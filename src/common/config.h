@@ -105,12 +105,29 @@ bool isPipelineCacheArchived();
 void setRdocEnabled(bool enable, bool is_game_specific = false);
 void setPipelineCacheEnabled(bool enable, bool is_game_specific = false);
 void setPipelineCacheArchived(bool enable, bool is_game_specific = false);
-std::string getLogType();
-void setLogType(const std::string& type, bool is_game_specific = false);
-bool groupIdenticalLogs();
-void setGroupIdenticalLogs(bool enable, bool is_game_specific = false);
+
+// Log
+bool isLogAppend();
+void setLogAppend(bool enable, bool is_game_specific = false);
+bool getLogEnable();
+void setLogEnable(bool enable, bool is_game_specific = false);
 std::string getLogFilter();
 void setLogFilter(const std::string& type, bool is_game_specific = false);
+u32 getLogMaxSkipDuration();
+void setLogMaxSkipDuration(u32 duration, bool is_game_specific = false);
+bool getLogSeparateLogFilesEnabled();
+void setLogSeparateLogFilesEnabled(bool enabled, bool is_game_specific = false);
+unsigned long long getLogSizeLimit();
+void setLogSizeLimit(unsigned long long size, bool is_game_specific = false);
+bool getLogSkipDuplicate();
+void setLogSkipDuplicate(bool enable, bool is_game_specific = false);
+bool isLogSync();
+void setLogSync(bool sync, bool is_game_specific = false);
+#ifdef _WIN32
+std::string getLogType();
+void setLogType(const std::string& type, bool is_game_specific = false);
+#endif
+
 double getTrophyNotificationDuration();
 void setTrophyNotificationDuration(double newTrophyNotificationDuration,
                                    bool is_game_specific = false);
@@ -122,8 +139,6 @@ void setPadSpkOutputDevice(std::string device, bool is_game_specific = false);
 std::string getMicDevice();
 void setCursorHideTimeout(int newcursorHideTimeout, bool is_game_specific = false);
 void setMicDevice(std::string device, bool is_game_specific = false);
-void setSeparateLogFilesEnabled(bool enabled, bool is_game_specific = false);
-bool getSeparateLogFilesEnabled();
 u32 GetLanguage();
 void setLanguage(u32 language, bool is_game_specific = false);
 void setUseSpecialPad(bool use);
@@ -148,8 +163,6 @@ std::string getDefaultControllerID();
 void setDefaultControllerID(std::string id);
 bool getBackgroundControllerInput();
 void setBackgroundControllerInput(bool enable, bool is_game_specific = false);
-bool getLoggingEnabled();
-void setLoggingEnabled(bool enable, bool is_game_specific = false);
 bool getFsrEnabled();
 void setFsrEnabled(bool enable, bool is_game_specific = false);
 bool getRcasEnabled();

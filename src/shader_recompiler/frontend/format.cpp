@@ -477,7 +477,7 @@ constexpr std::array<InstFormat, 32> InstructionFormatSMRD = {{
      ScalarType::Undefined},
 }};
 
-constexpr std::array<InstFormat, 50> InstructionFormatVOP2 = {{
+constexpr std::array<InstFormat, 59> InstructionFormatVOP2 = {{
     // 0 = V_CNDMASK_B32
     {InstClass::VectorThreadMask, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
      ScalarType::Uint32},
@@ -620,1169 +620,1707 @@ constexpr std::array<InstFormat, 50> InstructionFormatVOP2 = {{
     {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Uint32, ScalarType::Uint32},
     // 49 = V_CVT_PK_I16_I32
     {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Sint32, ScalarType::Sint32},
+    // 50 = V_ADD_F16
+    {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
+    // 51 = V_SUB_F16
+    {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
+    {},
+    // 53 = V_MUL_F16
+    {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
+    {},
+    {},
+    {},
+    // 57 = V_MAX_F16
+    {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
+    // 58 = V_MIN_F16
+    {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
 }};
 
-constexpr std::array<InstFormat, 455> InstructionFormatVOP3 = {{
-    // 0 = V_CMP_F_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 1 = V_CMP_LT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 2 = V_CMP_EQ_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 3 = V_CMP_LE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 4 = V_CMP_GT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 5 = V_CMP_LG_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 6 = V_CMP_GE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 7 = V_CMP_O_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 8 = V_CMP_U_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 9 = V_CMP_NGE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 10 = V_CMP_NLG_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 11 = V_CMP_NGT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 12 = V_CMP_NLE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 13 = V_CMP_NEQ_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 14 = V_CMP_NLT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 15 = V_CMP_TRU_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 16 = V_CMPX_F_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 17 = V_CMPX_LT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 18 = V_CMPX_EQ_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 19 = V_CMPX_LE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 20 = V_CMPX_GT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 21 = V_CMPX_LG_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 22 = V_CMPX_GE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 23 = V_CMPX_O_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 24 = V_CMPX_U_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 25 = V_CMPX_NGE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 26 = V_CMPX_NLG_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 27 = V_CMPX_NGT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 28 = V_CMPX_NLE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 29 = V_CMPX_NEQ_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 30 = V_CMPX_NLT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 31 = V_CMPX_TRU_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 32 = V_CMP_F_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 33 = V_CMP_LT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 34 = V_CMP_EQ_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 35 = V_CMP_LE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 36 = V_CMP_GT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 37 = V_CMP_LG_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 38 = V_CMP_GE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 39 = V_CMP_O_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 40 = V_CMP_U_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 41 = V_CMP_NGE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 42 = V_CMP_NLG_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 43 = V_CMP_NGT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 44 = V_CMP_NLE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 45 = V_CMP_NEQ_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 46 = V_CMP_NLT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 47 = V_CMP_TRU_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 48 = V_CMPX_F_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 49 = V_CMPX_LT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 50 = V_CMPX_EQ_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 51 = V_CMPX_LE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 52 = V_CMPX_GT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 53 = V_CMPX_LG_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 54 = V_CMPX_GE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 55 = V_CMPX_O_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 56 = V_CMPX_U_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 57 = V_CMPX_NGE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 58 = V_CMPX_NLG_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 59 = V_CMPX_NGT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 60 = V_CMPX_NLE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 61 = V_CMPX_NEQ_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 62 = V_CMPX_NLT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 63 = V_CMPX_TRU_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 64 = V_CMPS_F_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 65 = V_CMPS_LT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 66 = V_CMPS_EQ_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 67 = V_CMPS_LE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 68 = V_CMPS_GT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 69 = V_CMPS_LG_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 70 = V_CMPS_GE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 71 = V_CMPS_O_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 72 = V_CMPS_U_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 73 = V_CMPS_NGE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 74 = V_CMPS_NLG_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 75 = V_CMPS_NGT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 76 = V_CMPS_NLE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 77 = V_CMPS_NEQ_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 78 = V_CMPS_NLT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 79 = V_CMPS_TRU_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 80 = V_CMPSX_F_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 81 = V_CMPSX_LT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 82 = V_CMPSX_EQ_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 83 = V_CMPSX_LE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 84 = V_CMPSX_GT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 85 = V_CMPSX_LG_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 86 = V_CMPSX_GE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 87 = V_CMPSX_O_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 88 = V_CMPSX_U_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 89 = V_CMPSX_NGE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 90 = V_CMPSX_NLG_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 91 = V_CMPSX_NGT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 92 = V_CMPSX_NLE_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 93 = V_CMPSX_NEQ_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 94 = V_CMPSX_NLT_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 95 = V_CMPSX_TRU_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 96 = V_CMPS_F_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 97 = V_CMPS_LT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 98 = V_CMPS_EQ_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 99 = V_CMPS_LE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 100 = V_CMPS_GT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 101 = V_CMPS_LG_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 102 = V_CMPS_GE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 103 = V_CMPS_O_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 104 = V_CMPS_U_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 105 = V_CMPS_NGE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 106 = V_CMPS_NLG_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 107 = V_CMPS_NGT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 108 = V_CMPS_NLE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 109 = V_CMPS_NEQ_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 110 = V_CMPS_NLT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 111 = V_CMPS_TRU_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 112 = V_CMPSX_F_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 113 = V_CMPSX_LT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 114 = V_CMPSX_EQ_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 115 = V_CMPSX_LE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 116 = V_CMPSX_GT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 117 = V_CMPSX_LG_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 118 = V_CMPSX_GE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 119 = V_CMPSX_O_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 120 = V_CMPSX_U_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 121 = V_CMPSX_NGE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 122 = V_CMPSX_NLG_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 123 = V_CMPSX_NGT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 124 = V_CMPSX_NLE_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 125 = V_CMPSX_NEQ_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 126 = V_CMPSX_NLT_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 127 = V_CMPSX_TRU_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 128 = V_CMP_F_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 129 = V_CMP_LT_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 130 = V_CMP_EQ_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 131 = V_CMP_LE_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 132 = V_CMP_GT_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 133 = V_CMP_NE_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 134 = V_CMP_GE_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 135 = V_CMP_T_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 136 = V_CMP_CLASS_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    // 144 = V_CMPX_F_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 145 = V_CMPX_LT_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 146 = V_CMPX_EQ_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 147 = V_CMPX_LE_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 148 = V_CMPX_GT_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 149 = V_CMPX_NE_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 150 = V_CMPX_GE_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 151 = V_CMPX_T_I32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 152 = V_CMPX_CLASS_F32
-    {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    // 160 = V_CMP_F_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 161 = V_CMP_LT_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 162 = V_CMP_EQ_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 163 = V_CMP_LE_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 164 = V_CMP_GT_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 165 = V_CMP_NE_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 166 = V_CMP_GE_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 167 = V_CMP_T_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 168 = V_CMP_CLASS_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    // 176 = V_CMPX_F_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 177 = V_CMPX_LT_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 178 = V_CMPX_EQ_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 179 = V_CMPX_LE_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 180 = V_CMPX_GT_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 181 = V_CMPX_NE_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 182 = V_CMPX_GE_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 183 = V_CMPX_T_I64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 184 = V_CMPX_CLASS_F64
-    {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    // 192 = V_CMP_F_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 193 = V_CMP_LT_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 194 = V_CMP_EQ_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 195 = V_CMP_LE_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 196 = V_CMP_GT_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 197 = V_CMP_NE_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 198 = V_CMP_GE_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 199 = V_CMP_T_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    // 208 = V_CMPX_F_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 209 = V_CMPX_LT_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 210 = V_CMPX_EQ_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 211 = V_CMPX_LE_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 212 = V_CMPX_GT_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 213 = V_CMPX_NE_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 214 = V_CMPX_GE_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 215 = V_CMPX_T_U32
-    {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    // 224 = V_CMP_F_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 225 = V_CMP_LT_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 226 = V_CMP_EQ_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 227 = V_CMP_LE_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 228 = V_CMP_GT_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 229 = V_CMP_NE_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 230 = V_CMP_GE_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 231 = V_CMP_T_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    // 240 = V_CMPX_F_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 241 = V_CMPX_LT_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 242 = V_CMPX_EQ_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 243 = V_CMPX_LE_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 244 = V_CMPX_GT_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 245 = V_CMPX_NE_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 246 = V_CMPX_GE_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 247 = V_CMPX_T_U64
-    {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    // 256 = V_CNDMASK_B32
-    {InstClass::VectorThreadMask, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 257 = V_READLANE_B32
-    {InstClass::VectorLane, InstCategory::VectorALU, 2, 1, ScalarType::Uint32, ScalarType::Uint32},
-    // 258 = V_WRITELANE_B32
-    {InstClass::VectorLane, InstCategory::VectorALU, 2, 1, ScalarType::Uint32, ScalarType::Uint32},
-    // 259 = V_ADD_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 260 = V_SUB_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 261 = V_SUBREV_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 262 = V_MAC_LEGACY_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 263 = V_MUL_LEGACY_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 264 = V_MUL_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 265 = V_MUL_I32_I24
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 266 = V_MUL_HI_I32_I24
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 267 = V_MUL_U32_U24
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 268 = V_MUL_HI_U32_U24
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 269 = V_MIN_LEGACY_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 270 = V_MAX_LEGACY_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 271 = V_MIN_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 272 = V_MAX_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 273 = V_MIN_I32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 274 = V_MAX_I32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 275 = V_MIN_U32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 276 = V_MAX_U32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 277 = V_LSHR_B32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 278 = V_LSHRREV_B32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 279 = V_ASHR_I32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 280 = V_ASHRREV_I32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 281 = V_LSHL_B32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 282 = V_LSHLREV_B32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 283 = V_AND_B32
-    {InstClass::VectorBitLogic, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 284 = V_OR_B32
-    {InstClass::VectorBitLogic, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 285 = V_XOR_B32
-    {InstClass::VectorBitLogic, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 286 = V_BFM_B32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 287 = V_MAC_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 288 = V_MADMK_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 289 = V_MADAK_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 290 = V_BCNT_U32_B32
-    {InstClass::VectorThreadMask, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 291 = V_MBCNT_LO_U32_B32
-    {InstClass::VectorThreadMask, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 292 = V_MBCNT_HI_U32_B32
-    {InstClass::VectorThreadMask, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 293 = V_ADD_I32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 294 = V_SUB_I32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 295 = V_SUBREV_I32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 296 = V_ADDC_U32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 297 = V_SUBB_U32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 298 = V_SUBBREV_U32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 299 = V_LDEXP_F32
-    {InstClass::VectorFpField32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 300 = V_CVT_PKACCUM_U8_F32
-    {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Float32, ScalarType::Uint32},
-    // 301 = V_CVT_PKNORM_I16_F32
-    {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Float32, ScalarType::Sint32},
-    // 302 = V_CVT_PKNORM_U16_F32
-    {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Float32, ScalarType::Uint32},
-    // 303 = V_CVT_PKRTZ_F16_F32
-    {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Float32, ScalarType::Uint32},
-    // 304 = V_CVT_PK_U16_U32
-    {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Uint32, ScalarType::Uint32},
-    // 305 = V_CVT_PK_I16_I32
-    {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Sint32, ScalarType::Sint32},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    // 320 = V_MAD_LEGACY_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 321 = V_MAD_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 322 = V_MAD_I32_I24
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 323 = V_MAD_U32_U24
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 324 = V_CUBEID_F32
-    {InstClass::VectorFpGraph32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 325 = V_CUBESC_F32
-    {InstClass::VectorFpGraph32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 326 = V_CUBETC_F32
-    {InstClass::VectorFpGraph32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 327 = V_CUBEMA_F32
-    {InstClass::VectorFpGraph32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 328 = V_BFE_U32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 329 = V_BFE_I32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 330 = V_BFI_B32
-    {InstClass::VectorBitLogic, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 331 = V_FMA_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 332 = V_FMA_F64
-    {InstClass::VectorFpArith64, InstCategory::VectorALU, 3, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 333 = V_LERP_U8
-    {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 334 = V_ALIGNBIT_B32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 335 = V_ALIGNBYTE_B32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 336 = V_MULLIT_F32
-    {InstClass::VectorFpGraph32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 337 = V_MIN3_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 338 = V_MIN3_I32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 339 = V_MIN3_U32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 340 = V_MAX3_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 341 = V_MAX3_I32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 342 = V_MAX3_U32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 343 = V_MED3_F32
-    {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 344 = V_MED3_I32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 345 = V_MED3_U32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 346 = V_SAD_U8
-    {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 347 = V_SAD_HI_U8
-    {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 348 = V_SAD_U16
-    {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 349 = V_SAD_U32
-    {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 350 = V_CVT_PK_U8_F32
-    {InstClass::VectorConv, InstCategory::VectorALU, 3, 1, ScalarType::Float32, ScalarType::Uint32},
-    // 351 = V_DIV_FIXUP_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 352 = V_DIV_FIXUP_F64
-    {InstClass::VectorFpTran64, InstCategory::VectorALU, 3, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 353 = V_LSHL_B64
-    {InstClass::VectorBitField64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 354 = V_LSHR_B64
-    {InstClass::VectorBitField64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
-     ScalarType::Uint64},
-    // 355 = V_ASHR_I64
-    {InstClass::VectorBitField64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
-     ScalarType::Sint64},
-    // 356 = V_ADD_F64
-    {InstClass::VectorFpArith64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 357 = V_MUL_F64
-    {InstClass::VectorFpArith64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 358 = V_MIN_F64
-    {InstClass::VectorFpArith64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 359 = V_MAX_F64
-    {InstClass::VectorFpArith64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 360 = V_LDEXP_F64
-    {InstClass::VectorFpField64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 361 = V_MUL_LO_U32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 362 = V_MUL_HI_U32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 363 = V_MUL_LO_I32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 364 = V_MUL_HI_I32
-    {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 365 = V_DIV_SCALE_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 366 = V_DIV_SCALE_F64
-    {InstClass::VectorFpTran64, InstCategory::VectorALU, 3, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 367 = V_DIV_FMAS_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 368 = V_DIV_FMAS_F64
-    {InstClass::VectorFpTran64, InstCategory::VectorALU, 3, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 369 = V_MSAD_U8
-    {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 370 = V_QSAD_U8
-    {InstClass::Undefined, InstCategory::Undefined, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
-    // 371 = V_MQSAD_U8
-    {InstClass::Undefined, InstCategory::Undefined, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
-    // 372 = V_TRIG_PREOP_F64
-    {InstClass::VectorFpTran64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 373 = V_MQSAD_U32_U8
-    {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 374 = V_MAD_U64_U32
-    {InstClass::VectorIntArith64, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
-     ScalarType::Uint64},
-    // 375 = V_MAD_I64_I32
-    {InstClass::VectorIntArith64, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
-     ScalarType::Sint64},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    // 384 = V_NOP
-    {InstClass::VectorMisc, InstCategory::VectorALU, 0, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
-    // 385 = V_MOV_B32
-    {InstClass::VectorRegMov, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 386 = V_READFIRSTLANE_B32
-    {InstClass::VectorLane, InstCategory::VectorALU, 1, 1, ScalarType::Uint32, ScalarType::Uint32},
-    // 387 = V_CVT_I32_F64
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float64, ScalarType::Sint32},
-    // 388 = V_CVT_F64_I32
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Sint32, ScalarType::Float64},
-    // 389 = V_CVT_F32_I32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Sint32,
-     ScalarType::Float32},
-    // 390 = V_CVT_F32_U32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
-     ScalarType::Float32},
-    // 391 = V_CVT_U32_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Uint32},
-    // 392 = V_CVT_I32_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Sint32},
-    // 393 = V_MOV_FED_B32
-    {InstClass::Undefined, InstCategory::Undefined, 1, 1, ScalarType::Uint32, ScalarType::Uint32},
-    // 394 = V_CVT_F16_F32
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float16},
-    // 395 = V_CVT_F32_F16
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float16,
-     ScalarType::Float32},
-    // 396 = V_CVT_RPI_I32_F32
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float32, ScalarType::Sint32},
-    // 397 = V_CVT_FLR_I32_F32
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float32, ScalarType::Sint32},
-    // 398 = V_CVT_OFF_F32_I4
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Sint32, ScalarType::Float32},
-    // 399 = V_CVT_F32_F64
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
-     ScalarType::Float32},
-    // 400 = V_CVT_F64_F32
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float64},
-    // 401 = V_CVT_F32_UBYTE0
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
-    // 402 = V_CVT_F32_UBYTE1
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
-    // 403 = V_CVT_F32_UBYTE2
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
-    // 404 = V_CVT_F32_UBYTE3
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
-    // 405 = V_CVT_U32_F64
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float64, ScalarType::Uint32},
-    // 406 = V_CVT_F64_U32
-    {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Uint32, ScalarType::Float64},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    // 416 = V_FRACT_F32
-    {InstClass::VectorFpRound32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 417 = V_TRUNC_F32
-    {InstClass::VectorFpRound32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 418 = V_CEIL_F32
-    {InstClass::VectorFpRound32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 419 = V_RNDNE_F32
-    {InstClass::VectorFpRound32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 420 = V_FLOOR_F32
-    {InstClass::VectorFpRound32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 421 = V_EXP_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 422 = V_LOG_CLAMP_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 423 = V_LOG_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 424 = V_RCP_CLAMP_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 425 = V_RCP_LEGACY_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 426 = V_RCP_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 427 = V_RCP_IFLAG_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 428 = V_RSQ_CLAMP_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 429 = V_RSQ_LEGACY_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 430 = V_RSQ_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 431 = V_RCP_F64
-    {InstClass::VectorFpTran64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 432 = V_RCP_CLAMP_F64
-    {InstClass::VectorFpTran64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 433 = V_RSQ_F64
-    {InstClass::VectorFpTran64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 434 = V_RSQ_CLAMP_F64
-    {InstClass::VectorFpTran64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 435 = V_SQRT_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 436 = V_SQRT_F64
-    {InstClass::VectorFpTran64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 437 = V_SIN_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 438 = V_COS_F32
-    {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 439 = V_NOT_B32
-    {InstClass::VectorBitLogic, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 440 = V_BFREV_B32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 441 = V_FFBH_U32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 442 = V_FFBL_B32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 443 = V_FFBH_I32
-    {InstClass::VectorBitField32, InstCategory::VectorALU, 1, 1, ScalarType::Sint32,
-     ScalarType::Sint32},
-    // 444 = V_FREXP_EXP_I32_F64
-    {InstClass::VectorFpField64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
-     ScalarType::Sint32},
-    // 445 = V_FREXP_MANT_F64
-    {InstClass::VectorFpField64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 446 = V_FRACT_F64
-    {InstClass::VectorFpRound64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
-     ScalarType::Float64},
-    // 447 = V_FREXP_EXP_I32_F32
-    {InstClass::VectorFpField32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Sint32},
-    // 448 = V_FREXP_MANT_F32
-    {InstClass::VectorFpField32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
-     ScalarType::Float32},
-    // 449 = V_CLREXCP
-    {InstClass::Undefined, InstCategory::Undefined, 0, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
-    // 450 = V_MOVRELD_B32
-    {InstClass::VectorMovRel, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 451 = V_MOVRELS_B32
-    {InstClass::VectorMovRel, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    // 452 = V_MOVRELSD_B32
-    {InstClass::VectorMovRel, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
-     ScalarType::Uint32},
-    {},
-    {},
-}};
+constexpr std::array<InstFormat, 883> InstructionFormatVOP3 = {
+    {// 0 = V_CMP_F_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 1 = V_CMP_LT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 2 = V_CMP_EQ_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 3 = V_CMP_LE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 4 = V_CMP_GT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 5 = V_CMP_LG_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 6 = V_CMP_GE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 7 = V_CMP_O_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 8 = V_CMP_U_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 9 = V_CMP_NGE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 10 = V_CMP_NLG_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 11 = V_CMP_NGT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 12 = V_CMP_NLE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 13 = V_CMP_NEQ_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 14 = V_CMP_NLT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 15 = V_CMP_TRU_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 16 = V_CMPX_F_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 17 = V_CMPX_LT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 18 = V_CMPX_EQ_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 19 = V_CMPX_LE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 20 = V_CMPX_GT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 21 = V_CMPX_LG_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 22 = V_CMPX_GE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 23 = V_CMPX_O_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 24 = V_CMPX_U_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 25 = V_CMPX_NGE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 26 = V_CMPX_NLG_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 27 = V_CMPX_NGT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 28 = V_CMPX_NLE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 29 = V_CMPX_NEQ_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 30 = V_CMPX_NLT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 31 = V_CMPX_TRU_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 32 = V_CMP_F_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 33 = V_CMP_LT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 34 = V_CMP_EQ_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 35 = V_CMP_LE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 36 = V_CMP_GT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 37 = V_CMP_LG_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 38 = V_CMP_GE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 39 = V_CMP_O_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 40 = V_CMP_U_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 41 = V_CMP_NGE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 42 = V_CMP_NLG_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 43 = V_CMP_NGT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 44 = V_CMP_NLE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 45 = V_CMP_NEQ_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 46 = V_CMP_NLT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 47 = V_CMP_TRU_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 48 = V_CMPX_F_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 49 = V_CMPX_LT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 50 = V_CMPX_EQ_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 51 = V_CMPX_LE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 52 = V_CMPX_GT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 53 = V_CMPX_LG_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 54 = V_CMPX_GE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 55 = V_CMPX_O_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 56 = V_CMPX_U_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 57 = V_CMPX_NGE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 58 = V_CMPX_NLG_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 59 = V_CMPX_NGT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 60 = V_CMPX_NLE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 61 = V_CMPX_NEQ_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 62 = V_CMPX_NLT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 63 = V_CMPX_TRU_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 64 = V_CMPS_F_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 65 = V_CMPS_LT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 66 = V_CMPS_EQ_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 67 = V_CMPS_LE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 68 = V_CMPS_GT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 69 = V_CMPS_LG_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 70 = V_CMPS_GE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 71 = V_CMPS_O_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 72 = V_CMPS_U_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 73 = V_CMPS_NGE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 74 = V_CMPS_NLG_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 75 = V_CMPS_NGT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 76 = V_CMPS_NLE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 77 = V_CMPS_NEQ_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 78 = V_CMPS_NLT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 79 = V_CMPS_TRU_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 80 = V_CMPSX_F_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 81 = V_CMPSX_LT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 82 = V_CMPSX_EQ_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 83 = V_CMPSX_LE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 84 = V_CMPSX_GT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 85 = V_CMPSX_LG_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 86 = V_CMPSX_GE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 87 = V_CMPSX_O_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 88 = V_CMPSX_U_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 89 = V_CMPSX_NGE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 90 = V_CMPSX_NLG_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 91 = V_CMPSX_NGT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 92 = V_CMPSX_NLE_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 93 = V_CMPSX_NEQ_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 94 = V_CMPSX_NLT_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 95 = V_CMPSX_TRU_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 96 = V_CMPS_F_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 97 = V_CMPS_LT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 98 = V_CMPS_EQ_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 99 = V_CMPS_LE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 100 = V_CMPS_GT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 101 = V_CMPS_LG_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 102 = V_CMPS_GE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 103 = V_CMPS_O_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 104 = V_CMPS_U_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 105 = V_CMPS_NGE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 106 = V_CMPS_NLG_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 107 = V_CMPS_NGT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 108 = V_CMPS_NLE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 109 = V_CMPS_NEQ_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 110 = V_CMPS_NLT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 111 = V_CMPS_TRU_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 112 = V_CMPSX_F_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 113 = V_CMPSX_LT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 114 = V_CMPSX_EQ_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 115 = V_CMPSX_LE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 116 = V_CMPSX_GT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 117 = V_CMPSX_LG_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 118 = V_CMPSX_GE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 119 = V_CMPSX_O_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 120 = V_CMPSX_U_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 121 = V_CMPSX_NGE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 122 = V_CMPSX_NLG_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 123 = V_CMPSX_NGT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 124 = V_CMPSX_NLE_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 125 = V_CMPSX_NEQ_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 126 = V_CMPSX_NLT_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 127 = V_CMPSX_TRU_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 128 = V_CMP_F_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 129 = V_CMP_LT_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 130 = V_CMP_EQ_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 131 = V_CMP_LE_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 132 = V_CMP_GT_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 133 = V_CMP_NE_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 134 = V_CMP_GE_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 135 = V_CMP_T_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 136 = V_CMP_CLASS_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 137 = V_CMP_LT_I16
+     {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+      ScalarType::Sint16},
+     // 138 = V_CMP_EQ_I16
+     {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+      ScalarType::Sint16},
+     // 139 = V_CMP_LE_I16
+     {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+      ScalarType::Sint16},
+     // 140 = V_CMP_GT_I16
+     {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+      ScalarType::Sint16},
+     // 141 = V_CMP_NE_I16
+     {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+      ScalarType::Sint16},
+     // 142 = V_CMP_GE_I16
+     {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+      ScalarType::Sint16},
+     {},
+     // 144 = V_CMPX_F_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 145 = V_CMPX_LT_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 146 = V_CMPX_EQ_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 147 = V_CMPX_LE_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 148 = V_CMPX_GT_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 149 = V_CMPX_NE_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 150 = V_CMPX_GE_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 151 = V_CMPX_T_I32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 152 = V_CMPX_CLASS_F32
+     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 160 = V_CMP_F_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 161 = V_CMP_LT_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 162 = V_CMP_EQ_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 163 = V_CMP_LE_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 164 = V_CMP_GT_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 165 = V_CMP_NE_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 166 = V_CMP_GE_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 167 = V_CMP_T_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 168 = V_CMP_CLASS_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 176 = V_CMPX_F_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 177 = V_CMPX_LT_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 178 = V_CMPX_EQ_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 179 = V_CMPX_LE_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 180 = V_CMPX_GT_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 181 = V_CMPX_NE_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 182 = V_CMPX_GE_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 183 = V_CMPX_T_I64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 184 = V_CMPX_CLASS_F64
+     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 192 = V_CMP_F_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 193 = V_CMP_LT_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 194 = V_CMP_EQ_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 195 = V_CMP_LE_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 196 = V_CMP_GT_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 197 = V_CMP_NE_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 198 = V_CMP_GE_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 199 = V_CMP_T_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 200 = V_CMP_F_F16
+     {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 201 = V_CMP_LT_F16
+     {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 202 = V_CMP_EQ_F16
+     {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 203 = V_CMP_LE_F16
+     {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 204 = V_CMP_GT_F16
+     {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 205 = V_CMP_LG_F16
+     {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 206 = V_CMP_GE_F16
+     {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 207 = V_CMP_O_F16
+     {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 208 = V_CMPX_F_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 209 = V_CMPX_LT_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 210 = V_CMPX_EQ_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 211 = V_CMPX_LE_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 212 = V_CMPX_GT_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 213 = V_CMPX_NE_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 214 = V_CMPX_GE_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 215 = V_CMPX_T_U32
+     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 224 = V_CMP_F_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 225 = V_CMP_LT_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 226 = V_CMP_EQ_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 227 = V_CMP_LE_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 228 = V_CMP_GT_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 229 = V_CMP_NE_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 230 = V_CMP_GE_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 231 = V_CMP_T_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 240 = V_CMPX_F_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 241 = V_CMPX_LT_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 242 = V_CMPX_EQ_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 243 = V_CMPX_LE_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 244 = V_CMPX_GT_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 245 = V_CMPX_NE_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 246 = V_CMPX_GE_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 247 = V_CMPX_T_U64
+     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 256 = V_CNDMASK_B32
+     {InstClass::VectorThreadMask, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 257 = V_READLANE_B32
+     {InstClass::VectorLane, InstCategory::VectorALU, 2, 1, ScalarType::Uint32, ScalarType::Uint32},
+     // 258 = V_WRITELANE_B32
+     {InstClass::VectorLane, InstCategory::VectorALU, 2, 1, ScalarType::Uint32, ScalarType::Uint32},
+     // 259 = V_ADD_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 260 = V_SUB_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 261 = V_SUBREV_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 262 = V_MAC_LEGACY_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 263 = V_MUL_LEGACY_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 264 = V_MUL_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 265 = V_MUL_I32_I24
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 266 = V_MUL_HI_I32_I24
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 267 = V_MUL_U32_U24
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 268 = V_MUL_HI_U32_U24
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 269 = V_MIN_LEGACY_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 270 = V_MAX_LEGACY_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 271 = V_MIN_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 272 = V_MAX_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 273 = V_MIN_I32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 274 = V_MAX_I32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 275 = V_MIN_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 276 = V_MAX_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 277 = V_LSHR_B32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 278 = V_LSHRREV_B32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 279 = V_ASHR_I32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 280 = V_ASHRREV_I32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 281 = V_LSHL_B32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 282 = V_LSHLREV_B32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 283 = V_AND_B32
+     {InstClass::VectorBitLogic, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 284 = V_OR_B32
+     {InstClass::VectorBitLogic, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 285 = V_XOR_B32
+     {InstClass::VectorBitLogic, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 286 = V_BFM_B32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 287 = V_MAC_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 288 = V_MADMK_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 289 = V_MADAK_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 290 = V_BCNT_U32_B32
+     {InstClass::VectorThreadMask, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 291 = V_MBCNT_LO_U32_B32
+     {InstClass::VectorThreadMask, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 292 = V_MBCNT_HI_U32_B32
+     {InstClass::VectorThreadMask, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 293 = V_ADD_I32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 294 = V_SUB_I32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 295 = V_SUBREV_I32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 296 = V_ADDC_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 297 = V_SUBB_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 298 = V_SUBBREV_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 299 = V_LDEXP_F32
+     {InstClass::VectorFpField32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 300 = V_CVT_PKACCUM_U8_F32
+     {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Uint32},
+     // 301 = V_CVT_PKNORM_I16_F32
+     {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Sint32},
+     // 302 = V_CVT_PKNORM_U16_F32
+     {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Uint32},
+     // 303 = V_CVT_PKRTZ_F16_F32
+     {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
+      ScalarType::Uint32},
+     // 304 = V_CVT_PK_U16_U32
+     {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Uint32, ScalarType::Uint32},
+     // 305 = V_CVT_PK_I16_I32
+     {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Sint32, ScalarType::Sint32},
+     // 306 = V_ADD_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 307 = V_SUB_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 308 = V_SUBREV_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 309 = V_MUL_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     {},
+     {},
+     {},
+     // 313 = V_MAX_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 314 = V_MIN_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 315 = V_LDEXP_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     {},
+     {},
+     {},
+     {},
+     // 320 = V_MAD_LEGACY_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 321 = V_MAD_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 322 = V_MAD_I32_I24
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 323 = V_MAD_U32_U24
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 324 = V_CUBEID_F32
+     {InstClass::VectorFpGraph32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 325 = V_CUBESC_F32
+     {InstClass::VectorFpGraph32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 326 = V_CUBETC_F32
+     {InstClass::VectorFpGraph32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 327 = V_CUBEMA_F32
+     {InstClass::VectorFpGraph32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 328 = V_BFE_U32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 329 = V_BFE_I32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 330 = V_BFI_B32
+     {InstClass::VectorBitLogic, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 331 = V_FMA_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 332 = V_FMA_F64
+     {InstClass::VectorFpArith64, InstCategory::VectorALU, 3, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 333 = V_LERP_U8
+     {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 334 = V_ALIGNBIT_B32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 335 = V_ALIGNBYTE_B32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 336 = V_MULLIT_F32
+     {InstClass::VectorFpGraph32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 337 = V_MIN3_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 338 = V_MIN3_I32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 339 = V_MIN3_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 340 = V_MAX3_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 341 = V_MAX3_I32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 342 = V_MAX3_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 343 = V_MED3_F32
+     {InstClass::VectorFpArith32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 344 = V_MED3_I32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 345 = V_MED3_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 346 = V_SAD_U8
+     {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 347 = V_SAD_HI_U8
+     {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 348 = V_SAD_U16
+     {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 349 = V_SAD_U32
+     {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 350 = V_CVT_PK_U8_F32
+     {InstClass::VectorConv, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Uint32},
+     // 351 = V_DIV_FIXUP_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 352 = V_DIV_FIXUP_F64
+     {InstClass::VectorFpTran64, InstCategory::VectorALU, 3, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 353 = V_LSHL_B64
+     {InstClass::VectorBitField64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 354 = V_LSHR_B64
+     {InstClass::VectorBitField64, InstCategory::VectorALU, 2, 1, ScalarType::Uint64,
+      ScalarType::Uint64},
+     // 355 = V_ASHR_I64
+     {InstClass::VectorBitField64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
+      ScalarType::Sint64},
+     // 356 = V_ADD_F64
+     {InstClass::VectorFpArith64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 357 = V_MUL_F64
+     {InstClass::VectorFpArith64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 358 = V_MIN_F64
+     {InstClass::VectorFpArith64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 359 = V_MAX_F64
+     {InstClass::VectorFpArith64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 360 = V_LDEXP_F64
+     {InstClass::VectorFpField64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 361 = V_MUL_LO_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 362 = V_MUL_HI_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 363 = V_MUL_LO_I32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 364 = V_MUL_HI_I32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 365 = V_DIV_SCALE_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 366 = V_DIV_SCALE_F64
+     {InstClass::VectorFpTran64, InstCategory::VectorALU, 3, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 367 = V_DIV_FMAS_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 3, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 368 = V_DIV_FMAS_F64
+     {InstClass::VectorFpTran64, InstCategory::VectorALU, 3, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 369 = V_MSAD_U8
+     {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 370 = V_QSAD_U8
+     {InstClass::Undefined, InstCategory::Undefined, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
+     // 371 = V_MQSAD_U8
+     {InstClass::Undefined, InstCategory::Undefined, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
+     // 372 = V_TRIG_PREOP_F64
+     {InstClass::VectorFpTran64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 373 = V_MQSAD_U32_U8
+     {InstClass::VectorIntGraph, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 374 = V_MAD_U64_U32
+     {InstClass::VectorIntArith64, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint64},
+     // 375 = V_MAD_I64_I32
+     {InstClass::VectorIntArith64, InstCategory::VectorALU, 3, 1, ScalarType::Sint32,
+      ScalarType::Sint64},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 384 = V_NOP
+     {InstClass::VectorMisc, InstCategory::VectorALU, 0, 1, ScalarType::Undefined,
+      ScalarType::Undefined},
+     // 385 = V_MOV_B32
+     {InstClass::VectorRegMov, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 386 = V_READFIRSTLANE_B32
+     {InstClass::VectorLane, InstCategory::VectorALU, 1, 1, ScalarType::Uint32, ScalarType::Uint32},
+     // 387 = V_CVT_I32_F64
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+      ScalarType::Sint32},
+     // 388 = V_CVT_F64_I32
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Sint32,
+      ScalarType::Float64},
+     // 389 = V_CVT_F32_I32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Sint32,
+      ScalarType::Float32},
+     // 390 = V_CVT_F32_U32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+      ScalarType::Float32},
+     // 391 = V_CVT_U32_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Uint32},
+     // 392 = V_CVT_I32_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Sint32},
+     // 393 = V_MOV_FED_B32
+     {InstClass::Undefined, InstCategory::Undefined, 1, 1, ScalarType::Uint32, ScalarType::Uint32},
+     // 394 = V_CVT_F16_F32
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float16},
+     // 395 = V_CVT_F32_F16
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float16,
+      ScalarType::Float32},
+     // 396 = V_CVT_RPI_I32_F32
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Sint32},
+     // 397 = V_CVT_FLR_I32_F32
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Sint32},
+     // 398 = V_CVT_OFF_F32_I4
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Sint32,
+      ScalarType::Float32},
+     // 399 = V_CVT_F32_F64
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+      ScalarType::Float32},
+     // 400 = V_CVT_F64_F32
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float64},
+     // 401 = V_CVT_F32_UBYTE0
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Undefined,
+      ScalarType::Undefined},
+     // 402 = V_CVT_F32_UBYTE1
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Undefined,
+      ScalarType::Undefined},
+     // 403 = V_CVT_F32_UBYTE2
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Undefined,
+      ScalarType::Undefined},
+     // 404 = V_CVT_F32_UBYTE3
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Undefined,
+      ScalarType::Undefined},
+     // 405 = V_CVT_U32_F64
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+      ScalarType::Uint32},
+     // 406 = V_CVT_F64_U32
+     {InstClass::VectorConv, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+      ScalarType::Float64},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 416 = V_FRACT_F32
+     {InstClass::VectorFpRound32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 417 = V_TRUNC_F32
+     {InstClass::VectorFpRound32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 418 = V_CEIL_F32
+     {InstClass::VectorFpRound32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 419 = V_RNDNE_F32
+     {InstClass::VectorFpRound32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 420 = V_FLOOR_F32
+     {InstClass::VectorFpRound32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 421 = V_EXP_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 422 = V_LOG_CLAMP_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 423 = V_LOG_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 424 = V_RCP_CLAMP_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 425 = V_RCP_LEGACY_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 426 = V_RCP_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 427 = V_RCP_IFLAG_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 428 = V_RSQ_CLAMP_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 429 = V_RSQ_LEGACY_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 430 = V_RSQ_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 431 = V_RCP_F64
+     {InstClass::VectorFpTran64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 432 = V_RCP_CLAMP_F64
+     {InstClass::VectorFpTran64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 433 = V_RSQ_F64
+     {InstClass::VectorFpTran64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 434 = V_RSQ_CLAMP_F64
+     {InstClass::VectorFpTran64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 435 = V_SQRT_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 436 = V_SQRT_F64
+     {InstClass::VectorFpTran64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 437 = V_SIN_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 438 = V_COS_F32
+     {InstClass::VectorFpTran32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 439 = V_NOT_B32
+     {InstClass::VectorBitLogic, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 440 = V_BFREV_B32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 441 = V_FFBH_U32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 442 = V_FFBL_B32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 443 = V_FFBH_I32
+     {InstClass::VectorBitField32, InstCategory::VectorALU, 1, 1, ScalarType::Sint32,
+      ScalarType::Sint32},
+     // 444 = V_FREXP_EXP_I32_F64
+     {InstClass::VectorFpField64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+      ScalarType::Sint32},
+     // 445 = V_FREXP_MANT_F64
+     {InstClass::VectorFpField64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 446 = V_FRACT_F64
+     {InstClass::VectorFpRound64, InstCategory::VectorALU, 1, 1, ScalarType::Float64,
+      ScalarType::Float64},
+     // 447 = V_FREXP_EXP_I32_F32
+     {InstClass::VectorFpField32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Sint32},
+     // 448 = V_FREXP_MANT_F32
+     {InstClass::VectorFpField32, InstCategory::VectorALU, 1, 1, ScalarType::Float32,
+      ScalarType::Float32},
+     // 449 = V_CLREXCP
+     {InstClass::Undefined, InstCategory::Undefined, 0, 1, ScalarType::Undefined,
+      ScalarType::Undefined},
+     // 450 = V_MOVRELD_B32
+     {InstClass::VectorMovRel, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 451 = V_MOVRELS_B32
+     {InstClass::VectorMovRel, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 452 = V_MOVRELSD_B32
+     {InstClass::VectorMovRel, InstCategory::VectorALU, 1, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 84 = V_RCP_F16
+     {InstClass::VectorFpTran16, InstCategory::VectorALU, 1, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 85 = V_SQRT_F16
+     {InstClass::VectorFpTran16, InstCategory::VectorALU, 1, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 771 = V_ADD_NC_U16
+     {InstClass::VectorIntArith16, InstCategory::VectorALU, 2, 1, ScalarType::Uint16,
+      ScalarType::Uint16},
+     {},
+     {},
+     {},
+     // 775 = V_LSHRREV_B16
+     {InstClass::VectorIntArith16, InstCategory::VectorALU, 2, 1, ScalarType::Uint16,
+      ScalarType::Uint16},
+     // 776 = V_ASHRREV_I16
+     {InstClass::VectorIntArith16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+      ScalarType::Sint16},
+     {},
+     {},
+     {},
+     {},
+     // 781 = V_ADD_NC_I16
+     {InstClass::VectorIntArith16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+      ScalarType::Sint16},
+     // 782 = V_SUB_NC_I16
+     {InstClass::VectorIntArith16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+      ScalarType::Sint16},
+     {},
+     // 784 = V_SUB_CO_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     {},
+     {},
+     {},
+     // 788 = V_LSHLREV_B16
+     {InstClass::VectorIntArith16, InstCategory::VectorALU, 2, 1, ScalarType::Uint16,
+      ScalarType::Uint16},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 833 = V_MAD_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 3, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     {},
+     {},
+     {},
+     {},
+     // 838 = V_LSHL_ADD_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 839 = V_ADD_LSHL_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 849 = V_MIN3_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 3, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     {},
+     {},
+     // 852 = V_MAX3_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 3, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 862 = V_MAD_I16
+     {InstClass::VectorIntArith16, InstCategory::VectorALU, 3, 1, ScalarType::Sint16,
+      ScalarType::Sint16},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     {},
+     // 877 = V_ADD3_U32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     {},
+     // 879 = V_LSHL_OR_B32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     {},
+     // 881 = V_AND_OR_B32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32},
+     // 882 = V_OR3_B32
+     {InstClass::VectorIntArith32, InstCategory::VectorALU, 3, 1, ScalarType::Uint32,
+      ScalarType::Uint32}}};
 
 constexpr std::array<InstFormat, 35> InstructionFormatVOP3P = {{
     // 0 = V_PK_MAD_I16
@@ -1866,7 +2404,7 @@ constexpr std::array<InstFormat, 35> InstructionFormatVOP3P = {{
      ScalarType::Float32},
 }};
 
-constexpr std::array<InstFormat, 71> InstructionFormatVOP1 = {{
+constexpr std::array<InstFormat, 86> InstructionFormatVOP1 = {{
     // 0 = V_NOP
     {InstClass::VectorMisc, InstCategory::VectorALU, 0, 1, ScalarType::Any, ScalarType::Any},
     // 1 = V_MOV_B32
@@ -2048,6 +2586,25 @@ constexpr std::array<InstFormat, 71> InstructionFormatVOP1 = {{
      ScalarType::Uint32},
     {},
     {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    // 84 = V_RCP_F16
+    {InstClass::VectorFpTran16, InstCategory::VectorALU, 1, 1, ScalarType::Float16,
+     ScalarType::Float16},
+    // 85 = V_SQRT_F16
+    {InstClass::VectorFpTran16, InstCategory::VectorALU, 1, 1, ScalarType::Float16,
+     ScalarType::Float16},
 }};
 
 constexpr std::array<InstFormat, 248> InstructionFormatVOPC = {{
@@ -2462,12 +3019,24 @@ constexpr std::array<InstFormat, 248> InstructionFormatVOPC = {{
     // 136 = V_CMP_CLASS_F32
     {InstClass::VectorFpCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Float32,
      ScalarType::Float32},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    // 137 = V_CMP_LT_I16
+    {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+     ScalarType::Sint16},
+    // 138 = V_CMP_EQ_I16
+    {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+     ScalarType::Sint16},
+    // 139 = V_CMP_LE_I16
+    {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+     ScalarType::Sint16},
+    // 140 = V_CMP_GT_I16
+    {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+     ScalarType::Sint16},
+    // 141 = V_CMP_NE_I16
+    {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+     ScalarType::Sint16},
+    // 142 = V_CMP_GE_I16
+    {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Sint16,
+     ScalarType::Sint16},
     {},
     // 144 = V_CMPX_F_I32
     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Sint32,
@@ -2531,11 +3100,21 @@ constexpr std::array<InstFormat, 248> InstructionFormatVOPC = {{
     {InstClass::VectorFpCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Float64,
      ScalarType::Float64},
     {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    // 170 = V_CMP_EQ_U16
+    {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Uint16,
+     ScalarType::Uint16},
+    // 171 = V_CMP_LE_U16
+    {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Uint16,
+     ScalarType::Uint16},
+    // 172 = V_CMP_GT_U16
+    {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Uint16,
+     ScalarType::Uint16},
+    // 173 = V_CMP_NE_U16
+    {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Uint16,
+     ScalarType::Uint16},
+    // 174 = V_CMP_GE_U16
+    {InstClass::VectorIntCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Uint16,
+     ScalarType::Uint16},
     {},
     // 176 = V_CMPX_F_I64
     {InstClass::VectorIntCmp64, InstCategory::VectorALU, 2, 1, ScalarType::Sint64,
@@ -2595,14 +3174,30 @@ constexpr std::array<InstFormat, 248> InstructionFormatVOPC = {{
     // 199 = V_CMP_T_U32
     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
      ScalarType::Uint32},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    // 200 = V_CMP_F_F16
+    {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
+    // 201 = V_CMP_LT_F16
+    {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
+    // 202 = V_CMP_EQ_F16
+    {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
+    // 203 = V_CMP_LE_F16
+    {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
+    // 204 = V_CMP_GT_F16
+    {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
+    // 205 = V_CMP_LG_F16
+    {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
+    // 206 = V_CMP_GE_F16
+    {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
+    // 207 = V_CMP_O_F16
+    {InstClass::VectorFpCmp16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+     ScalarType::Float16},
     // 208 = V_CMPX_F_U32
     {InstClass::VectorIntCmp32, InstCategory::VectorALU, 2, 1, ScalarType::Uint32,
      ScalarType::Uint32},

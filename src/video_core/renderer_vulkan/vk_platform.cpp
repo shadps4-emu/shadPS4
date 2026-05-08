@@ -36,20 +36,20 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsCallback(
     vk::DebugUtilsMessageSeverityFlagBitsEXT severity, vk::DebugUtilsMessageTypeFlagsEXT type,
     const vk::DebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data) {
 
-    Common::Log::Level level{};
+    spdlog::level level{};
     switch (severity) {
     case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
-        level = Common::Log::Level::Error;
+        level = spdlog::level::err;
         break;
     case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
-        level = Common::Log::Level::Info;
+        level = spdlog::level::info;
         break;
     case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
     case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
-        level = Common::Log::Level::Debug;
+        level = spdlog::level::debug;
         break;
     default:
-        level = Common::Log::Level::Info;
+        level = spdlog::level::info;
     }
 
     LOG_GENERIC(Common::Log::Class::Render_Vulkan, level, "{}: {}",
@@ -419,14 +419,14 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
 
     vk::StructureChain<vk::InstanceCreateInfo, vk::LayerSettingsCreateInfoEXT> instance_ci_chain = {
         vk::InstanceCreateInfo{
+#ifdef __APPLE__
+            .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR,
+#endif
             .pApplicationInfo = &application_info,
             .enabledLayerCount = static_cast<u32>(layers.size()),
             .ppEnabledLayerNames = layers.data(),
             .enabledExtensionCount = static_cast<u32>(extensions.size()),
             .ppEnabledExtensionNames = extensions.data(),
-#ifdef __APPLE__
-            .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR,
-#endif
         },
         vk::LayerSettingsCreateInfoEXT{
             .settingCount = layer_setings.size(),

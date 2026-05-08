@@ -312,6 +312,7 @@ private:
     u64 critical_gc_memory = 0;
     u64 gc_tick = 0;
     Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
+    bool readback_linear_images;
     PageTable page_table;
     std::mutex mutex;
     struct MetaDataInfo {

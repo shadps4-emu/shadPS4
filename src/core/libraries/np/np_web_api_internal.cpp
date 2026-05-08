@@ -452,12 +452,12 @@ s32 createRequest(s32 titleUserCtxId, const char* pApiGroup, const char* pPath,
     }
 
     s64 user_ctx_id = static_cast<s64>(titleUserCtxId);
-    s32 request_id = (user_ctx_id << 0x20) | g_request_count;
+    s64 request_id = (user_ctx_id << 0x20) | g_request_count;
     while (user_context->requests.contains(request_id)) {
         request_id--;
     }
     // Real library would hang if this assert fails.
-    ASSERT_MSG(request_id <= (user_ctx_id << 0x20), "Too many requests!");
+    ASSERT_MSG(request_id > (user_ctx_id << 0x20), "Too many requests!");
     user_context->requests[request_id] = new OrbisNpWebApiRequest{};
 
     auto& request = user_context->requests[request_id];
@@ -606,7 +606,7 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
     unlockContext(context);
 
     // Stubbing sceNpManagerIntGetSigninState call with a config check.
-    if (!EmulatorSettings.IsPSNSignedIn()) {
+    if (!EmulatorSettings.IsShadNetEnabled()) {
         releaseRequest(request);
         releaseUserContext(user_context);
         releaseContext(context);
@@ -1025,7 +1025,7 @@ s32 createServicePushEventFilterInternal(
     auto& handle = context->handles[handleId];
     handle->userCount++;
 
-    if (pNpServiceName != nullptr && !EmulatorSettings.IsPSNSignedIn()) {
+    if (pNpServiceName != nullptr && !EmulatorSettings.IsShadNetEnabled()) {
         // Seems sceNpManagerIntGetUserList fails?
         LOG_DEBUG(Lib_NpWebApi, "Cannot create service push event while PSN is disabled");
         handle->userCount--;
@@ -1202,7 +1202,7 @@ s32 createExtendedPushEventFilterInternal(
     auto& handle = context->handles[handleId];
     handle->userCount++;
 
-    if (pNpServiceName != nullptr && !EmulatorSettings.IsPSNSignedIn()) {
+    if (pNpServiceName != nullptr && !EmulatorSettings.IsShadNetEnabled()) {
         // Seems sceNpManagerIntGetUserList fails?
         LOG_DEBUG(Lib_NpWebApi, "Cannot create extended push event while PSN is disabled");
         handle->userCount--;

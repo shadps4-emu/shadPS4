@@ -158,7 +158,7 @@ AjmJob AjmStatisticsJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buf
             break;
         }
         default:
-            UNREACHABLE_MSG("Unknown chunk: {}", header.ident);
+            UNREACHABLE_MSG("Unknown chunk: {}", +header.ident);
         }
     }
 
@@ -257,7 +257,7 @@ AjmJob AjmJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buffer) {
             break;
         }
         default:
-            UNREACHABLE_MSG("Unknown chunk: {}", header.ident);
+            UNREACHABLE_MSG("Unknown chunk: {}", +header.ident);
         }
     }
 

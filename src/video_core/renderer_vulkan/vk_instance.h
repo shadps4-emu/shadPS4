@@ -149,7 +149,12 @@ public:
         return depth_range_unrestricted;
     }
 
-    /// Returns true when the extendedDynamicState3ColorWriteMask feature o
+    /// Returns true when VK_EXT_extended_dynamic_state3 is supported
+    bool IsExtendedDynamicState3Supported() const {
+        return dynamic_state_3;
+    }
+
+    /// Returns true when the extendedDynamicState3ColorWriteMask feature of
     /// VK_EXT_extended_dynamic_state3 is supported.
     bool IsDynamicColorWriteMaskSupported() const {
         return dynamic_state_3 && dynamic_state_3_features.extendedDynamicState3ColorWriteMask;
@@ -421,6 +426,12 @@ public:
         return features.logicOp;
     }
 
+    /// Returns whether VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT is supported on compressed
+    /// images.
+    bool IsBlockTexelViewSupported() const {
+        return supports_block_texel_view;
+    }
+
     /// Returns whether the device can report memory usage.
     bool CanReportMemoryUsage() const {
         return supports_memory_budget;
@@ -447,6 +458,7 @@ private:
     /// Collects various information from the device.
     void CollectDeviceParameters();
     void CollectPhysicalMemoryInfo();
+    void CollectImageFormatInfo();
     void CollectToolingInfo() const;
 
     /// Gets the supported feature flags for a format.
@@ -507,6 +519,7 @@ private:
     bool maintenance_8{};
     bool attachment_feedback_loop{};
     bool supports_memory_budget{};
+    bool supports_block_texel_view{};
     u64 total_memory_budget{};
     std::vector<size_t> valid_heaps;
 };

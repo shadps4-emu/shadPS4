@@ -17,8 +17,12 @@ s32 PS4_SYSV_ABI sceKernelIsInSandbox() {
 }
 
 s32 PS4_SYSV_ABI sceKernelIsNeoMode() {
-    return EmulatorSettings.IsNeo() &&
-           Common::ElfInfo::Instance().GetPSFAttributes().support_neo_mode;
+    static s32 IsNeoMode = -1;
+    if (IsNeoMode == -1) {
+        IsNeoMode = EmulatorSettings.IsNeo() &&
+                    Common::ElfInfo::Instance().GetPSFAttributes().support_neo_mode;
+    }
+    return IsNeoMode;
 }
 
 s32 PS4_SYSV_ABI sceKernelHasNeoMode() {

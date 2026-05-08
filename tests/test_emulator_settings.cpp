@@ -54,7 +54,14 @@ static json ReadJson(const fs::path& p) {
     return j;
 }
 
-class EmulatorSettingsTest : public ::testing::Test {
+class TestWrapper : public ::testing::Test {
+protected:
+    TestWrapper() {
+        Common::Log::Setup("shad_test.log");
+    }
+};
+
+class EmulatorSettingsTest : public TestWrapper {
 protected:
     void SetUp() override {
         temp_dir = std::make_unique<TempDir>();
@@ -286,7 +293,7 @@ TEST_F(EmulatorSettingsTest, SaveCreatesConfigJson) {
 TEST_F(EmulatorSettingsTest, SaveWritesAllExpectedSections) {
     ASSERT_TRUE(temp_settings->Save());
     json j = ReadJson(ConfigJson());
-    for (const char* section : {"General", "Debug", "Input", "Audio", "GPU", "Vulkan"})
+    for (const char* section : {"General", "Log", "Debug", "Input", "Audio", "GPU", "Vulkan"})
         EXPECT_TRUE(j.contains(section)) << "Missing section: " << section;
 }
 
@@ -699,7 +706,6 @@ TEST_F(EmulatorSettingsTest, GetAllOverrideableKeysContainsRepresentativeKeys) {
     EXPECT_TRUE(has("pipeline_cache_enabled"));
     // Debug
     EXPECT_TRUE(has("debug_dump"));
-    EXPECT_TRUE(has("log_enabled"));
     // Input
     EXPECT_TRUE(has("cursor_state"));
     // Audio

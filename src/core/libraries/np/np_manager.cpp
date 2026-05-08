@@ -16,7 +16,7 @@
 
 namespace Libraries::Np::NpManager {
 
-static bool g_signed_in = false;
+static bool g_shadnet_enabled = false;
 static s32 g_active_requests = 0;
 static std::mutex g_request_mutex;
 
@@ -110,7 +110,7 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailability(s32 req_id, OrbisNpOnlineId* online_id
     }
 
     request.state = NpRequestState::Complete;
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         request.result = ORBIS_NP_ERROR_SIGNED_OUT;
         // If the request is processed in some form, and it's an async request, then it returns OK.
         if (request.async) {
@@ -146,7 +146,7 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
     }
 
     request.state = NpRequestState::Complete;
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         request.result = ORBIS_NP_ERROR_SIGNED_OUT;
         // If the request is processed in some form, and it's an async request, then it returns OK.
         if (request.async) {
@@ -182,7 +182,7 @@ s32 PS4_SYSV_ABI sceNpCheckNpReachability(s32 req_id,
     }
 
     request.state = NpRequestState::Complete;
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         request.result = ORBIS_NP_ERROR_SIGNED_OUT;
         // If the request is processed in some form, and it's an async request, then it returns OK.
         if (request.async) {
@@ -233,7 +233,7 @@ s32 PS4_SYSV_ABI sceNpCheckPlus(s32 req_id, const OrbisNpCheckPlusParameter* par
     }
 
     request.state = NpRequestState::Complete;
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         request.result = ORBIS_NP_ERROR_SIGNED_OUT;
         // If the request is processed in some form, and it's an async request, then it returns OK.
         if (request.async) {
@@ -277,7 +277,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
     }
 
     request.state = NpRequestState::Complete;
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         request.result = ORBIS_NP_ERROR_SIGNED_OUT;
         // If the request is processed in some form, and it's an async request, then it returns OK.
         if (request.async) {
@@ -320,7 +320,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
     }
 
     request.state = NpRequestState::Complete;
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         request.result = ORBIS_NP_ERROR_SIGNED_OUT;
         // If the request is processed in some form, and it's an async request, then it returns OK.
         if (request.async) {
@@ -362,7 +362,7 @@ s32 PS4_SYSV_ABI sceNpGetParentalControlInfo(s32 req_id, OrbisNpOnlineId* online
     }
 
     request.state = NpRequestState::Complete;
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         request.result = ORBIS_NP_ERROR_SIGNED_OUT;
         // If the request is processed in some form, and it's an async request, then it returns OK.
         if (request.async) {
@@ -407,7 +407,7 @@ sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServic
     }
 
     request.state = NpRequestState::Complete;
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         request.result = ORBIS_NP_ERROR_SIGNED_OUT;
         // If the request is processed in some form, and it's an async request, then it returns OK.
         if (request.async) {
@@ -518,7 +518,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountry(OrbisNpOnlineId* online_id,
     if (online_id == nullptr || country_code == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     std::memset(country_code, 0, sizeof(OrbisNpCountryCode));
@@ -532,7 +532,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountryA(Libraries::UserService::OrbisUserServic
     if (country_code == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     std::memset(country_code, 0, sizeof(OrbisNpCountryCode));
@@ -546,7 +546,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirth(OrbisNpOnlineId* online_id,
     if (online_id == nullptr || date_of_birth == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
 
@@ -562,7 +562,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirthA(Libraries::UserService::OrbisUserSe
     if (date_of_birth == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
 
@@ -580,7 +580,7 @@ s32 PS4_SYSV_ABI sceNpGetGamePresenceStatus(OrbisNpOnlineId* online_id,
     }
 
     *game_status =
-        g_signed_in ? OrbisNpGamePresenseStatus::Online : OrbisNpGamePresenseStatus::Offline;
+        g_shadnet_enabled ? OrbisNpGamePresenseStatus::Online : OrbisNpGamePresenseStatus::Offline;
     return ORBIS_OK;
 }
 
@@ -591,7 +591,7 @@ s32 PS4_SYSV_ABI sceNpGetGamePresenceStatusA(Libraries::UserService::OrbisUserSe
     }
 
     *game_status =
-        g_signed_in ? OrbisNpGamePresenseStatus::Online : OrbisNpGamePresenseStatus::Offline;
+        g_shadnet_enabled ? OrbisNpGamePresenseStatus::Online : OrbisNpGamePresenseStatus::Offline;
     return ORBIS_OK;
 }
 
@@ -600,7 +600,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountId(OrbisNpOnlineId* online_id, u64* account_id) 
     if (online_id == nullptr || account_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         *account_id = 0;
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
@@ -614,7 +614,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountIdA(Libraries::UserService::OrbisUserServiceUser
     if (account_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         *account_id = 0;
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
@@ -628,7 +628,7 @@ s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId use
     if (np_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     memset(np_id, 0, sizeof(OrbisNpId));
@@ -643,7 +643,7 @@ s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId
     if (online_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     memset(online_id, 0, sizeof(OrbisNpOnlineId));
@@ -658,8 +658,8 @@ s32 PS4_SYSV_ABI sceNpGetNpReachabilityState(Libraries::UserService::OrbisUserSe
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    *state =
-        g_signed_in ? OrbisNpReachabilityState::Reachable : OrbisNpReachabilityState::Unavailable;
+    *state = g_shadnet_enabled ? OrbisNpReachabilityState::Reachable
+                               : OrbisNpReachabilityState::Unavailable;
     return ORBIS_OK;
 }
 
@@ -668,8 +668,8 @@ s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId us
     if (state == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    *state = g_signed_in ? OrbisNpState::SignedIn : OrbisNpState::SignedOut;
-    LOG_DEBUG(Lib_NpManager, "Signed {}", g_signed_in ? "in" : "out");
+    *state = g_shadnet_enabled ? OrbisNpState::SignedIn : OrbisNpState::SignedOut;
+    LOG_DEBUG(Lib_NpManager, "Signed {}", g_shadnet_enabled ? "in" : "out");
     return ORBIS_OK;
 }
 
@@ -678,7 +678,7 @@ sceNpGetUserIdByAccountId(u64 account_id, Libraries::UserService::OrbisUserServi
     if (user_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_signed_in) {
+    if (!g_shadnet_enabled) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     *user_id = 1;
@@ -692,7 +692,7 @@ s32 PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId
     if (has_signed_up == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    *has_signed_up = g_signed_in ? true : false;
+    *has_signed_up = g_shadnet_enabled ? true : false;
     return ORBIS_OK;
 }
 
@@ -787,7 +787,7 @@ void DeregisterNpCallback(std::string key) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    g_signed_in = EmulatorSettings.IsPSNSignedIn();
+    g_shadnet_enabled = EmulatorSettings.IsShadNetEnabled();
 
     LIB_FUNCTION("GpLQDNKICac", "libSceNpManager", 1, "libSceNpManager", sceNpCreateRequest);
     LIB_FUNCTION("eiqMCt9UshI", "libSceNpManager", 1, "libSceNpManager", sceNpCreateAsyncRequest);

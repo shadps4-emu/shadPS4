@@ -27,6 +27,21 @@ MemoryManager::MemoryManager() {
         LOG_INFO(Kernel_Vmm, "{:#x} - {:#x}", region.lower(), region.upper());
     }
 
+    // Pre-initialize direct backing
+    auto total_size = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO;
+    s32 extra_dmem = EmulatorSettings.GetExtraDmemInMBytes();
+    if (extra_dmem != 0) {
+        total_size += extra_dmem * 1_MB;
+    }
+    total_direct_size = total_size;
+    dmem_map.clear();
+    dmem_map.emplace(0, PhysicalMemoryArea{0, total_direct_size});
+
+    // Pre-initialize flexible backing
+    total_flexible_size = ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE;
+    fmem_map.clear();
+    fmem_map.emplace(total_size, PhysicalMemoryArea{total_size, total_flexible_size});
+
     ASSERT_MSG(Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_version) == 0,
                "Failed to get compiled SDK version");
 }
@@ -35,6 +50,7 @@ MemoryManager::~MemoryManager() = default;
 
 void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1,
                                        bool use_extended_mem2) {
+    // Calculate actual direct and flexible memory sizes
     const bool is_neo = ::Libraries::Kernel::sceKernelIsNeoMode();
     auto total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_PRO : ORBIS_KERNEL_TOTAL_MEM;
     if (EmulatorSettings.IsDevKit()) {
@@ -53,20 +69,19 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
     if (!use_extended_mem2 && !is_neo) {
         total_size -= 128_MB;
     }
-    total_flexible_size = flexible_size - ORBIS_FLEXIBLE_MEMORY_BASE;
+
+    // Update stored totals
+    total_flexible_size = flexible_size - ORBIS_KERNEL_FLEXIBLE_MEMORY_BASE;
+    ASSERT_MSG(total_flexible_size >= flexible_usage, "Unable to shrink flexible memory size");
+    u64 old_direct_size = total_direct_size;
     total_direct_size = total_size - flexible_size;
 
-    // Insert an area that covers the direct memory physical address block.
-    // Note that this should never be called after direct memory allocations have been made.
-    dmem_map.clear();
-    dmem_map.emplace(0, PhysicalMemoryArea{0, total_direct_size});
-
-    // Insert an area that covers the flexible memory physical address block.
-    // Note that this should never be called after flexible memory allocations have been made.
-    const auto remaining_physical_space = total_size - total_direct_size;
-    fmem_map.clear();
-    fmem_map.emplace(total_direct_size,
-                     PhysicalMemoryArea{total_direct_size, remaining_physical_space});
+    // Limit direct memory space to match actual limit
+    auto last_dmem_area = FindDmemArea(total_direct_size);
+    ASSERT_MSG(last_dmem_area->second.dma_type == PhysicalMemoryType::Free &&
+                   last_dmem_area->second.size >= old_direct_size - total_direct_size,
+               "Unable to shrink dmem map");
+    last_dmem_area->second.size -= (old_direct_size - total_direct_size);
 
     LOG_INFO(Kernel_Vmm, "Configured memory regions: flexible size = {:#x}, direct size = {:#x}",
              total_flexible_size, total_direct_size);
@@ -936,7 +951,11 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, u64 size) {
 
 s32 MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* prot) {
     std::shared_lock lk{mutex};
-    ASSERT_MSG(IsValidMapping(addr), "Attempted to access invalid address {:#x}", addr);
+    VAddr min_query_addr = impl.SystemManagedVirtualBase();
+    if (addr < min_query_addr) {
+        LOG_ERROR(Kernel_Vmm, "Address {:#x} is not mapped", addr);
+        return ORBIS_KERNEL_ERROR_EACCES;
+    }
 
     const auto it = FindVMA(addr);
     const auto& vma = it->second;

@@ -26,15 +26,6 @@ static constexpr std::array LogicalStageToStageBit = {
     vk::ShaderStageFlagBits::eCompute,
 };
 
-static bool IsPrimitiveTopologyList(const vk::PrimitiveTopology topology) {
-    return topology == vk::PrimitiveTopology::ePointList ||
-           topology == vk::PrimitiveTopology::eLineList ||
-           topology == vk::PrimitiveTopology::eTriangleList ||
-           topology == vk::PrimitiveTopology::eLineListWithAdjacency ||
-           topology == vk::PrimitiveTopology::eTriangleListWithAdjacency ||
-           topology == vk::PrimitiveTopology::ePatchList;
-}
-
 GraphicsPipeline::GraphicsPipeline(
     const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
     const Shader::Profile& profile, const GraphicsPipelineKey& key_,
@@ -202,8 +193,9 @@ GraphicsPipeline::GraphicsPipeline(
     } else if (is_rect_list || is_quad_list) {
         const auto type = is_quad_list ? AuxShaderType::QuadListTCS : AuxShaderType::RectListTCS;
         if (!preloading) {
+            const auto& vs_info = runtime_infos[u32(Shader::LogicalStage::Vertex)].vs_info;
             const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
-            sdata.tcs = Shader::Backend::SPIRV::EmitAuxilaryTessShader(type, fs_info);
+            sdata.tcs = Shader::Backend::SPIRV::EmitAuxilaryTessShader(type, vs_info, fs_info);
         }
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationControl,
@@ -220,9 +212,10 @@ GraphicsPipeline::GraphicsPipeline(
         });
     } else if (is_rect_list || is_quad_list) {
         if (!preloading) {
+            const auto& vs_info = runtime_infos[u32(Shader::LogicalStage::Vertex)].vs_info;
             const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
             sdata.tes = Shader::Backend::SPIRV::EmitAuxilaryTessShader(
-                AuxShaderType::PassthroughTES, fs_info);
+                AuxShaderType::PassthroughTES, vs_info, fs_info);
         }
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationEvaluation,
@@ -358,6 +351,10 @@ GraphicsPipeline::GraphicsPipeline(
         .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},
     };
 
+    // Required by spec unless VK_EXT_extended_dynamic_state3 is supported.
+    // In practice, we use dynamic state for all of it.
+    constexpr vk::PipelineDepthStencilStateCreateInfo depth_stencil_info = {};
+
     const vk::GraphicsPipelineCreateInfo pipeline_info = {
         .pNext = &pipeline_rendering_ci,
         .stageCount = static_cast<u32>(shader_stages.size()),
@@ -368,6 +365,8 @@ GraphicsPipeline::GraphicsPipeline(
         .pViewportState = &viewport_info,
         .pRasterizationState = &raster_chain.get(),
         .pMultisampleState = &sdata.multisampling,
+        .pDepthStencilState =
+            !instance.IsExtendedDynamicState3Supported() ? &depth_stencil_info : nullptr,
         .pColorBlendState = &color_blending,
         .pDynamicState = &dynamic_info,
         .layout = *pipeline_layout,

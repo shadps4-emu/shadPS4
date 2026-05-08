@@ -61,7 +61,7 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
 
     // On NVIDIA GPUs HW interpolation of clip distance values seems broken, and we need to emulate
     // it with expensive discard in PS.
-    Shader::InjectClipDistanceAttributes(program, runtime_info);
+    Shader::InjectClipDistanceAttributes(program, runtime_info, profile);
 
     // Run optimization passes
     if (!profile.support_float64) {

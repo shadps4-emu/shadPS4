@@ -6,6 +6,7 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/scope_exit.h"
+#include "common/types.h"
 
 #ifdef __APPLE__
 #include <CoreFoundation/CFBundle.h>

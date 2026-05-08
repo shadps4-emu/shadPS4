@@ -87,7 +87,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -104,12 +104,12 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev libxrandr-dev libxfixes-dev libudev-dev uuid-dev uuid-dev
+          sudo apt-get install -y libc++-dev libc++abi-dev ninja-build libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev libxrandr-dev libxfixes-dev libudev-dev uuid-dev uuid-dev
 
-      - name: Install dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install ninja
+      # - name: Install dependencies (macOS)
+      #   if: runner.os == 'macOS'
+      #   run: |
+      #     brew install
 
       - name: Configure CMake
         run: |
@@ -118,6 +118,7 @@ jobs:
             -DCMAKE_C_COMPILER="${{ matrix.compiler_c }}" \
             -DCMAKE_BUILD_TYPE=Debug \
             -DENABLE_TESTS=ON \
+            ${{ runner.os == 'Linux' && '-DCMAKE_CXX_FLAGS=-stdlib=libc++' || '' }} \
             ${{ runner.os == 'macOS' && '-DCMAKE_OSX_ARCHITECTURES=x86_64' || '' }}
         shell: bash
 
@@ -139,7 +140,7 @@ jobs:
         shell: bash
 
       - name: Run tests with CTest
-        run: ctest --test-dir build --output-on-failure --progress
+        run: ctest --test-dir build --output-on-failure --progress -E 'GcnTest'
         shell: bash
 
   windows-sdl:

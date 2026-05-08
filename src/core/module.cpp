@@ -10,6 +10,7 @@
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
 #include "core/cpu_patches.h"
+#include "core/libraries/error_codes.h"
 #include "core/loader/dwarf.h"
 #include "core/memory.h"
 #include "core/module.h"
@@ -110,16 +111,22 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     const u64 base_size = CalculateBaseSize(elf_header, elf_pheader);
     aligned_base_size = Common::AlignUp(base_size, BlockAlign);
 
-    // Map module segments (and possible TLS trampolines)
+    // Reserve memory area for module
     void** out_addr = reinterpret_cast<void**>(&base_virtual_addr);
-    memory->MapMemory(out_addr, ModuleLoadBase, aligned_base_size + TrampolineSize,
-                      MemoryProt::CpuReadWrite | MemoryProt::CpuExec, MemoryMapFlags::NoFlags,
-                      VMAType::Code, name);
+    s32 result =
+        memory->MapMemory(out_addr, ModuleLoadBase, aligned_base_size + TrampolineSize,
+                          MemoryProt::NoAccess, MemoryMapFlags::NoFlags, VMAType::Reserved, name);
+    ASSERT_MSG(result == ORBIS_OK, "Failed to reserve memory for module {}", name);
     LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
 
 #ifdef ARCH_X86_64
     // Initialize trampoline generator.
-    void* trampoline_addr = std::bit_cast<void*>(base_virtual_addr + aligned_base_size);
+    VAddr trampoline_vaddr = base_virtual_addr + aligned_base_size;
+    void* trampoline_addr = std::bit_cast<void*>(trampoline_vaddr);
+    result = memory->MapMemory(&trampoline_addr, trampoline_vaddr, TrampolineSize,
+                               MemoryProt::CpuReadWrite | MemoryProt::CpuExec,
+                               MemoryMapFlags::Fixed, VMAType::Code, name);
+    ASSERT_MSG(result == ORBIS_OK, "Failed to map trampoline area for module {}", name);
     RegisterPatchModule(*out_addr, aligned_base_size, trampoline_addr, TrampolineSize);
 #endif
 
@@ -129,15 +136,35 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     LOG_INFO(Core_Linker, "aligned_base_size ......: {:#018x}", aligned_base_size);
 
     const auto add_segment = [this](const elf_program_header& phdr, bool do_map = true) {
-        const VAddr segment_addr = base_virtual_addr + phdr.p_vaddr;
+        const VAddr segment_vaddr = base_virtual_addr + phdr.p_vaddr;
+        void* segment_addr = std::bit_cast<void*>(segment_vaddr);
+        const u64 segment_size = GetAlignedSize(phdr);
         if (do_map) {
-            elf.LoadSegment(segment_addr, phdr.p_offset, phdr.p_filesz);
+            // Convert ELF flags to memory prot.
+            auto segment_prot = MemoryProt::NoAccess;
+            if ((phdr.p_flags & PF_READ) != 0) {
+                segment_prot |= MemoryProt::CpuRead;
+            }
+            if ((phdr.p_flags & PF_WRITE) != 0) {
+                segment_prot |= MemoryProt::CpuWrite;
+            }
+            if ((phdr.p_flags & PF_EXEC) != 0) {
+                segment_prot |= MemoryProt::CpuExec;
+            }
+
+            // Map module segments
+            const auto memory_type = IsSystemLib() ? VMAType::Code : VMAType::Flexible;
+            s32 result = memory->MapMemory(&segment_addr, segment_vaddr, segment_size, segment_prot,
+                                           MemoryMapFlags::Fixed, memory_type, name);
+            ASSERT_MSG(result == ORBIS_OK, "Failed to map segment at {:#x} for module {}",
+                       segment_vaddr, name);
+            elf.LoadSegment(segment_vaddr, phdr.p_offset, phdr.p_filesz);
         }
         if (info.num_segments < 4) {
             auto& segment = info.segments[info.num_segments++];
-            segment.address = segment_addr;
+            segment.address = segment_vaddr;
             segment.prot = phdr.p_flags;
-            segment.size = GetAlignedSize(phdr);
+            segment.size = segment_size;
         } else {
             LOG_ERROR(Core_Linker, "Attempting to add too many segments!");
         }
@@ -159,8 +186,8 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             const auto segment_mode = elf.ElfPheaderFlagsStr(elf_pheader[i].p_flags);
             LOG_INFO(Core_Linker, "program header = [{}] type = {}", i, header_type);
             LOG_INFO(Core_Linker, "segment_addr ..........: {:#018x}", segment_addr);
-            LOG_INFO(Core_Linker, "segment_file_size .....: {}", segment_file_size);
-            LOG_INFO(Core_Linker, "segment_memory_size ...: {}", segment_memory_size);
+            LOG_INFO(Core_Linker, "segment_file_size .....: {:#018x}", segment_file_size);
+            LOG_INFO(Core_Linker, "segment_memory_size ...: {:#018x}", segment_memory_size);
             LOG_INFO(Core_Linker, "segment_mode ..........: {}", segment_mode);
 
             add_segment(elf_pheader[i]);
