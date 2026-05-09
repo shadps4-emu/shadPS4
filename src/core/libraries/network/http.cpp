@@ -567,6 +567,20 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
         const char* body_ptr =
             plan.body.empty() ? "" : reinterpret_cast<const char*>(plan.body.data());
         size_t body_size = plan.body.size();
+        {
+            std::string header_dump;
+            header_dump.reserve(256);
+            for (const auto& [k, v] : headers) {
+                if (!header_dump.empty()) {
+                    header_dump += " | ";
+                }
+                header_dump += k;
+                header_dump += ": ";
+                header_dump += v;
+            }
+            LOG_INFO(Lib_Http, "Outgoing headers for {} {}{}: [{}]", HttpMethodName(plan.method),
+                     plan.scheme + "://" + plan.host, plan.path, header_dump);
+        }
 
         auto result = [&]() {
             switch (plan.method) {
@@ -659,8 +673,7 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
                     preview += '?';
                 }
             }
-            LOG_INFO(Lib_Http,
-                     "Server response body for {} {} (status {}, {} bytes): {}",
+            LOG_INFO(Lib_Http, "Server response body for {}{} (status {}, {} bytes): {}",
                      plan.scheme + "://" + plan.host, plan.path, result->status,
                      result->body.size(), preview);
         }
