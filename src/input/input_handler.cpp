@@ -544,7 +544,8 @@ void ParseInputConfig(const std::string game_id = "") {
             }
             output_gamepad_id = output_gamepad_id == -1 ? 1 : output_gamepad_id;
             if (enable == "true") {
-                GameControllers::SetControllerCustomColor(output_gamepad_id - 1, *r, *g, *b);
+                ControllerOutput::controllers.SetControllerCustomColor(output_gamepad_id - 1, *r,
+                                                                       *g, *b);
             }
             LOG_DEBUG(Input, "Parsed color settings: {} {} - {} {} {}",
                       enable == "true" ? "override" : "no override", output_gamepad_id, *r, *b, *g);
