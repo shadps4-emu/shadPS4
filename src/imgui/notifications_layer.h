@@ -8,9 +8,17 @@
 
 namespace shadNotifications {
 
+enum class position {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+};
+
 struct NotificationInfo {
     std::string message;
     float timer;
+    position position;
 };
 
 class NotificationsUI final : public ImGui::Layer {
@@ -21,8 +29,8 @@ public:
     void Draw() override;
 
 private:
-    ImGui::RefCountedTexture shadIcon;
-    NotificationInfo currentNotification;
+    ImGui::RefCountedTexture icon;
+    NotificationInfo currentInfo;
 
     // notification animation
     const float animation_duration = 0.5f; // Animation duration
@@ -31,6 +39,6 @@ private:
     float elapsed_time = 0.0f;             // Animation time
 };
 
-void QueueNotification(std::string message, float timer);
+void QueueNotification(std::string message, float timer, position position);
 
 }; // namespace shadNotifications
