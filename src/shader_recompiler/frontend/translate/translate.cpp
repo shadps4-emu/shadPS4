@@ -17,8 +17,6 @@
 #include "video_core/amdgpu/resource.h"
 
 #include <numbers>
-#define MAGIC_ENUM_RANGE_MIN 0
-#define MAGIC_ENUM_RANGE_MAX 2143
 #include <magic_enum/magic_enum.hpp>
 
 namespace Shader::Gcn {
