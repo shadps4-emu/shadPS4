@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <map>
-
 #include "imgui/imgui_layer.h"
 #include "imgui/imgui_texture.h"
 
@@ -17,22 +15,22 @@ enum class position {
     BottomRight,
 };
 
-enum class icon {
+enum class stockIcons {
     shadPS4,
     Settings,
     Profiles,
     Input,
 };
 
-struct NotificationInfo {
-    std::string message;
-    float timer;
-    position position;
-    ImGui::RefCountedTexture icon;
-    bool addIconBackground; // adds gray background (mostly for black icons)
-};
-
 class NotificationsUI final : public ImGui::Layer {
+    struct NotificationInfo {
+        std::string message;
+        float timer;
+        position pos;
+        ImGui::RefCountedTexture icon;
+        bool addIconBackground; // adds gray background (mostly for black icons)
+    };
+
 public:
     NotificationsUI(NotificationInfo info);
     ~NotificationsUI() override;
@@ -49,9 +47,9 @@ private:
     float elapsed_time = 0.0f;             // Animation time
 };
 
-void QueueNotification(std::string message, float timer, position position,
-                       icon = shadNotifications::icon::shadPS4);
-void QueueNotification(std::string message, float timer, position position, std::vector<u8> pngData,
+void QueueNotification(std::string message, float timer, position pos,
+                       stockIcons = shadNotifications::stockIcons::shadPS4);
+void QueueNotification(std::string message, float timer, position pos, std::vector<u8> pngData,
                        bool iconBackground = false);
 
 }; // namespace shadNotifications

@@ -4,7 +4,6 @@
 #include <cmrc/cmrc.hpp>
 #include <imgui.h>
 #include <queue>
-#include <stb_image.h>
 
 #include "imgui/imgui_std.h"
 #include "notifications_layer.h"
@@ -16,11 +15,11 @@ std::optional<NotificationsUI> current_notif;
 std::queue<NotificationInfo> notif_queue;
 std::mutex queueMtx;
 
-const std::map<shadNotifications::icon, std::string> iconMap = {
-    {shadNotifications::icon::shadPS4, "src/images/shadps4.png"},
-    {shadNotifications::icon::Settings, "src/images/big_picture/settings.png"},
-    {shadNotifications::icon::Profiles, "src/images/big_picture/profiles.png"},
-    {shadNotifications::icon::Input, "src/images/big_picture/controller.png"},
+const std::map<shadNotifications::stockIcons, std::string> iconMap = {
+    {shadNotifications::stockIcons::shadPS4, "src/images/shadps4.png"},
+    {shadNotifications::stockIcons::Settings, "src/images/big_picture/settings.png"},
+    {shadNotifications::stockIcons::Profiles, "src/images/big_picture/profiles.png"},
+    {shadNotifications::stockIcons::Input, "src/images/big_picture/controller.png"},
 };
 
 NotificationsUI::NotificationsUI(NotificationInfo info) {
@@ -55,19 +54,19 @@ void NotificationsUI::Draw() {
     float final_pos_x, start_x;
     float height;
 
-    if (currentInfo.position == position::TopLeft) {
+    if (currentInfo.pos == position::TopLeft) {
         start_x = -window_size.x;
         final_pos_x = 20 * AdjustWidth;
         height = 20 * AdjustHeight;
-    } else if (currentInfo.position == position::TopRight) {
+    } else if (currentInfo.pos == position::TopRight) {
         start_x = io.DisplaySize.x;
         final_pos_x = io.DisplaySize.x - window_size.x - 20 * AdjustWidth;
         height = 20 * AdjustHeight;
-    } else if (currentInfo.position == position::BottomLeft) {
+    } else if (currentInfo.pos == position::BottomLeft) {
         start_x = -window_size.x;
         final_pos_x = 20 * AdjustWidth;
         height = io.DisplaySize.y - window_size.y - 20 * AdjustHeight;
-    } else if (currentInfo.position == position::BottomRight) {
+    } else if (currentInfo.pos == position::BottomRight) {
         start_x = io.DisplaySize.x;
         final_pos_x = io.DisplaySize.x - window_size.x - 20 * AdjustWidth;
         height = io.DisplaySize.y - window_size.y - 20 * AdjustHeight;
@@ -127,29 +126,29 @@ void NotificationsUI::Draw() {
     }
 }
 
-void QueueNotification(std::string message, float timer, position position, icon icon) {
+void QueueNotification(std::string message, float timer, position pos, stockIcons icon) {
     auto resource = cmrc::res::get_filesystem();
-    std::string resourceString = iconMap.at(icon);
-    auto file = resource.open(resourceString);
+    auto file = resource.open(iconMap.at(icon));
     std::vector<u8> imgdata = std::vector<u8>(file.begin(), file.end());
 
     bool addBackground = false;
-    if (icon == shadNotifications::icon::Input || icon == shadNotifications::icon::Settings ||
-        icon == shadNotifications::icon::Profiles) {
+    if (icon == shadNotifications::stockIcons::Input ||
+        icon == shadNotifications::stockIcons::Settings ||
+        icon == shadNotifications::stockIcons::Profiles) {
         addBackground = true;
     }
 
-    QueueNotification(message, timer, position, imgdata, addBackground);
+    QueueNotification(message, timer, pos, imgdata, addBackground);
 }
 
-void QueueNotification(std::string message, float timer, position position, std::vector<u8> pngData,
+void QueueNotification(std::string message, float timer, position pos, std::vector<u8> pngData,
                        bool addBackground) {
     std::lock_guard<std::mutex> lock(queueMtx);
 
     NotificationInfo info;
     info.message = message;
     info.timer = timer;
-    info.position = position;
+    info.pos = pos;
     info.icon = ImGui::RefCountedTexture::DecodePngTexture(pngData);
     info.addIconBackground = addBackground;
 
