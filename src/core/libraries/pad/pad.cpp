@@ -50,6 +50,10 @@ int PS4_SYSV_ABI scePadConnectPort() {
 
 int PS4_SYSV_ABI scePadDeviceClassGetExtendedInformation(
     s32 handle, OrbisPadDeviceClassExtendedInformation* pExtInfo) {
+    auto it = handle_to_controller_map.find(handle);
+    if (it == handle_to_controller_map.end()) {
+        return ORBIS_PAD_ERROR_INVALID_HANDLE;
+    }
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
     std::memset(pExtInfo, 0, sizeof(OrbisPadDeviceClassExtendedInformation));
     if (EmulatorSettings.IsUsingSpecialPad()) {
@@ -116,6 +120,10 @@ int PS4_SYSV_ABI scePadGetCapability() {
 
 int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerInformation* pInfo) {
     LOG_DEBUG(Lib_Pad, "called handle = {}", handle);
+    auto it = handle_to_controller_map.find(handle);
+    if (it == handle_to_controller_map.end()) {
+        return ORBIS_PAD_ERROR_INVALID_HANDLE;
+    }
     pInfo->touchPadInfo.pixelDensity = 1;
     pInfo->touchPadInfo.resolution.x = 1920;
     pInfo->touchPadInfo.resolution.y = 950;
@@ -124,10 +132,6 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
     pInfo->connectedCount = 1;
     pInfo->deviceClass = OrbisPadDeviceClass::Standard;
-    if (handle < 0) {
-        pInfo->connected = false;
-        return ORBIS_OK;
-    }
     pInfo->connected = true;
     if (EmulatorSettings.IsUsingSpecialPad()) {
         pInfo->connectionType = ORBIS_PAD_PORT_TYPE_SPECIAL;
@@ -324,7 +328,10 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
     pad_handle_map[{userId, type, index}] = new_handle;
 
     handle_to_controller_map[new_handle] =
-        controllers[type == 0 ? UserManagement.GetUserByID(userId)->player_index - 1 : 4];
+        controllers[(!EmulatorSettings.IsUsingSpecialPad() && type == 0) ||
+                            type == EmulatorSettings.GetSpecialPadClass()
+                        ? UserManagement.GetUserByID(userId)->player_index - 1
+                        : 4];
     return new_handle;
 }
 
@@ -343,7 +350,11 @@ int PS4_SYSV_ABI scePadOpenExt(Libraries::UserService::OrbisUserServiceUserId us
     s32 new_handle = pad_handle_counter++;
     pad_handle_map[{userId, type, index}] = new_handle;
     auto& controllers = *Common::Singleton<GameControllers>::Instance();
-    handle_to_controller_map[new_handle] = controllers[4]; // TODO
+    handle_to_controller_map[new_handle] =
+        controllers[(!EmulatorSettings.IsUsingSpecialPad() && type == 0) ||
+                            type == EmulatorSettings.GetSpecialPadClass()
+                        ? UserManagement.GetUserByID(userId)->player_index - 1
+                        : 4];
     return new_handle;
 }
 
