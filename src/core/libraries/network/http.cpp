@@ -17,6 +17,7 @@
 #include <unordered_set>
 #include <vector>
 #include <httplib.h>
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -195,6 +196,33 @@ static bool ContainsCrLf(const char* s) {
             return true;
     }
     return false;
+}
+
+static const std::string& Ps4LibHttpVersionSuffix() {
+    static const std::string suffix = []() -> std::string {
+        u32 raw = Common::ElfInfo::Instance().RawFirmwareVer();
+        // if empty defalut to 11.00
+        if (raw == 0) {
+            raw = 0x11000000;
+        }
+        const u8 major_bcd = (raw >> 24) & 0xFFu;
+        const u8 minor_bcd = (raw >> 16) & 0xFFu;
+        return fmt::format("libhttp/{:02x}.{:02x} (PlayStation 4)", major_bcd, minor_bcd);
+    }();
+    return suffix;
+}
+
+static std::string BuildPs4UserAgent(const char* userAgent) {
+    const std::string& suffix_only = Ps4LibHttpVersionSuffix();
+    if (userAgent == nullptr) {
+        return suffix_only;
+    }
+    std::string out;
+    out.reserve(std::strlen(userAgent) + 1 + suffix_only.size());
+    out.assign(userAgent);
+    out.push_back(' ');
+    out.append(suffix_only);
+    return out;
 }
 
 struct HttpTemplate {
@@ -1050,8 +1078,6 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL(int connId, s32 method, const char*
 
     auto tmpl_it = g_state.templates.find(conn_it->second.tmpl_id);
     if (tmpl_it != g_state.templates.end()) {
-        // TODO PS4 emits User-Agent (the system suffix "libhttp/<fw>
-        // (PlayStation 4)") even when the game-supplied prefix is null.
         if (!tmpl_it->second.user_agent.empty()) {
             HeaderOps::Replace(req->headers, "User-Agent", tmpl_it->second.user_agent);
         }
@@ -1130,9 +1156,10 @@ int PS4_SYSV_ABI sceHttpCreateTemplate(int libhttpCtxId, const char* userAgent, 
 
     int tmpl_id = ++g_state.next_obj_id;
     HttpTemplate tmpl;
-    // TODO (libhttp/PS4-suffix): real PS4 ALWAYS appends
-    //    " libhttp/<firmware-version> (PlayStation 4)"
-    tmpl.user_agent = userAgent ? userAgent : "";
+    // append "<libhttp/X.YY (PlayStation 4)>" to the game-supplied
+    // user-agent at template creation time
+    tmpl.user_agent = BuildPs4UserAgent(userAgent);
+    LOG_DEBUG(Lib_Http, "template UA = '{}'", tmpl.user_agent);
     tmpl.http_version = httpVer;
     tmpl.auto_proxy_conf = isAutoProxyConf;
     tmpl.settings.accept_encoding_gzip = g_state.process_default_accept_encoding_gzip;
