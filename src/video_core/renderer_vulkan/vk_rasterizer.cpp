@@ -675,7 +675,12 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
     for (const auto& image_desc : stage.images) {
         const auto tsharp = image_desc.GetSharp(stage);
         if (texture_cache.IsMeta(tsharp.Address())) {
-            LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a shader (texture)");
+            LOG_WARNING(Render_Vulkan,
+                       "Unexpected metadata read by shader at address {:#x}. Binding null texture.",
+                       tsharp.Address());
+            image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            image_descriptor_array_sizes.push_back(1);
+            continue;
         }
 
         if (tsharp.GetDataFmt() == AmdGpu::DataFormat::FormatInvalid) {
