@@ -301,6 +301,9 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
     if (userId < 0) {
         return ORBIS_DEVICE_SERVICE_ERROR_INVALID_USER;
     }
+    if (pad_handle_map.find({userId, type, index}) != pad_handle_map.end()) {
+        return ORBIS_PAD_ERROR_ALREADY_OPENED;
+    }
     auto& controllers = *Common::Singleton<GameControllers>::Instance();
     if (userId == ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
         if (type == ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL) {
@@ -337,25 +340,8 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
 
 int PS4_SYSV_ABI scePadOpenExt(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
                                s32 index, const OrbisPadOpenExtParam* pParam) {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    auto u = UserManagement.GetUserByID(userId);
-    if (!u) {
-        return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;
-    }
-    s32 pad_handle = u->player_index;
-    LOG_INFO(Lib_Pad, "called user_id = {} type = {} index = {}, pad_handle = {}", userId, type,
-             index, pad_handle);
-    scePadResetLightBar(pad_handle);
-    scePadResetOrientation(pad_handle);
-    s32 new_handle = pad_handle_counter++;
-    pad_handle_map[{userId, type, index}] = new_handle;
-    auto& controllers = *Common::Singleton<GameControllers>::Instance();
-    handle_to_controller_map[new_handle] =
-        controllers[(!EmulatorSettings.IsUsingSpecialPad() && type == 0) ||
-                            type == EmulatorSettings.GetSpecialPadClass()
-                        ? UserManagement.GetUserByID(userId)->player_index - 1
-                        : 4];
-    return new_handle;
+    LOG_WARNING(Lib_Pad, "Redirect to scePadOpen");
+    return scePadOpen(userId, type, index, nullptr);
 }
 
 int PS4_SYSV_ABI scePadOpenExt2() {
