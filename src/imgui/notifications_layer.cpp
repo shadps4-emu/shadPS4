@@ -4,6 +4,7 @@
 #include <cmrc/cmrc.hpp>
 #include <imgui.h>
 #include <queue>
+#include <stb_image.h>
 
 #include "imgui/imgui_std.h"
 #include "notifications_layer.h"
@@ -15,16 +16,15 @@ std::optional<NotificationsUI> current_notif;
 std::queue<NotificationInfo> notif_queue;
 std::mutex queueMtx;
 
+const std::map<shadNotifications::icon, std::string> iconMap = {
+    {shadNotifications::icon::shadPS4, "src/images/shadps4.png"},
+    {shadNotifications::icon::Settings, "src/images/big_picture/settings.png"},
+    {shadNotifications::icon::Profiles, "src/images/big_picture/profiles.png"},
+    {shadNotifications::icon::Input, "src/images/big_picture/controller.png"},
+};
+
 NotificationsUI::NotificationsUI(NotificationInfo info) {
     AddLayer(this);
-
-    if (icon.GetTexture().im_id == nullptr) {
-        auto resource = cmrc::res::get_filesystem();
-        auto file = resource.open("src/images/shadps4.png");
-        std::vector<u8> imgdata = std::vector<u8>(file.begin(), file.end());
-        icon = ImGui::RefCountedTexture::DecodePngTexture(imgdata);
-    }
-
     currentInfo = info;
 
     // Resetting the animation
@@ -76,13 +76,6 @@ void NotificationsUI::Draw() {
     ImVec2 current_pos = ImVec2(start_x + (final_pos_x - start_x) * progress, height);
     ImGui::SetNextWindowPos(current_pos);
 
-    /*
-    start_x = io.DisplaySize.x;
-    final_pos_x = io.DisplaySize.x - window_size.x - 20 * AdjustWidth;
-    ImVec2 current_pos = ImVec2(start_x + (final_pos_x - start_x) * progress,
-                                io.DisplaySize.y - window_size.y - 50 * AdjustHeight);
-    */
-
     // If the remaining time of the notif is less than or equal to 1 second, the fade-out begins.
     if (currentInfo.timer <= 1.0f) {
         float fade_out_time = 1.0f - (currentInfo.timer / 1.0f);
@@ -105,11 +98,17 @@ void NotificationsUI::Draw() {
                          ImGuiWindowFlags_NoInputs)) {
         ImGui::GetColorU32(ImVec4{0.7f});
 
-        if (icon.GetTexture().im_id) {
-            ImGui::Image(icon.GetTexture().im_id, ImVec2((50 * AdjustWidth), (50 * AdjustHeight)));
+        if (currentInfo.icon.GetTexture().im_id) {
+            if (currentInfo.addIconBackground) {
+                ImVec2 pos = ImGui::GetCursorScreenPos();
+                ImGui::GetWindowDrawList()->AddRectFilled(
+                    pos, ImVec2(pos.x + 50 * AdjustWidth, pos.y + 50 * AdjustHeight),
+                    IM_COL32(211, 211, 211, 255));
+            }
+            ImGui::Image(currentInfo.icon.GetTexture().im_id,
+                         ImVec2((50 * AdjustWidth), (50 * AdjustHeight)));
         }
         ImGui::SameLine();
-
         ImGui::TextWrapped("%s", currentInfo.message.c_str());
     }
 
@@ -128,13 +127,31 @@ void NotificationsUI::Draw() {
     }
 }
 
-void QueueNotification(std::string message, float timer, position position) {
+void QueueNotification(std::string message, float timer, position position, icon icon) {
+    auto resource = cmrc::res::get_filesystem();
+    std::string resourceString = iconMap.at(icon);
+    auto file = resource.open(resourceString);
+    std::vector<u8> imgdata = std::vector<u8>(file.begin(), file.end());
+
+    bool addBackground = false;
+    if (icon == shadNotifications::icon::Input || icon == shadNotifications::icon::Settings ||
+        icon == shadNotifications::icon::Profiles) {
+        addBackground = true;
+    }
+
+    QueueNotification(message, timer, position, imgdata, addBackground);
+}
+
+void QueueNotification(std::string message, float timer, position position, std::vector<u8> pngData,
+                       bool addBackground) {
     std::lock_guard<std::mutex> lock(queueMtx);
 
     NotificationInfo info;
     info.message = message;
     info.timer = timer;
     info.position = position;
+    info.icon = ImGui::RefCountedTexture::DecodePngTexture(pngData);
+    info.addIconBackground = addBackground;
 
     if (!current_notif.has_value()) {
         current_notif.emplace(info);
