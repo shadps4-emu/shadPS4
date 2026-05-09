@@ -1365,14 +1365,14 @@ int PS4_SYSV_ABI sceHttpGetNonblock(int id, int* isEnable) {
 int PS4_SYSV_ABI sceHttpGetResponseContentLength(int reqId, int* result, u64* contentLength) {
     LOG_INFO(Lib_Http, "called reqId={}, result={}, contentLength={}", reqId, fmt::ptr(result),
              fmt::ptr(contentLength));
-    if (!result || !contentLength) {
-        LOG_ERROR(Lib_Http, "result or contentLength output pointer is null");
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
     std::unique_lock<std::mutex> lock(g_state.m_mutex);
     if (!g_state.inited) {
         LOG_ERROR(Lib_Http, "Not initialized");
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!result || !contentLength) {
+        LOG_ERROR(Lib_Http, "result or contentLength output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
     auto it = g_state.requests.find(reqId);
     if (it == g_state.requests.end()) {
@@ -1398,14 +1398,14 @@ int PS4_SYSV_ABI sceHttpGetResponseContentLength(int reqId, int* result, u64* co
 
 int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
     LOG_INFO(Lib_Http, "called reqId={}, statusCode={}", reqId, fmt::ptr(statusCode));
-    if (!statusCode) {
-        LOG_ERROR(Lib_Http, "statusCode output pointer is null");
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
     std::unique_lock<std::mutex> lock(g_state.m_mutex);
     if (!g_state.inited) {
         LOG_ERROR(Lib_Http, "Not initialized");
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!statusCode) {
+        LOG_ERROR(Lib_Http, "statusCode output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
     auto it = g_state.requests.find(reqId);
     if (it == g_state.requests.end()) {
@@ -1566,14 +1566,14 @@ int PS4_SYSV_ABI sceHttpParseStatusLine(const char* statusLine, u64 lineLen, int
 
 int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size) {
     LOG_INFO(Lib_Http, "called reqId={}, data={}, size={}", reqId, fmt::ptr(data), size);
-    if (!data) {
-        LOG_ERROR(Lib_Http, "data output pointer is null");
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
     std::unique_lock<std::mutex> lock(g_state.m_mutex);
     if (!g_state.inited) {
         LOG_ERROR(Lib_Http, "Not initialized");
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!data) {
+        LOG_ERROR(Lib_Http, "data output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
     auto it = g_state.requests.find(reqId);
     if (it == g_state.requests.end()) {

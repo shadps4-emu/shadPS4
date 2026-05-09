@@ -219,7 +219,6 @@ int PS4_SYSV_ABI sceHttpsGetCaList(int httpCtxId, OrbisHttpsCaList* list);
 int PS4_SYSV_ABI sceHttpsLoadCert(int libhttpCtxId, int caCertNum, const void** caList,
                                   const void* cert, const void* privKey);
 int PS4_SYSV_ABI sceHttpsSetMinSslVersion(int id, int version);
-int PS4_SYSV_ABI sceHttpsSetSslCallback(int id, OrbisHttpsCallback cbfunc, void* userArg);
 int PS4_SYSV_ABI sceHttpsSetSslVersion(int id, int version);
 int PS4_SYSV_ABI sceHttpsUnloadCert(int libhttpCtxId);
 int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId);
@@ -254,6 +253,7 @@ int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetSendTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetRecvTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable);
+int PS4_SYSV_ABI sceHttpsSetSslCallback(int id, OrbisHttpsCallback cbfunc, void* userArg);
 //***********************************
 // URI functions
 //***********************************
