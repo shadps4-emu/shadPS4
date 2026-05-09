@@ -40,7 +40,9 @@ static std::unordered_map<s32, GameController*> handle_to_controller_map{};
 
 int PS4_SYSV_ABI scePadClose(s32 handle) {
     LOG_WARNING(Lib_Pad, "called, handle: {}", handle);
-    handle_to_controller_map.erase(handle);
+    if (handle_to_controller_map.erase(handle) == 0) {
+        return ORBIS_PAD_ERROR_INVALID_HANDLE;
+    }
     for (auto& it : pad_handle_map) {
         if (it.second == handle) {
             pad_handle_map.erase(it.first);
