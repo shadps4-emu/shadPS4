@@ -197,6 +197,9 @@ public:
                                      Libraries::Pad::OrbisFQuaternion& lastOrientation,
                                      Libraries::Pad::OrbisFQuaternion& orientation);
     void SetControllerCustomColor(s32 i, u8 r, u8 g, u8 b) {
+        // reset to ensure the next function always runs, even if there already was a preexisting
+        // override colour before
+        controllers[i]->override_colour = std::nullopt;
         controllers[i]->SetLightBarRGB(r, g, b);
         controllers[i]->override_colour = {r, g, b};
     }
