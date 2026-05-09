@@ -643,6 +643,27 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
             return false;
         }
         PopulateRealResponse(out_res, result);
+        if (result->status >= 400 && result->body.size() <= 8192) {
+            std::string preview;
+            preview.reserve(result->body.size());
+            for (char c : result->body) {
+                if (c == '\n') {
+                    preview += "\\n";
+                } else if (c == '\r') {
+                    preview += "\\r";
+                } else if (c == '\t') {
+                    preview += "\\t";
+                } else if (c >= 0x20 && c < 0x7f) {
+                    preview += c;
+                } else {
+                    preview += '?';
+                }
+            }
+            LOG_INFO(Lib_Http,
+                     "Server response body for {} {} (status {}, {} bytes): {}",
+                     plan.scheme + "://" + plan.host, plan.path, result->status,
+                     result->body.size(), preview);
+        }
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR(Lib_Http,
