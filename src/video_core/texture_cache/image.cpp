@@ -213,6 +213,10 @@ Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 
     auto& last_state = backing->state;
     auto& subresource_states = backing->subresource_states;
 
+    LOG_TRACE(Render_Vulkan, "GetBarriers: addr={:#x}, dst_layout={}, levels={}, layers={}, samples={}, partial={}",
+             info.guest_address, vk::to_string(dst_layout), info.resources.levels,
+             info.resources.layers, backing->num_samples, subres_range.has_value());
+
     const bool needs_partial_transition =
         subres_range &&
         (subres_range->base != SubresourceBase{} || subres_range->extent != info.resources);
@@ -221,7 +225,16 @@ Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 
     Barriers barriers;
     if (needs_partial_transition || partially_transited) {
         if (!partially_transited) {
-            subresource_states.resize(info.resources.levels * info.resources.layers);
+            const u32 required_size = info.resources.levels * info.resources.layers;
+            LOG_TRACE(Render_Vulkan, "Initializing subresource states: size={}, levels={}, layers={}",
+                     required_size, info.resources.levels, info.resources.layers);
+            if (info.resources.levels == 0 || info.resources.layers == 0) {
+                LOG_ERROR(Render_Vulkan,
+                         "Invalid resource dimensions: levels={}, layers={}, addr={:#x}",
+                         info.resources.levels, info.resources.layers, info.guest_address);
+                return barriers;
+            }
+            subresource_states.resize(required_size);
             std::fill(subresource_states.begin(), subresource_states.end(), last_state);
         }
 
@@ -243,8 +256,20 @@ Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 
             for (u32 layer : layers) {
                 // NOTE: these loops may produce a lot of small barriers.
                 // If this becomes a problem, we can optimize it by merging adjacent barriers.
+                if (mip >= info.resources.levels || layer >= info.resources.layers) {
+                    LOG_WARNING(Render_Vulkan,
+                               "Subresource out of bounds: mip={}/{}, layer={}/{}, addr={:#x}",
+                               mip, info.resources.levels, layer, info.resources.layers, info.guest_address);
+                    continue;
+                }
                 const auto subres_idx = mip * info.resources.layers + layer;
-                ASSERT(subres_idx < subresource_states.size());
+                if (subres_idx >= subresource_states.size()) {
+                    LOG_ERROR(Render_Vulkan,
+                             "Subresource index {} >= size {}. mip={}, layer={}, levels={}, layers={}, addr={:#x}, samples={}",
+                             subres_idx, subresource_states.size(), mip, layer,
+                             info.resources.levels, info.resources.layers, info.guest_address, info.num_samples);
+                    continue;
+                }
                 auto& state = subresource_states[subres_idx];
 
                 constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
@@ -701,6 +726,18 @@ void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
 
 void Image::Resolve(Image& src_image, const VideoCore::SubresourceRange& mrt0_range,
                     const VideoCore::SubresourceRange& mrt1_range) {
+    LOG_TRACE(Render_Vulkan, "Resolve: src_addr={:#x}, dst_addr={:#x}, src_layer={}, dst_layer={}",
+             src_image.info.guest_address, info.guest_address,
+             mrt0_range.base.layer, mrt1_range.base.layer);
+    if (mrt0_range.base.layer >= src_image.info.resources.layers ||
+        mrt1_range.base.layer >= info.resources.layers) {
+        LOG_ERROR(Render_Vulkan,
+                 "Invalid layer range in Resolve: src_layer={}/{}, dst_layer={}/{}, src_addr={:#x}, dst_addr={:#x}",
+                 mrt0_range.base.layer, src_image.info.resources.layers,
+                 mrt1_range.base.layer, info.resources.layers,
+                 src_image.info.guest_address, info.guest_address);
+        return;
+    }
     SetBackingSamples(1, false);
     scheduler->EndRendering();
 
@@ -776,6 +813,8 @@ void Image::SetBackingSamples(u32 num_samples, bool copy_backing) {
     if (!backing || backing->num_samples == num_samples) {
         return;
     }
+    LOG_DEBUG(Render_Vulkan, "SetBackingSamples: {} -> {}, copy={}, addr={:#x}",
+             backing->num_samples, num_samples, copy_backing, info.guest_address);
     ASSERT_MSG(!info.props.is_depth, "Swapping samples is only valid for color images");
     BackingImage* new_backing;
     auto it = std::ranges::find(backing_images, num_samples, &BackingImage::num_samples);
@@ -794,6 +833,14 @@ void Image::SetBackingSamples(u32 num_samples, bool copy_backing) {
                               AmdGpu::NameOf(info.tile_mode), vk::to_string(info.pixel_format),
                               info.guest_address, info.guest_size, info.resources.layers,
                               info.resources.levels, num_samples);
+        LOG_TRACE(Render_Vulkan, "Created new backing: samples={}, levels={}, layers={}, addr={:#x}",
+                 num_samples, info.resources.levels, info.resources.layers, info.guest_address);
+        if (!new_backing->subresource_states.empty()) {
+            new_backing->subresource_states.clear();
+        }
+        new_backing->state.layout = vk::ImageLayout::eUndefined;
+        new_backing->state.access_mask = vk::AccessFlagBits2::eNone;
+        new_backing->state.pl_stage = vk::PipelineStageFlagBits2::eTopOfPipe;
     } else {
         new_backing = std::addressof(*it);
     }
