@@ -676,7 +676,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         const auto tsharp = image_desc.GetSharp(stage);
         if (texture_cache.IsMeta(tsharp.Address())) {
             LOG_WARNING(Render_Vulkan,
-                       "Unexpected metadata read by shader at address {:#x}. Binding null texture.",
+                       "Shader attempted metadata read at {:#x}. Binding null texture.",
                        tsharp.Address());
             image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
             image_descriptor_array_sizes.push_back(1);
