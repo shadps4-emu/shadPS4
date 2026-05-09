@@ -10,7 +10,7 @@ class SymbolsResolver;
 
 namespace Libraries::Kernel {
 
-typedef PS4_SYSV_ABI s32 (*OrbisCoredumpHandler)(void* common);
+typedef s32 PS4_SYSV_ABI (*OrbisCoredumpHandler)(void* common);
 
 struct OrbisCoredumpStopInfoCpu {
     void* thread;
