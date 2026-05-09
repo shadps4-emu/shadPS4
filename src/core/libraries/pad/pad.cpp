@@ -340,8 +340,7 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
     pad_handle_map[{userId, type, index}] = new_handle;
 
     handle_to_controller_map[new_handle] =
-        controllers[(!EmulatorSettings.IsUsingSpecialPad() && type == 0) ||
-                            type == EmulatorSettings.GetSpecialPadClass()
+        controllers[type == (EmulatorSettings.IsUsingSpecialPad() ? 2 : 0)
                         ? UserManagement.GetUserByID(userId)->player_index - 1
                         : 4];
     return new_handle;
