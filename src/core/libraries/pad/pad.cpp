@@ -316,10 +316,10 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
     auto& controllers = *Common::Singleton<GameControllers>::Instance();
     if (userId == ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
         if (type == ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL) {
-            LOG_INFO(Lib_Pad, "Opened a TV remote device");
             s32 new_handle = pad_handle_counter++;
             pad_handle_map[{userId, type, index}] = new_handle;
             handle_to_controller_map[new_handle] = controllers[4];
+            LOG_INFO(Lib_Pad, "Opened a TV remote device, out handle: {}", new_handle);
             return new_handle;
         }
         return ORBIS_DEVICE_SERVICE_ERROR_INVALID_USER;
@@ -332,7 +332,7 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
         return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;
     }
     s32 pad_handle = u->player_index;
-    LOG_INFO(Lib_Pad, "called user_id = {} type = {} index = {}, pad_handle = {}", userId, type,
+    LOG_INFO(Lib_Pad, "called user_id = {} type = {} index = {}, player_index = {}", userId, type,
              index, pad_handle);
     scePadResetLightBar(pad_handle);
     scePadResetOrientation(pad_handle);
@@ -343,6 +343,7 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
         controllers[type == (EmulatorSettings.IsUsingSpecialPad() ? 2 : 0)
                         ? UserManagement.GetUserByID(userId)->player_index - 1
                         : 4];
+    LOG_INFO(Lib_Pad, "Out handle: {}", new_handle);
     return new_handle;
 }
 
