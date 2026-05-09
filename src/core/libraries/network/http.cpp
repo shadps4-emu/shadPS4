@@ -27,7 +27,32 @@
 
 namespace Libraries::Http {
 
-static bool g_isHttpInitialized = true;
+// Normalize the path component of a path+query+fragment string in place,
+// resolving `./` and `../` segments
+static void NormalizePathInPlace(std::string& path_with_query) {
+    if (path_with_query.empty()) {
+        return;
+    }
+    auto path_end = path_with_query.find_first_of("?#");
+    std::string bare_path =
+        (path_end == std::string::npos) ? path_with_query : path_with_query.substr(0, path_end);
+    if (bare_path.empty() || bare_path == "/") {
+        return;
+    }
+    std::string out(bare_path.size() + 1, '\0');
+    if (sceHttpUriSweepPath(out.data(), bare_path.c_str(), bare_path.size() + 1) != ORBIS_OK) {
+        return; // Leave unchanged on failure.
+    }
+    out.resize(std::strlen(out.data()));
+    if (out == bare_path) {
+        return; // No change; avoid string churn.
+    }
+    if (path_end == std::string::npos) {
+        path_with_query = std::move(out);
+    } else {
+        path_with_query = std::move(out) + path_with_query.substr(path_end);
+    }
+}
 
 void NormalizeAndAppendPath(char* dest, char* src) {
     char* lastSlash;
@@ -1646,6 +1671,7 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         plan.settings = req.settings;
         plan.nonblock = req.nonblock;
         ParseRequestUrl(req.url, plan.scheme, plan.host, plan.port, plan.path);
+        NormalizePathInPlace(plan.path);
     }
 
     bool will_try_real = kRealNetworkEnabled && !plan.host.empty() && !IsMockPsnHost(plan.host) &&
@@ -3289,14 +3315,40 @@ int PS4_SYSV_ABI sceHttpSetSocketCreationCallback() {
 }
 
 int PS4_SYSV_ABI sceHttpsFreeCaList(int libhttpCtxId, OrbisHttpsCaList* caList) {
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (caList == nullptr) {
+        LOG_ERROR(Lib_Http, "caList is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    if (!g_state.active_contexts.contains(libhttpCtxId)) {
+        LOG_ERROR(Lib_Http, "Invalid libhttpCtxId={} (not in active contexts)", libhttpCtxId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
     LOG_ERROR(Lib_Http, "(STUBBED) called libhttpCtxId={}, caList={}", libhttpCtxId,
               fmt::ptr(caList));
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceHttpsGetCaList(int httpCtxId, OrbisHttpsCaList* list) {
-    LOG_INFO(Lib_Http, "called httpCtxId={}, list={} (DUMMY) returning empty CA list", httpCtxId,
-             fmt::ptr(list));
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (list == nullptr) {
+        LOG_ERROR(Lib_Http, "list is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    if (!g_state.active_contexts.contains(httpCtxId)) {
+        LOG_ERROR(Lib_Http, "Invalid httpCtxId={} (not in active contexts)", httpCtxId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    LOG_ERROR(Lib_Http, "(STUBBED) called httpCtxId={}, list={} (DUMMY) returning empty CA list",
+              httpCtxId, fmt::ptr(list));
     list->certsNum = 0;
     return ORBIS_OK;
 }
