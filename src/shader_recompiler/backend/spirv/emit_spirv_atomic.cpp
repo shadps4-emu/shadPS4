@@ -77,9 +77,7 @@ Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id 
     const auto [id, pointer_type] = buffer.Alias(is_float ? PointerType::F32 : PointerType::U32);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<32, 1, is_float>(ctx, address, buffer.Size(PointerSize::B32), [&] {
-        return (ctx.*atomic_func)(type, ptr, scope, semantics, value);
-    });
+    return (ctx.*atomic_func)(type, ptr, scope, semantics, value);
 }
 
 Id BufferAtomicU32IncDec(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address,
@@ -91,9 +89,7 @@ Id BufferAtomicU32IncDec(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addres
     const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<32>(ctx, address, buffer.Size(PointerSize::B32), [&] {
-        return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics);
-    });
+    return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics);
 }
 
 Id BufferAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
@@ -106,9 +102,7 @@ Id BufferAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
     const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<32>(ctx, address, buffer.Size(PointerSize::B32), [&] {
-        return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, semantics, value, cmp_value);
-    });
+    return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, semantics, value, cmp_value);
 }
 
 Id BufferAtomicU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
@@ -120,9 +114,7 @@ Id BufferAtomicU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id 
     const auto [id, pointer_type] = buffer.Alias(PointerType::U64);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<64>(ctx, address, buffer.Size(PointerSize::B64), [&] {
-        return (ctx.*atomic_func)(ctx.U64, ptr, scope, semantics, value);
-    });
+    return (ctx.*atomic_func)(ctx.U64, ptr, scope, semantics, value);
 }
 
 Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
