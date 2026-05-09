@@ -22,15 +22,15 @@ enum class stockIcons {
     Input,
 };
 
-class NotificationsUI final : public ImGui::Layer {
-    struct NotificationInfo {
-        std::string message;
-        float timer;
-        position pos;
-        ImGui::RefCountedTexture icon;
-        bool addIconBackground; // adds gray background (mostly for black icons)
-    };
+struct NotificationInfo {
+    std::string message;
+    float timer;
+    position pos;
+    ImGui::RefCountedTexture icon;
+    bool addIconBackground; // adds gray background (mostly for black icons)
+};
 
+class NotificationsUI final : public ImGui::Layer {
 public:
     NotificationsUI(NotificationInfo info);
     ~NotificationsUI() override;
