@@ -164,6 +164,7 @@ private:
     std::chrono::steady_clock::time_point m_last_update = {};
     Libraries::Pad::OrbisFQuaternion m_orientation = {0.0f, 0.0f, 0.0f, 1.0f};
     Colour colour;
+    std::optional<Colour> override_colour{};
 
     State m_state;
 
@@ -173,8 +174,6 @@ private:
 
 class GameControllers {
     std::array<GameController*, 5> controllers;
-
-    static std::array<std::optional<Colour>, 4> controller_override_colors;
 
 public:
     GameControllers()
@@ -197,14 +196,12 @@ public:
                                      float deltaTime,
                                      Libraries::Pad::OrbisFQuaternion& lastOrientation,
                                      Libraries::Pad::OrbisFQuaternion& orientation);
-    static void SetControllerCustomColor(s32 i, u8 r, u8 g, u8 b) {
-        controller_override_colors[i] = {r, g, b};
-    }
-    static std::optional<Colour> GetControllerCustomColor(s32 i) {
-        if (i >= controller_override_colors.size()) {
-            return {};
-        }
-        return controller_override_colors[i];
+    void SetControllerCustomColor(s32 i, u8 r, u8 g, u8 b) {
+        // reset to ensure the next function always runs, even if there already was a preexisting
+        // override colour before
+        controllers[i]->override_colour = std::nullopt;
+        controllers[i]->SetLightBarRGB(r, g, b);
+        controllers[i]->override_colour = {r, g, b};
     }
 };
 

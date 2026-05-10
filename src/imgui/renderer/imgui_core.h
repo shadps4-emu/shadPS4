@@ -28,6 +28,10 @@ void Shutdown(const vk::Device& device);
 
 bool ProcessEvent(SDL_Event* event);
 
+void AcquireGamepadInputCapture();
+void ReleaseGamepadInputCapture();
+bool IsGamepadInputCaptured();
+
 ImGuiID NewFrame(bool is_reusing_frame = false);
 
 void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,

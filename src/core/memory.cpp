@@ -702,7 +702,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
 
     handle = file->f.GetFileMapping();
 
-    if (False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Write) ||
+    if (False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Write) &&
         False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Append)) {
         // If the file does not have write access, ensure prot does not contain write
         // permissions. On real hardware, these mappings succeed, but the memory cannot be
