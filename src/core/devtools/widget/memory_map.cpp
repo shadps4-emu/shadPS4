@@ -56,8 +56,7 @@ bool MemoryMapViewer::Iterator::DrawLine() {
     auto type = static_cast<::Libraries::Kernel::MemoryTypes>(m.memory_type);
     Text("%s", magic_enum::enum_name(type).data());
     TableNextColumn();
-    Text("%d",
-         m.dma_type == PhysicalMemoryType::Pooled || m.dma_type == PhysicalMemoryType::Committed);
+    Text("%d", m.dma_type == PhysicalMemoryType::Committed);
     ++dmem.it;
     return true;
 }
