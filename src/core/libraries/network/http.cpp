@@ -239,7 +239,7 @@ static const std::string& Ps4LibHttpVersionSuffix() {
 
 static std::string BuildPs4UserAgent(const char* userAgent) {
     const std::string& suffix_only = Ps4LibHttpVersionSuffix();
-    if (userAgent == nullptr) {
+    if (userAgent == nullptr || userAgent[0] == '\0') {
         return suffix_only;
     }
     std::string out;
@@ -567,6 +567,7 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
         const char* body_ptr =
             plan.body.empty() ? "" : reinterpret_cast<const char*>(plan.body.data());
         size_t body_size = plan.body.size();
+        // debug stuff to be removed
         {
             std::string header_dump;
             header_dump.reserve(256);
@@ -581,7 +582,7 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
             LOG_INFO(Lib_Http, "Outgoing headers for {} {}{}: [{}]", HttpMethodName(plan.method),
                      plan.scheme + "://" + plan.host, plan.path, header_dump);
         }
-
+        // endof debug
         auto result = [&]() {
             switch (plan.method) {
             case SCE_HTTP_METHOD_GET:
@@ -657,6 +658,7 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
             return false;
         }
         PopulateRealResponse(out_res, result);
+        // Debug stuff to be removed
         if (result->status >= 400 && result->body.size() <= 8192) {
             std::string preview;
             preview.reserve(result->body.size());
@@ -677,6 +679,7 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
                      plan.scheme + "://" + plan.host, plan.path, result->status,
                      result->body.size(), preview);
         }
+        // endof debug
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR(Lib_Http,
@@ -1466,17 +1469,16 @@ int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, u64 poolSize) {
              libsslCtxId, poolSize);
     std::lock_guard<std::mutex> lock(g_state.m_mutex);
     if (poolSize == 0) {
-        LOG_ERROR(Lib_Http, "poolSize=0 (returning ORBIS_KERNEL_ERROR_EINVAL "
-                            "from underlying sceKernelMapNamedFlexibleMemory)");
+        LOG_ERROR(Lib_Http, "poolSize=0");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (!g_state.ssl_status_logged) {
         g_state.ssl_status_logged = true;
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
-        LOG_INFO(Lib_Http, "cpp-httplib was built with OpenSSL,https:// real-network "
+        LOG_INFO(Lib_Http, "cpp-httplib was built with LibreSSL,https:// real-network "
                            "requests will be attempted");
 #else
-        LOG_INFO(Lib_Http, "cpp-httplib was built WITHOUT OpenSSL,every https:// real-"
+        LOG_INFO(Lib_Http, "cpp-httplib was built WITHOUT LibreSSL,every https:// real-"
                            "network request will throw and be caught and fall back to mock.");
 #endif
 #ifdef CPPHTTPLIB_ZLIB_SUPPORT
