@@ -8,6 +8,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/pad/pad_errors.h"
 #include "core/user_settings.h"
+#include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
 #include "pad.h"
 
@@ -339,7 +340,21 @@ int ProcessStates(s32 handle, OrbisPadData* pData, Input::GameController& contro
         return 1;
     }
 
+    const bool gamepad_input_intercepted = ImGui::Core::IsGamepadInputCaptured();
     for (int i = 0; i < num; i++) {
+        if (gamepad_input_intercepted) {
+            pData[i] = {};
+            pData[i].buttons = OrbisPadButtonDataOffset::Intercepted;
+            pData[i].leftStick = {128, 128};
+            pData[i].rightStick = {128, 128};
+            pData[i].orientation = {0.0f, 0.0f, 0.0f, 1.0f};
+            pData[i].connected = connected;
+            pData[i].timestamp = states[i].time;
+            pData[i].connectedCount = connected_count;
+            pData[i].deviceUniqueDataLen = 0;
+            continue;
+        }
+
         pData[i].buttons = states[i].buttonsState;
         pData[i].leftStick.x = states[i].axes[static_cast<int>(Input::Axis::LeftX)];
         pData[i].leftStick.y = states[i].axes[static_cast<int>(Input::Axis::LeftY)];

@@ -165,11 +165,6 @@ public:
         return vertex_input_dynamic_state;
     }
 
-    /// Returns true when the robustBufferAccess2 feature of VK_EXT_robustness2 is supported.
-    bool IsRobustBufferAccess2Supported() const {
-        return robustness2 && robustness2_features.robustBufferAccess2;
-    }
-
     /// Returns true when the nullDescriptor feature of VK_EXT_robustness2 is supported.
     bool IsNullDescriptorSupported() const {
         return robustness2 && robustness2_features.nullDescriptor;

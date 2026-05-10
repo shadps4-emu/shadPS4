@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <magic_enum/magic_enum.hpp>
+
 #include "common/enum.h"
 #include "common/types.h"
 
@@ -2696,3 +2698,9 @@ struct SendMsgSimm {
 };
 
 } // namespace Shader::Gcn
+
+template <>
+struct magic_enum::customize::enum_range<Shader::Gcn::Opcode> {
+    static constexpr int min = static_cast<int>(Shader::Gcn::Opcode::S_ADD_U32);
+    static constexpr int max = static_cast<int>(Shader::Gcn::Opcode::V_MAD_MIXHI_F16);
+};
