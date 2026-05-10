@@ -332,11 +332,6 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
     if (!u) {
         return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;
     }
-    s32 pad_handle = u->player_index;
-    LOG_INFO(Lib_Pad, "called user_id = {} type = {} index = {}, player_index = {}", userId, type,
-             index, pad_handle);
-    scePadResetLightBar(pad_handle);
-    scePadResetOrientation(pad_handle);
     s32 new_handle = pad_handle_counter++;
     pad_handle_map[{userId, type, index}] = new_handle;
 
@@ -344,7 +339,11 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
         controllers[type == (EmulatorSettings.IsUsingSpecialPad() ? 2 : 0)
                         ? UserManagement.GetUserByID(userId)->player_index - 1
                         : 4];
-    LOG_INFO(Lib_Pad, "Out handle: {}", new_handle);
+    LOG_INFO(Lib_Pad,
+             "called user_id = {}, type = {}, index = {}, player index = {}, out handle = {}",
+             userId, type, index, u->player_index, new_handle);
+    scePadResetLightBar(new_handle);
+    scePadResetOrientation(new_handle);
     return new_handle;
 }
 
