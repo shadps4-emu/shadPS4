@@ -480,8 +480,65 @@ static void PopulateRealResponse(HttpResponse& res, const httplib::Result& resul
     res.read_cursor = 0;
 }
 
+static constexpr int MaxRedirects = 5;
+
+static bool IsPs4FollowableRedirect(int status, int method) {
+    const bool status_ok = (status >= 300 && status <= 303) || status == 307;
+    if (!status_ok) {
+        return false;
+    }
+    // POST only follows 303, not other 3xx codes.
+    if (method == SCE_HTTP_METHOD_POST && status != 303) {
+        return false;
+    }
+    return true;
+}
+
+static int Ps4MethodAfterRedirect(int status, int original_method) {
+    // 303 See Other forces GET on the redirect target
+    if (status == 303 && original_method != SCE_HTTP_METHOD_HEAD) {
+        return SCE_HTTP_METHOD_GET;
+    }
+    return original_method;
+}
+
+static bool ResolvePs4RedirectLocation(const std::string& current_scheme,
+                                       const std::string& current_host, u16 current_port,
+                                       const std::string& location, std::string& out_scheme,
+                                       std::string& out_host, u16& out_port,
+                                       std::string& out_path) {
+    if (location.empty()) {
+        return false;
+    }
+    // Absolute URL?
+    if (location.compare(0, 7, "http://") == 0 || location.compare(0, 8, "https://") == 0) {
+        std::string scheme, host, path;
+        u16 port = 0;
+        if (!ParseRequestUrl(location, scheme, host, port, path)) {
+            return false;
+        }
+        if (scheme != "http" && scheme != "https") {
+            return false;
+        }
+        out_scheme = std::move(scheme);
+        out_host = std::move(host);
+        out_port = port;
+        out_path = std::move(path);
+        return true;
+    }
+    // Absolute-path-relative? (starts with '/')
+    if (location.front() == '/') {
+        out_scheme = current_scheme;
+        out_host = current_host;
+        out_port = current_port;
+        out_path = location;
+        return true;
+    }
+    return false;
+}
+
 static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_res, s32* out_errno,
-                               s32* out_ssl_error, u32* out_ssl_detail) {
+                               s32* out_ssl_error, u32* out_ssl_detail, int redirect_depth) {
     // Each output gets reset to "no error" and is filled in when something
     // actually fails.
     if (out_errno)
@@ -513,7 +570,7 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
             cli.set_read_timeout(pick_timeout_seconds(plan.settings.recv_timeout_us, 120));
             cli.set_write_timeout(pick_timeout_seconds(plan.settings.send_timeout_us, 120));
         }
-        cli.set_follow_location(plan.settings.auto_redirect);
+        cli.set_follow_location(false);
 
         auto headers = BuildHttplibHeaders(plan.headers);
         if (plan.settings.accept_encoding_gzip) {
@@ -680,6 +737,63 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
                      result->body.size(), preview);
         }
         // endof debug
+
+        // PS4-faithful auto-redirect handling
+        if (plan.settings.auto_redirect && redirect_depth < MaxRedirects &&
+            IsPs4FollowableRedirect(result->status, plan.method)) {
+            const std::string location = result->get_header_value("Location");
+            std::string next_scheme, next_host, next_path;
+            u16 next_port = 0;
+            if (ResolvePs4RedirectLocation(plan.scheme, plan.host, plan.port, location, next_scheme,
+                                           next_host, next_port, next_path)) {
+                RealRequestPlan next_plan = plan;
+                next_plan.scheme = std::move(next_scheme);
+                next_plan.host = std::move(next_host);
+                next_plan.port = next_port;
+                next_plan.path = std::move(next_path);
+                if (plan.host != next_plan.host || plan.port != next_plan.port) {
+                    HeaderOps::EraseAll(next_plan.headers, "Host");
+                    const bool default_port =
+                        (next_plan.scheme == "https" && next_plan.port == 443) ||
+                        (next_plan.scheme == "http" && next_plan.port == 80);
+                    std::string host_value =
+                        default_port ? next_plan.host
+                                     : next_plan.host + ":" + std::to_string(next_plan.port);
+                    HeaderOps::Append(next_plan.headers, "Host", std::move(host_value));
+                }
+                const int new_method = Ps4MethodAfterRedirect(result->status, plan.method);
+                if (new_method != plan.method) {
+                    next_plan.method = new_method;
+                    next_plan.method_str.clear();
+                    // Method changed (303 to GET); body and Content-Type
+                    // semantically belong to the original request
+                    next_plan.body.clear();
+                    HeaderOps::EraseAll(next_plan.headers, "Content-Type");
+                    HeaderOps::EraseAll(next_plan.headers, "Content-Length");
+                }
+                LOG_INFO(Lib_Http,
+                         "PS4-faithful redirect: status={} method={} {}://{}{} -> "
+                         "{}://{}{} (depth {} -> {}, new_method={})",
+                         result->status, HttpMethodName(plan.method), plan.scheme, plan.host,
+                         plan.path, next_plan.scheme, next_plan.host, next_plan.path,
+                         redirect_depth, redirect_depth + 1, HttpMethodName(new_method));
+                return ExecuteRealRequest(next_plan, out_res, out_errno, out_ssl_error,
+                                          out_ssl_detail, redirect_depth + 1);
+            }
+            // Location was missing/unresolvable; fall through and return the
+            // 3xx response to the caller as-is.
+            LOG_INFO(Lib_Http,
+                     "PS4-faithful redirect: status={} would have been followed but Location "
+                     "header is missing/unresolvable (value=\"{}\"); returning response as-is",
+                     result->status, location);
+        } else if (plan.settings.auto_redirect && redirect_depth >= MaxRedirects &&
+                   IsPs4FollowableRedirect(result->status, plan.method)) {
+            LOG_ERROR(Lib_Http,
+                      "PS4-faithful redirect: max depth {} reached at status={} {}://{}{}; "
+                      "returning response as-is",
+                      MaxRedirects, result->status, plan.scheme, plan.host, plan.path);
+        }
+
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR(Lib_Http,
@@ -1731,8 +1845,8 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         u32 real_ssl_detail = 0;
 
         if (try_real) {
-            got_real_response =
-                ExecuteRealRequest(plan, local_res, &real_errno, &real_ssl_error, &real_ssl_detail);
+            got_real_response = ExecuteRealRequest(plan, local_res, &real_errno, &real_ssl_error,
+                                                   &real_ssl_detail, /*redirect_depth=*/0);
         }
 
         if (!got_real_response) {
@@ -3054,9 +3168,6 @@ int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable) {
     }
     s->auto_redirect = (isEnable != 0);
     LOG_INFO(Lib_Http, "auto_redirect={} at {} level (id={})", s->auto_redirect, level, id);
-    // TODO
-    // PS4 only follows 300,301,303,307
-    // Http-lib also follows 302 and 308 but we can't skip that
     return ORBIS_OK;
 }
 
