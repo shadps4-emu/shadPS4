@@ -230,7 +230,7 @@ s32 PS4_SYSV_ABI sceVideodec2GetPictureInfo(const OrbisVideodec2OutputInfo* outp
 }
 
 s32 PS4_SYSV_ABI sceVideodec2GetAvcPictureInfo(const OrbisVideodec2OutputInfo* outputInfo,
-                                            void* p1stPictureInfoOut, void* p2ndPictureInfoOut) {
+                                               void* p1stPictureInfoOut, void* p2ndPictureInfoOut) {
     LOG_TRACE(Lib_Vdec2, "called");
     return sceVideodec2GetPictureInfo(outputInfo, p1stPictureInfoOut, p2ndPictureInfoOut);
 }
@@ -252,7 +252,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("wJXikG6QFN8", "libSceVideodec2", 1, "libSceVideodec2", sceVideodec2Reset);
     LIB_FUNCTION("NtXRa3dRzU0", "libSceVideodec2", 1, "libSceVideodec2",
                  sceVideodec2GetPictureInfo);
-    LIB_FUNCTION("kjrLbcyhEiw", "libSceVideodec2", 1, "libSceVideodec2", sceVideodec2GetAvcPictureInfo);
+    LIB_FUNCTION("kjrLbcyhEiw", "libSceVideodec2", 1, "libSceVideodec2",
+                 sceVideodec2GetAvcPictureInfo);
 }
 
 } // namespace Libraries::Videodec2
