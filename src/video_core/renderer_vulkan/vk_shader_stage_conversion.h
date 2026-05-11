@@ -52,7 +52,7 @@ struct DomainShaderInfo {
 
 } // namespace AmdGpu
 
-namespace Vulkan::ShaderStageConversion {
+namespace Vulkan::VkShaderStageConversion {
 
 /**
  * Converts AmdGpu shader stage to Vulkan shader stage flag bits.
