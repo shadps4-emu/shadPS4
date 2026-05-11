@@ -283,6 +283,9 @@ public:
     void V_LSHLREV_B16(const GcnInst& inst);
     void V_LSHL_ADD_U32(const GcnInst& inst);
     void V_ADD_LSHL_U32(const GcnInst& inst);
+    void V_MIN3_F16(const GcnInst& inst);
+    void V_MAX3_F16(const GcnInst& inst);
+    void V_MED3_F16(const GcnInst& inst);
     void V_ADD3_U32(const GcnInst& inst);
     void V_LSHL_OR_B32(const GcnInst& inst);
     void V_AND_OR_B32(const GcnInst& inst);
