@@ -53,6 +53,20 @@ struct OrbisNpCountryCode {
     char pad;
 };
 
+struct OrbisNpAgeRestriction {
+    OrbisNpCountryCode country_code;
+    s8 age;
+    u8 padding[3];
+};
+
+struct OrbisNpContentRestriction {
+    u64 size;
+    s8 default_age_restriction;
+    u8 padding[3];
+    s32 age_restriction_count;
+    const OrbisNpAgeRestriction* age_restriction;
+};
+
 struct OrbisNpDate {
     u16 year;
     u8 month;
