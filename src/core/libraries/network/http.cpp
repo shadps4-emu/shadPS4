@@ -17,6 +17,7 @@
 #include <unordered_set>
 #include <vector>
 #include <httplib.h>
+#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -349,7 +350,6 @@ struct HttpState {
 static HttpState g_state;
 
 constexpr auto kMockLatency = std::chrono::milliseconds(50);
-constexpr bool kRealNetworkEnabled = true;
 
 // placeholder for webapi TODO fix me
 constexpr std::string_view kMockPsnHostSuffix = ".mock-psn.shadps4.invalid";
@@ -480,6 +480,57 @@ static void PopulateRealResponse(HttpResponse& res, const httplib::Result& resul
     res.read_cursor = 0;
 }
 
+// Translates cpp-httplib's Error enum into the closest PS4-faithful
+// ORBIS_HTTP_ERROR_* code.
+static s32 TranslateHttplibError(int httplib_err) {
+    using Err = httplib::Error;
+    switch (static_cast<Err>(httplib_err)) {
+    case Err::Connection:
+        return ORBIS_HTTP_ERROR_RESOLVER_ENOHOST;
+    case Err::ConnectionTimeout:
+    case Err::Timeout:
+        return ORBIS_HTTP_ERROR_TIMEOUT;
+    case Err::ConnectionClosed:
+    case Err::Read:
+    case Err::Write:
+        return ORBIS_HTTP_ERROR_BROKEN;
+    case Err::SSLConnection:
+    case Err::SSLLoadingCerts:
+    case Err::SSLServerVerification:
+    case Err::SSLServerHostnameVerification:
+        return ORBIS_HTTP_ERROR_SSL;
+    case Err::ProxyConnection:
+        return ORBIS_HTTP_ERROR_PROXY;
+    case Err::InvalidHeaders:
+    case Err::InvalidRequestLine:
+    case Err::InvalidHTTPMethod:
+    case Err::InvalidHTTPVersion:
+        return ORBIS_HTTP_ERROR_UNKNOWN;
+    case Err::Canceled:
+        return ORBIS_HTTP_ERROR_ABORTED;
+    case Err::ExceedRedirectCount:
+        return ORBIS_HTTP_ERROR_BROKEN;
+    case Err::Success:
+        return 0;
+    case Err::Unknown:
+    default:
+        return ORBIS_HTTP_ERROR_UNKNOWN;
+    }
+}
+
+// Build the response shape real PS4 produces when transport fails
+// before any HTTP status line is received
+static void SynthesizeTransportFailureResponse(HttpResponse& res) {
+    res.status_code = 0;
+    res.reason_phrase.clear();
+    res.headers.clear();
+    res.all_headers_blob.clear();
+    res.content_length = 0;
+    res.content_length_result = ORBIS_HTTP_ERROR_NO_CONTENT_LENGTH;
+    res.body.clear();
+    res.read_cursor = 0;
+}
+
 static constexpr int MaxRedirects = 5;
 
 static bool IsPs4FollowableRedirect(int status, int method) {
@@ -570,6 +621,7 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
             cli.set_read_timeout(pick_timeout_seconds(plan.settings.recv_timeout_us, 120));
             cli.set_write_timeout(pick_timeout_seconds(plan.settings.send_timeout_us, 120));
         }
+
         cli.set_follow_location(false);
 
         auto headers = BuildHttplibHeaders(plan.headers);
@@ -679,12 +731,14 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
         }();
         if (!result) {
             const auto err_val = static_cast<int>(result.error());
-            LOG_ERROR(Lib_Http, "cpp-httplib request failed (host={}, path={}): error={}",
-                      plan.host, plan.path, err_val);
+            LOG_ERROR(Lib_Http, "cpp-httplib request failed (host={}, path={}): error={} ({})",
+                      plan.host, plan.path, err_val,
+                      httplib::to_string(static_cast<httplib::Error>(err_val)));
 
-            // Generic transport errno
+            // Translate cpp-httplib's enum into a PS4-faithful errno code so
+            // sceHttpGetLastErrno reports the same value real PS4 would.
             if (out_errno)
-                *out_errno = -err_val;
+                *out_errno = TranslateHttplibError(err_val);
 
             // httlp-lib has a limitation on distinguishing SSL errors from non-SSL errors
             if (out_ssl_error && plan.scheme == "https") {
@@ -738,7 +792,6 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
         }
         // endof debug
 
-        // PS4-faithful auto-redirect handling
         if (plan.settings.auto_redirect && redirect_depth < MaxRedirects &&
             IsPs4FollowableRedirect(result->status, plan.method)) {
             const std::string location = result->get_header_value("Location");
@@ -781,7 +834,7 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
                                           out_ssl_detail, redirect_depth + 1);
             }
             // Location was missing/unresolvable; fall through and return the
-            // 3xx response to the caller as-is.
+            // 3xx response to the caller as-is
             LOG_INFO(Lib_Http,
                      "PS4-faithful redirect: status={} would have been followed but Location "
                      "header is missing/unresolvable (value=\"{}\"); returning response as-is",
@@ -1573,6 +1626,12 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
         }
         return wait_result;
     }
+    // Transport failure
+    if (req.res.status_code == 0 && req.last_errno != 0) {
+        LOG_INFO(Lib_Http, "reqId={} transport failure, errno={:#x}, returning BEFORE_SEND", reqId,
+                 static_cast<u32>(req.last_errno));
+        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+    }
     *statusCode = req.res.status_code;
     LOG_INFO(Lib_Http, "reqId={} status={}", reqId, req.res.status_code);
     return ORBIS_OK;
@@ -1824,11 +1883,21 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         NormalizePathInPlace(plan.path);
     }
 
-    bool will_try_real = kRealNetworkEnabled && !plan.host.empty() && !IsMockPsnHost(plan.host) &&
+    bool will_try_real = Config::getIsConnectedToNetwork() && !plan.host.empty() &&
+                         !IsMockPsnHost(plan.host) &&
                          (plan.scheme == "http" || plan.scheme == "https");
     if (will_try_real) {
         LOG_INFO(Lib_Http, "reqId={} dispatched to async worker [REAL net: {} {}://{}:{}{}]", reqId,
                  HttpMethodName(plan.method), plan.scheme, plan.host, plan.port, plan.path);
+    } else if (IsMockPsnHost(plan.host)) {
+        LOG_INFO(Lib_Http,
+                 "reqId={} dispatched to async worker [MOCK-PSN: latency ~{} ms, host={}]", reqId,
+                 kMockLatency.count(), plan.host);
+    } else if (!Config::getIsConnectedToNetwork()) {
+        LOG_INFO(
+            Lib_Http,
+            "reqId={} dispatched to async worker [OFFLINE: isConnectedToNetwork=false, host={}]",
+            reqId, plan.host);
     } else {
         LOG_INFO(Lib_Http,
                  "reqId={} dispatched to async worker [MOCK: latency ~{} ms, host={}, scheme={}]",
@@ -1836,8 +1905,10 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
     }
 
     std::thread([req_ptr, reqId, plan = std::move(plan)]() {
-        bool try_real = kRealNetworkEnabled && !plan.host.empty() && !IsMockPsnHost(plan.host) &&
-                        (plan.scheme == "http" || plan.scheme == "https");
+        const bool is_mock_psn = IsMockPsnHost(plan.host);
+        const bool real_net_enabled = Config::getIsConnectedToNetwork();
+        const bool try_real = real_net_enabled && !plan.host.empty() && !is_mock_psn &&
+                              (plan.scheme == "http" || plan.scheme == "https");
         HttpResponse local_res;
         bool got_real_response = false;
         s32 real_errno = 0;
@@ -1847,11 +1918,21 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         if (try_real) {
             got_real_response = ExecuteRealRequest(plan, local_res, &real_errno, &real_ssl_error,
                                                    &real_ssl_detail, /*redirect_depth=*/0);
+        } else if (!real_net_enabled && !is_mock_psn) {
+            // Offline mode: skip network I/O entirely
+            real_errno = ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
         }
 
         if (!got_real_response) {
-            std::this_thread::sleep_for(kMockLatency);
-            SynthesizeMockResponse(local_res);
+            if (is_mock_psn) {
+                // PSN-replacement traffic
+                std::this_thread::sleep_for(kMockLatency);
+                SynthesizeMockResponse(local_res);
+                real_errno = 0;
+            } else {
+                // Real game-traffic failure (or offline mode)
+                SynthesizeTransportFailureResponse(local_res);
+            }
         }
 
         std::lock_guard<std::mutex> lock(g_state.m_mutex);
@@ -1866,9 +1947,17 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         req_ptr->last_errno = real_errno;
         req_ptr->last_ssl_error = real_ssl_error;
         req_ptr->last_ssl_detail = real_ssl_detail;
-        const char* path_label = got_real_response ? "(REAL)" : "(MOCK ASYNC)";
-        LOG_INFO(Lib_Http, "{} reqId={} -> {} {} (body {} bytes)", path_label, reqId,
-                 req_ptr->res.status_code, req_ptr->res.reason_phrase, req_ptr->res.body.size());
+        const char* path_label;
+        if (got_real_response) {
+            path_label = "(REAL)";
+        } else if (is_mock_psn) {
+            path_label = "(MOCK-PSN ASYNC)";
+        } else {
+            path_label = "(TRANSPORT FAIL)";
+        }
+        LOG_INFO(Lib_Http, "{} reqId={} -> {} {} (body {} bytes, errno={:#x})", path_label, reqId,
+                 req_ptr->res.status_code, req_ptr->res.reason_phrase, req_ptr->res.body.size(),
+                 static_cast<u32>(req_ptr->last_errno));
         // Wake any getters blocked waiting for state to advance.
         req_ptr->cv.notify_all();
         if (req_ptr->epoll_id != 0) {
