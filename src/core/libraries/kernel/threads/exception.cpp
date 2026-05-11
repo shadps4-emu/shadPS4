@@ -304,6 +304,12 @@ s32 PS4_SYSV_ABI posix_sigemptyset(Sigset* s) {
     return 0;
 }
 
+s32 PS4_SYSV_ABI posix_sigfillset(Sigset* s) {
+    s->bits[0] = ~0U;
+    s->bits[1] = ~0U;
+    return 0;
+}
+
 bool PS4_SYSV_ABI posix_sigisemptyset(Sigset* s) {
     return s->bits[0] == 0 && s->bits[1] == 0;
 }
@@ -516,11 +522,13 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("KiJEPEWRyUY", "libkernel", 1, "libkernel", posix_sigaction);
     LIB_FUNCTION("+F7C-hdk7+E", "libkernel", 1, "libkernel", posix_sigemptyset);
+    LIB_FUNCTION("VkTAsrZDcJ0", "libkernel", 1, "libkernel", posix_sigfillset);
     LIB_FUNCTION("yH-uQW3LbX0", "libkernel", 1, "libkernel", posix_pthread_kill);
     LIB_FUNCTION("sHziAegVp74", "libkernel", 1, "libkernel", posix_sigalstack);
 
     LIB_FUNCTION("KiJEPEWRyUY", "libScePosix", 1, "libkernel", posix_sigaction);
     LIB_FUNCTION("+F7C-hdk7+E", "libScePosix", 1, "libkernel", posix_sigemptyset);
+    LIB_FUNCTION("VkTAsrZDcJ0", "libScePosix", 1, "libkernel", posix_sigfillset);
     LIB_FUNCTION("yH-uQW3LbX0", "libScePosix", 1, "libkernel", posix_pthread_kill);
     LIB_FUNCTION("sHziAegVp74", "libScePosix", 1, "libkernel", posix_sigalstack);
 }
