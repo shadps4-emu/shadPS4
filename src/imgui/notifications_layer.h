@@ -8,9 +8,26 @@
 
 namespace shadNotifications {
 
+enum class position {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+};
+
+enum class stockIcons {
+    shadPS4,
+    Settings,
+    Profiles,
+    Input,
+};
+
 struct NotificationInfo {
     std::string message;
     float timer;
+    position pos;
+    ImGui::RefCountedTexture icon;
+    bool addIconBackground; // adds gray background (mostly for black icons)
 };
 
 class NotificationsUI final : public ImGui::Layer {
@@ -21,8 +38,7 @@ public:
     void Draw() override;
 
 private:
-    ImGui::RefCountedTexture shadIcon;
-    NotificationInfo currentNotification;
+    NotificationInfo currentInfo;
 
     // notification animation
     const float animation_duration = 0.5f; // Animation duration
@@ -31,6 +47,9 @@ private:
     float elapsed_time = 0.0f;             // Animation time
 };
 
-void QueueNotification(std::string message, float timer);
+void QueueNotification(std::string message, float timer, position pos,
+                       stockIcons = shadNotifications::stockIcons::shadPS4);
+void QueueNotification(std::string message, float timer, position pos, std::vector<u8> pngData,
+                       bool iconBackground = false);
 
 }; // namespace shadNotifications

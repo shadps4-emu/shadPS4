@@ -313,7 +313,10 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnm_error.h
 )
 
-set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
+set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
+               src/core/libraries/kernel/coredump/coredump.h
+               src/core/libraries/kernel/coredump/coredump_error.h
+               src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/sync/mutex.h
                src/core/libraries/kernel/sync/semaphore.h
                src/core/libraries/kernel/threads/condvar.cpp
@@ -492,7 +495,12 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/font/fontft.cpp
                 src/core/libraries/font/fontft.h
                 src/core/libraries/font/font_error.h
-
+                src/core/libraries/content_export/content_export.cpp
+                src/core/libraries/content_export/content_export.h
+                src/core/libraries/content_export/content_export_error.h
+                src/core/libraries/video_recording/video_recording.cpp
+                src/core/libraries/video_recording/video_recording.h
+                src/core/libraries/video_recording/video_recording_error.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -521,12 +529,16 @@ set(HLE_LIBC_INTERNAL_LIB src/core/libraries/libc_internal/libc_internal.cpp
 set(IME_LIB src/core/libraries/ime/error_dialog.cpp
             src/core/libraries/ime/error_dialog.h
             src/core/libraries/ime/ime_common.h
+            src/core/libraries/ime/ime_kb_layout.cpp
+            src/core/libraries/ime/ime_kb_layout.h
             src/core/libraries/ime/ime_dialog_ui.cpp
             src/core/libraries/ime/ime_dialog_ui.h
             src/core/libraries/ime/ime_dialog.cpp
             src/core/libraries/ime/ime_dialog.h
             src/core/libraries/ime/ime_ui.cpp
             src/core/libraries/ime/ime_ui.h
+            src/core/libraries/ime/ime_ui_shared.cpp
+            src/core/libraries/ime/ime_ui_shared.h
             src/core/libraries/ime/ime.cpp
             src/core/libraries/ime/ime.h
             src/core/libraries/ime/ime_error.h

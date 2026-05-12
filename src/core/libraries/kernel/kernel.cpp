@@ -13,6 +13,7 @@
 #include "common/va_ctx.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/coredump/coredump.h"
 #include "core/libraries/kernel/debug.h"
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/file_system.h"
@@ -298,6 +299,31 @@ s32 PS4_SYSV_ABI sceKernelGetAppInfo(s32 pid, OrbisKernelAppInfo* app_info) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceKernelTitleWorkaroundIsEnabled(OrbisKernelTitleWorkaround* tw, s32 bit,
+                                                   s32* result) {
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called, bit {:#x}", bit);
+    if (!tw || !result) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+
+    // Maximum bit value is known to change with new firmwares.
+    if (bit >= 0x3a) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    // Straight from decompilation, most uses rely on workaround data from sceKernelGetAppInfo.
+    *result = ((tw->ids[bit >> 6] >> (bit & 0x3f)) & 1);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelGetProcessType(s32 pid) {
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called, pid: {}", pid);
+    if (pid != GLOBAL_PID) {
+        return ORBIS_KERNEL_ERROR_ENOSYS;
+    }
+    return 0;
+}
+
 // Nominally: long sysconf(int name);
 u64 PS4_SYSV_ABI posix_sysconf(s32 name) {
     switch (name) {
@@ -431,6 +457,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterException(sym);
     Libraries::Kernel::RegisterAio(sym);
     Libraries::Kernel::RegisterDebug(sym);
+    Libraries::Kernel::RegisterCoredump(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", &g_stack_chk_guard);
     LIB_FUNCTION("D4yla3vx4tY", "libkernel", 1, "libkernel", sceKernelError);
@@ -438,6 +465,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Mv1zUObHvXI", "libkernel", 1, "libkernel", sceKernelGetSystemSwVersion);
     LIB_FUNCTION("igMefp4SAv0", "libkernel", 1, "libkernel", get_authinfo);
     LIB_FUNCTION("G-MYv5erXaU", "libkernel", 1, "libkernel", sceKernelGetAppInfo);
+    LIB_FUNCTION("1yca4VvfcNA", "libkernel", 1, "libkernel", sceKernelTitleWorkaroundIsEnabled);
+    LIB_FUNCTION("+g+UP8Pyfmo", "libkernel", 1, "libkernel", sceKernelGetProcessType);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("wW+k21cmbwQ", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", sceKernelGetFsSandboxRandomWord);

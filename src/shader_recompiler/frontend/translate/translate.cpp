@@ -1038,24 +1038,23 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
 void Translator::EmitFetch(const GcnInst& inst) {
     const auto code_sgpr_base = inst.src[0].code;
 
-    // The fetch shader must be inlined to access as regular buffers, so that
-    // bounds checks can be emitted to emulate robust buffer access.
-    if (!profile.supports_robust_buffer_access) {
-        const auto* code = GetFetchShaderCode(info, code_sgpr_base);
-        GcnCodeSlice slice(code, code + std::numeric_limits<u32>::max());
-        GcnDecodeContext decoder;
+#if 0
+    // Translate fetch shader inline using regular buffer bindings; useful for debugging.
+    const auto* code = GetFetchShaderCode(info, code_sgpr_base);
+    GcnCodeSlice slice(code, code + std::numeric_limits<u32>::max());
+    GcnDecodeContext decoder;
 
-        // Decode and save instructions
-        while (!slice.atEnd()) {
-            const auto sub_inst = decoder.decodeInstruction(slice);
-            if (sub_inst.opcode == Opcode::S_SETPC_B64) {
-                // Assume we're swapping back to the main shader.
-                break;
-            }
-            TranslateInstruction(sub_inst);
+    // Decode and save instructions
+    while (!slice.atEnd()) {
+        const auto sub_inst = decoder.decodeInstruction(slice);
+        if (sub_inst.opcode == Opcode::S_SETPC_B64) {
+            // Assume we're swapping back to the main shader.
+            break;
         }
-        return;
+        TranslateInstruction(sub_inst);
     }
+    return;
+#endif
 
     info.has_fetch_shader = true;
     info.fetch_shader_sgpr_base = code_sgpr_base;

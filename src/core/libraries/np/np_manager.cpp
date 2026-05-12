@@ -696,6 +696,33 @@ s32 PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpSetContentRestriction(const OrbisNpContentRestriction* restriction) {
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+    if (restriction == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (restriction->size != sizeof(OrbisNpContentRestriction)) {
+        return ORBIS_NP_ERROR_INVALID_SIZE;
+    }
+    if (restriction->default_age_restriction < 0 || restriction->age_restriction_count > 0x100) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (restriction->age_restriction_count > 0 && restriction->age_restriction == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpSetNpTitleId(const OrbisNpTitleId* title_id,
+                                   const OrbisNpTitleSecret* title_secret) {
+    if (title_id == nullptr || title_secret == nullptr) {
+        LOG_ERROR(Lib_NpManager, "called with invalid arguments");
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, title_id = {}", title_id->id);
+    return ORBIS_OK;
+}
+
 struct NpStateCallbackForNpToolkit {
     OrbisNpStateCallbackForNpToolkit func;
     void* userdata;
@@ -826,6 +853,10 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("eQH7nWPcAgc", "libSceNpManager", 1, "libSceNpManager", sceNpGetState);
     LIB_FUNCTION("VgYczPGB5ss", "libSceNpManager", 1, "libSceNpManager", sceNpGetUserIdByAccountId);
     LIB_FUNCTION("Oad3rvY-NJQ", "libSceNpManager", 1, "libSceNpManager", sceNpHasSignedUp);
+    LIB_FUNCTION("A2CQ3kgSopQ", "libSceNpManager", 1, "libSceNpManager",
+                 sceNpSetContentRestriction);
+    LIB_FUNCTION("Ec63y59l9tw", "libSceNpManager", 1, "libSceNpManager", sceNpSetNpTitleId);
+
     LIB_FUNCTION("3Zl8BePTh9Y", "libSceNpManager", 1, "libSceNpManager", sceNpCheckCallback);
     LIB_FUNCTION("JELHf4xPufo", "libSceNpManager", 1, "libSceNpManager", sceNpCheckCallbackForLib);
     LIB_FUNCTION("VfRSmPmj8Q8", "libSceNpManager", 1, "libSceNpManager",

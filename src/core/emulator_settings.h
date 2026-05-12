@@ -291,6 +291,8 @@ struct InputSettings {
     Setting<bool> use_unified_input_config{true};
     Setting<std::string> default_controller_id{""};
     Setting<bool> background_controller_input{false}; // specific
+    Setting<bool> ime_accessibility_enabled{false};   // specific
+    Setting<bool> ime_url_mail_short_panel{false};    // specific
     Setting<s32> camera_id{-1};
 
     std::vector<OverrideItem> GetOverrideableFields() const {
@@ -303,13 +305,18 @@ struct InputSettings {
                                          &InputSettings::motion_controls_enabled),
             make_override<InputSettings>("background_controller_input",
                                          &InputSettings::background_controller_input),
+            make_override<InputSettings>("ime_accessibility_enabled",
+                                         &InputSettings::ime_accessibility_enabled),
+            make_override<InputSettings>("ime_url_mail_short_panel",
+                                         &InputSettings::ime_url_mail_short_panel),
             make_override<InputSettings>("camera_id", &InputSettings::camera_id)};
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_timeout,
                                    usb_device_backend, use_special_pad, special_pad_class,
                                    motion_controls_enabled, use_unified_input_config,
-                                   default_controller_id, background_controller_input, camera_id)
+                                   default_controller_id, background_controller_input,
+                                   ime_accessibility_enabled, ime_url_mail_short_panel, camera_id)
 // -------------------------------
 // Audio settings
 // -------------------------------
@@ -661,6 +668,8 @@ public:
     SETTING_FORWARD(m_input, UsbDeviceBackend, usb_device_backend)
     SETTING_FORWARD_BOOL(m_input, MotionControlsEnabled, motion_controls_enabled)
     SETTING_FORWARD_BOOL(m_input, BackgroundControllerInput, background_controller_input)
+    SETTING_FORWARD_BOOL(m_input, ImeAccessibilityEnabled, ime_accessibility_enabled)
+    SETTING_FORWARD_BOOL(m_input, ImeUrlMailShortPanel, ime_url_mail_short_panel)
     SETTING_FORWARD(m_input, DefaultControllerId, default_controller_id)
     SETTING_FORWARD_BOOL(m_input, UsingSpecialPad, use_special_pad)
     SETTING_FORWARD(m_input, SpecialPadClass, special_pad_class)
