@@ -780,7 +780,8 @@ s32 PS4_SYSV_ABI sceKernelMlock(void* addr, u64 len) {
 }
 
 s32 PS4_SYSV_ABI posix_msync(void* addr, u64 len, s32 flags) {
-    LOG_ERROR(Kernel_Vmm, "(STUBBED) called, addr = {}, len = {:#x}, flags = {}", fmt::ptr(addr), len, flags);
+    LOG_ERROR(Kernel_Vmm, "(STUBBED) called, addr = {}, len = {:#x}, flags = {}", fmt::ptr(addr),
+              len, flags);
     return ORBIS_OK;
 }
 
