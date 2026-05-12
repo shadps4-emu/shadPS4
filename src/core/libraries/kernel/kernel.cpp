@@ -299,6 +299,23 @@ s32 PS4_SYSV_ABI sceKernelGetAppInfo(s32 pid, OrbisKernelAppInfo* app_info) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceKernelTitleWorkaroundIsEnabled(OrbisKernelTitleWorkaround* tw, s32 bit,
+                                                   s32* result) {
+    LOG_WARNING(Lib_Kernel, "(STUBBED) called, bit {}", bit);
+    if (!tw || !result) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+
+    // Maximum bit value is known to change with new firmwares.
+    if (bit >= 0x39) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    // Straight from decompilation, most uses rely on workaround data from sceKernelGetAppInfo.
+    *result = ((tw->ids[bit >> 6] >> (bit & 0x3f)) & 1);
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceKernelGetProcessType(s32 pid) {
     LOG_ERROR(Lib_Kernel, "(STUBBED) called, pid: {}", pid);
     if (pid != GLOBAL_PID) {
@@ -448,6 +465,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Mv1zUObHvXI", "libkernel", 1, "libkernel", sceKernelGetSystemSwVersion);
     LIB_FUNCTION("igMefp4SAv0", "libkernel", 1, "libkernel", get_authinfo);
     LIB_FUNCTION("G-MYv5erXaU", "libkernel", 1, "libkernel", sceKernelGetAppInfo);
+    LIB_FUNCTION("1yca4VvfcNA", "libkernel", 1, "libkernel", sceKernelTitleWorkaroundIsEnabled);
     LIB_FUNCTION("+g+UP8Pyfmo", "libkernel", 1, "libkernel", sceKernelGetProcessType);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("wW+k21cmbwQ", "libkernel", 1, "libkernel", kernel_ioctl);
