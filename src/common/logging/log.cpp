@@ -52,6 +52,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_CommonDlg, nullptr},
     {Class::Lib_CompanionHttpd, nullptr},
     {Class::Lib_CompanionUtil, nullptr},
+    {Class::Lib_ContentExport, nullptr},
     {Class::Lib_DiscMap, nullptr},
     {Class::Lib_ErrorDialog, nullptr},
     {Class::Lib_Fiber, nullptr},
