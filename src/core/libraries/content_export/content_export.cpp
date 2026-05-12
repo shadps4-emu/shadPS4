@@ -45,9 +45,12 @@ s32 PS4_SYSV_ABI sceContentExportTerm() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("FzEWeYnAFlI", "libSceContentExport", 1, "libSceContentExport", sceContentExportInit);
-    LIB_FUNCTION("0GnN4QCgIfs", "libSceContentExport", 1, "libSceContentExport", sceContentExportInit2);
-    LIB_FUNCTION("+KDWny9Y-6k", "libSceContentExport", 1, "libSceContentExport", sceContentExportTerm);
+    LIB_FUNCTION("FzEWeYnAFlI", "libSceContentExport", 1, "libSceContentExport",
+                 sceContentExportInit);
+    LIB_FUNCTION("0GnN4QCgIfs", "libSceContentExport", 1, "libSceContentExport",
+                 sceContentExportInit2);
+    LIB_FUNCTION("+KDWny9Y-6k", "libSceContentExport", 1, "libSceContentExport",
+                 sceContentExportTerm);
 }
 
 } // namespace Libraries::ContentExport

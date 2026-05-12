@@ -12,7 +12,8 @@ namespace Libraries::ContentExport {
 
 typedef void* PS4_SYSV_ABI (*OrbisContentExportMalloc)(u64 datasize, void* userdata);
 typedef void PS4_SYSV_ABI (*OrbisContentExportFree)(void* p, void* userdata);
-typedef s32 PS4_SYSV_ABI (*OrbisContentExportDataProvideFunction)(void** data, u64* datasize, void* userdata);
+typedef s32 PS4_SYSV_ABI (*OrbisContentExportDataProvideFunction)(void** data, u64* datasize,
+                                                                  void* userdata);
 
 struct OrbisContentExportInitParam {
     OrbisContentExportMalloc mallocfunc;
