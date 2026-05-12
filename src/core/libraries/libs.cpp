@@ -70,6 +70,7 @@
 #include "core/libraries/videodec/videodec2.h"
 #include "core/libraries/videoout/video_out.h"
 #include "core/libraries/voice/voice.h"
+#include "core/libraries/video_recording/video_recording.h"
 #include "core/libraries/vr_tracker/vr_tracker.h"
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
 #include "core/libraries/zlib/zlib_sce.h"
@@ -153,6 +154,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Rudp::RegisterLib(sym);
     Libraries::VrTracker::RegisterLib(sym);
     Libraries::ContentExport::RegisterLib(sym);
+    Libraries::VideoRecording::RegisterLib(sym);
 
     // Loading libSceSsl is locked behind a title workaround that currently applies to nothing.
     // Libraries::Ssl::RegisterLib(sym);

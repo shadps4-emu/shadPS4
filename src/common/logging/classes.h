@@ -99,6 +99,7 @@ constexpr auto Lib_UserService = "Lib.UserService";                 ///< The Lib
 constexpr auto Lib_Vdec2 = "Lib.Vdec2";                             ///< The LibSceVideodec2 implementation.
 constexpr auto Lib_VideoOut = "Lib.VideoOut";                       ///< The LibSceVideoOut implementation.
 constexpr auto Lib_Videodec = "Lib.Videodec";                       ///< The LibSceVideodec implementation.
+constexpr auto Lib_VideoRecording = "Lib.VideoRecording";           ///< The LibSceVideoRecording implementation.
 constexpr auto Lib_Voice = "Lib.Voice";                             ///< The LibSceVoice implementation.
 constexpr auto Lib_VrTracker = "Lib.VrTracker";                     ///< The LibSceVrTracker implementation.
 constexpr auto Lib_WebBrowserDialog = "Lib.WebBrowserDialog";       ///< The LibSceWebBrowserDialog implementation
