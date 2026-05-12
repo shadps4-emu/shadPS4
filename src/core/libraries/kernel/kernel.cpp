@@ -301,7 +301,7 @@ s32 PS4_SYSV_ABI sceKernelGetAppInfo(s32 pid, OrbisKernelAppInfo* app_info) {
 
 s32 PS4_SYSV_ABI sceKernelTitleWorkaroundIsEnabled(OrbisKernelTitleWorkaround* tw, s32 bit,
                                                    s32* result) {
-    LOG_WARNING(Lib_Kernel, "(STUBBED) called, bit {}", bit);
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called, bit {:#x}", bit);
     if (!tw || !result) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
