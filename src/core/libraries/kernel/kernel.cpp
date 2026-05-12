@@ -307,7 +307,7 @@ s32 PS4_SYSV_ABI sceKernelTitleWorkaroundIsEnabled(OrbisKernelTitleWorkaround* t
     }
 
     // Maximum bit value is known to change with new firmwares.
-    if (bit >= 0x39) {
+    if (bit >= 0x3a) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
