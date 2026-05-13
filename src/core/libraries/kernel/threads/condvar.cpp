@@ -7,6 +7,7 @@
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/sleepq.h"
+#include "core/libraries/kernel/threads/thread_state.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
@@ -178,6 +179,7 @@ int PS4_SYSV_ABI posix_pthread_cond_reltimedwait_np(PthreadCondT* cond, PthreadM
 }
 
 int PthreadCond::Signal(Pthread* thread) {
+    Pthread* curthread = g_curthread;
     if (thread) {
         auto* thread_state = ThrState::Instance();
         int ret = thread_state->FindThread(thread, false);
