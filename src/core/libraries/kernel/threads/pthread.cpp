@@ -531,12 +531,14 @@ int PS4_SYSV_ABI posix_pthread_setprio(PthreadT thread, int prio) {
     param.sched_priority = prio;
 
     auto* thread_state = ThrState::Instance();
-    if (thread == g_curthread) {
-        g_curthread->lock.lock();
-    } else if (const int ret = thread_state->FindThread(thread, /*include dead*/ false); ret != 0) {
-        return ret;
+    if (thread != g_curthread) {
+        const int ret = thread_state->RefAdd(thread, /*include dead*/ false);
+        if (ret != 0) {
+            return ret;
+        }
     }
 
+    thread->lock.lock();
     if (thread->attr.sched_policy == SchedPolicy::Other || thread->attr.prio == prio) {
         thread->attr.prio = prio;
     } else {
@@ -545,6 +547,9 @@ int PS4_SYSV_ABI posix_pthread_setprio(PthreadT thread, int prio) {
     }
 
     thread->lock.unlock();
+    if (thread != g_curthread) {
+        thread_state->RefDelete(thread);
+    }
     return 0;
 }
 
