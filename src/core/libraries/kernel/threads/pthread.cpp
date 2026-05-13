@@ -411,15 +411,42 @@ int PS4_SYSV_ABI posix_sched_get_priority_min() {
 }
 
 int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
-    if (thread == nullptr) {
-        return POSIX_EINVAL;
+    LOG_INFO(Kernel_Pthread, "name = {}", name ? name : "(null)");
+    auto* thread_state = ThrState::Instance();
+    auto* memory = Core::Memory::Instance();
+
+    if (thread == g_curthread) {
+        // Avoid thread search for current thread. Real library also doesn't perform a lock here.
+        Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()), name);
+        thread->name = name ? name : std::string{""};
+        if (name && False(thread->attr.flags & PthreadAttrFlags::StackUser)) {
+            VAddr stack_addr = std::bit_cast<VAddr>(thread->attr.stackaddr_attr);
+            memory->NameVirtualRange(stack_addr, thread->attr.stacksize_attr, name);
+        }
+        return ORBIS_OK;
     }
-    if (name == nullptr) {
-        return 0;
+
+    // Find the thread in the list of active threads.
+    if (int ret = thread_state->RefAdd(thread, false); ret != 0) {
+        return POSIX_ESRCH;
     }
-    LOG_INFO(Kernel_Pthread, "name = {}", name);
-    Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()), name);
-    thread->name = name;
+
+    // Lock the thread.
+    thread->lock.lock();
+
+    // Set the thread and thread stack names.
+    if (thread->state != PthreadState::Dead) {
+        Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()), name);
+        thread->name = name ? name : std::string{""};
+        if (name && False(thread->attr.flags & PthreadAttrFlags::StackUser)) {
+            VAddr stack_addr = std::bit_cast<VAddr>(thread->attr.stackaddr_attr);
+            memory->NameVirtualRange(stack_addr, thread->attr.stacksize_attr, name);
+        }
+    }
+
+    // Unlock and remove reference.
+    thread->lock.unlock();
+    thread_state->RefDelete(thread);
     return ORBIS_OK;
 }
 

@@ -177,11 +177,11 @@ void SetCurrentThreadName(const char* name) {
     if (Libraries::Kernel::g_curthread) {
         Libraries::Kernel::g_curthread->name = name;
     }
-    SetThreadDescription(GetCurrentThread(), UTF8ToUTF16W(name).data());
+    SetThreadDescription(GetCurrentThread(), UTF8ToUTF16W(name ? name : "").data());
 }
 
 void SetThreadName(void* thread, const char* name) {
-    SetThreadDescription(thread, UTF8ToUTF16W(name).data());
+    SetThreadDescription(thread, UTF8ToUTF16W(name ? name : "").data());
 }
 
 #else // !_WIN32, so must be POSIX threads
