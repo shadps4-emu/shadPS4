@@ -157,6 +157,7 @@ struct PthreadCleanup {
 };
 
 enum class PthreadAttrFlags : u32 {
+    ScopeProcess = 0,
     Detached = 1,
     ScopeSystem = 2,
     InheritSched = 4,
