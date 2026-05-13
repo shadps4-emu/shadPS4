@@ -625,23 +625,19 @@ s32 PS4_SYSV_ABI sceAudio3dPortCreate(u32 max_objects, u32 queue_depth,
              "called, max_objects = {}, queue_depth = {}, parameters = {}, port_id = {}",
              max_objects, queue_depth, static_cast<void*>(parameters), static_cast<void*>(port_id));
 
-    if (!port_id) {
-        LOG_INFO(Lib_Audio3d, "!port_id");
+    if (!port_id || parameters) {
+        LOG_INFO(Lib_Audio3d, "!port_id || parameters");
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    if (!parameters) {
-        OrbisAudio3dOpenParameters local_params{};
-        local_params.size_this = 0x10;
-        local_params.granularity = 0x100;
-        local_params.rate = OrbisAudio3dRate::ORBIS_AUDIO3D_RATE_48000;
-        local_params.max_objects = max_objects;
-        local_params.queue_depth = queue_depth;
-        return sceAudio3dPortOpen(static_cast<Libraries::UserService::OrbisUserServiceUserId>(0xFF),
-                                  &local_params, port_id);
-    }
-
-    return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    OrbisAudio3dOpenParameters local_params{};
+    local_params.size_this = 0x10;
+    local_params.granularity = 0x100;
+    local_params.rate = OrbisAudio3dRate::ORBIS_AUDIO3D_RATE_48000;
+    local_params.max_objects = max_objects;
+    local_params.queue_depth = queue_depth;
+    return sceAudio3dPortOpen(static_cast<Libraries::UserService::OrbisUserServiceUserId>(0xFF),
+                              &local_params, port_id);
 }
 
 s32 PS4_SYSV_ABI sceAudio3dPortDestroy() {
@@ -804,17 +800,18 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetStatus() {
 s32 PS4_SYSV_ABI sceAudio3dPortOpen(const Libraries::UserService::OrbisUserServiceUserId user_id,
                                     const OrbisAudio3dOpenParameters* parameters,
                                     OrbisAudio3dPortId* port_id) {
-    LOG_INFO(Lib_Audio3d, "called, user_id = {}, parameters = {}, id = {}", user_id,
+    LOG_INFO(Lib_Audio3d, "called, user_id = {}, parameters = {}, port_id = {}", user_id,
              static_cast<const void*>(parameters), static_cast<void*>(port_id));
 
     if (user_id != 0xFF || !parameters || !port_id) {
-        LOG_ERROR(Lib_Audio3d, "user_id != 0xFF|| !parameters || !id");
+        LOG_ERROR(Lib_Audio3d, "user_id != 0xFF || !parameters || !port_id");
+        if (port_id)
+            *port_id = ORBIS_AUDIO3D_PORT_INVALID;
 
-        if (port_id) {
-            *port_id = static_cast<OrbisAudio3dPortId>(-1);
-        }
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
+
+    *port_id = ORBIS_AUDIO3D_PORT_INVALID;
 
     if (!state) {
         LOG_ERROR(Lib_Audio3d, "!initialized");
@@ -863,6 +860,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortOpen(const Libraries::UserService::OrbisUserServi
         break;
 
     default:
+        LOG_ERROR(Lib_Audio3d, "invalid size_this");
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
@@ -922,22 +920,30 @@ s32 PS4_SYSV_ABI sceAudio3dPortOpen(const Libraries::UserService::OrbisUserServi
     }
 
     if (effective.max_objects > 0x200) {
-        LOG_WARNING(Lib_Audio3d, "max_objects is limited to 512", effective.max_objects);
+        LOG_WARNING(Lib_Audio3d, "max_objects {} exceeds limit, clamping to 512",
+                    effective.max_objects);
         effective.max_objects = 0x200;
     }
 
-    const int id = static_cast<int>(state->ports.size()) + 1;
+    std::scoped_lock lock{state->ports_mutex};
 
-    if (id > 3) {
-        LOG_ERROR(Lib_Audio3d, "id > 3");
+    OrbisAudio3dPortId id = ORBIS_AUDIO3D_PORT_INVALID;
+    for (OrbisAudio3dPortId i = 0; i < MaxPorts; i++) {
+        if (!state->ports.contains(i)) {
+            id = i;
+            break;
+        }
+    }
+
+    if (id == ORBIS_AUDIO3D_PORT_INVALID) {
+        LOG_ERROR(Lib_Audio3d, "no free ports");
         return ORBIS_AUDIO3D_ERROR_OUT_OF_RESOURCES;
     }
 
+    auto& port = state->ports.try_emplace(id).first->second;
+    port.parameters = effective;
+
     *port_id = id;
-    auto& port = state->ports[id];
-    std::memcpy(
-        &port.parameters, &effective,
-        std::min(effective.size_this, static_cast<u64>(sizeof(OrbisAudio3dOpenParameters))));
 
     return ORBIS_OK;
 }

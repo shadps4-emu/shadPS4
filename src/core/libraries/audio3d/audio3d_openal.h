@@ -17,7 +17,13 @@ class SymbolsResolver;
 
 namespace Libraries::Audio3dOpenAL {
 
+using OrbisAudio3dPortId = u32;
+using OrbisAudio3dObjectId = u32;
+using OrbisAudio3dAmbisonics = u32;
+
 constexpr int ORBIS_AUDIO3D_OBJECT_INVALID = 0xFFFFFFFF;
+constexpr OrbisAudio3dPortId ORBIS_AUDIO3D_PORT_INVALID = 0xFFFFFFFFu;
+constexpr OrbisAudio3dPortId MaxPorts = 4;
 
 enum class OrbisAudio3dRate : u32 {
     ORBIS_AUDIO3D_RATE_48000 = 0,
@@ -27,6 +33,7 @@ enum class OrbisAudio3dBufferMode : u32 {
     ORBIS_AUDIO3D_BUFFER_NO_ADVANCE = 0,
     ORBIS_AUDIO3D_BUFFER_ADVANCE_NO_PUSH = 1,
     ORBIS_AUDIO3D_BUFFER_ADVANCE_AND_PUSH = 2,
+    ORBIS_AUDIO3D_BUFFER_UNKNOWN = 3,
 };
 
 struct OrbisAudio3dOpenParameters {
@@ -35,9 +42,9 @@ struct OrbisAudio3dOpenParameters {
     OrbisAudio3dRate rate;
     u32 max_objects;
     u32 queue_depth;
-    OrbisAudio3dBufferMode buffer_mode;
-    int : 32;
     u32 num_beds;
+    u32 _pad;
+    OrbisAudio3dBufferMode buffer_mode;
 };
 
 enum class OrbisAudio3dFormat : u32 {
@@ -76,10 +83,6 @@ enum class OrbisAudio3dAttributeId : u32 {
     ORBIS_AUDIO3D_ATTRIBUTE_OUTPUT_ROUTE = 11,
 };
 
-using OrbisAudio3dPortId = u32;
-using OrbisAudio3dObjectId = u32;
-using OrbisAudio3dAmbisonics = u32;
-
 struct OrbisAudio3dAttribute {
     OrbisAudio3dAttributeId attribute_id;
     int : 32;
@@ -117,6 +120,7 @@ struct Port {
 };
 
 struct Audio3dState {
+    std::mutex ports_mutex;
     std::unordered_map<OrbisAudio3dPortId, Port> ports;
 };
 
@@ -152,7 +156,9 @@ s32 PS4_SYSV_ABI sceAudio3dObjectUnreserve(OrbisAudio3dPortId port_id,
                                            OrbisAudio3dObjectId object_id);
 s32 PS4_SYSV_ABI sceAudio3dPortAdvance(OrbisAudio3dPortId port_id);
 s32 PS4_SYSV_ABI sceAudio3dPortClose(OrbisAudio3dPortId port_id);
-s32 PS4_SYSV_ABI sceAudio3dPortCreate();
+s32 PS4_SYSV_ABI sceAudio3dPortCreate(u32 max_objects, u32 queue_depth,
+                                      OrbisAudio3dOpenParameters* parameters,
+                                      OrbisAudio3dPortId* port_id);
 s32 PS4_SYSV_ABI sceAudio3dPortDestroy();
 s32 PS4_SYSV_ABI sceAudio3dPortFlush(OrbisAudio3dPortId port_id);
 s32 PS4_SYSV_ABI sceAudio3dPortFreeState();

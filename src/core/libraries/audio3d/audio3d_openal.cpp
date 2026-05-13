@@ -617,9 +617,27 @@ s32 PS4_SYSV_ABI sceAudio3dPortClose(const OrbisAudio3dPortId port_id) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAudio3dPortCreate() {
-    LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceAudio3dPortCreate(u32 max_objects, u32 queue_depth,
+                                      OrbisAudio3dOpenParameters* parameters,
+                                      OrbisAudio3dPortId* port_id) {
+
+    LOG_INFO(Lib_Audio3d,
+             "called, max_objects = {}, queue_depth = {}, parameters = {}, port_id = {}",
+             max_objects, queue_depth, static_cast<void*>(parameters), static_cast<void*>(port_id));
+
+    if (!port_id || parameters) {
+        LOG_INFO(Lib_Audio3d, "!port_id || parameters");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    OrbisAudio3dOpenParameters local_params{};
+    local_params.size_this = 0x10;
+    local_params.granularity = 0x100;
+    local_params.rate = OrbisAudio3dRate::ORBIS_AUDIO3D_RATE_48000;
+    local_params.max_objects = max_objects;
+    local_params.queue_depth = queue_depth;
+    return sceAudio3dPortOpen(static_cast<Libraries::UserService::OrbisUserServiceUserId>(0xFF),
+                              &local_params, port_id);
 }
 
 s32 PS4_SYSV_ABI sceAudio3dPortDestroy() {
@@ -782,31 +800,150 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetStatus() {
 s32 PS4_SYSV_ABI sceAudio3dPortOpen(const Libraries::UserService::OrbisUserServiceUserId user_id,
                                     const OrbisAudio3dOpenParameters* parameters,
                                     OrbisAudio3dPortId* port_id) {
-    LOG_INFO(Lib_Audio3d, "called, user_id = {}, parameters = {}, id = {}", user_id,
+    LOG_INFO(Lib_Audio3d, "called, user_id = {}, parameters = {}, port_id = {}", user_id,
              static_cast<const void*>(parameters), static_cast<void*>(port_id));
+
+    if (user_id != 0xFF || !parameters || !port_id) {
+        LOG_ERROR(Lib_Audio3d, "user_id != 0xFF || !parameters || !port_id");
+        if (port_id)
+            *port_id = ORBIS_AUDIO3D_PORT_INVALID;
+
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    *port_id = ORBIS_AUDIO3D_PORT_INVALID;
 
     if (!state) {
         LOG_ERROR(Lib_Audio3d, "!initialized");
         return ORBIS_AUDIO3D_ERROR_NOT_READY;
     }
 
-    if (!parameters || !port_id) {
-        LOG_ERROR(Lib_Audio3d, "!parameters || !id");
+    OrbisAudio3dOpenParameters effective{
+        .size_this = 0x28,
+        .granularity = 0x100,
+        .rate = OrbisAudio3dRate::ORBIS_AUDIO3D_RATE_48000,
+        .max_objects = 512,
+        .queue_depth = 2,
+        .num_beds = 0,
+        .buffer_mode = OrbisAudio3dBufferMode::ORBIS_AUDIO3D_BUFFER_ADVANCE_AND_PUSH,
+    };
+
+    switch (parameters->size_this) {
+    case 0x10:
+        effective.granularity = parameters->granularity;
+        effective.rate = parameters->rate;
+        break;
+
+    case 0x18:
+        effective.max_objects = parameters->max_objects;
+        effective.queue_depth = parameters->queue_depth;
+        effective.rate = parameters->rate;
+        effective.granularity = parameters->granularity;
+        effective.num_beds = 1;
+        break;
+
+    case 0x20:
+        effective.max_objects = parameters->max_objects;
+        effective.queue_depth = parameters->queue_depth;
+        effective.rate = parameters->rate;
+        effective.num_beds = parameters->num_beds;
+        effective.granularity = parameters->granularity;
+        break;
+
+    case 0x28:
+        effective.max_objects = parameters->max_objects;
+        effective.buffer_mode = parameters->buffer_mode;
+        effective.queue_depth = parameters->queue_depth;
+        effective.rate = parameters->rate;
+        effective.num_beds = parameters->num_beds;
+        effective.granularity = parameters->granularity;
+        break;
+
+    default:
+        LOG_ERROR(Lib_Audio3d, "invalid size_this");
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    const int id = static_cast<int>(state->ports.size()) + 1;
+    if (effective.rate != OrbisAudio3dRate::ORBIS_AUDIO3D_RATE_48000) {
+        LOG_ERROR(Lib_Audio3d, "unsupported rate");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
 
-    if (id > 3) {
-        LOG_ERROR(Lib_Audio3d, "id > 3");
+    if (effective.granularity < 0x100) {
+        LOG_ERROR(Lib_Audio3d, "granularity < 0x100");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    if ((effective.granularity & 0xFF) != 0) {
+        LOG_ERROR(Lib_Audio3d, "granularity not aligned to 0x100");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    if (effective.max_objects == 0) {
+        LOG_ERROR(Lib_Audio3d, "max_objects == 0");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    if (effective.queue_depth == 0) {
+        LOG_ERROR(Lib_Audio3d, "queue_depth == 0");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    if (effective.granularity == 0x100 && effective.queue_depth > 0x40) {
+        LOG_ERROR(Lib_Audio3d, "queue_depth too large for 0x100 granularity");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    if (effective.granularity == 0x200 && effective.queue_depth > 0x1F) {
+        LOG_ERROR(Lib_Audio3d, "queue_depth too large for 0x200 granularity");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    if (effective.granularity == 0x300 && effective.queue_depth > 0x14) {
+        LOG_ERROR(Lib_Audio3d, "queue_depth too large for 0x300 granularity");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    if (effective.queue_depth > 0xF && effective.granularity > 0x3FF) {
+        LOG_ERROR(Lib_Audio3d, "queue_depth invalid for large granularity");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    if ((static_cast<u32>(effective.buffer_mode) & 0xFFFFFFFEu) != 2) {
+        LOG_ERROR(Lib_Audio3d, "invalid buffer_mode");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    if (effective.num_beds > 2) {
+        LOG_ERROR(Lib_Audio3d, "num_beds > 2");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    if (effective.max_objects > 0x200) {
+        LOG_WARNING(Lib_Audio3d, "max_objects {} exceeds limit, clamping to 512",
+                    effective.max_objects);
+        effective.max_objects = 0x200;
+    }
+
+    std::scoped_lock lock{state->ports_mutex};
+
+    OrbisAudio3dPortId id = ORBIS_AUDIO3D_PORT_INVALID;
+    for (OrbisAudio3dPortId i = 0; i < MaxPorts; i++) {
+        if (!state->ports.contains(i)) {
+            id = i;
+            break;
+        }
+    }
+
+    if (id == ORBIS_AUDIO3D_PORT_INVALID) {
+        LOG_ERROR(Lib_Audio3d, "no free ports");
         return ORBIS_AUDIO3D_ERROR_OUT_OF_RESOURCES;
     }
 
+    auto& port = state->ports.try_emplace(id).first->second;
+    port.parameters = effective;
+
     *port_id = id;
-    auto& port = state->ports[id];
-    std::memcpy(
-        &port.parameters, parameters,
-        std::min(parameters->size_this, static_cast<u64>(sizeof(OrbisAudio3dOpenParameters))));
 
     return ORBIS_OK;
 }

@@ -18,9 +18,15 @@ class SymbolsResolver;
 
 namespace Libraries::Audio3d {
 
-constexpr int ORBIS_AUDIO3D_OBJECT_INVALID = 0xFFFFFFFF;
+using OrbisAudio3dPortId = u32;
+using OrbisAudio3dObjectId = u32;
+using OrbisAudio3dAmbisonics = u32;
 
-enum class OrbisAudio3dRate : s32 {
+constexpr int ORBIS_AUDIO3D_OBJECT_INVALID = 0xFFFFFFFF;
+constexpr OrbisAudio3dPortId ORBIS_AUDIO3D_PORT_INVALID = 0xFFFFFFFFu;
+constexpr OrbisAudio3dPortId MaxPorts = 4;
+
+enum class OrbisAudio3dRate : u32 {
     ORBIS_AUDIO3D_RATE_48000 = 0,
 };
 
@@ -78,10 +84,6 @@ enum class OrbisAudio3dAttributeId : u32 {
     ORBIS_AUDIO3D_ATTRIBUTE_OUTPUT_ROUTE = 11,
 };
 
-using OrbisAudio3dPortId = u32;
-using OrbisAudio3dObjectId = u32;
-using OrbisAudio3dAmbisonics = u32;
-
 struct OrbisAudio3dAttribute {
     OrbisAudio3dAttributeId attribute_id;
     int : 32;
@@ -120,6 +122,7 @@ struct Port {
 };
 
 struct Audio3dState {
+    std::mutex ports_mutex;
     std::unordered_map<OrbisAudio3dPortId, Port> ports;
 };
 
