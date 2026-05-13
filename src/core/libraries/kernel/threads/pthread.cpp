@@ -518,7 +518,10 @@ int PS4_SYSV_ABI scePthreadGetprio(PthreadT thread, int* priority) {
     SchedParam param;
     SchedPolicy policy;
 
-    posix_pthread_getschedparam(thread, &policy, &param);
+    int ret = posix_pthread_getschedparam(thread, &policy, &param);
+    if (ret != 0) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
     *priority = param.sched_priority;
     return 0;
 }
