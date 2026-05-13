@@ -36,7 +36,6 @@ constexpr int ORBIS_KERNEL_PRIO_RR_DEFAULT = 700;
 constexpr int ORBIS_KERNEL_PRIO_RR_HIGHEST = 256;
 constexpr int ORBIS_KERNEL_PRIO_RR_LOWEST = 767;
 
-
 struct Pthread;
 
 enum class PthreadMutexFlags : u32 {

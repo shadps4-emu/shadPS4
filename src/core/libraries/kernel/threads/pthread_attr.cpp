@@ -215,7 +215,7 @@ int PS4_SYSV_ABI posix_pthread_attr_setschedparam(PthreadAttrT* attr, SchedParam
     }
 
     const auto policy = (*attr)->sched_policy;
-    if (policy == SchedPolicy::RoundRobin) {
+    if (policy == SchedPolicy::Fifo || policy == SchedPolicy::RoundRobin) {
         if (param->sched_priority < ThrPriorities[u32(policy) - 1].pri_min ||
             param->sched_priority > ThrPriorities[u32(policy) - 1].pri_max) {
             return POSIX_ENOTSUP;
