@@ -284,8 +284,10 @@ void BufferCache::FillBuffer(VAddr address, u32 num_bytes, u32 value, bool is_gd
 void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {
     if (!dst_gds && !IsRegionGpuModified(dst, num_bytes)) {
         if (!src_gds && !IsRegionGpuModified(src, num_bytes) &&
-            !texture_cache.FindImageFromRange(src, num_bytes)) {
-            // Both buffers were not transferred to GPU yet. Can safely copy in host memory.
+            !texture_cache.FindImageFromRange(src, num_bytes) &&
+            !texture_cache.FindImageFromRange(dst, num_bytes)) {
+            // Both buffers were not transferred to GPU yet and neither aliases a cached
+            // texture. Can safely copy in host memory.
             memcpy(std::bit_cast<void*>(dst), std::bit_cast<void*>(src), num_bytes);
             return;
         }
@@ -501,10 +503,10 @@ BufferCache::OverlapResult BufferCache::ResolveOverlaps(VAddr device_addr, u32 w
             // as a stream buffer. Increase the size to skip constantly recreating buffers.
             has_stream_leap = true;
             if (expands_right) {
-                expand_begin(CACHING_PAGESIZE * 128);
+                expand_end(CACHING_PAGESIZE * 128);
             }
             if (expands_left) {
-                expand_end(CACHING_PAGESIZE * 128);
+                expand_begin(CACHING_PAGESIZE * 128);
             }
         }
     }
