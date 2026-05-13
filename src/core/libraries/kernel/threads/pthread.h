@@ -29,6 +29,13 @@ constexpr int PthreadInheritSched = 4;
 constexpr int ORBIS_KERNEL_PRIO_FIFO_DEFAULT = 700;
 constexpr int ORBIS_KERNEL_PRIO_FIFO_HIGHEST = 256;
 constexpr int ORBIS_KERNEL_PRIO_FIFO_LOWEST = 767;
+constexpr int ORBIS_KERNEL_PRIO_OTHER_DEFAULT = 900;
+constexpr int ORBIS_KERNEL_PRIO_OTHER_HIGHEST = 768;
+constexpr int ORBIS_KERNEL_PRIO_OTHER_LOWEST = 959;
+constexpr int ORBIS_KERNEL_PRIO_RR_DEFAULT = 700;
+constexpr int ORBIS_KERNEL_PRIO_RR_HIGHEST = 256;
+constexpr int ORBIS_KERNEL_PRIO_RR_LOWEST = 767;
+
 
 struct Pthread;
 
