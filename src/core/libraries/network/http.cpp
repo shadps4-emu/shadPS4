@@ -1883,7 +1883,7 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         LOG_INFO(Lib_Http,
                  "reqId={} dispatched to async worker [MOCK-PSN: latency ~{} ms, host={}]", reqId,
                  kMockLatency.count(), plan.host);
-    } else if (!Emulatorsettings.IsConnectedToNetwork()) {
+    } else if (!EmulatorSettings.IsConnectedToNetwork()) {
         LOG_INFO(
             Lib_Http,
             "reqId={} dispatched to async worker [OFFLINE: isConnectedToNetwork=false, host={}]",
