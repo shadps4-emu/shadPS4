@@ -419,7 +419,7 @@ int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
         // Avoid thread search for current thread. Real library also doesn't perform a lock here.
         thread->name = name ? name : std::string{""};
         Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()),
-                              thread->name);
+                              thread->name.data());
         if (name && False(thread->attr.flags & PthreadAttrFlags::StackUser)) {
             VAddr stack_addr = std::bit_cast<VAddr>(thread->attr.stackaddr_attr);
             memory->NameVirtualRange(stack_addr, thread->attr.stacksize_attr, name);
@@ -439,7 +439,7 @@ int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
     if (thread->state != PthreadState::Dead) {
         thread->name = name ? name : std::string{""};
         Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()),
-                              thread->name);
+                              thread->name.data());
         if (name && False(thread->attr.flags & PthreadAttrFlags::StackUser)) {
             VAddr stack_addr = std::bit_cast<VAddr>(thread->attr.stackaddr_attr);
             memory->NameVirtualRange(stack_addr, thread->attr.stacksize_attr, name);
