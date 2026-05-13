@@ -334,6 +334,10 @@ PthreadT PS4_SYSV_ABI posix_pthread_self() {
     return g_curthread;
 }
 
+void PS4_SYSV_ABI posix_pthread_set_name_np(PthreadT thread, const char* name) {
+    posix_pthread_rename_np(thread, name);
+}
+
 void PS4_SYSV_ABI posix_pthread_yield() {
     std::this_thread::yield();
 }
@@ -735,7 +739,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("How7B8Oet6k", "libkernel", 1, "libkernel", ORBIS(posix_pthread_getname_np));
     LIB_FUNCTION("3kg7rT0NQIs", "libkernel", 1, "libkernel", posix_pthread_exit);
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", posix_pthread_self);
-    LIB_FUNCTION("oxMp8uPqa+U", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rename_np));
+    LIB_FUNCTION("oxMp8uPqa+U", "libkernel", 1, "libkernel", posix_pthread_set_name_np);
     LIB_FUNCTION("3PtV6p3QNX4", "libkernel", 1, "libkernel", posix_pthread_equal);
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", posix_pthread_yield);
     LIB_FUNCTION("EI-5-jlq2dE", "libkernel", 1, "libkernel", posix_pthread_getthreadid_np);
