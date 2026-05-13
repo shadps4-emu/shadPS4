@@ -197,6 +197,7 @@ static constexpr u32 ThrGuardDefault = ThrPageSize;
 
 struct PthreadRwlockAttr {
     int pshared;
+    int type;
 };
 using PthreadRwlockAttrT = PthreadRwlockAttr*;
 
