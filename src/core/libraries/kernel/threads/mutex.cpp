@@ -378,8 +378,8 @@ s32 PS4_SYSV_ABI posix_pthread_mutexattr_getkind_np(PthreadMutexAttrT attr) {
 
 s32 PS4_SYSV_ABI posix_pthread_mutexattr_setprioceiling(PthreadMutexAttrT* attr, int prioceiling) {
     if (attr == nullptr || *attr == nullptr || (*attr)->m_protocol != PthreadMutexProt::Protect ||
-        prioceiling < ORBIS_KERNEL_PRIO_FIFO_HIGHEST ||
-        prioceiling > ORBIS_KERNEL_PRIO_FIFO_LOWEST) {
+        prioceiling > ORBIS_KERNEL_PRIO_FIFO_HIGHEST ||
+        prioceiling < ORBIS_KERNEL_PRIO_FIFO_LOWEST) {
         return POSIX_EINVAL;
     }
     (*attr)->m_ceiling = prioceiling;
@@ -401,7 +401,7 @@ s32 PS4_SYSV_ABI posix_pthread_mutexattr_setprotocol(PthreadMutexAttrT* mattr,
         return POSIX_EINVAL;
     }
     (*mattr)->m_protocol = protocol;
-    (*mattr)->m_ceiling = ORBIS_KERNEL_PRIO_RR_LOWEST;
+    (*mattr)->m_ceiling = ORBIS_KERNEL_PRIO_RR_HIGHEST;
     return 0;
 }
 
