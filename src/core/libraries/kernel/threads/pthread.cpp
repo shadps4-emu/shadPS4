@@ -422,7 +422,7 @@ int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
     auto* memory = Core::Memory::Instance();
 
     if (thread == g_curthread) {
-        // Avoid thread search for current thread. Real library also doesn't perform a lock here.
+        // If the requested thread is curthread, skip locking and reference logic.
         thread->name = name ? name : std::string{""};
         Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()),
                               thread->name.data());
