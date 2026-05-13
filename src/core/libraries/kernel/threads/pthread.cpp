@@ -402,11 +402,17 @@ int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control,
     return 0;
 }
 
-int PS4_SYSV_ABI posix_sched_get_priority_max() {
+int PS4_SYSV_ABI posix_sched_get_priority_max(SchedPolicy policy) {
+    if (policy != SchedPolicy::Fifo && policy != SchedPolicy::RoundRobin) {
+        return POSIX_EINVAL;
+    }
     return ORBIS_KERNEL_PRIO_FIFO_HIGHEST;
 }
 
-int PS4_SYSV_ABI posix_sched_get_priority_min() {
+int PS4_SYSV_ABI posix_sched_get_priority_min(SchedPolicy policy) {
+    if (policy != SchedPolicy::Fifo && policy != SchedPolicy::RoundRobin) {
+        return POSIX_EINVAL;
+    }
     return ORBIS_KERNEL_PRIO_FIFO_LOWEST;
 }
 
