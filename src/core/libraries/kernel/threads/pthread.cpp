@@ -22,9 +22,9 @@ extern PthreadAttr PthreadAttrDefault;
 void _thread_cleanupspecific();
 
 using ThreadDtor = void (*)();
-static ThreadDtor* ThreadDtors{};
+static ThreadDtor ThreadDtors{};
 
-void PS4_SYSV_ABI _sceKernelSetThreadDtors(ThreadDtor* dtor) {
+void PS4_SYSV_ABI _sceKernelSetThreadDtors(ThreadDtor dtor) {
     ThreadDtors = dtor;
 }
 
@@ -86,9 +86,9 @@ void PS4_SYSV_ABI posix_pthread_exit(void* status) {
             delete old;
         }
     }
-    /*if (ThreadDtors && *ThreadDtors) {
-        (*ThreadDtors)();
-    }*/
+    if (ThreadDtors) {
+        (ThreadDtors)();
+    }
     ExitThread();
 }
 
