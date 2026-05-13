@@ -46,18 +46,21 @@ static std::string ResolveApiGroupBaseUrl(const std::string& api_group) {
 }
 
 static s32 NpMethodToHttpMethod(OrbisNpWebApiHttpMethod method) {
+    using namespace Libraries::Http;
     switch (method) {
     case ORBIS_NP_WEBAPI_HTTP_METHOD_GET:
-        return 0; // ORBIS_HTTP_METHOD_GET
+        return ORBIS_HTTP_METHOD_GET;
     case ORBIS_NP_WEBAPI_HTTP_METHOD_POST:
-        return 1; // ORBIS_HTTP_METHOD_POST
+        return ORBIS_HTTP_METHOD_POST;
     case ORBIS_NP_WEBAPI_HTTP_METHOD_PUT:
-        return 4; // ORBIS_HTTP_METHOD_PUT
+        return ORBIS_HTTP_METHOD_PUT;
     case ORBIS_NP_WEBAPI_HTTP_METHOD_DELETE:
-        return 5; // ORBIS_HTTP_METHOD_DELETE
-    default:
-        return -1; // unknown / Patch (would need sceHttpCreateRequestWithURL2)
+        return ORBIS_HTTP_METHOD_DELETE;
+    case ORBIS_NP_WEBAPI_HTTP_METHOD_PATCH:
+        return ORBIS_HTTP_METHOD_CUSTOM;
     }
+    // Unreachable for valid enum inputs
+    return -1;
 }
 
 s32 initializeLibrary() {

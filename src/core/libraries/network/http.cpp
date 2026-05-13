@@ -77,16 +77,6 @@ void NormalizeAndAppendPath(char* dest, char* src) {
 
 namespace {
 
-constexpr int SCE_HTTP_METHOD_GET = 0;
-constexpr int SCE_HTTP_METHOD_POST = 1;
-constexpr int SCE_HTTP_METHOD_HEAD = 2;
-constexpr int SCE_HTTP_METHOD_OPTIONS = 3;
-constexpr int SCE_HTTP_METHOD_PUT = 4;
-constexpr int SCE_HTTP_METHOD_DELETE = 5;
-constexpr int SCE_HTTP_METHOD_TRACE = 6;
-constexpr int SCE_HTTP_METHOD_CONNECT = 7;
-constexpr int SCE_HTTP_METHOD_CUSTOM = 8;
-
 // Bitmask of int-method values that are accepted by sceHttpCreateRequestWithURL.
 // Bits set: 0,1,2,4,5,6,8 (GET, POST, HEAD, PUT, DELETE, TRACE, CUSTOM).
 constexpr u32 SCE_HTTP_VALID_METHOD_MASK = 0x177u;
@@ -367,7 +357,7 @@ struct RealRequestPlan {
     std::string host;       // hostname only (no port)
     u16 port = 0;           // numeric port (80 / 443 if scheme-default)
     std::string path;       // path + query string (the part cpp-httplib wants)
-    int method = 0;         // SCE_HTTP_METHOD_*
+    int method = 0;         // ORBIS_HTTP_METHOD_*
     std::string method_str; // populated for the *2 variants if `method` is invalid
     HttpHeaders headers;
     std::vector<u8> body;
@@ -425,26 +415,26 @@ static bool ParseRequestUrl(const std::string& url, std::string& scheme, std::st
     return !host.empty();
 }
 
-// Convert our integer SCE_HTTP_METHOD_* into a verb string usable for httplib
+// Convert our integer ORBIS_HTTP_METHOD_* into a verb string usable for httplib
 static const char* HttpMethodName(int method) {
     switch (method) {
-    case SCE_HTTP_METHOD_GET:
+    case ORBIS_HTTP_METHOD_GET:
         return "GET";
-    case SCE_HTTP_METHOD_POST:
+    case ORBIS_HTTP_METHOD_POST:
         return "POST";
-    case SCE_HTTP_METHOD_HEAD:
+    case ORBIS_HTTP_METHOD_HEAD:
         return "HEAD";
-    case SCE_HTTP_METHOD_OPTIONS:
+    case ORBIS_HTTP_METHOD_OPTIONS:
         return "OPTIONS";
-    case SCE_HTTP_METHOD_PUT:
+    case ORBIS_HTTP_METHOD_PUT:
         return "PUT";
-    case SCE_HTTP_METHOD_DELETE:
+    case ORBIS_HTTP_METHOD_DELETE:
         return "DELETE";
-    case SCE_HTTP_METHOD_TRACE:
+    case ORBIS_HTTP_METHOD_TRACE:
         return "TRACE";
-    case SCE_HTTP_METHOD_CONNECT:
+    case ORBIS_HTTP_METHOD_CONNECT:
         return "CONNECT";
-    case SCE_HTTP_METHOD_CUSTOM:
+    case ORBIS_HTTP_METHOD_CUSTOM:
         return "CUSTOM";
     default:
         return "UNKNOWN";
@@ -539,7 +529,7 @@ static bool IsPs4FollowableRedirect(int status, int method) {
         return false;
     }
     // POST only follows 303, not other 3xx codes.
-    if (method == SCE_HTTP_METHOD_POST && status != 303) {
+    if (method == ORBIS_HTTP_METHOD_POST && status != 303) {
         return false;
     }
     return true;
@@ -547,8 +537,8 @@ static bool IsPs4FollowableRedirect(int status, int method) {
 
 static int Ps4MethodAfterRedirect(int status, int original_method) {
     // 303 See Other forces GET on the redirect target
-    if (status == 303 && original_method != SCE_HTTP_METHOD_HEAD) {
-        return SCE_HTTP_METHOD_GET;
+    if (status == 303 && original_method != ORBIS_HTTP_METHOD_HEAD) {
+        return ORBIS_HTTP_METHOD_GET;
     }
     return original_method;
 }
@@ -694,19 +684,19 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
         // endof debug
         auto result = [&]() {
             switch (plan.method) {
-            case SCE_HTTP_METHOD_GET:
+            case ORBIS_HTTP_METHOD_GET:
                 return cli.Get(plan.path, headers);
-            case SCE_HTTP_METHOD_POST:
+            case ORBIS_HTTP_METHOD_POST:
                 return cli.Post(plan.path, headers, body_ptr, body_size, content_type);
-            case SCE_HTTP_METHOD_HEAD:
+            case ORBIS_HTTP_METHOD_HEAD:
                 return cli.Head(plan.path, headers);
-            case SCE_HTTP_METHOD_OPTIONS:
+            case ORBIS_HTTP_METHOD_OPTIONS:
                 return cli.Options(plan.path, headers);
-            case SCE_HTTP_METHOD_PUT:
+            case ORBIS_HTTP_METHOD_PUT:
                 return cli.Put(plan.path, headers, body_ptr, body_size, content_type);
-            case SCE_HTTP_METHOD_DELETE:
+            case ORBIS_HTTP_METHOD_DELETE:
                 return cli.Delete(plan.path, headers, body_ptr, body_size, content_type);
-            case SCE_HTTP_METHOD_CUSTOM: {
+            case ORBIS_HTTP_METHOD_CUSTOM: {
                 if (plan.method_str.empty()) {
                     LOG_ERROR(Lib_Http,
                               "method=CUSTOM but method_str is empty; falling back to mock");
@@ -1200,17 +1190,17 @@ int PS4_SYSV_ABI sceHttpCreateRequest2(int connId, const char* method, const cha
             return -1;
         std::string s = m;
         if (s == "GET")
-            return SCE_HTTP_METHOD_GET;
+            return ORBIS_HTTP_METHOD_GET;
         if (s == "POST")
-            return SCE_HTTP_METHOD_POST;
+            return ORBIS_HTTP_METHOD_POST;
         if (s == "HEAD")
-            return SCE_HTTP_METHOD_HEAD;
+            return ORBIS_HTTP_METHOD_HEAD;
         if (s == "PUT")
-            return SCE_HTTP_METHOD_PUT;
+            return ORBIS_HTTP_METHOD_PUT;
         if (s == "DELETE")
-            return SCE_HTTP_METHOD_DELETE;
+            return ORBIS_HTTP_METHOD_DELETE;
         if (s == "TRACE")
-            return SCE_HTTP_METHOD_TRACE;
+            return ORBIS_HTTP_METHOD_TRACE;
         return -1;
     };
     if (!path) {
@@ -1228,7 +1218,7 @@ int PS4_SYSV_ABI sceHttpCreateRequest2(int connId, const char* method, const cha
             return ORBIS_HTTP_ERROR_INVALID_VALUE;
         }
         LOG_INFO(Lib_Http, "method '{}' not in standard table; routing via CUSTOM slot", method);
-        int_method = SCE_HTTP_METHOD_CUSTOM;
+        int_method = ORBIS_HTTP_METHOD_CUSTOM;
     }
     // Resolve the connection's URL under the lock, then delegate.
     std::string url;
@@ -1335,17 +1325,17 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL2(int connId, const char* method, co
     if (method) {
         std::string s = method;
         if (s == "GET")
-            int_method = SCE_HTTP_METHOD_GET;
+            int_method = ORBIS_HTTP_METHOD_GET;
         else if (s == "POST")
-            int_method = SCE_HTTP_METHOD_POST;
+            int_method = ORBIS_HTTP_METHOD_POST;
         else if (s == "HEAD")
-            int_method = SCE_HTTP_METHOD_HEAD;
+            int_method = ORBIS_HTTP_METHOD_HEAD;
         else if (s == "PUT")
-            int_method = SCE_HTTP_METHOD_PUT;
+            int_method = ORBIS_HTTP_METHOD_PUT;
         else if (s == "DELETE")
-            int_method = SCE_HTTP_METHOD_DELETE;
+            int_method = ORBIS_HTTP_METHOD_DELETE;
         else if (s == "TRACE")
-            int_method = SCE_HTTP_METHOD_TRACE;
+            int_method = ORBIS_HTTP_METHOD_TRACE;
     }
     if (int_method < 0) {
         if (!method) {
@@ -1353,7 +1343,7 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL2(int connId, const char* method, co
             return ORBIS_HTTP_ERROR_INVALID_VALUE;
         }
         LOG_INFO(Lib_Http, "method '{}' not in standard table; routing via CUSTOM slot", method);
-        int_method = SCE_HTTP_METHOD_CUSTOM;
+        int_method = ORBIS_HTTP_METHOD_CUSTOM;
     }
     int reqId = sceHttpCreateRequestWithURL(connId, int_method, url, contentLength);
     if (reqId > 0 && method) {
