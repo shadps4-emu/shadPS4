@@ -322,8 +322,30 @@ int PS4_SYSV_ABI posix_pthread_getthreadid_np() {
 }
 
 int PS4_SYSV_ABI posix_pthread_getname_np(PthreadT thread, char* name) {
-    std::memcpy(name, thread->name.data(), std::min<size_t>(thread->name.size(), 32));
-    return 0;
+    if (thread == g_curthread) {
+        // Can skip locking and reference logic if thread is curthread.
+        std::memcpy(name, thread->name.data(), std::min<size_t>(thread->name.size(), 32));
+        return ORBIS_OK;
+    }
+
+    // Find the thread in the list of active threads.
+    auto* thread_state = ThrState::Instance();
+    if (int ret = thread_state->RefAdd(thread, false); ret != 0) {
+        return POSIX_ESRCH;
+    }
+
+    // Lock the thread.
+    thread->lock.lock();
+
+    // Set the thread and thread stack names.
+    if (thread->state != PthreadState::Dead) {
+        std::memcpy(name, thread->name.data(), std::min<size_t>(thread->name.size(), 32));
+    }
+
+    // Unlock and remove reference.
+    thread->lock.unlock();
+    thread_state->RefDelete(thread);
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI posix_pthread_equal(PthreadT thread1, PthreadT thread2) {
