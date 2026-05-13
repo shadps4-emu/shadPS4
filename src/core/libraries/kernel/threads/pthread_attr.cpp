@@ -85,11 +85,12 @@ int PS4_SYSV_ABI posix_pthread_attr_getschedpolicy(const PthreadAttrT* attr, Sch
     return 0;
 }
 
-int PS4_SYSV_ABI posix_pthread_attr_getscope(const PthreadAttrT* attr, int* contentionscope) {
+int PS4_SYSV_ABI posix_pthread_attr_getscope(const PthreadAttrT* attr,
+                                             PthreadAttrFlags* contentionscope) {
     if (attr == nullptr || *attr == nullptr || contentionscope == nullptr) {
         return POSIX_EINVAL;
     }
-    *contentionscope = (*attr)->flags & PthreadAttrFlags::ScopeSystem
+    *contentionscope = True((*attr)->flags & PthreadAttrFlags::ScopeSystem)
                            ? PthreadAttrFlags::ScopeSystem
                            : PthreadAttrFlags::ScopeProcess;
     return 0;
@@ -150,7 +151,7 @@ int PS4_SYSV_ABI posix_pthread_attr_setschedpolicy(PthreadAttrT* attr, SchedPoli
     return 0;
 }
 
-int PS4_SYSV_ABI posix_pthread_attr_setscope(PthreadAttrT* attr, int contentionscope) {
+int PS4_SYSV_ABI posix_pthread_attr_setscope(PthreadAttrT* attr, PthreadAttrFlags contentionscope) {
     if (attr == nullptr || *attr == nullptr) {
         return POSIX_EINVAL;
     }
@@ -159,7 +160,7 @@ int PS4_SYSV_ABI posix_pthread_attr_setscope(PthreadAttrT* attr, int contentions
         return POSIX_EINVAL;
     }
     if (contentionscope == PthreadAttrFlags::ScopeSystem) {
-        (*attr)->flags != contentionscope;
+        (*attr)->flags |= contentionscope;
     } else {
         (*attr)->flags &= ~PthreadAttrFlags::ScopeSystem;
     }
