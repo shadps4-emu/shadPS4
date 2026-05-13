@@ -186,6 +186,7 @@ int PthreadCond::Signal(Pthread* thread) {
         if (ret != ORBIS_OK) {
             return ret;
         }
+        thread->lock.unlock();
     }
 
     SleepqLock(this);
