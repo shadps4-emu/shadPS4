@@ -21,7 +21,7 @@ extern PthreadAttr PthreadAttrDefault;
 
 void _thread_cleanupspecific();
 
-using ThreadDtor = void (*)();
+using ThreadDtor = void PS4_SYSV_ABI (*)();
 static ThreadDtor ThreadDtors{};
 
 void PS4_SYSV_ABI _sceKernelSetThreadDtors(ThreadDtor dtor) {
