@@ -334,10 +334,6 @@ PthreadT PS4_SYSV_ABI posix_pthread_self() {
     return g_curthread;
 }
 
-void PS4_SYSV_ABI posix_pthread_set_name_np(PthreadT thread, const char* name) {
-    posix_pthread_rename_np(thread, name);
-}
-
 void PS4_SYSV_ABI posix_pthread_yield() {
     std::this_thread::yield();
 }
@@ -455,6 +451,10 @@ int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
     thread->lock.unlock();
     thread_state->RefDelete(thread);
     return ORBIS_OK;
+}
+
+void PS4_SYSV_ABI posix_pthread_set_name_np(PthreadT thread, const char* name) {
+    posix_pthread_rename_np(thread, name);
 }
 
 int PS4_SYSV_ABI posix_pthread_getschedparam(PthreadT pthread, SchedPolicy* policy,
