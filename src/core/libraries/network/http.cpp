@@ -17,9 +17,9 @@
 #include <unordered_set>
 #include <vector>
 #include <httplib.h>
-#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
@@ -1873,7 +1873,7 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         NormalizePathInPlace(plan.path);
     }
 
-    bool will_try_real = Config::getIsConnectedToNetwork() && !plan.host.empty() &&
+    bool will_try_real = EmulatorSettings.IsConnectedToNetwork() && !plan.host.empty() &&
                          !IsMockPsnHost(plan.host) &&
                          (plan.scheme == "http" || plan.scheme == "https");
     if (will_try_real) {
@@ -1883,7 +1883,7 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         LOG_INFO(Lib_Http,
                  "reqId={} dispatched to async worker [MOCK-PSN: latency ~{} ms, host={}]", reqId,
                  kMockLatency.count(), plan.host);
-    } else if (!Config::getIsConnectedToNetwork()) {
+    } else if (!Emulatorsettings.IsConnectedToNetwork()) {
         LOG_INFO(
             Lib_Http,
             "reqId={} dispatched to async worker [OFFLINE: isConnectedToNetwork=false, host={}]",
@@ -1896,7 +1896,7 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
 
     std::thread([req_ptr, reqId, plan = std::move(plan)]() {
         const bool is_mock_psn = IsMockPsnHost(plan.host);
-        const bool real_net_enabled = Config::getIsConnectedToNetwork();
+        const bool real_net_enabled = EmulatorSettings.IsConnectedToNetwork();
         const bool try_real = real_net_enabled && !plan.host.empty() && !is_mock_psn &&
                               (plan.scheme == "http" || plan.scheme == "https");
         HttpResponse local_res;
