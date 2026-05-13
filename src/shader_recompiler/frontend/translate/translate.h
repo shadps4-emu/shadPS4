@@ -292,6 +292,16 @@ public:
     void V_OR3_B32(const GcnInst& inst);
 
     // VOP3P
+    void V_PK_MUL_LO_U16(const GcnInst& inst);
+    void V_PK_ADD_I16(const GcnInst& inst);
+    void V_PK_SUB_I16(const GcnInst& inst);
+    void V_PK_LSHLREV_B16(const GcnInst& inst);
+    void V_PK_LSHRREV_B16(const GcnInst& inst);
+    void V_PK_MAD_U16(const GcnInst& inst);
+    void V_PK_ADD_U16(const GcnInst& inst);
+    void V_PK_SUB_U16(const GcnInst& inst);
+    void V_PK_MAX_U16(const GcnInst& inst);
+    void V_PK_MIN_U16(const GcnInst& inst);
     void V_PK_FMA_F16(const GcnInst& inst);
     void V_PK_ADD_F16(const GcnInst& inst);
     void V_PK_MUL_F16(const GcnInst& inst);
@@ -345,13 +355,15 @@ private:
     template <typename T = IR::U64>
     [[nodiscard]] T GetSrc64(const InstOperand& operand);
     [[nodiscard]] IR::F32 GetSrcMix(const InstOperand& operand);
-    template <typename T = IR::U32>
+    template <typename T = IR::U32, bool is_signed = false>
     [[nodiscard]] pk_type<T> GetSrcPk(const InstOperand& operand);
     void SetDst1(const InstOperand& operand, const IR::U1& value);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     template <bool is_signed = false>
     void SetDst16(const InstOperand& operand, const IR::U32F32& value);
     void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
+    template <typename T = IR::U32, bool is_signed = false>
+    void SetDstPk(const InstOperand& operand, const pk_type<T>& value);
 
     // Vector ALU Helpers
     IR::U32 GetCarryIn(const GcnInst& inst);
