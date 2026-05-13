@@ -167,7 +167,7 @@ enum class PthreadAttrFlags : u32 {
 DECLARE_ENUM_FLAG_OPERATORS(PthreadAttrFlags)
 
 enum class SchedPolicy : u32 {
-    Fifo = 0,
+    Fifo = 1,
     Other = 2,
     RoundRobin = 3,
 };
