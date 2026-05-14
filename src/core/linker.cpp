@@ -28,30 +28,49 @@
 
 namespace Core {
 
+#ifdef WIN32
+int filter(unsigned int code, struct _EXCEPTION_POINTERS* ep) {
+    // dont return EXCEPTION_CONTINUE_SEARCH to not truncate log
+    if (code != EXCEPTION_ACCESS_VIOLATION) {
+        LOG_CRITICAL(Debug, "unexpected SEH {} ep {}", code, fmt::ptr(ep));
+    }
+
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+#endif
+
 static PS4_SYSV_ABI void ProgramExitFunc() {
     LOG_ERROR(Core_Linker, "Exit function called");
 }
 
 #ifdef ARCH_X86_64
 static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
-    // Start shared library modules
-    asm volatile("andq $-16, %%rsp\n" // Align to 16 bytes
-                 "subq $8, %%rsp\n"   // videoout_basic expects the stack to be misaligned
+#ifdef WIN32
+    __try {
+#endif
+        // Start shared library modules
+        asm volatile("andq $-16, %%rsp\n" // Align to 16 bytes
+                     "subq $8, %%rsp\n"   // videoout_basic expects the stack to be misaligned
 
-                 // Kernel also pushes some more things here during process init
-                 // at least: environment, auxv, possibly other things
+                     // Kernel also pushes some more things here during process init
+                     // at least: environment, auxv, possibly other things
 
-                 "pushq 8(%1)\n" // copy EntryParams to top of stack like the kernel does
-                 "pushq 0(%1)\n" // OpenOrbis expects to find it there
+                     "pushq 8(%1)\n" // copy EntryParams to top of stack like the kernel does
+                     "pushq 0(%1)\n" // OpenOrbis expects to find it there
 
-                 "movq %1, %%rdi\n" // also pass params and exit func
-                 "movq %2, %%rsi\n" // as before
+                     "movq %1, %%rdi\n" // also pass params and exit func
+                     "movq %2, %%rsi\n" // as before
 
-                 "jmp *%0\n" // can't use call here, as that would mangle the prepared stack.
-                             // there's no coming back
-                 :
-                 : "r"(params->entry_addr), "r"(params), "r"(ProgramExitFunc)
-                 : "rax", "rsi", "rdi");
+                     "jmp *%0\n" // can't use call here, as that would mangle the prepared stack.
+                                 // there's no coming back
+                     :
+                     : "r"(params->entry_addr), "r"(params), "r"(ProgramExitFunc)
+                     : "rax", "rsi", "rdi");
+#ifdef WIN32
+    } __except (filter(GetExceptionCode(), GetExceptionInformation())) {
+        std::terminate();
+    }
+#endif
     UNREACHABLE();
 }
 #endif

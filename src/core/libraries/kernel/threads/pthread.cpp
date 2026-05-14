@@ -198,6 +198,17 @@ int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread) {
 }
 
 #ifdef WIN32
+int filter(unsigned int code, struct _EXCEPTION_POINTERS* ep) {
+    // dont return EXCEPTION_CONTINUE_SEARCH to not truncate log
+    if (code != EXCEPTION_ACCESS_VIOLATION) {
+        LOG_CRITICAL(Debug, "unexpected SEH {} ep {}", code, fmt::ptr(ep));
+    }
+
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+#endif
+
+#ifdef WIN32
 static DWORD RunThread(void* arg) {
 #else
 static void* RunThread(void* arg) {
@@ -210,14 +221,23 @@ static void* RunThread(void* arg) {
 
     curthread->native_thr.Initialize();
 
-    /* Run the current thread's start routine with argument: */
-    auto* const stack =
-        (void*)(((size_t)curthread->attr.stackaddr_attr + curthread->attr.stacksize_attr) & (~15));
-    void* ret = _runOnAnotherStack(curthread->arg, (void*)curthread->start_routine, stack);
+#ifdef WIN32
+    __try {
+#endif
+        /* Run the current thread's start routine with argument: */
+        auto* const stack =
+            (void*)(((size_t)curthread->attr.stackaddr_attr + curthread->attr.stacksize_attr) &
+                    (~15));
+        void* ret = _runOnAnotherStack(curthread->arg, (void*)curthread->start_routine, stack);
 
-    /* Remove thread from tracking */
-    DebugState.RemoveCurrentThreadFromGuestList();
-    posix_pthread_exit(ret);
+        /* Remove thread from tracking */
+        DebugState.RemoveCurrentThreadFromGuestList();
+        posix_pthread_exit(ret);
+#ifdef WIN32
+    } __except (filter(GetExceptionCode(), GetExceptionInformation())) {
+        std::terminate();
+    }
+#endif
 #ifdef WIN32
     return 0;
 #else
