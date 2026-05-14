@@ -982,201 +982,207 @@ void GcnDecodeContext::decodeInstructionMTBUF(uint64_t hexInstruction) {
     }
 }
 
-u32 GcnDecodeContext::getMimgModifier(Opcode opcode) {
+u32 GcnDecodeContext::getMimgModifier(OpcodeMIMG opcode) {
+    using enum OpcodeMIMG;
     MimgModifierFlags flags = {};
 
+    if (std::to_underlying(opcode) > 128) {
+        flags.set(MimgModifier::Gradients);
+        opcode = OpcodeMIMG(std::to_underlying(opcode) - 128);
+    }
+
     switch (opcode) {
-    case Opcode::IMAGE_SAMPLE:
+    case IMAGE_SAMPLE:
         break;
-    case Opcode::IMAGE_SAMPLE_CL:
+    case IMAGE_SAMPLE_CL:
         flags.set(MimgModifier::LodClamp);
         break;
-    case Opcode::IMAGE_SAMPLE_D:
+    case IMAGE_SAMPLE_D:
         flags.set(MimgModifier::Derivative);
         break;
-    case Opcode::IMAGE_SAMPLE_D_CL:
+    case IMAGE_SAMPLE_D_CL:
         flags.set(MimgModifier::Derivative, MimgModifier::LodClamp);
         break;
-    case Opcode::IMAGE_SAMPLE_L:
+    case IMAGE_SAMPLE_L:
         flags.set(MimgModifier::Lod);
         break;
-    case Opcode::IMAGE_SAMPLE_B:
+    case IMAGE_SAMPLE_B:
         flags.set(MimgModifier::LodBias);
         break;
-    case Opcode::IMAGE_SAMPLE_B_CL:
+    case IMAGE_SAMPLE_B_CL:
         flags.set(MimgModifier::LodBias, MimgModifier::LodClamp);
         break;
-    case Opcode::IMAGE_SAMPLE_LZ:
+    case IMAGE_SAMPLE_LZ:
         flags.set(MimgModifier::Level0);
         break;
-    case Opcode::IMAGE_SAMPLE_C:
+    case IMAGE_SAMPLE_C:
         flags.set(MimgModifier::Pcf);
         break;
-    case Opcode::IMAGE_SAMPLE_C_CL:
+    case IMAGE_SAMPLE_C_CL:
         flags.set(MimgModifier::Pcf, MimgModifier::LodClamp);
         break;
-    case Opcode::IMAGE_SAMPLE_C_D:
+    case IMAGE_SAMPLE_C_D:
         flags.set(MimgModifier::Pcf, MimgModifier::Derivative);
         break;
-    case Opcode::IMAGE_SAMPLE_C_D_CL:
+    case IMAGE_SAMPLE_C_D_CL:
         flags.set(MimgModifier::Pcf, MimgModifier::Derivative, MimgModifier::LodClamp);
         break;
-    case Opcode::IMAGE_SAMPLE_C_L:
+    case IMAGE_SAMPLE_C_L:
         flags.set(MimgModifier::Pcf, MimgModifier::Lod);
         break;
-    case Opcode::IMAGE_SAMPLE_C_B:
+    case IMAGE_SAMPLE_C_B:
         flags.set(MimgModifier::Pcf, MimgModifier::LodBias);
         break;
-    case Opcode::IMAGE_SAMPLE_C_B_CL:
+    case IMAGE_SAMPLE_C_B_CL:
         flags.set(MimgModifier::Pcf, MimgModifier::LodBias, MimgModifier::LodClamp);
         break;
-    case Opcode::IMAGE_SAMPLE_C_LZ:
+    case IMAGE_SAMPLE_C_LZ:
         flags.set(MimgModifier::Pcf, MimgModifier::Level0);
         break;
-    case Opcode::IMAGE_SAMPLE_O:
+    case IMAGE_SAMPLE_O:
         flags.set(MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_CL_O:
+    case IMAGE_SAMPLE_CL_O:
         flags.set(MimgModifier::LodClamp, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_D_O:
+    case IMAGE_SAMPLE_D_O:
         flags.set(MimgModifier::Derivative, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_D_CL_O:
+    case IMAGE_SAMPLE_D_CL_O:
         flags.set(MimgModifier::Derivative, MimgModifier::LodClamp, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_L_O:
+    case IMAGE_SAMPLE_L_O:
         flags.set(MimgModifier::Lod, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_B_O:
+    case IMAGE_SAMPLE_B_O:
         flags.set(MimgModifier::LodBias, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_B_CL_O:
+    case IMAGE_SAMPLE_B_CL_O:
         flags.set(MimgModifier::LodBias, MimgModifier::LodClamp, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_LZ_O:
+    case IMAGE_SAMPLE_LZ_O:
         flags.set(MimgModifier::Level0, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_C_O:
+    case IMAGE_SAMPLE_C_O:
         flags.set(MimgModifier::Pcf, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_C_CL_O:
+    case IMAGE_SAMPLE_C_CL_O:
         flags.set(MimgModifier::Pcf, MimgModifier::LodClamp, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_C_D_O:
+    case IMAGE_SAMPLE_C_D_O:
         flags.set(MimgModifier::Pcf, MimgModifier::Derivative, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_C_D_CL_O:
+    case IMAGE_SAMPLE_C_D_CL_O:
         flags.set(MimgModifier::Pcf, MimgModifier::Derivative, MimgModifier::LodClamp,
                   MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_C_L_O:
+    case IMAGE_SAMPLE_C_L_O:
         flags.set(MimgModifier::Pcf, MimgModifier::Lod, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_C_B_O:
+    case IMAGE_SAMPLE_C_B_O:
         flags.set(MimgModifier::Pcf, MimgModifier::LodBias, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_C_B_CL_O:
+    case IMAGE_SAMPLE_C_B_CL_O:
         flags.set(MimgModifier::Pcf, MimgModifier::LodBias, MimgModifier::LodClamp,
                   MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_C_LZ_O:
+    case IMAGE_SAMPLE_C_LZ_O:
         flags.set(MimgModifier::Pcf, MimgModifier::Level0, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_GATHER4:
+    case IMAGE_GATHER4:
         break;
-    case Opcode::IMAGE_GATHER4_CL:
+    case IMAGE_GATHER4_CL:
         flags.set(MimgModifier::LodClamp);
         break;
-    case Opcode::IMAGE_GATHER4_L:
+    case IMAGE_GATHER4_L:
         flags.set(MimgModifier::Lod);
         break;
-    case Opcode::IMAGE_GATHER4_B:
+    case IMAGE_GATHER4_B:
         flags.set(MimgModifier::LodBias);
         break;
-    case Opcode::IMAGE_GATHER4_B_CL:
+    case IMAGE_GATHER4_B_CL:
         flags.set(MimgModifier::LodBias, MimgModifier::LodClamp);
         break;
-    case Opcode::IMAGE_GATHER4_LZ:
+    case IMAGE_GATHER4_LZ:
         flags.set(MimgModifier::Level0);
         break;
-    case Opcode::IMAGE_GATHER4_C:
+    case IMAGE_GATHER4_C:
         flags.set(MimgModifier::Pcf);
         break;
-    case Opcode::IMAGE_GATHER4_C_CL:
+    case IMAGE_GATHER4_C_CL:
         flags.set(MimgModifier::Pcf, MimgModifier::LodClamp);
         break;
-    case Opcode::IMAGE_GATHER4_C_L:
+    case IMAGE_GATHER4_C_L:
         flags.set(MimgModifier::Pcf, MimgModifier::Lod);
         break;
-    case Opcode::IMAGE_GATHER4_C_B:
+    case IMAGE_GATHER4_C_B:
         flags.set(MimgModifier::Pcf, MimgModifier::LodBias);
         break;
-    case Opcode::IMAGE_GATHER4_C_B_CL:
+    case IMAGE_GATHER4_C_B_CL:
         flags.set(MimgModifier::Pcf, MimgModifier::LodBias, MimgModifier::LodClamp);
         break;
-    case Opcode::IMAGE_GATHER4_C_LZ:
+    case IMAGE_GATHER4_C_LZ:
         flags.set(MimgModifier::Pcf, MimgModifier::Level0);
         break;
-    case Opcode::IMAGE_GATHER4_O:
+    case IMAGE_GATHER4_O:
         flags.set(MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_GATHER4_CL_O:
+    case IMAGE_GATHER4_CL_O:
         flags.set(MimgModifier::LodClamp, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_GATHER4_L_O:
+    case IMAGE_GATHER4_L_O:
         flags.set(MimgModifier::Lod, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_GATHER4_B_O:
+    case IMAGE_GATHER4_B_O:
         flags.set(MimgModifier::LodBias, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_GATHER4_B_CL_O:
+    case IMAGE_GATHER4_B_CL_O:
         flags.set(MimgModifier::LodBias, MimgModifier::LodClamp, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_GATHER4_LZ_O:
+    case IMAGE_GATHER4_LZ_O:
         flags.set(MimgModifier::Level0, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_GATHER4_C_O:
+    case IMAGE_GATHER4_C_O:
         flags.set(MimgModifier::Pcf, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_GATHER4_C_CL_O:
+    case IMAGE_GATHER4_C_CL_O:
         flags.set(MimgModifier::Pcf, MimgModifier::LodClamp, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_GATHER4_C_L_O:
+    case IMAGE_GATHER4_C_L_O:
         flags.set(MimgModifier::Pcf, MimgModifier::Lod, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_GATHER4_C_B_O:
+    case IMAGE_GATHER4_C_B_O:
         flags.set(MimgModifier::Pcf, MimgModifier::LodBias, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_GATHER4_C_B_CL_O:
+    case IMAGE_GATHER4_C_B_CL_O:
         flags.set(MimgModifier::Pcf, MimgModifier::LodBias, MimgModifier::LodClamp,
                   MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_GATHER4_C_LZ_O:
+    case IMAGE_GATHER4_C_LZ_O:
         flags.set(MimgModifier::Pcf, MimgModifier::Level0, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_CD:
+    case IMAGE_SAMPLE_CD:
         flags.set(MimgModifier::CoarseDerivative);
         break;
-    case Opcode::IMAGE_SAMPLE_CD_CL:
+    case IMAGE_SAMPLE_CD_CL:
         flags.set(MimgModifier::CoarseDerivative, MimgModifier::LodClamp);
         break;
-    case Opcode::IMAGE_SAMPLE_C_CD:
+    case IMAGE_SAMPLE_C_CD:
         flags.set(MimgModifier::Pcf, MimgModifier::CoarseDerivative);
         break;
-    case Opcode::IMAGE_SAMPLE_C_CD_CL:
+    case IMAGE_SAMPLE_C_CD_CL:
         flags.set(MimgModifier::Pcf, MimgModifier::CoarseDerivative, MimgModifier::LodClamp);
         break;
-    case Opcode::IMAGE_SAMPLE_CD_O:
+    case IMAGE_SAMPLE_CD_O:
         flags.set(MimgModifier::CoarseDerivative, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_CD_CL_O:
+    case IMAGE_SAMPLE_CD_CL_O:
         flags.set(MimgModifier::CoarseDerivative, MimgModifier::LodClamp, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_C_CD_O:
+    case IMAGE_SAMPLE_C_CD_O:
         flags.set(MimgModifier::Pcf, MimgModifier::CoarseDerivative, MimgModifier::Offset);
         break;
-    case Opcode::IMAGE_SAMPLE_C_CD_CL_O:
+    case IMAGE_SAMPLE_C_CD_CL_O:
         flags.set(MimgModifier::Pcf, MimgModifier::CoarseDerivative, MimgModifier::LodClamp,
                   MimgModifier::Offset);
         break;
@@ -1188,7 +1194,9 @@ u32 GcnDecodeContext::getMimgModifier(Opcode opcode) {
 }
 
 void GcnDecodeContext::decodeInstructionMIMG(uint64_t hexInstruction) {
+    u32 op_msb = bit::extract(hexInstruction, 0, 0);
     u32 op = bit::extract(hexInstruction, 24, 18);
+    op = op + (op_msb * (1 << 7));
     u32 vaddr = bit::extract(hexInstruction, 39, 32);
     u32 vdata = bit::extract(hexInstruction, 47, 40);
     u32 srsrc = bit::extract(hexInstruction, 52, 48);
@@ -1206,7 +1214,13 @@ void GcnDecodeContext::decodeInstructionMIMG(uint64_t hexInstruction) {
     m_instruction.dst[0].code = vdata;
 
     m_instruction.control.mimg = *reinterpret_cast<InstControlMIMG*>(&hexInstruction);
-    m_instruction.control.mimg.mod = getMimgModifier(m_instruction.opcode);
+    // if (m_instruction.control.mimg.a16) {
+    //     UNIMPLEMENTED_MSG("a16");
+    // }
+    // if (m_instruction.control.mimg.d16) {
+    //     UNIMPLEMENTED_MSG("d16");
+    // }
+    m_instruction.control.mimg.mod = getMimgModifier(static_cast<OpcodeMIMG>(op));
 }
 
 void GcnDecodeContext::decodeInstructionDS(uint64_t hexInstruction) {
