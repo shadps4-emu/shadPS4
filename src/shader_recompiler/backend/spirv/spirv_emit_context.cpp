@@ -377,6 +377,12 @@ void EmitContext::DefineInputs() {
             } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
                 bary_coord =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+                // we would need sample_index to interpolate the bary_coord later
+                if (!ValidId(sample_index)) {
+                    sample_index =
+                        DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
+                    Decorate(sample_index, spv::Decoration::Flat);
+                }
             }
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordNoPersp)) {
