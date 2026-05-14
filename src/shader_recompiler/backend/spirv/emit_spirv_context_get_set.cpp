@@ -149,7 +149,9 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
                 ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth_sample, ctx.ConstU32(comp)));
         } else {
             return ctx.OpCompositeExtract(
-                ctx.F32[1], ctx.OpInterpolateAtSample(ctx.F32[3], ctx.bary_coord, ctx.sample_index),
+                ctx.F32[1],
+                ctx.OpInterpolateAtSample(ctx.F32[3], ctx.bary_coord,
+                                          ctx.OpLoad(ctx.U32[1], ctx.sample_index)),
                 comp);
         }
     case IR::Attribute::BaryCoordNoPersp:
