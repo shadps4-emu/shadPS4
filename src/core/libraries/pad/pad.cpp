@@ -12,6 +12,9 @@
 #include "input/controller.h"
 #include "pad.h"
 
+#include <algorithm>
+#include <optional>
+
 namespace Libraries::Pad {
 
 using Input::GameController;
@@ -38,6 +41,20 @@ static bool g_initialized = false;
 static u64 pad_handle_counter = 1;
 static std::unordered_map<HandleKey, s32, HandleKeyHash> pad_handle_map{};
 static std::unordered_map<s32, GameController*> handle_to_controller_map{};
+
+static std::optional<HandleKey> FindHandleKeyByHandle(s32 handle) {
+    for (const auto& [key, value] : pad_handle_map) {
+        if (value == handle) {
+            return key;
+        }
+    }
+    return std::nullopt;
+}
+
+static bool IsUnavailableSpecialHandle(const std::optional<HandleKey>& handle_key) {
+    return handle_key.has_value() && handle_key->device_class == ORBIS_PAD_PORT_TYPE_SPECIAL &&
+           !EmulatorSettings.IsUsingSpecialPad();
+}
 
 int PS4_SYSV_ABI scePadClose(s32 handle) {
     LOG_WARNING(Lib_Pad, "called, handle: {}", handle);
@@ -134,17 +151,28 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     if (it == handle_to_controller_map.end()) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
+    const auto handle_key = FindHandleKeyByHandle(handle);
+    bool connected = false;
+    int connected_count = 0;
+    Input::State state{};
+    if (!IsUnavailableSpecialHandle(handle_key)) {
+        it->second->ReadState(&state, &connected, &connected_count);
+    }
+
+    std::memset(pInfo, 0, sizeof(OrbisPadControllerInformation));
     pInfo->touchPadInfo.pixelDensity = 1;
     pInfo->touchPadInfo.resolution.x = 1920;
     pInfo->touchPadInfo.resolution.y = 950;
     pInfo->stickInfo.deadZoneLeft = 1;
     pInfo->stickInfo.deadZoneRight = 1;
-    pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
-    pInfo->connectedCount = 1;
-    pInfo->deviceClass = OrbisPadDeviceClass::Standard;
-    pInfo->connected = true;
-    if (EmulatorSettings.IsUsingSpecialPad()) {
-        pInfo->connectionType = ORBIS_PAD_PORT_TYPE_SPECIAL;
+    pInfo->connectionType = ORBIS_PAD_CONNECTION_TYPE_LOCAL;
+    pInfo->connectedCount = static_cast<u8>(std::clamp(connected_count, 0, 0xff));
+    pInfo->deviceClass = OrbisPadDeviceClass::Invalid;
+    pInfo->connected = connected;
+    if (handle_key.has_value() && handle_key->device_class == ORBIS_PAD_PORT_TYPE_STANDARD) {
+        pInfo->deviceClass = OrbisPadDeviceClass::Standard;
+    } else if (handle_key.has_value() && handle_key->device_class == ORBIS_PAD_PORT_TYPE_SPECIAL &&
+               EmulatorSettings.IsUsingSpecialPad()) {
         pInfo->deviceClass = (OrbisPadDeviceClass)EmulatorSettings.GetSpecialPadClass();
     }
     return ORBIS_OK;
@@ -168,16 +196,8 @@ int PS4_SYSV_ABI scePadGetDeviceInfo() {
 int PS4_SYSV_ABI scePadGetExtControllerInformation(s32 handle,
                                                    OrbisPadExtendedControllerInformation* pInfo) {
     LOG_INFO(Lib_Pad, "called handle = {}", handle);
-
-    pInfo->padType1 = 0;
-    pInfo->padType2 = 0;
-    pInfo->capability = 0;
-
-    auto res = scePadGetControllerInformation(handle, &pInfo->base);
-    if (!EmulatorSettings.IsUsingSpecialPad()) {
-        pInfo->base.connected = false;
-    }
-    return res;
+    std::memset(pInfo, 0, sizeof(OrbisPadExtendedControllerInformation));
+    return scePadGetControllerInformation(handle, &pInfo->base);
 }
 
 int PS4_SYSV_ABI scePadGetExtensionUnitInfo() {
