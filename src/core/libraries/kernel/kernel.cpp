@@ -44,6 +44,7 @@ namespace Libraries::Kernel {
 
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
 static std::vector<char*> g_environ{};
+static std::string g_progname{};
 
 boost::asio::io_context io_context;
 static std::mutex m_asio_req;
@@ -445,6 +446,10 @@ u64 PS4_SYSV_ABI posix_sysconf(s32 name) {
     }
 }
 
+void SetProgramName(std::string progname) {
+    progname.copy(g_progname.data(), progname.length());
+}
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
     g_environ.emplace_back(nullptr);
@@ -463,6 +468,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", &g_stack_chk_guard);
     LIB_OBJ("+2thxYZ4syk", "libkernel", 1, "libkernel", &g_environ)
+    LIB_OBJ("djxxOmW6-aw", "libkernel", 1, "libkernel", &g_progname)
     LIB_FUNCTION("D4yla3vx4tY", "libkernel", 1, "libkernel", sceKernelError);
     LIB_FUNCTION("YeU23Szo3BM", "libkernel", 1, "libkernel", sceKernelGetAllowedSdkVersionOnSystem);
     LIB_FUNCTION("Mv1zUObHvXI", "libkernel", 1, "libkernel", sceKernelGetSystemSwVersion);
