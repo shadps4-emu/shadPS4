@@ -677,7 +677,19 @@ s32 PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId
     if (has_signed_up == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    *has_signed_up = g_shadnet_enabled ? true : false;
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        if (g_firmware_version < 0 || g_firmware_version >= Common::ElfInfo::FW_90) {
+            return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+        }
+    }
+
+    const User* u = UserManagement.GetUserByID(user_id);
+    if (!u) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
+    }
+    // A user has signed up if they have a shadNet npid configured.
+    // This is independent of shadnet_enabled and current connection state.
+    *has_signed_up = !u->shadnet_npid.empty();
     return ORBIS_OK;
 }
 
@@ -712,22 +724,6 @@ struct NpStateCallbackForNpToolkit {
     OrbisNpStateCallbackForNpToolkit func;
     void* userdata;
 };
-
-    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
-        if (g_firmware_version < 0 || g_firmware_version >= Common::ElfInfo::FW_90) {
-            return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-        }
-    }
-
-    const User* u = UserManagement.GetUserByID(user_id);
-    if (!u) {
-        return ORBIS_NP_ERROR_USER_NOT_FOUND;
-    }
-    // A user has signed up if they have a shadNet npid configured.
-    // This is independent of shadnet_enabled and current connection state.
-    *has_signed_up = !u->shadnet_npid.empty();
-    return ORBIS_OK;
-}
 
 // Callbacks
 
