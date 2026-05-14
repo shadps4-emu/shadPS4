@@ -195,11 +195,18 @@ LoggedInUsers UserManager::GetLoggedInUsers() const {
 using namespace Libraries::UserService;
 
 void UserManager::LoginUser(User* u, s32 player_index) {
-    if (!u) {
+    if (!u || player_index < 1 || player_index > static_cast<s32>(logged_in_users.size())) {
         return;
     }
+
+    for (auto& logged_in_user : logged_in_users) {
+        if (logged_in_user == u) {
+            logged_in_user = nullptr;
+        }
+    }
+
     u->logged_in = true;
-    // u->player_index = player_index;
+    u->player_index = player_index;
     AddUserServiceEvent({OrbisUserServiceEventType::Login, u->user_id});
     logged_in_users[player_index - 1] = u;
 }
@@ -210,7 +217,9 @@ void UserManager::LogoutUser(User* u) {
     }
     u->logged_in = false;
     AddUserServiceEvent({OrbisUserServiceEventType::Logout, u->user_id});
-    logged_in_users[u->player_index - 1] = {};
+    if (u->player_index >= 1 && u->player_index <= static_cast<s32>(logged_in_users.size())) {
+        logged_in_users[u->player_index - 1] = {};
+    }
 }
 
 bool UserManager::Save() const {
