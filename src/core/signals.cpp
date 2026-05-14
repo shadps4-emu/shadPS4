@@ -7,6 +7,7 @@
 #include "common/signal_context.h"
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/signals.h"
+#include "core/veh_stack.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -29,7 +30,7 @@ namespace Core {
 
 #if defined(_WIN32)
 
-static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
+static long SignalHandlerImpl(EXCEPTION_POINTERS* pExp) noexcept {
     const auto* signals = Signals::Instance();
 
     bool handled = false;
@@ -50,6 +51,14 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     }
 
     return handled ? EXCEPTION_CONTINUE_EXECUTION : EXCEPTION_CONTINUE_SEARCH;
+}
+
+static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
+#ifdef _WIN64
+    return static_cast<LONG>(RunOnVehStack(SignalHandlerImpl, pExp));
+#else
+    return static_cast<LONG>(SignalHandlerImpl(pExp));
+#endif
 }
 
 #else

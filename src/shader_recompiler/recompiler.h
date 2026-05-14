@@ -22,8 +22,8 @@ struct Pools {
     explicit Pools() : inst_pool{InstPoolSize}, block_pool{BlockPoolSize} {}
 
     void ReleaseContents() {
-        inst_pool.ReleaseContents();
         block_pool.ReleaseContents();
+        inst_pool.ReleaseContents();
     }
 };
 
