@@ -720,11 +720,6 @@ s32 PS4_SYSV_ABI sceNpSetNpTitleId(const OrbisNpTitleId* title_id,
     return ORBIS_OK;
 }
 
-struct NpStateCallbackForNpToolkit {
-    OrbisNpStateCallbackForNpToolkit func;
-    void* userdata;
-};
-
 // Callbacks
 
 s32 PS4_SYSV_ABI sceNpCheckCallback() {
