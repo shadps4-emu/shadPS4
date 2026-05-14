@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <common/assert.h>
 #include <common/path_util.h>
 #include "emulator_settings.h"
 #include "libraries/system/userservice.h"
@@ -200,9 +201,7 @@ void UserManager::LoginUser(User* u, s32 player_index) {
     }
 
     for (auto& logged_in_user : logged_in_users) {
-        if (logged_in_user == u) {
-            logged_in_user = nullptr;
-        }
+        ASSERT(logged_in_user != u);
     }
 
     u->logged_in = true;
