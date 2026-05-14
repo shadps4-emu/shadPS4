@@ -452,7 +452,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());
-    Libraries::Kernel::SetProgramName(Common::FS::PathToUTF8String(eboot_name));
 
     // Load the module with the linker
     if (linker->LoadModule(eboot_path) == -1) {

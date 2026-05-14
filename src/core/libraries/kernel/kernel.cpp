@@ -44,7 +44,7 @@ namespace Libraries::Kernel {
 
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
 static std::vector<char*> g_environ{};
-static std::string g_progname{};
+static const char* g_progname = "eboot.bin";
 
 boost::asio::io_context io_context;
 static std::mutex m_asio_req;
@@ -444,10 +444,6 @@ u64 PS4_SYSV_ABI posix_sysconf(s32 name) {
         LOG_ERROR(Lib_Kernel, "unhandled {}", name);
         return 0;
     }
-}
-
-void SetProgramName(std::string progname) {
-    progname.copy(g_progname.data(), progname.length());
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
