@@ -327,7 +327,6 @@ public:
         u32 binding;
         BufferType buffer_type;
         std::array<Id, u32(PointerSize::NumClass)> offsets;
-        std::array<Id, u32(PointerSize::NumClass)> sizes;
         std::array<BufferSpv, u32(PointerType::NumAlias)> aliases;
 
         template <class Self>
@@ -338,11 +337,6 @@ public:
         template <class Self>
         auto& Offset(this Self& self, PointerSize size) {
             return self.offsets[u32(size)];
-        }
-
-        template <class Self>
-        auto& Size(this Self& self, PointerSize size) {
-            return self.sizes[u32(size)];
         }
     };
 

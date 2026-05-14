@@ -391,8 +391,8 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
                                             "config.toml")) {
                     SDL_MessageBoxButtonData btns[2]{
-                        {0, 0, "Defaults"},
-                        {0, 1, "Update"},
+                        {0, 0, "Update"},
+                        {0, 1, "Defaults"},
                     };
                     SDL_MessageBoxData msg_box{
                         0,
@@ -407,7 +407,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                     };
                     int result = 1;
                     SDL_ShowMessageBox(&msg_box, &result);
-                    if (result == 1) {
+                    if (result == 0) {
                         if (TransferSettings()) {
                             m_loaded = true;
                             Save();
@@ -545,6 +545,29 @@ bool EmulatorSettingsImpl::TransferSettings() {
 #endif
     }
 
+    if (og_data.contains("General")) {
+        const toml::value& general = og_data.at("General");
+        auto& s = m_log;
+
+        setFromToml(s.filter, general, "logFilter");
+        setFromToml(s.skip_duplicate, general, "isIdenticalLogGrouped");
+        Setting<std::string> logType("sync");
+        setFromToml(logType, general, "logType");
+        if (logType.get() == "sync") {
+            s.sync = true;
+        } else {
+            s.sync = false;
+        }
+    }
+
+    if (og_data.contains("Debug")) {
+        const toml::value& debug = og_data.at("Debug");
+        auto& s = m_log;
+
+        setFromToml(s.enable, debug, "logEnabled");
+        setFromToml(s.separate, debug, "isSeparateLogFilesEnabled");
+    }
+
     if (og_data.contains("Input")) {
         const toml::value& input = og_data.at("Input");
         auto& s = m_input;
@@ -556,6 +579,8 @@ bool EmulatorSettingsImpl::TransferSettings() {
         setFromToml(s.motion_controls_enabled, input, "isMotionControlsEnabled");
         setFromToml(s.use_unified_input_config, input, "useUnifiedInputConfig");
         setFromToml(s.background_controller_input, input, "backgroundControllerInput");
+        setFromToml(s.ime_accessibility_enabled, input, "imeAccessibilityEnabled");
+        setFromToml(s.ime_url_mail_short_panel, input, "imeUrlMailShortPanel");
         setFromToml(s.usb_device_backend, input, "usbDeviceBackend");
     }
 

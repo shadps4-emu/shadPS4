@@ -11,6 +11,15 @@ namespace Libraries::Np {
 
 using OrbisNpAccountId = u64;
 
+struct OrbisNpTitleId {
+    char id[13];
+    u8 padding[3];
+};
+
+struct OrbisNpTitleSecret {
+    u8 data[128];
+};
+
 constexpr s32 ORBIS_NP_ONLINEID_MAX_LENGTH = 16;
 
 struct OrbisNpOnlineId {

@@ -21,10 +21,10 @@ extern PthreadAttr PthreadAttrDefault;
 
 void _thread_cleanupspecific();
 
-using ThreadDtor = void (*)();
-static ThreadDtor* ThreadDtors{};
+using ThreadDtor = void PS4_SYSV_ABI (*)();
+static ThreadDtor ThreadDtors{};
 
-void PS4_SYSV_ABI _sceKernelSetThreadDtors(ThreadDtor* dtor) {
+void PS4_SYSV_ABI _sceKernelSetThreadDtors(ThreadDtor dtor) {
     ThreadDtors = dtor;
 }
 
@@ -86,9 +86,9 @@ void PS4_SYSV_ABI posix_pthread_exit(void* status) {
             delete old;
         }
     }
-    /*if (ThreadDtors && *ThreadDtors) {
-        (*ThreadDtors)();
-    }*/
+    if (ThreadDtors) {
+        (ThreadDtors)();
+    }
     ExitThread();
 }
 
@@ -322,8 +322,30 @@ int PS4_SYSV_ABI posix_pthread_getthreadid_np() {
 }
 
 int PS4_SYSV_ABI posix_pthread_getname_np(PthreadT thread, char* name) {
-    std::memcpy(name, thread->name.data(), std::min<size_t>(thread->name.size(), 32));
-    return 0;
+    if (thread == g_curthread) {
+        // Can skip locking and reference logic if thread is curthread.
+        std::memcpy(name, thread->name.data(), std::min<size_t>(thread->name.size(), 32));
+        return ORBIS_OK;
+    }
+
+    // Find the thread in the list of active threads.
+    auto* thread_state = ThrState::Instance();
+    if (int ret = thread_state->RefAdd(thread, false); ret != 0) {
+        return POSIX_ESRCH;
+    }
+
+    // Lock the thread.
+    thread->lock.lock();
+
+    // Get the thread name
+    if (thread->state != PthreadState::Dead) {
+        std::memcpy(name, thread->name.data(), std::min<size_t>(thread->name.size(), 32));
+    }
+
+    // Unlock and remove reference.
+    thread->lock.unlock();
+    thread_state->RefDelete(thread);
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI posix_pthread_equal(PthreadT thread1, PthreadT thread2) {
@@ -332,11 +354,6 @@ int PS4_SYSV_ABI posix_pthread_equal(PthreadT thread1, PthreadT thread2) {
 
 PthreadT PS4_SYSV_ABI posix_pthread_self() {
     return g_curthread;
-}
-
-void PS4_SYSV_ABI posix_pthread_set_name_np(PthreadT thread, const char* name) {
-    LOG_INFO(Kernel_Pthread, "called, new name: {}", name);
-    Common::SetCurrentThreadName(name);
 }
 
 void PS4_SYSV_ABI posix_pthread_yield() {
@@ -402,25 +419,64 @@ int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control,
     return 0;
 }
 
-int PS4_SYSV_ABI posix_sched_get_priority_max() {
+int PS4_SYSV_ABI posix_sched_get_priority_max(SchedPolicy policy) {
+    if (policy != SchedPolicy::Fifo && policy != SchedPolicy::RoundRobin) {
+        return POSIX_EINVAL;
+    }
     return ORBIS_KERNEL_PRIO_FIFO_HIGHEST;
 }
 
-int PS4_SYSV_ABI posix_sched_get_priority_min() {
+int PS4_SYSV_ABI posix_sched_get_priority_min(SchedPolicy policy) {
+    if (policy != SchedPolicy::Fifo && policy != SchedPolicy::RoundRobin) {
+        return POSIX_EINVAL;
+    }
     return ORBIS_KERNEL_PRIO_FIFO_LOWEST;
 }
 
 int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
-    if (thread == nullptr) {
-        return POSIX_EINVAL;
+    LOG_INFO(Kernel_Pthread, "name = {}", name ? name : "(null)");
+    auto* thread_state = ThrState::Instance();
+    auto* memory = Core::Memory::Instance();
+
+    if (thread == g_curthread) {
+        // If the requested thread is curthread, skip locking and reference logic.
+        thread->name = name ? name : std::string{""};
+        Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()),
+                              thread->name.data());
+        if (name && False(thread->attr.flags & PthreadAttrFlags::StackUser)) {
+            VAddr stack_addr = std::bit_cast<VAddr>(thread->attr.stackaddr_attr);
+            memory->NameVirtualRange(stack_addr, thread->attr.stacksize_attr, name);
+        }
+        return ORBIS_OK;
     }
-    if (name == nullptr) {
-        return 0;
+
+    // Find the thread in the list of active threads.
+    if (int ret = thread_state->RefAdd(thread, false); ret != 0) {
+        return POSIX_ESRCH;
     }
-    LOG_INFO(Kernel_Pthread, "name = {}", name);
-    Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()), name);
-    thread->name = name;
+
+    // Lock the thread.
+    thread->lock.lock();
+
+    // Set the thread and thread stack names.
+    if (thread->state != PthreadState::Dead) {
+        thread->name = name ? name : std::string{""};
+        Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()),
+                              thread->name.data());
+        if (name && False(thread->attr.flags & PthreadAttrFlags::StackUser)) {
+            VAddr stack_addr = std::bit_cast<VAddr>(thread->attr.stackaddr_attr);
+            memory->NameVirtualRange(stack_addr, thread->attr.stacksize_attr, name);
+        }
+    }
+
+    // Unlock and remove reference.
+    thread->lock.unlock();
+    thread_state->RefDelete(thread);
     return ORBIS_OK;
+}
+
+void PS4_SYSV_ABI posix_pthread_set_name_np(PthreadT thread, const char* name) {
+    posix_pthread_rename_np(thread, name);
 }
 
 int PS4_SYSV_ABI posix_pthread_getschedparam(PthreadT pthread, SchedPolicy* policy,
@@ -483,7 +539,10 @@ int PS4_SYSV_ABI scePthreadGetprio(PthreadT thread, int* priority) {
     SchedParam param;
     SchedPolicy policy;
 
-    posix_pthread_getschedparam(thread, &policy, &param);
+    int ret = posix_pthread_getschedparam(thread, &policy, &param);
+    if (ret != 0) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
     *priority = param.sched_priority;
     return 0;
 }
@@ -493,12 +552,14 @@ int PS4_SYSV_ABI posix_pthread_setprio(PthreadT thread, int prio) {
     param.sched_priority = prio;
 
     auto* thread_state = ThrState::Instance();
-    if (thread == g_curthread) {
-        g_curthread->lock.lock();
-    } else if (const int ret = thread_state->FindThread(thread, /*include dead*/ false); ret != 0) {
-        return ret;
+    if (thread != g_curthread) {
+        const int ret = thread_state->RefAdd(thread, /*include dead*/ false);
+        if (ret != 0) {
+            return ret;
+        }
     }
 
+    thread->lock.lock();
     if (thread->attr.sched_policy == SchedPolicy::Other || thread->attr.prio == prio) {
         thread->attr.prio = prio;
     } else {
@@ -507,6 +568,9 @@ int PS4_SYSV_ABI posix_pthread_setprio(PthreadT thread, int prio) {
     }
 
     thread->lock.unlock();
+    if (thread != g_curthread) {
+        thread_state->RefDelete(thread);
+    }
     return 0;
 }
 

@@ -165,11 +165,6 @@ public:
         return vertex_input_dynamic_state;
     }
 
-    /// Returns true when the robustBufferAccess2 feature of VK_EXT_robustness2 is supported.
-    bool IsRobustBufferAccess2Supported() const {
-        return robustness2 && robustness2_features.robustBufferAccess2;
-    }
-
     /// Returns true when the nullDescriptor feature of VK_EXT_robustness2 is supported.
     bool IsNullDescriptorSupported() const {
         return robustness2 && robustness2_features.nullDescriptor;
@@ -432,6 +427,12 @@ public:
         return supports_block_texel_view;
     }
 
+    /// Returns whether VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT is supported on 3D images
+    bool Is2dViewOf3dSupported() const {
+        return image_2d_view_of_3d && image_2d_view_of_3d_features.image2DViewOf3D &&
+               image_2d_view_of_3d_features.sampler2DViewOf3D;
+    }
+
     /// Returns whether the device can report memory usage.
     bool CanReportMemoryUsage() const {
         return supports_memory_budget;
@@ -483,6 +484,7 @@ private:
     vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
     vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
         workgroup_memory_explicit_layout_features;
+    vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT image_2d_view_of_3d_features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};
     std::string vendor_name;
@@ -518,6 +520,7 @@ private:
     bool portability_subset{};
     bool maintenance_8{};
     bool attachment_feedback_loop{};
+    bool image_2d_view_of_3d{};
     bool supports_memory_budget{};
     bool supports_block_texel_view{};
     u64 total_memory_budget{};

@@ -419,14 +419,14 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
 
     vk::StructureChain<vk::InstanceCreateInfo, vk::LayerSettingsCreateInfoEXT> instance_ci_chain = {
         vk::InstanceCreateInfo{
+#ifdef __APPLE__
+            .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR,
+#endif
             .pApplicationInfo = &application_info,
             .enabledLayerCount = static_cast<u32>(layers.size()),
             .ppEnabledLayerNames = layers.data(),
             .enabledExtensionCount = static_cast<u32>(extensions.size()),
             .ppEnabledExtensionNames = extensions.data(),
-#ifdef __APPLE__
-            .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR,
-#endif
         },
         vk::LayerSettingsCreateInfoEXT{
             .settingCount = layer_setings.size(),

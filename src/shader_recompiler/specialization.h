@@ -164,11 +164,7 @@ struct StageSpecialization {
             info->l_stage == LogicalStage::TessellationEval) {
             TessellationDataConstantBuffer tess_constants{};
             info->ReadTessConstantBuffer(tess_constants);
-            if (info->l_stage == LogicalStage::TessellationControl) {
-                runtime_info.hs_info.InitFromTessConstants(tess_constants);
-            } else {
-                runtime_info.vs_info.InitFromTessConstants(tess_constants);
-            }
+            runtime_info.InitFromTessConstants(tess_constants);
         }
     }
 
