@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <common/assert.h>
 #include <common/path_util.h>
 #include "emulator_settings.h"
 #include "libraries/system/userservice.h"
@@ -199,10 +200,15 @@ void UserManager::LoginUser(User* u, s32 player_index) {
         return;
     }
 
+    // if a controller triggers a login event for an already logged in user for the same index (e.g.
+    // the primary user is logged on at boot, with no controllers being connected at that time, then
+    // a controller is connected, triggering another login for the first user), do nothing
+    if (logged_in_users[player_index - 1] == u) {
+        return;
+    }
+    // if the same user is attempted to be registered in two different slots, crash
     for (auto& logged_in_user : logged_in_users) {
-        if (logged_in_user == u) {
-            logged_in_user = nullptr;
-        }
+        ASSERT(logged_in_user != u);
     }
 
     u->logged_in = true;
