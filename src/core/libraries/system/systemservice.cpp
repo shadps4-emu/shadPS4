@@ -1935,7 +1935,8 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
         *value = u32(OrbisSystemParamGameParentalLevel::Off);
         break;
     case OrbisSystemServiceParamId::EnterButtonAssign:
-        *value = u32(OrbisSystemParamEnterButtonAssign::Cross);
+        *value = u32(EmulatorSettings.IsCircleEnter() ? OrbisSystemParamEnterButtonAssign::Circle
+                                                      : OrbisSystemParamEnterButtonAssign::Cross);
         break;
     default:
         LOG_ERROR(Lib_SystemService, "param_id {} unsupported!", u32(param_id));
