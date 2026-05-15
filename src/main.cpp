@@ -27,6 +27,23 @@
 #endif
 #include <core/user_settings.h>
 
+#ifdef _WIN32
+LONG TopLevelExceptionHandler(_EXCEPTION_POINTERS* ExceptionInfo) {
+    DWORD code = 0;
+    PVOID address = nullptr;
+
+    if (ExceptionInfo != nullptr && ExceptionInfo->ExceptionRecord != nullptr) {
+        code = ExceptionInfo->ExceptionRecord->ExceptionCode;
+        address = ExceptionInfo->ExceptionRecord->ExceptionAddress;
+    }
+
+    LOG_CRITICAL(Debug, "Unhandled Exception code {} at 0x{}", code, address);
+    Common::Log::Flush();
+    std::terminate();
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+#endif
+
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
@@ -106,6 +123,9 @@ int main(int argc, char* argv[]) {
 
     // Start default log
     Common::Log::Setup("shad_log.txt");
+#ifdef _WIN32
+    SetUnhandledExceptionFilter(TopLevelExceptionHandler);
+#endif
 
     IPC::Instance().Init();
 
