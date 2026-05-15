@@ -37,7 +37,7 @@ LONG TopLevelExceptionHandler(_EXCEPTION_POINTERS* ExceptionInfo) {
         address = ExceptionInfo->ExceptionRecord->ExceptionAddress;
     }
 
-    LOG_CRITICAL(Debug, "Unhandled Exception code {} at 0x{}", code, address);
+    LOG_CRITICAL(Debug, "Unhandled Exception code {} at {}", code, address);
     Common::Log::Flush();
     std::terminate();
     return EXCEPTION_EXECUTE_HANDLER;
