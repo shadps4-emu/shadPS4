@@ -339,7 +339,7 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
 
     return ret;
 #else
-    return ORBIS_OK;
+    return ORBIS_HTTP_ERROR_BEFORE_SEND;
 #endif
 }
 
