@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "video_core/buffer_cache/buffer.h"
+#include "video_core/host_shaders/tiling_comp.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
@@ -9,8 +10,6 @@
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/tile_manager.h"
-
-#include "video_core/host_shaders/tiling_comp.h"
 
 #include <magic_enum/magic_enum.hpp>
 #include <vk_mem_alloc.h>
@@ -125,8 +124,9 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
         defines.emplace_back(fmt::format("NUM_BANKS={}", num_banks));
         defines.emplace_back(fmt::format("NUM_BANK_BITS={}", std::bit_width(num_banks) - 1));
         defines.emplace_back(fmt::format(
-            "TILE_SPLIT_BYTES={}", AmdGpu::CalculateTileSplit(info.tile_mode, info.array_mode,
-                                                              micro_tile_mode, info.num_bits)));
+            "TILE_SPLIT_BYTES={}", AmdGpu::CalculateTileSplit(
+                                      info.tile_mode, info.array_mode, micro_tile_mode,
+                                      info.num_bits)));
         defines.emplace_back(
             fmt::format("MACRO_TILE_ASPECT={}", AmdGpu::GetMacrotileAspect(macro_tile_mode)));
     }
@@ -206,8 +206,7 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
     };
     cmdbuf.pipelineBarrier(
         vk::PipelineStageFlagBits::eHost | vk::PipelineStageFlagBits::eTransfer,
-        vk::PipelineStageFlagBits::eComputeShader,
-        {}, {}, pre_dispatch_barrier, {});
+        vk::PipelineStageFlagBits::eComputeShader, {}, {}, pre_dispatch_barrier, {});
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, GetTilingPipeline(info, false));
 
@@ -263,10 +262,9 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
         .offset = 0,
         .size = info.guest_size,
     };
-    cmdbuf.pipelineBarrier(
-        vk::PipelineStageFlagBits::eComputeShader,
-        vk::PipelineStageFlagBits::eTransfer,
-        {}, {}, post_dispatch_barrier, {});
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
+                           vk::PipelineStageFlagBits::eTransfer, {}, {}, post_dispatch_barrier,
+                           {});
 
     return {out_buffer, 0};
 }
@@ -290,10 +288,10 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
             .offset = out_offset,
             .size = info.guest_size,
         };
-        cmdbuf.pipelineBarrier(
-            vk::PipelineStageFlagBits::eTransfer,
-            vk::PipelineStageFlagBits::eTransfer | vk::PipelineStageFlagBits::eHost,
-            {}, {}, linear_post_barrier, {});
+        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                               vk::PipelineStageFlagBits::eTransfer |
+                                   vk::PipelineStageFlagBits::eHost,
+                               {}, {}, linear_post_barrier, {});
         return;
     }
 
@@ -335,10 +333,9 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
         .offset = 0,
         .size = info.guest_size,
     };
-    cmdbuf.pipelineBarrier(
-        vk::PipelineStageFlagBits::eTransfer,
-        vk::PipelineStageFlagBits::eComputeShader,
-        {}, {}, pre_dispatch_barrier, {});
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                           vk::PipelineStageFlagBits::eComputeShader, {}, {},
+                           pre_dispatch_barrier, {});
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, GetTilingPipeline(info, true));
 
@@ -394,10 +391,10 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
         .offset = out_offset,
         .size = info.guest_size,
     };
-    cmdbuf.pipelineBarrier(
-        vk::PipelineStageFlagBits::eComputeShader,
-        vk::PipelineStageFlagBits::eTransfer | vk::PipelineStageFlagBits::eHost,
-        {}, {}, post_dispatch_barrier, {});
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
+                           vk::PipelineStageFlagBits::eTransfer |
+                               vk::PipelineStageFlagBits::eHost,
+                           {}, {}, post_dispatch_barrier, {});
 }
 
 } // namespace VideoCore
