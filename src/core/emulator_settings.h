@@ -318,7 +318,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_time
                                    usb_device_backend, use_special_pad, special_pad_class,
                                    motion_controls_enabled, use_unified_input_config,
                                    default_controller_id, background_controller_input,
-                                   ime_accessibility_enabled, ime_url_mail_short_panel, camera_id, is_circle_enter)
+                                   ime_accessibility_enabled, ime_url_mail_short_panel, camera_id,
+                                   is_circle_enter)
 // -------------------------------
 // Audio settings
 // -------------------------------
