@@ -760,14 +760,6 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
-                                 const OrbisHttpUriElement* srcElement, u32 option) {
-    LOG_ERROR(Lib_Http,
-              "(STUBBED) called out={}, require={}, prepare={}, srcElement={}, option={:#x}",
-              fmt::ptr(out), fmt::ptr(require), prepare, fmt::ptr(srcElement), option);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpUriCopy() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
@@ -776,6 +768,105 @@ int PS4_SYSV_ABI sceHttpUriCopy() {
 //***********************************
 // URI functions
 //***********************************
+int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
+                                 const OrbisHttpUriElement* srcElement, u32 option) {
+    LOG_INFO(Lib_Http,
+             "sceHttpUriBuild: called out={}, require={}, prepare={}, "
+             "srcElement={}, option=0x{:x}",
+             fmt::ptr(out), fmt::ptr(require), prepare, fmt::ptr(srcElement), option);
+
+    if (srcElement == nullptr) {
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+
+    auto field = [](const char* p) -> std::string_view {
+        return p ? std::string_view(p) : std::string_view{};
+    };
+
+    const std::string_view scheme = field(srcElement->scheme);
+    const std::string_view username = field(srcElement->username);
+    const std::string_view password = field(srcElement->password);
+    const std::string_view hostname = field(srcElement->hostname);
+    const std::string_view path = field(srcElement->path);
+    const std::string_view query = field(srcElement->query);
+    const std::string_view fragment = field(srcElement->fragment);
+
+    std::string built;
+    built.reserve(256);
+
+    // Scheme
+    if ((option & ORBIS_HTTP_URI_BUILD_WITH_SCHEME) && !scheme.empty()) {
+        built.append(scheme);
+        built.append("://");
+    }
+
+    // Userinfo (username[:password]@)
+    if ((option & ORBIS_HTTP_URI_BUILD_WITH_USERNAME) && !username.empty()) {
+        built.append(username);
+        if ((option & ORBIS_HTTP_URI_BUILD_WITH_PASSWORD) && !password.empty()) {
+            built.push_back(':');
+            built.append(password);
+        }
+        built.push_back('@');
+    }
+
+    // Host
+    if ((option & ORBIS_HTTP_URI_BUILD_WITH_HOSTNAME) && !hostname.empty()) {
+        built.append(hostname);
+    }
+
+    // Port (only if not the scheme's default)
+    if ((option & ORBIS_HTTP_URI_BUILD_WITH_PORT) && srcElement->port != 0) {
+        const bool is_default_https = (scheme == "https" && srcElement->port == 443);
+        const bool is_default_http = (scheme == "http" && srcElement->port == 80);
+        if (!is_default_https && !is_default_http) {
+            built.push_back(':');
+            built.append(std::to_string(srcElement->port));
+        }
+    }
+
+    // Path
+    if ((option & ORBIS_HTTP_URI_BUILD_WITH_PATH) && !path.empty()) {
+        if (path.front() != '/')
+            built.push_back('/');
+        built.append(path);
+    }
+
+    // Query
+    if ((option & ORBIS_HTTP_URI_BUILD_WITH_QUERY) && !query.empty()) {
+        if (query.front() != '?') {
+            built.push_back('?');
+        }
+        built.append(query);
+    }
+
+    // Fragment
+    if ((option & ORBIS_HTTP_URI_BUILD_WITH_FRAGMENT) && !fragment.empty()) {
+        if (fragment.front() != '#') {
+            built.push_back('#');
+        }
+        built.append(fragment);
+    }
+
+    // include null terminator in the required size.
+    const size_t need = built.size() + 1;
+    if (require) {
+        *require = need;
+    }
+
+    if (out == nullptr) {
+        // Size query mode (no buffer provided).
+        return ORBIS_OK;
+    }
+
+    if (prepare < need) {
+        return ORBIS_HTTP_ERROR_OUT_OF_SIZE; // buffer too small
+    }
+
+    std::memcpy(out, built.c_str(), need);
+    return ORBIS_OK;
+}
+
 int PS4_SYSV_ABI sceHttpUriEscape(char* out, u64* require, u64 prepare, const char* in) {
     LOG_TRACE(Lib_Http, "called out={}, require={}, prepare={}, in={}", fmt::ptr(out),
               fmt::ptr(require), prepare, in ? in : "(null)");
@@ -948,11 +1039,18 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
 
     if (out && pool) {
         memset(out, 0, sizeof(OrbisHttpUriElement));
-        out->scheme = (char*)pool;
+        char* empty = (char*)pool;
+        *empty = '\0';
+        out->scheme = (char*)pool + 1; // scheme storage follows the sentinel
+        out->username = empty;
+        out->password = empty;
+        out->hostname = empty;
+        out->path = empty;
+        out->query = empty;
+        out->fragment = empty;
     }
 
-    // Track the total required buffer size
-    u64 requiredSize = 0;
+    u64 requiredSize = 1;
 
     // Parse the scheme (e.g., "http:", "https:", "file:")
     u64 schemeLength = 0;
@@ -964,7 +1062,7 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
         schemeLength++;
     }
 
-    if (pool && prepare < schemeLength + 1) {
+    if (pool && prepare < requiredSize + schemeLength + 1) {
         LOG_ERROR(Lib_Http, "out of memory while writing scheme");
         return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
     }
@@ -1162,13 +1260,13 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
         offset += pathLength;
     }
 
-    // Parse the query (if present)
     if (srcUri[offset] == '?') {
-        char* queryStart = (char*)srcUri + offset + 1;
+        char* queryStart = (char*)srcUri + offset;
         u64 queryLength = 0;
-        while (queryStart[queryLength] && queryStart[queryLength] != '#') {
+        while (queryStart[queryLength + 1] && queryStart[queryLength + 1] != '#') {
             queryLength++;
         }
+        queryLength++;
 
         requiredSize += queryLength + 1;
 
@@ -1183,17 +1281,16 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
             out->query[queryLength] = '\0';
         }
 
-        // Move past the query
-        offset += queryLength + 1;
+        offset += queryLength;
     }
 
-    // Parse the fragment (if present)
     if (srcUri[offset] == '#') {
-        char* fragmentStart = (char*)srcUri + offset + 1;
+        char* fragmentStart = (char*)srcUri + offset;
         u64 fragmentLength = 0;
-        while (fragmentStart[fragmentLength]) {
+        while (fragmentStart[fragmentLength + 1]) {
             fragmentLength++;
         }
+        fragmentLength++;
 
         requiredSize += fragmentLength + 1;
 

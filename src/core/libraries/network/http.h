@@ -13,6 +13,17 @@ class SymbolsResolver;
 
 namespace Libraries::Http {
 
+enum OrbisUriBuild : s32 {
+    ORBIS_HTTP_URI_BUILD_WITH_SCHEME = 0x01,
+    ORBIS_HTTP_URI_BUILD_WITH_HOSTNAME = 0x02,
+    ORBIS_HTTP_URI_BUILD_WITH_PORT = 0x04,
+    ORBIS_HTTP_URI_BUILD_WITH_PATH = 0x08,
+    ORBIS_HTTP_URI_BUILD_WITH_USERNAME = 0x10,
+    ORBIS_HTTP_URI_BUILD_WITH_PASSWORD = 0x20,
+    ORBIS_HTTP_URI_BUILD_WITH_QUERY = 0x40,
+    ORBIS_HTTP_URI_BUILD_WITH_FRAGMENT = 0x80
+};
+
 struct OrbisHttpUriElement {
     bool opaque;
     char* scheme;
