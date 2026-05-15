@@ -217,7 +217,7 @@ void SetThreadName(void* thread, const char* name) {
 #endif
 
 #if defined(_WIN32)
-void SetCurrentThreadName(const char*) {
+void SetCurrentThreadName(const char* name) {
     if (Libraries::Kernel::g_curthread) {
         Libraries::Kernel::g_curthread->name = name;
     }
