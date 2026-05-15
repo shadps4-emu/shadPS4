@@ -5,12 +5,14 @@
 
 #include "app_content.h"
 #include "common/assert.h"
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/app_content/app_content_error.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
 
@@ -29,8 +31,10 @@ static std::array<AddContInfo, ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE> addcont_inf
       0x00}},
 }};
 
+static s32 sdk_ver = 0;
 static s32 addcont_count = 0;
 static std::string title_id;
+static bool is_initialized = false;
 
 int PS4_SYSV_ABI _Z5dummyv() {
     LOG_ERROR(Lib_AppContent, "(STUBBED) called");
@@ -279,7 +283,13 @@ int PS4_SYSV_ABI sceAppContentGetRegion() {
 
 int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initParam,
                                          OrbisAppContentBootParam* bootParam) {
-    LOG_ERROR(Lib_AppContent, "(DUMMY) called");
+    if (sdk_ver >= Common::ElfInfo::FW_15 && is_initialized) {
+        LOG_ERROR(Lib_AppContent, "Already initialized");
+        return ORBIS_APP_CONTENT_ERROR_BUSY;
+    }
+
+    LOG_WARNING(Lib_AppContent, "(DUMMY) called");
+    is_initialized = true;
     auto* param_sfo = Common::Singleton<PSF>::Instance();
 
     const auto addons_dir = EmulatorSettings.GetAddonInstallDir();
@@ -449,6 +459,9 @@ int PS4_SYSV_ABI sceAppContentGetDownloadedStoreCountry() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    ASSERT_MSG(Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver) == 0,
+               "Failed to get SDK version");
+
     LIB_FUNCTION("AS45QoYHjc4", "libSceAppContent", 1, "libSceAppContentUtil", _Z5dummyv);
     LIB_FUNCTION("ZiATpP9gEkA", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentAddcontDelete);
