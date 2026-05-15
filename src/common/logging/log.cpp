@@ -178,26 +178,7 @@ void Setup(std::string_view log_filename) {
         already_registered = true;
         std::atexit(Shutdown);
         std::at_quick_exit(Flush);
-        std::set_terminate([]() {
-            try {
-                if (std::exception_ptr eptr{std::current_exception()}) {
-                    std::rethrow_exception(eptr);
-                }
-
-                LOG_CRITICAL(Debug, "Exiting without exception");
-
-                std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITHOUT_EXCEPTION));
-            } catch (const std::exception& exception) {
-                LOG_CRITICAL(Debug, "Exception: {}", exception);
-
-                std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITH_EXCEPTION));
-            } catch (...) {
-                LOG_CRITICAL(Debug, "Unknown exception caught");
-
-                std::quick_exit(
-                    std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITH_UNKNOWN_EXCEPTION));
-            }
-        });
+        std::set_terminate(Terminate);
     }
 
 #ifdef _WIN32
@@ -285,6 +266,26 @@ void Flush() {
 
     if (g_console_sink != nullptr) {
         g_console_sink->flush();
+    }
+}
+
+void Terminate() {
+    try {
+        if (std::exception_ptr eptr{std::current_exception()}) {
+            std::rethrow_exception(eptr);
+        }
+
+        LOG_CRITICAL(Debug, "Exiting without exception");
+
+        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITHOUT_EXCEPTION));
+    } catch (const std::exception& exception) {
+        LOG_CRITICAL(Debug, "Exception: {}", exception);
+
+        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITH_EXCEPTION));
+    } catch (...) {
+        LOG_CRITICAL(Debug, "Unknown exception caught");
+
+        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITH_UNKNOWN_EXCEPTION));
     }
 }
 } // namespace Common::Log

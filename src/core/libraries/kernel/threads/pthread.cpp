@@ -223,6 +223,7 @@ static void* RunThread(void* arg) {
 
 #ifdef WIN32
     __try {
+        std::set_terminate(Common::Log::Terminate);
 #endif
         /* Run the current thread's start routine with argument: */
         auto* const stack =
