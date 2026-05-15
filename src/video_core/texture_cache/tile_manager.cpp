@@ -72,6 +72,7 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
     pl_layout = std::move(layout);
 }
 
+// NOLINTNEXTLINE(performance-trivially-destructible)
 TileManager::~TileManager() = default;
 
 TileManager::ScratchBuffer TileManager::GetScratchBuffer(u32 size) {
@@ -124,9 +125,8 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
         defines.emplace_back(fmt::format("NUM_BANKS={}", num_banks));
         defines.emplace_back(fmt::format("NUM_BANK_BITS={}", std::bit_width(num_banks) - 1));
         defines.emplace_back(fmt::format(
-            "TILE_SPLIT_BYTES={}",
-            AmdGpu::CalculateTileSplit(info.tile_mode, info.array_mode, micro_tile_mode,
-                                       info.num_bits)));
+            "TILE_SPLIT_BYTES={}", AmdGpu::CalculateTileSplit(info.tile_mode, info.array_mode,
+                                                              micro_tile_mode, info.num_bits)));
         defines.emplace_back(
             fmt::format("MACRO_TILE_ASPECT={}", AmdGpu::GetMacrotileAspect(macro_tile_mode)));
     }
@@ -164,7 +164,7 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
 TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset,
                                              const ImageInfo& info) {
     if (!info.props.is_tiled) {
-        return { in_buffer, in_offset };
+        return {in_buffer, in_offset};
     }
 
     TilingInfo params{};
@@ -265,7 +265,7 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
                            vk::PipelineStageFlagBits::eTransfer, {}, {}, post_dispatch_barrier, {});
 
-    return { out_buffer, 0 };
+    return {out_buffer, 0};
 }
 
 void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buffer_copies,
