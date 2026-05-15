@@ -141,3 +141,6 @@
 	url = https://github.com/gabime/spdlog.git
 	shallow = true
 	branch = v2.x
+[submodule "externals/libressl"]
+	path = externals/libressl
+	url = https://github.com/shadexternals/libressl
