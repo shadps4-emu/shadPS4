@@ -1,9 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <magic_enum/magic_enum.hpp>
-#include <vk_mem_alloc.h>
-
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/host_shaders/tiling_comp.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -13,6 +10,9 @@
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/tile_manager.h"
+
+#include <magic_enum/magic_enum.hpp>
+#include <vk_mem_alloc.h>
 
 namespace VideoCore {
 
@@ -72,7 +72,6 @@ TileManager::TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& sc
     pl_layout = std::move(layout);
 }
 
-// NOLINTNEXTLINE(performance-trivially-destructible)
 TileManager::~TileManager() = default;
 
 TileManager::ScratchBuffer TileManager::GetScratchBuffer(u32 size) {
