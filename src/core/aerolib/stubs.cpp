@@ -15,13 +15,7 @@ namespace Core::AeroLib {
 // If it runs out of stubs with name information, it will return
 // a default implementation without function name details
 
-// Up to 512, larger values lead to more resolve stub slots
-// and to longer compile / CI times on Apple software
-#ifdef __APPLE__
-constexpr u32 MAX_STUBS = 2048;
-#else
 constexpr u32 MAX_STUBS = 8192;
-#endif
 
 u64 UnresolvedStub() {
     LOG_ERROR(Core, "Returning zero to {}", __builtin_return_address(0));
@@ -53,13 +47,13 @@ static u64 CommonStubTemplate() {
     return CommonStub(stub_index, __builtin_return_address(0));
 }
 
-static u32 UsedStubEntries;
 template <size_t... Is>
 consteval auto MakeStubArray(std::index_sequence<Is...>) {
     return std::array<u64 (*)(), sizeof...(Is)>{&CommonStubTemplate<Is>...};
 }
 
 constexpr auto stub_handlers = MakeStubArray(std::make_index_sequence<MAX_STUBS>{});
+static u32 UsedStubEntries;
 
 u64 GetStub(const char* nid) {
     if (UsedStubEntries >= MAX_STUBS) {
