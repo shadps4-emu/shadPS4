@@ -149,6 +149,11 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"rpaddle_high", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1},
     {"rpaddle_low", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2},
     {"mouse_gyro_roll_mode", MOUSE_GYRO_ROLL_MODE},
+    {"qam", SDL_GAMEPAD_BUTTON_MISC1},
+    {"r4", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1},
+    {"l4", SDL_GAMEPAD_BUTTON_LEFT_PADDLE1},
+    {"r5", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2},
+    {"l5", SDL_GAMEPAD_BUTTON_LEFT_PADDLE2},
 };
 const std::map<std::string, u32> string_to_hotkey_map = {
     {"hotkey_pause", HOTKEY_PAUSE},
