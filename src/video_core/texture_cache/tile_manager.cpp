@@ -194,6 +194,21 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
     scheduler.EndRendering();
 
     const auto cmdbuf = scheduler.CommandBuffer();
+
+    const vk::BufferMemoryBarrier pre_dispatch_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eHostWrite | vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .buffer = in_buffer,
+        .offset = in_offset,
+        .size = info.guest_size,
+    };
+    cmdbuf.pipelineBarrier(
+        vk::PipelineStageFlagBits::eHost | vk::PipelineStageFlagBits::eTransfer,
+        vk::PipelineStageFlagBits::eComputeShader,
+        {}, {}, pre_dispatch_barrier, {});
+
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, GetTilingPipeline(info, false));
 
     const vk::DescriptorBufferInfo tiled_buffer_info{
@@ -238,6 +253,21 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
 
     const auto dim_x = (info.guest_size / (info.num_bits / 8)) / 64;
     cmdbuf.dispatch(dim_x, 1, 1);
+
+    const vk::BufferMemoryBarrier post_dispatch_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
+        .dstAccessMask = vk::AccessFlagBits::eTransferRead,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .buffer = out_buffer,
+        .offset = 0,
+        .size = info.guest_size,
+    };
+    cmdbuf.pipelineBarrier(
+        vk::PipelineStageFlagBits::eComputeShader,
+        vk::PipelineStageFlagBits::eTransfer,
+        {}, {}, post_dispatch_barrier, {});
+
     return {out_buffer, 0};
 }
 
@@ -249,6 +279,21 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
             copy.bufferOffset += out_offset;
         }
         in_image.Download(buffer_copies, out_buffer, out_offset, copy_size);
+
+        const auto cmdbuf = scheduler.CommandBuffer();
+        const vk::BufferMemoryBarrier linear_post_barrier{
+            .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+            .dstAccessMask = vk::AccessFlagBits::eTransferRead | vk::AccessFlagBits::eHostRead,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .buffer = out_buffer,
+            .offset = out_offset,
+            .size = info.guest_size,
+        };
+        cmdbuf.pipelineBarrier(
+            vk::PipelineStageFlagBits::eTransfer,
+            vk::PipelineStageFlagBits::eTransfer | vk::PipelineStageFlagBits::eHost,
+            {}, {}, linear_post_barrier, {});
         return;
     }
 
@@ -276,8 +321,24 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
         vmaDestroyBuffer(instance.GetAllocator(), temp_buffer, temp_allocation);
     });
 
-    const auto cmdbuf = scheduler.CommandBuffer();
+    scheduler.EndRendering();
+
     in_image.Download(buffer_copies, temp_buffer, 0, copy_size);
+    const auto cmdbuf = scheduler.CommandBuffer();
+
+    const vk::BufferMemoryBarrier pre_dispatch_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .buffer = temp_buffer,
+        .offset = 0,
+        .size = info.guest_size,
+    };
+    cmdbuf.pipelineBarrier(
+        vk::PipelineStageFlagBits::eTransfer,
+        vk::PipelineStageFlagBits::eComputeShader,
+        {}, {}, pre_dispatch_barrier, {});
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, GetTilingPipeline(info, true));
 
@@ -323,6 +384,20 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
 
     const auto dim_x = (info.guest_size / (info.num_bits / 8)) / 64;
     cmdbuf.dispatch(dim_x, 1, 1);
+
+    const vk::BufferMemoryBarrier post_dispatch_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
+        .dstAccessMask = vk::AccessFlagBits::eTransferRead | vk::AccessFlagBits::eHostRead,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .buffer = out_buffer,
+        .offset = out_offset,
+        .size = info.guest_size,
+    };
+    cmdbuf.pipelineBarrier(
+        vk::PipelineStageFlagBits::eComputeShader,
+        vk::PipelineStageFlagBits::eTransfer | vk::PipelineStageFlagBits::eHost,
+        {}, {}, post_dispatch_barrier, {});
 }
 
 } // namespace VideoCore
