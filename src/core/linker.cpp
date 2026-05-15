@@ -111,6 +111,8 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
     main_thread.Run([this, module, &args](std::stop_token) {
         Common::SetCurrentThreadName("Game:Main");
+        std::set_terminate(Common::Log::Terminate);
+
 #ifndef _WIN32 // Clear any existing signal mask for game threads.
         sigset_t emptyset;
         sigemptyset(&emptyset);

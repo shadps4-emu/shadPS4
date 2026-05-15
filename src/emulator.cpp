@@ -320,6 +320,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         if (args.size() > 32) {
             LOG_ERROR(Loader, "Too many game arguments, only passing the first 32");
         }
+    } else {
+        args.insert(args.begin(), guest_eboot_path);
     }
 
     std::filesystem::path mods_folder = game_folder;
@@ -482,7 +484,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         });
     }
 
-    args.insert(args.begin(), guest_eboot_path);
     linker->Execute(args);
 
     window->InitTimers();
