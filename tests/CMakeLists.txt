@@ -200,12 +200,9 @@ foreach(t ${TEST_TARGETS})
     )
 endforeach()
 
-set(HTTP_URI_TEST_SOURCES
+set(HTTP_TEST_SOURCES
     # Under test
     ${CMAKE_SOURCE_DIR}/src/core/libraries/network/http.cpp
-
-    # Required to link RegisterLib's LIB_FUNCTION calls and the logger's
-    # access to EmulatorSettings.
     ${CMAKE_SOURCE_DIR}/src/core/emulator_settings.cpp
     ${CMAKE_SOURCE_DIR}/src/core/emulator_state.cpp
 
@@ -224,20 +221,21 @@ set(HTTP_URI_TEST_SOURCES
 
     # Tests
     network/test_http_uri.cpp
+    network/test_http_status_line.cpp
 )
 
-add_executable(shadps4_http_uri_test ${HTTP_URI_TEST_SOURCES})
+add_executable(shadps4_http_test ${HTTP_TEST_SOURCES})
 
-list(APPEND TEST_TARGETS shadps4_http_uri_test)
+list(APPEND TEST_TARGETS shadps4_http_test)
 
-target_include_directories(shadps4_http_uri_test PRIVATE
+target_include_directories(shadps4_http_test PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}
 )
-target_compile_features(shadps4_http_uri_test PRIVATE cxx_std_23)
-target_compile_definitions(shadps4_http_uri_test PRIVATE BOOST_ASIO_STANDALONE)
+target_compile_features(shadps4_http_test PRIVATE cxx_std_23)
+target_compile_definitions(shadps4_http_test PRIVATE BOOST_ASIO_STANDALONE)
 
-target_link_libraries(shadps4_http_uri_test PRIVATE
+target_link_libraries(shadps4_http_test PRIVATE
     GTest::gtest_main
     fmt::fmt
     magic_enum::magic_enum
@@ -252,13 +250,13 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
     include(CheckCXXSymbolExists)
     check_cxx_symbol_exists(_LIBCPP_VERSION version LIBCPP)
     if (LIBCPP)
-        target_compile_options(shadps4_http_uri_test PRIVATE -fexperimental-library)
+        target_compile_options(shadps4_http_test PRIVATE -fexperimental-library)
     endif()
 endif()
 
 if (WIN32)
-    target_link_libraries(shadps4_http_uri_test PRIVATE onecore)
-    target_compile_definitions(shadps4_http_uri_test PRIVATE
+    target_link_libraries(shadps4_http_test PRIVATE onecore)
+    target_compile_definitions(shadps4_http_test PRIVATE
         NOMINMAX
         WIN32_LEAN_AND_MEAN
         NTDDI_VERSION=0x0A000006
@@ -266,7 +264,7 @@ if (WIN32)
         WINVER=0x0A00
     )
     if (MSVC)
-        target_compile_definitions(shadps4_http_uri_test PRIVATE
+        target_compile_definitions(shadps4_http_test PRIVATE
             _CRT_SECURE_NO_WARNINGS
             _CRT_NONSTDC_NO_DEPRECATE
             _SCL_SECURE_NO_WARNINGS
@@ -275,7 +273,7 @@ if (WIN32)
     endif()
 endif()
 
-gtest_discover_tests(shadps4_http_uri_test
+gtest_discover_tests(shadps4_http_test
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     PROPERTIES TIMEOUT 60
 )

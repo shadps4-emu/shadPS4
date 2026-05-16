@@ -367,108 +367,6 @@ int PS4_SYSV_ABI sceHttpParseResponseHeader(const char* header, u64 headerLen, c
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpParseStatusLine(const char* statusLine, u64 lineLen, int32_t* httpMajorVer,
-                                        int32_t* httpMinorVer, int32_t* responseCode,
-                                        const char** reasonPhrase, u64* phraseLen) {
-    LOG_INFO(Lib_Http,
-             "called statusLine={}, lineLen={}, httpMajorVer={}, httpMinorVer={}, responseCode={}, "
-             "reasonPhrase={}, phraseLen={}",
-             fmt::ptr(statusLine), lineLen, fmt::ptr(httpMajorVer), fmt::ptr(httpMinorVer),
-             fmt::ptr(responseCode), fmt::ptr(reasonPhrase), fmt::ptr(phraseLen));
-
-    if (!statusLine) {
-        LOG_ERROR(Lib_Http, "Invalid response: statusLine is null");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-    if (!httpMajorVer || !httpMinorVer || !responseCode || !reasonPhrase || !phraseLen) {
-        LOG_ERROR(Lib_Http, "Invalid value: one or more output pointers are null");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_VALUE;
-    }
-    *httpMajorVer = 0;
-    *httpMinorVer = 0;
-    if (lineLen < 8) {
-        LOG_ERROR(Lib_Http, "lineLen ({}) is smaller than 8", lineLen);
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-    if (strncmp(statusLine, "HTTP/", 5) != 0) {
-        LOG_ERROR(Lib_Http, "statusLine doesn't start with HTTP/");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-
-    u64 index = 5;
-
-    if (!isdigit(statusLine[index])) {
-        LOG_ERROR(Lib_Http, "Invalid response: expected digit after HTTP/");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-
-    while (isdigit(statusLine[index])) {
-        *httpMajorVer = *httpMajorVer * 10 + (statusLine[index] - '0');
-        index++;
-    }
-
-    if (statusLine[index] != '.') {
-        LOG_ERROR(Lib_Http, "Invalid response: expected '.' after major version");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-    index++;
-
-    if (!isdigit(statusLine[index])) {
-        LOG_ERROR(Lib_Http, "Invalid response: expected digit for minor version");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-
-    while (isdigit(statusLine[index])) {
-        *httpMinorVer = *httpMinorVer * 10 + (statusLine[index] - '0');
-        index++;
-    }
-
-    if (statusLine[index] != ' ') {
-        LOG_ERROR(Lib_Http, "Invalid response: expected ' ' after minor version");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-    index++;
-
-    // Validate and parse the 3-digit HTTP response code
-    if (lineLen - index < 3 || !isdigit(statusLine[index]) || !isdigit(statusLine[index + 1]) ||
-        !isdigit(statusLine[index + 2])) {
-        LOG_ERROR(Lib_Http, "Invalid response: malformed 3-digit response code");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-
-    *responseCode = (statusLine[index] - '0') * 100 + (statusLine[index + 1] - '0') * 10 +
-                    (statusLine[index + 2] - '0');
-    index += 3;
-
-    if (statusLine[index] != ' ') {
-        LOG_ERROR(Lib_Http, "Invalid response: expected ' ' after response code");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-    index++;
-
-    // Set the reason phrase start position
-    *reasonPhrase = &statusLine[index];
-    u64 phraseStart = index;
-
-    while (index < lineLen && statusLine[index] != '\n') {
-        index++;
-    }
-
-    // Determine the length of the reason phrase, excluding trailing \r if present
-    if (index == phraseStart) {
-        *phraseLen = 0;
-    } else {
-        *phraseLen =
-            (statusLine[index - 1] == '\r') ? (index - phraseStart - 1) : (index - phraseStart);
-    }
-
-    LOG_INFO(Lib_Http, "parsed HTTP/{}.{} {}, phraseLen={}, bytes consumed={}", *httpMajorVer,
-             *httpMinorVer, *responseCode, *phraseLen, index + 1);
-
-    // Return the number of bytes processed
-    return index + 1;
-}
-
 int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size) {
     LOG_ERROR(Lib_Http, "(STUBBED) called reqId={}, data={}, size={}", reqId, fmt::ptr(data), size);
     return ORBIS_OK;
@@ -769,6 +667,128 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
 int PS4_SYSV_ABI sceHttpUriCopy() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
+}
+
+//***********************************
+// HTTP Header Parsing functions
+//***********************************
+int PS4_SYSV_ABI sceHttpParseStatusLine(const char* statusLine, u64 lineLen, int32_t* httpMajorVer,
+                                        int32_t* httpMinorVer, int32_t* responseCode,
+                                        const char** reasonPhrase, u64* phraseLen) {
+    LOG_INFO(Lib_Http,
+             "called statusLine={}, lineLen={}, httpMajorVer={}, httpMinorVer={}, responseCode={}, "
+             "reasonPhrase={}, phraseLen={}",
+             fmt::ptr(statusLine), lineLen, fmt::ptr(httpMajorVer), fmt::ptr(httpMinorVer),
+             fmt::ptr(responseCode), fmt::ptr(reasonPhrase), fmt::ptr(phraseLen));
+
+    if (!statusLine) {
+        LOG_ERROR(Lib_Http, "Invalid Response");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+    if (!httpMajorVer || !httpMinorVer || !responseCode || !reasonPhrase || !phraseLen) {
+        LOG_ERROR(Lib_Http, "Invalid value");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_VALUE;
+    }
+
+    *httpMajorVer = 0;
+    *httpMinorVer = 0;
+
+    if (lineLen < 8) {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+    if (memcmp(statusLine, "HTTP/", 5) != 0) {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    auto isAsciiDigit = [](char c) -> bool {
+        const unsigned char uc = static_cast<unsigned char>(c);
+        return uc < 0x80 && std::isdigit(uc);
+    };
+
+    // First byte of major version
+    if (!isAsciiDigit(statusLine[5])) {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    // Major version digit loop
+    u64 index = 7;
+    {
+        unsigned char ch = static_cast<unsigned char>(statusLine[5]);
+        while (ch < 0x80 && std::isdigit(ch)) {
+            *httpMajorVer = *httpMajorVer * 10 + (statusLine[index - 2] - '0');
+            const char next = statusLine[index - 1];
+            index++;
+            if (static_cast<unsigned char>(next) >= 0x80) {
+                return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+            }
+            ch = static_cast<unsigned char>(next);
+        }
+    }
+
+    // After major loop, the previously-loaded byte must be '.'.
+    if (statusLine[index - 2] != '.') {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    // First byte of minor version
+    if (!isAsciiDigit(statusLine[index - 1])) {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    // Minor version digit loop
+    {
+        unsigned char ch = static_cast<unsigned char>(statusLine[index - 1]);
+        while (ch < 0x80 && std::isdigit(ch)) {
+            *httpMinorVer = *httpMinorVer * 10 + (statusLine[index - 1] - '0');
+            const char next = statusLine[index];
+            index++;
+            if (static_cast<unsigned char>(next) >= 0x80) {
+                return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+            }
+            ch = static_cast<unsigned char>(next);
+        }
+    }
+
+    // After minor loop, statusLine[index - 1] must be ' '.
+    if (statusLine[index - 1] != ' ') {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    // Need >=3 bytes for the response code
+    const u64 remaining = lineLen - index;
+    if (remaining < 3) {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    // Validate and parse the 3-digit response code
+    for (int i = 0; i < 3; ++i) {
+        if (!isAsciiDigit(statusLine[index + i])) {
+            return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+        }
+    }
+    *responseCode = (statusLine[index] - '0') * 100 + (statusLine[index + 1] - '0') * 10 +
+                    (statusLine[index + 2] - '0');
+
+    const char* phraseStart = statusLine + index + 3;
+    const u64 maxScan = remaining - 3;
+    for (u64 scanLen = 0; scanLen <= maxScan; ++scanLen) {
+        if (phraseStart[scanLen] != '\n') {
+            continue;
+        }
+        *reasonPhrase = phraseStart;
+        if (scanLen == 0) {
+            *phraseLen = 0;
+        } else {
+            *phraseLen = scanLen - (phraseStart[scanLen - 1] == '\r' ? 1 : 0);
+        }
+        const u64 bytesConsumed = (phraseStart - statusLine) + scanLen + 1;
+        LOG_INFO(Lib_Http, "parsed HTTP/{}.{} {}, phraseLen={}, bytes consumed={}", *httpMajorVer,
+                 *httpMinorVer, *responseCode, *phraseLen, bytesConsumed);
+        return static_cast<int>(bytesConsumed);
+    }
+
+    LOG_ERROR(Lib_Http, "no '\\n' found in status line");
+    return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
 }
 
 //***********************************
@@ -1212,7 +1232,7 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
             passOffset = atPos + 1;
             passLen = 0;
         }
-        // Firmware needs (passOffset + passLen + 1) bytes from poolUsed.
+
         if (writeOutput) {
             const u64 needed = passOffset + passLen + 1;
             if (prepare - poolUsed < needed) {
@@ -1242,7 +1262,6 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
 
     inputOffset += inputAdvance;
 
-    // ---- 4. Host parsing ----
     char* hostDest = poolBytes + poolUsed;
     const char* hostStart = srcUri + inputOffset;
     const char firstHostChar = hostStart[0];
@@ -1305,7 +1324,6 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
     poolUsed += storedHostLen + 1;
     inputOffset += hostScanLen;
 
-    // ---- 5. Port (if ':' follows host) ----
     bool hasExplicitPort = false;
     uint16_t portValue = 0;
 
@@ -1322,7 +1340,6 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
             LOG_ERROR(Lib_Http, "Invalid URL");
             return ORBIS_HTTP_ERROR_INVALID_URL;
         }
-        // Firmware line 26867: after port digits, only '/' or '\0' allowed.
         const char afterPort = digits[digitsLen];
         if (afterPort != '\0' && afterPort != '/') {
             return ORBIS_HTTP_ERROR_INVALID_URL;
