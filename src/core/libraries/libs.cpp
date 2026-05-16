@@ -155,6 +155,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Voice::RegisterLib(sym);
     Libraries::Rudp::RegisterLib(sym);
     Libraries::VrTracker::RegisterLib(sym);
+    Libraries::Font::RegisterlibSceFont(sym);
+    Libraries::FontFt::RegisterlibSceFontFt(sym);
     Libraries::ContentExport::RegisterLib(sym);
     Libraries::VideoRecording::RegisterLib(sym);
 
