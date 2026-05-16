@@ -782,9 +782,11 @@ int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
              fmt::ptr(out), fmt::ptr(require), prepare, fmt::ptr(srcElement), option);
 
     if (srcElement == nullptr) {
+        LOG_ERROR(Lib_Http, "Invalid url");
         return ORBIS_HTTP_ERROR_INVALID_URL;
     }
     if (out == nullptr && require == nullptr) {
+        LOG_ERROR(Lib_Http, "Invalid value");
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
 
@@ -890,7 +892,7 @@ int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
     }
 
     if (prepare < need) {
-        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY; // buffer too small (matches firmware 0x80431022)
     }
 
     std::memcpy(out, built.c_str(), need);
@@ -1065,10 +1067,9 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
         LOG_ERROR(Lib_Http, "invalid url: srcUri is null");
         return ORBIS_HTTP_ERROR_INVALID_URL;
     }
-
-    // Per firmware: either (out && pool) (write mode) or require non-null (size-query mode).
     const bool writeOutput = (out != nullptr) && (pool != nullptr);
     if (!writeOutput && !require) {
+        LOG_ERROR(Lib_Http, "Invalid value");
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
 
@@ -1102,6 +1103,7 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
     if (hasScheme) {
         if (writeOutput) {
             if (prepare < schemeLen + 1) {
+                LOG_ERROR(Lib_Http, "Out of memory");
                 return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
             }
             memcpy(poolBytes, srcUri, schemeLen);
@@ -1113,6 +1115,7 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
     } else {
         if (writeOutput) {
             if (prepare < 2) {
+                LOG_ERROR(Lib_Http, "Out of memory");
                 return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
             }
             poolBytes[0] = '\0';
@@ -1140,58 +1143,59 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
     }
 
     const char* authStart = srcUri + inputOffset;
-    u64 sVar20 = 0;
-    u64 sVar3 = 0; // position of ':' (when seenColon)
+    u64 scanPos = 0;  // current byte offset within the authority area
+    u64 colonPos = 0; // offset of the first ':' (only valid when seenColon)
     bool seenColon = false;
     bool seenAt = false;
     u64 atPos = 0;
 
+    auto isUserinfoPunct = [](unsigned char c) -> bool {
+        switch (c) {
+        case 0x21:
+        case 0x24:
+        case 0x25:
+        case 0x26:
+        case 0x27:
+        case 0x28:
+        case 0x29:
+        case 0x2a:
+        case 0x2b:
+        case 0x2c:
+        case 0x2d:
+        case 0x2e:
+        case 0x3a:
+        case 0x3b:
+        case 0x3d:
+        case 0x5f:
+        case 0x7e:
+            return true;
+        default:
+            return false;
+        }
+    };
+
     while (true) {
-        const unsigned char c = static_cast<unsigned char>(authStart[sVar20]);
+        const unsigned char c = static_cast<unsigned char>(authStart[scanPos]);
         if (c == 0)
             break;
         if (c == '@') {
             seenAt = true;
-            atPos = sVar20;
+            atPos = scanPos;
             break;
         }
         if (!seenColon && c == ':') {
             seenColon = true;
-            sVar3 = sVar20;
+            colonPos = scanPos;
         } else {
             if ((signed char)c < 0)
-                break; // non-ASCII
-            if (!isalnum(c)) {
-                // Firmware switch list: ! $ % & ' ( ) * + , - . : ; = _ ~
-                switch (c) {
-                case 0x21:
-                case 0x24:
-                case 0x25:
-                case 0x26:
-                case 0x27:
-                case 0x28:
-                case 0x29:
-                case 0x2a:
-                case 0x2b:
-                case 0x2c:
-                case 0x2d:
-                case 0x2e:
-                case 0x3a:
-                case 0x3b:
-                case 0x3d:
-                case 0x5f:
-                case 0x7e:
-                    break;
-                default:
-                    goto authLoopDone;
-                }
-            }
+                break;                              // non-ASCII
+            if (!isalnum(c) && !isUserinfoPunct(c)) // not in firmware's allowed set
+                break;
         }
-        sVar20++;
+        scanPos++;
     }
-authLoopDone:
 
-    // Write user/password to pool
+    // Write user/password to pool.
     char* userDest = poolBytes + poolUsed;
     u64 inputAdvance = 0;
 
@@ -1200,15 +1204,15 @@ authLoopDone:
         u64 passLen;
         u64 userLen;
         if (seenColon) {
-            userLen = sVar3;
-            passOffset = sVar3 + 1;
+            userLen = colonPos;
+            passOffset = colonPos + 1;
             passLen = atPos - passOffset;
         } else {
             userLen = atPos;
             passOffset = atPos + 1;
             passLen = 0;
         }
-
+        // Firmware needs (passOffset + passLen + 1) bytes from poolUsed.
         if (writeOutput) {
             const u64 needed = passOffset + passLen + 1;
             if (prepare - poolUsed < needed) {
@@ -1261,6 +1265,7 @@ authLoopDone:
                 break;
             if (c == ']')
                 break;
+            // IPv6 mode allows ':' in addition to host chars
             if (!isalnum(c) && c != '-' && c != '.' && c != '_' && c != ':')
                 break;
             hostScanLen++;
@@ -1269,8 +1274,9 @@ authLoopDone:
             return ORBIS_HTTP_ERROR_INVALID_URL;
         }
         storedHostLen = hostScanLen - 1;
-        hostScanLen++;
+        hostScanLen++; // consume ']' for input advance
     } else {
+        // Normal host scan: alphanumeric + '-' '.' '_'
         while (true) {
             if (hostScanLen == 0xff) {
                 return ORBIS_HTTP_ERROR_INVALID_URL;
@@ -1299,6 +1305,7 @@ authLoopDone:
     poolUsed += storedHostLen + 1;
     inputOffset += hostScanLen;
 
+    // ---- 5. Port (if ':' follows host) ----
     bool hasExplicitPort = false;
     uint16_t portValue = 0;
 
@@ -1311,11 +1318,11 @@ authLoopDone:
             port32 = port32 * 10 + (digits[digitsLen] - '0');
             digitsLen++;
         }
-
         if (port32 > 0x10000) {
+            LOG_ERROR(Lib_Http, "Invalid URL");
             return ORBIS_HTTP_ERROR_INVALID_URL;
         }
-
+        // Firmware line 26867: after port digits, only '/' or '\0' allowed.
         const char afterPort = digits[digitsLen];
         if (afterPort != '\0' && afterPort != '/') {
             return ORBIS_HTTP_ERROR_INVALID_URL;
@@ -1366,6 +1373,7 @@ authLoopDone:
 
     if (writeOutput) {
         if (prepare - poolUsed < pathLen + 1) {
+            LOG_ERROR(Lib_Http, "Out of memory");
             return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
         }
         memcpy(pathDest, pathStart, pathLen);
@@ -1382,7 +1390,7 @@ authLoopDone:
     char* queryDest = poolBytes + poolUsed;
     u64 queryLen = 0;
     if (srcUri[inputOffset] == '?') {
-        queryLen = 1;
+        queryLen = 1; // include leading '?'
         while (srcUri[inputOffset + queryLen] && srcUri[inputOffset + queryLen] != '#') {
             if (queryLen >= 0x3fff) {
                 return ORBIS_HTTP_ERROR_INVALID_URL;
@@ -1445,6 +1453,7 @@ int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, u64 srcSize) {
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
 
+    // Non-absolute
     if (src[0] != '/') {
         const u64 copyLen = srcSize - 1;
         memcpy(dst, src, copyLen);
@@ -1452,52 +1461,54 @@ int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, u64 srcSize) {
         return ORBIS_OK;
     }
 
+    // Absolute path: dst[0]='/', dst[1]='\0'
     dst[0] = '/';
     dst[1] = '\0';
     if (srcSize - 1U <= 1) {
         return ORBIS_OK;
     }
 
-    u64 uVar3 = 1;
-    char* pcVar4 = dst;
-    while (uVar3 < srcSize - 1U) {
-        if (src[uVar3] == '.') {
-            if (src[uVar3 + 1] == '/') {
+    u64 srcPos = 1;
+    char* segmentEnd = dst;
+    while (srcPos < srcSize - 1U) {
+        if (src[srcPos] == '.') {
+            if (src[srcPos + 1] == '/') {
                 // "./" - skip
-                uVar3 += 2;
+                srcPos += 2;
                 continue;
             }
-            if (src[uVar3 + 1] == '.' && src[uVar3 + 2] == '/') {
-                char* pcVar2 = dst;
-                if (pcVar4 != dst) {
-                    *pcVar4 = '\0';
-                    pcVar2 = std::strrchr(dst, '/');
-                    if (pcVar2 == nullptr) {
-                        pcVar2 = nullptr;
+            if (src[srcPos + 1] == '.' && src[srcPos + 2] == '/') {
+                char* newSegmentEnd = dst;
+                if (segmentEnd != dst) {
+                    *segmentEnd = '\0';
+                    char* prevSlash = std::strrchr(dst, '/');
+                    if (prevSlash == nullptr) {
+                        newSegmentEnd = nullptr;
                     } else {
-                        pcVar2[1] = '\0';
+                        prevSlash[1] = '\0';
+                        newSegmentEnd = prevSlash;
                     }
                 }
-                uVar3 += 3;
-                pcVar4 = pcVar2;
+                srcPos += 3;
+                segmentEnd = newSegmentEnd;
                 continue;
             }
         }
 
-        const char* pcVar2 = src + uVar3;
-        const char* pcVar1 = std::strchr(pcVar2, '/');
-        const u64 remaining = srcSize - uVar3 - 1U;
-        u64 n;
-        if (pcVar1 == nullptr) {
-            n = remaining;
+        const char* segmentStart = src + srcPos;
+        const char* nextSlash = std::strchr(segmentStart, '/');
+        const u64 remaining = srcSize - srcPos - 1U;
+        u64 copyLen;
+        if (nextSlash == nullptr) {
+            copyLen = remaining;
         } else {
-            const u64 segLen = static_cast<u64>(pcVar1 + 1 - pcVar2);
-            n = (segLen <= remaining) ? segLen : remaining;
+            const u64 segLen = static_cast<u64>(nextSlash + 1 - segmentStart);
+            copyLen = (segLen <= remaining) ? segLen : remaining;
         }
-        memcpy(pcVar4 + 1, pcVar2, n);
-        pcVar4[n + 1] = '\0';
-        pcVar4 += n;
-        uVar3 += n;
+        memcpy(segmentEnd + 1, segmentStart, copyLen);
+        segmentEnd[copyLen + 1] = '\0';
+        segmentEnd += copyLen;
+        srcPos += copyLen;
     }
 
     return ORBIS_OK;
