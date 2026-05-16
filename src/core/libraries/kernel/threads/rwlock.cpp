@@ -1,14 +1,17 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/elf_info.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/posix_error.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
 
 static std::mutex RwlockStaticLock;
+static s32 sdk_version;
 
 #define THR_RWLOCK_INITIALIZER ((PthreadRwlock*)NULL)
 #define THR_RWLOCK_DESTROYED ((PthreadRwlock*)1)
@@ -31,6 +34,12 @@ static int RwlockInit(PthreadRwlockT* rwlock, const PthreadRwlockAttrT* attr) {
     if (prwlock == nullptr) {
         return POSIX_ENOMEM;
     }
+    if (attr != nullptr && sdk_version >= Common::ElfInfo::FW_45) {
+        if ((*attr)->type > 2) {
+            delete prwlock;
+            return POSIX_EINVAL;
+        }
+    }
     *rwlock = prwlock;
     return 0;
 }
@@ -51,7 +60,11 @@ int PS4_SYSV_ABI posix_pthread_rwlock_destroy(PthreadRwlockT* rwlock) {
 static int InitStatic(Pthread* thread, PthreadRwlockT* rwlock) {
     std::scoped_lock lk{RwlockStaticLock};
     if (*rwlock == THR_RWLOCK_INITIALIZER) {
-        return RwlockInit(rwlock, nullptr);
+        auto* prwlock = new (std::nothrow) PthreadRwlock{};
+        if (prwlock == nullptr) {
+            return POSIX_ENOMEM;
+        }
+        *rwlock = prwlock;
     }
     return 0;
 }
@@ -208,6 +221,15 @@ int PS4_SYSV_ABI posix_pthread_rwlockattr_getpshared(const PthreadRwlockAttrT* r
     return 0;
 }
 
+int PS4_SYSV_ABI posix_pthread_rwlockattr_gettype_np(const PthreadRwlockAttrT* rwlockattr,
+                                                     int* type) {
+    if (rwlockattr == nullptr || *rwlockattr == nullptr || (*rwlockattr)->type > 2) {
+        return POSIX_EINVAL;
+    }
+    *type = (*rwlockattr)->type;
+    return 0;
+}
+
 int PS4_SYSV_ABI posix_pthread_rwlockattr_init(PthreadRwlockAttrT* rwlockattr) {
     if (rwlockattr == nullptr) {
         return POSIX_EINVAL;
@@ -223,6 +245,15 @@ int PS4_SYSV_ABI posix_pthread_rwlockattr_init(PthreadRwlockAttrT* rwlockattr) {
     return 0;
 }
 
+int PS4_SYSV_ABI posix_pthread_rwlockattr_settype_np(const PthreadRwlockAttrT* rwlockattr,
+                                                     int type) {
+    if (rwlockattr == nullptr || *rwlockattr == nullptr || (*rwlockattr)->type > 2) {
+        return POSIX_EINVAL;
+    }
+    (*rwlockattr)->type = type;
+    return 0;
+}
+
 int PS4_SYSV_ABI posix_pthread_rwlockattr_setpshared(PthreadRwlockAttrT* rwlockattr, int pshared) {
     /* Only PTHREAD_PROCESS_PRIVATE is supported. */
     if (pshared != 0) {
@@ -234,6 +265,8 @@ int PS4_SYSV_ABI posix_pthread_rwlockattr_setpshared(PthreadRwlockAttrT* rwlocka
 }
 
 void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
+    ASSERT_MSG(sceKernelGetCompiledSdkVersion(&sdk_version) == 0, "Failed to get SDK version");
+
     // Posix-Kernel
     LIB_FUNCTION("1471ajPzxh0", "libkernel", 1, "libkernel", posix_pthread_rwlock_destroy);
     LIB_FUNCTION("ytQULN-nhL4", "libkernel", 1, "libkernel", posix_pthread_rwlock_init);
@@ -246,8 +279,10 @@ void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("sIlRvQqsN2Y", "libkernel", 1, "libkernel", posix_pthread_rwlock_wrlock);
     LIB_FUNCTION("qsdmgXjqSgk", "libkernel", 1, "libkernel", posix_pthread_rwlockattr_destroy);
     LIB_FUNCTION("VqEMuCv-qHY", "libkernel", 1, "libkernel", posix_pthread_rwlockattr_getpshared);
+    LIB_FUNCTION("l+bG5fsYkhg", "libkernel", 1, "libkernel", posix_pthread_rwlockattr_gettype_np);
     LIB_FUNCTION("xFebsA4YsFI", "libkernel", 1, "libkernel", posix_pthread_rwlockattr_init);
     LIB_FUNCTION("OuKg+kRDD7U", "libkernel", 1, "libkernel", posix_pthread_rwlockattr_setpshared);
+    LIB_FUNCTION("8NuOHiTr1Vw", "libkernel", 1, "libkernel", posix_pthread_rwlockattr_settype_np);
 
     // Posix
     LIB_FUNCTION("1471ajPzxh0", "libScePosix", 1, "libkernel", posix_pthread_rwlock_destroy);
@@ -261,17 +296,23 @@ void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("sIlRvQqsN2Y", "libScePosix", 1, "libkernel", posix_pthread_rwlock_wrlock);
     LIB_FUNCTION("qsdmgXjqSgk", "libScePosix", 1, "libkernel", posix_pthread_rwlockattr_destroy);
     LIB_FUNCTION("VqEMuCv-qHY", "libScePosix", 1, "libkernel", posix_pthread_rwlockattr_getpshared);
+    LIB_FUNCTION("l+bG5fsYkhg", "libScePosix", 1, "libkernel", posix_pthread_rwlockattr_gettype_np);
     LIB_FUNCTION("xFebsA4YsFI", "libScePosix", 1, "libkernel", posix_pthread_rwlockattr_init);
     LIB_FUNCTION("OuKg+kRDD7U", "libScePosix", 1, "libkernel", posix_pthread_rwlockattr_setpshared);
+    LIB_FUNCTION("8NuOHiTr1Vw", "libScePosix", 1, "libkernel", posix_pthread_rwlockattr_settype_np);
 
     // Orbis
     LIB_FUNCTION("i2ifZ3fS2fo", "libkernel", 1, "libkernel",
                  ORBIS(posix_pthread_rwlockattr_destroy));
     LIB_FUNCTION("LcOZBHGqbFk", "libkernel", 1, "libkernel",
                  ORBIS(posix_pthread_rwlockattr_getpshared));
+    LIB_FUNCTION("Kyls1ChFyrc", "libkernel", 1, "libkernel",
+                 ORBIS(posix_pthread_rwlockattr_gettype_np));
     LIB_FUNCTION("yOfGg-I1ZII", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlockattr_init));
     LIB_FUNCTION("-ZvQH18j10c", "libkernel", 1, "libkernel",
                  ORBIS(posix_pthread_rwlockattr_setpshared));
+    LIB_FUNCTION("h-OifiouBd8", "libkernel", 1, "libkernel",
+                 ORBIS(posix_pthread_rwlockattr_settype_np));
     LIB_FUNCTION("BB+kb08Tl9A", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_destroy));
     LIB_FUNCTION("6ULAa0fq4jA", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_init));
     LIB_FUNCTION("Ox9i0c7L5w0", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_rdlock));

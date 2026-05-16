@@ -308,6 +308,10 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
 
     auto& offs_dw = asc_next_offs_dw[vqid];
 
+    if (next_offs_dw == offs_dw) {
+        return;
+    }
+
     if (next_offs_dw < offs_dw && next_offs_dw != 0) {
         // For cases if a submission is split at the end of the ring buffer, we need to submit it in
         // two parts to handle the wrap

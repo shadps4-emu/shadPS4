@@ -766,7 +766,7 @@ T Translator::GetSrc64(const InstOperand& operand) {
 template IR::U64 Translator::GetSrc64<IR::U64>(const InstOperand&);
 template IR::F64 Translator::GetSrc64<IR::F64>(const InstOperand&);
 
-template <typename T>
+template <typename T, bool is_signed>
 pk_type<T> Translator::GetSrcPk(const InstOperand& operand) {
     constexpr bool is_float = std::is_same_v<T, IR::F32>;
 
@@ -794,7 +794,8 @@ pk_type<T> Translator::GetSrcPk(const InstOperand& operand) {
         if constexpr (is_float) {
             return value;
         } else {
-            return ir.BitCast<IR::U32>(value);
+            return ir.BitFieldExtract(ir.BitCast<IR::U32>(value), ir.Imm32(0), ir.Imm32(16),
+                                      is_signed);
         }
     };
 
@@ -891,8 +892,9 @@ pk_type<T> Translator::GetSrcPk(const InstOperand& operand) {
     return value;
 }
 
-template pk_type<IR::U32> Translator::GetSrcPk<IR::U32>(const InstOperand&);
-template pk_type<IR::F32> Translator::GetSrcPk<IR::F32>(const InstOperand&);
+template pk_type<IR::U32> Translator::GetSrcPk<IR::U32, true>(const InstOperand&);
+template pk_type<IR::U32> Translator::GetSrcPk<IR::U32, false>(const InstOperand&);
+template pk_type<IR::F32> Translator::GetSrcPk<IR::F32, false>(const InstOperand&);
 
 void Translator::SetDst1(const InstOperand& operand, const IR::U1& value) {
     switch (operand.field) {
@@ -1034,6 +1036,46 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
         UNREACHABLE();
     }
 }
+
+template <typename T, bool is_signed>
+void Translator::SetDstPk(const InstOperand& operand, const pk_type<T>& value) {
+    pk_type<T> v = value;
+
+    if constexpr (std::is_same_v<T, IR::F32>) {
+        if (operand.output_modifier.clamp) {
+            v = {ir.FPSaturate(v.first), ir.FPSaturate(v.second)};
+        }
+    } else {
+        if (operand.output_modifier.clamp) {
+            if constexpr (is_signed) {
+                auto lower = ir.Imm32(-32768);
+                auto upper = ir.Imm32(32767);
+                v = {ir.SClamp(v.first, lower, upper), ir.SClamp(v.second, lower, upper)};
+            } else {
+                auto imm = ir.Imm32(0xFFFF);
+                v = {ir.UMin(v.first, imm), ir.UMin(v.second, imm)};
+            }
+        }
+    }
+
+    IR::U32 value_raw{};
+    if constexpr (std::is_same_v<T, IR::F32>) {
+        value_raw =
+            ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(v.first, v.second));
+    } else {
+        value_raw = ir.Pack2x16(AmdGpu::NumberFormat::Uint,
+                                ir.CompositeConstruct(ir.BitCast<IR::F32, IR::U32>(v.first),
+                                                      ir.BitCast<IR::F32, IR::U32>(v.second)));
+    }
+    SetDst(operand, value_raw);
+}
+
+template void Translator::SetDstPk<IR::U32, false>(const InstOperand& operand,
+                                                   const pk_type<IR::U32>& value);
+template void Translator::SetDstPk<IR::U32, true>(const InstOperand& operand,
+                                                  const pk_type<IR::U32>& value);
+template void Translator::SetDstPk<IR::F32, false>(const InstOperand& operand,
+                                                   const pk_type<IR::F32>& value);
 
 void Translator::EmitFetch(const GcnInst& inst) {
     const auto code_sgpr_base = inst.src[0].code;
