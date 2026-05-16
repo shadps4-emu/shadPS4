@@ -9,6 +9,11 @@
 
 #include "common/types.h"
 #include "core/libraries/network/http.h"
+#include "core/libraries/network/http_error.h"
+
+#ifndef ORBIS_OK
+#define ORBIS_OK 0
+#endif
 
 using namespace Libraries::Http;
 
