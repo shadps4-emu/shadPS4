@@ -358,15 +358,6 @@ int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, u64 poolSize) {
     return ++id;
 }
 
-int PS4_SYSV_ABI sceHttpParseResponseHeader(const char* header, u64 headerLen, const char* fieldStr,
-                                            const char** fieldValue, u64* valueLen) {
-    LOG_ERROR(Lib_Http,
-              "(STUBBED) called header={}, headerLen={}, fieldStr={}, fieldValue={}, valueLen={}",
-              fmt::ptr(header), headerLen, fieldStr ? fieldStr : "(null)", fmt::ptr(fieldValue),
-              fmt::ptr(valueLen));
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size) {
     LOG_ERROR(Lib_Http, "(STUBBED) called reqId={}, data={}, size={}", reqId, fmt::ptr(data), size);
     return ORBIS_OK;
@@ -789,6 +780,127 @@ int PS4_SYSV_ABI sceHttpParseStatusLine(const char* statusLine, u64 lineLen, int
 
     LOG_ERROR(Lib_Http, "no '\\n' found in status line");
     return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+}
+
+int PS4_SYSV_ABI sceHttpParseResponseHeader(const char* header, u64 headerLen, const char* fieldStr,
+                                            const char** fieldValue, u64* valueLen) {
+    LOG_TRACE(Lib_Http, "called header={}, headerLen={}, fieldStr={}, fieldValue={}, valueLen={}",
+              fmt::ptr(header), headerLen, fieldStr ? fieldStr : "(null)", fmt::ptr(fieldValue),
+              fmt::ptr(valueLen));
+
+    if (!header) {
+        LOG_ERROR(Lib_Http, "Invalid response");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+    if (!fieldStr || !fieldValue || !valueLen) {
+        LOG_ERROR(Lib_Http, "Invalid value");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_VALUE;
+    }
+
+    const u64 fieldStrLen = strnlen(fieldStr, 0xfff);
+
+    auto isAsciiSpace = [](unsigned char c) -> bool { return c < 0x80 && std::isspace(c) != 0; };
+    auto caseInsensitiveEq = [](const char* a, const char* b, u64 n) -> bool {
+        for (u64 i = 0; i < n; ++i) {
+            if (std::tolower(static_cast<unsigned char>(a[i])) !=
+                std::tolower(static_cast<unsigned char>(b[i])))
+                return false;
+        }
+        return true;
+    };
+
+    bool atLineStart = true;
+    u64 valueOffset = 0;
+    bool found = false;
+
+    if (headerLen != 0) {
+        u64 cur = 0;
+        u64 next = 1;
+        while (true) {
+            if (atLineStart) {
+                const unsigned char first = static_cast<unsigned char>(header[cur]);
+                if (!isAsciiSpace(first)) {
+                    if (fieldStrLen < headerLen - cur &&
+                        caseInsensitiveEq(fieldStr, header + cur, fieldStrLen) &&
+                        header[cur + fieldStrLen] == ':') {
+                        // Found.
+                        valueOffset = cur + fieldStrLen + 1;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            atLineStart = (header[cur] == '\n');
+            cur = next;
+            next += 1;
+            if (cur >= headerLen)
+                break;
+        }
+    }
+    if (!found) {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_NOT_FOUND;
+    }
+
+    while (valueOffset < headerLen) {
+        const unsigned char c = static_cast<unsigned char>(header[valueOffset]);
+        if (!isAsciiSpace(c))
+            break;
+        if (c == '\n') {
+            // Past EOL with only whitespace seen. Firmware advances one more
+            // and exits the loop so the value scan starts past the '\n'.
+            valueOffset++;
+            break;
+        }
+        valueOffset++;
+    }
+
+    u64 valueStart = valueOffset;
+    u64 scan = valueOffset;
+    u64 lineEnd = valueOffset;   // points one past the '\n' of the final line
+    u64 lengthEnd = valueOffset; // where the trimmed value ends (strips trailing \r)
+
+    if (valueOffset < headerLen) {
+        bool sawCR = false;
+        while (scan < headerLen) {
+            // Walk to next '\n'.
+            while (scan < headerLen && header[scan] != '\n') {
+                scan++;
+            }
+            if (scan >= headerLen) {
+                // No '\n' before end of buffer: value runs to headerLen.
+                lengthEnd = headerLen;
+                lineEnd = headerLen;
+                break;
+            }
+            // scan points at '\n'. Note trailing '\r'.
+            sawCR = (scan > valueStart && header[scan - 1] == '\r');
+            const u64 afterLF = scan + 1;
+            // Check for line folding: next byte is SP or HT.
+            if (afterLF < headerLen && (header[afterLF] == ' ' || header[afterLF] == '\t')) {
+                // Continuation - keep scanning.
+                scan = afterLF;
+                continue;
+            }
+            // End of value.
+            lineEnd = afterLF;
+            lengthEnd = sawCR ? (scan - 1) : scan;
+            break;
+        }
+    } else {
+        lineEnd = headerLen;
+        lengthEnd = headerLen;
+    }
+
+    const u64 finalLen = (lengthEnd > valueStart) ? (lengthEnd - valueStart) : 0;
+    if (finalLen == 0) {
+        *fieldValue = nullptr;
+        *valueLen = 0;
+        return 0;
+    }
+
+    *fieldValue = header + valueStart;
+    *valueLen = finalLen;
+    return static_cast<int>(lineEnd);
 }
 
 //***********************************

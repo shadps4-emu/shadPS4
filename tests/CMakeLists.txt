@@ -200,9 +200,18 @@ foreach(t ${TEST_TARGETS})
     )
 endforeach()
 
+# ===========================================================================
+# HTTP tests (libSceHttp - URI helpers and status-line parsing)
+# ===========================================================================
+# Self-contained block - mirrors the structure of the targets above so the
+# new test does not depend on any earlier foreach iterations.
+
 set(HTTP_TEST_SOURCES
     # Under test
     ${CMAKE_SOURCE_DIR}/src/core/libraries/network/http.cpp
+
+    # Required to link RegisterLib's LIB_FUNCTION calls and the logger's
+    # access to EmulatorSettings.
     ${CMAKE_SOURCE_DIR}/src/core/emulator_settings.cpp
     ${CMAKE_SOURCE_DIR}/src/core/emulator_state.cpp
 
@@ -222,6 +231,7 @@ set(HTTP_TEST_SOURCES
     # Tests
     network/test_http_uri.cpp
     network/test_http_status_line.cpp
+    network/test_http_parse_response_header.cpp
 )
 
 add_executable(shadps4_http_test ${HTTP_TEST_SOURCES})
