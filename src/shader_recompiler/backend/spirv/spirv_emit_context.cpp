@@ -337,7 +337,8 @@ void EmitContext::DefineInputs() {
         break;
     }
     case LogicalStage::Fragment: {
-        if (info.loads.GetAny(IR::Attribute::FragCoord)) {
+        if (info.loads.GetAny(IR::Attribute::FragCoord) ||
+            info.loads.GetAny(IR::Attribute::BaryCoordPullModel)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         }
         if (info.loads.Get(IR::Attribute::IsFrontFace)) {
@@ -352,7 +353,8 @@ void EmitContext::DefineInputs() {
             sample_index = DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
             Decorate(sample_index, spv::Decoration::Flat);
         }
-        if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth)) {
+        if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth) ||
+            info.loads.GetAny(IR::Attribute::BaryCoordPullModel)) {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_smooth = DefineVariable(F32[2], spv::BuiltIn::BaryCoordSmoothAMD,
                                                    spv::StorageClass::Input);

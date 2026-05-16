@@ -139,6 +139,20 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     case IR::Attribute::BaryCoordNoPersp:
         return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp,
                                                         ctx.ConstU32(comp)));
+    case IR::Attribute::BaryCoordPullModel: {
+        ASSERT_MSG(comp < 3, "Invalid BaryCoordPullModel component {}", comp);
+        const Id inv_w = ctx.OpLoad(
+            ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.frag_coord, ctx.ConstU32(3U)));
+        if (comp == 2) {
+            // Pull-model Z is 1/W at fragment center.
+            return inv_w;
+        }
+        // Pull-model XY are I/W and J/W at fragment center.
+        const u32 ij_comp = ctx.profile.supports_fragment_shader_barycentric ? comp + 1 : comp;
+        const Id ij = ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth,
+                                                               ctx.ConstU32(ij_comp)));
+        return ctx.OpFMul(ctx.F32[1], ij, inv_w);
+    }
     default:
         UNREACHABLE_MSG("Read attribute {}", attr);
     }
