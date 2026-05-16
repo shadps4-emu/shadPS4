@@ -151,6 +151,9 @@ void GameController::UpdateAxisSmoothing() {
 }
 
 void GameController::SetLightBarRGB(u8 r, u8 g, u8 b) {
+    if (override_colour.has_value()) {
+        return;
+    }
     colour = {r, g, b};
     if (m_sdl_gamepad != nullptr) {
         SDL_SetGamepadLED(m_sdl_gamepad, r, g, b);
@@ -187,9 +190,6 @@ void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, f
         }
     }
 }
-
-std::array<std::optional<Colour>, 4> GameControllers::controller_override_colors{
-    std::nullopt, std::nullopt, std::nullopt, std::nullopt};
 
 void GameControllers::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
                                            Libraries::Pad::OrbisFVector3& angularVelocity,

@@ -11,6 +11,7 @@
 #include "core/libraries/camera/camera.h"
 #include "core/libraries/companion/companion_httpd.h"
 #include "core/libraries/companion/companion_util.h"
+#include "core/libraries/content_export/content_export.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
@@ -67,6 +68,7 @@
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/ulobjmgr/ulobjmgr.h"
 #include "core/libraries/usbd/usbd.h"
+#include "core/libraries/video_recording/video_recording.h"
 #include "core/libraries/videodec/videodec.h"
 #include "core/libraries/videodec/videodec2.h"
 #include "core/libraries/videoout/video_out.h"
@@ -155,6 +157,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::VrTracker::RegisterLib(sym);
     Libraries::Font::RegisterlibSceFont(sym);
     Libraries::FontFt::RegisterlibSceFontFt(sym);
+    Libraries::ContentExport::RegisterLib(sym);
+    Libraries::VideoRecording::RegisterLib(sym);
 
     // Loading libSceSsl is locked behind a title workaround that currently applies to nothing.
     // Libraries::Ssl::RegisterLib(sym);

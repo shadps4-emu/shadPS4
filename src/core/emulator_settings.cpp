@@ -391,8 +391,8 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
                                             "config.toml")) {
                     SDL_MessageBoxButtonData btns[2]{
-                        {0, 0, "Defaults"},
-                        {0, 1, "Update"},
+                        {0, 0, "Update"},
+                        {0, 1, "Defaults"},
                     };
                     SDL_MessageBoxData msg_box{
                         0,
@@ -407,7 +407,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                     };
                     int result = 1;
                     SDL_ShowMessageBox(&msg_box, &result);
-                    if (result == 1) {
+                    if (result == 0) {
                         if (TransferSettings()) {
                             m_loaded = true;
                             Save();

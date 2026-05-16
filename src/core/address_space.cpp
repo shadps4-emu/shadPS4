@@ -257,9 +257,20 @@ struct AddressSpace::Impl {
                 ret = VirtualProtect(ptr, size, prot, &resultvar);
                 ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
             } else {
-                ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
-                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
-                ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
+                if (prot == PAGE_NOACCESS) {
+                    DWORD resultvar;
+                    ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
+                                         phys_addr, size, MEM_REPLACE_PLACEHOLDER, PAGE_READWRITE,
+                                         nullptr, 0);
+                    ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
+                    bool ret = VirtualProtect(ptr, size, prot, &resultvar);
+                    ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
+                } else {
+                    ptr =
+                        MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
+                                       phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
+                    ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
+                }
             }
         } else {
             ptr =

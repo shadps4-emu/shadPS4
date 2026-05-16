@@ -560,6 +560,9 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             return ConvertReturnErrorCode(ioctl(sock, FIONBIO, &sockopt_so_nbio));
 #endif
         }
+        case ORBIS_NET_SO_ACCEPTTIMEO:
+            LOG_ERROR(Lib_Net, "Unhandled option ORBIS_NET_SO_ACCEPTTIMEO");
+            return ORBIS_OK;
         }
     } else if (native_level == IPPROTO_IP) {
         switch (optname) {
