@@ -201,7 +201,13 @@ foreach(t ${TEST_TARGETS})
 endforeach()
 
 set(HTTP_URI_TEST_SOURCES
+    # Under test
     ${CMAKE_SOURCE_DIR}/src/core/libraries/network/http.cpp
+
+    # Required to link RegisterLib's LIB_FUNCTION calls and the logger's
+    # access to EmulatorSettings.
+    ${CMAKE_SOURCE_DIR}/src/core/emulator_settings.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/emulator_state.cpp
 
     # Minimal common support
     ${CMAKE_SOURCE_DIR}/src/common/path_util.cpp
@@ -213,6 +219,8 @@ set(HTTP_URI_TEST_SOURCES
     # Stubs that replace dependencies
     stubs/common_stub.cpp
     stubs/scm_rev_stub.cpp
+    stubs/sdl_stub.cpp
+    stubs/loader_stub.cpp
 
     # Tests
     network/test_http_uri.cpp
