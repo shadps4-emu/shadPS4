@@ -130,12 +130,8 @@ int PS4_SYSV_ABI sceHttpCreateConnection(int tmplId, const char* serverName, con
 int PS4_SYSV_ABI sceHttpCreateConnectionWithURL(int tmplId, const char* url, bool enableKeepalive);
 int PS4_SYSV_ABI sceHttpCreateEpoll(int libhttpCtxId, OrbisHttpEpollHandle* eh);
 int PS4_SYSV_ABI sceHttpCreateRequest(int connId, int method, const char* path, u64 contentLength);
-int PS4_SYSV_ABI sceHttpCreateRequest2(int connId, const char* method, const char* path,
-                                       u64 contentLength);
 int PS4_SYSV_ABI sceHttpCreateRequestWithURL(int connId, s32 method, const char* url,
                                              u64 contentLength);
-int PS4_SYSV_ABI sceHttpCreateRequestWithURL2(int connId, const char* method, const char* url,
-                                              u64 contentLength);
 int PS4_SYSV_ABI sceHttpCreateTemplate(int libhttpCtxId, const char* userAgent, int httpVer,
                                        int isAutoProxyConf);
 int PS4_SYSV_ABI sceHttpDbgEnableProfile();
@@ -230,7 +226,13 @@ int PS4_SYSV_ABI sceHttpUnsetEpoll(int id);
 int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* nbev, int maxevents,
                                     int timeout);
 int PS4_SYSV_ABI sceHttpUriCopy();
-
+//***********************************
+// Request functions
+//***********************************
+int PS4_SYSV_ABI sceHttpCreateRequest2(int connId, const char* method, const char* path,
+                                       u64 contentLength);
+int PS4_SYSV_ABI sceHttpCreateRequestWithURL2(int connId, const char* method, const char* url,
+                                              u64 contentLength);
 //***********************************
 // Error Obtainment functions
 //***********************************
