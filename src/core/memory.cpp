@@ -652,7 +652,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         ASSERT_MSG(remaining_size == 0, "Failed to map physical memory");
     }
 
-    if (new_vma.type != VMAType::Direct || sdk_version >= Common::ElfInfo::FW_20) {
+    if (new_vma.type != VMAType::Direct || sdk_version >= Common::ElfInfo::FW_200) {
         // Merge this VMA with similar nearby areas
         // Direct memory mappings only coalesce on SDK version 2.00 or later.
         MergeAdjacent(vma_map, new_vma_handle);

@@ -1921,19 +1921,19 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
     switch (param_id) {
     case OrbisSystemServiceParamId::Lang: {
         s32 lang = EmulatorSettings.GetConsoleLanguage();
-        if (lang == 0x15 && g_sdk_version < Common::ElfInfo::FW_20) {
+        if (lang == 0x15 && g_sdk_version < Common::ElfInfo::FW_200) {
             lang = 0x12;
         }
-        if (lang == 0x16 && g_sdk_version < Common::ElfInfo::FW_25) {
+        if (lang == 0x16 && g_sdk_version < Common::ElfInfo::FW_250) {
             lang = 2;
         }
-        if ((lang >= 0x17 && lang <= 0x1a) && g_sdk_version < Common::ElfInfo::FW_50) {
+        if ((lang >= 0x17 && lang <= 0x1a) && g_sdk_version < Common::ElfInfo::FW_500) {
             lang = 0x12;
         }
-        if ((lang >= 0x1b && lang <= 0x1d) && g_sdk_version < Common::ElfInfo::FW_50) {
+        if ((lang >= 0x1b && lang <= 0x1d) && g_sdk_version < Common::ElfInfo::FW_500) {
             lang = 1;
         }
-        if (lang == 0x1e && g_sdk_version < Common::ElfInfo::FW_100) {
+        if (lang == 0x1e && g_sdk_version < Common::ElfInfo::FW_1000) {
             lang = 0x12;
         }
         *value = lang;
