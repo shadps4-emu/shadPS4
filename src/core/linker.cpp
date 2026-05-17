@@ -5,6 +5,7 @@
 #include "common/arch.h"
 #include "common/assert.h"
 #include "common/elf_info.h"
+#include "common/logging/formatter.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
@@ -124,6 +125,24 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
         // Have libSceSysmodule preload our libraries.
         Libraries::SysModule::sceSysmodulePreloadModuleForLibkernel();
+
+        // Load and start custom modules from the user directory.
+        std::string_view id = Common::ElfInfo::Instance().GameSerial();
+        const auto& custom_mod_directory =
+            Common::FS::GetUserPath(Common::FS::PathType::CustomModulesDir) / id;
+        if (!std::filesystem::exists(custom_mod_directory)) {
+            std::filesystem::create_directory(custom_mod_directory);
+        }
+        for (const auto& entry : std::filesystem::directory_iterator(custom_mod_directory)) {
+            if (entry.is_regular_file()) {
+                LOG_INFO(Core_Linker, "Loading custom module: {}",
+                         fmt::UTF(entry.path().u8string()));
+                if (LoadAndStartModule(entry.path(), 0, nullptr, nullptr) == -1) {
+                    LOG_ERROR(Core_Linker, "Failed to load custom module: {}",
+                              fmt::UTF(entry.path().u8string()));
+                }
+            }
+        }
 
         // Simulate libSceGnmDriver initialization, which maps a chunk of direct memory.
         // Some games fail without accurately emulating this behavior.
