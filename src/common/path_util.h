@@ -27,6 +27,7 @@ enum class PathType {
     CacheDir,       // Where pipeline and shader cache is stored.
     FontsDir,       // Where dumped system fonts are stored.
     HomeDir,        // PS4 home directory
+    CustomModulesDir // Where custom modules are stored.
 };
 
 constexpr auto PORTABLE_DIR = "user";
@@ -48,6 +49,7 @@ constexpr auto CUSTOM_CONFIGS = "custom_configs";
 constexpr auto CACHE_DIR = "cache";
 constexpr auto FONTS_DIR = "fonts";
 constexpr auto HOME_DIR = "home";
+constexpr auto CUSTOM_MODULES_DIR = "custom_modules";
 
 // Filenames
 constexpr auto LOG_FILE = "shad_log.txt";
