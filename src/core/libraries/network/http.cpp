@@ -593,11 +593,9 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
 
     req.last_errno = ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
     req.state = HttpRequestState::Sent;
-    LOG_INFO(Lib_Http,
-             "reqId={} 'sent' (no-internet path): last_errno={:#x} will be reported "
-             "via sceHttpGetLastErrno",
-             reqId, static_cast<u32>(req.last_errno));
-    return ORBIS_OK;
+    LOG_INFO(Lib_Http, "reqId={} send failed: last_errno={:#x} (no-internet path)", reqId,
+             static_cast<u32>(req.last_errno));
+    return ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
 }
 
 int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable) {
@@ -1245,7 +1243,7 @@ int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
     }
 
     if (prepare < need) {
-        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY; // buffer too small (matches firmware 0x80431022)
+        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY; // buffer too small
     }
 
     std::memcpy(out, built.c_str(), need);
@@ -1541,8 +1539,8 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
             colonPos = scanPos;
         } else {
             if ((signed char)c < 0)
-                break;                              // non-ASCII
-            if (!isalnum(c) && !isUserinfoPunct(c)) // not in firmware's allowed set
+                break;
+            if (!isalnum(c) && !isUserinfoPunct(c))
                 break;
         }
         scanPos++;
