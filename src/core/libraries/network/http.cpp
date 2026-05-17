@@ -399,9 +399,11 @@ int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags) {
 }
 
 int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called reqId={}, postData={}, size={}", reqId,
-              fmt::ptr(postData), size);
-    return ORBIS_OK;
+    LOG_ERROR(Lib_Http, "called reqId={}, postData={}, size={}", reqId, fmt::ptr(postData), size);
+    if (!g_isHttpInitialized) {
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    return ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
 }
 
 int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable) {
