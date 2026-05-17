@@ -1,15 +1,74 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+#include <cctype>
+#include <cstring>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/http.h"
 #include "http_error.h"
 
 namespace Libraries::Http {
 
-static bool g_isHttpInitialized = true; // TODO temp always inited
+enum class HttpRequestState {
+    Created,
+    Sending,
+    Sent,
+    Aborted,
+};
+
+struct HttpTemplate {
+    std::string user_agent;
+    int http_version;
+    int auto_proxy_conf;
+};
+
+struct HttpConnection {
+    int tmpl_id;             // Owning template (looked up to inherit user_agent etc.)
+    std::string url;         // Reconstructed "scheme://host:port" or the raw URL the
+                             // game gave us via sceHttpCreateConnectionWithURL.
+    std::string scheme;      // "http" or "https".
+    std::string hostname;    // Host portion only. Used for the Host: request header.
+    u16 port = 0;            // Numeric port. 80 / 443 if scheme-default.
+    bool keep_alive = false; // Game-controlled keep-alive intent.
+    bool is_secure = false;  // True if scheme == "https".
+};
+
+struct HttpRequest {
+    int conn_id = 0;
+    int method = 0;
+    std::string method_str;
+    std::string url;
+    u64 content_length = 0;
+    HttpRequestState state = HttpRequestState::Created;
+    bool deleted = false;
+    s32 last_errno = 0; // populated by SendRequest, read by GetLastErrno
+};
+
+struct HttpState {
+    std::mutex m_mutex;
+    bool inited = false;
+    int next_ctx_id = 0;
+    int next_obj_id = 0;
+    std::unordered_set<int> active_contexts;
+    std::unordered_map<int, HttpTemplate> templates;
+    std::unordered_map<int, HttpConnection> connections;
+    std::unordered_map<int, std::shared_ptr<HttpRequest>> requests;
+    std::atomic<bool> shutting_down{false};
+};
+
+static HttpState g_state;
 
 void NormalizeAndAppendPath(char* dest, char* src) {
     char* lastSlash;
@@ -29,6 +88,47 @@ void NormalizeAndAppendPath(char* dest, char* src) {
     length = strnlen(dest, 0x3fff);
     strncat(dest, src, 0x3fff - length);
     return;
+}
+
+// Returns ORBIS_OK on success or one of {INVALID_VALUE, UNKNOWN_SCHEME}.
+static int CheckScheme(const char* scheme, bool& is_secure) {
+    if (!scheme) {
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    auto match_ci = [](const char* s, const char* lit, size_t cap) -> bool {
+        for (size_t i = 0; i < cap; ++i) {
+            const char a = s[i];
+            const char b = lit[i];
+            if (a == '\0' && b == '\0')
+                return true;
+            if (a == '\0' || b == '\0')
+                return false;
+            const char fa = (a >= 'A' && a <= 'Z') ? char(a - 'A' + 'a') : a;
+            const char fb = (b >= 'A' && b <= 'Z') ? char(b - 'A' + 'a') : b;
+            if (fa != fb)
+                return false;
+        }
+        return s[cap] == '\0' && lit[cap] == '\0';
+    };
+    if (match_ci(scheme, "HTTP", 0x20)) {
+        is_secure = false;
+        return ORBIS_OK;
+    }
+    if (match_ci(scheme, "HTTPS", 0x20)) {
+        is_secure = true;
+        return ORBIS_OK;
+    }
+    return ORBIS_HTTP_ERROR_UNKNOWN_SCHEME;
+}
+
+static bool ContainsCrLf(const char* s) {
+    if (!s)
+        return false;
+    for (; *s; ++s) {
+        if (*s == '\r' || *s == '\n')
+            return true;
+    }
+    return false;
 }
 
 int PS4_SYSV_ABI sceHttpAbortRequest(int reqId) {
@@ -109,17 +209,115 @@ int PS4_SYSV_ABI sceHttpCookieImport(int libhttpCtxId, const void* buffer, u64 b
 
 int PS4_SYSV_ABI sceHttpCreateConnection(int tmplId, const char* serverName, const char* scheme,
                                          u16 port, int isEnableKeepalive) {
-    LOG_ERROR(Lib_Http,
-              "(STUBBED) called tmplId={}, serverName={}, scheme={}, port={}, isEnableKeepalive={}",
-              tmplId, serverName ? serverName : "(null)", scheme ? scheme : "(null)", port,
-              isEnableKeepalive);
-    return ORBIS_OK;
+    LOG_INFO(Lib_Http, "called tmplId={}, serverName={}, scheme={}, port={}, isEnableKeepalive={}",
+             tmplId, serverName ? serverName : "(null)", scheme ? scheme : "(null)", port,
+             isEnableKeepalive);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!g_state.templates.contains(tmplId)) {
+        LOG_ERROR(Lib_Http, "Invalid tmplId={}", tmplId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+
+    if (!serverName) {
+        LOG_ERROR(Lib_Http, "serverName is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    bool is_secure = false;
+    if (int sc = CheckScheme(scheme, is_secure); sc < 0) {
+        LOG_ERROR(Lib_Http, "scheme rejected: '{}' -> {:#x}", scheme ? scheme : "(null)", sc);
+        return sc;
+    }
+
+    const std::string scheme_str = is_secure ? "https" : "http";
+    const int conn_id = ++g_state.next_obj_id;
+    HttpConnection conn;
+    conn.tmpl_id = tmplId;
+    conn.scheme = scheme_str;
+    conn.hostname = serverName;
+    conn.port = port;
+    conn.keep_alive = (isEnableKeepalive != 0);
+    conn.is_secure = is_secure;
+    conn.url = scheme_str + "://" + serverName + ":" + std::to_string(port);
+    g_state.connections.emplace(conn_id, std::move(conn));
+    LOG_INFO(Lib_Http, "created connection connId={} url={}", conn_id,
+             g_state.connections[conn_id].url);
+    return conn_id;
 }
 
 int PS4_SYSV_ABI sceHttpCreateConnectionWithURL(int tmplId, const char* url, bool enableKeepalive) {
-    LOG_INFO(Lib_Http, "(STUBBED) called tmplId={}, url={}, enableKeepalive={}", tmplId,
-             url ? url : "(null)", enableKeepalive);
-    return ORBIS_OK;
+    LOG_INFO(Lib_Http, "called tmplId={}, url={}, enableKeepalive={}", tmplId, url ? url : "(null)",
+             enableKeepalive);
+    {
+        std::lock_guard<std::mutex> lock(g_state.m_mutex);
+        if (!g_state.inited) {
+            LOG_ERROR(Lib_Http, "Not initialized");
+            return ORBIS_HTTP_ERROR_BEFORE_INIT;
+        }
+        if (!g_state.templates.contains(tmplId)) {
+            LOG_ERROR(Lib_Http, "Invalid tmplId={}", tmplId);
+            return ORBIS_HTTP_ERROR_INVALID_ID;
+        }
+    }
+    if (!url) {
+        LOG_ERROR(Lib_Http, "url is null");
+        return ORBIS_HTTP_ERROR_INVALID_URL;
+    }
+
+    u64 required = 0;
+    int parse_ret = sceHttpUriParse(nullptr, url, nullptr, &required, 0);
+    if (parse_ret < 0) {
+        LOG_ERROR(Lib_Http, "URI pre-parse failed: {:#x}", parse_ret);
+        return parse_ret; // already an ORBIS_HTTP_ERROR_*
+    }
+    std::vector<char> pool(required);
+    OrbisHttpUriElement parsed{};
+    parse_ret = sceHttpUriParse(&parsed, url, pool.data(), &required, required);
+    if (parse_ret < 0) {
+        LOG_ERROR(Lib_Http, "URI parse failed: {:#x}", parse_ret);
+        return parse_ret;
+    }
+
+    std::string scheme_str = parsed.scheme ? parsed.scheme : "";
+    bool is_secure = false;
+    if (int sc = CheckScheme(parsed.scheme, is_secure); sc < 0) {
+        LOG_ERROR(Lib_Http, "URL scheme rejected: '{}' -> {:#x}", scheme_str, sc);
+        return sc;
+    }
+    if (!parsed.hostname || !parsed.hostname[0]) {
+        LOG_ERROR(Lib_Http, "URL has no hostname");
+        return ORBIS_HTTP_ERROR_INVALID_URL;
+    }
+
+    scheme_str = is_secure ? "https" : "http";
+    u16 port = parsed.port;
+
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized (raced with Term?)");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!g_state.templates.contains(tmplId)) {
+        LOG_ERROR(Lib_Http, "Invalid tmplId={} (raced with DeleteTemplate?)", tmplId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+
+    int conn_id = ++g_state.next_obj_id;
+    HttpConnection conn;
+    conn.tmpl_id = tmplId;
+    conn.url = url;
+    conn.scheme = scheme_str;
+    conn.hostname = parsed.hostname;
+    conn.port = port;
+    conn.keep_alive = enableKeepalive;
+    conn.is_secure = is_secure;
+    g_state.connections.emplace(conn_id, std::move(conn));
+    LOG_INFO(Lib_Http, "created connection connId={} host={} port={} scheme={}", conn_id,
+             g_state.connections[conn_id].hostname, port, scheme_str);
+    return conn_id;
 }
 
 int PS4_SYSV_ABI sceHttpCreateEpoll(int libhttpCtxId, OrbisHttpEpollHandle* eh) {
@@ -128,38 +326,205 @@ int PS4_SYSV_ABI sceHttpCreateEpoll(int libhttpCtxId, OrbisHttpEpollHandle* eh) 
 }
 
 int PS4_SYSV_ABI sceHttpCreateRequest(int connId, int method, const char* path, u64 contentLength) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called connId={}, method={}, path={}, contentLength={}", connId,
-              method, path ? path : "(null)", contentLength);
-    return ORBIS_OK;
+    LOG_INFO(Lib_Http, "called connId={}, method={}, path={}, contentLength={}", connId, method,
+             path ? path : "(null)", contentLength);
+    std::string url;
+    {
+        std::lock_guard<std::mutex> lock(g_state.m_mutex);
+        if (!g_state.inited) {
+            LOG_ERROR(Lib_Http, "Not initialized");
+            return ORBIS_HTTP_ERROR_BEFORE_INIT;
+        }
+        auto it = g_state.connections.find(connId);
+        if (it == g_state.connections.end()) {
+            LOG_ERROR(Lib_Http, "Invalid connId={}", connId);
+            return ORBIS_HTTP_ERROR_INVALID_ID;
+        }
+        if (!path) {
+            LOG_ERROR(Lib_Http, "path is null");
+            return ORBIS_HTTP_ERROR_INVALID_VALUE;
+        }
+        if (ContainsCrLf(path)) {
+            LOG_ERROR(Lib_Http, "path contains CR/LF (CRLF-injection rejected): {}", path);
+            return ORBIS_HTTP_ERROR_INVALID_VALUE;
+        }
+        const auto& conn = it->second;
+        url = conn.scheme + "://" + conn.hostname + ":" + std::to_string(conn.port);
+        if (path[0] != '\0') {
+            if (path[0] != '/') {
+                url.push_back('/');
+            }
+            url.append(path);
+        }
+    }
+    return sceHttpCreateRequestWithURL(connId, method, url.c_str(), contentLength);
 }
 
 int PS4_SYSV_ABI sceHttpCreateRequest2(int connId, const char* method, const char* path,
                                        u64 contentLength) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called connId={}, method={}, path={}, contentLength={}", connId,
-              method ? method : "(null)", path ? path : "(null)", contentLength);
-    return ORBIS_OK;
+    LOG_INFO(Lib_Http, "called connId={}, method={}, path={}, contentLength={}", connId,
+             method ? method : "(null)", path ? path : "(null)", contentLength);
+    auto map_method = [](const char* m) -> int {
+        if (!m)
+            return -1;
+        std::string s = m;
+        if (s == "GET")
+            return ORBIS_HTTP_METHOD_GET;
+        if (s == "POST")
+            return ORBIS_HTTP_METHOD_POST;
+        if (s == "HEAD")
+            return ORBIS_HTTP_METHOD_HEAD;
+        if (s == "PUT")
+            return ORBIS_HTTP_METHOD_PUT;
+        if (s == "DELETE")
+            return ORBIS_HTTP_METHOD_DELETE;
+        if (s == "TRACE")
+            return ORBIS_HTTP_METHOD_TRACE;
+        return -1;
+    };
+    if (!path) {
+        LOG_ERROR(Lib_Http, "path is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    if (ContainsCrLf(path)) {
+        LOG_ERROR(Lib_Http, "path contains CR/LF (CRLF-injection rejected): {}", path);
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    int int_method = map_method(method);
+    if (int_method < 0) {
+        if (!method) {
+            LOG_ERROR(Lib_Http, "method is null");
+            return ORBIS_HTTP_ERROR_INVALID_VALUE;
+        }
+        LOG_INFO(Lib_Http, "method '{}' not in standard table; routing via CUSTOM slot", method);
+        int_method = ORBIS_HTTP_METHOD_CUSTOM;
+    }
+    // Resolve the connection's URL under the lock, then delegate.
+    std::string url;
+    {
+        std::lock_guard<std::mutex> lock(g_state.m_mutex);
+        if (!g_state.inited) {
+            LOG_ERROR(Lib_Http, "Not initialized");
+            return ORBIS_HTTP_ERROR_BEFORE_INIT;
+        }
+        auto it = g_state.connections.find(connId);
+        if (it == g_state.connections.end()) {
+            LOG_ERROR(Lib_Http, "Invalid connId={}", connId);
+            return ORBIS_HTTP_ERROR_INVALID_ID;
+        }
+        const auto& conn = it->second;
+        url = conn.scheme + "://" + conn.hostname + ":" + std::to_string(conn.port);
+        if (path[0] != '\0') {
+            if (path[0] != '/') {
+                url.push_back('/');
+            }
+            url.append(path);
+        }
+    }
+    int reqId = sceHttpCreateRequestWithURL(connId, int_method, url.c_str(), contentLength);
+    if (reqId > 0 && method) {
+        std::lock_guard<std::mutex> lock(g_state.m_mutex);
+        auto it = g_state.requests.find(reqId);
+        if (it != g_state.requests.end()) {
+            it->second->method_str = method;
+        }
+    }
+    return reqId;
 }
 
 int PS4_SYSV_ABI sceHttpCreateRequestWithURL(int connId, s32 method, const char* url,
                                              u64 contentLength) {
-    LOG_INFO(Lib_Http, "(STUBBED) called connId={}, method={}, url={}, contentLength={}", connId,
-             method, url ? url : "(null)", contentLength);
-    return ORBIS_OK;
+    LOG_INFO(Lib_Http, "called connId={}, method={}, url={}, contentLength={}", connId, method,
+             url ? url : "(null)", contentLength);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!g_state.connections.contains(connId)) {
+        LOG_ERROR(Lib_Http, "Invalid connId={}", connId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    if (!url) {
+        LOG_ERROR(Lib_Http, "url is null");
+        return ORBIS_HTTP_ERROR_INVALID_URL;
+    }
+
+    if (method > 8 || ((0x177u >> (static_cast<u32>(method) & 0x1f)) & 1u) == 0) {
+        LOG_ERROR(Lib_Http, "method {} not accepted", method);
+        return ORBIS_HTTP_ERROR_UNKNOWN_METHOD;
+    }
+    const int req_id = ++g_state.next_obj_id;
+    auto req = std::make_shared<HttpRequest>();
+    req->conn_id = connId;
+    req->method = method;
+    req->url = url;
+    req->content_length = contentLength;
+    g_state.requests.emplace(req_id, std::move(req));
+    LOG_INFO(Lib_Http, "created request reqId={}", req_id);
+    return req_id;
 }
 
 int PS4_SYSV_ABI sceHttpCreateRequestWithURL2(int connId, const char* method, const char* url,
                                               u64 contentLength) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called connId={}, method={}, url={}, contentLength={}", connId,
-              method ? method : "(null)", url ? url : "(null)", contentLength);
-    return ORBIS_OK;
+    LOG_INFO(Lib_Http, "called connId={}, method={}, url={}, contentLength={}", connId,
+             method ? method : "(null)", url ? url : "(null)", contentLength);
+    int int_method = -1;
+    if (method) {
+        std::string s = method;
+        if (s == "GET")
+            int_method = ORBIS_HTTP_METHOD_GET;
+        else if (s == "POST")
+            int_method = ORBIS_HTTP_METHOD_POST;
+        else if (s == "HEAD")
+            int_method = ORBIS_HTTP_METHOD_HEAD;
+        else if (s == "PUT")
+            int_method = ORBIS_HTTP_METHOD_PUT;
+        else if (s == "DELETE")
+            int_method = ORBIS_HTTP_METHOD_DELETE;
+        else if (s == "TRACE")
+            int_method = ORBIS_HTTP_METHOD_TRACE;
+    }
+    if (int_method < 0) {
+        if (!method) {
+            LOG_ERROR(Lib_Http, "method is null");
+            return ORBIS_HTTP_ERROR_INVALID_VALUE;
+        }
+        LOG_INFO(Lib_Http, "method '{}' not in standard table; routing via CUSTOM slot", method);
+        int_method = ORBIS_HTTP_METHOD_CUSTOM;
+    }
+    int reqId = sceHttpCreateRequestWithURL(connId, int_method, url, contentLength);
+    if (reqId > 0 && method) {
+        std::lock_guard<std::mutex> lock(g_state.m_mutex);
+        auto it = g_state.requests.find(reqId);
+        if (it != g_state.requests.end()) {
+            it->second->method_str = method;
+        }
+    }
+    return reqId;
 }
 
 int PS4_SYSV_ABI sceHttpCreateTemplate(int libhttpCtxId, const char* userAgent, int httpVer,
                                        int isAutoProxyConf) {
-    LOG_ERROR(Lib_Http,
-              "(STUBBED) called libhttpCtxId={}, userAgent={}, httpVer={}, isAutoProxyConf={}",
-              libhttpCtxId, userAgent ? userAgent : "(null)", httpVer, isAutoProxyConf);
-    return ORBIS_OK;
+    LOG_INFO(Lib_Http, "called libhttpCtxId={}, userAgent={}, httpVer={}, isAutoProxyConf={}",
+             libhttpCtxId, userAgent ? userAgent : "(null)", httpVer, isAutoProxyConf);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!g_state.active_contexts.contains(libhttpCtxId)) {
+        LOG_ERROR(Lib_Http, "Invalid libhttpCtxId={}", libhttpCtxId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    const int tmpl_id = ++g_state.next_obj_id;
+    HttpTemplate tmpl;
+    tmpl.user_agent = userAgent ? userAgent : "";
+    tmpl.http_version = httpVer;
+    tmpl.auto_proxy_conf = isAutoProxyConf;
+    g_state.templates.emplace(tmpl_id, std::move(tmpl));
+    LOG_INFO(Lib_Http, "created template tmplId={}", tmpl_id);
+    return tmpl_id;
 }
 
 int PS4_SYSV_ABI sceHttpDbgEnableProfile() {
@@ -203,17 +568,49 @@ int PS4_SYSV_ABI sceHttpDbgShowStat() {
 }
 
 int PS4_SYSV_ABI sceHttpDeleteConnection(int connId) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called connId={}", connId);
+    LOG_INFO(Lib_Http, "called connId={}", connId);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (g_state.connections.erase(connId) == 0) {
+        LOG_ERROR(Lib_Http, "Invalid connId={}", connId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceHttpDeleteRequest(int reqId) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called reqId={}", reqId);
+    LOG_INFO(Lib_Http, "called reqId={}", reqId);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    auto req_ptr = it->second;
+    req_ptr->deleted = true;
+    req_ptr->state = HttpRequestState::Aborted;
+    g_state.requests.erase(it);
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceHttpDeleteTemplate(int tmplId) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called tmplId={}", tmplId);
+    LOG_INFO(Lib_Http, "called tmplId={}", tmplId);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (g_state.templates.erase(tmplId) == 0) {
+        LOG_ERROR(Lib_Http, "Invalid tmplId={}", tmplId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
     return ORBIS_OK;
 }
 
@@ -281,7 +678,22 @@ int PS4_SYSV_ABI sceHttpGetEpollId() {
 }
 
 int PS4_SYSV_ABI sceHttpGetLastErrno(int reqId, int* errNum) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called reqId={}, errNum={}", reqId, fmt::ptr(errNum));
+    LOG_INFO(Lib_Http, "called reqId={}, errNum={}", reqId, fmt::ptr(errNum));
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!errNum) {
+        LOG_ERROR(Lib_Http, "errNum output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    *errNum = it->second->last_errno;
     return ORBIS_OK;
 }
 
@@ -311,7 +723,7 @@ int PS4_SYSV_ABI sceHttpGetResponseContentLength(int reqId, int* result, u64* co
 int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
     LOG_INFO(Lib_Http, "(STUBBED) called reqId={}, statusCode={}", reqId, fmt::ptr(statusCode));
 #if 0
-    if (!g_isHttpInitialized)
+    if (!g_state.inited)
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
 
     if (statusCode == nullptr)
@@ -346,121 +758,18 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
 int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, u64 poolSize) {
     LOG_INFO(Lib_Http, "called libnetMemId={}, libsslCtxId={}, poolSize={}", libnetMemId,
              libsslCtxId, poolSize);
-    LOG_ERROR(Lib_Http, "(DUMMY) returning incrementing context id");
-    // return a value >1
-    static int id = 0;
-    return ++id;
-}
-
-int PS4_SYSV_ABI sceHttpParseResponseHeader(const char* header, u64 headerLen, const char* fieldStr,
-                                            const char** fieldValue, u64* valueLen) {
-    LOG_ERROR(Lib_Http,
-              "(STUBBED) called header={}, headerLen={}, fieldStr={}, fieldValue={}, valueLen={}",
-              fmt::ptr(header), headerLen, fieldStr ? fieldStr : "(null)", fmt::ptr(fieldValue),
-              fmt::ptr(valueLen));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpParseStatusLine(const char* statusLine, u64 lineLen, int32_t* httpMajorVer,
-                                        int32_t* httpMinorVer, int32_t* responseCode,
-                                        const char** reasonPhrase, u64* phraseLen) {
-    LOG_INFO(Lib_Http,
-             "called statusLine={}, lineLen={}, httpMajorVer={}, httpMinorVer={}, responseCode={}, "
-             "reasonPhrase={}, phraseLen={}",
-             fmt::ptr(statusLine), lineLen, fmt::ptr(httpMajorVer), fmt::ptr(httpMinorVer),
-             fmt::ptr(responseCode), fmt::ptr(reasonPhrase), fmt::ptr(phraseLen));
-
-    if (!statusLine) {
-        LOG_ERROR(Lib_Http, "Invalid response: statusLine is null");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (poolSize == 0) {
+        LOG_ERROR(Lib_Http, "poolSize is zero");
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    if (!httpMajorVer || !httpMinorVer || !responseCode || !reasonPhrase || !phraseLen) {
-        LOG_ERROR(Lib_Http, "Invalid value: one or more output pointers are null");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_VALUE;
-    }
-    *httpMajorVer = 0;
-    *httpMinorVer = 0;
-    if (lineLen < 8) {
-        LOG_ERROR(Lib_Http, "lineLen ({}) is smaller than 8", lineLen);
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-    if (strncmp(statusLine, "HTTP/", 5) != 0) {
-        LOG_ERROR(Lib_Http, "statusLine doesn't start with HTTP/");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-
-    u64 index = 5;
-
-    if (!isdigit(statusLine[index])) {
-        LOG_ERROR(Lib_Http, "Invalid response: expected digit after HTTP/");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-
-    while (isdigit(statusLine[index])) {
-        *httpMajorVer = *httpMajorVer * 10 + (statusLine[index] - '0');
-        index++;
-    }
-
-    if (statusLine[index] != '.') {
-        LOG_ERROR(Lib_Http, "Invalid response: expected '.' after major version");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-    index++;
-
-    if (!isdigit(statusLine[index])) {
-        LOG_ERROR(Lib_Http, "Invalid response: expected digit for minor version");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-
-    while (isdigit(statusLine[index])) {
-        *httpMinorVer = *httpMinorVer * 10 + (statusLine[index] - '0');
-        index++;
-    }
-
-    if (statusLine[index] != ' ') {
-        LOG_ERROR(Lib_Http, "Invalid response: expected ' ' after minor version");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-    index++;
-
-    // Validate and parse the 3-digit HTTP response code
-    if (lineLen - index < 3 || !isdigit(statusLine[index]) || !isdigit(statusLine[index + 1]) ||
-        !isdigit(statusLine[index + 2])) {
-        LOG_ERROR(Lib_Http, "Invalid response: malformed 3-digit response code");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-
-    *responseCode = (statusLine[index] - '0') * 100 + (statusLine[index + 1] - '0') * 10 +
-                    (statusLine[index + 2] - '0');
-    index += 3;
-
-    if (statusLine[index] != ' ') {
-        LOG_ERROR(Lib_Http, "Invalid response: expected ' ' after response code");
-        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
-    }
-    index++;
-
-    // Set the reason phrase start position
-    *reasonPhrase = &statusLine[index];
-    u64 phraseStart = index;
-
-    while (index < lineLen && statusLine[index] != '\n') {
-        index++;
-    }
-
-    // Determine the length of the reason phrase, excluding trailing \r if present
-    if (index == phraseStart) {
-        *phraseLen = 0;
-    } else {
-        *phraseLen =
-            (statusLine[index - 1] == '\r') ? (index - phraseStart - 1) : (index - phraseStart);
-    }
-
-    LOG_INFO(Lib_Http, "parsed HTTP/{}.{} {}, phraseLen={}, bytes consumed={}", *httpMajorVer,
-             *httpMinorVer, *responseCode, *phraseLen, index + 1);
-
-    // Return the number of bytes processed
-    return index + 1;
+    const int ctx_id = ++g_state.next_ctx_id;
+    g_state.active_contexts.insert(ctx_id);
+    g_state.inited = true; // true while at least one context is alive
+    g_state.shutting_down.store(false);
+    LOG_INFO(Lib_Http, "initialized -> ctxId={} (active contexts: {})", ctx_id,
+             g_state.active_contexts.size());
+    return ctx_id;
 }
 
 int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size) {
@@ -504,9 +813,32 @@ int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags) {
 }
 
 int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called reqId={}, postData={}, size={}", reqId,
-              fmt::ptr(postData), size);
-    return ORBIS_OK;
+    LOG_INFO(Lib_Http, "called reqId={}, postData={}, size={}", reqId, fmt::ptr(postData), size);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    auto& req = *it->second;
+    if (req.state == HttpRequestState::Sent) {
+        LOG_ERROR(Lib_Http, "Request already sent (reqId={})", reqId);
+        return ORBIS_HTTP_ERROR_AFTER_SEND;
+    }
+    if (req.state == HttpRequestState::Aborted) {
+        LOG_ERROR(Lib_Http, "Request was aborted (reqId={})", reqId);
+        return ORBIS_HTTP_ERROR_ABORTED;
+    }
+
+    req.last_errno = ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
+    req.state = HttpRequestState::Sent;
+    LOG_INFO(Lib_Http, "reqId={} send failed: last_errno={:#x} (no-internet path)", reqId,
+             static_cast<u32>(req.last_errno));
+    return ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
 }
 
 int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable) {
@@ -734,7 +1066,32 @@ int PS4_SYSV_ABI sceHttpsUnloadCert(int libhttpCtxId) {
 }
 
 int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called libhttpCtxId={}", libhttpCtxId);
+    LOG_INFO(Lib_Http, "called libhttpCtxId={}", libhttpCtxId);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (g_state.active_contexts.erase(libhttpCtxId) == 0) {
+        LOG_ERROR(Lib_Http, "Invalid or already-terminated ctxId={}", libhttpCtxId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    if (g_state.active_contexts.empty()) {
+        // Last context torn down - wipe all dependent objects.
+        LOG_INFO(Lib_Http, "last context terminated, clearing state");
+        g_state.shutting_down.store(true);
+        for (auto& [id, req_ptr] : g_state.requests) {
+            req_ptr->deleted = true;
+            req_ptr->state = HttpRequestState::Aborted;
+        }
+        g_state.requests.clear();
+        g_state.connections.clear();
+        g_state.templates.clear();
+        g_state.inited = false;
+    } else {
+        LOG_INFO(Lib_Http, "ctxId={} terminated, {} contexts still active", libhttpCtxId,
+                 g_state.active_contexts.size());
+    }
     return ORBIS_OK;
 }
 
@@ -766,6 +1123,249 @@ int PS4_SYSV_ABI sceHttpUriCopy() {
 }
 
 //***********************************
+// HTTP Header Parsing functions
+//***********************************
+int PS4_SYSV_ABI sceHttpParseStatusLine(const char* statusLine, u64 lineLen, int32_t* httpMajorVer,
+                                        int32_t* httpMinorVer, int32_t* responseCode,
+                                        const char** reasonPhrase, u64* phraseLen) {
+    LOG_INFO(Lib_Http,
+             "called statusLine={}, lineLen={}, httpMajorVer={}, httpMinorVer={}, responseCode={}, "
+             "reasonPhrase={}, phraseLen={}",
+             fmt::ptr(statusLine), lineLen, fmt::ptr(httpMajorVer), fmt::ptr(httpMinorVer),
+             fmt::ptr(responseCode), fmt::ptr(reasonPhrase), fmt::ptr(phraseLen));
+
+    if (!statusLine) {
+        LOG_ERROR(Lib_Http, "Invalid Response");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+    if (!httpMajorVer || !httpMinorVer || !responseCode || !reasonPhrase || !phraseLen) {
+        LOG_ERROR(Lib_Http, "Invalid value");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_VALUE;
+    }
+
+    *httpMajorVer = 0;
+    *httpMinorVer = 0;
+
+    if (lineLen < 8) {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+    if (memcmp(statusLine, "HTTP/", 5) != 0) {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    auto isAsciiDigit = [](char c) -> bool {
+        const unsigned char uc = static_cast<unsigned char>(c);
+        return uc < 0x80 && std::isdigit(uc);
+    };
+
+    // First byte of major version
+    if (!isAsciiDigit(statusLine[5])) {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    // Major version digit loop
+    u64 index = 7;
+    {
+        unsigned char ch = static_cast<unsigned char>(statusLine[5]);
+        while (ch < 0x80 && std::isdigit(ch)) {
+            *httpMajorVer = *httpMajorVer * 10 + (statusLine[index - 2] - '0');
+            const char next = statusLine[index - 1];
+            index++;
+            if (static_cast<unsigned char>(next) >= 0x80) {
+                return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+            }
+            ch = static_cast<unsigned char>(next);
+        }
+    }
+
+    // After major loop, the previously-loaded byte must be '.'.
+    if (statusLine[index - 2] != '.') {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    // First byte of minor version
+    if (!isAsciiDigit(statusLine[index - 1])) {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    // Minor version digit loop
+    {
+        unsigned char ch = static_cast<unsigned char>(statusLine[index - 1]);
+        while (ch < 0x80 && std::isdigit(ch)) {
+            *httpMinorVer = *httpMinorVer * 10 + (statusLine[index - 1] - '0');
+            const char next = statusLine[index];
+            index++;
+            if (static_cast<unsigned char>(next) >= 0x80) {
+                return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+            }
+            ch = static_cast<unsigned char>(next);
+        }
+    }
+
+    // After minor loop, statusLine[index - 1] must be ' '.
+    if (statusLine[index - 1] != ' ') {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    // Need >=3 bytes for the response code
+    const u64 remaining = lineLen - index;
+    if (remaining < 3) {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+
+    // Validate and parse the 3-digit response code
+    for (int i = 0; i < 3; ++i) {
+        if (!isAsciiDigit(statusLine[index + i])) {
+            return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+        }
+    }
+    *responseCode = (statusLine[index] - '0') * 100 + (statusLine[index + 1] - '0') * 10 +
+                    (statusLine[index + 2] - '0');
+
+    const char* phraseStart = statusLine + index + 3;
+    const u64 maxScan = remaining - 3;
+    for (u64 scanLen = 0; scanLen <= maxScan; ++scanLen) {
+        if (phraseStart[scanLen] != '\n') {
+            continue;
+        }
+        *reasonPhrase = phraseStart;
+        if (scanLen == 0) {
+            *phraseLen = 0;
+        } else {
+            *phraseLen = scanLen - (phraseStart[scanLen - 1] == '\r' ? 1 : 0);
+        }
+        const u64 bytesConsumed = (phraseStart - statusLine) + scanLen + 1;
+        LOG_INFO(Lib_Http, "parsed HTTP/{}.{} {}, phraseLen={}, bytes consumed={}", *httpMajorVer,
+                 *httpMinorVer, *responseCode, *phraseLen, bytesConsumed);
+        return static_cast<int>(bytesConsumed);
+    }
+
+    LOG_ERROR(Lib_Http, "no '\\n' found in status line");
+    return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+}
+
+int PS4_SYSV_ABI sceHttpParseResponseHeader(const char* header, u64 headerLen, const char* fieldStr,
+                                            const char** fieldValue, u64* valueLen) {
+    LOG_TRACE(Lib_Http, "called header={}, headerLen={}, fieldStr={}, fieldValue={}, valueLen={}",
+              fmt::ptr(header), headerLen, fieldStr ? fieldStr : "(null)", fmt::ptr(fieldValue),
+              fmt::ptr(valueLen));
+
+    if (!header) {
+        LOG_ERROR(Lib_Http, "Invalid response");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE;
+    }
+    if (!fieldStr || !fieldValue || !valueLen) {
+        LOG_ERROR(Lib_Http, "Invalid value");
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_INVALID_VALUE;
+    }
+
+    const u64 fieldStrLen = strnlen(fieldStr, 0xfff);
+
+    auto isAsciiSpace = [](unsigned char c) -> bool { return c < 0x80 && std::isspace(c) != 0; };
+    auto caseInsensitiveEq = [](const char* a, const char* b, u64 n) -> bool {
+        for (u64 i = 0; i < n; ++i) {
+            if (std::tolower(static_cast<unsigned char>(a[i])) !=
+                std::tolower(static_cast<unsigned char>(b[i])))
+                return false;
+        }
+        return true;
+    };
+
+    bool atLineStart = true;
+    u64 valueOffset = 0;
+    bool found = false;
+
+    if (headerLen != 0) {
+        u64 cur = 0;
+        u64 next = 1;
+        while (true) {
+            if (atLineStart) {
+                const unsigned char first = static_cast<unsigned char>(header[cur]);
+                if (!isAsciiSpace(first)) {
+                    if (fieldStrLen < headerLen - cur &&
+                        caseInsensitiveEq(fieldStr, header + cur, fieldStrLen) &&
+                        header[cur + fieldStrLen] == ':') {
+                        // Found.
+                        valueOffset = cur + fieldStrLen + 1;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            atLineStart = (header[cur] == '\n');
+            cur = next;
+            next += 1;
+            if (cur >= headerLen)
+                break;
+        }
+    }
+    if (!found) {
+        return ORBIS_HTTP_ERROR_PARSE_HTTP_NOT_FOUND;
+    }
+
+    while (valueOffset < headerLen) {
+        const unsigned char c = static_cast<unsigned char>(header[valueOffset]);
+        if (!isAsciiSpace(c))
+            break;
+        if (c == '\n') {
+            // Past EOL with only whitespace seen. Firmware advances one more
+            // and exits the loop so the value scan starts past the '\n'.
+            valueOffset++;
+            break;
+        }
+        valueOffset++;
+    }
+
+    u64 valueStart = valueOffset;
+    u64 scan = valueOffset;
+    u64 lineEnd = valueOffset;   // points one past the '\n' of the final line
+    u64 lengthEnd = valueOffset; // where the trimmed value ends (strips trailing \r)
+
+    if (valueOffset < headerLen) {
+        bool sawCR = false;
+        while (scan < headerLen) {
+            // Walk to next '\n'.
+            while (scan < headerLen && header[scan] != '\n') {
+                scan++;
+            }
+            if (scan >= headerLen) {
+                // No '\n' before end of buffer: value runs to headerLen.
+                lengthEnd = headerLen;
+                lineEnd = headerLen;
+                break;
+            }
+            // scan points at '\n'. Note trailing '\r'.
+            sawCR = (scan > valueStart && header[scan - 1] == '\r');
+            const u64 afterLF = scan + 1;
+            // Check for line folding: next byte is SP or HT.
+            if (afterLF < headerLen && (header[afterLF] == ' ' || header[afterLF] == '\t')) {
+                // Continuation - keep scanning.
+                scan = afterLF;
+                continue;
+            }
+            // End of value.
+            lineEnd = afterLF;
+            lengthEnd = sawCR ? (scan - 1) : scan;
+            break;
+        }
+    } else {
+        lineEnd = headerLen;
+        lengthEnd = headerLen;
+    }
+
+    const u64 finalLen = (lengthEnd > valueStart) ? (lengthEnd - valueStart) : 0;
+    if (finalLen == 0) {
+        *fieldValue = nullptr;
+        *valueLen = 0;
+        return 0;
+    }
+
+    *fieldValue = header + valueStart;
+    *valueLen = finalLen;
+    return static_cast<int>(lineEnd);
+}
+
+//***********************************
 // URI functions
 //***********************************
 int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
@@ -776,6 +1376,11 @@ int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
              fmt::ptr(out), fmt::ptr(require), prepare, fmt::ptr(srcElement), option);
 
     if (srcElement == nullptr) {
+        LOG_ERROR(Lib_Http, "Invalid url");
+        return ORBIS_HTTP_ERROR_INVALID_URL;
+    }
+    if (out == nullptr && require == nullptr) {
+        LOG_ERROR(Lib_Http, "Invalid value");
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
 
@@ -791,22 +1396,54 @@ int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
     const std::string_view query = field(srcElement->query);
     const std::string_view fragment = field(srcElement->fragment);
 
+    auto schemeDefaultPort = [&]() -> uint16_t {
+        if (scheme.size() > 0x20)
+            return 0;
+        auto prefixCaseEq = [&](const char* target) {
+            const size_t tlen = std::strlen(target);
+            if (scheme.size() < tlen)
+                return false;
+            for (size_t i = 0; i < tlen; ++i) {
+                if (std::tolower(static_cast<unsigned char>(scheme[i])) !=
+                    std::tolower(static_cast<unsigned char>(target[i])))
+                    return false;
+            }
+            return true;
+        };
+        if (prefixCaseEq("HTTPS"))
+            return 443;
+        if (prefixCaseEq("HTTP"))
+            return 80;
+        if (prefixCaseEq("TTP"))
+            return 80;
+        return 0;
+    };
+
+    const bool isMailto = (scheme.size() == 6) && std::memcmp(scheme.data(), "mailto", 6) == 0;
+
     std::string built;
     built.reserve(256);
 
-    // Scheme
+    // Scheme: write "<scheme>:"
     if ((option & ORBIS_HTTP_URI_BUILD_WITH_SCHEME) && !scheme.empty()) {
         built.append(scheme);
-        built.append("://");
+        built.push_back(':');
+    }
+    if (!srcElement->opaque) {
+        built.append("//");
     }
 
     // Userinfo (username[:password]@)
-    if ((option & ORBIS_HTTP_URI_BUILD_WITH_USERNAME) && !username.empty()) {
+    const bool hasUser = (option & ORBIS_HTTP_URI_BUILD_WITH_USERNAME) && !username.empty();
+    const bool hasPass = (option & ORBIS_HTTP_URI_BUILD_WITH_PASSWORD) && !password.empty();
+    if (hasUser) {
         built.append(username);
-        if ((option & ORBIS_HTTP_URI_BUILD_WITH_PASSWORD) && !password.empty()) {
-            built.push_back(':');
-            built.append(password);
-        }
+    }
+    if (hasPass) {
+        built.push_back(':');
+        built.append(password);
+    }
+    if (hasUser || hasPass) {
         built.push_back('@');
     }
 
@@ -815,36 +1452,25 @@ int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
         built.append(hostname);
     }
 
-    // Port (only if not the scheme's default)
+    // Port: only if (a) we have one, (b) it isn't the scheme's default, and (c) scheme isn't
+    // mailto.
     if ((option & ORBIS_HTTP_URI_BUILD_WITH_PORT) && srcElement->port != 0) {
-        const bool is_default_https = (scheme == "https" && srcElement->port == 443);
-        const bool is_default_http = (scheme == "http" && srcElement->port == 80);
-        if (!is_default_https && !is_default_http) {
+        const uint16_t def = schemeDefaultPort();
+        const bool skip = (def != 0 || isMailto) && (def == srcElement->port);
+        if (!skip) {
             built.push_back(':');
             built.append(std::to_string(srcElement->port));
         }
     }
 
-    // Path
+    // Path / Query / Fragment
     if ((option & ORBIS_HTTP_URI_BUILD_WITH_PATH) && !path.empty()) {
-        if (path.front() != '/')
-            built.push_back('/');
         built.append(path);
     }
-
-    // Query
     if ((option & ORBIS_HTTP_URI_BUILD_WITH_QUERY) && !query.empty()) {
-        if (query.front() != '?') {
-            built.push_back('?');
-        }
         built.append(query);
     }
-
-    // Fragment
     if ((option & ORBIS_HTTP_URI_BUILD_WITH_FRAGMENT) && !fragment.empty()) {
-        if (fragment.front() != '#') {
-            built.push_back('#');
-        }
         built.append(fragment);
     }
 
@@ -860,7 +1486,7 @@ int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
     }
 
     if (prepare < need) {
-        return ORBIS_HTTP_ERROR_OUT_OF_SIZE; // buffer too small
+        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY; // buffer too small
     }
 
     std::memcpy(out, built.c_str(), need);
@@ -994,7 +1620,8 @@ int PS4_SYSV_ABI sceHttpUriMerge(char* mergedUrl, char* url, char* relativeUri, 
         LOG_ERROR(Lib_Http, "second sceHttpUriParse(relativeUri) returned {:#x}", returnValue);
         return returnValue;
     }
-    if (parsedUriElement.scheme == NULL) {
+
+    if (!parsedUriElement.opaque) {
         strncpy(mergedUrl, relativeUri, requiredLength);
         if (require) {
             *require = strnlen(relativeUri, 0x3fff) + 1;
@@ -1014,6 +1641,8 @@ int PS4_SYSV_ABI sceHttpUriMerge(char* mergedUrl, char* url, char* relativeUri, 
     strncpy(mergedUrl + combinedLength, parsedUriElement.path, prepare - combinedLength);
     NormalizeAndAppendPath(mergedUrl + combinedLength, relativeUri);
 
+    parsedUriElement.path = mergedUrl + combinedLength;
+
     returnValue = sceHttpUriBuild(mergedUrl, 0, ~(baseUrlLength + totalLength) + prepare,
                                   &parsedUriElement, 0x3f);
     if (returnValue >= 0) {
@@ -1032,287 +1661,374 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
         LOG_ERROR(Lib_Http, "invalid url: srcUri is null");
         return ORBIS_HTTP_ERROR_INVALID_URL;
     }
-    if (!out && !pool && !require) {
-        LOG_ERROR(Lib_Http, "invalid values: all output parameters are null");
+    const bool writeOutput = (out != nullptr) && (pool != nullptr);
+    if (!writeOutput && !require) {
+        LOG_ERROR(Lib_Http, "Invalid value");
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
 
-    if (out && pool) {
+    if (writeOutput) {
         memset(out, 0, sizeof(OrbisHttpUriElement));
-        char* empty = (char*)pool;
-        *empty = '\0';
-        out->scheme = (char*)pool + 1; // scheme storage follows the sentinel
-        out->username = empty;
-        out->password = empty;
-        out->hostname = empty;
-        out->path = empty;
-        out->query = empty;
-        out->fragment = empty;
     }
 
-    u64 requiredSize = 1;
+    char* poolBytes = (char*)pool;
 
-    // Parse the scheme (e.g., "http:", "https:", "file:")
-    u64 schemeLength = 0;
-    while (srcUri[schemeLength] && srcUri[schemeLength] != ':') {
-        if (!isalnum(srcUri[schemeLength])) {
-            LOG_ERROR(Lib_Http, "invalid url: non-alphanumeric character in scheme");
-            return ORBIS_HTTP_ERROR_INVALID_URL;
+    bool hasScheme = false;
+    u64 schemeLen = 0;
+    {
+        u64 i = 0;
+        while (i < 0x20 && srcUri[i]) {
+            if (srcUri[i] == ':')
+                break;
+            const unsigned char c = static_cast<unsigned char>(srcUri[i]);
+            if (!isalnum(c) && c != '+' && c != '-' && c != '.')
+                break;
+            i++;
         }
-        schemeLength++;
-    }
-
-    if (pool && prepare < requiredSize + schemeLength + 1) {
-        LOG_ERROR(Lib_Http, "out of memory while writing scheme");
-        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
-    }
-
-    if (out && pool) {
-        memcpy(out->scheme, srcUri, schemeLength);
-        out->scheme[schemeLength] = '\0';
-    }
-
-    requiredSize += schemeLength + 1;
-
-    // Move past the scheme and ':' character
-    u64 offset = schemeLength + 1;
-
-    // Check if "//" appears after the scheme
-    if (strncmp(srcUri + offset, "//", 2) == 0) {
-        // "//" is present
-        if (out) {
-            out->opaque = false;
+        if (i > 0 && srcUri[i] == ':' && isalpha(static_cast<unsigned char>(srcUri[0]))) {
+            hasScheme = true;
+            schemeLen = i;
         }
-        offset += 2; // Move past "//"
+    }
+
+    u64 poolUsed;    // bytes used in pool
+    u64 inputOffset; // current position in input string
+
+    if (hasScheme) {
+        if (writeOutput) {
+            if (prepare < schemeLen + 1) {
+                LOG_ERROR(Lib_Http, "Out of memory");
+                return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+            }
+            memcpy(poolBytes, srcUri, schemeLen);
+            poolBytes[schemeLen] = '\0';
+            out->scheme = poolBytes;
+        }
+        poolUsed = schemeLen + 1;
+        inputOffset = schemeLen + 1;
     } else {
-        // "//" is not present
-        if (out) {
+        if (writeOutput) {
+            if (prepare < 2) {
+                LOG_ERROR(Lib_Http, "Out of memory");
+                return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+            }
+            poolBytes[0] = '\0';
+            out->scheme = poolBytes;
+        }
+        poolUsed = 1;
+        inputOffset = 0;
+    }
+
+    int slashCount = 0;
+    {
+        const char* p = srcUri + inputOffset;
+        while (*p == '/') {
+            slashCount++;
+            p++;
+        }
+    }
+    if (slashCount >= 2) {
+        inputOffset += 2;
+        // opaque stays at 0 from memset
+    } else {
+        if (writeOutput) {
             out->opaque = true;
         }
     }
 
-    // Handle "file" scheme
-    if (strncmp(srcUri, "file", 4) == 0) {
-        // File URIs typically start with "file://"
-        if (out && !out->opaque) {
-            // Skip additional slashes (e.g., "////")
-            while (srcUri[offset] == '/') {
-                offset++;
-            }
+    const char* authStart = srcUri + inputOffset;
+    u64 scanPos = 0;  // current byte offset within the authority area
+    u64 colonPos = 0; // offset of the first ':' (only valid when seenColon)
+    bool seenColon = false;
+    bool seenAt = false;
+    u64 atPos = 0;
 
-            // Parse the path (everything after the slashes)
-            char* pathStart = (char*)srcUri + offset;
-            u64 pathLength = 0;
-            while (pathStart[pathLength] && pathStart[pathLength] != '?' &&
-                   pathStart[pathLength] != '#') {
-                pathLength++;
-            }
-
-            if (pathLength > 0) {
-                // Prepend '/' to the path
-                requiredSize += pathLength + 2; // Include '/' and null terminator
-
-                if (pool && prepare < requiredSize) {
-                    LOG_ERROR(Lib_Http, "out of memory, provided size: {}, required size: {}",
-                              prepare, requiredSize);
-                    return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
-                }
-
-                if (out && pool) {
-                    out->path = (char*)pool + (requiredSize - pathLength - 2);
-                    out->username = (char*)pool + (requiredSize - pathLength - 3);
-                    out->password = (char*)pool + (requiredSize - pathLength - 3);
-                    out->hostname = (char*)pool + (requiredSize - pathLength - 3);
-                    out->query = (char*)pool + (requiredSize - pathLength - 3);
-                    out->fragment = (char*)pool + (requiredSize - pathLength - 3);
-                    out->username[0] = '\0';
-                    out->path[0] = '/'; // Add leading '/'
-                    memcpy(out->path + 1, pathStart, pathLength);
-                    out->path[pathLength + 1] = '\0';
-                }
-            } else {
-                // Path already starts with '/'
-                requiredSize += pathLength + 1;
-
-                if (pool && prepare < requiredSize) {
-                    LOG_ERROR(Lib_Http, "out of memory writing file scheme path");
-                    return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
-                }
-
-                if (out && pool) {
-                    memcpy((char*)pool + (requiredSize - pathLength - 1), pathStart, pathLength);
-                    out->path = (char*)pool + (requiredSize - pathLength - 1);
-                    out->path[pathLength] = '\0';
-                }
-            }
-
-            // Move past the path
-            offset += pathLength;
-        } else {
-            // Parse the path (everything after the slashes)
-            char* pathStart = (char*)srcUri + offset;
-            u64 pathLength = 0;
-            while (pathStart[pathLength] && pathStart[pathLength] != '?' &&
-                   pathStart[pathLength] != '#') {
-                pathLength++;
-            }
-
-            if (pathLength > 0) {
-                requiredSize += pathLength + 3; // Add '/' and null terminator, and the dummy
-                                                // null character for the other fields
-            }
+    auto isUserinfoPunct = [](unsigned char c) -> bool {
+        switch (c) {
+        case 0x21:
+        case 0x24:
+        case 0x25:
+        case 0x26:
+        case 0x27:
+        case 0x28:
+        case 0x29:
+        case 0x2a:
+        case 0x2b:
+        case 0x2c:
+        case 0x2d:
+        case 0x2e:
+        case 0x3a:
+        case 0x3b:
+        case 0x3d:
+        case 0x5f:
+        case 0x7e:
+            return true;
+        default:
+            return false;
         }
+    };
+
+    while (true) {
+        const unsigned char c = static_cast<unsigned char>(authStart[scanPos]);
+        if (c == 0)
+            break;
+        if (c == '@') {
+            seenAt = true;
+            atPos = scanPos;
+            break;
+        }
+        if (!seenColon && c == ':') {
+            seenColon = true;
+            colonPos = scanPos;
+        } else {
+            if ((signed char)c < 0)
+                break;
+            if (!isalnum(c) && !isUserinfoPunct(c))
+                break;
+        }
+        scanPos++;
     }
 
-    // Handle non-file schemes (e.g., "http", "https")
-    else {
-        // Parse the host and port
-        char* hostStart = (char*)srcUri + offset;
-        while (*hostStart == '/') {
-            hostStart++;
+    // Write user/password to pool.
+    char* userDest = poolBytes + poolUsed;
+    u64 inputAdvance = 0;
+
+    if (seenAt) {
+        u64 passOffset;
+        u64 passLen;
+        u64 userLen;
+        if (seenColon) {
+            userLen = colonPos;
+            passOffset = colonPos + 1;
+            passLen = atPos - passOffset;
+        } else {
+            userLen = atPos;
+            passOffset = atPos + 1;
+            passLen = 0;
         }
 
-        u64 hostLength = 0;
-        while (hostStart[hostLength] && hostStart[hostLength] != '/' &&
-               hostStart[hostLength] != '?' && hostStart[hostLength] != ':') {
-            hostLength++;
-        }
-
-        requiredSize += hostLength + 1;
-
-        if (pool && prepare < requiredSize) {
-            LOG_ERROR(Lib_Http, "out of memory while writing hostname");
-            return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
-        }
-
-        if (out && pool) {
-            memcpy((char*)pool + (requiredSize - hostLength - 1), hostStart, hostLength);
-            out->hostname = (char*)pool + (requiredSize - hostLength - 1);
-            out->hostname[hostLength] = '\0';
-        }
-
-        // Move past the host
-        offset += hostLength;
-
-        // Parse the port (if present)
-        if (hostStart[hostLength] == ':') {
-            char* portStart = hostStart + hostLength + 1;
-            u64 portLength = 0;
-            while (portStart[portLength] && isdigit(portStart[portLength])) {
-                portLength++;
-            }
-
-            requiredSize += portLength + 1;
-
-            if (pool && prepare < requiredSize) {
-                LOG_ERROR(Lib_Http, "out of memory while writing port");
+        if (writeOutput) {
+            const u64 needed = passOffset + passLen + 1;
+            if (prepare - poolUsed < needed) {
                 return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
             }
+            memcpy(userDest, authStart, userLen);
+            userDest[userLen] = '\0';
+            memcpy(userDest + passOffset, authStart + passOffset, passLen);
+            userDest[passOffset + passLen] = '\0';
+            out->username = userDest;
+            out->password = userDest + passOffset;
+        }
+        poolUsed += passOffset + passLen + 1;
+        inputAdvance = atPos + 1;
+    } else {
+        if (writeOutput) {
+            if (prepare - poolUsed < 2) {
+                return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+            }
+            userDest[0] = '\0';
+            userDest[1] = '\0';
+            out->username = userDest;
+            out->password = userDest + 1;
+        }
+        poolUsed += 2;
+    }
 
-            // Convert the port string to a uint16_t
-            char portStr[6]; // Max length for a port number (65535)
-            if (portLength > 5) {
-                LOG_ERROR(Lib_Http, "invalid url: port length {} exceeds 5 chars", portLength);
+    inputOffset += inputAdvance;
+
+    char* hostDest = poolBytes + poolUsed;
+    const char* hostStart = srcUri + inputOffset;
+    const char firstHostChar = hostStart[0];
+    u64 hostScanLen = 0;   // bytes scanned in input (including brackets)
+    u64 storedHostLen = 0; // bytes stored to pool
+
+    if (firstHostChar == '.') {
+        hostScanLen = 0;
+        storedHostLen = 0;
+    } else if (firstHostChar == '[') {
+        hostScanLen = 1;
+        while (true) {
+            if (hostScanLen == 0xff) {
                 return ORBIS_HTTP_ERROR_INVALID_URL;
             }
-            memcpy(portStr, portStart, portLength);
-            portStr[portLength] = '\0';
-
-            uint16_t port = (uint16_t)atoi(portStr);
-            if (port == 0 && portStr[0] != '0') {
-                LOG_ERROR(Lib_Http, "invalid url: failed to parse port '{}'", portStr);
+            const unsigned char c = static_cast<unsigned char>(hostStart[hostScanLen]);
+            if (c == 0)
+                break;
+            if ((signed char)c < 0)
+                break;
+            if (c == ']')
+                break;
+            // IPv6 mode allows ':' in addition to host chars
+            if (!isalnum(c) && c != '-' && c != '.' && c != '_' && c != ':')
+                break;
+            hostScanLen++;
+        }
+        if (hostStart[hostScanLen] != ']') {
+            return ORBIS_HTTP_ERROR_INVALID_URL;
+        }
+        storedHostLen = hostScanLen - 1;
+        hostScanLen++; // consume ']' for input advance
+    } else {
+        // Normal host scan: alphanumeric + '-' '.' '_'
+        while (true) {
+            if (hostScanLen == 0xff) {
                 return ORBIS_HTTP_ERROR_INVALID_URL;
             }
+            const unsigned char c = static_cast<unsigned char>(hostStart[hostScanLen]);
+            if (c == 0)
+                break;
+            if ((signed char)c < 0)
+                break;
+            if (!isalnum(c) && c != '-' && c != '.' && c != '_')
+                break;
+            hostScanLen++;
+        }
+        storedHostLen = hostScanLen;
+    }
 
-            // Set the port in the output structure
-            if (out) {
-                out->port = port;
+    if (writeOutput) {
+        if (prepare - poolUsed < storedHostLen + 1) {
+            return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+        }
+        const char* hostCopySrc = (firstHostChar == '[') ? hostStart + 1 : hostStart;
+        memcpy(hostDest, hostCopySrc, storedHostLen);
+        hostDest[storedHostLen] = '\0';
+        out->hostname = hostDest;
+    }
+    poolUsed += storedHostLen + 1;
+    inputOffset += hostScanLen;
+
+    bool hasExplicitPort = false;
+    uint16_t portValue = 0;
+
+    if (srcUri[inputOffset] == ':') {
+        inputOffset++;
+        const char* digits = srcUri + inputOffset;
+        u64 digitsLen = 0;
+        u32 port32 = 0;
+        while (digitsLen < 5 && isdigit(static_cast<unsigned char>(digits[digitsLen]))) {
+            port32 = port32 * 10 + (digits[digitsLen] - '0');
+            digitsLen++;
+        }
+        if (port32 > 0x10000) {
+            LOG_ERROR(Lib_Http, "Invalid URL");
+            return ORBIS_HTTP_ERROR_INVALID_URL;
+        }
+        const char afterPort = digits[digitsLen];
+        if (afterPort != '\0' && afterPort != '/') {
+            return ORBIS_HTTP_ERROR_INVALID_URL;
+        }
+        if (digitsLen > 0) {
+            hasExplicitPort = true;
+            portValue = static_cast<uint16_t>(port32);
+        }
+        inputOffset += digitsLen;
+    }
+
+    if (writeOutput) {
+        if (hasExplicitPort) {
+            out->port = portValue;
+        } else if (out->scheme) {
+            const size_t schSize = std::strlen(out->scheme);
+            if (schSize <= 0x20) {
+                auto prefixCaseEq = [&](const char* target) {
+                    const size_t tlen = std::strlen(target);
+                    if (schSize < tlen)
+                        return false;
+                    for (size_t i = 0; i < tlen; ++i) {
+                        if (std::tolower(static_cast<unsigned char>(out->scheme[i])) !=
+                            std::tolower(static_cast<unsigned char>(target[i])))
+                            return false;
+                    }
+                    return true;
+                };
+                if (prefixCaseEq("HTTPS"))
+                    out->port = 443;
+                else if (prefixCaseEq("HTTP"))
+                    out->port = 80;
+                else if (prefixCaseEq("TTP"))
+                    out->port = 80;
             }
-
-            // Move past the port
-            offset += portLength + 1;
         }
     }
 
-    // Parse the path (if present)
-    if (srcUri[offset] == '/') {
-        char* pathStart = (char*)srcUri + offset;
-        u64 pathLength = 0;
-        while (pathStart[pathLength] && pathStart[pathLength] != '?' &&
-               pathStart[pathLength] != '#') {
-            pathLength++;
+    char* pathDest = poolBytes + poolUsed;
+    const char* pathStart = srcUri + inputOffset;
+    u64 pathLen = 0;
+    while (pathStart[pathLen] && pathStart[pathLen] != '?' && pathStart[pathLen] != '#') {
+        if (pathLen >= 0x3fff) {
+            return ORBIS_HTTP_ERROR_INVALID_URL;
         }
+        pathLen++;
+    }
 
-        requiredSize += pathLength + 1;
-
-        if (pool && prepare < requiredSize) {
-            LOG_ERROR(Lib_Http, "out of memory while writing path");
+    if (writeOutput) {
+        if (prepare - poolUsed < pathLen + 1) {
+            LOG_ERROR(Lib_Http, "Out of memory");
             return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
         }
+        memcpy(pathDest, pathStart, pathLen);
+        pathDest[pathLen] = '\0';
+        std::vector<char> tmp(pathLen + 1);
+        memcpy(tmp.data(), pathStart, pathLen);
+        tmp[pathLen] = '\0';
+        sceHttpUriSweepPath(pathDest, tmp.data(), pathLen + 1);
+        out->path = pathDest;
+    }
+    poolUsed += pathLen + 1;
+    inputOffset += pathLen;
 
-        if (out && pool) {
-            memcpy((char*)pool + (requiredSize - pathLength - 1), pathStart, pathLength);
-            out->path = (char*)pool + (requiredSize - pathLength - 1);
-            out->path[pathLength] = '\0';
+    char* queryDest = poolBytes + poolUsed;
+    u64 queryLen = 0;
+    if (srcUri[inputOffset] == '?') {
+        queryLen = 1; // include leading '?'
+        while (srcUri[inputOffset + queryLen] && srcUri[inputOffset + queryLen] != '#') {
+            if (queryLen >= 0x3fff) {
+                return ORBIS_HTTP_ERROR_INVALID_URL;
+            }
+            queryLen++;
         }
-
-        // Move past the path
-        offset += pathLength;
     }
 
-    if (srcUri[offset] == '?') {
-        char* queryStart = (char*)srcUri + offset;
-        u64 queryLength = 0;
-        while (queryStart[queryLength + 1] && queryStart[queryLength + 1] != '#') {
-            queryLength++;
-        }
-        queryLength++;
-
-        requiredSize += queryLength + 1;
-
-        if (pool && prepare < requiredSize) {
-            LOG_ERROR(Lib_Http, "out of memory while writing query");
+    if (writeOutput) {
+        if (prepare - poolUsed < queryLen + 1) {
             return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
         }
+        memcpy(queryDest, srcUri + inputOffset, queryLen);
+        queryDest[queryLen] = '\0';
+        out->query = queryDest;
+    }
+    poolUsed += queryLen + 1;
+    inputOffset += queryLen;
 
-        if (out && pool) {
-            memcpy((char*)pool + (requiredSize - queryLength - 1), queryStart, queryLength);
-            out->query = (char*)pool + (requiredSize - queryLength - 1);
-            out->query[queryLength] = '\0';
+    char* fragDest = poolBytes + poolUsed;
+    u64 fragLen = 0;
+    if (srcUri[inputOffset] == '#') {
+        u64 i = 1; // include leading '#'
+        while (srcUri[inputOffset + i]) {
+            if (i >= 0x3fff) {
+                return ORBIS_HTTP_ERROR_INVALID_URL;
+            }
+            i++;
         }
-
-        offset += queryLength;
+        fragLen = i;
     }
 
-    if (srcUri[offset] == '#') {
-        char* fragmentStart = (char*)srcUri + offset;
-        u64 fragmentLength = 0;
-        while (fragmentStart[fragmentLength + 1]) {
-            fragmentLength++;
-        }
-        fragmentLength++;
-
-        requiredSize += fragmentLength + 1;
-
-        if (pool && prepare < requiredSize) {
-            LOG_ERROR(Lib_Http, "out of memory while writing fragment");
+    if (writeOutput) {
+        if (prepare - poolUsed < fragLen + 1) {
             return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
         }
-
-        if (out && pool) {
-            memcpy((char*)pool + (requiredSize - fragmentLength - 1), fragmentStart,
-                   fragmentLength);
-            out->fragment = (char*)pool + (requiredSize - fragmentLength - 1);
-            out->fragment[fragmentLength] = '\0';
-        }
+        memcpy(fragDest, srcUri + inputOffset, fragLen);
+        fragDest[fragLen] = '\0';
+        out->fragment = fragDest;
     }
+    poolUsed += fragLen + 1;
 
-    // Calculate the total required buffer size
     if (require) {
-        *require = requiredSize; // Update with actual required size
+        *require = poolUsed;
     }
 
-    LOG_TRACE(Lib_Http, "parsed successfully, requiredSize={}", requiredSize);
+    LOG_TRACE(Lib_Http, "parsed successfully, poolUsed={}", poolUsed);
     return ORBIS_OK;
 }
 
@@ -1320,92 +2036,72 @@ int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, u64 srcSize) {
     LOG_TRACE(Lib_Http, "called dst={}, src={}, srcSize={}", fmt::ptr(dst), src ? src : "(null)",
               srcSize);
 
+    if (srcSize == 0) {
+        return ORBIS_OK;
+    }
     if (!dst || !src) {
         LOG_ERROR(Lib_Http, "Invalid parameters: dst={}, src={}", fmt::ptr(dst), fmt::ptr(src));
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
 
-    if (srcSize == 0) {
-        dst[0] = '\0';
+    // Non-absolute
+    if (src[0] != '/') {
+        const u64 copyLen = srcSize - 1;
+        memcpy(dst, src, copyLen);
+        dst[copyLen] = '\0';
         return ORBIS_OK;
     }
 
-    u64 len = 0;
-    while (len < srcSize && src[len] != '\0') {
-        len++;
+    // Absolute path: dst[0]='/', dst[1]='\0'
+    dst[0] = '/';
+    dst[1] = '\0';
+    if (srcSize - 1U <= 1) {
+        return ORBIS_OK;
     }
 
-    for (u64 i = 0; i < len; i++) {
-        dst[i] = src[i];
-    }
-    dst[len] = '\0';
-
-    char* read = dst;
-    char* write = dst;
-
-    while (*read) {
-        if (read[0] == '.' && read[1] == '.' && read[2] == '/') {
-            read += 3;
-            continue;
-        }
-
-        if (read[0] == '.' && read[1] == '/') {
-            read += 2;
-            continue;
-        }
-
-        if (read[0] == '/' && read[1] == '.' && read[2] == '/') {
-            read += 2;
-            continue;
-        }
-
-        if (read[0] == '/' && read[1] == '.' && read[2] == '\0') {
-            if (write == dst) {
-                *write++ = '/';
+    u64 srcPos = 1;
+    char* segmentEnd = dst;
+    while (srcPos < srcSize - 1U) {
+        if (src[srcPos] == '.') {
+            if (src[srcPos + 1] == '/') {
+                // "./" - skip
+                srcPos += 2;
+                continue;
             }
-            break;
-        }
-
-        bool is_dotdot_mid = (read[0] == '/' && read[1] == '.' && read[2] == '.' && read[3] == '/');
-        bool is_dotdot_end =
-            (read[0] == '/' && read[1] == '.' && read[2] == '.' && read[3] == '\0');
-
-        if (is_dotdot_mid || is_dotdot_end) {
-            if (write > dst) {
-                if (*(write - 1) == '/') {
-                    write--;
+            if (src[srcPos + 1] == '.' && src[srcPos + 2] == '/') {
+                char* newSegmentEnd = dst;
+                if (segmentEnd != dst) {
+                    *segmentEnd = '\0';
+                    char* prevSlash = std::strrchr(dst, '/');
+                    if (prevSlash == nullptr) {
+                        newSegmentEnd = nullptr;
+                    } else {
+                        prevSlash[1] = '\0';
+                        newSegmentEnd = prevSlash;
+                    }
                 }
-                while (write > dst && *(write - 1) != '/') {
-                    write--;
-                }
-
-                if (is_dotdot_mid && write > dst) {
-                    write--;
-                }
+                srcPos += 3;
+                segmentEnd = newSegmentEnd;
+                continue;
             }
-
-            if (is_dotdot_mid) {
-                read += 3;
-            } else {
-                break;
-            }
-            continue;
         }
 
-        if ((read[0] == '.' && read[1] == '\0') ||
-            (read[0] == '.' && read[1] == '.' && read[2] == '\0')) {
-            break;
+        const char* segmentStart = src + srcPos;
+        const char* nextSlash = std::strchr(segmentStart, '/');
+        const u64 remaining = srcSize - srcPos - 1U;
+        u64 copyLen;
+        if (nextSlash == nullptr) {
+            copyLen = remaining;
+        } else {
+            const u64 segLen = static_cast<u64>(nextSlash + 1 - segmentStart);
+            copyLen = (segLen <= remaining) ? segLen : remaining;
         }
-
-        if (read[0] == '/') {
-            *write++ = *read++;
-        }
-        while (*read && *read != '/') {
-            *write++ = *read++;
-        }
+        memcpy(segmentEnd + 1, segmentStart, copyLen);
+        segmentEnd[copyLen + 1] = '\0';
+        segmentEnd += copyLen;
+        srcPos += copyLen;
     }
 
-    *write = '\0';
     return ORBIS_OK;
 }
 
