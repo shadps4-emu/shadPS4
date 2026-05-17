@@ -221,18 +221,17 @@ int PS4_SYSV_ABI sceHttpCreateConnection(int tmplId, const char* serverName, con
         LOG_ERROR(Lib_Http, "Invalid tmplId={}", tmplId);
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
+
+    if (!serverName) {
+        LOG_ERROR(Lib_Http, "serverName is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
     bool is_secure = false;
     if (int sc = CheckScheme(scheme, is_secure); sc < 0) {
         LOG_ERROR(Lib_Http, "scheme rejected: '{}' -> {:#x}", scheme ? scheme : "(null)", sc);
         return sc;
     }
-    if (!serverName) {
-        LOG_ERROR(Lib_Http, "serverName is null");
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
-    if (port == 0) {
-        port = is_secure ? 443 : 80;
-    }
+
     const std::string scheme_str = is_secure ? "https" : "http";
     const int conn_id = ++g_state.next_obj_id;
     HttpConnection conn;
@@ -294,7 +293,7 @@ int PS4_SYSV_ABI sceHttpCreateConnectionWithURL(int tmplId, const char* url, boo
     }
 
     scheme_str = is_secure ? "https" : "http";
-    u16 port = parsed.port != 0 ? parsed.port : (is_secure ? 443 : 80);
+    u16 port = parsed.port;
 
     std::lock_guard<std::mutex> lock(g_state.m_mutex);
     if (!g_state.inited) {
@@ -449,6 +448,11 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL(int connId, s32 method, const char*
     if (!url) {
         LOG_ERROR(Lib_Http, "url is null");
         return ORBIS_HTTP_ERROR_INVALID_URL;
+    }
+
+    if (method > 8 || ((0x177u >> (static_cast<u32>(method) & 0x1f)) & 1u) == 0) {
+        LOG_ERROR(Lib_Http, "method {} not accepted", method);
+        return ORBIS_HTTP_ERROR_UNKNOWN_METHOD;
     }
     const int req_id = ++g_state.next_obj_id;
     auto req = std::make_shared<HttpRequest>();
