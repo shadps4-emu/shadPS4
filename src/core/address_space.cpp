@@ -248,11 +248,11 @@ struct AddressSpace::Impl {
                                     PAGE_READWRITE, nullptr, 0);
 
                 // Use ReadFile to read file contents into the memory area.
-                // Create an OVERLAPPED with the offset, then supply that to ReadFile
+                // Create an OVERLAPPED with the file offset, then supply that to ReadFile
                 OVERLAPPED param{};
                 // Offset is the least-significant 32 bits, OffsetHigh is the most-significant.
-                param.Offset = offset & 0xffffffffull;
-                param.OffsetHigh = (offset & 0xffffffff00000000ull) >> 32;
+                param.Offset = phys_addr & 0xffffffffull;
+                param.OffsetHigh = (phys_addr & 0xffffffff00000000ull) >> 32;
                 bool ret = ReadFile(backing, ptr, size, &resultvar, &param);
                 ASSERT_MSG(ret, "ReadFile failed. {}", Common::GetLastErrorMsg());
 
