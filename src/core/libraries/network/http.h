@@ -161,7 +161,6 @@ int PS4_SYSV_ABI sceHttpGetCookieEnabled(int id, int* isEnable);
 int PS4_SYSV_ABI sceHttpGetCookieStats(int libhttpCtxId, OrbisHttpCookieStats* stats);
 int PS4_SYSV_ABI sceHttpGetEpoll(int id, OrbisHttpEpollHandle* eh, void** userArg);
 int PS4_SYSV_ABI sceHttpGetEpollId();
-int PS4_SYSV_ABI sceHttpGetLastErrno(int reqId, int* errNum);
 int PS4_SYSV_ABI sceHttpGetMemoryPoolStats(int libhttpCtxId, OrbisHttpMemoryPoolStats* currentStat);
 int PS4_SYSV_ABI sceHttpGetNonblock(int id, int* isEnable);
 int PS4_SYSV_ABI sceHttpGetRegisteredCtxIds();
@@ -232,6 +231,10 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
                                     int timeout);
 int PS4_SYSV_ABI sceHttpUriCopy();
 
+//***********************************
+// Error Obtainment functions
+//***********************************
+int PS4_SYSV_ABI sceHttpGetLastErrno(int reqId, int* errNum);
 //***********************************
 // HTTP Header Parsing functions
 //***********************************

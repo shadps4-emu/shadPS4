@@ -677,26 +677,6 @@ int PS4_SYSV_ABI sceHttpGetEpollId() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpGetLastErrno(int reqId, int* errNum) {
-    LOG_INFO(Lib_Http, "called reqId={}, errNum={}", reqId, fmt::ptr(errNum));
-    std::lock_guard<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    if (!errNum) {
-        LOG_ERROR(Lib_Http, "errNum output pointer is null");
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
-    auto it = g_state.requests.find(reqId);
-    if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    *errNum = it->second->last_errno;
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpGetMemoryPoolStats(int libhttpCtxId,
                                            OrbisHttpMemoryPoolStats* currentStat) {
     LOG_ERROR(Lib_Http, "(STUBBED) called libhttpCtxId={}, currentStat={}", libhttpCtxId,
@@ -1119,6 +1099,29 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
 
 int PS4_SYSV_ABI sceHttpUriCopy() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+//***********************************
+// Error Obtainment functions
+//***********************************
+int PS4_SYSV_ABI sceHttpGetLastErrno(int reqId, int* errNum) {
+    LOG_INFO(Lib_Http, "called reqId={}, errNum={}", reqId, fmt::ptr(errNum));
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!errNum) {
+        LOG_ERROR(Lib_Http, "errNum output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    *errNum = it->second->last_errno;
     return ORBIS_OK;
 }
 
