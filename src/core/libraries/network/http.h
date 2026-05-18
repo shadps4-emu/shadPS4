@@ -13,6 +13,26 @@ class SymbolsResolver;
 
 namespace Libraries::Http {
 
+enum OrbisHttpsFlags : u32 {
+    ORBIS_HTTPS_FLAG_SERVER_VERIFY = 0x01,
+    ORBIS_HTTPS_FLAG_CLIENT_VERIFY = 0x02,
+    ORBIS_HTTPS_FLAG_CN_CHECK = 0x04,
+    ORBIS_HTTPS_FLAG_NOT_AFTER_CHECK = 0x08,
+    ORBIS_HTTPS_FLAG_NOT_BEFORE_CHECK = 0x10,
+    ORBIS_HTTPS_FLAG_KNOWN_CA_CHECK = 0x20,
+    ORBIS_HTTPS_FLAG_SESSION_REUSE = 0x40,
+    ORBIS_HTTPS_FLAG_SNI = 0x80,
+};
+
+// Used as the initial value of HttpSettings::ssl_flags.
+constexpr u32 ORBIS_HTTPS_FLAG_SDK_DEFAULT = ORBIS_HTTPS_FLAG_SERVER_VERIFY |
+                                             ORBIS_HTTPS_FLAG_CN_CHECK |
+                                             ORBIS_HTTPS_FLAG_KNOWN_CA_CHECK | ORBIS_HTTPS_FLAG_SNI;
+
+// Validation masks consumed by sceHttpsEnableOption / sceHttpsDisableOption
+constexpr u32 ORBIS_HTTPS_FLAG_PUBLIC_VALID = 0x000020ff;
+constexpr u32 ORBIS_HTTPS_FLAG_PRIVATE_VALID = 0x00002dff;
+
 enum OrbisHttpMethod : s32 {
     ORBIS_HTTP_METHOD_GET = 0,
     ORBIS_HTTP_METHOD_POST = 1,
@@ -149,7 +169,6 @@ int PS4_SYSV_ABI sceHttpDestroyEpoll(int libhttpCtxId, OrbisHttpEpollHandle eh);
 int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled(int id, int* isEnable);
 int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* headerSize);
 int PS4_SYSV_ABI sceHttpGetAuthEnabled(int id, int* isEnable);
-int PS4_SYSV_ABI sceHttpGetAutoRedirect(int id, int* isEnable);
 int PS4_SYSV_ABI sceHttpGetConnectionStat();
 int PS4_SYSV_ABI sceHttpGetCookie(int libhttpCtxId, const char* url, char* cookie, u64* required,
                                   u64 prepared, int isSecure);
@@ -167,18 +186,12 @@ int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size);
 int PS4_SYSV_ABI sceHttpRedirectCacheFlush(int libhttpCtxId);
 int PS4_SYSV_ABI sceHttpRemoveRequestHeader(int id, const char* name);
 int PS4_SYSV_ABI sceHttpRequestGetAllHeaders();
-int PS4_SYSV_ABI sceHttpsDisableOption(int id, u32 sslFlags);
-int PS4_SYSV_ABI sceHttpsDisableOptionPrivate(int id, u32 sslFlags);
-int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags);
-int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags);
 int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size);
 int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetAuthEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetAuthInfoCallback(int id, OrbisHttpAuthInfoCallback cbfunc,
                                             void* userArg);
-int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetChunkedTransferEnabled(int id, int isEnable);
-int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetCookieEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetCookieMaxNum(int libhttpCtxId, u32 num);
 int PS4_SYSV_ABI sceHttpSetCookieMaxNumPerDomain(int libhttpCtxId, u32 num);
@@ -193,22 +206,18 @@ int PS4_SYSV_ABI sceHttpSetDelayBuildRequestEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetEpoll(int id, OrbisHttpEpollHandle eh, void* userArg);
 int PS4_SYSV_ABI sceHttpSetEpollId();
 int PS4_SYSV_ABI sceHttpSetHttp09Enabled(int id, int isEnable);
-int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetNonblock(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetPolicyOption();
 int PS4_SYSV_ABI sceHttpSetPriorityOption();
 int PS4_SYSV_ABI sceHttpSetProxy();
 int PS4_SYSV_ABI sceHttpSetRecvBlockSize(int id, u32 blockSize);
-int PS4_SYSV_ABI sceHttpSetRecvTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetRedirectCallback(int id, OrbisHttpRedirectCallback cbfunc,
                                             void* userArg);
-int PS4_SYSV_ABI sceHttpSetRequestContentLength(int id, u64 contentLength);
 int PS4_SYSV_ABI sceHttpSetRequestStatusCallback(int id, OrbisHttpRequestStatusCallback cbfunc,
                                                  void* userArg);
 int PS4_SYSV_ABI sceHttpSetResolveRetry(int id, int retry);
 int PS4_SYSV_ABI sceHttpSetResolveTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetResponseHeaderMaxSize(int id, u64 headerSize);
-int PS4_SYSV_ABI sceHttpSetSendTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetSocketCreationCallback();
 int PS4_SYSV_ABI sceHttpsFreeCaList(int libhttpCtxId, OrbisHttpsCaList* caList);
 int PS4_SYSV_ABI sceHttpsGetCaList(int httpCtxId, OrbisHttpsCaList* list);
@@ -226,6 +235,33 @@ int PS4_SYSV_ABI sceHttpUnsetEpoll(int id);
 int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* nbev, int maxevents,
                                     int timeout);
 int PS4_SYSV_ABI sceHttpUriCopy();
+
+//***********************************
+// Https Option setting functions
+//***********************************
+int PS4_SYSV_ABI sceHttpsDisableOption(int id, u32 sslFlags);
+int PS4_SYSV_ABI sceHttpsDisableOptionPrivate(int id, u32 sslFlags);
+int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags);
+int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags);
+//***********************************
+// Response Information functions
+//***********************************
+int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable);
+//***********************************
+// Http Header setting functions
+//***********************************
+int PS4_SYSV_ABI sceHttpSetRequestContentLength(int id, u64 contentLength);
+//***********************************
+// Redirection setting functions
+//***********************************
+int PS4_SYSV_ABI sceHttpGetAutoRedirect(int id, int* isEnable);
+int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable);
+//***********************************
+// Timeout settting functions
+//***********************************
+int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec);
+int PS4_SYSV_ABI sceHttpSetSendTimeOut(int id, u32 usec);
+int PS4_SYSV_ABI sceHttpSetRecvTimeOut(int id, u32 usec);
 //***********************************
 // Request functions
 //***********************************
