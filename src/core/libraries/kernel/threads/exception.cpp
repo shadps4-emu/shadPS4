@@ -318,7 +318,7 @@ s32 PS4_SYSV_ABI posix_sigaddset(Sigset* s, s32 sig) {
     s32 val = sig - 1;
     if (val >= 0x80) {
         *Libraries::Kernel::__Error() = POSIX_EINVAL;
-        return -1;
+        return ORBIS_FAIL;
     }
     s->bits[val >> 5] |= 1 << (val & 0x1f);
     return ORBIS_OK;
@@ -328,7 +328,7 @@ s32 PS4_SYSV_ABI posix_sigdelset(Sigset* s, s32 sig) {
     s32 val = sig - 1;
     if (val >= 0x80) {
         *Libraries::Kernel::__Error() = POSIX_EINVAL;
-        return -1;
+        return ORBIS_FAIL;
     }
     s->bits[val >> 5] &= ~(1 << (val & 0x1f));
     return ORBIS_OK;
@@ -338,7 +338,7 @@ s32 PS4_SYSV_ABI posix_sigismember(Sigset* s, s32 sig) {
     s32 val = sig - 1;
     if (val >= 0x80) {
         *Libraries::Kernel::__Error() = POSIX_EINVAL;
-        return -1;
+        return ORBIS_FAIL;
     }
     return ((s->bits[val >> 5] >> (val & 0x1f)) & 1) != 0;
 }
