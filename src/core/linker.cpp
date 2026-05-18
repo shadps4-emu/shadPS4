@@ -103,7 +103,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
     }
 
     const u64 sdk_ver = proc_param->sdk_version;
-    if (sdk_ver < Common::ElfInfo::FW_50) {
+    if (sdk_ver < Common::ElfInfo::FW_500) {
         use_extended_mem1 = mem_param.extended_memory_1 ? *mem_param.extended_memory_1 : false;
         use_extended_mem2 = mem_param.extended_memory_2 ? *mem_param.extended_memory_2 : false;
     }

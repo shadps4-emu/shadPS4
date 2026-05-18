@@ -131,11 +131,11 @@ struct AddressSpace::Impl {
         // Higher PS4 firmware versions prevent higher address mappings too.
         s32 sdk_ver = Common::ElfInfo::Instance().CompiledSdkVer();
         if (os_version_info.dwBuildNumber <= AffectedBuildNumber ||
-            sdk_ver >= Common::ElfInfo::FW_30) {
+            sdk_ver >= Common::ElfInfo::FW_300) {
             supported_user_max = 0x10000000000ULL;
             // Only log the message if we're restricting the user max due to operating system.
             // Since higher compiled SDK versions also get reduced max, we don't need to log there.
-            if (sdk_ver < Common::ElfInfo::FW_30) {
+            if (sdk_ver < Common::ElfInfo::FW_300) {
                 LOG_WARNING(
                     Core,
                     "Older Windows version detected, reducing user max to {:#x} to avoid problems",
