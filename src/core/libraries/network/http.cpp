@@ -32,6 +32,7 @@ struct HttpSettings {
     u32 connect_timeout_us = 0;
     u32 send_timeout_us = 0;
     u32 recv_timeout_us = 0;
+    bool auto_redirect = true;
 };
 
 struct HttpTemplate {
@@ -550,11 +551,6 @@ int PS4_SYSV_ABI sceHttpGetAuthEnabled(int id, int* isEnable) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpGetAutoRedirect(int id, int* isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, fmt::ptr(isEnable));
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpGetConnectionStat() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
@@ -750,11 +746,6 @@ int PS4_SYSV_ABI sceHttpSetAuthInfoCallback(int id, OrbisHttpAuthInfoCallback cb
                                             void* userArg) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}, cbfunc={}, userArg={}", id,
               fmt::ptr(reinterpret_cast<void*>(cbfunc)), fmt::ptr(userArg));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
     return ORBIS_OK;
 }
 
@@ -1003,7 +994,49 @@ int PS4_SYSV_ABI sceHttpUriCopy() {
 }
 
 //***********************************
-// Timeout functions
+// Redirection setting functions
+//***********************************
+int PS4_SYSV_ABI sceHttpGetAutoRedirect(int id, int* isEnable) {
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, fmt::ptr(isEnable));
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!isEnable) {
+        LOG_ERROR(Lib_Http, "Invalid Value");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid Id");
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    *isEnable = s->auto_redirect ? 1 : 0;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable) {
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, isEnable);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid Id");
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->auto_redirect = (isEnable != 0);
+    LOG_INFO(Lib_Http, "auto_redirect={} at {} level (id={})", s->auto_redirect, level, id);
+    return ORBIS_OK;
+}
+
+//***********************************
+// Timeout setting functions
 //***********************************
 int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec) {
     LOG_INFO(Lib_Http, "called id={}, usec={}", id, usec);

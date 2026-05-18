@@ -149,7 +149,6 @@ int PS4_SYSV_ABI sceHttpDestroyEpoll(int libhttpCtxId, OrbisHttpEpollHandle eh);
 int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled(int id, int* isEnable);
 int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* headerSize);
 int PS4_SYSV_ABI sceHttpGetAuthEnabled(int id, int* isEnable);
-int PS4_SYSV_ABI sceHttpGetAutoRedirect(int id, int* isEnable);
 int PS4_SYSV_ABI sceHttpGetConnectionStat();
 int PS4_SYSV_ABI sceHttpGetCookie(int libhttpCtxId, const char* url, char* cookie, u64* required,
                                   u64 prepared, int isSecure);
@@ -176,7 +175,6 @@ int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetAuthEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetAuthInfoCallback(int id, OrbisHttpAuthInfoCallback cbfunc,
                                             void* userArg);
-int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetChunkedTransferEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetCookieEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetCookieMaxNum(int libhttpCtxId, u32 num);
@@ -223,8 +221,14 @@ int PS4_SYSV_ABI sceHttpUnsetEpoll(int id);
 int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* nbev, int maxevents,
                                     int timeout);
 int PS4_SYSV_ABI sceHttpUriCopy();
+
 //***********************************
-// Timeout functions
+// Redirection setting functions
+//***********************************
+int PS4_SYSV_ABI sceHttpGetAutoRedirect(int id, int* isEnable);
+int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable);
+//***********************************
+// Timeout settting functions
 //***********************************
 int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetSendTimeOut(int id, u32 usec);
