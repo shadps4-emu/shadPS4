@@ -1068,8 +1068,21 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL2(int connId, const char* method, co
                                               u64 contentLength) {
     LOG_INFO(Lib_Http, "called connId={}, method={}, url={}, contentLength={}", connId,
              method ? method : "(null)", url ? url : "(null)", contentLength);
-    int int_method = -1;
-    if (method) {
+    int int_method;
+    {
+        std::lock_guard<std::mutex> lock(g_state.m_mutex);
+        if (!g_state.inited) {
+            LOG_ERROR(Lib_Http, "Not initialized");
+            return ORBIS_HTTP_ERROR_BEFORE_INIT;
+        }
+        if (!g_state.connections.contains(connId)) {
+            LOG_ERROR(Lib_Http, "Invalid connId={}", connId);
+            return ORBIS_HTTP_ERROR_INVALID_ID;
+        }
+        if (!method) {
+            LOG_ERROR(Lib_Http, "method is null");
+            return ORBIS_HTTP_ERROR_INVALID_VALUE;
+        }
         std::string s = method;
         if (s == "GET")
             int_method = ORBIS_HTTP_METHOD_GET;
@@ -1083,17 +1096,14 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL2(int connId, const char* method, co
             int_method = ORBIS_HTTP_METHOD_DELETE;
         else if (s == "TRACE")
             int_method = ORBIS_HTTP_METHOD_TRACE;
-    }
-    if (int_method < 0) {
-        if (!method) {
-            LOG_ERROR(Lib_Http, "method is null");
-            return ORBIS_HTTP_ERROR_INVALID_VALUE;
+        else {
+            LOG_INFO(Lib_Http, "method '{}' not in standard table; routing via CUSTOM slot",
+                     method);
+            int_method = ORBIS_HTTP_METHOD_CUSTOM;
         }
-        LOG_INFO(Lib_Http, "method '{}' not in standard table; routing via CUSTOM slot", method);
-        int_method = ORBIS_HTTP_METHOD_CUSTOM;
     }
     int reqId = sceHttpCreateRequestWithURL(connId, int_method, url, contentLength);
-    if (reqId > 0 && method) {
+    if (reqId > 0) {
         std::lock_guard<std::mutex> lock(g_state.m_mutex);
         auto it = g_state.requests.find(reqId);
         if (it != g_state.requests.end()) {
