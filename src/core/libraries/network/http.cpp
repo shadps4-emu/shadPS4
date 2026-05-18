@@ -28,10 +28,17 @@ enum class HttpRequestState {
     Aborted,
 };
 
+struct HttpSettings {
+    u32 connect_timeout_us = 0;
+    u32 send_timeout_us = 0;
+    u32 recv_timeout_us = 0;
+};
+
 struct HttpTemplate {
     std::string user_agent;
     int http_version;
     int auto_proxy_conf;
+    HttpSettings settings;
 };
 
 struct HttpConnection {
@@ -43,6 +50,7 @@ struct HttpConnection {
     u16 port = 0;            // Numeric port. 80 / 443 if scheme-default.
     bool keep_alive = false; // Game-controlled keep-alive intent.
     bool is_secure = false;  // True if scheme == "https".
+    HttpSettings settings;
 };
 
 struct HttpRequest {
@@ -54,6 +62,7 @@ struct HttpRequest {
     HttpRequestState state = HttpRequestState::Created;
     bool deleted = false;
     s32 last_errno = 0; // populated by SendRequest, read by GetLastErrno
+    HttpSettings settings;
 };
 
 struct HttpState {
@@ -69,6 +78,23 @@ struct HttpState {
 };
 
 static HttpState g_state;
+
+static HttpSettings* ResolveSettings(int id, const char*& level) {
+    if (auto it = g_state.templates.find(id); it != g_state.templates.end()) {
+        level = "template";
+        return &it->second.settings;
+    }
+    if (auto it = g_state.connections.find(id); it != g_state.connections.end()) {
+        level = "connection";
+        return &it->second.settings;
+    }
+    if (auto it = g_state.requests.find(id); it != g_state.requests.end()) {
+        level = "request";
+        return &it->second->settings;
+    }
+    level = "";
+    return nullptr;
+}
 
 void NormalizeAndAppendPath(char* dest, char* src) {
     char* lastSlash;
@@ -737,11 +763,6 @@ int PS4_SYSV_ABI sceHttpSetChunkedTransferEnabled(int id, int isEnable) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, usec={}", id, usec);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpSetCookieEnabled(int id, int isEnable) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
     return ORBIS_OK;
@@ -837,11 +858,6 @@ int PS4_SYSV_ABI sceHttpSetRecvBlockSize(int id, u32 blockSize) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpSetRecvTimeOut(int id, u32 usec) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, usec={}", id, usec);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpSetRedirectCallback(int id, OrbisHttpRedirectCallback cbfunc,
                                             void* userArg) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}, cbfunc={}, userArg={}", id,
@@ -873,11 +889,6 @@ int PS4_SYSV_ABI sceHttpSetResolveTimeOut(int id, u32 usec) {
 
 int PS4_SYSV_ABI sceHttpSetResponseHeaderMaxSize(int id, u64 headerSize) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}, headerSize={}", id, headerSize);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpSetSendTimeOut(int id, u32 usec) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, usec={}", id, usec);
     return ORBIS_OK;
 }
 
@@ -988,6 +999,60 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
 
 int PS4_SYSV_ABI sceHttpUriCopy() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+//***********************************
+// Timeout functions
+//***********************************
+int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec) {
+    LOG_INFO(Lib_Http, "called id={}, usec={}", id, usec);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid Id");
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->connect_timeout_us = usec;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpSetSendTimeOut(int id, u32 usec) {
+    LOG_INFO(Lib_Http, "called id={}, usec={}", id, usec);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid Id");
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->send_timeout_us = usec;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpSetRecvTimeOut(int id, u32 usec) {
+    LOG_INFO(Lib_Http, "called id={}, usec={}", id, usec);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid Id");
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->recv_timeout_us = usec;
     return ORBIS_OK;
 }
 

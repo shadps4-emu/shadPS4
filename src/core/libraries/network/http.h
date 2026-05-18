@@ -178,7 +178,6 @@ int PS4_SYSV_ABI sceHttpSetAuthInfoCallback(int id, OrbisHttpAuthInfoCallback cb
                                             void* userArg);
 int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetChunkedTransferEnabled(int id, int isEnable);
-int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetCookieEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetCookieMaxNum(int libhttpCtxId, u32 num);
 int PS4_SYSV_ABI sceHttpSetCookieMaxNumPerDomain(int libhttpCtxId, u32 num);
@@ -199,7 +198,6 @@ int PS4_SYSV_ABI sceHttpSetPolicyOption();
 int PS4_SYSV_ABI sceHttpSetPriorityOption();
 int PS4_SYSV_ABI sceHttpSetProxy();
 int PS4_SYSV_ABI sceHttpSetRecvBlockSize(int id, u32 blockSize);
-int PS4_SYSV_ABI sceHttpSetRecvTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetRedirectCallback(int id, OrbisHttpRedirectCallback cbfunc,
                                             void* userArg);
 int PS4_SYSV_ABI sceHttpSetRequestContentLength(int id, u64 contentLength);
@@ -208,7 +206,6 @@ int PS4_SYSV_ABI sceHttpSetRequestStatusCallback(int id, OrbisHttpRequestStatusC
 int PS4_SYSV_ABI sceHttpSetResolveRetry(int id, int retry);
 int PS4_SYSV_ABI sceHttpSetResolveTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetResponseHeaderMaxSize(int id, u64 headerSize);
-int PS4_SYSV_ABI sceHttpSetSendTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetSocketCreationCallback();
 int PS4_SYSV_ABI sceHttpsFreeCaList(int libhttpCtxId, OrbisHttpsCaList* caList);
 int PS4_SYSV_ABI sceHttpsGetCaList(int httpCtxId, OrbisHttpsCaList* list);
@@ -226,6 +223,12 @@ int PS4_SYSV_ABI sceHttpUnsetEpoll(int id);
 int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* nbev, int maxevents,
                                     int timeout);
 int PS4_SYSV_ABI sceHttpUriCopy();
+//***********************************
+// Timeout functions
+//***********************************
+int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec);
+int PS4_SYSV_ABI sceHttpSetSendTimeOut(int id, u32 usec);
+int PS4_SYSV_ABI sceHttpSetRecvTimeOut(int id, u32 usec);
 //***********************************
 // Request functions
 //***********************************
