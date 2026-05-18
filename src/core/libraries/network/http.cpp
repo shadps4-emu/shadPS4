@@ -269,6 +269,9 @@ int PS4_SYSV_ABI sceHttpCreateConnection(int tmplId, const char* serverName, con
     conn.keep_alive = (isEnableKeepalive != 0);
     conn.is_secure = is_secure;
     conn.url = scheme_str + "://" + serverName + ":" + std::to_string(port);
+    if (auto tmpl_it = g_state.templates.find(tmplId); tmpl_it != g_state.templates.end()) {
+        conn.settings = tmpl_it->second.settings;
+    }
     g_state.connections.emplace(conn_id, std::move(conn));
     LOG_INFO(Lib_Http, "created connection connId={} url={}", conn_id,
              g_state.connections[conn_id].url);
@@ -341,6 +344,9 @@ int PS4_SYSV_ABI sceHttpCreateConnectionWithURL(int tmplId, const char* url, boo
     conn.port = port;
     conn.keep_alive = enableKeepalive;
     conn.is_secure = is_secure;
+    if (auto tmpl_it = g_state.templates.find(tmplId); tmpl_it != g_state.templates.end()) {
+        conn.settings = tmpl_it->second.settings;
+    }
     g_state.connections.emplace(conn_id, std::move(conn));
     LOG_INFO(Lib_Http, "created connection connId={} host={} port={} scheme={}", conn_id,
              g_state.connections[conn_id].hostname, port, scheme_str);
@@ -396,7 +402,8 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL(int connId, s32 method, const char*
         LOG_ERROR(Lib_Http, "Not initialized");
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
     }
-    if (!g_state.connections.contains(connId)) {
+    auto conn_it = g_state.connections.find(connId);
+    if (conn_it == g_state.connections.end()) {
         LOG_ERROR(Lib_Http, "Invalid connId={}", connId);
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
@@ -415,6 +422,7 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL(int connId, s32 method, const char*
     req->method = method;
     req->url = url;
     req->content_length = contentLength;
+    req->settings = conn_it->second.settings;
     g_state.requests.emplace(req_id, std::move(req));
     LOG_INFO(Lib_Http, "created request reqId={}", req_id);
     return req_id;
