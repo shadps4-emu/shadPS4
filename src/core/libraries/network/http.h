@@ -13,6 +13,26 @@ class SymbolsResolver;
 
 namespace Libraries::Http {
 
+enum OrbisHttpsFlags : u32 {
+    ORBIS_HTTPS_FLAG_SERVER_VERIFY = 0x01,
+    ORBIS_HTTPS_FLAG_CLIENT_VERIFY = 0x02,
+    ORBIS_HTTPS_FLAG_CN_CHECK = 0x04,
+    ORBIS_HTTPS_FLAG_NOT_AFTER_CHECK = 0x08,
+    ORBIS_HTTPS_FLAG_NOT_BEFORE_CHECK = 0x10,
+    ORBIS_HTTPS_FLAG_KNOWN_CA_CHECK = 0x20,
+    ORBIS_HTTPS_FLAG_SESSION_REUSE = 0x40,
+    ORBIS_HTTPS_FLAG_SNI = 0x80,
+};
+
+// Used as the initial value of HttpSettings::ssl_flags.
+constexpr u32 ORBIS_HTTPS_FLAG_SDK_DEFAULT = ORBIS_HTTPS_FLAG_SERVER_VERIFY |
+                                             ORBIS_HTTPS_FLAG_CN_CHECK |
+                                             ORBIS_HTTPS_FLAG_KNOWN_CA_CHECK | ORBIS_HTTPS_FLAG_SNI;
+
+// Validation masks consumed by sceHttpsEnableOption / sceHttpsDisableOption
+constexpr u32 ORBIS_HTTPS_FLAG_PUBLIC_VALID = 0x000020ff;
+constexpr u32 ORBIS_HTTPS_FLAG_PRIVATE_VALID = 0x00002dff;
+
 enum OrbisHttpMethod : s32 {
     ORBIS_HTTP_METHOD_GET = 0,
     ORBIS_HTTP_METHOD_POST = 1,
@@ -166,10 +186,6 @@ int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size);
 int PS4_SYSV_ABI sceHttpRedirectCacheFlush(int libhttpCtxId);
 int PS4_SYSV_ABI sceHttpRemoveRequestHeader(int id, const char* name);
 int PS4_SYSV_ABI sceHttpRequestGetAllHeaders();
-int PS4_SYSV_ABI sceHttpsDisableOption(int id, u32 sslFlags);
-int PS4_SYSV_ABI sceHttpsDisableOptionPrivate(int id, u32 sslFlags);
-int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags);
-int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags);
 int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size);
 int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetAuthEnabled(int id, int isEnable);
@@ -219,6 +235,14 @@ int PS4_SYSV_ABI sceHttpUnsetEpoll(int id);
 int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* nbev, int maxevents,
                                     int timeout);
 int PS4_SYSV_ABI sceHttpUriCopy();
+
+//***********************************
+// Https Option setting functions
+//***********************************
+int PS4_SYSV_ABI sceHttpsDisableOption(int id, u32 sslFlags);
+int PS4_SYSV_ABI sceHttpsDisableOptionPrivate(int id, u32 sslFlags);
+int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags);
+int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags);
 //***********************************
 // Response Information functions
 //***********************************

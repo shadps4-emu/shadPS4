@@ -34,6 +34,7 @@ struct HttpSettings {
     u32 recv_timeout_us = 0;
     bool auto_redirect = true;
     bool inflate_gzip = true;
+    u32 ssl_flags = ORBIS_HTTPS_FLAG_SDK_DEFAULT; // SSL flag mask. Bitmask of OrbisHttpsFlags.
 };
 
 struct HttpTemplate {
@@ -692,26 +693,6 @@ int PS4_SYSV_ABI sceHttpRequestGetAllHeaders() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpsDisableOption(int id, u32 sslFlags) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, sslFlags={:#x}", id, sslFlags);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpsDisableOptionPrivate(int id, u32 sslFlags) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, sslFlags={:#x}", id, sslFlags);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, sslFlags={:#x}", id, sslFlags);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, sslFlags={:#x}", id, sslFlags);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
     LOG_INFO(Lib_Http, "called reqId={}, postData={}, size={}", reqId, fmt::ptr(postData), size);
     std::lock_guard<std::mutex> lock(g_state.m_mutex);
@@ -989,6 +970,105 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
 
 int PS4_SYSV_ABI sceHttpUriCopy() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+//***********************************
+// Https Option setting functions
+//***********************************
+int PS4_SYSV_ABI sceHttpsDisableOption(int id, u32 sslFlags) {
+    LOG_INFO(Lib_Http, "called id={}, sslFlags={:#x}", id, sslFlags);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if ((sslFlags & ~ORBIS_HTTPS_FLAG_PUBLIC_VALID) != 0) {
+        LOG_ERROR(Lib_Http, "sslFlags=0x{:x} contains unknown bits 0x{:x}", sslFlags,
+                  sslFlags & ~ORBIS_HTTPS_FLAG_PUBLIC_VALID);
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={} (not a template, connection, or request)", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->ssl_flags &= ~sslFlags;
+    LOG_INFO(Lib_Http, "ssl_flags now 0x{:x} at {} level (id={})", s->ssl_flags, level, id);
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpsDisableOptionPrivate(int id, u32 sslFlags) {
+    LOG_INFO(Lib_Http, "called id={}, sslFlags={:#x}", id, sslFlags);
+    // Same as sceHttpsDisableOption but accepts a wider bit-mask
+    // ORBIS_HTTPS_FLAG_PRIVATE_VALID
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if ((sslFlags & ~ORBIS_HTTPS_FLAG_PRIVATE_VALID) != 0) {
+        LOG_ERROR(Lib_Http, "sslFlags=0x{:x} contains unknown bits 0x{:x}", sslFlags,
+                  sslFlags & ~ORBIS_HTTPS_FLAG_PRIVATE_VALID);
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={} (not a template, connection, or request)", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->ssl_flags &= ~sslFlags;
+    LOG_INFO(Lib_Http, "ssl_flags now 0x{:x} at {} level (id={})", s->ssl_flags, level, id);
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags) {
+    LOG_INFO(Lib_Http, "called id={}, sslFlags={:#x}", id, sslFlags);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if ((sslFlags & ~ORBIS_HTTPS_FLAG_PUBLIC_VALID) != 0) {
+        LOG_ERROR(Lib_Http, "sslFlags=0x{:x} contains unknown bits 0x{:x}", sslFlags,
+                  sslFlags & ~ORBIS_HTTPS_FLAG_PUBLIC_VALID);
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={} (not a template, connection, or request)", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->ssl_flags |= sslFlags;
+    LOG_INFO(Lib_Http, "ssl_flags now 0x{:x} at {} level (id={})", s->ssl_flags, level, id);
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags) {
+    LOG_INFO(Lib_Http, "called id={}, sslFlags={:#x}", id, sslFlags);
+    // Same as sceHttpsEnableOption but accepts the wider Private
+    // bit-mask (ORBIS_HTTPS_FLAG_PRIVATE_VALID).
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if ((sslFlags & ~ORBIS_HTTPS_FLAG_PRIVATE_VALID) != 0) {
+        LOG_ERROR(Lib_Http, "sslFlags=0x{:x} contains unknown bits 0x{:x}", sslFlags,
+                  sslFlags & ~ORBIS_HTTPS_FLAG_PRIVATE_VALID);
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={} (not a template, connection, or request)", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->ssl_flags |= sslFlags;
+    LOG_INFO(Lib_Http, "ssl_flags now 0x{:x} at {} level (id={})", s->ssl_flags, level, id);
     return ORBIS_OK;
 }
 
