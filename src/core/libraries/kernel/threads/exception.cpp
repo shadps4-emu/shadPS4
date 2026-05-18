@@ -301,12 +301,16 @@ void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
 s32 PS4_SYSV_ABI posix_sigemptyset(Sigset* s) {
     s->bits[0] = 0;
     s->bits[1] = 0;
+    s->bits[2] = 0;
+    s->bits[3] = 0;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI posix_sigfillset(Sigset* s) {
     s->bits[0] = ~0U;
     s->bits[1] = ~0U;
+    s->bits[2] = ~0U;
+    s->bits[3] = ~0U;
     return ORBIS_OK;
 }
 
@@ -340,7 +344,7 @@ s32 PS4_SYSV_ABI posix_sigismember(Sigset* s, s32 sig) {
 }
 
 bool PS4_SYSV_ABI posix_sigisemptyset(Sigset* s) {
-    return s->bits[0] == 0 && s->bits[1] == 0;
+    return s->bits[0] == 0 && s->bits[1] == 0 && s->bits[2] == 0 && s->bits[3] == 0;
 }
 
 s32 PS4_SYSV_ABI posix_sigprocmask(s32 how, const Sigset* set, Sigset* oset) {

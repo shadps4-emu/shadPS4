@@ -120,7 +120,7 @@ struct ExStack {
 };
 
 struct Sigset {
-    u64 bits[2];
+    u32 bits[4];
 };
 
 union Sigval {
@@ -168,10 +168,12 @@ struct Siginfo {
     } _reason;
 };
 
+using SigHandler = void PS4_SYSV_ABI (*)(int);
+
 struct Sigaction {
     union {
-        void (*handler)(int);
-        void (*sigaction)(int, struct Siginfo*, void*);
+        void PS4_SYSV_ABI (*handler)(int);
+        void PS4_SYSV_ABI (*sigaction)(int, struct Siginfo*, void*);
     } __sigaction_handler;
     int sa_flags;
     Sigset sa_mask;
