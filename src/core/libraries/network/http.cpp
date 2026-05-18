@@ -360,78 +360,6 @@ int PS4_SYSV_ABI sceHttpCreateRequest(int connId, int method, const char* path, 
     return sceHttpCreateRequestWithURL(connId, method, url.c_str(), contentLength);
 }
 
-int PS4_SYSV_ABI sceHttpCreateRequest2(int connId, const char* method, const char* path,
-                                       u64 contentLength) {
-    LOG_INFO(Lib_Http, "called connId={}, method={}, path={}, contentLength={}", connId,
-             method ? method : "(null)", path ? path : "(null)", contentLength);
-    auto map_method = [](const char* m) -> int {
-        if (!m)
-            return -1;
-        std::string s = m;
-        if (s == "GET")
-            return ORBIS_HTTP_METHOD_GET;
-        if (s == "POST")
-            return ORBIS_HTTP_METHOD_POST;
-        if (s == "HEAD")
-            return ORBIS_HTTP_METHOD_HEAD;
-        if (s == "PUT")
-            return ORBIS_HTTP_METHOD_PUT;
-        if (s == "DELETE")
-            return ORBIS_HTTP_METHOD_DELETE;
-        if (s == "TRACE")
-            return ORBIS_HTTP_METHOD_TRACE;
-        return -1;
-    };
-    if (!path) {
-        LOG_ERROR(Lib_Http, "path is null");
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
-    if (ContainsCrLf(path)) {
-        LOG_ERROR(Lib_Http, "path contains CR/LF (CRLF-injection rejected): {}", path);
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
-    int int_method = map_method(method);
-    if (int_method < 0) {
-        if (!method) {
-            LOG_ERROR(Lib_Http, "method is null");
-            return ORBIS_HTTP_ERROR_INVALID_VALUE;
-        }
-        LOG_INFO(Lib_Http, "method '{}' not in standard table; routing via CUSTOM slot", method);
-        int_method = ORBIS_HTTP_METHOD_CUSTOM;
-    }
-    // Resolve the connection's URL under the lock, then delegate.
-    std::string url;
-    {
-        std::lock_guard<std::mutex> lock(g_state.m_mutex);
-        if (!g_state.inited) {
-            LOG_ERROR(Lib_Http, "Not initialized");
-            return ORBIS_HTTP_ERROR_BEFORE_INIT;
-        }
-        auto it = g_state.connections.find(connId);
-        if (it == g_state.connections.end()) {
-            LOG_ERROR(Lib_Http, "Invalid connId={}", connId);
-            return ORBIS_HTTP_ERROR_INVALID_ID;
-        }
-        const auto& conn = it->second;
-        url = conn.scheme + "://" + conn.hostname + ":" + std::to_string(conn.port);
-        if (path[0] != '\0') {
-            if (path[0] != '/') {
-                url.push_back('/');
-            }
-            url.append(path);
-        }
-    }
-    int reqId = sceHttpCreateRequestWithURL(connId, int_method, url.c_str(), contentLength);
-    if (reqId > 0 && method) {
-        std::lock_guard<std::mutex> lock(g_state.m_mutex);
-        auto it = g_state.requests.find(reqId);
-        if (it != g_state.requests.end()) {
-            it->second->method_str = method;
-        }
-    }
-    return reqId;
-}
-
 int PS4_SYSV_ABI sceHttpCreateRequestWithURL(int connId, s32 method, const char* url,
                                              u64 contentLength) {
     LOG_INFO(Lib_Http, "called connId={}, method={}, url={}, contentLength={}", connId, method,
@@ -463,45 +391,6 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL(int connId, s32 method, const char*
     g_state.requests.emplace(req_id, std::move(req));
     LOG_INFO(Lib_Http, "created request reqId={}", req_id);
     return req_id;
-}
-
-int PS4_SYSV_ABI sceHttpCreateRequestWithURL2(int connId, const char* method, const char* url,
-                                              u64 contentLength) {
-    LOG_INFO(Lib_Http, "called connId={}, method={}, url={}, contentLength={}", connId,
-             method ? method : "(null)", url ? url : "(null)", contentLength);
-    int int_method = -1;
-    if (method) {
-        std::string s = method;
-        if (s == "GET")
-            int_method = ORBIS_HTTP_METHOD_GET;
-        else if (s == "POST")
-            int_method = ORBIS_HTTP_METHOD_POST;
-        else if (s == "HEAD")
-            int_method = ORBIS_HTTP_METHOD_HEAD;
-        else if (s == "PUT")
-            int_method = ORBIS_HTTP_METHOD_PUT;
-        else if (s == "DELETE")
-            int_method = ORBIS_HTTP_METHOD_DELETE;
-        else if (s == "TRACE")
-            int_method = ORBIS_HTTP_METHOD_TRACE;
-    }
-    if (int_method < 0) {
-        if (!method) {
-            LOG_ERROR(Lib_Http, "method is null");
-            return ORBIS_HTTP_ERROR_INVALID_VALUE;
-        }
-        LOG_INFO(Lib_Http, "method '{}' not in standard table; routing via CUSTOM slot", method);
-        int_method = ORBIS_HTTP_METHOD_CUSTOM;
-    }
-    int reqId = sceHttpCreateRequestWithURL(connId, int_method, url, contentLength);
-    if (reqId > 0 && method) {
-        std::lock_guard<std::mutex> lock(g_state.m_mutex);
-        auto it = g_state.requests.find(reqId);
-        if (it != g_state.requests.end()) {
-            it->second->method_str = method;
-        }
-    }
-    return reqId;
 }
 
 int PS4_SYSV_ABI sceHttpCreateTemplate(int libhttpCtxId, const char* userAgent, int httpVer,
@@ -674,26 +563,6 @@ int PS4_SYSV_ABI sceHttpGetEpoll(int id, OrbisHttpEpollHandle* eh, void** userAr
 
 int PS4_SYSV_ABI sceHttpGetEpollId() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpGetLastErrno(int reqId, int* errNum) {
-    LOG_INFO(Lib_Http, "called reqId={}, errNum={}", reqId, fmt::ptr(errNum));
-    std::lock_guard<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    if (!errNum) {
-        LOG_ERROR(Lib_Http, "errNum output pointer is null");
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
-    auto it = g_state.requests.find(reqId);
-    if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    *errNum = it->second->last_errno;
     return ORBIS_OK;
 }
 
@@ -1119,6 +988,141 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
 
 int PS4_SYSV_ABI sceHttpUriCopy() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+//***********************************
+// Request functions
+//***********************************
+int PS4_SYSV_ABI sceHttpCreateRequest2(int connId, const char* method, const char* path,
+                                       u64 contentLength) {
+    LOG_INFO(Lib_Http, "called connId={}, method={}, path={}, contentLength={}", connId,
+             method ? method : "(null)", path ? path : "(null)", contentLength);
+    auto map_method = [](const char* m) -> int {
+        if (!m)
+            return -1;
+        std::string s = m;
+        if (s == "GET")
+            return ORBIS_HTTP_METHOD_GET;
+        if (s == "POST")
+            return ORBIS_HTTP_METHOD_POST;
+        if (s == "HEAD")
+            return ORBIS_HTTP_METHOD_HEAD;
+        if (s == "PUT")
+            return ORBIS_HTTP_METHOD_PUT;
+        if (s == "DELETE")
+            return ORBIS_HTTP_METHOD_DELETE;
+        if (s == "TRACE")
+            return ORBIS_HTTP_METHOD_TRACE;
+        return -1;
+    };
+    // Resolve the connection's URL under the lock, then delegate.
+    std::string url;
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    auto it = g_state.connections.find(connId);
+    if (it == g_state.connections.end()) {
+        LOG_ERROR(Lib_Http, "Invalid connId={}", connId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    if (!path) {
+        LOG_ERROR(Lib_Http, "path is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    if (ContainsCrLf(path)) {
+        LOG_ERROR(Lib_Http, "path contains CR/LF (CRLF-injection rejected): {}", path);
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    int int_method = map_method(method);
+    if (int_method < 0) {
+        if (!method) {
+            LOG_ERROR(Lib_Http, "method is null");
+            return ORBIS_HTTP_ERROR_INVALID_VALUE;
+        }
+        LOG_INFO(Lib_Http, "method '{}' not in standard table; routing via CUSTOM slot", method);
+        int_method = ORBIS_HTTP_METHOD_CUSTOM;
+    }
+    const auto& conn = it->second;
+    url = conn.scheme + "://" + conn.hostname + ":" + std::to_string(conn.port);
+    if (path[0] != '\0') {
+        if (path[0] != '/') {
+            url.push_back('/');
+        }
+        url.append(path);
+    }
+    int reqId = sceHttpCreateRequestWithURL(connId, int_method, url.c_str(), contentLength);
+    if (reqId > 0 && method) {
+        std::lock_guard<std::mutex> lock(g_state.m_mutex);
+        auto it = g_state.requests.find(reqId);
+        if (it != g_state.requests.end()) {
+            it->second->method_str = method;
+        }
+    }
+    return reqId;
+}
+
+int PS4_SYSV_ABI sceHttpCreateRequestWithURL2(int connId, const char* method, const char* url,
+                                              u64 contentLength) {
+    LOG_INFO(Lib_Http, "called connId={}, method={}, url={}, contentLength={}", connId,
+             method ? method : "(null)", url ? url : "(null)", contentLength);
+    int int_method = -1;
+    if (method) {
+        std::string s = method;
+        if (s == "GET")
+            int_method = ORBIS_HTTP_METHOD_GET;
+        else if (s == "POST")
+            int_method = ORBIS_HTTP_METHOD_POST;
+        else if (s == "HEAD")
+            int_method = ORBIS_HTTP_METHOD_HEAD;
+        else if (s == "PUT")
+            int_method = ORBIS_HTTP_METHOD_PUT;
+        else if (s == "DELETE")
+            int_method = ORBIS_HTTP_METHOD_DELETE;
+        else if (s == "TRACE")
+            int_method = ORBIS_HTTP_METHOD_TRACE;
+    }
+    if (int_method < 0) {
+        if (!method) {
+            LOG_ERROR(Lib_Http, "method is null");
+            return ORBIS_HTTP_ERROR_INVALID_VALUE;
+        }
+        LOG_INFO(Lib_Http, "method '{}' not in standard table; routing via CUSTOM slot", method);
+        int_method = ORBIS_HTTP_METHOD_CUSTOM;
+    }
+    int reqId = sceHttpCreateRequestWithURL(connId, int_method, url, contentLength);
+    if (reqId > 0 && method) {
+        std::lock_guard<std::mutex> lock(g_state.m_mutex);
+        auto it = g_state.requests.find(reqId);
+        if (it != g_state.requests.end()) {
+            it->second->method_str = method;
+        }
+    }
+    return reqId;
+}
+
+//***********************************
+// Error Obtainment functions
+//***********************************
+int PS4_SYSV_ABI sceHttpGetLastErrno(int reqId, int* errNum) {
+    LOG_INFO(Lib_Http, "called reqId={}, errNum={}", reqId, fmt::ptr(errNum));
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!errNum) {
+        LOG_ERROR(Lib_Http, "errNum output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    *errNum = it->second->last_errno;
     return ORBIS_OK;
 }
 
