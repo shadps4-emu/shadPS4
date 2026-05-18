@@ -187,6 +187,7 @@ s32 OrbisToNativeSignal(s32 s) {
 #endif
 
 std::array<OrbisKernelExceptionHandler, 130> Handlers{};
+Sigset g_sigintr{};
 
 #ifndef _WIN64
 void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context) {
@@ -445,6 +446,22 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     return ORBIS_OK;
 }
 
+SigHandler PS4_SYSV_ABI posix_signal(s32 sig, SigHandler func) {
+    Sigaction act{};
+    act.__sigaction_handler.handler = func;
+    posix_sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    if (posix_sigismember(&g_sigintr, sig) == 0) {
+        act.sa_flags |= POSIX_SA_RESTART;
+    }
+    Sigaction oact{};
+    s32 result = posix_sigaction(sig, &act, &oact);
+    if (result >= ORBIS_OK) {
+        return oact.__sigaction_handler.handler;
+    }
+    return reinterpret_cast<SigHandler>(-1);
+}
+
 s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
     if (sig < 1 || sig > 128) { // off-by-one error?
         return POSIX_EINVAL;
@@ -548,6 +565,8 @@ s32 PS4_SYSV_ABI sceKernelDebugRaiseExceptionOnReleaseMode(s32 error, s64 unk) {
 }
 
 void RegisterException(Core::Loader::SymbolsResolver* sym) {
+    LIB_OBJ("nQVWJEGHObc", "libkernel", 1, "libkernel", &g_sigintr);
+
     LIB_FUNCTION("il03nluKfMk", "libkernel_unity", 1, "libkernel", sceKernelRaiseException);
     LIB_FUNCTION("WkwEd3N7w0Y", "libkernel_unity", 1, "libkernel",
                  sceKernelInstallExceptionHandler);
@@ -559,6 +578,7 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Qhv5ARAoOEc", "libkernel", 1, "libkernel", sceKernelRemoveExceptionHandler);
 
     LIB_FUNCTION("KiJEPEWRyUY", "libkernel", 1, "libkernel", posix_sigaction);
+    LIB_FUNCTION("VADc3MNQ3cM", "libkernel", 1, "libkernel", posix_signal);
     LIB_FUNCTION("+F7C-hdk7+E", "libkernel", 1, "libkernel", posix_sigemptyset);
     LIB_FUNCTION("VkTAsrZDcJ0", "libkernel", 1, "libkernel", posix_sigfillset);
     LIB_FUNCTION("JUimFtKe0Kc", "libkernel", 1, "libkernel", posix_sigaddset);
@@ -569,6 +589,7 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("sHziAegVp74", "libkernel", 1, "libkernel", posix_sigalstack);
 
     LIB_FUNCTION("KiJEPEWRyUY", "libScePosix", 1, "libkernel", posix_sigaction);
+    LIB_FUNCTION("VADc3MNQ3cM", "libScePosix", 1, "libkernel", posix_signal);
     LIB_FUNCTION("+F7C-hdk7+E", "libScePosix", 1, "libkernel", posix_sigemptyset);
     LIB_FUNCTION("VkTAsrZDcJ0", "libScePosix", 1, "libkernel", posix_sigfillset);
     LIB_FUNCTION("JUimFtKe0Kc", "libScePosix", 1, "libkernel", posix_sigaddset);
