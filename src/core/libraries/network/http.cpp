@@ -33,6 +33,7 @@ struct HttpSettings {
     u32 send_timeout_us = 0;
     u32 recv_timeout_us = 0;
     bool auto_redirect = true;
+    bool inflate_gzip = true;
 };
 
 struct HttpTemplate {
@@ -827,11 +828,6 @@ int PS4_SYSV_ABI sceHttpSetHttp09Enabled(int id, int isEnable) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpSetNonblock(int id, int isEnable) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
     return ORBIS_OK;
@@ -861,11 +857,6 @@ int PS4_SYSV_ABI sceHttpSetRedirectCallback(int id, OrbisHttpRedirectCallback cb
                                             void* userArg) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}, cbfunc={}, userArg={}", id,
               fmt::ptr(reinterpret_cast<void*>(cbfunc)), fmt::ptr(userArg));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpSetRequestContentLength(int id, u64 contentLength) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, contentLength={}", id, contentLength);
     return ORBIS_OK;
 }
 
@@ -998,6 +989,54 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
 
 int PS4_SYSV_ABI sceHttpUriCopy() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+//***********************************
+// Response Information functions
+//***********************************
+int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable) {
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, isEnable);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (static_cast<u32>(isEnable) >= 2) {
+        LOG_ERROR(Lib_Http, "isEnable={} is not 0 or 1", isEnable);
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid Id");
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->inflate_gzip = (isEnable != 0);
+    LOG_INFO(Lib_Http, "inflate_gzip={} at {} level (id={})", s->inflate_gzip, level, id);
+    return ORBIS_OK;
+}
+
+//***********************************
+// Http Header setting functions
+//***********************************
+int PS4_SYSV_ABI sceHttpSetRequestContentLength(int id, u64 contentLength) {
+    LOG_INFO(Lib_Http, "called id={}, contentLength={}", id, contentLength);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    auto it = g_state.requests.find(id);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    if (it->second->state != HttpRequestState::Created) {
+        LOG_ERROR(Lib_Http, "reqId={} already sent or in-flight; cannot set content length", id);
+        return ORBIS_HTTP_ERROR_BUSY;
+    }
+    it->second->content_length = contentLength;
     return ORBIS_OK;
 }
 

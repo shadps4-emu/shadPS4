@@ -190,7 +190,6 @@ int PS4_SYSV_ABI sceHttpSetDelayBuildRequestEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetEpoll(int id, OrbisHttpEpollHandle eh, void* userArg);
 int PS4_SYSV_ABI sceHttpSetEpollId();
 int PS4_SYSV_ABI sceHttpSetHttp09Enabled(int id, int isEnable);
-int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetNonblock(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetPolicyOption();
 int PS4_SYSV_ABI sceHttpSetPriorityOption();
@@ -198,7 +197,6 @@ int PS4_SYSV_ABI sceHttpSetProxy();
 int PS4_SYSV_ABI sceHttpSetRecvBlockSize(int id, u32 blockSize);
 int PS4_SYSV_ABI sceHttpSetRedirectCallback(int id, OrbisHttpRedirectCallback cbfunc,
                                             void* userArg);
-int PS4_SYSV_ABI sceHttpSetRequestContentLength(int id, u64 contentLength);
 int PS4_SYSV_ABI sceHttpSetRequestStatusCallback(int id, OrbisHttpRequestStatusCallback cbfunc,
                                                  void* userArg);
 int PS4_SYSV_ABI sceHttpSetResolveRetry(int id, int retry);
@@ -221,7 +219,14 @@ int PS4_SYSV_ABI sceHttpUnsetEpoll(int id);
 int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* nbev, int maxevents,
                                     int timeout);
 int PS4_SYSV_ABI sceHttpUriCopy();
-
+//***********************************
+// Response Information functions
+//***********************************
+int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable);
+//***********************************
+// Http Header setting functions
+//***********************************
+int PS4_SYSV_ABI sceHttpSetRequestContentLength(int id, u64 contentLength);
 //***********************************
 // Redirection setting functions
 //***********************************
