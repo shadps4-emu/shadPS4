@@ -709,6 +709,8 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported(OrbisAudio3dPortId port_id
     // We support three attributes, PCM, Gain, and ResetState
     // In the future, supported attributes should be stored in the port.
     if (capabilities) {
+        // Writes up to num_capabilities supported capabilities,
+        // then sets num_capabilities to how many were written.
         u32 caps_to_write = *num_capabilities;
         if (caps_to_write >= 1) {
             capabilities[0] = OrbisAudio3dAttributeId::ORBIS_AUDIO3D_ATTRIBUTE_PCM;
@@ -719,8 +721,11 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported(OrbisAudio3dPortId port_id
         if (caps_to_write >= 3) {
             capabilities[2] = OrbisAudio3dAttributeId::ORBIS_AUDIO3D_ATTRIBUTE_RESET_STATE;
         }
+        *num_capabilities = std::min<u32>(caps_to_write, 3);
+    } else {
+        // If capabilities is null, then just report the number of supported capabilities.
+        *num_capabilities = 3;
     }
-    *num_capabilities = 3;
     return ORBIS_OK;
 }
 
