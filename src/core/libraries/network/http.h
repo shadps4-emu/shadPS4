@@ -129,8 +129,6 @@ using OrbisHttpsCallback = int(PS4_SYSV_ABI*)(int libsslCtxId, u32 verifyErr, vo
 using OrbisHttpsCaList = Libraries::Ssl::OrbisSslCaList;
 
 // Functions
-int PS4_SYSV_ABI sceHttpAbortRequest(int reqId);
-int PS4_SYSV_ABI sceHttpAbortRequestForce(int reqId);
 int PS4_SYSV_ABI sceHttpAbortWaitRequest(OrbisHttpEpollHandle eh);
 int PS4_SYSV_ABI sceHttpAddCookie(int libhttpCtxId, const char* url, const char* cookie,
                                   u64 cookieLength);
@@ -235,7 +233,11 @@ int PS4_SYSV_ABI sceHttpUnsetEpoll(int id);
 int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* nbev, int maxevents,
                                     int timeout);
 int PS4_SYSV_ABI sceHttpUriCopy();
-
+//***********************************
+// Https Communication functions
+//***********************************
+int PS4_SYSV_ABI sceHttpAbortRequest(int reqId);
+int PS4_SYSV_ABI sceHttpAbortRequestForce(int reqId);
 //***********************************
 // Https Option setting functions
 //***********************************

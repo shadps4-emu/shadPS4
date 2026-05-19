@@ -3,16 +3,19 @@
 
 #include <atomic>
 #include <cctype>
+#include <condition_variable>
 #include <cstring>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
@@ -56,6 +59,15 @@ struct HttpConnection {
     HttpSettings settings;
 };
 
+struct HttpResponse {
+    int status_code = 0;
+    u64 content_length = 0;
+    int content_length_result = ORBIS_HTTP_ERROR_NO_CONTENT_LENGTH;
+    std::vector<u8> body;
+    u64 read_cursor = 0;
+    std::string all_headers_blob; // Pre-formatted "Name: Value\r\n..." string.
+};
+
 struct HttpRequest {
     int conn_id = 0;
     int method = 0;
@@ -66,6 +78,9 @@ struct HttpRequest {
     bool deleted = false;
     s32 last_errno = 0; // populated by SendRequest, read by GetLastErrno
     HttpSettings settings;
+    HttpResponse res;
+    std::condition_variable cv; // waiters in blocking getters block on this
+                                // notified when state leaves Sending.
 };
 
 struct HttpState {
@@ -97,6 +112,38 @@ static HttpSettings* ResolveSettings(int id, const char*& level) {
     }
     level = "";
     return nullptr;
+}
+
+// Populate a response object with the shape a transport-level failure produces:
+// no status line, no headers, no body. Used by the no-internet path.
+static void SynthesizeTransportFailureResponse(HttpResponse& res) {
+    res.status_code = 0;
+    res.content_length = 0;
+    res.content_length_result = ORBIS_HTTP_ERROR_NO_CONTENT_LENGTH;
+    res.body.clear();
+    res.read_cursor = 0;
+    res.all_headers_blob.clear();
+}
+
+static int WaitForResponseReady(HttpRequest& req, std::unique_lock<std::mutex>& lock) {
+    if (req.state == HttpRequestState::Aborted) {
+        return ORBIS_HTTP_ERROR_ABORTED;
+    }
+    if (req.state == HttpRequestState::Created) {
+        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+    }
+    if (req.state == HttpRequestState::Sent) {
+        return ORBIS_OK;
+    }
+    // state == Sending: block on the per-request cv until the worker moves
+    // it to Sent (or Term/Abort transitions us to shutdown / Aborted).
+    req.cv.wait(lock, [&req]() {
+        return req.state != HttpRequestState::Sending || g_state.shutting_down.load();
+    });
+    if (g_state.shutting_down.load() || req.state == HttpRequestState::Aborted) {
+        return ORBIS_HTTP_ERROR_ABORTED;
+    }
+    return ORBIS_OK;
 }
 
 void NormalizeAndAppendPath(char* dest, char* src) {
@@ -158,16 +205,6 @@ static bool ContainsCrLf(const char* s) {
             return true;
     }
     return false;
-}
-
-int PS4_SYSV_ABI sceHttpAbortRequest(int reqId) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called reqId={}", reqId);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpAbortRequestForce(int reqId) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called reqId={}", reqId);
-    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceHttpAbortWaitRequest(OrbisHttpEpollHandle eh) {
@@ -522,6 +559,7 @@ int PS4_SYSV_ABI sceHttpDeleteRequest(int reqId) {
     auto req_ptr = it->second;
     req_ptr->deleted = true;
     req_ptr->state = HttpRequestState::Aborted;
+    req_ptr->cv.notify_all();
     g_state.requests.erase(it);
     return ORBIS_OK;
 }
@@ -551,9 +589,35 @@ int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled(int id, int* isEnable) {
 }
 
 int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* headerSize) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called reqId={}, header={}, headerSize={}", reqId,
-              fmt::ptr(header), fmt::ptr(headerSize));
-    return ORBIS_FAIL;
+    LOG_INFO(Lib_Http, "called reqId={}, header={}, headerSize={}", reqId, fmt::ptr(header),
+             fmt::ptr(headerSize));
+    std::unique_lock<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!header || !headerSize) {
+        LOG_ERROR(Lib_Http, "header or headerSize output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    auto& req = *it->second;
+    int wr = WaitForResponseReady(req, lock);
+    if (wr != ORBIS_OK) {
+        return wr;
+    }
+    if (req.res.all_headers_blob.empty()) {
+        *header = nullptr;
+        *headerSize = 0;
+    } else {
+        *header = const_cast<char*>(req.res.all_headers_blob.c_str());
+        *headerSize = req.res.all_headers_blob.size();
+    }
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceHttpGetAuthEnabled(int id, int* isEnable) {
@@ -616,44 +680,62 @@ int PS4_SYSV_ABI sceHttpGetRegisteredCtxIds() {
 }
 
 int PS4_SYSV_ABI sceHttpGetResponseContentLength(int reqId, int* result, u64* contentLength) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called reqId={}, result={}, contentLength={}", reqId,
-              fmt::ptr(result), fmt::ptr(contentLength));
+    LOG_INFO(Lib_Http, "called reqId={}, result={}, contentLength={}", reqId, fmt::ptr(result),
+             fmt::ptr(contentLength));
+    std::unique_lock<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!result || !contentLength) {
+        LOG_ERROR(Lib_Http, "result or contentLength output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    auto& req = *it->second;
+    int wr = WaitForResponseReady(req, lock);
+    if (wr != ORBIS_OK) {
+        return wr;
+    }
+    *result = req.res.content_length_result;
+    *contentLength = req.res.content_length;
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
-    LOG_INFO(Lib_Http, "(STUBBED) called reqId={}, statusCode={}", reqId, fmt::ptr(statusCode));
-#if 0
-    if (!g_state.inited)
+    LOG_INFO(Lib_Http, "called reqId={}, statusCode={}", reqId, fmt::ptr(statusCode));
+    std::unique_lock<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
-
-    if (statusCode == nullptr)
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-
-    int ret = 0;
-    // Lookup HttpRequestInternal by reqId
-    HttpRequestInternal* request = nullptr;
-    ret = HttpRequestInternal_Acquire(&request, reqId);
-    if (ret < 0)
-        return ret;
-    request->m_mutex.lock();
-    if (request->state > 0x11) {
-        if (request->state == 0x16) {
-            ret = request->errorCode;
-        } else {
-            *statusCode = request->httpStatusCode;
-            ret = 0;
-        }
-    } else {
-        ret = ORBIS_HTTP_ERROR_BEFORE_SEND;
     }
-    request->m_mutex.unlock();
-    HttpRequestInternal_Release(request);
-
-    return ret;
-#else
-    return ORBIS_HTTP_ERROR_BEFORE_SEND;
-#endif
+    if (!statusCode) {
+        LOG_ERROR(Lib_Http, "statusCode output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    auto& req = *it->second;
+    int wr = WaitForResponseReady(req, lock);
+    if (wr != ORBIS_OK) {
+        return wr;
+    }
+    // Transport failure: no status line was ever received from a server.
+    if (req.res.status_code == 0 && req.last_errno != 0) {
+        LOG_INFO(Lib_Http, "reqId={} transport failure, errno={:#x}, returning BEFORE_SEND", reqId,
+                 static_cast<u32>(req.last_errno));
+        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+    }
+    *statusCode = req.res.status_code;
+    LOG_INFO(Lib_Http, "reqId={} status={}", reqId, req.res.status_code);
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, u64 poolSize) {
@@ -674,8 +756,35 @@ int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, u64 poolSize) {
 }
 
 int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called reqId={}, data={}, size={}", reqId, fmt::ptr(data), size);
-    return ORBIS_OK;
+    LOG_INFO(Lib_Http, "called reqId={}, data={}, size={}", reqId, fmt::ptr(data), size);
+    std::unique_lock<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!data) {
+        LOG_ERROR(Lib_Http, "data output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    auto& req = *it->second;
+    int wr = WaitForResponseReady(req, lock);
+    if (wr != ORBIS_OK) {
+        return wr;
+    }
+    u64 remaining = req.res.body.size() - req.res.read_cursor;
+    u64 to_copy = std::min(size, remaining);
+    if (to_copy > 0) {
+        std::memcpy(data, req.res.body.data() + req.res.read_cursor, to_copy);
+        req.res.read_cursor += to_copy;
+    }
+    LOG_INFO(Lib_Http, "reqId={} copied {} bytes (cursor {}/{}) ", reqId, to_copy,
+             req.res.read_cursor, req.res.body.size());
+    return static_cast<int>(to_copy);
 }
 
 int PS4_SYSV_ABI sceHttpRedirectCacheFlush(int libhttpCtxId) {
@@ -695,31 +804,59 @@ int PS4_SYSV_ABI sceHttpRequestGetAllHeaders() {
 
 int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
     LOG_INFO(Lib_Http, "called reqId={}, postData={}, size={}", reqId, fmt::ptr(postData), size);
-    std::lock_guard<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    auto it = g_state.requests.find(reqId);
-    if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    auto& req = *it->second;
-    if (req.state == HttpRequestState::Sent) {
-        LOG_ERROR(Lib_Http, "Request already sent (reqId={})", reqId);
-        return ORBIS_HTTP_ERROR_AFTER_SEND;
-    }
-    if (req.state == HttpRequestState::Aborted) {
-        LOG_ERROR(Lib_Http, "Request was aborted (reqId={})", reqId);
-        return ORBIS_HTTP_ERROR_ABORTED;
+    std::shared_ptr<HttpRequest> req_ptr;
+    {
+        std::lock_guard<std::mutex> lock(g_state.m_mutex);
+        if (!g_state.inited) {
+            LOG_ERROR(Lib_Http, "Not initialized");
+            return ORBIS_HTTP_ERROR_BEFORE_INIT;
+        }
+        auto it = g_state.requests.find(reqId);
+        if (it == g_state.requests.end()) {
+            LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+            return ORBIS_HTTP_ERROR_INVALID_ID;
+        }
+        auto& req = *it->second;
+        if (req.state == HttpRequestState::Sending || req.state == HttpRequestState::Sent) {
+            LOG_ERROR(Lib_Http, "Request already sent (reqId={})", reqId);
+            return ORBIS_HTTP_ERROR_AFTER_SEND;
+        }
+        if (req.state == HttpRequestState::Aborted) {
+            LOG_ERROR(Lib_Http, "Request was aborted (reqId={})", reqId);
+            return ORBIS_HTTP_ERROR_ABORTED;
+        }
+        // Created -> Sending. Worker thread will move to Sent.
+        req.state = HttpRequestState::Sending;
+        req_ptr = it->second;
     }
 
-    req.last_errno = ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
-    req.state = HttpRequestState::Sent;
-    LOG_INFO(Lib_Http, "reqId={} send failed: last_errno={:#x} (no-internet path)", reqId,
-             static_cast<u32>(req.last_errno));
-    return ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
+    LOG_INFO(Lib_Http, "reqId={} dispatched to async worker [{}]", reqId,
+             EmulatorSettings.IsConnectedToNetwork() ? "ONLINE (TODO real I/O)"
+                                                     : "OFFLINE no-internet path");
+    std::thread([req_ptr, reqId]() {
+        HttpResponse local_res;
+        if (!EmulatorSettings.IsConnectedToNetwork()) {
+            SynthesizeTransportFailureResponse(local_res);
+        } else {
+            // TODO: real network I/O path but for now return the same so switching doesn't affect
+            // something
+            SynthesizeTransportFailureResponse(local_res);
+        }
+        std::lock_guard<std::mutex> lock(g_state.m_mutex);
+        if (g_state.shutting_down.load() || req_ptr->deleted ||
+            req_ptr->state == HttpRequestState::Aborted) {
+            req_ptr->cv.notify_all();
+            return;
+        }
+        req_ptr->res = std::move(local_res);
+        req_ptr->state = HttpRequestState::Sent;
+        req_ptr->last_errno = ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
+        LOG_INFO(Lib_Http, "(TRANSPORT FAIL) reqId={} -> 0 (body 0 bytes, errno={:#x})", reqId,
+                 static_cast<u32>(req_ptr->last_errno));
+        req_ptr->cv.notify_all();
+    }).detach();
+
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable) {
@@ -934,6 +1071,7 @@ int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId) {
         for (auto& [id, req_ptr] : g_state.requests) {
             req_ptr->deleted = true;
             req_ptr->state = HttpRequestState::Aborted;
+            req_ptr->cv.notify_all(); // wake blocked waiters before wiping the map
         }
         g_state.requests.clear();
         g_state.connections.clear();
@@ -971,6 +1109,38 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
 int PS4_SYSV_ABI sceHttpUriCopy() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
+}
+
+//***********************************
+// Https Communication functions
+//***********************************
+int PS4_SYSV_ABI sceHttpAbortRequest(int reqId) {
+    LOG_INFO(Lib_Http, "called reqId={}", reqId);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    auto& req = *it->second;
+
+    if (req.state == HttpRequestState::Created || req.state == HttpRequestState::Sending) {
+        req.state = HttpRequestState::Aborted;
+        req.cv.notify_all();
+        LOG_INFO(Lib_Http, "reqId={} marked Aborted", reqId);
+    } else {
+        LOG_INFO(Lib_Http, "reqId={} already Sent/Aborted, no-op", reqId);
+    }
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpAbortRequestForce(int reqId) {
+    LOG_INFO(Lib_Http, "called reqId={}", reqId);
+    return sceHttpAbortRequest(reqId);
 }
 
 //***********************************
