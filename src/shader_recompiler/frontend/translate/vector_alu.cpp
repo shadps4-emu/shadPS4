@@ -462,12 +462,18 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_ASHRREV_I16(inst);
     case Opcode::V_LSHLREV_B16:
         return V_LSHLREV_B16(inst);
-    case Opcode::V_ADD3_U32:
-        return V_ADD3_U32(inst);
     case Opcode::V_ADD_LSHL_U32:
         return V_ADD_LSHL_U32(inst);
     case Opcode::V_LSHL_ADD_U32:
         return V_LSHL_ADD_U32(inst);
+    case Opcode::V_MIN3_F16:
+        return V_MIN3_F16(inst);
+    case Opcode::V_MAX3_F16:
+        return V_MAX3_F16(inst);
+    case Opcode::V_MED3_F16:
+        return V_MED3_F16(inst);
+    case Opcode::V_ADD3_U32:
+        return V_ADD3_U32(inst);
     case Opcode::V_LSHL_OR_B32:
         return V_LSHL_OR_B32(inst);
     case Opcode::V_AND_OR_B32:
@@ -478,6 +484,26 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return;
 
     // VOP3P
+    case Opcode::V_PK_MUL_LO_U16:
+        return V_PK_MUL_LO_U16(inst);
+    case Opcode::V_PK_ADD_I16:
+        return V_PK_ADD_I16(inst);
+    case Opcode::V_PK_SUB_I16:
+        return V_PK_SUB_I16(inst);
+    case Opcode::V_PK_LSHRREV_B16:
+        return V_PK_LSHRREV_B16(inst);
+    case Opcode::V_PK_LSHLREV_B16:
+        return V_PK_LSHLREV_B16(inst);
+    case Opcode::V_PK_MAD_U16:
+        return V_PK_MAD_U16(inst);
+    case Opcode::V_PK_ADD_U16:
+        return V_PK_ADD_U16(inst);
+    case Opcode::V_PK_SUB_U16:
+        return V_PK_SUB_U16(inst);
+    case Opcode::V_PK_MAX_U16:
+        return V_PK_MAX_U16(inst);
+    case Opcode::V_PK_MIN_U16:
+        return V_PK_MIN_U16(inst);
     case Opcode::V_PK_FMA_F16:
         return V_PK_FMA_F16(inst);
     case Opcode::V_PK_ADD_F16:
@@ -1636,12 +1662,143 @@ void Translator::V_LSHL_ADD_U32(const GcnInst& inst) {
     SetDst(inst.dst[0], result);
 }
 
+void Translator::V_MIN3_F16(const GcnInst& inst) {
+    const auto src0 = GetSrc16<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrc16<IR::F32>(inst.src[1]);
+    const auto src2 = GetSrc16<IR::F32>(inst.src[2]);
+
+    const auto result = ir.FPMinTri(src0, src1, src2);
+
+    SetDst16(inst.dst[0], result);
+}
+
+void Translator::V_MAX3_F16(const GcnInst& inst) {
+    const auto src0 = GetSrc16<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrc16<IR::F32>(inst.src[1]);
+    const auto src2 = GetSrc16<IR::F32>(inst.src[2]);
+
+    const auto result = ir.FPMaxTri(src0, src1, src2);
+
+    SetDst16(inst.dst[0], result);
+}
+
+void Translator::V_MED3_F16(const GcnInst& inst) {
+    const auto src0 = GetSrc16<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrc16<IR::F32>(inst.src[1]);
+    const auto src2 = GetSrc16<IR::F32>(inst.src[2]);
+
+    const auto result = ir.FPMedTri(src0, src1, src2);
+
+    SetDst16(inst.dst[0], result);
+}
+
 void Translator::V_ADD3_U32(const GcnInst& inst) {
     const auto src0 = GetSrc<IR::U32>(inst.src[0]);
     const auto src1 = GetSrc<IR::U32>(inst.src[1]);
     const auto src2 = GetSrc<IR::U32>(inst.src[2]);
 
     SetDst(inst.dst[0], ir.IAdd(src0, ir.IAdd(src1, src2)));
+}
+
+void Translator::V_PK_MUL_LO_U16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::U32>(inst.src[1]);
+
+    const auto result_lo = ir.IAdd(src0.first, src1.first);
+    const auto result_hi = ir.IAdd(src0.second, src1.second);
+
+    SetDstPk<IR::U32, false>(inst.dst[0], {result_lo, result_hi});
+}
+
+void Translator::V_PK_ADD_I16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::U32, true>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::U32, true>(inst.src[1]);
+
+    const auto result_lo = ir.IAdd(src0.first, src1.first);
+    const auto result_hi = ir.IAdd(src0.second, src1.second);
+
+    SetDstPk<IR::U32, true>(inst.dst[0], {result_lo, result_hi});
+}
+
+void Translator::V_PK_SUB_I16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::U32, true>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::U32, true>(inst.src[1]);
+
+    const auto result_lo = ir.ISub(src0.first, src1.first);
+    const auto result_hi = ir.ISub(src0.second, src1.second);
+
+    SetDstPk<IR::U32, true>(inst.dst[0], {result_lo, result_hi});
+}
+
+void Translator::V_PK_LSHLREV_B16(const GcnInst& inst) {
+    const auto shift = GetSrcPk<IR::U32>(inst.src[0]);
+    const auto src = GetSrcPk<IR::U32>(inst.src[1]);
+
+    const auto result_lo = ir.ShiftLeftLogical(src.first, shift.first);
+    const auto result_hi = ir.ShiftLeftLogical(src.second, shift.second);
+
+    SetDstPk<IR::U32, false>(inst.dst[0], {result_lo, result_hi});
+}
+
+void Translator::V_PK_LSHRREV_B16(const GcnInst& inst) {
+    const auto shift = GetSrcPk<IR::U32>(inst.src[0]);
+    const auto src = GetSrcPk<IR::U32>(inst.src[1]);
+
+    const auto result_lo = ir.ShiftRightLogical(src.first, shift.first);
+    const auto result_hi = ir.ShiftRightLogical(src.second, shift.second);
+
+    SetDstPk<IR::U32, false>(inst.dst[0], {result_lo, result_hi});
+}
+
+void Translator::V_PK_MAD_U16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::U32>(inst.src[1]);
+    const auto src2 = GetSrcPk<IR::U32>(inst.src[2]);
+
+    const auto result_lo = ir.IAdd(ir.IMul(src0.first, src1.first), src2.first);
+    const auto result_hi = ir.IAdd(ir.IMul(src0.second, src1.second), src2.second);
+
+    SetDstPk<IR::U32, false>(inst.dst[0], {result_lo, result_hi});
+}
+
+void Translator::V_PK_ADD_U16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::U32>(inst.src[1]);
+
+    const auto result_lo = ir.IAdd(src0.first, src1.first);
+    const auto result_hi = ir.IAdd(src0.second, src1.second);
+
+    SetDstPk<IR::U32, false>(inst.dst[0], {result_lo, result_hi});
+}
+
+void Translator::V_PK_SUB_U16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::U32>(inst.src[1]);
+
+    const auto result_lo = ir.ISub(src0.first, src1.first);
+    const auto result_hi = ir.ISub(src0.second, src1.second);
+
+    SetDstPk<IR::U32, false>(inst.dst[0], {result_lo, result_hi});
+}
+
+void Translator::V_PK_MAX_U16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::U32>(inst.src[1]);
+
+    const auto result_lo = ir.UMax(src0.first, src1.first);
+    const auto result_hi = ir.UMax(src0.second, src1.second);
+
+    SetDstPk<IR::U32, false>(inst.dst[0], {result_lo, result_hi});
+}
+
+void Translator::V_PK_MIN_U16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::U32>(inst.src[1]);
+
+    const auto result_lo = ir.UMin(src0.first, src1.first);
+    const auto result_hi = ir.UMin(src0.second, src1.second);
+
+    SetDstPk<IR::U32, false>(inst.dst[0], {result_lo, result_hi});
 }
 
 void Translator::V_PK_FMA_F16(const GcnInst& inst) {
@@ -1652,8 +1809,7 @@ void Translator::V_PK_FMA_F16(const GcnInst& inst) {
     const auto result_lo = ir.FPFma(src0.first, src1.first, src2.first);
     const auto result_hi = ir.FPFma(src0.second, src1.second, src2.second);
 
-    SetDst(inst.dst[0],
-           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+    SetDstPk<IR::F32>(inst.dst[0], {result_lo, result_hi});
 }
 
 void Translator::V_PK_ADD_F16(const GcnInst& inst) {
@@ -1663,8 +1819,7 @@ void Translator::V_PK_ADD_F16(const GcnInst& inst) {
     const auto result_lo = ir.FPAdd(src0.first, src1.first);
     const auto result_hi = ir.FPAdd(src0.second, src1.second);
 
-    SetDst(inst.dst[0],
-           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+    SetDstPk<IR::F32>(inst.dst[0], {result_lo, result_hi});
 }
 
 void Translator::V_PK_MUL_F16(const GcnInst& inst) {
@@ -1674,8 +1829,7 @@ void Translator::V_PK_MUL_F16(const GcnInst& inst) {
     const auto result_lo = ir.FPMul(src0.first, src1.first);
     const auto result_hi = ir.FPMul(src0.second, src1.second);
 
-    SetDst(inst.dst[0],
-           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+    SetDstPk<IR::F32>(inst.dst[0], {result_lo, result_hi});
 }
 
 void Translator::V_PK_MIN_F16(const GcnInst& inst) {
@@ -1685,8 +1839,7 @@ void Translator::V_PK_MIN_F16(const GcnInst& inst) {
     const auto result_lo = ir.FPMin(src0.first, src1.first);
     const auto result_hi = ir.FPMin(src0.second, src1.second);
 
-    SetDst(inst.dst[0],
-           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+    SetDstPk<IR::F32>(inst.dst[0], {result_lo, result_hi});
 }
 
 void Translator::V_PK_MAX_F16(const GcnInst& inst) {
@@ -1696,8 +1849,7 @@ void Translator::V_PK_MAX_F16(const GcnInst& inst) {
     const auto result_lo = ir.FPMax(src0.first, src1.first);
     const auto result_hi = ir.FPMax(src0.second, src1.second);
 
-    SetDst(inst.dst[0],
-           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+    SetDstPk<IR::F32>(inst.dst[0], {result_lo, result_hi});
 }
 
 void Translator::V_LSHL_OR_B32(const GcnInst& inst) {

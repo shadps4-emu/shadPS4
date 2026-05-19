@@ -10,23 +10,24 @@
 namespace Common::FS {
 
 enum class PathType {
-    UserDir,        // Where shadPS4 stores its data.
-    LogDir,         // Where log files are stored.
-    ScreenshotsDir, // Where screenshots are stored.
-    ShaderDir,      // Where shaders are stored.
-    TempDataDir,    // Where game temp data is stored.
-    GameDataDir,    // Where game data is stored.
-    SysModuleDir,   // Where system modules are stored.
-    DownloadDir,    // Where downloads/temp files are stored.
-    CapturesDir,    // Where rdoc captures are stored.
-    CheatsDir,      // Where cheats are stored.
-    PatchesDir,     // Where patches are stored.
-    MetaDataDir,    // Where game metadata (e.g. trophies and menu backgrounds) is stored.
-    CustomTrophy,   // Where custom files for trophies are stored.
-    CustomConfigs,  // Where custom files for different games are stored.
-    CacheDir,       // Where pipeline and shader cache is stored.
-    FontsDir,       // Where dumped system fonts are stored.
-    HomeDir,        // PS4 home directory
+    UserDir,         // Where shadPS4 stores its data.
+    LogDir,          // Where log files are stored.
+    ScreenshotsDir,  // Where screenshots are stored.
+    ShaderDir,       // Where shaders are stored.
+    TempDataDir,     // Where game temp data is stored.
+    GameDataDir,     // Where game data is stored.
+    SysModuleDir,    // Where system modules are stored.
+    DownloadDir,     // Where downloads/temp files are stored.
+    CapturesDir,     // Where rdoc captures are stored.
+    CheatsDir,       // Where cheats are stored.
+    PatchesDir,      // Where patches are stored.
+    MetaDataDir,     // Where game metadata (e.g. trophies and menu backgrounds) is stored.
+    CustomTrophy,    // Where custom files for trophies are stored.
+    CustomConfigs,   // Where custom files for different games are stored.
+    CacheDir,        // Where pipeline and shader cache is stored.
+    FontsDir,        // Where dumped system fonts are stored.
+    HomeDir,         // PS4 home directory
+    CustomModulesDir // Where custom modules are stored.
 };
 
 constexpr auto PORTABLE_DIR = "user";
@@ -48,6 +49,7 @@ constexpr auto CUSTOM_CONFIGS = "custom_configs";
 constexpr auto CACHE_DIR = "cache";
 constexpr auto FONTS_DIR = "fonts";
 constexpr auto HOME_DIR = "home";
+constexpr auto CUSTOM_MODULES_DIR = "custom_modules";
 
 // Filenames
 constexpr auto LOG_FILE = "shad_log.txt";

@@ -126,6 +126,9 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                                vk::ImageCreateFlagBits::eExtendedUsage};
     if (info.props.is_volume) {
         flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
+        if (instance->Is2dViewOf3dSupported()) {
+            flags |= vk::ImageCreateFlagBits::e2DViewCompatibleEXT;
+        }
     }
     if (info.props.is_block && instance->IsBlockTexelViewSupported()) {
         flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible;

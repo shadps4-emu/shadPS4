@@ -501,10 +501,10 @@ BufferCache::OverlapResult BufferCache::ResolveOverlaps(VAddr device_addr, u32 w
             // as a stream buffer. Increase the size to skip constantly recreating buffers.
             has_stream_leap = true;
             if (expands_right) {
-                expand_begin(CACHING_PAGESIZE * 128);
+                expand_end(CACHING_PAGESIZE * 128);
             }
             if (expands_left) {
-                expand_end(CACHING_PAGESIZE * 128);
+                expand_begin(CACHING_PAGESIZE * 128);
             }
         }
     }

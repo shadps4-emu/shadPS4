@@ -652,7 +652,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         ASSERT_MSG(remaining_size == 0, "Failed to map physical memory");
     }
 
-    if (new_vma.type != VMAType::Direct || sdk_version >= Common::ElfInfo::FW_20) {
+    if (new_vma.type != VMAType::Direct || sdk_version >= Common::ElfInfo::FW_200) {
         // Merge this VMA with similar nearby areas
         // Direct memory mappings only coalesce on SDK version 2.00 or later.
         MergeAdjacent(vma_map, new_vma_handle);
@@ -702,7 +702,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
 
     handle = file->f.GetFileMapping();
 
-    if (False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Write) ||
+    if (False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Write) &&
         False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Append)) {
         // If the file does not have write access, ensure prot does not contain write
         // permissions. On real hardware, these mappings succeed, but the memory cannot be
@@ -720,7 +720,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
         prot &= ~MemoryProt::CpuExec;
     }
 
-    if (True(flags & MemoryMapFlags::Fixed) && False(flags & MemoryMapFlags::NoOverwrite)) {
+    if (True(flags & MemoryMapFlags::Fixed) && True(flags & MemoryMapFlags::NoOverwrite)) {
         ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                    virtual_addr);
         auto vma = FindVMA(virtual_addr)->second;

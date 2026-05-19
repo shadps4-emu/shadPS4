@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/div_ceil.h"
-#include "shader_recompiler/backend/spirv/emit_spirv_bounds.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 
@@ -22,48 +20,36 @@ Id SharedAtomicU32(EmitContext& ctx, Id offset, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const Id shift_id{ctx.ConstU32(2U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 4u)};
     const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<32>(ctx, index, ctx.ConstU32(num_elements), [&] {
-        return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
-    });
+    return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
 }
 
 Id SharedAtomicU32IncDec(EmitContext& ctx, Id offset,
                          Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id)) {
     const Id shift_id{ctx.ConstU32(2U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 4u)};
     const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<32>(ctx, index, ctx.ConstU32(num_elements), [&] {
-        return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics);
-    });
+    return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics);
 }
 
 Id SharedAtomicU64(EmitContext& ctx, Id offset, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const Id shift_id{ctx.ConstU32(3U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 8u)};
     const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<64>(ctx, index, ctx.ConstU32(num_elements), [&] {
-        return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics, value);
-    });
+    return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics, value);
 }
 
 Id SharedAtomicU64IncDec(EmitContext& ctx, Id offset,
                          Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id)) {
     const Id shift_id{ctx.ConstU32(3U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const u32 num_elements{Common::DivCeil(ctx.runtime_info.cs_info.shared_memory_size, 8u)};
     const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<64>(ctx, index, ctx.ConstU32(num_elements), [&] {
-        return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics);
-    });
+    return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics);
 }
 
 template <bool is_float = false>
@@ -77,9 +63,7 @@ Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id 
     const auto [id, pointer_type] = buffer.Alias(is_float ? PointerType::F32 : PointerType::U32);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<32, 1, is_float>(ctx, address, buffer.Size(PointerSize::B32), [&] {
-        return (ctx.*atomic_func)(type, ptr, scope, semantics, value);
-    });
+    return (ctx.*atomic_func)(type, ptr, scope, semantics, value);
 }
 
 Id BufferAtomicU32IncDec(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address,
@@ -91,9 +75,7 @@ Id BufferAtomicU32IncDec(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addres
     const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<32>(ctx, address, buffer.Size(PointerSize::B32), [&] {
-        return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics);
-    });
+    return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics);
 }
 
 Id BufferAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
@@ -106,9 +88,7 @@ Id BufferAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
     const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<32>(ctx, address, buffer.Size(PointerSize::B32), [&] {
-        return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, semantics, value, cmp_value);
-    });
+    return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, semantics, value, cmp_value);
 }
 
 Id BufferAtomicU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
@@ -120,9 +100,7 @@ Id BufferAtomicU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id 
     const auto [id, pointer_type] = buffer.Alias(PointerType::U64);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return AccessBoundsCheck<64>(ctx, address, buffer.Size(PointerSize::B64), [&] {
-        return (ctx.*atomic_func)(ctx.U64, ptr, scope, semantics, value);
-    });
+    return (ctx.*atomic_func)(ctx.U64, ptr, scope, semantics, value);
 }
 
 Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,

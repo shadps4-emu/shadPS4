@@ -35,6 +35,8 @@ void Shutdown();
 
 void Flush();
 
+void Terminate();
+
 static constexpr std::array level_string_views{"Trace", "Debug",    "Info", "Warning",
                                                "Error", "Critical", "Off"};
 

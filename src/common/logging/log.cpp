@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <fmt/std.h>
 
 #include "common/assert.h"
 #include "common/config.h"
@@ -14,6 +15,14 @@
 #ifdef _WIN32
 #include <Windows.h>
 #endif
+
+// return codes above 'standard'
+// https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes
+enum class ShadPs4ReturnCode : u32 {
+    TERMINATE_WITHOUT_EXCEPTION = 20'000,
+    TERMINATE_WITH_EXCEPTION = 20'001,
+    TERMINATE_WITH_UNKNOWN_EXCEPTION = 20'002,
+};
 
 namespace Common::Log {
 bool g_should_append = false;
@@ -52,6 +61,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_CommonDlg, nullptr},
     {Class::Lib_CompanionHttpd, nullptr},
     {Class::Lib_CompanionUtil, nullptr},
+    {Class::Lib_ContentExport, nullptr},
     {Class::Lib_DiscMap, nullptr},
     {Class::Lib_ErrorDialog, nullptr},
     {Class::Lib_Fiber, nullptr},
@@ -112,6 +122,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_Vdec2, nullptr},
     {Class::Lib_VideoOut, nullptr},
     {Class::Lib_Videodec, nullptr},
+    {Class::Lib_VideoRecording, nullptr},
     {Class::Lib_Voice, nullptr},
     {Class::Lib_VrTracker, nullptr},
     {Class::Lib_WebBrowserDialog, nullptr},
@@ -167,6 +178,7 @@ void Setup(std::string_view log_filename) {
         already_registered = true;
         std::atexit(Shutdown);
         std::at_quick_exit(Flush);
+        std::set_terminate(Terminate);
     }
 
 #ifdef _WIN32
@@ -254,6 +266,26 @@ void Flush() {
 
     if (g_console_sink != nullptr) {
         g_console_sink->flush();
+    }
+}
+
+void Terminate() {
+    try {
+        if (std::exception_ptr eptr{std::current_exception()}) {
+            std::rethrow_exception(eptr);
+        }
+
+        LOG_CRITICAL(Debug, "Exiting without exception");
+
+        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITHOUT_EXCEPTION));
+    } catch (const std::exception& exception) {
+        LOG_CRITICAL(Debug, "Exception: {}", exception);
+
+        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITH_EXCEPTION));
+    } catch (...) {
+        LOG_CRITICAL(Debug, "Unknown exception caught");
+
+        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITH_UNKNOWN_EXCEPTION));
     }
 }
 } // namespace Common::Log

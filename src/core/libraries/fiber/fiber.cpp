@@ -177,7 +177,7 @@ s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, Orb
     }
 
     u32 user_flags = flags;
-    if (build_ver >= Common::ElfInfo::FW_35) {
+    if (build_ver >= Common::ElfInfo::FW_350) {
         user_flags |= FiberFlags::SetFpuRegs;
     }
     if (context_size_check) {

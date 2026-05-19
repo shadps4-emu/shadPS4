@@ -231,7 +231,7 @@ Id EmitContext::GetBufferSize(const u32 sharp_idx) {
 }
 
 void EmitContext::DefineBufferProperties() {
-    if (!profile.needs_buffer_offsets && profile.supports_robust_buffer_access) {
+    if (!profile.needs_buffer_offsets) {
         return;
     }
     for (u32 i = 0; i < buffers.size(); i++) {
@@ -242,59 +242,31 @@ void EmitContext::DefineBufferProperties() {
             continue;
         }
 
-        // Only load and apply buffer offsets if host GPU alignment is larger than guest.
-        if (profile.needs_buffer_offsets) {
-            const u32 half = PushData::BufOffsetIndex + (binding >> 4);
-            const u32 comp = (binding & 0xf) >> 2;
-            const u32 offset = (binding & 0x3) << 3;
-            const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
-                                       push_data_block, ConstU32(half), ConstU32(comp))};
-            const Id value{OpLoad(U32[1], ptr)};
+        const u32 half = PushData::BufOffsetIndex + (binding >> 4);
+        const u32 comp = (binding & 0xf) >> 2;
+        const u32 offset = (binding & 0x3) << 3;
+        const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
+                                   push_data_block, ConstU32(half), ConstU32(comp))};
+        const Id value{OpLoad(U32[1], ptr)};
 
-            const Id buf_offset{OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U))};
-            Name(buf_offset, fmt::format("buf{}_off", binding));
-            buffer.Offset(PointerSize::B8) = buf_offset;
+        const Id buf_offset{OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U))};
+        Name(buf_offset, fmt::format("buf{}_off", binding));
+        buffer.Offset(PointerSize::B8) = buf_offset;
 
-            if (True(desc.used_types & IR::Type::U16)) {
-                const Id buf_word_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(1U))};
-                Name(buf_word_offset, fmt::format("buf{}_word_off", binding));
-                buffer.Offset(PointerSize::B16) = buf_word_offset;
-            }
-            if (True(desc.used_types & IR::Type::U32)) {
-                const Id buf_dword_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(2U))};
-                Name(buf_dword_offset, fmt::format("buf{}_dword_off", binding));
-                buffer.Offset(PointerSize::B32) = buf_dword_offset;
-            }
-            if (True(desc.used_types & IR::Type::U64)) {
-                const Id buf_qword_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(3U))};
-                Name(buf_qword_offset, fmt::format("buf{}_qword_off", binding));
-                buffer.Offset(PointerSize::B64) = buf_qword_offset;
-            }
+        if (True(desc.used_types & IR::Type::U16)) {
+            const Id buf_word_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(1U))};
+            Name(buf_word_offset, fmt::format("buf{}_word_off", binding));
+            buffer.Offset(PointerSize::B16) = buf_word_offset;
         }
-
-        // Only load size if performing bounds checks.
-        if (!profile.supports_robust_buffer_access) {
-            const Id buf_size{desc.sharp_idx == std::numeric_limits<u32>::max()
-                                  ? ConstU32(desc.inline_cbuf.GetSize())
-                                  : GetBufferSize(desc.sharp_idx)};
-            Name(buf_size, fmt::format("buf{}_size", binding));
-            buffer.Size(PointerSize::B8) = buf_size;
-
-            if (True(desc.used_types & IR::Type::U16)) {
-                const Id buf_word_size{OpShiftRightLogical(U32[1], buf_size, ConstU32(1U))};
-                Name(buf_word_size, fmt::format("buf{}_short_size", binding));
-                buffer.Size(PointerSize::B16) = buf_word_size;
-            }
-            if (True(desc.used_types & IR::Type::U32)) {
-                const Id buf_dword_size{OpShiftRightLogical(U32[1], buf_size, ConstU32(2U))};
-                Name(buf_dword_size, fmt::format("buf{}_dword_size", binding));
-                buffer.Size(PointerSize::B32) = buf_dword_size;
-            }
-            if (True(desc.used_types & IR::Type::U64)) {
-                const Id buf_qword_size{OpShiftRightLogical(U32[1], buf_size, ConstU32(3U))};
-                Name(buf_qword_size, fmt::format("buf{}_qword_size", binding));
-                buffer.Size(PointerSize::B64) = buf_qword_size;
-            }
+        if (True(desc.used_types & IR::Type::U32)) {
+            const Id buf_dword_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(2U))};
+            Name(buf_dword_offset, fmt::format("buf{}_dword_off", binding));
+            buffer.Offset(PointerSize::B32) = buf_dword_offset;
+        }
+        if (True(desc.used_types & IR::Type::U64)) {
+            const Id buf_qword_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(3U))};
+            Name(buf_qword_offset, fmt::format("buf{}_qword_off", binding));
+            buffer.Offset(PointerSize::B64) = buf_qword_offset;
         }
     }
 }

@@ -356,10 +356,10 @@ static bool match(std::string_view str, std::string_view pattern) {
 }
 
 static Error setNotInitializedError() {
-    if (g_fw_ver < ElfInfo::FW_20) {
+    if (g_fw_ver < ElfInfo::FW_200) {
         return Error::INTERNAL;
     }
-    if (g_fw_ver < ElfInfo::FW_25) {
+    if (g_fw_ver < ElfInfo::FW_250) {
         return Error::USER_SERVICE_NOT_INITIALIZED;
     }
     return Error::NOT_INITIALIZED;
@@ -391,13 +391,13 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
 
     const bool create = True(mount_mode & OrbisSaveDataMountMode::CREATE);
     const bool create_if_not_exist =
-        True(mount_mode & OrbisSaveDataMountMode::CREATE2) && g_fw_ver >= ElfInfo::FW_45;
+        True(mount_mode & OrbisSaveDataMountMode::CREATE2) && g_fw_ver >= ElfInfo::FW_450;
     ASSERT(!create || !create_if_not_exist); // Can't have both
 
     const bool copy_icon = True(mount_mode & OrbisSaveDataMountMode::COPY_ICON);
 
     const bool ignore_corrupt =
-        True(mount_mode & OrbisSaveDataMountMode::DESTRUCT_OFF) || g_fw_ver < ElfInfo::FW_16;
+        True(mount_mode & OrbisSaveDataMountMode::DESTRUCT_OFF) || g_fw_ver < ElfInfo::FW_160;
 
     const std::string_view dir_name{mount_info->dirName->data};
 
@@ -470,7 +470,7 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
 
     mount_result->mount_point.data.FromString(save_instance.GetMountPoint());
 
-    if (g_fw_ver >= ElfInfo::FW_45) {
+    if (g_fw_ver >= ElfInfo::FW_450) {
         mount_result->mount_status = create_if_not_exist && to_be_created
                                          ? OrbisSaveDataMountStatus::CREATED
                                          : OrbisSaveDataMountStatus::NOTHING;
@@ -795,7 +795,7 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
 
     if (!fs::exists(save_path)) {
         result->hitNum = 0;
-        if (g_fw_ver >= ElfInfo::FW_17) {
+        if (g_fw_ver >= ElfInfo::FW_170) {
             result->setNum = 0;
         }
         return Error::OK;
@@ -869,7 +869,7 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
     }
 
     size_t max_count = std::min(static_cast<size_t>(result->dirNamesNum), dir_list.size());
-    if (g_fw_ver >= ElfInfo::FW_17) {
+    if (g_fw_ver >= ElfInfo::FW_170) {
         result->hitNum = dir_list.size();
         result->setNum = max_count;
     } else {
@@ -880,13 +880,13 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
         auto& name_data = result->dirNames[i].data;
         name_data.FromString(dir_list[i]);
 
-        if (g_fw_ver >= ElfInfo::FW_17 && result->params != nullptr) {
+        if (g_fw_ver >= ElfInfo::FW_170 && result->params != nullptr) {
             auto& sfo = map_dir_sfo.at(dir_list[i]);
             auto& param_data = result->params[i];
             param_data.FromSFO(sfo);
         }
 
-        if (g_fw_ver >= ElfInfo::FW_25 && result->infos != nullptr) {
+        if (g_fw_ver >= ElfInfo::FW_250 && result->infos != nullptr) {
             auto& info = result->infos[i];
             info.blocks = map_max_blocks.at(dir_list[i]);
             info.freeBlocks = map_free_size.at(dir_list[i]);
@@ -1139,7 +1139,7 @@ Error PS4_SYSV_ABI sceSaveDataGetSaveDataMemory2(OrbisSaveDataMemoryGet2* getPar
     }
 
     u32 slot_id = 0;
-    if (g_fw_ver > ElfInfo::FW_50) {
+    if (g_fw_ver > ElfInfo::FW_500) {
         slot_id = getParam->slotId;
     }
     if (!SaveMemory::IsSaveMemoryInitialized(slot_id)) {
@@ -1503,7 +1503,7 @@ Error PS4_SYSV_ABI sceSaveDataSetSaveDataMemory2(const OrbisSaveDataMemorySet2* 
     }
     u32 slot_id = 0;
     u32 data_num = 1;
-    if (g_fw_ver > ElfInfo::FW_50) {
+    if (g_fw_ver > ElfInfo::FW_500) {
         slot_id = setParam->slotId;
         if (setParam->dataNum > 1) {
             data_num = setParam->dataNum;
@@ -1573,7 +1573,7 @@ Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetu
     LOG_DEBUG(Lib_SaveData, "called");
 
     u32 slot_id = 0;
-    if (g_fw_ver > ElfInfo::FW_50) {
+    if (g_fw_ver > ElfInfo::FW_500) {
         slot_id = setupParam->slotId;
     }
 
@@ -1588,20 +1588,20 @@ Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory2(const OrbisSaveDataMemorySetu
         size_t existed_size = SaveMemory::SetupSaveMemory(setupParam->userId, slot_id,
                                                           g_game_serial, setupParam->memorySize);
         if (existed_size == 0) { // Just created
-            if (g_fw_ver >= ElfInfo::FW_45 && setupParam->initParam != nullptr) {
+            if (g_fw_ver >= ElfInfo::FW_450 && setupParam->initParam != nullptr) {
                 auto& sfo = SaveMemory::GetParamSFO(slot_id);
                 setupParam->initParam->ToSFO(sfo);
             }
             SaveMemory::SaveSFO(slot_id);
 
             auto init_icon = setupParam->initIcon;
-            if (g_fw_ver >= ElfInfo::FW_45 && init_icon != nullptr) {
+            if (g_fw_ver >= ElfInfo::FW_450 && init_icon != nullptr) {
                 SaveMemory::SetIcon(slot_id, init_icon->buf, init_icon->bufSize);
             } else {
                 SaveMemory::SetIcon(slot_id);
             }
         }
-        if (g_fw_ver >= ElfInfo::FW_45 && result != nullptr) {
+        if (g_fw_ver >= ElfInfo::FW_450 && result != nullptr) {
             result->existedMemorySize = existed_size;
         }
     } catch (const fs::filesystem_error& e) {
@@ -1645,7 +1645,7 @@ Error PS4_SYSV_ABI sceSaveDataSyncSaveDataMemory(OrbisSaveDataMemorySync* syncPa
     }
 
     u32 slot_id = 0;
-    if (g_fw_ver > ElfInfo::FW_50) {
+    if (g_fw_ver > ElfInfo::FW_500) {
         slot_id = syncParam->slotId;
     }
 
@@ -1670,7 +1670,7 @@ Error PS4_SYSV_ABI sceSaveDataTerminate() {
     }
     for (auto& instance : g_mount_slots) {
         if (instance.has_value()) {
-            if (g_fw_ver >= ElfInfo::FW_40) {
+            if (g_fw_ver >= ElfInfo::FW_400) {
                 return Error::BUSY;
             }
             instance->Umount();
