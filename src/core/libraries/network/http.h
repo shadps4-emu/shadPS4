@@ -234,7 +234,7 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
                                     int timeout);
 int PS4_SYSV_ABI sceHttpUriCopy();
 //***********************************
-// Https Communication functions
+// Http Communication functions
 //***********************************
 int PS4_SYSV_ABI sceHttpAbortRequest(int reqId);
 int PS4_SYSV_ABI sceHttpAbortRequestForce(int reqId);

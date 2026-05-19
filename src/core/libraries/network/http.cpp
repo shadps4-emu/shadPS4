@@ -1112,7 +1112,7 @@ int PS4_SYSV_ABI sceHttpUriCopy() {
 }
 
 //***********************************
-// Https Communication functions
+// Http Communication functions
 //***********************************
 int PS4_SYSV_ABI sceHttpAbortRequest(int reqId) {
     LOG_INFO(Lib_Http, "called reqId={}", reqId);
