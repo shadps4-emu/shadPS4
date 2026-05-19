@@ -694,8 +694,19 @@ s32 PS4_SYSV_ABI sceAudio3dPortFreeState() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported() {
+s32 PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported(OrbisAudio3dPortId port_id,
+                                                      OrbisAudio3dAttributeId* capabilities,
+                                                      u32* num_capabilities) {
     LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
+    if (!num_capabilities) {
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    }
+
+    if (!state->ports.contains(port_id)) {
+        return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
+    }
+
+    *num_capabilities = 0;
     return ORBIS_OK;
 }
 
