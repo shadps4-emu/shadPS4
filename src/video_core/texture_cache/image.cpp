@@ -231,23 +231,41 @@ Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 
         // In case of partial transition, we need to change the specified subresources only.
         // Otherwise all subresources need to be set to the same state so we can use a full
         // resource transition for the next time.
-        const auto mips =
-            needs_partial_transition
-                ? std::ranges::views::iota(subres_range->base.level,
-                                           subres_range->base.level + subres_range->extent.levels)
-                : std::views::iota(0u, info.resources.levels);
-        const auto layers =
-            needs_partial_transition
-                ? std::ranges::views::iota(subres_range->base.layer,
-                                           subres_range->base.layer + subres_range->extent.layers)
-                : std::views::iota(0u, info.resources.layers);
+        const u32 mip_begin = needs_partial_transition ? subres_range->base.level : 0u;
+        const u32 mip_end = needs_partial_transition
+                                ? std::min(subres_range->base.level + subres_range->extent.levels,
+                                           info.resources.levels)
+                                : info.resources.levels;
+        const u32 layer_begin = needs_partial_transition ? subres_range->base.layer : 0u;
+        const u32 layer_end = needs_partial_transition
+                                  ? std::min(subres_range->base.layer + subres_range->extent.layers,
+                                             info.resources.layers)
+                                  : info.resources.layers;
+
+        const auto mips = std::views::iota(mip_begin, mip_end);
+        const auto layers = std::views::iota(layer_begin, layer_end);
 
         for (u32 mip : mips) {
             for (u32 layer : layers) {
                 // NOTE: these loops may produce a lot of small barriers.
                 // If this becomes a problem, we can optimize it by merging adjacent barriers.
                 const auto subres_idx = mip * info.resources.layers + layer;
-                ASSERT(subres_idx < subresource_states.size());
+                if (subres_idx >= subresource_states.size()) {
+                    LOG_CRITICAL(Render_Vulkan,
+                                 "GetBarriers OOB: mip={} layer={} subres_idx={} size={} "
+                                 "levels={} layers={} needs_partial={} partially_transited={}",
+                                 mip, layer, subres_idx, subresource_states.size(),
+                                 info.resources.levels, info.resources.layers,
+                                 needs_partial_transition, partially_transited);
+                    if (subres_range) {
+                        LOG_CRITICAL(Render_Vulkan,
+                                     "GetBarriers subres_range: base.level={} base.layer={} "
+                                     "extent.levels={} extent.layers={}",
+                                     subres_range->base.level, subres_range->base.layer,
+                                     subres_range->extent.levels, subres_range->extent.layers);
+                    }
+                    ASSERT(false);
+                }
                 auto& state = subresource_states[subres_idx];
 
                 constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
