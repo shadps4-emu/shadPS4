@@ -71,7 +71,7 @@ void VideoOutDriver::Close(s32 handle) {
     std::memset(main_port.buffer_labels.data(), 0, sizeof(main_port.buffer_labels));
     std::memset(main_port.groups.data(), 0, sizeof(main_port.groups));
     std::memset(&main_port.flip_status, 0, sizeof(main_port.flip_status));
-    std::memset(&main_port.vblank_status, 0, sizeof(main_port.vblank_status));
+    main_port.flip_status = FlipStatus{};
 
     // Re-initialize buffers
     std::memset(main_port.buffer_slots.data(), 0, sizeof(main_port.buffer_slots));
