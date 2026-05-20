@@ -175,7 +175,6 @@ int PS4_SYSV_ABI sceHttpGetCookieStats(int libhttpCtxId, OrbisHttpCookieStats* s
 int PS4_SYSV_ABI sceHttpGetEpoll(int id, OrbisHttpEpollHandle* eh, void** userArg);
 int PS4_SYSV_ABI sceHttpGetEpollId();
 int PS4_SYSV_ABI sceHttpGetMemoryPoolStats(int libhttpCtxId, OrbisHttpMemoryPoolStats* currentStat);
-int PS4_SYSV_ABI sceHttpGetNonblock(int id, int* isEnable);
 int PS4_SYSV_ABI sceHttpGetRegisteredCtxIds();
 int PS4_SYSV_ABI sceHttpGetResponseContentLength(int reqId, int* result, u64* contentLength);
 int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode);
@@ -204,7 +203,6 @@ int PS4_SYSV_ABI sceHttpSetDelayBuildRequestEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetEpoll(int id, OrbisHttpEpollHandle eh, void* userArg);
 int PS4_SYSV_ABI sceHttpSetEpollId();
 int PS4_SYSV_ABI sceHttpSetHttp09Enabled(int id, int isEnable);
-int PS4_SYSV_ABI sceHttpSetNonblock(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetPolicyOption();
 int PS4_SYSV_ABI sceHttpSetPriorityOption();
 int PS4_SYSV_ABI sceHttpSetProxy();
@@ -227,12 +225,17 @@ int PS4_SYSV_ABI sceHttpsSetSslCallback(int id, OrbisHttpsCallback cbfunc, void*
 int PS4_SYSV_ABI sceHttpsSetSslVersion(int id, int version);
 int PS4_SYSV_ABI sceHttpsUnloadCert(int libhttpCtxId);
 int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId);
-int PS4_SYSV_ABI sceHttpTryGetNonblock(int id, int* isEnable);
-int PS4_SYSV_ABI sceHttpTrySetNonblock(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpUnsetEpoll(int id);
 int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* nbev, int maxevents,
                                     int timeout);
 int PS4_SYSV_ABI sceHttpUriCopy();
+//***********************************
+// Non-blocking processing functions
+//***********************************
+int PS4_SYSV_ABI sceHttpGetNonblock(int id, int* isEnable);
+int PS4_SYSV_ABI sceHttpSetNonblock(int id, int isEnable);
+int PS4_SYSV_ABI sceHttpTryGetNonblock(int id, int* isEnable);
+int PS4_SYSV_ABI sceHttpTrySetNonblock(int id, int isEnable);
 //***********************************
 // Http Communication functions
 //***********************************

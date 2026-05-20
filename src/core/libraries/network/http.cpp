@@ -38,6 +38,7 @@ struct HttpSettings {
     bool auto_redirect = true;
     bool inflate_gzip = true;
     u32 ssl_flags = ORBIS_HTTPS_FLAG_SDK_DEFAULT; // SSL flag mask. Bitmask of OrbisHttpsFlags.
+    bool nonblock = false; // false = blocking (default), true = nonblock (EAGAIN)
 };
 
 struct HttpTemplate {
@@ -135,8 +136,10 @@ static int WaitForResponseReady(HttpRequest& req, std::unique_lock<std::mutex>& 
     if (req.state == HttpRequestState::Sent) {
         return ORBIS_OK;
     }
-    // state == Sending: block on the per-request cv until the worker moves
-    // it to Sent (or Term/Abort transitions us to shutdown / Aborted).
+    // state == Sending. Honor nonblock: return EAGAIN instead of blocking.
+    if (req.settings.nonblock) {
+        return ORBIS_HTTP_ERROR_EAGAIN;
+    }
     req.cv.wait(lock, [&req]() {
         return req.state != HttpRequestState::Sending || g_state.shutting_down.load();
     });
@@ -608,6 +611,12 @@ int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* hea
     auto& req = *it->second;
     int wr = WaitForResponseReady(req, lock);
     if (wr != ORBIS_OK) {
+        if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
+            LOG_DEBUG(Lib_Http, "reqId={}: EAGAIN (response not yet ready)", reqId);
+        } else {
+            LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId,
+                      static_cast<u32>(wr));
+        }
         return wr;
     }
     if (req.res.all_headers_blob.empty()) {
@@ -669,11 +678,6 @@ int PS4_SYSV_ABI sceHttpGetMemoryPoolStats(int libhttpCtxId,
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpGetNonblock(int id, int* isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, fmt::ptr(isEnable));
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpGetRegisteredCtxIds() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
@@ -698,7 +702,13 @@ int PS4_SYSV_ABI sceHttpGetResponseContentLength(int reqId, int* result, u64* co
     }
     auto& req = *it->second;
     int wr = WaitForResponseReady(req, lock);
+    if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
+        LOG_DEBUG(Lib_Http, "reqId={}: response not yet ready, returning BEFORE_SEND",
+                  reqId);
+        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+    }
     if (wr != ORBIS_OK) {
+        LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
         return wr;
     }
     *result = req.res.content_length_result;
@@ -724,7 +734,13 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
     }
     auto& req = *it->second;
     int wr = WaitForResponseReady(req, lock);
+    if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
+        LOG_DEBUG(Lib_Http, "reqId={}: response not yet ready, returning BEFORE_SEND",
+                  reqId);
+        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+    }
     if (wr != ORBIS_OK) {
+        LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
         return wr;
     }
     // Transport failure: no status line was ever received from a server.
@@ -774,6 +790,12 @@ int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size) {
     auto& req = *it->second;
     int wr = WaitForResponseReady(req, lock);
     if (wr != ORBIS_OK) {
+        if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
+            LOG_DEBUG(Lib_Http, "reqId={}: EAGAIN (response not yet ready)", reqId);
+        } else {
+            LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId,
+                      static_cast<u32>(wr));
+        }
         return wr;
     }
     u64 remaining = req.res.body.size() - req.res.read_cursor;
@@ -946,11 +968,6 @@ int PS4_SYSV_ABI sceHttpSetHttp09Enabled(int id, int isEnable) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpSetNonblock(int id, int isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpSetPolicyOption() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
@@ -1084,16 +1101,6 @@ int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpTryGetNonblock(int id, int* isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, fmt::ptr(isEnable));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpTrySetNonblock(int id, int isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpUnsetEpoll(int id) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}", id);
     return ORBIS_OK;
@@ -1109,6 +1116,58 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
 int PS4_SYSV_ABI sceHttpUriCopy() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
+}
+
+//***********************************
+// Non-blocking processing functions
+//***********************************
+int PS4_SYSV_ABI sceHttpGetNonblock(int id, int* isEnable) {
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, fmt::ptr(isEnable));
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!isEnable) {
+        LOG_ERROR(Lib_Http, "isEnable output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={}", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    *isEnable = s->nonblock ? 1 : 0;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpSetNonblock(int id, int isEnable) {
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, isEnable);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={}", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->nonblock = (isEnable != 0);
+    LOG_INFO(Lib_Http, "set {} id={} nonblock={}", level, id, s->nonblock);
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpTryGetNonblock(int id, int* isEnable) {
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, fmt::ptr(isEnable));
+    return sceHttpGetNonblock(id, isEnable);
+}
+
+int PS4_SYSV_ABI sceHttpTrySetNonblock(int id, int isEnable) {
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, isEnable);
+    return sceHttpSetNonblock(id, isEnable);
 }
 
 //***********************************
