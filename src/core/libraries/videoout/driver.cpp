@@ -79,9 +79,21 @@ void VideoOutDriver::Close(s32 handle) {
         buffer.group_index = -1;
     }
 
-    // TODO: Remove events?
-    ASSERT(main_port.flip_events.empty());
-    ASSERT(main_port.vblank_events.empty());
+    // Clear events
+    for (auto event : main_port.flip_events) {
+        auto equeue = Kernel::GetEqueue(event);
+        if (equeue != nullptr) {
+            equeue->RemoveEvent(static_cast<u64>(OrbisVideoOutInternalEventId::Flip),
+                                Kernel::OrbisKernelEvent::Filter::VideoOut);
+        }
+    }
+    for (auto event : main_port.vblank_events) {
+        auto equeue = Kernel::GetEqueue(event);
+        if (equeue != nullptr) {
+            equeue->RemoveEvent(static_cast<u64>(OrbisVideoOutInternalEventId::Vblank),
+                                Kernel::OrbisKernelEvent::Filter::VideoOut);
+        }
+    }
 }
 
 VideoOutPort* VideoOutDriver::GetPort(int handle) {
