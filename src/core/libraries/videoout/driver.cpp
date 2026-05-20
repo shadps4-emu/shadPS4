@@ -87,6 +87,7 @@ void VideoOutDriver::Close(s32 handle) {
                                 Kernel::OrbisKernelEvent::Filter::VideoOut);
         }
     }
+    main_port.flip_events.clear();
     for (auto event : main_port.vblank_events) {
         auto equeue = Kernel::GetEqueue(event);
         if (equeue != nullptr) {
@@ -94,6 +95,7 @@ void VideoOutDriver::Close(s32 handle) {
                                 Kernel::OrbisKernelEvent::Filter::VideoOut);
         }
     }
+    main_port.vblank_events.clear();
 }
 
 VideoOutPort* VideoOutDriver::GetPort(int handle) {
