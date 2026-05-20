@@ -614,8 +614,7 @@ int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* hea
         if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
             LOG_DEBUG(Lib_Http, "reqId={}: EAGAIN (response not yet ready)", reqId);
         } else {
-            LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId,
-                      static_cast<u32>(wr));
+            LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
         }
         return wr;
     }
@@ -703,8 +702,7 @@ int PS4_SYSV_ABI sceHttpGetResponseContentLength(int reqId, int* result, u64* co
     auto& req = *it->second;
     int wr = WaitForResponseReady(req, lock);
     if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
-        LOG_DEBUG(Lib_Http, "reqId={}: response not yet ready, returning BEFORE_SEND",
-                  reqId);
+        LOG_DEBUG(Lib_Http, "reqId={}: response not yet ready, returning BEFORE_SEND", reqId);
         return ORBIS_HTTP_ERROR_BEFORE_SEND;
     }
     if (wr != ORBIS_OK) {
@@ -735,8 +733,7 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
     auto& req = *it->second;
     int wr = WaitForResponseReady(req, lock);
     if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
-        LOG_DEBUG(Lib_Http, "reqId={}: response not yet ready, returning BEFORE_SEND",
-                  reqId);
+        LOG_DEBUG(Lib_Http, "reqId={}: response not yet ready, returning BEFORE_SEND", reqId);
         return ORBIS_HTTP_ERROR_BEFORE_SEND;
     }
     if (wr != ORBIS_OK) {
@@ -793,8 +790,7 @@ int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size) {
         if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
             LOG_DEBUG(Lib_Http, "reqId={}: EAGAIN (response not yet ready)", reqId);
         } else {
-            LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId,
-                      static_cast<u32>(wr));
+            LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
         }
         return wr;
     }
