@@ -698,7 +698,7 @@ void SaveDialogUi::DrawUser() {
             }
             SameLine();
             if (Button("No", BUTTON_SIZE)) {
-                if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+                if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
                     Finish(ButtonId::INVALID, Result::USER_CANCELED);
                 } else {
                     Finish(ButtonId::NO);
@@ -710,7 +710,7 @@ void SaveDialogUi::DrawUser() {
         } else {
             if (Button("OK", BUTTON_SIZE)) {
                 if (btn_type == ButtonType::OK &&
-                    ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+                    ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
                     Finish(ButtonId::INVALID, Result::USER_CANCELED);
                 } else {
                     Finish(ButtonId::OK);
@@ -763,7 +763,7 @@ void SaveDialogUi::DrawSystemMessage() {
     });
     BeginGroup();
     if (Button(sys_state.show_no ? "Yes" : "OK", BUTTON_SIZE)) {
-        if (sys_state.return_cancel && ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+        if (sys_state.return_cancel && ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
             Finish(ButtonId::INVALID, Result::USER_CANCELED);
         } else {
             Finish(ButtonId::YES);
@@ -772,7 +772,7 @@ void SaveDialogUi::DrawSystemMessage() {
     SameLine();
     if (sys_state.show_no) {
         if (Button("No", BUTTON_SIZE)) {
-            if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+            if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
                 Finish(ButtonId::INVALID, Result::USER_CANCELED);
             } else {
                 Finish(ButtonId::NO);
@@ -811,7 +811,7 @@ void SaveDialogUi::DrawErrorCode() {
         ws.y - FOOTER_HEIGHT + 5.0f,
     });
     if (Button("OK", BUTTON_SIZE)) {
-        if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+        if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
             Finish(ButtonId::INVALID, Result::USER_CANCELED);
         } else {
             Finish(ButtonId::OK);

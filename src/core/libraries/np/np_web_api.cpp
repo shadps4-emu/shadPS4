@@ -41,7 +41,7 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateServicePushEventFilter(
     if (pNpServiceName == nullptr || pFilterParam == nullptr || filterParamNum == 0) {
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }
-    if (getCompiledSdkVersion() >= Common::ElfInfo::FW_20 &&
+    if (getCompiledSdkVersion() >= Common::ElfInfo::FW_200 &&
         npServiceLabel == ORBIS_NP_INVALID_SERVICE_LABEL) {
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }
@@ -88,7 +88,7 @@ s32 PS4_SYSV_ABI sceNpWebApiRegisterNotificationCallback(s32 titleUserCtxId,
 s32 PS4_SYSV_ABI sceNpWebApiRegisterPushEventCallback(s32 titleUserCtxId, s32 filterId,
                                                       OrbisNpWebApiPushEventCallback cbFunc,
                                                       void* pUserArg) {
-    if (getCompiledSdkVersion() >= Common::ElfInfo::FW_10 && cbFunc == nullptr) {
+    if (getCompiledSdkVersion() >= Common::ElfInfo::FW_100 && cbFunc == nullptr) {
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }
     LOG_INFO(Lib_NpWebApi, "called, titleUserCtxId = {:#x}, filterId = {:#x}, cbFunc = {}",
@@ -99,7 +99,7 @@ s32 PS4_SYSV_ABI sceNpWebApiRegisterPushEventCallback(s32 titleUserCtxId, s32 fi
 s32 PS4_SYSV_ABI sceNpWebApiRegisterServicePushEventCallback(
     s32 titleUserCtxId, s32 filterId, OrbisNpWebApiServicePushEventCallback cbFunc,
     void* pUserArg) {
-    if (getCompiledSdkVersion() >= Common::ElfInfo::FW_10 && cbFunc == nullptr) {
+    if (getCompiledSdkVersion() >= Common::ElfInfo::FW_100 && cbFunc == nullptr) {
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }
     LOG_INFO(Lib_NpWebApi, "called, titleUserCtxId = {:#x}, filterId = {:#x}, cbFunc = {}",
@@ -223,7 +223,7 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateMultipartRequest(s32 titleUserCtxId, const cha
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }
 
-    if (getCompiledSdkVersion() >= Common::ElfInfo::FW_25 &&
+    if (getCompiledSdkVersion() >= Common::ElfInfo::FW_250 &&
         method > OrbisNpWebApiHttpMethod::ORBIS_NP_WEBAPI_HTTP_METHOD_DELETE) {
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }
@@ -249,7 +249,7 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateRequest(s32 titleUserCtxId, const char* pApiGr
         return ORBIS_NP_WEBAPI_ERROR_INVALID_CONTENT_PARAMETER;
     }
 
-    if (getCompiledSdkVersion() >= Common::ElfInfo::FW_25 &&
+    if (getCompiledSdkVersion() >= Common::ElfInfo::FW_250 &&
         method > OrbisNpWebApiHttpMethod::ORBIS_NP_WEBAPI_HTTP_METHOD_DELETE) {
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }
@@ -317,7 +317,7 @@ s32 PS4_SYSV_ABI sceNpWebApiGetHttpResponseHeaderValueLength(s64 requestId, cons
 s32 PS4_SYSV_ABI sceNpWebApiGetHttpStatusCode(s64 requestId, s32* out_status_code) {
     LOG_ERROR(Lib_NpWebApi, "called : requestId = {:#x}", requestId);
     // On newer SDKs, NULL output pointer is invalid
-    if (getCompiledSdkVersion() > Common::ElfInfo::FW_10 && out_status_code == nullptr)
+    if (getCompiledSdkVersion() > Common::ElfInfo::FW_100 && out_status_code == nullptr)
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     s32 returncode = getHttpStatusCodeInternal(requestId, out_status_code);
     return returncode;

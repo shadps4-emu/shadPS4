@@ -491,7 +491,7 @@ int ProcessStates(s32 handle, OrbisPadData* pData, Input::GameController& contro
             pData[i].touchData.touch[1].y = states[i].touchpad[1].y;
             pData[i].touchData.touch[1].id = states[i].touchpad[1].ID;
         }
-        if (Common::ElfInfo::Instance().FirmwareVer() > Common::ElfInfo::FW_35) {
+        if (Common::ElfInfo::Instance().FirmwareVer() > Common::ElfInfo::FW_350) {
             pData[i].touchData.time_since_touch_held_down =
                 controller.last_touch_down_timestamp == 0
                     ? 0
