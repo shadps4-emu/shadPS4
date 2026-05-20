@@ -243,9 +243,10 @@ void VideoOutDriver::Flip(const Request& req) {
     }
 
     // Trigger flip events for the port.
-    for (auto& event : port->flip_events) {
-        if (event != nullptr) {
-            event->TriggerEvent(
+    for (auto event : port->flip_events) {
+        auto equeue = Kernel::GetEqueue(event);
+        if (equeue != nullptr) {
+            equeue->TriggerEvent(
                 static_cast<u64>(OrbisVideoOutInternalEventId::Flip),
                 Kernel::OrbisKernelEvent::Filter::VideoOut,
                 reinterpret_cast<void*>(static_cast<u64>(OrbisVideoOutInternalEventId::Flip) |
@@ -372,13 +373,15 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             std::scoped_lock lock{main_port.vo_mutex};
 
             // Trigger flip events for the port
-            for (auto& event : main_port.vblank_events) {
-                if (event != nullptr) {
-                    event->TriggerEvent(static_cast<u64>(OrbisVideoOutInternalEventId::Vblank),
-                                        Kernel::OrbisKernelEvent::Filter::VideoOut,
-                                        reinterpret_cast<void*>(
-                                            static_cast<u64>(OrbisVideoOutInternalEventId::Vblank) |
-                                            (vblank_status.count << 16)));
+            for (auto event : main_port.vblank_events) {
+                auto equeue = Kernel::GetEqueue(event);
+                if (equeue != nullptr) {
+                    equeue->TriggerEvent(
+                        static_cast<u64>(OrbisVideoOutInternalEventId::Vblank),
+                        Kernel::OrbisKernelEvent::Filter::VideoOut,
+                        reinterpret_cast<void*>(
+                            static_cast<u64>(OrbisVideoOutInternalEventId::Vblank) |
+                            (vblank_status.count << 16)));
                 }
             }
 
