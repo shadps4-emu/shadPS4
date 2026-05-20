@@ -75,8 +75,8 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
             LOG_DEBUG(Render_Vulkan,
                       "ImageViewInfo: non-array texture base_array={} >= NumLayers()={} "
                       "(type={} depth={}) using local layer 0",
-                      image.base_array, image.NumLayers(),
-                      magic_enum::enum_name(image.GetType()), image.depth);
+                      image.base_array, image.NumLayers(), magic_enum::enum_name(image.GetType()),
+                      image.depth);
         }
     }
     range.extent.levels = image.NumViewLevels(desc.is_array);
