@@ -761,7 +761,34 @@ int PS4_SYSV_ABI sceHttpRedirectCacheFlush(int libhttpCtxId) {
 }
 
 int PS4_SYSV_ABI sceHttpRemoveRequestHeader(int id, const char* name) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, name={}", id, name ? name : "(null)");
+    LOG_INFO(Lib_Http, "called id={}, name={}", id, name ? name : "(null)");
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!name) {
+        LOG_ERROR(Lib_Http, "name is null");
+        return ORBIS_HTTP_ERROR_NOT_FOUND;
+    }
+    const char* level = "";
+    auto* headers = ResolveHeaders(id, level);
+    if (!headers) {
+        LOG_ERROR(Lib_Http, "Invalid id={} (not a template, connection, or request)", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    // Remove ALL entries with this name (case-insensitive)
+    auto new_end = std::remove_if(headers->begin(), headers->end(), [&](const auto& kv) {
+        return HeaderNameMatches(kv.first, name);
+    });
+    if (new_end == headers->end()) {
+        LOG_INFO(Lib_Http, "no header '{}' found at {} id={}", name, level, id);
+        return ORBIS_HTTP_ERROR_NOT_FOUND;
+    }
+    size_t removed = std::distance(new_end, headers->end());
+    headers->erase(new_end, headers->end());
+    LOG_INFO(Lib_Http, "removed {} occurrence(s) of '{}' from {} id={} (total now {})", removed,
+             name, level, id, headers->size());
     return ORBIS_OK;
 }
 
