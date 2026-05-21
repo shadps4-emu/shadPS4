@@ -21,6 +21,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/http.h"
 #include "http_error.h"
@@ -38,8 +39,13 @@ struct HttpSettings {
     u32 connect_timeout_us = 0;
     u32 send_timeout_us = 0;
     u32 recv_timeout_us = 0;
+    u32 resolve_timeout_us = 0;  // DNS resolution timeout (sceHttpSetResolveTimeOut)
+    s32 resolve_retry = 0;       // DNS retry count (sceHttpSetResolveRetry)
+    u64 recv_block_size = 0;     // Hint to streaming receiver; 0 = default
+    u64 response_header_max = 0; // Max response-header bytes accepted; 0 = default
     bool auto_redirect = true;
-    bool inflate_gzip = true;
+    bool inflate_gzip = true;                     // Auto-decompress response body if gzipped
+    bool accept_encoding_gzip = true;             // Send "Accept-Encoding: gzip" request header
     u32 ssl_flags = ORBIS_HTTPS_FLAG_SDK_DEFAULT; // SSL flag mask. Bitmask of OrbisHttpsFlags.
     bool nonblock = false; // false = blocking (default), true = nonblock (EAGAIN)
 };
@@ -109,6 +115,7 @@ struct HttpState {
     bool inited = false;
     int next_ctx_id = 0;
     int next_obj_id = 0;
+    bool default_accept_encoding_gzip = true; // Library-wide default for new templates
     std::unordered_set<int> active_contexts;
     std::unordered_map<int, HttpTemplate> templates;
     std::unordered_map<int, HttpConnection> connections;
@@ -640,6 +647,7 @@ int PS4_SYSV_ABI sceHttpCreateTemplate(int libhttpCtxId, const char* userAgent, 
     tmpl.user_agent = userAgent ? userAgent : "";
     tmpl.http_version = httpVer;
     tmpl.auto_proxy_conf = isAutoProxyConf;
+    tmpl.settings.accept_encoding_gzip = g_state.default_accept_encoding_gzip;
     g_state.templates.emplace(tmpl_id, std::move(tmpl));
     LOG_INFO(Lib_Http, "created template tmplId={}", tmpl_id);
     return tmpl_id;
@@ -686,7 +694,23 @@ int PS4_SYSV_ABI sceHttpDbgShowStat() {
 }
 
 int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled(int id, int* isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, fmt::ptr(isEnable));
+    LOG_INFO(Lib_Http, "called id={}", id);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!isEnable) {
+        LOG_ERROR(Lib_Http, "isEnable output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={}", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    *isEnable = s->accept_encoding_gzip ? 1 : 0;
     return ORBIS_OK;
 }
 
@@ -873,7 +897,20 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
 }
 
 int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, isEnable);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={}", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->accept_encoding_gzip = (isEnable != 0);
+    LOG_INFO(Lib_Http, "set {} id={} accept_encoding_gzip={}", level, id, s->accept_encoding_gzip);
     return ORBIS_OK;
 }
 
@@ -934,7 +971,15 @@ int PS4_SYSV_ABI sceHttpSetCookieTotalMaxSize(int libhttpCtxId, u32 size) {
 }
 
 int PS4_SYSV_ABI sceHttpSetDefaultAcceptEncodingGZIPEnabled(int libhttpCtxId, int isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called libhttpCtxId={}, isEnable={}", libhttpCtxId, isEnable);
+    LOG_INFO(Lib_Http, "called libhttpCtxId={}, isEnable={}", libhttpCtxId, isEnable);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    g_state.default_accept_encoding_gzip = (isEnable != 0);
+    LOG_INFO(Lib_Http, "set library default accept_encoding_gzip={}",
+             g_state.default_accept_encoding_gzip);
     return ORBIS_OK;
 }
 
@@ -969,7 +1014,20 @@ int PS4_SYSV_ABI sceHttpSetProxy() {
 }
 
 int PS4_SYSV_ABI sceHttpSetRecvBlockSize(int id, u32 blockSize) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, blockSize={}", id, blockSize);
+    LOG_INFO(Lib_Http, "called id={}, blockSize={}", id, blockSize);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={}", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->recv_block_size = blockSize;
+    LOG_INFO(Lib_Http, "set {} id={} recv_block_size={}", level, id, blockSize);
     return ORBIS_OK;
 }
 
@@ -988,17 +1046,66 @@ int PS4_SYSV_ABI sceHttpSetRequestStatusCallback(int id, OrbisHttpRequestStatusC
 }
 
 int PS4_SYSV_ABI sceHttpSetResolveRetry(int id, int retry) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, retry={}", id, retry);
+    LOG_INFO(Lib_Http, "called id={}, retry={}", id, retry);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (retry < 0) {
+        LOG_ERROR(Lib_Http, "Invalid retry={} (must be >= 0)", retry);
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={}", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->resolve_retry = retry;
+    LOG_INFO(Lib_Http, "set {} id={} resolve_retry={}", level, id, retry);
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceHttpSetResolveTimeOut(int id, u32 usec) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, usec={}", id, usec);
+    LOG_INFO(Lib_Http, "called id={}, usec={}", id, usec);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    u32 sdk_ver = 0x1000000;
+    ::Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
+    if (sdk_ver >= 0x1700000 && usec > 999999u) {
+        LOG_ERROR(Lib_Http, "Invalid usec={}, usec);
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={}", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->resolve_timeout_us = usec;
+    LOG_INFO(Lib_Http, "set {} id={} resolve_timeout_us={}", level, id, usec);
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceHttpSetResponseHeaderMaxSize(int id, u64 headerSize) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, headerSize={}", id, headerSize);
+    LOG_INFO(Lib_Http, "called id={}, headerSize={}", id, headerSize);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={}", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->response_header_max = headerSize;
+    LOG_INFO(Lib_Http, "set {} id={} response_header_max={}", level, id, headerSize);
     return ORBIS_OK;
 }
 
