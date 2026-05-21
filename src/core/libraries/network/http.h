@@ -209,7 +209,8 @@ int PS4_SYSV_ABI sceHttpSetEpollId();
 int PS4_SYSV_ABI sceHttpSetHttp09Enabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetPolicyOption();
 int PS4_SYSV_ABI sceHttpSetPriorityOption();
-int PS4_SYSV_ABI sceHttpSetProxy();
+int PS4_SYSV_ABI sceHttpSetProxy(int id, int httpProxyConf, int wlanProxyConf, const char* host,
+                                 u16 port);
 int PS4_SYSV_ABI sceHttpSetRecvBlockSize(int id, u32 blockSize);
 int PS4_SYSV_ABI sceHttpSetRedirectCallback(int id, OrbisHttpRedirectCallback cbfunc,
                                             void* userArg);

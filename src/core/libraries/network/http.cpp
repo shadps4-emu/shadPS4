@@ -48,6 +48,11 @@ struct HttpSettings {
     bool accept_encoding_gzip = true;             // Send "Accept-Encoding: gzip" request header
     u32 ssl_flags = ORBIS_HTTPS_FLAG_SDK_DEFAULT; // SSL flag mask. Bitmask of OrbisHttpsFlags.
     bool nonblock = false; // false = blocking (default), true = nonblock (EAGAIN)
+    // (0 = no proxy, 1 = manual host:port, 2 = automatic/PAC).
+    std::string proxy_host;
+    u16 proxy_port = 0;
+    int proxy_http_conf = 0;
+    int proxy_wlan_conf = 0;
 };
 
 struct Epoll {
@@ -1008,8 +1013,31 @@ int PS4_SYSV_ABI sceHttpSetPriorityOption() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpSetProxy() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
+int PS4_SYSV_ABI sceHttpSetProxy(int id, int httpProxyConf, int wlanProxyConf, const char* host,
+                                 u16 port) {
+    LOG_INFO(Lib_Http, "called id={}, httpProxyConf={}, wlanProxyConf={}, host={}, port={}", id,
+             httpProxyConf, wlanProxyConf, host ? host : "(null)", port);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!host) {
+        LOG_ERROR(Lib_Http, "host is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={}", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->proxy_http_conf = httpProxyConf;
+    s->proxy_wlan_conf = wlanProxyConf;
+    s->proxy_host = host;
+    s->proxy_port = port;
+    LOG_INFO(Lib_Http, "set {} id={} proxy={}:{} (httpConf={}, wlanConf={})", level, id, host, port,
+             httpProxyConf, wlanProxyConf);
     return ORBIS_OK;
 }
 
@@ -1074,10 +1102,10 @@ int PS4_SYSV_ABI sceHttpSetResolveTimeOut(int id, u32 usec) {
         LOG_ERROR(Lib_Http, "Not initialized");
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
     }
-    u32 sdk_ver = 0x1000000;
+    s32 sdk_ver = 0x1000000;
     ::Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
     if (sdk_ver >= 0x1700000 && usec > 999999u) {
-        LOG_ERROR(Lib_Http, "Invalid usec={}, usec);
+        LOG_ERROR(Lib_Http, "Invalid usec={}", usec);
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
     const char* level = "";
