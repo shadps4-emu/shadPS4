@@ -17,6 +17,10 @@ body:
 
         This repository does not provide support for game patches. If you are having issues with patches please refer to [Cheats and Patches Repository](https://github.com/shadps4-emu/ps4_cheats).
 
+        Don't force kill the application (or precise it in this issue if you had to.)
+
+        Don't run inside or attached to a debugger.
+        
         Before submitting an issue please check [Game Compatibility Repository](https://github.com/shadps4-compatibility/shadps4-game-compatibility) for the information about the status of the game.
 
         Please make an effort to make sure your issue isn't already reported.
