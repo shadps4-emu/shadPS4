@@ -158,8 +158,7 @@ s32 PS4_SYSV_ABI sceAudio3dObjectUnreserve(OrbisAudio3dPortId port_id,
                                            OrbisAudio3dObjectId object_id);
 s32 PS4_SYSV_ABI sceAudio3dPortAdvance(OrbisAudio3dPortId port_id);
 s32 PS4_SYSV_ABI sceAudio3dPortClose(OrbisAudio3dPortId port_id);
-s32 PS4_SYSV_ABI sceAudio3dPortCreate(u32 max_objects, u32 queue_depth,
-                                      OrbisAudio3dOpenParameters* parameters,
+s32 PS4_SYSV_ABI sceAudio3dPortCreate(u32 granularity, u32 rate, s64 reserved,
                                       OrbisAudio3dPortId* port_id);
 s32 PS4_SYSV_ABI sceAudio3dPortDestroy();
 s32 PS4_SYSV_ABI sceAudio3dPortFlush(OrbisAudio3dPortId port_id);

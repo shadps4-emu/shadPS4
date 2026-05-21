@@ -617,25 +617,21 @@ s32 PS4_SYSV_ABI sceAudio3dPortClose(const OrbisAudio3dPortId port_id) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAudio3dPortCreate(u32 max_objects, u32 queue_depth,
-                                      OrbisAudio3dOpenParameters* parameters,
+s32 PS4_SYSV_ABI sceAudio3dPortCreate(u32 granularity, u32 rate, s64 reserved,
                                       OrbisAudio3dPortId* port_id) {
 
-    LOG_INFO(Lib_Audio3d,
-             "called, max_objects = {}, queue_depth = {}, parameters = {}, port_id = {}",
-             max_objects, queue_depth, static_cast<void*>(parameters), static_cast<void*>(port_id));
+    LOG_INFO(Lib_Audio3d, "called, granularity = {}, rate = {}, reserved = {}, port_id = {}",
+             granularity, rate, reserved, static_cast<void*>(port_id));
 
-    if (!port_id || parameters) {
-        LOG_INFO(Lib_Audio3d, "!port_id || parameters");
+    if (!port_id || reserved) {
+        LOG_INFO(Lib_Audio3d, "!port_id || reserved");
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
     OrbisAudio3dOpenParameters local_params{};
     local_params.size_this = 0x10;
-    local_params.granularity = 0x100;
-    local_params.rate = OrbisAudio3dRate::ORBIS_AUDIO3D_RATE_48000;
-    local_params.max_objects = max_objects;
-    local_params.queue_depth = queue_depth;
+    local_params.granularity = granularity;
+    local_params.rate = static_cast<OrbisAudio3dRate>(rate);
     return sceAudio3dPortOpen(static_cast<Libraries::UserService::OrbisUserServiceUserId>(0xFF),
                               &local_params, port_id);
 }
