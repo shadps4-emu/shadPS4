@@ -1466,42 +1466,47 @@ int PS4_SYSV_ABI sceHttpCreateRequest2(int connId, const char* method, const cha
             return ORBIS_HTTP_METHOD_TRACE;
         return -1;
     };
-    // Resolve the connection's URL under the lock, then delegate.
+    // Resolve the connection's URL under the lock, then drop the lock before
+    // delegating to sceHttpCreateRequestWithURL
     std::string url;
-    std::lock_guard<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    auto it = g_state.connections.find(connId);
-    if (it == g_state.connections.end()) {
-        LOG_ERROR(Lib_Http, "Invalid connId={}", connId);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    if (!path) {
-        LOG_ERROR(Lib_Http, "path is null");
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
-    if (ContainsCrLf(path)) {
-        LOG_ERROR(Lib_Http, "path contains CR/LF (CRLF-injection rejected): {}", path);
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
-    int int_method = map_method(method);
-    if (int_method < 0) {
-        if (!method) {
-            LOG_ERROR(Lib_Http, "method is null");
+    int int_method;
+    {
+        std::lock_guard<std::mutex> lock(g_state.m_mutex);
+        if (!g_state.inited) {
+            LOG_ERROR(Lib_Http, "Not initialized");
+            return ORBIS_HTTP_ERROR_BEFORE_INIT;
+        }
+        auto it = g_state.connections.find(connId);
+        if (it == g_state.connections.end()) {
+            LOG_ERROR(Lib_Http, "Invalid connId={}", connId);
+            return ORBIS_HTTP_ERROR_INVALID_ID;
+        }
+        if (!path) {
+            LOG_ERROR(Lib_Http, "path is null");
             return ORBIS_HTTP_ERROR_INVALID_VALUE;
         }
-        LOG_INFO(Lib_Http, "method '{}' not in standard table; routing via CUSTOM slot", method);
-        int_method = ORBIS_HTTP_METHOD_CUSTOM;
-    }
-    const auto& conn = it->second;
-    url = conn.scheme + "://" + conn.hostname + ":" + std::to_string(conn.port);
-    if (path[0] != '\0') {
-        if (path[0] != '/') {
-            url.push_back('/');
+        if (ContainsCrLf(path)) {
+            LOG_ERROR(Lib_Http, "path contains CR/LF (CRLF-injection rejected): {}", path);
+            return ORBIS_HTTP_ERROR_INVALID_VALUE;
         }
-        url.append(path);
+        int_method = map_method(method);
+        if (int_method < 0) {
+            if (!method) {
+                LOG_ERROR(Lib_Http, "method is null");
+                return ORBIS_HTTP_ERROR_INVALID_VALUE;
+            }
+            LOG_INFO(Lib_Http, "method '{}' not in standard table; routing via CUSTOM slot",
+                     method);
+            int_method = ORBIS_HTTP_METHOD_CUSTOM;
+        }
+        const auto& conn = it->second;
+        url = conn.scheme + "://" + conn.hostname + ":" + std::to_string(conn.port);
+        if (path[0] != '\0') {
+            if (path[0] != '/') {
+                url.push_back('/');
+            }
+            url.append(path);
+        }
     }
     int reqId = sceHttpCreateRequestWithURL(connId, int_method, url.c_str(), contentLength);
     if (reqId > 0 && method) {
