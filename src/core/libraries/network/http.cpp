@@ -967,8 +967,8 @@ int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId) {
 
 int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* nbev, int maxevents,
                                     int timeout) {
-    LOG_INFO(Lib_Http, "called eh={}, nbev={}, maxevents={}, timeout={}", fmt::ptr(eh),
-             fmt::ptr(nbev), maxevents, timeout);
+    LOG_DEBUG(Lib_Http, "called eh={}, nbev={}, maxevents={}, timeout={}", fmt::ptr(eh),
+              fmt::ptr(nbev), maxevents, timeout);
     std::unique_lock<std::mutex> lock(g_state.m_mutex);
     if (!g_state.inited) {
         LOG_ERROR(Lib_Http, "Not initialized");
