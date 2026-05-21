@@ -98,6 +98,10 @@ struct HttpState {
 
 static HttpState g_state;
 
+//***********************************
+// Helper functions
+//***********************************
+
 static HttpSettings* ResolveSettings(int id, const char*& level) {
     if (auto it = g_state.templates.find(id); it != g_state.templates.end()) {
         level = "template";
@@ -209,6 +213,10 @@ static bool ContainsCrLf(const char* s) {
     }
     return false;
 }
+
+//***********************************
+// TODO/WIP/Stubbed functions
+//***********************************
 
 int PS4_SYSV_ABI sceHttpAbortWaitRequest(OrbisHttpEpollHandle eh) {
     LOG_ERROR(Lib_Http, "(STUBBED) called eh={}", fmt::ptr(eh));
@@ -533,54 +541,6 @@ int PS4_SYSV_ABI sceHttpDbgShowStat() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpDeleteConnection(int connId) {
-    LOG_INFO(Lib_Http, "called connId={}", connId);
-    std::lock_guard<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    if (g_state.connections.erase(connId) == 0) {
-        LOG_ERROR(Lib_Http, "Invalid connId={}", connId);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpDeleteRequest(int reqId) {
-    LOG_INFO(Lib_Http, "called reqId={}", reqId);
-    std::lock_guard<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    auto it = g_state.requests.find(reqId);
-    if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    auto req_ptr = it->second;
-    req_ptr->deleted = true;
-    req_ptr->state = HttpRequestState::Aborted;
-    req_ptr->cv.notify_all();
-    g_state.requests.erase(it);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpDeleteTemplate(int tmplId) {
-    LOG_INFO(Lib_Http, "called tmplId={}", tmplId);
-    std::lock_guard<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    if (g_state.templates.erase(tmplId) == 0) {
-        LOG_ERROR(Lib_Http, "Invalid tmplId={}", tmplId);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpDestroyEpoll(int libhttpCtxId, OrbisHttpEpollHandle eh) {
     LOG_ERROR(Lib_Http, "(STUBBED) called libhttpCtxId={}, eh={}", libhttpCtxId, fmt::ptr(eh));
     return ORBIS_OK;
@@ -588,43 +548,6 @@ int PS4_SYSV_ABI sceHttpDestroyEpoll(int libhttpCtxId, OrbisHttpEpollHandle eh) 
 
 int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled(int id, int* isEnable) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, fmt::ptr(isEnable));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* headerSize) {
-    LOG_INFO(Lib_Http, "called reqId={}, header={}, headerSize={}", reqId, fmt::ptr(header),
-             fmt::ptr(headerSize));
-    std::unique_lock<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    if (!header || !headerSize) {
-        LOG_ERROR(Lib_Http, "header or headerSize output pointer is null");
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
-    auto it = g_state.requests.find(reqId);
-    if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    auto& req = *it->second;
-    int wr = WaitForResponseReady(req, lock);
-    if (wr != ORBIS_OK) {
-        if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
-            LOG_DEBUG(Lib_Http, "reqId={}: EAGAIN (response not yet ready)", reqId);
-        } else {
-            LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
-        }
-        return wr;
-    }
-    if (req.res.all_headers_blob.empty()) {
-        *header = nullptr;
-        *headerSize = 0;
-    } else {
-        *header = const_cast<char*>(req.res.all_headers_blob.c_str());
-        *headerSize = req.res.all_headers_blob.size();
-    }
     return ORBIS_OK;
 }
 
@@ -682,75 +605,6 @@ int PS4_SYSV_ABI sceHttpGetRegisteredCtxIds() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpGetResponseContentLength(int reqId, int* result, u64* contentLength) {
-    LOG_INFO(Lib_Http, "called reqId={}, result={}, contentLength={}", reqId, fmt::ptr(result),
-             fmt::ptr(contentLength));
-    std::unique_lock<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    if (!result || !contentLength) {
-        LOG_ERROR(Lib_Http, "result or contentLength output pointer is null");
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
-    auto it = g_state.requests.find(reqId);
-    if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    auto& req = *it->second;
-    int wr = WaitForResponseReady(req, lock);
-    if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
-        LOG_DEBUG(Lib_Http, "reqId={}: response not yet ready, returning BEFORE_SEND", reqId);
-        return ORBIS_HTTP_ERROR_BEFORE_SEND;
-    }
-    if (wr != ORBIS_OK) {
-        LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
-        return wr;
-    }
-    *result = req.res.content_length_result;
-    *contentLength = req.res.content_length;
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
-    LOG_INFO(Lib_Http, "called reqId={}, statusCode={}", reqId, fmt::ptr(statusCode));
-    std::unique_lock<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    if (!statusCode) {
-        LOG_ERROR(Lib_Http, "statusCode output pointer is null");
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
-    auto it = g_state.requests.find(reqId);
-    if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    auto& req = *it->second;
-    int wr = WaitForResponseReady(req, lock);
-    if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
-        LOG_DEBUG(Lib_Http, "reqId={}: response not yet ready, returning BEFORE_SEND", reqId);
-        return ORBIS_HTTP_ERROR_BEFORE_SEND;
-    }
-    if (wr != ORBIS_OK) {
-        LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
-        return wr;
-    }
-    // Transport failure: no status line was ever received from a server.
-    if (req.res.status_code == 0 && req.last_errno != 0) {
-        LOG_INFO(Lib_Http, "reqId={} transport failure, errno={:#x}, returning BEFORE_SEND", reqId,
-                 static_cast<u32>(req.last_errno));
-        return ORBIS_HTTP_ERROR_BEFORE_SEND;
-    }
-    *statusCode = req.res.status_code;
-    LOG_INFO(Lib_Http, "reqId={} status={}", reqId, req.res.status_code);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, u64 poolSize) {
     LOG_INFO(Lib_Http, "called libnetMemId={}, libsslCtxId={}, poolSize={}", libnetMemId,
              libsslCtxId, poolSize);
@@ -766,43 +620,6 @@ int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, u64 poolSize) {
     LOG_INFO(Lib_Http, "initialized -> ctxId={} (active contexts: {})", ctx_id,
              g_state.active_contexts.size());
     return ctx_id;
-}
-
-int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size) {
-    LOG_INFO(Lib_Http, "called reqId={}, data={}, size={}", reqId, fmt::ptr(data), size);
-    std::unique_lock<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    if (!data) {
-        LOG_ERROR(Lib_Http, "data output pointer is null");
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
-    auto it = g_state.requests.find(reqId);
-    if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    auto& req = *it->second;
-    int wr = WaitForResponseReady(req, lock);
-    if (wr != ORBIS_OK) {
-        if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
-            LOG_DEBUG(Lib_Http, "reqId={}: EAGAIN (response not yet ready)", reqId);
-        } else {
-            LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
-        }
-        return wr;
-    }
-    u64 remaining = req.res.body.size() - req.res.read_cursor;
-    u64 to_copy = std::min(size, remaining);
-    if (to_copy > 0) {
-        std::memcpy(data, req.res.body.data() + req.res.read_cursor, to_copy);
-        req.res.read_cursor += to_copy;
-    }
-    LOG_INFO(Lib_Http, "reqId={} copied {} bytes (cursor {}/{}) ", reqId, to_copy,
-             req.res.read_cursor, req.res.body.size());
-    return static_cast<int>(to_copy);
 }
 
 int PS4_SYSV_ABI sceHttpRedirectCacheFlush(int libhttpCtxId) {
@@ -1169,6 +986,43 @@ int PS4_SYSV_ABI sceHttpTrySetNonblock(int id, int isEnable) {
 //***********************************
 // Http Communication functions
 //***********************************
+int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size) {
+    LOG_INFO(Lib_Http, "called reqId={}, data={}, size={}", reqId, fmt::ptr(data), size);
+    std::unique_lock<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!data) {
+        LOG_ERROR(Lib_Http, "data output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    auto& req = *it->second;
+    int wr = WaitForResponseReady(req, lock);
+    if (wr != ORBIS_OK) {
+        if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
+            LOG_DEBUG(Lib_Http, "reqId={}: EAGAIN (response not yet ready)", reqId);
+        } else {
+            LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
+        }
+        return wr;
+    }
+    u64 remaining = req.res.body.size() - req.res.read_cursor;
+    u64 to_copy = std::min(size, remaining);
+    if (to_copy > 0) {
+        std::memcpy(data, req.res.body.data() + req.res.read_cursor, to_copy);
+        req.res.read_cursor += to_copy;
+    }
+    LOG_INFO(Lib_Http, "reqId={} copied {} bytes (cursor {}/{}) ", reqId, to_copy,
+             req.res.read_cursor, req.res.body.size());
+    return static_cast<int>(to_copy);
+}
+
 int PS4_SYSV_ABI sceHttpAbortRequest(int reqId) {
     LOG_INFO(Lib_Http, "called reqId={}", reqId);
     std::lock_guard<std::mutex> lock(g_state.m_mutex);
@@ -1300,6 +1154,112 @@ int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags) {
 //***********************************
 // Response Information functions
 //***********************************
+int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* headerSize) {
+    LOG_INFO(Lib_Http, "called reqId={}, header={}, headerSize={}", reqId, fmt::ptr(header),
+             fmt::ptr(headerSize));
+    std::unique_lock<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!header || !headerSize) {
+        LOG_ERROR(Lib_Http, "header or headerSize output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    auto& req = *it->second;
+    int wr = WaitForResponseReady(req, lock);
+    if (wr != ORBIS_OK) {
+        if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
+            LOG_DEBUG(Lib_Http, "reqId={}: EAGAIN (response not yet ready)", reqId);
+        } else {
+            LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
+        }
+        return wr;
+    }
+    if (req.res.all_headers_blob.empty()) {
+        *header = nullptr;
+        *headerSize = 0;
+    } else {
+        *header = const_cast<char*>(req.res.all_headers_blob.c_str());
+        *headerSize = req.res.all_headers_blob.size();
+    }
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpGetResponseContentLength(int reqId, int* result, u64* contentLength) {
+    LOG_INFO(Lib_Http, "called reqId={}, result={}, contentLength={}", reqId, fmt::ptr(result),
+             fmt::ptr(contentLength));
+    std::unique_lock<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!result || !contentLength) {
+        LOG_ERROR(Lib_Http, "result or contentLength output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    auto& req = *it->second;
+    int wr = WaitForResponseReady(req, lock);
+    if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
+        LOG_DEBUG(Lib_Http, "reqId={}: response not yet ready, returning BEFORE_SEND", reqId);
+        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+    }
+    if (wr != ORBIS_OK) {
+        LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
+        return wr;
+    }
+    *result = req.res.content_length_result;
+    *contentLength = req.res.content_length;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
+    LOG_INFO(Lib_Http, "called reqId={}, statusCode={}", reqId, fmt::ptr(statusCode));
+    std::unique_lock<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!statusCode) {
+        LOG_ERROR(Lib_Http, "statusCode output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    auto& req = *it->second;
+    int wr = WaitForResponseReady(req, lock);
+    if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
+        LOG_DEBUG(Lib_Http, "reqId={}: response not yet ready, returning BEFORE_SEND", reqId);
+        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+    }
+    if (wr != ORBIS_OK) {
+        LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
+        return wr;
+    }
+    // Transport failure: no status line was ever received from a server.
+    if (req.res.status_code == 0 && req.last_errno != 0) {
+        LOG_INFO(Lib_Http, "reqId={} transport failure, errno={:#x}, returning BEFORE_SEND", reqId,
+                 static_cast<u32>(req.last_errno));
+        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+    }
+    *statusCode = req.res.status_code;
+    LOG_INFO(Lib_Http, "reqId={} status={}", reqId, req.res.status_code);
+    return ORBIS_OK;
+}
+
 int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable) {
     LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, isEnable);
     std::lock_guard<std::mutex> lock(g_state.m_mutex);
@@ -1442,8 +1402,62 @@ int PS4_SYSV_ABI sceHttpSetRecvTimeOut(int id, u32 usec) {
 }
 
 //***********************************
+// Connection functions
+//***********************************
+int PS4_SYSV_ABI sceHttpDeleteConnection(int connId) {
+    LOG_INFO(Lib_Http, "called connId={}", connId);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (g_state.connections.erase(connId) == 0) {
+        LOG_ERROR(Lib_Http, "Invalid connId={}", connId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    return ORBIS_OK;
+}
+
+//***********************************
+// Template functions
+//***********************************
+int PS4_SYSV_ABI sceHttpDeleteTemplate(int tmplId) {
+    LOG_INFO(Lib_Http, "called tmplId={}", tmplId);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (g_state.templates.erase(tmplId) == 0) {
+        LOG_ERROR(Lib_Http, "Invalid tmplId={}", tmplId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    return ORBIS_OK;
+}
+
+//***********************************
 // Request functions
 //***********************************
+int PS4_SYSV_ABI sceHttpDeleteRequest(int reqId) {
+    LOG_INFO(Lib_Http, "called reqId={}", reqId);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    auto it = g_state.requests.find(reqId);
+    if (it == g_state.requests.end()) {
+        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    auto req_ptr = it->second;
+    req_ptr->deleted = true;
+    req_ptr->state = HttpRequestState::Aborted;
+    req_ptr->cv.notify_all();
+    g_state.requests.erase(it);
+    return ORBIS_OK;
+}
+
 int PS4_SYSV_ABI sceHttpCreateRequest2(int connId, const char* method, const char* path,
                                        u64 contentLength) {
     LOG_INFO(Lib_Http, "called connId={}, method={}, path={}, contentLength={}", connId,
