@@ -179,6 +179,40 @@ static void SynthesizeTransportFailureResponse(HttpResponse& res) {
     res.all_headers_blob.clear();
 }
 
+// Map common HTTP status codes to strings for logs.
+static std::string HttpStatusLabel(int sc) {
+    switch (sc) {
+    case 0:
+        return "0 (no status)";
+    case 200:
+        return "200 OK";
+    case 204:
+        return "204 No Content";
+    case 301:
+        return "301 Moved Permanently";
+    case 302:
+        return "302 Found";
+    case 304:
+        return "304 Not Modified";
+    case 400:
+        return "400 Bad Request";
+    case 401:
+        return "401 Unauthorized";
+    case 403:
+        return "403 Forbidden";
+    case 404:
+        return "404 Not Found";
+    case 500:
+        return "500 Internal Server Error";
+    case 502:
+        return "502 Bad Gateway";
+    case 503:
+        return "503 Service Unavailable";
+    default:
+        return std::to_string(sc);
+    }
+}
+
 static int WaitForResponseReady(HttpRequest& req, std::unique_lock<std::mutex>& lock) {
     if (req.state == HttpRequestState::Aborted) {
         return ORBIS_HTTP_ERROR_ABORTED;
@@ -1495,7 +1529,7 @@ int PS4_SYSV_ABI sceHttpGetResponseContentLength(int reqId, int* result, u64* co
 }
 
 int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
-    LOG_INFO(Lib_Http, "called reqId={}, statusCode={}", reqId, fmt::ptr(statusCode));
+    LOG_INFO(Lib_Http, "called reqId={}", reqId);
     std::unique_lock<std::mutex> lock(g_state.m_mutex);
     if (!g_state.inited) {
         LOG_ERROR(Lib_Http, "Not initialized");
@@ -1527,7 +1561,7 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
         return ORBIS_HTTP_ERROR_BEFORE_SEND;
     }
     *statusCode = req.res.status_code;
-    LOG_INFO(Lib_Http, "reqId={} status={}", reqId, req.res.status_code);
+    LOG_INFO(Lib_Http, "reqId={} status={}", reqId, HttpStatusLabel(req.res.status_code));
     return ORBIS_OK;
 }
 
