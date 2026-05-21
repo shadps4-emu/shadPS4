@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <atomic>
 #include <cctype>
 #include <chrono>
@@ -58,6 +59,7 @@ struct HttpTemplate {
     HttpSettings settings;
     int epoll_id = 0;
     void* epoll_user_arg = nullptr;
+    std::vector<std::pair<std::string, std::string>> headers;
 };
 
 struct HttpConnection {
@@ -72,6 +74,7 @@ struct HttpConnection {
     HttpSettings settings;
     int epoll_id = 0;
     void* epoll_user_arg = nullptr;
+    std::vector<std::pair<std::string, std::string>> headers;
 };
 
 struct HttpResponse {
@@ -98,6 +101,7 @@ struct HttpRequest {
                                 // notified when state leaves Sending.
     int epoll_id = 0;
     void* epoll_user_arg = nullptr;
+    std::vector<std::pair<std::string, std::string>> headers;
 };
 
 struct HttpState {
@@ -177,6 +181,39 @@ static void SynthesizeTransportFailureResponse(HttpResponse& res) {
     res.body.clear();
     res.read_cursor = 0;
     res.all_headers_blob.clear();
+}
+
+// Case-insensitive ASCII comparison of two HTTP header names.
+static bool HeaderNameMatches(std::string_view a, std::string_view b) {
+    if (a.size() != b.size()) {
+        return false;
+    }
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (std::tolower(static_cast<unsigned char>(a[i])) !=
+            std::tolower(static_cast<unsigned char>(b[i]))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Resolve the headers vector for a template/connection/request id. Returns
+// nullptr if id is invalid
+static std::vector<std::pair<std::string, std::string>>* ResolveHeaders(int id,
+                                                                        const char*& level) {
+    if (auto it = g_state.templates.find(id); it != g_state.templates.end()) {
+        level = "template";
+        return &it->second.headers;
+    }
+    if (auto it = g_state.connections.find(id); it != g_state.connections.end()) {
+        level = "connection";
+        return &it->second.headers;
+    }
+    if (auto it = g_state.requests.find(id); it != g_state.requests.end()) {
+        level = "request";
+        return &it->second->headers;
+    }
+    return nullptr;
 }
 
 // Map common HTTP status codes to strings for logs.
@@ -314,8 +351,36 @@ int PS4_SYSV_ABI sceHttpAddQuery() {
 }
 
 int PS4_SYSV_ABI sceHttpAddRequestHeader(int id, const char* name, const char* value, s32 mode) {
-    LOG_INFO(Lib_Http, "(STUBBED) called id={}, name={}, value={}, mode={}", id,
-             name ? name : "(null)", value ? value : "(null)", mode);
+    LOG_INFO(Lib_Http, "called id={}, name={}, value={}, mode={}", id, name ? name : "(null)",
+             value ? value : "(null)", mode);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (mode != ORBIS_HTTP_HEADER_OVERWRITE && mode != ORBIS_HTTP_HEADER_ADD) {
+        LOG_ERROR(Lib_Http, "Invalid mode={} (must be OVERWRITE=0 or ADD=1)", mode);
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    if (!name || !value) {
+        LOG_ERROR(Lib_Http, "name or value is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    auto* headers = ResolveHeaders(id, level);
+    if (!headers) {
+        LOG_ERROR(Lib_Http, "Invalid id={} (not a template, connection, or request)", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    if (mode == ORBIS_HTTP_HEADER_OVERWRITE) {
+        headers->erase(
+            std::remove_if(headers->begin(), headers->end(),
+                           [&](const auto& kv) { return HeaderNameMatches(kv.first, name); }),
+            headers->end());
+    }
+    headers->emplace_back(name, value);
+    LOG_INFO(Lib_Http, "added header at {} id={}: {}: {} (mode={}, total now {})", level, id, name,
+             value, mode, headers->size());
     return ORBIS_OK;
 }
 

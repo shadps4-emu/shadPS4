@@ -54,6 +54,12 @@ enum OrbisHttpMethod : s32 {
     ORBIS_HTTP_METHOD_CUSTOM = 8,
 };
 
+// mode argument for sceHttpAddRequestHeader.
+enum OrbisHttpHeaderModes : s32 {
+    ORBIS_HTTP_HEADER_OVERWRITE = 0,
+    ORBIS_HTTP_HEADER_ADD = 1,
+};
+
 enum OrbisUriBuild : s32 {
     ORBIS_HTTP_URI_BUILD_WITH_SCHEME = 0x01,
     ORBIS_HTTP_URI_BUILD_WITH_HOSTNAME = 0x02,
