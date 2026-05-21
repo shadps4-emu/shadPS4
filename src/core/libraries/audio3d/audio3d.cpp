@@ -816,43 +816,36 @@ s32 PS4_SYSV_ABI sceAudio3dPortOpen(const Libraries::UserService::OrbisUserServi
 
     OrbisAudio3dOpenParameters effective{
         .size_this = 0x28,
-        .granularity = 0x100,
-        .rate = OrbisAudio3dRate::ORBIS_AUDIO3D_RATE_48000,
+        .granularity = parameters->granularity,
+        .rate = parameters->rate,
         .max_objects = 512,
         .queue_depth = 2,
-        .num_beds = 0,
-        .buffer_mode = OrbisAudio3dBufferMode::ORBIS_AUDIO3D_BUFFER_ADVANCE_AND_PUSH,
+        .buffer_mode = OrbisAudio3dBufferMode::ORBIS_AUDIO3D_BUFFER_NO_ADVANCE,
+        ._pad = 0,
+        .num_beds = 2,
     };
 
     switch (parameters->size_this) {
     case 0x10:
-        effective.granularity = parameters->granularity;
-        effective.rate = parameters->rate;
         break;
 
     case 0x18:
         effective.max_objects = parameters->max_objects;
         effective.queue_depth = parameters->queue_depth;
-        effective.rate = parameters->rate;
-        effective.granularity = parameters->granularity;
-        effective.num_beds = 1;
+        effective.buffer_mode = OrbisAudio3dBufferMode::ORBIS_AUDIO3D_BUFFER_ADVANCE_NO_PUSH;
         break;
 
     case 0x20:
         effective.max_objects = parameters->max_objects;
         effective.queue_depth = parameters->queue_depth;
-        effective.rate = parameters->rate;
-        effective.num_beds = parameters->num_beds;
-        effective.granularity = parameters->granularity;
+        effective.buffer_mode = parameters->buffer_mode;
         break;
 
     case 0x28:
         effective.max_objects = parameters->max_objects;
-        effective.buffer_mode = parameters->buffer_mode;
         effective.queue_depth = parameters->queue_depth;
-        effective.rate = parameters->rate;
+        effective.buffer_mode = parameters->buffer_mode;
         effective.num_beds = parameters->num_beds;
-        effective.granularity = parameters->granularity;
         break;
 
     default:
@@ -905,13 +898,13 @@ s32 PS4_SYSV_ABI sceAudio3dPortOpen(const Libraries::UserService::OrbisUserServi
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    if ((static_cast<u32>(effective.buffer_mode) & 0xFFFFFFFEu) != 2) {
+    if (static_cast<u32>(effective.buffer_mode) > 2) {
         LOG_ERROR(Lib_Audio3d, "invalid buffer_mode");
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    if (effective.num_beds > 2) {
-        LOG_ERROR(Lib_Audio3d, "num_beds > 2");
+    if ((effective.num_beds & 0xfffffffe) != 2) {
+        LOG_ERROR(Lib_Audio3d, "invalid num_beds");
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 

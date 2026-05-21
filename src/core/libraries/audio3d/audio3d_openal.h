@@ -33,7 +33,6 @@ enum class OrbisAudio3dBufferMode : u32 {
     ORBIS_AUDIO3D_BUFFER_NO_ADVANCE = 0,
     ORBIS_AUDIO3D_BUFFER_ADVANCE_NO_PUSH = 1,
     ORBIS_AUDIO3D_BUFFER_ADVANCE_AND_PUSH = 2,
-    ORBIS_AUDIO3D_BUFFER_UNKNOWN = 3,
 };
 
 struct OrbisAudio3dOpenParameters {
@@ -42,9 +41,9 @@ struct OrbisAudio3dOpenParameters {
     OrbisAudio3dRate rate;
     u32 max_objects;
     u32 queue_depth;
-    u32 num_beds;
-    u32 _pad;
     OrbisAudio3dBufferMode buffer_mode;
+    u32 _pad;
+    u32 num_beds;
 };
 
 enum class OrbisAudio3dFormat : u32 {
