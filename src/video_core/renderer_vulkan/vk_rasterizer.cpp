@@ -67,14 +67,9 @@ bool Rasterizer::FilterDraw() {
         return false;
     }
     if (regs.color_control.mode == AmdGpu::ColorControl::OperationMode::FmaskDecompress) {
-        if (regs.color_buffers[1]) {
-            LOG_DEBUG(Render_Vulkan, "FmaskDecompress with valid MRT1={:#x}, promoting to resolve",
-                      liverpool->regs.color_buffers[1].Address());
-            Resolve();
-        } else {
-            LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
-            ScopedMarkerInsert("FmaskDecompress");
-        }
+        // TODO: check for a valid MRT1 to promote the draw to the resolve pass.
+        LOG_TRACE(Render_Vulkan, "FMask decompression pass skipped");
+        ScopedMarkerInsert("FmaskDecompress");
         return false;
     }
     if (regs.color_control.mode == AmdGpu::ColorControl::OperationMode::Resolve) {
