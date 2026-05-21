@@ -737,8 +737,8 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
                 ev.userArg = req_ptr->epoll_user_arg;
                 epoll_it->second->events.push_back(ev);
                 epoll_it->second->cv.notify_all();
-                LOG_INFO(Lib_Http, "pushed failure epoll event for reqId={} on epoll={}", reqId,
-                         req_ptr->epoll_id);
+                LOG_DEBUG(Lib_Http, "pushed failure epoll event for reqId={} on epoll={}", reqId,
+                          req_ptr->epoll_id);
             }
         }
     }).detach();
