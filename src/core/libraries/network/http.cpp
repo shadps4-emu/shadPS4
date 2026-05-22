@@ -26,6 +26,11 @@
 #include "core/libraries/network/http.h"
 #include "http_error.h"
 
+#if __has_include(<httplib.h>)
+#include <httplib.h>
+#define ORBIS_HTTP_WITH_HTTPLIB 1
+#endif
+
 namespace Libraries::Http {
 
 enum class HttpRequestState {
@@ -64,6 +69,7 @@ struct Epoll {
 };
 
 struct HttpTemplate {
+    int ctx_id = 0; // Owning libhttp context
     std::string user_agent;
     int http_version;
     int auto_proxy_conf;
@@ -122,6 +128,11 @@ struct HttpState {
     int next_obj_id = 0;
     bool default_accept_encoding_gzip = true; // Library-wide default for new templates
     std::unordered_set<int> active_contexts;
+    // Contexts where sceHttpsLoadCert was called. We can't actually parse the
+    // PS4 cert blobs, but we use this as a signal that
+    // the game expects custom CA validation. Connections under these contexts
+    // bypass cpp-httplib's default verification so endpoints aren't blocked
+    std::unordered_set<int> contexts_with_loaded_certs;
     std::unordered_map<int, HttpTemplate> templates;
     std::unordered_map<int, HttpConnection> connections;
     std::unordered_map<int, std::shared_ptr<HttpRequest>> requests;
@@ -184,6 +195,9 @@ static bool ResolveEpollBinding(int id, int*& epoll_id_out, void**& user_arg_out
     return false;
 }
 
+static bool HeaderNameMatches(std::string_view a, std::string_view b);
+static std::string HttpStatusLabel(int sc);
+
 // Populate a response object with the shape a transport-level failure produces:
 // no status line, no headers, no body. Used by the no-internet path.
 static void SynthesizeTransportFailureResponse(HttpResponse& res) {
@@ -193,6 +207,62 @@ static void SynthesizeTransportFailureResponse(HttpResponse& res) {
     res.body.clear();
     res.read_cursor = 0;
     res.all_headers_blob.clear();
+}
+
+struct SendRequestPlan {
+    std::string scheme;
+    std::string host;
+    u16 port = 0;
+    std::string path; // Path + query, e.g. "/utility/time" or "/?x=1"
+    s32 method = 0;
+    std::string method_str; // Only used when method == ORBIS_HTTP_METHOD_CUSTOM
+    std::string content_type;
+    std::vector<u8> body;
+    std::vector<std::pair<std::string, std::string>> headers; // Merged tmpl + conn + req
+    HttpSettings settings;
+    // True if the request's owning ctx had sceHttpsLoadCert called. In that
+    // case we bypass TLS verification because we can't load the game's CAs.
+    bool ctx_has_loaded_certs = false;
+};
+
+// Extract the path-and-query portion from a full URL
+static std::string ExtractPathFromUrl(const std::string& url) {
+    auto scheme_end = url.find("://");
+    if (scheme_end == std::string::npos) {
+        return "/";
+    }
+    auto authority_start = scheme_end + 3;
+    auto path_start = url.find('/', authority_start);
+    if (path_start == std::string::npos) {
+        return "/";
+    }
+    return url.substr(path_start);
+}
+
+// Map common HTTP method codes to their name. Used for logging only.
+static const char* HttpMethodName(s32 method) {
+    switch (method) {
+    case ORBIS_HTTP_METHOD_GET:
+        return "GET";
+    case ORBIS_HTTP_METHOD_POST:
+        return "POST";
+    case ORBIS_HTTP_METHOD_HEAD:
+        return "HEAD";
+    case ORBIS_HTTP_METHOD_OPTIONS:
+        return "OPTIONS";
+    case ORBIS_HTTP_METHOD_PUT:
+        return "PUT";
+    case ORBIS_HTTP_METHOD_DELETE:
+        return "DELETE";
+    case ORBIS_HTTP_METHOD_TRACE:
+        return "TRACE";
+    case ORBIS_HTTP_METHOD_CONNECT:
+        return "CONNECT";
+    case ORBIS_HTTP_METHOD_CUSTOM:
+        return "CUSTOM";
+    default:
+        return "?";
+    }
 }
 
 // Dump every effective setting and the merged header list when a request is
@@ -230,7 +300,7 @@ static void LogSendRequestSettings(const HttpRequest& req, int reqId, u64 body_s
             method_name = "CONNECT";
             break;
         case ORBIS_HTTP_METHOD_CUSTOM:
-            method_name = "(custom)";
+            method_name = "CUSTOM";
             break;
         default:
             break;
@@ -296,6 +366,209 @@ static void LogSendRequestSettings(const HttpRequest& req, int reqId, u64 body_s
     }
     dump_headers("request", req.headers);
     LOG_INFO(Lib_Http, "--- end dump reqId={} ---", reqId);
+}
+
+#ifdef CPPHTTPLIB_OPENSSL_SUPPORT
+#define ORBIS_HTTP_HAS_HTTPS 1
+#else
+#define ORBIS_HTTP_HAS_HTTPS 0
+#endif
+
+#ifdef ORBIS_HTTP_WITH_HTTPLIB
+static s32 TranslateHttplibError(httplib::Error err) {
+    using E = httplib::Error;
+    switch (err) {
+    case E::Success:
+        return ORBIS_OK;
+    // TCP couldn't be established (DNS resolved but the host refused / no
+    // route / unreachable). Closest firmware code is ResolverEnohost.
+    case E::Connection:
+        return ORBIS_HTTP_ERROR_RESOLVER_ENOHOST;
+    // Timed out at connect time or during the request.
+    case E::ConnectionTimeout:
+    case E::Timeout:
+        return ORBIS_HTTP_ERROR_TIMEOUT;
+    // TCP set up but the stream broke mid-flight, or peer closed early.
+    case E::Read:
+    case E::Write:
+    case E::ConnectionClosed:
+        return ORBIS_HTTP_ERROR_BROKEN;
+    // Anything TLS-related.
+    case E::SSLConnection:
+    case E::SSLLoadingCerts:
+    case E::SSLServerVerification:
+    case E::SSLServerHostnameVerification:
+        return ORBIS_HTTP_ERROR_SSL;
+    // CONNECT-method proxy handshake failed.
+    case E::ProxyConnection:
+        return ORBIS_HTTP_ERROR_PROXY;
+    // User aborted or library cancelled.
+    case E::Canceled:
+        return ORBIS_HTTP_ERROR_ABORTED;
+    // Exceeded our redirect-loop bound
+    case E::ExceedRedirectCount:
+        return ORBIS_HTTP_ERROR_NETWORK;
+    // Internal-bug paths that exist across all cpp-httplib versions.
+    case E::Unknown:
+    case E::BindIPAddress:
+    case E::UnsupportedMultipartBoundaryChars:
+    case E::Compression:
+        return ORBIS_HTTP_ERROR_UNKNOWN;
+    }
+    return ORBIS_HTTP_ERROR_UNKNOWN;
+}
+#endif // ORBIS_HTTP_WITH_HTTPLIB
+
+static s32 RunRealHttpRequest(const SendRequestPlan& plan, HttpResponse& out_res,
+                              u32& out_event_bits) {
+    out_event_bits = 0;
+#ifndef ORBIS_HTTP_WITH_HTTPLIB
+    // Test or no-httplib build: behave like a transport failure.
+    SynthesizeTransportFailureResponse(out_res);
+    LOG_INFO(Lib_Http,
+             "real I/O path requested but httplib not available; "
+             "falling back to transport failure for {}://{}{}",
+             plan.scheme, plan.host, plan.path);
+    return ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
+#else
+    // HTTPS requires SSL support in the linked cpp-httplib.
+    if (plan.scheme == "https" && !ORBIS_HTTP_HAS_HTTPS) {
+        LOG_ERROR(Lib_Http, "HTTPS request but cpp-httplib lacks OpenSSL support");
+        SynthesizeTransportFailureResponse(out_res);
+        return ORBIS_HTTP_ERROR_SSL;
+    }
+
+    std::string base_url = plan.scheme + "://" + plan.host;
+    if ((plan.scheme == "https" && plan.port != 443) ||
+        (plan.scheme == "http" && plan.port != 80)) {
+        base_url += ":" + std::to_string(plan.port);
+    }
+    httplib::Client cli(base_url);
+
+    auto pick_timeout_seconds = [](u32 us, u32 default_s) -> std::chrono::seconds {
+        if (us == 0) {
+            return std::chrono::seconds(default_s);
+        }
+        u64 secs = (static_cast<u64>(us) + 999999ull) / 1000000ull;
+        if (secs == 0) {
+            secs = 1;
+        }
+        return std::chrono::seconds(secs);
+    };
+    cli.set_connection_timeout(pick_timeout_seconds(plan.settings.connect_timeout_us, 30));
+    cli.set_read_timeout(pick_timeout_seconds(plan.settings.recv_timeout_us, 120));
+    cli.set_write_timeout(pick_timeout_seconds(plan.settings.send_timeout_us, 120));
+
+    // Redirect handling: let httplib auto-follow when the game asked for it.
+    cli.set_follow_location(plan.settings.auto_redirect);
+
+#ifdef CPPHTTPLIB_ZLIB_SUPPORT
+    cli.set_decompress(plan.settings.inflate_gzip);
+#endif
+
+#ifdef CPPHTTPLIB_OPENSSL_SUPPORT
+    if (plan.scheme == "https") {
+        const bool game_disabled_verify =
+            (plan.settings.ssl_flags & ORBIS_HTTPS_FLAG_SERVER_VERIFY) == 0;
+        bool verify_server = !game_disabled_verify;
+        if (verify_server && plan.ctx_has_loaded_certs) {
+            verify_server = false;
+            LOG_INFO(Lib_Http,
+                     "{}://{}: ctx loaded custom CAs (libSceSsl integration absent) -> "
+                     "bypassing cert verification",
+                     plan.scheme, plan.host);
+        }
+        cli.enable_server_certificate_verification(verify_server);
+        if (game_disabled_verify) {
+            LOG_INFO(Lib_Http, "{}://{}: server cert verification disabled (ssl_flags={:#x})",
+                     plan.scheme, plan.host, plan.settings.ssl_flags);
+        }
+    }
+#endif
+
+    // Translate our headers list into httplib's multimap.
+    httplib::Headers headers;
+    for (const auto& [k, v] : plan.headers) {
+        headers.emplace(k, v);
+    }
+    if (plan.settings.accept_encoding_gzip) {
+        bool already_set = false;
+        for (const auto& [k, v] : plan.headers) {
+            if (HeaderNameMatches(k, "Accept-Encoding")) {
+                already_set = true;
+                break;
+            }
+        }
+        if (!already_set) {
+            headers.emplace("Accept-Encoding", "gzip");
+        }
+    }
+
+    const char* body_ptr = plan.body.empty() ? "" : reinterpret_cast<const char*>(plan.body.data());
+    const size_t body_size = plan.body.size();
+
+    auto result = [&]() {
+        switch (plan.method) {
+        case ORBIS_HTTP_METHOD_GET:
+            return cli.Get(plan.path, headers);
+        case ORBIS_HTTP_METHOD_POST:
+            return cli.Post(plan.path, headers, body_ptr, body_size, plan.content_type);
+        case ORBIS_HTTP_METHOD_HEAD:
+            return cli.Head(plan.path, headers);
+        case ORBIS_HTTP_METHOD_OPTIONS:
+            return cli.Options(plan.path, headers);
+        case ORBIS_HTTP_METHOD_PUT:
+            return cli.Put(plan.path, headers, body_ptr, body_size, plan.content_type);
+        case ORBIS_HTTP_METHOD_DELETE:
+            return cli.Delete(plan.path, headers, body_ptr, body_size, plan.content_type);
+        case ORBIS_HTTP_METHOD_CUSTOM: {
+            httplib::Request creq;
+            creq.method = plan.method_str.empty() ? "GET" : plan.method_str;
+            creq.path = plan.path;
+            creq.headers = headers;
+            if (body_size > 0) {
+                creq.body.assign(body_ptr, body_size);
+            }
+            return cli.send(creq);
+        }
+        default:
+            LOG_ERROR(Lib_Http, "Unsupported method {}; using GET", plan.method);
+            return cli.Get(plan.path, headers);
+        }
+    }();
+
+    if (!result) {
+        const int err_val = static_cast<int>(result.error());
+        LOG_ERROR(Lib_Http, "cpp-httplib failed for {} {}{}: error={} ({})",
+                  HttpMethodName(plan.method), base_url, plan.path, err_val,
+                  httplib::to_string(static_cast<httplib::Error>(err_val)));
+        SynthesizeTransportFailureResponse(out_res);
+        return TranslateHttplibError(result.error());
+    }
+
+    // Success: populate response.
+    out_res.status_code = result->status;
+    out_res.body.assign(result->body.begin(), result->body.end());
+    out_res.content_length = result->body.size();
+    out_res.content_length_result = 0; // valid Content-Length
+    out_res.read_cursor = 0;
+    // Firmware-faithful: sceHttpGetAllResponseHeaders returns the entire
+    // response head including the HTTP/1.1 status line
+    std::string reason;
+    {
+        const std::string label = HttpStatusLabel(result->status);
+        const auto space = label.find(' ');
+        reason = (space == std::string::npos) ? label : label.substr(space + 1);
+    }
+    out_res.all_headers_blob = "HTTP/1.1 " + std::to_string(result->status) + " " + reason + "\r\n";
+    for (const auto& [k, v] : result->headers) {
+        out_res.all_headers_blob += k + ": " + v + "\r\n";
+    }
+    out_res.all_headers_blob += "\r\n";
+    out_event_bits =
+        ORBIS_HTTP_NB_EVENT_IN | ORBIS_HTTP_NB_EVENT_OUT | ORBIS_HTTP_NB_EVENT_RESOLVED;
+    return 0;
+#endif // ORBIS_HTTP_WITH_HTTPLIB
 }
 
 // Case-insensitive ASCII comparison of two HTTP header names.
@@ -718,6 +991,7 @@ int PS4_SYSV_ABI sceHttpCreateTemplate(int libhttpCtxId, const char* userAgent, 
     }
     const int tmpl_id = ++g_state.next_obj_id;
     HttpTemplate tmpl;
+    tmpl.ctx_id = libhttpCtxId;
     tmpl.user_agent = userAgent ? userAgent : "";
     tmpl.http_version = httpVer;
     tmpl.auto_proxy_conf = isAutoProxyConf;
@@ -845,6 +1119,7 @@ int PS4_SYSV_ABI sceHttpRequestGetAllHeaders() {
 int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
     LOG_INFO(Lib_Http, "called reqId={}, postData={}, size={}", reqId, fmt::ptr(postData), size);
     std::shared_ptr<HttpRequest> req_ptr;
+    SendRequestPlan plan;
     {
         std::lock_guard<std::mutex> lock(g_state.m_mutex);
         if (!g_state.inited) {
@@ -869,20 +1144,62 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         req.state = HttpRequestState::Sending;
         req_ptr = it->second;
         LogSendRequestSettings(req, reqId, size);
+
+        plan.method = req.method;
+        plan.method_str = req.method_str;
+        plan.path = ExtractPathFromUrl(req.url);
+        plan.settings = req.settings;
+        if (auto conn_it = g_state.connections.find(req.conn_id);
+            conn_it != g_state.connections.end()) {
+            plan.scheme = conn_it->second.scheme;
+            plan.host = conn_it->second.hostname;
+            plan.port = static_cast<u16>(conn_it->second.port);
+            // Inherit headers in tmpl to conn to req order
+            if (auto tmpl_it = g_state.templates.find(conn_it->second.tmpl_id);
+                tmpl_it != g_state.templates.end()) {
+                plan.headers = tmpl_it->second.headers;
+                // Check if the owning context loaded custom CAs - if so the
+                // worker will bypass TLS verification.
+                plan.ctx_has_loaded_certs =
+                    g_state.contexts_with_loaded_certs.contains(tmpl_it->second.ctx_id);
+            }
+            for (const auto& h : conn_it->second.headers) {
+                plan.headers.push_back(h);
+            }
+        }
+        for (const auto& h : req.headers) {
+            plan.headers.push_back(h);
+        }
+        // Pull Content-Type out of headers
+        for (const auto& [k, v] : plan.headers) {
+            if (HeaderNameMatches(k, "Content-Type")) {
+                plan.content_type = v;
+                break;
+            }
+        }
+        if (postData && size > 0) {
+            plan.body.assign(static_cast<const u8*>(postData),
+                             static_cast<const u8*>(postData) + size);
+        }
     }
 
-    LOG_INFO(Lib_Http, "reqId={} dispatched to async worker [{}]", reqId,
-             EmulatorSettings.IsConnectedToNetwork() ? "ONLINE (TODO real I/O)"
-                                                     : "OFFLINE no-internet path");
-    std::thread([req_ptr, reqId]() {
+    const bool online = EmulatorSettings.IsConnectedToNetwork();
+    LOG_INFO(Lib_Http, "reqId={} dispatched to async worker [{} {} {}://{}:{}{}]", reqId,
+             online ? "ONLINE" : "OFFLINE", HttpMethodName(plan.method), plan.scheme, plan.host,
+             plan.port, plan.path);
+
+    std::thread([req_ptr, reqId, plan = std::move(plan), online]() {
         HttpResponse local_res;
-        if (!EmulatorSettings.IsConnectedToNetwork()) {
+        s32 worker_errno = 0;
+        u32 success_event_bits = 0; // 0 = no event (offline path uses failure bits)
+
+        if (!online) {
             SynthesizeTransportFailureResponse(local_res);
+            worker_errno = ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
         } else {
-            // TODO: real network I/O path but for now return the same so switching doesn't affect
-            // something
-            SynthesizeTransportFailureResponse(local_res);
+            worker_errno = RunRealHttpRequest(plan, local_res, success_event_bits);
         }
+
         std::lock_guard<std::mutex> lock(g_state.m_mutex);
         if (g_state.shutting_down.load() || req_ptr->deleted ||
             req_ptr->state == HttpRequestState::Aborted) {
@@ -891,26 +1208,36 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         }
         req_ptr->res = std::move(local_res);
         req_ptr->state = HttpRequestState::Sent;
-        req_ptr->last_errno = ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
-        LOG_INFO(Lib_Http, "(TRANSPORT FAIL) reqId={} -> 0 (body 0 bytes, errno={:#x})", reqId,
-                 static_cast<u32>(req_ptr->last_errno));
+        req_ptr->last_errno = worker_errno;
+        if (worker_errno == 0) {
+            LOG_INFO(Lib_Http, "(SUCCESS) reqId={} status={} body={} bytes", reqId,
+                     req_ptr->res.status_code, req_ptr->res.body.size());
+        } else {
+            LOG_INFO(Lib_Http, "(TRANSPORT FAIL) reqId={} -> {} (body {} bytes, errno={:#x})",
+                     reqId, req_ptr->res.status_code, req_ptr->res.body.size(),
+                     static_cast<u32>(worker_errno));
+        }
         req_ptr->cv.notify_all();
-        // If this request is bound to an epoll, push a failure-shaped event so
-        // sceHttpWaitRequest callers see the completion (with errored bits).
+
+        // Push an epoll event so sceHttpWaitRequest callers see completion.
         if (req_ptr->epoll_id != 0) {
             auto epoll_it = g_state.epolls.find(req_ptr->epoll_id);
             if (epoll_it != g_state.epolls.end() && !epoll_it->second->destroyed) {
-                constexpr u32 FailureEventBits =
-                    ORBIS_HTTP_NB_EVENT_RESOLVER_ERR | ORBIS_HTTP_NB_EVENT_HUP;
+                u32 event_bits;
+                if (worker_errno == 0) {
+                    event_bits = success_event_bits;
+                } else {
+                    event_bits = ORBIS_HTTP_NB_EVENT_RESOLVER_ERR | ORBIS_HTTP_NB_EVENT_HUP;
+                }
                 OrbisHttpNBEvent ev{};
-                ev.events = FailureEventBits;
-                ev.eventDetail = FailureEventBits;
+                ev.events = event_bits;
+                ev.eventDetail = event_bits;
                 ev.id = reqId;
                 ev.userArg = req_ptr->epoll_user_arg;
                 epoll_it->second->events.push_back(ev);
                 epoll_it->second->cv.notify_all();
-                LOG_DEBUG(Lib_Http, "pushed failure epoll event for reqId={} on epoll={}", reqId,
-                          req_ptr->epoll_id);
+                LOG_DEBUG(Lib_Http, "pushed epoll event for reqId={} on epoll={} bits={:#x}", reqId,
+                          req_ptr->epoll_id, event_bits);
             }
         }
     }).detach();
@@ -1039,9 +1366,28 @@ int PS4_SYSV_ABI sceHttpsGetSslError(int id, int* errNum, u32* detail) {
 
 int PS4_SYSV_ABI sceHttpsLoadCert(int libhttpCtxId, int caCertNum, const void** caList,
                                   const void* cert, const void* privKey) {
-    LOG_ERROR(Lib_Http,
-              "(STUBBED) called libhttpCtxId={}, caCertNum={}, caList={}, cert={}, privKey={}",
-              libhttpCtxId, caCertNum, fmt::ptr(caList), fmt::ptr(cert), fmt::ptr(privKey));
+    LOG_INFO(Lib_Http, "called libhttpCtxId={}, caCertNum={}, caList={}, cert={}, privKey={}",
+             libhttpCtxId, caCertNum, fmt::ptr(caList), fmt::ptr(cert), fmt::ptr(privKey));
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!g_state.active_contexts.contains(libhttpCtxId)) {
+        LOG_ERROR(Lib_Http, "Invalid libhttpCtxId={}", libhttpCtxId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    // Firmware would hand caList/cert/privKey to libSceSsl, which would parse
+    // them into an X509_STORE used by the TLS layer. We don't implement that
+    // pipeline. Instead, we record that this context expects custom CA-based
+    // verification, and at TLS-handshake time we bypass cpp-httplib's default
+    // CA verification so the game's private-CA-signed endpoints aren't blocked
+    // by our system CA store not knowing about them.
+    g_state.contexts_with_loaded_certs.insert(libhttpCtxId);
+    LOG_INFO(Lib_Http,
+             "ctxId={} marked as using custom CAs; subsequent HTTPS requests on this "
+             "context will bypass cert verification (libSceSsl integration not implemented)",
+             libhttpCtxId);
     return ORBIS_OK;
 }
 
@@ -1062,7 +1408,18 @@ int PS4_SYSV_ABI sceHttpsSetSslVersion(int id, int version) {
 }
 
 int PS4_SYSV_ABI sceHttpsUnloadCert(int libhttpCtxId) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called libhttpCtxId={}", libhttpCtxId);
+    LOG_INFO(Lib_Http, "called libhttpCtxId={}", libhttpCtxId);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!g_state.active_contexts.contains(libhttpCtxId)) {
+        LOG_ERROR(Lib_Http, "Invalid libhttpCtxId={}", libhttpCtxId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    g_state.contexts_with_loaded_certs.erase(libhttpCtxId);
+    LOG_INFO(Lib_Http, "ctxId={} cleared custom-CA marker", libhttpCtxId);
     return ORBIS_OK;
 }
 
@@ -1166,6 +1523,7 @@ int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId) {
         LOG_ERROR(Lib_Http, "Invalid or already-terminated ctxId={}", libhttpCtxId);
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
+    g_state.contexts_with_loaded_certs.erase(libhttpCtxId);
     if (g_state.active_contexts.empty()) {
         // Last context torn down - wipe all dependent objects.
         LOG_INFO(Lib_Http, "last context terminated, clearing state");
@@ -1183,6 +1541,7 @@ int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId) {
         g_state.connections.clear();
         g_state.templates.clear();
         g_state.epolls.clear();
+        g_state.contexts_with_loaded_certs.clear();
         g_state.inited = false;
     } else {
         LOG_INFO(Lib_Http, "ctxId={} terminated, {} contexts still active", libhttpCtxId,
@@ -1675,8 +2034,8 @@ int PS4_SYSV_ABI sceHttpSetResolveTimeOut(int id, u32 usec) {
     }
     s32 sdk_ver = 0x1000000;
     ::Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
-    if (sdk_ver >= 0x1700000 && usec > 999999u) {
-        LOG_ERROR(Lib_Http, "Invalid usec={}", usec);
+    if (sdk_ver >= 0x1700000 && usec <= 999999u) {
+        LOG_ERROR(Lib_Http, "Invalid usec={}", usec, sdk_ver);
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
     const char* level = "";
@@ -1738,9 +2097,11 @@ int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* hea
     if (req.res.all_headers_blob.empty()) {
         *header = nullptr;
         *headerSize = 0;
+        LOG_INFO(Lib_Http, "reqId={} returning empty headers blob", reqId);
     } else {
         *header = const_cast<char*>(req.res.all_headers_blob.c_str());
         *headerSize = req.res.all_headers_blob.size();
+        LOG_INFO(Lib_Http, "reqId={} returning {} bytes of headers", reqId, *headerSize);
     }
     return ORBIS_OK;
 }
@@ -1774,11 +2135,13 @@ int PS4_SYSV_ABI sceHttpGetResponseContentLength(int reqId, int* result, u64* co
     }
     *result = req.res.content_length_result;
     *contentLength = req.res.content_length;
+    LOG_INFO(Lib_Http, "reqId={} result={:#x} contentLength={}", reqId, static_cast<u32>(*result),
+             *contentLength);
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
-    LOG_INFO(Lib_Http, "called reqId={}", reqId);
+    LOG_DEBUG(Lib_Http, "called reqId={}", reqId);
     std::unique_lock<std::mutex> lock(g_state.m_mutex);
     if (!g_state.inited) {
         LOG_ERROR(Lib_Http, "Not initialized");
@@ -2495,9 +2858,7 @@ int PS4_SYSV_ABI sceHttpParseResponseHeader(const char* header, u64 headerLen, c
 //***********************************
 int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
                                  const OrbisHttpUriElement* srcElement, u32 option) {
-    LOG_INFO(Lib_Http,
-             "sceHttpUriBuild: called out={}, require={}, prepare={}, "
-             "srcElement={}, option=0x{:x}",
+    LOG_INFO(Lib_Http, "called out={}, require={}, prepare={}, srcElement={}, option=0x{:x}",
              fmt::ptr(out), fmt::ptr(require), prepare, fmt::ptr(srcElement), option);
 
     if (srcElement == nullptr) {
