@@ -909,28 +909,6 @@ int PS4_SYSV_ABI sceHttpSetRequestStatusCallback(int id, OrbisHttpRequestStatusC
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpSetResolveRetry(int id, int retry) {
-    LOG_INFO(Lib_Http, "called id={}, retry={}", id, retry);
-    std::lock_guard<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    if (retry < 0) {
-        LOG_ERROR(Lib_Http, "Invalid retry={} (must be >= 0)", retry);
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
-    }
-    const char* level = "";
-    HttpSettings* s = ResolveSettings(id, level);
-    if (!s) {
-        LOG_ERROR(Lib_Http, "Invalid id={}", id);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    s->resolve_retry = retry;
-    LOG_INFO(Lib_Http, "set {} id={} resolve_retry={}", level, id, retry);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpSetSocketCreationCallback() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
@@ -1885,6 +1863,28 @@ int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable) {
 //***********************************
 // Timeout setting functions
 //***********************************
+int PS4_SYSV_ABI sceHttpSetResolveRetry(int id, int retry) {
+    LOG_INFO(Lib_Http, "called id={}, retry={}", id, retry);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (retry < 0) {
+        LOG_ERROR(Lib_Http, "Invalid retry={} (must be >= 0)", retry);
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s) {
+        LOG_ERROR(Lib_Http, "Invalid id={}", id);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    s->resolve_retry = retry;
+    LOG_INFO(Lib_Http, "set {} id={} resolve_retry={}", level, id, retry);
+    return ORBIS_OK;
+}
+
 int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec) {
     LOG_INFO(Lib_Http, "called id={}, usec={}", id, usec);
     std::lock_guard<std::mutex> lock(g_state.m_mutex);

@@ -209,7 +209,6 @@ int PS4_SYSV_ABI sceHttpSetRedirectCallback(int id, OrbisHttpRedirectCallback cb
                                             void* userArg);
 int PS4_SYSV_ABI sceHttpSetRequestStatusCallback(int id, OrbisHttpRequestStatusCallback cbfunc,
                                                  void* userArg);
-int PS4_SYSV_ABI sceHttpSetResolveRetry(int id, int retry);
 int PS4_SYSV_ABI sceHttpSetSocketCreationCallback();
 int PS4_SYSV_ABI sceHttpsFreeCaList(int libhttpCtxId, OrbisHttpsCaList* caList);
 int PS4_SYSV_ABI sceHttpsGetCaList(int httpCtxId, OrbisHttpsCaList* list);
@@ -281,6 +280,7 @@ int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable);
 //***********************************
 // Timeout settting functions
 //***********************************
+int PS4_SYSV_ABI sceHttpSetResolveRetry(int id, int retry);
 int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetSendTimeOut(int id, u32 usec);
 int PS4_SYSV_ABI sceHttpSetRecvTimeOut(int id, u32 usec);
