@@ -1346,15 +1346,41 @@ int PS4_SYSV_ABI sceHttpSetSocketCreationCallback() {
 }
 
 int PS4_SYSV_ABI sceHttpsFreeCaList(int libhttpCtxId, OrbisHttpsCaList* caList) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called libhttpCtxId={}, caList={}", libhttpCtxId,
-              fmt::ptr(caList));
+    LOG_INFO(Lib_Http, "called libhttpCtxId={}, caList={}", libhttpCtxId, fmt::ptr(caList));
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!g_state.active_contexts.contains(libhttpCtxId)) {
+        LOG_ERROR(Lib_Http, "Invalid libhttpCtxId={}", libhttpCtxId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    if (!caList) {
+        LOG_ERROR(Lib_Http, "caList is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    caList->certsNum = 0;
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceHttpsGetCaList(int httpCtxId, OrbisHttpsCaList* list) {
     LOG_INFO(Lib_Http, "called httpCtxId={}, list={}", httpCtxId, fmt::ptr(list));
-    LOG_ERROR(Lib_Http, "(DUMMY) returning empty CA list");
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (!g_state.active_contexts.contains(httpCtxId)) {
+        LOG_ERROR(Lib_Http, "Invalid httpCtxId={}", httpCtxId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    if (!list) {
+        LOG_ERROR(Lib_Http, "list output pointer is null");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
     list->certsNum = 0;
+    LOG_INFO(Lib_Http, "returning empty CA list (libSceSsl integration not implemented)");
     return ORBIS_OK;
 }
 
@@ -1870,7 +1896,7 @@ int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size) {
     }
     auto it = g_state.requests.find(reqId);
     if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        LOG_DEBUG(Lib_Http, "Invalid reqId={}", reqId);
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
     auto& req = *it->second;
@@ -2081,7 +2107,7 @@ int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* hea
     }
     auto it = g_state.requests.find(reqId);
     if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        LOG_DEBUG(Lib_Http, "Invalid reqId={}", reqId);
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
     auto& req = *it->second;
@@ -2120,7 +2146,7 @@ int PS4_SYSV_ABI sceHttpGetResponseContentLength(int reqId, int* result, u64* co
     }
     auto it = g_state.requests.find(reqId);
     if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        LOG_DEBUG(Lib_Http, "Invalid reqId={}", reqId);
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
     auto& req = *it->second;
@@ -2153,7 +2179,7 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
     }
     auto it = g_state.requests.find(reqId);
     if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        LOG_DEBUG(Lib_Http, "Invalid reqId={}", reqId);
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
     auto& req = *it->second;
@@ -2603,7 +2629,7 @@ int PS4_SYSV_ABI sceHttpGetLastErrno(int reqId, int* errNum) {
     }
     auto it = g_state.requests.find(reqId);
     if (it == g_state.requests.end()) {
-        LOG_ERROR(Lib_Http, "Invalid reqId={}", reqId);
+        LOG_DEBUG(Lib_Http, "Invalid reqId={}", reqId);
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
     *errNum = it->second->last_errno;
