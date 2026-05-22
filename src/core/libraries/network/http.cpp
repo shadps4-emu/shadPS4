@@ -195,6 +195,74 @@ static void SynthesizeTransportFailureResponse(HttpResponse& res) {
     res.all_headers_blob.clear();
 }
 
+// Dump every effective setting and the merged header list when a request is
+// about to be sent.
+static void LogSendRequestSettings(const HttpRequest& req, int reqId, u64 body_size) {
+    const HttpSettings& s = req.settings;
+    LOG_INFO(Lib_Http, "--- SendRequest dump reqId={} ---", reqId);
+    LOG_INFO(Lib_Http, "  method={} url={} body_size={}",
+             req.method_str.empty() ? "(unset)" : req.method_str.c_str(),
+             req.url.empty() ? "(unset)" : req.url.c_str(), body_size);
+
+    // Resolve the owning connection + template (for full URL context and
+    // header inheritance dump).
+    const HttpConnection* conn = nullptr;
+    const HttpTemplate* tmpl = nullptr;
+    if (auto it = g_state.connections.find(req.conn_id); it != g_state.connections.end()) {
+        conn = &it->second;
+        if (auto tit = g_state.templates.find(conn->tmpl_id); tit != g_state.templates.end()) {
+            tmpl = &tit->second;
+        }
+    }
+    if (conn) {
+        LOG_INFO(Lib_Http, "  connection: {}://{}:{} keep_alive={} secure={}", conn->scheme,
+                 conn->hostname, conn->port, conn->keep_alive, conn->is_secure);
+    }
+    if (tmpl) {
+        LOG_INFO(Lib_Http, "  template: ua=\"{}\" http_ver={} auto_proxy_conf={}", tmpl->user_agent,
+                 tmpl->http_version, tmpl->auto_proxy_conf);
+    }
+
+    // Timeouts and basic flags
+    LOG_INFO(Lib_Http, "  timeouts: connect={}us send={}us recv={}us resolve={}us resolve_retry={}",
+             s.connect_timeout_us, s.send_timeout_us, s.recv_timeout_us, s.resolve_timeout_us,
+             s.resolve_retry);
+    LOG_INFO(Lib_Http,
+             "  flags: auto_redirect={} inflate_gzip={} accept_encoding_gzip={} nonblock={}",
+             s.auto_redirect, s.inflate_gzip, s.accept_encoding_gzip, s.nonblock);
+    LOG_INFO(Lib_Http, "  buffers: recv_block_size={} response_header_max={}", s.recv_block_size,
+             s.response_header_max);
+    LOG_INFO(Lib_Http, "  ssl_flags={:#x}", s.ssl_flags);
+    if (!s.proxy_host.empty() || s.proxy_http_conf != 0 || s.proxy_wlan_conf != 0) {
+        LOG_INFO(Lib_Http, "  proxy: {}:{} http_conf={} wlan_conf={}",
+                 s.proxy_host.empty() ? "(empty)" : s.proxy_host.c_str(), s.proxy_port,
+                 s.proxy_http_conf, s.proxy_wlan_conf);
+    }
+    if (req.epoll_id != 0) {
+        LOG_INFO(Lib_Http, "  epoll: bound to epoll_id={} user_arg={}", req.epoll_id,
+                 req.epoll_user_arg);
+    }
+
+    // Merged header view: dump tmpl + conn + req lists
+    auto dump_headers = [&](const char* origin,
+                            const std::vector<std::pair<std::string, std::string>>& h) {
+        if (h.empty()) {
+            return;
+        }
+        for (const auto& [name, value] : h) {
+            LOG_INFO(Lib_Http, "  header[{}] {}: {}", origin, name, value);
+        }
+    };
+    if (tmpl) {
+        dump_headers("template", tmpl->headers);
+    }
+    if (conn) {
+        dump_headers("connection", conn->headers);
+    }
+    dump_headers("request", req.headers);
+    LOG_INFO(Lib_Http, "--- end dump reqId={} ---", reqId);
+}
+
 // Case-insensitive ASCII comparison of two HTTP header names.
 static bool HeaderNameMatches(std::string_view a, std::string_view b) {
     if (a.size() != b.size()) {
@@ -765,6 +833,7 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         // Created to Sending. Worker thread will move to Sent.
         req.state = HttpRequestState::Sending;
         req_ptr = it->second;
+        LogSendRequestSettings(req, reqId, size);
     }
 
     LOG_INFO(Lib_Http, "reqId={} dispatched to async worker [{}]", reqId,
