@@ -419,7 +419,95 @@ static s32 TranslateHttplibError(httplib::Error err) {
 }
 #endif // ORBIS_HTTP_WITH_HTTPLIB
 
-static s32 RunRealHttpRequest(const SendRequestPlan& plan, HttpResponse& out_res,
+constexpr int MaxRedirects = 5;
+
+bool IsFollowableRedirect(int status, s32 method) {
+    const bool status_in_set = (status >= 300 && status <= 303) || (status == 307);
+    if (!status_in_set) {
+        return false;
+    }
+    if (method == ORBIS_HTTP_METHOD_POST && status != 303) {
+        return false;
+    }
+    return true;
+}
+
+// 303 changes the new method to GET unless original was HEAD
+// Every other followable status preserves the original method.
+s32 MethodAfterRedirect(int status, s32 original_method) {
+    if (status == 303 && original_method != ORBIS_HTTP_METHOD_HEAD) {
+        return ORBIS_HTTP_METHOD_GET;
+    }
+    return original_method;
+}
+
+struct ResolvedRedirect {
+    std::string scheme;
+    std::string host;
+    u16 port;
+    std::string path;
+};
+
+// Resolve a Location value relative to the current request's authority.
+// Handles absolute URLs and absolute-path-relative forms
+std::optional<ResolvedRedirect> ResolveRedirectLocation(const std::string& current_scheme,
+                                                        const std::string& current_host,
+                                                        u16 current_port,
+                                                        std::string_view location) {
+    if (location.empty()) {
+        return std::nullopt;
+    }
+    if (const auto scheme_end = location.find("://"); scheme_end != std::string_view::npos) {
+        ResolvedRedirect out;
+        out.scheme.assign(location.substr(0, scheme_end));
+        std::transform(out.scheme.begin(), out.scheme.end(), out.scheme.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+        if (out.scheme != "http" && out.scheme != "https") {
+            return std::nullopt;
+        }
+        const auto authority_start = scheme_end + 3;
+        if (authority_start >= location.size()) {
+            return std::nullopt;
+        }
+        const auto path_start = location.find('/', authority_start);
+        const std::string_view authority =
+            (path_start == std::string_view::npos)
+                ? location.substr(authority_start)
+                : location.substr(authority_start, path_start - authority_start);
+        if (authority.empty()) {
+            return std::nullopt;
+        }
+        if (const auto colon = authority.find(':'); colon != std::string_view::npos) {
+            out.host.assign(authority.substr(0, colon));
+            try {
+                const unsigned long p = std::stoul(std::string(authority.substr(colon + 1)));
+                if (p == 0 || p > 65535) {
+                    return std::nullopt;
+                }
+                out.port = static_cast<u16>(p);
+            } catch (...) {
+                return std::nullopt;
+            }
+        } else {
+            out.host.assign(authority);
+            out.port = (out.scheme == "https") ? 443 : 80;
+        }
+        out.path =
+            (path_start == std::string_view::npos) ? "/" : std::string(location.substr(path_start));
+        return out;
+    }
+    if (location[0] == '/') {
+        ResolvedRedirect out;
+        out.scheme = current_scheme;
+        out.host = current_host;
+        out.port = current_port;
+        out.path.assign(location);
+        return out;
+    }
+    return std::nullopt;
+}
+
+static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_res,
                               u32& out_event_bits) {
     out_event_bits = 0;
 #ifndef ORBIS_HTTP_WITH_HTTPLIB
@@ -428,22 +516,11 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan, HttpResponse& out_res
     LOG_INFO(Lib_Http,
              "real I/O path requested but httplib not available; "
              "falling back to transport failure for {}://{}{}",
-             plan.scheme, plan.host, plan.path);
+             plan_in.scheme, plan_in.host, plan_in.path);
     return ORBIS_HTTP_ERROR_RESOLVER_ENODNS;
 #else
-    // HTTPS requires SSL support in the linked cpp-httplib.
-    if (plan.scheme == "https" && !ORBIS_HTTP_HAS_HTTPS) {
-        LOG_ERROR(Lib_Http, "HTTPS request but cpp-httplib lacks OpenSSL support");
-        SynthesizeTransportFailureResponse(out_res);
-        return ORBIS_HTTP_ERROR_SSL;
-    }
-
-    std::string base_url = plan.scheme + "://" + plan.host;
-    if ((plan.scheme == "https" && plan.port != 443) ||
-        (plan.scheme == "http" && plan.port != 80)) {
-        base_url += ":" + std::to_string(plan.port);
-    }
-    httplib::Client cli(base_url);
+    // Mutable copy: PS4-faithful redirect loop rewrites scheme/host/port/path/method.
+    SendRequestPlan plan = plan_in;
 
     auto pick_timeout_seconds = [](u32 us, u32 default_s) -> std::chrono::seconds {
         if (us == 0) {
@@ -455,116 +532,212 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan, HttpResponse& out_res
         }
         return std::chrono::seconds(secs);
     };
-    cli.set_connection_timeout(pick_timeout_seconds(plan.settings.connect_timeout_us, 30));
-    cli.set_read_timeout(pick_timeout_seconds(plan.settings.recv_timeout_us, 120));
-    cli.set_write_timeout(pick_timeout_seconds(plan.settings.send_timeout_us, 120));
 
-    // Redirect handling: let httplib auto-follow when the game asked for it.
-    cli.set_follow_location(plan.settings.auto_redirect);
+    for (int depth = 0; depth <= MaxRedirects; ++depth) {
+        if (plan.scheme == "https" && !ORBIS_HTTP_HAS_HTTPS) {
+            LOG_ERROR(Lib_Http, "HTTPS request but cpp-httplib lacks OpenSSL support");
+            SynthesizeTransportFailureResponse(out_res);
+            return ORBIS_HTTP_ERROR_SSL;
+        }
+
+        std::string base_url = plan.scheme + "://" + plan.host;
+        if ((plan.scheme == "https" && plan.port != 443) ||
+            (plan.scheme == "http" && plan.port != 80)) {
+            base_url += ":" + std::to_string(plan.port);
+        }
+        httplib::Client cli(base_url);
+        cli.set_connection_timeout(pick_timeout_seconds(plan.settings.connect_timeout_us, 30));
+        cli.set_read_timeout(pick_timeout_seconds(plan.settings.recv_timeout_us, 120));
+        cli.set_write_timeout(pick_timeout_seconds(plan.settings.send_timeout_us, 120));
+
+        // We always handle redirects manually per PS4 rules
+        cli.set_follow_location(false);
 
 #ifdef CPPHTTPLIB_ZLIB_SUPPORT
-    cli.set_decompress(plan.settings.inflate_gzip);
+        cli.set_decompress(plan.settings.inflate_gzip);
 #endif
 
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
-    if (plan.scheme == "https") {
-        const bool game_disabled_verify =
-            (plan.settings.ssl_flags & ORBIS_HTTPS_FLAG_SERVER_VERIFY) == 0;
-        bool verify_server = !game_disabled_verify;
-        if (verify_server && plan.ctx_has_loaded_certs) {
-            verify_server = false;
-            LOG_INFO(Lib_Http,
-                     "{}://{}: ctx loaded custom CAs (libSceSsl integration absent) -> "
-                     "bypassing cert verification",
-                     plan.scheme, plan.host);
+        if (plan.scheme == "https") {
+            const bool game_disabled_verify =
+                (plan.settings.ssl_flags & ORBIS_HTTPS_FLAG_SERVER_VERIFY) == 0;
+            bool verify_server = !game_disabled_verify;
+            if (verify_server && plan.ctx_has_loaded_certs) {
+                verify_server = false;
+                LOG_INFO(Lib_Http,
+                         "{}://{}: ctx loaded custom CAs (libSceSsl integration absent) -> "
+                         "bypassing cert verification",
+                         plan.scheme, plan.host);
+            }
+            cli.enable_server_certificate_verification(verify_server);
+            if (game_disabled_verify) {
+                LOG_INFO(Lib_Http, "{}://{}: server cert verification disabled (ssl_flags={:#x})",
+                         plan.scheme, plan.host, plan.settings.ssl_flags);
+            }
         }
-        cli.enable_server_certificate_verification(verify_server);
-        if (game_disabled_verify) {
-            LOG_INFO(Lib_Http, "{}://{}: server cert verification disabled (ssl_flags={:#x})",
-                     plan.scheme, plan.host, plan.settings.ssl_flags);
-        }
-    }
 #endif
 
-    // Translate our headers list into httplib's multimap.
-    httplib::Headers headers;
-    for (const auto& [k, v] : plan.headers) {
-        headers.emplace(k, v);
-    }
-    if (plan.settings.accept_encoding_gzip) {
-        bool already_set = false;
+        httplib::Headers headers;
         for (const auto& [k, v] : plan.headers) {
-            if (HeaderNameMatches(k, "Accept-Encoding")) {
-                already_set = true;
+            headers.emplace(k, v);
+        }
+        if (plan.settings.accept_encoding_gzip) {
+            bool already_set = false;
+            for (const auto& [k, v] : plan.headers) {
+                if (HeaderNameMatches(k, "Accept-Encoding")) {
+                    already_set = true;
+                    break;
+                }
+            }
+            if (!already_set) {
+                headers.emplace("Accept-Encoding", "gzip");
+            }
+        }
+
+        const char* body_ptr =
+            plan.body.empty() ? "" : reinterpret_cast<const char*>(plan.body.data());
+        const size_t body_size = plan.body.size();
+
+        auto result = [&]() {
+            switch (plan.method) {
+            case ORBIS_HTTP_METHOD_GET:
+                return cli.Get(plan.path, headers);
+            case ORBIS_HTTP_METHOD_POST:
+                return cli.Post(plan.path, headers, body_ptr, body_size, plan.content_type);
+            case ORBIS_HTTP_METHOD_HEAD:
+                return cli.Head(plan.path, headers);
+            case ORBIS_HTTP_METHOD_OPTIONS:
+                return cli.Options(plan.path, headers);
+            case ORBIS_HTTP_METHOD_PUT:
+                return cli.Put(plan.path, headers, body_ptr, body_size, plan.content_type);
+            case ORBIS_HTTP_METHOD_DELETE:
+                return cli.Delete(plan.path, headers, body_ptr, body_size, plan.content_type);
+            case ORBIS_HTTP_METHOD_CUSTOM: {
+                httplib::Request creq;
+                creq.method = plan.method_str.empty() ? "GET" : plan.method_str;
+                creq.path = plan.path;
+                creq.headers = headers;
+                if (body_size > 0) {
+                    creq.body.assign(body_ptr, body_size);
+                }
+                return cli.send(creq);
+            }
+            default:
+                LOG_ERROR(Lib_Http, "Unsupported method {}; using GET", plan.method);
+                return cli.Get(plan.path, headers);
+            }
+        }();
+
+        if (!result) {
+            const int err_val = static_cast<int>(result.error());
+            LOG_ERROR(Lib_Http, "cpp-httplib failed for {} {}{}: error={} ({})",
+                      HttpMethodName(plan.method), base_url, plan.path, err_val,
+                      httplib::to_string(static_cast<httplib::Error>(err_val)));
+            SynthesizeTransportFailureResponse(out_res);
+            return TranslateHttplibError(result.error());
+        }
+
+        // Populate response (overwrites any prior-iteration 3xx).
+        out_res.status_code = result->status;
+        out_res.body.assign(result->body.begin(), result->body.end());
+        out_res.content_length = result->body.size();
+        out_res.content_length_result = 0;
+        out_res.read_cursor = 0;
+        std::string reason;
+        {
+            const std::string label = HttpStatusLabel(result->status);
+            const auto space = label.find(' ');
+            reason = (space == std::string::npos) ? label : label.substr(space + 1);
+        }
+        out_res.all_headers_blob =
+            "HTTP/1.1 " + std::to_string(result->status) + " " + reason + "\r\n";
+        for (const auto& [k, v] : result->headers) {
+            out_res.all_headers_blob += k + ": " + v + "\r\n";
+        }
+        out_res.all_headers_blob += "\r\n";
+
+        // -- PS4-faithful redirect decision --
+        if (!plan.settings.auto_redirect) {
+            break;
+        }
+        if (depth >= MaxRedirects) {
+            LOG_INFO(Lib_Http,
+                     "redirect depth limit ({}) reached; returning final response status={}",
+                     MaxRedirects, out_res.status_code);
+            break;
+        }
+        if (!IsFollowableRedirect(out_res.status_code, plan.method)) {
+            break;
+        }
+
+        std::string location;
+        for (const auto& [k, v] : result->headers) {
+            if (HeaderNameMatches(k, "Location")) {
+                location = v;
                 break;
             }
         }
-        if (!already_set) {
-            headers.emplace("Accept-Encoding", "gzip");
+        if (location.empty()) {
+            LOG_INFO(Lib_Http, "{} response without Location header; returning as-is",
+                     out_res.status_code);
+            break;
         }
-    }
+        auto resolved = ResolveRedirectLocation(plan.scheme, plan.host, plan.port, location);
+        if (!resolved) {
+            LOG_INFO(Lib_Http,
+                     "{} response Location='{}' unresolvable (relative or malformed); "
+                     "returning as-is",
+                     out_res.status_code, location);
+            break;
+        }
 
-    const char* body_ptr = plan.body.empty() ? "" : reinterpret_cast<const char*>(plan.body.data());
-    const size_t body_size = plan.body.size();
+        const int prev_status = out_res.status_code;
+        const s32 prev_method = plan.method;
+        const s32 next_method = MethodAfterRedirect(prev_status, prev_method);
+        const bool host_changed = (resolved->host != plan.host) || (resolved->port != plan.port);
 
-    auto result = [&]() {
-        switch (plan.method) {
-        case ORBIS_HTTP_METHOD_GET:
-            return cli.Get(plan.path, headers);
-        case ORBIS_HTTP_METHOD_POST:
-            return cli.Post(plan.path, headers, body_ptr, body_size, plan.content_type);
-        case ORBIS_HTTP_METHOD_HEAD:
-            return cli.Head(plan.path, headers);
-        case ORBIS_HTTP_METHOD_OPTIONS:
-            return cli.Options(plan.path, headers);
-        case ORBIS_HTTP_METHOD_PUT:
-            return cli.Put(plan.path, headers, body_ptr, body_size, plan.content_type);
-        case ORBIS_HTTP_METHOD_DELETE:
-            return cli.Delete(plan.path, headers, body_ptr, body_size, plan.content_type);
-        case ORBIS_HTTP_METHOD_CUSTOM: {
-            httplib::Request creq;
-            creq.method = plan.method_str.empty() ? "GET" : plan.method_str;
-            creq.path = plan.path;
-            creq.headers = headers;
-            if (body_size > 0) {
-                creq.body.assign(body_ptr, body_size);
+        plan.scheme = std::move(resolved->scheme);
+        plan.host = std::move(resolved->host);
+        plan.port = resolved->port;
+        plan.path = std::move(resolved->path);
+        plan.method = next_method;
+
+        // 303 + non-HEAD downgrades the method to GET; drop the request body
+        // and the headers that describe it.
+        if (prev_status == 303 && prev_method != ORBIS_HTTP_METHOD_HEAD) {
+            plan.body.clear();
+            plan.content_type.clear();
+            plan.headers.erase(
+                std::remove_if(plan.headers.begin(), plan.headers.end(),
+                               [](const auto& kv) {
+                                   return HeaderNameMatches(kv.first, "Content-Type") ||
+                                          HeaderNameMatches(kv.first, "Content-Length");
+                               }),
+                plan.headers.end());
+        }
+
+        // Cross-host: rewrite any game-supplied Host header
+        // If the game didn't add one, cpp-httplib auto-generates the correct
+        // value from the new base_url on the next iteration.
+        if (host_changed) {
+            std::string host_value = plan.host;
+            const bool default_port = (plan.scheme == "https" && plan.port == 443) ||
+                                      (plan.scheme == "http" && plan.port == 80);
+            if (!default_port) {
+                host_value += ":" + std::to_string(plan.port);
             }
-            return cli.send(creq);
+            for (auto& [k, v] : plan.headers) {
+                if (HeaderNameMatches(k, "Host")) {
+                    v = host_value;
+                }
+            }
         }
-        default:
-            LOG_ERROR(Lib_Http, "Unsupported method {}; using GET", plan.method);
-            return cli.Get(plan.path, headers);
-        }
-    }();
 
-    if (!result) {
-        const int err_val = static_cast<int>(result.error());
-        LOG_ERROR(Lib_Http, "cpp-httplib failed for {} {}{}: error={} ({})",
-                  HttpMethodName(plan.method), base_url, plan.path, err_val,
-                  httplib::to_string(static_cast<httplib::Error>(err_val)));
-        SynthesizeTransportFailureResponse(out_res);
-        return TranslateHttplibError(result.error());
+        LOG_INFO(Lib_Http, "redirect: depth={} status={} {} -> {} {}://{}:{}{}", depth, prev_status,
+                 HttpMethodName(prev_method), HttpMethodName(next_method), plan.scheme, plan.host,
+                 plan.port, plan.path);
     }
 
-    // Success: populate response.
-    out_res.status_code = result->status;
-    out_res.body.assign(result->body.begin(), result->body.end());
-    out_res.content_length = result->body.size();
-    out_res.content_length_result = 0; // valid Content-Length
-    out_res.read_cursor = 0;
-    // Firmware-faithful: sceHttpGetAllResponseHeaders returns the entire
-    // response head including the HTTP/1.1 status line
-    std::string reason;
-    {
-        const std::string label = HttpStatusLabel(result->status);
-        const auto space = label.find(' ');
-        reason = (space == std::string::npos) ? label : label.substr(space + 1);
-    }
-    out_res.all_headers_blob = "HTTP/1.1 " + std::to_string(result->status) + " " + reason + "\r\n";
-    for (const auto& [k, v] : result->headers) {
-        out_res.all_headers_blob += k + ": " + v + "\r\n";
-    }
-    out_res.all_headers_blob += "\r\n";
     out_event_bits =
         ORBIS_HTTP_NB_EVENT_IN | ORBIS_HTTP_NB_EVENT_OUT | ORBIS_HTTP_NB_EVENT_RESOLVED;
     return 0;
