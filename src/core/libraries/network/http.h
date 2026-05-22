@@ -219,10 +219,13 @@ int PS4_SYSV_ABI sceHttpsSetMinSslVersion(int id, int version);
 int PS4_SYSV_ABI sceHttpsSetSslCallback(int id, OrbisHttpsCallback cbfunc, void* userArg);
 int PS4_SYSV_ABI sceHttpsSetSslVersion(int id, int version);
 int PS4_SYSV_ABI sceHttpsUnloadCert(int libhttpCtxId);
-int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId);
 int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* nbev, int maxevents,
                                     int timeout);
 int PS4_SYSV_ABI sceHttpUriCopy();
+//***********************************
+// Init/Terminate functions
+//***********************************
+int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId);
 //***********************************
 // Misc functions
 //***********************************
