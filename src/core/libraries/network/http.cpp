@@ -200,8 +200,43 @@ static void SynthesizeTransportFailureResponse(HttpResponse& res) {
 static void LogSendRequestSettings(const HttpRequest& req, int reqId, u64 body_size) {
     const HttpSettings& s = req.settings;
     LOG_INFO(Lib_Http, "--- SendRequest dump reqId={} ---", reqId);
-    LOG_INFO(Lib_Http, "  method={} url={} body_size={}",
-             req.method_str.empty() ? "(unset)" : req.method_str.c_str(),
+    const char* method_name = "(unset)";
+    if (!req.method_str.empty()) {
+        method_name = req.method_str.c_str();
+    } else {
+        switch (req.method) {
+        case ORBIS_HTTP_METHOD_GET:
+            method_name = "GET";
+            break;
+        case ORBIS_HTTP_METHOD_POST:
+            method_name = "POST";
+            break;
+        case ORBIS_HTTP_METHOD_HEAD:
+            method_name = "HEAD";
+            break;
+        case ORBIS_HTTP_METHOD_OPTIONS:
+            method_name = "OPTIONS";
+            break;
+        case ORBIS_HTTP_METHOD_PUT:
+            method_name = "PUT";
+            break;
+        case ORBIS_HTTP_METHOD_DELETE:
+            method_name = "DELETE";
+            break;
+        case ORBIS_HTTP_METHOD_TRACE:
+            method_name = "TRACE";
+            break;
+        case ORBIS_HTTP_METHOD_CONNECT:
+            method_name = "CONNECT";
+            break;
+        case ORBIS_HTTP_METHOD_CUSTOM:
+            method_name = "(custom)";
+            break;
+        default:
+            break;
+        }
+    }
+    LOG_INFO(Lib_Http, "  method={} url={} body_size={}", method_name,
              req.url.empty() ? "(unset)" : req.url.c_str(), body_size);
 
     // Resolve the owning connection + template (for full URL context and
@@ -1031,42 +1066,6 @@ int PS4_SYSV_ABI sceHttpsUnloadCert(int libhttpCtxId) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId) {
-    LOG_INFO(Lib_Http, "called libhttpCtxId={}", libhttpCtxId);
-    std::lock_guard<std::mutex> lock(g_state.m_mutex);
-    if (!g_state.inited) {
-        LOG_ERROR(Lib_Http, "Not initialized");
-        return ORBIS_HTTP_ERROR_BEFORE_INIT;
-    }
-    if (g_state.active_contexts.erase(libhttpCtxId) == 0) {
-        LOG_ERROR(Lib_Http, "Invalid or already-terminated ctxId={}", libhttpCtxId);
-        return ORBIS_HTTP_ERROR_INVALID_ID;
-    }
-    if (g_state.active_contexts.empty()) {
-        // Last context torn down - wipe all dependent objects.
-        LOG_INFO(Lib_Http, "last context terminated, clearing state");
-        g_state.shutting_down.store(true);
-        for (auto& [id, req_ptr] : g_state.requests) {
-            req_ptr->deleted = true;
-            req_ptr->state = HttpRequestState::Aborted;
-            req_ptr->cv.notify_all(); // wake blocked waiters before wiping the map
-        }
-        for (auto& [id, epoll_ptr] : g_state.epolls) {
-            epoll_ptr->destroyed = true;
-            epoll_ptr->cv.notify_all(); // wake any sceHttpWaitRequest blocker
-        }
-        g_state.requests.clear();
-        g_state.connections.clear();
-        g_state.templates.clear();
-        g_state.epolls.clear();
-        g_state.inited = false;
-    } else {
-        LOG_INFO(Lib_Http, "ctxId={} terminated, {} contexts still active", libhttpCtxId,
-                 g_state.active_contexts.size());
-    }
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* nbev, int maxevents,
                                     int timeout) {
     LOG_DEBUG(Lib_Http, "called eh={}, nbev={}, maxevents={}, timeout={}", fmt::ptr(eh),
@@ -1150,6 +1149,45 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
 
 int PS4_SYSV_ABI sceHttpUriCopy() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+//***********************************
+// Init/Terminate functions
+//***********************************
+int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId) {
+    LOG_INFO(Lib_Http, "called libhttpCtxId={}", libhttpCtxId);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited) {
+        LOG_ERROR(Lib_Http, "Not initialized");
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+    if (g_state.active_contexts.erase(libhttpCtxId) == 0) {
+        LOG_ERROR(Lib_Http, "Invalid or already-terminated ctxId={}", libhttpCtxId);
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+    if (g_state.active_contexts.empty()) {
+        // Last context torn down - wipe all dependent objects.
+        LOG_INFO(Lib_Http, "last context terminated, clearing state");
+        g_state.shutting_down.store(true);
+        for (auto& [id, req_ptr] : g_state.requests) {
+            req_ptr->deleted = true;
+            req_ptr->state = HttpRequestState::Aborted;
+            req_ptr->cv.notify_all(); // wake blocked waiters before wiping the map
+        }
+        for (auto& [id, epoll_ptr] : g_state.epolls) {
+            epoll_ptr->destroyed = true;
+            epoll_ptr->cv.notify_all(); // wake any sceHttpWaitRequest blocker
+        }
+        g_state.requests.clear();
+        g_state.connections.clear();
+        g_state.templates.clear();
+        g_state.epolls.clear();
+        g_state.inited = false;
+    } else {
+        LOG_INFO(Lib_Http, "ctxId={} terminated, {} contexts still active", libhttpCtxId,
+                 g_state.active_contexts.size());
+    }
     return ORBIS_OK;
 }
 
