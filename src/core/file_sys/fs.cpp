@@ -63,7 +63,6 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         *is_read_only = mount->read_only;
     }
 
-    // If we're getting the mount itself, return the correct version based on path type
     const auto corrected_path_sanitized = RemoveTrailingSlashes(corrected_path);
     std::filesystem::path host_path = mount->host_path;
 
