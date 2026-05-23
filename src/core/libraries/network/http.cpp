@@ -2662,10 +2662,6 @@ int PS4_SYSV_ABI sceHttpDeleteRequest(int reqId) {
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
     auto req_ptr = it->second;
-    // Surface the "prepared but never sent" pattern (Beach Buggy Racing, offline
-    // mode kicking in mid-setup). In firmware it's just a tear-down; here we
-    // call it out so log readers can see the request was abandoned without a
-    // SendRequest, distinguishing it from a normal post-completion delete.
     if (req_ptr->state == HttpRequestState::Created) {
         LOG_INFO(Lib_Http,
                  "reqId={} abandoned before sceHttpSendRequest (state=Created); "
