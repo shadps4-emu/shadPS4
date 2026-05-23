@@ -1229,15 +1229,15 @@ typedef struct {
 } fd_set_posix;
 
 static void FD_SET_POSIX(s32 fd, fd_set_posix* set) {
-    set->fds_bits[fd / (8 * sizeof(u64))] |= (1UL << (fd % (8 * sizeof(u64))));
+    set->fds_bits[fd / (8 * sizeof(u64))] |= (1ULL << (fd % (8 * sizeof(u64))));
 }
 
 static void FD_CLR_POSIX(s32 fd, fd_set_posix* set) {
-    set->fds_bits[fd / (8 * sizeof(u64))] &= ~(1UL << (fd % (8 * sizeof(u64))));
+    set->fds_bits[fd / (8 * sizeof(u64))] &= ~(1ULL << (fd % (8 * sizeof(u64))));
 }
 
 static bool FD_ISSET_POSIX(s32 fd, fd_set_posix* set) {
-    return (set->fds_bits[fd / (8 * sizeof(u64))] & (1UL << (fd % (8 * sizeof(u64))))) != 0;
+    return (set->fds_bits[fd / (8 * sizeof(u64))] & (1ULL << (fd % (8 * sizeof(u64))))) != 0;
 }
 
 static void FD_ZERO_POSIX(fd_set_posix* set) {
