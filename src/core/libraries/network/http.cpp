@@ -1377,8 +1377,8 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         if (g_state.shutting_down.load() || req_ptr->deleted ||
             req_ptr->state == HttpRequestState::Aborted) {
             const char* reason = g_state.shutting_down.load() ? "shutdown"
-                                 : req_ptr->deleted          ? "deleted"
-                                                             : "aborted";
+                                 : req_ptr->deleted           ? "deleted"
+                                                              : "aborted";
             LOG_INFO(Lib_Http,
                      "reqId={} worker finished but request was {} before completion; "
                      "dropping result (would have been status={}, errno={:#x})",
@@ -2662,6 +2662,16 @@ int PS4_SYSV_ABI sceHttpDeleteRequest(int reqId) {
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
     auto req_ptr = it->second;
+    // Surface the "prepared but never sent" pattern (Beach Buggy Racing, offline
+    // mode kicking in mid-setup). In firmware it's just a tear-down; here we
+    // call it out so log readers can see the request was abandoned without a
+    // SendRequest, distinguishing it from a normal post-completion delete.
+    if (req_ptr->state == HttpRequestState::Created) {
+        LOG_INFO(Lib_Http,
+                 "reqId={} abandoned before sceHttpSendRequest (state=Created); "
+                 "{} headers, content_length={} were prepared but never transmitted",
+                 reqId, req_ptr->headers.size(), req_ptr->content_length);
+    }
     req_ptr->deleted = true;
     req_ptr->state = HttpRequestState::Aborted;
     req_ptr->cv.notify_all();
