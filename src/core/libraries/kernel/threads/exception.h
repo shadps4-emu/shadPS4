@@ -160,7 +160,7 @@ struct Siginfo {
         } _mesgq;
         struct {
             s64 _band; /* band event for SIGPOLL */
-        } _poll;        /* was this ever used ? */
+        } _poll;       /* was this ever used ? */
         struct {
             s64 __spare1__;
             s32 __spare2__[7];
