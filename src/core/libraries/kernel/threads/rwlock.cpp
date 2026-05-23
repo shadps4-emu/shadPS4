@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <unordered_map>
+
 #include "common/elf_info.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/posix_error.h"
@@ -9,6 +11,47 @@
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
+
+// std::shared_timed_mutex is non-recursive. POSIX pthread_rwlock, however,
+// permits a thread that already holds a read lock to acquire it again for
+// reading, and some PS4 titles rely on this. Because shared_timed_mutex is
+// writer-preferring, a recursive read taken while a writer is queued would
+// deadlock the calling thread against itself. Track the per-thread read-hold
+// depth for each rwlock so recursive reads resolve locally without re-entering
+// the underlying mutex, releasing it only when the outermost read lock leaves.
+static thread_local std::unordered_map<const PthreadRwlock*, u32> g_rdlock_depth;
+
+// Returns true if the calling thread already holds a read lock on `lock`,
+// recording one more level of read recursion.
+static bool ReenterReadLock(const PthreadRwlock* lock) {
+    const auto it = g_rdlock_depth.find(lock);
+    if (it != g_rdlock_depth.end() && it->second > 0) {
+        ++it->second;
+        return true;
+    }
+    return false;
+}
+
+// Records the first (outermost) read-lock acquisition by the calling thread.
+static void EnterReadLock(const PthreadRwlock* lock) {
+    g_rdlock_depth[lock] = 1;
+}
+
+// Drops one level of read recursion. Returns true when the underlying shared
+// mutex should actually be released (the outermost read lock is leaving).
+static bool LeaveReadLock(const PthreadRwlock* lock) {
+    const auto it = g_rdlock_depth.find(lock);
+    if (it == g_rdlock_depth.end() || it->second == 0) {
+        // Untracked acquisition (e.g. acquired before this thread was tracked) —
+        // fall back to a real release to stay correct.
+        return true;
+    }
+    if (--it->second == 0) {
+        g_rdlock_depth.erase(it);
+        return true;
+    }
+    return false;
+}
 
 static std::mutex RwlockStaticLock;
 static s32 sdk_version;
@@ -77,11 +120,20 @@ int PS4_SYSV_ABI posix_pthread_rwlock_init(PthreadRwlockT* rwlock, const Pthread
 int PthreadRwlock::Rdlock(const OrbisKernelTimespec* abstime) {
     Pthread* curthread = g_curthread;
 
+    // Recursive read-lock: this thread already holds a read lock on this rwlock.
+    // Bump the recursion depth and return without re-entering the (non-recursive)
+    // shared_timed_mutex, which would otherwise deadlock when a writer is queued.
+    if (ReenterReadLock(this)) {
+        curthread->rdlock_count++;
+        return 0;
+    }
+
     /*
      * POSIX said the validity of the abstimeout parameter need
      * not be checked if the lock can be immediately acquired.
      */
     if (lock.try_lock_shared()) {
+        EnterReadLock(this);
         curthread->rdlock_count++;
         return 0;
     }
@@ -98,6 +150,7 @@ int PthreadRwlock::Rdlock(const OrbisKernelTimespec* abstime) {
         lock.lock_shared();
     }
 
+    EnterReadLock(this);
     curthread->rdlock_count++;
     return 0;
 }
@@ -149,10 +202,17 @@ int PS4_SYSV_ABI posix_pthread_rwlock_tryrdlock(PthreadRwlockT* rwlock) {
     PthreadRwlockT prwlock{};
     CHECK_AND_INIT_RWLOCK
 
+    // Recursive read-lock: already held for read by this thread, succeed locally.
+    if (ReenterReadLock(prwlock)) {
+        curthread->rdlock_count++;
+        return 0;
+    }
+
     if (!prwlock->lock.try_lock_shared()) {
         return POSIX_EBUSY;
     }
 
+    EnterReadLock(prwlock);
     curthread->rdlock_count++;
     return 0;
 }
@@ -196,7 +256,11 @@ int PS4_SYSV_ABI posix_pthread_rwlock_unlock(PthreadRwlockT* rwlock) {
         if (prwlock->owner == nullptr) {
             curthread->rdlock_count--;
         }
-        prwlock->lock.unlock_shared();
+        // Only release the underlying shared mutex when the outermost read lock
+        // leaves; inner recursive read-locks merely decrement the depth counter.
+        if (LeaveReadLock(prwlock)) {
+            prwlock->lock.unlock_shared();
+        }
     }
 
     return 0;
