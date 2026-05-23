@@ -335,7 +335,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
         // Size and resources are greater, expand the image.
         if (image_info.type == cache_image.info.type &&
-            image_info.resources > cache_image.info.resources) {
+            image_info.tile_mode == cache_image.info.tile_mode &&
+            image_info.guest_size > cache_image.info.guest_size) {
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
