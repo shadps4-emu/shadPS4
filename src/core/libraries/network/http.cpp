@@ -1376,6 +1376,13 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         std::lock_guard<std::mutex> lock(g_state.m_mutex);
         if (g_state.shutting_down.load() || req_ptr->deleted ||
             req_ptr->state == HttpRequestState::Aborted) {
+            const char* reason = g_state.shutting_down.load() ? "shutdown"
+                                 : req_ptr->deleted          ? "deleted"
+                                                             : "aborted";
+            LOG_INFO(Lib_Http,
+                     "reqId={} worker finished but request was {} before completion; "
+                     "dropping result (would have been status={}, errno={:#x})",
+                     reqId, reason, local_res.status_code, static_cast<u32>(worker_errno));
             req_ptr->cv.notify_all();
             return;
         }
