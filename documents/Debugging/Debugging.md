@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
+SPDX-FileCopyrightText: 2024-26 shadPS4 Emulator Project
 SPDX-License-Identifier: GPL-2.0-or-later
 -->
 
@@ -53,12 +53,12 @@ Launch and debug the emulator through **Debug > Start Debugging** (F5 by default
 
 ## Configuration
 
-You can configure the emulator by editing the `config.toml` file found in the `user` folder created after starting the application.
+You can configure the emulator by editing the `config.json` file found in the `user` folder created after starting the application.
 
 <details>
    <summary>Some configuration entries worth changing</summary>
 
-- `[Log]`
+- `Log`
   - `sync`: Log synchronously (`true`/`false`)
     - By default `true`, the emulator logs messages synchronously to respect the order.
     - It can be beneficial to set this to `false` for better performance.
@@ -71,33 +71,29 @@ You can configure the emulator by editing the `config.toml` file found in the `u
     - Examples:
       - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad:Critical` to only log critical-level messages.
       - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `*:Off Render.Vulkan:Info` (if you want critical at least `*:Critical Render.Vulkan:Info`)
-  - `skipDuplicate`: Skip same lines with a `Skipped N duplicate messages..` message (`true`/`false`)
+  - `skip_duplicate`: Skip same lines with a `Skipped N duplicate messages..` message (`true`/`false`)
     - By default, the emulator will skip same lines for `maxSkipDuration` milliseconds.
   - `append`: Append log to the existing file (`true`/`false`)
       - By default, the emulator will overwrite the log file. (it can also be by-passed with CLI `--log-append`)
   - `separate`: Write log to `log/{GAME ID}.log` instead of `log/shad_log.txt` (`true`/`false`)
       - By default, the emulator use `log/shad_log.txt`.
-  - `maxSkipDuration`: Amount of time in which identical lines will not be logged (milliseconds).
+  - `max_skip_duration`: Amount of time in which identical lines will not be logged (milliseconds).
       - By default, 5'000 milliseconds.
-  - `sizeLimit`: Size limit for log files (bytes).
+  - `size_limit`: Size limit for log files (bytes).
       - By default, 100 MB.
   - `type`: Choose between `wincolor` (WriteConsole*) and `msvc` (OutputDebugString*) - only for Windows.
       - By default, `wincolor`.
 
      
-- `[GPU]`
-  - `dumpShaders`: Dump shaders that are loaded by the emulator. Dump path: `../user/shader/dumps`
-  - `nullGpu`: Disables rendering.
-  - `screenWidth` and `screenHeight`: Configures the game window width and height.
-  - `Fullscreen`: Display the game in a full screen borderless window.
+- `GPU`
+  - `dump_shaders`: Dump shaders that are loaded by the emulator. Dump path: `../user/shader/dumps`
+  - `null_gpu`: Disables rendering.
+  - `window_width` and `window_height`: Configures the game window width and height.
+  - `full_screen_mode`: Display the game in a full screen borderless window.
     
-- `[Vulkan]`
-   - `validation`-related settings: Use when debugging Vulkan.
-   - `rdocEnable`: Automatically hook RenderDoc when installed. Useful for debugging shaders and game rendering.
-   - `rdocMarkersEnable`: Enable automatic RenderDoc event annotation
-     
-- `[LLE]`
-   - `libc`: Use LLE with `libc`.
+- `Vulkan`
+   - `vkvalidation`-related settings: Use when debugging Vulkan.
+   - `renderdoc_enabled`: Automatically hook RenderDoc when installed. Useful for debugging shaders and game rendering.
    
 </details>
 
