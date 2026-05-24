@@ -11,75 +11,75 @@ namespace Libraries::Np::NpScore {
 // Helper macro to format pointer safely
 #define PTR(ptr) static_cast<const void*>(ptr)
 
-int PS4_SYSV_ABI sceNpScoreAbortRequest(s32 reqId) {
+s32 PS4_SYSV_ABI sceNpScoreAbortRequest(s32 reqId) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}", reqId);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreCensorComment(s32 reqId, const char* comment, void* option) {
+s32 PS4_SYSV_ABI sceNpScoreCensorComment(s32 reqId, const char* comment, void* option) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, comment={}, option={}", reqId,
               comment ? comment : "null", PTR(option));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreCensorCommentAsync(s32 reqId, const char* comment, void* option) {
+s32 PS4_SYSV_ABI sceNpScoreCensorCommentAsync(s32 reqId, const char* comment, void* option) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, comment={}, option={}", reqId,
               comment ? comment : "null", PTR(option));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners() {
+s32 PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners() {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId) {
+s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, const OrbisNpId* npId) {
     LOG_ERROR(Lib_NpScore, "serviceLabel = {}, npId->data = {}", serviceLabel, npId->handle.data);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreCreateRequest(s32 titleCtxId) {
+s32 PS4_SYSV_ABI sceNpScoreCreateRequest(s32 titleCtxId) {
     LOG_ERROR(Lib_NpScore, "libCtxId = {}", titleCtxId);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreDeleteRequest(s32 reqId) {
+s32 PS4_SYSV_ABI sceNpScoreDeleteRequest(s32 reqId) {
     LOG_ERROR(Lib_NpScore, "requestId = {:#x}", reqId);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(OrbisNpServiceLabel npServiceLabel,
+s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(OrbisNpServiceLabel npServiceLabel,
                                              UserService::OrbisUserServiceUserId selfId) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called npServiceLabel={}, selfId={}",
               static_cast<u32>(npServiceLabel), selfId);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreCreateTitleCtx() {
+s32 PS4_SYSV_ABI sceNpScoreCreateTitleCtx() {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreDeleteNpTitleCtx(s32 titleCtxId) {
+s32 PS4_SYSV_ABI sceNpScoreDeleteNpTitleCtx(s32 titleCtxId) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called titleCtxId={}", titleCtxId);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetBoardInfo(s32 reqId, OrbisNpScoreBoardId boardId,
+s32 PS4_SYSV_ABI sceNpScoreGetBoardInfo(s32 reqId, OrbisNpScoreBoardId boardId,
                                         OrbisNpScoreBoardInfo* boardInfo, void* option) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, boardId={}, boardInfo={}, option={}", reqId,
               boardId, PTR(boardInfo), PTR(option));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetBoardInfoAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+s32 PS4_SYSV_ABI sceNpScoreGetBoardInfoAsync(s32 reqId, OrbisNpScoreBoardId boardId,
                                              OrbisNpScoreBoardInfo* boardInfo, void* option) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, boardId={}, boardInfo={}, option={}", reqId,
               boardId, PTR(boardInfo), PTR(option));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetFriendsRanking(s32 reqId, OrbisNpScoreBoardId boardId,
+s32 PS4_SYSV_ABI sceNpScoreGetFriendsRanking(s32 reqId, OrbisNpScoreBoardId boardId,
                                              s32 includeSelf, OrbisNpScoreRankData* rankArray,
                                              u64 rankArraySize, OrbisNpScoreComment* commentArray,
                                              u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -96,7 +96,7 @@ int PS4_SYSV_ABI sceNpScoreGetFriendsRanking(s32 reqId, OrbisNpScoreBoardId boar
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByRange(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByRange(
     s32 reqId, OrbisNpScoreBoardId boardId, OrbisNpScoreRankNumber startSerialRank,
     OrbisNpScoreRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -107,7 +107,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRange(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetFriendsRankingA(s32 reqId, OrbisNpScoreBoardId boardId,
+s32 PS4_SYSV_ABI sceNpScoreGetFriendsRankingA(s32 reqId, OrbisNpScoreBoardId boardId,
                                               s32 includeSelf, OrbisNpScoreRankDataA* rankArray,
                                               u64 rankArraySize, OrbisNpScoreComment* commentArray,
                                               u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -125,7 +125,7 @@ int PS4_SYSV_ABI sceNpScoreGetFriendsRankingA(s32 reqId, OrbisNpScoreBoardId boa
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetFriendsRankingAAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetFriendsRankingAAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, s32 includeSelf, OrbisNpScoreRankDataA* rankArray,
     u64 rankArraySize, OrbisNpScoreComment* commentArray, u64 commentArraySize,
     OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -141,7 +141,7 @@ int PS4_SYSV_ABI sceNpScoreGetFriendsRankingAAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetFriendsRankingAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetFriendsRankingAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, s32 includeSelf, OrbisNpScoreRankData* rankArray,
     u64 rankArraySize, OrbisNpScoreComment* commentArray, u64 commentArraySize,
     OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -151,7 +151,7 @@ int PS4_SYSV_ABI sceNpScoreGetFriendsRankingAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetFriendsRankingForCrossSave(
+s32 PS4_SYSV_ABI sceNpScoreGetFriendsRankingForCrossSave(
     s32 reqId, OrbisNpScoreBoardId boardId, s32 includeSelf,
     OrbisNpScoreRankDataForCrossSave* rankArray, u64 rankArraySize,
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -167,7 +167,7 @@ int PS4_SYSV_ABI sceNpScoreGetFriendsRankingForCrossSave(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetFriendsRankingForCrossSaveAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetFriendsRankingForCrossSaveAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, s32 includeSelf,
     OrbisNpScoreRankDataForCrossSave* rankArray, u64 rankArraySize,
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -184,17 +184,25 @@ int PS4_SYSV_ABI sceNpScoreGetFriendsRankingForCrossSaveAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetGameData() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpScoreGetGameData(s32 reqId, OrbisNpScoreBoardId boardId,
+                                       const OrbisNpId* npId, u64* totalSize, u64 recvSize,
+                                       void* data, void* option) {
+    LOG_ERROR(Lib_NpScore,
+             "called reqId={}, boardId={}, npId={}, totalSize={}, recvSize={}, data={}, option={}",
+             reqId, boardId, PTR(npId), PTR(totalSize), recvSize, PTR(data), PTR(option));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetGameDataAsync() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpScoreGetGameDataAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+                                            const OrbisNpId* npId, u64* totalSize, u64 recvSize,
+                                            void* data, void* option) {
+    LOG_ERROR(Lib_NpScore,
+             "called reqId={}, boardId={}, npId={}, totalSize={}, recvSize={}, data={}, option={}",
+             reqId, boardId, PTR(npId), PTR(totalSize), recvSize, PTR(data), PTR(option));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetGameDataByAccountId(s32 reqId, OrbisNpScoreBoardId boardId,
+s32 PS4_SYSV_ABI sceNpScoreGetGameDataByAccountId(s32 reqId, OrbisNpScoreBoardId boardId,
                                                   OrbisNpAccountId accountId, u64* totalSize,
                                                   u64 recvSize, void* data, void* option) {
     LOG_ERROR(Lib_NpScore,
@@ -204,7 +212,7 @@ int PS4_SYSV_ABI sceNpScoreGetGameDataByAccountId(s32 reqId, OrbisNpScoreBoardId
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetGameDataByAccountIdAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+s32 PS4_SYSV_ABI sceNpScoreGetGameDataByAccountIdAsync(s32 reqId, OrbisNpScoreBoardId boardId,
                                                        OrbisNpAccountId accountId, u64* totalSize,
                                                        u64 recvSize, void* data, void* option) {
     LOG_ERROR(Lib_NpScore,
@@ -214,7 +222,7 @@ int PS4_SYSV_ABI sceNpScoreGetGameDataByAccountIdAsync(s32 reqId, OrbisNpScoreBo
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByAccountId(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByAccountId(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpAccountId* accountIdArray,
     u64 accountIdArraySize, OrbisNpScorePlayerRankDataA* rankArray, u64 rankArraySize,
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -231,7 +239,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountId(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpAccountId* accountIdArray,
     u64 accountIdArraySize, OrbisNpScorePlayerRankDataA* rankArray, u64 rankArraySize,
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -248,7 +256,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdForCrossSave(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdForCrossSave(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpAccountId* accountIdArray,
     u64 accountIdArraySize, OrbisNpScorePlayerRankDataForCrossSave* rankArray, u64 rankArraySize,
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -265,7 +273,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdForCrossSave(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdForCrossSaveAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdForCrossSaveAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpAccountId* accountIdArray,
     u64 accountIdArraySize, OrbisNpScorePlayerRankDataForCrossSave* rankArray, u64 rankArraySize,
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -282,7 +290,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdForCrossSaveAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcId(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcId(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpScoreAccountIdPcId* idArray,
     u64 idArraySize, OrbisNpScorePlayerRankDataA* rankArray, u64 rankArraySize,
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -299,7 +307,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcId(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpScoreAccountIdPcId* idArray,
     u64 idArraySize, OrbisNpScorePlayerRankDataA* rankArray, u64 rankArraySize,
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -316,7 +324,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdForCrossSave(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdForCrossSave(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpScoreAccountIdPcId* idArray,
     u64 idArraySize, OrbisNpScorePlayerRankDataForCrossSave* rankArray, u64 rankArraySize,
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -333,7 +341,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdForCrossSave(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdForCrossSaveAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdForCrossSaveAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpScoreAccountIdPcId* idArray,
     u64 idArraySize, OrbisNpScorePlayerRankDataForCrossSave* rankArray, u64 rankArraySize,
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -350,27 +358,56 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdForCrossSaveAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpId() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByNpId(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore,
+             "called reqId={}, boardId={}, npIdArray={}, npIdArraySize={}, "
+             "rankArray={}, rankArraySize={}, commentArray={}, commentArraySize={}, "
+             "infoArray={}, infoArraySize={}, arrayNum={}, lastSortDate={}, totalRecord={}, "
+             "option={}",
+             reqId, boardId, PTR(npIdArray), npIdArraySize, PTR(rankArray), rankArraySize,
+             PTR(commentArray), commentArraySize, PTR(infoArray), infoArraySize, arrayNum,
+             PTR(lastSortDate), PTR(totalRecord), PTR(option));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore, "called reqId={}, boardId={}, arrayNum={}", reqId, boardId, arrayNum);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcId() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcId(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpScoreNpIdPcId* idArray, u64 idArraySize,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "called reqId={}, boardId={}, idArray={}, idArraySize={}, "
+              "rankArray={}, rankArraySize={}, arrayNum={}",
+              reqId, boardId, PTR(idArray), idArraySize, PTR(rankArray), rankArraySize, arrayNum);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcIdAsync() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcIdAsync(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpScoreNpIdPcId* idArray, u64 idArraySize,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "called reqId={}, boardId={}, idArray={}, idArraySize={}, "
+              "rankArray={}, rankArraySize={}, arrayNum={}",
+              reqId, boardId, PTR(idArray), idArraySize, PTR(rankArray), rankArraySize, arrayNum);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByRangeA(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByRangeA(
     s32 reqId, OrbisNpScoreBoardId boardId, OrbisNpScoreRankNumber startSerialRank,
     OrbisNpScoreRankDataA* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -385,7 +422,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeA(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByRangeAAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByRangeAAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, OrbisNpScoreRankNumber startSerialRank,
     OrbisNpScoreRankDataA* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -400,7 +437,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeAAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByRangeAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByRangeAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, OrbisNpScoreRankNumber startSerialRank,
     OrbisNpScoreRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -415,7 +452,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByRangeForCrossSave(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByRangeForCrossSave(
     s32 reqId, OrbisNpScoreBoardId boardId, OrbisNpScoreRankNumber startSerialRank,
     OrbisNpScoreRankDataForCrossSave* rankArray, u64 rankArraySize,
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -432,7 +469,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeForCrossSave(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByRangeForCrossSaveAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByRangeForCrossSaveAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, OrbisNpScoreRankNumber startSerialRank,
     OrbisNpScoreRankDataForCrossSave* rankArray, u64 rankArraySize,
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -449,12 +486,12 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeForCrossSaveAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScorePollAsync(s32 reqId, s32* result) {
+s32 PS4_SYSV_ABI sceNpScorePollAsync(s32 reqId, s32* result) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, result={}", reqId, PTR(result));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreRecordGameData(s32 reqId, OrbisNpScoreBoardId boardId,
+s32 PS4_SYSV_ABI sceNpScoreRecordGameData(s32 reqId, OrbisNpScoreBoardId boardId,
                                           OrbisNpScoreValue score, u64 totalSize, u64 sendSize,
                                           const void* data, void* option) {
     LOG_ERROR(Lib_NpScore,
@@ -464,7 +501,7 @@ int PS4_SYSV_ABI sceNpScoreRecordGameData(s32 reqId, OrbisNpScoreBoardId boardId
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreRecordGameDataAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+s32 PS4_SYSV_ABI sceNpScoreRecordGameDataAsync(s32 reqId, OrbisNpScoreBoardId boardId,
                                                OrbisNpScoreValue score, u64 totalSize, u64 sendSize,
                                                const void* data, void* option) {
     LOG_ERROR(Lib_NpScore,
@@ -474,7 +511,7 @@ int PS4_SYSV_ABI sceNpScoreRecordGameDataAsync(s32 reqId, OrbisNpScoreBoardId bo
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreRecordScore(s32 reqId, OrbisNpScoreBoardId boardId,
+s32 PS4_SYSV_ABI sceNpScoreRecordScore(s32 reqId, OrbisNpScoreBoardId boardId,
                                        OrbisNpScoreValue score,
                                        const OrbisNpScoreComment* scoreComment,
                                        const OrbisNpScoreGameInfo* gameInfo,
@@ -488,7 +525,7 @@ int PS4_SYSV_ABI sceNpScoreRecordScore(s32 reqId, OrbisNpScoreBoardId boardId,
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreRecordScoreAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+s32 PS4_SYSV_ABI sceNpScoreRecordScoreAsync(s32 reqId, OrbisNpScoreBoardId boardId,
                                             OrbisNpScoreValue score,
                                             const OrbisNpScoreComment* scoreComment,
                                             const OrbisNpScoreGameInfo* gameInfo,
@@ -502,14 +539,14 @@ int PS4_SYSV_ABI sceNpScoreRecordScoreAsync(s32 reqId, OrbisNpScoreBoardId board
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 reqId, const char* comment, char* sanitizedComment,
+s32 PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 reqId, const char* comment, char* sanitizedComment,
                                            void* option) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, comment={}, sanitizedComment={}, option={}",
               reqId, comment ? comment : "null", PTR(sanitizedComment), PTR(option));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreSanitizeCommentAsync(s32 reqId, const char* comment,
+s32 PS4_SYSV_ABI sceNpScoreSanitizeCommentAsync(s32 reqId, const char* comment,
                                                 char* sanitizedComment, void* option) {
     LOG_ERROR(Lib_NpScore,
               "(STUBBED) called reqId={}, comment={}, sanitizedComment={}, "
@@ -518,18 +555,18 @@ int PS4_SYSV_ABI sceNpScoreSanitizeCommentAsync(s32 reqId, const char* comment,
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxId, OrbisNpScorePcId pcId) {
+s32 PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxId, OrbisNpScorePcId pcId) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called ctxId={}, pcId={}", ctxId, pcId);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreSetThreadParam(s32 threadPriority, u64 cpuAffinityMask) {
+s32 PS4_SYSV_ABI sceNpScoreSetThreadParam(s32 threadPriority, u64 cpuAffinityMask) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called threadPriority={}, cpuAffinityMask={:#x}",
               threadPriority, cpuAffinityMask);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreSetTimeout(s32 id, s32 resolveRetry, s32 resolveTimeout, s32 connTimeout,
+s32 PS4_SYSV_ABI sceNpScoreSetTimeout(s32 id, s32 resolveRetry, s32 resolveTimeout, s32 connTimeout,
                                       s32 sendTimeout, s32 recvTimeout) {
     LOG_ERROR(Lib_NpScore,
               "(STUBBED) called id={}, resolveRetry={}, resolveTimeout={}, "
@@ -538,7 +575,7 @@ int PS4_SYSV_ABI sceNpScoreSetTimeout(s32 id, s32 resolveRetry, s32 resolveTimeo
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreWaitAsync(s32 reqId, s32* result) {
+s32 PS4_SYSV_ABI sceNpScoreWaitAsync(s32 reqId, s32* result) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) sceNpScoreWaitAsync(reqId={}, result={})", reqId,
               PTR(result));
     return ORBIS_OK;
