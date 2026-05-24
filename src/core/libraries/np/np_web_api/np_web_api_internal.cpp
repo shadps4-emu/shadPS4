@@ -7,7 +7,7 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/network/http.h"
-#include "np_error.h"
+#include "core/libraries/np/np_error.h"
 #include "np_web_api_internal.h"
 
 namespace Libraries::Np::NpWebApi {
