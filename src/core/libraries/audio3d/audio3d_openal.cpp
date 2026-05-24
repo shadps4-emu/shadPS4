@@ -825,7 +825,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortOpen(const Libraries::UserService::OrbisUserServi
         .num_beds = 2,
     };
 
-    switch (parameters->size_this) {
+    switch (parameters->size_this & ~0x7ull) {
     case 0x10:
         break;
 
