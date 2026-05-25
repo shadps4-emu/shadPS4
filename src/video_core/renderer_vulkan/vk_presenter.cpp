@@ -1043,7 +1043,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
                                                     : vk::ImageLayout::eColorAttachmentOptimal;
         const vk::ImageMemoryBarrier post_barrier{
             .srcAccessMask = post_src_access_mask,
-            .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
+            .dstAccessMask = vk::AccessFlagBits::eNone,
             .oldLayout = post_old_layout,
             .newLayout = vk::ImageLayout::ePresentSrcKHR,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,

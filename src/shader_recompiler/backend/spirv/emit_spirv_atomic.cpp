@@ -252,8 +252,11 @@ Id EmitBufferAtomicFMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
     }
 
     const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
-    const auto sign_bit_set =
-        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u));
+    // OpSelect requires a bool condition; produce one by comparing the sign bit to 0.
+    const auto sign_bit_set = ctx.OpINotEqual(
+        ctx.U1[1],
+        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u)),
+        ctx.u32_zero_value);
 
     // FIXME this needs control flow because it currently executes both atomics
     const auto result = ctx.OpSelect(
@@ -287,8 +290,11 @@ Id EmitBufferAtomicFMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
     }
 
     const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
-    const auto sign_bit_set =
-        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u));
+    // OpSelect requires a bool condition; produce one by comparing the sign bit to 0.
+    const auto sign_bit_set = ctx.OpINotEqual(
+        ctx.U1[1],
+        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u)),
+        ctx.u32_zero_value);
 
     // FIXME this needs control flow because it currently executes both atomics
     const auto result = ctx.OpSelect(
@@ -364,8 +370,11 @@ Id EmitImageAtomicFMax32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords
     }
 
     const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
-    const auto sign_bit_set =
-        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u));
+    // OpSelect requires a bool condition; produce one by comparing the sign bit to 0.
+    const auto sign_bit_set = ctx.OpINotEqual(
+        ctx.U1[1],
+        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u)),
+        ctx.u32_zero_value);
 
     const auto result = ctx.OpSelect(
         ctx.F32[1], sign_bit_set,
@@ -381,8 +390,11 @@ Id EmitImageAtomicFMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords
     }
 
     const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
-    const auto sign_bit_set =
-        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u));
+    // OpSelect requires a bool condition; produce one by comparing the sign bit to 0.
+    const auto sign_bit_set = ctx.OpINotEqual(
+        ctx.U1[1],
+        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u)),
+        ctx.u32_zero_value);
 
     const auto result = ctx.OpSelect(
         ctx.F32[1], sign_bit_set,

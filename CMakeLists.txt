@@ -619,19 +619,12 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_manager.h
             src/core/libraries/np/np_matching2.cpp
             src/core/libraries/np/np_matching2.h
-            src/core/libraries/np/np_score.cpp
-            src/core/libraries/np/np_score.h
             src/core/libraries/np/np_trophy.cpp
             src/core/libraries/np/np_trophy.h
             src/core/libraries/np/np_tus.cpp
             src/core/libraries/np/np_tus.h
             src/core/libraries/np/trophy_ui.cpp
             src/core/libraries/np/trophy_ui.h
-            src/core/libraries/np/np_web_api.cpp
-            src/core/libraries/np/np_web_api.h
-            src/core/libraries/np/np_web_api_error.h
-            src/core/libraries/np/np_web_api_internal.cpp
-            src/core/libraries/np/np_web_api_internal.h
             src/core/libraries/np/np_web_api2.cpp
             src/core/libraries/np/np_web_api2.h
             src/core/libraries/np/np_party.cpp
@@ -647,6 +640,15 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_partner.cpp
             src/core/libraries/np/np_partner.h
             src/core/libraries/np/object_manager.h
+            src/core/libraries/np/np_handler.cpp
+            src/core/libraries/np/np_handler.h
+            src/core/libraries/np/np_score/np_score.cpp
+            src/core/libraries/np/np_score/np_score.h
+            src/core/libraries/np/np_score/np_score_ctx.h
+            src/core/libraries/np/np_web_api/np_web_api.cpp
+            src/core/libraries/np/np_web_api/np_web_api.h
+            src/core/libraries/np/np_web_api/np_web_api_internal.cpp
+            src/core/libraries/np/np_web_api/np_web_api_internal.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
