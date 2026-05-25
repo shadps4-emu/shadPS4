@@ -741,6 +741,7 @@ set(COMMON src/common/logging/classes.h
            src/common/elf_info.h
            src/common/endian.h
            src/common/enum.h
+           src/common/incremental_id.h
            src/common/io_file.cpp
            src/common/io_file.h
            src/common/lru_cache.h
