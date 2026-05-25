@@ -1923,6 +1923,13 @@ U8U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U8U16U32U64& value)
         default:
             break;
         }
+    case 64:
+        switch (value.Type()) {
+        case Type::U32:
+            return Inst<U64>(Opcode::ConvertU64U32, value);
+        default:
+            break;
+        }
     default:
         break;
     }

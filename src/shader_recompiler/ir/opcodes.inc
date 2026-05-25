@@ -404,6 +404,7 @@ OPCODE(ConvertF64U32,                                       F64,            U32,
 OPCODE(ConvertF32U16,                                       F32,            U16,                                                                            )
 OPCODE(ConvertU16U32,                                       U16,            U32,                                                                            )
 OPCODE(ConvertU32U16,                                       U32,            U16,                                                                            )
+OPCODE(ConvertU64U32,                                       U64,            U32,                                                                            )
 OPCODE(ConvertU8U32,                                        U8,             U32,                                                                            )
 OPCODE(ConvertU32U8,                                        U32,            U8,                                                                             )
 OPCODE(ConvertS32S8,                                        U32,            U8,                                                                             )
