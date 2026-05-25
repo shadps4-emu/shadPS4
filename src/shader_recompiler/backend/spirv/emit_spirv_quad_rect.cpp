@@ -25,11 +25,9 @@ struct QuadRectListEmitter : public Sirit::Module {
         vec3_id = TypeVector(float_id, 3);
         vec4_id = TypeVector(float_id, 4);
 
-        float_zero = Constant(float_id, 0.0f);
         float_one = Constant(float_id, 1.0f);
         float_min_one = Constant(float_id, -1.0f);
         int_zero = Constant(int_id, 0);
-        vec4_zero = ConstantComposite(vec4_id, float_zero, float_zero, float_zero, float_zero);
 
         const Id float_arr{TypeArray(float_id, Constant(uint_id, 1U))};
         gl_per_vertex_type = TypeStruct(vec4_id, float_id, float_arr, float_arr);
@@ -192,14 +190,8 @@ struct QuadRectListEmitter : public Sirit::Module {
         OpStore(OpAccessChain(output_vec4, gl_per_vertex, Int(0)), position);
 
         // out_paramN = in_paramN[index];
-        for (int i = 0; i < outputs.size(); i++) {
-            Id param;
-            if (i < inputs.size()) {
-                param = OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], index));
-            } else {
-                // Not enough inputs to forward, use dummy value.
-                param = vec4_zero;
-            }
+        for (int i = 0; i < inputs.size(); i++) {
+            const Id param{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], index))};
             OpStore(outputs[i], param);
         }
 
@@ -245,7 +237,6 @@ private:
     }
 
     void DefineOutputs(spv::ExecutionModel model) {
-        auto num_forwards = vs_info.num_exports;
         if (model == spv::ExecutionModel::TessellationControl) {
             const Id gl_per_vertex_array{TypeArray(gl_per_vertex_type, Constant(uint_id, 4U))};
             gl_out = AddOutput(gl_per_vertex_array);
@@ -261,10 +252,8 @@ private:
             Decorate(gl_tess_level_outer, spv::Decoration::Patch);
         } else {
             gl_per_vertex = AddOutput(gl_per_vertex_type);
-            // Tessellation eval stage comes before fragment, output number of forwards it will
-            // actually accept.
-            num_forwards = fs_info.num_inputs;
         }
+        const auto num_forwards = std::min(vs_info.num_exports, fs_info.num_inputs);
         outputs.reserve(num_forwards);
         for (int i = 0; i < num_forwards; i++) {
             const auto& input = fs_info.inputs[i];
@@ -290,7 +279,7 @@ private:
         gl_in = AddInput(gl_per_vertex_array);
         const Id float_arr{TypeArray(vec4_id, Int(32))};
 
-        const auto num_forwards = vs_info.num_exports;
+        const auto num_forwards = std::min(vs_info.num_exports, fs_info.num_inputs);
         inputs.reserve(num_forwards);
         for (int i = 0; i < num_forwards; i++) {
             const auto& input = fs_info.inputs[i];
@@ -315,11 +304,9 @@ private:
     Id vec2_id;
     Id vec3_id;
     Id vec4_id;
-    Id float_zero;
     Id float_one;
     Id float_min_one;
     Id int_zero;
-    Id vec4_zero;
     Id gl_per_vertex_type;
     Id gl_in;
     union {
