@@ -112,9 +112,9 @@ struct Image {
         return True(flags & ImageFlagBits::GpuModified) && False(flags & (ImageFlagBits::Dirty));
     }
 
-    void AssociateDepth(const Image& depth_image) {
-        depth_id = depth_image.image_uid;
-        depth_uid = depth_image.image_uid;
+    void AssociateDepth(ImageId depth_image_id, u64 depth_image_uid) {
+        depth_id = depth_image_id;
+        depth_uid = depth_image_uid;
     }
 
     void DisassociateDepth() {

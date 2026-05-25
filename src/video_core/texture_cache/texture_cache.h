@@ -159,7 +159,7 @@ public:
         }
         if (slot_images.is_allocated(image.depth_id)) {
             auto& depth_image = slot_images[image.depth_id];
-            if (depth_image.depth_id == image.depth_id &&
+            if (depth_image.image_uid == image.depth_uid &&
                 depth_image.flags & ImageFlagBits::Registered) {
                 return image.depth_id;
             }
