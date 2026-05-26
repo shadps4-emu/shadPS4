@@ -157,6 +157,8 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
                                  ? (OrbisPadDeviceClass)EmulatorSettings.GetSpecialPadClass()
                                  : OrbisPadDeviceClass::Standard;
     }
+    LOG_INFO(Lib_Pad, "c: {} cc: {}, ct: {}, dc: {}", pInfo->connected, pInfo->connectedCount,
+             pInfo->connectionType, std::to_underlying(pInfo->deviceClass));
     return ORBIS_OK;
 }
 
