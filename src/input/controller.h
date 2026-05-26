@@ -178,7 +178,9 @@ class GameControllers {
 public:
     GameControllers()
         : controllers({new GameController(), new GameController(), new GameController(),
-                       new GameController(), new GameController()}) {};
+                       new GameController(), new GameController()}) {
+        controllers[4]->m_connected = false;
+    };
     virtual ~GameControllers() = default;
     GameController* operator[](const size_t& i) const {
         if (i > 4) {
