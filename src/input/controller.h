@@ -180,6 +180,7 @@ public:
         : controllers({new GameController(), new GameController(), new GameController(),
                        new GameController(), new GameController()}) {
         controllers[4]->m_connected = false;
+        controllers[4]->m_connected_count = 0;
     };
     virtual ~GameControllers() = default;
     GameController* operator[](const size_t& i) const {

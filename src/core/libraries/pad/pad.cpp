@@ -51,11 +51,6 @@ static std::optional<HandleKey> FindHandleKeyByHandle(s32 handle) {
     return std::nullopt;
 }
 
-static bool IsUnavailableSpecialHandle(const std::optional<HandleKey>& handle_key) {
-    return handle_key.has_value() && handle_key->device_class == ORBIS_PAD_PORT_TYPE_SPECIAL &&
-           !EmulatorSettings.IsUsingSpecialPad();
-}
-
 int PS4_SYSV_ABI scePadClose(s32 handle) {
     LOG_WARNING(Lib_Pad, "called, handle: {}", handle);
     if (handle_to_controller_map.erase(handle) == 0) {
@@ -155,9 +150,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     bool connected = false;
     int connected_count = 0;
     Input::State state{};
-    if (!IsUnavailableSpecialHandle(handle_key)) {
-        it->second->ReadState(&state, &connected, &connected_count);
-    }
+    it->second->ReadState(&state, &connected, &connected_count);
 
     std::memset(pInfo, 0, sizeof(OrbisPadControllerInformation));
     pInfo->touchPadInfo.pixelDensity = 1;
