@@ -150,7 +150,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     pInfo->stickInfo.deadZoneRight = 1;
     pInfo->connectionType = ORBIS_PAD_CONNECTION_TYPE_LOCAL;
     pInfo->connectedCount = static_cast<u8>(std::clamp(connected_count, 0, 0xff));
-    pInfo->deviceClass = OrbisPadDeviceClass::Invalid;
+    pInfo->deviceClass = OrbisPadDeviceClass::Standard;
     pInfo->connected = connected;
     if (connected) {
         pInfo->deviceClass = EmulatorSettings.IsUsingSpecialPad()
