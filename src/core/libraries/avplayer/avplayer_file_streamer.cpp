@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm> // std::max, std::min
-#include <magic_enum/magic_enum.hpp>
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
 
 extern "C" {
-#include <libavformat/avformat.h>
 #include <libavformat/avio.h>
+#include <libavutil/error.h>
+#include <libavutil/mem.h>
 }
 
 constexpr u32 AVPLAYER_AVIO_BUFFER_SIZE = 4096;
