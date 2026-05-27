@@ -110,6 +110,8 @@
             libxkbcommon
             libGL
             libuuid
+            miniz
+            libressl
           ];
 
           defaultFlags = [
