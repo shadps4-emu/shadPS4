@@ -34,7 +34,7 @@ static int RwlockInit(PthreadRwlockT* rwlock, const PthreadRwlockAttrT* attr) {
     if (prwlock == nullptr) {
         return POSIX_ENOMEM;
     }
-    if (attr != nullptr && sdk_version >= Common::ElfInfo::FW_45) {
+    if (attr != nullptr && sdk_version >= Common::ElfInfo::FW_450) {
         if ((*attr)->type > 2) {
             delete prwlock;
             return POSIX_EINVAL;

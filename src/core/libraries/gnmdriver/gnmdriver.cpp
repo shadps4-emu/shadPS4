@@ -2234,9 +2234,9 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
     }
 
     if (send_init_packet) {
-        if (sdk_version < Common::ElfInfo::FW_20) {
+        if (sdk_version < Common::ElfInfo::FW_200) {
             liverpool->SubmitGfx(InitSequence, {});
-        } else if (sdk_version < Common::ElfInfo::FW_40) {
+        } else if (sdk_version < Common::ElfInfo::FW_400) {
             if (sceKernelIsNeoMode()) {
                 if (!UseNeoCompatSequences) {
                     liverpool->SubmitGfx(InitSequence200Neo, {});
@@ -2817,7 +2817,7 @@ int PS4_SYSV_ABI Func_C4C328B7CF3B4171() {
 
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalCommand(u32* cmdbuf, u32 size) {
     LOG_TRACE(Lib_GnmDriver, "called");
-    if (sdk_version >= Common::ElfInfo::FW_40) {
+    if (sdk_version >= Common::ElfInfo::FW_400) {
         return sceGnmDrawInitToDefaultContextState400(cmdbuf, size);
     }
     return sceGnmDrawInitToDefaultContextState(cmdbuf, size);
@@ -2825,7 +2825,7 @@ int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalCommand(u32* cmdbuf,
 
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalSize() {
     LOG_TRACE(Lib_GnmDriver, "called");
-    if (sdk_version >= Common::ElfInfo::FW_40) {
+    if (sdk_version >= Common::ElfInfo::FW_400) {
         return 0x100;
     }
     return 0x20;

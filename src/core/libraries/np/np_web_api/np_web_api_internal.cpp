@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <magic_enum/magic_enum.hpp>
 #include "common/elf_info.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/network/http.h"
+#include "core/libraries/np/np_error.h"
 #include "np_web_api_internal.h"
-
-#include <magic_enum/magic_enum.hpp>
 
 namespace Libraries::Np::NpWebApi {
 
@@ -170,7 +170,7 @@ s32 terminateContext(s32 libCtxId) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
 
-    if (g_sdk_ver < Common::ElfInfo::FW_40 && isContextBusy(ctx)) {
+    if (g_sdk_ver < Common::ElfInfo::FW_400 && isContextBusy(ctx)) {
         releaseContext(ctx);
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_BUSY;
     }
@@ -182,13 +182,13 @@ s32 terminateContext(s32 libCtxId) {
     for (s32 user_context_id : user_context_ids) {
         s32 result = deleteUserContext(user_context_id);
         if (result != ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND ||
-            g_sdk_ver < Common::ElfInfo::FW_40) {
+            g_sdk_ver < Common::ElfInfo::FW_400) {
             return result;
         }
     }
 
     lockContext(ctx);
-    if (g_sdk_ver >= Common::ElfInfo::FW_40) {
+    if (g_sdk_ver >= Common::ElfInfo::FW_400) {
         for (auto& handle : ctx->handles) {
             abortHandle(libCtxId, handle.first);
         }
@@ -377,7 +377,7 @@ s32 deleteUserContext(s32 titleUserCtxId) {
         return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
     }
 
-    if (g_sdk_ver < Common::ElfInfo::FW_40) {
+    if (g_sdk_ver < Common::ElfInfo::FW_400) {
         if (isUserContextBusy(user_context)) {
             releaseUserContext(user_context);
             unlockContext(context);
@@ -439,7 +439,7 @@ s32 createRequest(s32 titleUserCtxId, const char* pApiGroup, const char* pPath,
     }
 
     lockContext(user_context->parentContext);
-    if (g_sdk_ver >= Common::ElfInfo::FW_40 && user_context->deleted) {
+    if (g_sdk_ver >= Common::ElfInfo::FW_400 && user_context->deleted) {
         unlockContext(user_context->parentContext);
         releaseUserContext(user_context);
         releaseContext(context);
@@ -590,7 +590,7 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
 
     // TODO: multipart logic
 
-    if (g_sdk_ver >= Common::ElfInfo::FW_25 && !request->sent) {
+    if (g_sdk_ver >= Common::ElfInfo::FW_250 && !request->sent) {
         request->sent = true;
     }
 
@@ -694,7 +694,7 @@ s32 deleteRequest(s64 requestId) {
         return ORBIS_NP_WEBAPI_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_sdk_ver < Common::ElfInfo::FW_40 && isRequestBusy(request)) {
+    if (g_sdk_ver < Common::ElfInfo::FW_400 && isRequestBusy(request)) {
         releaseRequest(request);
         releaseUserContext(user_context);
         releaseContext(context);
@@ -733,7 +733,7 @@ s32 createHandleInternal(OrbisNpWebApiContext* context) {
     handle->aborted = false;
     handle->deleted = false;
 
-    if (g_sdk_ver >= Common::ElfInfo::FW_30) {
+    if (g_sdk_ver >= Common::ElfInfo::FW_300) {
         context->timerHandles[handle_id] = new OrbisNpWebApiTimerHandle{};
         auto& timer_handle = context->timerHandles[handle_id];
         timer_handle->handleId = handle_id;
@@ -840,7 +840,7 @@ s32 deleteHandleInternal(OrbisNpWebApiContext* context, s32 handleId) {
     }
 
     auto& handle = context->handles[handleId];
-    if (g_sdk_ver >= Common::ElfInfo::FW_40) {
+    if (g_sdk_ver >= Common::ElfInfo::FW_400) {
         if (handle->deleted) {
             unlockContext(context);
             return ORBIS_NP_WEBAPI_ERROR_HANDLE_NOT_FOUND;
@@ -865,7 +865,7 @@ s32 deleteHandleInternal(OrbisNpWebApiContext* context, s32 handleId) {
 
     context->handles.erase(handleId);
 
-    if (g_sdk_ver >= Common::ElfInfo::FW_30 && context->timerHandles.contains(handleId)) {
+    if (g_sdk_ver >= Common::ElfInfo::FW_300 && context->timerHandles.contains(handleId)) {
         auto& timer_handle = context->timerHandles[handleId];
         context->timerHandles.erase(handleId);
     }
@@ -976,7 +976,7 @@ s32 registerPushEventCallback(s32 titleUserCtxId, s32 filterId,
         return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
     }
 
-    if (g_sdk_ver >= Common::ElfInfo::FW_25 && !context->pushEventFilters.contains(filterId)) {
+    if (g_sdk_ver >= Common::ElfInfo::FW_250 && !context->pushEventFilters.contains(filterId)) {
         releaseUserContext(user_context);
         releaseContext(context);
         return ORBIS_NP_WEBAPI_ERROR_PUSH_EVENT_FILTER_NOT_FOUND;
@@ -1150,7 +1150,7 @@ s32 registerServicePushEventCallback(s32 titleUserCtxId, s32 filterId,
         return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
     }
 
-    if (g_sdk_ver >= Common::ElfInfo::FW_25 &&
+    if (g_sdk_ver >= Common::ElfInfo::FW_250 &&
         !context->servicePushEventFilters.contains(filterId)) {
         releaseUserContext(user_context);
         releaseContext(context);

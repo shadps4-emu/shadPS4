@@ -86,7 +86,7 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
     if (result == ORBIS_KERNEL_ERROR_ESTART) {
         s32 sdk_ver = 0;
         result = Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
-        if (sdk_ver < Common::ElfInfo::FW_115 || result != ORBIS_OK) {
+        if (sdk_ver < Common::ElfInfo::FW_1150 || result != ORBIS_OK) {
             return ORBIS_KERNEL_ERROR_EINVAL;
         } else {
             return ORBIS_KERNEL_ERROR_ESTART;
