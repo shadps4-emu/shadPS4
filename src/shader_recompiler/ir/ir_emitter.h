@@ -411,6 +411,7 @@ public:
 
     void EmitVertex();
     void EmitPrimitive();
+    U64 Memtime();
 
 private:
     Block* block;

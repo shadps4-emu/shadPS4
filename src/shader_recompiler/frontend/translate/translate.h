@@ -147,6 +147,7 @@ public:
     // SMRD
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
     void S_BUFFER_LOAD_DWORD(int num_dwords, const GcnInst& inst);
+    void S_MEMTIME(const GcnInst& inst);
 
     // Vector ALU
     // VOP2
