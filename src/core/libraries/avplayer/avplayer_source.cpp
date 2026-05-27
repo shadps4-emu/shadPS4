@@ -8,6 +8,7 @@
 #include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
+#include "core/memory.h"
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -15,6 +16,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
+#include <libavutil/mathematics.h>
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 }
@@ -91,6 +93,23 @@ static AvPlayerStreamType CodecTypeToStreamType(AVMediaType codec_type) {
     }
 }
 
+static u64 TimestampToMillis(s64 timestamp, AVRational time_base) {
+    if (timestamp == AV_NOPTS_VALUE || timestamp <= 0 || time_base.num <= 0 || time_base.den <= 0) {
+        return 0;
+    }
+
+    const auto millis = av_rescale_q(timestamp, time_base, AVRational{1, 1000});
+    return millis > 0 ? u64(millis) : 0;
+}
+
+static u64 StreamDurationMillis(const AVFormatContext& context, const AVStream& stream) {
+    const auto stream_duration = TimestampToMillis(stream.duration, stream.time_base);
+    if (stream_duration != 0) {
+        return stream_duration;
+    }
+    return TimestampToMillis(context.duration, AVRational{1, AV_TIME_BASE});
+}
+
 bool AvPlayerSource::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
     info = {};
     if (m_avformat_context == nullptr || stream_index >= m_avformat_context->nb_streams) {
@@ -103,8 +122,8 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
         return false;
     }
     info.type = CodecTypeToStreamType(p_stream->codecpar->codec_type);
-    info.start_time = p_stream->start_time;
-    info.duration = p_stream->duration;
+    info.start_time = 0; // start_time is currently unused and defaults to 0.
+    info.duration = StreamDurationMillis(*m_avformat_context, *p_stream);
     const auto p_lang_node = av_dict_get(p_stream->metadata, "language", nullptr, 0);
     if (p_lang_node != nullptr) {
         LOG_INFO(Lib_AvPlayer, "Stream {} language = {}", stream_index, p_lang_node->value);
@@ -390,14 +409,64 @@ bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
     return true;
 }
 
-u64 AvPlayerSource::CurrentTime() {
-    if (!IsActive() || !m_start_time.has_value()) {
+u64 AvPlayerSource::DurationMillis() const {
+    if (m_avformat_context == nullptr) {
         return 0;
     }
+
+    u64 duration = 0;
+    const auto add_stream_duration = [&](std::optional<s32> stream_index) {
+        if (!stream_index.has_value()) {
+            return;
+        }
+        const auto index = stream_index.value();
+        if (index < 0 || u32(index) >= m_avformat_context->nb_streams) {
+            return;
+        }
+        const auto stream = m_avformat_context->streams[index];
+        if (stream == nullptr) {
+            return;
+        }
+        duration = std::max(duration, StreamDurationMillis(*m_avformat_context, *stream));
+    };
+
+    add_stream_duration(m_video_stream_index);
+    add_stream_duration(m_audio_stream_index);
+
+    if (duration == 0) {
+        for (u32 index = 0; index < m_avformat_context->nb_streams; ++index) {
+            const auto stream = m_avformat_context->streams[index];
+            if (stream != nullptr) {
+                duration = std::max(duration, StreamDurationMillis(*m_avformat_context, *stream));
+            }
+        }
+    }
+
+    return duration;
+}
+
+u64 AvPlayerSource::CurrentTime() {
+    if (!m_start_time.has_value()) {
+        return 0;
+    }
+
+    const auto duration = DurationMillis();
+    if (m_is_eof && !IsActive()) {
+        return duration;
+    }
+    if (!IsActive()) {
+        return 0;
+    }
+
     using namespace std::chrono;
-    return duration_cast<milliseconds>(high_resolution_clock::now() - m_start_time.value() -
-                                       m_pause_duration)
-        .count();
+    const auto now = m_is_paused.load() ? m_pause_time : high_resolution_clock::now();
+    const auto elapsed =
+        duration_cast<milliseconds>(now - m_start_time.value() - m_pause_duration).count();
+    if (elapsed <= 0) {
+        return 0;
+    }
+    const auto current_time = u64(elapsed);
+    return duration != 0 && current_time > duration ? duration : current_time;
 }
 
 bool AvPlayerSource::IsActive() {
@@ -514,6 +583,7 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
 
 AvPlayerSource::AVFramePtr AvPlayerSource::ConvertVideoFrame(const AVFrame& frame) {
     auto nv12_frame = AVFramePtr{av_frame_alloc(), &ReleaseAVFrame};
+    nv12_frame->best_effort_timestamp = frame.best_effort_timestamp;
     nv12_frame->pts = frame.pts;
     nv12_frame->pkt_dts = frame.pkt_dts < 0 ? 0 : frame.pkt_dts;
     nv12_frame->format = AV_PIX_FMT_NV12;
@@ -543,27 +613,48 @@ AvPlayerSource::AVFramePtr AvPlayerSource::ConvertVideoFrame(const AVFrame& fram
     return nv12_frame;
 }
 
-static void CopyNV12Data(u8* dst, const AVFrame& src, bool use_vdec2) {
-    auto width = u32(src.width);
-    auto height = u32(src.height);
-    if (!use_vdec2) {
-        width = Common::AlignUp(width, 16);
-        height = Common::AlignUp(height, 16);
+static u64 FrameTimestampMillis(const AVFrame& frame, AVRational time_base) {
+    auto timestamp = frame.best_effort_timestamp;
+    if (timestamp == AV_NOPTS_VALUE) {
+        timestamp = frame.pts;
+    }
+    if (timestamp == AV_NOPTS_VALUE) {
+        timestamp = frame.pkt_dts;
+    }
+    if (timestamp == AV_NOPTS_VALUE || timestamp < 0 || time_base.den <= 0) {
+        return 0;
     }
 
-    if (src.width == width) {
-        std::memcpy(dst, src.data[0], src.width * src.height);
-        std::memcpy(dst + src.width * height, src.data[1], (src.width * src.height) / 2);
-    } else {
-        const auto luma_dst = dst;
-        for (u32 y = 0; y < src.height; ++y) {
-            std::memcpy(luma_dst + y * width, src.data[0] + y * src.width, src.width);
-        }
-        const auto chroma_dst = dst + width * height;
-        for (u32 y = 0; y < src.height / 2; ++y) {
-            std::memcpy(chroma_dst + y * (width / 2), src.data[0] + y * (src.width / 2),
-                        src.width / 2);
-        }
+    const auto millis = av_rescale_q(timestamp, time_base, AVRational{1, 1000});
+    return millis > 0 ? u64(millis) : 0;
+}
+
+static void CopyNV12Data(u8* dst, const AVFrame& src, bool use_vdec2) {
+    auto dst_width = u32(src.width);
+    auto dst_height = u32(src.height);
+    if (!use_vdec2) {
+        dst_width = Common::AlignUp(dst_width, 16);
+        dst_height = Common::AlignUp(dst_height, 16);
+    }
+
+    const auto src_width = u32(src.width);
+    const auto src_height = u32(src.height);
+    const auto dst_size = (dst_width * dst_height * 3) / 2;
+    std::memset(dst, 0, dst_size);
+
+    ASSERT(src.data[0] != nullptr);
+    ASSERT(src.data[1] != nullptr);
+    ASSERT(src.linesize[0] >= s32(src_width));
+    ASSERT(src.linesize[1] >= s32(src_width));
+
+    const auto luma_dst = dst;
+    for (u32 y = 0; y < src_height; ++y) {
+        std::memcpy(luma_dst + y * dst_width, src.data[0] + y * src.linesize[0], src_width);
+    }
+
+    const auto chroma_dst = dst + dst_width * dst_height;
+    for (u32 y = 0; y < src_height / 2; ++y) {
+        std::memcpy(chroma_dst + y * dst_width, src.data[1] + y * src.linesize[1], src_width);
     }
 }
 
@@ -573,12 +664,8 @@ Frame AvPlayerSource::PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame
     auto p_buffer = buffer.GetBuffer();
     CopyNV12Data(p_buffer, frame, m_use_vdec2);
 
-    const auto pkt_dts = u64(frame.pkt_dts) * 1000;
     const auto stream = m_avformat_context->streams[m_video_stream_index.value()];
-    const auto time_base = stream->time_base;
-    const auto den = time_base.den;
-    const auto num = time_base.num;
-    const auto timestamp = (num != 0 && den > 1) ? (pkt_dts * num) / den : pkt_dts;
+    const auto timestamp = FrameTimestampMillis(frame, stream->time_base);
 
     auto width = u32(frame.width);
     auto height = u32(frame.height);
@@ -586,6 +673,8 @@ Frame AvPlayerSource::PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame
         width = Common::AlignUp(width, 16);
         height = Common::AlignUp(height, 16);
     }
+    Core::Memory::Instance()->InvalidateMemory(reinterpret_cast<VAddr>(p_buffer),
+                                               (width * height * 3) / 2);
 
     return Frame{
         .buffer = std::move(buffer),
@@ -605,7 +694,7 @@ Frame AvPlayerSource::PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame
                                 .crop_top_offset = u32(frame.crop_top),
                                 .crop_bottom_offset =
                                     u32(frame.crop_bottom + (height - frame.height)),
-                                .pitch = u32(frame.linesize[0]),
+                                .pitch = width,
                                 .luma_bit_depth = 8,
                                 .chroma_bit_depth = 8,
                             },
@@ -664,6 +753,10 @@ void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
                 }
                 if (up_frame->format != AV_PIX_FMT_NV12) {
                     const auto nv12_frame = ConvertVideoFrame(*up_frame);
+                    if (nv12_frame == nullptr) {
+                        m_state.OnError();
+                        return;
+                    }
                     m_video_frames.Push(PrepareVideoFrame(std::move(buffer.value()), *nv12_frame));
                 } else {
                     m_video_frames.Push(PrepareVideoFrame(std::move(buffer.value()), *up_frame));
@@ -678,6 +771,7 @@ void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
 
 AvPlayerSource::AVFramePtr AvPlayerSource::ConvertAudioFrame(const AVFrame& frame) {
     auto pcm16_frame = AVFramePtr{av_frame_alloc(), &ReleaseAVFrame};
+    pcm16_frame->best_effort_timestamp = frame.best_effort_timestamp;
     pcm16_frame->pts = frame.pts;
     pcm16_frame->pkt_dts = frame.pkt_dts < 0 ? 0 : frame.pkt_dts;
     pcm16_frame->format = AV_SAMPLE_FMT_S16;
@@ -710,12 +804,8 @@ Frame AvPlayerSource::PrepareAudioFrame(GuestBuffer buffer, const AVFrame& frame
     const auto size = frame.ch_layout.nb_channels * frame.nb_samples * sizeof(u16);
     std::memcpy(p_buffer, frame.data[0], size);
 
-    const auto pkt_dts = u64(frame.pkt_dts) * 1000;
     const auto stream = m_avformat_context->streams[m_audio_stream_index.value()];
-    const auto time_base = stream->time_base;
-    const auto den = time_base.den;
-    const auto num = time_base.num;
-    const auto timestamp = (num != 0 && den > 1) ? (pkt_dts * num) / den : pkt_dts;
+    const auto timestamp = FrameTimestampMillis(frame, stream->time_base);
 
     return Frame{
         .buffer = std::move(buffer),
