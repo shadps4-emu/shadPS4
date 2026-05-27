@@ -110,6 +110,8 @@
             libxkbcommon
             libGL
             libuuid
+            miniz
+            libressl
           ];
 
           defaultFlags = [
@@ -152,7 +154,7 @@
             nativeBuildInputs = nativeInputs;
             buildInputs = buildInputs;
             cmakeFlags = [
-              "-DCMAKE_BUILD_TYPE=Release"
+              "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
             ] ++ [defaultFlags];
           };
         };
