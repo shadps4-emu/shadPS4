@@ -17,15 +17,21 @@ body:
 
         This repository does not provide support for game patches. If you are having issues with patches please refer to [Cheats and Patches Repository](https://github.com/shadps4-emu/ps4_cheats).
 
-        Don't force kill the application (or precise it in this issue if you had to.)
-
-        Don't run inside or attached to a debugger.
-        
         Before submitting an issue please check [Game Compatibility Repository](https://github.com/shadps4-compatibility/shadps4-game-compatibility) for the information about the status of the game.
 
         Please make an effort to make sure your issue isn't already reported.
 
         Do not create issues involving software piracy, our rules specifically prohibit this. Otherwise your issue will be closed and you will be banned in this repository.
+        
+        ### Attention
+
+        Don't edit log.
+        
+        Don't force kill the application (or precise it in your issue if you had to.)
+
+        When there are several "Critical" lines, the first one is the most important one.
+        
+        Don't run inside or attached to a debugger or extension tool.
   - type: checkboxes
     id: checklist
     attributes:
@@ -94,6 +100,6 @@ body:
     id: logs
     attributes:
       label: "Log File"
-      description: Drag and drop the log file here. It can be found by right clicking on a game name -> Open Folder... -> Open Log Folder. Make sure that the log type is set to `sync`.
+      description: Drag and drop the log file here. It can be found by right clicking on a game name -> Open Folder... -> Open Log Folder. Make sure that the log `sync` option is ticked.
     validations:
       required: true
