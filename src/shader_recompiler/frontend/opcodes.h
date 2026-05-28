@@ -2565,7 +2565,7 @@ enum class OperandField : u32 {
     VccHi,
     M0 = 124,
     ExecLo = 126,
-    ExecHi,
+    ExecHi = 127,
     ConstZero,
     SignedConstIntPos = 129,
     SignedConstIntNeg = 193,

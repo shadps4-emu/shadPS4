@@ -657,6 +657,18 @@ void EmitGetExec(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
+Id EmitGetExecLo(EmitContext& ctx) {
+    const Id scope_subgroup = ctx.ConstU32(static_cast<u32>(spv::Scope::Subgroup));
+    const Id ballot = ctx.OpGroupNonUniformBallot(ctx.U32[4], scope_subgroup, ctx.true_value);
+    return ctx.OpCompositeExtract(ctx.U32[1], ballot, 0u);
+}
+
+Id EmitGetExecHi(EmitContext& ctx) {
+    const Id scope_subgroup = ctx.ConstU32(static_cast<u32>(spv::Scope::Subgroup));
+    const Id ballot = ctx.OpGroupNonUniformBallot(ctx.U32[4], scope_subgroup, ctx.true_value);
+    return ctx.OpCompositeExtract(ctx.U32[1], ballot, 1u);
+}
+
 void EmitGetVcc(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
