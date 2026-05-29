@@ -24,6 +24,7 @@
           renderdoc
           gef
           strace
+          perf
 
           openal
           zlib.dev
