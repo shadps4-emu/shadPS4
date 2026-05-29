@@ -71,7 +71,6 @@
 
       linux =
         let
-          execName = "shadps4";
           nativeInputs = with pkgsLinux; [
             cmake
             ninja
