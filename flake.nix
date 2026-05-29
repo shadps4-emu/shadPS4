@@ -123,50 +123,13 @@
 
             nativeBuildInputs = nativeInputs;
             buildInputs = buildInputs;
-            cmakeFlags = [
-              "-DCMAKE_INSTALL_PREFIX=$out"
-            ] ++ [ buildFlags ];
+            cmakeFlags = buildFlags; 
           });
         in
         {
-          debug = pkgsLinux.stdenv.mkDerivation {
-            pname = "${execName}";
-            version = "git";
-            system = "x86_64-linux";
-            src = ./.;
-            dontStrip = true;
-
-            nativeBuildInputs = nativeInputs;
-            buildInputs = buildInputs;
-            cmakeFlags = [
-              "-DCMAKE_BUILD_TYPE=Debug"
-            ] ++ [defaultFlags];
-          };
-          release = pkgsLinux.stdenv.mkDerivation {
-            pname = "${execName}";
-            version = "git";
-            system = "x86_64-linux";
-            src = ./.;
-
-            nativeBuildInputs = nativeInputs;
-            buildInputs = buildInputs;
-            cmakeFlags = [
-              "-DCMAKE_BUILD_TYPE=Release"
-            ] ++ [defaultFlags];
-          };
-          releaseWithDebugInfo = pkgsLinux.stdenv.mkDerivation {
-            pname = "${execName}";
-            version = "git";
-            system = "x86_64-linux";
-            src = ./.;
-            dontStrip = true;
-
-            nativeBuildInputs = nativeInputs;
-            buildInputs = buildInputs;
-            cmakeFlags = [
-              "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
-            ] ++ [defaultFlags];
-          };
+          debug = build{buildFlags = ["-DCMAKE_BUILD_TYPE=Debug"]};
+          release = build{debugSymbols = false, buildFlags = ["-DCMAKE_BUILD_TYPE=Release"]};
+          releaseWithDebugInfo = build{buildFlags = ["-DCMAKE_BUILD_TYPE=RelWithDebInfo"]};
         };
     };
 }
