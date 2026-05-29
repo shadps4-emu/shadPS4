@@ -14,6 +14,8 @@
       pkgsLinux = nixpkgs.legacyPackages.x86_64-linux;
     in
     {
+      formatter.x86_64-linux = pkgsLinux.nixpkgs-fmt;
+
       devShells.x86_64-linux.default = pkgsLinux.mkShell.override { stdenv = pkgsLinux.clangStdenv; } {
         packages = with pkgsLinux; [
           clang-tools
@@ -24,6 +26,7 @@
           renderdoc
           gef
           strace
+          perf
 
           openal
           zlib.dev
@@ -67,11 +70,14 @@
         shellHook = ''
           echo "Entering shadPS4 development shell!"
         '';
+
+        CMAKE_C_COMPILER = "clang";
+        CMAKE_CXX_COMPILER = "clang++";
+        CMAKE_EXPORT_COMPILE_COMMANDS = "ON";
       };
 
       linux =
         let
-          execName = "shadps4";
           nativeInputs = with pkgsLinux; [
             cmake
             ninja
@@ -114,49 +120,23 @@
             libressl
           ];
 
-          defaultFlags = [
-            "-DCMAKE_INSTALL_PREFIX=$out"
-          ];
+          build = { debugSymbols ? true, buildFlags }: pkgsLinux.clangStdenv.mkDerivation {
+            pname = "shadps4";
+            version = "15.1";
+            system = "x86_64-linux";
+            src = ./.;
+
+            dontStrip = if debugSymbols then true else false;
+
+            nativeBuildInputs = nativeInputs;
+            buildInputs = buildInputs;
+            cmakeFlags = buildFlags;
+          };
         in
         {
-          debug = pkgsLinux.stdenv.mkDerivation {
-            pname = "${execName}";
-            version = "git";
-            system = "x86_64-linux";
-            src = ./.;
-            dontStrip = true;
-
-            nativeBuildInputs = nativeInputs;
-            buildInputs = buildInputs;
-            cmakeFlags = [
-              "-DCMAKE_BUILD_TYPE=Debug"
-            ] ++ [defaultFlags];
-          };
-          release = pkgsLinux.stdenv.mkDerivation {
-            pname = "${execName}";
-            version = "git";
-            system = "x86_64-linux";
-            src = ./.;
-
-            nativeBuildInputs = nativeInputs;
-            buildInputs = buildInputs;
-            cmakeFlags = [
-              "-DCMAKE_BUILD_TYPE=Release"
-            ] ++ [defaultFlags];
-          };
-          releaseWithDebugInfo = pkgsLinux.stdenv.mkDerivation {
-            pname = "${execName}";
-            version = "git";
-            system = "x86_64-linux";
-            src = ./.;
-            dontStrip = true;
-
-            nativeBuildInputs = nativeInputs;
-            buildInputs = buildInputs;
-            cmakeFlags = [
-              "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
-            ] ++ [defaultFlags];
-          };
+          debug = build { buildFlags = [ "-DCMAKE_BUILD_TYPE=Debug" ]; };
+          release = build { debugSymbols = false; buildFlags = [ "-DCMAKE_BUILD_TYPE=Release" ]; };
+          releaseWithDebugInfo = build { buildFlags = [ "-DCMAKE_BUILD_TYPE=RelWithDebInfo" ]; };
         };
     };
 }
