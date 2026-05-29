@@ -113,7 +113,7 @@
             libressl
           ];
 
-          build = {debugSymbols ? true, buildFlags}: pkgsLinux.stdenv.mkDerivation (finalAttrs: {
+          build = {debugSymbols ? true, buildFlags}: pkgsLinux.stdenv.mkDerivation {
             pname = "shadps4";
             version = "git";
             system = "x86_64-linux";
@@ -124,7 +124,7 @@
             nativeBuildInputs = nativeInputs;
             buildInputs = buildInputs;
             cmakeFlags = buildFlags; 
-          });
+          };
         in
         {
           debug = build{buildFlags = ["-DCMAKE_BUILD_TYPE=Debug"]};
