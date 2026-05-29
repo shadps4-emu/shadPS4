@@ -70,10 +70,10 @@
         shellHook = ''
           echo "Entering shadPS4 development shell!"
         '';
-        
-        CMAKE_C_COMPILER="clang";
-        CMAKE_CXX_COMPILER="clang++";
-        CMAKE_EXPORT_COMPILE_COMMANDS="ON";
+
+        CMAKE_C_COMPILER = "clang";
+        CMAKE_CXX_COMPILER = "clang++";
+        CMAKE_EXPORT_COMPILE_COMMANDS = "ON";
       };
 
       linux =
@@ -120,7 +120,7 @@
             libressl
           ];
 
-          build = {debugSymbols ? true, buildFlags}: pkgsLinux.clangStdenv.mkDerivation {
+          build = { debugSymbols ? true, buildFlags }: pkgsLinux.clangStdenv.mkDerivation {
             pname = "shadps4";
             version = "15.1";
             system = "x86_64-linux";
@@ -130,13 +130,13 @@
 
             nativeBuildInputs = nativeInputs;
             buildInputs = buildInputs;
-            cmakeFlags = buildFlags; 
+            cmakeFlags = buildFlags;
           };
         in
         {
-          debug = build{buildFlags = ["-DCMAKE_BUILD_TYPE=Debug"];};
-          release = build{debugSymbols = false; buildFlags = ["-DCMAKE_BUILD_TYPE=Release"];};
-          releaseWithDebugInfo = build{buildFlags = ["-DCMAKE_BUILD_TYPE=RelWithDebInfo"];};
+          debug = build { buildFlags = [ "-DCMAKE_BUILD_TYPE=Debug" ]; };
+          release = build { debugSymbols = false; buildFlags = [ "-DCMAKE_BUILD_TYPE=Release" ]; };
+          releaseWithDebugInfo = build { buildFlags = [ "-DCMAKE_BUILD_TYPE=RelWithDebInfo" ]; };
         };
     };
 }
