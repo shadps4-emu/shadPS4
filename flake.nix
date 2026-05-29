@@ -114,9 +114,20 @@
             libressl
           ];
 
-          defaultFlags = [
-            "-DCMAKE_INSTALL_PREFIX=$out"
-          ];
+          build = {debugSymbols ? true, buildFlags}: pkgsLinux.stdenv.mkDerivation (finalAttrs: {
+            pname = "shadps4";
+            version = "git";
+            system = "x86_64-linux";
+            src = ./.;
+
+            dontStrip = !debugSymbols;
+
+            nativeBuildInputs = nativeInputs;
+            buildInputs = buildInputs;
+            cmakeFlags = [
+              "-DCMAKE_INSTALL_PREFIX=$out"
+            ] ++ [ buildFlags ];
+          });
         in
         {
           debug = pkgsLinux.stdenv.mkDerivation {
