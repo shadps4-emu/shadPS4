@@ -57,7 +57,7 @@ nix-shell shell.nix
 #### Nix Flake Development Shell
 ```bash
 nix develop
-cmake -S . -B build/ -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_EXPORT_COMPILE_COMMANDS=ON  
+cmake -S . -B build/
 ln -s ./build/compile_commands.json .
 ```
 

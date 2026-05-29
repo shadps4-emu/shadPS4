@@ -67,6 +67,10 @@
         shellHook = ''
           echo "Entering shadPS4 development shell!"
         '';
+        
+        CMAKE_C_COMPILER=clang;
+        CMAKE_CXX_COMPILER=clang++;
+        CMAKE_EXPORT_COMPILE_COMMANDS=ON;
       };
 
       linux =
