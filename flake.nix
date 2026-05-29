@@ -113,7 +113,7 @@
             libressl
           ];
 
-          build = {debugSymbols ? true, buildFlags}: pkgsLinux.stdenv.mkDerivation {
+          build = {debugSymbols ? true, buildFlags}: pkgsLinux.clangStdenv.mkDerivation {
             pname = "shadps4";
             version = "git";
             system = "x86_64-linux";
