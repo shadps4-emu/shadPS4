@@ -127,9 +127,9 @@
           };
         in
         {
-          debug = build{buildFlags = ["-DCMAKE_BUILD_TYPE=Debug"]};
-          release = build{debugSymbols = false, buildFlags = ["-DCMAKE_BUILD_TYPE=Release"]};
-          releaseWithDebugInfo = build{buildFlags = ["-DCMAKE_BUILD_TYPE=RelWithDebInfo"]};
+          debug = build{buildFlags = ["-DCMAKE_BUILD_TYPE=Debug"];};
+          release = build{debugSymbols = false; buildFlags = ["-DCMAKE_BUILD_TYPE=Release"];};
+          releaseWithDebugInfo = build{buildFlags = ["-DCMAKE_BUILD_TYPE=RelWithDebInfo"];};
         };
     };
 }
