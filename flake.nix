@@ -14,6 +14,8 @@
       pkgsLinux = nixpkgs.legacyPackages.x86_64-linux;
     in
     {
+      formatter.x86_64-linux = pkgsLinux.nixpkgs-fmt;
+
       devShells.x86_64-linux.default = pkgsLinux.mkShell.override { stdenv = pkgsLinux.clangStdenv; } {
         packages = with pkgsLinux; [
           clang-tools
