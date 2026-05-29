@@ -123,7 +123,7 @@
             system = "x86_64-linux";
             src = ./.;
 
-            dontStrip = !debugSymbols;
+            dontStrip = if debugSymbols then true else false;
 
             nativeBuildInputs = nativeInputs;
             buildInputs = buildInputs;
