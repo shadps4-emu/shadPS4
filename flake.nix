@@ -115,7 +115,7 @@
 
           build = {debugSymbols ? true, buildFlags}: pkgsLinux.clangStdenv.mkDerivation {
             pname = "shadps4";
-            version = "git";
+            version = "15.1";
             system = "x86_64-linux";
             src = ./.;
 
