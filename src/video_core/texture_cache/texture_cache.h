@@ -90,6 +90,11 @@ public:
     /// Marks an image as dirty if it exists at the provided address.
     void InvalidateMemoryFromGPU(VAddr address, size_t max_size);
 
+    /// After compute dispatch writes a storage image, marks overlapping non-compute images
+    /// GpuDirty (so they refresh from updated guest memory) and clears ComputeWritten from
+    /// storage images whose download has completed.
+    void InvalidateMemoryRange(VAddr addr, size_t size);
+
     /// Evicts any images that overlap the unmapped range.
     void UnmapMemory(VAddr cpu_addr, size_t size);
 

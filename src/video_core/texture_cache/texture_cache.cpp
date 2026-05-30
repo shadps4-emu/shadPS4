@@ -131,6 +131,16 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
         });
 }
 
+void TextureCache::InvalidateMemoryRange(VAddr addr, size_t size) {
+    ForEachImageInRegion(addr, size, [&](ImageId image_id, Image& image) {
+        if (True(image.flags & ImageFlagBits::ComputeWritten)) {
+            image.flags &= ~ImageFlagBits::ComputeWritten;
+        } else {
+            image.flags |= ImageFlagBits::GpuDirty;
+        }
+    });
+}
+
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
     if (image.hash == 0) {
         // Initialize hash
