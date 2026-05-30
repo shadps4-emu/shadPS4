@@ -47,7 +47,7 @@
 }:
 
 pkgs.clangStdenv.stdenv.mkDerivation (finalAttrs: {
-  inherit src, system, cmakeFlags, dontStrip;
+  inherit src system cmakeFlags dontStrip;
   
   pname = "shadps4";
   version = "0.15.1";
