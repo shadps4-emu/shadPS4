@@ -80,7 +80,7 @@
         {
           debug = pkgsLinux.callPackage "${self}/nix/modules/build-shadps4.nix" 
           {
-            src = ${self};
+            src = "${self}";
             system = "x86_64-linux";
             cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Debug" ];
           };
