@@ -45,6 +45,9 @@
 , pipewire
 , libxscrnsaver
 , sndio
+, cli11
+, nlohmann_json
+, spdlog
 ,
 }:
 
@@ -72,6 +75,9 @@ mkShell.override { stdenv = clangStdenv; } {
     stb
     libpng.dev
     libuuid
+    cli11
+    nlohmann_json
+    spdlog.dev
 
     sdl3.dev
     alsa-lib
