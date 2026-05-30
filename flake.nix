@@ -76,27 +76,32 @@
         CMAKE_EXPORT_COMPILE_COMMANDS = "ON";
       };
 
-      packages.x86_64-linux =
+      packages.x86_64-linux = let
+        debugBuild = pkgsLinux.callPackage "${self}/nix/modules/build-shadps4.nix" 
         {
-          debug = pkgsLinux.callPackage "${self}/nix/modules/build-shadps4.nix" 
-          {
-            src = "${self}";
-            system = "x86_64-linux";
-            cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Debug" ];
-          };
-          release = pkgsLinux.callPackage "${self}/nix/modules/build-shadps4.nix" 
-          {
-            src = "${self}";
-            system = "x86_64-linux";
-            dontStrip = false;
-            cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" ];
-          };
-          releaseWithDebugInfo = pkgsLinux.callPackage "${self}/nix/modules/build-shadps4.nix" 
-          {
-            src = "${self}";
-            system = "x86_64-linux";
-            cmakeFlags = [ "-DCMAKE_BUILD_TYPE=RelWithDebInfo" ];
-          };
+          src = "${self}";
+          system = "x86_64-linux";
+          cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Debug" ];
+        };
+        releaseBuild = pkgsLinux.callPackage "${self}/nix/modules/build-shadps4.nix" 
+        {
+          src = "${self}";
+          system = "x86_64-linux";
+          dontStrip = false;
+          cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" ];
+        };
+        releaseWithDebugInfoBuild = pkgsLinux.callPackage "${self}/nix/modules/build-shadps4.nix" 
+        {
+          src = "${self}";
+          system = "x86_64-linux";
+          cmakeFlags = [ "-DCMAKE_BUILD_TYPE=RelWithDebInfo" ];
+        };
+      in 
+        {
+          debug = debugBuild;
+          release = releaseBuild;
+          releaseWithDebugInfo = releaseWithDebugInfoBuild;
+          default = releaseWithDebugInfoBuild;
         };
     };
 }
