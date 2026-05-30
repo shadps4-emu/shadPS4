@@ -122,7 +122,7 @@
 
           build = { debugSymbols ? true, buildFlags }: pkgsLinux.clangStdenv.mkDerivation {
             pname = "shadps4";
-            version = "15.1";
+            version = "0.15.1";
             system = "x86_64-linux";
             src = ./.;
 
