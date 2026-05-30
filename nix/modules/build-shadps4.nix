@@ -2,6 +2,44 @@
 ## SPDX-License-Identifier: GPL-2.0-or-later
 
 {
+  cmake
+  ninja
+  pkg-config
+  magic-enum
+  fmt
+  eudev
+  boost
+  cli11
+  openal
+  nlohmann_json
+  vulkan-loader
+  vulkan-headers
+  vulkan-memory-allocator
+  toml11
+  zlib
+  zydis
+  pugixml
+  ffmpeg
+  libpulseaudio
+  pipewire
+  vulkan-loader
+  wayland
+  wayland-scanner
+  libX11
+  libxrandr
+  libxext
+  libxcursor
+  libxi
+  libxscrnsaver
+  libxtst
+  libxcb
+  libdecor
+  libxkbcommon
+  libGL
+  libuuid
+  miniz
+  libressl
+
   rootPath,
   platform,
   buildFlags,
@@ -14,8 +52,47 @@ pkgs.clangStdenv.stdenv.mkDerivation (finalAttrs: {
   system = platform;
   src = rootPath;
 
-  nativeBuildInputs = [ ];
-  buildInputs = [ ];
+  nativeBuildInputs = [
+    cmake
+    ninja
+    pkg-config
+    magic-enum
+    fmt
+    eudev
+  ];
+  buildInputs = [
+    boost
+    cli11
+    openal
+    nlohmann_json
+    vulkan-loader
+    vulkan-headers
+    vulkan-memory-allocator
+    toml11
+    zlib
+    zydis
+    pugixml
+    ffmpeg
+    libpulseaudio
+    pipewire
+    vulkan-loader
+    wayland
+    wayland-scanner
+    libX11
+    libxrandr
+    libxext
+    libxcursor
+    libxi
+    libxscrnsaver
+    libxtst
+    libxcb
+    libdecor
+    libxkbcommon
+    libGL
+    libuuid
+    miniz
+    libressl
+  ];
   cmakeFlags = buildFlags;
   dontStrip = debugSymbols;
   

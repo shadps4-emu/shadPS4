@@ -77,63 +77,9 @@
       };
 
       packages.x86_64-linux =
-        let
-          nativeInputs = with pkgsLinux; [
-            cmake
-            ninja
-            pkg-config
-            magic-enum
-            fmt
-            eudev
-          ];
-          buildInputs = with pkgsLinux; [
-            boost
-            cli11
-            openal
-            nlohmann_json
-            vulkan-loader
-            vulkan-headers
-            vulkan-memory-allocator
-            toml11
-            zlib
-            zydis
-            pugixml
-            ffmpeg
-            libpulseaudio
-            pipewire
-            vulkan-loader
-            wayland
-            wayland-scanner
-            libX11
-            libxrandr
-            libxext
-            libxcursor
-            libxi
-            libxscrnsaver
-            libxtst
-            libxcb
-            libdecor
-            libxkbcommon
-            libGL
-            libuuid
-            miniz
-            libressl
-          ];
-
-          build = { debugSymbols ? true, buildFlags }: pkgsLinux.clangStdenv.mkDerivation {
-            pname = "shadps4";
-            version = "0.15.1";
-            system = "x86_64-linux";
-            src = ./.;
-
-            dontStrip = if debugSymbols then true else false;
-
-            nativeBuildInputs = nativeInputs;
-            buildInputs = buildInputs;
-            cmakeFlags = buildFlags;
-          };
-        in
         {
+          debug = callPackage
+
           debug = build { buildFlags = [ "-DCMAKE_BUILD_TYPE=Debug" ]; };
           release = build { debugSymbols = false; buildFlags = [ "-DCMAKE_BUILD_TYPE=Release" ]; };
           releaseWithDebugInfo = build { buildFlags = [ "-DCMAKE_BUILD_TYPE=RelWithDebInfo" ]; };
