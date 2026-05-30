@@ -370,7 +370,10 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 
 void Rasterizer::SyncComputeStorageImages(u64 shader_hash, u32 grid_x, u32 grid_y, u32 grid_z) {
     if (!compute_download) return;
-    if (grid_x == 0 || grid_y == 0) return; // indirect dispatch — skip
+    if (grid_x == 0 || grid_y == 0) {
+        LOG_WARNING(Render, "[ComputeDownload] Indirect dispatch, grid unknown — skip");
+        return;
+    }
 
     for (const auto& [image_id, img_desc] : image_bindings) {
         if (img_desc.type != VideoCore::TextureCache::BindingType::Storage || !image_id) continue;
