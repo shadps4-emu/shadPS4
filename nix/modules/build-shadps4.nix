@@ -2,6 +2,8 @@
 ## SPDX-License-Identifier: GPL-2.0-or-later
 
 {
+  clangStdenv,
+
   cmake,
   ninja,
   pkg-config,
@@ -22,7 +24,6 @@
   ffmpeg,
   libpulseaudio,
   pipewire,
-  vulkan-loader,
   wayland,
   wayland-scanner,
   libX11,
@@ -46,7 +47,7 @@
   dontStrip ? true,
 }:
 
-pkgs.clangStdenv.stdenv.mkDerivation (finalAttrs: {
+clangStdenv.mkDerivation (finalAttrs: {
   inherit src system cmakeFlags dontStrip;
   
   pname = "shadps4";
@@ -75,7 +76,6 @@ pkgs.clangStdenv.stdenv.mkDerivation (finalAttrs: {
     ffmpeg
     libpulseaudio
     pipewire
-    vulkan-loader
     wayland
     wayland-scanner
     libX11
@@ -95,5 +95,5 @@ pkgs.clangStdenv.stdenv.mkDerivation (finalAttrs: {
   ];
   
   patches = [ ];
-});
+})
 
