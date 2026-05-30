@@ -16,66 +16,8 @@
     {
       formatter.x86_64-linux = pkgsLinux.nixpkgs-fmt;
 
-      devShells.x86_64-linux.default = pkgsLinux.mkShell.override { stdenv = pkgsLinux.clangStdenv; } {
-        packages = with pkgsLinux; [
-          clang-tools
-          cmake
-          pkg-config
-          vulkan-tools
-
-          renderdoc
-          gef
-          strace
-          perf
-
-          openal
-          zlib.dev
-          libedit.dev
-          vulkan-headers
-          vulkan-utility-libraries
-          ffmpeg.dev
-          fmt.dev
-          glslang.dev
-          wayland.dev
-          stb
-          libpng.dev
-          libuuid
-
-          sdl3.dev
-          alsa-lib
-          hidapi
-          ibus.dev
-          jack2.dev
-          libdecor.dev
-          libthai.dev
-          fribidi.dev
-          libxcb.dev
-          libGL.dev
-          libpulseaudio.dev
-          libusb1.dev
-          libx11.dev
-          libxcursor.dev
-          libxext
-          libxfixes.dev
-          libxi.dev
-          libxinerama.dev
-          libxkbcommon
-          libxrandr.dev
-          libxrender.dev
-          libxtst
-          pipewire.dev
-          libxscrnsaver
-          sndio
-        ];
-        shellHook = ''
-          echo "Entering shadPS4 development shell!"
-        '';
-
-        CMAKE_C_COMPILER = "clang";
-        CMAKE_CXX_COMPILER = "clang++";
-        CMAKE_EXPORT_COMPILE_COMMANDS = "ON";
-      };
-
+      devShells.x86_64-linux.default = pkgsLinux.callPackage "${self}/nix/shell.nix" {};
+      
       packages.x86_64-linux = let
         debugBuild = pkgsLinux.callPackage "${self}/nix/build.nix.nix" 
         {
