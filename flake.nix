@@ -77,20 +77,20 @@
       };
 
       packages.x86_64-linux = let
-        debugBuild = pkgsLinux.callPackage "${self}/nix/modules/build-shadps4.nix" 
+        debugBuild = pkgsLinux.callPackage "${self}/nix/build.nix.nix" 
         {
           src = "${self}";
           system = "x86_64-linux";
           cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Debug" ];
         };
-        releaseBuild = pkgsLinux.callPackage "${self}/nix/modules/build-shadps4.nix" 
+        releaseBuild = pkgsLinux.callPackage "${self}/nix/build.nix.nix" 
         {
           src = "${self}";
           system = "x86_64-linux";
           dontStrip = false;
           cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" ];
         };
-        releaseWithDebugInfoBuild = pkgsLinux.callPackage "${self}/nix/modules/build-shadps4.nix" 
+        releaseWithDebugInfoBuild = pkgsLinux.callPackage "${self}/nix/build.nix.nix" 
         {
           src = "${self}";
           system = "x86_64-linux";
