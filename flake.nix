@@ -78,9 +78,13 @@
 
       packages.x86_64-linux =
         {
-          debug = callPackage
+          debug = pkgsLinux.callPackage "${self}/nix/modules/build-shadps4.nix" 
+          {
+            src = ${self};
+            system = "x86_64-linux";
+            cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Debug" ];
+          };
 
-          debug = build { buildFlags = [ "-DCMAKE_BUILD_TYPE=Debug" ]; };
           release = build { debugSymbols = false; buildFlags = [ "-DCMAKE_BUILD_TYPE=Release" ]; };
           releaseWithDebugInfo = build { buildFlags = [ "-DCMAKE_BUILD_TYPE=RelWithDebInfo" ]; };
         };
