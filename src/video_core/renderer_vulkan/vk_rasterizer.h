@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <vector>
-
 #include "common/recursive_lock.h"
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -133,22 +131,7 @@ private:
     boost::icl::interval_set<VAddr> mapped_ranges;
     Common::SharedFirstMutex mapped_ranges_mutex;
     PipelineCache pipeline_cache;
-
-    struct PendingComputeDownload {
-        vk::Fence fence{};
-        VkBuffer staging_buffer{};
-        VmaAllocation staging_alloc{};
-        VmaAllocator vma_alloc{};
-        u8* staging_ptr{};
-        VAddr guest_base{};
-        u32 img_width{};
-        u32 bpp{};
-        u32 min_x{};
-        u32 min_y{};
-        u32 max_x{};
-        u32 max_y{};
-    };
-    std::vector<PendingComputeDownload> pending_compute_downloads;
+    std::unique_ptr<class ComputeDownloadManager> compute_download;
 
     using RenderTargetInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::ImageDesc>;
     std::array<RenderTargetInfo, AmdGpu::NUM_COLOR_BUFFERS> cb_descs;

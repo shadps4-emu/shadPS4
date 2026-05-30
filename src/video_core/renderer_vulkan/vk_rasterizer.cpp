@@ -8,12 +8,12 @@
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_compute_download.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_hle.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/texture_cache.h"
-#include <vk_mem_alloc.h>
 
 #ifdef MemoryBarrier
 #undef MemoryBarrier
@@ -38,24 +38,18 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
       buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, liverpool_, buffer_cache, page_manager},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
-      pipeline_cache{instance, scheduler, liverpool} {
+      pipeline_cache{instance, scheduler, liverpool},
+      compute_download{ComputeDownloadManager::IsEnabled()
+                           ? std::make_unique<ComputeDownloadManager>(instance, scheduler,
+                                                                       texture_cache)
+                           : nullptr} {
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
     memory->SetRasterizer(this);
 }
 
-Rasterizer::~Rasterizer() {
-    // Clean up any pending compute downloads that weren't resolved.
-    for (auto& dl : pending_compute_downloads) {
-        if (dl.fence) {
-            (void)instance.GetDevice().waitForFences(dl.fence, true, UINT64_MAX);
-            instance.GetDevice().destroyFence(dl.fence);
-        }
-        vmaDestroyBuffer(dl.vma_alloc, dl.staging_buffer, dl.staging_alloc);
-    }
-    pending_compute_downloads.clear();
-}
+Rasterizer::~Rasterizer() = default;
 
 void Rasterizer::CpSync() {
     scheduler.EndRendering();
@@ -375,204 +369,20 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 }
 
 void Rasterizer::SyncComputeStorageImages(u64 shader_hash, u32 grid_x, u32 grid_y, u32 grid_z) {
-    // For indirect dispatch, grid parameters are unknown — skip download.
-    if (grid_x == 0 || grid_y == 0) return;
+    if (!compute_download) return;
+    if (grid_x == 0 || grid_y == 0) return; // indirect dispatch — skip
 
     for (const auto& [image_id, img_desc] : image_bindings) {
         if (img_desc.type != VideoCore::TextureCache::BindingType::Storage || !image_id) continue;
         auto& storage_img = texture_cache.GetImage(image_id);
-
-        // Guard checks.
-        if (storage_img.info.guest_address == 0) {
-            LOG_WARNING(Render, "[ComputeDownload] Storage image has null guest address, skip");
-            continue;
-        }
-        if (storage_img.info.num_samples > 1) continue; // multisampled — expected, no download
-        const u32 bpp = storage_img.info.num_bits / 8u;
-        if (bpp == 0 || storage_img.info.size.width == 0 || storage_img.info.size.height == 0) {
-            LOG_WARNING(Render, "[ComputeDownload] Invalid dimensions ({}×{} bpp={}), skip",
-                        storage_img.info.size.width, storage_img.info.size.height, bpp);
-            continue;
-        }
-
-        // NOTE: We do NOT check whether a texture currently overlaps this storage image
-        // before initiating the download. The typical pattern is "compute writes first,
-        // textures are created later at the same address" (e.g. A/B double-buffer swap).
-        // At dispatch time ForEachImageInRegion would find no overlap and skip the download,
-        // but the texture created moments later would then refresh stale guest memory.
-        // Conservatively always download; overlapping textures will pick up the data when
-        // they are later created or refreshed via GpuDirty marking in InvalidateMemoryRange.
-        //
-        // This also assumes the compute output is consumed by a graphics pipeline (texture
-        // Refresh via guest memory), not by a subsequent compute dispatch that binds a
-        // *different* ImageId at the same guest address. In that scenario the download may
-        // still be in flight and the second dispatch would sample stale guest memory.
-        // The known CS (ccdebd80f02a77aa) does not exhibit this pattern; a general solution
-        // would need to resolve pending downloads before BindResources for compute pipelines.
-
-        // Compute conservative dirty rect from dispatch grid dimensions.
-        // Each thread group covers at least 1 pixel — dirty rect never misses writes.
-        const u32 img_w = static_cast<u32>(storage_img.info.size.width);
-        const u32 img_h = static_cast<u32>(storage_img.info.size.height);
-        const u32 block_w = std::max<u32>(1, (img_w + grid_x - 1) / grid_x);
-        const u32 block_h = std::max<u32>(1, (img_h + grid_y - 1) / grid_y);
-        const u32 dirty_w = std::min<u32>(grid_x * block_w, img_w);
-        const u32 dirty_h = std::min<u32>(grid_y * block_h, img_h);
-
-        // Allocate staging buffer (VMA, persistently mapped).
-        const u32 full_row_bytes = img_w * bpp;
-        const u32 download_size = dirty_h * full_row_bytes;
-
-        const VkBufferCreateInfo buffer_ci = {
-            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = download_size,
-            .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-        };
-        VmaAllocationCreateInfo alloc_ci = {};
-        alloc_ci.flags =
-            VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
-        alloc_ci.usage = VMA_MEMORY_USAGE_AUTO;
-
-        VmaAllocator vma_alloc = storage_img.backing->image.allocator;
-        VmaAllocation allocation = VK_NULL_HANDLE;
-        VmaAllocationInfo alloc_info{};
-        VkBuffer staging_vk = VK_NULL_HANDLE;
-        if (vmaCreateBuffer(vma_alloc, &buffer_ci, &alloc_ci, &staging_vk, &allocation,
-                            &alloc_info) != VK_SUCCESS) {
-            LOG_ERROR(Render, "[ComputeDownload] VMA staging allocation failed ({} bytes)",
-                      download_size);
-            continue;
-        }
-
-        // Record GPU copy into current command buffer (barriers handled by Image::Download).
-        const vk::BufferImageCopy copy_region = {
-            .bufferOffset = 0,
-            .bufferRowLength = img_w,
-            .bufferImageHeight = 0,
-            .imageSubresource =
-                {
-                    .aspectMask = storage_img.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
-                    .mipLevel = 0,
-                    .baseArrayLayer = 0,
-                    .layerCount = 1,
-                },
-            .imageOffset = {0, 0, 0},
-            .imageExtent = {img_w, dirty_h, 1},
-        };
-        vk::Buffer staging_buffer{staging_vk};
-        std::span copies{&copy_region, 1};
-        storage_img.Download(copies, staging_buffer, 0, download_size);
-
-        // Submit command buffer with fence (non-blocking — GPU copy runs asynchronously).
-        vk::Fence fence = Check(instance.GetDevice().createFence({}));
-        SubmitInfo info{};
-        info.AddSignal(fence);
-        scheduler.Flush(info);
-
-        // Store pending download for later resolution.
-        pending_compute_downloads.push_back({
-            .fence = fence,
-            .staging_buffer = staging_vk,
-            .staging_alloc = allocation,
-            .vma_alloc = vma_alloc,
-            .staging_ptr = static_cast<u8*>(alloc_info.pMappedData),
-            .guest_base = storage_img.info.guest_address,
-            .img_width = img_w,
-            .bpp = bpp,
-            .min_x = 0,
-            .min_y = 0,
-            .max_x = dirty_w,
-            .max_y = dirty_h,
-        });
-
-        static constexpr size_t kMaxPendingDownloads = 10;
-        if (pending_compute_downloads.size() >= kMaxPendingDownloads) {
-            static bool overflow_logged = false;
-            if (!overflow_logged) {
-                LOG_ERROR(Render,
-                          "[ComputeDownload] {} pending downloads without resolution — "
-                          "no graphics draw between compute dispatches?",
-                          pending_compute_downloads.size());
-                overflow_logged = true;
-            }
-        }
-
-        // Mark storage image as compute-written, no longer Dirty.
-        storage_img.flags |= VideoCore::ImageFlagBits::GpuModified |
-                             VideoCore::ImageFlagBits::ComputeWritten;
-        storage_img.flags &= ~VideoCore::ImageFlagBits::Dirty;
+        compute_download->SyncOne(storage_img, grid_x, grid_y);
     }
-
-    // GpuDirty marking is deferred to ResolvePendingComputeDownloads (after memcpy),
-    // because InvalidateMemoryRange would clear ComputeWritten before the download resolves.
 }
 
 void Rasterizer::ResolvePendingComputeDownloads() {
-    if (pending_compute_downloads.empty()) return;
-
-    auto device = instance.GetDevice();
-    // Process in reverse order: if multiple dispatches wrote to the same storage image,
-    // the last dispatch (freshest data) is resolved first. Earlier downloads for the same
-    // image will fail validation (ComputeWritten already cleared) and be discarded.
-    for (size_t i = pending_compute_downloads.size(); i > 0; --i) {
-        auto& dl = pending_compute_downloads[i - 1];
-        // Wait for GPU copy to complete (fence is usually already signaled by now).
-        if (dl.fence) {
-            if (device.getFenceStatus(dl.fence) != vk::Result::eSuccess) {
-                static bool logged = false;
-                if (!logged) {
-                    LOG_WARNING(Render,
-                                "[ComputeDownload] Fence not ready, blocking on waitForFences "
-                                "(async overlap insufficient between dispatch and draw)");
-                    logged = true;
-                }
-            }
-            (void)device.waitForFences(dl.fence, true, UINT64_MAX);
-            device.destroyFence(dl.fence);
-            dl.fence = nullptr;
-        }
-
-        // Verify the storage image still exists and still needs this download.
-        // Between dispatch and resolution the image may have been evicted,
-        // its guest address reused, or ComputeWritten cleared by another path.
-        bool valid = false;
-        const u64 range_size = static_cast<u64>(dl.max_y) * dl.img_width * dl.bpp;
-        texture_cache.ForEachImageInRegion(
-            dl.guest_base, range_size,
-            [&](VideoCore::ImageId, VideoCore::Image& img) {
-                if (True(img.flags & VideoCore::ImageFlagBits::ComputeWritten)) {
-                    valid = true;
-                    return true; // found — stop searching
-                }
-                return false;
-            });
-
-        if (!valid) {
-            LOG_WARNING(Render,
-                        "[ComputeDownload] Discarded: image at guest={:#018x} evicted "
-                        "or ComputeWritten cleared before memcpy",
-                        dl.guest_base);
-            vmaDestroyBuffer(dl.vma_alloc, dl.staging_buffer, dl.staging_alloc);
-            continue;
-        }
-
-        // Per-row memcpy from staging buffer to guest memory.
-        const u32 full_row_bytes = dl.img_width * dl.bpp;
-        const u32 rect_w_bytes = (dl.max_x - dl.min_x) * dl.bpp;
-        for (u32 row = dl.min_y; row < dl.max_y; ++row) {
-            const u32 src_off = row * full_row_bytes + dl.min_x * dl.bpp;
-            u8* dst = std::bit_cast<u8*>(dl.guest_base + src_off);
-            std::memcpy(dst, dl.staging_ptr + src_off, rect_w_bytes);
-        }
-
-        // Free staging buffer.
-        vmaDestroyBuffer(dl.vma_alloc, dl.staging_buffer, dl.staging_alloc);
-
-        // Clear ComputeWritten from images overlapping this range (download is now done).
-        texture_cache.InvalidateMemoryRange(dl.guest_base, range_size);
+    if (compute_download) {
+        compute_download->ResolvePending();
     }
-    pending_compute_downloads.clear();
 }
 
 u64 Rasterizer::Flush() {
