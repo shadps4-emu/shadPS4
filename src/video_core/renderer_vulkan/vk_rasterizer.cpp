@@ -372,18 +372,6 @@ void Rasterizer::SyncComputeStorageImages(u64 shader_hash, u32 grid_x, u32 grid_
     if (!compute_download) return;
     if (grid_x == 0 || grid_y == 0) return; // indirect dispatch — skip
 
-    // Only download for verified CS whose storage output is known to overlap with
-    // textures at a different format. Unconditionally downloading for every compute
-    // dispatch would add Flush + VMA + fence overhead on hot paths that don't need it.
-    static constexpr u64 kVerifiedCS[] = {
-        0xccdebd80f02a77aa, // R32 pixel copy, cascaded dispatch → BC3/BC1 texture overlap
-    };
-    bool verified = false;
-    for (u64 h : kVerifiedCS) {
-        if (shader_hash == h) { verified = true; break; }
-    }
-    if (!verified) return;
-
     for (const auto& [image_id, img_desc] : image_bindings) {
         if (img_desc.type != VideoCore::TextureCache::BindingType::Storage || !image_id) continue;
         auto& storage_img = texture_cache.GetImage(image_id);

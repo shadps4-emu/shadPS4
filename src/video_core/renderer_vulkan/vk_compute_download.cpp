@@ -5,9 +5,7 @@
 #include "common/logging/log.h"
 #include "core/memory.h"
 #include "video_core/renderer_vulkan/vk_compute_download.h"
-#include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
-#include "video_core/renderer_vulkan/vk_platform.h"
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/texture_cache.h"
 #include <vk_mem_alloc.h>
@@ -16,7 +14,7 @@ namespace Vulkan {
 
 namespace {
 struct PendingDownload {
-    vk::Fence fence{};
+    u64 download_tick{};     // scheduler tick when the copy was recorded
     VkBuffer staging_buffer{};
     VmaAllocation staging_alloc{};
     VmaAllocator vma_alloc{};
@@ -44,13 +42,9 @@ ComputeDownloadManager::ComputeDownloadManager(const Instance& instance,
     : m_impl(std::make_unique<Impl>(instance, scheduler, texture_cache)) {}
 
 ComputeDownloadManager::~ComputeDownloadManager() {
-    // Clean up any downloads that were never resolved (e.g. compute-only workloads).
-    auto device = m_impl->instance.GetDevice();
+    // Ensure GPU is done with all staging buffers before freeing them.
+    m_impl->scheduler.Finish();
     for (auto& dl : m_impl->pending_downloads) {
-        if (dl.fence) {
-            (void)device.waitForFences(dl.fence, true, UINT64_MAX);
-            device.destroyFence(dl.fence);
-        }
         vmaDestroyBuffer(dl.vma_alloc, dl.staging_buffer, dl.staging_alloc);
     }
 }
@@ -68,34 +62,28 @@ bool ComputeDownloadManager::IsEnabled() {
 }
 
 void ComputeDownloadManager::SyncOne(VideoCore::Image& storage_img, u32 grid_x, u32 grid_y) {
-    // Guard checks.
-    if (storage_img.info.guest_address == 0) {
-        static bool logged = false;
-        if (!logged) {
-            LOG_WARNING(Render, "[ComputeDownload] Storage image has null guest address, skip");
-            logged = true;
-        }
-        return;
-    }
-    if (storage_img.info.num_samples > 1) return; // multisampled — expected, no download
+    // GPU-only storage images (no guest address) are compute temporaries —
+    // they never need a guest-memory download. Expected, not a warning.
+    if (storage_img.info.guest_address == 0) return;
+    if (storage_img.info.num_samples > 1) return;
     const u32 bpp = storage_img.info.num_bits / 8u;
     if (bpp == 0 || storage_img.info.size.width == 0 || storage_img.info.size.height == 0) {
-        static bool logged = false;
-        if (!logged) {
-            LOG_WARNING(Render, "[ComputeDownload] Invalid dimensions ({}×{} bpp={}), skip",
-                        storage_img.info.size.width, storage_img.info.size.height, bpp);
-            logged = true;
-        }
+        LOG_WARNING(Render, "[ComputeDownload] Invalid dimensions ({}×{} bpp={}), skip",
+                    storage_img.info.size.width, storage_img.info.size.height, bpp);
         return;
     }
 
-    // NOTE: We do NOT check whether a texture currently overlaps this storage image.
-    // The typical pattern is "compute writes first, textures are created later at the
-    // same address" (A/B double-buffer swap). Conservatively always download.
+    // NOTE: We do NOT check whether a texture currently overlaps this storage image
+    // before initiating the download. The typical pattern is "compute writes first,
+    // textures are created later at the same address" (A/B double-buffer swap).
+    // Conservatively always download; overlapping textures will pick up the data when
+    // they are later created or refreshed via GpuDirty marking in InvalidateMemoryRange.
     //
     // This also assumes compute output is consumed by a graphics pipeline, not by
     // another compute dispatch binding a different ImageId at the same guest address.
-    // The known CS (ccdebd80f02a77aa) does not exhibit that pattern.
+    // If that occurs, the download may still be in flight and the second dispatch
+    // would sample stale guest memory. A general solution would need to resolve
+    // pending downloads before BindResources for compute pipelines.
 
     // Compute conservative dirty rect from dispatch grid dimensions.
     // Assumes each thread group covers at least 1 pixel; dirty rect never misses writes
@@ -134,7 +122,9 @@ void ComputeDownloadManager::SyncOne(VideoCore::Image& storage_img, u32 grid_x, 
         return;
     }
 
-    // Record GPU copy into current command buffer.
+    // Record GPU copy into the current command buffer WITHOUT flushing.
+    // The copy piggybacks on the CB and is submitted later in ResolvePending
+    // via scheduler.Wait(), together with any other accumulated work.
     const vk::BufferImageCopy copy_region = {
         .bufferOffset = 0,
         .bufferRowLength = img_w,
@@ -153,20 +143,13 @@ void ComputeDownloadManager::SyncOne(VideoCore::Image& storage_img, u32 grid_x, 
     std::span copies{&copy_region, 1};
     storage_img.Download(copies, staging_buffer, 0, download_size);
 
-    // Submit with fence (non-blocking).
-    // Each dispatch produces a separate submit, breaking command-buffer batching.
-    // The per-dispatch fence is required for async resolution: we need to know when
-    // THIS copy completes independently, so stale downloads can be discarded and
-    // fresh ones take precedence in ResolvePending's reverse iteration.
-    auto device = m_impl->instance.GetDevice();
-    vk::Fence fence = Check(device.createFence({}));
-    SubmitInfo info{};
-    info.AddSignal(fence);
-    m_impl->scheduler.Flush(info);
+    // Capture the tick that will be assigned to the next SubmitExecution (which will
+    // contain our copy). No Flush — the copy stays in the current command buffer and
+    // is submitted in batch with other work when ResolvePending calls Wait(tick).
+    const u64 download_tick = m_impl->scheduler.CurrentTick();
 
-    // Store pending download.
     m_impl->pending_downloads.push_back({
-        .fence = fence,
+        .download_tick = download_tick,
         .staging_buffer = staging_vk,
         .staging_alloc = allocation,
         .vma_alloc = vma_alloc,
@@ -204,30 +187,30 @@ void ComputeDownloadManager::SyncOne(VideoCore::Image& storage_img, u32 grid_x, 
 void ComputeDownloadManager::ResolvePending() {
     if (m_impl->pending_downloads.empty()) return;
 
-    auto device = m_impl->instance.GetDevice();
     // Process in reverse order: if multiple dispatches wrote to the same storage image,
     // the last dispatch (freshest data) is resolved first. Earlier downloads for the
     // same image fail validation and are discarded.
     for (size_t i = m_impl->pending_downloads.size(); i > 0; --i) {
         auto& dl = m_impl->pending_downloads[i - 1];
 
-        // Wait for GPU copy to complete (fence is usually already signaled).
-        if (dl.fence) {
-            if (device.getFenceStatus(dl.fence) != vk::Result::eSuccess) {
-                static bool logged = false;
-                if (!logged) {
-                    LOG_WARNING(Render,
-                                "[ComputeDownload] Fence not ready, blocking on waitForFences "
-                                "(async overlap insufficient between dispatch and draw)");
-                    logged = true;
-                }
+        // Submit the command buffer (if not already submitted) and wait for the GPU
+        // to complete all work up to and including our copy. If the CB was already
+        // flushed by other code (e.g. OnSubmit), the CB is already submitted and
+        // Wait returns quickly (GPU likely already done).
+        if (!m_impl->scheduler.IsFree(dl.download_tick)) {
+            static bool logged = false;
+            if (!logged) {
+                LOG_WARNING(Render,
+                            "[ComputeDownload] GPU not caught up, blocking on Wait "
+                            "(async overlap insufficient between dispatch and draw)");
+                logged = true;
             }
-            (void)device.waitForFences(dl.fence, true, UINT64_MAX);
-            device.destroyFence(dl.fence);
-            dl.fence = nullptr;
         }
+        m_impl->scheduler.Wait(dl.download_tick);
 
         // Verify the storage image still exists and still needs this download.
+        // Between dispatch and resolution the image may have been evicted,
+        // its guest address reused, or ComputeWritten cleared by another path.
         const u64 range_size = static_cast<u64>(dl.max_y) * dl.img_width * dl.bpp;
         bool valid = false;
         m_impl->texture_cache.ForEachImageInRegion(
