@@ -70,14 +70,22 @@ bool ComputeDownloadManager::IsEnabled() {
 void ComputeDownloadManager::SyncOne(VideoCore::Image& storage_img, u32 grid_x, u32 grid_y) {
     // Guard checks.
     if (storage_img.info.guest_address == 0) {
-        LOG_WARNING(Render, "[ComputeDownload] Storage image has null guest address, skip");
+        static bool logged = false;
+        if (!logged) {
+            LOG_WARNING(Render, "[ComputeDownload] Storage image has null guest address, skip");
+            logged = true;
+        }
         return;
     }
     if (storage_img.info.num_samples > 1) return; // multisampled — expected, no download
     const u32 bpp = storage_img.info.num_bits / 8u;
     if (bpp == 0 || storage_img.info.size.width == 0 || storage_img.info.size.height == 0) {
-        LOG_WARNING(Render, "[ComputeDownload] Invalid dimensions ({}×{} bpp={}), skip",
-                    storage_img.info.size.width, storage_img.info.size.height, bpp);
+        static bool logged = false;
+        if (!logged) {
+            LOG_WARNING(Render, "[ComputeDownload] Invalid dimensions ({}×{} bpp={}), skip",
+                        storage_img.info.size.width, storage_img.info.size.height, bpp);
+            logged = true;
+        }
         return;
     }
 
