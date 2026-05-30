@@ -76,7 +76,7 @@
         CMAKE_EXPORT_COMPILE_COMMANDS = "ON";
       };
 
-      linux =
+      packages.x86_64-linux =
         let
           nativeInputs = with pkgsLinux; [
             cmake
