@@ -198,13 +198,9 @@ void ComputeDownloadManager::ResolvePending() {
         // flushed by other code (e.g. OnSubmit), the CB is already submitted and
         // Wait returns quickly (GPU likely already done).
         if (!m_impl->scheduler.IsFree(dl.download_tick)) {
-            static bool logged = false;
-            if (!logged) {
-                LOG_WARNING(Render,
-                            "[ComputeDownload] GPU not caught up, blocking on Wait "
-                            "(async overlap insufficient between dispatch and draw)");
-                logged = true;
-            }
+            LOG_WARNING(Render,
+                        "[ComputeDownload] GPU not caught up, blocking on Wait "
+                        "(async overlap insufficient between dispatch and draw)");
         }
         m_impl->scheduler.Wait(dl.download_tick);
 
