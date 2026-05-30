@@ -40,17 +40,17 @@
   miniz
   libressl
 
-  rootPath,
-  platform,
-  buildFlags,
-  useDebugSymbols ? true,
+  src,
+  system,
+  cmakeFlags,
+  dontStrip ? true,
 }:
 
 pkgs.clangStdenv.stdenv.mkDerivation (finalAttrs: {
+  inherit src, system, cmakeFlags, dontStrip;
+  
   pname = "shadps4";
   version = "0.15.1";
-  system = platform;
-  src = rootPath;
 
   nativeBuildInputs = [
     cmake
@@ -93,8 +93,6 @@ pkgs.clangStdenv.stdenv.mkDerivation (finalAttrs: {
     miniz
     libressl
   ];
-  cmakeFlags = buildFlags;
-  dontStrip = debugSymbols;
   
   patches = [ ];
 });
