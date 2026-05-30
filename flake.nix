@@ -19,20 +19,20 @@
       devShells.x86_64-linux.default = pkgsLinux.callPackage "${self}/nix/shell.nix" {};
       
       packages.x86_64-linux = let
-        debugBuild = pkgsLinux.callPackage "${self}/nix/build.nix.nix" 
+        debugBuild = pkgsLinux.callPackage "${self}/nix/build.nix" 
         {
           src = "${self}";
           system = "x86_64-linux";
           cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Debug" ];
         };
-        releaseBuild = pkgsLinux.callPackage "${self}/nix/build.nix.nix" 
+        releaseBuild = pkgsLinux.callPackage "${self}/nix/build.nix" 
         {
           src = "${self}";
           system = "x86_64-linux";
           dontStrip = false;
           cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" ];
         };
-        releaseWithDebugInfoBuild = pkgsLinux.callPackage "${self}/nix/build.nix.nix" 
+        releaseWithDebugInfoBuild = pkgsLinux.callPackage "${self}/nix/build.nix" 
         {
           src = "${self}";
           system = "x86_64-linux";
