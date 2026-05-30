@@ -90,6 +90,9 @@ void ComputeDownloadManager::SyncOne(VideoCore::Image& storage_img, u32 grid_x, 
     // The known CS (ccdebd80f02a77aa) does not exhibit that pattern.
 
     // Compute conservative dirty rect from dispatch grid dimensions.
+    // Assumes each thread group covers at least 1 pixel; dirty rect never misses writes
+    // but may over-estimate for sparse grids. For the known CS (ccdebd80f02a77aa,
+    // local_size=8×8), grid always covers the full image → dirty = full image, zero waste.
     const u32 img_w = static_cast<u32>(storage_img.info.size.width);
     const u32 img_h = static_cast<u32>(storage_img.info.size.height);
     const u32 block_w = std::max<u32>(1, (img_w + grid_x - 1) / grid_x);
@@ -143,6 +146,10 @@ void ComputeDownloadManager::SyncOne(VideoCore::Image& storage_img, u32 grid_x, 
     storage_img.Download(copies, staging_buffer, 0, download_size);
 
     // Submit with fence (non-blocking).
+    // Each dispatch produces a separate submit, breaking command-buffer batching.
+    // The per-dispatch fence is required for async resolution: we need to know when
+    // THIS copy completes independently, so stale downloads can be discarded and
+    // fresh ones take precedence in ResolvePending's reverse iteration.
     auto device = m_impl->instance.GetDevice();
     vk::Fence fence = Check(device.createFence({}));
     SubmitInfo info{};
@@ -165,7 +172,10 @@ void ComputeDownloadManager::SyncOne(VideoCore::Image& storage_img, u32 grid_x, 
         .max_y = dirty_h,
     });
 
-    // Set flags.
+    // GpuModified: the storage VkImage is now authoritative (compute just wrote to it).
+    // ComputeWritten: marks image for Tartarus overlap detection in BindResources.
+    // Cleared Dirty because guest memory is now stale relative to the VkImage; any
+    // future refresh of this image must come from GPU, not guest memory.
     storage_img.flags |= VideoCore::ImageFlagBits::GpuModified |
                          VideoCore::ImageFlagBits::ComputeWritten;
     storage_img.flags &= ~VideoCore::ImageFlagBits::Dirty;
@@ -231,7 +241,9 @@ void ComputeDownloadManager::ResolvePending() {
             continue;
         }
 
-        // Per-row memcpy from staging buffer to guest memory.
+        // Per-row memcpy: only the dirty rect columns [min_x, max_x) are copied.
+        // Padding columns between max_x and img_width in guest memory are not touched
+        // — they may contain data belonging to other resources at adjacent addresses.
         const u32 full_row_bytes = dl.img_width * dl.bpp;
         const u32 rect_w_bytes = (dl.max_x - dl.min_x) * dl.bpp;
         for (u32 row = dl.min_y; row < dl.max_y; ++row) {
@@ -241,6 +253,9 @@ void ComputeDownloadManager::ResolvePending() {
         }
 
         vmaDestroyBuffer(dl.vma_alloc, dl.staging_buffer, dl.staging_alloc);
+        // Two-in-one: clears ComputeWritten from the storage image (download resolved)
+        // and marks all non-compute images in this range GpuDirty so they refresh from
+        // the now-updated guest memory on next bind.
         m_impl->texture_cache.InvalidateMemoryRange(dl.guest_base, range_size);
     }
     m_impl->pending_downloads.clear();

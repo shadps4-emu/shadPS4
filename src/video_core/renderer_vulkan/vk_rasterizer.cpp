@@ -412,8 +412,10 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         return false;
     }
 
-    // Resolve any pending compute downloads before binding textures,
-    // so RefreshImage reads the updated guest memory data.
+    // Resolve pending compute downloads before BindTextures so RefreshImage reads
+    // the updated guest memory. Must be called at this exact point: after the
+    // early-return guards but before the first BindTextures call below.
+    // Compute-only pipelines skip resolution — they don't trigger RefreshImage.
     if (!pipeline->IsCompute()) {
         ResolvePendingComputeDownloads();
     }
