@@ -103,6 +103,9 @@ private:
     void BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding);
     bool BindResources(const Pipeline* pipeline);
 
+    void SyncComputeStorageImages(u64 shader_hash = 0, u32 grid_x = 0, u32 grid_y = 0,
+                                   u32 grid_z = 0);
+
     void ResetBindings() {
         for (auto& image_id : bound_images) {
             texture_cache.GetImage(image_id).binding = {};

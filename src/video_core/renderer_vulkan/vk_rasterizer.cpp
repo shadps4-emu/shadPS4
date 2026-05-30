@@ -328,6 +328,8 @@ void Rasterizer::DispatchDirect() {
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 
+    SyncComputeStorageImages(cs.pgm_hash, cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
+
     ResetBindings();
 }
 
@@ -346,6 +348,7 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
         return;
     }
 
+    const auto& cs = pipeline->GetStage(Shader::LogicalStage::Compute);
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
 
     scheduler.EndRendering();
@@ -355,7 +358,60 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatchIndirect(buffer->Handle(), base);
 
+    SyncComputeStorageImages(cs.pgm_hash); // grid unknown for indirect
+
     ResetBindings();
+}
+
+void Rasterizer::SyncComputeStorageImages(u64 shader_hash, u32 grid_x, u32 grid_y, u32 grid_z) {
+    // Only download for verified CS to avoid corrupting guest memory with unverified output.
+    static constexpr u64 VERIFIED_CS[] = {
+        0xccdebd80f02a77aa, // R32 pixel copy, cascaded dispatch → BC3/BC1 texture overlap
+    };
+    bool is_verified = false;
+    for (u64 h : VERIFIED_CS) {
+        if (shader_hash == h) { is_verified = true; break; }
+    }
+    if (!is_verified) return;
+
+    const bool can_estimate = (grid_x > 0 && grid_y > 0);
+
+    for (const auto& [image_id, img_desc] : image_bindings) {
+        if (img_desc.type != VideoCore::TextureCache::BindingType::Storage || !image_id) continue;
+        auto& storage_img = texture_cache.GetImage(image_id);
+        storage_img.flags |= VideoCore::ImageFlagBits::GpuModified |
+                             VideoCore::ImageFlagBits::ComputeWritten;
+        storage_img.flags &= ~VideoCore::ImageFlagBits::Dirty;
+
+        if (storage_img.info.guest_address == 0) {
+            LOG_ERROR(Render, "CS sync skip: null guest address shader={:016x}", shader_hash);
+            continue;
+        }
+        if (!can_estimate) {
+            LOG_ERROR(Render, "CS sync skip: indirect dispatch shader={:016x}", shader_hash);
+            continue;
+        }
+        if (storage_img.info.num_samples > 1) {
+            LOG_ERROR(Render, "CS sync skip: multisampled shader={:016x}", shader_hash);
+            continue;
+        }
+        const u32 bpp = storage_img.info.num_bits / 8u;
+        if (bpp == 0 || storage_img.info.size.width == 0 || storage_img.info.size.height == 0) {
+            LOG_ERROR(Render, "CS sync skip: invalid image shader={:016x}", shader_hash);
+            continue;
+        }
+
+        const u32 img_w = static_cast<u32>(storage_img.info.size.width);
+        const u32 img_h = static_cast<u32>(storage_img.info.size.height);
+        const u32 block_w = std::max<u32>(1, (img_w + grid_x - 1) / grid_x);
+        const u32 block_h = std::max<u32>(1, (img_h + grid_y - 1) / grid_y);
+        const u32 dirty_w = std::min<u32>(grid_x * block_w, img_w);
+        const u32 dirty_h = std::min<u32>(grid_y * block_h, img_h);
+
+        storage_img.DownloadToGuest(0, 0, dirty_w, dirty_h);
+        storage_img.flags &= ~VideoCore::ImageFlagBits::ComputeWritten;
+        storage_img.flags &= ~VideoCore::ImageFlagBits::GpuModified;
+    }
 }
 
 u64 Rasterizer::Flush() {
@@ -396,6 +452,8 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     // Bind resource buffers and textures.
     Shader::Backend::Bindings binding{};
     push_data = MakeUserData(liverpool->regs);
+    // Accumulate all image bindings across stages (each BindTextures clears image_bindings).
+    boost::container::small_vector<ImageBindingInfo, Shader::NUM_IMAGES> all_images;
     for (const auto* stage : pipeline->GetStages()) {
         if (!stage) {
             continue;
@@ -405,7 +463,27 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         stage->PushUd(binding, push_data);
         BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
+        all_images.insert(all_images.end(), image_bindings.begin(), image_bindings.end());
         uses_dma |= stage->uses_dma;
+    }
+
+    // Detect compute storage ↔ texture overlaps and mark textures Dirty for refresh.
+    if (!pipeline->IsCompute()) {
+        for (const auto& [tex_id, tex_desc] : all_images) {
+            if (!tex_id) continue;
+            auto& tex_img = texture_cache.GetImage(tex_id);
+            if (tex_img.info.props.is_depth) continue;
+            if (tex_img.info.num_samples > 1) continue;
+            texture_cache.ForEachImageInRegion(tex_img.info.guest_address,
+                tex_img.info.guest_size,
+                [&](VideoCore::ImageId overlap_id, VideoCore::Image& overlap_img) {
+                    if (overlap_id == tex_id) return;
+                    if (!True(overlap_img.flags & VideoCore::ImageFlagBits::ComputeWritten)) return;
+                    if (overlap_img.info.pixel_format == tex_img.info.pixel_format) return;
+                    tex_img.flags |= VideoCore::ImageFlagBits::Dirty;
+                    // ComputeWritten is cleared in SyncComputeStorageImages after download.
+                });
+        }
     }
 
     if (uses_dma) {

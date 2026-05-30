@@ -436,6 +436,72 @@ void Image::Download(std::span<const vk::BufferImageCopy> download_copies, vk::B
     });
 }
 
+void Image::DownloadToGuest(u32 min_x, u32 min_y, u32 max_x, u32 max_y) {
+    // Guard against invalid image or out-of-bounds rect.
+    if (info.guest_address == 0) return;
+    const u32 bpp = info.num_bits / 8u;
+    if (bpp == 0 || info.size.width == 0 || info.size.height == 0) return;
+    if (min_x >= max_x || min_y >= max_y) return;
+    if (max_x > info.size.width || max_y > info.size.height) return;
+
+    const u32 full_row_bytes = info.size.width * bpp;
+    const u32 rect_w = max_x - min_x;
+    const u32 rect_h = max_y - min_y;
+    const u32 partial_row_bytes = rect_w * bpp;
+    const u32 download_size = rect_h * full_row_bytes;
+    const VAddr guest_base = info.guest_address;
+
+    // Allocate staging buffer (full row width, rect_h rows).
+    const VkBufferCreateInfo buffer_ci = {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = download_size,
+        .usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
+    VmaAllocationCreateInfo alloc_ci = {};
+    alloc_ci.flags =
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    alloc_ci.usage = VMA_MEMORY_USAGE_AUTO;
+
+    VmaAllocator vma_alloc = backing->image.allocator;
+    VmaAllocation allocation = VK_NULL_HANDLE;
+    VmaAllocationInfo alloc_info{};
+    VkBuffer staging_vk = VK_NULL_HANDLE;
+    VkResult vk_res = vmaCreateBuffer(vma_alloc, &buffer_ci, &alloc_ci, &staging_vk,
+                                       &allocation, &alloc_info);
+    if (vk_res != VK_SUCCESS) return;
+    vk::Buffer staging_buffer{staging_vk};
+
+    // Download the rows covering the requested rectangle.
+    const vk::BufferImageCopy copy_region = {
+        .bufferOffset = 0,
+        .bufferRowLength = static_cast<u32>(info.size.width),
+        .bufferImageHeight = 0,
+        .imageSubresource =
+            {
+                .aspectMask = aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+        .imageOffset = {0, static_cast<int32_t>(min_y), 0},
+        .imageExtent = {static_cast<u32>(info.size.width), rect_h, 1},
+    };
+    std::span copies{&copy_region, 1};
+    Download(copies, staging_buffer, 0, download_size);
+    scheduler->Finish();
+
+    // Per-row memcpy: only columns [min_x, max_x) to guest memory.
+    const u8* mapped = static_cast<const u8*>(alloc_info.pMappedData);
+    for (u32 row = 0; row < rect_h; ++row) {
+        const u32 src_off = row * full_row_bytes + min_x * bpp;
+        u8* dst = std::bit_cast<u8*>(guest_base + (min_y + row) * full_row_bytes + min_x * bpp);
+        std::memcpy(dst, mapped + src_off, partial_row_bytes);
+    }
+
+    vmaDestroyBuffer(vma_alloc, staging_vk, allocation);
+}
+
 static std::pair<u32, u32> SanitizeCopyLayers(const ImageInfo& src_info, const ImageInfo& dst_info,
                                               const u32 depth) {
     const auto vk_src_type = ConvertImageType(src_info.type);

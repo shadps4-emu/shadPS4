@@ -32,6 +32,7 @@ enum ImageFlagBits : u32 {
     GpuDirty = 1 << 2, ///< Contents have been modified from the GPU (valid data in buffer cache)
     Dirty = MaybeCpuDirty | CpuDirty | GpuDirty,
     GpuModified = 1 << 3, ///< Contents have been modified from the GPU
+    ComputeWritten = 1 << 4, ///< Written by compute dispatch (for GPU-side sync to textures)
     Registered = 1 << 6,  ///< True when the image is registered
     Picked = 1 << 7,      ///< Temporary flag to mark the image as picked
 };
@@ -134,6 +135,9 @@ struct Image {
     void Download(std::span<const vk::BufferImageCopy> download_copies, vk::Buffer buffer,
                   u64 offset, u64 download_size);
 
+    /// Download image content to guest memory for the pixel rectangle [min_x,min_y)-(max_x,max_y).
+    void DownloadToGuest(u32 min_x, u32 min_y, u32 max_x, u32 max_y);
+
     void CopyImage(Image& src_image);
     void CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset);
     void CopyMip(Image& src_image, u32 mip, u32 slice);
@@ -157,6 +161,13 @@ public:
     VAddr track_addr_end = 0;
     ImageId depth_id{};
     u64 depth_uid{};
+
+    // Pixel region written by last compute dispatch on this storage image.
+    struct {
+        u32 min_x = 0, min_y = 0;
+        u32 max_x = 0, max_y = 0; // exclusive
+        bool valid = false;
+    } compute_dirty_rect{};
 
     // Resource state tracking
     vk::ImageUsageFlags usage_flags;
