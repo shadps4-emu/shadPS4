@@ -52,6 +52,10 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     case DBG_PRINTEXCEPTION_WIDE_C:
         // Used by OutputDebugString functions.
         return EXCEPTION_CONTINUE_EXECUTION;
+    case EXCEPTION_BREAKPOINT:
+        // This is almost certainly coming from our asserts/unreachables, no need to log it again.
+        Common::Log::Flush();
+        return EXCEPTION_CONTINUE_SEARCH;
     default:
         break;
     }
