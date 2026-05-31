@@ -234,6 +234,16 @@
               ];
 
               patches = [ ];
+
+              # Cannot get the Branch name from the sandbox.
+              # Getting the commit hash can still be acquired through self.
+              patchPhase = '' 
+                substituteInPlace src/common/scm_rev.cpp.in \
+                  --replace-fail "@GIT_BRANCH@" "${self.shortRev or "Dirty"}"
+                
+                substituteInPlace src/common/scm_rev.cpp.in \
+                  --replace-fail "@GIT_DESC@" ""
+              '';
             });
 
           debugBuild = pkgsLinux.callPackage build
