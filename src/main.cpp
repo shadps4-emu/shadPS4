@@ -112,8 +112,6 @@ int main(int argc, char* argv[]) {
     EmulatorState::SetInstance(emu_state);
     UserSettings.Load();
 
-    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-
     // Initialize key manager
     auto key_manager = KeyManager::GetInstance();
     key_manager->LoadFromFile();
