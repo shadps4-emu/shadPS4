@@ -732,8 +732,6 @@ set(COMMON src/common/logging/classes.h
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
-           src/common/config.cpp
-           src/common/config.h
            src/common/cstring.h
            src/common/debug.h
            src/common/decoder.cpp
