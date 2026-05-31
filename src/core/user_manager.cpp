@@ -25,11 +25,11 @@ bool UserManager::AddUser(const User& user) {
     const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(user.user_id);
 
     std::error_code ec;
-    if (!fs::exists(user_dir)) {
-        fs::create_directory(user_dir, ec);
-        fs::create_directory(user_dir / "savedata", ec);
-        fs::create_directory(user_dir / "trophy", ec);
-        fs::create_directory(user_dir / "inputs", ec);
+    if (!std::filesystem::exists(user_dir)) {
+        std::filesystem::create_directory(user_dir, ec);
+        std::filesystem::create_directory(user_dir / "savedata", ec);
+        std::filesystem::create_directory(user_dir / "trophy", ec);
+        std::filesystem::create_directory(user_dir / "inputs", ec);
     }
 
     Save();
@@ -44,9 +44,9 @@ bool UserManager::RemoveUser(s32 user_id) {
 
     const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(user_id);
 
-    if (fs::exists(user_dir)) {
+    if (std::filesystem::exists(user_dir)) {
         std::error_code ec;
-        fs::remove_all(user_dir, ec);
+        std::filesystem::remove_all(user_dir, ec);
     }
 
     m_users.user.erase(it, m_users.user.end());
@@ -141,14 +141,15 @@ Users UserManager::CreateDefaultUsers() {
     for (auto& u : default_users.user) {
         const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(u.user_id);
 
-        if (!fs::exists(user_dir)) {
-            fs::create_directory(user_dir);
-            fs::create_directory(user_dir / "savedata");
-            fs::create_directory(user_dir / "trophy");
-            fs::create_directory(user_dir / "inputs");
+        if (!std::filesystem::exists(user_dir)) {
+            std::filesystem::create_directory(user_dir);
+            std::filesystem::create_directory(user_dir / "savedata");
+            std::filesystem::create_directory(user_dir / "trophy");
+            std::filesystem::create_directory(user_dir / "inputs");
             auto const old_save_dir =
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "savedata" / "1";
-            if (u.user_id == 1000 && fs::exists(old_save_dir) && !fs::is_empty(old_save_dir)) {
+            if (u.user_id == 1000 && std::filesystem::exists(old_save_dir) &&
+                !std::filesystem::is_empty(old_save_dir)) {
                 auto const new_save_dir = user_dir / "savedata";
 #ifndef _WIN32
                 SDL_MessageBoxButtonData btns[4]
@@ -187,24 +188,27 @@ Users UserManager::CreateDefaultUsers() {
                 try {
                     switch (result) {
                     case 0:
-                        fs::copy(old_save_dir, new_save_dir, fs::copy_options::recursive);
+                        std::filesystem::copy(old_save_dir, new_save_dir,
+                                              std::filesystem::copy_options::recursive);
                         break;
                     case 1:
                         try {
-                            fs::rename(old_save_dir, new_save_dir);
+                            std::filesystem::rename(old_save_dir, new_save_dir);
                         } catch (...) {
-                            fs::copy(old_save_dir, new_save_dir, fs::copy_options::recursive);
-                            fs::remove_all(old_save_dir);
+                            std::filesystem::copy(old_save_dir, new_save_dir,
+                                                  std::filesystem::copy_options::recursive);
+                            std::filesystem::remove_all(old_save_dir);
                         }
                         break;
                     case 2:
                         try {
-                            fs::rename(old_save_dir, new_save_dir);
+                            std::filesystem::rename(old_save_dir, new_save_dir);
                         } catch (...) {
-                            fs::copy(old_save_dir, new_save_dir, fs::copy_options::recursive);
-                            fs::remove_all(old_save_dir);
+                            std::filesystem::copy(old_save_dir, new_save_dir,
+                                                  std::filesystem::copy_options::recursive);
+                            std::filesystem::remove_all(old_save_dir);
                         }
-                        fs::create_directory_symlink(new_save_dir, old_save_dir);
+                        std::filesystem::create_directory_symlink(new_save_dir, old_save_dir);
                         break;
                     case -1:
                     case 3:
@@ -254,7 +258,7 @@ std::vector<User> UserManager::GetValidUsers() const {
 
     for (const auto& user : m_users.user) {
         const auto user_dir = home_dir / std::to_string(user.user_id);
-        if (fs::exists(user_dir)) {
+        if (std::filesystem::exists(user_dir)) {
             result.push_back(user);
         }
     }
