@@ -212,7 +212,7 @@ Users UserManager::CreateDefaultUsers() {
                     default:
                         UNREACHABLE();
                     }
-                } catch (std::exception& e) {
+                } catch (std::exception const& e) {
                     UNREACHABLE_MSG("Error while migrating saves: {}", e.what());
                 }
             }
