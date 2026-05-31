@@ -48,12 +48,6 @@ sudo zypper install clang git cmake libasound2 libpulse-devel \
     vulkan-devel vulkan-validationlayers libpng-devel
 ```
 
-#### NixOS
-
-```bash
-nix-shell shell.nix
-```
-
 #### Nix Flake Development Shell
 ```bash
 nix develop
