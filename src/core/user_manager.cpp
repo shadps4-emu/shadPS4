@@ -3,12 +3,15 @@
 
 #include <filesystem>
 #include <iostream>
+#include <SDL3/SDL_messagebox.h>
 #include <common/assert.h>
 #include <common/path_util.h>
 #include "emulator_settings.h"
 #include "libraries/system/userservice.h"
 #include "user_manager.h"
 #include "user_settings.h"
+
+namespace fs = std::filesystem;
 
 bool UserManager::AddUser(const User& user) {
     for (const auto& u : m_users.user) {
@@ -22,11 +25,11 @@ bool UserManager::AddUser(const User& user) {
     const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(user.user_id);
 
     std::error_code ec;
-    if (!std::filesystem::exists(user_dir)) {
-        std::filesystem::create_directory(user_dir, ec);
-        std::filesystem::create_directory(user_dir / "savedata", ec);
-        std::filesystem::create_directory(user_dir / "trophy", ec);
-        std::filesystem::create_directory(user_dir / "inputs", ec);
+    if (!fs::exists(user_dir)) {
+        fs::create_directory(user_dir, ec);
+        fs::create_directory(user_dir / "savedata", ec);
+        fs::create_directory(user_dir / "trophy", ec);
+        fs::create_directory(user_dir / "inputs", ec);
     }
 
     Save();
@@ -41,9 +44,9 @@ bool UserManager::RemoveUser(s32 user_id) {
 
     const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(user_id);
 
-    if (std::filesystem::exists(user_dir)) {
+    if (fs::exists(user_dir)) {
         std::error_code ec;
-        std::filesystem::remove_all(user_dir, ec);
+        fs::remove_all(user_dir, ec);
     }
 
     m_users.user.erase(it, m_users.user.end());
@@ -138,11 +141,70 @@ Users UserManager::CreateDefaultUsers() {
     for (auto& u : default_users.user) {
         const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(u.user_id);
 
-        if (!std::filesystem::exists(user_dir)) {
-            std::filesystem::create_directory(user_dir);
-            std::filesystem::create_directory(user_dir / "savedata");
-            std::filesystem::create_directory(user_dir / "trophy");
-            std::filesystem::create_directory(user_dir / "inputs");
+        if (!fs::exists(user_dir)) {
+            fs::create_directory(user_dir);
+            fs::create_directory(user_dir / "savedata");
+            fs::create_directory(user_dir / "trophy");
+            fs::create_directory(user_dir / "inputs");
+            auto const old_save_dir =
+                Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "savedata" / "1";
+            if (u.user_id == 1000 && fs::exists(old_save_dir) && !fs::is_empty(old_save_dir)) {
+                auto const new_save_dir = user_dir / "savedata";
+
+                SDL_MessageBoxButtonData btns[4]{
+                    {0, 0, "Copy"},
+                    {0, 1, "Move"},
+                    {0, 2, "Move and link back"},
+                    {0, 3, "Do nothing"},
+                };
+                SDL_MessageBoxData msg_box{
+                    0,
+                    nullptr,
+                    "Save Migration",
+                    "The shadPS4 save location has been updated, and save files have been detected "
+                    "in the old location. Do you wish to copy them over, move them over, move and "
+                    "link back to the original the original location (only UNIX systems), or "
+                    "continue without doing anything?",
+                    4,
+                    btns,
+                    nullptr,
+                };
+                int result = 3;
+                SDL_ShowMessageBox(&msg_box, &result);
+                try {
+                    switch (result) {
+                    case 0:
+                        fs::copy(old_save_dir, new_save_dir, fs::copy_options::recursive);
+                        break;
+                    case 1:
+                        try {
+                            fs::rename(old_save_dir, new_save_dir);
+                        } catch (...) {
+                            fs::copy(old_save_dir, new_save_dir, fs::copy_options::recursive);
+                            fs::remove_all(old_save_dir);
+                        }
+                        break;
+                    case 2:
+                        try {
+                            fs::rename(old_save_dir, new_save_dir);
+                        } catch (...) {
+                            fs::copy(old_save_dir, new_save_dir, fs::copy_options::recursive);
+                            fs::remove_all(old_save_dir);
+                        }
+#ifndef _WIN32
+                        fs::create_directory_symlink(new_save_dir, old_save_dir);
+#endif
+                        break;
+                    case -1:
+                    case 3:
+                        break;
+                    default:
+                        UNREACHABLE();
+                    }
+                } catch (std::exception& e) {
+                    UNREACHABLE_MSG("Error while migrating saves: {}", e.what());
+                }
+            }
         }
     }
 
@@ -181,7 +243,7 @@ std::vector<User> UserManager::GetValidUsers() const {
 
     for (const auto& user : m_users.user) {
         const auto user_dir = home_dir / std::to_string(user.user_id);
-        if (std::filesystem::exists(user_dir)) {
+        if (fs::exists(user_dir)) {
             result.push_back(user);
         }
     }
