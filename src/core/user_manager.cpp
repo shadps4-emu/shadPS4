@@ -150,22 +150,35 @@ Users UserManager::CreateDefaultUsers() {
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "savedata" / "1";
             if (u.user_id == 1000 && fs::exists(old_save_dir) && !fs::is_empty(old_save_dir)) {
                 auto const new_save_dir = user_dir / "savedata";
-
-                SDL_MessageBoxButtonData btns[4]{
-                    {0, 0, "Copy"},
-                    {0, 1, "Move"},
-                    {0, 2, "Move and link back"},
-                    {0, 3, "Do nothing"},
-                };
+#ifndef _WIN32
+                SDL_MessageBoxButtonData btns[4]
+#else
+                SDL_MessageBoxButtonData btns[3]
+#endif
+                    {
+                        {0, 0, "Copy"},
+                        {0, 1, "Move"},
+#ifndef _WIN32
+                        {0, 2, "Move and link back"},
+#endif
+                        {0, 3, "Do nothing"},
+                    };
                 SDL_MessageBoxData msg_box{
                     0,
                     nullptr,
                     "Save Migration",
                     "The shadPS4 save location has been updated, and save files have been detected "
-                    "in the old location. Do you wish to copy them over, move them over, move and "
-                    "link back to the original the original location (only UNIX systems), or "
-                    "continue without doing anything?",
+                    "in the old location. Do you wish to copy them over, move them over, "
+#ifndef _WIN32
+                    "move and link back to the original the original location, "
+#endif
+                    "or continue without doing anything?",
+
+#ifndef _WIN32
                     4,
+#else
+                    3,
+#endif
                     btns,
                     nullptr,
                 };
@@ -191,9 +204,7 @@ Users UserManager::CreateDefaultUsers() {
                             fs::copy(old_save_dir, new_save_dir, fs::copy_options::recursive);
                             fs::remove_all(old_save_dir);
                         }
-#ifndef _WIN32
                         fs::create_directory_symlink(new_save_dir, old_save_dir);
-#endif
                         break;
                     case -1:
                     case 3:
