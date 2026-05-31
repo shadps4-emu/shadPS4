@@ -3,12 +3,15 @@
 
 #include <filesystem>
 #include <iostream>
+#include <SDL3/SDL_messagebox.h>
 #include <common/assert.h>
 #include <common/path_util.h>
 #include "emulator_settings.h"
 #include "libraries/system/userservice.h"
 #include "user_manager.h"
 #include "user_settings.h"
+
+namespace fs = std::filesystem;
 
 bool UserManager::AddUser(const User& user) {
     for (const auto& u : m_users.user) {
@@ -143,6 +146,80 @@ Users UserManager::CreateDefaultUsers() {
             std::filesystem::create_directory(user_dir / "savedata");
             std::filesystem::create_directory(user_dir / "trophy");
             std::filesystem::create_directory(user_dir / "inputs");
+            auto const old_save_dir =
+                Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "savedata" / "1";
+            if (u.user_id == 1000 && std::filesystem::exists(old_save_dir) &&
+                !std::filesystem::is_empty(old_save_dir)) {
+                auto const new_save_dir = user_dir / "savedata";
+#ifndef _WIN32
+                SDL_MessageBoxButtonData btns[4]
+#else
+                SDL_MessageBoxButtonData btns[3]
+#endif
+                    {
+                        {0, 0, "Copy"},
+                        {0, 1, "Move"},
+#ifndef _WIN32
+                        {0, 2, "Move and link back"},
+#endif
+                        {0, 3, "Do nothing"},
+                    };
+                SDL_MessageBoxData msg_box{
+                    0,
+                    nullptr,
+                    "Save Migration",
+                    "The shadPS4 save location has been updated, and save files have been detected "
+                    "in the old location.\nDo you wish to copy them over, move them over, "
+#ifndef _WIN32
+                    "move and link back to the original the original location, "
+#endif
+                    "or continue without doing anything?",
+
+#ifndef _WIN32
+                    4,
+#else
+                    3,
+#endif
+                    btns,
+                    nullptr,
+                };
+                int result = 3;
+                SDL_ShowMessageBox(&msg_box, &result);
+                try {
+                    switch (result) {
+                    case 0:
+                        std::filesystem::copy(old_save_dir, new_save_dir,
+                                              std::filesystem::copy_options::recursive);
+                        break;
+                    case 1:
+                        try {
+                            std::filesystem::rename(old_save_dir, new_save_dir);
+                        } catch (...) {
+                            std::filesystem::copy(old_save_dir, new_save_dir,
+                                                  std::filesystem::copy_options::recursive);
+                            std::filesystem::remove_all(old_save_dir);
+                        }
+                        break;
+                    case 2:
+                        try {
+                            std::filesystem::rename(old_save_dir, new_save_dir);
+                        } catch (...) {
+                            std::filesystem::copy(old_save_dir, new_save_dir,
+                                                  std::filesystem::copy_options::recursive);
+                            std::filesystem::remove_all(old_save_dir);
+                        }
+                        std::filesystem::create_directory_symlink(new_save_dir, old_save_dir);
+                        break;
+                    case -1:
+                    case 3:
+                        break;
+                    default:
+                        UNREACHABLE();
+                    }
+                } catch (std::exception const& e) {
+                    UNREACHABLE_MSG("Error while migrating saves: {}", e.what());
+                }
+            }
         }
     }
 
