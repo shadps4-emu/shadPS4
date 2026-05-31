@@ -168,7 +168,7 @@ Users UserManager::CreateDefaultUsers() {
                     nullptr,
                     "Save Migration",
                     "The shadPS4 save location has been updated, and save files have been detected "
-                    "in the old location. Do you wish to copy them over, move them over, "
+                    "in the old location.\nDo you wish to copy them over, move them over, "
 #ifndef _WIN32
                     "move and link back to the original the original location, "
 #endif
