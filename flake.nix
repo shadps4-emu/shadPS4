@@ -233,8 +233,6 @@
                 libressl
               ];
 
-              patches = [ ];
-
               # Cannot get the Branch name from the sandbox.
               # Getting the commit hash can still be acquired through self.
               patchPhase = '' 
