@@ -31,10 +31,10 @@ enum ImageFlagBits : u32 {
     CpuDirty = 1 << 1,      ///< Contents have been modified from the CPU
     GpuDirty = 1 << 2, ///< Contents have been modified from the GPU (valid data in buffer cache)
     Dirty = MaybeCpuDirty | CpuDirty | GpuDirty,
-    GpuModified = 1 << 3, ///< Contents have been modified from the GPU
+    GpuModified = 1 << 3,    ///< Contents have been modified from the GPU
     ComputeWritten = 1 << 4, ///< Written by compute dispatch (for GPU-side sync to textures)
-    Registered = 1 << 6,  ///< True when the image is registered
-    Picked = 1 << 7,      ///< Temporary flag to mark the image as picked
+    Registered = 1 << 6,     ///< True when the image is registered
+    Picked = 1 << 7,         ///< Temporary flag to mark the image as picked
 };
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 
