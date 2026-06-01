@@ -230,52 +230,65 @@ Users UserManager::CreateDefaultUsers() {
                     Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "game_data";
                 auto const new_trophy_global_dir =
                     Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy";
-                for (auto const& entry : fs::directory_iterator(old_trophy_base_dir)) {
-                    if (!entry.is_directory()) {
-                        continue;
-                    }
-                    // sorry Driveclub fans, y'all'll get trophy01 migrated when y'all go and boot
-                    // up the game, I can't be assed to do yet another directory iteration here
-                    auto const old_trophy_dir = entry.path() / "TrophyFiles" / "trophy00";
-                    if (fs::exists(old_trophy_dir / "Xml")) {
-                        pugi::xml_document doc;
-                        pugi::xml_parse_result result =
-                            doc.load_file((old_trophy_dir / "Xml" / "TROP.XML").native().c_str());
-                        if (!result) {
+                try {
+                    for (auto const& entry : fs::directory_iterator(old_trophy_base_dir)) {
+                        if (!entry.is_directory()) {
                             continue;
                         }
-                        std::string npcommid =
-                            doc.child("trophyconf").child("npcommid").text().as_string();
-                        if (npcommid.empty()) {
+                        if (!fs::exists(entry.path() / "TrophyFiles")) {
                             continue;
                         }
-                        if (fs::exists(user_dir / "trophy" / (npcommid + ".xml"))) {
-                            continue;
-                        }
-                        try {
-                            fs::create_directories(new_trophy_global_dir / npcommid);
-                            fs::copy(old_trophy_dir, new_trophy_global_dir / npcommid,
-                                     fs::copy_options::recursive);
-                            auto const old_trophy_file = old_trophy_dir / "Xml" / "TROP.XML";
-                            auto const new_trophy_file = user_dir / "trophy" / (npcommid + ".xml");
-                            switch (user_choice) {
-                            case TransferOption::Copy:
-                                fs::copy_file(old_trophy_file, new_trophy_file);
-                            case TransferOption::Move:
-                                fs::rename(old_trophy_file, new_trophy_file);
-                            case TransferOption::MoveAndLinkBack:
-                                fs::rename(old_trophy_file, new_trophy_file);
-                                fs::create_symlink(new_trophy_file, old_trophy_file);
-                            case TransferOption::Nothing:
-                            case TransferOption::SdlCancelled:
-                                break;
-                            default:
-                                UNREACHABLE();
+                        for (auto const& subentry :
+                             fs::directory_iterator(entry.path() / "TrophyFiles")) {
+                            if (!subentry.is_directory()) {
+                                continue;
                             }
-                        } catch (std::exception const& e) {
-                            UNREACHABLE_MSG("Error while migrating trophies: {}", e.what());
+                            auto const old_trophy_dir = subentry.path();
+                            if (fs::exists(old_trophy_dir / "Xml")) {
+                                pugi::xml_document doc;
+                                pugi::xml_parse_result result = doc.load_file(
+                                    (old_trophy_dir / "Xml" / "TROP.XML").native().c_str());
+                                if (!result) {
+                                    continue;
+                                }
+                                std::string npcommid =
+                                    doc.child("trophyconf").child("npcommid").text().as_string();
+                                if (npcommid.empty()) {
+                                    continue;
+                                }
+                                if (fs::exists(user_dir / "trophy" / (npcommid + ".xml"))) {
+                                    continue;
+                                }
+                                if (!fs::exists(new_trophy_global_dir / npcommid)) {
+                                    fs::create_directories(new_trophy_global_dir / npcommid);
+                                    fs::copy(old_trophy_dir, new_trophy_global_dir / npcommid,
+                                             fs::copy_options::recursive);
+                                }
+                                auto const old_trophy_file = old_trophy_dir / "Xml" / "TROP.XML";
+                                auto const new_trophy_file =
+                                    user_dir / "trophy" / (npcommid + ".xml");
+                                switch (user_choice) {
+                                case TransferOption::Copy:
+                                    fs::copy_file(old_trophy_file, new_trophy_file);
+                                    break;
+                                case TransferOption::Move:
+                                    fs::rename(old_trophy_file, new_trophy_file);
+                                    break;
+                                case TransferOption::MoveAndLinkBack:
+                                    fs::rename(old_trophy_file, new_trophy_file);
+                                    fs::create_symlink(new_trophy_file, old_trophy_file);
+                                    break;
+                                case TransferOption::Nothing:
+                                case TransferOption::SdlCancelled:
+                                    break;
+                                default:
+                                    UNREACHABLE();
+                                }
+                            }
                         }
                     }
+                } catch (std::exception const& e) {
+                    UNREACHABLE_MSG("Error while migrating trophies: {}", e.what());
                 }
             }
         }
