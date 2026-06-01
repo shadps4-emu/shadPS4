@@ -4,9 +4,7 @@
 #include "common/logging/log.h"
 #include "common/thread.h"
 #include "core/libraries/avplayer/avplayer_error.h"
-#include "core/libraries/avplayer/avplayer_source.h"
 #include "core/libraries/avplayer/avplayer_state.h"
-#include "core/tls.h"
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -177,6 +175,7 @@ bool AvPlayerState::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
 bool AvPlayerState::Start() {
     std::shared_lock lock(m_source_mutex);
     if (m_current_state == AvState::Ready || m_current_state == AvState::Stop || Stop()) {
+        m_eof_stop_event_sent = false;
         SetState(AvState::Starting);
         if (!m_up_source->Start()) {
             LOG_ERROR(Lib_AvPlayer, "Could not start playback.");
@@ -199,13 +198,16 @@ bool AvPlayerState::Pause() {
         return true;
     }
     if (m_up_source == nullptr || m_current_state == AvState::Pause ||
-        m_current_state == AvState::Ready || m_current_state == AvState::Initial ||
-        m_current_state == AvState::Unknown || m_current_state == AvState::AddingSource) {
+        m_current_state == AvState::Stop || m_current_state == AvState::Ready ||
+        m_current_state == AvState::Initial || m_current_state == AvState::Unknown ||
+        m_current_state == AvState::AddingSource) {
         LOG_ERROR(Lib_AvPlayer, "Could not pause playback.");
         return false;
     }
     m_up_source->Pause();
-    SetState(AvState::Pause);
+    if (!SetState(AvState::Pause)) {
+        return false;
+    }
     OnPlaybackStateChanged(AvState::Pause);
     return true;
 }
@@ -286,6 +288,7 @@ bool AvPlayerState::Stop() {
     if (!SetState(AvState::Stop)) {
         return false;
     }
+    m_eof_stop_event_sent = true;
     OnPlaybackStateChanged(AvState::Stop);
     return true;
 }
@@ -320,7 +323,7 @@ bool AvPlayerState::IsActive() {
         return false;
     }
     return m_current_state != AvState::Stop && m_current_state != AvState::Error &&
-           m_current_state != AvState::EndOfFile && m_up_source->IsActive();
+           m_up_source->IsActive();
 }
 
 u64 AvPlayerState::CurrentTime() {
@@ -359,6 +362,16 @@ void AvPlayerState::OnError() {
 
 void AvPlayerState::OnEOF() {
     SetState(AvState::EndOfFile);
+}
+
+void AvPlayerState::UpdateEndOfFileState() {
+    std::shared_lock lock(m_source_mutex);
+    if (m_up_source == nullptr || m_up_source->IsActive() || m_eof_stop_event_sent.exchange(true)) {
+        return;
+    }
+    lock.unlock();
+
+    EmitEvent(AvPlayerEvents::StateStop);
 }
 
 // Called inside CONTROLLER thread
@@ -466,7 +479,9 @@ void AvPlayerState::ProcessEvent() {
 
 // Called inside CONTROLLER thread
 void AvPlayerState::UpdateBufferingState() {
-    if (m_current_state == AvState::Buffering) {
+    if (m_current_state == AvState::EndOfFile) {
+        UpdateEndOfFileState();
+    } else if (m_current_state == AvState::Buffering) {
         const auto has_frames = OnBufferingCheckEvent(10);
         if (!has_frames.has_value()) {
             return;
