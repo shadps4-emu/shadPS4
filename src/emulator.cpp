@@ -347,7 +347,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         MemoryPatcher::g_game_serial = id;
 
         int index = 0;
-        for (std::string npCommId : game_info.npCommIds) {
+        for (u64 i = 0; i < game_info.npCommIds.size(); i++) {
+            std::string const& npCommId = game_info.npCommIds[i];
             const auto trophyOutputDir =
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / npCommId;
             if (!std::filesystem::exists(trophyOutputDir)) {
@@ -361,11 +362,21 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                                               std::to_string(user.user_id) / "trophy" /
                                               (npCommId + ".xml");
                 if (!std::filesystem::exists(user_trophy_file)) {
+                    auto const old_trophy_location =
+                        Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "game_data" /
+                        game_info.game_serial / "TrophyFiles" / std::format("trophy{:02}", i);
                     auto temp = user_trophy_file.parent_path();
                     std::filesystem::create_directories(temp);
                     std::error_code discard;
-                    std::filesystem::copy_file(trophyOutputDir / "Xml" / "TROPCONF.XML",
-                                               user_trophy_file, discard);
+                    if (std::filesystem::exists(old_trophy_location)) {
+                        // this version stores more data, but technically has all of the needed
+                        // stuff to slot into the place of TROPCONF.XML's layout seamlessly
+                        std::filesystem::copy_file(old_trophy_location / "Xml" / "TROP.XML",
+                                                   user_trophy_file, discard);
+                    } else {
+                        std::filesystem::copy_file(trophyOutputDir / "Xml" / "TROPCONF.XML",
+                                                   user_trophy_file, discard);
+                    }
                 }
             }
             index++;

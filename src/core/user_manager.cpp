@@ -6,6 +6,7 @@
 #include <SDL3/SDL_messagebox.h>
 #include <common/assert.h>
 #include <common/path_util.h>
+#include <pugixml.hpp>
 #include "emulator_settings.h"
 #include "libraries/system/userservice.h"
 #include "user_manager.h"
@@ -148,77 +149,113 @@ Users UserManager::CreateDefaultUsers() {
             std::filesystem::create_directory(user_dir / "inputs");
             auto const old_save_dir =
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "savedata" / "1";
-            if (u.user_id == 1000 && std::filesystem::exists(old_save_dir) &&
-                !std::filesystem::is_empty(old_save_dir)) {
-                auto const new_save_dir = user_dir / "savedata";
+            if (u.user_id == 1000) {
+                if (fs::exists(old_save_dir) && !fs::is_empty(old_save_dir)) {
+                    auto const new_save_dir = user_dir / "savedata";
 #ifndef _WIN32
-                SDL_MessageBoxButtonData btns[4]
+                    SDL_MessageBoxButtonData btns[4]
 #else
-                SDL_MessageBoxButtonData btns[3]
+                    SDL_MessageBoxButtonData btns[3]
 #endif
-                    {
-                        {0, 0, "Copy"},
-                        {0, 1, "Move"},
+                        {
+                            {0, 0, "Copy"},
+                            {0, 1, "Move"},
 #ifndef _WIN32
-                        {0, 2, "Move and link back"},
+                            {0, 2, "Move and link back"},
 #endif
-                        {0, 3, "Do nothing"},
-                    };
-                SDL_MessageBoxData msg_box{
-                    0,
-                    nullptr,
-                    "Save Migration",
-                    "The shadPS4 save location has been updated, and save files have been detected "
-                    "in the old location.\nDo you wish to copy them over, move them over, "
+                            {0, 3, "Do nothing"},
+                        };
+                    SDL_MessageBoxData msg_box{
+                        0,
+                        nullptr,
+                        "Save Migration",
+                        "The shadPS4 save location has been updated, and save files have been "
+                        "detected "
+                        "in the old location.\nDo you wish to copy them over, move them over, "
 #ifndef _WIN32
-                    "move and link back to the original the original location, "
+                        "move and link back to the original the original location, "
 #endif
-                    "or continue without doing anything?",
+                        "or continue without doing anything?",
 
 #ifndef _WIN32
-                    4,
+                        4,
 #else
-                    3,
+                        3,
 #endif
-                    btns,
-                    nullptr,
-                };
-                int result = 3;
-                SDL_ShowMessageBox(&msg_box, &result);
-                try {
-                    switch (result) {
-                    case 0:
-                        std::filesystem::copy(old_save_dir, new_save_dir,
-                                              std::filesystem::copy_options::recursive);
-                        break;
-                    case 1:
-                        try {
-                            std::filesystem::rename(old_save_dir, new_save_dir);
-                        } catch (...) {
-                            std::filesystem::copy(old_save_dir, new_save_dir,
-                                                  std::filesystem::copy_options::recursive);
-                            std::filesystem::remove_all(old_save_dir);
+                        btns,
+                        nullptr,
+                    };
+                    int result = 3;
+                    SDL_ShowMessageBox(&msg_box, &result);
+                    try {
+                        switch (result) {
+                        case 0:
+                            fs::copy(old_save_dir, new_save_dir, fs::copy_options::recursive);
+                            break;
+                        case 1:
+                            try {
+                                fs::rename(old_save_dir, new_save_dir);
+                            } catch (...) {
+                                fs::copy(old_save_dir, new_save_dir, fs::copy_options::recursive);
+                                fs::remove_all(old_save_dir);
+                            }
+                            break;
+                        case 2:
+                            try {
+                                fs::rename(old_save_dir, new_save_dir);
+                            } catch (...) {
+                                fs::copy(old_save_dir, new_save_dir, fs::copy_options::recursive);
+                                fs::remove_all(old_save_dir);
+                            }
+                            fs::create_directory_symlink(new_save_dir, old_save_dir);
+                            break;
+                        case -1:
+                        case 3:
+                            break;
+                        default:
+                            UNREACHABLE();
                         }
-                        break;
-                    case 2:
-                        try {
-                            std::filesystem::rename(old_save_dir, new_save_dir);
-                        } catch (...) {
-                            std::filesystem::copy(old_save_dir, new_save_dir,
-                                                  std::filesystem::copy_options::recursive);
-                            std::filesystem::remove_all(old_save_dir);
-                        }
-                        std::filesystem::create_directory_symlink(new_save_dir, old_save_dir);
-                        break;
-                    case -1:
-                    case 3:
-                        break;
-                    default:
-                        UNREACHABLE();
+                    } catch (std::exception const& e) {
+                        UNREACHABLE_MSG("Error while migrating saves: {}", e.what());
                     }
-                } catch (std::exception const& e) {
-                    UNREACHABLE_MSG("Error while migrating saves: {}", e.what());
                 }
+                auto const old_trophy_base_dir =
+                    Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "game_data";
+                auto const new_trophy_global_dir =
+                    Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy";
+                for (auto const& entry : fs::directory_iterator(old_trophy_base_dir)) {
+                    if (!entry.is_directory()) {
+                        continue;
+                    }
+                    // sorry Driveclub fans, y'all'll get trophy01 migrated when y'all go and boot
+                    // up the game, I can't be assed to do yet another directory iteration here
+                    auto const old_trophy_dir = entry.path() / "TrophyFiles" / "trophy00";
+                    if (fs::exists(old_trophy_dir / "Xml")) {
+                        pugi::xml_document doc;
+                        pugi::xml_parse_result result =
+                            doc.load_file((old_trophy_dir / "Xml" / "TROP.XML").native().c_str());
+                        if (!result) {
+                            continue;
+                        }
+                        std::string npcommid =
+                            doc.child("trophyconf").child("npcommid").text().as_string();
+                        if (npcommid.empty()) {
+                            continue;
+                        }
+                        if (fs::exists(user_dir / "trophy" / (npcommid + ".xml"))) {
+                            continue;
+                        }
+                        try {
+                            fs::copy_file(old_trophy_dir / "Xml" / "TROP.XML",
+                                          user_dir / "trophy" / (npcommid + ".xml"));
+                            fs::create_directories(new_trophy_global_dir / npcommid);
+                            fs::copy(old_trophy_dir, new_trophy_global_dir / npcommid,
+                                     fs::copy_options::recursive);
+                        } catch (std::exception const& e) {
+                            UNREACHABLE_MSG("Error while migrating trophies: {}", e.what());
+                        }
+                    }
+                } // for
             }
         }
     }
