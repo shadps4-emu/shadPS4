@@ -190,7 +190,7 @@
               inherit src system cmakeFlags dontStrip;
 
               pname = "shadps4";
-              version = "0.15.1";
+              version = "0.16.1";
 
               nativeBuildInputs = [
                 cmake
