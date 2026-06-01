@@ -27,11 +27,11 @@ body:
 
         Don't edit log.
         
-        Don't force kill the application (or precise it in your issue if you had to.)
+        Don't force kill the application (or mention it in your issue if you had to).
 
-        When there are several "Critical" lines, the first one is the most important one.
+        When there are several "Critical" lines, the last one is the most important one.
         
-        Don't run inside or attached to a debugger or extension tool.
+        Don't run inside or attached to a debugger or external tool, such as: Renderdoc, Vulkan Validation Layers, Reshade
   - type: checkboxes
     id: checklist
     attributes:
