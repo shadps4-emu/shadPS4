@@ -4,7 +4,6 @@
 #include <algorithm> // std::equal
 #include <cctype>    // std::tolower
 
-#include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/avplayer/avplayer_common.h"
 
 namespace Libraries::AvPlayer {
