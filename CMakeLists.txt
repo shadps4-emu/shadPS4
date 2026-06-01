@@ -58,7 +58,7 @@ endif()
 if (ARCHITECTURE STREQUAL "x86_64")
     # Target x86-64-v3 CPU architecture as this is a good balance between supporting performance critical
     # instructions like AVX2 and maintaining support for older CPUs.
-    add_compile_options(-march=x86-64-v3 -mno-avx512f)
+    add_compile_options(-march=x86-64-v3)
 endif()
 
 if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
@@ -205,7 +205,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "15")
+set(EMULATOR_VERSION_MINOR "16")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -736,8 +736,6 @@ set(COMMON src/common/logging/classes.h
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
-           src/common/config.cpp
-           src/common/config.h
            src/common/cstring.h
            src/common/debug.h
            src/common/decoder.cpp
@@ -745,6 +743,7 @@ set(COMMON src/common/logging/classes.h
            src/common/elf_info.h
            src/common/endian.h
            src/common/enum.h
+           src/common/incremental_id.h
            src/common/io_file.cpp
            src/common/io_file.h
            src/common/lru_cache.h

@@ -15,6 +15,8 @@ namespace VideoCore {
 
 using namespace Vulkan;
 
+Common::IncrementalIdProvider<u64> Image::global_image_uid{};
+
 static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance* instance,
                                            const ImageInfo& info) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
@@ -119,6 +121,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     if (info.pixel_format == vk::Format::eUndefined) {
         return;
     }
+    image_uid = global_image_uid.Next();
     mip_hashes.resize(info.resources.levels);
     // Here we force `eExtendedUsage` as don't know all image usage cases beforehand. In normal case
     // the texture cache should re-create the resource with the usage requested

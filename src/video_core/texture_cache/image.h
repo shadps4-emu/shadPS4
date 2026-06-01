@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/enum.h"
+#include "common/incremental_id.h"
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/image_info.h"
@@ -111,8 +112,14 @@ struct Image {
         return True(flags & ImageFlagBits::GpuModified) && False(flags & (ImageFlagBits::Dirty));
     }
 
-    void AssociateDepth(ImageId image_id) {
-        depth_id = image_id;
+    void AssociateDepth(ImageId depth_image_id, u64 depth_image_uid) {
+        depth_id = depth_image_id;
+        depth_uid = depth_image_uid;
+    }
+
+    void DisassociateDepth() {
+        depth_id = {};
+        depth_uid = {};
     }
 
     ImageView& FindView(const ImageViewInfo& view_info, bool ensure_guest_samples = true);
@@ -149,6 +156,7 @@ public:
     VAddr track_addr = 0;
     VAddr track_addr_end = 0;
     ImageId depth_id{};
+    u64 depth_uid{};
 
     // Resource state tracking
     vk::ImageUsageFlags usage_flags;
@@ -169,6 +177,7 @@ public:
     std::deque<BackingImage> backing_images;
     BackingImage* backing{};
     boost::container::static_vector<u64, 16> mip_hashes{};
+    u64 image_uid{};
     u64 lru_id{};
     u64 tick_accessed_last{};
     u64 hash{};
@@ -187,6 +196,9 @@ public:
         u32 needs_rebind : 1;
         u32 force_general : 1;
     } binding{};
+
+private:
+    static Common::IncrementalIdProvider<u64> global_image_uid;
 };
 
 } // namespace VideoCore
