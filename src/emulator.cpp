@@ -133,8 +133,13 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
                 continue;
             }
 
-            // Extract the actual trophies if they're no extracted yet
+            // Add the relevant trophies to our trophy index map.
+            // This currently assumes the order of NPCommIDs matches the order of trophies.
             std::string np_comm_id = np_comm_ids[trophy_index];
+            trophy_index_map[trophy_index] = np_comm_id;
+            LOG_DEBUG(Loader, "Mapped trophy index {} to NPCommID: {}", trophy_index, np_comm_id);
+
+            // Extract the actual trophies if they're no extracted yet
             const auto& trophy_output_dir =
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / np_comm_id;
             if (!std::filesystem::exists(trophy_output_dir)) {
@@ -158,11 +163,6 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
                                                user_trophy_file, discard);
                 }
             }
-
-            // Add the relevant trophies to our trophy index map.
-            // This currently assumes the order of NPCommIDs matches the order of trophies.
-            trophy_index_map[trophy_index] = np_comm_id;
-            LOG_DEBUG(Loader, "Mapped trophy index {} to NPCommID: {}", trophy_index, np_comm_id);
         }
     }
     return trophy_index_map;
