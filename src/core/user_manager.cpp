@@ -150,49 +150,56 @@ Users UserManager::CreateDefaultUsers() {
             auto const old_save_dir =
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "savedata" / "1";
             if (u.user_id == 1000) {
-                if (fs::exists(old_save_dir) && !fs::is_empty(old_save_dir)) {
-                    auto const new_save_dir = user_dir / "savedata";
+                enum TransferOption : s32 {
+                    Copy = 0,
+                    Move,
+                    MoveAndLinkBack,
+                    Nothing,
+                    SdlCancelled = -1,
+                };
+                int user_choice = TransferOption::Nothing;
+                auto const new_save_dir = user_dir / "savedata";
 #ifndef _WIN32
-                    SDL_MessageBoxButtonData btns[4]
+                SDL_MessageBoxButtonData btns[4]
 #else
-                    SDL_MessageBoxButtonData btns[3]
+                SDL_MessageBoxButtonData btns[3]
 #endif
-                        {
-                            {0, 0, "Copy"},
-                            {0, 1, "Move"},
+                    {
+                        {0, Copy, "Copy"},
+                        {0, Move, "Move"},
 #ifndef _WIN32
-                            {0, 2, "Move and link back"},
+                        {0, MoveAndLinkBack, "Move and link back"},
 #endif
-                            {0, 3, "Do nothing"},
-                        };
-                    SDL_MessageBoxData msg_box{
-                        0,
-                        nullptr,
-                        "Save Migration",
-                        "The shadPS4 save location has been updated, and save files have been "
-                        "detected "
-                        "in the old location.\nDo you wish to copy them over, move them over, "
+                        {0, Nothing, "Do nothing"},
+                    };
+                SDL_MessageBoxData msg_box{
+                    0,
+                    nullptr,
+                    "Save Migration",
+                    "The shadPS4 save and trophy locations have been updated, and save/trophy "
+                    "files have been detected  in the old location.\n"
+                    "Do you wish to copy them over, move them over, "
 #ifndef _WIN32
-                        "move and link back to the original the original location, "
+                    "move and link back to the original the original location, "
 #endif
-                        "or continue without doing anything?",
+                    "or continue without doing anything?",
 
 #ifndef _WIN32
-                        4,
+                    4,
 #else
-                        3,
+                    3,
 #endif
-                        btns,
-                        nullptr,
-                    };
-                    int result = 3;
-                    SDL_ShowMessageBox(&msg_box, &result);
+                    btns,
+                    nullptr,
+                };
+                SDL_ShowMessageBox(&msg_box, &user_choice);
+                if (fs::exists(old_save_dir) && !fs::is_empty(old_save_dir)) {
                     try {
-                        switch (result) {
-                        case 0:
+                        switch (user_choice) {
+                        case TransferOption::Copy:
                             fs::copy(old_save_dir, new_save_dir, fs::copy_options::recursive);
                             break;
-                        case 1:
+                        case TransferOption::Move:
                             try {
                                 fs::rename(old_save_dir, new_save_dir);
                             } catch (...) {
@@ -200,7 +207,7 @@ Users UserManager::CreateDefaultUsers() {
                                 fs::remove_all(old_save_dir);
                             }
                             break;
-                        case 2:
+                        case TransferOption::MoveAndLinkBack:
                             try {
                                 fs::rename(old_save_dir, new_save_dir);
                             } catch (...) {
@@ -209,8 +216,8 @@ Users UserManager::CreateDefaultUsers() {
                             }
                             fs::create_directory_symlink(new_save_dir, old_save_dir);
                             break;
-                        case -1:
-                        case 3:
+                        case TransferOption::SdlCancelled:
+                        case TransferOption::Nothing:
                             break;
                         default:
                             UNREACHABLE();
@@ -246,16 +253,30 @@ Users UserManager::CreateDefaultUsers() {
                             continue;
                         }
                         try {
-                            fs::copy_file(old_trophy_dir / "Xml" / "TROP.XML",
-                                          user_dir / "trophy" / (npcommid + ".xml"));
                             fs::create_directories(new_trophy_global_dir / npcommid);
                             fs::copy(old_trophy_dir, new_trophy_global_dir / npcommid,
                                      fs::copy_options::recursive);
+                            auto const old_trophy_file = old_trophy_dir / "Xml" / "TROP.XML";
+                            auto const new_trophy_file = user_dir / "trophy" / (npcommid + ".xml");
+                            switch (user_choice) {
+                            case TransferOption::Copy:
+                                fs::copy_file(old_trophy_file, new_trophy_file);
+                            case TransferOption::Move:
+                                fs::rename(old_trophy_file, new_trophy_file);
+                            case TransferOption::MoveAndLinkBack:
+                                fs::rename(old_trophy_file, new_trophy_file);
+                                fs::create_symlink(new_trophy_file, old_trophy_file);
+                            case TransferOption::Nothing:
+                            case TransferOption::SdlCancelled:
+                                break;
+                            default:
+                                UNREACHABLE();
+                            }
                         } catch (std::exception const& e) {
                             UNREACHABLE_MSG("Error while migrating trophies: {}", e.what());
                         }
                     }
-                } // for
+                }
             }
         }
     }
