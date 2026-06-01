@@ -128,8 +128,7 @@ struct TrophyContext {
     u32 service_label;
     u32 user_id;
     bool registered = false;
-    bool has_paths = false;
-    std::filesystem::path trophy_xml_path; // resolved once at RegisterContext
+    std::filesystem::path trophy_xml_path; // resolved once at CreateContext
     std::filesystem::path xml_dir;         // .../Xml/
     std::filesystem::path xml_save_file;   // The actual file for tracking progress per-user.
     std::filesystem::path icons_dir;       // .../Icons/
@@ -358,15 +357,8 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
     }
     ContextKey contextkey = trophy_contexts[contextId];
     const auto& ctx = contexts_internal[contextkey];
-    if (!ctx.registered) {
+    if (!ctx.registered)
         return ORBIS_NP_TROPHY_ERROR_NOT_REGISTERED;
-    }
-    if (!ctx.has_paths) {
-        // Stub success to prevent errors from bad game dumps.
-        LOG_ERROR(Lib_NpTrophy, "Context failed to register");
-        return ORBIS_OK;
-    }
-
     const auto& trophy_file = ctx.trophy_xml_path;
     const auto& trophy_save_file = ctx.xml_save_file;
 
@@ -483,15 +475,8 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
     }
     ContextKey contextkey = trophy_contexts[contextId];
     const auto& ctx = contexts_internal[contextkey];
-    if (!ctx.registered) {
+    if (!ctx.registered)
         return ORBIS_NP_TROPHY_ERROR_NOT_REGISTERED;
-    }
-    if (!ctx.has_paths) {
-        // Stub success to prevent errors from bad game dumps.
-        LOG_ERROR(Lib_NpTrophy, "Context failed to register");
-        return ORBIS_OK;
-    }
-
     const auto& trophy_file = ctx.trophy_xml_path;
 
     pugi::xml_document doc;
@@ -607,14 +592,8 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyIcon(OrbisNpTrophyContext context, OrbisNpT
 
     ContextKey contextkey = trophy_contexts[contextId];
     const auto& ctx = contexts_internal[contextkey];
-    if (!ctx.registered) {
+    if (!ctx.registered)
         return ORBIS_NP_TROPHY_ERROR_NOT_REGISTERED;
-    }
-    if (!ctx.has_paths) {
-        // Stub success to prevent errors from bad game dumps.
-        LOG_ERROR(Lib_NpTrophy, "Context failed to register");
-        return ORBIS_OK;
-    }
 
     // Check that the trophy is unlocked and icons are only available for earned trophies.
     pugi::xml_document doc;
@@ -685,15 +664,8 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpT
     }
     ContextKey contextkey = trophy_contexts[contextId];
     const auto& ctx = contexts_internal[contextkey];
-    if (!ctx.registered) {
+    if (!ctx.registered)
         return ORBIS_NP_TROPHY_ERROR_NOT_REGISTERED;
-    }
-    if (!ctx.has_paths) {
-        // Stub success to prevent errors from bad game dumps.
-        LOG_ERROR(Lib_NpTrophy, "Context failed to register");
-        return ORBIS_OK;
-    }
-
     const auto& trophy_file = ctx.trophy_xml_path;
 
     pugi::xml_document doc;
@@ -787,14 +759,8 @@ s32 PS4_SYSV_ABI sceNpTrophyGetTrophyUnlockState(OrbisNpTrophyContext context,
 
     ContextKey contextkey = trophy_contexts[contextId];
     const auto& ctx = contexts_internal[contextkey];
-    if (!ctx.registered) {
+    if (!ctx.registered)
         return ORBIS_NP_TROPHY_ERROR_NOT_REGISTERED;
-    }
-    if (!ctx.has_paths) {
-        // Stub success to prevent errors from bad game dumps.
-        LOG_ERROR(Lib_NpTrophy, "Context failed to register");
-        return ORBIS_OK;
-    }
     const auto& trophy_file = ctx.xml_save_file;
 
     ORBIS_NP_TROPHY_FLAG_ZERO(flags);
@@ -877,13 +843,11 @@ int PS4_SYSV_ABI sceNpTrophyRegisterContext(OrbisNpTrophyContext context,
         if (!std::filesystem::exists(ctx.trophy_xml_path)) {
             LOG_ERROR(Lib_NpTrophy, "Could not find trophy files.");
             // Stub success here to prevent issues specific to missing a trophy key.
-        } else {
-            ctx.has_paths = true;
         }
     } else {
         LOG_ERROR(Lib_NpTrophy, "No npCommId found for trophy index/service_label: {}",
                   ctx.service_label);
-        // Stub success to prevent errors from bad game dumps.
+        return ORBIS_NP_UTIL_ERROR_INVALID_TITLEID;
     }
 
     ctx.registered = true;
@@ -922,15 +886,8 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
 
     ContextKey contextkey = trophy_contexts[contextId];
     const auto& ctx = contexts_internal[contextkey];
-    if (!ctx.registered) {
+    if (!ctx.registered)
         return ORBIS_NP_TROPHY_ERROR_NOT_REGISTERED;
-    }
-    if (!ctx.has_paths) {
-        // Stub success to prevent errors from bad game dumps.
-        LOG_ERROR(Lib_NpTrophy, "Context failed to register");
-        return ORBIS_OK;
-    }
-
     const auto& xml_dir = ctx.xml_dir;
     const auto& trophy_file = ctx.trophy_xml_path;
 
