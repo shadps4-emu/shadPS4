@@ -55,7 +55,7 @@ static constexpr std::array level_string_views{"Trace", "Debug",    "Info", "War
                         spdlog::source_loc::basename(__FILE__), __LINE__,                          \
                         std::string_view(__func__) == "operator()" ? "lambda" : __func__,          \
                         ##__VA_ARGS__);                                                            \
-        }                                                                                          \                                                                                      \
+        }                                                                                          \
     } while (false)
 
 #ifdef _DEBUG
