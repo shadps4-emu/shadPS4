@@ -4,6 +4,7 @@
 #pragma once
 #include <memory>
 #include "core/file_sys/devices/base_device.h"
+#include "core/libraries/kernel/file_system.h"
 
 namespace Core::Devices {
 

@@ -6,9 +6,12 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 #include <optional>
+#include <stop_token>
 #include <string_view>
+#include <utility>
 
 #include "common/assert.h"
 #include "core/libraries/avplayer/avplayer.h"
@@ -160,6 +163,8 @@ public:
     bool IsActive();
 
 private:
+    u64 DurationMillis() const;
+
     static void ReleaseAVPacket(AVPacket* packet);
     static void ReleaseAVFrame(AVFrame* frame);
     static void ReleaseAVCodecContext(AVCodecContext* context);

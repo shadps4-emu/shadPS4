@@ -31,9 +31,16 @@ namespace Core {
 
 static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     const auto* signals = Signals::Instance();
+    DWORD code = 0;
+    PVOID address = nullptr;
+
+    if (pExp != nullptr && pExp->ExceptionRecord != nullptr) {
+        code = pExp->ExceptionRecord->ExceptionCode;
+        address = pExp->ExceptionRecord->ExceptionAddress;
+    }
 
     bool handled = false;
-    switch (pExp->ExceptionRecord->ExceptionCode) {
+    switch (code) {
     case EXCEPTION_ACCESS_VIOLATION:
         handled = signals->DispatchAccessViolation(
             pExp, reinterpret_cast<void*>(pExp->ExceptionRecord->ExceptionInformation[1]));
@@ -45,11 +52,22 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     case DBG_PRINTEXCEPTION_WIDE_C:
         // Used by OutputDebugString functions.
         return EXCEPTION_CONTINUE_EXECUTION;
+    case EXCEPTION_BREAKPOINT:
+        // This is almost certainly coming from our asserts/unreachables, no need to log it again.
+        Common::Log::Flush();
+        return EXCEPTION_CONTINUE_SEARCH;
     default:
         break;
     }
 
-    return handled ? EXCEPTION_CONTINUE_EXECUTION : EXCEPTION_CONTINUE_SEARCH;
+    if (handled) {
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+    LOG_CRITICAL(Debug, "Unhandled Exception code {:#x} at {}", code, address);
+    Common::Log::Flush();
+
+    return EXCEPTION_CONTINUE_SEARCH;
 }
 
 #else

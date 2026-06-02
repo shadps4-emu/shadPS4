@@ -203,7 +203,8 @@ bool Instance::CreateDevice() {
                           vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
                           vk::PhysicalDevicePortabilitySubsetFeaturesKHR,
                           vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
-                          vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
+                          vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
+                          vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -312,6 +313,15 @@ bool Instance::CreateDevice() {
         LOG_INFO(
             Render_Vulkan, "- workgroupMemoryExplicitLayout16BitAccess: {}",
             workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess);
+    }
+    image_2d_view_of_3d = add_extension(VK_EXT_IMAGE_2D_VIEW_OF_3D_EXTENSION_NAME);
+    if (image_2d_view_of_3d) {
+        image_2d_view_of_3d_features =
+            feature_chain.get<vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
+        LOG_INFO(Render_Vulkan, "- image2DViewOf3D: {}",
+                 image_2d_view_of_3d_features.image2DViewOf3D);
+        LOG_INFO(Render_Vulkan, "- sampler2DViewOf3D: {}",
+                 image_2d_view_of_3d_features.sampler2DViewOf3D);
     }
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
@@ -490,6 +500,10 @@ bool Instance::CreateDevice() {
             .workgroupMemoryExplicitLayout16BitAccess =
                 workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess,
         },
+        vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT{
+            .image2DViewOf3D = image_2d_view_of_3d_features.image2DViewOf3D,
+            .sampler2DViewOf3D = image_2d_view_of_3d_features.sampler2DViewOf3D,
+        },
 #ifdef __APPLE__
         vk::PhysicalDevicePortabilitySubsetFeaturesKHR{
             .constantAlphaColorBlendFactors = portability_features.constantAlphaColorBlendFactors,
@@ -555,6 +569,9 @@ bool Instance::CreateDevice() {
     }
     if (!workgroup_memory_explicit_layout) {
         device_chain.unlink<vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
+    }
+    if (!image_2d_view_of_3d) {
+        device_chain.unlink<vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());

@@ -95,7 +95,9 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.num_input_vgprs = program.settings.vgpr_comp_cnt;
         info.num_allocated_vgprs = program.NumVgprs();
         info.fp_denorm_mode32 = program.settings.fp_denorm_mode32;
+        info.fp_denorm_mode16_64 = program.settings.fp_denorm_mode64;
         info.fp_round_mode32 = program.settings.fp_round_mode32;
+        info.fp_round_mode16_64 = program.settings.fp_round_mode64;
     };
     info.Initialize(stage);
     switch (stage) {
@@ -132,7 +134,6 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.vs_info.step_rate_0 = regs.vgt_instance_step_rate_0;
         info.vs_info.step_rate_1 = regs.vgt_instance_step_rate_1;
         info.vs_info.num_outputs = MapOutputs(info.vs_info.outputs, regs.vs_output_control);
-        info.vs_info.num_exports = regs.vs_output_config.NumExports();
         info.vs_info.emulate_depth_negative_one_to_one =
             !instance.IsDepthClipControlSupported() &&
             regs.clipper_control.clip_space == AmdGpu::ClipSpace::MinusWToW;
@@ -264,15 +265,29 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_int64 = instance.IsShaderInt64Supported(),
         .support_float16 = instance.IsShaderFloat16Supported(),
         .support_float64 = instance.IsShaderFloat64Supported(),
+        .supports_denorm_behavior_independence =
+            vk12_props.denormBehaviorIndependence != vk::ShaderFloatControlsIndependence::eNone,
+        .supports_rounding_mode_independence =
+            vk12_props.roundingModeIndependence != vk::ShaderFloatControlsIndependence::eNone,
+        .support_fp16_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat16),
+        .support_fp16_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat16),
+        .support_fp16_round_to_zero = bool(vk12_props.shaderRoundingModeRTZFloat16),
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
         .support_fp32_round_to_zero = bool(vk12_props.shaderRoundingModeRTZFloat32),
+        .support_fp64_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat64),
+        .support_fp64_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat64),
+        .support_fp64_round_to_zero = bool(vk12_props.shaderRoundingModeRTZFloat64),
+        .support_fp16_signed_zero_inf_nan_preserve =
+            bool(vk12_props.shaderSignedZeroInfNanPreserveFloat16),
+        .support_fp32_signed_zero_inf_nan_preserve =
+            bool(vk12_props.shaderSignedZeroInfNanPreserveFloat32),
+        .support_fp64_signed_zero_inf_nan_preserve =
+            bool(vk12_props.shaderSignedZeroInfNanPreserveFloat64),
         .support_legacy_vertex_attributes = instance_.IsLegacyVertexAttributesSupported(),
         .supports_image_load_store_lod = instance_.IsImageLoadStoreLodSupported(),
         .supports_native_cube_calc = instance_.IsAmdGcnShaderSupported(),
         .supports_trinary_minmax = instance_.IsAmdShaderTrinaryMinMaxSupported(),
-        // TODO: Emitted bounds checks cause problems with phi control flow; needs to be fixed.
-        .supports_robust_buffer_access = true, // instance_.IsRobustBufferAccess2Supported(),
         .supports_buffer_fp32_atomic_min_max =
             instance_.IsShaderAtomicFloatBuffer32MinMaxSupported(),
         .supports_image_fp32_atomic_min_max = instance_.IsShaderAtomicFloatImage32MinMaxSupported(),

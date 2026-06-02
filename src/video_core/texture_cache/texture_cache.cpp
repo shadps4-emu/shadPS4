@@ -5,6 +5,7 @@
 
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/div_ceil.h"
 #include "common/scope_exit.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
@@ -740,9 +741,9 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
                 slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
             RegisterImage(stencil_id);
         }
-        Image& image = slot_images[stencil_id];
-        TouchImage(image);
-        image.AssociateDepth(image_id);
+        Image& stencil_image = slot_images[stencil_id];
+        TouchImage(stencil_image);
+        stencil_image.AssociateDepth(image_id, image.image_uid);
     }
 
     return image.FindView(desc.view_info, false);
@@ -764,7 +765,10 @@ void TextureCache::RefreshImage(Image& image) {
         const auto addr = std::bit_cast<u8*>(image.info.guest_address);
         const u32 w = std::min(image.info.size.width, u32(8));
         const u32 h = std::min(image.info.size.height, u32(8));
-        const u32 size = w * h * image.info.num_bits >> (3 + image.info.props.is_block ? 4 : 0);
+
+        const u32 s_w = image.info.props.is_block ? Common::DivCeil(w, 4u) : w;
+        const u32 s_h = image.info.props.is_block ? Common::DivCeil(h, 4u) : h;
+        const u32 size = s_w * s_h * (image.info.num_bits / 8);
         const u64 hash = XXH3_64bits(addr, size);
         if (image.hash == hash) {
             image.flags &= ~ImageFlagBits::MaybeCpuDirty;

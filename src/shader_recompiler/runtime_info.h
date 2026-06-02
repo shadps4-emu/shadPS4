@@ -95,7 +95,6 @@ using OutputMap = std::array<Output, 4>;
 
 struct VertexRuntimeInfo : protected CommonEsVsRuntimeInfo {
     u32 num_outputs;
-    u32 num_exports;
     std::array<OutputMap, 3> outputs;
     bool tess_emulated_primitive{};
     bool emulate_depth_negative_one_to_one{};
@@ -229,7 +228,9 @@ struct RuntimeInfo {
     u32 num_input_vgprs;
     u32 num_allocated_vgprs;
     AmdGpu::FpDenormMode fp_denorm_mode32;
+    AmdGpu::FpDenormMode fp_denorm_mode16_64;
     AmdGpu::FpRoundMode fp_round_mode32;
+    AmdGpu::FpRoundMode fp_round_mode16_64;
     union {
         LocalRuntimeInfo ls_info;
         ExportRuntimeInfo es_info;

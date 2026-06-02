@@ -308,6 +308,10 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
 
     auto& offs_dw = asc_next_offs_dw[vqid];
 
+    if (next_offs_dw == offs_dw) {
+        return;
+    }
+
     if (next_offs_dw < offs_dw && next_offs_dw != 0) {
         // For cases if a submission is split at the end of the ring buffer, we need to submit it in
         // two parts to handle the wrap
@@ -1045,8 +1049,13 @@ void PS4_SYSV_ABI sceGnmGpuPaDebugLeave() {
     // Not available in retail firmware
 }
 
-int PS4_SYSV_ABI sceGnmInsertDingDongMarker() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceGnmInsertDingDongMarker(u32* cmdbuf, u32 size) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (cmdbuf == nullptr || size != 4) {
+        return -1;
+    }
+    WritePacket<PM4ItOpcode::Nop>(cmdbuf, PM4ShaderType::ShaderGraphics, 0u, 0u, 0u);
     return ORBIS_OK;
 }
 
@@ -2225,9 +2234,9 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
     }
 
     if (send_init_packet) {
-        if (sdk_version < Common::ElfInfo::FW_20) {
+        if (sdk_version < Common::ElfInfo::FW_200) {
             liverpool->SubmitGfx(InitSequence, {});
-        } else if (sdk_version < Common::ElfInfo::FW_40) {
+        } else if (sdk_version < Common::ElfInfo::FW_400) {
             if (sceKernelIsNeoMode()) {
                 if (!UseNeoCompatSequences) {
                     liverpool->SubmitGfx(InitSequence200Neo, {});
@@ -2808,7 +2817,7 @@ int PS4_SYSV_ABI Func_C4C328B7CF3B4171() {
 
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalCommand(u32* cmdbuf, u32 size) {
     LOG_TRACE(Lib_GnmDriver, "called");
-    if (sdk_version >= Common::ElfInfo::FW_40) {
+    if (sdk_version >= Common::ElfInfo::FW_400) {
         return sceGnmDrawInitToDefaultContextState400(cmdbuf, size);
     }
     return sceGnmDrawInitToDefaultContextState(cmdbuf, size);
@@ -2816,7 +2825,7 @@ int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalCommand(u32* cmdbuf,
 
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalSize() {
     LOG_TRACE(Lib_GnmDriver, "called");
-    if (sdk_version >= Common::ElfInfo::FW_40) {
+    if (sdk_version >= Common::ElfInfo::FW_400) {
         return 0x100;
     }
     return 0x20;

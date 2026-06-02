@@ -5,8 +5,8 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_web_api2.h"
-#include "core/libraries/np/np_web_api2_error.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Libraries::Np::NpWebApi2 {

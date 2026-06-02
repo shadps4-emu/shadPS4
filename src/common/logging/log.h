@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <unordered_map>
 #include <vector>
 #include <spdlog/details/fmt_helper.h>
@@ -34,6 +35,8 @@ void Setup(std::string_view log_filename);
 void Shutdown();
 
 void Flush();
+
+void Terminate();
 
 static constexpr std::array level_string_views{"Trace", "Debug",    "Info", "Warning",
                                                "Error", "Critical", "Off"};
