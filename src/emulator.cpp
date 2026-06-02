@@ -271,10 +271,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     game_info.game_folder = game_folder;
-    EmulatorSettings.Load(id);
-
-    Common::Log::Shutdown();
+    
     // Initialize logging as soon as possible
+    EmulatorSettings.Load(id);
     Common::Log::Setup((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
                                                                          : "shad_log.txt");
 
