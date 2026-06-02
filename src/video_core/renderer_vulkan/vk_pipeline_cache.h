@@ -100,6 +100,9 @@ private:
     bool RefreshGraphicsStages();
     bool RefreshComputeKey();
 
+    vk::ShaderModule GetClipDistanceEmulationFragmentShader(
+        std::array<Shader::OutputMap, 3> outputs);
+
     void DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage, size_t perm_idx,
                     std::string_view ext);
     std::optional<std::vector<u32>> GetShaderPatch(u64 hash, Shader::Stage stage, size_t perm_idx,
@@ -125,6 +128,7 @@ private:
     tsl::robin_map<size_t, std::unique_ptr<Program>> program_cache;
     tsl::robin_map<ComputePipelineKey, std::unique_ptr<ComputePipeline>> compute_pipelines;
     tsl::robin_map<GraphicsPipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_pipelines;
+    tsl::robin_map<ClipDistanceShaderKey, vk::ShaderModule> clip_distance_shaders;
     std::array<Shader::RuntimeInfo, MaxShaderStages> runtime_infos{};
     std::array<const Shader::Info*, MaxShaderStages> infos{};
     std::array<vk::ShaderModule, MaxShaderStages> modules{};

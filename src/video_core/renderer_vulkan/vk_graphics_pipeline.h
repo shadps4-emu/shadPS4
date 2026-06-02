@@ -115,11 +115,26 @@ private:
     std::optional<const Shader::Gcn::FetchShaderData> fetch_shader{};
 };
 
+struct ClipDistanceShaderKey {
+    std::array<std::tuple<u8, u8>, 8> clip_locations;
+
+    bool operator==(const ClipDistanceShaderKey& key) const noexcept {
+        return std::memcmp(this, &key, sizeof(key)) == 0;
+    }
+};
+
 } // namespace Vulkan
 
 template <>
 struct std::hash<Vulkan::GraphicsPipelineKey> {
     std::size_t operator()(const Vulkan::GraphicsPipelineKey& key) const noexcept {
+        return XXH3_64bits(&key, sizeof(key));
+    }
+};
+
+template <>
+struct std::hash<Vulkan::ClipDistanceShaderKey> {
+    std::size_t operator()(const Vulkan::ClipDistanceShaderKey& key) const noexcept {
         return XXH3_64bits(&key, sizeof(key));
     }
 };

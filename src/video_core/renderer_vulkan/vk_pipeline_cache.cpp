@@ -18,6 +18,7 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_serialization.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/renderer_vulkan/vk_shader_emulation.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 
 namespace Vulkan {
@@ -502,17 +503,8 @@ bool PipelineCache::RefreshGraphicsStages() {
 
     infos.fill(nullptr);
     modules.fill(nullptr);
-    const auto result = bind_stage(Stage::Fragment, LogicalStage::Fragment);
-    if (!result && regs.vs_output_control.clip_distance_enable &&
-        profile.needs_clip_distance_emulation) {
-        // TODO: need to implement a discard only fallback shader
-        LOG_WARNING(Render_Vulkan,
-                    "Clip distance emulation is ineffective due to absense of fragment shader");
-    }
 
-    const auto* fs_info = infos[static_cast<u32>(LogicalStage::Fragment)];
-    key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
-    key.num_color_attachments = std::bit_width(key.mrt_mask);
+    const auto fs_result = bind_stage(Stage::Fragment, LogicalStage::Fragment);
 
     switch (regs.stage_enable.raw) {
     case AmdGpu::ShaderStageEnable::VgtStages::EsGs:
@@ -594,6 +586,31 @@ bool PipelineCache::RefreshGraphicsStages() {
         }
     }
 
+    if (!fs_result && regs.vs_output_control.clip_distance_enable &&
+        profile.needs_clip_distance_emulation) {
+        static auto fs_info = Shader::Info(
+            Stage::Fragment, LogicalStage::Fragment,
+            Shader::ShaderParams{std::array<const u32, 16>{0}, std::span<const u32>(), (u64)-1});
+        fs_info.mrt_mask = 0u;
+
+        const auto* vs_info = infos[static_cast<u32>(Shader::LogicalStage::Vertex)];
+        if (vs_info) {
+            const auto vs_runtime_info =
+                runtime_infos[static_cast<u32>(Shader::LogicalStage::Vertex)].vs_info;
+
+            infos[u32(LogicalStage::Fragment)] = &fs_info;
+            modules[u32(LogicalStage::Fragment)] =
+                GetClipDistanceEmulationFragmentShader(vs_runtime_info.outputs);
+        } else {
+            LOG_WARNING(Render_Vulkan,
+                        "clip distance emulation should be active but there is no vertex shader?");
+        }
+    }
+
+    const auto* fs_info = infos[static_cast<u32>(LogicalStage::Fragment)];
+    key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
+    key.num_color_attachments = std::bit_width(key.mrt_mask);
+
     return true;
 }
 
@@ -605,6 +622,46 @@ bool PipelineCache::RefreshComputeKey() {
         GetProgram(Shader::Stage::Compute, LogicalStage::Compute, cs_params, binding);
     return true;
 }
+
+vk::ShaderModule PipelineCache::GetClipDistanceEmulationFragmentShader(
+    std::array<Shader::OutputMap, 3> outputs) {
+    std::array<std::tuple<u8, u8>, 8> clip_locations;
+    clip_locations.fill({-1, -1});
+    auto locations = 0;
+    for (u8 location = 0; location < 3; ++location) {
+        for (u8 elem = 0; elem < 4; ++elem) {
+            switch (outputs.at(location).at(elem)) {
+            case Output::ClipDist0:
+            case Output::ClipDist1:
+            case Output::ClipDist2:
+            case Output::ClipDist3:
+            case Output::ClipDist4:
+            case Output::ClipDist5:
+            case Output::ClipDist6:
+            case Output::ClipDist7: {
+                clip_locations[locations++] = std::make_pair(location, elem);
+                break;
+            }
+            default:
+                break;
+            }
+        }
+    }
+
+    auto key = ClipDistanceShaderKey{clip_locations};
+    auto it = clip_distance_shaders.find(key);
+    if (it != clip_distance_shaders.end()) {
+        return it->second;
+    }
+
+    auto spv = GenerateClipDistanceShaderSpirv(std::span{clip_locations}.first(locations));
+    auto hash = std::hash<ClipDistanceShaderKey>{}(key);
+    DumpShader(spv, hash, Shader::Stage::Fragment, 0, "clip.spv");
+    LOG_INFO(Render_Vulkan, "Compiling clip distance emulation shader {:#x}", hash);
+    auto module = CompileSPV(spv, instance.GetDevice());
+    clip_distance_shaders[key] = module;
+    return module;
+};
 
 vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                               const std::span<const u32>& code, size_t perm_idx,
