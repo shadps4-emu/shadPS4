@@ -919,6 +919,7 @@ void BufferCache::RunGarbageCollector() {
     if (total_used_memory < trigger_gc_memory) {
         return;
     }
+    bool downloads_done = true;
     const bool aggressive = total_used_memory >= critical_gc_memory;
     const u64 ticks_to_destroy = std::min<u64>(aggressive ? 80 : 160, gc_tick);
     int max_deletions = aggressive ? 64 : 32;
@@ -930,8 +931,13 @@ void BufferCache::RunGarbageCollector() {
         Buffer& buffer = slot_buffers[buffer_id];
         DownloadBufferMemory<true>(buffer, buffer.CpuAddr(), buffer.SizeBytes(), true);
         DeleteBuffer(buffer_id);
+        downloads_done = true;
     };
     lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
+    if (downloads_done) {
+        // For now we can do this to avoid re-uploading the buffer that is being downloaded, potentially losing GPU modifications.
+        scheduler.Finish();
+    }
 }
 
 void BufferCache::TouchBuffer(const Buffer& buffer) {
