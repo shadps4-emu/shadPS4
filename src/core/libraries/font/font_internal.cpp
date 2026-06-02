@@ -10,6 +10,7 @@
 #include FT_OUTLINE_H
 #include FT_TRUETYPE_TABLES_H
 
+#include "core/emulator_settings.h"
 #include "core/libraries/font/fontft_internal.h"
 #include "core/libraries/kernel/kernel.h"
 
@@ -1593,7 +1594,7 @@ static bool DirectoryContainsAnyFontFiles(const std::filesystem::path& dir) {
 }
 
 std::filesystem::path GetSysFontBaseDir() {
-    std::filesystem::path base = Config::getFontsPath();
+    std::filesystem::path base = EmulatorSettings.GetFontsDir();
     std::error_code ec;
     if (base.empty()) {
         LOG_ERROR(Lib_Font, "SystemFonts: FontsPath not set");
@@ -1816,7 +1817,7 @@ std::string ReportSystemFaceRequest(FontState& st, Libraries::Font::OrbisFontHan
     }
     if (!st.system_requested) {
         st.system_requested = true;
-        const auto configured = Config::getFontsPath();
+        const auto configured = EmulatorSettings.GetFontsDir();
         return fmt::format("SystemFace: handle={} requested internal font but fontsPath ('{}') "
                            "could not be loaded",
                            static_cast<const void*>(handle), configured.string());

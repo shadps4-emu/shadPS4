@@ -29,8 +29,8 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_TRUETYPE_TABLES_H
-#include "common/config.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/font/font.h"
@@ -3469,7 +3469,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
         std::vector<unsigned char> primary_bytes;
         if (!Internal::LoadFontFile(primary_path, primary_bytes)) {
             LOG_ERROR(Lib_Font, "FONT_OPEN_FAILED path='{}' fontsPath='{}'", primary_path.string(),
-                      Config::getFontsPath().string());
+                      EmulatorSettings.GetFontsDir().string());
             return release_library_and_clear_out(ORBIS_FONT_ERROR_FONT_OPEN_FAILED);
         }
         LOG_INFO(Lib_Font, "OpenFontSet: stage=loaded_primary_bytes");

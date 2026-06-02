@@ -35,7 +35,6 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include "common/config.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
