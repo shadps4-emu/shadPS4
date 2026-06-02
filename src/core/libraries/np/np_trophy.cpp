@@ -846,7 +846,7 @@ int PS4_SYSV_ABI sceNpTrophyRegisterContext(OrbisNpTrophyContext context,
         }
     } else {
         LOG_ERROR(Lib_NpTrophy, "No npCommId found for trophy index/service_label: {}",
-                  service_label);
+                  ctx.service_label);
         return ORBIS_NP_UTIL_ERROR_INVALID_TITLEID;
     }
 
