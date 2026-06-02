@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <map>
 #include <common/path_util.h>
 #include <common/scm_rev.h>
@@ -59,13 +60,13 @@ bool UserSettingsImpl::Save() const {
 
         std::ofstream out(path);
         if (!out) {
-            LOG_ERROR(Config, "Failed to open user settings for writing: {}", path.string());
+            std::cerr << "Failed to open user settings for writing: " << path.string() << std::endl;
             return false;
         }
         out << std::setw(2) << existing;
         return !out.fail();
     } catch (const std::exception& e) {
-        LOG_ERROR(Config, "Error saving user settings: {}", e.what());
+        std::cerr << "Error saving user settings: " << e.what() << std::endl;
         return false;
     }
 }
@@ -74,7 +75,6 @@ bool UserSettingsImpl::Load() {
     const auto path = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "users.json";
     try {
         if (!std::filesystem::exists(path)) {
-            LOG_DEBUG(Config, "User settings file not found: {}", path.string());
             if (m_userManager.GetUsers().user.empty())
                 m_userManager.GetUsers() = m_userManager.CreateDefaultUsers();
             m_loaded = true;
@@ -84,7 +84,7 @@ bool UserSettingsImpl::Load() {
 
         std::ifstream in(path);
         if (!in) {
-            LOG_ERROR(Config, "Failed to open user settings: {}", path.string());
+            std::cerr << "Failed to open user settings: " << path.string() << std::endl;
             return false;
         }
 
@@ -103,15 +103,13 @@ bool UserSettingsImpl::Load() {
             m_userManager.GetUsers() = default_users;
         }
 
-        LOG_DEBUG(Config, "User settings loaded successfully");
-
         m_loaded = true;
         if (m_userManager.GetUsers().commit_hash != Common::g_scm_rev)
             Save();
 
         return true;
     } catch (const std::exception& e) {
-        LOG_ERROR(Config, "Error loading user settings: {}", e.what());
+        std::cerr << "Error loading user settings: " << e.what() << std::endl;
         if (m_userManager.GetUsers().user.empty())
             m_userManager.GetUsers() = m_userManager.CreateDefaultUsers();
         return false;

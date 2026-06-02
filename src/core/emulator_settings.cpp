@@ -89,12 +89,11 @@ std::optional<T> get_optional(const toml::value& v, const std::string& key) {
 
 void EmulatorSettingsImpl::PrintChangedSummary(const std::vector<std::string>& changed) {
     if (changed.empty()) {
-        LOG_DEBUG(Config, "No game-specific overrides applied");
         return;
     }
-    LOG_DEBUG(Config, "Game-specific overrides applied:");
+    std::cout << "Game-specific overrides applied:" << std::endl;
     for (const auto& k : changed)
-        LOG_DEBUG(Config, "    * {}", k);
+        std::cout << "    * " << k << std::endl;
 }
 
 // ── Singleton ────────────────────────────────────────────────────────
@@ -232,7 +231,6 @@ void EmulatorSettingsImpl::ClearGameSpecificOverrides() {
     ClearGroupOverrides(m_audio);
     ClearGroupOverrides(m_gpu);
     ClearGroupOverrides(m_vulkan);
-    LOG_DEBUG(Config, "All game-specific overrides cleared");
 }
 
 void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
@@ -260,7 +258,7 @@ void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
         return;
     if (tryGroup(m_vulkan))
         return;
-    LOG_WARNING(Config, "ResetGameSpecificValue: key '{}' not found", key);
+    std::cerr << "ResetGameSpecificValue: key '" << key << "' not found" << std::endl;
 }
 
 bool EmulatorSettingsImpl::Save(const std::string& serial) {
@@ -302,7 +300,8 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
 
             std::ofstream out(path);
             if (!out) {
-                LOG_ERROR(Config, "Failed to open game config for writing: {}", path.string());
+                std::cerr << "Failed to open game config for writing: " << path.string()
+                          << std::endl;
                 return false;
             }
             out << std::setw(2) << j;
@@ -344,14 +343,14 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
 
             std::ofstream out(path);
             if (!out) {
-                LOG_ERROR(Config, "Failed to open config for writing: {}", path.string());
+                std::cerr << "Failed to open config for writing: " << path.string() << std::endl;
                 return false;
             }
             out << std::setw(2) << existing;
             return !out.fail();
         }
     } catch (const std::exception& e) {
-        LOG_ERROR(Config, "Error saving settings: {}", e.what());
+        std::cerr << "Error saving settings: " << e.what() << std::endl;
         return false;
     }
 }
@@ -364,7 +363,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             // ── Global config ──────────────────────────────────────────
             const auto userDir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
             const auto configPath = userDir / "config.json";
-            LOG_DEBUG(Config, "Loading global config from: {}", configPath.string());
 
             if (std::ifstream in{configPath}; in.good()) {
                 json gj;
@@ -385,8 +383,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 mergeGroup(m_audio, "Audio");
                 mergeGroup(m_gpu, "GPU");
                 mergeGroup(m_vulkan, "Vulkan");
-
-                LOG_DEBUG(Config, "Global config loaded successfully");
             } else {
                 if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
                                             "config.toml")) {
@@ -420,7 +416,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                         }
                     }
                 }
-                LOG_DEBUG(Config, "Global config not found - using defaults");
                 SetDefaultValues();
                 Save();
             }
@@ -436,16 +431,14 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             // base configuration.
             const auto gamePath =
                 Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (serial + ".json");
-            LOG_DEBUG(Config, "Applying game config: {}", gamePath.string());
 
             if (!std::filesystem::exists(gamePath)) {
-                LOG_DEBUG(Config, "No game-specific config found for {}", serial);
                 return false;
             }
 
             std::ifstream in(gamePath);
             if (!in) {
-                LOG_ERROR(Config, "Failed to open game config: {}", gamePath.string());
+                std::cerr << "Failed to open game config: " << gamePath.string() << std::endl;
                 return false;
             }
 
@@ -478,7 +471,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             return true;
         }
     } catch (const std::exception& e) {
-        LOG_ERROR(Config, "Error loading settings: {}", e.what());
+        std::cerr << "Error loading settings: " << e.what() << std::endl;
         return false;
     }
 }
@@ -678,7 +671,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
             }
             s.install_dirs.value = settings_install_dirs;
         } catch (const std::exception& e) {
-            LOG_WARNING(Config, "Failed to transfer install directories: {}", e.what());
+            std::cerr << "Failed to transfer install directories: " << e.what() << std::endl;
         }
 
         // Transfer addon install directory
@@ -694,7 +687,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
                 }
             }
         } catch (const std::exception& e) {
-            LOG_WARNING(Config, "Failed to transfer addon install directory: {}", e.what());
+            std::cerr << "Failed to transfer addon install directory: " << e.what() << std::endl;
         }
     }
     if (og_data.contains("General")) {
@@ -713,7 +706,8 @@ bool EmulatorSettingsImpl::TransferSettings() {
                 }
             }
         } catch (const std::exception& e) {
-            LOG_WARNING(Config, "Failed to transfer sysmodules install directory: {}", e.what());
+            std::cerr << "Failed to transfer sysmodules install directory: " << e.what()
+                      << std::endl;
         }
 
         // Transfer font install directory
@@ -729,7 +723,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
                 }
             }
         } catch (const std::exception& e) {
-            LOG_WARNING(Config, "Failed to transfer font install directory: {}", e.what());
+            std::cerr << "Failed to transfer font install directory: " << e.what() << std::endl;
         }
     }
 

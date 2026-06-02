@@ -190,13 +190,14 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
 
 void Launch(char* executableName) {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
-        LOG_ERROR(ImGui, "SDL_INIT_VIDEO Error: {}", SDL_GetError());
+        std::cout << "BigPictureMode Launch: SDL_INIT_VIDEO Error: " << SDL_GetError() << std::endl;
         SDL_Quit();
         return;
     }
 
     if (!SDL_Init(SDL_INIT_GAMEPAD)) {
-        LOG_ERROR(ImGui, "SDL_INIT_GAMEPAD Error: {}", SDL_GetError());
+        std::cout << "BigPictureMode Launch: SDL_INIT_GAMEPAD Error: " << SDL_GetError()
+                  << std::endl;
     }
 
     SDL_Window* window =
@@ -204,7 +205,8 @@ void Launch(char* executableName) {
     renderer = SDL_CreateRenderer(window, nullptr);
 
     if (window == nullptr) {
-        LOG_ERROR(ImGui, "SDL Window Creation Error: {}", SDL_GetError());
+        std::cout << "BigPictureMode Launch: SDL Window Creation Error: " << SDL_GetError()
+                  << std::endl;
         SDL_DestroyRenderer(renderer);
         SDL_Quit();
         return;
