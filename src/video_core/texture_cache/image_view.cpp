@@ -60,7 +60,11 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     }
 
     range.base.level = image.base_level;
-    if (image.base_array < image.NumLayers()) {
+    const bool is_array_image = image.GetType() == AmdGpu::ImageType::Color1DArray ||
+                                image.GetType() == AmdGpu::ImageType::Color2DArray ||
+                                image.GetType() == AmdGpu::ImageType::Color2DMsaaArray ||
+                                image.IsCube();
+    if (is_array_image) {
         range.base.layer = image.base_array;
         if (image.base_array > 0) {
             LOG_DEBUG(Render_Vulkan,
@@ -73,7 +77,7 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
         range.base.layer = 0u;
         if (image.base_array > 0) {
             LOG_DEBUG(Render_Vulkan,
-                      "ImageViewInfo: non-array texture base_array={} >= NumLayers()={} "
+                      "ImageViewInfo: non-array texture base_array={} NumLayers()={} "
                       "(type={} depth={}) using local layer 0",
                       image.base_array, image.NumLayers(), magic_enum::enum_name(image.GetType()),
                       image.depth);
@@ -89,9 +93,8 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
 }
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::ColorBuffer& col_buffer) noexcept {
-    const u32 base_slice = col_buffer.BaseSlice();
-    range.base.layer = base_slice;
-    range.extent.layers = col_buffer.NumSlices() - base_slice;
+    range.base.layer = col_buffer.BaseSlice();
+    range.extent.layers = col_buffer.NumSlices() - range.base.layer;
     type = range.extent.layers > 1 ? AmdGpu::ImageType::Color2DArray : AmdGpu::ImageType::Color2D;
     format =
         Vulkan::LiverpoolToVK::SurfaceFormat(col_buffer.GetDataFmt(), col_buffer.GetNumberFmt());
@@ -102,9 +105,8 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::DepthBuffer& depth_buffer, AmdGpu::De
     format = Vulkan::LiverpoolToVK::DepthFormat(depth_buffer.z_info.format,
                                                 depth_buffer.stencil_info.format);
     is_storage = ctl.depth_write_enable;
-    const u32 base_slice = view.slice_start;
-    range.base.layer = base_slice;
-    range.extent.layers = view.NumSlices() - base_slice;
+    range.base.layer = view.slice_start;
+    range.extent.layers = view.NumSlices() - range.base.layer;
     type = range.extent.layers > 1 ? AmdGpu::ImageType::Color2DArray : AmdGpu::ImageType::Color2D;
 }
 
