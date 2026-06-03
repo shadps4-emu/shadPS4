@@ -250,22 +250,20 @@ Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 
                 // NOTE: these loops may produce a lot of small barriers.
                 // If this becomes a problem, we can optimize it by merging adjacent barriers.
                 const auto subres_idx = mip * info.resources.layers + layer;
-                if (subres_idx >= subresource_states.size()) {
-                    LOG_CRITICAL(Render_Vulkan,
-                                 "GetBarriers OOB: mip={} layer={} subres_idx={} size={} "
-                                 "levels={} layers={} needs_partial={} partially_transited={}",
-                                 mip, layer, subres_idx, subresource_states.size(),
-                                 info.resources.levels, info.resources.layers,
-                                 needs_partial_transition, partially_transited);
-                    if (subres_range) {
-                        LOG_CRITICAL(Render_Vulkan,
-                                     "GetBarriers subres_range: base.level={} base.layer={} "
-                                     "extent.levels={} extent.layers={}",
-                                     subres_range->base.level, subres_range->base.layer,
-                                     subres_range->extent.levels, subres_range->extent.layers);
-                    }
-                    ASSERT(false);
-                }
+                ASSERT_MSG(subres_idx < subresource_states.size(),
+                           "GetBarriers OOB: mip={} layer={} subres_idx={} size={} "
+                           "levels={} layers={} needs_partial={} partially_transited={} "
+                           "subres_range: {}",
+                           mip, layer, subres_idx, subresource_states.size(),
+                           info.resources.levels, info.resources.layers,
+                           needs_partial_transition, partially_transited,
+                           subres_range
+                               ? fmt::format("base.level={} base.layer={} extent.levels={} "
+                                             "extent.layers={}",
+                                             subres_range->base.level, subres_range->base.layer,
+                                             subres_range->extent.levels,
+                                             subres_range->extent.layers)
+                               : "none");
                 auto& state = subresource_states[subres_idx];
 
                 constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
