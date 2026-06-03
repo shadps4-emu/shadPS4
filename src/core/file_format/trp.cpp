@@ -47,14 +47,13 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, std::string npCommId,
     // Retrieve trophy key
     const auto& user_key_vec =
         KeyManager::GetInstance()->GetAllKeys().TrophyKeySet.ReleaseTrophyKey;
-
-    if (user_key_vec.size() != 16) {
-        LOG_INFO(Common_Filesystem, "Trophy decryption key is not specified");
-        return false;
-    }
-
     std::array<u8, 16> user_key{};
-    std::copy(user_key_vec.begin(), user_key_vec.end(), user_key.begin());
+    const bool has_user_key = user_key_vec.size() == user_key.size();
+    if (has_user_key) {
+        std::copy(user_key_vec.begin(), user_key_vec.end(), user_key.begin());
+    } else {
+        LOG_INFO(Common_Filesystem, "Trophy decryption key is not specified");
+    }
 
     s32 trpFileIndex = 0;
     bool success = true;
@@ -81,8 +80,10 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, std::string npCommId,
 
         s64 seekPos = sizeof(TrpHeader);
         // Create output directories
-        if (!std::filesystem::create_directories(outputPath / "Icons") ||
-            !std::filesystem::create_directories(outputPath / "Xml")) {
+        const auto ensure_directory = [](const std::filesystem::path& path) {
+            return std::filesystem::exists(path) || std::filesystem::create_directories(path);
+        };
+        if (!ensure_directory(outputPath / "Icons") || !ensure_directory(outputPath / "Xml")) {
             LOG_ERROR(Common_Filesystem, "Failed to create output directories for {}", npCommId);
             return false;
         }
@@ -112,7 +113,10 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, std::string npCommId,
                 }
             } else if (entry.flag == ENTRY_FLAG_ENCRYPTED_XML) {
                 // Check if we have a valid NPCommID for decryption
-                if (npCommId.size() >= 12 && npCommId[0] == 'N' && npCommId[1] == 'P') {
+                if (!has_user_key) {
+                    LOG_WARNING(Common_Filesystem,
+                                "Skipping encrypted XML entry - trophy decryption key unavailable");
+                } else if (npCommId.size() >= 12 && npCommId[0] == 'N' && npCommId[1] == 'P') {
                     if (!ProcessEncryptedXmlEntry(file, entry, outputPath, name, user_key,
                                                   npCommId)) {
                         success = false;

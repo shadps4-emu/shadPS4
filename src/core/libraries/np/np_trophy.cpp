@@ -224,9 +224,13 @@ s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context,
     if (it != trophyMap.end()) {
         np_comm_id = it->second;
     } else {
-        LOG_ERROR(Lib_NpTrophy, "No npCommId found for trophy index/service_label: {}",
-                  service_label);
-        return ORBIS_NP_TROPHY_ERROR_UNKNOWN;
+        LOG_WARNING(Lib_NpTrophy,
+                    "No npCommId found for trophy index/service_label: {}, continuing without "
+                    "resolved trophy assets",
+                    service_label);
+        LOG_INFO(Lib_NpTrophy, "New context = {}, user_id = {} service label = {}", *context,
+                 user_id, service_label);
+        return ORBIS_OK;
     }
     const auto trophy_base =
         Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / np_comm_id;

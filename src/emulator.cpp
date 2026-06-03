@@ -130,34 +130,34 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
 
             // Extract the actual trophies if they're no extracted yet
             std::string np_comm_id = np_comm_ids[trophy_index];
+            // Keep the index mapping even if trophy XML extraction is unavailable.
+            trophy_index_map[trophy_index] = np_comm_id;
+            LOG_DEBUG(Loader, "Mapped trophy index {} to NPCommID: {}", trophy_index, np_comm_id);
+
             const auto& trophy_output_dir =
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / np_comm_id;
             if (!std::filesystem::exists(trophy_output_dir)) {
                 TRP trp;
                 if (!trp.Extract(entry, np_comm_id, trophy_output_dir)) {
-                    LOG_ERROR(Loader, "Couldn't extract trophy file {}", filename);
+                    LOG_WARNING(Loader, "Couldn't fully extract trophy file {}", filename);
                     continue;
                 }
             }
 
             // Move extracted trophy contents into each user's folder
+            const auto trophy_conf_path = trophy_output_dir / "Xml" / "TROPCONF.XML";
             for (User user : UserSettings.GetUserManager().GetValidUsers()) {
                 auto const user_trophy_file = EmulatorSettings.GetHomeDir() /
                                               std::to_string(user.user_id) / "trophy" /
                                               (np_comm_id + ".xml");
-                if (!std::filesystem::exists(user_trophy_file)) {
+                if (!std::filesystem::exists(user_trophy_file) &&
+                    std::filesystem::exists(trophy_conf_path)) {
                     auto temp = user_trophy_file.parent_path();
                     std::filesystem::create_directories(temp);
                     std::error_code discard;
-                    std::filesystem::copy_file(trophy_output_dir / "Xml" / "TROPCONF.XML",
-                                               user_trophy_file, discard);
+                    std::filesystem::copy_file(trophy_conf_path, user_trophy_file, discard);
                 }
             }
-
-            // Add the relevant trophies to our trophy index map.
-            // This currently assumes the order of NPCommIDs matches the order of trophies.
-            trophy_index_map[trophy_index] = np_comm_id;
-            LOG_DEBUG(Loader, "Mapped trophy index {} to NPCommID: {}", trophy_index, np_comm_id);
         }
     }
     return trophy_index_map;
