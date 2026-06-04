@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <magic_enum/magic_enum.hpp>
 #include "common/elf_info.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/network/http.h"
+#include "core/libraries/np/np_error.h"
 #include "np_web_api_internal.h"
-
-#include <magic_enum/magic_enum.hpp>
 
 namespace Libraries::Np::NpWebApi {
 

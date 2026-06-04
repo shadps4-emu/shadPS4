@@ -802,11 +802,19 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction) {
 
     // update input modifier
     auto& control = m_instruction.control.vop3;
-    for (u32 i = 0; i != 3; ++i) {
-        if (control.abs & (1u << i)) {
-            m_instruction.src[i].input_modifier.abs = true;
-        }
 
+    // update output modifier
+    auto& outputMod = m_instruction.dst[0].output_modifier;
+
+    if (!IsVop3BEncoding(m_instruction.opcode)) {
+        for (u32 i = 0; i != 3; ++i) {
+            if (control.abs & (1u << i)) {
+                m_instruction.src[i].input_modifier.abs = true;
+            }
+        }
+        outputMod.clamp = static_cast<bool>(control.clmp);
+    }
+    for (u32 i = 0; i != 3; ++i) {
         if (control.neg & (1u << i)) {
             m_instruction.src[i].input_modifier.neg = true;
         }
@@ -818,10 +826,6 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction) {
 
     m_instruction.dst[0].op_sel.op_sel = control.op_sel & (1u << 3);
 
-    // update output modifier
-    auto& outputMod = m_instruction.dst[0].output_modifier;
-
-    outputMod.clamp = static_cast<bool>(control.clmp);
     switch (control.omod) {
     case 0:
         outputMod.multiplier = 0.f;
