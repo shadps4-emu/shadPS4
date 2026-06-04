@@ -10,6 +10,7 @@
 #include <shared_mutex>
 
 #include "common/enum.h"
+#include "common/shared_first_mutex.h"
 #include "core/libraries/kernel/sync/mutex.h"
 #include "core/libraries/kernel/sync/semaphore.h"
 #include "core/libraries/kernel/time.h"
@@ -202,7 +203,7 @@ struct PthreadRwlockAttr {
 using PthreadRwlockAttrT = PthreadRwlockAttr*;
 
 struct PthreadRwlock {
-    std::shared_timed_mutex lock;
+    Common::SharedFirstMutex lock;
     Pthread* owner;
 
     int Wrlock(const OrbisKernelTimespec* abstime);
