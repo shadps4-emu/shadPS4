@@ -260,10 +260,11 @@ void GameControllers::TryOpenSDLControllers() {
             }
             if (!still_connected) {
                 auto u = UserManagement.GetUserByID(controllers[i]->user_id);
-                UserManagement.LogoutUser(u);
                 SDL_CloseGamepad(pad);
                 controllers[i]->m_sdl_gamepad = nullptr;
                 controllers[i]->user_id = -1;
+                controllers[i]->m_connected = false;
+                controllers[i]->m_connected_count = 0;
                 slot_taken[i] = false;
             }
         }
@@ -294,6 +295,8 @@ void GameControllers::TryOpenSDLControllers() {
                 c->user_id = u->user_id;
                 slot_taken[i] = true;
                 UserManagement.LoginUser(u, i + 1);
+                c->m_connected = true;
+                c->m_connected_count = 1;
                 if (EmulatorSettings.IsMotionControlsEnabled()) {
                     if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
                         c->gyro_poll_rate =
