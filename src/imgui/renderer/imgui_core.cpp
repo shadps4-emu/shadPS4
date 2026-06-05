@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+#include <cstdint>
 #include <SDL3/SDL_events.h>
 #include <imgui.h>
 
@@ -8,6 +10,8 @@
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
+#include "font_data.h"
+#include "font_stack.h"
 #include "imgui/imgui_layer.h"
 #include "imgui_core.h"
 #include "imgui_impl_sdl3.h"
@@ -16,9 +20,6 @@
 #include "sdl_window.h"
 #include "texture_manager.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
-
-#include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
-#include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
 
 static void CheckVkResult(const vk::Result err) {
     LOG_ERROR(ImGui, "Vulkan error {}", vk::to_string(err));
@@ -33,10 +34,30 @@ static std::deque<std::pair<bool, ImGui::Layer*>> change_layers{};
 static std::mutex change_layers_mutex{};
 
 static ImGuiID dock_id;
+static std::atomic<std::uint32_t> force_gamepad_input_capture_count{0};
 
 namespace ImGui {
 
 namespace Core {
+
+void AcquireGamepadInputCapture() {
+    force_gamepad_input_capture_count.fetch_add(1, std::memory_order_relaxed);
+}
+
+void ReleaseGamepadInputCapture() {
+    std::uint32_t expected = force_gamepad_input_capture_count.load(std::memory_order_relaxed);
+    while (expected != 0) {
+        if (force_gamepad_input_capture_count.compare_exchange_weak(
+                expected, expected - 1, std::memory_order_relaxed, std::memory_order_relaxed)) {
+            return;
+        }
+    }
+    LOG_WARNING(ImGui, "ReleaseGamepadInputCapture called with no active capture");
+}
+
+bool IsGamepadInputCaptured() {
+    return force_gamepad_input_capture_count.load(std::memory_order_relaxed) > 0;
+}
 
 void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& window,
                 const u32 image_count, vk::Format surface_format,
@@ -63,26 +84,25 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     std::memcpy(log_file_buf, path.c_str(), path.size());
     io.LogFilename = log_file_buf;
 
-    ImFontGlyphRangesBuilder rb{};
-    rb.AddRanges(io.Fonts->GetGlyphRangesDefault());
-    rb.AddRanges(io.Fonts->GetGlyphRangesGreek());
-    rb.AddRanges(io.Fonts->GetGlyphRangesKorean());
-    rb.AddRanges(io.Fonts->GetGlyphRangesJapanese());
-    rb.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
-    ImVector<ImWchar> ranges{};
-    rb.BuildRanges(&ranges);
     ImFontConfig font_cfg{};
     font_cfg.OversampleH = 2;
     font_cfg.OversampleV = 1;
-    io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
-        imgui_font_notosansjp_regular_compressed_data,
-        imgui_font_notosansjp_regular_compressed_size, 32.0f, &font_cfg, ranges.Data);
+    io.Fonts->Flags |= ImFontAtlasFlags_NoPowerOfTwoHeight;
+    const int console_language = EmulatorSettings.GetConsoleLanguage();
+    io.FontDefault = FontStack::AddPrimaryUiFont(io.Fonts, 32.0f, console_language, font_cfg, true);
+
     io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_proggyvector_regular_compressed_data,
                                              imgui_font_proggyvector_regular_compressed_size,
                                              32.0f);
-    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
-                                             imgui_font_notosansjp_regular_compressed_size, 128.0f,
-                                             &font_cfg, ranges.Data);
+
+    // Avoid exploding atlas size on Metal/MoltenVK when CJK fallback is enabled.
+    FontStack::AddPrimaryUiFont(io.Fonts, 128.0f, console_language, font_cfg, false);
+
+    // Big Picture
+    FontStack::AddPrimaryUiFont(ImGui::GetIO().Fonts, 64.0f, EmulatorSettings.GetConsoleLanguage(),
+                                font_cfg, true);
+
+    io.Fonts->Build();
 
     io.FontGlobalScale = 0.5f;
 
@@ -163,14 +183,28 @@ bool ProcessEvent(SDL_Event* event) {
     }
     case SDL_EVENT_TEXT_INPUT:
     case SDL_EVENT_KEY_DOWN: {
+        if (IsGamepadInputCaptured()) {
+            // Keep keyboard events flowing through the regular input-binding path while IME/OSK
+            // captures gamepad input, so keyboard equivalents of pad buttons still update the
+            // virtual controller state.
+            return false;
+        }
         const auto& io = GetIO();
         return io.WantCaptureKeyboard && io.Ctx->NavWindow != nullptr &&
                io.Ctx->NavWindow->ID != dock_id;
     }
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+    case SDL_EVENT_GAMEPAD_BUTTON_UP:
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION: {
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
+    case SDL_EVENT_GAMEPAD_SENSOR_UPDATE: {
+        if (IsGamepadInputCaptured()) {
+            // Let controller events continue to input bindings so OSK shortcuts and virtual
+            // controller state keep updating; game-side pad reads are blocked in libScePad.
+            return false;
+        }
         const auto& io = GetIO();
         return io.NavActive && io.Ctx->NavWindow != nullptr && io.Ctx->NavWindow->ID != dock_id;
     }

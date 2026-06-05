@@ -205,7 +205,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "15")
+set(EMULATOR_VERSION_MINOR "16")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -234,6 +234,7 @@ find_package(miniz 3.1 CONFIG)
 find_package(nlohmann_json 3.12 CONFIG)
 find_package(PNG 1.6 MODULE)
 find_package(OpenAL CONFIG)
+find_package(LibreSSL 4.3.1 MODULE)
 find_package(RenderDoc 1.6.0 MODULE)
 find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
@@ -312,7 +313,10 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnm_error.h
 )
 
-set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
+set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
+               src/core/libraries/kernel/coredump/coredump.h
+               src/core/libraries/kernel/coredump/coredump_error.h
+               src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/sync/mutex.h
                src/core/libraries/kernel/sync/semaphore.h
                src/core/libraries/kernel/threads/condvar.cpp
@@ -491,7 +495,12 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/font/fontft.cpp
                 src/core/libraries/font/fontft.h
                 src/core/libraries/font/font_error.h
-
+                src/core/libraries/content_export/content_export.cpp
+                src/core/libraries/content_export/content_export.h
+                src/core/libraries/content_export/content_export_error.h
+                src/core/libraries/video_recording/video_recording.cpp
+                src/core/libraries/video_recording/video_recording.h
+                src/core/libraries/video_recording/video_recording_error.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -520,12 +529,16 @@ set(HLE_LIBC_INTERNAL_LIB src/core/libraries/libc_internal/libc_internal.cpp
 set(IME_LIB src/core/libraries/ime/error_dialog.cpp
             src/core/libraries/ime/error_dialog.h
             src/core/libraries/ime/ime_common.h
+            src/core/libraries/ime/ime_kb_layout.cpp
+            src/core/libraries/ime/ime_kb_layout.h
             src/core/libraries/ime/ime_dialog_ui.cpp
             src/core/libraries/ime/ime_dialog_ui.h
             src/core/libraries/ime/ime_dialog.cpp
             src/core/libraries/ime/ime_dialog.h
             src/core/libraries/ime/ime_ui.cpp
             src/core/libraries/ime/ime_ui.h
+            src/core/libraries/ime/ime_ui_shared.cpp
+            src/core/libraries/ime/ime_ui_shared.h
             src/core/libraries/ime/ime.cpp
             src/core/libraries/ime/ime.h
             src/core/libraries/ime/ime_error.h
@@ -606,19 +619,12 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_manager.h
             src/core/libraries/np/np_matching2.cpp
             src/core/libraries/np/np_matching2.h
-            src/core/libraries/np/np_score.cpp
-            src/core/libraries/np/np_score.h
             src/core/libraries/np/np_trophy.cpp
             src/core/libraries/np/np_trophy.h
             src/core/libraries/np/np_tus.cpp
             src/core/libraries/np/np_tus.h
             src/core/libraries/np/trophy_ui.cpp
             src/core/libraries/np/trophy_ui.h
-            src/core/libraries/np/np_web_api.cpp
-            src/core/libraries/np/np_web_api.h
-            src/core/libraries/np/np_web_api_error.h
-            src/core/libraries/np/np_web_api_internal.cpp
-            src/core/libraries/np/np_web_api_internal.h
             src/core/libraries/np/np_web_api2.cpp
             src/core/libraries/np/np_web_api2.h
             src/core/libraries/np/np_party.cpp
@@ -634,6 +640,15 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_partner.cpp
             src/core/libraries/np/np_partner.h
             src/core/libraries/np/object_manager.h
+            src/core/libraries/np/np_handler.cpp
+            src/core/libraries/np/np_handler.h
+            src/core/libraries/np/np_score/np_score.cpp
+            src/core/libraries/np/np_score/np_score.h
+            src/core/libraries/np/np_score/np_score_ctx.h
+            src/core/libraries/np/np_web_api/np_web_api.cpp
+            src/core/libraries/np/np_web_api/np_web_api.h
+            src/core/libraries/np/np_web_api/np_web_api_internal.cpp
+            src/core/libraries/np/np_web_api/np_web_api_internal.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
@@ -717,8 +732,6 @@ set(COMMON src/common/logging/classes.h
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
-           src/common/config.cpp
-           src/common/config.h
            src/common/cstring.h
            src/common/debug.h
            src/common/decoder.cpp
@@ -726,6 +739,7 @@ set(COMMON src/common/logging/classes.h
            src/common/elf_info.h
            src/common/endian.h
            src/common/enum.h
+           src/common/incremental_id.h
            src/common/io_file.cpp
            src/common/io_file.h
            src/common/lru_cache.h
@@ -1092,22 +1106,30 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_texture.h
           src/imgui/imgui_translations.cpp
           src/imgui/imgui_translations.h
+          src/imgui/notifications_layer.cpp
+          src/imgui/notifications_layer.h
           src/imgui/renderer/imgui_core.cpp
           src/imgui/renderer/imgui_core.h
           src/imgui/renderer/imgui_impl_sdl3.cpp
           src/imgui/renderer/imgui_impl_sdl3.h
-          src/imgui/renderer/imgui_impl_sdl3_bpm.cpp
-          src/imgui/renderer/imgui_impl_sdl3_bpm.h
-          src/imgui/renderer/imgui_impl_sdlrenderer3.cpp
-          src/imgui/renderer/imgui_impl_sdlrenderer3.h
           src/imgui/renderer/imgui_impl_vulkan.cpp
           src/imgui/renderer/imgui_impl_vulkan.h
+          src/imgui/renderer/font_data.cpp
+          src/imgui/renderer/font_data.h
+          src/imgui/renderer/font_stack.cpp
+          src/imgui/renderer/font_stack.h
           src/imgui/renderer/texture_manager.cpp
           src/imgui/renderer/texture_manager.h
-          src/imgui/big_picture.cpp
-          src/imgui/big_picture.h
-          src/imgui/settings_dialog_imgui.cpp
-          src/imgui/settings_dialog_imgui.h
+          src/imgui/big_picture/big_picture.cpp
+          src/imgui/big_picture/big_picture.h
+          src/imgui/big_picture/settings_dialog_imgui.cpp
+          src/imgui/big_picture/settings_dialog_imgui.h
+          src/imgui/big_picture/settings_dialog_layer.cpp
+          src/imgui/big_picture/settings_dialog_layer.h
+          src/imgui/big_picture/imgui_impl_sdl3_big_picture.cpp
+          src/imgui/big_picture/imgui_impl_sdl3_big_picture.h
+          src/imgui/big_picture/imgui_impl_sdlrenderer3.cpp
+          src/imgui/big_picture/imgui_impl_sdlrenderer3.h
 )
 
 set(INPUT src/input/controller.cpp
@@ -1144,9 +1166,10 @@ add_executable(shadps4
 
 create_target_directory_groups(shadps4)
 
+target_link_libraries(shadps4 PRIVATE spdlog::spdlog)
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui ImGuiFileDialog gcn half::half ZLIB::ZLIB PNG::PNG minimp3)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml)
-target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib spdlog::spdlog)
+target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib)
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     target_link_libraries(shadps4 PRIVATE "/usr/lib/libusb.so")
@@ -1268,9 +1291,9 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeRC.cmake")
 cmrc_add_resource_library(embedded-resources
         ALIAS res::embedded
         NAMESPACE res
+        src/images/shadps4.png
         src/images/big_picture/folder.png
         src/images/big_picture/settings.png
-        src/images/big_picture/global-settings.png
         src/images/big_picture/experimental.png
         src/images/big_picture/graphics.png
         src/images/big_picture/controller.png

@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdlib>
+#include <iostream>
 #include <string>
+#include <fmt/std.h>
 
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/logging/log.h"
 #include "common/logging/thread_name_formatter.h"
 #include "common/types.h"
@@ -13,6 +14,14 @@
 #ifdef _WIN32
 #include <Windows.h>
 #endif
+
+// return codes above 'standard'
+// https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes
+enum class ShadPs4ReturnCode : u32 {
+    TERMINATE_WITHOUT_EXCEPTION = 20'000,
+    TERMINATE_WITH_EXCEPTION = 20'001,
+    TERMINATE_WITH_UNKNOWN_EXCEPTION = 20'002,
+};
 
 namespace Common::Log {
 bool g_should_append = false;
@@ -51,6 +60,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_CommonDlg, nullptr},
     {Class::Lib_CompanionHttpd, nullptr},
     {Class::Lib_CompanionUtil, nullptr},
+    {Class::Lib_ContentExport, nullptr},
     {Class::Lib_DiscMap, nullptr},
     {Class::Lib_ErrorDialog, nullptr},
     {Class::Lib_Fiber, nullptr},
@@ -111,6 +121,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_Vdec2, nullptr},
     {Class::Lib_VideoOut, nullptr},
     {Class::Lib_Videodec, nullptr},
+    {Class::Lib_VideoRecording, nullptr},
     {Class::Lib_Voice, nullptr},
     {Class::Lib_VrTracker, nullptr},
     {Class::Lib_WebBrowserDialog, nullptr},
@@ -166,6 +177,7 @@ void Setup(std::string_view log_filename) {
         already_registered = true;
         std::atexit(Shutdown);
         std::at_quick_exit(Flush);
+        std::set_terminate(Terminate);
     }
 
 #ifdef _WIN32
@@ -176,7 +188,7 @@ void Setup(std::string_view log_filename) {
     }
 
 #else
-    g_console_sink = UpdateColorLevels(std::make_shared<spdlog_stdout>());
+    g_console_sink = UpdateColorLevels(std::make_shared<spdlog_stdout>(spdlog::color_mode::always));
 #endif
 
     g_console_sink->set_formatter(std::make_unique<thread_name_formatter>(UNLIMITED_SIZE));
@@ -200,12 +212,17 @@ void Setup(std::string_view log_filename) {
     std::unordered_map<std::string, spdlog::level> log_level_per_class;
 
     if (EmulatorSettings.IsLogEnable()) {
-        for (const auto class_level : std::views::split(EmulatorSettings.GetLogFilter(), ',')) {
+        for (const auto class_level : std::views::split(EmulatorSettings.GetLogFilter(), ' ')) {
             const auto class_level_pair =
-                std::views::split(class_level, '=') | std::ranges::to<std::vector<std::string>>();
+                std::views::split(class_level, ':') | std::ranges::to<std::vector<std::string>>();
 
-            if (class_level_pair.size() == 1) {
-                default_log_level = spdlog::level_from_str(class_level_pair.front() |
+            if (class_level_pair.size() != 2) {
+                std::cerr << "bad log filter provided" << std::endl;
+                continue;
+            }
+
+            if (class_level_pair.front()[0] == '*') {
+                default_log_level = spdlog::level_from_str(class_level_pair.back() |
                                                            std::ranges::to<std::string>());
             } else {
                 log_level_per_class[class_level_pair.front() | std::ranges::to<std::string>()] =
@@ -248,6 +265,26 @@ void Flush() {
 
     if (g_console_sink != nullptr) {
         g_console_sink->flush();
+    }
+}
+
+void Terminate() {
+    try {
+        if (std::exception_ptr eptr{std::current_exception()}) {
+            std::rethrow_exception(eptr);
+        }
+
+        LOG_CRITICAL(Debug, "Exiting without exception");
+
+        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITHOUT_EXCEPTION));
+    } catch (const std::exception& exception) {
+        LOG_CRITICAL(Debug, "Exception: {}", exception);
+
+        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITH_EXCEPTION));
+    } catch (...) {
+        LOG_CRITICAL(Debug, "Unknown exception caught");
+
+        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITH_UNKNOWN_EXCEPTION));
     }
 }
 } // namespace Common::Log

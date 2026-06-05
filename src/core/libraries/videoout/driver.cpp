@@ -62,10 +62,40 @@ int VideoOutDriver::Open(const ServiceThreadParams* params) {
 void VideoOutDriver::Close(s32 handle) {
     std::scoped_lock lock{mutex};
 
+    // Mark as closed
     main_port.is_open = false;
     main_port.flip_rate = 0;
     main_port.prev_index = -1;
-    ASSERT(main_port.flip_events.empty());
+
+    // Clear port information
+    std::memset(main_port.buffer_labels.data(), 0, sizeof(main_port.buffer_labels));
+    std::memset(main_port.groups.data(), 0, sizeof(main_port.groups));
+    std::memset(&main_port.vblank_status, 0, sizeof(main_port.vblank_status));
+    main_port.flip_status = FlipStatus{};
+
+    // Re-initialize buffers
+    std::memset(main_port.buffer_slots.data(), 0, sizeof(main_port.buffer_slots));
+    for (auto& buffer : main_port.buffer_slots) {
+        buffer.group_index = -1;
+    }
+
+    // Clear events
+    for (auto event : main_port.flip_events) {
+        auto equeue = Kernel::GetEqueue(event);
+        if (equeue != nullptr) {
+            equeue->RemoveEvent(static_cast<u64>(OrbisVideoOutInternalEventId::Flip),
+                                Kernel::OrbisKernelEvent::Filter::VideoOut);
+        }
+    }
+    main_port.flip_events.clear();
+    for (auto event : main_port.vblank_events) {
+        auto equeue = Kernel::GetEqueue(event);
+        if (equeue != nullptr) {
+            equeue->RemoveEvent(static_cast<u64>(OrbisVideoOutInternalEventId::Vblank),
+                                Kernel::OrbisKernelEvent::Filter::VideoOut);
+        }
+    }
+    main_port.vblank_events.clear();
 }
 
 VideoOutPort* VideoOutDriver::GetPort(int handle) {
@@ -165,6 +195,44 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
     return ORBIS_OK;
 }
 
+int VideoOutDriver::ChangeBufferAttribute(VideoOutPort* port, s32 attributeIndex,
+                                          const BufferAttribute* attribute) {
+    if (attributeIndex >= MaxDisplayBufferGroups || !port->groups[attributeIndex].is_occupied) {
+        LOG_ERROR(Lib_VideoOut, "Invalid attribute index {}", attributeIndex);
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
+    }
+
+    if (attribute->reserved0 != 0 || attribute->reserved1 != 0) {
+        LOG_ERROR(Lib_VideoOut, "Invalid reserved members");
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
+    }
+    if (attribute->aspect_ratio != 0) {
+        LOG_ERROR(Lib_VideoOut, "Invalid aspect ratio = {}", attribute->aspect_ratio);
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ASPECT_RATIO;
+    }
+    if (attribute->width > attribute->pitch_in_pixel) {
+        LOG_ERROR(Lib_VideoOut, "Buffer width {} is larger than pitch {}", attribute->width,
+                  attribute->pitch_in_pixel);
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_PITCH;
+    }
+    if (attribute->tiling_mode < TilingMode::Tile || attribute->tiling_mode > TilingMode::Linear) {
+        LOG_ERROR(Lib_VideoOut, "Invalid tilingMode = {}",
+                  static_cast<u32>(attribute->tiling_mode));
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_TILING_MODE;
+    }
+
+    LOG_INFO(Lib_VideoOut,
+             "attributeIndex = {}, pixelFormat = {}, aspectRatio = {}, "
+             "tilingMode = {}, width = {}, height = {}, pitchInPixel = {}, option = {:#x}",
+             attributeIndex, GetPixelFormatString(attribute->pixel_format), attribute->aspect_ratio,
+             static_cast<u32>(attribute->tiling_mode), attribute->width, attribute->height,
+             attribute->pitch_in_pixel, attribute->option);
+
+    std::unique_lock lock{port->port_mutex};
+    std::memcpy(&port->groups[attributeIndex].attrib, attribute, sizeof(BufferAttribute));
+    return 0;
+}
+
 void VideoOutDriver::Flip(const Request& req) {
     // Update HDR status before presenting.
     presenter->SetHDR(req.port->is_hdr);
@@ -189,9 +257,10 @@ void VideoOutDriver::Flip(const Request& req) {
     }
 
     // Trigger flip events for the port.
-    for (auto& event : port->flip_events) {
-        if (event != nullptr) {
-            event->TriggerEvent(
+    for (auto event : port->flip_events) {
+        auto equeue = Kernel::GetEqueue(event);
+        if (equeue != nullptr) {
+            equeue->TriggerEvent(
                 static_cast<u64>(OrbisVideoOutInternalEventId::Flip),
                 Kernel::OrbisKernelEvent::Filter::VideoOut,
                 reinterpret_cast<void*>(static_cast<u64>(OrbisVideoOutInternalEventId::Flip) |
@@ -318,13 +387,15 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
             std::scoped_lock lock{main_port.vo_mutex};
 
             // Trigger flip events for the port
-            for (auto& event : main_port.vblank_events) {
-                if (event != nullptr) {
-                    event->TriggerEvent(static_cast<u64>(OrbisVideoOutInternalEventId::Vblank),
-                                        Kernel::OrbisKernelEvent::Filter::VideoOut,
-                                        reinterpret_cast<void*>(
-                                            static_cast<u64>(OrbisVideoOutInternalEventId::Vblank) |
-                                            (vblank_status.count << 16)));
+            for (auto event : main_port.vblank_events) {
+                auto equeue = Kernel::GetEqueue(event);
+                if (equeue != nullptr) {
+                    equeue->TriggerEvent(
+                        static_cast<u64>(OrbisVideoOutInternalEventId::Vblank),
+                        Kernel::OrbisKernelEvent::Filter::VideoOut,
+                        reinterpret_cast<void*>(
+                            static_cast<u64>(OrbisVideoOutInternalEventId::Vblank) |
+                            (vblank_status.count << 16)));
                 }
             }
 

@@ -1386,35 +1386,29 @@ U1 IREmitter::FPUnordered(const F32F64& lhs, const F32F64& rhs) {
     return LogicalOr(FPIsNan(lhs), FPIsNan(rhs));
 }
 
-F32F64 IREmitter::FPMax(const F32F64& lhs, const F32F64& rhs, bool is_legacy) {
+F32F64 IREmitter::FPMax(const F32F64& lhs, const F32F64& rhs) {
     if (lhs.Type() != rhs.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
     }
 
     switch (lhs.Type()) {
     case Type::F32:
-        return Inst<F32>(Opcode::FPMax32, lhs, rhs, is_legacy);
+        return Inst<F32>(Opcode::FPMax32, lhs, rhs);
     case Type::F64:
-        if (is_legacy) {
-            UNREACHABLE_MSG("F64 cannot be used with LEGACY ops");
-        }
         return Inst<F64>(Opcode::FPMax64, lhs, rhs);
     default:
         ThrowInvalidType(lhs.Type());
     }
 }
 
-F32F64 IREmitter::FPMin(const F32F64& lhs, const F32F64& rhs, bool is_legacy) {
+F32F64 IREmitter::FPMin(const F32F64& lhs, const F32F64& rhs) {
     if (lhs.Type() != rhs.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
     }
     switch (lhs.Type()) {
     case Type::F32:
-        return Inst<F32>(Opcode::FPMin32, lhs, rhs, is_legacy);
+        return Inst<F32>(Opcode::FPMin32, lhs, rhs);
     case Type::F64:
-        if (is_legacy) {
-            UNREACHABLE_MSG("F64 cannot be used with LEGACY ops");
-        }
         return Inst<F64>(Opcode::FPMin64, lhs, rhs);
     default:
         ThrowInvalidType(lhs.Type());
@@ -1926,6 +1920,13 @@ U8U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U8U16U32U64& value)
             return Inst<U32>(Opcode::ConvertU32U8, value);
         case Type::U16:
             return Inst<U32>(Opcode::ConvertU32U16, value);
+        default:
+            break;
+        }
+    case 64:
+        switch (value.Type()) {
+        case Type::U32:
+            return Inst<U64>(Opcode::ConvertU64U32, value);
         default:
             break;
         }

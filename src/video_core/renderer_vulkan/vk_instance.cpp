@@ -116,13 +116,20 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
         std::sort(properties2.begin(), properties2.end(), [](const auto& left, const auto& right) {
             const vk::PhysicalDeviceProperties& left_prop = std::get<1>(left).properties;
             const vk::PhysicalDeviceProperties& right_prop = std::get<1>(right).properties;
-            if (left_prop.apiVersion >= TargetVulkanApiVersion &&
-                right_prop.apiVersion < TargetVulkanApiVersion) {
-                return true;
+            const bool left_supports_api = left_prop.apiVersion >= TargetVulkanApiVersion;
+            const bool right_supports_api = right_prop.apiVersion >= TargetVulkanApiVersion;
+            if (left_supports_api != right_supports_api) {
+                return left_supports_api;
             }
-            if (left_prop.deviceType != right_prop.deviceType) {
-                return left_prop.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+
+            const bool left_is_discrete =
+                left_prop.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+            const bool right_is_discrete =
+                right_prop.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+            if (left_is_discrete != right_is_discrete) {
+                return left_is_discrete;
             }
+
             constexpr auto get_mem = [](const vk::PhysicalDeviceMemoryProperties& mem) -> size_t {
                 size_t max = 0;
                 for (u32 i = 0; i < mem.memoryHeapCount; i++) {
@@ -196,7 +203,8 @@ bool Instance::CreateDevice() {
                           vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
                           vk::PhysicalDevicePortabilitySubsetFeaturesKHR,
                           vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
-                          vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
+                          vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
+                          vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -305,6 +313,15 @@ bool Instance::CreateDevice() {
         LOG_INFO(
             Render_Vulkan, "- workgroupMemoryExplicitLayout16BitAccess: {}",
             workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess);
+    }
+    image_2d_view_of_3d = add_extension(VK_EXT_IMAGE_2D_VIEW_OF_3D_EXTENSION_NAME);
+    if (image_2d_view_of_3d) {
+        image_2d_view_of_3d_features =
+            feature_chain.get<vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
+        LOG_INFO(Render_Vulkan, "- image2DViewOf3D: {}",
+                 image_2d_view_of_3d_features.image2DViewOf3D);
+        LOG_INFO(Render_Vulkan, "- sampler2DViewOf3D: {}",
+                 image_2d_view_of_3d_features.sampler2DViewOf3D);
     }
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
@@ -483,6 +500,10 @@ bool Instance::CreateDevice() {
             .workgroupMemoryExplicitLayout16BitAccess =
                 workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess,
         },
+        vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT{
+            .image2DViewOf3D = image_2d_view_of_3d_features.image2DViewOf3D,
+            .sampler2DViewOf3D = image_2d_view_of_3d_features.sampler2DViewOf3D,
+        },
 #ifdef __APPLE__
         vk::PhysicalDevicePortabilitySubsetFeaturesKHR{
             .constantAlphaColorBlendFactors = portability_features.constantAlphaColorBlendFactors,
@@ -548,6 +569,9 @@ bool Instance::CreateDevice() {
     }
     if (!workgroup_memory_explicit_layout) {
         device_chain.unlink<vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
+    }
+    if (!image_2d_view_of_3d) {
+        device_chain.unlink<vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());

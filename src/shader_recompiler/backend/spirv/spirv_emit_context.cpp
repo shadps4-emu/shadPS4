@@ -231,7 +231,7 @@ Id EmitContext::GetBufferSize(const u32 sharp_idx) {
 }
 
 void EmitContext::DefineBufferProperties() {
-    if (!profile.needs_buffer_offsets && profile.supports_robust_buffer_access) {
+    if (!profile.needs_buffer_offsets) {
         return;
     }
     for (u32 i = 0; i < buffers.size(); i++) {
@@ -242,59 +242,31 @@ void EmitContext::DefineBufferProperties() {
             continue;
         }
 
-        // Only load and apply buffer offsets if host GPU alignment is larger than guest.
-        if (profile.needs_buffer_offsets) {
-            const u32 half = PushData::BufOffsetIndex + (binding >> 4);
-            const u32 comp = (binding & 0xf) >> 2;
-            const u32 offset = (binding & 0x3) << 3;
-            const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
-                                       push_data_block, ConstU32(half), ConstU32(comp))};
-            const Id value{OpLoad(U32[1], ptr)};
+        const u32 half = PushData::BufOffsetIndex + (binding >> 4);
+        const u32 comp = (binding & 0xf) >> 2;
+        const u32 offset = (binding & 0x3) << 3;
+        const Id ptr{OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
+                                   push_data_block, ConstU32(half), ConstU32(comp))};
+        const Id value{OpLoad(U32[1], ptr)};
 
-            const Id buf_offset{OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U))};
-            Name(buf_offset, fmt::format("buf{}_off", binding));
-            buffer.Offset(PointerSize::B8) = buf_offset;
+        const Id buf_offset{OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U))};
+        Name(buf_offset, fmt::format("buf{}_off", binding));
+        buffer.Offset(PointerSize::B8) = buf_offset;
 
-            if (True(desc.used_types & IR::Type::U16)) {
-                const Id buf_word_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(1U))};
-                Name(buf_word_offset, fmt::format("buf{}_word_off", binding));
-                buffer.Offset(PointerSize::B16) = buf_word_offset;
-            }
-            if (True(desc.used_types & IR::Type::U32)) {
-                const Id buf_dword_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(2U))};
-                Name(buf_dword_offset, fmt::format("buf{}_dword_off", binding));
-                buffer.Offset(PointerSize::B32) = buf_dword_offset;
-            }
-            if (True(desc.used_types & IR::Type::U64)) {
-                const Id buf_qword_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(3U))};
-                Name(buf_qword_offset, fmt::format("buf{}_qword_off", binding));
-                buffer.Offset(PointerSize::B64) = buf_qword_offset;
-            }
+        if (True(desc.used_types & IR::Type::U16)) {
+            const Id buf_word_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(1U))};
+            Name(buf_word_offset, fmt::format("buf{}_word_off", binding));
+            buffer.Offset(PointerSize::B16) = buf_word_offset;
         }
-
-        // Only load size if performing bounds checks.
-        if (!profile.supports_robust_buffer_access) {
-            const Id buf_size{desc.sharp_idx == std::numeric_limits<u32>::max()
-                                  ? ConstU32(desc.inline_cbuf.GetSize())
-                                  : GetBufferSize(desc.sharp_idx)};
-            Name(buf_size, fmt::format("buf{}_size", binding));
-            buffer.Size(PointerSize::B8) = buf_size;
-
-            if (True(desc.used_types & IR::Type::U16)) {
-                const Id buf_word_size{OpShiftRightLogical(U32[1], buf_size, ConstU32(1U))};
-                Name(buf_word_size, fmt::format("buf{}_short_size", binding));
-                buffer.Size(PointerSize::B16) = buf_word_size;
-            }
-            if (True(desc.used_types & IR::Type::U32)) {
-                const Id buf_dword_size{OpShiftRightLogical(U32[1], buf_size, ConstU32(2U))};
-                Name(buf_dword_size, fmt::format("buf{}_dword_size", binding));
-                buffer.Size(PointerSize::B32) = buf_dword_size;
-            }
-            if (True(desc.used_types & IR::Type::U64)) {
-                const Id buf_qword_size{OpShiftRightLogical(U32[1], buf_size, ConstU32(3U))};
-                Name(buf_qword_size, fmt::format("buf{}_qword_size", binding));
-                buffer.Size(PointerSize::B64) = buf_qword_size;
-            }
+        if (True(desc.used_types & IR::Type::U32)) {
+            const Id buf_dword_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(2U))};
+            Name(buf_dword_offset, fmt::format("buf{}_dword_off", binding));
+            buffer.Offset(PointerSize::B32) = buf_dword_offset;
+        }
+        if (True(desc.used_types & IR::Type::U64)) {
+            const Id buf_qword_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(3U))};
+            Name(buf_qword_offset, fmt::format("buf{}_qword_off", binding));
+            buffer.Offset(PointerSize::B64) = buf_qword_offset;
         }
     }
 }
@@ -520,7 +492,8 @@ void EmitContext::DefineInputs() {
         const u32 num_attrs = Common::AlignUp(runtime_info.hs_info.ls_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
-            // The input vertex count isn't statically known, so make length 32 (what glslang does)
+            // The input vertex count isn't statically known, so make length 32 (what
+            // glslang does)
             const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
             input_attr_array = DefineInput(patch_array_type, 0);
             Name(input_attr_array, "in_attrs");
@@ -531,10 +504,12 @@ void EmitContext::DefineInputs() {
         tess_coord = DefineInput(F32[3], std::nullopt, spv::BuiltIn::TessCoord);
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
 
-        const u32 num_attrs = Common::AlignUp(runtime_info.vs_info.hs_output_cp_stride, 16) >> 4;
+        const u32 num_attrs =
+            Common::AlignUp(runtime_info.hs_es_vs_info.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
-            // The input vertex count isn't statically known, so make length 32 (what glslang does)
+            // The input vertex count isn't statically known, so make length 32 (what
+            // glslang does)
             const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
             input_attr_array = DefineInput(patch_array_type, 0);
             Name(input_attr_array, "in_attrs");
@@ -643,10 +618,12 @@ void EmitContext::DefineOutputs() {
             Decorate(output_tess_level_inner, spv::Decoration::Patch);
         }
 
-        const u32 num_attrs = Common::AlignUp(runtime_info.hs_info.hs_output_cp_stride, 16) >> 4;
+        const u32 num_attrs =
+            Common::AlignUp(runtime_info.hs_es_vs_info.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
-            // The input vertex count isn't statically known, so make length 32 (what glslang does)
+            // The input vertex count isn't statically known, so make length 32 (what
+            // glslang does)
             const Id patch_array_type{TypeArray(
                 per_vertex_type, ConstU32(runtime_info.hs_info.NumOutputControlPoints()))};
             output_attr_array = DefineOutput(patch_array_type, 0);
@@ -709,7 +686,8 @@ void EmitContext::DefineOutputs() {
             ++num_render_targets;
         }
         // Dual source blending allows at most 2 render targets, one for each source.
-        // Fewer targets are allowed but the missing blending source values will be undefined.
+        // Fewer targets are allowed but the missing blending source values will be
+        // undefined.
         ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets <= 2,
                    "Dual source blending enabled, there must be at most two MRT exports");
         break;

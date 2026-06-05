@@ -49,7 +49,7 @@ struct Buffer {
     }
 
     operator bool() const noexcept {
-        return base_address != 0;
+        return num_records != 0;
     }
 
     bool operator==(const Buffer& other) const noexcept {

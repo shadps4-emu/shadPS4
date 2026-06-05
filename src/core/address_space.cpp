@@ -45,6 +45,9 @@ constexpr VAddr USER_MIN = 0x1000000000ULL;
 #if defined(__linux__)
 // Linux maps the shadPS4 executable around here, so limit the user maximum
 constexpr VAddr USER_MAX = 0x54FFFFFFFFFFULL;
+#elif defined(__FreeBSD__)
+// FreeBSD address space is extremely volatile, keep this lower for safety.
+constexpr VAddr USER_MAX = 0xFFFFFFFFFFFULL;
 #else
 constexpr VAddr USER_MAX = 0x5FFFFFFFFFFFULL;
 #endif
@@ -128,11 +131,11 @@ struct AddressSpace::Impl {
         // Higher PS4 firmware versions prevent higher address mappings too.
         s32 sdk_ver = Common::ElfInfo::Instance().CompiledSdkVer();
         if (os_version_info.dwBuildNumber <= AffectedBuildNumber ||
-            sdk_ver >= Common::ElfInfo::FW_30) {
+            sdk_ver >= Common::ElfInfo::FW_300) {
             supported_user_max = 0x10000000000ULL;
             // Only log the message if we're restricting the user max due to operating system.
             // Since higher compiled SDK versions also get reduced max, we don't need to log there.
-            if (sdk_ver < Common::ElfInfo::FW_30) {
+            if (sdk_ver < Common::ElfInfo::FW_300) {
                 LOG_WARNING(
                     Core,
                     "Older Windows version detected, reducing user max to {:#x} to avoid problems",
@@ -238,25 +241,45 @@ struct AddressSpace::Impl {
         if (phys_addr != -1) {
             HANDLE backing = fd != -1 ? reinterpret_cast<HANDLE>(fd) : backing_handle;
             if (fd != -1 && prot == PAGE_READONLY) {
+                // Allocate the memory for the mapping
                 DWORD resultvar;
                 ptr = VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
                                     MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER,
                                     PAGE_READWRITE, nullptr, 0);
 
-                // phys_addr serves as an offset for file mmaps.
-                // Create an OVERLAPPED with the offset, then supply that to ReadFile
+                // Use ReadFile to read file contents into the memory area.
+                // Create an OVERLAPPED with the file offset, then supply that to ReadFile
                 OVERLAPPED param{};
                 // Offset is the least-significant 32 bits, OffsetHigh is the most-significant.
                 param.Offset = phys_addr & 0xffffffffull;
                 param.OffsetHigh = (phys_addr & 0xffffffff00000000ull) >> 32;
                 bool ret = ReadFile(backing, ptr, size, &resultvar, &param);
                 ASSERT_MSG(ret, "ReadFile failed. {}", Common::GetLastErrorMsg());
+
+                // ReadFile moves the file pointer, restore it with SetFilePointer
+                s64 size_to_move = -size;
+                LONG size_low = size_to_move & 0xffffffffull;
+                LONG size_high = (size_to_move & 0xffffffff00000000ull) >> 32;
+                ret = SetFilePointer(backing, size_low, &size_high, FILE_CURRENT);
+
+                // Protect the memory area appropriately
                 ret = VirtualProtect(ptr, size, prot, &resultvar);
                 ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
             } else {
-                ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
-                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
-                ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
+                if (prot == PAGE_NOACCESS) {
+                    DWORD resultvar;
+                    ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
+                                         phys_addr, size, MEM_REPLACE_PLACEHOLDER, PAGE_READWRITE,
+                                         nullptr, 0);
+                    ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
+                    bool ret = VirtualProtect(ptr, size, prot, &resultvar);
+                    ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
+                } else {
+                    ptr =
+                        MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
+                                       phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
+                    ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
+                }
             }
         } else {
             ptr =

@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
+#include <deque>
 #include <map>
 #include <mutex>
 #include <variant>
@@ -22,6 +24,10 @@ static std::mutex g_request_mutex;
 
 static std::map<std::string, std::function<void()>> g_np_callbacks;
 static std::mutex g_np_callbacks_mutex;
+static std::mutex g_np_state_events_mutex;
+static std::mutex g_np_state_callbacks_mutex;
+
+constexpr s32 ORBIS_NP_STATE_CALLBACK_MAX = 8;
 
 // Internal types for storing request-related information
 enum class NpRequestState {
@@ -614,6 +620,10 @@ s32 PS4_SYSV_ABI sceNpGetAccountIdA(Libraries::UserService::OrbisUserServiceUser
     if (account_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    if (UserManagement.GetUserByID(user_id) == nullptr) {
+        *account_id = 0;
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
+    }
     if (!g_shadnet_enabled) {
         *account_id = 0;
         return ORBIS_NP_ERROR_SIGNED_OUT;
@@ -628,12 +638,15 @@ s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId use
     if (np_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    const auto* user = UserManagement.GetUserByID(user_id);
+    if (user == nullptr) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
+    }
     if (!g_shadnet_enabled) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     memset(np_id, 0, sizeof(OrbisNpId));
-    strncpy(np_id->handle.data, UserManagement.GetDefaultUser().user_name.c_str(),
-            sizeof(np_id->handle.data));
+    strncpy(np_id->handle.data, user->user_name.c_str(), sizeof(np_id->handle.data) - 1);
     return ORBIS_OK;
 }
 
@@ -643,12 +656,15 @@ s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId
     if (online_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    const auto* user = UserManagement.GetUserByID(user_id);
+    if (user == nullptr) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
+    }
     if (!g_shadnet_enabled) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     memset(online_id, 0, sizeof(OrbisNpOnlineId));
-    strncpy(online_id->data, UserManagement.GetDefaultUser().user_name.c_str(),
-            sizeof(online_id->data));
+    strncpy(online_id->data, user->user_name.c_str(), sizeof(online_id->data) - 1);
     return ORBIS_OK;
 }
 
@@ -656,6 +672,9 @@ s32 PS4_SYSV_ABI sceNpGetNpReachabilityState(Libraries::UserService::OrbisUserSe
                                              OrbisNpReachabilityState* state) {
     if (state == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (UserManagement.GetUserByID(user_id) == nullptr) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
 
     *state = g_shadnet_enabled ? OrbisNpReachabilityState::Reachable
@@ -667,6 +686,9 @@ s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId us
                                OrbisNpState* state) {
     if (state == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (UserManagement.GetUserByID(user_id) == nullptr) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
     *state = g_shadnet_enabled ? OrbisNpState::SignedIn : OrbisNpState::SignedOut;
     LOG_DEBUG(Lib_NpManager, "Signed {}", g_shadnet_enabled ? "in" : "out");
@@ -692,7 +714,37 @@ s32 PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId
     if (has_signed_up == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    if (UserManagement.GetUserByID(user_id) == nullptr) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
+    }
     *has_signed_up = g_shadnet_enabled ? true : false;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpSetContentRestriction(const OrbisNpContentRestriction* restriction) {
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+    if (restriction == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (restriction->size != sizeof(OrbisNpContentRestriction)) {
+        return ORBIS_NP_ERROR_INVALID_SIZE;
+    }
+    if (restriction->default_age_restriction < 0 || restriction->age_restriction_count > 0x100) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (restriction->age_restriction_count > 0 && restriction->age_restriction == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpSetNpTitleId(const OrbisNpTitleId* title_id,
+                                   const OrbisNpTitleSecret* title_secret) {
+    if (title_id == nullptr || title_secret == nullptr) {
+        LOG_ERROR(Lib_NpManager, "called with invalid arguments");
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, title_id = {}", title_id->id);
     return ORBIS_OK;
 }
 
@@ -703,15 +755,151 @@ struct NpStateCallbackForNpToolkit {
 
 NpStateCallbackForNpToolkit NpStateCbForNp;
 
-struct NpStateCallback {
-    std::variant<OrbisNpStateCallback, OrbisNpStateCallbackA> func;
+struct LegacyNpStateCallback {
+    OrbisNpStateCallback func;
     void* userdata;
 };
 
-NpStateCallback NpStateCb;
+LegacyNpStateCallback LegacyNpStateCb;
+
+struct NpStateCallbackAEntry {
+    OrbisNpStateCallbackA func;
+    void* userdata;
+    bool in_use;
+};
+
+static std::array<NpStateCallbackAEntry, ORBIS_NP_STATE_CALLBACK_MAX> g_np_state_callbacks{};
+
+struct PendingNpStateEvent {
+    Libraries::UserService::OrbisUserServiceUserId user_id;
+    OrbisNpState state;
+    OrbisNpId np_id;
+    bool has_np_id;
+};
+
+static std::deque<PendingNpStateEvent> g_np_state_events;
+
+static void QueueNpStateEvent(Libraries::UserService::OrbisUserServiceUserId user_id,
+                              OrbisNpState state) {
+    const auto* user = UserManagement.GetUserByID(user_id);
+    if (user == nullptr) {
+        return;
+    }
+
+    PendingNpStateEvent event{};
+    event.user_id = user_id;
+    event.state = state;
+    event.has_np_id = state == OrbisNpState::SignedIn;
+    if (event.has_np_id) {
+        std::strncpy(event.np_id.handle.data, user->user_name.c_str(),
+                     sizeof(event.np_id.handle.data) - 1);
+    }
+
+    std::scoped_lock lk{g_np_state_events_mutex};
+    g_np_state_events.emplace_back(event);
+}
+
+void NotifyNpStateFromUserServiceEvent(Libraries::UserService::OrbisUserServiceEventType event_type,
+                                       Libraries::UserService::OrbisUserServiceUserId user_id) {
+    switch (event_type) {
+    case Libraries::UserService::OrbisUserServiceEventType::Login:
+        QueueNpStateEvent(user_id,
+                          g_shadnet_enabled ? OrbisNpState::SignedIn : OrbisNpState::SignedOut);
+        break;
+    case Libraries::UserService::OrbisUserServiceEventType::Logout:
+        QueueNpStateEvent(user_id, OrbisNpState::SignedOut);
+        break;
+    default:
+        break;
+    }
+}
+
+static s32 RegisterStateCallbackA(OrbisNpStateCallbackA callback, void* userdata) {
+    if (callback == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::scoped_lock lk{g_np_state_callbacks_mutex};
+
+    for (const auto& entry : g_np_state_callbacks) {
+        if (!entry.in_use) {
+            continue;
+        }
+        if (entry.func == callback) {
+            return ORBIS_NP_ERROR_CALLBACK_ALREADY_REGISTERED;
+        }
+    }
+
+    for (size_t i = 0; i < g_np_state_callbacks.size(); ++i) {
+        auto& entry = g_np_state_callbacks[i];
+        if (entry.in_use) {
+            continue;
+        }
+        entry.func = callback;
+        entry.userdata = userdata;
+        entry.in_use = true;
+        return static_cast<s32>(i + 1);
+    }
+
+    return ORBIS_NP_ERROR_CALLBACK_MAX;
+}
+
+static s32 UnregisterStateCallbackAById(s32 callback_id) {
+    if (callback_id <= 0 || callback_id > static_cast<s32>(g_np_state_callbacks.size())) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::scoped_lock lk{g_np_state_callbacks_mutex};
+
+    auto& entry = g_np_state_callbacks[callback_id - 1];
+    if (!entry.in_use) {
+        return ORBIS_NP_ERROR_CALLBACK_NOT_REGISTERED;
+    }
+
+    entry = {};
+    return ORBIS_OK;
+}
+
+static void DispatchPendingNpStateCallbacks() {
+    std::deque<PendingNpStateEvent> pending_events;
+    LegacyNpStateCallback legacy_callback{};
+    std::array<NpStateCallbackAEntry, ORBIS_NP_STATE_CALLBACK_MAX> callbacks;
+    {
+        std::scoped_lock lk{g_np_state_events_mutex, g_np_state_callbacks_mutex};
+        if (g_np_state_events.empty()) {
+            return;
+        }
+        pending_events.swap(g_np_state_events);
+        legacy_callback = LegacyNpStateCb;
+        callbacks = g_np_state_callbacks;
+    }
+
+    for (auto& event : pending_events) {
+        if (legacy_callback.func != nullptr) {
+            legacy_callback.func(event.user_id, event.state,
+                                 event.has_np_id ? &event.np_id : nullptr,
+                                 legacy_callback.userdata);
+        }
+
+        for (const auto& entry : callbacks) {
+            if (!entry.in_use) {
+                continue;
+            }
+
+            if (entry.func != nullptr) {
+                entry.func(event.user_id, event.state, entry.userdata);
+            }
+        }
+
+        if (NpStateCbForNp.func != nullptr) {
+            NpStateCbForNp.func(event.user_id, event.state, NpStateCbForNp.userdata);
+        }
+    }
+}
 
 s32 PS4_SYSV_ABI sceNpCheckCallback() {
     LOG_DEBUG(Lib_NpManager, "(STUBBED) called");
+    DispatchPendingNpStateCallbacks();
 
     std::scoped_lock lk{g_np_callbacks_mutex};
 
@@ -724,25 +912,49 @@ s32 PS4_SYSV_ABI sceNpCheckCallback() {
 
 s32 PS4_SYSV_ABI sceNpCheckCallbackForLib() {
     LOG_DEBUG(Lib_NpManager, "(STUBBED) called");
+    DispatchPendingNpStateCallbacks();
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpRegisterStateCallback(OrbisNpStateCallback callback, void* userdata) {
-    static s32 id = 0;
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, userdata = {}", userdata);
-    NpStateCb.func = callback;
-    NpStateCb.userdata = userdata;
+    if (callback == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
 
-    return id;
+    std::scoped_lock lk{g_np_state_callbacks_mutex};
+    if (LegacyNpStateCb.func != nullptr) {
+        return ORBIS_NP_ERROR_CALLBACK_ALREADY_REGISTERED;
+    }
+
+    LOG_INFO(Lib_NpManager, "called, userdata = {}", userdata);
+    LegacyNpStateCb.func = callback;
+    LegacyNpStateCb.userdata = userdata;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpUnregisterStateCallback(s32 callback_id) {
+    LOG_INFO(Lib_NpManager, "called, callback_id = {}", callback_id);
+    if (callback_id != 0) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::scoped_lock lk{g_np_state_callbacks_mutex};
+    if (LegacyNpStateCb.func == nullptr) {
+        return ORBIS_NP_ERROR_CALLBACK_NOT_REGISTERED;
+    }
+
+    LegacyNpStateCb = {};
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpRegisterStateCallbackA(OrbisNpStateCallbackA callback, void* userdata) {
-    static s32 id = 0;
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, userdata = {}", userdata);
-    NpStateCb.func = callback;
-    NpStateCb.userdata = userdata;
+    LOG_INFO(Lib_NpManager, "called, userdata = {}", userdata);
+    return RegisterStateCallbackA(callback, userdata);
+}
 
-    return id;
+s32 PS4_SYSV_ABI sceNpUnregisterStateCallbackA(s32 callback_id) {
+    LOG_INFO(Lib_NpManager, "called, callback_id = {}", callback_id);
+    return UnregisterStateCallbackAById(callback_id);
 }
 
 struct NpReachabilityStateCallback {
@@ -754,11 +966,26 @@ NpReachabilityStateCallback NpReachabilityCb;
 
 s32 PS4_SYSV_ABI sceNpRegisterNpReachabilityStateCallback(OrbisNpReachabilityStateCallback callback,
                                                           void* userdata) {
-    static s32 id = 0;
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+    if (callback == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (NpReachabilityCb.func != nullptr) {
+        return ORBIS_NP_ERROR_CALLBACK_ALREADY_REGISTERED;
+    }
+
+    LOG_INFO(Lib_NpManager, "called");
     NpReachabilityCb.func = callback;
     NpReachabilityCb.userdata = userdata;
-    return id;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpUnregisterNpReachabilityStateCallback() {
+    if (NpReachabilityCb.func == nullptr) {
+        return ORBIS_NP_ERROR_CALLBACK_NOT_REGISTERED;
+    }
+
+    NpReachabilityCb = {};
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit(OrbisNpStateCallbackForNpToolkit callback,
@@ -826,12 +1053,24 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("eQH7nWPcAgc", "libSceNpManager", 1, "libSceNpManager", sceNpGetState);
     LIB_FUNCTION("VgYczPGB5ss", "libSceNpManager", 1, "libSceNpManager", sceNpGetUserIdByAccountId);
     LIB_FUNCTION("Oad3rvY-NJQ", "libSceNpManager", 1, "libSceNpManager", sceNpHasSignedUp);
+    LIB_FUNCTION("A2CQ3kgSopQ", "libSceNpManager", 1, "libSceNpManager",
+                 sceNpSetContentRestriction);
+    LIB_FUNCTION("Ec63y59l9tw", "libSceNpManager", 1, "libSceNpManager", sceNpSetNpTitleId);
+
     LIB_FUNCTION("3Zl8BePTh9Y", "libSceNpManager", 1, "libSceNpManager", sceNpCheckCallback);
     LIB_FUNCTION("JELHf4xPufo", "libSceNpManager", 1, "libSceNpManager", sceNpCheckCallbackForLib);
     LIB_FUNCTION("VfRSmPmj8Q8", "libSceNpManager", 1, "libSceNpManager",
                  sceNpRegisterStateCallback);
+    LIB_FUNCTION("mjjTXh+NHWY", "libSceNpManager", 1, "libSceNpManager",
+                 sceNpUnregisterStateCallback);
+    LIB_FUNCTION("qQJfO8HAiaY", "libSceNpManager", 1, "libSceNpManager",
+                 sceNpRegisterStateCallbackA);
+    LIB_FUNCTION("M3wFXbYQtAA", "libSceNpManager", 1, "libSceNpManager",
+                 sceNpUnregisterStateCallbackA);
     LIB_FUNCTION("hw5KNqAAels", "libSceNpManager", 1, "libSceNpManager",
                  sceNpRegisterNpReachabilityStateCallback);
+    LIB_FUNCTION("cRILAEvn+9M", "libSceNpManager", 1, "libSceNpManager",
+                 sceNpUnregisterNpReachabilityStateCallback);
     LIB_FUNCTION("JELHf4xPufo", "libSceNpManagerForToolkit", 1, "libSceNpManager",
                  sceNpCheckCallbackForLib);
     LIB_FUNCTION("0c7HbXRKUt4", "libSceNpManagerForToolkit", 1, "libSceNpManager",

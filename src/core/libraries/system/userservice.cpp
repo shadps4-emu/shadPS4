@@ -10,6 +10,7 @@
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/np/np_manager.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/system/userservice_error.h"
 #include "core/tls.h"
@@ -127,6 +128,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetEvent(OrbisUserServiceEvent* event) {
         event->event = temp.event;
         event->userId = temp.userId;
         user_service_event_queue.pop();
+        Libraries::Np::NpManager::NotifyNpStateFromUserServiceEvent(temp.event, temp.userId);
         LOG_INFO(Lib_UserService, "Event processed by the game: {} {}", (u8)temp.event,
                  temp.userId);
         return ORBIS_OK;
@@ -1092,6 +1094,10 @@ int PS4_SYSV_ABI sceUserServiceGetUserGroupNum() {
 
 s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::size_t size) {
     LOG_DEBUG(Lib_UserService, "called user_id = {}, size = {} ", user_id, size);
+    if (user_id == ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        LOG_ERROR(Lib_UserService, "invalid user_id");
+        return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
+    }
     if (user_name == nullptr) {
         LOG_ERROR(Lib_UserService, "user_name is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;

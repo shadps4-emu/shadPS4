@@ -1223,25 +1223,26 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
 }
 
 #ifdef _WIN32
-#define __FD_SETSIZE 1024
 
 typedef struct {
-    unsigned long fds_bits[__FD_SETSIZE / (8 * sizeof(unsigned long))];
+    u64 fds_bits[16];
 } fd_set_posix;
 
-#define FD_SET_POSIX(fd, set)                                                                      \
-    ((set)->fds_bits[(fd) / (8 * sizeof(unsigned long))] |=                                        \
-     (1UL << ((fd) % (8 * sizeof(unsigned long)))))
+static void FD_SET_POSIX(s32 fd, fd_set_posix* set) {
+    set->fds_bits[fd / (8 * sizeof(u64))] |= (1ULL << (fd % (8 * sizeof(u64))));
+}
 
-#define FD_CLR_POSIX(fd, set)                                                                      \
-    ((set)->fds_bits[(fd) / (8 * sizeof(unsigned long))] &=                                        \
-     ~(1UL << ((fd) % (8 * sizeof(unsigned long)))))
+static void FD_CLR_POSIX(s32 fd, fd_set_posix* set) {
+    set->fds_bits[fd / (8 * sizeof(u64))] &= ~(1ULL << (fd % (8 * sizeof(u64))));
+}
 
-#define FD_ISSET_POSIX(fd, set)                                                                    \
-    (((set)->fds_bits[(fd) / (8 * sizeof(unsigned long))] &                                        \
-      (1UL << ((fd) % (8 * sizeof(unsigned long))))) != 0)
+static bool FD_ISSET_POSIX(s32 fd, fd_set_posix* set) {
+    return (set->fds_bits[fd / (8 * sizeof(u64))] & (1ULL << (fd % (8 * sizeof(u64))))) != 0;
+}
 
-#define FD_ZERO_POSIX(set) memset((set), 0, sizeof(fd_set_posix))
+static void FD_ZERO_POSIX(fd_set_posix* set) {
+    std::memset(set, 0, sizeof(fd_set_posix));
+}
 
 s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* writefds,
                               fd_set_posix* exceptfds, OrbisKernelTimeval* timeout) {
@@ -1549,6 +1550,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mqQMh1zPPT8", "libkernel", 1, "libkernel", posix_fstat);
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", sceKernelFstat);
     LIB_FUNCTION("ih4CD9-gghM", "libkernel", 1, "libkernel", posix_ftruncate);
+    LIB_FUNCTION("ih4CD9-gghM", "libScePosix", 1, "libkernel", posix_ftruncate);
     LIB_FUNCTION("VW3TVZiM4-E", "libkernel", 1, "libkernel", sceKernelFtruncate);
     LIB_FUNCTION("NN01qLRhiqU", "libScePosix", 1, "libkernel", posix_rename);
     LIB_FUNCTION("NN01qLRhiqU", "libkernel", 1, "libkernel", posix_rename);
@@ -1565,6 +1567,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("2G6i6hMIUUY", "libkernel", 1, "libkernel", posix_getdents);
     LIB_FUNCTION("taRWhTJFTgE", "libkernel", 1, "libkernel", sceKernelGetdirentries);
     LIB_FUNCTION("C2kJ-byS5rM", "libkernel", 1, "libkernel", posix_pwrite);
+    LIB_FUNCTION("C2kJ-byS5rM", "libScePosix", 1, "libkernel", posix_pwrite);
     LIB_FUNCTION("FCcmRZhWtOk", "libScePosix", 1, "libkernel", posix_pwritev);
     LIB_FUNCTION("FCcmRZhWtOk", "libkernel", 1, "libkernel", posix_pwritev);
     LIB_FUNCTION("nKWi-N2HBV4", "libkernel", 1, "libkernel", sceKernelPwrite);

@@ -60,6 +60,23 @@ enum class SdwaDstUnused : u32 {
     Invalid = 3,
 };
 
+enum class DppCtrl : u16 {
+    DppQuadPerm = 0,
+    DppRowShl = 0x101,
+    DppRowShr = 0x111,
+    DppRowRor = 0x121,
+    DppRowMirror = 0x140,
+    DppRowHalfMirror = 0x141,
+};
+
+struct DppOperation {
+    DppCtrl op;
+    u16 value;
+    bool bc;
+    u8 row_mask;
+    u8 bank_mask;
+};
+
 struct InstOperand {
     OperandField field = OperandField::Undefined;
     ScalarType type = ScalarType::Undefined;
@@ -69,6 +86,7 @@ struct InstOperand {
     OperandSelection op_sel = {};
     SdwaDstUnused sdwa_dst = SdwaDstUnused::Invalid;
     SdwaSelector sdwa_sel = SdwaSelector::Invalid;
+    std::optional<DppOperation> dpp = {};
     u32 code = 0xFFFFFFFF;
 };
 
@@ -284,6 +302,39 @@ struct SdwaVopc {
 union Sdwa {
     SdwaVopc vopc;
     SdwaVop12 vop12;
+};
+
+struct Dpp {
+    u32 src0 : 8;
+    u32 dpp_ctrl : 9;
+    u32 : 1;
+    u32 fi : 1;
+    u32 bc : 1;
+    u32 src0_neg : 1;
+    u32 src0_abs : 1;
+    u32 src1_neg : 1;
+    u32 src1_abs : 1;
+    u32 bank_mask : 4;
+    u32 row_mask : 4;
+
+    DppOperation GetOperation() const {
+        if (dpp_ctrl >= u32(DppCtrl::DppQuadPerm) && dpp_ctrl < 0x100) {
+            return {DppCtrl::DppQuadPerm, u16(dpp_ctrl & 0xFF), bool(bc), u8(row_mask),
+                    u8(bank_mask)};
+        } else if (dpp_ctrl >= u32(DppCtrl::DppRowShl) && dpp_ctrl < 0x110) {
+            return {DppCtrl::DppRowShl, u16(dpp_ctrl & 0xF), bool(bc), u8(row_mask), u8(bank_mask)};
+        } else if (dpp_ctrl >= u32(DppCtrl::DppRowShr) && dpp_ctrl < 0x120) {
+            return {DppCtrl::DppRowShr, u16(dpp_ctrl & 0xF), bool(bc), u8(row_mask), u8(bank_mask)};
+        } else if (dpp_ctrl >= u32(DppCtrl::DppRowRor) && dpp_ctrl < 0x130) {
+            return {DppCtrl::DppRowRor, u16(dpp_ctrl & 0xF), bool(bc), u8(row_mask), u8(bank_mask)};
+        } else if (dpp_ctrl == u32(DppCtrl::DppRowMirror)) {
+            return {DppCtrl::DppRowMirror, 0, bool(bc), u8(row_mask), u8(bank_mask)};
+        } else if (dpp_ctrl == u32(DppCtrl::DppRowHalfMirror)) {
+            return {DppCtrl::DppRowHalfMirror, 0, bool(bc), u8(row_mask), u8(bank_mask)};
+        } else {
+            UNREACHABLE_MSG("malformed dpp_ctrl");
+        }
+    }
 };
 
 struct GcnInst {

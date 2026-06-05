@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <magic_enum/magic_enum.hpp>
+
 #include "common/enum.h"
 #include "common/types.h"
 
@@ -707,6 +709,7 @@ enum class OpcodeVOP3 : u32 {
     V_ADD_LSHL_U32 = 839,
     V_MIN3_F16 = 849,
     V_MAX3_F16 = 852,
+    V_MED3_F16 = 855,
     V_MAD_I16 = 862,
     V_ADD3_U32 = 877,
     V_LSHL_OR_B32 = 879,
@@ -2018,6 +2021,7 @@ enum class Opcode : u32 {
     V_ADD_LSHL_U32 = 839 + (u32)OpcodeMap::OP_MAP_VOP3,
     V_MIN3_F16 = 849 + (u32)OpcodeMap::OP_MAP_VOP3,
     V_MAX3_F16 = 852 + (u32)OpcodeMap::OP_MAP_VOP3,
+    V_MED3_F16 = 855 + (u32)OpcodeMap::OP_MAP_VOP3,
     V_MAD_I16 = 862 + (u32)OpcodeMap::OP_MAP_VOP3,
     V_ADD3_U32 = 877 + (u32)OpcodeMap::OP_MAP_VOP3,
     V_LSHL_OR_B32 = 879 + (u32)OpcodeMap::OP_MAP_VOP3,
@@ -2696,3 +2700,9 @@ struct SendMsgSimm {
 };
 
 } // namespace Shader::Gcn
+
+template <>
+struct magic_enum::customize::enum_range<Shader::Gcn::Opcode> {
+    static constexpr int min = static_cast<int>(Shader::Gcn::Opcode::S_ADD_U32);
+    static constexpr int max = static_cast<int>(Shader::Gcn::Opcode::V_MAD_MIXHI_F16);
+};

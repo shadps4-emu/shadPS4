@@ -60,7 +60,6 @@ std::vector<u32> TranslateToSpirv(u64 raw_gcn_inst) {
     Profile profile{};
     profile.supported_spirv = 0x00010600;
     profile.subgroup_size = 32;
-    profile.supports_robust_buffer_access = true;
 
     RuntimeInfo runtime_info{};
     runtime_info.Initialize(Stage::Compute);
