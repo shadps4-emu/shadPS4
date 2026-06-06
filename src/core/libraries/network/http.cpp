@@ -1941,8 +1941,7 @@ int PS4_SYSV_ABI sceHttpTerm(int libhttpCtxId) {
             }
         }
         if (in_flight > 0) {
-            LOG_INFO(Lib_Http,
-                     "Term: {} request(s) still in flight,results will be abandoned"),
+            LOG_INFO(Lib_Http, "Term: {} request(s) still in flight,results will be abandoned",
                      in_flight);
         }
         for (auto& [id, req_ptr] : g_state.requests) {
