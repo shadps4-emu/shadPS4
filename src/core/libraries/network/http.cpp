@@ -299,7 +299,7 @@ std::unordered_map<std::string, HostOverrideTarget> ParseHostOverridesJson(
         return out;
     }
     for (auto it = root.begin(); it != root.end(); ++it) {
-        .if (!it.key().empty() && it.key().front() == '_') {
+        if (!it.key().empty() && it.key().front() == '_') {
             continue;
         }
         if (!it.value().is_string()) {
