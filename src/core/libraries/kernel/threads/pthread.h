@@ -41,6 +41,7 @@ struct Pthread;
 
 enum class PthreadMutexFlags : u32 {
     TypeMask = 0xff,
+    Private = 0x100,
     Deferred = 0x200,
 };
 DECLARE_ENUM_FLAG_OPERATORS(PthreadMutexFlags)
@@ -60,13 +61,14 @@ enum class PthreadMutexProt : u32 {
 };
 
 struct PthreadMutex {
-    TimedMutex m_lock;
-    PthreadMutexFlags m_flags;
     Pthread* m_owner;
     int m_count;
     int m_spinloops;
     int m_yieldloops;
     PthreadMutexProt m_protocol;
+    u64 : 64;
+    PthreadMutexFlags m_flags;
+    TimedMutex m_lock;
     std::string name;
 
     [[nodiscard]] PthreadMutexType Type() const noexcept {
@@ -98,6 +100,9 @@ struct PthreadMutex {
     int IsOwned(Pthread* curthread) const;
 };
 using PthreadMutexT = PthreadMutex*;
+
+// libc and libSceLibcInternal modify the m_flags of a mutex, make sure it's in the right spot.
+static_assert(offsetof(PthreadMutex, m_flags) == 0x20, "Incorrect offset for mutex flags");
 
 struct PthreadMutexAttr {
     PthreadMutexType m_type;
