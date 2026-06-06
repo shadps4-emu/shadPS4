@@ -6,7 +6,7 @@
 #include <stop_token>
 #include <unordered_map>
 #include <queue>
-#include <zlib.h>
+#include <miniz.h>
 
 #include "common/logging/log.h"
 #include "common/thread.h"
