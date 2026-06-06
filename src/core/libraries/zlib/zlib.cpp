@@ -56,7 +56,7 @@ void ZlibTaskThread(const std::stop_token& stop) {
         }
 
         uLongf decompressed_length = task.dst_length;
-        const auto ret = uncompress(static_cast<Bytef*>(task.dst), &decompressed_length,
+        const auto ret = mz_uncompress(static_cast<Bytef*>(task.dst), &decompressed_length,
                                     static_cast<const Bytef*>(task.src), task.src_length);
 
         {
