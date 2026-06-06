@@ -92,7 +92,7 @@ s32 PS4_SYSV_ABI sceZlibInitialize(const void* buffer, u32 length) {
 
 s32 PS4_SYSV_ABI sceZlibInflate(const void* src, u32 src_len, void* dst, u32 dst_len,
                                 u64* request_id) {
-    LOG_DEBUG(Lib_Zlib, "(STUBBED) called");
+    LOG_DEBUG(Lib_Zlib, "called");
     if (!task_thread.Joinable()) {
         return ORBIS_ZLIB_ERROR_NOT_INITIALIZED;
     }
@@ -117,7 +117,7 @@ s32 PS4_SYSV_ABI sceZlibInflate(const void* src, u32 src_len, void* dst, u32 dst
 }
 
 s32 PS4_SYSV_ABI sceZlibWaitForDone(u64* request_id, const u32* timeout) {
-    LOG_DEBUG(Lib_Zlib, "(STUBBED) called");
+    LOG_DEBUG(Lib_Zlib, "called");
     if (!task_thread.Joinable()) {
         return ORBIS_ZLIB_ERROR_NOT_INITIALIZED;
     }
@@ -143,7 +143,7 @@ s32 PS4_SYSV_ABI sceZlibWaitForDone(u64* request_id, const u32* timeout) {
 }
 
 s32 PS4_SYSV_ABI sceZlibGetResult(const u64 request_id, u32* dst_length, s32* status) {
-    LOG_DEBUG(Lib_Zlib, "(STUBBED) called");
+    LOG_DEBUG(Lib_Zlib, "called");
     if (!task_thread.Joinable()) {
         return ORBIS_ZLIB_ERROR_NOT_INITIALIZED;
     }
