@@ -5,8 +5,8 @@
 #include <mutex>
 #include <stop_token>
 #include <unordered_map>
-#include <queue>
 #include <miniz.h>
+#include <queue>
 
 #include "common/logging/log.h"
 #include "common/thread.h"
