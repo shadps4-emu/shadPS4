@@ -19,6 +19,7 @@
 #include <unordered_set>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
@@ -1760,7 +1761,7 @@ int PS4_SYSV_ABI sceHttpsGetCaList(int httpCtxId, OrbisHttpsCaList* list) {
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
     list->certsNum = 0;
-    LOG_INFO(Lib_Http, "returning empty CA list (libSceSsl integration not implemented)");
+    LOG_ERROR(Lib_Http, "returning empty CA list (libSceSsl integration not implemented)");
     return ORBIS_OK;
 }
 
@@ -1790,10 +1791,10 @@ int PS4_SYSV_ABI sceHttpsLoadCert(int libhttpCtxId, int caCertNum, const void** 
     // CA verification so the game's private-CA-signed endpoints aren't blocked
     // by our system CA store not knowing about them.
     g_state.contexts_with_loaded_certs.insert(libhttpCtxId);
-    LOG_INFO(Lib_Http,
-             "ctxId={} marked as using custom CAs; subsequent HTTPS requests on this "
-             "context will bypass cert verification (libSceSsl integration not implemented)",
-             libhttpCtxId);
+    LOG_ERROR(Lib_Http,
+              "ctxId={} marked as using custom CAs; subsequent HTTPS requests on this "
+              "context will bypass cert verification (libSceSsl integration not implemented)",
+              libhttpCtxId);
     return ORBIS_OK;
 }
 
@@ -2448,9 +2449,9 @@ int PS4_SYSV_ABI sceHttpSetResolveTimeOut(int id, u32 usec) {
         LOG_ERROR(Lib_Http, "Not initialized");
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
     }
-    s32 sdk_ver = 0x1000000;
+    s32 sdk_ver = Common::ElfInfo::FW_100;
     ::Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
-    if (sdk_ver >= 0x1700000 && usec <= 999999u) {
+    if (sdk_ver >= Common::ElfInfo::FW_170 && usec <= 999999u) {
         LOG_ERROR(Lib_Http, "Invalid usec={}", usec, sdk_ver);
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
