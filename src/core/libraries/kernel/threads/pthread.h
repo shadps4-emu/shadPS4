@@ -41,6 +41,7 @@ struct Pthread;
 
 enum class PthreadMutexFlags : u32 {
     TypeMask = 0xff,
+    Private = 0x100,
     Deferred = 0x200,
 };
 DECLARE_ENUM_FLAG_OPERATORS(PthreadMutexFlags)
@@ -60,14 +61,14 @@ enum class PthreadMutexProt : u32 {
 };
 
 struct PthreadMutex {
-    TimedMutex m_lock;
+    std::string name;
     PthreadMutexFlags m_flags;
-    Pthread* m_owner;
     int m_count;
+    TimedMutex m_lock;
+    Pthread* m_owner;
     int m_spinloops;
     int m_yieldloops;
     PthreadMutexProt m_protocol;
-    std::string name;
 
     [[nodiscard]] PthreadMutexType Type() const noexcept {
         return static_cast<PthreadMutexType>(m_flags & PthreadMutexFlags::TypeMask);
