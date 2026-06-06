@@ -55,9 +55,9 @@ void ZlibTaskThread(const std::stop_token& stop) {
             task_queue.pop();
         }
 
-        uLongf decompressed_length = task.dst_length;
-        const auto ret = mz_uncompress(static_cast<Bytef*>(task.dst), &decompressed_length,
-                                       static_cast<const Bytef*>(task.src), task.src_length);
+        mz_ulong decompressed_length = task.dst_length;
+        const auto ret = mz_uncompress(static_cast<u8*>(task.dst), &decompressed_length,
+                                       static_cast<const u8*>(task.src), task.src_length);
 
         {
             // Lock, insert the new result, and push the finished request ID to the done queue.
