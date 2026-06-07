@@ -14,6 +14,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
+#include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
 #include "core/user_settings.h"
 #include "imgui/renderer/imgui_core.h"
@@ -109,6 +110,8 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
     SDL_SetNumberProperty(props, "flags", SDL_WINDOW_VULKAN);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, true);
+    const bool start_hidden = EmulatorSettings.IsFullScreen();
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_HIDDEN_BOOLEAN, start_hidden);
     window = SDL_CreateWindowWithProperties(props);
     SDL_DestroyProperties(props);
     if (window == nullptr) {
@@ -134,6 +137,15 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     }
     SDL_SetWindowFullscreen(window, EmulatorSettings.IsFullScreen());
     SDL_SyncWindow(window);
+    if (start_hidden) {
+        const bool defer_reveal = Libraries::SystemService::IsSplashVisible() &&
+                                  !Common::ElfInfo::Instance().GetSplashPath().empty() &&
+                                  SDL_SetWindowOpacity(window, 0.0f);
+        startup_splash_reveal_pending.store(defer_reveal, std::memory_order_release);
+        SDL_ShowWindow(window);
+        SDL_SyncWindow(window);
+    }
+    SDL_GetWindowSizeInPixels(window, &width, &height);
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
 
@@ -306,6 +318,23 @@ void WindowSDL::InitTimers() {
         SDL_AddTimer(4, &PollController, controllers[i]);
     }
     SDL_AddTimer(33, Input::MousePolling, (void*)controllers[0]);
+}
+
+void WindowSDL::RequestStartupSplashReveal() {
+    if (!startup_splash_reveal_pending.exchange(false, std::memory_order_acq_rel)) {
+        return;
+    }
+    if (!SDL_RunOnMainThread(
+            [](void* userdata) {
+                static_cast<WindowSDL*>(userdata)->RevealStartupSplash();
+            },
+            this, false)) {
+        startup_splash_reveal_pending.store(true, std::memory_order_release);
+    }
+}
+
+void WindowSDL::RevealStartupSplash() {
+    SDL_SetWindowOpacity(window, 1.0f);
 }
 
 void WindowSDL::RequestKeyboard() {

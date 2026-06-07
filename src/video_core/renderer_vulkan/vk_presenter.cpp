@@ -1086,11 +1086,16 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
     scheduler.Flush(info);
 
     // Present to swapchain.
+    bool presented = false;
     {
         std::scoped_lock submit_lock{Scheduler::submit_mutex};
-        if (!swapchain.Present()) {
+        presented = swapchain.Present();
+        if (!presented) {
             swapchain.Recreate(window.GetWidth(), window.GetHeight());
         }
+    }
+    if (presented) {
+        window.RequestStartupSplashReveal();
     }
 
     free_frame();

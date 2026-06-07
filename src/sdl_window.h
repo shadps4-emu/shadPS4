@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <string>
 
 #include "common/types.h"
@@ -76,9 +77,11 @@ public:
 
     void RequestKeyboard();
     void ReleaseKeyboard();
+    void RequestStartupSplashReveal();
 
 private:
     void OnResize();
+    void RevealStartupSplash();
     void OnKeyboardMouseInput(const SDL_Event* event);
     void OnGamepadEvent(const SDL_Event* event);
 
@@ -90,6 +93,7 @@ private:
     SDL_Window* window{};
     bool is_shown{};
     bool is_open{true};
+    std::atomic_bool startup_splash_reveal_pending{false};
 };
 
 } // namespace Frontend
