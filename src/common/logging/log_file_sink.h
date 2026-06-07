@@ -37,7 +37,7 @@ protected:
         if (session_file_helper_.filename().empty()) {
             // always log in the main file, it shouldnt be too big
             main_file_helper_.write(formatted);
-        } else if (_current_size < _size_limit) {
+        } else if (_current_size < _size_limit || msg.log_level == spdlog::level::critical) {
             session_file_helper_.write(formatted);
             _current_size += formatted.size();
         }
