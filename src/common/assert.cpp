@@ -13,14 +13,8 @@
 #error "Missing Crash() implementation for target CPU architecture."
 #endif
 
-namespace Core {
-extern Emulator* g_emu;
-}
-
 void assert_fail_impl() {
-    if (Core::g_emu) {
-        Core::g_emu->~Emulator();
-    }
+    Common::Singleton<Core::Emulator>::Instance()->Shutdown();
     Crash();
 }
 
