@@ -57,6 +57,8 @@ Frontend::WindowSDL* g_window = nullptr;
 
 namespace Core {
 
+std::mutex exit_mutex{};
+
 Emulator::Emulator() {
     // Initialize NT API functions, set high priority and disable WER
 #ifdef _WIN32
@@ -68,9 +70,25 @@ Emulator::Emulator() {
     WSADATA wsaData;
     WSAStartup(versionWanted, &wsaData);
 #endif
+    std::at_quick_exit([]() { Common::Singleton<Core::Emulator>::Instance()->Shutdown(); });
 }
 
 Emulator::~Emulator() {}
+
+void Emulator::Shutdown() {
+    static bool exit_done = false;
+    std::scoped_lock l{exit_mutex};
+    if (exit_done) {
+        return;
+    }
+    Common::Log::Flush();
+    if (controllers) {
+        controllers->ResetLightbarColors();
+        // need to give SDL time to do this before the runtime exits
+        std::this_thread::sleep_for(std::chrono::milliseconds{10});
+    }
+    exit_done = true;
+}
 
 s32 ReadCompiledSdkVersion(const std::filesystem::path& file) {
     Core::Loader::Elf elf;
