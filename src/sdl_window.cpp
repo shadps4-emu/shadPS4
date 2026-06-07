@@ -325,10 +325,8 @@ void WindowSDL::RequestStartupSplashReveal() {
         return;
     }
     if (!SDL_RunOnMainThread(
-            [](void* userdata) {
-                static_cast<WindowSDL*>(userdata)->RevealStartupSplash();
-            },
-            this, false)) {
+            [](void* userdata) { static_cast<WindowSDL*>(userdata)->RevealStartupSplash(); }, this,
+            false)) {
         startup_splash_reveal_pending.store(true, std::memory_order_release);
     }
 }
