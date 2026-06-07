@@ -230,6 +230,7 @@ set(HTTP_TEST_SOURCES
     stubs/scm_rev_stub.cpp
     stubs/sdl_stub.cpp
     stubs/loader_stub.cpp
+    stubs/core_stub.cpp
 
     # Tests
     network/test_http_uri.cpp
