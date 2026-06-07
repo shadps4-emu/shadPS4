@@ -287,7 +287,7 @@ void UpdateLogLevels(std::string_view log_filter) {
                 std::views::split(class_level, ':') | std::ranges::to<std::vector<std::string>>();
 
             if (class_level_pair.size() != 2) {
-                std::cerr << "bad log filter provided" << std::endl;
+                LOG_ERROR(Config, "bad log filter provided");
                 continue;
             }
 

@@ -135,14 +135,14 @@ int main(int argc, char* argv[]) {
     if (addGameFolder) {
         EmulatorSettings.AddGameInstallDir(*addGameFolder);
         EmulatorSettings.Save();
-        std::cout << "Game folder successfully saved.\n";
+        LOG_INFO(Config, "Game folder successfully saved.");
         return 0;
     }
 
     if (setAddonFolder) {
         EmulatorSettings.SetAddonInstallDir(*setAddonFolder);
         EmulatorSettings.Save();
-        std::cout << "Addon folder successfully saved.\n";
+        LOG_INFO(Config, "Addon folder successfully saved.");
         return 0;
     }
 
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
             gamePath = gameArgs.front();
             gameArgs.erase(gameArgs.begin());
         } else {
-            std::cerr << "Error: Please provide a game path or ID.\n";
+            LOG_ERROR(Debug, "Please provide a game path or ID.");
             return 1;
         }
     }
@@ -159,7 +159,7 @@ int main(int argc, char* argv[]) {
         if (gameArgs.front() == "--") {
             gameArgs.erase(gameArgs.begin());
         } else {
-            std::cerr << "Error: unhandled flags\n";
+            LOG_ERROR(Debug, "unhandled flags");
             return 1;
         }
     }
@@ -177,7 +177,7 @@ int main(int argc, char* argv[]) {
         } else if (*fullscreenStr == "false") {
             EmulatorSettings.SetFullScreen(false);
         } else {
-            std::cerr << "Error: Invalid argument for --fullscreen (use true|false)\n";
+            LOG_ERROR(Debug, "Invalid argument for --fullscreen (use true|false)");
             return 1;
         }
     }
@@ -204,7 +204,7 @@ int main(int argc, char* argv[]) {
             }
         }
         if (!found) {
-            std::cerr << "Error: Game ID or file path not found: " << *gamePath << "\n";
+            LOG_ERROR(Debug, "Game ID or file path not found: {}", *gamePath);
             return 1;
         }
     }
