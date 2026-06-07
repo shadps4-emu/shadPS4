@@ -43,6 +43,12 @@ struct TouchpadEntry {
 struct Colour {
     u8 r, g, b;
 };
+static constexpr Input::Colour g_user_colours[4]{
+    {0, 0, 255},   // blue
+    {255, 0, 0},   // red
+    {0, 255, 0},   // green
+    {255, 0, 255}, // pink
+};
 
 struct State {
 private:
@@ -127,7 +133,8 @@ public:
     void UpdateGyro(const float gyro[3]);
     void UpdateAcceleration(const float acceleration[3]);
     void UpdateAxisSmoothing();
-    void SetLightBarRGB(u8 r, u8 g, u8 b);
+    void SetLightBarRGB(u8 const r, u8 const g, u8 const b);
+    void SetLightBarRGB(Colour const c);
     Colour GetLightBarRGB();
     void PollLightColour();
     bool SetVibration(u8 smallMotor, u8 largeMotor);
@@ -205,6 +212,7 @@ public:
         controllers[i]->SetLightBarRGB(r, g, b);
         controllers[i]->override_colour = {r, g, b};
     }
+    void ResetLightbarColors();
 };
 
 } // namespace Input

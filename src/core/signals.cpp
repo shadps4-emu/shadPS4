@@ -7,6 +7,7 @@
 #include "common/signal_context.h"
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/signals.h"
+#include "emulator.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -26,6 +27,10 @@ extern std::array<OrbisKernelExceptionHandler, 32> Handlers;
 #endif
 
 namespace Core {
+
+namespace Core {
+extern Emulator* g_emu;
+}
 
 #if defined(_WIN32)
 
@@ -52,10 +57,6 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     case DBG_PRINTEXCEPTION_WIDE_C:
         // Used by OutputDebugString functions.
         return EXCEPTION_CONTINUE_EXECUTION;
-    case EXCEPTION_BREAKPOINT:
-        // This is almost certainly coming from our asserts/unreachables, no need to log it again.
-        Common::Log::Flush();
-        return EXCEPTION_CONTINUE_SEARCH;
     default:
         break;
     }
@@ -64,8 +65,13 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
         return EXCEPTION_CONTINUE_EXECUTION;
     }
 
-    LOG_CRITICAL(Debug, "Unhandled Exception code {:#x} at {}", code, address);
-    Common::Log::Flush();
+    // Breakpoints almost certainly come from our asserts/unreachables, no need to log it again.
+    if (code != EXCEPTION_BREAKPOINT) {
+        LOG_CRITICAL(Debug, "Unhandled Exception code {:#x} at {}", code, address);
+        if (Core::g_emu) {
+            Core::g_emu->~Emulator();
+        }
+    }
 
     return EXCEPTION_CONTINUE_SEARCH;
 }
