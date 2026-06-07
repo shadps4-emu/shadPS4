@@ -236,6 +236,10 @@ spv::ExecutionMode ExecutionMode(AmdGpu::TessellationPartitioning spacing) {
         return spv::ExecutionMode::SpacingFractionalOdd;
     case AmdGpu::TessellationPartitioning::FracEven:
         return spv::ExecutionMode::SpacingFractionalEven;
+    case AmdGpu::TessellationPartitioning::Pow2:
+        // Pow2 rounds tessellation factors to the nearest power of 2, which has no
+        // direct Vulkan equivalent. SpacingEqual (integer) is the closest match.
+        return spv::ExecutionMode::SpacingEqual;
     default:
         break;
     }
