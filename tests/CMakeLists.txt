@@ -25,6 +25,7 @@ set(SETTINGS_TEST_SOURCES
 
     # Stubs that replace dependencies
     stubs/common_stub.cpp
+    stubs/core_stub.cpp
     stubs/scm_rev_stub.cpp
     stubs/sdl_stub.cpp
 
