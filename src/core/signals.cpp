@@ -28,9 +28,7 @@ extern std::array<OrbisKernelExceptionHandler, 32> Handlers;
 
 namespace Core {
 
-namespace Core {
 extern Emulator* g_emu;
-}
 
 #if defined(_WIN32)
 
@@ -68,8 +66,8 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     // Breakpoints almost certainly come from our asserts/unreachables, no need to log it again.
     if (code != EXCEPTION_BREAKPOINT) {
         LOG_CRITICAL(Debug, "Unhandled Exception code {:#x} at {}", code, address);
-        if (Core::g_emu) {
-            Core::g_emu->~Emulator();
+        if (g_emu) {
+            g_emu->~Emulator();
         }
     }
 
