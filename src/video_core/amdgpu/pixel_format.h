@@ -221,7 +221,16 @@ constexpr NumberFormat RemapNumberFormat(const NumberFormat format, const DataFo
         }
     }
     case NumberFormat::Srgb:
-        return data_format == DataFormat::FormatBc6 ? NumberFormat::Unorm : format;
+        switch (data_format) {
+        case DataFormat::FormatBc4:
+        case DataFormat::FormatBc5:
+        case DataFormat::FormatBc6:
+            // BC4/BC5 store non-color data (single/two-channel, used for normal maps),
+            // and BC6 is HDR float — none have sRGB Vulkan equivalents.
+            return NumberFormat::Unorm;
+        default:
+            return format;
+        }
     case NumberFormat::Uscaled:
         return NumberFormat::Uint;
     case NumberFormat::Sscaled:
