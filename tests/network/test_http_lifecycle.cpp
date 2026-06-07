@@ -124,10 +124,10 @@ TEST_F(HttpLifecycle, FullLifecycleSurfacesNoInternetError) {
     ASSERT_GT(tmpl, 0);
     EXPECT_NE(tmpl, ctx); // different ID space
 
-    int conn = sceHttpCreateConnection(tmpl, "example.com", "http", 80, 0);
+    int conn = sceHttpCreateConnection(tmpl, "shadps4-test.invalid", "http", 80, 0);
     ASSERT_GT(conn, 0);
 
-    int req = sceHttpCreateRequestWithURL(conn, 0, "http://example.com/", 0);
+    int req = sceHttpCreateRequestWithURL(conn, 0, "http://shadps4-test.invalid/", 0);
     ASSERT_GT(req, 0);
 
     // Send dispatches a worker thread. Returns ORBIS_OK synchronously.
