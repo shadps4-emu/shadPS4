@@ -57,7 +57,6 @@ Frontend::WindowSDL* g_window = nullptr;
 
 namespace Core {
 
-Emulator* g_emu = nullptr;
 std::mutex exit_mutex{};
 
 Emulator::Emulator() {
@@ -71,12 +70,12 @@ Emulator::Emulator() {
     WSADATA wsaData;
     WSAStartup(versionWanted, &wsaData);
 #endif
-    g_emu = this;
-    std::at_quick_exit([]() { g_emu->~Emulator(); });
+    std::at_quick_exit([]() { Common::Singleton<Core::Emulator>::Instance()->Shutdown(); });
 }
 
-Emulator::~Emulator() {
-    g_emu = nullptr;
+Emulator::~Emulator() {}
+
+void Emulator::Shutdown() {
     static bool exit_done = false;
     std::scoped_lock l{exit_mutex};
     if (exit_done) {
@@ -150,7 +149,7 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
             // Extract the actual trophies if they're no extracted yet
             std::string np_comm_id = np_comm_ids[trophy_index];
             const auto& trophy_output_dir =
-                Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / np_comm_id;
+                Common::FS::GetUserPath(Common::FS::PathType::TrophyDir)  / np_comm_id;
             if (!std::filesystem::exists(trophy_output_dir)) {
                 TRP trp;
                 if (!trp.Extract(entry, np_comm_id, trophy_output_dir)) {
