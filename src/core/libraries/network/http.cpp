@@ -2351,7 +2351,7 @@ int PS4_SYSV_ABI sceHttpsDisableOption(int id, u32 sslFlags) {
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
     }
     if ((sslFlags & ~ORBIS_HTTPS_FLAG_PUBLIC_VALID) != 0) {
-        LOG_ERROR(Lib_Http, "sslFlags=0x{:x} contains unknown bits 0x{:x}", sslFlags,
+        LOG_ERROR(Lib_Http, "sslFlags={:#x} contains unknown bits {:#x}", sslFlags,
                   sslFlags & ~ORBIS_HTTPS_FLAG_PUBLIC_VALID);
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
@@ -2362,7 +2362,7 @@ int PS4_SYSV_ABI sceHttpsDisableOption(int id, u32 sslFlags) {
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
     s->ssl_flags &= ~sslFlags;
-    LOG_INFO(Lib_Http, "ssl_flags now 0x{:x} at {} level (id={})", s->ssl_flags, level, id);
+    LOG_INFO(Lib_Http, "ssl_flags now {:#x} at {} level (id={})", s->ssl_flags, level, id);
     return ORBIS_OK;
 }
 
@@ -2376,7 +2376,7 @@ int PS4_SYSV_ABI sceHttpsDisableOptionPrivate(int id, u32 sslFlags) {
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
     }
     if ((sslFlags & ~ORBIS_HTTPS_FLAG_PRIVATE_VALID) != 0) {
-        LOG_ERROR(Lib_Http, "sslFlags=0x{:x} contains unknown bits 0x{:x}", sslFlags,
+        LOG_ERROR(Lib_Http, "sslFlags={:#x} contains unknown bits {:#x}", sslFlags,
                   sslFlags & ~ORBIS_HTTPS_FLAG_PRIVATE_VALID);
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
@@ -2387,7 +2387,7 @@ int PS4_SYSV_ABI sceHttpsDisableOptionPrivate(int id, u32 sslFlags) {
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
     s->ssl_flags &= ~sslFlags;
-    LOG_INFO(Lib_Http, "ssl_flags now 0x{:x} at {} level (id={})", s->ssl_flags, level, id);
+    LOG_INFO(Lib_Http, "ssl_flags now {:#x} at {} level (id={})", s->ssl_flags, level, id);
     return ORBIS_OK;
 }
 
@@ -2399,7 +2399,7 @@ int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags) {
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
     }
     if ((sslFlags & ~ORBIS_HTTPS_FLAG_PUBLIC_VALID) != 0) {
-        LOG_ERROR(Lib_Http, "sslFlags=0x{:x} contains unknown bits 0x{:x}", sslFlags,
+        LOG_ERROR(Lib_Http, "sslFlags={:#x} contains unknown bits {:#x}", sslFlags,
                   sslFlags & ~ORBIS_HTTPS_FLAG_PUBLIC_VALID);
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
@@ -2410,7 +2410,7 @@ int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags) {
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
     s->ssl_flags |= sslFlags;
-    LOG_INFO(Lib_Http, "ssl_flags now 0x{:x} at {} level (id={})", s->ssl_flags, level, id);
+    LOG_INFO(Lib_Http, "ssl_flags now {:#x} at {} level (id={})", s->ssl_flags, level, id);
     return ORBIS_OK;
 }
 
@@ -2424,7 +2424,7 @@ int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags) {
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
     }
     if ((sslFlags & ~ORBIS_HTTPS_FLAG_PRIVATE_VALID) != 0) {
-        LOG_ERROR(Lib_Http, "sslFlags=0x{:x} contains unknown bits 0x{:x}", sslFlags,
+        LOG_ERROR(Lib_Http, "sslFlags={:#x} contains unknown bits {:#x}", sslFlags,
                   sslFlags & ~ORBIS_HTTPS_FLAG_PRIVATE_VALID);
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
@@ -2435,7 +2435,7 @@ int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags) {
         return ORBIS_HTTP_ERROR_INVALID_ID;
     }
     s->ssl_flags |= sslFlags;
-    LOG_INFO(Lib_Http, "ssl_flags now 0x{:x} at {} level (id={})", s->ssl_flags, level, id);
+    LOG_INFO(Lib_Http, "ssl_flags now {:#x} at {} level (id={})", s->ssl_flags, level, id);
     return ORBIS_OK;
 }
 
@@ -2452,7 +2452,7 @@ int PS4_SYSV_ABI sceHttpSetResolveTimeOut(int id, u32 usec) {
     s32 sdk_ver = Common::ElfInfo::FW_100;
     ::Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
     if (sdk_ver >= Common::ElfInfo::FW_170 && usec <= 999999u) {
-        LOG_ERROR(Lib_Http, "Invalid usec={}", usec, sdk_ver);
+        LOG_ERROR(Lib_Http, "Invalid usec={} (sdk_ver={:#x})", usec, sdk_ver);
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
     const char* level = "";
@@ -3281,7 +3281,7 @@ int PS4_SYSV_ABI sceHttpParseResponseHeader(const char* header, u64 headerLen, c
 //***********************************
 int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
                                  const OrbisHttpUriElement* srcElement, u32 option) {
-    LOG_INFO(Lib_Http, "called out={}, require={}, prepare={}, srcElement={}, option=0x{:x}",
+    LOG_INFO(Lib_Http, "called out={}, require={}, prepare={}, srcElement={}, option={:#x}",
              fmt::ptr(out), fmt::ptr(require), prepare, fmt::ptr(srcElement), option);
 
     if (srcElement == nullptr) {
