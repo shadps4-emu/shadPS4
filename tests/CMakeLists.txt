@@ -232,6 +232,7 @@ set(HTTP_TEST_SOURCES
     network/test_http_uri.cpp
     network/test_http_status_line.cpp
     network/test_http_parse_response_header.cpp
+    network/test_http_lifecycle.cpp
 )
 
 add_executable(shadps4_http_test ${HTTP_TEST_SOURCES})
