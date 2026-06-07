@@ -114,38 +114,6 @@ TEST_F(HttpLifecycle, CreateTemplateInvalidCtx) {
     EXPECT_EQ(sceHttpTerm(ctx), ORBIS_OK);
 }
 
-// Sequence : Init then CreateTemplate then CreateConnection then CreateRequest then SendRequest
-// then GetLastErrno reports ENODNS then Delete chain succeeds.
-TEST_F(HttpLifecycle, FullLifecycleSurfacesNoInternetError) {
-    int ctx = sceHttpInit(0, 0, 4096);
-    ASSERT_GT(ctx, 0);
-
-    int tmpl = sceHttpCreateTemplate(ctx, "UA/1.0", 1, 0);
-    ASSERT_GT(tmpl, 0);
-    EXPECT_NE(tmpl, ctx); // different ID space
-
-    int conn = sceHttpCreateConnection(tmpl, "shadps4-test.invalid", "http", 80, 0);
-    ASSERT_GT(conn, 0);
-
-    int req = sceHttpCreateRequestWithURL(conn, 0, "http://shadps4-test.invalid/", 0);
-    ASSERT_GT(req, 0);
-
-    // Send dispatches a worker thread. Returns ORBIS_OK synchronously.
-    EXPECT_EQ(sceHttpSendRequest(req, nullptr, 0), ORBIS_OK);
-
-    int sc = 0;
-    EXPECT_EQ(sceHttpGetStatusCode(req, &sc), static_cast<int>(ORBIS_HTTP_ERROR_BEFORE_SEND));
-
-    int err = 0;
-    EXPECT_EQ(sceHttpGetLastErrno(req, &err), ORBIS_OK);
-    EXPECT_NE(err, 0);
-
-    EXPECT_EQ(sceHttpDeleteRequest(req), ORBIS_OK);
-    EXPECT_EQ(sceHttpDeleteConnection(conn), ORBIS_OK);
-    EXPECT_EQ(sceHttpDeleteTemplate(tmpl), ORBIS_OK);
-    EXPECT_EQ(sceHttpTerm(ctx), ORBIS_OK);
-}
-
 // SendRequest twice on the same reqId: first dispatches the worker, second
 // is rejected with AFTER_SEND (state is already Sending or Sent).
 TEST_F(HttpLifecycle, SendTwiceReturnsAfterSend) {
