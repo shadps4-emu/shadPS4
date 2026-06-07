@@ -933,11 +933,12 @@ void BufferCache::RunGarbageCollector() {
         DeleteBuffer(buffer_id);
         downloads_done = true;
     };
-    lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
-    if (downloads_done) {
-        // For now we can do this to avoid re-uploading the buffer that is being downloaded, potentially losing GPU modifications.
-        scheduler.Finish();
-    }
+    // This is still not figured out...
+    // lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
+    // if (downloads_done) {
+    //     scheduler.Finish();
+    //     scheduler.PopPendingOperations();
+    // }
 }
 
 void BufferCache::TouchBuffer(const Buffer& buffer) {
