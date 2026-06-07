@@ -392,17 +392,24 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     if (dtv_table[0].counter != dtv_generation_counter) {
         // Generation counter changed, a dynamic module was either loaded or unloaded.
         const u32 old_num_dtvs = dtv_table[1].counter;
-        ASSERT_MSG(max_tls_index > old_num_dtvs, "Module unloading unsupported");
-        // Module was loaded, increase DTV table size.
-        DtvEntry* new_dtv_table = new DtvEntry[max_tls_index + 2]{};
-        std::memcpy(new_dtv_table + 2, dtv_table + 2, old_num_dtvs * sizeof(DtvEntry));
-        new_dtv_table[0].counter = dtv_generation_counter;
-        new_dtv_table[1].counter = max_tls_index;
-        delete[] dtv_table;
+        const u32 new_num_dtvs = std::max(old_num_dtvs, max_tls_index);
+        if (new_num_dtvs != old_num_dtvs) {
+            // Module table grew, resize DTV and preserve existing entries.
+            DtvEntry* new_dtv_table = new DtvEntry[new_num_dtvs + 2]{};
+            std::memcpy(new_dtv_table + 2, dtv_table + 2, old_num_dtvs * sizeof(DtvEntry));
+            delete[] dtv_table;
 
-        // Update TCB pointer.
-        GetTcbBase()->tcb_dtv = new_dtv_table;
-        dtv_table = new_dtv_table;
+            // Update TCB pointer.
+            GetTcbBase()->tcb_dtv = new_dtv_table;
+            dtv_table = new_dtv_table;
+        } else if (max_tls_index < old_num_dtvs) {
+            // Keep the larger DTV if module IDs were reused or slot count shrank logically.
+            LOG_WARNING(Core_Linker,
+                        "__tls_get_addr observed DTV shrink (old slots={}, max_tls_index={})",
+                        old_num_dtvs, max_tls_index);
+        }
+        dtv_table[0].counter = dtv_generation_counter;
+        dtv_table[1].counter = new_num_dtvs;
     }
 
     u8* addr = dtv_table[module_index + 1].pointer;
