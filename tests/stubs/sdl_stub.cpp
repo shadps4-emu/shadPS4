@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SDL3/SDL_messagebox.h>
-// tests/stubs/sdl_stub.cpp
 #include "sdl_window.h"
 
 namespace Frontend {
