@@ -103,6 +103,11 @@ int main(int argc, char* argv[]) {
     if (waitPid)
         Core::Debugger::WaitForPid(*waitPid);
 
+    // Initialize main log with default config
+    Common::Log::Setup("shadps4.log");
+
+    LOG_INFO(Debug, "Run: {}", std::span(argv, argc));
+
     IPC::Instance().Init();
 
     auto emu_state = std::make_shared<EmulatorState>();
