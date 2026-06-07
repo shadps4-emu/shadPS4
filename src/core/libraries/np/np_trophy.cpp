@@ -125,6 +125,8 @@ struct ContextKeyHash {
 
 struct TrophyContext {
     u32 context_id;
+    u32 service_label;
+    u32 user_id;
     bool registered = false;
     std::filesystem::path trophy_xml_path; // resolved once at CreateContext
     std::filesystem::path xml_dir;         // .../Xml/
@@ -216,29 +218,11 @@ s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context,
 
     auto& ctx = contexts_internal[key];
     ctx.context_id = *context;
-
-    // Resolve and cache all paths once so callers never recompute them.
-    std::string np_comm_id;
-    const auto& trophyMap = Common::ElfInfo::Instance().GetTrophyIndexMap();
-    auto it = trophyMap.find(service_label);
-    if (it != trophyMap.end()) {
-        np_comm_id = it->second;
-    } else {
-        LOG_ERROR(Lib_NpTrophy, "No npCommId found for trophy index/service_label: {}",
-                  service_label);
-        return ORBIS_NP_TROPHY_ERROR_UNKNOWN;
-    }
-    const auto trophy_base =
-        Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / np_comm_id;
-    ctx.xml_save_file =
-        EmulatorSettings.GetHomeDir() / std::to_string(user_id) / "trophy" / (np_comm_id + ".xml");
-    ctx.xml_dir = trophy_base / "Xml";
-    ctx.icons_dir = trophy_base / "Icons";
-    ctx.trophy_xml_path = GetTrophyXmlPath(ctx.xml_dir, EmulatorSettings.GetConsoleLanguage());
+    ctx.service_label = service_label;
+    ctx.user_id = user_id;
 
     LOG_INFO(Lib_NpTrophy, "New context = {}, user_id = {} service label = {}", *context, user_id,
              service_label);
-
     return ORBIS_OK;
 }
 
@@ -836,12 +820,34 @@ int PS4_SYSV_ABI sceNpTrophyRegisterContext(OrbisNpTrophyContext context,
     ContextKey contextkey = trophy_contexts[contextId];
     auto& ctx = contexts_internal[contextkey];
 
-    if (ctx.registered)
+    if (ctx.registered) {
         return ORBIS_NP_TROPHY_ERROR_ALREADY_REGISTERED;
+    }
 
-    if (!std::filesystem::exists(ctx.trophy_xml_path)) {
-        LOG_ERROR(Lib_NpTrophy, "Could not find trophy files.");
-        // Stub success here to prevent issues specific to missing a trophy key.
+    // Resolve trophy-related paths using the context's service_label
+    std::string np_comm_id;
+    const auto& trophyMap = Common::ElfInfo::Instance().GetTrophyIndexMap();
+    auto it = trophyMap.find(ctx.service_label);
+    if (it != trophyMap.end()) {
+        // If we have an NP communication ID, prepare proper trophy paths
+        np_comm_id = it->second;
+
+        const auto trophy_base =
+            Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / np_comm_id;
+        ctx.xml_save_file = EmulatorSettings.GetHomeDir() / std::to_string(ctx.user_id) / "trophy" /
+                            (np_comm_id + ".xml");
+        ctx.xml_dir = trophy_base / "Xml";
+        ctx.icons_dir = trophy_base / "Icons";
+        ctx.trophy_xml_path = GetTrophyXmlPath(ctx.xml_dir, EmulatorSettings.GetConsoleLanguage());
+
+        if (!std::filesystem::exists(ctx.trophy_xml_path)) {
+            LOG_ERROR(Lib_NpTrophy, "Could not find trophy files.");
+            // Stub success here to prevent issues specific to missing a trophy key.
+        }
+    } else {
+        LOG_ERROR(Lib_NpTrophy, "No npCommId found for trophy index/service_label: {}",
+                  ctx.service_label);
+        return ORBIS_NP_UTIL_ERROR_INVALID_TITLEID;
     }
 
     ctx.registered = true;

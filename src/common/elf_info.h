@@ -75,8 +75,7 @@ class ElfInfo {
 
     std::filesystem::path splash_path{};
     std::filesystem::path game_folder{};
-    std::vector<std::string> npCommIds{};
-    std::map<int, std::string> trophyIndexMap{};
+    std::map<s32, std::string> trophy_index_map{};
 
 public:
     static constexpr u32 FW_100 = 0x1000000;
@@ -145,12 +144,8 @@ public:
         return game_folder;
     }
 
-    [[nodiscard]] const std::vector<std::string> GetNpCommIds() const {
-        return npCommIds;
-    }
-
-    [[nodiscard]] const std::map<int, std::string>& GetTrophyIndexMap() const {
-        return trophyIndexMap;
+    [[nodiscard]] const std::map<s32, std::string>& GetTrophyIndexMap() const {
+        return trophy_index_map;
     }
 };
 

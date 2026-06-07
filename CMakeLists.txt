@@ -61,6 +61,10 @@ if (ARCHITECTURE STREQUAL "x86_64")
     add_compile_options(-march=x86-64-v3)
 endif()
 
+cmake_host_system_information(RESULT PROC_INFO QUERY PROCESSOR_DESCRIPTION)
+
+message(STATUS "${PROC_INFO}")
+
 if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
     # Exclude ARM homebrew path to avoid conflicts when cross compiling.
     list(APPEND CMAKE_IGNORE_PREFIX_PATH "/opt/homebrew")
@@ -205,7 +209,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "15")
+set(EMULATOR_VERSION_MINOR "16")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -732,8 +736,6 @@ set(COMMON src/common/logging/classes.h
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
-           src/common/config.cpp
-           src/common/config.h
            src/common/cstring.h
            src/common/debug.h
            src/common/decoder.cpp

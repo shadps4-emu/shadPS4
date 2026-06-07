@@ -114,6 +114,8 @@ class GameController {
 public:
     GameController();
     virtual ~GameController() = default;
+    void ConnectController(SDL_Gamepad* pad);
+    void DisconnectController();
 
     void ReadState(State* state, bool* isConnected, int* connectedCount);
     int ReadStates(State* states, int states_num, bool* isConnected, int* connectedCount);
@@ -155,8 +157,8 @@ public:
 private:
     void PushState();
 
-    bool m_connected = true;
-    int m_connected_count = 1;
+    bool m_connected = false;
+    int m_connected_count = 0;
     u8 m_touch_count = 0;
     u8 m_secondary_touch_count = 0;
     u8 m_previous_touchnum = 0;
@@ -178,10 +180,7 @@ class GameControllers {
 public:
     GameControllers()
         : controllers({new GameController(), new GameController(), new GameController(),
-                       new GameController(), new GameController()}) {
-        controllers[4]->m_connected = false;
-        controllers[4]->m_connected_count = 0;
-    };
+                       new GameController(), new GameController()}) {};
     virtual ~GameControllers() = default;
     GameController* operator[](const size_t& i) const {
         if (i > 4) {

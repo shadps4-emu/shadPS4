@@ -232,6 +232,17 @@ void GameControllers::CalculateOrientation(Libraries::Pad::OrbisFVector3& accele
               orientation.y, orientation.z, orientation.w);
 }
 
+void GameController::ConnectController(SDL_Gamepad* pad) {
+    m_sdl_gamepad = pad;
+    m_connected_count = 1;
+    m_connected = true;
+}
+void GameController::DisconnectController() {
+    m_sdl_gamepad = nullptr;
+    m_connected_count = 0;
+    m_connected = false;
+}
+
 bool is_first_check = true;
 
 void GameControllers::TryOpenSDLControllers() {
@@ -260,9 +271,8 @@ void GameControllers::TryOpenSDLControllers() {
             }
             if (!still_connected) {
                 auto u = UserManagement.GetUserByID(controllers[i]->user_id);
-                UserManagement.LogoutUser(u);
                 SDL_CloseGamepad(pad);
-                controllers[i]->m_sdl_gamepad = nullptr;
+                controllers[i]->DisconnectController();
                 controllers[i]->user_id = -1;
                 slot_taken[i] = false;
             }
@@ -288,12 +298,12 @@ void GameControllers::TryOpenSDLControllers() {
                               // Player N won't be registered at all
                 }
                 auto* c = controllers[i];
-                c->m_sdl_gamepad = pad;
                 LOG_INFO(Input, "Gamepad registered for slot {}! Handle: {}", i,
                          SDL_GetGamepadID(pad));
-                c->user_id = u->user_id;
                 slot_taken[i] = true;
+                c->user_id = u->user_id;
                 UserManagement.LoginUser(u, i + 1);
+                c->ConnectController(pad);
                 if (EmulatorSettings.IsMotionControlsEnabled()) {
                     if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
                         c->gyro_poll_rate =
@@ -321,6 +331,7 @@ void GameControllers::TryOpenSDLControllers() {
         if (controller_count - move_count == 0) {
             auto u = UserManagement.GetUserByPlayerIndex(1);
             controllers[0]->user_id = u->user_id;
+            controllers[0]->ConnectController(nullptr);
             UserManagement.LoginUser(u, 1);
         }
     }
