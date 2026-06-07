@@ -308,8 +308,16 @@ constexpr NumberConversion MapNumberConversion(const NumberFormat num_fmt,
         }
     }
     case NumberFormat::Srgb:
-        return data_fmt == DataFormat::FormatBc6 ? NumberConversion::SrgbToNorm
-                                                 : NumberConversion::None;
+        switch (data_fmt) {
+        case DataFormat::FormatBc4:
+        case DataFormat::FormatBc5:
+            // BC4/BC5 have no sRGB variant; no conversion needed (treated as Unorm).
+            return NumberConversion::None;
+        case DataFormat::FormatBc6:
+            return NumberConversion::SrgbToNorm;
+        default:
+            return NumberConversion::None;
+        }
     case NumberFormat::Uscaled:
         return NumberConversion::UintToUscaled;
     case NumberFormat::Sscaled:
