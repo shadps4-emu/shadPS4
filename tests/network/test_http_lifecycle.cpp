@@ -6,6 +6,7 @@
 #include <fstream>
 
 #include "common/types.h"
+#include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/http_error.h"
 #include "tests/stubs/kernel_stub.h"
@@ -1428,8 +1429,7 @@ TEST_F(HttpLifecycle, SetResponseHeaderMaxSizeInvalidId) {
 } // namespace
 
 TEST_F(HttpLifecycle, SetResolveTimeOutOldSdkSkipsValidation) {
-    auto saved = Libraries::Kernel::g_test_sdk_version;
-    Libraries::Kernel::g_test_sdk_version = 0x1000000; // pre-1.70
+    Libraries::Kernel::TestSetSdkVersion(0x1000000); // pre-1.70
     int ctx = sceHttpInit(0, 0, 4096);
     int tmpl = sceHttpCreateTemplate(ctx, "UA", 1, 0);
     // Both small and large usec accepted on old SDK.
@@ -1437,12 +1437,11 @@ TEST_F(HttpLifecycle, SetResolveTimeOutOldSdkSkipsValidation) {
     EXPECT_EQ(sceHttpSetResolveTimeOut(tmpl, 999999u), ORBIS_OK);
     EXPECT_EQ(sceHttpSetResolveTimeOut(tmpl, 5000000u), ORBIS_OK);
     sceHttpTerm(ctx);
-    Libraries::Kernel::g_test_sdk_version = saved;
+    Libraries::Kernel::TestResetSdkVersion();
 }
 
 TEST_F(HttpLifecycle, SetResolveTimeOutNewSdkEnforces) {
-    auto saved = Libraries::Kernel::g_test_sdk_version;
-    Libraries::Kernel::g_test_sdk_version = 0x1700000; // exactly 1.70
+    Libraries::Kernel::TestSetSdkVersion(0x1700000); // exactly 1.70
     int ctx = sceHttpInit(0, 0, 4096);
     int tmpl = sceHttpCreateTemplate(ctx, "UA", 1, 0);
     EXPECT_EQ(sceHttpSetResolveTimeOut(tmpl, 999999u),
@@ -1452,7 +1451,7 @@ TEST_F(HttpLifecycle, SetResolveTimeOutNewSdkEnforces) {
     EXPECT_EQ(sceHttpSetResolveTimeOut(tmpl, 1000000u), ORBIS_OK);
     EXPECT_EQ(sceHttpSetResolveTimeOut(tmpl, 35000000u), ORBIS_OK);
     sceHttpTerm(ctx);
-    Libraries::Kernel::g_test_sdk_version = saved;
+    Libraries::Kernel::TestResetSdkVersion();
 }
 
 // sceHttpSetProxy tests
