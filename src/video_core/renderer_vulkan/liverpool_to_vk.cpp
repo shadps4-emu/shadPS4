@@ -722,11 +722,17 @@ std::span<const SurfaceFormatInfo> SurfaceFormats() {
                                 vk::Format::eBc4UnormBlock),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::FormatBc4, AmdGpu::NumberFormat::Snorm,
                                 vk::Format::eBc4SnormBlock),
+        // BC4 has no sRGB variant in Vulkan; treat as Unorm (single-channel, not color data)
+        CreateSurfaceFormatInfo(AmdGpu::DataFormat::FormatBc4, AmdGpu::NumberFormat::Srgb,
+                                vk::Format::eBc4UnormBlock),
         // BC5
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::FormatBc5, AmdGpu::NumberFormat::Unorm,
                                 vk::Format::eBc5UnormBlock),
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::FormatBc5, AmdGpu::NumberFormat::Snorm,
                                 vk::Format::eBc5SnormBlock),
+        // BC5 has no sRGB variant in Vulkan; treat as Unorm (two-channel normal map, not color data)
+        CreateSurfaceFormatInfo(AmdGpu::DataFormat::FormatBc5, AmdGpu::NumberFormat::Srgb,
+                                vk::Format::eBc5UnormBlock),
         // BC6
         CreateSurfaceFormatInfo(AmdGpu::DataFormat::FormatBc6, AmdGpu::NumberFormat::Unorm,
                                 vk::Format::eBc6HUfloatBlock),
