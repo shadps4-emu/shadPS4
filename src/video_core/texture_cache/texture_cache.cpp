@@ -121,8 +121,7 @@ std::optional<TextureCache::PendingImageDownload> TextureCache::ScheduleImageDow
         .imageOffset = {0, 0, 0},
         .imageExtent = {image.info.size.width, image.info.size.height, 1},
     };
-    image.Download(std::span{&image_download, 1}, download_buffer.Handle(), offset,
-                   download_size);
+    image.Download(std::span{&image_download, 1}, download_buffer.Handle(), offset, download_size);
 
     const u64 serial = ++image_download_serial;
     latest_image_downloads[image.info.guest_address] = serial;
@@ -157,8 +156,7 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     });
 }
 
-void TextureCache::SynchronizeGuestMemory(VAddr address, size_t size,
-                                          const Image* excluded_image) {
+void TextureCache::SynchronizeGuestMemory(VAddr address, size_t size, const Image* excluded_image) {
     if (!readback_linear_images) {
         return;
     }
