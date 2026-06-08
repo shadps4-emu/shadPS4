@@ -289,6 +289,7 @@ public:
     Id bary_coord_smooth_centroid{};
     Id bary_coord_smooth_sample{};
     Id bary_coord_nopersp{};
+    Id bary_coord_nopersp_sample{};
 
     struct TextureDefinition {
         const VectorIds* data_types;
