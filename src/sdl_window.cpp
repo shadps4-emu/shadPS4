@@ -112,8 +112,8 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
         const SDL_DisplayID primary_display = SDL_GetPrimaryDisplay();
         if (primary_display != 0 && SDL_GetDisplayBounds(primary_display, &display_bounds)) {
             // A hidden fullscreen window may retain its windowed client size until it is mapped.
-            // Seed the native window with the monitor geometry before creating the Vulkan surface so
-            // the first swapchain is already fullscreen-sized.
+            // Seed the native window with the monitor geometry before creating the Vulkan surface
+            // so the first swapchain is already fullscreen-sized.
             create_x = display_bounds.x;
             create_y = display_bounds.y;
             create_width = display_bounds.w;
