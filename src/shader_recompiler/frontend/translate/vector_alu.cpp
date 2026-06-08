@@ -1702,8 +1702,8 @@ void Translator::V_PK_MUL_LO_U16(const GcnInst& inst) {
     const auto src0 = GetSrcPk<IR::U32>(inst.src[0]);
     const auto src1 = GetSrcPk<IR::U32>(inst.src[1]);
 
-    const auto result_lo = ir.IAdd(src0.first, src1.first);
-    const auto result_hi = ir.IAdd(src0.second, src1.second);
+    const auto result_lo = ir.IMul(src0.first, src1.first);
+    const auto result_hi = ir.IMul(src0.second, src1.second);
 
     SetDstPk<IR::U32, false>(inst.dst[0], {result_lo, result_hi});
 }
