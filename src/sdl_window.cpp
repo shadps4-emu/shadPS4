@@ -157,7 +157,6 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
         SDL_SetWindowFullscreenMode(
             window, EmulatorSettings.GetFullScreenMode() == "Fullscreen" ? displayMode : NULL);
     }
-    SDL_SetWindowFullscreen(window, EmulatorSettings.IsFullScreen());
     SDL_SyncWindow(window);
     SDL_GetWindowSizeInPixels(window, &width, &height);
     if (start_fullscreen) {
