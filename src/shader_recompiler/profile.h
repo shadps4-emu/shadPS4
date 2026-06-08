@@ -52,6 +52,7 @@ struct Profile {
     bool needs_buffer_offsets{};
     bool needs_unorm_fixup{};
     bool needs_clip_distance_emulation{};
+    bool supports_shader_stencil_export{};
 };
 
 } // namespace Shader
