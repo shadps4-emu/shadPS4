@@ -253,6 +253,8 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
         return op_store(ctx.frag_depth);
     case IR::Attribute::SampleMask:
         return op_store(ctx.OpAccessChain(ctx.output_u32, ctx.sample_mask, ctx.u32_zero_value));
+    case IR::Attribute::StencilRef:
+        return ctx.OpStore(ctx.stencil_ref, ctx.OpConvertFToS(ctx.S32[1], value));
     default:
         UNREACHABLE_MSG("Write attribute {}", attr);
     }
