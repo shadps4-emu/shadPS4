@@ -25,6 +25,7 @@ set(SETTINGS_TEST_SOURCES
 
     # Stubs that replace dependencies
     stubs/common_stub.cpp
+    stubs/core_stub.cpp
     stubs/scm_rev_stub.cpp
     stubs/sdl_stub.cpp
 
@@ -115,6 +116,8 @@ set(GCN_TEST_SOURCES
     stubs/common_stub.cpp
     stubs/resource_tracking_pass_stub.cpp
     stubs/scm_rev_stub.cpp
+    stubs/sdl_stub.cpp
+    stubs/core_stub.cpp
 
     gcn/gcn_test_runner.hpp
     gcn/gcn_test_runner.cpp
@@ -209,7 +212,6 @@ endforeach()
 set(HTTP_TEST_SOURCES
     # Under test
     ${CMAKE_SOURCE_DIR}/src/core/libraries/network/http.cpp
-
     # Required to link RegisterLib's LIB_FUNCTION calls and the logger's
     # access to EmulatorSettings.
     ${CMAKE_SOURCE_DIR}/src/core/emulator_settings.cpp
@@ -227,11 +229,14 @@ set(HTTP_TEST_SOURCES
     stubs/scm_rev_stub.cpp
     stubs/sdl_stub.cpp
     stubs/loader_stub.cpp
+    stubs/core_stub.cpp
+    stubs/kernel_stub.cpp
 
     # Tests
     network/test_http_uri.cpp
     network/test_http_status_line.cpp
     network/test_http_parse_response_header.cpp
+    network/test_http_lifecycle.cpp
 )
 
 add_executable(shadps4_http_test ${HTTP_TEST_SOURCES})

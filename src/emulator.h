@@ -29,6 +29,7 @@ public:
     void Run(std::filesystem::path file, std::vector<std::string> args = {},
              std::optional<std::filesystem::path> game_folder = {});
     void UpdatePlayTime(const std::string& serial);
+    void Shutdown();
 
     /**
      * This will kill the current process and launch a new process with the same configuration

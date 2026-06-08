@@ -269,6 +269,7 @@ void WindowSDL::WaitEvent() {
                     break;
                 }
                 controllers[i]->user_id = u->user_id;
+                controllers[i]->ConnectController(controllers[i]->m_sdl_gamepad);
                 UserManagement.LoginUser(u, i + 1);
                 break;
             }
@@ -279,6 +280,7 @@ void WindowSDL::WaitEvent() {
         for (int i = 3; i >= 0; i--) {
             if (controllers[i]->user_id != -1) {
                 UserManagement.LogoutUser(UserManagement.GetUserByID(controllers[i]->user_id));
+                controllers[i]->DisconnectController();
                 controllers[i]->user_id = -1;
                 break;
             }

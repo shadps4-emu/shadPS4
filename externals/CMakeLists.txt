@@ -51,8 +51,6 @@ if (NOT TARGET ZLIB::ZLIB)
     set(ZLIB_ENABLE_TESTS OFF)
     set(WITH_GTEST OFF)
     set(WITH_NEW_STRATEGIES ON)
-    # Will mess with gh actions
-    set(WITH_NATIVE_INSTRUCTIONS OFF)
     set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
     include(FetchContent)
     FetchContent_Declare(
@@ -70,6 +68,7 @@ endif()
 if (NOT TARGET SDL3::SDL3)
     set(SDL_TEST_LIBRARY OFF)
     set(SDL_PIPEWIRE OFF)
+    set(SDL_AVX512F OFF)
     add_subdirectory(sdl3)
 endif()
 
