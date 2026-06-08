@@ -1095,7 +1095,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
         }
     }
     if (presented) {
-        window.RequestStartupSplashReveal();
+        window.RequestStartupWindowReveal();
     }
 
     free_frame();

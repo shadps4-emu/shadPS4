@@ -89,7 +89,8 @@ static Uint32 SDLCALL PollControllerLightColour(void* userdata, SDL_TimerID time
 
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controllers_,
                      std::string_view window_title)
-    : width{width_}, height{height_}, controllers{*controllers_} {
+    : width{width_}, height{height_}, windowed_width{width_}, windowed_height{height_},
+      controllers{*controllers_} {
     if (!SDL_SetHint(SDL_HINT_APP_NAME, "shadPS4")) {
         UNREACHABLE_MSG("Failed to set SDL window hint: {}", SDL_GetError());
     }
@@ -101,17 +102,38 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     }
     SDL_InitSubSystem(SDL_INIT_AUDIO);
 
+    const bool start_fullscreen = EmulatorSettings.IsFullScreen();
+    s32 create_x = SDL_WINDOWPOS_CENTERED;
+    s32 create_y = SDL_WINDOWPOS_CENTERED;
+    s32 create_width = width;
+    s32 create_height = height;
+    if (start_fullscreen) {
+        SDL_Rect display_bounds{};
+        const SDL_DisplayID primary_display = SDL_GetPrimaryDisplay();
+        if (primary_display != 0 && SDL_GetDisplayBounds(primary_display, &display_bounds)) {
+            // A hidden fullscreen window may retain its windowed client size until it is mapped.
+            // Seed the native window with the monitor geometry before creating the Vulkan surface so
+            // the first swapchain is already fullscreen-sized.
+            create_x = display_bounds.x;
+            create_y = display_bounds.y;
+            create_width = display_bounds.w;
+            create_height = display_bounds.h;
+        } else {
+            LOG_WARNING(Frontend, "Failed to query primary display bounds: {}", SDL_GetError());
+        }
+    }
+
     SDL_PropertiesID props = SDL_CreateProperties();
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING,
                           std::string(window_title).c_str());
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, width);
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, create_x);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, create_y);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, create_width);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, create_height);
     SDL_SetNumberProperty(props, "flags", SDL_WINDOW_VULKAN);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, true);
-    const bool start_hidden = EmulatorSettings.IsFullScreen();
-    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_HIDDEN_BOOLEAN, start_hidden);
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_FULLSCREEN_BOOLEAN, start_fullscreen);
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_HIDDEN_BOOLEAN, start_fullscreen);
     window = SDL_CreateWindowWithProperties(props);
     SDL_DestroyProperties(props);
     if (window == nullptr) {
@@ -122,7 +144,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
 
     bool error = false;
     const SDL_DisplayID displayIndex = SDL_GetDisplayForWindow(window);
-    if (displayIndex < 0) {
+    if (displayIndex == 0) {
         LOG_ERROR(Frontend, "Error getting display index: {}", SDL_GetError());
         error = true;
     }
@@ -137,15 +159,17 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     }
     SDL_SetWindowFullscreen(window, EmulatorSettings.IsFullScreen());
     SDL_SyncWindow(window);
-    if (start_hidden) {
-        const bool defer_reveal = Libraries::SystemService::IsSplashVisible() &&
-                                  !Common::ElfInfo::Instance().GetSplashPath().empty() &&
-                                  SDL_SetWindowOpacity(window, 0.0f);
-        startup_splash_reveal_pending.store(defer_reveal, std::memory_order_release);
-        SDL_ShowWindow(window);
-        SDL_SyncWindow(window);
-    }
     SDL_GetWindowSizeInPixels(window, &width, &height);
+    if (start_fullscreen) {
+        const bool defer_reveal = Libraries::SystemService::IsSplashVisible() &&
+                                  !Common::ElfInfo::Instance().GetSplashPath().empty();
+        startup_window_reveal_needed.store(defer_reveal, std::memory_order_release);
+        if (!defer_reveal) {
+            SDL_ShowWindow(window);
+            SDL_SyncWindow(window);
+            SDL_GetWindowSizeInPixels(window, &width, &height);
+        }
+    }
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
 
@@ -198,6 +222,7 @@ void WindowSDL::WaitEvent() {
 
     switch (event.type) {
     case SDL_EVENT_WINDOW_RESIZED:
+    case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
     case SDL_EVENT_WINDOW_MAXIMIZED:
     case SDL_EVENT_WINDOW_RESTORED:
         OnResize();
@@ -236,10 +261,29 @@ void WindowSDL::WaitEvent() {
         break;
     case SDL_EVENT_TOGGLE_FULLSCREEN: {
         if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) {
-            SDL_SetWindowFullscreen(window, 0);
+            if (!SDL_SetWindowFullscreen(window, false)) {
+                LOG_WARNING(Frontend, "Failed to leave fullscreen mode: {}", SDL_GetError());
+                break;
+            }
+            SDL_SyncWindow(window);
+            SDL_SetWindowSize(window, windowed_width, windowed_height);
+            if (has_windowed_position) {
+                SDL_SetWindowPosition(window, windowed_x, windowed_y);
+            } else {
+                SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+            }
+            SDL_SyncWindow(window);
         } else {
-            SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+            SDL_GetWindowPosition(window, &windowed_x, &windowed_y);
+            SDL_GetWindowSize(window, &windowed_width, &windowed_height);
+            has_windowed_position = true;
+            if (!SDL_SetWindowFullscreen(window, true)) {
+                LOG_WARNING(Frontend, "Failed to enter fullscreen mode: {}", SDL_GetError());
+                break;
+            }
+            SDL_SyncWindow(window);
         }
+        OnResize();
         break;
     }
     case SDL_EVENT_TOGGLE_PAUSE:
@@ -320,19 +364,21 @@ void WindowSDL::InitTimers() {
     SDL_AddTimer(33, Input::MousePolling, (void*)controllers[0]);
 }
 
-void WindowSDL::RequestStartupSplashReveal() {
-    if (!startup_splash_reveal_pending.exchange(false, std::memory_order_acq_rel)) {
+void WindowSDL::RequestStartupWindowReveal() {
+    if (!startup_window_reveal_needed.exchange(false, std::memory_order_acq_rel)) {
         return;
     }
     if (!SDL_RunOnMainThread(
-            [](void* userdata) { static_cast<WindowSDL*>(userdata)->RevealStartupSplash(); }, this,
+            [](void* userdata) { static_cast<WindowSDL*>(userdata)->RevealStartupWindow(); }, this,
             false)) {
-        startup_splash_reveal_pending.store(true, std::memory_order_release);
+        startup_window_reveal_needed.store(true, std::memory_order_release);
     }
 }
 
-void WindowSDL::RevealStartupSplash() {
-    SDL_SetWindowOpacity(window, 1.0f);
+void WindowSDL::RevealStartupWindow() {
+    SDL_ShowWindow(window);
+    SDL_SyncWindow(window);
+    OnResize();
 }
 
 void WindowSDL::RequestKeyboard() {

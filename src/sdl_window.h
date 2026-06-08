@@ -77,23 +77,28 @@ public:
 
     void RequestKeyboard();
     void ReleaseKeyboard();
-    void RequestStartupSplashReveal();
+    void RequestStartupWindowReveal();
 
 private:
     void OnResize();
-    void RevealStartupSplash();
+    void RevealStartupWindow();
     void OnKeyboardMouseInput(const SDL_Event* event);
     void OnGamepadEvent(const SDL_Event* event);
 
 private:
     s32 width;
     s32 height;
+    s32 windowed_width;
+    s32 windowed_height;
+    s32 windowed_x{};
+    s32 windowed_y{};
+    bool has_windowed_position{};
     Input::GameControllers controllers{};
     WindowSystemInfo window_info{};
     SDL_Window* window{};
     bool is_shown{};
     bool is_open{true};
-    std::atomic_bool startup_splash_reveal_pending{false};
+    std::atomic_bool startup_window_reveal_needed{false};
 };
 
 } // namespace Frontend

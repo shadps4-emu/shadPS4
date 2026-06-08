@@ -110,6 +110,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
 
     ::Core::Devtools::Layer::SetupSettings();
     Sdl::Init(window.GetSDLWindow());
+    Sdl::OnResize();
 
     const Vulkan::InitInfo vk_info{
         .instance = instance.GetInstance(),
