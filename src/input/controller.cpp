@@ -150,7 +150,7 @@ void GameController::UpdateAxisSmoothing() {
     m_state.UpdateAxisSmoothing();
 }
 
-void GameController::SetLightBarRGB(u8 r, u8 g, u8 b) {
+void GameController::SetLightBarRGB(u8 const r, u8 const g, u8 const b) {
     if (override_colour.has_value()) {
         return;
     }
@@ -160,6 +160,10 @@ void GameController::SetLightBarRGB(u8 r, u8 g, u8 b) {
     }
 }
 
+void GameController::SetLightBarRGB(Colour const c) {
+    SetLightBarRGB(c.r, c.g, c.b);
+}
+
 Colour GameController::GetLightBarRGB() {
     return colour;
 }
@@ -167,6 +171,22 @@ Colour GameController::GetLightBarRGB() {
 void GameController::PollLightColour() {
     if (m_sdl_gamepad != nullptr) {
         SDL_SetGamepadLED(m_sdl_gamepad, colour.r, colour.g, colour.b);
+    }
+}
+
+void GameControllers::ResetLightbarColors() {
+    for (auto& c : controllers) {
+        auto const* u = UserManagement.GetUserByID(c->user_id);
+        if (!u || !c->m_sdl_gamepad) {
+            continue;
+        }
+        auto const i = u->user_color - 1;
+        if (i < 0 || i > 3) {
+            continue;
+        }
+        auto const& col = g_user_colours[i];
+        c->override_colour = std::nullopt;
+        c->SetLightBarRGB(col);
     }
 }
 

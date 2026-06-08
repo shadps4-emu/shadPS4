@@ -57,6 +57,8 @@ Frontend::WindowSDL* g_window = nullptr;
 
 namespace Core {
 
+std::mutex exit_mutex{};
+
 Emulator::Emulator() {
     // Initialize NT API functions, set high priority and disable WER
 #ifdef _WIN32
@@ -68,9 +70,25 @@ Emulator::Emulator() {
     WSADATA wsaData;
     WSAStartup(versionWanted, &wsaData);
 #endif
+    std::at_quick_exit([]() { Common::Singleton<Core::Emulator>::Instance()->Shutdown(); });
 }
 
 Emulator::~Emulator() {}
+
+void Emulator::Shutdown() {
+    static bool exit_done = false;
+    std::scoped_lock l{exit_mutex};
+    if (exit_done) {
+        return;
+    }
+    Common::Log::Flush();
+    if (controllers) {
+        controllers->ResetLightbarColors();
+        // need to give SDL time to do this before the runtime exits
+        std::this_thread::sleep_for(std::chrono::milliseconds{10});
+    }
+    exit_done = true;
+}
 
 s32 ReadCompiledSdkVersion(const std::filesystem::path& file) {
     Core::Loader::Elf elf;
@@ -102,8 +120,13 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
     }
 
     auto np_comm_ids = npbind.GetNpCommIds();
-    if (!std::filesystem::exists(trophy_dir) || np_comm_ids.empty()) {
-        LOG_WARNING(Common_Filesystem, "Cannot extract game trophies");
+    if (np_comm_ids.empty()) {
+        LOG_WARNING(Common_Filesystem, "No NPCommIDs in npbind.dat");
+        return trophy_index_map;
+    }
+
+    if (!std::filesystem::exists(trophy_dir)) {
+        LOG_WARNING(Common_Filesystem, "Game does not contain a trophy directory");
         return trophy_index_map;
     }
 
@@ -128,8 +151,13 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
                 continue;
             }
 
-            // Extract the actual trophies if they're no extracted yet
+            // Add the relevant trophies to our trophy index map.
+            // This currently assumes the order of NPCommIDs matches the order of trophies.
             std::string np_comm_id = np_comm_ids[trophy_index];
+            trophy_index_map[trophy_index] = np_comm_id;
+            LOG_DEBUG(Loader, "Mapped trophy index {} to NPCommID: {}", trophy_index, np_comm_id);
+
+            // Extract the actual trophies if they're no extracted yet
             const auto& trophy_output_dir =
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / np_comm_id;
             if (!std::filesystem::exists(trophy_output_dir)) {
@@ -153,11 +181,6 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
                                                user_trophy_file, discard);
                 }
             }
-
-            // Add the relevant trophies to our trophy index map.
-            // This currently assumes the order of NPCommIDs matches the order of trophies.
-            trophy_index_map[trophy_index] = np_comm_id;
-            LOG_DEBUG(Loader, "Mapped trophy index {} to NPCommID: {}", trophy_index, np_comm_id);
         }
     }
     return trophy_index_map;
