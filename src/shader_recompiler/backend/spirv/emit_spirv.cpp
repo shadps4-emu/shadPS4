@@ -316,7 +316,7 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
         if (info.loads.GetAny(IR::Attribute::RenderTargetIndex)) {
             ctx.AddCapability(spv::Capability::Geometry);
         }
-        if (info.stores.Get(IR::Attribute::StencilRef)) {
+        if (info.stores.Get(IR::Attribute::StencilRef) && profile.supports_shader_stencil_export) {
             ctx.AddExtension("SPV_EXT_shader_stencil_export");
             ctx.AddCapability(spv::Capability::StencilExportEXT);
         }
