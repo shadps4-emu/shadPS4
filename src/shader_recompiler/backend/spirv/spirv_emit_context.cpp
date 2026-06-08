@@ -675,7 +675,7 @@ void EmitContext::DefineOutputs() {
             sample_mask = DefineVariable(TypeArray(U32[1], u32_one_value), spv::BuiltIn::SampleMask,
                                          spv::StorageClass::Output);
         }
-        if (info.stores.Get(IR::Attribute::StencilRef)) {
+        if (info.stores.Get(IR::Attribute::StencilRef) && profile.supports_shader_stencil_export) {
             stencil_ref = DefineVariable(S32[1], spv::BuiltIn::FragStencilRefEXT,
                                          spv::StorageClass::Output);
         }
