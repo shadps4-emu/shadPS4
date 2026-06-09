@@ -13,6 +13,8 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/font/fontft_internal.h"
 #include "core/libraries/kernel/kernel.h"
+#include "imgui/notifications_layer.h"
+#include "imgui/renderer/font_data.h"
 
 namespace Libraries::Font::Internal {
 
@@ -142,6 +144,278 @@ void DestroyFreeTypeFace(FT_Face& face) {
 }
 
 namespace {
+
+constexpr std::string_view kBuiltinFontPrefix = "@builtin/";
+constexpr std::string_view kBuiltinFontLatin = "@builtin/NotoSans-Regular.ttf";
+constexpr std::string_view kBuiltinFontArabic = "@builtin/NotoSansArabic-Regular.ttf";
+constexpr std::string_view kBuiltinFontThai = "@builtin/NotoSansThai-Regular.ttf";
+constexpr std::string_view kBuiltinFontSymbols = "@builtin/NotoSansSymbols2-Regular.ttf";
+constexpr std::string_view kBuiltinFontCjkJp = "@builtin/NotoSansCJK-Regular.jp.ttc";
+constexpr std::string_view kBuiltinFontCjkKr = "@builtin/NotoSansCJK-Regular.kr.ttc";
+constexpr std::string_view kBuiltinFontCjkSc = "@builtin/NotoSansCJK-Regular.sc.ttc";
+constexpr std::string_view kBuiltinFontCjkTc = "@builtin/NotoSansCJK-Regular.tc.ttc";
+
+struct BuiltinFontBlob {
+    std::string_view virtual_path;
+    const unsigned char* compressed_data = nullptr;
+    unsigned int compressed_size = 0;
+    u32 face_index = 0;
+};
+
+static const std::array<BuiltinFontBlob, 8> kBuiltinFontBlobs{{
+    BuiltinFontBlob{kBuiltinFontLatin, imgui_font_notosans_regular_compressed_data,
+                    imgui_font_notosans_regular_compressed_size, 0},
+    BuiltinFontBlob{kBuiltinFontArabic, imgui_font_notosansarabic_regular_compressed_data,
+                    imgui_font_notosansarabic_regular_compressed_size, 0},
+    BuiltinFontBlob{kBuiltinFontThai, imgui_font_notosansthai_regular_compressed_data,
+                    imgui_font_notosansthai_regular_compressed_size, 0},
+    BuiltinFontBlob{kBuiltinFontSymbols, imgui_font_notosanssymbols2_regular_compressed_data,
+                    imgui_font_notosanssymbols2_regular_compressed_size, 0},
+    BuiltinFontBlob{kBuiltinFontCjkJp, imgui_font_notosanscjk_regular_compressed_data,
+                    imgui_font_notosanscjk_regular_compressed_size, 0},
+    BuiltinFontBlob{kBuiltinFontCjkKr, imgui_font_notosanscjk_regular_compressed_data,
+                    imgui_font_notosanscjk_regular_compressed_size, 1},
+    BuiltinFontBlob{kBuiltinFontCjkSc, imgui_font_notosanscjk_regular_compressed_data,
+                    imgui_font_notosanscjk_regular_compressed_size, 2},
+    BuiltinFontBlob{kBuiltinFontCjkTc, imgui_font_notosanscjk_regular_compressed_data,
+                    imgui_font_notosanscjk_regular_compressed_size, 3},
+}};
+
+static unsigned char* g_stb_barrier_out_e = nullptr;
+static unsigned char* g_stb_barrier_out_b = nullptr;
+static const unsigned char* g_stb_barrier_in_b = nullptr;
+static unsigned char* g_stb_dout = nullptr;
+
+static unsigned int StbDecompressLength(const unsigned char* input) {
+    return (input[8] << 24) + (input[9] << 16) + (input[10] << 8) + input[11];
+}
+
+static void StbMatch(const unsigned char* data, unsigned int length) {
+    if (g_stb_dout + length > g_stb_barrier_out_e) {
+        g_stb_dout += length;
+        return;
+    }
+    if (data < g_stb_barrier_out_b) {
+        g_stb_dout = g_stb_barrier_out_e + 1;
+        return;
+    }
+    while (length-- != 0u) {
+        *g_stb_dout++ = *data++;
+    }
+}
+
+static void StbLiteral(const unsigned char* data, unsigned int length) {
+    if (g_stb_dout + length > g_stb_barrier_out_e) {
+        g_stb_dout += length;
+        return;
+    }
+    if (data < g_stb_barrier_in_b) {
+        g_stb_dout = g_stb_barrier_out_e + 1;
+        return;
+    }
+    std::memcpy(g_stb_dout, data, length);
+    g_stb_dout += length;
+}
+
+#define STB_IN2(x) ((i[x] << 8) + i[(x) + 1])
+#define STB_IN3(x) ((i[x] << 16) + STB_IN2((x) + 1))
+#define STB_IN4(x) ((i[x] << 24) + STB_IN3((x) + 1))
+
+static const unsigned char* StbDecompressToken(const unsigned char* i) {
+    if (*i >= 0x20) {
+        if (*i >= 0x80) {
+            StbMatch(g_stb_dout - i[1] - 1, i[0] - 0x80 + 1);
+            i += 2;
+        } else if (*i >= 0x40) {
+            StbMatch(g_stb_dout - (STB_IN2(0) - 0x4000 + 1), i[2] + 1);
+            i += 3;
+        } else {
+            StbLiteral(i + 1, i[0] - 0x20 + 1);
+            i += 1 + (i[0] - 0x20 + 1);
+        }
+    } else {
+        if (*i >= 0x18) {
+            StbMatch(g_stb_dout - (STB_IN3(0) - 0x180000 + 1), i[3] + 1);
+            i += 4;
+        } else if (*i >= 0x10) {
+            StbMatch(g_stb_dout - (STB_IN3(0) - 0x100000 + 1), STB_IN2(3) + 1);
+            i += 5;
+        } else if (*i >= 0x08) {
+            StbLiteral(i + 2, STB_IN2(0) - 0x0800 + 1);
+            i += 2 + (STB_IN2(0) - 0x0800 + 1);
+        } else if (*i == 0x07) {
+            StbLiteral(i + 3, STB_IN2(1) + 1);
+            i += 3 + (STB_IN2(1) + 1);
+        } else if (*i == 0x06) {
+            StbMatch(g_stb_dout - (STB_IN3(1) + 1), i[4] + 1);
+            i += 5;
+        } else if (*i == 0x04) {
+            StbMatch(g_stb_dout - (STB_IN3(1) + 1), STB_IN2(4) + 1);
+            i += 6;
+        }
+    }
+    return i;
+}
+
+static unsigned int StbAdler32(unsigned int adler32, unsigned char* buffer,
+                               unsigned int buffer_len) {
+    constexpr unsigned long kAdlerMod = 65521;
+    unsigned long s1 = adler32 & 0xffff;
+    unsigned long s2 = adler32 >> 16;
+    unsigned long block_len = buffer_len % 5552;
+
+    while (buffer_len != 0u) {
+        unsigned long i = 0;
+        for (; i + 7 < block_len; i += 8) {
+            s1 += buffer[0];
+            s2 += s1;
+            s1 += buffer[1];
+            s2 += s1;
+            s1 += buffer[2];
+            s2 += s1;
+            s1 += buffer[3];
+            s2 += s1;
+            s1 += buffer[4];
+            s2 += s1;
+            s1 += buffer[5];
+            s2 += s1;
+            s1 += buffer[6];
+            s2 += s1;
+            s1 += buffer[7];
+            s2 += s1;
+            buffer += 8;
+        }
+        for (; i < block_len; ++i) {
+            s1 += *buffer++;
+            s2 += s1;
+        }
+        s1 %= kAdlerMod;
+        s2 %= kAdlerMod;
+        buffer_len -= static_cast<unsigned int>(block_len);
+        block_len = 5552;
+    }
+    return (static_cast<unsigned int>(s2) << 16) + static_cast<unsigned int>(s1);
+}
+
+static unsigned int StbDecompress(unsigned char* output, const unsigned char* i) {
+    if (STB_IN4(0) != 0x57BC0000u || STB_IN4(4) != 0u) {
+        return 0;
+    }
+
+    const unsigned int output_len = StbDecompressLength(i);
+    g_stb_barrier_in_b = i;
+    g_stb_barrier_out_e = output + output_len;
+    g_stb_barrier_out_b = output;
+    i += 16;
+
+    g_stb_dout = output;
+    for (;;) {
+        const unsigned char* old_i = i;
+        i = StbDecompressToken(i);
+        if (i == old_i) {
+            if (*i == 0x05 && i[1] == 0xFA) {
+                if (g_stb_dout != output + output_len) {
+                    return 0;
+                }
+                return StbAdler32(1, output, output_len) == static_cast<unsigned int>(STB_IN4(2))
+                           ? output_len
+                           : 0;
+            }
+            return 0;
+        }
+        if (g_stb_dout > output + output_len) {
+            return 0;
+        }
+    }
+}
+
+#undef STB_IN2
+#undef STB_IN3
+#undef STB_IN4
+
+static const BuiltinFontBlob* FindBuiltinFontBlob(const std::filesystem::path& path) {
+    const std::string normalized = path.generic_string();
+    for (const auto& blob : kBuiltinFontBlobs) {
+        if (normalized == blob.virtual_path) {
+            return &blob;
+        }
+    }
+    return nullptr;
+}
+
+static std::string LowerAsciiString(std::string value) {
+    for (auto& c : value) {
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    }
+    return value;
+}
+
+static bool StartsWithAsciiInsensitive(std::string_view value, std::string_view prefix) {
+    if (value.size() < prefix.size()) {
+        return false;
+    }
+    for (std::size_t i = 0; i < prefix.size(); ++i) {
+        const auto lhs = static_cast<unsigned char>(value[i]);
+        const auto rhs = static_cast<unsigned char>(prefix[i]);
+        if (std::tolower(lhs) != std::tolower(rhs)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool EqualsAsciiInsensitive(std::string_view lhs, std::string_view rhs) {
+    if (lhs.size() != rhs.size()) {
+        return false;
+    }
+    return StartsWithAsciiInsensitive(lhs, rhs);
+}
+
+static bool IsThaiSeaWeightTag(u32 font_set_type) {
+    const u32 tag = (font_set_type >> 8) & 0xFFu;
+    u32 sea_weight_code = font_set_type & 0xFFu;
+    switch (sea_weight_code) {
+    case 0xD3u:
+        sea_weight_code = 0x53u;
+        break;
+    case 0xD4u:
+        sea_weight_code = 0x54u;
+        break;
+    case 0xD5u:
+        sea_weight_code = 0x55u;
+        break;
+    case 0xD7u:
+        sea_weight_code = 0x57u;
+        break;
+    default:
+        break;
+    }
+
+    const bool is_sea_weight = (sea_weight_code == 0x53u) || (sea_weight_code == 0x54u) ||
+                               (sea_weight_code == 0x55u) || (sea_weight_code == 0x57u);
+    if (!is_sea_weight) {
+        return false;
+    }
+
+    return (tag == 0x10u) || (tag == 0x14u) || (tag == 0x34u) || (tag == 0x90u) || (tag == 0x94u) ||
+           (tag == 0xB0u) || (tag == 0xB4u) || (tag == 0xBCu);
+}
+
+static bool HasPathFilenameLower(const FontState& st, std::string_view filename_lower) {
+    if (filename_lower.empty()) {
+        return false;
+    }
+    const auto primary_lower = LowerAsciiString(st.system_font_path.filename().string());
+    if (primary_lower == filename_lower) {
+        return true;
+    }
+    for (const auto& fb : st.system_fallback_faces) {
+        if (LowerAsciiString(fb.path.filename().string()) == filename_lower) {
+            return true;
+        }
+    }
+    return false;
+}
 
 static std::optional<std::filesystem::path> ResolveKnownSysFontAliasImpl(
     const std::filesystem::path& sysfonts_dir, std::string_view ps4_filename) {
@@ -1568,6 +1842,183 @@ const SystemFontDefinition* FindSystemFontDefinition(u32 font_set_type) {
     return nullptr;
 }
 
+float ComputeSysfontScaleFactor(FT_Face face, int units_per_em) {
+    (void)units_per_em;
+    if (!face) {
+        return 1.0f;
+    }
+    const auto* os2 = static_cast<const TT_OS2*>(FT_Get_Sfnt_Table(face, ft_sfnt_os2));
+    if (os2 && os2->sTypoAscender == 770 && os2->sTypoDescender == -230) {
+        return 1024.0f / 952.0f;
+    }
+    return 1.0f;
+}
+
+s32 ComputeSysfontShiftValue(FT_Face face) {
+    if (!face) {
+        return 0;
+    }
+    const auto* os2 = static_cast<const TT_OS2*>(FT_Get_Sfnt_Table(face, ft_sfnt_os2));
+    if (!os2) {
+        return 0;
+    }
+    const bool is_jp_pro_metrics =
+        (os2->sTypoAscender == 880) && (os2->sTypoDescender == -120) && (os2->sTypoLineGap == 1);
+    if (!is_jp_pro_metrics) {
+        return 0;
+    }
+    const auto* vhea = static_cast<const TT_VertHeader*>(FT_Get_Sfnt_Table(face, ft_sfnt_vhea));
+    if (!vhea) {
+        return 0;
+    }
+    const int units = static_cast<int>(face->units_per_EM);
+    const int gap = static_cast<int>(os2->sTypoLineGap);
+    const int shift = 1024 - units - gap;
+    if (shift > 0 && shift < 128) {
+        return static_cast<s32>(shift);
+    }
+    return 0;
+}
+
+std::shared_ptr<std::vector<unsigned char>> LoadBuiltinFontBytesShared(
+    const std::filesystem::path& path, u32* out_subfont_index) {
+    const auto* blob = FindBuiltinFontBlob(path);
+    if (!blob) {
+        return {};
+    }
+    if (out_subfont_index) {
+        *out_subfont_index = blob->face_index;
+    }
+
+    static std::mutex cache_mutex;
+    static std::unordered_map<std::string, std::shared_ptr<std::vector<unsigned char>>> cache;
+
+    const std::string cache_key(blob->virtual_path);
+    {
+        std::scoped_lock lock(cache_mutex);
+        if (const auto it = cache.find(cache_key); it != cache.end()) {
+            return it->second;
+        }
+    }
+
+    const unsigned int output_len = StbDecompressLength(blob->compressed_data);
+    if (output_len == 0u) {
+        return {};
+    }
+
+    auto bytes = std::make_shared<std::vector<unsigned char>>(output_len);
+    if (StbDecompress(bytes->data(), blob->compressed_data) != output_len) {
+        return {};
+    }
+
+    {
+        std::scoped_lock lock(cache_mutex);
+        return cache.emplace(cache_key, std::move(bytes)).first->second;
+    }
+}
+
+bool IsBuiltinFontPath(const std::filesystem::path& path) {
+    const std::string normalized = path.generic_string();
+    return normalized.rfind(kBuiltinFontPrefix, 0) == 0;
+}
+
+BuiltinSystemFontSelection BuildBuiltinSystemFontSelection(u32 font_set_type) {
+    BuiltinSystemFontSelection selection{};
+    const auto* def = FindSystemFontDefinition(font_set_type);
+    if (!def || !def->default_file || !*def->default_file) {
+        return selection;
+    }
+
+    const std::string_view default_file(def->default_file);
+    const u32 tag = (font_set_type >> 8) & 0xFFu;
+    const u32 style_suffix = font_set_type & 0xFFu;
+    const bool needs_arabic = (style_suffix == 0xC3u) || (style_suffix == 0xC4u) ||
+                              (style_suffix == 0xC5u) || (style_suffix == 0xC7u) ||
+                              (style_suffix == 0xD3u) || (style_suffix == 0xD4u) ||
+                              (style_suffix == 0xD5u) || (style_suffix == 0xD7u);
+    const bool needs_jppro = (tag == 0x04u) || (tag == 0x24u) || (tag == 0x34u) || (tag == 0x84u) ||
+                             (tag == 0xA4u) || (tag == 0xACu) || (tag == 0xB4u) || (tag == 0xBCu);
+    const bool needs_cngb = (tag == 0x80u) || (tag == 0x84u) || (tag == 0x90u) || (tag == 0xA0u) ||
+                            (tag == 0xA4u) || (tag == 0xACu) || (tag == 0xB0u) || (tag == 0xB4u) ||
+                            (tag == 0xBCu);
+    const bool needs_hangul = (tag == 0x24u) || (tag == 0x34u) || (tag == 0xA0u) ||
+                              (tag == 0xA4u) || (tag == 0xACu) || (tag == 0xB0u) ||
+                              (tag == 0xB4u) || (tag == 0xBCu);
+    const bool needs_thai = IsThaiSeaWeightTag(font_set_type);
+
+    const auto push_unique = [&](std::vector<std::filesystem::path>& paths,
+                                 std::string_view path_string) {
+        if (path_string.empty()) {
+            return;
+        }
+        const std::string filename_lower =
+            LowerAsciiString(std::filesystem::path(std::string(path_string)).filename().string());
+        for (const auto& existing : paths) {
+            if (LowerAsciiString(existing.filename().string()) == filename_lower) {
+                return;
+            }
+        }
+        paths.emplace_back(std::string(path_string));
+    };
+
+    enum class PrimaryKind { Latin, Thai, Jp, Kr, Sc };
+    PrimaryKind primary_kind = PrimaryKind::Latin;
+    if (EqualsAsciiInsensitive(default_file, "DFHEI5-SONY.ttf")) {
+        primary_kind = PrimaryKind::Sc;
+    } else if (StartsWithAsciiInsensitive(default_file, "SCEPS4Yoongd-")) {
+        primary_kind = PrimaryKind::Kr;
+    } else if (StartsWithAsciiInsensitive(default_file, "SSTJpPro-") ||
+               StartsWithAsciiInsensitive(default_file, "SCE-RDC-")) {
+        primary_kind = PrimaryKind::Jp;
+    } else if (StartsWithAsciiInsensitive(default_file, "SSTThai-") ||
+               (needs_thai && !needs_jppro && !needs_cngb && !needs_hangul)) {
+        primary_kind = PrimaryKind::Thai;
+    }
+
+    switch (primary_kind) {
+    case PrimaryKind::Thai:
+        selection.primary_path = std::filesystem::path(std::string(kBuiltinFontThai));
+        break;
+    case PrimaryKind::Jp:
+        selection.primary_path = std::filesystem::path(std::string(kBuiltinFontCjkJp));
+        break;
+    case PrimaryKind::Kr:
+        selection.primary_path = std::filesystem::path(std::string(kBuiltinFontCjkKr));
+        break;
+    case PrimaryKind::Sc:
+        selection.primary_path = std::filesystem::path(std::string(kBuiltinFontCjkSc));
+        break;
+    case PrimaryKind::Latin:
+    default:
+        selection.primary_path = std::filesystem::path(std::string(kBuiltinFontLatin));
+        break;
+    }
+
+    selection.preferred_latin_name_lower =
+        LowerAsciiString(std::filesystem::path(std::string(kBuiltinFontLatin)).filename().string());
+
+    if (primary_kind != PrimaryKind::Latin) {
+        push_unique(selection.fallback_paths, kBuiltinFontLatin);
+    }
+    if (needs_arabic) {
+        push_unique(selection.fallback_paths, kBuiltinFontArabic);
+    }
+    if (needs_thai && primary_kind != PrimaryKind::Thai) {
+        push_unique(selection.fallback_paths, kBuiltinFontThai);
+    }
+    if (needs_jppro && primary_kind != PrimaryKind::Jp) {
+        push_unique(selection.fallback_paths, kBuiltinFontCjkJp);
+    }
+    if (needs_hangul && primary_kind != PrimaryKind::Kr) {
+        push_unique(selection.fallback_paths, kBuiltinFontCjkKr);
+    }
+    if (needs_cngb && primary_kind != PrimaryKind::Sc) {
+        push_unique(selection.fallback_paths, kBuiltinFontCjkSc);
+    }
+    push_unique(selection.fallback_paths, kBuiltinFontSymbols);
+    return selection;
+}
+
 static bool DirectoryContainsAnyFontFiles(const std::filesystem::path& dir) {
     std::error_code ec;
     if (!std::filesystem::is_directory(dir, ec)) {
@@ -1593,11 +2044,13 @@ static bool DirectoryContainsAnyFontFiles(const std::filesystem::path& dir) {
     return false;
 }
 
-std::filesystem::path GetSysFontBaseDir() {
+static std::filesystem::path GetSysFontBaseDirImpl(bool log_errors) {
     std::filesystem::path base = EmulatorSettings.GetFontsDir();
     std::error_code ec;
     if (base.empty()) {
-        LOG_ERROR(Lib_Font, "SystemFonts: FontsPath not set");
+        if (log_errors) {
+            LOG_ERROR(Lib_Font, "SystemFonts: FontsPath not set");
+        }
         return {};
     }
     if (std::filesystem::is_directory(base, ec)) {
@@ -1607,19 +2060,27 @@ std::filesystem::path GetSysFontBaseDir() {
             DirectoryContainsAnyFontFiles(font2_dir)) {
             return base;
         }
-        LOG_ERROR(
-            Lib_Font,
-            "SystemFonts: FontsPath '{}' contains no font files; expected files directly in this "
-            "directory or under 'font'/'font2'",
-            base.string());
+        if (log_errors) {
+            LOG_ERROR(
+                Lib_Font,
+                "SystemFonts: FontsPath '{}' contains no font files; expected files directly in "
+                "this directory or under 'font'/'font2'",
+                base.string());
+        }
         return {};
     }
     if (std::filesystem::is_regular_file(base, ec)) {
         return base.parent_path();
     }
-    LOG_ERROR(Lib_Font, "SystemFonts: FontsPath '{}' is not a valid directory or file",
-              base.string());
+    if (log_errors) {
+        LOG_ERROR(Lib_Font, "SystemFonts: FontsPath '{}' is not a valid directory or file",
+                  base.string());
+    }
     return {};
+}
+
+std::filesystem::path GetSysFontBaseDir() {
+    return GetSysFontBaseDirImpl(true);
 }
 
 static std::filesystem::path ResolveSystemFontPathCandidate(const std::filesystem::path& base_dir,
@@ -1682,7 +2143,10 @@ const FontSetCache* EnsureFontSetCache(u32 font_set_type) {
     auto& cache = g_fontset_cache[font_set_type];
     if (!cache.loaded) {
         cache.loaded = true;
-        const auto path = ResolveSystemFontPath(font_set_type);
+        auto path = ResolveSystemFontPath(font_set_type);
+        if (path.empty()) {
+            path = BuildBuiltinSystemFontSelection(font_set_type).primary_path;
+        }
         if (!path.empty() && LoadFontFile(path, cache.bytes)) {
             cache.available = HasSfntTables(cache.bytes);
             cache.path = cache.available ? path : std::filesystem::path{};
@@ -1708,11 +2172,18 @@ bool HasSfntTables(const std::vector<unsigned char>& bytes) {
     return true;
 }
 
-bool LoadFontFile(const std::filesystem::path& path, std::vector<unsigned char>& out_bytes) {
+bool LoadFontFileWithSubfont(const std::filesystem::path& path,
+                             std::vector<unsigned char>& out_bytes, u32& out_subfont_index) {
     if (path.empty()) {
         return false;
     }
 
+    if (const auto builtin_bytes = LoadBuiltinFontBytesShared(path, &out_subfont_index)) {
+        out_bytes.assign(builtin_bytes->begin(), builtin_bytes->end());
+        return !out_bytes.empty();
+    }
+
+    out_subfont_index = 0;
     auto try_load = [&](const std::filesystem::path& p) -> bool {
         out_bytes.clear();
         if (!LoadGuestFileBytes(p, out_bytes) || out_bytes.empty()) {
@@ -1756,6 +2227,68 @@ bool LoadFontFile(const std::filesystem::path& path, std::vector<unsigned char>&
     return false;
 }
 
+bool LoadFontFile(const std::filesystem::path& path, std::vector<unsigned char>& out_bytes) {
+    u32 ignored_subfont_index = 0;
+    return LoadFontFileWithSubfont(path, out_bytes, ignored_subfont_index);
+}
+
+bool AddSystemFallbackFace(FontState& st, const std::filesystem::path& path, u32 subfont_index) {
+    if (path.empty()) {
+        return false;
+    }
+
+    const std::string filename_lower = LowerAsciiString(path.filename().string());
+    if (HasPathFilenameLower(st, filename_lower)) {
+        return false;
+    }
+
+    std::vector<unsigned char> fallback_bytes;
+    u32 fallback_face_index = subfont_index;
+    if (!LoadFontFileWithSubfont(path, fallback_bytes, fallback_face_index)) {
+        return false;
+    }
+
+    FontState::SystemFallbackFace fallback{};
+    fallback.font_id = 0xffffffffu;
+    fallback.path = path;
+    fallback.bytes = std::make_shared<std::vector<unsigned char>>(std::move(fallback_bytes));
+    fallback.ft_face = CreateFreeTypeFaceFromBytes(fallback.bytes->data(), fallback.bytes->size(),
+                                                   fallback_face_index);
+    fallback.ready = (fallback.ft_face != nullptr);
+    if (!fallback.ready) {
+        DestroyFreeTypeFace(fallback.ft_face);
+        return false;
+    }
+
+    fallback.scale_factor = ComputeSysfontScaleFactor(
+        fallback.ft_face, fallback.ft_face ? static_cast<int>(fallback.ft_face->units_per_EM) : 0);
+    fallback.shift_value = ComputeSysfontShiftValue(fallback.ft_face);
+    st.system_fallback_faces.push_back(std::move(fallback));
+    return true;
+}
+
+void AddBuiltinFallbackFaces(FontState& st, u32 font_set_type, u32 subfont_index,
+                             std::string* preferred_latin_name_lower) {
+    const auto selection = BuildBuiltinSystemFontSelection(font_set_type);
+    if (preferred_latin_name_lower) {
+        *preferred_latin_name_lower = selection.preferred_latin_name_lower;
+    }
+    for (const auto& path : selection.fallback_paths) {
+        (void)AddSystemFallbackFace(st, path, subfont_index);
+    }
+}
+
+void NotifyBuiltinFontFallbackOnce() {
+    static std::once_flag once;
+    std::call_once(once, [] {
+        shadNotifications::QueueNotification("WARNING! PS4 system fonts not found.\n"
+                                             "Using bundled fallback fonts instead.\n"
+                                             "Text rendering may be inaccurate.",
+                                             30.0f, shadNotifications::position::BottomRight,
+                                             shadNotifications::stockIcons::shadPS4);
+    });
+}
+
 bool AttachSystemFont(FontState& st, Libraries::Font::OrbisFontHandle handle) {
     if (st.ext_face_ready) {
         return true;
@@ -1773,15 +2306,23 @@ bool AttachSystemFont(FontState& st, Libraries::Font::OrbisFontHandle handle) {
     }
 
     std::filesystem::path primary_path = ResolveSystemFontPath(st.font_set_type);
+    bool using_builtin_primary = false;
     std::vector<unsigned char> primary_bytes;
-    if (primary_path.empty() || !LoadFontFile(primary_path, primary_bytes)) {
+    u32 primary_face_index = subfont_index;
+    if (primary_path.empty() ||
+        !LoadFontFileWithSubfont(primary_path, primary_bytes, primary_face_index)) {
+        primary_path = BuildBuiltinSystemFontSelection(st.font_set_type).primary_path;
+        using_builtin_primary = !primary_path.empty();
+    }
+    if (primary_path.empty() ||
+        !LoadFontFileWithSubfont(primary_path, primary_bytes, primary_face_index)) {
         return false;
     }
 
     DestroyFreeTypeFace(st.ext_ft_face);
     st.ext_face_data = std::move(primary_bytes);
     st.ext_ft_face = CreateFreeTypeFaceFromBytes(st.ext_face_data.data(), st.ext_face_data.size(),
-                                                 subfont_index);
+                                                 primary_face_index);
     if (!st.ext_ft_face) {
         st.ext_face_data.clear();
         return false;
@@ -1797,6 +2338,17 @@ bool AttachSystemFont(FontState& st, Libraries::Font::OrbisFontHandle handle) {
     st.ext_face_ready = true;
     st.system_font_path = primary_path;
     st.system_requested = true;
+    st.system_font_scale_factor = ComputeSysfontScaleFactor(st.ext_ft_face, st.ext_units_per_em);
+    st.system_font_shift_value = ComputeSysfontShiftValue(st.ext_ft_face);
+
+    if (using_builtin_primary || IsBuiltinFontPath(primary_path)) {
+        AddBuiltinFallbackFaces(st, st.font_set_type, subfont_index, nullptr);
+    }
+    if (using_builtin_primary) {
+        LOG_WARNING(Lib_Font, "SystemFonts: using bundled Noto fallback for set type=0x{:08X}",
+                    st.font_set_type);
+        NotifyBuiltinFontFallbackOnce();
+    }
 
     LOG_INFO(Lib_Font, "system font attached");
     LOG_DEBUG(Lib_Font,

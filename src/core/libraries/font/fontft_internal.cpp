@@ -177,6 +177,10 @@ static bool IsArabicLikeCodepoint(u32 cp) {
            (cp >= 0xFE70u && cp <= 0xFEFFu);
 }
 
+static bool IsThaiLikeCodepoint(u32 cp) {
+    return (cp >= 0x0E00u && cp <= 0x0E7Fu);
+}
+
 static bool IsSymbolLikeCodepoint(u32 cp) {
     return (cp >= 0x25A0u && cp <= 0x25FFu) || (cp >= 0x2600u && cp <= 0x26FFu) ||
            (cp >= 0x2700u && cp <= 0x27BFu);
@@ -672,11 +676,19 @@ u32 ResolveSysFontCodepoint(const void* record, u64 code, u32 flags, u32* out_fo
             selector->roman_font_id != 0xffffffffu ? selector->roman_font_id : record_primary_id;
         const u32 arabic_id =
             selector->arabic_font_id != 0xffffffffu ? selector->arabic_font_id : roman_id;
+        const u32 thai_id =
+            selector->thai_font_id != 0xffffffffu ? selector->thai_font_id : roman_id;
+        const u32 symbol_id =
+            selector->symbol_font_id != 0xffffffffu ? selector->symbol_font_id : primary_id;
 
         u32 selected_font_id = roman_id;
         if (IsArabicLikeCodepoint(code_u32)) {
             selected_font_id = arabic_id;
-        } else if (IsCjkLikeCodepoint(code_u32) || IsSymbolLikeCodepoint(code_u32)) {
+        } else if (IsThaiLikeCodepoint(code_u32)) {
+            selected_font_id = thai_id;
+        } else if (IsSymbolLikeCodepoint(code_u32)) {
+            selected_font_id = symbol_id;
+        } else if (IsCjkLikeCodepoint(code_u32)) {
             selected_font_id = primary_id;
         }
 
@@ -3073,6 +3085,7 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
     const u8* data = nullptr;
     u32 size = 0;
     void* owned_data = nullptr;
+    std::shared_ptr<std::vector<unsigned char>> shared_data;
     std::string open_path;
     std::filesystem::path host_path_fs{};
 
@@ -3136,7 +3149,26 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
             if (cand.empty()) {
                 continue;
             }
-            if (!std::filesystem::exists(std::filesystem::path{cand}, ec) || ec) {
+            const std::filesystem::path cand_path{cand};
+            u32 builtin_face_index = subFontIndex;
+            if (const auto builtin_bytes = Libraries::Font::Internal::LoadBuiltinFontBytesShared(
+                    cand_path, &builtin_face_index)) {
+                attempted_open = true;
+                ft_err = FT_New_Memory_Face(ctx->ft_lib,
+                                            reinterpret_cast<const FT_Byte*>(builtin_bytes->data()),
+                                            static_cast<FT_Long>(builtin_bytes->size()),
+                                            static_cast<FT_Long>(builtin_face_index), &face);
+                last_ft_err = ft_err;
+                if (ft_err == 0 && face) {
+                    shared_data = builtin_bytes;
+                    data = builtin_bytes->data();
+                    size = static_cast<u32>(builtin_bytes->size());
+                    break;
+                }
+                continue;
+            }
+
+            if (!std::filesystem::exists(cand_path, ec) || ec) {
                 continue;
             }
             attempted_open = true;
@@ -3197,6 +3229,7 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
     sidecar.font_data = data;
     sidecar.font_size = size;
     sidecar.owned_data = owned_data;
+    sidecar.shared_data = std::move(shared_data);
     if (mode == 1) {
         (void)ResolveSfntBaseOffset(data, size, subFontIndex, sidecar.sfnt_base);
     }
@@ -3226,8 +3259,10 @@ s32 PS4_SYSV_ABI LibraryCloseFontObjStub(void* fontObj, u32 /*flags*/) {
     const auto free_fn =
         (ctx && ctx->alloc_vtbl) ? reinterpret_cast<GuestFreeFn>(ctx->alloc_vtbl[1]) : nullptr;
     void* owned_data = nullptr;
+    std::shared_ptr<std::vector<unsigned char>> shared_data;
     if (const auto sidecar = TakeFontObjSidecar(obj)) {
         owned_data = sidecar->owned_data;
+        shared_data = sidecar->shared_data;
     }
 
     if (face) {

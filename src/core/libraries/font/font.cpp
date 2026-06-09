@@ -65,44 +65,6 @@ static std::string formatParams(
     return Libraries::Font::Internal::FormatNamedParams(params);
 }
 
-static float ComputeSysfontScaleFactor(FT_Face face, int units_per_em) {
-    (void)units_per_em;
-    if (!face) {
-        return 1.0f;
-    }
-    const TT_OS2* os2 = static_cast<const TT_OS2*>(FT_Get_Sfnt_Table(face, ft_sfnt_os2));
-    if (os2) {
-        if (os2->sTypoAscender == 770 && os2->sTypoDescender == -230) {
-            return 1024.0f / 952.0f;
-        }
-    }
-    return 1.0f;
-}
-
-static s32 ComputeSysfontShiftValue(FT_Face face) {
-    if (!face) {
-        return 0;
-    }
-    const TT_OS2* os2 = static_cast<const TT_OS2*>(FT_Get_Sfnt_Table(face, ft_sfnt_os2));
-    if (!os2) {
-        return 0;
-    }
-    const bool is_jp_pro_metrics =
-        (os2->sTypoAscender == 880) && (os2->sTypoDescender == -120) && (os2->sTypoLineGap == 1);
-    if (is_jp_pro_metrics) {
-        const auto* vhea = static_cast<const TT_VertHeader*>(FT_Get_Sfnt_Table(face, ft_sfnt_vhea));
-        if (vhea) {
-            const int units = static_cast<int>(face->units_per_EM);
-            const int gap = static_cast<int>(os2->sTypoLineGap);
-            const int shift = 1024 - units - gap;
-            if (shift > 0 && shift < 128) {
-                return static_cast<s32>(shift);
-            }
-        }
-    }
-    return 0;
-}
-
 static std::string LowerAscii(std::string s) {
     for (auto& c : s) {
         c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
@@ -3459,7 +3421,13 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             return release_library_and_clear_out(ORBIS_FONT_ERROR_NO_SUPPORT_FUNCTION);
         }
 
+        const auto builtin_selection = Internal::BuildBuiltinSystemFontSelection(fontSetType);
         std::filesystem::path primary_path = Internal::ResolveSystemFontPath(fontSetType);
+        bool using_builtin_primary = false;
+        if (primary_path.empty()) {
+            primary_path = builtin_selection.primary_path;
+            using_builtin_primary = !primary_path.empty();
+        }
         if (primary_path.empty()) {
             LOG_ERROR(Lib_Font, "NO_SUPPORT_FONTSET");
             return release_library_and_clear_out(ORBIS_FONT_ERROR_NO_SUPPORT_FONTSET);
@@ -3467,10 +3435,23 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
         LOG_INFO(Lib_Font, "OpenFontSet: stage=resolved_primary_path");
 
         std::vector<unsigned char> primary_bytes;
-        if (!Internal::LoadFontFile(primary_path, primary_bytes)) {
-            LOG_ERROR(Lib_Font, "FONT_OPEN_FAILED path='{}' fontsPath='{}'", primary_path.string(),
-                      EmulatorSettings.GetFontsDir().string());
-            return release_library_and_clear_out(ORBIS_FONT_ERROR_FONT_OPEN_FAILED);
+        u32 primary_face_index = sub_font_index;
+        if (!Internal::LoadFontFileWithSubfont(primary_path, primary_bytes, primary_face_index)) {
+            if (!using_builtin_primary && !builtin_selection.primary_path.empty() &&
+                Internal::LoadFontFileWithSubfont(builtin_selection.primary_path, primary_bytes,
+                                                  primary_face_index)) {
+                primary_path = builtin_selection.primary_path;
+                using_builtin_primary = true;
+            } else {
+                LOG_ERROR(Lib_Font, "FONT_OPEN_FAILED path='{}' fontsPath='{}'",
+                          primary_path.string(), EmulatorSettings.GetFontsDir().string());
+                return release_library_and_clear_out(ORBIS_FONT_ERROR_FONT_OPEN_FAILED);
+            }
+        }
+        if (using_builtin_primary) {
+            LOG_WARNING(Lib_Font, "SystemFonts: using bundled Noto fallback for set type=0x{:08X}",
+                        fontSetType);
+            Internal::NotifyBuiltinFontFallbackOnce();
         }
         LOG_INFO(Lib_Font, "OpenFontSet: stage=loaded_primary_bytes");
 
@@ -3569,7 +3550,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
         st.system_font_shift_value = 0;
         st.ext_face_data = std::move(primary_bytes);
         st.ext_ft_face = Internal::CreateFreeTypeFaceFromBytes(
-            st.ext_face_data.data(), st.ext_face_data.size(), sub_font_index);
+            st.ext_face_data.data(), st.ext_face_data.size(), primary_face_index);
         if (!st.ext_ft_face) {
             LOG_ERROR(Lib_Font, "FONT_OPEN_FAILED");
             return cleanup_handle_for_error(ORBIS_FONT_ERROR_FONT_OPEN_FAILED);
@@ -3601,8 +3582,8 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
         }
 
         st.system_font_scale_factor =
-            ComputeSysfontScaleFactor(st.ext_ft_face, st.ext_units_per_em);
-        st.system_font_shift_value = ComputeSysfontShiftValue(st.ext_ft_face);
+            Internal::ComputeSysfontScaleFactor(st.ext_ft_face, st.ext_units_per_em);
+        st.system_font_shift_value = Internal::ComputeSysfontShiftValue(st.ext_ft_face);
         LOG_DEBUG(Lib_Font, "SystemFonts: primary='{}' unitsPerEm={} scaleFactor={} shiftValue={}",
                   primary_path.filename().string(), st.ext_units_per_em,
                   st.system_font_scale_factor, st.system_font_shift_value);
@@ -3674,41 +3655,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             };
 
             auto add_fallback_face = [&](const std::filesystem::path& p) {
-                LOG_DEBUG(Lib_Font, "SystemFonts: add_fallback_face begin");
-                std::vector<unsigned char> fb_bytes;
-                if (!Internal::LoadFontFile(p, fb_bytes)) {
-                    LOG_DEBUG(Lib_Font, "SystemFonts: add_fallback_face failed (LoadFontFile)");
-                    return;
-                }
-                LOG_DEBUG(Lib_Font, "SystemFonts: add_fallback_face bytes_size={}",
-                          fb_bytes.size());
-                Internal::FontState::SystemFallbackFace fb{};
-                fb.font_id = 0xffffffffu;
-                fb.scale_factor = 1.0f;
-                fb.shift_value = 0;
-                fb.path = p;
-                fb.bytes = std::make_shared<std::vector<unsigned char>>(std::move(fb_bytes));
-                fb.ft_face = Internal::CreateFreeTypeFaceFromBytes(
-                    fb.bytes->data(), fb.bytes->size(), sub_font_index);
-                fb.ready = (fb.ft_face != nullptr);
-                if (fb.ready) {
-                    LOG_DEBUG(Lib_Font, "SystemFonts: add_fallback_face face={}",
-                              fmt::ptr(fb.ft_face));
-                    fb.scale_factor = ComputeSysfontScaleFactor(
-                        fb.ft_face, fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0);
-                    fb.shift_value = ComputeSysfontShiftValue(fb.ft_face);
-                    LOG_DEBUG(
-                        Lib_Font,
-                        "SystemFonts: fallback='{}' unitsPerEm={} scaleFactor={} shiftValue={}",
-                        fb.path.filename().string(),
-                        fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0,
-                        fb.scale_factor, fb.shift_value);
-                    LOG_DEBUG(Lib_Font, "SystemFonts: add_fallback_face push_back begin");
-                    st.system_fallback_faces.push_back(std::move(fb));
-                    LOG_DEBUG(Lib_Font, "SystemFonts: add_fallback_face done");
-                } else {
-                    Internal::DestroyFreeTypeFace(fb.ft_face);
-                }
+                (void)Internal::AddSystemFallbackFace(st, p, sub_font_index);
             };
 
             {
@@ -3944,6 +3891,12 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                                                     : "SCEPS4Yoongd-Medium.otf");
                 }
             }
+        }
+
+        if (using_builtin_primary || Internal::IsBuiltinFontPath(primary_path)) {
+            preferred_latin_name_lower = builtin_selection.preferred_latin_name_lower;
+            Internal::AddBuiltinFallbackFaces(st, fontSetType, sub_font_index,
+                                              &preferred_latin_name_lower);
         }
 
         {
@@ -4242,8 +4195,25 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             }
             for (const auto& fb : st.system_fallback_faces) {
                 const auto name = LowerAscii(fb.path.filename().string());
-                if (name.rfind("sstarabic-", 0) == 0 && fb.font_id != 0xffffffffu) {
+                if ((name.rfind("sstarabic-", 0) == 0 || name.rfind("notosansarabic-", 0) == 0) &&
+                    fb.font_id != 0xffffffffu) {
                     st.fontset_selector->arabic_font_id = fb.font_id;
+                    break;
+                }
+            }
+            for (const auto& fb : st.system_fallback_faces) {
+                const auto name = LowerAscii(fb.path.filename().string());
+                if ((name.rfind("sstthai-", 0) == 0 || name.rfind("notosansthai-", 0) == 0) &&
+                    fb.font_id != 0xffffffffu) {
+                    st.fontset_selector->thai_font_id = fb.font_id;
+                    break;
+                }
+            }
+            for (const auto& fb : st.system_fallback_faces) {
+                const auto name = LowerAscii(fb.path.filename().string());
+                if ((name.rfind("notosanssymbols2-", 0) == 0 || name.rfind("symbols2-", 0) == 0) &&
+                    fb.font_id != 0xffffffffu) {
+                    st.fontset_selector->symbol_font_id = fb.font_id;
                     break;
                 }
             }

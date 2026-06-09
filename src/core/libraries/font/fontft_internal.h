@@ -8,6 +8,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <memory>
+#include <vector>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -664,6 +666,7 @@ struct FontObjSidecar {
     u32 font_size = 0;
     u32 sfnt_base = 0;
     void* owned_data = nullptr;
+    std::shared_ptr<std::vector<unsigned char>> shared_data;
 };
 
 struct LayoutOutIo {
