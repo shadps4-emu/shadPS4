@@ -676,8 +676,8 @@ void EmitContext::DefineOutputs() {
                                          spv::StorageClass::Output);
         }
         if (info.stores.Get(IR::Attribute::StencilRef) && profile.supports_shader_stencil_export) {
-            stencil_ref = DefineVariable(S32[1], spv::BuiltIn::FragStencilRefEXT,
-                                         spv::StorageClass::Output);
+            stencil_ref =
+                DefineVariable(S32[1], spv::BuiltIn::FragStencilRefEXT, spv::StorageClass::Output);
         }
         u32 num_render_targets = 0;
         for (u32 i = 0; i < IR::NumRenderTargets; i++) {
