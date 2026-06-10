@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstring>
 
+#include "common/alignment.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/libraries/error_codes.h"
@@ -47,19 +48,16 @@ s16 GetAppTypeStateGate() {
 }
 
 void SetAppTypeMarker(u16 marker) {
-    LOG_DEBUG(Lib_NpSignaling, "Helpers::SetAppTypeMarker marker={:#x}", marker);
+    LOG_DEBUG(Lib_NpSignaling, "marker={:#x}", marker);
 }
 } // namespace
 
 void SetRuntimeHooks(const SignalingRuntimeHooks& hooks) {
-    LOG_DEBUG(Lib_NpSignaling, "Helpers::SetRuntimeHooks");
     g_runtime_hooks = hooks;
     g_runtime_hooks_registered = true;
 }
 
 s32 CheckInitializeAppType(u32* is_app_type_4) {
-    LOG_DEBUG(Lib_NpSignaling, "Helpers::CheckInitializeAppType");
-
     s32 app_type = -1;
     const s32 rc = GetInferredAppType(&app_type);
     if (rc < 0) {
@@ -74,16 +72,13 @@ s32 CheckInitializeAppType(u32* is_app_type_4) {
 }
 
 s32 InitSignalingHeap(s64 pool_size) {
-    LOG_DEBUG(Lib_NpSignaling, "Helpers::InitSignalingHeap pool_size={}", pool_size);
+    LOG_DEBUG(Lib_NpSignaling, "pool_size={}", pool_size);
 
     if (pool_size == 0 || g_signaling_heap_initialized) {
         return ORBIS_NP_SIGNALING_INTERNAL_ERROR_ALLOCATOR;
     }
 
-    const u64 alignment_mask = 0x3fff;
-    const u64 remainder = static_cast<u64>(pool_size) & alignment_mask;
-    const u64 aligned_size = remainder == 0 ? static_cast<u64>(pool_size)
-                                            : static_cast<u64>(pool_size) + (0x4000 - remainder);
+    const u64 aligned_size = Common::AlignUp(static_cast<u64>(pool_size), 0x4000);
 
     void* heap_base = nullptr;
     const s32 rc = Libraries::Kernel::sceKernelMapNamedFlexibleMemory(&heap_base, aligned_size, 3,
@@ -99,8 +94,6 @@ s32 InitSignalingHeap(s64 pool_size) {
 }
 
 void ShutdownSignalingHeap() {
-    LOG_DEBUG(Lib_NpSignaling, "Helpers::ShutdownSignalingHeap");
-
     if (!g_signaling_heap_initialized) {
         return;
     }
@@ -116,8 +109,6 @@ void ShutdownSignalingHeap() {
 }
 
 s32 CheckAppType() {
-    LOG_DEBUG(Lib_NpSignaling, "Helpers::CheckAppType");
-
     s32 app_type = -1;
     const s32 rc = GetInferredAppType(&app_type);
     if (rc < 0) {
@@ -137,7 +128,7 @@ s32 CheckAppType() {
 
 s32 StartMainRuntime(s32 thread_priority, s32 cpu_affinity_mask, s64 thread_stack_size) {
     LOG_DEBUG(Lib_NpSignaling,
-              "Helpers::StartMainRuntime thread_priority={} cpu_affinity_mask={} "
+              "thread_priority={} cpu_affinity_mask={} "
               "thread_stack_size={}",
               thread_priority, cpu_affinity_mask, thread_stack_size);
 
@@ -162,8 +153,8 @@ s32 StartMainRuntime(s32 thread_priority, s32 cpu_affinity_mask, s64 thread_stac
 }
 
 s32 StartEchoRuntime(s32 thread_priority, s32 cpu_affinity_mask) {
-    LOG_DEBUG(Lib_NpSignaling, "Helpers::StartEchoRuntime thread_priority={} cpu_affinity_mask={}",
-              thread_priority, cpu_affinity_mask);
+    LOG_DEBUG(Lib_NpSignaling, "thread_priority={} cpu_affinity_mask={}", thread_priority,
+              cpu_affinity_mask);
 
     auto sock = Libraries::Net::sceNetSocket("SceNpSignalingIoctl", 2, 6, 0);
     if (sock < 0) {
@@ -181,8 +172,6 @@ s32 StartEchoRuntime(s32 thread_priority, s32 cpu_affinity_mask) {
 }
 
 void ShutdownRuntime() {
-    LOG_DEBUG(Lib_NpSignaling, "Helpers::ShutdownRuntime");
-
     if (!g_runtime_hooks_registered) {
         g_echo_probe_word2 = 0;
         g_echo_probe_word3 = 0;
@@ -364,8 +353,7 @@ static void StartReceiveThread(s32 priority, u64 affinity_mask, u64 stack_size) 
     g_receive_stop = false;
     if (!g_receive_thread) {
         NpCommon::sceNpCreateThread(&g_receive_thread, ReceiveThreadFunc, nullptr, priority,
-                                    stack_size, affinity_mask,
-                                    const_cast<char*>("SceNpSignalingRecv"));
+                                    stack_size, affinity_mask, "SceNpSignalingRecv");
     }
 }
 
@@ -434,7 +422,7 @@ static void StartPingThread(s32 priority, u64 affinity_mask, u64 stack_size) {
     g_ping_stop = false;
     if (!g_ping_thread) {
         NpCommon::sceNpCreateThread(&g_ping_thread, PingThreadFunc, nullptr, priority, stack_size,
-                                    affinity_mask, const_cast<char*>("SceNpSignalingPing"));
+                                    affinity_mask, "SceNpSignalingPing");
     }
 }
 
@@ -476,9 +464,8 @@ static void DispatchThreadMain() {
         }
 
         if (dispatch.callback) {
-            LOG_INFO(Lib_NpSignaling,
-                     "t={} DeliverSignalingEvent: ctxId={} connId={} event={}({}) delay={}ms",
-                     NowMs(), dispatch.ctx_id, dispatch.conn_id, dispatch.event_type,
+            LOG_INFO(Lib_NpSignaling, "t={} ctxId={} connId={} event={}({}) delay={}ms", NowMs(),
+                     dispatch.ctx_id, dispatch.conn_id, dispatch.event_type,
                      SignalingEventName(dispatch.event_type), dispatch.delay_ms);
             LOG_DEBUG(Lib_NpSignaling,
                       "INVOKE signaling_cb={} ctxId={} connId={} event={}({}) errorCode={} arg={}",
@@ -502,8 +489,7 @@ static void StartDispatchThread(s32 priority, u64 affinity_mask, u64 stack_size)
     g_dispatch_stop = false;
     if (!g_dispatch_thread) {
         NpCommon::sceNpCreateThread(&g_dispatch_thread, DispatchThreadFunc, nullptr, priority,
-                                    stack_size, affinity_mask,
-                                    const_cast<char*>("SceNpSignalingMain"));
+                                    stack_size, affinity_mask, "SceNpSignalingMain");
     }
 }
 
@@ -521,7 +507,6 @@ static void StopDispatchThread() {
 }
 
 void RegisterRuntimeHooks() {
-    LOG_INFO(Lib_NpSignaling, "RegisterRuntimeHooks");
     Helpers::SetRuntimeHooks({
         .start_dispatch = StartDispatchThread,
         .start_receive = StartReceiveThread,

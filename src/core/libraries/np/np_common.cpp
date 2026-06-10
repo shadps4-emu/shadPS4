@@ -2,12 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cctype>
-#include <chrono>
-#include <condition_variable>
 #include <cstddef>
 #include <cstring>
-#include <mutex>
-#include <thread>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
@@ -169,168 +165,174 @@ s32 PS4_SYSV_ABI sceNpCmpOnlineId(OrbisNpOnlineId* online_id1, OrbisNpOnlineId* 
     return ORBIS_OK;
 }
 
-using NpMutexStorage = std::recursive_mutex;
-using NpCondStorage = std::condition_variable_any;
-struct NpThreadStorage {
-    std::thread t;
-};
-
 u32 PS4_SYSV_ABI sceNpMutexLock(void* mutex) {
-    // scepthread should be used here
-    LOG_TRACE(Lib_NpCommon, "sceNpMutexLock: mutex={:p}", fmt::ptr(mutex));
-    auto* m = *static_cast<NpMutexStorage**>(mutex);
-    if (m != nullptr) {
-        m->lock();
-    }
-    return 0;
+    auto* pthread_mutex = static_cast<Libraries::Kernel::PthreadMutexT*>(mutex);
+    LOG_TRACE(Lib_NpCommon, "mutex={:p}", fmt::ptr(mutex));
+    return static_cast<u32>(
+        NormalizeNpCommonResult(Libraries::Kernel::posix_pthread_mutex_lock(pthread_mutex)));
 }
 
 u32 PS4_SYSV_ABI sceNpMutexUnlock(void* mutex) {
-    // scepthread should be used here
-    LOG_TRACE(Lib_NpCommon, "sceNpMutexUnlock: mutex={:p}", fmt::ptr(mutex));
-    auto* m = *static_cast<NpMutexStorage**>(mutex);
-    if (m != nullptr) {
-        m->unlock();
-    }
-    return 0;
+    auto* pthread_mutex = static_cast<Libraries::Kernel::PthreadMutexT*>(mutex);
+    LOG_TRACE(Lib_NpCommon, "mutex={:p}", fmt::ptr(mutex));
+    return static_cast<u32>(
+        NormalizeNpCommonResult(Libraries::Kernel::posix_pthread_mutex_unlock(pthread_mutex)));
 }
 
 u32 PS4_SYSV_ABI sceNpMutexInit(void* mutex, void* mutex_name, u64 flags) {
-    // scepthread should be used here
-    LOG_DEBUG(Lib_NpCommon, "sceNpMutexInit: mutex={:p} name={:p} flags={:#x}", fmt::ptr(mutex),
+    auto* pthread_mutex = static_cast<Libraries::Kernel::PthreadMutexT*>(mutex);
+    auto* pthread_name = static_cast<const char*>(mutex_name);
+    LOG_DEBUG(Lib_NpCommon, "mutex={:p} name={:p} flags={:#x}", fmt::ptr(mutex),
               fmt::ptr(mutex_name), flags);
-    *static_cast<NpMutexStorage**>(mutex) = new NpMutexStorage();
-    return 0;
+
+    Libraries::Kernel::PthreadMutexAttrT attr = nullptr;
+    int rc = Libraries::Kernel::posix_pthread_mutexattr_init(&attr);
+    if (rc == 0) {
+        if ((flags & 1) != 0) {
+            rc = Libraries::Kernel::posix_pthread_mutexattr_settype(
+                &attr, Libraries::Kernel::PthreadMutexType::Recursive);
+        }
+        if (rc == 0) {
+            rc = Libraries::Kernel::scePthreadMutexInit(pthread_mutex, &attr, pthread_name);
+        }
+        Libraries::Kernel::posix_pthread_mutexattr_destroy(&attr);
+    }
+    return static_cast<u32>(NormalizeNpCommonResult(rc));
 }
 
 void PS4_SYSV_ABI sceNpMutexDestroy(void* mutex) {
-    // scepthread should be used here
-    LOG_DEBUG(Lib_NpCommon, "sceNpMutexDestroy: mutex={:p}", fmt::ptr(mutex));
-    auto** slot = static_cast<NpMutexStorage**>(mutex);
-    delete *slot;
-    *slot = nullptr;
+    auto* pthread_mutex = static_cast<Libraries::Kernel::PthreadMutexT*>(mutex);
+    LOG_DEBUG(Lib_NpCommon, "mutex={:p}", fmt::ptr(mutex));
+    (void)Libraries::Kernel::posix_pthread_mutex_destroy(pthread_mutex);
 }
 
 u32 PS4_SYSV_ABI sceNpMutexTryLock(void* mutex) {
-    // scepthread should be used here
-    LOG_TRACE(Lib_NpCommon, "sceNpMutexTryLock: mutex={:p}", fmt::ptr(mutex));
-    auto* m = *static_cast<NpMutexStorage**>(mutex);
-    if (m != nullptr && !m->try_lock()) {
-        return ORBIS_NP_LW_MUTEX_ERROR_BUSY;
-    }
-    return 0;
+    auto* pthread_mutex = static_cast<Libraries::Kernel::PthreadMutexT*>(mutex);
+    LOG_TRACE(Lib_NpCommon, "mutex={:p}", fmt::ptr(mutex));
+    return NormalizeNpTryLockResult(Libraries::Kernel::posix_pthread_mutex_trylock(pthread_mutex));
 }
 
 u32 PS4_SYSV_ABI sceNpLwMutexLock(void* mutex) {
-    LOG_TRACE(Lib_NpCommon, "sceNpLwMutexLock: mutex={:p}", fmt::ptr(mutex));
+    LOG_TRACE(Lib_NpCommon, "mutex={:p}", fmt::ptr(mutex));
     return sceNpMutexLock(mutex);
 }
 
 u32 PS4_SYSV_ABI sceNpLwMutexUnlock(void* mutex) {
-    LOG_TRACE(Lib_NpCommon, "sceNpLwMutexUnlock: mutex={:p}", fmt::ptr(mutex));
+    LOG_TRACE(Lib_NpCommon, "mutex={:p}", fmt::ptr(mutex));
     return sceNpMutexUnlock(mutex);
 }
 
 u32 PS4_SYSV_ABI sceNpLwMutexInit(void* mutex, void* mutex_name, u64 flags) {
-    LOG_DEBUG(Lib_NpCommon, "sceNpLwMutexInit: mutex={:p} name={:p} flags={:#x}", fmt::ptr(mutex),
+    LOG_DEBUG(Lib_NpCommon, "mutex={:p} name={:p} flags={:#x}", fmt::ptr(mutex),
               fmt::ptr(mutex_name), flags);
     return sceNpMutexInit(mutex, mutex_name, flags);
 }
 
 void PS4_SYSV_ABI sceNpLwMutexDestroy(void* mutex) {
-    LOG_DEBUG(Lib_NpCommon, "sceNpLwMutexDestroy: mutex={:p}", fmt::ptr(mutex));
+    LOG_DEBUG(Lib_NpCommon, "mutex={:p}", fmt::ptr(mutex));
     sceNpMutexDestroy(mutex);
 }
 
 u32 PS4_SYSV_ABI sceNpLwMutexTryLock(void* mutex) {
-    LOG_TRACE(Lib_NpCommon, "sceNpLwMutexTryLock: mutex={:p}", fmt::ptr(mutex));
+    LOG_TRACE(Lib_NpCommon, "mutex={:p}", fmt::ptr(mutex));
     return sceNpMutexTryLock(mutex);
 }
 
 s32 PS4_SYSV_ABI sceNpCondInit(void* cond, void* cond_name, u64 flags) {
-    // scepthread should be used here
-    LOG_DEBUG(Lib_NpCommon, "sceNpCondInit: cond={:p} name={:p} flags={:#x}", fmt::ptr(cond),
-              fmt::ptr(cond_name), flags);
-    *static_cast<NpCondStorage**>(cond) = new NpCondStorage();
-    return 0;
+    auto* pthread_cond = static_cast<Libraries::Kernel::PthreadCondT*>(cond);
+    auto* cond_name_cstr = static_cast<const char*>(cond_name);
+    LOG_DEBUG(Lib_NpCommon, "cond={:p} name={:p} flags={:#x}", fmt::ptr(cond), fmt::ptr(cond_name),
+              flags);
+
+    Libraries::Kernel::PthreadCondAttrT attr = nullptr;
+    int rc = Libraries::Kernel::posix_pthread_condattr_init(&attr);
+    if (rc == 0) {
+        rc = Libraries::Kernel::scePthreadCondInit(pthread_cond, &attr, cond_name_cstr);
+        Libraries::Kernel::posix_pthread_condattr_destroy(&attr);
+    }
+    return NormalizeNpCommonResult(rc);
 }
 
 void PS4_SYSV_ABI sceNpCondDestroy(void* cond) {
-    // scepthread should be used here
-    LOG_DEBUG(Lib_NpCommon, "sceNpCondDestroy: cond={:p}", fmt::ptr(cond));
-    auto** slot = static_cast<NpCondStorage**>(cond);
-    delete *slot;
-    *slot = nullptr;
+    auto* pthread_cond = static_cast<Libraries::Kernel::PthreadCondT*>(cond);
+    LOG_DEBUG(Lib_NpCommon, "cond={:p}", fmt::ptr(cond));
+    (void)Libraries::Kernel::posix_pthread_cond_destroy(pthread_cond);
 }
 
 void PS4_SYSV_ABI sceNpCondSignal(void* cond) {
-    // scepthread should be used here
-    LOG_DEBUG(Lib_NpCommon, "sceNpCondSignal: cond={:p}", fmt::ptr(cond));
-    auto* c = *static_cast<NpCondStorage**>(cond);
-    if (c != nullptr) {
-        c->notify_one();
-    }
+    auto* pthread_cond = static_cast<Libraries::Kernel::PthreadCondT*>(cond);
+    LOG_DEBUG(Lib_NpCommon, "cond={:p}", fmt::ptr(cond));
+    (void)Libraries::Kernel::posix_pthread_cond_signal(pthread_cond);
 }
 
 s32 PS4_SYSV_ABI sceNpCondTimedwait(void* cond, void* mutex, u32 usec) {
-    // scepthread should be used here
-    LOG_DEBUG(Lib_NpCommon, "sceNpCondTimedwait: cond={:p} mutex={:p} usec={:#x}", fmt::ptr(cond),
-              fmt::ptr(mutex), usec);
-    auto* c = *static_cast<NpCondStorage**>(cond);
-    auto* m = *static_cast<NpMutexStorage**>(mutex);
-    if (c == nullptr || m == nullptr) {
-        return 0;
-    }
-    std::unique_lock<NpMutexStorage> lock(*m, std::adopt_lock);
+    auto* pthread_cond = static_cast<Libraries::Kernel::PthreadCondT*>(cond);
+    auto* pthread_mutex = static_cast<Libraries::Kernel::PthreadMutexT*>(mutex);
+    LOG_DEBUG(Lib_NpCommon, "cond={:p} mutex={:p} usec={:#x}", fmt::ptr(cond), fmt::ptr(mutex),
+              usec);
     if (usec == 0) {
-        c->wait(lock);
-    } else {
-        c->wait_for(lock, std::chrono::microseconds(usec));
+        return NormalizeNpCommonResult(
+            Libraries::Kernel::posix_pthread_cond_wait(pthread_cond, pthread_mutex));
     }
-    lock.release();
-    return 0;
+    return NormalizeNpCommonResult(
+        Libraries::Kernel::posix_pthread_cond_reltimedwait_np(pthread_cond, pthread_mutex, usec));
 }
 
 s32 PS4_SYSV_ABI sceNpCreateThread(void* thread, NpThreadEntry start_routine, void* arg,
                                    s32 priority, u64 stack_size, u64 affinity_mask,
-                                   void* thread_name) {
+                                   const char* name) {
+    auto* pthread = static_cast<Libraries::Kernel::PthreadT*>(thread);
     LOG_DEBUG(Lib_NpCommon,
-              "sceNpCreateThread: thread={:p} start={:#x} arg={:p} priority={} stack={:#x} "
+              "thread={:p} start={:#x} arg={:p} priority={} stack={:#x} "
               "affinity={:#x} name={:p}",
               fmt::ptr(thread), reinterpret_cast<u64>(start_routine), fmt::ptr(arg), priority,
-              stack_size, affinity_mask, fmt::ptr(thread_name));
+              stack_size, affinity_mask, fmt::ptr(name));
 
-    // scepthread should be used here
-    (void)priority;
-    (void)stack_size;
-    (void)affinity_mask;
-    (void)thread_name;
-    auto* storage = new NpThreadStorage();
-    storage->t = std::thread([start_routine, arg]() { (void)start_routine(arg); });
-    *static_cast<NpThreadStorage**>(thread) = storage;
-    return 0;
+    Libraries::Kernel::PthreadAttrT attr = nullptr;
+    int rc = Libraries::Kernel::posix_pthread_attr_init(&attr);
+    if (rc != 0) {
+        return NormalizeNpCommonResult(rc);
+    }
+
+    rc = Libraries::Kernel::posix_pthread_attr_setstacksize(&attr, static_cast<size_t>(stack_size));
+    if (rc == 0) {
+        if (priority != 0) {
+            s32 sdk_version = 0;
+            rc = Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_version);
+            if (rc >= 0 && sdk_version >= 0x2500000) {
+                rc = Libraries::Kernel::posix_pthread_attr_setinheritsched(&attr, 0);
+                if (rc == 0) {
+                    rc = Libraries::Kernel::posix_pthread_attr_setschedpolicy(
+                        &attr, Libraries::Kernel::SchedPolicy::Fifo);
+                }
+            }
+            if (rc >= 0) {
+                Libraries::Kernel::SchedParam param{.sched_priority = priority};
+                rc = Libraries::Kernel::posix_pthread_attr_setschedparam(&attr, &param);
+            }
+        }
+        if (rc == 0 && affinity_mask != 0) {
+            rc = Libraries::Kernel::scePthreadAttrSetaffinity(&attr, affinity_mask);
+        }
+        if (rc == 0) {
+            rc = Libraries::Kernel::posix_pthread_create_name_np(pthread, &attr, start_routine, arg,
+                                                                 name);
+        }
+    }
+
+    Libraries::Kernel::posix_pthread_attr_destroy(&attr);
+    return NormalizeNpCommonResult(rc);
 }
 
 u32 PS4_SYSV_ABI sceNpJoinThread(void* thread, void** ret) {
-    // scepthread should be used here
-    LOG_DEBUG(Lib_NpCommon, "sceNpJoinThread: thread={:p} ret={:p}", fmt::ptr(thread),
-              fmt::ptr(ret));
-    auto** slot = static_cast<NpThreadStorage**>(thread);
-    if (*slot != nullptr) {
-        if ((*slot)->t.joinable()) {
-            (*slot)->t.join();
-        }
-        delete *slot;
-        *slot = nullptr;
-    }
-    if (ret != nullptr) {
-        *ret = nullptr;
-    }
-    return 0;
+    auto pthread = static_cast<Libraries::Kernel::PthreadT>(thread);
+    LOG_DEBUG(Lib_NpCommon, "thread={:p} ret={:p}", fmt::ptr(thread), fmt::ptr(ret));
+    return static_cast<u32>(
+        NormalizeNpCommonResult(Libraries::Kernel::posix_pthread_join(pthread, ret)));
 }
 
 s32 PS4_SYSV_ABI sceNpGetSystemClockUsec(s64* usec) {
-    LOG_DEBUG(Lib_NpCommon, "sceNpGetSystemClockUsec: usec={:p}", fmt::ptr(usec));
+    LOG_DEBUG(Lib_NpCommon, "usec={:p}", fmt::ptr(usec));
     Libraries::Kernel::OrbisKernelTimespec ts{};
     const s32 rc =
         Libraries::Kernel::sceKernelClockGettime(Libraries::Kernel::ORBIS_CLOCK_MONOTONIC, &ts);
@@ -340,9 +342,8 @@ s32 PS4_SYSV_ABI sceNpGetSystemClockUsec(s64* usec) {
     return rc;
 }
 
-s32 PS4_SYSV_ABI sceNpGetPlatformType(const void* np_id) {
-    const auto* npid = static_cast<const OrbisNpId*>(np_id);
-    LOG_DEBUG(Lib_NpCommon, "sceNpGetPlatformType: np_id={:p}", fmt::ptr(np_id));
+s32 PS4_SYSV_ABI sceNpGetPlatformType(const OrbisNpId* npid) {
+    LOG_DEBUG(Lib_NpCommon, "np_id={:p}", fmt::ptr(npid));
 
     if (npid == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
@@ -367,7 +368,7 @@ s32 PS4_SYSV_ABI sceNpGetPlatformType(const void* np_id) {
 
 s32 PS4_SYSV_ABI sceNpIntIsValidOnlineId(const void* online_id) {
     const auto* id = static_cast<const OrbisNpOnlineId*>(online_id);
-    LOG_DEBUG(Lib_NpCommon, "sceNpIntIsValidOnlineId: online_id={:p}", fmt::ptr(online_id));
+    LOG_DEBUG(Lib_NpCommon, "online_id={:p}", fmt::ptr(online_id));
 
     if (id == nullptr || id->term != 0) {
         return 0;
@@ -394,21 +395,18 @@ s32 PS4_SYSV_ABI sceNpIntIsValidOnlineId(const void* online_id) {
     return 1;
 }
 
-s32 PS4_SYSV_ABI sceNpCalloutInitCtx(void* ctx, void* name, u64 stack_size, s32 priority,
-                                     u64 affinity_mask) {
-    auto* callout_ctx = static_cast<OrbisNpCalloutContext*>(ctx);
-
-    LOG_DEBUG(Lib_NpCommon,
-              "sceNpCalloutInitCtx: ctx={:p} name={:p} stack={:#x} priority={} affinity={:#x}",
-              fmt::ptr(ctx), fmt::ptr(name), stack_size, priority, affinity_mask);
+s32 PS4_SYSV_ABI sceNpCalloutInitCtx(OrbisNpCalloutContext* callout_ctx, const char* name,
+                                     u64 stack_size, s32 priority, u64 affinity_mask) {
+    LOG_DEBUG(Lib_NpCommon, "ctx={:p} name={:p} stack={:#x} priority={} affinity={:#x}",
+              fmt::ptr(callout_ctx), fmt::ptr(name), stack_size, priority, affinity_mask);
 
     s32 rc = ORBIS_NP_CALLOUT_ERROR_ALREADY_INITIALIZED;
     if (callout_ctx->active < 1) {
         callout_ctx->stop_requested = 0;
         callout_ctx->head = nullptr;
-        rc = static_cast<s32>(sceNpMutexInit(&callout_ctx->mutex, name, 1));
+        rc = static_cast<s32>(sceNpMutexInit(&callout_ctx->mutex, const_cast<char*>(name), 1));
         if (rc >= 0) {
-            rc = sceNpCondInit(&callout_ctx->cond, name, 0);
+            rc = sceNpCondInit(&callout_ctx->cond, const_cast<char*>(name), 0);
             if (rc >= 0) {
                 rc = sceNpCreateThread(&callout_ctx->thread, NpCalloutThreadMain, callout_ctx,
                                        priority, stack_size, affinity_mask, name);
@@ -424,14 +422,11 @@ s32 PS4_SYSV_ABI sceNpCalloutInitCtx(void* ctx, void* name, u64 stack_size, s32 
     return rc;
 }
 
-s32 PS4_SYSV_ABI sceNpCalloutStartOnCtx(void* ctx, void* callout, u64 delay_usec, u64 handler,
+s32 PS4_SYSV_ABI sceNpCalloutStartOnCtx(OrbisNpCalloutContext* callout_ctx,
+                                        OrbisNpCalloutEntry* entry, u64 delay_usec, u64 handler,
                                         u64 arg) {
-    auto* callout_ctx = static_cast<OrbisNpCalloutContext*>(ctx);
-    auto* entry = static_cast<OrbisNpCalloutEntry*>(callout);
-
-    LOG_DEBUG(Lib_NpCommon,
-              "sceNpCalloutStartOnCtx: ctx={:p} callout={:p} delay={:#x} handler={:p} arg={:#x}",
-              fmt::ptr(ctx), fmt::ptr(callout), delay_usec,
+    LOG_DEBUG(Lib_NpCommon, "ctx={:p} callout={:p} delay={:#x} handler={:p} arg={:#x}",
+              fmt::ptr(callout_ctx), fmt::ptr(entry), delay_usec,
               fmt::ptr(reinterpret_cast<void*>(static_cast<uintptr_t>(handler))), arg);
 
     if (callout_ctx->active == 0) {
@@ -468,14 +463,11 @@ s32 PS4_SYSV_ABI sceNpCalloutStartOnCtx(void* ctx, void* callout, u64 delay_usec
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpCalloutStartOnCtx64(void* ctx, void* callout, s64 delay_usec, u64 handler,
+s32 PS4_SYSV_ABI sceNpCalloutStartOnCtx64(OrbisNpCalloutContext* callout_ctx,
+                                          OrbisNpCalloutEntry* entry, s64 delay_usec, u64 handler,
                                           u64 arg) {
-    auto* callout_ctx = static_cast<OrbisNpCalloutContext*>(ctx);
-    auto* entry = static_cast<OrbisNpCalloutEntry*>(callout);
-
-    LOG_DEBUG(Lib_NpCommon,
-              "sceNpCalloutStartOnCtx64: ctx={:p} callout={:p} delay={} handler={:p} arg={:#x}",
-              fmt::ptr(ctx), fmt::ptr(callout), delay_usec,
+    LOG_DEBUG(Lib_NpCommon, "ctx={:p} callout={:p} delay={} handler={:p} arg={:#x}",
+              fmt::ptr(callout_ctx), fmt::ptr(entry), delay_usec,
               fmt::ptr(reinterpret_cast<void*>(static_cast<uintptr_t>(handler))), arg);
 
     if (callout_ctx->active == 0) {
@@ -512,12 +504,10 @@ s32 PS4_SYSV_ABI sceNpCalloutStartOnCtx64(void* ctx, void* callout, s64 delay_us
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpCalloutStopOnCtx(void* ctx, void* callout, u32* removed) {
-    auto* callout_ctx = static_cast<OrbisNpCalloutContext*>(ctx);
-    auto* entry = static_cast<OrbisNpCalloutEntry*>(callout);
-
-    LOG_DEBUG(Lib_NpCommon, "sceNpCalloutStopOnCtx: ctx={:p} callout={:p} removed={:p}",
-              fmt::ptr(ctx), fmt::ptr(callout), fmt::ptr(removed));
+s32 PS4_SYSV_ABI sceNpCalloutStopOnCtx(OrbisNpCalloutContext* callout_ctx,
+                                       OrbisNpCalloutEntry* entry, u32* removed) {
+    LOG_DEBUG(Lib_NpCommon, "ctx={:p} callout={:p} removed={:p}", fmt::ptr(callout_ctx),
+              fmt::ptr(entry), fmt::ptr(removed));
 
     if (callout_ctx->active == 0) {
         return ORBIS_NP_CALLOUT_ERROR_NOT_INITIALIZED;
@@ -541,17 +531,15 @@ s32 PS4_SYSV_ABI sceNpCalloutStopOnCtx(void* ctx, void* callout, u32* removed) {
     return ORBIS_OK;
 }
 
-void PS4_SYSV_ABI sceNpCalloutTermCtx(void* ctx) {
-    auto* callout_ctx = static_cast<OrbisNpCalloutContext*>(ctx);
-
-    LOG_DEBUG(Lib_NpCommon, "sceNpCalloutTermCtx: ctx={:p}", fmt::ptr(ctx));
+void PS4_SYSV_ABI sceNpCalloutTermCtx(OrbisNpCalloutContext* callout_ctx) {
+    LOG_DEBUG(Lib_NpCommon, "ctx={:p}", fmt::ptr(callout_ctx));
 
     if (callout_ctx->active != 0) {
         (void)sceNpMutexLock(&callout_ctx->mutex);
         callout_ctx->stop_requested = 1;
         sceNpCondSignal(&callout_ctx->cond);
         (void)sceNpMutexUnlock(&callout_ctx->mutex);
-        (void)sceNpJoinThread(&callout_ctx->thread, nullptr);
+        (void)sceNpJoinThread(callout_ctx->thread, nullptr);
         sceNpCondDestroy(&callout_ctx->cond);
         sceNpMutexDestroy(&callout_ctx->mutex);
         callout_ctx->active = 0;

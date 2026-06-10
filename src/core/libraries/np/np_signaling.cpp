@@ -51,8 +51,8 @@ s32 PS4_SYSV_ABI sceNpSignalingInitialize(s64 memorySize, s32 threadPriority, s3
     }
 
     LOG_INFO(Lib_NpSignaling,
-             "Initialize: memorySize={} threadPriority={} cpuAffinityMask={} threadStackSize={}",
-             memorySize, threadPriority, cpuAffinityMask, threadStackSize);
+             "memorySize={} threadPriority={} cpuAffinityMask={} threadStackSize={}", memorySize,
+             threadPriority, cpuAffinityMask, threadStackSize);
 
     const s32 heap_rc = Helpers::InitSignalingHeap(memorySize);
     if (heap_rc < 0) {
@@ -85,8 +85,8 @@ s32 PS4_SYSV_ABI sceNpSignalingInitialize(s64 memorySize, s32 threadPriority, s3
     }
 
     const s32 callout_rc = NpCommon::sceNpCalloutInitCtx(
-        &g_callout_ctx, const_cast<char*>("SceNpSignalingCallout"),
-        static_cast<u64>(threadStackSize), threadPriority, static_cast<u64>(cpuAffinityMask));
+        &g_callout_ctx, "SceNpSignalingCallout", static_cast<u64>(threadStackSize), threadPriority,
+        static_cast<u64>(cpuAffinityMask));
     if (callout_rc < 0) {
         g_initialized = false;
         Helpers::ShutdownRuntime();
@@ -125,7 +125,7 @@ s32 PS4_SYSV_ABI sceNpSignalingTerminate() {
 
     DestroySignalingMutex();
 
-    LOG_INFO(Lib_NpSignaling, "sceNpSignalingTerminate: cleared all state");
+    LOG_INFO(Lib_NpSignaling, "cleared all state");
     return ORBIS_OK;
 }
 
@@ -172,8 +172,7 @@ s32 PS4_SYSV_ABI sceNpSignalingCreateContext(const void* npId, void* callback, v
         ctx.bound_port = Stubs::ConfiguredPort();
         *outContextId = ctx_id;
 
-        LOG_INFO(Lib_NpSignaling,
-                 "CreateContext: ctxId={} owner='{}' callback={} arg={} sdk={:#x} p2p_port={}",
+        LOG_INFO(Lib_NpSignaling, "ctxId={} owner='{}' callback={} arg={} sdk={:#x} p2p_port={}",
                  ctx_id, OnlineIdToString(owner_online_id), fmt::ptr(callback),
                  fmt::ptr(callbackArg), ctx.compiled_sdk_version, ctx.bound_port);
     }
@@ -231,8 +230,8 @@ s32 PS4_SYSV_ABI sceNpSignalingCreateContextA(s32 userId, void* callback, void* 
         ctx.bound_port = Stubs::ConfiguredPort();
         *outContextId = ctx_id;
 
-        LOG_INFO(Lib_NpSignaling, "CreateContextA: ctxId={} userId={} owner='{}' accountId={:#x}",
-                 ctx_id, userId, OnlineIdToString(ctx.owner_online_id), account_id);
+        LOG_INFO(Lib_NpSignaling, "ctxId={} userId={} owner='{}' accountId={:#x}", ctx_id, userId,
+                 OnlineIdToString(ctx.owner_online_id), account_id);
     }
 
     if (Stubs::TransportIsReady()) {
@@ -249,7 +248,7 @@ s32 PS4_SYSV_ABI sceNpSignalingDeleteContext(OrbisNpSignalingContextId ctxId) {
             return ORBIS_NP_SIGNALING_ERROR_NOT_INITIALIZED;
         }
 
-        LOG_INFO(Lib_NpSignaling, "DeleteContext: ctxId={}", ctxId);
+        LOG_INFO(Lib_NpSignaling, "ctxId={}", ctxId);
 
         for (const auto& [cid, ci] : g_connections) {
             if (ci.ctx_id == ctxId && ci.status != ORBIS_NP_SIGNALING_CONN_STATUS_INACTIVE) {
@@ -276,8 +275,8 @@ s32 PS4_SYSV_ABI sceNpSignalingDeleteContext(OrbisNpSignalingContextId ctxId) {
 s32 PS4_SYSV_ABI sceNpSignalingActivateConnection(OrbisNpSignalingContextId ctxId,
                                                   const void* peerNpId,
                                                   OrbisNpSignalingConnectionId* outConnId) {
-    LOG_INFO(Lib_NpSignaling, "t={} ActivateConnection: ctxId={} peerNpId={:p} connId={:p}",
-             NowMs(), ctxId, peerNpId, fmt::ptr(outConnId));
+    LOG_INFO(Lib_NpSignaling, "t={} ctxId={} peerNpId={:p} connId={:p}", NowMs(), ctxId, peerNpId,
+             fmt::ptr(outConnId));
 
     {
         SignalingMutexGuard lock;
@@ -355,8 +354,8 @@ s32 PS4_SYSV_ABI sceNpSignalingActivateConnection(OrbisNpSignalingContextId ctxI
             ArmConnectTimeoutLocked(cid);
             QueueActivationLocked(cid, peer_online_id_str);
         }
-        LOG_INFO(Lib_NpSignaling, "ActivateConnection: ctxId={} peer='{}' connId={} Status: {}",
-                 ctxId, peer_online_id_str, cid,
+        LOG_INFO(Lib_NpSignaling, "ctxId={} peer='{}' connId={} Status: {}", ctxId,
+                 peer_online_id_str, cid,
                  created_new          ? "queued, async"
                  : reused_established ? "reused established"
                                       : "reused transient");
@@ -407,8 +406,8 @@ s32 PS4_SYSV_ABI sceNpSignalingActivateConnectionA(
     g_connections[cid] = std::move(ci);
     *outConnId = cid;
 
-    LOG_INFO(Lib_NpSignaling, "ActivateConnectionA: ctxId={} accountId={:#x} platform={} connId={}",
-             ctxId, peerAddr->accountId, peerAddr->platformType, cid);
+    LOG_INFO(Lib_NpSignaling, "ctxId={} accountId={:#x} platform={} connId={}", ctxId,
+             peerAddr->accountId, peerAddr->platformType, cid);
     return ORBIS_OK;
 }
 
@@ -428,9 +427,8 @@ s32 PS4_SYSV_ABI sceNpSignalingDeactivateConnection(OrbisNpSignalingContextId ct
             return ORBIS_NP_SIGNALING_ERROR_CONN_NOT_FOUND;
         }
 
-        LOG_INFO(Lib_NpSignaling,
-                 "t={} DeactivateConnection: ctxId={} connId={} peer='{}' status={}", NowMs(),
-                 ctxId, connId, OnlineIdToString(it->second.online_id), it->second.status);
+        LOG_INFO(Lib_NpSignaling, "t={} ctxId={} connId={} peer='{}' status={}", NowMs(), ctxId,
+                 connId, OnlineIdToString(it->second.online_id), it->second.status);
     }
     DeactivateConnectionFaithful(connId);
     return ORBIS_OK;
@@ -450,7 +448,7 @@ s32 PS4_SYSV_ABI sceNpSignalingTerminateConnection(OrbisNpSignalingContextId ctx
         if (it == g_connections.end() || it->second.ctx_id != ctxId) {
             return ORBIS_NP_SIGNALING_ERROR_CONN_NOT_FOUND;
         }
-        LOG_INFO(Lib_NpSignaling, "TerminateConnection: ctxId={} connId={}", ctxId, connId);
+        LOG_INFO(Lib_NpSignaling, "ctxId={} connId={}", ctxId, connId);
     }
     TerminateConnectionFaithful(connId);
     {
@@ -496,8 +494,8 @@ s32 PS4_SYSV_ABI sceNpSignalingGetConnectionStatus(OrbisNpSignalingContextId ctx
         *outStatus = ORBIS_NP_SIGNALING_CONN_STATUS_INACTIVE;
     }
 
-    LOG_INFO(Lib_NpSignaling, "t={} GetConnectionStatus: ctxId={} connId={} peer='{}' status={}",
-             NowMs(), ctxId, connId, OnlineIdToString(it->second.online_id), *outStatus);
+    LOG_INFO(Lib_NpSignaling, "t={} ctxId={} connId={} peer='{}' status={}", NowMs(), ctxId, connId,
+             OnlineIdToString(it->second.online_id), *outStatus);
     return ORBIS_OK;
 }
 
@@ -512,8 +510,8 @@ s32 PS4_SYSV_ABI sceNpSignalingGetConnectionInfo(OrbisNpSignalingContextId ctxId
         return ORBIS_NP_SIGNALING_ERROR_INVALID_ARGUMENT;
     }
     const s32 rc = GetConnectionInfoInternal(ctxId, connId, infoCode, outInfo, nullptr);
-    LOG_INFO(Lib_NpSignaling, "GetConnectionInfo: ctxId={} connId={} infoCode={} rc={:#x}", ctxId,
-             connId, infoCode, static_cast<u32>(rc));
+    LOG_INFO(Lib_NpSignaling, "ctxId={} connId={} infoCode={} rc={:#x}", ctxId, connId, infoCode,
+             static_cast<u32>(rc));
     return rc;
 }
 
@@ -528,8 +526,8 @@ s32 PS4_SYSV_ABI sceNpSignalingGetConnectionInfoA(OrbisNpSignalingContextId ctxI
         return ORBIS_NP_SIGNALING_ERROR_INVALID_ARGUMENT;
     }
     const s32 rc = GetConnectionInfoInternal(ctxId, connId, infoCode, nullptr, outInfo);
-    LOG_INFO(Lib_NpSignaling, "GetConnectionInfoA: ctxId={} connId={} infoCode={} rc={:#x}", ctxId,
-             connId, infoCode, static_cast<u32>(rc));
+    LOG_INFO(Lib_NpSignaling, "ctxId={} connId={} infoCode={} rc={:#x}", ctxId, connId, infoCode,
+             static_cast<u32>(rc));
     return rc;
 }
 
@@ -570,7 +568,7 @@ s32 PS4_SYSV_ABI sceNpSignalingGetConnectionFromNpId(OrbisNpSignalingContextId c
     }
 
     *outConnId = it->second;
-    LOG_INFO(Lib_NpSignaling, "GetConnectionFromNpId: ctxId={} npid='{}' connId={}", ctxId,
+    LOG_INFO(Lib_NpSignaling, "ctxId={} npid='{}' connId={}", ctxId,
              OnlineIdToString(peer_online_id), it->second);
     return ORBIS_OK;
 }
@@ -593,9 +591,8 @@ sceNpSignalingGetConnectionFromPeerAddress(OrbisNpSignalingContextId ctxId, u32 
         if (ci.ctx_id == ctxId && ci.addr == peerAddr && ci.port == peerPort &&
             ConnectionStateFromStatus(ci.status) == 10) {
             *outConnId = id;
-            LOG_INFO(Lib_NpSignaling,
-                     "GetConnectionFromPeerAddress: ctxId={} addr={:#x} port={} connId={}", ctxId,
-                     peerAddr, sceNetNtohs(peerPort), id);
+            LOG_INFO(Lib_NpSignaling, "ctxId={} addr={:#x} port={} connId={}", ctxId, peerAddr,
+                     sceNetNtohs(peerPort), id);
             return ORBIS_OK;
         }
     }
@@ -619,8 +616,7 @@ s32 PS4_SYSV_ABI sceNpSignalingGetConnectionFromPeerAddressA(
     if ((ctx_it->second.flags & 0x4) == 0) {
         return ORBIS_NP_SIGNALING_ERROR_INVALID_ARGUMENT;
     }
-    LOG_INFO(Lib_NpSignaling, "GetConnectionFromPeerAddressA: ctxId={} accountId={:#x}", ctxId,
-             peerAddr->accountId);
+    LOG_INFO(Lib_NpSignaling, "ctxId={} accountId={:#x}", ctxId, peerAddr->accountId);
     return ORBIS_NP_SIGNALING_ERROR_CONN_NOT_FOUND;
 }
 
@@ -699,8 +695,8 @@ s32 PS4_SYSV_ABI sceNpSignalingGetLocalNetInfo(OrbisNpSignalingContextId ctxId,
     }
     info->_pad_14 = 0;
 
-    LOG_INFO(Lib_NpSignaling, "GetLocalNetInfo: localAddr={:#x} mappedAddr={:#x} natStatus={}",
-             info->localAddr, info->mappedAddr, info->natStatus);
+    LOG_INFO(Lib_NpSignaling, "localAddr={:#x} mappedAddr={:#x} natStatus={}", info->localAddr,
+             info->mappedAddr, info->natStatus);
     return ORBIS_OK;
 }
 
@@ -733,7 +729,7 @@ s32 PS4_SYSV_ABI sceNpSignalingGetPeerNetInfo(OrbisNpSignalingContextId ctxId, c
         }
     }
     *outReqId = static_cast<u32>(req_id);
-    LOG_INFO(Lib_NpSignaling, "GetPeerNetInfo: ctxId={} reqId={:#x}", ctxId, *outReqId);
+    LOG_INFO(Lib_NpSignaling, "ctxId={} reqId={:#x}", ctxId, *outReqId);
     return ORBIS_OK;
 }
 
@@ -759,7 +755,7 @@ s32 PS4_SYSV_ABI sceNpSignalingGetPeerNetInfoA(OrbisNpSignalingContextId ctxId,
         return ORBIS_NP_MATCHING2_SIGNALING_ERROR_OUT_OF_MEMORY;
     }
     *outReqId = static_cast<u32>(req_id);
-    LOG_INFO(Lib_NpSignaling, "GetPeerNetInfoA: ctxId={} reqId={:#x}", ctxId, *outReqId);
+    LOG_INFO(Lib_NpSignaling, "ctxId={} reqId={:#x}", ctxId, *outReqId);
     return ORBIS_OK;
 }
 
@@ -774,7 +770,7 @@ s32 PS4_SYSV_ABI sceNpSignalingCancelPeerNetInfo(OrbisNpSignalingContextId ctxId
     if (!DropPeerNetInfoResultLocked(ctxId, reqOrConnId)) {
         return ORBIS_NP_SIGNALING_ERROR_REQ_NOT_FOUND;
     }
-    LOG_INFO(Lib_NpSignaling, "CancelPeerNetInfo: ctxId={} reqOrConnId={:#x}", ctxId, reqOrConnId);
+    LOG_INFO(Lib_NpSignaling, "ctxId={} reqOrConnId={:#x}", ctxId, reqOrConnId);
     return ORBIS_OK;
 }
 
@@ -803,8 +799,8 @@ s32 PS4_SYSV_ABI sceNpSignalingGetPeerNetInfoResult(OrbisNpSignalingContextId ct
     peerNetInfo->mappedAddr = result.external_ipv4;
     peerNetInfo->natStatus = static_cast<s32>(result.nat_route_kind);
     peerNetInfo->_pad_14 = 0;
-    LOG_INFO(Lib_NpSignaling, "GetPeerNetInfoResult: ctxId={} connId={:#x} ext={:#x}", ctxId,
-             connId, result.external_ipv4);
+    LOG_INFO(Lib_NpSignaling, "ctxId={} connId={:#x} ext={:#x}", ctxId, connId,
+             result.external_ipv4);
     return ORBIS_OK;
 }
 
