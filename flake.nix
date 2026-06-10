@@ -179,18 +179,18 @@
             , libuuid
             , miniz
             , libressl
-            , src
-            , system
             , cmakeFlags
             , dontStrip ? true
             ,
             }:
 
             clangStdenv.mkDerivation (finalAttrs: {
-              inherit src system cmakeFlags dontStrip;
+              inherit cmakeFlags dontStrip;
 
               pname = "shadps4";
               version = "0.16.1";
+              system = "x86_64-linux";
+              src = "${self}";
 
               nativeBuildInputs = [
                 cmake
@@ -246,21 +246,15 @@
 
           debugBuild = pkgsLinux.callPackage build
             {
-              src = "${self}";
-              system = "x86_64-linux";
               cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Debug" ];
             };
           releaseBuild = pkgsLinux.callPackage build
             {
-              src = "${self}";
-              system = "x86_64-linux";
               dontStrip = false;
               cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" ];
             };
           releaseWithDebugInfoBuild = pkgsLinux.callPackage build
             {
-              src = "${self}";
-              system = "x86_64-linux";
               cmakeFlags = [ "-DCMAKE_BUILD_TYPE=RelWithDebInfo" ];
             };
         in
