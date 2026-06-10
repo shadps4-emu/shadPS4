@@ -69,6 +69,7 @@
             , cli11
             , nlohmann_json
             , spdlog
+            , freetype
             ,
             }:
 
@@ -125,6 +126,7 @@
                 pipewire.dev
                 libxscrnsaver
                 sndio
+                freetype.dev
               ];
 
               shellHook = ''
@@ -179,6 +181,7 @@
             , libuuid
             , miniz
             , libressl
+            , freetype
             , cmakeFlags
             , dontStrip ? true
             ,
@@ -231,6 +234,7 @@
                 libuuid
                 miniz
                 libressl
+                freetype
               ];
 
               # Cannot get the Branch name from the sandbox.
