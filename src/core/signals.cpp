@@ -11,6 +11,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+static constexpr DWORD MS_VC_EXCEPTION = 0x406D1388;
 #else
 #include <csignal>
 #include <pthread.h>
