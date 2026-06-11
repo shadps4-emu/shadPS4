@@ -88,6 +88,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_NpCommon, nullptr},
     {Class::Lib_NpManager, nullptr},
     {Class::Lib_NpMatching2, nullptr},
+    {Class::Lib_NpSignaling, nullptr},
     {Class::Lib_NpPartner, nullptr},
     {Class::Lib_NpParty, nullptr},
     {Class::Lib_NpProfileDialog, nullptr},

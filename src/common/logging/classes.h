@@ -66,6 +66,7 @@ constexpr auto Lib_NpCommerce = "Lib.NpCommerce";                   ///< The Lib
 constexpr auto Lib_NpCommon = "Lib.NpCommon";                       ///< The LibSceNpCommon implementation
 constexpr auto Lib_NpManager = "Lib.NpManager";                     ///< The LibSceNpManager implementation
 constexpr auto Lib_NpMatching2 = "Lib.NpMatching2";                 ///< The LibSceNpMatching2 implementation
+constexpr auto Lib_NpSignaling = "Lib.NpSignaling";                 ///< The LibSceNpSignaling implementation
 constexpr auto Lib_NpPartner = "Lib.NpPartner";                     ///< The LibSceNpPartner implementation
 constexpr auto Lib_NpParty = "Lib.NpParty";                         ///< The LibSceNpParty implementation
 constexpr auto Lib_NpProfileDialog = "Lib.NpProfileDialog";         ///< The LibSceNpProfileDialog implementation
