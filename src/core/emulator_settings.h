@@ -112,7 +112,7 @@ struct OverrideItem {
 };
 
 template <typename Struct, typename T>
-inline OverrideItem make_override(const char* key, Setting<T> Struct::* member) {
+inline OverrideItem make_override(const char* key, Setting<T> Struct::*member) {
     return OverrideItem{
         key,
         [member, key](void* base, const nlohmann::json& entry, std::vector<std::string>& changed) {
@@ -184,6 +184,9 @@ struct GeneralSettings {
     Setting<int> console_language{1};
     Setting<int> big_picture_scale{1000};
     Setting<std::string> shadnet_server{""};
+    Setting<std::string> signaling_addr{""};
+    Setting<u16> signaling_port{};
+    Setting<bool> enable_upnp{true};
 
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
@@ -202,7 +205,9 @@ struct GeneralSettings {
             make_override<GeneralSettings>("trophy_notification_side",
                                            &GeneralSettings::trophy_notification_side),
             make_override<GeneralSettings>("connected_to_network",
-                                           &GeneralSettings::connected_to_network)};
+                                           &GeneralSettings::connected_to_network),
+            make_override<GeneralSettings>("signaling_addr", &GeneralSettings::signaling_addr),
+            make_override<GeneralSettings>("signaling_port", &GeneralSettings::signaling_port)};
     }
 };
 
@@ -212,7 +217,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    trophy_notification_duration, show_splash,
                                    trophy_notification_side, connected_to_network,
                                    discord_rpc_enabled, show_fps_counter, console_language,
-                                   big_picture_scale, shadnet_server)
+                                   big_picture_scale, shadnet_server, signaling_addr,
+                                   signaling_port, enable_upnp)
 
 // -------------------------------
 // Log settings
@@ -596,6 +602,9 @@ public:
     SETTING_FORWARD(m_general, ConsoleLanguage, console_language)
     SETTING_FORWARD(m_general, BigPictureScale, big_picture_scale)
     SETTING_FORWARD(m_general, ShadNetServer, shadnet_server)
+    SETTING_FORWARD(m_general, SignalingAddr, signaling_addr)
+    SETTING_FORWARD(m_general, SignalingPort, signaling_port)
+    SETTING_FORWARD_BOOL(m_general, UPnPEnabled, enable_upnp)
 
     // Log settings
     SETTING_FORWARD_BOOL(m_log, LogAppend, append)

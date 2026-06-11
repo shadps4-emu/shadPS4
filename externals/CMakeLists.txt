@@ -296,6 +296,14 @@ if (NOT TARGET CLI11::CLI11)
     add_subdirectory(CLI11)
 endif()
 
+# miniupnpc
+set(UPNPC_BUILD_STATIC ON CACHE BOOL "" FORCE)
+set(UPNPC_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(UPNPC_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(UPNPC_BUILD_SAMPLE OFF CACHE BOOL "" FORCE)
+set(UPNPC_NO_INSTALL ON CACHE BOOL "" FORCE)
+add_subdirectory(miniupnp/miniupnpc)
+
 # minimp3
 add_library(minimp3 INTERFACE)
 target_include_directories(minimp3 INTERFACE minimp3)
