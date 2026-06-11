@@ -16,7 +16,7 @@
 #include "common/types.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/np/np_common.h"
-#include "core/libraries/np/np_signaling.h"
+#include "core/libraries/np/np_signaling/np_signaling.h"
 #include "core/libraries/np/np_types.h"
 
 namespace Libraries::Np::NpSignaling {

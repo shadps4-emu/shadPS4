@@ -14,10 +14,10 @@
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_handler.h"
 #include "core/libraries/np/np_manager.h"
-#include "core/libraries/np/np_signaling.h"
-#include "core/libraries/np/np_signaling_helpers.h"
-#include "core/libraries/np/np_signaling_state.h"
-#include "core/libraries/np/np_signaling_stubs.h"
+#include "core/libraries/np/np_signaling/np_signaling.h"
+#include "core/libraries/np/np_signaling/np_signaling_helpers.h"
+#include "core/libraries/np/np_signaling/np_signaling_state.h"
+#include "core/libraries/np/np_signaling/np_signaling_stubs.h"
 
 namespace Libraries::Np::NpSignaling {
 

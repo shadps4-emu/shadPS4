@@ -14,9 +14,9 @@
 #include "core/libraries/network/net_util.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_error.h"
-#include "core/libraries/np/np_signaling_helpers.h"
-#include "core/libraries/np/np_signaling_state.h"
-#include "core/libraries/np/np_signaling_stubs.h"
+#include "core/libraries/np/np_signaling/np_signaling_helpers.h"
+#include "core/libraries/np/np_signaling/np_signaling_state.h"
+#include "core/libraries/np/np_signaling/np_signaling_stubs.h"
 
 namespace Libraries::Np::NpSignaling::Helpers {
 
