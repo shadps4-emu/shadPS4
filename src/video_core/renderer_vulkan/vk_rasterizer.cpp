@@ -1295,13 +1295,18 @@ void Rasterizer::UpdatePrimitiveState(const bool is_indexed) const {
                topology == vk::PrimitiveTopology::eLineList ||
                topology == vk::PrimitiveTopology::eTriangleList ||
                topology == vk::PrimitiveTopology::eLineListWithAdjacency ||
-               topology == vk::PrimitiveTopology::eTriangleListWithAdjacency ||
-               topology == vk::PrimitiveTopology::ePatchList;
+               topology == vk::PrimitiveTopology::eTriangleListWithAdjacency;
+    };
+    const auto is_patch_list_topology = [](const AmdGpu::PrimitiveType type) {
+        // Quad and rect lists are emulated using tessellation.
+        return type == AmdGpu::PrimitiveType::PatchPrimitive ||
+               type == AmdGpu::PrimitiveType::QuadList || type == AmdGpu::PrimitiveType::RectList;
     };
 
     const auto prim_restart =
         (regs.enable_primitive_restart & 1) != 0 &&
-        (instance.IsListRestartSupported() || !is_list_topology(regs.primitive_type));
+        (instance.IsListRestartSupported() || !is_list_topology(regs.primitive_type)) &&
+        (instance.IsPatchListRestartSupported() || !is_patch_list_topology(regs.primitive_type));
     ASSERT_MSG(!is_indexed || !prim_restart || regs.primitive_restart_index == 0xFFFF ||
                    regs.primitive_restart_index == 0xFFFFFFFF,
                "Primitive restart index other than -1 is not supported yet");
