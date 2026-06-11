@@ -35,7 +35,7 @@ bool g_initialized = false;
 Libraries::Kernel::PthreadMutexT g_mutex_storage{};
 
 void InitSignalingMutex() {
-    NpCommon::sceNpLwMutexInit(&g_mutex_storage, const_cast<char*>("SceNpSignalingLock"), 1);
+    NpCommon::sceNpLwMutexInit(&g_mutex_storage, "SceNpSignalingLock", 1);
 }
 void DestroySignalingMutex() {
     NpCommon::sceNpLwMutexDestroy(&g_mutex_storage);
@@ -927,7 +927,7 @@ void ProcessPendingActivations() {
 
         if (!resolved) {
             LOG_WARNING(Lib_NpSignaling,
-                        "ProcessPendingActivations: peer '{}' endpoint unresolved; connection {} "
+                        "peer '{}' endpoint unresolved; connection {} "
                         "stays transient (30s connect timeout will fire DEAD/TIMEOUT)",
                         act.peer_online_id, act.conn_id);
             continue;
@@ -1300,8 +1300,7 @@ void SendStunPing(s32 ctx_id) {
     const u16 server_udp = Stubs::MmServerUdpPort();
 
     if (server_addr == 0 || server_udp == 0) {
-        LOG_WARNING(Lib_NpSignaling,
-                    "SendStunPing: ctxId={} skipped (server_addr={:#x} udp_port={})", ctx_id,
+        LOG_WARNING(Lib_NpSignaling, "ctxId={} skipped (server_addr={:#x} udp_port={})", ctx_id,
                     server_addr, sceNetNtohs(server_udp));
         return;
     }
@@ -1310,7 +1309,7 @@ void SendStunPing(s32 ctx_id) {
     ping.cmd = 0x01;
     std::memcpy(ping.online_id, online_id.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
 
-    LOG_DEBUG(Lib_NpSignaling, "SendStunPing: ctxId={} online_id='{}' server={:#x}:{}", ctx_id,
+    LOG_DEBUG(Lib_NpSignaling, "ctxId={} online_id='{}' server={:#x}:{}", ctx_id,
               OnlineIdToString(online_id), server_addr, sceNetNtohs(server_udp));
 
     Stubs::SignalingSendTo(&ping, sizeof(ping), server_addr, server_udp);

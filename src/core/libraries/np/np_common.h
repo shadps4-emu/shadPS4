@@ -38,27 +38,30 @@ struct OrbisNpCalloutContext {
     OrbisNpCalloutEntry* head;
 };
 
-u32 PS4_SYSV_ABI sceNpMutexLock(void* mutex);
-u32 PS4_SYSV_ABI sceNpMutexUnlock(void* mutex);
-u32 PS4_SYSV_ABI sceNpMutexInit(void* mutex, void* mutex_name, u64 flags);
-void PS4_SYSV_ABI sceNpMutexDestroy(void* mutex);
-u32 PS4_SYSV_ABI sceNpMutexTryLock(void* mutex);
-u32 PS4_SYSV_ABI sceNpLwMutexLock(void* mutex);
-u32 PS4_SYSV_ABI sceNpLwMutexUnlock(void* mutex);
-u32 PS4_SYSV_ABI sceNpLwMutexInit(void* mutex, void* mutex_name, u64 flags);
-void PS4_SYSV_ABI sceNpLwMutexDestroy(void* mutex);
-u32 PS4_SYSV_ABI sceNpLwMutexTryLock(void* mutex);
-s32 PS4_SYSV_ABI sceNpCondInit(void* cond, void* cond_name, u64 flags);
-void PS4_SYSV_ABI sceNpCondDestroy(void* cond);
-void PS4_SYSV_ABI sceNpCondSignal(void* cond);
-s32 PS4_SYSV_ABI sceNpCondTimedwait(void* cond, void* mutex, u32 usec);
-s32 PS4_SYSV_ABI sceNpCreateThread(void* thread, NpThreadEntry start_routine, void* arg,
-                                   s32 priority, u64 stack_size, u64 affinity_mask,
+u32 PS4_SYSV_ABI sceNpMutexLock(Libraries::Kernel::PthreadMutexT* mutex);
+u32 PS4_SYSV_ABI sceNpMutexUnlock(Libraries::Kernel::PthreadMutexT* mutex);
+u32 PS4_SYSV_ABI sceNpMutexInit(Libraries::Kernel::PthreadMutexT* mutex, const char* name,
+                                u64 flags);
+s32 PS4_SYSV_ABI sceNpMutexDestroy(Libraries::Kernel::PthreadMutexT* mutex);
+u32 PS4_SYSV_ABI sceNpMutexTryLock(Libraries::Kernel::PthreadMutexT* mutex);
+u32 PS4_SYSV_ABI sceNpLwMutexLock(Libraries::Kernel::PthreadMutexT* mutex);
+u32 PS4_SYSV_ABI sceNpLwMutexUnlock(Libraries::Kernel::PthreadMutexT* mutex);
+u32 PS4_SYSV_ABI sceNpLwMutexInit(Libraries::Kernel::PthreadMutexT* mutex, const char* name,
+                                  u64 flags);
+s32 PS4_SYSV_ABI sceNpLwMutexDestroy(Libraries::Kernel::PthreadMutexT* mutex);
+u32 PS4_SYSV_ABI sceNpLwMutexTryLock(Libraries::Kernel::PthreadMutexT* mutex);
+s32 PS4_SYSV_ABI sceNpCondInit(Libraries::Kernel::PthreadCondT* cond, const char* name, u64 flags);
+s32 PS4_SYSV_ABI sceNpCondDestroy(Libraries::Kernel::PthreadCondT* cond);
+s32 PS4_SYSV_ABI sceNpCondSignal(Libraries::Kernel::PthreadCondT* cond);
+s32 PS4_SYSV_ABI sceNpCondTimedwait(Libraries::Kernel::PthreadCondT* cond,
+                                    Libraries::Kernel::PthreadMutexT* mutex, u32 usec);
+s32 PS4_SYSV_ABI sceNpCreateThread(Libraries::Kernel::PthreadT* thread, NpThreadEntry start_routine,
+                                   void* arg, s32 priority, u64 stack_size, u64 affinity_mask,
                                    const char* name);
-u32 PS4_SYSV_ABI sceNpJoinThread(void* thread, void** ret);
+u32 PS4_SYSV_ABI sceNpJoinThread(Libraries::Kernel::PthreadT thread, void** ret);
 s32 PS4_SYSV_ABI sceNpGetSystemClockUsec(s64* usec);
 s32 PS4_SYSV_ABI sceNpGetPlatformType(const OrbisNpId* np_id);
-s32 PS4_SYSV_ABI sceNpIntIsValidOnlineId(const void* online_id);
+s32 PS4_SYSV_ABI sceNpIntIsValidOnlineId(const OrbisNpOnlineId* id);
 s32 PS4_SYSV_ABI sceNpCalloutInitCtx(OrbisNpCalloutContext* ctx, const char* name, u64 stack_size,
                                      s32 priority, u64 affinity_mask);
 s32 PS4_SYSV_ABI sceNpCalloutStartOnCtx(OrbisNpCalloutContext* ctx, OrbisNpCalloutEntry* callout,

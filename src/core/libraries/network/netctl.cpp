@@ -280,8 +280,8 @@ int PS4_SYSV_ABI sceNetCtlGetNatInfo(OrbisNetCtlNatInfo* nat_info) {
         }
     }
 
-    LOG_DEBUG(Lib_NetCtl, "GetNatInfo: stun_status={} nat_type={} mapped_addr={:#x}",
-              nat_info->stun_status, nat_info->nat_type, nat_info->mapped_addr);
+    LOG_DEBUG(Lib_NetCtl, "stun_status={} nat_type={} mapped_addr={:#x}", nat_info->stun_status,
+              nat_info->nat_type, nat_info->mapped_addr);
     return ORBIS_OK;
 }
 
