@@ -926,8 +926,7 @@ void ProcessPendingActivations() {
                               peer_addr != 0 && peer_port != 0;
 
         if (!resolved) {
-            LOG_WARNING(Lib_NpSignaling,
-                        "peer '{}' endpoint unresolved; connection {} 30s timeout",
+            LOG_WARNING(Lib_NpSignaling, "peer '{}' endpoint unresolved; connection {} 30s timeout",
                         act.peer_online_id, act.conn_id);
             continue;
         }
