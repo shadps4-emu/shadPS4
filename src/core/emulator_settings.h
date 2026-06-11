@@ -207,7 +207,8 @@ struct GeneralSettings {
             make_override<GeneralSettings>("connected_to_network",
                                            &GeneralSettings::connected_to_network),
             make_override<GeneralSettings>("signaling_addr", &GeneralSettings::signaling_addr),
-            make_override<GeneralSettings>("signaling_port", &GeneralSettings::signaling_port)};
+            make_override<GeneralSettings>("signaling_port", &GeneralSettings::signaling_port),
+            make_override<GeneralSettings>("enable_upnp", &GeneralSettings::enable_upnp)};
     }
 };
 
