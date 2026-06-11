@@ -927,8 +927,7 @@ void ProcessPendingActivations() {
 
         if (!resolved) {
             LOG_WARNING(Lib_NpSignaling,
-                        "peer '{}' endpoint unresolved; connection {} "
-                        "stays transient (30s connect timeout will fire DEAD/TIMEOUT)",
+                        "peer '{}' endpoint unresolved; connection {} 30s timeout",
                         act.peer_online_id, act.conn_id);
             continue;
         }
