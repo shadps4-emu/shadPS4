@@ -35,6 +35,11 @@ static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance* instance,
             // flag is also used.
             usage |= vk::ImageUsageFlagBits::eStorage;
         }
+    } else {
+        // Similarly to above, we specify storage usage. This is typically not supported by
+        // compressed formats, but may be used for uncompressed views. In order to satisfy this,
+        // we will also specify the extended usage bit.
+        usage |= vk::ImageUsageFlagBits::eStorage;
     }
 
     return usage;
