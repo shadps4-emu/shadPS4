@@ -3,7 +3,10 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/font/font.h"
+#include "core/libraries/font/font_internal.h"
 #include "core/libraries/font/fontft.h"
+#include "core/libraries/font/fontft_internal.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::FontFt {
@@ -103,14 +106,22 @@ s32 PS4_SYSV_ABI sceFontSelectGlyphsFt() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontSelectLibraryFt() {
-    LOG_ERROR(Lib_FontFt, "(STUBBED) called");
-    return ORBIS_OK;
+const OrbisFontLibrarySelection* PS4_SYSV_ABI sceFontSelectLibraryFt(int value) {
+    LOG_INFO(Lib_FontFt, "called");
+    LOG_DEBUG(Lib_FontFt, "params:\nvalue: {}\n", value);
+    if (value == 0) {
+        return Libraries::FontFt::Internal::GetDriverTable();
+    }
+    return nullptr;
 }
 
-s32 PS4_SYSV_ABI sceFontSelectRendererFt() {
-    LOG_ERROR(Lib_FontFt, "(STUBBED) called");
-    return ORBIS_OK;
+const OrbisFontRendererSelection* PS4_SYSV_ABI sceFontSelectRendererFt(int value) {
+    LOG_INFO(Lib_FontFt, "called");
+    LOG_DEBUG(Lib_FontFt, "params:\nvalue: {}\n", value);
+    if (value == 0) {
+        return Libraries::FontFt::Internal::GetRendererSelectionTable();
+    }
+    return nullptr;
 }
 
 void RegisterlibSceFontFt(Core::Loader::SymbolsResolver* sym) {

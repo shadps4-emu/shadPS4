@@ -1323,6 +1323,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
         }
 
         if (native_fd == -1) {
+            LOG_WARNING(Kernel_Fs, "Unsupported fd {}", i);
             continue;
         }
 
@@ -1454,6 +1455,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
                 }
             }();
             if (native_fd == -1) {
+                LOG_WARNING(Kernel_Fs, "Unsupported fd {}", i);
                 continue;
             }
             host_to_guest.emplace(native_fd, i);

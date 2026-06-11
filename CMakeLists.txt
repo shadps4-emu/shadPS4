@@ -61,6 +61,10 @@ if (ARCHITECTURE STREQUAL "x86_64")
     add_compile_options(-march=x86-64-v3)
 endif()
 
+cmake_host_system_information(RESULT PROC_INFO QUERY PROCESSOR_DESCRIPTION)
+
+message(STATUS "${PROC_INFO}")
+
 if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
     # Exclude ARM homebrew path to avoid conflicts when cross compiling.
     list(APPEND CMAKE_IGNORE_PREFIX_PATH "/opt/homebrew")
@@ -227,6 +231,7 @@ find_package(Boost 1.84.0 CONFIG)
 find_package(CLI11 2.6.1 CONFIG)
 find_package(FFmpeg 5.1.2 MODULE)
 find_package(fmt 12.0.0 CONFIG)
+find_package(Freetype 2.14.1 MODULE)
 find_package(glslang 15 CONFIG)
 find_package(half 1.12.0 MODULE)
 find_package(magic_enum 0.9.7 CONFIG)
@@ -492,8 +497,12 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/web_browser_dialog/webbrowserdialog.h
                 src/core/libraries/font/font.cpp
                 src/core/libraries/font/font.h
+                src/core/libraries/font/font_internal.cpp
+                src/core/libraries/font/font_internal.h
                 src/core/libraries/font/fontft.cpp
                 src/core/libraries/font/fontft.h
+                src/core/libraries/font/fontft_internal.cpp
+                src/core/libraries/font/fontft_internal.h
                 src/core/libraries/font/font_error.h
                 src/core/libraries/content_export/content_export.cpp
                 src/core/libraries/content_export/content_export.h
@@ -1170,6 +1179,7 @@ target_link_libraries(shadps4 PRIVATE spdlog::spdlog)
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui ImGuiFileDialog gcn half::half ZLIB::ZLIB PNG::PNG minimp3)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml)
 target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib)
+target_link_libraries(shadps4 PRIVATE Freetype::Freetype)
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     target_link_libraries(shadps4 PRIVATE "/usr/lib/libusb.so")

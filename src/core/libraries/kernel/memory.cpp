@@ -169,7 +169,14 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, s32 flags, u
 
     auto* memory = Core::Memory::Instance();
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
-    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+
+    if (True(map_flags & Core::MemoryMapFlags::Fixed) && in_addr == 0) {
+        if (Common::ElfInfo::FW_170 <= g_sdk_version) {
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        }
+        map_flags &= ~Core::MemoryMapFlags::Fixed;
+    }
 
     s32 result = memory->MapMemory(addr, in_addr, len, Core::MemoryProt::NoAccess, map_flags,
                                    Core::VMAType::Reserved, "anon", false, -1, alignment);
@@ -214,7 +221,7 @@ s32 PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, s32 prot, s
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
-    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
 
     auto* memory = Core::Memory::Instance();
@@ -224,6 +231,14 @@ s32 PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, s32 prot, s
         // Under these conditions, this would normally redirect to sceKernelMapDirectMemory2.
         should_check = !g_alias_dmem;
     }
+
+    if (True(map_flags & Core::MemoryMapFlags::Fixed) && in_addr == 0) {
+        if (Common::ElfInfo::FW_170 <= g_sdk_version) {
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        }
+        map_flags &= ~Core::MemoryMapFlags::Fixed;
+    }
+
     const auto ret =
         memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, name,
                           should_check, phys_addr, alignment);
@@ -307,8 +322,16 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, u64 len, s3
 
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
-    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     auto* memory = Core::Memory::Instance();
+
+    if (True(map_flags & Core::MemoryMapFlags::Fixed) && in_addr == 0) {
+        if (Common::ElfInfo::FW_170 <= g_sdk_version) {
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        }
+        map_flags &= ~Core::MemoryMapFlags::Fixed;
+    }
+
     const auto ret = memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
                                        Core::VMAType::Flexible, name);
     LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr_in_out));
