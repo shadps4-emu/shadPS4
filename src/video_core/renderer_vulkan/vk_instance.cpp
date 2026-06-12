@@ -95,8 +95,8 @@ Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                    bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
-    : instance{CreateInstance(window.GetWindowInfo().type, enable_validation,
-                              enable_crash_diagnostic)},
+    : instance{
+          CreateInstance(window.GetWindowInfo().type, enable_validation, enable_crash_diagnostic)},
       physical_devices{EnumeratePhysicalDevices(instance)} {
     if (enable_validation) {
         debug_callback = CreateDebugCallback(*instance);
@@ -239,9 +239,13 @@ bool Instance::CreateDevice() {
     };
 
     // Required
-    ASSERT(add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
-    ASSERT(add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME));
-    ASSERT(add_extension(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME));
+    ASSERT_MSG(add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME),
+               "Required Vulkan extension unavailable: {}", VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    ASSERT_MSG(add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME),
+               "Required Vulkan extension unavailable: {}", VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+    ASSERT_MSG(add_extension(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME),
+               "Required Vulkan extension unavailable: {}",
+               VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME);
 
     // Optional
     maintenance_8 = add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
