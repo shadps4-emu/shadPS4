@@ -11,20 +11,29 @@ static u64 GetIndexFromSdlHandle(SDL_MouseID id) {
     return mouse_sdl_handles[0] == id ? 0 : mouse_sdl_handles[1] == id ? 1 : 2;
 }
 
+constexpr u32 OrbisButtonFromSDL(Uint8 button) {
+    switch (button) {
+    case SDL_BUTTON_LEFT:
+        return 1u << 0;
+    case SDL_BUTTON_RIGHT:
+        return 1u << 1;
+    case SDL_BUTTON_MIDDLE:
+        return 1u << 2;
+    case SDL_BUTTON_X1:
+        return 1u << 3;
+    case SDL_BUTTON_X2:
+        return 1u << 4;
+    default:
+        return 0;
+    }
+}
+
 bool PushSDLEvent(SDL_Event const& e) {
+    static OrbisMouseData current_state[2]{};
     if (!g_lib_init) {
         return false;
     }
     switch (e.type) {
-    case SDL_EVENT_MOUSE_ADDED: {
-        LOG_INFO(Lib_Mouse, "Mouse added, id: {}", e.mdevice.which);
-        u64 index = GetIndexFromSdlHandle(-1); // first open slot
-        if (index == 2) {
-            return false;
-        }
-        mouse_sdl_handles[index] = e.mdevice.which;
-        break;
-    }
     case SDL_EVENT_MOUSE_REMOVED: {
         LOG_INFO(Lib_Mouse, "Mouse removed, id: {}", e.mdevice.which);
         u64 index = GetIndexFromSdlHandle(e.mdevice.which);
@@ -43,9 +52,49 @@ bool PushSDLEvent(SDL_Event const& e) {
             else
                 return false;
         }
-        mouse_states[index].Push({.timestamp = Libraries::Kernel::sceKernelGetProcessTime(),
-                                  .x_axis = (s32)e.motion.xrel,
-                                  .y_axis = (s32)e.motion.yrel});
+        auto& s = current_state[index];
+        s.x_axis = (s32)e.motion.xrel;
+        s.y_axis = (s32)e.motion.yrel;
+        s.timestamp = Libraries::Kernel::sceKernelGetProcessTime();
+
+        mouse_states[index].Push(s);
+        break;
+    }
+    case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+        u64 index = GetIndexFromSdlHandle(e.button.which);
+        if (index >= 2)
+            return false;
+
+        auto& s = current_state[index];
+        s.buttons |= OrbisButtonFromSDL(e.button.button);
+        s.timestamp = Libraries::Kernel::sceKernelGetProcessTime();
+
+        mouse_states[index].Push(s);
+        break;
+    }
+    case SDL_EVENT_MOUSE_BUTTON_UP: {
+        u64 index = GetIndexFromSdlHandle(e.button.which);
+        if (index >= 2)
+            return false;
+
+        auto& s = current_state[index];
+        s.buttons &= ~OrbisButtonFromSDL(e.button.button);
+        s.timestamp = Libraries::Kernel::sceKernelGetProcessTime();
+
+        mouse_states[index].Push(s);
+        break;
+    }
+    case SDL_EVENT_MOUSE_WHEEL: {
+        u64 index = GetIndexFromSdlHandle(e.wheel.which);
+        if (index >= 2)
+            return false;
+
+        auto& s = current_state[index];
+        s.wheel = e.wheel.y;
+        s.tilt = e.wheel.x;
+        s.timestamp = Libraries::Kernel::sceKernelGetProcessTime();
+
+        mouse_states[index].Push(s);
         break;
     }
     default:
