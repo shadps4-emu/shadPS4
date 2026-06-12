@@ -280,6 +280,14 @@ bool Instance::CreateDevice() {
     depth_clip_enable = add_extension(VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME);
     vertex_input_dynamic_state = add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
     list_restart = add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
+    if (list_restart) {
+        list_restart_features =
+            feature_chain.get<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
+        LOG_INFO(Render_Vulkan, "- primitiveTopologyListRestart: {}",
+                 list_restart_features.primitiveTopologyListRestart);
+        LOG_INFO(Render_Vulkan, "- primitiveTopologyPatchListRestart: {}",
+                 list_restart_features.primitiveTopologyPatchListRestart);
+    }
     amd_shader_explicit_vertex_parameter =
         add_extension(VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_EXTENSION_NAME);
     if (!amd_shader_explicit_vertex_parameter) {
@@ -369,8 +377,6 @@ bool Instance::CreateDevice() {
         .pQueuePriorities = queue_priorities.data(),
     };
 
-    const auto topology_list_restart_features =
-        feature_chain.get<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
     const auto vk11_features = feature_chain.get<vk::PhysicalDeviceVulkan11Features>();
     vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
     vk13_features = feature_chain.get<vk::PhysicalDeviceVulkan13Features>();
@@ -464,9 +470,9 @@ bool Instance::CreateDevice() {
             .vertexInputDynamicState = true,
         },
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT{
-            .primitiveTopologyListRestart = true,
+            .primitiveTopologyListRestart = list_restart_features.primitiveTopologyListRestart,
             .primitiveTopologyPatchListRestart =
-                topology_list_restart_features.primitiveTopologyPatchListRestart,
+                list_restart_features.primitiveTopologyPatchListRestart,
         },
         vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR{
             .fragmentShaderBarycentric = true,
