@@ -1166,8 +1166,6 @@ set(EMULATOR src/emulator.cpp
              src/sdl_window.cpp
 )
 
-if(NOT ENABLE_TESTS)
-
 add_executable(shadps4
     ${AUDIO_CORE}
     ${IMGUI}
@@ -1342,7 +1340,7 @@ endif()
 # Install rules
 install(TARGETS shadps4 BUNDLE DESTINATION .)
 
-else()
+if(ENABLE_TESTS)
     enable_testing()
-    add_subdirectory(tests)
+    add_subdirectory(tests EXCLUDE_FROM_ALL)
 endif()
