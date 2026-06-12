@@ -59,13 +59,13 @@ bool UserSettingsImpl::Save() const {
 
         std::ofstream out(path);
         if (!out) {
-            fmt::println("Failed to open user settings for writing: {}", path.string());
+            LOG_DEBUG(Config, "Failed to open user settings for writing: {}", path.string());
             return false;
         }
         out << std::setw(2) << existing;
         return !out.fail();
     } catch (const std::exception& e) {
-        fmt::println("Error saving user settings: {}", e.what());
+        LOG_DEBUG(Config, "Error saving user settings: {}", e.what());
         return false;
     }
 }
@@ -83,7 +83,7 @@ bool UserSettingsImpl::Load() {
 
         std::ifstream in(path);
         if (!in) {
-            fmt::println("Failed to open user settings: {}", path.string());
+            LOG_DEBUG(Config, "Failed to open user settings: {}", path.string());
             return false;
         }
 
@@ -108,7 +108,7 @@ bool UserSettingsImpl::Load() {
 
         return true;
     } catch (const std::exception& e) {
-        fmt::println("Error loading user settings: {}", e.what());
+        LOG_DEBUG(Config, "Error loading user settings: {}", e.what());
         if (m_userManager.GetUsers().user.empty())
             m_userManager.GetUsers() = m_userManager.CreateDefaultUsers();
         return false;

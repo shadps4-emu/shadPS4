@@ -91,9 +91,9 @@ void EmulatorSettingsImpl::PrintChangedSummary(const std::vector<std::string>& c
     if (changed.empty()) {
         return;
     }
-    fmt::println("Game-specific overrides applied:");
+    LOG_DEBUG(Config, "Game-specific overrides applied:");
     for (const auto& k : changed)
-        fmt::println("    * {}", k);
+        LOG_DEBUG(Config, "    * {}", k);
 }
 
 // ── Singleton ────────────────────────────────────────────────────────
@@ -258,7 +258,7 @@ void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
         return;
     if (tryGroup(m_vulkan))
         return;
-    fmt::println("ResetGameSpecificValue: key '{}' not found", key);
+    LOG_DEBUG(Config, "ResetGameSpecificValue: key '{}' not found", key);
 }
 
 bool EmulatorSettingsImpl::Save(const std::string& serial) {
@@ -300,7 +300,7 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
 
             std::ofstream out(path);
             if (!out) {
-                fmt::println("Failed to open game config for writing: {}", path.string());
+                LOG_DEBUG(Config, "Failed to open game config for writing: {}", path.string());
                 return false;
             }
             out << std::setw(2) << j;
@@ -342,14 +342,14 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
 
             std::ofstream out(path);
             if (!out) {
-                fmt::println("Failed to open config for writing: {}", path.string());
+                LOG_DEBUG(Config, "Failed to open config for writing: {}", path.string());
                 return false;
             }
             out << std::setw(2) << existing;
             return !out.fail();
         }
     } catch (const std::exception& e) {
-        fmt::println("Error saving settings: {}", e.what());
+        LOG_DEBUG(Config, "Error saving settings: {}", e.what());
         return false;
     }
 }
@@ -469,7 +469,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             return true;
         }
     } catch (const std::exception& e) {
-        fmt::println("Error loading settings: {}", e.what());
+        LOG_DEBUG(Config, "Error loading settings: {}", e.what());
         return false;
     }
 }
@@ -669,7 +669,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
             }
             s.install_dirs.value = settings_install_dirs;
         } catch (const std::exception& e) {
-            fmt::println("Failed to transfer install directories: {}", e.what());
+            LOG_DEBUG(Config, "Failed to transfer install directories: {}", e.what());
         }
 
         // Transfer addon install directory
@@ -685,7 +685,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
                 }
             }
         } catch (const std::exception& e) {
-            fmt::println("Failed to transfer addon install directory: {}", e.what());
+            LOG_DEBUG(Config, "Failed to transfer addon install directory: {}", e.what());
         }
     }
     if (og_data.contains("General")) {
@@ -704,7 +704,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
                 }
             }
         } catch (const std::exception& e) {
-            fmt::println("Failed to transfer sysmodules install directory: {}", e.what());
+            LOG_DEBUG(Config, "Failed to transfer sysmodules install directory: {}", e.what());
         }
 
         // Transfer font install directory
@@ -720,7 +720,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
                 }
             }
         } catch (const std::exception& e) {
-            fmt::println("Failed to transfer font install directory: {}", e.what());
+            LOG_DEBUG(Config, "Failed to transfer font install directory: {}", e.what());
         }
     }
 

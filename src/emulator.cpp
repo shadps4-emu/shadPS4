@@ -275,10 +275,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
 
-    // Initialize logging as soon as possible
     EmulatorSettings.Load(id);
-    Common::Log::Setup((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
-                                                                         : "shad_log.txt");
+    // Switch to configured log
+    Common::Log::Switch((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
+                                                                          : "shad_log.txt");
 
     auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
     const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
