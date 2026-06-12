@@ -382,6 +382,11 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
         LOG_WARNING(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
                     return_info->name, library->name, module->name);
     }
+    if (!record && sym_type == Loader::SymbolType::Object) {
+        LOG_WARNING(Core_Linker, "Patching object stub with unresolve indicator");
+        return_info->virtual_address = 0x7c00000000ull;
+        return false;
+    }
     return false;
 }
 
