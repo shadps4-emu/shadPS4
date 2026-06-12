@@ -960,7 +960,7 @@ void Translator::V_CVT_FLR_I32_F32(const GcnInst& inst) {
 
 void Translator::V_CVT_OFF_F32_I4(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
-    ASSERT_MSG(src0.IsImmediate(), "V_CVT_OFF_F32_I4 expects an immediate source operand");
+    ASSERT(src0.IsImmediate());
     static constexpr std::array IntToFloat = {
         0.0f,     0.0625f,  0.1250f,  0.1875f,  0.2500f,  0.3125f,  0.3750f,  0.4375f,
         -0.5000f, -0.4375f, -0.3750f, -0.3125f, -0.2500f, -0.1875f, -0.1250f, -0.0625f};
@@ -1252,57 +1252,45 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
 }
 
 void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
-    // AMD VOPC semantics:
-    //   V_CMP_*  : D/VCC[threadId] = compare(S0, S1)
-    //   V_CMPX_* : EXEC[threadId] = D/VCC[threadId] = compare(S0, S1)
-    //
-    // Do not use subgroup reductions here. Result must stay per-lane.
+    const bool is_zero = inst.src[1].field == OperandField::ConstZero;
+    const bool is_neg_one = inst.src[1].field == OperandField::SignedConstIntNeg;
+    ASSERT(is_zero || is_neg_one);
+    if (is_neg_one) {
+        ASSERT_MSG(-s32(inst.src[1].code) + SignedConstIntNegMin - 1 == -1,
+                   "SignedConstIntNeg must be -1");
+    }
 
-    const auto set_result = [&](IR::U1 result) {
-        if (set_exec) {
-            ir.SetExec(result);
-        }
-        SetDst1(inst.dst[1], result);
-    };
-
-    const auto make_compare = [&](IR::U64 src0, IR::U64 src1) -> IR::U1 {
-        switch (op) {
-        case ConditionOp::F:
-            return ir.Imm1(false);
-        case ConditionOp::TRU:
-            return ir.Imm1(true);
-        case ConditionOp::EQ:
-            return ir.IEqual(src0, src1);
-        case ConditionOp::LG: // NE
-            return ir.INotEqual(src0, src1);
-        case ConditionOp::LT:
-            return ir.ILessThan(src0, src1, is_signed);
-        case ConditionOp::LE:
-            return ir.ILessThanEqual(src0, src1, is_signed);
-        case ConditionOp::GT:
-            return ir.IGreaterThan(src0, src1, is_signed);
-        case ConditionOp::GE:
-            return ir.IGreaterThanEqual(src0, src1, is_signed);
+    const IR::U1 src0 = [&] {
+        switch (inst.src[0].field) {
+        case OperandField::ScalarGPR:
+            return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
+        case OperandField::VccLo:
+            return ir.GetVcc();
         default:
-            UNREACHABLE_MSG("Unsupported V_CMP_{}64 condition: {}", is_signed ? "I" : "U", u32(op));
+            UNREACHABLE_MSG("src0 = {}", u32(inst.src[0].field));
         }
-    };
+    }();
+    const IR::U1 result = [&] {
+        switch (op) {
+        case ConditionOp::EQ:
+            return is_zero ? ir.LogicalNot(src0) : src0;
+        case ConditionOp::LG: // NE
+            return is_zero ? src0 : ir.LogicalNot(src0);
+        case ConditionOp::GT:
+            ASSERT(is_zero);
+            return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
+        default:
+            UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
+        }
+    }();
 
-    // Cheap constants first. These are always spec-correct.
-    if (op == ConditionOp::F) {
-        set_result(ir.Imm1(false));
-        return;
+    if (is_signed) {
+        UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
     }
-
-    if (op == ConditionOp::TRU) {
-        set_result(ir.Imm1(true));
-        return;
+    if (set_exec) {
+        UNREACHABLE_MSG("Exec setting for V_CMP_U64 is not supported");
     }
-
-    const IR::U64 src0 = GetSrc64(inst.src[0]);
-    const IR::U64 src1 = GetSrc64(inst.src[1]);
-
-    set_result(make_compare(src0, src1));
+    SetDst1(inst.dst[1], result);
 }
 
 void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
