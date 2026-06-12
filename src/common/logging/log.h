@@ -7,10 +7,7 @@
 #include <unordered_map>
 #include <vector>
 #include <spdlog/details/fmt_helper.h>
-#include <spdlog/sinks/async_sink.h>
 #include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/dup_filter_sink.h>
-#include <spdlog/sinks/null_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #ifdef _WIN32
@@ -30,13 +27,19 @@ namespace Common::Log {
 extern bool g_should_append;
 extern std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGERS;
 
-void Setup(std::string_view log_filename);
+void Setup(std::string_view shadps4_filename);
+
+void Switch(std::string_view game_filename);
 
 void Shutdown();
 
 void Flush();
 
 void Terminate();
+
+void UpdateSinks();
+
+void UpdateLogLevels(std::string_view log_filter);
 
 static constexpr std::array level_string_views{"Trace", "Debug",    "Info", "Warning",
                                                "Error", "Critical", "Off"};

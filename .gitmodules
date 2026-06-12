@@ -148,3 +148,6 @@
 [submodule "externals/libressl"]
 	path = externals/libressl
 	url = https://github.com/shadexternals/libressl
+[submodule "externals/miniupnp"]
+	path = externals/miniupnp
+	url = https://github.com/miniupnp/miniupnp.git

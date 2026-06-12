@@ -37,8 +37,9 @@ static std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribu
     case IR::Attribute::RenderTargetIndex:
     case IR::Attribute::ViewportIndex:
     case IR::Attribute::SampleMask:
-    case IR::Attribute::StencilRef:
         return {ctx.U32[1], true};
+    case IR::Attribute::StencilRef:
+        return {ctx.S32[1], true};
     default:
         UNREACHABLE_MSG("Write attribute {}", attr);
     }
@@ -253,6 +254,11 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
         return op_store(ctx.frag_depth);
     case IR::Attribute::SampleMask:
         return op_store(ctx.OpAccessChain(ctx.output_u32, ctx.sample_mask, ctx.u32_zero_value));
+    case IR::Attribute::StencilRef:
+        if (ctx.profile.supports_shader_stencil_export) {
+            return op_store(ctx.stencil_ref);
+        }
+        return;
     default:
         UNREACHABLE_MSG("Write attribute {}", attr);
     }
