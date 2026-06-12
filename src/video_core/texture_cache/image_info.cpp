@@ -152,23 +152,20 @@ bool ImageInfo::IsCompatible(const ImageInfo& info) const {
 
 void ImageInfo::UpdateSize() {
     guest_size = 0;
+    const u32 pow2_pitch = props.is_pow2 ? std::bit_ceil(pitch) : pitch;
+    const u32 pow2_height = props.is_pow2 ? std::bit_ceil(size.height) : size.height;
+    const u32 pow2_depth = props.is_pow2 ? std::bit_ceil(size.depth) : size.depth;
     for (s32 mip = 0; mip < resources.levels; ++mip) {
-        u32 mip_w = pitch >> mip;
-        u32 mip_h = size.height >> mip;
+        u32 mip_w = mip == 0 ? pitch : std::max(pow2_pitch >> mip, 1u);
+        u32 mip_h = mip == 0 ? size.height : std::max(pow2_height >> mip, 1u);
         if (props.is_block) {
             mip_w = (mip_w + 3) / 4;
             mip_h = (mip_h + 3) / 4;
         }
         mip_w = std::max(mip_w, 1u);
         mip_h = std::max(mip_h, 1u);
-        u32 mip_d = std::max(size.depth >> mip, 1u);
+        u32 mip_d = mip == 0 ? std::max(size.depth, 1u) : std::max(pow2_depth >> mip, 1u);
         u32 thickness = 1;
-
-        if (props.is_pow2) {
-            mip_w = std::bit_ceil(mip_w);
-            mip_h = std::bit_ceil(mip_h);
-            mip_d = std::bit_ceil(mip_d);
-        }
 
         auto& mip_info = mips_layout[mip];
         switch (array_mode) {
