@@ -12,6 +12,9 @@ static u64 GetIndexFromSdlHandle(SDL_MouseID id) {
 }
 
 bool PushSDLEvent(SDL_Event const& e) {
+    if (!g_lib_init) {
+        return false;
+    }
     switch (e.type) {
     case SDL_EVENT_MOUSE_ADDED: {
         LOG_INFO(Lib_Mouse, "Mouse added, id: {}", e.mdevice.which);
@@ -32,12 +35,11 @@ bool PushSDLEvent(SDL_Event const& e) {
         break;
     }
     case SDL_EVENT_MOUSE_MOTION: {
-        // LOG_INFO(Lib_Mouse, "Mouse moved, id: {}", e.mdevice.which);
-        u64 index = GetIndexFromSdlHandle(e.mdevice.which);
+        u64 index = GetIndexFromSdlHandle(e.motion.which);
         if (index == 2) {
             index = GetIndexFromSdlHandle(-1);
             if (index < 2)
-                mouse_sdl_handles[index] = e.mdevice.which;
+                mouse_sdl_handles[index] = e.motion.which;
             else
                 return false;
         }
