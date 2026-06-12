@@ -260,16 +260,6 @@ if (APPLE OR ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     endif()
 endif()
 
-# Apple-only dependencies
-if (APPLE)
-    # MoltenVK
-    if (NOT TARGET MoltenVK)
-        set(MVK_EXCLUDE_SPIRV_TOOLS ON)
-        set(MVK_USE_METAL_PRIVATE_API ON)
-        add_subdirectory(MoltenVK)
-    endif()
-endif()
-
 #windows only
 if (WIN32)
 add_subdirectory(ext-wepoll)
