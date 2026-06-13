@@ -270,16 +270,6 @@ public:
         return features.tessellationShader;
     }
 
-    /// Returns true when tessellation isolines are supported by the device
-    bool IsTessellationIsolinesSupported() const {
-        return !portability_subset || portability_features.tessellationIsolines;
-    }
-
-    /// Returns true when tessellation point mode is supported by the device
-    bool IsTessellationPointModeSupported() const {
-        return !portability_subset || portability_features.tessellationPointMode;
-    }
-
     /// Returns the vendor ID of the physical device
     u32 GetVendorID() const {
         return properties.vendorID;
@@ -483,7 +473,6 @@ private:
     vk::PhysicalDeviceFeatures features;
     vk::PhysicalDeviceVulkan12Features vk12_features;
     vk::PhysicalDeviceVulkan13Features vk13_features;
-    vk::PhysicalDevicePortabilitySubsetFeaturesKHR portability_features;
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
     vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;
     vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
@@ -523,7 +512,6 @@ private:
     bool shader_atomic_float{};
     bool shader_atomic_float2{};
     bool workgroup_memory_explicit_layout{};
-    bool portability_subset{};
     bool maintenance_8{};
     bool attachment_feedback_loop{};
     bool image_2d_view_of_3d{};

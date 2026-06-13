@@ -9,26 +9,42 @@
 #include <CLI/CLI.hpp>
 #include <SDL3/SDL_messagebox.h>
 
-#include <core/emulator_settings.h>
-#include <core/emulator_state.h>
+#include "common/arch.h"
 #include "common/key_manager.h"
 #include "common/logging/log.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/debugger.h"
+#include "core/emulator_settings.h"
+#include "core/emulator_state.h"
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
+#include "core/user_settings.h"
 #include "emulator.h"
 #include "imgui/big_picture/big_picture.h"
 
 #ifdef _WIN32
 #include <windows.h>
+#elif defined(__APPLE__)
+#include <sys/sysctl.h>
 #endif
-#include <core/user_settings.h>
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
+#endif
+
+#if defined(__APPLE__) && defined(ARCH_X86_64)
+    // KosmicKrisp only supports Apple Silicon. Check that we are not running on an Intel Mac.
+    int sysctl_ret = 0;
+    size_t sysctl_size = sizeof(sysctl_ret);
+    sysctlbyname("sysctl.proc_translated", &sysctl_ret, &sysctl_size, nullptr, 0);
+    if (sysctl_ret != 1) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadPS4",
+                                 "shadPS4 only supports Apple Silicon Macs.", nullptr);
+        std::cout << "shadPS4 only supports Apple Silicon Macs." << std::endl;
+        return -1;
+    }
 #endif
 
     CLI::App app{"shadPS4 Emulator CLI"};
