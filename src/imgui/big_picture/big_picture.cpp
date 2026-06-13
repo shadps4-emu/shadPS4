@@ -115,18 +115,18 @@ SDL_Texture* LoadSdlTextureData(std::vector<u8> data) {
     unsigned char* image_data = stbi_load_from_memory(
         (const unsigned char*)data.data(), (int)data.size(), &image_width, &image_height, NULL, 4);
     if (image_data == nullptr) {
-        fmt::println("Failed to load image: {}", stbi_failure_reason());
+        LOG_ERROR(ImGui, "Failed to load image: {}", stbi_failure_reason());
     }
 
     SDL_Surface* surface = SDL_CreateSurfaceFrom(image_width, image_height, SDL_PIXELFORMAT_RGBA32,
                                                  (void*)image_data, channels * image_width);
     if (surface == nullptr) {
-        fmt::println("Unable to create SDL surface: {}", SDL_GetError());
+        LOG_ERROR(ImGui, "Unable to create SDL surface: {}", SDL_GetError());
     }
 
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
     if (texture == nullptr) {
-        fmt::println("Unable to create SDL texture: {}", SDL_GetError());
+        LOG_ERROR(ImGui, "Unable to create SDL texture: {}", SDL_GetError());
     }
 
     SDL_DestroySurface(surface);
@@ -190,13 +190,13 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
 
 void Launch(char* executableName) {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
-        fmt::println("SDL_INIT_VIDEO Error: {}", SDL_GetError());
+        LOG_ERROR(ImGui, "SDL_INIT_VIDEO Error: {}", SDL_GetError());
         SDL_Quit();
         return;
     }
 
     if (!SDL_Init(SDL_INIT_GAMEPAD)) {
-        fmt::println("SDL_INIT_GAMEPAD Error: {}", SDL_GetError());
+        LOG_ERROR(ImGui, "SDL_INIT_GAMEPAD Error: {}", SDL_GetError());
     }
 
     SDL_Window* window =
@@ -204,7 +204,7 @@ void Launch(char* executableName) {
     renderer = SDL_CreateRenderer(window, nullptr);
 
     if (window == nullptr) {
-        fmt::println("SDL Window Creation Error: {}", SDL_GetError());
+        LOG_ERROR(ImGui, "SDL Window Creation Error: {}", SDL_GetError());
         SDL_DestroyRenderer(renderer);
         SDL_Quit();
         return;

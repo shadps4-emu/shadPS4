@@ -390,6 +390,16 @@ void EmitContext::DefineInputs() {
                                                     spv::StorageClass::Input);
             }
         }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample)) {
+            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                bary_coord_nopersp_sample = DefineVariable(
+                    F32[2], spv::BuiltIn::BaryCoordNoPerspSampleAMD, spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric) {
+                bary_coord_nopersp_sample = DefineVariable(
+                    F32[3], spv::BuiltIn::BaryCoordNoPerspKHR, spv::StorageClass::Input);
+                // Decorate(bary_coord_nopersp_sample, spv::Decoration::Sample);
+            }
+        }
 
         const bool has_clip_distance_inputs = runtime_info.fs_info.clip_distance_emulation;
         // Clip distances attribute vector is the last in inputs array
@@ -664,6 +674,10 @@ void EmitContext::DefineOutputs() {
         if (info.stores.Get(IR::Attribute::SampleMask)) {
             sample_mask = DefineVariable(TypeArray(U32[1], u32_one_value), spv::BuiltIn::SampleMask,
                                          spv::StorageClass::Output);
+        }
+        if (info.stores.Get(IR::Attribute::StencilRef) && profile.supports_shader_stencil_export) {
+            stencil_ref =
+                DefineVariable(S32[1], spv::BuiltIn::FragStencilRefEXT, spv::StorageClass::Output);
         }
         u32 num_render_targets = 0;
         for (u32 i = 0; i < IR::NumRenderTargets; i++) {

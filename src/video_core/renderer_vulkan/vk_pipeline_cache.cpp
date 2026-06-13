@@ -298,18 +298,15 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .supports_amd_shader_explicit_vertex_parameter =
             instance_.IsAmdShaderExplicitVertexParameterSupported(),
         .supports_fragment_shader_barycentric = instance_.IsFragmentShaderBarycentricSupported(),
-        .has_incomplete_fragment_shader_barycentric =
-            instance_.IsFragmentShaderBarycentricSupported() &&
-            instance.GetDriverID() == vk::DriverId::eMoltenvk,
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
-                              instance.GetDriverID() == vk::DriverId::eMoltenvk,
+                              instance.GetDriverID() == vk::DriverId::eMesaKosmickrisp,
         .needs_buffer_offsets = instance.StorageMinAlignment() > 4,
-        .needs_unorm_fixup = instance.GetDriverID() == vk::DriverId::eMoltenvk,
+        .needs_unorm_fixup = instance.GetDriverID() == vk::DriverId::eMesaKosmickrisp,
         .needs_clip_distance_emulation = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
+        .supports_shader_stencil_export = instance_.IsShaderStencilExportSupported(),
     };
-
     WarmUp();
 
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});
@@ -532,9 +529,7 @@ bool PipelineCache::RefreshGraphicsStages() {
         }
         break;
     case AmdGpu::ShaderStageEnable::VgtStages::LsHs:
-        if (!instance.IsTessellationSupported() ||
-            (regs.tess_config.type == AmdGpu::TessellationType::Isoline &&
-             !instance.IsTessellationIsolinesSupported())) {
+        if (!instance.IsTessellationSupported()) {
             return false;
         }
         if (!bind_stage(Stage::Hull, LogicalStage::TessellationControl)) {
@@ -548,9 +543,7 @@ bool PipelineCache::RefreshGraphicsStages() {
         }
         break;
     case AmdGpu::ShaderStageEnable::VgtStages::LsHsEsGs:
-        if (!instance.IsTessellationSupported() ||
-            (regs.tess_config.type == AmdGpu::TessellationType::Isoline &&
-             !instance.IsTessellationIsolinesSupported())) {
+        if (!instance.IsTessellationSupported()) {
             return false;
         }
         if (!instance.IsGeometryStageSupported()) {
@@ -588,7 +581,9 @@ bool PipelineCache::RefreshGraphicsStages() {
         u32 vertex_binding = 0;
         for (const auto& attrib : fetch_shader->attributes) {
             const auto& buffer = attrib.GetSharp(*vs_info);
-            ASSERT(vertex_binding < MaxVertexBufferCount);
+            ASSERT_MSG(vertex_binding < MaxVertexBufferCount,
+                       "Vertex attribute binding count exceeded limit: {} >= {}", vertex_binding,
+                       MaxVertexBufferCount);
             key.vertex_buffer_formats[vertex_binding++] =
                 Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt());
         }

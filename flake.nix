@@ -69,6 +69,7 @@
             , cli11
             , nlohmann_json
             , spdlog
+            , freetype
             ,
             }:
 
@@ -125,6 +126,7 @@
                 pipewire.dev
                 libxscrnsaver
                 sndio
+                freetype.dev
               ];
 
               shellHook = ''
@@ -179,18 +181,19 @@
             , libuuid
             , miniz
             , libressl
-            , src
-            , system
+            , freetype
             , cmakeFlags
             , dontStrip ? true
             ,
             }:
 
             clangStdenv.mkDerivation (finalAttrs: {
-              inherit src system cmakeFlags dontStrip;
+              inherit cmakeFlags dontStrip;
 
               pname = "shadps4";
               version = "0.16.1";
+              system = "x86_64-linux";
+              src = "${self}";
 
               nativeBuildInputs = [
                 cmake
@@ -231,6 +234,7 @@
                 libuuid
                 miniz
                 libressl
+                freetype
               ];
 
               # Cannot get the Branch name from the sandbox.
@@ -246,21 +250,15 @@
 
           debugBuild = pkgsLinux.callPackage build
             {
-              src = "${self}";
-              system = "x86_64-linux";
               cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Debug" ];
             };
           releaseBuild = pkgsLinux.callPackage build
             {
-              src = "${self}";
-              system = "x86_64-linux";
               dontStrip = false;
               cmakeFlags = [ "-DCMAKE_BUILD_TYPE=Release" ];
             };
           releaseWithDebugInfoBuild = pkgsLinux.callPackage build
             {
-              src = "${self}";
-              system = "x86_64-linux";
               cmakeFlags = [ "-DCMAKE_BUILD_TYPE=RelWithDebInfo" ];
             };
         in

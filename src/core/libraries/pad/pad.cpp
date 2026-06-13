@@ -556,18 +556,12 @@ int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
     s32 colour_index = u ? u->user_color - 1 : 0;
     Input::Colour colour{255, 0, 0};
     if (colour_index >= 0 && colour_index <= 3) {
-        static constexpr Input::Colour colours[4]{
-            {0, 0, 255},   // blue
-            {255, 0, 0},   // red
-            {0, 255, 0},   // green
-            {255, 0, 255}, // pink
-        };
-        colour = colours[colour_index];
+        colour = Input::g_user_colours[colour_index];
     } else {
         LOG_ERROR(Lib_Pad, "Invalid user colour value {} for controller {}, falling back to blue",
                   colour_index, handle);
     }
-    controller.SetLightBarRGB(colour.r, colour.g, colour.b);
+    controller.SetLightBarRGB(colour);
     return ORBIS_OK;
 }
 
@@ -735,7 +729,6 @@ int PS4_SYSV_ABI scePadSetVibration(s32 handle, const OrbisPadVibrationParam* pP
     if (pParam != nullptr) {
         LOG_DEBUG(Lib_Pad, "scePadSetVibration called handle = {} data = {} , {}", handle,
                   pParam->smallMotor, pParam->largeMotor);
-        auto& controllers = *Common::Singleton<GameControllers>::Instance();
         controller.SetVibration(pParam->smallMotor, pParam->largeMotor);
         return ORBIS_OK;
     }
