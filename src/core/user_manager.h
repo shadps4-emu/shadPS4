@@ -11,7 +11,7 @@
 struct User {
     s32 user_id = -1;
     std::string user_name = "";
-    u32 user_color;
+    u32 user_color = 1;
     int player_index = 0; // 1-4
     bool logged_in = false;
     // ShadNet settings

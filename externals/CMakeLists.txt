@@ -51,7 +51,6 @@ if (NOT TARGET ZLIB::ZLIB)
     set(ZLIB_ENABLE_TESTS OFF)
     set(WITH_GTEST OFF)
     set(WITH_NEW_STRATEGIES ON)
-    set(WITH_NATIVE_INSTRUCTIONS ON)
     set(ZLIB_COMPAT ON CACHE BOOL "" FORCE)
     include(FetchContent)
     FetchContent_Declare(
@@ -65,10 +64,22 @@ if (NOT TARGET ZLIB::ZLIB)
     set(ZLIB_INCLUDE_DIRS "${FETCHCONTENT_BASE_DIR}/zlib-build")
 endif()
 
+# FreeType
+if (NOT TARGET Freetype::Freetype)
+    # Keep optional deps off to reduce build surface; zlib stays enabled for compressed fonts.
+    set(FT_DISABLE_BZIP2 ON CACHE BOOL "" FORCE)
+    set(FT_DISABLE_BROTLI ON CACHE BOOL "" FORCE)
+    set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
+    set(FT_DISABLE_PNG ON CACHE BOOL "" FORCE)
+    add_subdirectory(freetype)
+    add_library(Freetype::Freetype ALIAS freetype)
+endif()
+
 # SDL3
 if (NOT TARGET SDL3::SDL3)
     set(SDL_TEST_LIBRARY OFF)
     set(SDL_PIPEWIRE OFF)
+    set(SDL_AVX512F OFF)
     add_subdirectory(sdl3)
 endif()
 
@@ -249,16 +260,6 @@ if (APPLE OR ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     endif()
 endif()
 
-# Apple-only dependencies
-if (APPLE)
-    # MoltenVK
-    if (NOT TARGET MoltenVK)
-        set(MVK_EXCLUDE_SPIRV_TOOLS ON)
-        set(MVK_USE_METAL_PRIVATE_API ON)
-        add_subdirectory(MoltenVK)
-    endif()
-endif()
-
 #windows only
 if (WIN32)
 add_subdirectory(ext-wepoll)
@@ -283,6 +284,16 @@ if (NOT TARGET CLI11::CLI11)
     set(CLI11_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(CLI11_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     add_subdirectory(CLI11)
+endif()
+
+# miniupnpc
+if (NOT TARGET miniupnpc::miniupnpc)
+set(UPNPC_BUILD_STATIC ON CACHE BOOL "" FORCE)
+set(UPNPC_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(UPNPC_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(UPNPC_BUILD_SAMPLE OFF CACHE BOOL "" FORCE)
+set(UPNPC_NO_INSTALL ON CACHE BOOL "" FORCE)
+add_subdirectory(miniupnp/miniupnpc)
 endif()
 
 # minimp3
@@ -327,6 +338,19 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 add_subdirectory(openal-soft EXCLUDE_FROM_ALL)
 endif()
 
+# LibreSSL
+if (TARGET LibreSSL::SSL OR TARGET LibreSSL::Crypto)
+    set(SSL_DEPENDENCIES LibreSSL::SSL LibreSSL::Crypto)
+elseif (TARGET OpenSSL::SSL OR TARGET OpenSSL::Crypto)
+    set(SSL_DEPENDENCIES OpenSSL::SSL OpenSSL::Crypto)
+else()
+    set(LIBRESSL_SKIP_INSTALL ON CACHE BOOL "" FORCE)
+    set(LIBRESSL_APPS OFF CACHE BOOL "" FORCE)
+    set(LIBRESSL_TESTS OFF CACHE BOOL "" FORCE)
+    add_subdirectory(libressl EXCLUDE_FROM_ALL)
+    get_directory_property(SSL_DEPENDENCIES DIRECTORY libressl DEFINITION OPENSSL_LIBS)
+endif()
+
 # cpp-httplib
 add_library(Cpp_Httplib INTERFACE)
 target_include_directories(Cpp_Httplib INTERFACE cpp-httplib/)
@@ -342,3 +366,18 @@ if(MSVC)
 set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
 endif()
 add_subdirectory(protobuf EXCLUDE_FROM_ALL)
+if (TARGET ZLIB::ZLIB)
+    target_link_libraries(Cpp_Httplib INTERFACE ZLIB::ZLIB)
+    target_compile_definitions(Cpp_Httplib INTERFACE CPPHTTPLIB_ZLIB_SUPPORT)
+    message(STATUS "cpp-httplib: zlib support enabled (gzip response decompression)")
+else()
+    message(STATUS "cpp-httplib: zlib not available — gzip responses will arrive uncompressed")
+endif()
+
+if (DEFINED SSL_DEPENDENCIES)
+    target_link_libraries(Cpp_Httplib INTERFACE ${SSL_DEPENDENCIES})
+    target_compile_definitions(Cpp_Httplib INTERFACE CPPHTTPLIB_OPENSSL_SUPPORT)
+    message(STATUS "cpp-httplib: SSL support enabled (TLS connections)")
+else()
+    message(STATUS "cpp-httplib: OpenSSL/LibreSSL not available — libSceHttp HTTPS will fall back to mock at runtime.")
+endif()

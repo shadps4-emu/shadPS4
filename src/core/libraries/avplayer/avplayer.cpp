@@ -7,6 +7,8 @@
 #include "core/libraries/avplayer/avplayer_impl.h"
 #include "core/libraries/libs.h"
 
+#include <string_view>
+
 namespace Libraries::AvPlayer {
 
 s32 PS4_SYSV_ABI sceAvPlayerAddSource(AvPlayerHandle handle, const char* filename) {
@@ -20,7 +22,7 @@ s32 PS4_SYSV_ABI sceAvPlayerAddSource(AvPlayerHandle handle, const char* filenam
 s32 PS4_SYSV_ABI sceAvPlayerAddSourceEx(AvPlayerHandle handle, AvPlayerUriType uri_type,
                                         AvPlayerSourceDetails* source_details) {
     LOG_TRACE(Lib_AvPlayer, "called");
-    if (handle == nullptr || uri_type != AvPlayerUriType::Source) {
+    if (handle == nullptr || uri_type != AvPlayerUriType::Source || source_details == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
     const auto path = std::string_view(source_details->uri.name, source_details->uri.length);

@@ -1598,9 +1598,7 @@ void Translator::V_MAD_U64_U32(const GcnInst& inst) {
     const auto src1 = GetSrc<IR::U32>(inst.src[1]);
     const auto src2 = GetSrc64<IR::U64>(inst.src[2]);
 
-    // const IR::U64 mul_result = ir.UConvert(64, ir.IMul(src0, src1));
-    const IR::U64 mul_result =
-        ir.PackUint2x32(ir.CompositeConstruct(ir.IMul(src0, src1), ir.Imm32(0U)));
+    const IR::U64 mul_result = ir.IMul(ir.UConvert(64, src0), ir.UConvert(64, src1));
     const IR::U64 sum_result = ir.IAdd(mul_result, src2);
 
     SetDst64(inst.dst[0], sum_result);
@@ -1704,8 +1702,8 @@ void Translator::V_PK_MUL_LO_U16(const GcnInst& inst) {
     const auto src0 = GetSrcPk<IR::U32>(inst.src[0]);
     const auto src1 = GetSrcPk<IR::U32>(inst.src[1]);
 
-    const auto result_lo = ir.IAdd(src0.first, src1.first);
-    const auto result_hi = ir.IAdd(src0.second, src1.second);
+    const auto result_lo = ir.IMul(src0.first, src1.first);
+    const auto result_hi = ir.IMul(src0.second, src1.second);
 
     SetDstPk<IR::U32, false>(inst.dst[0], {result_lo, result_hi});
 }

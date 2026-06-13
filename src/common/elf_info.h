@@ -75,8 +75,7 @@ class ElfInfo {
 
     std::filesystem::path splash_path{};
     std::filesystem::path game_folder{};
-    std::vector<std::string> npCommIds{};
-    std::map<int, std::string> trophyIndexMap{};
+    std::map<s32, std::string> trophy_index_map{};
 
 public:
     static constexpr u32 FW_10 = 0x1000000;
@@ -97,6 +96,24 @@ public:
     static constexpr u32 FW_80 = 0x8000000;
     static constexpr u32 FW_90 = 0x9000000;
     static constexpr u32 FW_115 = 0x11500000;
+    static constexpr u32 FW_100 = 0x1000000;
+    static constexpr u32 FW_150 = 0x1500000;
+    static constexpr u32 FW_160 = 0x1600000;
+    static constexpr u32 FW_170 = 0x1700000;
+    static constexpr u32 FW_200 = 0x2000000;
+    static constexpr u32 FW_250 = 0x2500000;
+    static constexpr u32 FW_300 = 0x3000000;
+    static constexpr u32 FW_350 = 0x3500000;
+    static constexpr u32 FW_400 = 0x4000000;
+    static constexpr u32 FW_450 = 0x4500000;
+    static constexpr u32 FW_500 = 0x5000000;
+    static constexpr u32 FW_550 = 0x5500000;
+    static constexpr u32 FW_600 = 0x6000000;
+    static constexpr u32 FW_700 = 0x7000000;
+    static constexpr u32 FW_750 = 0x7500000;
+    static constexpr u32 FW_800 = 0x8000000;
+    static constexpr u32 FW_1000 = 0x10000000;
+    static constexpr u32 FW_1150 = 0x11500000;
 
     static ElfInfo& Instance() {
         return *Singleton<ElfInfo>::Instance();
@@ -145,12 +162,8 @@ public:
         return game_folder;
     }
 
-    [[nodiscard]] const std::vector<std::string> GetNpCommIds() const {
-        return npCommIds;
-    }
-
-    [[nodiscard]] const std::map<int, std::string>& GetTrophyIndexMap() const {
-        return trophyIndexMap;
+    [[nodiscard]] const std::map<s32, std::string>& GetTrophyIndexMap() const {
+        return trophy_index_map;
     }
 };
 

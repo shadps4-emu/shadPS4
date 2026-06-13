@@ -12,6 +12,9 @@
 #include "input/controller.h"
 #include "pad.h"
 
+#include <algorithm>
+#include <optional>
+
 namespace Libraries::Pad {
 
 using Input::GameController;
@@ -134,19 +137,28 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     if (it == handle_to_controller_map.end()) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
+    bool connected = false;
+    int connected_count = 0;
+    Input::State state{};
+    it->second->ReadState(&state, &connected, &connected_count);
+
+    std::memset(pInfo, 0, sizeof(OrbisPadControllerInformation));
     pInfo->touchPadInfo.pixelDensity = 1;
     pInfo->touchPadInfo.resolution.x = 1920;
     pInfo->touchPadInfo.resolution.y = 950;
     pInfo->stickInfo.deadZoneLeft = 1;
     pInfo->stickInfo.deadZoneRight = 1;
-    pInfo->connectionType = ORBIS_PAD_PORT_TYPE_STANDARD;
-    pInfo->connectedCount = 1;
+    pInfo->connectionType = ORBIS_PAD_CONNECTION_TYPE_LOCAL;
+    pInfo->connectedCount = static_cast<u8>(std::clamp(connected_count, 0, 0xff));
     pInfo->deviceClass = OrbisPadDeviceClass::Standard;
-    pInfo->connected = true;
-    if (EmulatorSettings.IsUsingSpecialPad()) {
-        pInfo->connectionType = ORBIS_PAD_PORT_TYPE_SPECIAL;
-        pInfo->deviceClass = (OrbisPadDeviceClass)EmulatorSettings.GetSpecialPadClass();
+    pInfo->connected = connected;
+    if (connected) {
+        pInfo->deviceClass = EmulatorSettings.IsUsingSpecialPad()
+                                 ? (OrbisPadDeviceClass)EmulatorSettings.GetSpecialPadClass()
+                                 : OrbisPadDeviceClass::Standard;
     }
+    LOG_DEBUG(Lib_Pad, "c: {} cc: {}, ct: {}, dc: {}", pInfo->connected, pInfo->connectedCount,
+              pInfo->connectionType, std::to_underlying(pInfo->deviceClass));
     return ORBIS_OK;
 }
 
@@ -168,16 +180,8 @@ int PS4_SYSV_ABI scePadGetDeviceInfo() {
 int PS4_SYSV_ABI scePadGetExtControllerInformation(s32 handle,
                                                    OrbisPadExtendedControllerInformation* pInfo) {
     LOG_INFO(Lib_Pad, "called handle = {}", handle);
-
-    pInfo->padType1 = 0;
-    pInfo->padType2 = 0;
-    pInfo->capability = 0;
-
-    auto res = scePadGetControllerInformation(handle, &pInfo->base);
-    if (!EmulatorSettings.IsUsingSpecialPad()) {
-        pInfo->base.connected = false;
-    }
-    return res;
+    std::memset(pInfo, 0, sizeof(OrbisPadExtendedControllerInformation));
+    return scePadGetControllerInformation(handle, &pInfo->base);
 }
 
 int PS4_SYSV_ABI scePadGetExtensionUnitInfo() {
@@ -471,7 +475,7 @@ int ProcessStates(s32 handle, OrbisPadData* pData, Input::GameController& contro
             pData[i].touchData.touch[1].y = states[i].touchpad[1].y;
             pData[i].touchData.touch[1].id = states[i].touchpad[1].ID;
         }
-        if (Common::ElfInfo::Instance().FirmwareVer() > Common::ElfInfo::FW_35) {
+        if (Common::ElfInfo::Instance().FirmwareVer() > Common::ElfInfo::FW_350) {
             pData[i].touchData.time_since_touch_held_down =
                 controller.last_touch_down_timestamp == 0
                     ? 0
@@ -552,18 +556,12 @@ int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
     s32 colour_index = u ? u->user_color - 1 : 0;
     Input::Colour colour{255, 0, 0};
     if (colour_index >= 0 && colour_index <= 3) {
-        static constexpr Input::Colour colours[4]{
-            {0, 0, 255},   // blue
-            {255, 0, 0},   // red
-            {0, 255, 0},   // green
-            {255, 0, 255}, // pink
-        };
-        colour = colours[colour_index];
+        colour = Input::g_user_colours[colour_index];
     } else {
         LOG_ERROR(Lib_Pad, "Invalid user colour value {} for controller {}, falling back to blue",
                   colour_index, handle);
     }
-    controller.SetLightBarRGB(colour.r, colour.g, colour.b);
+    controller.SetLightBarRGB(colour);
     return ORBIS_OK;
 }
 
@@ -731,7 +729,6 @@ int PS4_SYSV_ABI scePadSetVibration(s32 handle, const OrbisPadVibrationParam* pP
     if (pParam != nullptr) {
         LOG_DEBUG(Lib_Pad, "scePadSetVibration called handle = {} data = {} , {}", handle,
                   pParam->smallMotor, pParam->largeMotor);
-        auto& controllers = *Common::Singleton<GameControllers>::Instance();
         controller.SetVibration(pParam->smallMotor, pParam->largeMotor);
         return ORBIS_OK;
     }

@@ -10,6 +10,7 @@
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/np/np_manager.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/system/userservice_error.h"
 #include "core/tls.h"
@@ -127,6 +128,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetEvent(OrbisUserServiceEvent* event) {
         event->event = temp.event;
         event->userId = temp.userId;
         user_service_event_queue.pop();
+        Libraries::Np::NpManager::NotifyNpStateFromUserServiceEvent(temp.event, temp.userId);
         LOG_INFO(Lib_UserService, "Event processed by the game: {} {}", (u8)temp.event,
                  temp.userId);
         return ORBIS_OK;

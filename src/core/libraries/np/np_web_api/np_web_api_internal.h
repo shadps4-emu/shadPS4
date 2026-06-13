@@ -9,6 +9,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_web_api.h"
+#include "np_web_api.h"
 
 namespace Libraries::Np::NpWebApi {
 
