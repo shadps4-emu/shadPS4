@@ -66,6 +66,8 @@ bool PushSDLEvent(SDL_Event const& e) {
             return false;
 
         auto& s = current_state[index];
+        s.x_axis = 0;
+        s.y_axis = 0;
         s.buttons |= OrbisButtonFromSDL(e.button.button);
         s.timestamp = Libraries::Kernel::sceKernelGetProcessTime();
 
@@ -78,6 +80,8 @@ bool PushSDLEvent(SDL_Event const& e) {
             return false;
 
         auto& s = current_state[index];
+        s.x_axis = 0;
+        s.y_axis = 0;
         s.buttons &= ~OrbisButtonFromSDL(e.button.button);
         s.timestamp = Libraries::Kernel::sceKernelGetProcessTime();
 
@@ -90,6 +94,8 @@ bool PushSDLEvent(SDL_Event const& e) {
             return false;
 
         auto& s = current_state[index];
+        s.x_axis = 0;
+        s.y_axis = 0;
         s.wheel = e.wheel.y;
         s.tilt = e.wheel.x;
         s.timestamp = Libraries::Kernel::sceKernelGetProcessTime();
