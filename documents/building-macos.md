@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 ### Install the necessary tools to build shadPS4:
 
-First, make sure you have **Xcode 16.0 or newer** installed.
+First, make sure you have **Xcode 26.0 or newer** installed.
 
 For installing other tools and library dependencies we will be using [Homebrew](https://brew.sh/).
 

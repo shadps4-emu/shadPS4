@@ -225,34 +225,6 @@ static float MaxSsCompat(float a, float b) {
     return a;
 }
 
-static s32 RoundFixedMul16x16ToS32(long fixed_16_16, s32 value) {
-    const long long prod = static_cast<long long>(fixed_16_16) * static_cast<long long>(value);
-    const long long sign_adj =
-        (static_cast<long long>(~static_cast<long long>(value)) >> 63) * -0x10000LL;
-    const long long base = sign_adj + prod;
-    long long tmp = base - 0x8000LL;
-    if (tmp < 0) {
-        tmp = base + 0x7FFFLL;
-    }
-    return static_cast<s32>(static_cast<u64>(tmp) >> 16);
-}
-
-static int FloorIntCompat(float v) {
-    int i = static_cast<int>(std::trunc(v));
-    if (static_cast<float>(i) > v) {
-        --i;
-    }
-    return i;
-}
-
-static int CeilIntCompat(float v) {
-    int i = static_cast<int>(std::trunc(v));
-    if (static_cast<float>(i) < v) {
-        ++i;
-    }
-    return i;
-}
-
 float FixedMulUnitsToF26Dot6(long fixed_16_16, u16 units_per_em) {
     constexpr float kOneOver64Local = 1.0f / 64.0f;
     const long prod = static_cast<long>(static_cast<long long>(fixed_16_16) *
@@ -1944,25 +1916,27 @@ static s32 RenderGlyphIndexToSurface(FontObj& font_obj, u32 glyph_index,
     const float bottom_f = top_f - metrics->height;
 
     const int left_i = FloorIntCompat(left_f);
-    const int top_i = FloorIntCompat(top_f);
+    const int top_i = CeilIntCompat(top_f);
     const int right_i = CeilIntCompat(right_f);
     const int bottom_i = FloorIntCompat(bottom_f);
 
     const float adv_f = x + metrics->Horizontal.advance;
-    const float adv_snapped = static_cast<float>(FloorIntCompat(adv_f)) - x;
+    const int adv_i = CeilIntCompat(adv_f);
+    const float adv_snapped = static_cast<float>(adv_i) - x;
 
     result->ImageMetrics.bearingX = static_cast<float>(left_i) - x;
     result->ImageMetrics.bearingY = static_cast<float>(top_i) - y;
     result->ImageMetrics.advance = adv_snapped;
-    int stride_i = right_i + 1;
-    const float adjust = static_cast<float>(right_i) - right_f;
-    const int tmp_i = FloorIntCompat(adv_f + adjust);
-    const int adv_trunc_i = static_cast<int>(std::trunc(adv_f));
-    if (adv_trunc_i == 0) {
-        stride_i = tmp_i;
-    }
-    if (stride_i < tmp_i) {
-        stride_i = tmp_i;
+    int stride_i = adv_i;
+    if (adv_f != static_cast<float>(adv_i)) {
+        const int tmp_i = static_cast<int>((static_cast<float>(right_i) - right_f) + adv_f);
+        stride_i = right_i + 1;
+        if (adv_f <= right_f) {
+            stride_i = tmp_i;
+        }
+        if (stride_i < tmp_i) {
+            stride_i = tmp_i;
+        }
     }
     result->ImageMetrics.stride = static_cast<float>(stride_i) - x;
     result->ImageMetrics.width = static_cast<u32>(std::max(0, right_i - left_i));
@@ -2583,90 +2557,6 @@ static float to_f26dot6_s64(s64 value) {
     return static_cast<float>(value) * kOneOver64;
 }
 
-static std::optional<std::filesystem::path> ResolveKnownSysFontAlias(
-    const std::filesystem::path& sysfonts_dir, std::string_view ps4_filename) {
-    const auto resolve_existing =
-        [&](std::string_view filename) -> std::optional<std::filesystem::path> {
-        const std::filesystem::path file_path{std::string(filename)};
-        std::error_code ec;
-        {
-            const auto candidate = sysfonts_dir / file_path;
-            if (std::filesystem::exists(candidate, ec)) {
-                return candidate;
-            }
-        }
-        {
-            const auto candidate = sysfonts_dir / "font" / file_path;
-            if (std::filesystem::exists(candidate, ec)) {
-                return candidate;
-            }
-        }
-        {
-            const auto candidate = sysfonts_dir / "font2" / file_path;
-            if (std::filesystem::exists(candidate, ec)) {
-                return candidate;
-            }
-        }
-        return std::nullopt;
-    };
-
-    static constexpr std::array<std::pair<std::string_view, std::string_view>, 41> kAliases = {{
-        {"SST-EU-ROMAN-L.OTF", "SST-Light.otf"},
-        {"SST-EU-ROMAN.OTF", "SST-Roman.otf"},
-        {"SST-EU-ROMAN-M.OTF", "SST-Medium.otf"},
-        {"SST-EU-ROMAN-R.OTF", "SST-Roman.otf"},
-        {"SST-EU-ROMAN-I.OTF", "SST-Italic.otf"},
-        {"SST-EU-ROMAN-B.OTF", "SST-Bold.otf"},
-        {"SST-EU-ROMAN-BI.OTF", "SST-BoldItalic.otf"},
-        {"SST-ITALIC-L.OTF", "SST-LightItalic.otf"},
-        {"SST-ITALIC-R.OTF", "SST-Italic.otf"},
-        {"SST-ITALIC-M.OTF", "SST-MediumItalic.otf"},
-        {"SST-ITALIC-B.OTF", "SST-BoldItalic.otf"},
-        {"SST-TYPEWRITER-R.OTF", "SSTTypewriter-Roman.otf"},
-        {"SST-TYPEWRITER-B.OTF", "SSTTypewriter-Bd.otf"},
-        {"SST-JPPRO-R.OTF", "SSTJpPro-Regular.otf"},
-        {"SST-JPPRO-B.OTF", "SSTJpPro-Bold.otf"},
-        {"SST-CNGB-HEI-R.TTF", "DFHEI5-SONY.ttf"},
-        {"SST-ARIB-STD-B24-R.TTF", "SSTAribStdB24-Regular.ttf"},
-        {"SST-ARABIC-R.OTF", "SSTArabic-Roman.otf"},
-        {"SST-ARABIC-L.OTF", "SSTArabic-Light.otf"},
-        {"SST-ARABIC-M.OTF", "SSTArabic-Medium.otf"},
-        {"SST-ARABIC-B.OTF", "SSTArabic-Bold.otf"},
-        {"SCE-EXT-HANGUL-L.OTF", "SCEPS4Yoongd-Light.otf"},
-        {"SCE-EXT-HANGUL-R.OTF", "SCEPS4Yoongd-Medium.otf"},
-        {"SCE-EXT-HANGUL-B.OTF", "SCEPS4Yoongd-Bold.otf"},
-        {"SSTCC-SERIF-MONO.OTF", "e046323ms.ttf"},
-        {"SSTCC-SERIF.OTF", "e046323ts.ttf"},
-        {"SSTCC-SANSSERIF-MONO.OTF", "n023055ms.ttf"},
-        {"SSTCC-SANSSERIF.OTF", "n023055ts.ttf"},
-        {"SSTCC-CUSUAL.OTF", "d013013ds.ttf"},
-        {"SSTCC-CURSIVE.OTF", "k006004ds.ttf"},
-        {"SSTCC-SMALLCAPITAL.OTF", "c041056ts.ttf"},
-        {"SCE-JP-CATTLEYA-L.OTF", "SCE-RDC-R-JPN.otf"},
-        {"SCE-JP-CATTLEYA-B.OTF", "SCE-RDC-B-JPN.otf"},
-        {"SST-THAI-L.OTF", "SSTThai-Light.otf"},
-        {"SST-THAI-R.OTF", "SSTThai-Roman.otf"},
-        {"SST-THAI-M.OTF", "SSTThai-Medium.otf"},
-        {"SST-THAI-B.OTF", "SSTThai-Bold.otf"},
-        {"SST-VIETNAMESE-L.OTF", "SSTVietnamese-Light.otf"},
-        {"SST-VIETNAMESE-R.OTF", "SSTVietnamese-Roman.otf"},
-        {"SST-VIETNAMESE-M.OTF", "SSTVietnamese-Medium.otf"},
-        {"SST-VIETNAMESE-B.OTF", "SSTVietnamese-Bold.otf"},
-    }};
-
-    for (const auto& [from, to] : kAliases) {
-        if (ps4_filename == from) {
-            return resolve_existing(to);
-        }
-        if (ps4_filename == to) {
-            if (auto reverse = resolve_existing(from)) {
-                return reverse;
-            }
-        }
-    }
-    return std::nullopt;
-}
-
 static constexpr u32 MakeTag(char a, char b, char c, char d) {
     return (static_cast<u32>(static_cast<u8>(a)) << 24) |
            (static_cast<u32>(static_cast<u8>(b)) << 16) |
@@ -3137,7 +3027,8 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
             const std::filesystem::path file_path{ps4_name};
             candidates.emplace_back((sysfonts_dir / "font" / file_path).string());
             candidates.emplace_back((sysfonts_dir / "font2" / file_path).string());
-            if (const auto alias = ResolveKnownSysFontAlias(sysfonts_dir, ps4_name)) {
+            if (const auto alias =
+                    Libraries::Font::Internal::ResolveKnownSysFontAlias(sysfonts_dir, ps4_name)) {
                 candidates.emplace_back(alias->string());
             }
         }

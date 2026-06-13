@@ -58,7 +58,6 @@ std::string FormatNamedParams(std::initializer_list<NamedParam> params) {
 }
 
 bool HasSfntTables(const std::vector<unsigned char>& bytes);
-FontState* TryGetState(Libraries::Font::OrbisFontHandle h);
 std::string ReportSystemFaceRequest(FontState& st, Libraries::Font::OrbisFontHandle handle,
                                     bool& attached_out);
 
@@ -82,34 +81,6 @@ static constexpr FT_Int32 kFtLoadFlagsBase =
 
 static constexpr FT_Int32 kFtLoadFlagsRender =
     static_cast<FT_Int32>(kFtLoadFlagsBase | FT_LOAD_RENDER);
-
-static s32 RoundFixedMul16x16ToS32(long fixed_16_16, s32 value) {
-    const long long prod = static_cast<long long>(fixed_16_16) * static_cast<long long>(value);
-    const long long sign_adj =
-        (static_cast<long long>(~static_cast<long long>(value)) >> 63) * -0x10000LL;
-    const long long base = sign_adj + prod;
-    long long tmp = base - 0x8000LL;
-    if (tmp < 0) {
-        tmp = base + 0x7FFFLL;
-    }
-    return static_cast<s32>(static_cast<u64>(tmp) >> 16);
-}
-
-static int FloorIntCompat(float v) {
-    int i = static_cast<int>(std::trunc(v));
-    if (static_cast<float>(i) > v) {
-        --i;
-    }
-    return i;
-}
-
-static int CeilIntCompat(float v) {
-    int i = static_cast<int>(std::trunc(v));
-    if (static_cast<float>(i) < v) {
-        ++i;
-    }
-    return i;
-}
 
 } // namespace
 
@@ -1398,25 +1369,27 @@ s32 RenderCodepointToSurface(FontState& st, Libraries::Font::OrbisFontHandle han
     const float bottom_f = top_f - metrics->height;
 
     const int left_i = FloorIntCompat(left_f);
-    const int top_i = FloorIntCompat(top_f);
+    const int top_i = CeilIntCompat(top_f);
     const int right_i = CeilIntCompat(right_f);
-    const int bottom_i = CeilIntCompat(bottom_f);
+    const int bottom_i = FloorIntCompat(bottom_f);
 
     const float adv_f = x + metrics->Horizontal.advance;
-    const float adv_snapped = static_cast<float>(FloorIntCompat(adv_f)) - x;
+    const int adv_i = CeilIntCompat(adv_f);
+    const float adv_snapped = static_cast<float>(adv_i) - x;
 
     result->ImageMetrics.bearingX = static_cast<float>(left_i) - x;
     result->ImageMetrics.bearingY = static_cast<float>(top_i) - y;
     result->ImageMetrics.advance = adv_snapped;
-    int stride_i = right_i + 1;
-    const float adjust = static_cast<float>(right_i) - right_f;
-    const int tmp_i = FloorIntCompat(adv_f + adjust);
-    const int adv_trunc_i = static_cast<int>(std::trunc(adv_f));
-    if (adv_trunc_i == 0) {
-        stride_i = tmp_i;
-    }
-    if (stride_i < tmp_i) {
-        stride_i = tmp_i;
+    int stride_i = adv_i;
+    if (adv_f != static_cast<float>(adv_i)) {
+        const int tmp_i = static_cast<int>((static_cast<float>(right_i) - right_f) + adv_f);
+        stride_i = right_i + 1;
+        if (adv_f <= right_f) {
+            stride_i = tmp_i;
+        }
+        if (stride_i < tmp_i) {
+            stride_i = tmp_i;
+        }
     }
     result->ImageMetrics.stride = static_cast<float>(stride_i) - x;
     result->ImageMetrics.width = static_cast<u32>(std::max(0, right_i - left_i));
@@ -1629,25 +1602,27 @@ s32 RenderCodepointToSurfaceWithScale(FontState& st, Libraries::Font::OrbisFontH
     const float bottom_f = top_f - m->height;
 
     const int left_i = FloorIntCompat(left_f);
-    const int top_i = FloorIntCompat(top_f);
+    const int top_i = CeilIntCompat(top_f);
     const int right_i = CeilIntCompat(right_f);
-    const int bottom_i = CeilIntCompat(bottom_f);
+    const int bottom_i = FloorIntCompat(bottom_f);
 
     const float adv_f = x + m->Horizontal.advance;
-    const float adv_snapped = static_cast<float>(FloorIntCompat(adv_f)) - x;
+    const int adv_i = CeilIntCompat(adv_f);
+    const float adv_snapped = static_cast<float>(adv_i) - x;
 
     result->ImageMetrics.bearingX = static_cast<float>(left_i) - x;
     result->ImageMetrics.bearingY = static_cast<float>(top_i) - y;
     result->ImageMetrics.advance = adv_snapped;
-    int stride_i = right_i + 1;
-    const float adjust = static_cast<float>(right_i) - right_f;
-    const int tmp_i = FloorIntCompat(adv_f + adjust);
-    const int adv_trunc_i = static_cast<int>(std::trunc(adv_f));
-    if (adv_trunc_i == 0) {
-        stride_i = tmp_i;
-    }
-    if (stride_i < tmp_i) {
-        stride_i = tmp_i;
+    int stride_i = adv_i;
+    if (adv_f != static_cast<float>(adv_i)) {
+        const int tmp_i = static_cast<int>((static_cast<float>(right_i) - right_f) + adv_f);
+        stride_i = right_i + 1;
+        if (adv_f <= right_f) {
+            stride_i = tmp_i;
+        }
+        if (stride_i < tmp_i) {
+            stride_i = tmp_i;
+        }
     }
     result->ImageMetrics.stride = static_cast<float>(stride_i) - x;
     result->ImageMetrics.width = static_cast<u32>(std::max(0, right_i - left_i));

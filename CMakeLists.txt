@@ -9,8 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(APPLE)
     list(APPEND ADDITIONAL_LANGUAGES OBJC)
-    # Starting with 15.4, Rosetta 2 has support for all the necessary instruction sets.
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.4 CACHE STRING "")
+    # Minimum OS version for KosmicKrisp
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 26.0 CACHE STRING "")
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -235,6 +235,7 @@ find_package(Freetype 2.14.1 MODULE)
 find_package(glslang 15 CONFIG)
 find_package(half 1.12.0 MODULE)
 find_package(magic_enum 0.9.7 CONFIG)
+find_package(miniupnpc 2.3.3 MODULE)
 find_package(miniz 3.1 CONFIG)
 find_package(nlohmann_json 3.12 CONFIG)
 find_package(PNG 1.6 MODULE)
@@ -245,7 +246,7 @@ find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.329 CONFIG)
+find_package(VulkanHeaders 1.4.330 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
@@ -1188,7 +1189,7 @@ create_target_directory_groups(shadps4)
 target_link_libraries(shadps4 PRIVATE spdlog::spdlog)
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui ImGuiFileDialog gcn half::half ZLIB::ZLIB PNG::PNG minimp3)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml)
-target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib libminiupnpc-static)
+target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib miniupnpc::miniupnpc)
 target_link_libraries(shadps4 PRIVATE Freetype::Freetype)
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
@@ -1215,25 +1216,10 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 endif()
 
 if (APPLE)
-    # Include MoltenVK, along with an ICD file so it can be found by the system Vulkan loader if used for loading layers.
+    # Bundle Vulkan loader and KosmicKrisp driver with the emulator.
     set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
-    set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR})
-    set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/MoltenVK/libMoltenVK.dylib)
-    set(MVK_DYLIB_DST ${MVK_DST}/libMoltenVK.dylib)
-    set(MVK_ICD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/externals/MoltenVK/MoltenVK/icd/MoltenVK_icd.json)
-    set(MVK_ICD_DST ${MVK_DST}/MoltenVK_icd.json)
-
-    add_custom_command(
-        OUTPUT ${MVK_ICD_DST}
-        DEPENDS ${MVK_ICD_SRC} ${MVK_DST}
-        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_ICD_SRC} ${MVK_ICD_DST})
-    add_custom_command(
-        OUTPUT ${MVK_DYLIB_DST}
-        DEPENDS ${MVK_DYLIB_SRC} ${MVK_DST}
-        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
-    add_custom_target(CopyMoltenVK DEPENDS ${MVK_ICD_DST} ${MVK_DYLIB_DST})
-    add_dependencies(CopyMoltenVK MoltenVK)
-    add_dependencies(shadps4 CopyMoltenVK)
+    add_subdirectory(externals/mesa-kosmickrisp)
+    AddCopyKosmicKrisp(shadps4 ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
     if (ARCHITECTURE STREQUAL "x86_64")
         # Reserve system-managed memory space.
