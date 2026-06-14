@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
+#include <cctype>
 #include <deque>
 #include <map>
 #include <mutex>
 #include <variant>
 
 #include <core/user_settings.h>
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
@@ -15,10 +17,13 @@
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/tls.h"
+#include "core/user_manager.h"
+#include "np_handler.h"
 
 namespace Libraries::Np::NpManager {
 
 static bool g_shadnet_enabled = false;
+static s32 g_firmware_version = -1;
 static s32 g_active_requests = 0;
 static std::mutex g_request_mutex;
 
@@ -43,9 +48,68 @@ struct NpRequest {
     s32 result;
 };
 
+static void FillCountryCodeFromProfile(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                       OrbisNpCountryCode* out) {
+    std::memset(out, 0, sizeof(OrbisNpCountryCode));
+    const User* u = UserManagement.GetUserByID(user_id);
+    const std::string cfg = u ? u->np_country : std::string();
+    const bool ok = cfg.size() == 2 && std::isalpha(static_cast<unsigned char>(cfg[0])) &&
+                    std::isalpha(static_cast<unsigned char>(cfg[1]));
+    const char* src = ok ? cfg.c_str() : "us";
+    std::memcpy(out->country_code, src, 2);
+}
+
+static void FillLanguageCodeFromProfile(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                        OrbisNpLanguageCode* out) {
+    std::memset(out, 0, sizeof(OrbisNpLanguageCode));
+    const User* u = UserManagement.GetUserByID(user_id);
+    const std::string cfg = u ? u->np_language : std::string();
+    const bool ok = cfg.size() == 2 && std::isalpha(static_cast<unsigned char>(cfg[0])) &&
+                    std::isalpha(static_cast<unsigned char>(cfg[1]));
+    const char* src = ok ? cfg.c_str() : "en";
+    std::memcpy(out->code, src, 2);
+}
+
+static s8 GetAgeFromProfile(Libraries::UserService::OrbisUserServiceUserId user_id) {
+    const User* u = UserManagement.GetUserByID(user_id);
+    const int v = u ? static_cast<int>(u->np_age) : 0;
+    if (v <= 0 || v > 127) {
+        return 13;
+    }
+    return static_cast<s8>(v);
+}
+
+static void FillDateOfBirthFromProfile(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                       OrbisNpDate* out) {
+    const User* u = UserManagement.GetUserByID(user_id);
+    const std::string s = u ? u->np_date_of_birth : std::string();
+
+    int y = 0, m = 0, d = 0;
+    bool ok = s.size() == 10 && s[4] == '-' && s[7] == '-';
+    if (ok) {
+        auto is_digit_at = [&](size_t i) { return std::isdigit(static_cast<unsigned char>(s[i])); };
+        for (size_t i : {0u, 1u, 2u, 3u, 5u, 6u, 8u, 9u}) {
+            if (!is_digit_at(i)) {
+                ok = false;
+                break;
+            }
+        }
+    }
+    if (ok) {
+        y = (s[0] - '0') * 1000 + (s[1] - '0') * 100 + (s[2] - '0') * 10 + (s[3] - '0');
+        m = (s[5] - '0') * 10 + (s[6] - '0');
+        d = (s[8] - '0') * 10 + (s[9] - '0');
+        ok = y >= 1900 && y <= 2100 && m >= 1 && m <= 12 && d >= 1 && d <= 31;
+    }
+
+    out->year = ok ? static_cast<u16>(y) : 2000;
+    out->month = ok ? static_cast<u16>(m) : 1;
+    out->day = ok ? static_cast<u16>(d) : 1;
+}
+
 static std::vector<NpRequest> g_requests;
 
-s32 CreateNpRequest(bool async) {
+static s32 CreateNpRequest(bool async) {
     if (g_active_requests == ORBIS_NP_MANAGER_REQUEST_LIMIT) {
         return ORBIS_NP_ERROR_REQUEST_MAX;
     }
@@ -75,6 +139,41 @@ s32 CreateNpRequest(bool async) {
     return req_index + ORBIS_NP_MANAGER_REQUEST_ID_OFFSET + 1;
 }
 
+// Validate a request ID and return the NpRequest*, or nullptr + error code.
+// Writes the error code to *out_err when returning nullptr.
+static NpRequest* GetRequest(s32 req_id, s32* out_err) {
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || req_index < 0 ||
+        req_index >= static_cast<s32>(g_requests.size()) ||
+        g_requests[req_index].state == NpRequestState::None) {
+        *out_err = ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+        return nullptr;
+    }
+    auto& req = g_requests[req_index];
+    if (req.state == NpRequestState::Complete) {
+        req.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
+        *out_err = ORBIS_NP_ERROR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (req.state == NpRequestState::Aborted) {
+        req.result = ORBIS_NP_ERROR_ABORTED;
+        *out_err = ORBIS_NP_ERROR_ABORTED;
+        return nullptr;
+    }
+    return &req;
+}
+
+// Complete a request and return OK (or SIGNED_OUT for async when disabled).
+static s32 CompleteRequest(NpRequest& req, s32 result) {
+    req.state = NpRequestState::Complete;
+    req.result = result;
+    if (result != ORBIS_OK && req.async) {
+        // Async requests always return OK immediately; result is read via PollAsync/WaitAsync.
+        return ORBIS_OK;
+    }
+    return result;
+}
+
 s32 PS4_SYSV_ABI sceNpCreateRequest() {
     LOG_DEBUG(Lib_NpManager, "called");
     return CreateNpRequest(false);
@@ -97,166 +196,78 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailability(s32 req_id, OrbisNpOnlineId* online_id
     if (online_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-
     std::scoped_lock lk{g_request_mutex};
-
-    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index].state == NpRequestState::None) {
-        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    s32 err;
+    NpRequest* req = GetRequest(req_id, &err);
+    if (!req)
+        return err;
+    const s32 user_id = Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(*online_id);
+    if (!g_shadnet_enabled || user_id == -1 ||
+        !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
+        return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
-
-    auto& request = g_requests[req_index];
-    if (request.state == NpRequestState::Complete) {
-        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
-        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    } else if (request.state == NpRequestState::Aborted) {
-        request.result = ORBIS_NP_ERROR_ABORTED;
-        return ORBIS_NP_ERROR_ABORTED;
-    }
-
-    request.state = NpRequestState::Complete;
-    if (!g_shadnet_enabled) {
-        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
-        // If the request is processed in some form, and it's an async request, then it returns OK.
-        if (request.async) {
-            return ORBIS_OK;
-        }
-        return ORBIS_NP_ERROR_SIGNED_OUT;
-    }
-
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, is_async = {}", req_id,
-              request.async);
-
-    request.result = ORBIS_OK;
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_NpManager, "req_id = {:#x}", req_id);
+    return CompleteRequest(*req, ORBIS_OK);
 }
 
 s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
                                            Libraries::UserService::OrbisUserServiceUserId user_id) {
-    std::scoped_lock lk{g_request_mutex};
-
-    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index].state == NpRequestState::None) {
-        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
-    }
-
-    auto& request = g_requests[req_index];
-    if (request.state == NpRequestState::Complete) {
-        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        LOG_ERROR(Lib_NpManager, "invalid user_id {}", user_id);
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    } else if (request.state == NpRequestState::Aborted) {
-        request.result = ORBIS_NP_ERROR_ABORTED;
-        return ORBIS_NP_ERROR_ABORTED;
     }
-
-    request.state = NpRequestState::Complete;
-    if (!g_shadnet_enabled) {
-        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
-        // If the request is processed in some form, and it's an async request, then it returns OK.
-        if (request.async) {
-            return ORBIS_OK;
-        }
-        return ORBIS_NP_ERROR_SIGNED_OUT;
+    std::scoped_lock lk{g_request_mutex};
+    s32 err;
+    NpRequest* req = GetRequest(req_id, &err);
+    if (!req)
+        return err;
+    if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
+        return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
-
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, is_async = {}", req_id,
-              request.async);
-
-    request.result = ORBIS_OK;
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_NpManager, "req_id = {:#x}, user_id = {}", req_id, user_id);
+    return CompleteRequest(*req, ORBIS_OK);
 }
 
 s32 PS4_SYSV_ABI sceNpCheckNpReachability(s32 req_id,
                                           Libraries::UserService::OrbisUserServiceUserId user_id) {
     std::scoped_lock lk{g_request_mutex};
-
-    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index].state == NpRequestState::None) {
-        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    s32 err;
+    NpRequest* req = GetRequest(req_id, &err);
+    if (!req)
+        return err;
+    if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
+        return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
-
-    auto& request = g_requests[req_index];
-    if (request.state == NpRequestState::Complete) {
-        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
-        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    } else if (request.state == NpRequestState::Aborted) {
-        request.result = ORBIS_NP_ERROR_ABORTED;
-        return ORBIS_NP_ERROR_ABORTED;
-    }
-
-    request.state = NpRequestState::Complete;
-    if (!g_shadnet_enabled) {
-        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
-        // If the request is processed in some form, and it's an async request, then it returns OK.
-        if (request.async) {
-            return ORBIS_OK;
-        }
-        return ORBIS_NP_ERROR_SIGNED_OUT;
-    }
-
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, is_async = {}", req_id,
-              request.async);
-
-    request.result = ORBIS_OK;
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_NpManager, "req_id = {:#x}, user_id = {}", req_id, user_id);
+    return CompleteRequest(*req, ORBIS_OK);
 }
 
 s32 PS4_SYSV_ABI sceNpCheckPlus(s32 req_id, const OrbisNpCheckPlusParameter* param,
                                 OrbisNpCheckPlusResult* result) {
-
     if (req_id == 0 || param == nullptr || result == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-
     if (param->size != sizeof(OrbisNpCheckPlusParameter)) {
         return ORBIS_NP_ERROR_INVALID_SIZE;
     }
-
     if (param->features < 1 || param->features > 3) {
         // TODO: If compiled SDK version is greater or equal to fw 3.50,
-        // error if param->features != 1 instead.
+        // // error if param->features != 1 instead.
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-
     std::scoped_lock lk{g_request_mutex};
-
-    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index].state == NpRequestState::None) {
-        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    s32 err;
+    NpRequest* req = GetRequest(req_id, &err);
+    if (!req)
+        return err;
+    if (!g_shadnet_enabled ||
+        !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(param->user_id)) {
+        return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
-
-    auto& request = g_requests[req_index];
-    if (request.state == NpRequestState::Complete) {
-        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
-        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    } else if (request.state == NpRequestState::Aborted) {
-        request.result = ORBIS_NP_ERROR_ABORTED;
-        return ORBIS_NP_ERROR_ABORTED;
-    }
-
-    request.state = NpRequestState::Complete;
-    if (!g_shadnet_enabled) {
-        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
-        // If the request is processed in some form, and it's an async request, then it returns OK.
-        if (request.async) {
-            return ORBIS_OK;
-        }
-        return ORBIS_NP_ERROR_SIGNED_OUT;
-    }
-
-    LOG_ERROR(Lib_NpManager,
-              "(STUBBED) called, req_id = {:#x}, is_async = {}, param.features = {:#x}", req_id,
-              request.async, param->features);
-
-    // For now, set authorized to true to signal PS+ access.
+    LOG_DEBUG(Lib_NpManager, "req_id = {:#x}, features = {:#x}", req_id, param->features);
+    // Grant PS+ — shadNet has no subscription gating.
     result->authorized = true;
-
-    request.result = ORBIS_OK;
-    return ORBIS_OK;
+    return CompleteRequest(*req, ORBIS_OK);
 }
 
 s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
@@ -264,41 +275,19 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
     if (online_id == nullptr || language == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-
     std::scoped_lock lk{g_request_mutex};
-
-    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index].state == NpRequestState::None) {
-        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    s32 err;
+    NpRequest* req = GetRequest(req_id, &err);
+    if (!req)
+        return err;
+    const s32 user_id = Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(*online_id);
+    if (!g_shadnet_enabled || user_id == -1 ||
+        !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
+        return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
-
-    auto& request = g_requests[req_index];
-    if (request.state == NpRequestState::Complete) {
-        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
-        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    } else if (request.state == NpRequestState::Aborted) {
-        request.result = ORBIS_NP_ERROR_ABORTED;
-        return ORBIS_NP_ERROR_ABORTED;
-    }
-
-    request.state = NpRequestState::Complete;
-    if (!g_shadnet_enabled) {
-        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
-        // If the request is processed in some form, and it's an async request, then it returns OK.
-        if (request.async) {
-            return ORBIS_OK;
-        }
-        return ORBIS_NP_ERROR_SIGNED_OUT;
-    }
-
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, is_async = {}", req_id,
-              request.async);
-
-    std::memset(language, 0, sizeof(OrbisNpLanguageCode));
-
-    request.result = ORBIS_OK;
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_NpManager, "req_id = {:#x}", req_id);
+    FillLanguageCodeFromProfile(user_id, language);
+    return CompleteRequest(*req, ORBIS_OK);
 }
 
 s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
@@ -307,41 +296,17 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
     if (language == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-
     std::scoped_lock lk{g_request_mutex};
-
-    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index].state == NpRequestState::None) {
-        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    s32 err;
+    NpRequest* req = GetRequest(req_id, &err);
+    if (!req)
+        return err;
+    if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
+        return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
-
-    auto& request = g_requests[req_index];
-    if (request.state == NpRequestState::Complete) {
-        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
-        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    } else if (request.state == NpRequestState::Aborted) {
-        request.result = ORBIS_NP_ERROR_ABORTED;
-        return ORBIS_NP_ERROR_ABORTED;
-    }
-
-    request.state = NpRequestState::Complete;
-    if (!g_shadnet_enabled) {
-        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
-        // If the request is processed in some form, and it's an async request, then it returns OK.
-        if (request.async) {
-            return ORBIS_OK;
-        }
-        return ORBIS_NP_ERROR_SIGNED_OUT;
-    }
-
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, user_id = {}, is_async = {}",
-              req_id, user_id, request.async);
-
-    std::memset(language, 0, sizeof(OrbisNpLanguageCode));
-
-    request.result = ORBIS_OK;
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_NpManager, "req_id = {:#x}, user_id = {}", req_id, user_id);
+    FillLanguageCodeFromProfile(user_id, language);
+    return CompleteRequest(*req, ORBIS_OK);
 }
 
 s32 PS4_SYSV_ABI sceNpGetParentalControlInfo(s32 req_id, OrbisNpOnlineId* online_id, s8* age,
@@ -349,43 +314,20 @@ s32 PS4_SYSV_ABI sceNpGetParentalControlInfo(s32 req_id, OrbisNpOnlineId* online
     if (online_id == nullptr || age == nullptr || info == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-
     std::scoped_lock lk{g_request_mutex};
-
-    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index].state == NpRequestState::None) {
-        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    s32 err;
+    NpRequest* req = GetRequest(req_id, &err);
+    if (!req)
+        return err;
+    const s32 user_id = Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(*online_id);
+    if (!g_shadnet_enabled || user_id == -1 ||
+        !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
+        return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
-
-    auto& request = g_requests[req_index];
-    if (request.state == NpRequestState::Complete) {
-        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
-        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    } else if (request.state == NpRequestState::Aborted) {
-        request.result = ORBIS_NP_ERROR_ABORTED;
-        return ORBIS_NP_ERROR_ABORTED;
-    }
-
-    request.state = NpRequestState::Complete;
-    if (!g_shadnet_enabled) {
-        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
-        // If the request is processed in some form, and it's an async request, then it returns OK.
-        if (request.async) {
-            return ORBIS_OK;
-        }
-        return ORBIS_NP_ERROR_SIGNED_OUT;
-    }
-
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, is_async = {}", req_id,
-              request.async);
-
-    // TODO: Add to config?
-    *age = 13;
+    LOG_DEBUG(Lib_NpManager, "req_id = {:#x}", req_id);
+    *age = GetAgeFromProfile(user_id);
     std::memset(info, 0, sizeof(OrbisNpParentalControlInfo));
-
-    request.result = ORBIS_OK;
-    return ORBIS_OK;
+    return CompleteRequest(*req, ORBIS_OK);
 }
 
 s32 PS4_SYSV_ABI
@@ -394,43 +336,18 @@ sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServic
     if (age == nullptr || info == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-
     std::scoped_lock lk{g_request_mutex};
-
-    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index].state == NpRequestState::None) {
-        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    s32 err;
+    NpRequest* req = GetRequest(req_id, &err);
+    if (!req)
+        return err;
+    if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
+        return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
-
-    auto& request = g_requests[req_index];
-    if (request.state == NpRequestState::Complete) {
-        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
-        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    } else if (request.state == NpRequestState::Aborted) {
-        request.result = ORBIS_NP_ERROR_ABORTED;
-        return ORBIS_NP_ERROR_ABORTED;
-    }
-
-    request.state = NpRequestState::Complete;
-    if (!g_shadnet_enabled) {
-        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
-        // If the request is processed in some form, and it's an async request, then it returns OK.
-        if (request.async) {
-            return ORBIS_OK;
-        }
-        return ORBIS_NP_ERROR_SIGNED_OUT;
-    }
-
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, user_id = {}, is_async = {}",
-              req_id, user_id, request.async);
-
-    // TODO: Add to config?
-    *age = 13;
+    LOG_DEBUG(Lib_NpManager, "req_id = {:#x}, user_id = {}", req_id, user_id);
+    *age = GetAgeFromProfile(user_id);
     std::memset(info, 0, sizeof(OrbisNpParentalControlInfo));
-
-    request.result = ORBIS_OK;
-    return ORBIS_OK;
+    return CompleteRequest(*req, ORBIS_OK);
 }
 
 s32 PS4_SYSV_ABI sceNpAbortRequest(s32 req_id) {
@@ -439,7 +356,8 @@ s32 PS4_SYSV_ABI sceNpAbortRequest(s32 req_id) {
     std::scoped_lock lk{g_request_mutex};
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+    if (g_active_requests == 0 || req_index < 0 ||
+        req_index >= static_cast<s32>(g_requests.size()) ||
         g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
@@ -461,7 +379,8 @@ s32 PS4_SYSV_ABI sceNpWaitAsync(s32 req_id, s32* result) {
     std::scoped_lock lk{g_request_mutex};
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+    if (g_active_requests == 0 || req_index < 0 ||
+        req_index >= static_cast<s32>(g_requests.size()) ||
         g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
@@ -486,7 +405,8 @@ s32 PS4_SYSV_ABI sceNpPollAsync(s32 req_id, s32* result) {
     std::scoped_lock lk{g_request_mutex};
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+    if (g_active_requests == 0 || req_index < 0 ||
+        req_index >= static_cast<s32>(g_requests.size()) ||
         g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
@@ -509,7 +429,8 @@ s32 PS4_SYSV_ABI sceNpDeleteRequest(s32 req_id) {
     std::scoped_lock lk{g_request_mutex};
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+    if (g_active_requests == 0 || req_index < 0 ||
+        req_index >= static_cast<s32>(g_requests.size()) ||
         g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
@@ -524,12 +445,12 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountry(OrbisNpOnlineId* online_id,
     if (online_id == nullptr || country_code == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_shadnet_enabled) {
+    const s32 user_id = Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(*online_id);
+    if (!g_shadnet_enabled || user_id == -1 ||
+        !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
-    std::memset(country_code, 0, sizeof(OrbisNpCountryCode));
-    // TODO: get NP country code from config
-    std::memcpy(country_code->country_code, "us", 2);
+    FillCountryCodeFromProfile(user_id, country_code);
     return ORBIS_OK;
 }
 
@@ -538,12 +459,10 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountryA(Libraries::UserService::OrbisUserServic
     if (country_code == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_shadnet_enabled) {
+    if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
-    std::memset(country_code, 0, sizeof(OrbisNpCountryCode));
-    // TODO: get NP country code from config
-    std::memcpy(country_code->country_code, "us", 2);
+    FillCountryCodeFromProfile(user_id, country_code);
     return ORBIS_OK;
 }
 
@@ -552,14 +471,12 @@ s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirth(OrbisNpOnlineId* online_id,
     if (online_id == nullptr || date_of_birth == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_shadnet_enabled) {
+    const s32 user_id = Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(*online_id);
+    if (!g_shadnet_enabled || user_id == -1 ||
+        !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
-
-    // TODO: maybe add to config?
-    date_of_birth->day = 1;
-    date_of_birth->month = 1;
-    date_of_birth->year = 2000;
+    FillDateOfBirthFromProfile(user_id, date_of_birth);
     return ORBIS_OK;
 }
 
@@ -568,14 +485,10 @@ s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirthA(Libraries::UserService::OrbisUserSe
     if (date_of_birth == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_shadnet_enabled) {
+    if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
-
-    // TODO: maybe add to config?
-    date_of_birth->day = 1;
-    date_of_birth->month = 1;
-    date_of_birth->year = 2000;
+    FillDateOfBirthFromProfile(user_id, date_of_birth);
     return ORBIS_OK;
 }
 
@@ -584,9 +497,11 @@ s32 PS4_SYSV_ABI sceNpGetGamePresenceStatus(OrbisNpOnlineId* online_id,
     if (online_id == nullptr || game_status == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-
-    *game_status =
-        g_shadnet_enabled ? OrbisNpGamePresenseStatus::Online : OrbisNpGamePresenseStatus::Offline;
+    const s32 user_id = Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(*online_id);
+    *game_status = (g_shadnet_enabled && user_id != -1 &&
+                    Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id))
+                       ? OrbisNpGamePresenseStatus::Online
+                       : OrbisNpGamePresenseStatus::Offline;
     return ORBIS_OK;
 }
 
@@ -595,9 +510,10 @@ s32 PS4_SYSV_ABI sceNpGetGamePresenceStatusA(Libraries::UserService::OrbisUserSe
     if (game_status == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-
     *game_status =
-        g_shadnet_enabled ? OrbisNpGamePresenseStatus::Online : OrbisNpGamePresenseStatus::Offline;
+        (g_shadnet_enabled && Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id))
+            ? OrbisNpGamePresenseStatus::Online
+            : OrbisNpGamePresenseStatus::Offline;
     return ORBIS_OK;
 }
 
@@ -677,8 +593,14 @@ s32 PS4_SYSV_ABI sceNpGetNpReachabilityState(Libraries::UserService::OrbisUserSe
         return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
 
-    *state = g_shadnet_enabled ? OrbisNpReachabilityState::Reachable
-                               : OrbisNpReachabilityState::Unavailable;
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        if (g_firmware_version < 0 || g_firmware_version >= Common::ElfInfo::FW_400) {
+            return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+        }
+    }
+    *state = (g_shadnet_enabled && Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id))
+                 ? OrbisNpReachabilityState::Reachable
+                 : OrbisNpReachabilityState::Unavailable;
     return ORBIS_OK;
 }
 
@@ -690,8 +612,21 @@ s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId us
     if (UserManagement.GetUserByID(user_id) == nullptr) {
         return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
-    *state = g_shadnet_enabled ? OrbisNpState::SignedIn : OrbisNpState::SignedOut;
-    LOG_DEBUG(Lib_NpManager, "Signed {}", g_shadnet_enabled ? "in" : "out");
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        if (g_firmware_version < 0 || g_firmware_version >= Common::ElfInfo::FW_90) {
+            return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+        }
+    }
+    if (!g_shadnet_enabled) {
+        *state = OrbisNpState::SignedOut;
+        LOG_DEBUG(Lib_NpManager, "shadNet disabled,SignedOut");
+        return ORBIS_OK;
+    }
+    *state = Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)
+                 ? OrbisNpState::SignedIn
+                 : OrbisNpState::SignedOut;
+    LOG_DEBUG(Lib_NpManager, "user_id={} state={}", user_id,
+              *state == OrbisNpState::SignedIn ? "SignedIn" : "SignedOut");
     return ORBIS_OK;
 }
 
@@ -703,7 +638,7 @@ sceNpGetUserIdByAccountId(u64 account_id, Libraries::UserService::OrbisUserServi
     if (!g_shadnet_enabled) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
-    *user_id = 1;
+    *user_id = 1000;
     LOG_DEBUG(Lib_NpManager, "userid({}) = {}", account_id, *user_id);
     return ORBIS_OK;
 }
@@ -714,10 +649,22 @@ s32 PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId
     if (has_signed_up == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    *has_signed_up = false;
     if (UserManagement.GetUserByID(user_id) == nullptr) {
         return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
-    *has_signed_up = g_shadnet_enabled ? true : false;
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        if (g_firmware_version < 0 || g_firmware_version >= Common::ElfInfo::FW_900) {
+            return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+        }
+    }
+    const User* u = UserManagement.GetUserByID(user_id);
+    if (!u) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
+    }
+    // A user has signed up if they have a shadNet npid configured.
+    // This is independent of shadnet_enabled and current connection state.
+    *has_signed_up = !u->shadnet_npid.empty();
     return ORBIS_OK;
 }
 
@@ -1014,6 +961,8 @@ void DeregisterNpCallback(std::string key) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    ASSERT_MSG(Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_firmware_version) == ORBIS_OK,
+               "Failed to get compiled SDK verision.");
     g_shadnet_enabled = EmulatorSettings.IsShadNetEnabled();
 
     LIB_FUNCTION("GpLQDNKICac", "libSceNpManager", 1, "libSceNpManager", sceNpCreateRequest);
