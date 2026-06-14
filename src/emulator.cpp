@@ -405,6 +405,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     std::filesystem::path trophy_dir = mnt->GetHostPath("/app0/sce_sys/trophy");
     game_info.trophy_index_map = ExtractTrophies(npbind_path, trophy_dir);
 
+    if (NPBindFile npbind; npbind.Load(npbind_path.string())) {
+        game_info.np_comm_ids = npbind.GetNpCommIds();
+    }
+
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
     std::string window_title = "";
     std::string remote_url(Common::g_scm_remote_url);
