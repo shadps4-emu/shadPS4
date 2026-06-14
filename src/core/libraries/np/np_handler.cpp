@@ -343,7 +343,6 @@ std::string NpHandler::GetNpCommId(s32 service_label) const {
     }
     return com_id;
 }
-
 s32 NpHandler::RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId, s64 score,
                            const char* comment, size_t commentLen, const u8* gameInfoData,
                            size_t gameInfoSize, std::shared_ptr<NpScore::ScoreRequestCtx> req) {

@@ -36,7 +36,7 @@ s32 g_echo_thread_status = -1;
 
 s32 GetInferredAppType(s32* app_type) {
     if (app_type == nullptr) {
-        return ORBIS_NP_INT_ERROR_INVALID_ARGUMENT;
+        return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
     }
 
     *app_type = InferredNpAppType;

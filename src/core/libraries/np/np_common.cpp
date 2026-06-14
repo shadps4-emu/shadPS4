@@ -358,7 +358,7 @@ s32 PS4_SYSV_ABI sceNpGetPlatformType(const OrbisNpId* npid) {
     case kTagPs4:
         return OrbisNpPlatformType::PS4;
     default:
-        return ORBIS_NP_ERROR_INVALID_PLATFORM_TYPE;
+        return ORBIS_NP_ERROR_UNKNOWN_PLATFORM_TYPE;
     }
 }
 

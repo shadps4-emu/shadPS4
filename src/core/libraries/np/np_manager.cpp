@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cctype>
@@ -583,7 +583,6 @@ s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId use
     if (user == nullptr) {
         return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
-    if (!g_shadnet_enabled) {
     if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         LOG_WARNING(Lib_NpManager,
                     "sceNpGetNpId: SIGNED_OUT (user_id={} shadnet_enabled={} signed_in={})",
@@ -616,6 +615,7 @@ s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId
                  "sceNpGetOnlineId: SIGNED_OUT (user_id={} shadnet_enabled={} signed_in={})",
                  user_id, g_shadnet_enabled,
                  Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id));
+    }
     const auto* user = UserManagement.GetUserByID(user_id);
     if (user == nullptr) {
         return ORBIS_NP_ERROR_USER_NOT_FOUND;
@@ -680,8 +680,7 @@ s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId us
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI
-sceNpGetUserIdByAccountId(u64 account_id, Libraries::UserService::OrbisUserServiceUserId* user_id) {
+s32 PS4_SYSV_ABI sceNpGetUserIdByAccountId(u64 account_id, Libraries::UserService::OrbisUserServiceUserId* user_id) {
     if (account_id == 0 || user_id == nullptr) {
         LOG_ERROR(Lib_NpManager, "invalid argument: account_id={}", account_id);
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
@@ -754,14 +753,6 @@ s32 PS4_SYSV_ABI sceNpSetNpTitleId(const OrbisNpTitleId* title_id,
     LOG_ERROR(Lib_NpManager, "(STUBBED) called, title_id = {}", title_id->id);
     return ORBIS_OK;
 }
-
-// Callbacks
-struct NpStateCallbackForNpToolkit {
-    OrbisNpStateCallbackForNpToolkit func;
-    void* userdata;
-};
-
-NpStateCallbackForNpToolkit NpStateCbForNp;
 
 struct LegacyNpStateCallback {
     OrbisNpStateCallback func;
@@ -997,11 +988,6 @@ s32 PS4_SYSV_ABI sceNpRegisterStateCallbackA(OrbisNpStateCallbackA callback, voi
 }
 
 s32 PS4_SYSV_ABI sceNpUnregisterStateCallbackA(s32 callback_id) {
-    LOG_INFO(Lib_NpManager, "called, callback_id = {}", callback_id);
-    return UnregisterStateCallbackAById(callback_id);
-}
-
-s32 PS4_SYSV_ABI sceNpUnregisterStateCallbackA(s32 callback_id) {
     if (callback_id <= 0) {
         LOG_ERROR(Lib_NpManager, "invalid callback_id {}", callback_id);
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
@@ -1040,16 +1026,6 @@ s32 PS4_SYSV_ABI sceNpRegisterNpReachabilityStateCallback(OrbisNpReachabilitySta
     LOG_ERROR(Lib_NpManager, "(STUBBED) called");
     NpReachabilityCb.func = callback;
     NpReachabilityCb.userdata = userdata;
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpUnregisterNpReachabilityStateCallback() {
-    if (NpReachabilityCb.func == nullptr) {
-        return ORBIS_NP_ERROR_CALLBACK_NOT_REGISTERED;
-    }
-
-    NpReachabilityCb = {};
-    return ORBIS_OK;
     return ORBIS_OK;
 }
 
