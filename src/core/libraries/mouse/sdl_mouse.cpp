@@ -55,6 +55,7 @@ bool PushSDLEvent(SDL_Event const& e) {
         auto& s = current_state[index];
         s.x_axis = (s32)e.motion.xrel;
         s.y_axis = (s32)e.motion.yrel;
+        s.wheel = 0;
         s.timestamp = Libraries::Kernel::sceKernelGetProcessTime();
 
         mouse_states[index].Push(s);
@@ -68,6 +69,7 @@ bool PushSDLEvent(SDL_Event const& e) {
         auto& s = current_state[index];
         s.x_axis = 0;
         s.y_axis = 0;
+        s.wheel = 0;
         s.buttons |= OrbisButtonFromSDL(e.button.button);
         s.timestamp = Libraries::Kernel::sceKernelGetProcessTime();
 
@@ -82,6 +84,7 @@ bool PushSDLEvent(SDL_Event const& e) {
         auto& s = current_state[index];
         s.x_axis = 0;
         s.y_axis = 0;
+        s.wheel = 0;
         s.buttons &= ~OrbisButtonFromSDL(e.button.button);
         s.timestamp = Libraries::Kernel::sceKernelGetProcessTime();
 
