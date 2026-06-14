@@ -13,6 +13,7 @@
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
@@ -613,7 +614,7 @@ s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId us
         return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
     if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
-        if (g_firmware_version < 0 || g_firmware_version >= Common::ElfInfo::FW_90) {
+        if (g_firmware_version < 0 || g_firmware_version >= Common::ElfInfo::FW_900) {
             return ORBIS_NP_ERROR_INVALID_ARGUMENT;
         }
     }
@@ -961,8 +962,8 @@ void DeregisterNpCallback(std::string key) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    ASSERT_MSG(Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_firmware_version) == ORBIS_OK,
-               "Failed to get compiled SDK verision.");
+    ASSERT_MSG(Libraries::sceKernelGetCompiledSdkVersion(&g_firmware_version) == ORBIS_OK,
+               "Failed to get compiled SDK version.");
     g_shadnet_enabled = EmulatorSettings.IsShadNetEnabled();
 
     LIB_FUNCTION("GpLQDNKICac", "libSceNpManager", 1, "libSceNpManager", sceNpCreateRequest);
