@@ -712,8 +712,7 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
         }
         // v_mbcnt_hi_u32_b32 vX, exec_hi/vcc_hi/scalar_gpr, src1
         // The hi half contributes nothing beyond what src1 already has in practice.
-        if (inst.src[0].field == OperandField::ExecHi ||
-            inst.src[0].field == OperandField::VccHi ||
+        if (inst.src[0].field == OperandField::ExecHi || inst.src[0].field == OperandField::VccHi ||
             inst.src[0].field == OperandField::ScalarGPR) {
             return SetDst(inst.dst[0], GetSrc(inst.src[1]));
         }
@@ -736,14 +735,12 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
             return SetDst(inst.dst[0], ir.LaneId());
         }
         // v_mbcnt_lo_u32_b32 vY, literal 0xFFFFFFFF, vX  (same semantics as -1)
-        if (inst.src[0].field == OperandField::LiteralConst &&
-            inst.src[0].code == 0xFFFFFFFFu) {
+        if (inst.src[0].field == OperandField::LiteralConst && inst.src[0].code == 0xFFFFFFFFu) {
             return SetDst(inst.dst[0], ir.LaneId());
         }
         // v_mbcnt_lo_u32_b32 vY, exec_lo/vcc_lo/scalar_gpr, vX
         // Used combined with hi for append buffer indexing.
-        if (inst.src[0].field == OperandField::ExecLo ||
-            inst.src[0].field == OperandField::VccLo ||
+        if (inst.src[0].field == OperandField::ExecLo || inst.src[0].field == OperandField::VccLo ||
             inst.src[0].field == OperandField::ScalarGPR) {
             return SetDst(inst.dst[0], GetSrc(inst.src[1]));
         }
