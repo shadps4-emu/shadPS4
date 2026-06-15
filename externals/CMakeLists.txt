@@ -87,6 +87,7 @@ endif()
 if (NOT TARGET Vulkan::Headers)
     set(VULKAN_HEADERS_ENABLE_MODULE OFF)
     add_subdirectory(vulkan-headers)
+    set(VulkanHeaders_VERSION "1.4.330")
 endif()
 
 # VMA
@@ -369,4 +370,14 @@ if (DEFINED SSL_DEPENDENCIES)
     message(STATUS "cpp-httplib: SSL support enabled (TLS connections)")
 else()
     message(STATUS "cpp-httplib: OpenSSL/LibreSSL not available — libSceHttp HTTPS will fall back to mock at runtime.")
+endif()
+
+# macOS Vulkan driver
+if (APPLE AND NOT ENABLE_SYSTEM_VULKAN)
+    add_subdirectory(vulkan-loader)
+    set(VULKAN_LOADER_PATH "${CMAKE_CURRENT_BINARY_DIR}/vulkan-loader/loader/libvulkan.dylib" PARENT_SCOPE)
+
+    add_subdirectory(mesa-kosmickrisp)
+    set(VULKAN_DRIVER_PATH "${CMAKE_CURRENT_BINARY_DIR}/mesa-kosmickrisp/outputs/libvulkan_kosmickrisp.dylib" PARENT_SCOPE)
+    set(VULKAN_ICD_PATH "${CMAKE_CURRENT_BINARY_DIR}/mesa-kosmickrisp/outputs/kosmickrisp_mesa_icd.json" PARENT_SCOPE)
 endif()

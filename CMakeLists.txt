@@ -33,6 +33,9 @@ if(UNIX AND NOT APPLE)
     endif()
 endif()
 
+include(CMakeDependentOption)
+cmake_dependent_option(ENABLE_SYSTEM_VULKAN "Enable the system Vulkan driver" OFF APPLE OFF)
+
 option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
 option(ENABLE_UPDATER "Enables the options to updater" ON)
 option(ENABLE_TESTS "Build unit tests (requires GTest)" OFF)
@@ -1216,10 +1219,30 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 endif()
 
 if (APPLE)
-    # Bundle Vulkan loader and KosmicKrisp driver with the emulator.
-    set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
-    add_subdirectory(externals/mesa-kosmickrisp)
-    AddCopyKosmicKrisp(shadps4 ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+    if (NOT ENABLE_SYSTEM_VULKAN)
+        # Bundle Vulkan loader and KosmicKrisp driver with the emulator.
+        set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
+
+        set(LOADER_DEST "${CMAKE_CURRENT_BINARY_DIR}/libvulkan.dylib")
+        set(DRIVER_DEST "${CMAKE_CURRENT_BINARY_DIR}/libvulkan_kosmickrisp.dylib")
+        set(ICD_DEST "${CMAKE_CURRENT_BINARY_DIR}/kosmickrisp_mesa_icd.json")
+
+        add_custom_command(
+            OUTPUT ${LOADER_DEST}
+            DEPENDS ${VULKAN_LOADER_PATH} vulkan
+            COMMAND ${CMAKE_COMMAND} -E copy ${VULKAN_LOADER_PATH} ${LOADER_DEST})
+        add_custom_command(
+            OUTPUT ${DRIVER_DEST}
+            DEPENDS ${VULKAN_DRIVER_PATH} kosmickrisp
+            COMMAND ${CMAKE_COMMAND} -E copy ${VULKAN_DRIVER_PATH} ${DRIVER_DEST})
+        add_custom_command(
+            OUTPUT ${ICD_DEST}
+            DEPENDS ${VULKAN_ICD_PATH} kosmickrisp
+            COMMAND ${CMAKE_COMMAND} -E copy ${VULKAN_ICD_PATH} ${ICD_DEST})
+
+        add_custom_target(CopyVulkanDriver DEPENDS ${LOADER_DEST} ${DRIVER_DEST} ${ICD_DEST})
+        add_dependencies(shadps4 CopyVulkanDriver)
+    endif()
 
     if (ARCHITECTURE STREQUAL "x86_64")
         # Reserve system-managed memory space.
