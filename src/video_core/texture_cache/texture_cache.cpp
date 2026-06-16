@@ -986,10 +986,13 @@ void TextureCache::UntrackImage(ImageId image_id) {
     const auto size = image.track_addr_end - image.track_addr;
     image.track_addr = 0;
     image.track_addr_end = 0;
+    // Must run before the write-watcher removal below: dropping the write watcher first
+    // while a read watcher is still up would briefly make this range write-only, which
+    // PageManager::Impl::Protect rejects (and most platforms can't represent anyway).
+    UnprotectImageRead(image_id, addr, size);
     if (size != 0) {
         tracker.UpdatePageWatchers<false>(addr, size);
     }
-    UnprotectImageRead(image_id, addr, size);
 }
 
 void TextureCache::UntrackImageHead(ImageId image_id) {
