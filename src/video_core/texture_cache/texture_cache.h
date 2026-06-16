@@ -96,6 +96,9 @@ public:
     /// Schedules a copy of pending images for download back to CPU memory.
     void ProcessDownloadImages();
 
+    /// Downloads a protected, GPU-modified linear image before a CPU read completes.
+    void ReadMemory(VAddr device_addr, u64 size);
+
     /// Retrieves the image handle of the image with the provided attributes.
     [[nodiscard]] ImageId FindImage(ImageDesc& desc, bool exact_fmt = false);
 
@@ -272,7 +275,13 @@ private:
     ImageId GetNullImage(vk::Format format);
 
     /// Copies image memory back to CPU.
+    template <bool async>
     void DownloadImageMemory(ImageId image_id);
+
+    /// Page-protects CPU reads to [addr, addr+size) for a linear, GPU-modified image.
+    void ProtectImageRead(ImageId image_id, VAddr addr, u64 size);
+    /// Removes CPU read protection installed by ProtectImageRead.
+    void UnprotectImageRead(ImageId image_id, VAddr addr, u64 size);
 
     /// Thread function for copying downloaded images out to CPU memory.
     void DownloadedImagesThread(const std::stop_token& token);
