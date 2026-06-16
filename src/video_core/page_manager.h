@@ -39,6 +39,11 @@ public:
     template <bool track>
     void UpdatePageWatchers(VAddr addr, u64 size) const;
 
+    /// Updates read watches in the pages touching the specified region. While active, a CPU
+    /// read to these pages faults and calls back into the rasterizer before completing.
+    template <bool track>
+    void UpdatePageWatchersRead(VAddr addr, u64 size) const;
+
     /// Updates watches in the pages touching the specified region using a mask.
     template <bool track, bool is_read = false>
     void UpdatePageWatchersForRegion(VAddr base_addr, RegionBits& mask) const;
