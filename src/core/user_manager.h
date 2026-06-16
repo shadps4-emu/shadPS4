@@ -20,6 +20,11 @@ struct User {
     std::string shadnet_token = "";    // 2FA/validation token (future use)
     std::string shadnet_email = "";    // email address (furute use)
     bool shadnet_enabled = false;      // enable shadnet for user
+    // these are used to populate NP profile fields
+    std::string np_country = "us";               // ISO 3166-1 alpha-2, e.g. "us", "jp", "gb"
+    std::string np_language = "en";              // ISO 639-1, e.g. "en", "ja", "fr"
+    u8 np_age = 30;                              // 0..127
+    std::string np_date_of_birth = "1994-01-01"; // ISO 8601 date "YYYY-MM-DD"
 };
 
 struct Users {
@@ -28,7 +33,8 @@ struct Users {
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(User, user_id, user_color, user_name, player_index,
                                                 shadnet_npid, shadnet_password, shadnet_token,
-                                                shadnet_email, shadnet_enabled)
+                                                shadnet_email, shadnet_enabled, np_country,
+                                                np_language, np_age, np_date_of_birth)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(Users, user, commit_hash)
 
 using LoggedInUsers = std::array<User*, 4>;
