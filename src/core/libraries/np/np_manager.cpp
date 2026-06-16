@@ -111,14 +111,14 @@ static void FillDateOfBirthFromProfile(Libraries::UserService::OrbisUserServiceU
 static std::vector<NpRequest> g_requests;
 
 static s32 CreateNpRequest(bool async) {
+    std::scoped_lock lk{g_request_mutex};
+
     if (g_active_requests == ORBIS_NP_MANAGER_REQUEST_LIMIT) {
         return ORBIS_NP_ERROR_REQUEST_MAX;
     }
 
-    std::scoped_lock lk{g_request_mutex};
-
     s32 req_index = 0;
-    while (req_index < g_requests.size()) {
+    while (req_index < static_cast<s32>(g_requests.size())) {
         // Find first nonexistant request
         if (g_requests[req_index].state == NpRequestState::None) {
             // There is no request at this index, set the index to ready then break.
@@ -129,7 +129,7 @@ static s32 CreateNpRequest(bool async) {
         req_index++;
     }
 
-    if (req_index == g_requests.size()) {
+    if (req_index == static_cast<s32>(g_requests.size())) {
         // There are no requests to replace.
         NpRequest new_request{NpRequestState::Ready, async, 0};
         g_requests.emplace_back(new_request);
@@ -143,6 +143,10 @@ static s32 CreateNpRequest(bool async) {
 // Validate a request ID and return the NpRequest*, or nullptr + error code.
 // Writes the error code to *out_err when returning nullptr.
 static NpRequest* GetRequest(s32 req_id, s32* out_err) {
+    if (req_id == 0) {
+        *out_err = ORBIS_NP_ERROR_INVALID_ARGUMENT;
+        return nullptr;
+    }
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || req_index < 0 ||
         req_index >= static_cast<s32>(g_requests.size()) ||
@@ -197,18 +201,11 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailability(s32 req_id, OrbisNpOnlineId* online_id
     if (online_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    std::scoped_lock lk{g_request_mutex};
-    s32 err;
-    NpRequest* req = GetRequest(req_id, &err);
-    if (!req)
-        return err;
     const s32 user_id = Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(*online_id);
-    if (!g_shadnet_enabled || user_id == -1 ||
-        !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
-        return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
+    if (user_id == -1) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
-    LOG_DEBUG(Lib_NpManager, "req_id = {:#x}", req_id);
-    return CompleteRequest(*req, ORBIS_OK);
+    return sceNpCheckNpAvailabilityA(req_id, user_id);
 }
 
 s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
@@ -231,6 +228,9 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
 
 s32 PS4_SYSV_ABI sceNpCheckNpReachability(s32 req_id,
                                           Libraries::UserService::OrbisUserServiceUserId user_id) {
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
     std::scoped_lock lk{g_request_mutex};
     s32 err;
     NpRequest* req = GetRequest(req_id, &err);
@@ -251,10 +251,19 @@ s32 PS4_SYSV_ABI sceNpCheckPlus(s32 req_id, const OrbisNpCheckPlusParameter* par
     if (param->size != sizeof(OrbisNpCheckPlusParameter)) {
         return ORBIS_NP_ERROR_INVALID_SIZE;
     }
+    if (param->user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
     if (param->features < 1 || param->features > 3) {
         // TODO: If compiled SDK version is greater or equal to fw 3.50,
         // // error if param->features != 1 instead.
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    // The reserved field must be zero-initialized by the caller.
+    for (u8 b : param->reserved) {
+        if (b != 0) {
+            return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+        }
     }
     std::scoped_lock lk{g_request_mutex};
     s32 err;
@@ -276,25 +285,18 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
     if (online_id == nullptr || language == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    std::scoped_lock lk{g_request_mutex};
-    s32 err;
-    NpRequest* req = GetRequest(req_id, &err);
-    if (!req)
-        return err;
     const s32 user_id = Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(*online_id);
-    if (!g_shadnet_enabled || user_id == -1 ||
-        !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
-        return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
+    if (user_id == -1) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
-    LOG_DEBUG(Lib_NpManager, "req_id = {:#x}", req_id);
-    FillLanguageCodeFromProfile(user_id, language);
-    return CompleteRequest(*req, ORBIS_OK);
+    return sceNpGetAccountLanguageA(req_id, user_id, language);
 }
 
 s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
                                           Libraries::UserService::OrbisUserServiceUserId user_id,
                                           OrbisNpLanguageCode* language) {
-    if (language == nullptr) {
+    if (language == nullptr ||
+        user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     std::scoped_lock lk{g_request_mutex};
@@ -315,26 +317,18 @@ s32 PS4_SYSV_ABI sceNpGetParentalControlInfo(s32 req_id, OrbisNpOnlineId* online
     if (online_id == nullptr || age == nullptr || info == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    std::scoped_lock lk{g_request_mutex};
-    s32 err;
-    NpRequest* req = GetRequest(req_id, &err);
-    if (!req)
-        return err;
     const s32 user_id = Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(*online_id);
-    if (!g_shadnet_enabled || user_id == -1 ||
-        !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
-        return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
+    if (user_id == -1) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
-    LOG_DEBUG(Lib_NpManager, "req_id = {:#x}", req_id);
-    *age = GetAgeFromProfile(user_id);
-    std::memset(info, 0, sizeof(OrbisNpParentalControlInfo));
-    return CompleteRequest(*req, ORBIS_OK);
+    return sceNpGetParentalControlInfoA(req_id, user_id, age, info);
 }
 
 s32 PS4_SYSV_ABI
 sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServiceUserId user_id,
                              s8* age, OrbisNpParentalControlInfo* info) {
-    if (age == nullptr || info == nullptr) {
+    if (age == nullptr || info == nullptr ||
+        user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     std::scoped_lock lk{g_request_mutex};
@@ -447,8 +441,10 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountry(OrbisNpOnlineId* online_id,
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     const s32 user_id = Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(*online_id);
-    if (!g_shadnet_enabled || user_id == -1 ||
-        !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
+    if (user_id == -1) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
+    }
+    if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     FillCountryCodeFromProfile(user_id, country_code);
@@ -457,8 +453,12 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountry(OrbisNpOnlineId* online_id,
 
 s32 PS4_SYSV_ABI sceNpGetAccountCountryA(Libraries::UserService::OrbisUserServiceUserId user_id,
                                          OrbisNpCountryCode* country_code) {
-    if (country_code == nullptr) {
+    if (country_code == nullptr ||
+        user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (UserManagement.GetUserByID(user_id) == nullptr) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
     if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
@@ -473,8 +473,10 @@ s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirth(OrbisNpOnlineId* online_id,
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     const s32 user_id = Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(*online_id);
-    if (!g_shadnet_enabled || user_id == -1 ||
-        !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
+    if (user_id == -1) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
+    }
+    if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     FillDateOfBirthFromProfile(user_id, date_of_birth);
@@ -483,8 +485,12 @@ s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirth(OrbisNpOnlineId* online_id,
 
 s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirthA(Libraries::UserService::OrbisUserServiceUserId user_id,
                                              OrbisNpDate* date_of_birth) {
-    if (date_of_birth == nullptr) {
+    if (date_of_birth == nullptr ||
+        user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (UserManagement.GetUserByID(user_id) == nullptr) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
     if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
@@ -651,17 +657,14 @@ s32 PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     *has_signed_up = false;
-    if (UserManagement.GetUserByID(user_id) == nullptr) {
+    const User* u = UserManagement.GetUserByID(user_id);
+    if (u == nullptr) {
         return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
     if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
         if (g_firmware_version < 0 || g_firmware_version >= Common::ElfInfo::FW_900) {
             return ORBIS_NP_ERROR_INVALID_ARGUMENT;
         }
-    }
-    const User* u = UserManagement.GetUserByID(user_id);
-    if (!u) {
-        return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
     // A user has signed up if they have a shadNet npid configured.
     // This is independent of shadnet_enabled and current connection state.
