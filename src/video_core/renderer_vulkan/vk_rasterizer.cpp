@@ -1049,6 +1049,7 @@ bool Rasterizer::ReadMemory(VAddr addr, u64 size) {
         return false;
     }
     buffer_cache.ReadMemory(addr, size);
+    texture_cache.ReadMemory(addr, size);
     return true;
 }
 
