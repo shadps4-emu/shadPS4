@@ -587,6 +587,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
             // less than {1 level, 6 layers} because levels=3 > levels=1 stops the comparison.
             FreeImage(image_id);
             image_id = {};
+            LOG_WARNING(Render_Vulkan, "Image overlap resolve failed");
         }
     }
     // Create and register a new image
