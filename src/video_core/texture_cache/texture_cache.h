@@ -152,6 +152,23 @@ public:
         return slot_image_views[id];
     }
 
+    /// Get the associated depth stencil image if it is still valid.
+    ImageId GetAssociatedDepth(Image& image) {
+        if (!image.depth_id) {
+            return {};
+        }
+        if (slot_images.is_allocated(image.depth_id)) {
+            auto& depth_image = slot_images[image.depth_id];
+            if (depth_image.image_uid == image.depth_uid &&
+                depth_image.flags & ImageFlagBits::Registered) {
+                return image.depth_id;
+            }
+        }
+        // The linked depth image is no longer valid, disassociate it.
+        image.DisassociateDepth();
+        return {};
+    }
+
     /// Returns true if the specified address is a metadata surface.
     bool IsMeta(VAddr address) const {
         return surface_metas.contains(address);

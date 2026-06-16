@@ -43,6 +43,12 @@ struct TouchpadEntry {
 struct Colour {
     u8 r, g, b;
 };
+static constexpr Input::Colour g_user_colours[4]{
+    {0, 0, 255},   // blue
+    {255, 0, 0},   // red
+    {0, 255, 0},   // green
+    {255, 0, 255}, // pink
+};
 
 struct State {
 private:
@@ -114,6 +120,8 @@ class GameController {
 public:
     GameController();
     virtual ~GameController() = default;
+    void ConnectController(SDL_Gamepad* pad);
+    void DisconnectController();
 
     void ReadState(State* state, bool* isConnected, int* connectedCount);
     int ReadStates(State* states, int states_num, bool* isConnected, int* connectedCount);
@@ -125,7 +133,8 @@ public:
     void UpdateGyro(const float gyro[3]);
     void UpdateAcceleration(const float acceleration[3]);
     void UpdateAxisSmoothing();
-    void SetLightBarRGB(u8 r, u8 g, u8 b);
+    void SetLightBarRGB(u8 const r, u8 const g, u8 const b);
+    void SetLightBarRGB(Colour const c);
     Colour GetLightBarRGB();
     void PollLightColour();
     bool SetVibration(u8 smallMotor, u8 largeMotor);
@@ -155,8 +164,8 @@ public:
 private:
     void PushState();
 
-    bool m_connected = true;
-    int m_connected_count = 1;
+    bool m_connected = false;
+    int m_connected_count = 0;
     u8 m_touch_count = 0;
     u8 m_secondary_touch_count = 0;
     u8 m_previous_touchnum = 0;
@@ -203,6 +212,7 @@ public:
         controllers[i]->SetLightBarRGB(r, g, b);
         controllers[i]->override_colour = {r, g, b};
     }
+    void ResetLightbarColors();
 };
 
 } // namespace Input

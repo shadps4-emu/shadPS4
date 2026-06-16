@@ -258,8 +258,30 @@ int PS4_SYSV_ABI sceNetCtlGetInfoV6IpcInt() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlGetNatInfo() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlGetNatInfo(OrbisNetCtlNatInfo* nat_info) {
+    if (!nat_info) {
+        return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
+    }
+    if (nat_info->size != sizeof(OrbisNetCtlNatInfo)) {
+        return ORBIS_NET_CTL_ERROR_INVALID_SIZE;
+    }
+
+    auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
+    nat_info->nat_type = netinfo->GetNatType();
+    const u32 ext_ip = netinfo->GetExternalIp();
+    if (ext_ip != 0) {
+        nat_info->stun_status = 1;
+        nat_info->mapped_addr = ext_ip;
+    } else {
+        nat_info->stun_status = 0;
+        nat_info->mapped_addr = inet_addr("127.0.0.1");
+        if (netinfo->RetrieveIp()) {
+            nat_info->mapped_addr = inet_addr(netinfo->GetIp().c_str());
+        }
+    }
+
+    LOG_DEBUG(Lib_NetCtl, "stun_status={} nat_type={} mapped_addr={:#x}", nat_info->stun_status,
+              nat_info->nat_type, nat_info->mapped_addr);
     return ORBIS_OK;
 }
 

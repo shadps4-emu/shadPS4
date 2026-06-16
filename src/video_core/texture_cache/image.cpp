@@ -15,6 +15,8 @@ namespace VideoCore {
 
 using namespace Vulkan;
 
+Common::IncrementalIdProvider<u64> Image::global_image_uid{};
+
 static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance* instance,
                                            const ImageInfo& info) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
@@ -33,6 +35,11 @@ static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance* instance,
             // flag is also used.
             usage |= vk::ImageUsageFlagBits::eStorage;
         }
+    } else {
+        // Similarly to above, we specify storage usage. This is typically not supported by
+        // compressed formats, but may be used for uncompressed views. In order to satisfy this,
+        // we will also specify the extended usage bit.
+        usage |= vk::ImageUsageFlagBits::eStorage;
     }
 
     return usage;
@@ -119,6 +126,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     if (info.pixel_format == vk::Format::eUndefined) {
         return;
     }
+    image_uid = global_image_uid.Next();
     mip_hashes.resize(info.resources.levels);
     // Here we force `eExtendedUsage` as don't know all image usage cases beforehand. In normal case
     // the texture cache should re-create the resource with the usage requested
@@ -337,7 +345,7 @@ Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 
 
 void Image::Transit(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
                     std::optional<SubresourceRange> range, vk::CommandBuffer cmdbuf /*= {}*/) {
-    // Adjust pipieline stage
+    // Adjust pipeline stage
     const vk::PipelineStageFlags2 dst_pl_stage =
         (dst_mask == vk::AccessFlagBits2::eTransferRead ||
          dst_mask == vk::AccessFlagBits2::eTransferWrite)
@@ -680,13 +688,14 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
 void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
     const auto& src_info = src_image.info;
 
-    const auto mip_w = std::max(info.size.width >> mip, 1u);
-    const auto mip_h = std::max(info.size.height >> mip, 1u);
-    const auto mip_d = std::max(info.size.depth >> mip, 1u);
-    const auto [src_layers, dst_layers] = SanitizeCopyLayers(src_info, info, mip_d);
+    const auto src_block_dim = src_info.BlockDim();
+    const auto dst_block_dim = info.BlockDim();
+    const auto mip_block_w = std::max(dst_block_dim.width >> mip, 1u);
+    const auto mip_block_h = std::max(dst_block_dim.height >> mip, 1u);
+    ASSERT(mip_block_w == src_block_dim.width);
+    ASSERT(mip_block_h == src_block_dim.height);
 
-    ASSERT(mip_w == src_info.size.width);
-    ASSERT(mip_h == src_info.size.height);
+    const auto [src_layers, dst_layers] = SanitizeCopyLayers(src_info, info, src_info.size.depth);
 
     const vk::ImageCopy image_copy{
         .srcSubresource{
@@ -701,7 +710,7 @@ void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
             .baseArrayLayer = slice,
             .layerCount = dst_layers,
         },
-        .extent = {mip_w, mip_h, mip_d},
+        .extent = {src_info.size.width, src_info.size.height, src_info.size.depth},
     };
 
     SetBackingSamples(info.num_samples);

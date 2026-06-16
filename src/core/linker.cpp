@@ -326,14 +326,6 @@ void Linker::Relocate(Module* module) {
     });
 }
 
-const Module* Linker::FindExportedModule(const ModuleInfo& module, const LibraryInfo& library) {
-    const auto it = std::ranges::find_if(m_modules, [&](const auto& m) {
-        return std::ranges::contains(m->GetExportLibs(), library) &&
-               std::ranges::contains(m->GetExportModules(), module);
-    });
-    return it == m_modules.end() ? nullptr : it->get();
-}
-
 bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Module* m,
                      Loader::SymbolRecord* return_info) {
     const auto ids = Common::SplitString(name, '#');
@@ -362,10 +354,16 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
         return true;
     }
 
-    // Check if it an export function
-    const auto* p = FindExportedModule(*module, *library);
-    if (p && p->export_sym.GetSize() > 0) {
-        record = p->export_sym.FindSymbol(sr);
+    // Check if it an exported function from one of our loaded libraries
+    for (const auto& mod : m_modules) {
+        if (!std::ranges::contains(mod->GetExportLibs(), *library) ||
+            !std::ranges::contains(mod->GetExportModules(), *module)) {
+            continue;
+        }
+        if (mod->export_sym.GetSize() == 0) {
+            continue;
+        }
+        record = mod->export_sym.FindSymbol(sr);
         if (record) {
             *return_info = *record;
             return true;

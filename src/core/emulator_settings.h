@@ -116,26 +116,20 @@ inline OverrideItem make_override(const char* key, Setting<T> Struct::* member) 
     return OverrideItem{
         key,
         [member, key](void* base, const nlohmann::json& entry, std::vector<std::string>& changed) {
-            LOG_DEBUG(Config, "[make_override] Processing key: {}", key);
-            LOG_DEBUG(Config, "[make_override] Entry JSON: {}", entry.dump());
             Struct* obj = reinterpret_cast<Struct*>(base);
             Setting<T>& dst = obj->*member;
             try {
                 T newValue = entry.get<T>();
-                LOG_DEBUG(Config, "[make_override] Parsed value: {}", newValue);
-                LOG_DEBUG(Config, "[make_override] Current value: {}", dst.value);
                 if (dst.value != newValue) {
                     std::ostringstream oss;
-                    oss << key << " ( " << dst.value << " → " << newValue << " )";
+                    oss << key << " ( " << dst.value << " -> " << newValue << " )";
                     changed.push_back(oss.str());
-                    LOG_DEBUG(Config, "[make_override] Recorded change: {}", oss.str());
                 }
                 dst.game_specific_value = newValue;
-                LOG_DEBUG(Config, "[make_override] Successfully updated {}", key);
             } catch (const std::exception& e) {
-                LOG_ERROR(Config, "[make_override] ERROR parsing {}: {}", key, e.what());
-                LOG_ERROR(Config, "[make_override] Entry was: {}", entry.dump());
-                LOG_ERROR(Config, "[make_override] Type name: {}", entry.type_name());
+                LOG_DEBUG(Config, "[make_override] error parsing {}: {}", key, e.what());
+                LOG_DEBUG(Config, "[make_override] Entry was: {}", entry.dump());
+                LOG_DEBUG(Config, "[make_override] Type name: {}", entry.type_name());
             }
         },
 
@@ -190,6 +184,9 @@ struct GeneralSettings {
     Setting<int> console_language{1};
     Setting<int> big_picture_scale{1000};
     Setting<std::string> shadnet_server{""};
+    Setting<std::string> signaling_addr{""};
+    Setting<u16> signaling_port{};
+    Setting<bool> enable_upnp{true};
 
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
@@ -208,7 +205,10 @@ struct GeneralSettings {
             make_override<GeneralSettings>("trophy_notification_side",
                                            &GeneralSettings::trophy_notification_side),
             make_override<GeneralSettings>("connected_to_network",
-                                           &GeneralSettings::connected_to_network)};
+                                           &GeneralSettings::connected_to_network),
+            make_override<GeneralSettings>("signaling_addr", &GeneralSettings::signaling_addr),
+            make_override<GeneralSettings>("signaling_port", &GeneralSettings::signaling_port),
+            make_override<GeneralSettings>("enable_upnp", &GeneralSettings::enable_upnp)};
     }
 };
 
@@ -218,7 +218,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    trophy_notification_duration, show_splash,
                                    trophy_notification_side, connected_to_network,
                                    discord_rpc_enabled, show_fps_counter, console_language,
-                                   big_picture_scale, shadnet_server)
+                                   big_picture_scale, shadnet_server, signaling_addr,
+                                   signaling_port, enable_upnp)
 
 // -------------------------------
 // Log settings
@@ -602,6 +603,9 @@ public:
     SETTING_FORWARD(m_general, ConsoleLanguage, console_language)
     SETTING_FORWARD(m_general, BigPictureScale, big_picture_scale)
     SETTING_FORWARD(m_general, ShadNetServer, shadnet_server)
+    SETTING_FORWARD(m_general, SignalingAddr, signaling_addr)
+    SETTING_FORWARD(m_general, SignalingPort, signaling_port)
+    SETTING_FORWARD_BOOL(m_general, UPnPEnabled, enable_upnp)
 
     // Log settings
     SETTING_FORWARD_BOOL(m_log, LogAppend, append)

@@ -200,7 +200,8 @@ void Launch(char* executableName) {
     }
 
     SDL_Window* window =
-        SDL_CreateWindow("shadPS4 Big Picture Mode", 1280, 720, SDL_WINDOW_FULLSCREEN);
+        SDL_CreateWindow("shadPS4 Big Picture Mode", 1280, 720,
+                         EmulatorSettings.IsFullScreen() ? SDL_WINDOW_FULLSCREEN : 0);
     renderer = SDL_CreateRenderer(window, nullptr);
 
     if (window == nullptr) {
@@ -229,10 +230,18 @@ void Launch(char* executableName) {
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
-    GetGameIconInfo(gameIcons);
 
-    uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
     ImGuiEmuSettings::SettingsWindow settingsWindow(false);
+
+    float sliderScale = 1.0f;
+    auto applySettings = [&] {
+        uiScale = EmulatorSettings.GetBigPictureScale() / 1000.f;
+        sliderScale = uiScale;
+        GetGameIconInfo(gameIcons);
+        SDL_SetWindowFullscreen(window,
+                                EmulatorSettings.IsFullScreen() ? SDL_WINDOW_FULLSCREEN : 0);
+    };
+    applySettings();
 
     while (!done) {
         SDL_Event event;
@@ -297,7 +306,6 @@ void Launch(char* executableName) {
 
         ImGui::SetNextItemWidth(300.0f * uiScale);
 
-        static float sliderScale = 1.0f;
         if (ImGui::IsWindowAppearing()) {
             sliderScale = uiScale;
         }
@@ -317,6 +325,9 @@ void Launch(char* executableName) {
         ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - buttonsWidth);
 
         if (ImGui::Button("Settings")) {
+            EmulatorSettings.SetBigPictureScale(static_cast<int>(uiScale * 1000));
+            EmulatorSettings.Save();
+            settingsWindow.Prepare();
             showSettings = true;
         }
 
@@ -350,16 +361,7 @@ void Launch(char* executableName) {
         }
 
         if (showSettings) {
-            EmulatorSettings.SetBigPictureScale(static_cast<int>(uiScale * 1000));
-            EmulatorSettings.Save();
-            settingsWindow.DrawSettings(&showSettings);
-
-            // update when settings dialog closed
-            if (!showSettings) {
-                uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
-                sliderScale = uiScale;
-                GetGameIconInfo(gameIcons);
-            }
+            settingsWindow.DrawSettings(&showSettings, applySettings);
         }
 
         ImGui::PopStyleVar(8);
