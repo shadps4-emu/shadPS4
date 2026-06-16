@@ -48,7 +48,7 @@ jobs:
     - name: Build
       env:
         COMMIT_RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
-      run: ./.ci/clang-format.sh
+      run: ./.github/workflows/scripts/clang-format.sh
 
   get-info:
     runs-on: ubuntu-24.04
@@ -300,7 +300,7 @@ jobs:
         path: ${{ github.workspace }}/build/shadps4
 
     - name: Run AppImage packaging script
-      run:  ./.github/linux-appimage-sdl.sh
+      run:  ./.github/workflows/scripts/linux-appimage-sdl.sh
 
     - name: Package and Upload Linux SDL artifact
       run: |
