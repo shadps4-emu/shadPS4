@@ -127,9 +127,9 @@ inline OverrideItem make_override(const char* key, Setting<T> Struct::* member) 
                 }
                 dst.game_specific_value = newValue;
             } catch (const std::exception& e) {
-                LOG_DEBUG(Config, "[make_override] error parsing {}: {}", key, e.what());
-                LOG_DEBUG(Config, "[make_override] Entry was: {}", entry.dump());
-                LOG_DEBUG(Config, "[make_override] Type name: {}", entry.type_name());
+                LOG_ERROR(Config, "[make_override] error parsing {}: {}", key, e.what());
+                LOG_ERROR(Config, "[make_override] Entry was: {}", entry.dump());
+                LOG_ERROR(Config, "[make_override] Type name: {}", entry.type_name());
             }
         },
 
