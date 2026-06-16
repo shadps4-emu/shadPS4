@@ -373,7 +373,7 @@ else()
 endif()
 
 # macOS Vulkan driver
-if (APPLE AND NOT ENABLE_SYSTEM_VULKAN)
+if (APPLE AND NOT ENABLE_SYSTEM_VULKAN AND NOT ENABLE_TESTS)
     add_subdirectory(vulkan-loader)
     set(VULKAN_LOADER_PATH "${CMAKE_CURRENT_BINARY_DIR}/vulkan-loader/loader/libvulkan.dylib" PARENT_SCOPE)
 
