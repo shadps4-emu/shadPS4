@@ -816,6 +816,10 @@ set(COMMON src/common/logging/classes.h
            src/common/key_manager.h
 )
 
+if (APPLE)
+    list(APPEND COMMON src/common/apple.h src/common/apple.mm)
+endif()
+
 if (ENABLE_DISCORD_RPC)
     list(APPEND COMMON src/common/discord_rpc_handler.cpp src/common/discord_rpc_handler.h)
 endif()
