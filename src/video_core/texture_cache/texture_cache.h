@@ -280,6 +280,7 @@ private:
 
     /// Page-protects CPU reads to [addr, addr+size) for a linear, GPU-modified image.
     void ProtectImageRead(ImageId image_id, VAddr addr, u64 size);
+
     /// Removes CPU read protection installed by ProtectImageRead.
     void UnprotectImageRead(ImageId image_id, VAddr addr, u64 size);
 
