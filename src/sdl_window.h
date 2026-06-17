@@ -71,6 +71,8 @@ public:
         return window_info;
     }
 
+    void SetIcon(const std::filesystem::path& path);
+
     void WaitEvent();
     void InitTimers();
 
