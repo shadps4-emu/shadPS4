@@ -219,7 +219,9 @@ void WindowSDL::SetIcon(const std::filesystem::path& path) {
     if (surface == nullptr) {
         LOG_ERROR(Core, "Failed to create SDL surface for window icon: {}", SDL_GetError());
     }
-    SDL_SetWindowIcon(window, surface);
+    if (!SDL_SetWindowIcon(window, surface)) {
+        LOG_ERROR(Core, "Failed to set SDL window icon: {}", SDL_GetError());
+    }
     SDL_DestroySurface(surface);
 #endif
 }
