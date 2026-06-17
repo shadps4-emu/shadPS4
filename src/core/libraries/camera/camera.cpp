@@ -72,7 +72,7 @@ s32 PS4_SYSV_ABI sceCameraChangeAppModuleState() {
 }
 
 s32 PS4_SYSV_ABI sceCameraClose(s32 handle) {
-    LOG_DEBUG(Lib_Camera, "called, handle: {}", handle);
+    LOG_INFO(Lib_Camera, "called, handle: {}", handle);
     if (handle < 1) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
@@ -1021,7 +1021,7 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
     if (g_firmware_version >= Common::ElfInfo::FW_250 &&
-        (param->formatLevel[0] >= 0xf || param->formatLevel[1] >= 0xf ||
+        (param->formatLevel[0] > 0xf || param->formatLevel[1] > 0xf ||
          (param->formatLevel[0] | param->formatLevel[1]) == 0)) {
         LOG_ERROR(Lib_Camera, "ORBIS_CAMERA_ERROR_FORMAT_UNKNOWN");
         return ORBIS_CAMERA_ERROR_FORMAT_UNKNOWN;
