@@ -93,28 +93,14 @@ void TextureCache::ProcessDownloadImages() {
     download_images.clear();
 }
 
-void TextureCache::ReadMemory(VAddr device_addr, u64 size) {
-    // Vulkan command recording must happen on the GPU thread, same as BufferCache::ReadMemory.
-    liverpool->SendCommand<true>([this, device_addr, size] {
-        std::scoped_lock lock{mutex};
-        ImageIds image_ids;
-        ForEachImageInRegion(device_addr, size, [&](ImageId image_id, Image& image) {
-            if (True(image.flags & ImageFlagBits::GpuReadProtected)) {
-                image_ids.push_back(image_id);
-            }
-        });
-        for (const ImageId image_id : image_ids) {
-            DownloadImageMemory<false>(image_id);
-        }
-    });
-}
-
 void TextureCache::ProtectImageRead(ImageId image_id, VAddr addr, u64 size) {
     if (size == 0) {
         return;
     }
     Image& image = slot_images[image_id];
-    if (image.info.props.is_tiled || True(image.flags & ImageFlagBits::GpuReadProtected)) {
+    if (image.info.guest_address == 0 || image.info.props.is_tiled ||
+        False(image.flags & ImageFlagBits::GpuModified) ||
+        True(image.flags & ImageFlagBits::GpuReadProtected)) {
         return;
     }
     image.flags |= ImageFlagBits::GpuReadProtected;
@@ -130,6 +116,31 @@ void TextureCache::UnprotectImageRead(ImageId image_id, VAddr addr, u64 size) {
     if (size != 0) {
         tracker.UpdatePageWatchersRead<false>(addr, size);
     }
+}
+
+void TextureCache::ReadMemory(VAddr device_addr, u64 size) {
+    // Vulkan command recording must happen on the GPU thread, same as BufferCache::ReadMemory.
+    liverpool->SendCommand<true>([this, device_addr, size] {
+        std::scoped_lock lock{mutex};
+        ImageIds image_ids;
+        ForEachImageInRegion(device_addr, size, [&](ImageId image_id, Image& image) {
+            if (True(image.flags & ImageFlagBits::GpuReadProtected)) {
+                image_ids.push_back(image_id);
+            }
+        });
+        for (const ImageId image_id : image_ids) {
+            // Synchronous download: by the time this returns, the write-back has already
+            // landed, so it's safe to drop protection immediately afterwards. We deliberately
+            // do NOT unprotect from the async (deferred) download path used by
+            // ProcessDownloadImages/GC, since by the time that deferred callback runs, the
+            // image's tracked range may have changed (or the image may be gone) and we'd risk
+            // operating on stale state. Read-protection is only ever removed here, or via the
+            // normal CPU-write untrack path, both of which observe live, current image state.
+            DownloadImageMemory<false>(image_id);
+            Image& image = slot_images[image_id];
+            UnprotectImageRead(image_id, image.track_addr, image.track_addr_end - image.track_addr);
+        }
+    });
 }
 
 template <bool async>
@@ -165,15 +176,10 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     cmdbuf.copyImageToBuffer(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
                              download_buffer.Handle(), image_download);
 
-    // Snapshot the protected range now: track_addr can be moved/cleared by an unrelated
-    // (un)track call before this runs, especially on the deferred/async path.
-    const VAddr protect_addr = image.track_addr;
-    const u64 protect_size = image.track_addr_end - image.track_addr;
     const auto write_data = [this, device_addr = image.info.guest_address, download,
-                             download_size, image_id, protect_addr, protect_size] {
+                             download_size] {
         Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
                                                   download_size);
-        UnprotectImageRead(image_id, protect_addr, protect_size);
     };
     if constexpr (async) {
         scheduler.DeferPriorityOperation(write_data);
@@ -704,7 +710,6 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     }
     UpdateImage(image_id);
     if (desc.type == BindingType::Storage) {
-        // Only storage binds can be written by the GPU; sampled-only textures never are.
         ProtectImageRead(image_id, image.track_addr, image.track_addr_end - image.track_addr);
     }
     return image.FindView(desc.view_info);
@@ -949,10 +954,10 @@ void TextureCache::TrackImageHead(ImageId image_id) {
     }
     ASSERT(image.track_addr != 0 && image_begin < image.track_addr);
     const auto size = image.track_addr - image_begin;
+    const bool read_protected = True(image.flags & ImageFlagBits::GpuReadProtected);
     image.track_addr = image_begin;
     tracker.UpdatePageWatchers<1>(image_begin, size);
-    if (True(image.flags & ImageFlagBits::GpuReadProtected)) {
-        // Keep the read-protected range in sync with the write-tracked one.
+    if (read_protected) {
         tracker.UpdatePageWatchersRead<true>(image_begin, size);
     }
 }
@@ -969,10 +974,10 @@ void TextureCache::TrackImageTail(ImageId image_id) {
     ASSERT(image.track_addr_end != 0 && image.track_addr_end < image_end);
     const auto addr = image.track_addr_end;
     const auto size = image_end - image.track_addr_end;
+    const bool read_protected = True(image.flags & ImageFlagBits::GpuReadProtected);
     image.track_addr_end = image_end;
     tracker.UpdatePageWatchers<1>(addr, size);
-    if (True(image.flags & ImageFlagBits::GpuReadProtected)) {
-        // Keep the read-protected range in sync with the write-tracked one.
+    if (read_protected) {
         tracker.UpdatePageWatchersRead<true>(addr, size);
     }
 }
@@ -984,12 +989,9 @@ void TextureCache::UntrackImage(ImageId image_id) {
     }
     const auto addr = image.track_addr;
     const auto size = image.track_addr_end - image.track_addr;
+    UnprotectImageRead(image_id, addr, size);
     image.track_addr = 0;
     image.track_addr_end = 0;
-    // Must run before the write-watcher removal below: dropping the write watcher first
-    // while a read watcher is still up would briefly make this range write-only, which
-    // PageManager::Impl::Protect rejects (and most platforms can't represent anyway).
-    UnprotectImageRead(image_id, addr, size);
     if (size != 0) {
         tracker.UpdatePageWatchers<false>(addr, size);
     }
@@ -1003,11 +1005,11 @@ void TextureCache::UntrackImageHead(ImageId image_id) {
     }
     const auto addr = tracker.GetNextPageAddr(image_begin);
     const auto size = addr - image_begin;
+    const bool read_protected = True(image.flags & ImageFlagBits::GpuReadProtected);
     image.track_addr = addr;
-    // Snapshot before MarkAsMaybeDirty: it can recurse into UntrackImage with a zero-size
-    // range (since track_addr now equals track_addr_end) and clear the flag without ever
-    // calling UpdatePageWatchersRead, which would otherwise swallow this chunk's unprotect.
-    const bool was_read_protected = True(image.flags & ImageFlagBits::GpuReadProtected);
+    if (read_protected) {
+        tracker.UpdatePageWatchersRead<false>(image_begin, size);
+    }
     if (image.track_addr == image.track_addr_end) {
         // This image spans only 2 pages and both are modified,
         // but the image itself was not directly affected.
@@ -1015,9 +1017,6 @@ void TextureCache::UntrackImageHead(ImageId image_id) {
         MarkAsMaybeDirty(image_id, image);
     }
     tracker.UpdatePageWatchers<false>(image_begin, size);
-    if (was_read_protected) {
-        tracker.UpdatePageWatchersRead<false>(image_begin, size);
-    }
 }
 
 void TextureCache::UntrackImageTail(ImageId image_id) {
@@ -1029,9 +1028,11 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
     ASSERT(image.track_addr_end != 0);
     const auto addr = tracker.GetPageAddr(image_end);
     const auto size = image_end - addr;
+    const bool read_protected = True(image.flags & ImageFlagBits::GpuReadProtected);
     image.track_addr_end = addr;
-    // See UntrackImageHead for why this is snapshotted before MarkAsMaybeDirty.
-    const bool was_read_protected = True(image.flags & ImageFlagBits::GpuReadProtected);
+    if (read_protected) {
+        tracker.UpdatePageWatchersRead<false>(addr, size);
+    }
     if (image.track_addr == image.track_addr_end) {
         // This image spans only 2 pages and both are modified,
         // but the image itself was not directly affected.
@@ -1039,9 +1040,6 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
         MarkAsMaybeDirty(image_id, image);
     }
     tracker.UpdatePageWatchers<false>(addr, size);
-    if (was_read_protected) {
-        tracker.UpdatePageWatchersRead<false>(addr, size);
-    }
 }
 
 void TextureCache::RunGarbageCollector() {
