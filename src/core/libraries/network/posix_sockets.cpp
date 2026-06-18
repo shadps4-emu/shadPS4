@@ -547,7 +547,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             }
 
             // Store inputted timeout
-            u32 millis = *reinterpret_cast<const u32*>(optval);
+            s32 millis = *reinterpret_cast<const s32*>(optval);
             if (optname == ORBIS_SO_SNDTIMEO) {
                 sockopt_so_sndtimeo = millis;
             } else {
