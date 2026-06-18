@@ -560,7 +560,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
                                                      static_cast<const char*>(optval), optlen));
 #else
             // POSIX platforms use a timeval, we need to convert
-            timeval timeout{.tv_sec = millis / 1000, .tv_usec = millis % 1000};
+            timeval timeout{.tv_sec = millis / 1000, .tv_usec = millis * 1000};
             return ConvertReturnErrorCode(setsockopt(sock, native_level, native_opt,
                                                      reinterpret_cast<char*>(&timeout),
                                                      sizeof(timeout)));
@@ -686,7 +686,7 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
         case ORBIS_SO_RCVTIMEO: {
             // Returns timeout as a timeval
             s32 millis = optname == ORBIS_SO_SNDTIMEO ? sockopt_so_sndtimeo : sockopt_so_rcvtimeo;
-            Kernel::OrbisKernelTimeval out_time{millis / 1000, millis % 1000};
+            Kernel::OrbisKernelTimeval out_time{.tv_sec = millis / 1000, .tv_usec = millis * 1000};
             *optlen = std::min<u32>(sizeof(out_time), *optlen);
             std::memcpy(optval, &out_time, *optlen);
             return 0;
