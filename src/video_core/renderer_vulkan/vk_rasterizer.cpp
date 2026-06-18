@@ -702,10 +702,10 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
 
             image_id = texture_cache.FindImage(desc);
             auto* image = &texture_cache.GetImage(image_id);
-            if (image->depth_id) {
+            if (auto depth_image_id = texture_cache.GetAssociatedDepth(*image)) {
                 // If this image has an associated depth image, it's a stencil attachment.
                 // Redirect the access to the actual depth-stencil buffer.
-                image_id = image->depth_id;
+                image_id = depth_image_id;
                 image = &texture_cache.GetImage(image_id);
             }
             if (image->binding.is_bound) {
@@ -917,6 +917,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         auto& attachment = state.depth_stencil_attachment;
         attachment.image_view = *image_view.image_view;
         attachment.image_layout = image.backing->state.layout;
+        attachment.clear_value = {};
 
         if (regs.depth_buffer.DepthValid()) {
             attachment.clear_value[0] = is_depth_clear ? std::bit_cast<u32>(regs.depth_clear) : 0u;
@@ -1294,13 +1295,18 @@ void Rasterizer::UpdatePrimitiveState(const bool is_indexed) const {
                topology == vk::PrimitiveTopology::eLineList ||
                topology == vk::PrimitiveTopology::eTriangleList ||
                topology == vk::PrimitiveTopology::eLineListWithAdjacency ||
-               topology == vk::PrimitiveTopology::eTriangleListWithAdjacency ||
-               topology == vk::PrimitiveTopology::ePatchList;
+               topology == vk::PrimitiveTopology::eTriangleListWithAdjacency;
+    };
+    const auto is_patch_list_topology = [](const AmdGpu::PrimitiveType type) {
+        // Quad and rect lists are emulated using tessellation.
+        return type == AmdGpu::PrimitiveType::PatchPrimitive ||
+               type == AmdGpu::PrimitiveType::QuadList || type == AmdGpu::PrimitiveType::RectList;
     };
 
     const auto prim_restart =
         (regs.enable_primitive_restart & 1) != 0 &&
-        (instance.IsListRestartSupported() || !is_list_topology(regs.primitive_type));
+        (instance.IsListRestartSupported() || !is_list_topology(regs.primitive_type)) &&
+        (instance.IsPatchListRestartSupported() || !is_patch_list_topology(regs.primitive_type));
     ASSERT_MSG(!is_indexed || !prim_restart || regs.primitive_restart_index == 0xFFFF ||
                    regs.primitive_restart_index == 0xFFFFFFFF,
                "Primitive restart index other than -1 is not supported yet");

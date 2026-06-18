@@ -12,149 +12,217 @@
     { self, nixpkgs }:
     let
       pkgsLinux = nixpkgs.legacyPackages.x86_64-linux;
+
     in
     {
-      devShells.x86_64-linux.default = pkgsLinux.mkShell.override { stdenv = pkgsLinux.clangStdenv; } {
-        packages = with pkgsLinux; [
-          clang-tools
-          cmake
-          pkg-config
-          vulkan-tools
+      formatter.x86_64-linux = pkgsLinux.nixpkgs-fmt;
 
-          renderdoc
-          gef
-          strace
-
-          openal
-          zlib.dev
-          libedit.dev
-          vulkan-headers
-          vulkan-utility-libraries
-          ffmpeg.dev
-          fmt.dev
-          glslang.dev
-          wayland.dev
-          stb
-          libpng.dev
-          libuuid
-
-          sdl3.dev
-          alsa-lib
-          hidapi
-          ibus.dev
-          jack2.dev
-          libdecor.dev
-          libthai.dev
-          fribidi.dev
-          libxcb.dev
-          libGL.dev
-          libpulseaudio.dev
-          libusb1.dev
-          libx11.dev
-          libxcursor.dev
-          libxext
-          libxfixes.dev
-          libxi.dev
-          libxinerama.dev
-          libxkbcommon
-          libxrandr.dev
-          libxrender.dev
-          libxtst
-          pipewire.dev
-          libxscrnsaver
-          sndio
-        ];
-        shellHook = ''
-          echo "Entering shadPS4 development shell!"
-        '';
-      };
-
-      linux =
+      devShells.x86_64-linux.default =
         let
-          execName = "shadps4";
-          nativeInputs = with pkgsLinux; [
-            cmake
-            ninja
-            pkg-config
-            magic-enum
-            fmt
-            eudev
-          ];
-          buildInputs = with pkgsLinux; [
-            boost
-            cli11
-            openal
-            nlohmann_json
-            vulkan-loader
-            vulkan-headers
-            vulkan-memory-allocator
-            toml11
-            zlib
-            zydis
-            pugixml
-            ffmpeg
-            libpulseaudio
-            pipewire
-            vulkan-loader
-            wayland
-            wayland-scanner
-            libX11
-            libxrandr
-            libxext
-            libxcursor
-            libxi
-            libxscrnsaver
-            libxtst
-            libxcb
-            libdecor
-            libxkbcommon
-            libGL
-            libuuid
-          ];
+          shell =
+            { self
+            , mkShell
+            , clangStdenv
+            , clang-tools
+            , cmake
+            , pkg-config
+            , renderdoc
+            , gef
+            , strace
+            , perf
+            , sdl3
+            , vulkan-tools
+            , libGL
+            , jack1
+            , fribidi
+            , libthai
+            , libpulseaudio
+            , sndio
+            , libdrm
+            , libgbm
+            , libusb1
+            , libxkbcommon
+            , libxcursor
+            , libxext
+            , libxfixes
+            , libxi
+            , libxinerama
+            , libxrandr
+            , libxrender
+            , libxtst
+            , libxscrnsaver
+            , enableDebugTooling ? true
+            ,
+            }:
 
-          defaultFlags = [
-            "-DCMAKE_INSTALL_PREFIX=$out"
-          ];
+            mkShell.override { stdenv = clangStdenv; } {
+              inputsFrom = [ self.packages.x86_64-linux.default ];
+
+              packages =
+                let
+                  # SDL3 requres extra libraries inside the devshell in order to pass CMake's configure.
+                  sdlConfigureDeps = [
+                    libGL
+                    jack1
+                    fribidi
+                    libthai
+                    libpulseaudio
+                    sndio
+                    libdrm
+                    libgbm
+                    libusb1
+                    libxkbcommon
+                    libxcursor
+                    libxext
+                    libxfixes
+                    libxi
+                    libxinerama
+                    libxrandr
+                    libxrender
+                    libxtst
+                    libxscrnsaver
+                  ];
+                in
+                [
+                  clang-tools
+                  cmake
+                  pkg-config
+                ] ++ sdlConfigureDeps ++ pkgsLinux.lib.optionals enableDebugTooling [ renderdoc gef strace perf vulkan-tools ];
+
+              shellHook = ''
+                echo "Entering shadPS4 development shell!"
+              '';
+
+              CMAKE_C_COMPILER = "clang";
+              CMAKE_CXX_COMPILER = "clang++";
+              CMAKE_EXPORT_COMPILE_COMMANDS = "ON";
+            };
+
+        in
+        pkgsLinux.callPackage shell { inherit self; };
+
+      packages.x86_64-linux =
+        let
+          buildSettings = {
+            "release" = { symbols = false; flag = "-DCMAKE_BUILD_TYPE=Release"; };
+            "relWithDebInfo" = { symbols = true; flag = "-DCMAKE_BUILD_TYPE=RelWithDebInfo"; };
+            "debug" = { symbols = true; flag = "-DCMAKE_BUILD_TYPE=Debug"; };
+          };
+          getBuildSettings = chosenBuild: buildSettings.${chosenBuild} or (abort "Build mode not valid! Use \"debug\", \"release\", or \"relWithDebInfo\".");
+
+          build =
+            { clangStdenv
+            , cmake
+            , ninja
+            , pkg-config
+            , libX11
+            , libxrandr
+            , libxext
+            , libxcursor
+            , libxi
+            , libxscrnsaver
+            , libxtst
+            , libxcb
+            , boost
+            , cli11
+            , ffmpeg
+            , fmt
+            , freetype
+            , glslang
+            , magic-enum
+            , miniupnpc
+            , miniz
+            , nlohmann_json
+            , libpng
+            , openal
+            , libressl
+            , renderdoc
+            , sdl3
+            , stb
+            , toml11
+            , robin-map
+            , vulkan-headers
+            , vulkan-memory-allocator
+            , xbyak
+            , xxhash
+            , zlib
+            , zydis
+            , pugixml
+            , libuuid
+            , systemdMinimal
+            , libx11
+            , releaseMode ? "debug"
+            , enableDiscordRpc ? false
+            ,
+            }:
+
+            clangStdenv.mkDerivation (finalAttrs: {
+              name = "${finalAttrs.pname}-${finalAttrs.version}-${finalAttrs.system}";
+              pname = "shadps4";
+              version = "0.16.1";
+              system = "x86_64-linux";
+              src = ./.;
+
+              nativeBuildInputs = [
+                cmake
+                ninja
+                pkg-config
+              ];
+              buildInputs = [
+                boost
+                cli11
+                ffmpeg
+                fmt
+                freetype
+                glslang
+                magic-enum
+                miniupnpc
+                miniz
+                nlohmann_json
+                libpng
+                openal
+                libressl
+                renderdoc
+                sdl3
+                stb
+                toml11
+                robin-map
+                vulkan-headers
+                vulkan-memory-allocator
+                xbyak
+                xxhash
+                zlib
+                zydis
+                pugixml
+                libuuid
+                systemdMinimal
+                libx11
+              ];
+
+              cmakeFlags = [
+                (getBuildSettings releaseMode).flag
+                (pkgsLinux.lib.cmakeBool "ENABLE_DISCORD_RPC" enableDiscordRpc)
+                (pkgsLinux.lib.cmakeBool "ENABLE_TESTS" false)
+                (pkgsLinux.lib.cmakeBool "ENABLE_SYSTEM_LIBRARIES" true)
+              ];
+              dontStrip = (getBuildSettings releaseMode).symbols;
+
+              # Cannot get the Branch name from the sandbox.
+              # Getting the commit hash can still be acquired through self.
+              patchPhase = '' 
+                substituteInPlace src/common/scm_rev.cpp.in \
+                  --replace-fail "@GIT_BRANCH@" "${self.shortRev or "Dirty"}"
+                
+                substituteInPlace src/common/scm_rev.cpp.in \
+                  --replace-fail "@GIT_DESC@" ""
+              '';
+            });
         in
         {
-          debug = pkgsLinux.stdenv.mkDerivation {
-            pname = "${execName}";
-            version = "git";
-            system = "x86_64-linux";
-            src = ./.;
-            dontStrip = true;
-
-            nativeBuildInputs = nativeInputs;
-            buildInputs = buildInputs;
-            cmakeFlags = [
-              "-DCMAKE_BUILD_TYPE=Debug"
-            ] ++ [defaultFlags];
-          };
-          release = pkgsLinux.stdenv.mkDerivation {
-            pname = "${execName}";
-            version = "git";
-            system = "x86_64-linux";
-            src = ./.;
-
-            nativeBuildInputs = nativeInputs;
-            buildInputs = buildInputs;
-            cmakeFlags = [
-              "-DCMAKE_BUILD_TYPE=Release"
-            ] ++ [defaultFlags];
-          };
-          releaseWithDebugInfo = pkgsLinux.stdenv.mkDerivation {
-            pname = "${execName}";
-            version = "git";
-            system = "x86_64-linux";
-            src = ./.;
-            dontStrip = true;
-
-            nativeBuildInputs = nativeInputs;
-            buildInputs = buildInputs;
-            cmakeFlags = [
-              "-DCMAKE_BUILD_TYPE=Release"
-            ] ++ [defaultFlags];
-          };
+          debug = pkgsLinux.callPackage build { releaseMode = "debug"; };
+          release = pkgsLinux.callPackage build { releaseMode = "release"; };
+          releaseWithDebInfo = pkgsLinux.callPackage build { releaseMode = "relWithDebInfo"; };
+          default = pkgsLinux.callPackage build { releaseMode = "relWithDebInfo"; };
         };
     };
 }

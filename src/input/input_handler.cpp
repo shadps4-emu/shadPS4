@@ -120,8 +120,8 @@ axis_right_x = axis_right_x
 axis_right_y = axis_right_y
 
 # Range of deadzones: 1 (almost none) to 127 (max)
-analog_deadzone = leftjoystick, 2, 127
-analog_deadzone = rightjoystick, 2, 127
+analog_deadzone = leftjoystick, 5, 127
+analog_deadzone = rightjoystick, 5, 127
 
 override_controller_color = false, 0, 0, 255
 )";
@@ -544,7 +544,8 @@ void ParseInputConfig(const std::string game_id = "") {
             }
             output_gamepad_id = output_gamepad_id == -1 ? 1 : output_gamepad_id;
             if (enable == "true") {
-                GameControllers::SetControllerCustomColor(output_gamepad_id - 1, *r, *g, *b);
+                ControllerOutput::controllers.SetControllerCustomColor(output_gamepad_id - 1, *r,
+                                                                       *g, *b);
             }
             LOG_DEBUG(Input, "Parsed color settings: {} {} - {} {} {}",
                       enable == "true" ? "override" : "no override", output_gamepad_id, *r, *b, *g);

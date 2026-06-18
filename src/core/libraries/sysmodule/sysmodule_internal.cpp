@@ -94,17 +94,17 @@ bool validateModuleId(s32 id) {
                "Failed to retrieve compiled SDK version");
 
     // libSceGameCustomDialog isn't loadable on SDK >= 7.50
-    if (id == 0xb8 && sdk_ver >= Common::ElfInfo::FW_75) {
+    if (id == 0xb8 && sdk_ver >= Common::ElfInfo::FW_750) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }
 
     // libSceNpSnsFacebookDialog isn't loadable on SDK >= 7.00
-    if (id == 0xb0 && sdk_ver >= Common::ElfInfo::FW_70) {
+    if (id == 0xb0 && sdk_ver >= Common::ElfInfo::FW_700) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }
 
     // libSceJson isn't loadable on SDK >= 3.00
-    if (id == 0x80 && sdk_ver >= Common::ElfInfo::FW_30) {
+    if (id == 0x80 && sdk_ver >= Common::ElfInfo::FW_300) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }
 
@@ -405,7 +405,7 @@ s32 preloadModulesForLibkernel() {
         }
 
         // libSceDiscMap case, skipped on newer SDK versions.
-        if (module_index == 0x22 && sdk_ver >= Common::ElfInfo::FW_20) {
+        if (module_index == 0x22 && sdk_ver >= Common::ElfInfo::FW_200) {
             continue;
         }
 
@@ -416,18 +416,18 @@ s32 preloadModulesForLibkernel() {
         }
 
         // libSceRazorCpu, skipped for old non-devkit consoles.
-        if (module_index == 0x25 && sdk_ver < Common::ElfInfo::FW_45 &&
+        if (module_index == 0x25 && sdk_ver < Common::ElfInfo::FW_450 &&
             !EmulatorSettings.IsDevKit()) {
             continue;
         }
 
         // libSceHttp2, skipped for SDK versions below 7.00.
-        if (module_index == 0x28 && sdk_ver < Common::ElfInfo::FW_70) {
+        if (module_index == 0x28 && sdk_ver < Common::ElfInfo::FW_700) {
             continue;
         }
 
         // libSceNpWebApi2 and libSceNpGameIntent, skipped for SDK versions below 7.50
-        if ((module_index == 0x29 || module_index == 0x2a) && sdk_ver < Common::ElfInfo::FW_75) {
+        if ((module_index == 0x29 || module_index == 0x2a) && sdk_ver < Common::ElfInfo::FW_750) {
             continue;
         }
 

@@ -63,25 +63,36 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         *is_read_only = mount->read_only;
     }
 
-    // Nothing to do if getting the mount itself.
     const auto corrected_path_sanitized = RemoveTrailingSlashes(corrected_path);
-    if (corrected_path_sanitized == mount->mount) {
-        return mount->host_path;
-    }
+    std::filesystem::path host_path = mount->host_path;
 
-    // Remove device (e.g /app0) from path to retrieve relative path.
-    const auto rel_path = std::string_view{corrected_path}.substr(mount->mount.size() + 1);
-    std::filesystem::path host_path = mount->host_path / rel_path;
+    // Update folder is either mount + "-UPDATE" or mount + "-patch"
     std::filesystem::path patch_path = mount->host_path;
     patch_path += "-UPDATE";
     if (!std::filesystem::exists(patch_path)) {
         patch_path = mount->host_path;
         patch_path += "-patch";
     }
-    patch_path /= rel_path;
 
+    // Mods folder can only be at mount + "-mods"
     std::filesystem::path mods_path = mount->host_path;
     mods_path += "-mods";
+
+    // If we're just retrieving the mount, return the correct mount path.
+    if (corrected_path_sanitized == mount->mount) {
+        if (path_type == HostPathType::Mod) {
+            return mods_path;
+        } else if (path_type == HostPathType::Patch) {
+            return patch_path;
+        } else {
+            return host_path;
+        }
+    }
+
+    // Remove device (e.g /app0) from path to retrieve relative path.
+    const auto rel_path = std::string_view{corrected_path}.substr(mount->mount.size() + 1);
+    host_path /= rel_path;
+    patch_path /= rel_path;
     mods_path /= rel_path;
 
     if (path_type == HostPathType::Mod) {

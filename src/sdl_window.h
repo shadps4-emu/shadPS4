@@ -71,6 +71,8 @@ public:
         return window_info;
     }
 
+    void SetIcon(const std::filesystem::path& path);
+
     void WaitEvent();
     void InitTimers();
 
@@ -91,5 +93,8 @@ private:
     bool is_shown{};
     bool is_open{true};
 };
+
+void SetWindowIcon(SDL_Window* window, const std::vector<u8>& png);
+void SetDefaultWindowIcon(SDL_Window* window);
 
 } // namespace Frontend

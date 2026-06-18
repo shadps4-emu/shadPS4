@@ -37,7 +37,6 @@ struct Profile {
     bool supports_image_load_store_lod{};
     bool supports_native_cube_calc{};
     bool supports_trinary_minmax{};
-    bool supports_robust_buffer_access{};
     bool supports_buffer_fp32_atomic_min_max{};
     bool supports_image_fp32_atomic_min_max{};
     bool supports_buffer_int64_atomics{};
@@ -45,7 +44,6 @@ struct Profile {
     bool supports_workgroup_explicit_memory_layout{};
     bool supports_amd_shader_explicit_vertex_parameter{};
     bool supports_fragment_shader_barycentric{};
-    bool has_incomplete_fragment_shader_barycentric{};
     bool has_broken_spirv_clamp{};
     bool lower_left_origin_mode{};
     bool needs_manual_interpolation{};
@@ -53,6 +51,7 @@ struct Profile {
     bool needs_buffer_offsets{};
     bool needs_unorm_fixup{};
     bool needs_clip_distance_emulation{};
+    bool supports_shader_stencil_export{};
 };
 
 } // namespace Shader

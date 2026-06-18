@@ -256,6 +256,7 @@ public:
     Id frag_coord{};
     Id front_facing{};
     Id frag_depth{};
+    Id stencil_ref{};
     Id sample_mask{};
     Id sample_index{};
     Id clip_distances{};
@@ -288,6 +289,7 @@ public:
     Id bary_coord_smooth_centroid{};
     Id bary_coord_smooth_sample{};
     Id bary_coord_nopersp{};
+    Id bary_coord_nopersp_sample{};
 
     struct TextureDefinition {
         const VectorIds* data_types;
@@ -327,7 +329,6 @@ public:
         u32 binding;
         BufferType buffer_type;
         std::array<Id, u32(PointerSize::NumClass)> offsets;
-        std::array<Id, u32(PointerSize::NumClass)> sizes;
         std::array<BufferSpv, u32(PointerType::NumAlias)> aliases;
 
         template <class Self>
@@ -338,11 +339,6 @@ public:
         template <class Self>
         auto& Offset(this Self& self, PointerSize size) {
             return self.offsets[u32(size)];
-        }
-
-        template <class Self>
-        auto& Size(this Self& self, PointerSize size) {
-            return self.sizes[u32(size)];
         }
     };
 

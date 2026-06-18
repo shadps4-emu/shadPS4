@@ -99,10 +99,6 @@
 	url = https://github.com/shadps4-emu/ext-wepoll.git
 	shallow = true
 	branch = dist
-[submodule "externals/MoltenVK"]
-	path = externals/MoltenVK
-	url = https://github.com/shadPS4-emu/ext-MoltenVK.git
-	shallow = true
 [submodule "externals/json"]
 	path = externals/json
 	url = https://github.com/nlohmann/json.git
@@ -112,6 +108,10 @@
 [submodule "externals/aacdec/fdk-aac"]
 	path = externals/aacdec/fdk-aac
 	url = https://android.googlesource.com/platform/external/aac
+[submodule "externals/freetype"]
+	path = externals/freetype
+	url = https://github.com/freetype/freetype.git
+	shallow = true
 [submodule "externals/CLI11"]
 	path = externals/CLI11
 	url = https://github.com/shadexternals/CLI11.git
@@ -141,3 +141,17 @@
 	url = https://github.com/gabime/spdlog.git
 	shallow = true
 	branch = v2.x
+[submodule "externals/libressl"]
+	path = externals/libressl
+	url = https://github.com/shadexternals/libressl
+[submodule "externals/miniupnp"]
+	path = externals/miniupnp
+	url = https://github.com/miniupnp/miniupnp.git
+[submodule "externals/mesa-kosmickrisp"]
+	path = externals/mesa-kosmickrisp
+	url = https://github.com/shadexternals/mesa-kosmickrisp
+	shallow = true
+[submodule "externals/vulkan-loader"]
+	path = externals/vulkan-loader
+	url = https://github.com/KhronosGroup/Vulkan-Loader
+	shallow = true
