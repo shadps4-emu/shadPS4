@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
-#include "common/types.h"
+
+#include "common/ring_buffer_queue.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Core::Loader {
@@ -10,44 +11,6 @@ class SymbolsResolver;
 }
 
 namespace Libraries::Mouse {
-
-template <class T>
-class RingBufferQueue {
-public:
-    RingBufferQueue(size_t size) : m_storage(size) {}
-
-    void Push(T item) {
-        const size_t index = (m_begin + m_size) % m_storage.size();
-        m_storage[index] = std::move(item);
-        if (m_size < m_storage.size()) {
-            m_size += 1;
-        } else {
-            m_begin = (m_begin + 1) % m_storage.size();
-        }
-    }
-
-    std::optional<T> Pop() {
-        if (m_size == 0) {
-            return {};
-        }
-        const size_t index = m_begin;
-        m_begin = (m_begin + 1) % m_storage.size();
-        m_size -= 1;
-        return std::move(m_storage[index]);
-    }
-
-    std::optional<T> Peek() {
-        if (m_size == 0) {
-            return {};
-        }
-        return m_storage[m_begin];
-    }
-
-private:
-    size_t m_begin = 0;
-    size_t m_size = 0;
-    std::vector<T> m_storage;
-};
 
 struct OrbisMouseData {
     u64 timestamp;
