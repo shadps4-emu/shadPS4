@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <core/libraries/kernel/time.h>
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
+#include "core/libraries/kernel/time.h"
 #include "sdl_mouse.h"
 
 namespace Libraries::Mouse {
@@ -33,10 +34,15 @@ constexpr u32 OrbisButtonFromSDL(Uint8 button) {
 
 bool PushSDLEvent(SDL_Event const& e) {
     static OrbisMouseData current_state[2]{};
+    if (!EmulatorSettings.IsMiceUsedAsMice()) {
+        return false;
+    }
     if (!g_lib_init) {
         return false;
     }
     switch (e.type) {
+    default:
+        return false;
     case SDL_EVENT_MOUSE_REMOVED: {
         LOG_INFO(Lib_Mouse, "Mouse removed, id: {}", e.mdevice.which);
         if (g_is_merged_mode) {
@@ -112,8 +118,6 @@ bool PushSDLEvent(SDL_Event const& e) {
         mouse_states[index].Push(s);
         break;
     }
-    default:
-        return false;
     }
     return true;
 }
