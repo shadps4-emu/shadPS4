@@ -520,7 +520,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             // Windows setsockopt uses milliseconds, we need to convert
             Kernel::OrbisKernelTimeval set_time =
                 *static_cast<const Kernel::OrbisKernelTimeval*>(optval);
-            u32 millis = set_time.tv_sec * 1000 + set_time.tv_usec / 1000;
+            s32 millis = set_time.tv_sec * 1000 + set_time.tv_usec / 1000;
 
             // Store time in ms
             if (optname == ORBIS_SO_SNDTIMEO) {
@@ -685,7 +685,7 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
         case ORBIS_SO_SNDTIMEO:
         case ORBIS_SO_RCVTIMEO: {
             // Returns timeout as a timeval
-            u32 millis = optname == ORBIS_SO_SNDTIMEO ? sockopt_so_sndtimeo : sockopt_so_rcvtimeo;
+            s32 millis = optname == ORBIS_SO_SNDTIMEO ? sockopt_so_sndtimeo : sockopt_so_rcvtimeo;
             Kernel::OrbisKernelTimeval out_time{millis / 1000, millis % 1000};
             *optlen = std::min<u32>(sizeof(out_time), *optlen);
             std::memcpy(optval, &out_time, *optlen);
