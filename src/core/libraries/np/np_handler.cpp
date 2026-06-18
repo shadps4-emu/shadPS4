@@ -15,12 +15,60 @@
 
 namespace Libraries::Np {
 
-// Static empty NpId returned when user_id is not connected.
-const OrbisNpId NpHandler::s_empty_np_id{};
-
 NpHandler& NpHandler::GetInstance() {
     static NpHandler s_instance;
     return s_instance;
+}
+
+std::pair<std::string, u16> NpHandler::ParseServerAddress() const {
+    const std::string server_str = EmulatorSettings.GetShadNetServer();
+    std::string host = server_str;
+    u16 port = 31313; // default port
+    const auto colon = server_str.rfind(':');
+    if (colon != std::string::npos) {
+        host = server_str.substr(0, colon);
+        try {
+            port = static_cast<u16>(std::stoi(server_str.substr(colon + 1)));
+        } catch (...) {
+        }
+    }
+    return {host, port};
+}
+
+bool NpHandler::ConnectUserById(s32 user_id) {
+    if (!EmulatorSettings.IsShadNetEnabled())
+        return false;
+
+    {
+        std::lock_guard lock(m_mutex_clients);
+        if (m_clients.find(user_id) != m_clients.end())
+            return false; // already connected
+    }
+
+    const User* u = UserManagement.GetUserByID(user_id);
+    if (!u)
+        return false;
+    if (!u->shadnet_enabled) {
+        LOG_DEBUG(NpHandler, "user_id={} ('{}') shadNet disabled,skipping", u->user_id,
+                  u->user_name);
+        return false;
+    }
+    if (u->shadnet_npid.empty() || u->shadnet_password.empty()) {
+        LOG_WARNING(NpHandler, "user_id={} ('{}') shadNet enabled but credentials missing,skipping",
+                    u->user_id, u->user_name);
+        return false;
+    }
+
+    const auto [host, port] = ParseServerAddress();
+    return ConnectUser(u->user_id, host, port, u->shadnet_npid, u->shadnet_password,
+                       u->shadnet_token);
+}
+
+void NpHandler::StartWorker() {
+    bool expected = false;
+    if (m_worker_running.compare_exchange_strong(expected, true)) {
+        m_worker_thread = std::thread(&NpHandler::WorkerThread, this);
+    }
 }
 
 void NpHandler::Initialize() {
@@ -34,42 +82,13 @@ void NpHandler::Initialize() {
         return;
     }
 
-    // Parse server address from GeneralSettings
-    const std::string server_str = EmulatorSettings.GetShadNetServer();
-    std::string host = server_str;
-    u16 port = 31313; // default port
-    const auto colon = server_str.rfind(':');
-    if (colon != std::string::npos) {
-        host = server_str.substr(0, colon);
-        try {
-            port = static_cast<u16>(std::stoi(server_str.substr(colon + 1)));
-        } catch (...) {
-        }
-    }
-
     const auto logged_in = UserManagement.GetLoggedInUsers(); // get all login users
     int connected_count = 0;
-
     for (int i = 0; i < Libraries::UserService::ORBIS_USER_SERVICE_MAX_LOGIN_USERS; ++i) {
         const User* u = logged_in[i];
         if (!u)
             continue;
-        // skip users that has shadnet disabled
-        if (!u->shadnet_enabled) {
-            LOG_DEBUG(NpHandler, "user_id={} ('{}') shadNet disabled,skipping", u->user_id,
-                      u->user_name);
-            continue;
-        }
-        // skip also users that doesn't have npid or password empty
-        if (u->shadnet_npid.empty() || u->shadnet_password.empty()) {
-            LOG_WARNING(NpHandler,
-                        "user_id={} ('{}') shadNet enabled but credentials missing,skipping",
-                        u->user_id, u->user_name);
-            continue;
-        }
-
-        if (ConnectUser(u->user_id, host, port, u->shadnet_npid, u->shadnet_password,
-                        u->shadnet_token))
+        if (ConnectUserById(u->user_id))
             ++connected_count;
     }
 
@@ -78,9 +97,7 @@ void NpHandler::Initialize() {
         return;
     }
 
-    // Start the health-monitor worker
-    m_worker_running = true;
-    m_worker_thread = std::thread(&NpHandler::WorkerThread, this);
+    StartWorker();
 }
 
 void NpHandler::Shutdown() {
@@ -179,6 +196,15 @@ void NpHandler::DisconnectUser(s32 user_id) {
     LOG_INFO(NpHandler, "user_id={} disconnected", user_id);
 }
 
+void NpHandler::OnUserLoggedIn(s32 user_id) {
+    if (ConnectUserById(user_id))
+        StartWorker();
+}
+
+void NpHandler::OnUserLoggedOut(s32 user_id) {
+    DisconnectUser(user_id);
+}
+
 void NpHandler::WorkerThread() {
     constexpr auto INTERVAL = std::chrono::milliseconds(500);
 
@@ -216,13 +242,13 @@ bool NpHandler::IsAnySignedIn() const {
     return false;
 }
 
-const OrbisNpId& NpHandler::GetNpId(s32 user_id) const {
+OrbisNpId NpHandler::GetNpId(s32 user_id) const {
     std::lock_guard lock(m_mutex_clients);
     auto it = m_np_ids.find(user_id);
-    return it != m_np_ids.end() ? it->second : s_empty_np_id;
+    return it != m_np_ids.end() ? it->second : OrbisNpId{};
 }
 
-const OrbisNpOnlineId& NpHandler::GetOnlineId(s32 user_id) const {
+OrbisNpOnlineId NpHandler::GetOnlineId(s32 user_id) const {
     return GetNpId(user_id).handle;
 }
 

@@ -12,6 +12,7 @@
 #include <optional>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "common/types.h"
@@ -38,6 +39,10 @@ public:
     // Disconnect all clients, stop worker threads, fire SignedOut for each.
     void Shutdown();
 
+    // Connect/disconnect a single user in response to a user service login/logout event.
+    void OnUserLoggedIn(s32 user_id);
+    void OnUserLoggedOut(s32 user_id);
+
     // True if this specific user is authenticated to the shadNet server.
     bool IsPsnSignedIn(s32 user_id) const;
 
@@ -45,10 +50,10 @@ public:
     bool IsAnySignedIn() const;
 
     /// Full NP ID for this user, built once from shadnet_npid after login.
-    const OrbisNpId& GetNpId(s32 user_id) const;
+    OrbisNpId GetNpId(s32 user_id) const;
 
     /// The Online ID embedded in the NP ID (npid.handle).
-    const OrbisNpOnlineId& GetOnlineId(s32 user_id) const;
+    OrbisNpOnlineId GetOnlineId(s32 user_id) const;
 
     // Avatar URL returned by the server.
     std::string GetAvatarUrl(s32 user_id) const;
@@ -159,6 +164,15 @@ private:
     bool ConnectUser(s32 user_id, const std::string& host, u16 port, const std::string& npid,
                      const std::string& password, const std::string& token);
 
+    // Connect a single logged-in user by id (looks up credentials, parses server).
+    bool ConnectUserById(s32 user_id);
+
+    // Parse the configured shadNet server "host:port" (default port 31313).
+    std::pair<std::string, u16> ParseServerAddress() const;
+
+    // Start the health-monitor worker thread if not already running (idempotent).
+    void StartWorker();
+
     // Disconnect and remove one user's client.
     void DisconnectUser(s32 user_id);
 
@@ -184,8 +198,6 @@ private:
     std::map<s32, std::shared_ptr<ShadNet::ShadNetClient>> m_clients;
     // Per-user NP ID built once from shadnet_npid after login.
     std::map<s32, OrbisNpId> m_np_ids;
-    // Returned by GetNpId/GetOnlineId when user_id is not connected.
-    static const OrbisNpId s_empty_np_id;
 
     // Score requests awaiting a reply, keyed by the submit packet id.
     struct PendingScoreRequest {
