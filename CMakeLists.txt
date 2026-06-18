@@ -1201,6 +1201,7 @@ add_executable(shadps4
     ${SHADER_RECOMPILER}
     ${VIDEO_CORE}
     ${EMULATOR}
+    ${SHADNET}
     src/main.cpp
     src/emulator.cpp
     src/emulator.h
