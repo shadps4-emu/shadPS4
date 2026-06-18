@@ -316,6 +316,10 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
         if (info.loads.GetAny(IR::Attribute::RenderTargetIndex)) {
             ctx.AddCapability(spv::Capability::Geometry);
         }
+        if (info.stores.Get(IR::Attribute::StencilRef) && profile.supports_shader_stencil_export) {
+            ctx.AddExtension("SPV_EXT_shader_stencil_export");
+            ctx.AddCapability(spv::Capability::StencilExportEXT);
+        }
     }
     if (stage == LogicalStage::TessellationControl || stage == LogicalStage::TessellationEval) {
         ctx.AddCapability(spv::Capability::Tessellation);
@@ -555,9 +559,21 @@ void SetupRoundingMode(EmitContext& ctx, const Profile& profile, const RuntimeIn
 
 void SetupInfNanPreserveMode(EmitContext& ctx, const Profile& profile,
                              const RuntimeInfo& runtime_info, Id main_func) {
-    ctx.AddCapability(spv::Capability::SignedZeroInfNanPreserve);
-    // universally supported (98.85% on gpuinfo) so no flag checked
-    ctx.AddExecutionMode(main_func, spv::ExecutionMode::SignedZeroInfNanPreserve, 32U);
+    if (profile.support_fp16_signed_zero_inf_nan_preserve ||
+        profile.support_fp32_signed_zero_inf_nan_preserve ||
+        profile.support_fp64_signed_zero_inf_nan_preserve) {
+        ctx.AddCapability(spv::Capability::SignedZeroInfNanPreserve);
+    }
+
+    if (profile.support_fp32_signed_zero_inf_nan_preserve) {
+        ctx.AddExecutionMode(main_func, spv::ExecutionMode::SignedZeroInfNanPreserve, 32U);
+    } else {
+        static std::once_flag logged;
+        std::call_once(logged, [] {
+            LOG_WARNING(Render_Vulkan,
+                        "Float32 signed zero/inf/nan preserve mode is not supported by the GPU");
+        });
+    }
     if (ctx.info.uses_fp16) {
         if (profile.support_fp16_signed_zero_inf_nan_preserve) {
             ctx.AddExecutionMode(main_func, spv::ExecutionMode::SignedZeroInfNanPreserve, 16U);

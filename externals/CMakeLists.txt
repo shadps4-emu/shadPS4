@@ -87,6 +87,7 @@ endif()
 if (NOT TARGET Vulkan::Headers)
     set(VULKAN_HEADERS_ENABLE_MODULE OFF)
     add_subdirectory(vulkan-headers)
+    set(VulkanHeaders_VERSION "1.4.330")
 endif()
 
 # VMA
@@ -260,16 +261,6 @@ if (APPLE OR ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     endif()
 endif()
 
-# Apple-only dependencies
-if (APPLE)
-    # MoltenVK
-    if (NOT TARGET MoltenVK)
-        set(MVK_EXCLUDE_SPIRV_TOOLS ON)
-        set(MVK_USE_METAL_PRIVATE_API ON)
-        add_subdirectory(MoltenVK)
-    endif()
-endif()
-
 #windows only
 if (WIN32)
 add_subdirectory(ext-wepoll)
@@ -294,6 +285,16 @@ if (NOT TARGET CLI11::CLI11)
     set(CLI11_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     set(CLI11_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     add_subdirectory(CLI11)
+endif()
+
+# miniupnpc
+if (NOT TARGET miniupnpc::miniupnpc)
+set(UPNPC_BUILD_STATIC ON CACHE BOOL "" FORCE)
+set(UPNPC_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(UPNPC_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(UPNPC_BUILD_SAMPLE OFF CACHE BOOL "" FORCE)
+set(UPNPC_NO_INSTALL ON CACHE BOOL "" FORCE)
+add_subdirectory(miniupnp/miniupnpc)
 endif()
 
 # minimp3
@@ -369,4 +370,14 @@ if (DEFINED SSL_DEPENDENCIES)
     message(STATUS "cpp-httplib: SSL support enabled (TLS connections)")
 else()
     message(STATUS "cpp-httplib: OpenSSL/LibreSSL not available — libSceHttp HTTPS will fall back to mock at runtime.")
+endif()
+
+# macOS Vulkan driver
+if (APPLE AND NOT ENABLE_SYSTEM_VULKAN AND NOT ENABLE_TESTS)
+    add_subdirectory(vulkan-loader)
+    set(VULKAN_LOADER_PATH "${CMAKE_CURRENT_BINARY_DIR}/vulkan-loader/loader/libvulkan.dylib" PARENT_SCOPE)
+
+    add_subdirectory(mesa-kosmickrisp)
+    set(VULKAN_DRIVER_PATH "${CMAKE_CURRENT_BINARY_DIR}/mesa-kosmickrisp/outputs/libvulkan_kosmickrisp.dylib" PARENT_SCOPE)
+    set(VULKAN_ICD_PATH "${CMAKE_CURRENT_BINARY_DIR}/mesa-kosmickrisp/outputs/kosmickrisp_mesa_icd.json" PARENT_SCOPE)
 endif()

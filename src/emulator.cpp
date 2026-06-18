@@ -275,10 +275,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
 
-    // Initialize logging as soon as possible
     EmulatorSettings.Load(id);
-    Common::Log::Setup((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
-                                                                         : "shad_log.txt");
+    // Switch to configured log
+    Common::Log::Switch((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
+                                                                          : "shad_log.txt");
 
     auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
     const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
@@ -429,6 +429,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                                                    window_title);
 
     g_window = window.get();
+
+    std::filesystem::path icon_path = mnt->GetHostPath("/app0/sce_sys/icon0.png");
+    window->SetIcon(icon_path);
 
     const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir);
     mnt->Mount(mount_data_dir, "/data");

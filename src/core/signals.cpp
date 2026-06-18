@@ -11,6 +11,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+static constexpr DWORD MS_VC_EXCEPTION = 0x406D1388;
 #else
 #include <csignal>
 #include <pthread.h>
@@ -53,6 +54,9 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     case DBG_PRINTEXCEPTION_WIDE_C:
         // Used by OutputDebugString functions.
         return EXCEPTION_CONTINUE_EXECUTION;
+    case MS_VC_EXCEPTION:
+        LOG_DEBUG(Debug, "Pass MS_VC_EXCEPTION at {} to handler", address);
+        return EXCEPTION_EXECUTE_HANDLER;
     default:
         break;
     }

@@ -316,6 +316,7 @@ void PipelineCache::WarmUp() {
     if (std::memcmp(profile_data.data(), &profile, sizeof(profile)) != 0) {
         LOG_WARNING(Render,
                     "Pipeline cache isn't compatible with current system. Ignoring the cache");
+        Storage::DataBase::Instance().Close();
         return;
     }
 

@@ -288,6 +288,24 @@ constexpr CompMapping RemapSwizzle(const DataFormat format, const CompMapping sw
         result.a = swizzle.a;
         return result;
     }
+    case DataFormat::Format8:
+    case DataFormat::Format16:
+    case DataFormat::Format32: {
+        // PS4 single-channel formats expose the texel as either R or A depending on dst_sel,
+        // but Vulkan single-channel formats expose it only via R. Redirect any selector
+        // that points at Alpha to Red so the texel is read correctly.
+        CompMapping result = swizzle;
+        const auto remap_alpha_to_red = [](CompSwizzle& c) {
+            if (c == CompSwizzle::Alpha) {
+                c = CompSwizzle::Red;
+            }
+        };
+        remap_alpha_to_red(result.r);
+        remap_alpha_to_red(result.g);
+        remap_alpha_to_red(result.b);
+        remap_alpha_to_red(result.a);
+        return result;
+    }
     default:
         return swizzle;
     }

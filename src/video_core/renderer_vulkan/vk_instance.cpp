@@ -201,7 +201,6 @@ bool Instance::CreateDevice() {
                           vk::PhysicalDeviceRobustness2FeaturesEXT,
                           vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
                           vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
-                          vk::PhysicalDevicePortabilitySubsetFeaturesKHR,
                           vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
                           vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
                           vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
@@ -239,9 +238,13 @@ bool Instance::CreateDevice() {
     };
 
     // Required
-    ASSERT(add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
-    ASSERT(add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME));
-    ASSERT(add_extension(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME));
+    ASSERT_MSG(add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME),
+               "Required Vulkan extension unavailable: {}", VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    ASSERT_MSG(add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME),
+               "Required Vulkan extension unavailable: {}", VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+    ASSERT_MSG(add_extension(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME),
+               "Required Vulkan extension unavailable: {}",
+               VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME);
 
     // Optional
     maintenance_8 = add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
@@ -276,6 +279,14 @@ bool Instance::CreateDevice() {
     depth_clip_enable = add_extension(VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME);
     vertex_input_dynamic_state = add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
     list_restart = add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
+    if (list_restart) {
+        list_restart_features =
+            feature_chain.get<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
+        LOG_INFO(Render_Vulkan, "- primitiveTopologyListRestart: {}",
+                 list_restart_features.primitiveTopologyListRestart);
+        LOG_INFO(Render_Vulkan, "- primitiveTopologyPatchListRestart: {}",
+                 list_restart_features.primitiveTopologyPatchListRestart);
+    }
     amd_shader_explicit_vertex_parameter =
         add_extension(VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_EXTENSION_NAME);
     if (!amd_shader_explicit_vertex_parameter) {
@@ -323,20 +334,9 @@ bool Instance::CreateDevice() {
         LOG_INFO(Render_Vulkan, "- sampler2DViewOf3D: {}",
                  image_2d_view_of_3d_features.sampler2DViewOf3D);
     }
+    supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
-
-#ifdef __APPLE__
-    if (driver_id == vk::DriverId::eMoltenvk) {
-        portability_subset = add_extension(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
-        if (portability_subset) {
-            portability_features =
-                feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
-        }
-    }
-#endif
-
-    supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
@@ -365,8 +365,6 @@ bool Instance::CreateDevice() {
         .pQueuePriorities = queue_priorities.data(),
     };
 
-    const auto topology_list_restart_features =
-        feature_chain.get<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
     const auto vk11_features = feature_chain.get<vk::PhysicalDeviceVulkan11Features>();
     vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
     vk13_features = feature_chain.get<vk::PhysicalDeviceVulkan13Features>();
@@ -460,9 +458,9 @@ bool Instance::CreateDevice() {
             .vertexInputDynamicState = true,
         },
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT{
-            .primitiveTopologyListRestart = true,
+            .primitiveTopologyListRestart = list_restart_features.primitiveTopologyListRestart,
             .primitiveTopologyPatchListRestart =
-                topology_list_restart_features.primitiveTopologyPatchListRestart,
+                list_restart_features.primitiveTopologyPatchListRestart,
         },
         vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR{
             .fragmentShaderBarycentric = true,
@@ -504,27 +502,6 @@ bool Instance::CreateDevice() {
             .image2DViewOf3D = image_2d_view_of_3d_features.image2DViewOf3D,
             .sampler2DViewOf3D = image_2d_view_of_3d_features.sampler2DViewOf3D,
         },
-#ifdef __APPLE__
-        vk::PhysicalDevicePortabilitySubsetFeaturesKHR{
-            .constantAlphaColorBlendFactors = portability_features.constantAlphaColorBlendFactors,
-            .events = portability_features.events,
-            .imageViewFormatReinterpretation = portability_features.imageViewFormatReinterpretation,
-            .imageViewFormatSwizzle = portability_features.imageViewFormatSwizzle,
-            .imageView2DOn3DImage = portability_features.imageView2DOn3DImage,
-            .multisampleArrayImage = portability_features.multisampleArrayImage,
-            .mutableComparisonSamplers = portability_features.mutableComparisonSamplers,
-            .pointPolygons = portability_features.pointPolygons,
-            .samplerMipLodBias = portability_features.samplerMipLodBias,
-            .separateStencilMaskRef = portability_features.separateStencilMaskRef,
-            .shaderSampleRateInterpolationFunctions =
-                portability_features.shaderSampleRateInterpolationFunctions,
-            .tessellationIsolines = portability_features.tessellationIsolines,
-            .tessellationPointMode = portability_features.tessellationPointMode,
-            .triangleFans = portability_features.triangleFans,
-            .vertexAttributeAccessBeyondStride =
-                portability_features.vertexAttributeAccessBeyondStride,
-        },
-#endif
     };
 
     if (!custom_border_color) {
