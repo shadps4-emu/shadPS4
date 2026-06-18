@@ -97,7 +97,10 @@ int PS4_SYSV_ABI sceMouseOpen(Libraries::UserService::OrbisUserServiceUserId use
 }
 
 int PS4_SYSV_ABI sceMouseRead(s32 handle, OrbisMouseData* pData, s32 num) {
-    // LOG_DEBUG(Lib_Mouse, "(DUMMY) called, h: {}, n: {}", handle, num);
+    LOG_DEBUG(Lib_Mouse, "(DUMMY) called, h: {}, n: {}", handle, num);
+    if (!pData || num > 64) {
+        return ORBIS_MOUSE_ERROR_INVALID_ARG;
+    }
     if (mouse_handles[0] != handle && mouse_handles[1] != handle) {
         return ORBIS_MOUSE_ERROR_INVALID_HANDLE;
     }
