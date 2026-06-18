@@ -82,6 +82,7 @@ struct Socket {
     virtual int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) = 0;
     virtual int fstat(Libraries::Kernel::OrbisKernelStat* stat) = 0;
     virtual std::optional<net_socket> Native() = 0;
+    std::string name;
     std::mutex m_mutex;
     std::mutex receive_mutex;
     int socket_type;
@@ -89,7 +90,10 @@ struct Socket {
 
 struct PosixSocket : public Socket {
     net_socket sock;
+    int sockopt_so_accepttimeo = 0;
     int sockopt_so_connecttimeo = 0;
+    int sockopt_so_sndtimeo = 0;
+    int sockopt_so_rcvtimeo = 0;
     int sockopt_so_reuseport = 0;
     int sockopt_so_onesbcast = 0;
     int sockopt_so_usecrypto = 0;

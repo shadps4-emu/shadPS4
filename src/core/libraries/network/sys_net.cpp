@@ -134,7 +134,7 @@ int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optv
               NameOf((OrbisNetProtocol)level), name);
     int returncode = file->socket->GetSocketOptions(level, optname, optval, optlen);
     if (returncode >= 0) {
-        if (optname == ORBIS_NET_SO_ERROR) {
+        if (optval != 0 && (optname == ORBIS_NET_SO_ERROR_EX || optname == ORBIS_SO_ERROR)) {
             LOG_DEBUG(Lib_Net, "so_error = {}", *reinterpret_cast<s32*>(optval));
         }
         return returncode;
@@ -227,6 +227,7 @@ int PS4_SYSV_ABI sys_socketex(const char* name, int family, int type, int protoc
     sock->is_opened = true;
     sock->type = Core::FileSys::FileType::Socket;
     sock->socket = socket;
+    sock->socket->name = name ? std::string(sname, 0x20) : "";
     sock->m_guest_name = sname;
     return fd;
 }
