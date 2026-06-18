@@ -1168,6 +1168,28 @@ set(EMULATOR src/emulator.cpp
              src/sdl_window.cpp
 )
 
+# shadNet protobuf generation
+set(SHADNET_PROTO_OUT "${CMAKE_CURRENT_BINARY_DIR}/shadnet_proto_gen")
+file(MAKE_DIRECTORY "${SHADNET_PROTO_OUT}")
+add_custom_command(
+    OUTPUT
+        "${SHADNET_PROTO_OUT}/shadnet.pb.cc"
+        "${SHADNET_PROTO_OUT}/shadnet.pb.h"
+    COMMAND protobuf::protoc
+        "--proto_path=${CMAKE_CURRENT_SOURCE_DIR}/src/shadnet"
+        "--cpp_out=${SHADNET_PROTO_OUT}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/shadnet/shadnet.proto"
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/shadnet/shadnet.proto"
+    COMMENT "Generating shadnet protobuf sources"
+    VERBATIM
+)
+
+set(SHADNET src/shadnet/client.cpp
+            src/shadnet/client.h
+            "${SHADNET_PROTO_OUT}/shadnet.pb.cc"
+)
+
 if(NOT ENABLE_TESTS)
 
 add_executable(shadps4
@@ -1193,6 +1215,8 @@ target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::to
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml)
 target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib miniupnpc::miniupnpc)
 target_link_libraries(shadps4 PRIVATE Freetype::Freetype)
+target_link_libraries(shadps4 PRIVATE libprotobuf)
+target_include_directories(shadps4 PRIVATE "${SHADNET_PROTO_OUT}")
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     target_link_libraries(shadps4 PRIVATE "/usr/lib/libusb.so")
