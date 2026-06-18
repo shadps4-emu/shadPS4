@@ -18,7 +18,7 @@ namespace Libraries::Mouse {
 RingBufferQueue<OrbisMouseData> mouse_states[2]{{64}, {64}};
 s32 mouse_handles[2]{-1, -1};
 s32 mouse_sdl_handles[2]{-1, -1};
-bool g_lib_init = false;
+bool g_lib_init = false, g_is_merged_mode = false;
 
 int PS4_SYSV_ABI sceMouseClose(s32 handle) {
     LOG_ERROR(Lib_Mouse, "(STUBBED) called");
@@ -82,9 +82,11 @@ int PS4_SYSV_ABI sceMouseOpen(Libraries::UserService::OrbisUserServiceUserId use
         LOG_ERROR(Lib_Mouse, "invalid argument");
         return ORBIS_MOUSE_ERROR_INVALID_ARG;
     }
-    if (pParam->flag == MouseOpenBehaviour::Merged) {
-        LOG_ERROR(Lib_Mouse, "unsupported flag");
+    if (pParam->flag == MouseOpenBehaviour::Merged && index != 0) {
+        LOG_ERROR(Lib_Mouse, "Only one mouse can be opened in merged mode!");
+        return ORBIS_MOUSE_ERROR_ALREADY_OPENED;
     }
+    g_is_merged_mode = pParam->flag == MouseOpenBehaviour::Merged;
     if (mouse_handles[index] != -1) {
         LOG_ERROR(Lib_Mouse, "already opened");
         return ORBIS_MOUSE_ERROR_ALREADY_OPENED;

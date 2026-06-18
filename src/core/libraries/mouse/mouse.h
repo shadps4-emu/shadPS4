@@ -73,7 +73,7 @@ struct OrbisMouseOpenParam {
 extern RingBufferQueue<OrbisMouseData> mouse_states[2];
 extern s32 mouse_handles[2];
 extern s32 mouse_sdl_handles[2];
-extern bool g_lib_init;
+extern bool g_lib_init, g_is_merged_mode;
 
 s32 PS4_SYSV_ABI sceMouseClose(s32 handle);
 s32 PS4_SYSV_ABI sceMouseConnectPort();

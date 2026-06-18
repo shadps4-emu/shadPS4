@@ -8,7 +8,10 @@
 namespace Libraries::Mouse {
 
 static u64 GetIndexFromSdlHandle(SDL_MouseID id) {
-    return mouse_sdl_handles[0] == id ? 0 : mouse_sdl_handles[1] == id ? 1 : 2;
+    return g_is_merged_mode             ? 0
+           : mouse_sdl_handles[0] == id ? 0
+           : mouse_sdl_handles[1] == id ? 1
+                                        : 2;
 }
 
 constexpr u32 OrbisButtonFromSDL(Uint8 button) {
@@ -36,6 +39,9 @@ bool PushSDLEvent(SDL_Event const& e) {
     switch (e.type) {
     case SDL_EVENT_MOUSE_REMOVED: {
         LOG_INFO(Lib_Mouse, "Mouse removed, id: {}", e.mdevice.which);
+        if (g_is_merged_mode) {
+            break;
+        }
         u64 index = GetIndexFromSdlHandle(e.mdevice.which);
         if (index == 2) {
             return false;
