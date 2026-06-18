@@ -341,7 +341,8 @@ private:
     Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
     bool readback_linear_images;
     PageTable page_table;
-    std::mutex mutex;
+
+    std::recursive_mutex mutex;
     struct MetaDataInfo {
         enum class Type {
             CMask,
