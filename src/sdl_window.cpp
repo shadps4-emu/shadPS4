@@ -32,6 +32,8 @@
 #ifdef __APPLE__
 #include <SDL3/SDL_metal.h>
 #endif
+#include <core/emulator_settings.h>
+#include "core/libraries/mouse/sdl_mouse.h"
 
 CMRC_DECLARE(res);
 
@@ -214,6 +216,10 @@ void WindowSDL::WaitEvent() {
     SDL_Event event;
 
     if (!SDL_WaitEvent(&event)) {
+        return;
+    }
+
+    if (Libraries::Mouse::PushSDLEvent(event)) {
         return;
     }
 
