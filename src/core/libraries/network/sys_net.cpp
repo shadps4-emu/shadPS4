@@ -134,8 +134,11 @@ int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optv
               NameOf((OrbisNetProtocol)level), name);
     int returncode = file->socket->GetSocketOptions(level, optname, optval, optlen);
     if (returncode >= 0) {
-        if (optval != 0 && (optname == ORBIS_NET_SO_ERROR_EX || optname == ORBIS_SO_ERROR)) {
-            LOG_DEBUG(Lib_Net, "so_error = {}", *reinterpret_cast<s32*>(optval));
+        if (optname == ORBIS_NET_SO_ERROR_EX || optname == ORBIS_SO_ERROR) {
+            s32 so_error = *reinterpret_cast<s32*>(optval);
+            if (so_error != 0) {
+                LOG_DEBUG(Lib_Net, "so_error = {}", so_error);
+            }
         }
         return returncode;
     }
