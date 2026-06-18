@@ -711,8 +711,8 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             }
 
             image_id = texture_cache.FindImage(desc);
-            rt_sync_.CopyFromLastRt(desc.info.guest_address, image_id,
-                                    desc.info.size.width, desc.info.size.height);
+            rt_sync_.CopyFromLastRt(desc.info.guest_address, image_id, desc.info.size.width,
+                                    desc.info.size.height);
             auto* image = &texture_cache.GetImage(image_id);
             if (auto depth_image_id = texture_cache.GetAssociatedDepth(*image)) {
                 // If this image has an associated depth image, it's a stencil attachment.
@@ -859,8 +859,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         const auto& image_view = texture_cache.FindRenderTarget(image_id, desc);
         rt_sync_.RecordRtWrite(desc.info.guest_address, image_id);
         // 1×1 render target: force download to guest so CPU can read the result
-        if (desc.info.size.width == 1 &&
-            desc.info.size.height == 1) {
+        if (desc.info.size.width == 1 && desc.info.size.height == 1) {
             rt_sync_.Schedule1x1Readback(image_id);
         }
         const auto slice = image_view.info.range.base.layer;
@@ -912,10 +911,9 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         const auto slice = image_view.info.range.base.layer;
         // Only clear depth if writes are enabled —PS4 hardware ignores clear when
         // depth_write_enable is false, otherwise data from a previous pass is lost.
-        const bool is_depth_clear =
-            regs.depth_control.depth_write_enable &&
-            (regs.depth_render_control.depth_clear_enable ||
-             texture_cache.IsMetaCleared(htile_address, slice));
+        const bool is_depth_clear = regs.depth_control.depth_write_enable &&
+                                    (regs.depth_render_control.depth_clear_enable ||
+                                     texture_cache.IsMetaCleared(htile_address, slice));
         const bool is_stencil_clear = regs.depth_render_control.stencil_clear_enable;
         texture_cache.TouchMeta(htile_address, slice, false);
         ASSERT(desc.view_info.range.extent.levels == 1 && !image.binding.needs_rebind);

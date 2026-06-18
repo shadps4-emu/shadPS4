@@ -19,16 +19,16 @@ StorageImageSync::~StorageImageSync() = default;
 void StorageImageSync::Sync(VideoCore::ImageId image_id) {
     auto& img = texture_cache.GetImage(image_id);
     const VAddr guest_addr = img.info.guest_address;
-    if (guest_addr == 0) return;
+    if (guest_addr == 0)
+        return;
 
     const u32 bpp = img.info.num_bits / 8u;
     const u32 row_length = img.info.pitch ? img.info.pitch : img.info.size.width;
     const u32 download_size = row_length * img.info.size.height * img.info.resources.layers * bpp;
 
-    LOG_DEBUG(Render_Vulkan,
-              "[StorageSync] guest={:#x} {}x{} layers={} bpp={} row_len={} size={}",
-             guest_addr, img.info.size.width, img.info.size.height,
-             img.info.resources.layers, bpp, row_length, download_size);
+    LOG_DEBUG(Render_Vulkan, "[StorageSync] guest={:#x} {}x{} layers={} bpp={} row_len={} size={}",
+              guest_addr, img.info.size.width, img.info.size.height, img.info.resources.layers, bpp,
+              row_length, download_size);
 
     // Transit to transfer-src for the copy.
     img.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
@@ -92,7 +92,7 @@ void StorageImageSync::Sync(VideoCore::ImageId image_id) {
 
     // Mark consumers dirty before writing to guest (hash check needs old hash).
     texture_cache.InvalidateMemory(guest_addr, img.info.guest_size,
-                                  /*exclude_image_id=*/image_id);
+                                   /*exclude_image_id=*/image_id);
     Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(guest_addr), data, download_size);
     // Notify buffer cache that guest memory has new data so SynchronizeBuffer picks it up.
     buffer_cache.MarkRegionAsCpuModified(guest_addr, download_size);
