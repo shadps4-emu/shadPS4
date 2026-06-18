@@ -424,6 +424,10 @@ bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
     return memory_tracker->IsRegionGpuModified(addr, size);
 }
 
+void BufferCache::MarkRegionAsCpuModified(VAddr addr, size_t size) {
+    memory_tracker->MarkRegionAsCpuModified(addr, size);
+}
+
 BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {
     if (device_addr == 0) {
         return NULL_BUFFER_ID;

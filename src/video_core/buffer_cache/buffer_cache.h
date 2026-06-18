@@ -137,6 +137,11 @@ public:
     /// Return true when a CPU region is modified from the CPU
     [[nodiscard]] bool IsRegionCpuModified(VAddr addr, size_t size);
 
+    /// Mark a region as CPU-modified so that subsequent SynchronizeBuffer picks it up.
+    /// Backdoor for external paths (e.g. storage image sync) that write guest memory
+    /// without going through the buffer cache's own ObtainBuffer/WriteDataBuffer.
+    void MarkRegionAsCpuModified(VAddr addr, size_t size);
+
     /// Return true when a CPU region is modified from the GPU
     [[nodiscard]] bool IsRegionGpuModified(VAddr addr, size_t size);
 

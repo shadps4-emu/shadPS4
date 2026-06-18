@@ -241,6 +241,86 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
     return {out_buffer, 0};
 }
 
+TileManager::Result TileManager::TileLinearBuffer(vk::Buffer in_buffer, u32 in_offset,
+                                                  const ImageInfo& info) {
+    if (!info.props.is_tiled) {
+        return {in_buffer, in_offset};
+    }
+
+    TilingInfo params{};
+    params.bank_swizzle = info.bank_swizzle;
+    params.num_slices = info.props.is_volume ? info.size.depth : info.resources.layers;
+    params.num_mips = info.resources.levels;
+    for (u32 mip = 0; mip < params.num_mips; ++mip) {
+        auto& mip_info = params.mips[mip];
+        mip_info = info.mips_layout[mip];
+        if (info.props.is_block) {
+            mip_info.pitch = std::max((mip_info.pitch + 3) / 4, 1U);
+            mip_info.height = std::max((mip_info.height + 3) / 4, 1U);
+        }
+    }
+
+    const vk::DescriptorBufferInfo params_buffer_info{
+        .buffer = stream_buffer.Handle(),
+        .offset = stream_buffer.Copy(&params, sizeof(params), instance.UniformMinAlignment()),
+        .range = sizeof(params),
+    };
+
+    const auto [out_buffer, out_allocation] = GetScratchBuffer(info.guest_size);
+    scheduler.DeferOperation([this, out_buffer, out_allocation]() {
+        vmaDestroyBuffer(instance.GetAllocator(), out_buffer, out_allocation);
+    });
+
+    scheduler.EndRendering();
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, GetTilingPipeline(info, true));
+
+    const vk::DescriptorBufferInfo tiled_buffer_info{
+        .buffer = out_buffer,
+        .offset = 0,
+        .range = info.guest_size,
+    };
+
+    const vk::DescriptorBufferInfo linear_buffer_info{
+        .buffer = in_buffer,
+        .offset = in_offset,
+        .range = info.guest_size,
+    };
+
+    const std::array<vk::WriteDescriptorSet, 3> set_writes = {{
+        {
+            .dstSet = VK_NULL_HANDLE,
+            .dstBinding = 0,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .pBufferInfo = &tiled_buffer_info,
+        },
+        {
+            .dstSet = VK_NULL_HANDLE,
+            .dstBinding = 1,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
+            .pBufferInfo = &linear_buffer_info,
+        },
+        {
+            .dstSet = VK_NULL_HANDLE,
+            .dstBinding = 2,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .pBufferInfo = &params_buffer_info,
+        },
+    }};
+    cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *pl_layout, 0, set_writes);
+
+    const auto dim_x = (info.guest_size / (info.num_bits / 8)) / 64;
+    cmdbuf.dispatch(dim_x, 1, 1);
+    return {out_buffer, 0};
+}
+
 void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buffer_copies,
                             vk::Buffer out_buffer, u32 out_offset, u32 copy_size) {
     const auto& info = in_image.info;
