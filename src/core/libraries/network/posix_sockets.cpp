@@ -560,7 +560,6 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
                                                      static_cast<const char*>(optval), optlen));
 #else
             // POSIX platforms use a timeval, we need to convert
-            u32 millis = *static_cast<const u32*>(optval);
             timeval timeout{.tv_sec = millis / 1000, .tv_usec = millis % 1000};
             return ConvertReturnErrorCode(setsockopt(sock, native_level, native_opt,
                                                      reinterpret_cast<char*>(&timeout),
