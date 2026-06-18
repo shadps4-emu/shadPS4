@@ -3,11 +3,10 @@
 
 #pragma once
 
-#include "common/types.h"
 #include "SDL3/SDL_events.h"
+#include "common/types.h"
 #include "mouse.h"
 
 namespace Libraries::Mouse {
-
 bool PushSDLEvent(SDL_Event const& e);
 }
