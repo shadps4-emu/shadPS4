@@ -94,6 +94,7 @@ public:
     static constexpr u32 FW_700 = 0x7000000;
     static constexpr u32 FW_750 = 0x7500000;
     static constexpr u32 FW_800 = 0x8000000;
+    static constexpr u32 FW_900 = 0x9000000;
     static constexpr u32 FW_1000 = 0x10000000;
     static constexpr u32 FW_1150 = 0x11500000;
 

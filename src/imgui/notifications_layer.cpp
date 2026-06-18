@@ -16,10 +16,10 @@ std::queue<NotificationInfo> notif_queue;
 std::mutex queueMtx;
 
 const std::map<shadNotifications::stockIcons, std::string> iconMap = {
-    {shadNotifications::stockIcons::shadPS4, "src/images/shadps4.png"},
-    {shadNotifications::stockIcons::Settings, "src/images/big_picture/settings.png"},
-    {shadNotifications::stockIcons::Profiles, "src/images/big_picture/profiles.png"},
-    {shadNotifications::stockIcons::Input, "src/images/big_picture/controller.png"},
+    {shadNotifications::stockIcons::shadPS4, "src/resources/shadps4.png"},
+    {shadNotifications::stockIcons::Settings, "src/resources/big_picture/settings.png"},
+    {shadNotifications::stockIcons::Profiles, "src/resources/big_picture/profiles.png"},
+    {shadNotifications::stockIcons::Input, "src/resources/big_picture/controller.png"},
 };
 
 NotificationsUI::NotificationsUI(NotificationInfo info) {

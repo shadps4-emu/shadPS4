@@ -27,7 +27,8 @@ bool NpHandler::IsPsnSignedIn(s32 user_id) const {
 }
 
 s32 NpHandler::GetUserIdByOnlineId(const OrbisNpOnlineId& online_id) const {
-    return 1000; // return dummy user
+    UserManager& user_manager = UserManagement;
+    return user_manager.GetDefaultUser().user_id; // dummy return default user id for now //TODO
 }
 
 } // namespace Libraries::Np

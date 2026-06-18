@@ -187,14 +187,14 @@ SettingsWindow::SettingsWindow(bool gameRunning) : isGameRunning(gameRunning) {
                     : texture = BigPictureMode::LoadSdlTextureData(texData);
     };
 
-    loadTexture("src/images/big_picture/settings.png", generalTexture);
-    loadTexture("src/images/big_picture/experimental.png", experimentalTexture);
-    loadTexture("src/images/big_picture/graphics.png", graphicsTexture);
-    loadTexture("src/images/big_picture/controller.png", inputTexture);
-    loadTexture("src/images/big_picture/trophy.png", trophyTexture);
-    loadTexture("src/images/big_picture/log.png", logTexture);
-    loadTexture("src/images/big_picture/folder.png", foldersTexture);
-    loadTexture("src/images/big_picture/profiles.png", profilesTexture);
+    loadTexture("src/resources/big_picture/settings.png", generalTexture);
+    loadTexture("src/resources/big_picture/experimental.png", experimentalTexture);
+    loadTexture("src/resources/big_picture/graphics.png", graphicsTexture);
+    loadTexture("src/resources/big_picture/controller.png", inputTexture);
+    loadTexture("src/resources/big_picture/trophy.png", trophyTexture);
+    loadTexture("src/resources/big_picture/log.png", logTexture);
+    loadTexture("src/resources/big_picture/folder.png", foldersTexture);
+    loadTexture("src/resources/big_picture/profiles.png", profilesTexture);
 
     auto languageKeys = std::views::keys(languageMap);
     languageOptions.assign(languageKeys.begin(), languageKeys.end());
@@ -202,7 +202,6 @@ SettingsWindow::SettingsWindow(bool gameRunning) : isGameRunning(gameRunning) {
     currentProfile = "Global";
     m_GameInstallDirs = EmulatorSettings.GetAllGameInstallDirs();
     currentCategory = isGameRunning ? SettingsCategory::General : SettingsCategory::Profiles;
-    uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
 
     bool customConfigFound = false;
     if (isGameRunning) {
@@ -223,6 +222,10 @@ SettingsWindow::SettingsWindow(bool gameRunning) : isGameRunning(gameRunning) {
     customConfigFound ? LoadSettings(runningGameSerial) : LoadSettings("Global");
 }
 
+void SettingsWindow::Prepare() {
+    uiScale = EmulatorSettings.GetBigPictureScale() / 1000.f;
+}
+
 void SettingsWindow::DeInit() {
     EmulatorSettings.Load();
     EmulatorSettings.SetBigPictureScale(static_cast<int>(uiScale * 1000));
@@ -232,7 +235,7 @@ void SettingsWindow::DeInit() {
         EmulatorSettings.Load(runningGameSerial);
     }
 }
-void SettingsWindow::DrawSettings(bool* open) {
+void SettingsWindow::DrawSettings(bool* open, const std::function<void()>& applySettings) {
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.06f, 0.06f, 0.06f, 1.00f)); // black
     ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(0.20f, 0.40f, 0.70f, 1.00f));   // blue
     ImGui::PushStyleColor(ImGuiCol_HeaderHovered,
@@ -253,7 +256,7 @@ void SettingsWindow::DrawSettings(bool* open) {
 
     SetupWindow();
     DrawCategoryTabs();
-    DrawMainContent(open);
+    DrawMainContent(open, applySettings);
 
     ImGui::PopStyleVar(8);
     ImGui::PopStyleColor(5);
@@ -366,7 +369,7 @@ void SettingsWindow::AddCategory(std::string name,
     ImGui::EndGroup();
 }
 
-void SettingsWindow::DrawMainContent(bool* open) {
+void SettingsWindow::DrawMainContent(bool* open, const std::function<void()>& applySettings) {
     ImVec4 settingsColor = ImVec4(0.1f, 0.1f, 0.12f, 0.8f); // Darker gray
     ImGui::PushStyleColor(ImGuiCol_ChildBg, settingsColor);
     ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
@@ -442,6 +445,9 @@ void SettingsWindow::DrawMainContent(bool* open) {
             } else {
                 ImGui::CloseCurrentPopup();
             }
+            if (applySettings) {
+                applySettings();
+            }
         }
 
         ImGui::EndPopup();
@@ -451,6 +457,9 @@ void SettingsWindow::DrawMainContent(bool* open) {
     if (ImGui::Button("Cancel")) {
         DeInit();
         *open = false;
+        if (applySettings) {
+            applySettings();
+        }
     }
 }
 

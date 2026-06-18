@@ -105,7 +105,7 @@ This section will provide some preliminary steps to take and tips on what to do 
 <summary>When a game crashes and breaks in the debugger</summary>
 
 1. Analyze the log
-   - A console will open by default when you launch the emulator. It shows the same log messages that go into the log file found at `<emulator executable>/user/log/shad_log.txt`.
+   - A console will open by default when you launch the emulator. It shows the same log messages that go into the log files found at `<emulator executable>/user/log/{shadps4.log, shad_log.txt, {GAME ID}.log}`.
 
    - It is recommended that you start analyzing the log bottom-up first:
      - Are there any critical or error-level messages at the end of the log that would point to a reason for the game crashing?
@@ -113,6 +113,8 @@ This section will provide some preliminary steps to take and tips on what to do 
      - Did the game window draw anything on-screen?
     
    - Continue analyzing the log from the start to see other errors (such as with initialization, memory mapping, linker errors etc.)
+
+   - If `shadps4.log` contains error, it should be reported in your issue.
 
 2. Analyze the stack trace
    - When the emulator is launched through a debugger, it will **break** when an exception or violation is encountered.\

@@ -197,6 +197,34 @@ inline void log_debug(std::string_view message) {
     LOG_DEBUG(Lib_Font, "{}", message);
 }
 
+inline s32 RoundFixedMul16x16ToS32(long fixed_16_16, s32 value) {
+    const long long prod = static_cast<long long>(fixed_16_16) * static_cast<long long>(value);
+    const long long sign_adj =
+        (static_cast<long long>(~static_cast<long long>(value)) >> 63) * -0x10000LL;
+    const long long base = sign_adj + prod;
+    long long tmp = base - 0x8000LL;
+    if (tmp < 0) {
+        tmp = base + 0x7FFFLL;
+    }
+    return static_cast<s32>(static_cast<u64>(tmp) >> 16);
+}
+
+inline int FloorIntCompat(float v) {
+    int i = static_cast<int>(std::trunc(v));
+    if (static_cast<float>(i) > v) {
+        --i;
+    }
+    return i;
+}
+
+inline int CeilIntCompat(float v) {
+    int i = static_cast<int>(std::trunc(v));
+    if (static_cast<float>(i) < v) {
+        ++i;
+    }
+    return i;
+}
+
 #define formatParams(...) formatParamsImpl(#__VA_ARGS__ __VA_OPT__(, ) __VA_ARGS__)
 
 struct FontSetSelector;

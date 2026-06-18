@@ -371,7 +371,10 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     }
 
     const auto aeronid = AeroLib::FindByNid(sr.name.c_str());
-    if (aeronid) {
+    if (sym_type == Loader::SymbolType::Object) {
+        return_info->name = aeronid ? aeronid->name : "Unknown object";
+        return_info->virtual_address = 0;
+    } else if (aeronid) {
         return_info->name = aeronid->name;
         return_info->virtual_address = AeroLib::GetStub(aeronid->nid);
     } else {

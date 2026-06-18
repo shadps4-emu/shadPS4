@@ -9,26 +9,42 @@
 #include <CLI/CLI.hpp>
 #include <SDL3/SDL_messagebox.h>
 
-#include <core/emulator_settings.h>
-#include <core/emulator_state.h>
+#include "common/arch.h"
 #include "common/key_manager.h"
 #include "common/logging/log.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/debugger.h"
+#include "core/emulator_settings.h"
+#include "core/emulator_state.h"
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
+#include "core/user_settings.h"
 #include "emulator.h"
 #include "imgui/big_picture/big_picture.h"
 
 #ifdef _WIN32
 #include <windows.h>
+#elif defined(__APPLE__)
+#include <sys/sysctl.h>
 #endif
-#include <core/user_settings.h>
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
+#endif
+
+#if defined(__APPLE__) && defined(ARCH_X86_64)
+    // KosmicKrisp only supports Apple Silicon. Check that we are not running on an Intel Mac.
+    int sysctl_ret = 0;
+    size_t sysctl_size = sizeof(sysctl_ret);
+    sysctlbyname("sysctl.proc_translated", &sysctl_ret, &sysctl_size, nullptr, 0);
+    if (sysctl_ret != 1) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadPS4",
+                                 "shadPS4 only supports Apple Silicon Macs.", nullptr);
+        std::cout << "shadPS4 only supports Apple Silicon Macs." << std::endl;
+        return -1;
+    }
 #endif
 
     CLI::App app{"shadPS4 Emulator CLI"};
@@ -103,6 +119,11 @@ int main(int argc, char* argv[]) {
     if (waitPid)
         Core::Debugger::WaitForPid(*waitPid);
 
+    // Initialize main log with default config
+    Common::Log::Setup("shadps4.log");
+
+    LOG_INFO(Debug, "Run: {}", std::span(argv, argc));
+
     IPC::Instance().Init();
 
     auto emu_state = std::make_shared<EmulatorState>();
@@ -130,14 +151,14 @@ int main(int argc, char* argv[]) {
     if (addGameFolder) {
         EmulatorSettings.AddGameInstallDir(*addGameFolder);
         EmulatorSettings.Save();
-        std::cout << "Game folder successfully saved.\n";
+        LOG_INFO(Config, "Game folder successfully saved.");
         return 0;
     }
 
     if (setAddonFolder) {
         EmulatorSettings.SetAddonInstallDir(*setAddonFolder);
         EmulatorSettings.Save();
-        std::cout << "Addon folder successfully saved.\n";
+        LOG_INFO(Config, "Addon folder successfully saved.");
         return 0;
     }
 
@@ -146,7 +167,7 @@ int main(int argc, char* argv[]) {
             gamePath = gameArgs.front();
             gameArgs.erase(gameArgs.begin());
         } else {
-            std::cerr << "Error: Please provide a game path or ID.\n";
+            LOG_ERROR(Debug, "Please provide a game path or ID.");
             return 1;
         }
     }
@@ -154,7 +175,7 @@ int main(int argc, char* argv[]) {
         if (gameArgs.front() == "--") {
             gameArgs.erase(gameArgs.begin());
         } else {
-            std::cerr << "Error: unhandled flags\n";
+            LOG_ERROR(Debug, "unhandled flags");
             return 1;
         }
     }
@@ -172,7 +193,7 @@ int main(int argc, char* argv[]) {
         } else if (*fullscreenStr == "false") {
             EmulatorSettings.SetFullScreen(false);
         } else {
-            std::cerr << "Error: Invalid argument for --fullscreen (use true|false)\n";
+            LOG_ERROR(Debug, "Invalid argument for --fullscreen (use true|false)");
             return 1;
         }
     }
@@ -199,7 +220,7 @@ int main(int argc, char* argv[]) {
             }
         }
         if (!found) {
-            std::cerr << "Error: Game ID or file path not found: " << *gamePath << "\n";
+            LOG_ERROR(Debug, "Game ID or file path not found: {}", *gamePath);
             return 1;
         }
     }

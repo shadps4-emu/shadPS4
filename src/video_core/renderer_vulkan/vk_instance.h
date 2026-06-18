@@ -180,9 +180,14 @@ public:
         return amd_shader_explicit_vertex_parameter;
     }
 
-    /// Returns true when VK_EXT_primitive_topology_list_restart is supported.
+    /// Returns true when VK_EXT_primitive_topology_list_restart is supported for regular lists.
     bool IsListRestartSupported() const {
-        return list_restart;
+        return list_restart && list_restart_features.primitiveTopologyListRestart;
+    }
+
+    /// Returns true when VK_EXT_primitive_topology_list_restart is supported for patch lists.
+    bool IsPatchListRestartSupported() const {
+        return list_restart && list_restart_features.primitiveTopologyPatchListRestart;
     }
 
     /// Returns true when VK_EXT_legacy_vertex_attributes is supported.
@@ -263,16 +268,6 @@ public:
     /// Returns true when tessellation is supported by the device
     bool IsTessellationSupported() const {
         return features.tessellationShader;
-    }
-
-    /// Returns true when tessellation isolines are supported by the device
-    bool IsTessellationIsolinesSupported() const {
-        return !portability_subset || portability_features.tessellationIsolines;
-    }
-
-    /// Returns true when tessellation point mode is supported by the device
-    bool IsTessellationPointModeSupported() const {
-        return !portability_subset || portability_features.tessellationPointMode;
     }
 
     /// Returns the vendor ID of the physical device
@@ -478,13 +473,13 @@ private:
     vk::PhysicalDeviceFeatures features;
     vk::PhysicalDeviceVulkan12Features vk12_features;
     vk::PhysicalDeviceVulkan13Features vk13_features;
-    vk::PhysicalDevicePortabilitySubsetFeaturesKHR portability_features;
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
     vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;
     vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
     vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
         workgroup_memory_explicit_layout_features;
     vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT image_2d_view_of_3d_features;
+    vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT list_restart_features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};
     std::string vendor_name;
@@ -517,7 +512,6 @@ private:
     bool shader_atomic_float{};
     bool shader_atomic_float2{};
     bool workgroup_memory_explicit_layout{};
-    bool portability_subset{};
     bool maintenance_8{};
     bool attachment_feedback_loop{};
     bool image_2d_view_of_3d{};
