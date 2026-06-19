@@ -7,6 +7,7 @@
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
+#include <cmrc/cmrc.hpp>
 #include <stb_image.h>
 
 #include "common/assert.h"
@@ -31,8 +32,11 @@
 
 #ifdef __APPLE__
 #include <SDL3/SDL_metal.h>
-#include "common/apple.h"
 #endif
+#include <core/emulator_settings.h>
+#include "core/libraries/mouse/sdl_mouse.h"
+
+CMRC_DECLARE(res);
 
 namespace Frontend {
 
@@ -179,52 +183,33 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
 WindowSDL::~WindowSDL() = default;
 
 void WindowSDL::SetIcon(const std::filesystem::path& path) {
-#ifdef __APPLE__
-    // Use native path which matches system icon look-and-feel.
-    Common::SetAppIcon(path);
-#else
+    if (!std::filesystem::exists(path)) {
+        LOG_WARNING(Core, "Could not find icon file '{}', using default icon.",
+                    fmt::UTF(path.u8string()));
+        SetDefaultWindowIcon(window);
+        return;
+    }
+
     Common::FS::IOFile file{path, Common::FS::FileAccessMode::Read,
                             Common::FS::FileType::BinaryFile,
                             Common::FS::FileShareFlag::ShareReadWrite};
     if (!file.IsOpen()) {
         LOG_ERROR(Core, "Failed to open window icon file '{}'.", fmt::UTF(path.u8string()));
+        SetDefaultWindowIcon(window);
         return;
     }
 
-    const u64 file_size = file.GetSize();
-    std::vector<u8> buf(file_size);
-    const size_t bytes_read = file.ReadRaw<u8>(buf.data(), file_size);
+    const u64 fileSize = file.GetSize();
+    std::vector<u8> buf(fileSize);
+    const size_t bytesRead = file.ReadRaw<u8>(buf.data(), fileSize);
     file.Close();
-    if (bytes_read < file_size) {
+    if (bytesRead < fileSize) {
         LOG_ERROR(Core, "Failed to read window icon file '{}'.", fmt::UTF(path.u8string()));
+        SetDefaultWindowIcon(window);
         return;
     }
 
-    int image_width = 0;
-    int image_height = 0;
-    constexpr int num_channels = 4;
-    unsigned char* image_data =
-        stbi_load_from_memory(buf.data(), static_cast<int>(buf.size()), &image_width, &image_height,
-                              nullptr, num_channels);
-    if (image_data == nullptr) {
-        LOG_ERROR(Core, "Failed to load window icon image '{}': {}", fmt::UTF(path.u8string()),
-                  stbi_failure_reason());
-        return;
-    }
-    SCOPE_EXIT {
-        stbi_image_free(image_data);
-    };
-
-    SDL_Surface* surface = SDL_CreateSurfaceFrom(image_width, image_height, SDL_PIXELFORMAT_RGBA32,
-                                                 image_data, image_width * num_channels);
-    if (surface == nullptr) {
-        LOG_ERROR(Core, "Failed to create SDL surface for window icon: {}", SDL_GetError());
-    }
-    if (!SDL_SetWindowIcon(window, surface)) {
-        LOG_ERROR(Core, "Failed to set SDL window icon: {}", SDL_GetError());
-    }
-    SDL_DestroySurface(surface);
-#endif
+    SetWindowIcon(window, buf);
 }
 
 void WindowSDL::WaitEvent() {
@@ -232,6 +217,10 @@ void WindowSDL::WaitEvent() {
     SDL_Event event;
 
     if (!SDL_WaitEvent(&event)) {
+        return;
+    }
+
+    if (Libraries::Mouse::PushSDLEvent(event)) {
         return;
     }
 
@@ -479,6 +468,40 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
         // update bindings
         Input::ActivateOutputsFromInputs();
     }
+}
+
+#ifndef __APPLE__
+void SetWindowIcon(SDL_Window* window, const std::vector<u8>& png) {
+    int imageWidth = 0;
+    int imageHeight = 0;
+    constexpr int numChannels = 4;
+    unsigned char* imageData = stbi_load_from_memory(png.data(), png.size(), &imageWidth,
+                                                     &imageHeight, nullptr, numChannels);
+    if (imageData == nullptr) {
+        LOG_ERROR(Core, "Failed to load window icon image: {}", stbi_failure_reason());
+        return;
+    }
+    SCOPE_EXIT {
+        stbi_image_free(imageData);
+    };
+
+    SDL_Surface* surface = SDL_CreateSurfaceFrom(imageWidth, imageHeight, SDL_PIXELFORMAT_RGBA32,
+                                                 imageData, imageWidth * numChannels);
+    if (surface == nullptr) {
+        LOG_ERROR(Core, "Failed to create SDL surface for window icon: {}", SDL_GetError());
+    }
+    if (!SDL_SetWindowIcon(window, surface)) {
+        LOG_ERROR(Core, "Failed to set SDL window icon: {}", SDL_GetError());
+    }
+    SDL_DestroySurface(surface);
+}
+#endif
+
+void SetDefaultWindowIcon(SDL_Window* window) {
+    const auto resource = cmrc::res::get_filesystem();
+    const auto file = resource.open("src/resources/shadps4.png");
+    const std::vector<u8> texData = std::vector<u8>(file.begin(), file.end());
+    SetWindowIcon(window, texData);
 }
 
 } // namespace Frontend

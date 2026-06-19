@@ -10,7 +10,7 @@
 #include <SDL3/SDL_gamepad.h>
 #include "SDL3/SDL_joystick.h"
 #include "common/assert.h"
-#include "common/types.h"
+#include "common/ring_buffer_queue.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
 
@@ -82,37 +82,6 @@ inline int GetAxis(int min, int max, int value) {
     int v = (255 * (value - min)) / (max - min);
     return (v < 0 ? 0 : (v > 255 ? 255 : v));
 }
-
-template <class T>
-class RingBufferQueue {
-public:
-    RingBufferQueue(size_t size) : m_storage(size) {}
-
-    void Push(T item) {
-        const size_t index = (m_begin + m_size) % m_storage.size();
-        m_storage[index] = std::move(item);
-        if (m_size < m_storage.size()) {
-            m_size += 1;
-        } else {
-            m_begin = (m_begin + 1) % m_storage.size();
-        }
-    }
-
-    std::optional<T> Pop() {
-        if (m_size == 0) {
-            return {};
-        }
-        const size_t index = m_begin;
-        m_begin = (m_begin + 1) % m_storage.size();
-        m_size -= 1;
-        return std::move(m_storage[index]);
-    }
-
-private:
-    size_t m_begin = 0;
-    size_t m_size = 0;
-    std::vector<T> m_storage;
-};
 
 class GameController {
     friend class GameControllers;
