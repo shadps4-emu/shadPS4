@@ -11,8 +11,8 @@
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_score/np_score.h"
 #include "core/user_settings.h"
-#include "np_handler.h"
 #include "imgui/shadnet_notifications_layer.h"
+#include "np_handler.h"
 #include "shadnet.pb.h"
 
 namespace Libraries::Np {
@@ -331,7 +331,8 @@ void NpHandler::OnFriendQuery(s32 user_id, const ShadNet::NotifyFriendQuery& n) 
 void NpHandler::OnFriendNew(s32 user_id, const ShadNet::NotifyFriendNew& n) {
     LOG_INFO(NpHandler, "user_id={} FriendNew '{}' ({})", user_id, n.npid,
              n.online ? "online" : "offline");
-    ImGui::ShadNetNotify::Push(ImGui::ShadNetNotify::Kind::FriendNew, n.npid + " is now your friend");
+    ImGui::ShadNetNotify::Push(ImGui::ShadNetNotify::Kind::FriendNew,
+                               n.npid + " is now your friend");
     std::lock_guard lock(m_mutex_friend_state);
     auto& st = m_friend_state[user_id];
     auto it = std::find_if(st.friends.begin(), st.friends.end(),
@@ -399,9 +400,9 @@ void NpHandler::OnLoginResult(s32 user_id, const ShadNet::LoginResult& res) {
 
     // Surface friend requests that arrived while offline (no live notification fires for these).
     if (!res.requestsReceived.empty()) {
-        ImGui::ShadNetNotify::Push(
-            ImGui::ShadNetNotify::Kind::FriendRequest,
-            std::to_string(res.requestsReceived.size()) + " pending friend request(s)");
+        ImGui::ShadNetNotify::Push(ImGui::ShadNetNotify::Kind::FriendRequest,
+                                   std::to_string(res.requestsReceived.size()) +
+                                       " pending friend request(s)");
     }
 }
 
@@ -439,12 +440,10 @@ s32 NpHandler::SendFriendRequest(s32 user_id, const std::string& npid) {
 
     std::lock_guard lock(m_mutex_friend_state);
     auto& st = m_friend_state[user_id];
-    const bool accepting =
-        std::find(st.requests_received.begin(), st.requests_received.end(), npid) !=
-        st.requests_received.end();
-    if (!accepting &&
-        std::find(st.requests_sent.begin(), st.requests_sent.end(), npid) ==
-            st.requests_sent.end()) {
+    const bool accepting = std::find(st.requests_received.begin(), st.requests_received.end(),
+                                     npid) != st.requests_received.end();
+    if (!accepting && std::find(st.requests_sent.begin(), st.requests_sent.end(), npid) ==
+                          st.requests_sent.end()) {
         st.requests_sent.push_back(npid);
     }
     return ORBIS_OK;
