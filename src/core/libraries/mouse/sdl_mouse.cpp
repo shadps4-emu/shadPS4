@@ -53,6 +53,7 @@ bool PushSDLEvent(SDL_Event const& e) {
             return false;
         }
         mouse_sdl_handles[index] = -1;
+        mouse_states[index].Push(current_state[index]);
         break;
     }
     case SDL_EVENT_MOUSE_MOTION: {
