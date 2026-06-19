@@ -337,7 +337,6 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/threads/sleepq.cpp
                src/core/libraries/kernel/threads/sleepq.h
                src/core/libraries/kernel/threads/stack.cpp
-               src/core/libraries/kernel/threads/stack.S
                src/core/libraries/kernel/threads/tcb.cpp
                src/core/libraries/kernel/threads/pthread.h
                src/core/libraries/kernel/threads/thread_state.cpp
@@ -364,7 +363,10 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/aio.h
 )
 
-set_source_files_properties(src/core/libraries/kernel/threads/stack.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+if (ARCHITECTURE STREQUAL "x86_64")
+    list(APPEND KERNEL_LIB src/core/libraries/kernel/threads/stack.S)
+    set_source_files_properties(src/core/libraries/kernel/threads/stack.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+endif()
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/http.h
@@ -888,7 +890,6 @@ set(CORE src/core/aerolib/stubs.cpp
          ${ZLIB_LIB}
          ${MISC_LIBS}
          ${IME_LIB}
-         ${FIBER_LIB}
          ${VDEC_LIB}
          ${VR_LIBS}
          ${CAMERA_LIBS}
@@ -924,7 +925,8 @@ set(CORE src/core/aerolib/stubs.cpp
 if (ARCHITECTURE STREQUAL "x86_64")
     set(CORE ${CORE}
              src/core/cpu_patches.cpp
-             src/core/cpu_patches.h)
+             src/core/cpu_patches.h
+             ${FIBER_LIB})
 endif()
 
 set(SHADER_RECOMPILER src/shader_recompiler/profile.h
