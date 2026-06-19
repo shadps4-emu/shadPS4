@@ -33,7 +33,7 @@ constexpr u32 OrbisButtonFromSDL(Uint8 button) {
 }
 
 bool PushSDLEvent(SDL_Event const& e) {
-    static OrbisMouseData current_state[2]{};
+    static OrbisMouseData current_state[2]{{.connected = true}, {.connected = true}};
     if (!EmulatorSettings.IsMiceUsedAsMice()) {
         return false;
     }
@@ -43,6 +43,18 @@ bool PushSDLEvent(SDL_Event const& e) {
     switch (e.type) {
     default:
         return false;
+    case SDL_EVENT_MOUSE_ADDED: {
+        LOG_INFO(Lib_Mouse, "Mouse added, id: {}", e.mdevice.which);
+        u64 index = GetIndexFromSdlHandle(e.mdevice.which);
+        if (index != 2) {
+            return true;
+        }
+        auto new_index = GetIndexFromSdlHandle(-1);
+        if (new_index < 2) {
+            mouse_sdl_handles[(GetIndexFromSdlHandle(-1))] = e.mdevice.which;
+        }
+        break;
+    }
     case SDL_EVENT_MOUSE_REMOVED: {
         LOG_INFO(Lib_Mouse, "Mouse removed, id: {}", e.mdevice.which);
         if (g_is_merged_mode) {
@@ -53,17 +65,21 @@ bool PushSDLEvent(SDL_Event const& e) {
             return false;
         }
         mouse_sdl_handles[index] = -1;
+        current_state[index].connected = false;
         mouse_states[index].Push(current_state[index]);
+        current_state[index].connected = true;
         break;
     }
     case SDL_EVENT_MOUSE_MOTION: {
         u64 index = GetIndexFromSdlHandle(e.motion.which);
         if (index == 2) {
             index = GetIndexFromSdlHandle(-1);
-            if (index < 2)
+            if (index < 2) {
+                LOG_INFO(Lib_Mouse, "mouse {} = sdl id {}", index, e.motion.which);
                 mouse_sdl_handles[index] = e.motion.which;
-            else
+            } else {
                 return false;
+            }
         }
         auto& s = current_state[index];
         s.x_axis = (s32)e.motion.xrel;
