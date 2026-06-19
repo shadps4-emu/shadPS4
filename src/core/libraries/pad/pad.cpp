@@ -494,13 +494,14 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
     LOG_TRACE(Lib_Pad, "called");
     int connected_count = 0;
     bool connected = false;
-    std::vector<Input::State> states(64);
+    const s32 read_num = std::clamp<s32>(num, 0, 64);
+    std::vector<Input::State> states(std::max<s32>(read_num, 1));
     auto it = handle_to_controller_map.find(handle);
     if (it == handle_to_controller_map.end()) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     auto& controller = *it->second;
-    int ret_num = controller.ReadStates(states.data(), num, &connected, &connected_count);
+    int ret_num = controller.ReadStates(states.data(), read_num, &connected, &connected_count);
     return ProcessStates(handle, pData, controller, states.data(), ret_num, connected,
                          connected_count);
 }
