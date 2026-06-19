@@ -21,6 +21,7 @@
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
 #include "core/user_settings.h"
+#include "imgui/friends_layer.h"
 #include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
 #include "input/input_handler.h"
@@ -396,6 +397,12 @@ Uint32 wheelOffCallback(void* og_event, Uint32 timer_id, Uint32 interval) {
 
 void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
     using Libraries::Pad::OrbisPadButtonDataOffset;
+
+    // Global UI hotkey: F2 toggles the shadNet Friends window.
+    if (event->type == SDL_EVENT_KEY_DOWN && !event->key.repeat && event->key.key == SDLK_F2) {
+        ImGui::Friends::Toggle();
+        return;
+    }
 
     // get the event's id, if it's keyup or keydown
     const bool input_down = event->type == SDL_EVENT_KEY_DOWN ||

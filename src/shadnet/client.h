@@ -213,6 +213,12 @@ public:
     // Returns the packet id so callers can correlate the eventual reply.
     u64 SubmitRequest(CommandType cmd, const std::vector<u8>& payload);
 
+    // Friend / block commands.
+    u64 AddFriend(const std::string& npid);
+    u64 RemoveFriend(const std::string& npid);
+    u64 AddBlock(const std::string& npid);
+    u64 RemoveBlock(const std::string& npid);
+
 private:
     void ConnectThread();
     void ReaderThread();

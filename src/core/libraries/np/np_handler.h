@@ -80,6 +80,30 @@ public:
     u32 GetNumFriends(s32 user_id) const;
     std::optional<std::string> GetFriendNpid(s32 user_id, u32 index) const;
 
+    // ---- Friend list / requests / blocked (shadNet) ----
+    struct FriendInfo {
+        std::string npid;
+        bool online = false;
+    };
+    struct FriendListSnapshot {
+        std::vector<FriendInfo> friends;
+        std::vector<std::string> requests_received;
+        std::vector<std::string> requests_sent;
+        std::vector<std::string> blocked;
+    };
+
+    // Local users that currently have an authenticated shadNet session.
+    std::vector<s32> GetConnectedUsers() const;
+
+    // user's friend state for UI display.
+    FriendListSnapshot GetFriendList(s32 user_id) const;
+
+    // Friend/block actions
+    s32 SendFriendRequest(s32 user_id, const std::string& npid);
+    s32 RemoveFriend(s32 user_id, const std::string& npid);
+    s32 BlockUser(s32 user_id, const std::string& npid);
+    s32 UnblockUser(s32 user_id, const std::string& npid);
+
     // Submit a RecordScore request to the shadNet server.
     s32 RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId, s64 score,
                     const char* comment, size_t commentLen, const u8* gameInfoData,
@@ -184,6 +208,7 @@ private:
     void OnFriendNew(s32 user_id, const ShadNet::NotifyFriendNew& n);
     void OnFriendLost(s32 user_id, const ShadNet::NotifyFriendLost& n);
     void OnFriendStatus(s32 user_id, const ShadNet::NotifyFriendStatus& n);
+    void OnLoginResult(s32 user_id, const ShadNet::LoginResult& res);
 
     // Async reply dispatch for score commands. Called from the per-user
     // ShadNetClient on the reader thread.
@@ -236,6 +261,10 @@ private:
     mutable std::mutex m_mutex_cbs;
     std::vector<CbEntry> m_state_cbs;
     s32 m_next_handle{1};
+
+    // Friend state per user, seeded from LoginReply and updated by notifications/actions.
+    mutable std::mutex m_mutex_friend_state;
+    std::map<s32, FriendListSnapshot> m_friend_state;
 };
 
 } // namespace Libraries::Np

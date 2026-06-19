@@ -445,6 +445,30 @@ u64 ShadNetClient::SubmitRequest(CommandType cmd, const std::vector<u8>& payload
     return pkt_id;
 }
 
+u64 ShadNetClient::AddFriend(const std::string& npid) {
+    shadnet::FriendCommandRequest req;
+    req.set_npid(npid);
+    return SubmitRequest(CommandType::AddFriend, MakeProtoPayload(req));
+}
+
+u64 ShadNetClient::RemoveFriend(const std::string& npid) {
+    shadnet::FriendCommandRequest req;
+    req.set_npid(npid);
+    return SubmitRequest(CommandType::RemoveFriend, MakeProtoPayload(req));
+}
+
+u64 ShadNetClient::AddBlock(const std::string& npid) {
+    shadnet::FriendCommandRequest req;
+    req.set_npid(npid);
+    return SubmitRequest(CommandType::AddBlock, MakeProtoPayload(req));
+}
+
+u64 ShadNetClient::RemoveBlock(const std::string& npid) {
+    shadnet::FriendCommandRequest req;
+    req.set_npid(npid);
+    return SubmitRequest(CommandType::RemoveBlock, MakeProtoPayload(req));
+}
+
 // Packet dispatch
 
 void ShadNetClient::DispatchPacket(PacketType type, u16 cmd_raw, u64 pkt_id,
