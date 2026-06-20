@@ -74,6 +74,9 @@ struct OrbisNpWebApiRequest {
     u64 remainingData;
     u32 readOffset;
     char data[64];
+    s32 http_connection_id = 0;
+    s32 http_request_id = 0;
+    s32 http_template_id = 0;
 };
 
 struct OrbisNpWebApiHandle {

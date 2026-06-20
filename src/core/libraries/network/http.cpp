@@ -1522,6 +1522,11 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
 
         plan.method = req.method;
         plan.method_str = req.method_str;
+        // np_web_api sends ORBIS_HTTP_METHOD_CUSTOM (8) with no method string as an
+        // out-of-band PATCH marker
+        if (plan.method == ORBIS_HTTP_METHOD_CUSTOM && plan.method_str.empty()) {
+            plan.method_str = "PATCH";
+        }
         plan.path = ExtractPathFromUrl(req.url);
         plan.settings = req.settings;
         if (auto conn_it = g_state.connections.find(req.conn_id);

@@ -184,6 +184,7 @@ struct GeneralSettings {
     Setting<int> console_language{1};
     Setting<int> big_picture_scale{1000};
     Setting<std::string> shadnet_server{""};
+    Setting<std::string> shadnet_webapi_server{""};
     Setting<std::string> signaling_addr{""};
     Setting<u16> signaling_port{};
     Setting<bool> enable_upnp{true};
@@ -218,7 +219,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    trophy_notification_duration, show_splash,
                                    trophy_notification_side, connected_to_network,
                                    discord_rpc_enabled, show_fps_counter, console_language,
-                                   big_picture_scale, shadnet_server, signaling_addr,
+                                   big_picture_scale, shadnet_server, shadnet_webapi_server, signaling_addr,
                                    signaling_port, enable_upnp)
 
 // -------------------------------
@@ -605,6 +606,7 @@ public:
     SETTING_FORWARD(m_general, ConsoleLanguage, console_language)
     SETTING_FORWARD(m_general, BigPictureScale, big_picture_scale)
     SETTING_FORWARD(m_general, ShadNetServer, shadnet_server)
+    SETTING_FORWARD(m_general, ShadNetWebApiServer, shadnet_webapi_server)
     SETTING_FORWARD(m_general, SignalingAddr, signaling_addr)
     SETTING_FORWARD(m_general, SignalingPort, signaling_port)
     SETTING_FORWARD_BOOL(m_general, UPnPEnabled, enable_upnp)
