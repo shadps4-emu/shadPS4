@@ -219,8 +219,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    trophy_notification_duration, show_splash,
                                    trophy_notification_side, connected_to_network,
                                    discord_rpc_enabled, show_fps_counter, console_language,
-                                   big_picture_scale, shadnet_server, shadnet_webapi_server, signaling_addr,
-                                   signaling_port, enable_upnp)
+                                   big_picture_scale, shadnet_server, shadnet_webapi_server,
+                                   signaling_addr, signaling_port, enable_upnp)
 
 // -------------------------------
 // Log settings
