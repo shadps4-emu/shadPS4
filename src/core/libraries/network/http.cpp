@@ -2582,8 +2582,8 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode) {
     auto& req = *it->second;
     int wr = WaitForResponseReady(req, lock);
     if (wr == ORBIS_HTTP_ERROR_EAGAIN) {
-        LOG_DEBUG(Lib_Http, "reqId={}: response not yet ready, returning BEFORE_SEND", reqId);
-        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+        LOG_DEBUG(Lib_Http, "reqId={}: response not yet ready, returning EAGAIN", reqId);
+        return ORBIS_HTTP_ERROR_EAGAIN;
     }
     if (wr != ORBIS_OK) {
         LOG_ERROR(Lib_Http, "Wait failed for reqId={}: {:#x}", reqId, static_cast<u32>(wr));
