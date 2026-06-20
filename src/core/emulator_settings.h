@@ -127,9 +127,9 @@ inline OverrideItem make_override(const char* key, Setting<T> Struct::* member) 
                 }
                 dst.game_specific_value = newValue;
             } catch (const std::exception& e) {
-                LOG_DEBUG(Config, "[make_override] error parsing {}: {}", key, e.what());
-                LOG_DEBUG(Config, "[make_override] Entry was: {}", entry.dump());
-                LOG_DEBUG(Config, "[make_override] Type name: {}", entry.type_name());
+                LOG_ERROR(Config, "[make_override] error parsing {}: {}", key, e.what());
+                LOG_ERROR(Config, "[make_override] Entry was: {}", entry.dump());
+                LOG_ERROR(Config, "[make_override] Type name: {}", entry.type_name());
             }
         },
 
@@ -296,6 +296,7 @@ struct InputSettings {
     Setting<bool> ime_url_mail_short_panel{false};    // specific
     Setting<bool> is_circle_enter{false};             // specific
     Setting<s32> camera_id{-1};
+    Setting<bool> use_mice_as_mice{false};
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -312,7 +313,8 @@ struct InputSettings {
             make_override<InputSettings>("ime_url_mail_short_panel",
                                          &InputSettings::ime_url_mail_short_panel),
             make_override<InputSettings>("is_circle_enter", &InputSettings::is_circle_enter),
-            make_override<InputSettings>("camera_id", &InputSettings::camera_id)};
+            make_override<InputSettings>("camera_id", &InputSettings::camera_id),
+            make_override<InputSettings>("use_mice_as_mice", &InputSettings::use_mice_as_mice)};
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_timeout,
@@ -320,7 +322,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_time
                                    motion_controls_enabled, use_unified_input_config,
                                    default_controller_id, background_controller_input,
                                    ime_accessibility_enabled, ime_url_mail_short_panel, camera_id,
-                                   is_circle_enter)
+                                   is_circle_enter, use_mice_as_mice)
 // -------------------------------
 // Audio settings
 // -------------------------------
@@ -683,6 +685,7 @@ public:
     SETTING_FORWARD_BOOL(m_input, UseUnifiedInputConfig, use_unified_input_config)
     SETTING_FORWARD(m_input, CameraId, camera_id)
     SETTING_FORWARD_BOOL(m_input, CircleEnter, is_circle_enter)
+    SETTING_FORWARD_BOOL(m_input, MiceUsedAsMice, use_mice_as_mice)
 
     // Vulkan settings
     SETTING_FORWARD(m_vulkan, GpuId, gpu_id)

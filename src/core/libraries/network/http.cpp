@@ -610,8 +610,9 @@ static s32 TranslateHttplibError(httplib::Error err) {
     case E::UnsupportedMultipartBoundaryChars:
     case E::Compression:
         return ORBIS_HTTP_ERROR_UNKNOWN;
+    default:
+        return ORBIS_HTTP_ERROR_UNKNOWN;
     }
-    return ORBIS_HTTP_ERROR_UNKNOWN;
 }
 #endif // ORBIS_HTTP_WITH_HTTPLIB
 

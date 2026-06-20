@@ -43,7 +43,7 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
                   fmt::UTF(trophyIconPath.u8string()));
     }
 
-    std::string pathString = "src/images/";
+    std::string pathString = "src/resources/";
 
     if (trophy_type == "P") {
         pathString += "platinum.png";
@@ -151,7 +151,7 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
         file.close();
         PlayWav(sound_data);
     } else {
-        auto soundFile = resource.open("src/images/trophy.wav");
+        auto soundFile = resource.open("src/resources/trophy.wav");
         sound_data = std::vector<unsigned char>(soundFile.begin(), soundFile.end());
         PlayWav(sound_data);
     }
