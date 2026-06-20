@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
+#include "common/arch.h"
 #include "common/assert.h"
 #include "common/types.h"
 #include "core/libraries/kernel/kernel.h"
@@ -18,7 +19,11 @@ static std::mutex MutxStaticLock;
 #define THR_ADAPTIVE_MUTEX_INITIALIZER ((PthreadMutex*)1)
 #define THR_MUTEX_DESTROYED ((PthreadMutex*)2)
 
+#if defined(ARCH_X86_64)
 #define CPU_SPINWAIT __asm__ volatile("pause")
+#elif defined(ARCH_ARM64)
+#define CPU_SPINWAIT __asm__ volatile("yield")
+#endif
 
 #define CHECK_AND_INIT_MUTEX                                                                       \
     if (PthreadMutex* m = *mutex; m <= THR_MUTEX_DESTROYED) [[unlikely]] {                         \

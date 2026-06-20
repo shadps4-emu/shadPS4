@@ -39,6 +39,7 @@ cmake_dependent_option(ENABLE_SYSTEM_VULKAN "Enable the system Vulkan driver" OF
 option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
 option(ENABLE_UPDATER "Enables the options to updater" ON)
 option(ENABLE_TESTS "Build unit tests (requires GTest)" OFF)
+option(ENABLE_SYSTEM_LIBRARIES "Enable building against system libraries" OFF)
 
 # First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
 if (APPLE AND CMAKE_OSX_ARCHITECTURES)
@@ -215,7 +216,7 @@ set(EMULATOR_VERSION_MAJOR "0")
 set(EMULATOR_VERSION_MINOR "16")
 set(EMULATOR_VERSION_PATCH "1")
 
-set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
+set_source_files_properties(src/dist/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
 
 set(APP_VERSION_NUM "${EMULATOR_VERSION_MAJOR}.${EMULATOR_VERSION_MINOR}.${EMULATOR_VERSION_PATCH}")
 set(APP_VERSION "${APP_VERSION_NUM} WIP")
@@ -230,46 +231,39 @@ if(NOT (GIT_REMOTE_URL_LOWER MATCHES "shadps4-emu/shadps4" AND (GIT_BRANCH STREQ
     set(ENABLE_UPDATER OFF)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-find_package(Boost 1.84.0 CONFIG)
-find_package(CLI11 2.6.1 CONFIG)
-find_package(FFmpeg 5.1.2 MODULE)
-find_package(fmt 12.0.0 CONFIG)
-find_package(Freetype 2.14.1 MODULE)
-find_package(glslang 15 CONFIG)
-find_package(half 1.12.0 MODULE)
-find_package(magic_enum 0.9.7 CONFIG)
-find_package(miniupnpc 2.3.3 MODULE)
-find_package(miniz 3.1 CONFIG)
-find_package(nlohmann_json 3.12 CONFIG)
-find_package(PNG 1.6 MODULE)
-find_package(OpenAL CONFIG)
-find_package(LibreSSL 4.3.1 MODULE)
-find_package(RenderDoc 1.6.0 MODULE)
-find_package(SDL3 3.1.2 CONFIG)
-find_package(stb MODULE)
-find_package(toml11 4.2.0 CONFIG)
-find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.330 CONFIG)
-find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
-find_package(xbyak 7.07 CONFIG)
-find_package(xxHash 0.8.2 MODULE)
-find_package(ZLIB 1.3 MODULE)
-find_package(Zydis 5.0.0 MODULE)
-find_package(pugixml 1.14 CONFIG)
-if (APPLE)
-    find_package(date 3.0.1 CONFIG)
-    find_package(epoll-shim 3.14 CONFIG)
-endif()
-list(POP_BACK CMAKE_MODULE_PATH)
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    # libc++ requires -fexperimental-library to enable std::jthread and std::stop_token support.
-    include(CheckCXXSymbolExists)
-    check_cxx_symbol_exists(_LIBCPP_VERSION version LIBCPP)
-    if(LIBCPP)
-        add_compile_options(-fexperimental-library)
+if (ENABLE_SYSTEM_LIBRARIES)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+    find_package(Boost 1.84.0 CONFIG)
+    find_package(CLI11 2.6.1 CONFIG)
+    find_package(FFmpeg 5.1.2 MODULE)
+    find_package(fmt 12.0.0 CONFIG)
+    find_package(Freetype 2.14.1 MODULE)
+    find_package(glslang 15 CONFIG)
+    find_package(half 1.12.0 MODULE)
+    find_package(magic_enum 0.9.7 CONFIG)
+    find_package(miniupnpc 2.3.3 MODULE)
+    find_package(miniz 3.1 CONFIG)
+    find_package(nlohmann_json 3.12 CONFIG)
+    find_package(PNG 1.6 MODULE)
+    find_package(OpenAL CONFIG)
+    find_package(LibreSSL 4.3.1 MODULE)
+    find_package(RenderDoc 1.6.0 MODULE)
+    find_package(SDL3 3.1.2 CONFIG)
+    find_package(stb MODULE)
+    find_package(toml11 4.2.0 CONFIG)
+    find_package(tsl-robin-map 1.3.0 CONFIG)
+    find_package(VulkanHeaders 1.4.330 CONFIG)
+    find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
+    find_package(xbyak 7.07 CONFIG)
+    find_package(xxHash 0.8.2 MODULE)
+    find_package(ZLIB 1.3 MODULE)
+    find_package(Zydis 5.0.0 MODULE)
+    find_package(pugixml 1.14 CONFIG)
+    if (APPLE)
+        find_package(date 3.0.1 CONFIG)
+        find_package(epoll-shim 3.14 CONFIG)
     endif()
+    list(POP_BACK CMAKE_MODULE_PATH)
 endif()
 
 add_subdirectory(externals)
@@ -343,7 +337,6 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/threads/sleepq.cpp
                src/core/libraries/kernel/threads/sleepq.h
                src/core/libraries/kernel/threads/stack.cpp
-               src/core/libraries/kernel/threads/stack.S
                src/core/libraries/kernel/threads/tcb.cpp
                src/core/libraries/kernel/threads/pthread.h
                src/core/libraries/kernel/threads/thread_state.cpp
@@ -370,7 +363,10 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/aio.h
 )
 
-set_source_files_properties(src/core/libraries/kernel/threads/stack.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+if (ARCHITECTURE STREQUAL "x86_64")
+    list(APPEND KERNEL_LIB src/core/libraries/kernel/threads/stack.S)
+    set_source_files_properties(src/core/libraries/kernel/threads/stack.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+endif()
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/http.h
@@ -500,6 +496,9 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/razor_cpu/razor_cpu.h
                 src/core/libraries/mouse/mouse.cpp
                 src/core/libraries/mouse/mouse.h
+                src/core/libraries/mouse/mouse_error.h
+                src/core/libraries/mouse/sdl_mouse.cpp
+                src/core/libraries/mouse/sdl_mouse.h
                 src/core/libraries/web_browser_dialog/webbrowserdialog.cpp
                 src/core/libraries/web_browser_dialog/webbrowserdialog.h
                 src/core/libraries/font/font.cpp
@@ -891,7 +890,6 @@ set(CORE src/core/aerolib/stubs.cpp
          ${ZLIB_LIB}
          ${MISC_LIBS}
          ${IME_LIB}
-         ${FIBER_LIB}
          ${VDEC_LIB}
          ${VR_LIBS}
          ${CAMERA_LIBS}
@@ -927,7 +925,8 @@ set(CORE src/core/aerolib/stubs.cpp
 if (ARCHITECTURE STREQUAL "x86_64")
     set(CORE ${CORE}
              src/core/cpu_patches.cpp
-             src/core/cpu_patches.h)
+             src/core/cpu_patches.h
+             ${FIBER_LIB})
 endif()
 
 set(SHADER_RECOMPILER src/shader_recompiler/profile.h
@@ -1170,6 +1169,10 @@ set(EMULATOR src/emulator.cpp
              src/sdl_window.cpp
 )
 
+if (APPLE)
+    list(APPEND EMULATOR src/sdl_window_apple.mm)
+endif()
+
 if(NOT ENABLE_TESTS)
 
 add_executable(shadps4
@@ -1254,8 +1257,8 @@ if (APPLE)
     target_link_libraries(shadps4 PRIVATE date::date-tz epoll-shim)
 
     # Create and embed Info.plist
-    set(INFO_PLIST_PATH ${CMAKE_CURRENT_BINARY_DIR}/dist/Info.plist)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/dist/MacOSBundleInfo.plist.in ${INFO_PLIST_PATH})
+    set(INFO_PLIST_PATH ${CMAKE_CURRENT_BINARY_DIR}/src/dist/Info.plist)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dist/MacOSBundleInfo.plist.in ${INFO_PLIST_PATH})
     target_link_options(shadps4 PRIVATE LINKER:-sectcreate,__TEXT,__info_plist,${INFO_PLIST_PATH})
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     target_link_libraries(shadps4 PRIVATE date::date-tz epoll-shim)
@@ -1306,7 +1309,7 @@ if (WIN32)
 endif()
 
 if (WIN32)
-    target_sources(shadps4 PRIVATE src/shadps4.rc)
+    target_sources(shadps4 PRIVATE src/dist/shadps4.rc)
 endif()
 
 add_compile_definitions(BOOST_ASIO_STANDALONE)
@@ -1326,20 +1329,20 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeRC.cmake")
 cmrc_add_resource_library(embedded-resources
         ALIAS res::embedded
         NAMESPACE res
-        src/images/shadps4.png
-        src/images/big_picture/folder.png
-        src/images/big_picture/settings.png
-        src/images/big_picture/experimental.png
-        src/images/big_picture/graphics.png
-        src/images/big_picture/controller.png
-        src/images/big_picture/trophy.png
-        src/images/big_picture/log.png
-        src/images/big_picture/profiles.png
-	src/images/trophy.wav
-        src/images/bronze.png
-        src/images/gold.png
-        src/images/platinum.png
-        src/images/silver.png)
+        src/resources/big_picture/controller.png
+        src/resources/big_picture/experimental.png
+        src/resources/big_picture/folder.png
+        src/resources/big_picture/graphics.png
+        src/resources/big_picture/log.png
+        src/resources/big_picture/profiles.png
+        src/resources/big_picture/settings.png
+        src/resources/big_picture/trophy.png
+        src/resources/bronze.png
+        src/resources/gold.png
+        src/resources/platinum.png
+        src/resources/shadps4.png
+        src/resources/silver.png
+        src/resources/trophy.wav)
 target_link_libraries(shadps4 PRIVATE res::embedded)
 
 # ImGui resources

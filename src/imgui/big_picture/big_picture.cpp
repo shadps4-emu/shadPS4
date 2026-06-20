@@ -4,17 +4,18 @@
 #include <fstream>
 #include <stb_image.h>
 
-#include "big_picture.h"
 #include "common/logging/log.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
 #include "emulator.h"
+#include "imgui/big_picture/big_picture.h"
+#include "imgui/big_picture/imgui_impl_sdl3_big_picture.h"
+#include "imgui/big_picture/imgui_impl_sdlrenderer3.h"
+#include "imgui/big_picture/settings_dialog_imgui.h"
 #include "imgui/imgui_std.h"
 #include "imgui/renderer/font_stack.h"
-#include "imgui_impl_sdl3_big_picture.h"
-#include "imgui_impl_sdlrenderer3.h"
-#include "settings_dialog_imgui.h"
+#include "sdl_window.h"
 
 namespace BigPictureMode {
 
@@ -202,14 +203,14 @@ void Launch(char* executableName) {
     SDL_Window* window =
         SDL_CreateWindow("shadPS4 Big Picture Mode", 1280, 720,
                          EmulatorSettings.IsFullScreen() ? SDL_WINDOW_FULLSCREEN : 0);
-    renderer = SDL_CreateRenderer(window, nullptr);
-
     if (window == nullptr) {
         LOG_ERROR(ImGui, "SDL Window Creation Error: {}", SDL_GetError());
-        SDL_DestroyRenderer(renderer);
         SDL_Quit();
         return;
     }
+
+    Frontend::SetDefaultWindowIcon(window);
+    renderer = SDL_CreateRenderer(window, nullptr);
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
