@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/arch.h"
 #include "common/assert.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -194,6 +195,7 @@ void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context
     const auto handler = Handlers[NativeToOrbisSignal(native_signum)];
     if (handler) {
         auto ctx = Ucontext{};
+#ifdef ARCH_X86_64
 #ifdef __APPLE__
         const auto& regs = raw_context->uc_mcontext->__ss;
         ctx.uc_mcontext.mc_r8 = regs.__r8;
@@ -260,6 +262,9 @@ void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context
         ctx.uc_mcontext.mc_gs = (regs[REG_CSGSFS] >> 16) & 0xFFFF;
         ctx.uc_mcontext.mc_rip = (regs[REG_RIP]);
         ctx.uc_mcontext.mc_addr = reinterpret_cast<uint64_t>(inf->si_addr);
+#endif
+#else
+        UNREACHABLE_MSG("SigactionHandler not implemented for current architecture.");
 #endif
         handler(NativeToOrbisSignal(native_signum), &ctx);
     } else {
