@@ -184,6 +184,7 @@ void Setup(std::string_view shadps4_filename) {
 
     for (auto& [name, logger] : ALL_LOGGERS) {
         logger = std::make_shared<spdlog::logger>(std::string(name));
+        logger->set_level(spdlog::level::trace);
     }
 
     // Setup console
@@ -209,7 +210,6 @@ void Setup(std::string_view shadps4_filename) {
     g_shad_file_sink->set_pattern("%^%v%$");
 
     UpdateSinks();
-    UpdateLogLevels(EmulatorSettings.GetLogFilter());
 }
 
 void Switch(std::string_view game_filename) {

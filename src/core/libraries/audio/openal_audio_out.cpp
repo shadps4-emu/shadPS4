@@ -711,7 +711,7 @@ private:
             d[i] = OrbisFloatToS16(s[i]);
         }
     }
-#elif
+#else
     static void ConvertF32ToS16Stereo(const void* src, void* dst, u32 frames, const float*) {
         const float* s = static_cast<const float*>(src);
         s16* d = static_cast<s16*>(dst);
@@ -755,7 +755,7 @@ private:
             d[i] = OrbisFloatToS16(s[i]);
         }
     }
-#elif
+#else
     static void ConvertF32ToS16_8CH(const void* src, void* dst, u32 frames, const float*) {
         const float* s = static_cast<const float*>(src);
         s16* d = static_cast<s16*>(dst);
