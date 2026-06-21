@@ -158,6 +158,9 @@ void BufferCache::ReadEdgeImagePages(const Image& image) {
     // May happen that after downloading the image and invalidating region,
     // that there were GPU modified ranges that are lost due to CPU reuploading.
     // This doesn't change tracker state and it is spected to call DownloadImageMemory after this.
+    if (image.info.guest_address == 0x50158c8000) {
+        LOG_CRITICAL(Render_Vulkan, "test test test");
+    }
     const VAddr image_addr = image.info.guest_address;
     const u64 image_size = image.info.guest_size;
     const VAddr image_end = image_addr + image_size;

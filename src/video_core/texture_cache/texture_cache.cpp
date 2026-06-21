@@ -133,9 +133,29 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     StreamBufferMapping mapping(download_buffer, image_size);
     download_buffer.Commit();
     scheduler.EndRendering();
+
+    if (image_addr == 0x50158c8000) {
+        LOG_CRITICAL(Render_Vulkan, "[gcd] Download with size {}, uid: {}", image_size, image.image_uid);
+    }
+
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
     tile_manager.TileImage(image, buffer_copies, mapping.Buffer()->Handle(), mapping.Offset(),
                            copy_size);
+
+    const vk::BufferMemoryBarrier2 barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
+        .srcAccessMask = vk::AccessFlagBits2::eShaderWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eHost,
+        .dstAccessMask = vk::AccessFlagBits2::eHostRead,
+        .buffer = mapping.Buffer()->Handle(),
+        .offset = mapping.Offset(),
+        .size = copy_size,
+    };
+    scheduler.CommandBuffer().pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &barrier,
+    });
 
     const auto operation = [this, device_addr = image.info.guest_address, download = mapping.Data(),
                             image_size] {
@@ -143,6 +163,10 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
                                                   image_size);
         if constexpr (!priority) {
             buffer_cache.InvalidateMemory(device_addr, image_size, false);
+        }
+
+        if (device_addr == 0x50158c8000) {
+            LOG_CRITICAL(Render_Vulkan, "[gcd] Download complete with size {}", image_size);
         }
     };
 
@@ -529,6 +553,11 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
+    if (info.guest_address == 0x50158c8000) {
+        LOG_CRITICAL(Render_Vulkan, "[gcd] ExpandImage with size {}, uid: {}", info.guest_size,
+                     slot_images[image_id].image_uid);
+    }
+
     const auto new_image_id =
         slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
     RegisterImage(new_image_id);
@@ -543,16 +572,22 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
         src_image.binding.needs_rebind = 1u;
     }
 
-    FreeImage(image_id);
-
+    
     TrackImage(new_image_id);
     new_image.flags &= ~ImageFlagBits::Dirty;
     new_image.flags |= src_image.flags & ImageFlagBits::GpuModified;
+    
+    FreeImage(image_id);
+    
     return new_image_id;
 }
 
 ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     const auto& info = desc.info;
+
+    if (info.guest_address == 0x50158c8000) {
+        LOG_CRITICAL(Render_Vulkan, "[gcd] FindImage with size {}, start", info.guest_size);
+    }
 
     if (info.guest_address == 0) [[unlikely]] {
         return GetNullImage(info.pixel_format);
@@ -634,6 +669,10 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     }
     if (view_slice > 0) {
         desc.view_info.range.base.layer = view_slice;
+    }
+
+    if (info.guest_address == 0x50158c8000) {
+        LOG_CRITICAL(Render_Vulkan, "[gcd] FindImage with size {}, uid: {}", info.guest_size, image.image_uid);
     }
 
     return image_id;
