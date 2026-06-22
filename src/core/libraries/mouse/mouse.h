@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/enum.h"
 #include "common/ring_buffer_queue.h"
 #include "core/libraries/system/userservice.h"
 
@@ -27,6 +28,7 @@ enum class MouseOpenBehaviour : u8 {
     Normal = 0,
     Merged = 1,
 };
+DECLARE_ENUM_FLAG_OPERATORS(MouseOpenBehaviour);
 
 struct OrbisMouseOpenParam {
     MouseOpenBehaviour flag;
