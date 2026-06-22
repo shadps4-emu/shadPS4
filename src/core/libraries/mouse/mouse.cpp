@@ -85,11 +85,12 @@ int PS4_SYSV_ABI sceMouseOpen(Libraries::UserService::OrbisUserServiceUserId use
         LOG_ERROR(Lib_Mouse, "invalid argument");
         return ORBIS_MOUSE_ERROR_INVALID_ARG;
     }
-    if (pParam && True(pParam->flag & MouseOpenBehaviour::Merged) && index != 0) {
+    bool merged_mode = pParam && True(pParam->flag & MouseOpenBehaviour::Merged);
+    if (merged_mode && index != 0) {
         LOG_ERROR(Lib_Mouse, "Only one mouse can be opened in merged mode!");
         return ORBIS_MOUSE_ERROR_ALREADY_OPENED;
     }
-    g_is_merged_mode = pParam && True(pParam->flag & MouseOpenBehaviour::Merged);
+    g_is_merged_mode = merged_mode;
     if (mouse_handles[index] != -1) {
         LOG_ERROR(Lib_Mouse, "already opened");
         return ORBIS_MOUSE_ERROR_ALREADY_OPENED;
