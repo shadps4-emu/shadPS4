@@ -33,8 +33,8 @@ static PS4_SYSV_ABI void ProgramExitFunc() {
     LOG_ERROR(Core_Linker, "Exit function called");
 }
 
-#ifdef ARCH_X86_64
 static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
+#ifdef ARCH_X86_64
     // Start shared library modules
     asm volatile("andq $-16, %%rsp\n" // Align to 16 bytes
                  "subq $8, %%rsp\n"   // videoout_basic expects the stack to be misaligned
@@ -54,8 +54,10 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
                  : "r"(params->entry_addr), "r"(params), "r"(ProgramExitFunc)
                  : "rax", "rsi", "rdi");
     UNREACHABLE();
-}
+#else
+    UNREACHABLE_MSG("RunMainEntry unimplemented for current architecture.");
 #endif
+}
 
 Linker::Linker() : memory{Memory::Instance()} {}
 
@@ -371,7 +373,10 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     }
 
     const auto aeronid = AeroLib::FindByNid(sr.name.c_str());
-    if (aeronid) {
+    if (sym_type == Loader::SymbolType::Object) {
+        return_info->name = aeronid ? aeronid->name : "Unknown object";
+        return_info->virtual_address = 0;
+    } else if (aeronid) {
         return_info->name = aeronid->name;
         return_info->virtual_address = AeroLib::GetStub(aeronid->nid);
     } else {

@@ -133,6 +133,7 @@ void DataBase::Close() {
         mz_zip_writer_end(&zip_ar);
     }
 
+    opened = false;
     LOG_INFO(Render, "Cache dumped");
 }
 

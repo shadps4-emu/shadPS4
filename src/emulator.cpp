@@ -430,6 +430,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     g_window = window.get();
 
+    std::filesystem::path icon_path = mnt->GetHostPath("/app0/sce_sys/icon0.png");
+    window->SetIcon(icon_path);
+
     const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir);
     mnt->Mount(mount_data_dir, "/data");
 
