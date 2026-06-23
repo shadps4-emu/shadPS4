@@ -202,15 +202,18 @@ void BufferCache::BindVertexBuffers(
         }
     }
 
-    // Map buffers for merged ranges; barrier any compute-written buffer for vertex input.
+    // Map buffers for merged ranges
     for (auto& range : ranges_merged) {
         const u64 size = memory->ClampRangeSize(range.base_address, range.GetSize());
         const auto [buffer, offset] = ObtainBuffer(range.base_address, size, false);
         range.vk_buffer = buffer->buffer;
         range.offset = offset;
-        if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eVertexAttributeRead,
-                                              vk::PipelineStageFlagBits2::eVertexAttributeInput)) {
-            barriers.emplace_back(*barrier);
+        if (IsRegionGpuModified(range.base_address, size)) {
+            if (auto barrier =
+                    buffer->GetBarrier(vk::AccessFlagBits2::eVertexAttributeRead,
+                                       vk::PipelineStageFlagBits2::eVertexAttributeInput)) {
+                barriers.emplace_back(*barrier);
+            }
         }
     }
 
@@ -264,9 +267,11 @@ void BufferCache::BindIndexBuffer(
     // Bind index buffer.
     const u32 index_buffer_size = regs.num_indices * index_size;
     const auto [vk_buffer, offset] = ObtainBuffer(index_address, index_buffer_size, false);
-    if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eIndexRead,
-                                             vk::PipelineStageFlagBits2::eIndexInput)) {
-        barriers.emplace_back(*barrier);
+    if (IsRegionGpuModified(index_address, index_buffer_size)) {
+        if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eIndexRead,
+                                                 vk::PipelineStageFlagBits2::eIndexInput)) {
+            barriers.emplace_back(*barrier);
+        }
     }
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindIndexBuffer(vk_buffer->Handle(), offset, index_type);
