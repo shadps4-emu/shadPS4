@@ -24,19 +24,28 @@ NpHandler& NpHandler::GetInstance() {
 
 std::pair<std::string, u16> NpHandler::ParseServerAddress() const {
     const std::string server_str = EmulatorSettings.GetShadNetServer();
-    std::string host = server_str;
     u16 port = 31313; // default port
+    if (server_str.empty()) {
+        LOG_ERROR(NpHandler,
+                  "shadNet server address is empty,set the shadNet server field in settings. "
+                  "Connection will fail.");
+        return {std::string{}, port};
+    }
+    std::string host = server_str;
     const auto colon = server_str.rfind(':');
     if (colon != std::string::npos) {
         host = server_str.substr(0, colon);
+        const std::string port_str = server_str.substr(colon + 1);
         try {
-            port = static_cast<u16>(std::stoi(server_str.substr(colon + 1)));
-        } catch (...) {
+            port = static_cast<u16>(std::stoi(port_str));
+        } catch (const std::exception&) {
+            LOG_WARNING(NpHandler,
+                        "shadNet server port '{}' is not a valid number; using default {}",
+                        port_str, port);
         }
     }
     return {host, port};
 }
-
 bool NpHandler::ConnectUserById(s32 user_id) {
     if (!EmulatorSettings.IsShadNetEnabled())
         return false;
