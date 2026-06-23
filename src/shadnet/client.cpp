@@ -627,9 +627,7 @@ void ShadNetClient::HandleGetTokenReply(const std::vector<u8>& payload) {
     }
     const ErrorType err = static_cast<ErrorType>(payload[0]);
     if (err != ErrorType::NoError) {
-        LOG_WARNING(ShadNet,
-                    "GetToken returned error={} — WebAPI calls will be unauthenticated. "
-                    "(Server build may predate cmd 39.)",
+        LOG_WARNING(ShadNet, "GetToken returned error={} — WebAPI calls will be unauthenticated",
                     static_cast<int>(err));
         m_sem_authenticated.release();
         return;
