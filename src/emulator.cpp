@@ -124,6 +124,21 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
         LOG_WARNING(Common_Filesystem, "No NPCommIDs in npbind.dat");
         return trophy_index_map;
     }
+    auto& game_info = Common::ElfInfo::Instance();
+    game_info.SetNpCommIds(std::move(np_comm_ids));
+
+    printf("NP Comm IDs count: %zu\n", np_comm_ids.size());
+
+    for (size_t i = 0; i < np_comm_ids.size(); i++) {
+        const auto& id = np_comm_ids[i];
+
+        printf("[%zu] len=%zu id=", i, id.size());
+
+        // safe print (handles possible non-null-terminated / binary data)
+        fwrite(id.data(), 1, id.size(), stdout);
+
+        printf("\n");
+    }
 
     if (!std::filesystem::exists(trophy_dir)) {
         LOG_WARNING(Common_Filesystem, "Game does not contain a trophy directory");

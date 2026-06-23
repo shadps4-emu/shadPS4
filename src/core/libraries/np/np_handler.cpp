@@ -560,31 +560,25 @@ void NpHandler::FireStateCallback(s32 user_id, NpManager::OrbisNpState state) {
 std::string NpHandler::GetNpCommId(s32 service_label) const {
     // TODO complete guess of how commid is mapping to service_label.
     constexpr size_t COM_ID_LEN = 12;
-    const auto& ids =
-        Common::ElfInfo::Instance()
-            .GetTrophyIndexMap(); // use the same code we use for trophy index to get the commid
+    const auto& ids = Common::ElfInfo::Instance().GetNpCommIds();
     std::string com_id;
-
     if (!ids.empty()) {
-        auto it = ids.find(service_label);
-
-        if (it != ids.end()) {
-            com_id = it->second;
-        } else {
+        const size_t idx = (service_label >= 0 && static_cast<size_t>(service_label) < ids.size())
+                               ? static_cast<size_t>(service_label)
+                               : 0;
+        com_id = ids[idx];
+        if (static_cast<size_t>(service_label) >= ids.size()) {
             LOG_WARNING(NpHandler,
-                        "GetNpCommId: service_label={} not found, falling back to first entry",
-                        service_label);
-
-            com_id = ids.begin()->second;
+                        "GetNpCommId: service_label={} >= npbind entry count {} — falling back "
+                        "to index 0",
+                        service_label, ids.size());
         }
     }
-
     if (com_id.size() < COM_ID_LEN) {
         com_id.resize(COM_ID_LEN, '\0');
     } else if (com_id.size() > COM_ID_LEN) {
         com_id.resize(COM_ID_LEN);
     }
-
     return com_id;
 }
 
