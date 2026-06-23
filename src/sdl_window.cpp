@@ -289,6 +289,9 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_TOGGLE_SIMPLE_FPS:
         Overlay::ToggleSimpleFps();
         break;
+    case SDL_EVENT_TOGGLE_FRIENDS:
+        ImGui::Friends::Toggle();
+        break;
     case SDL_EVENT_RELOAD_INPUTS:
         Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
         break;
@@ -386,12 +389,6 @@ Uint32 wheelOffCallback(void* og_event, Uint32 timer_id, Uint32 interval) {
 
 void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
     using Libraries::Pad::OrbisPadButtonDataOffset;
-
-    // Global UI hotkey: F2 toggles the shadNet Friends window.
-    if (event->type == SDL_EVENT_KEY_DOWN && !event->key.repeat && event->key.key == SDLK_F2) {
-        ImGui::Friends::Toggle();
-        return;
-    }
 
     // get the event's id, if it's keyup or keydown
     const bool input_down = event->type == SDL_EVENT_KEY_DOWN ||
