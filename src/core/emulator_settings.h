@@ -188,8 +188,6 @@ struct GeneralSettings {
     Setting<std::string> signaling_info{};
     Setting<bool> enable_upnp{true};
 
-    SETTING_FORWARD(m_general, SignalingInfo, signaling_info)
-
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
