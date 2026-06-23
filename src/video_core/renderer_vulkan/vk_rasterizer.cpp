@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+
 #include "common/debug.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
@@ -38,6 +40,13 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
       texture_cache{instance, scheduler, liverpool_, buffer_cache, page_manager},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool} {
+    const vk::QueryPoolCreateInfo query_pool_info = {
+        .queryType = vk::QueryType::eOcclusion,
+        .queryCount = PixelPipeQueryPoolSize,
+    };
+    pixel_pipe_query_pool = Check<"create pixel-pipe occlusion query pool">(
+        instance.GetDevice().createQueryPoolUnique(query_pool_info));
+
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
@@ -57,6 +66,285 @@ void Rasterizer::CpSync() {
     cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
                            vk::PipelineStageFlagBits::eDrawIndirect,
                            vk::DependencyFlagBits::eByRegion, ib_barrier, {}, {});
+}
+
+std::optional<u32> Rasterizer::AcquirePixelPipeQuery() {
+    CollectRetiredPixelPipeQueries(false);
+
+    for (u32 attempt = 0; attempt < PixelPipeQueryPoolSize; ++attempt) {
+        const u32 query = pixel_pipe_query_cursor++ % PixelPipeQueryPoolSize;
+        if (!pixel_pipe_query_in_use[query]) {
+            pixel_pipe_query_in_use[query] = true;
+            return query;
+        }
+    }
+
+    CollectActivePixelPipeQueries(true);
+    ResolvePendingPixelPipeDumps(true, std::nullopt, 0);
+    CollectRetiredPixelPipeQueries(true);
+
+    for (u32 attempt = 0; attempt < PixelPipeQueryPoolSize; ++attempt) {
+        const u32 query = pixel_pipe_query_cursor++ % PixelPipeQueryPoolSize;
+        if (!pixel_pipe_query_in_use[query]) {
+            pixel_pipe_query_in_use[query] = true;
+            return query;
+        }
+    }
+
+    LOG_WARNING(Render_Vulkan,
+                "Pixel-pipe occlusion query pool exhausted; forcing visible sample");
+    ++pixel_pipe_sample_counter;
+    return std::nullopt;
+}
+
+std::optional<u32> Rasterizer::BeginPixelPipeQuery() {
+    if (!pixel_pipe_stats_enabled || !pixel_pipe_query_pool) {
+        return std::nullopt;
+    }
+
+    const auto query = AcquirePixelPipeQuery();
+    if (!query) {
+        return std::nullopt;
+    }
+
+    if (instance.IsHostQueryResetSupported()) {
+        // vkCmdResetQueryPool is invalid while dynamic rendering is active. The rasterizer keeps
+        // rendering open across consecutive draws, so reset query slots on the host when supported.
+        instance.GetDevice().resetQueryPool(*pixel_pipe_query_pool, *query, 1);
+    } else {
+        scheduler.EndRendering();
+        scheduler.CommandBuffer().resetQueryPool(*pixel_pipe_query_pool, *query, 1);
+    }
+    return query;
+}
+
+void Rasterizer::EndPixelPipeQuery(std::optional<u32> query) {
+    if (!query) {
+        return;
+    }
+    scheduler.CommandBuffer().endQuery(*pixel_pipe_query_pool, *query);
+    active_pixel_pipe_queries.emplace_back(*query);
+}
+
+void Rasterizer::CollectActivePixelPipeQueries(bool wait) {
+    if (active_pixel_pipe_queries.empty()) {
+        return;
+    }
+
+    scheduler.PopPendingOperations();
+    if (wait) {
+        scheduler.Finish();
+    }
+
+    auto device = instance.GetDevice();
+    for (auto it = active_pixel_pipe_queries.begin(); it != active_pixel_pipe_queries.end();) {
+        u64 result{};
+        const auto vk_result = device.getQueryPoolResults(
+            *pixel_pipe_query_pool, *it, 1, sizeof(result), &result, sizeof(result),
+            vk::QueryResultFlagBits::e64);
+        if (vk_result == vk::Result::eSuccess) {
+            pixel_pipe_sample_counter += result;
+            pixel_pipe_query_in_use[*it] = false;
+            it = active_pixel_pipe_queries.erase(it);
+            continue;
+        }
+        if (vk_result == vk::Result::eNotReady && !wait) {
+            ++it;
+            continue;
+        }
+        LOG_WARNING(Render_Vulkan, "Failed to read active pixel-pipe query: {}",
+                    vk::to_string(vk_result));
+        pixel_pipe_query_in_use[*it] = false;
+        it = active_pixel_pipe_queries.erase(it);
+    }
+}
+
+void Rasterizer::CollectRetiredPixelPipeQueries(bool wait) {
+    if (retired_pixel_pipe_queries.empty()) {
+        return;
+    }
+
+    scheduler.PopPendingOperations();
+    if (wait) {
+        scheduler.Finish();
+    }
+
+    auto device = instance.GetDevice();
+    for (auto it = retired_pixel_pipe_queries.begin(); it != retired_pixel_pipe_queries.end();) {
+        u64 result{};
+        const auto vk_result = device.getQueryPoolResults(
+            *pixel_pipe_query_pool, *it, 1, sizeof(result), &result, sizeof(result),
+            vk::QueryResultFlagBits::e64);
+        if (vk_result == vk::Result::eSuccess) {
+            pixel_pipe_query_in_use[*it] = false;
+            it = retired_pixel_pipe_queries.erase(it);
+            continue;
+        }
+        if (vk_result == vk::Result::eNotReady) {
+            ++it;
+            continue;
+        }
+        LOG_WARNING(Render_Vulkan, "Failed to retire pixel-pipe query: {}",
+                    vk::to_string(vk_result));
+        pixel_pipe_query_in_use[*it] = false;
+        it = retired_pixel_pipe_queries.erase(it);
+    }
+}
+
+bool Rasterizer::TryResolvePixelPipeDump(PixelPipeStatsDump& dump) {
+    if (dump.resolved) {
+        return true;
+    }
+
+    auto device = instance.GetDevice();
+    u64 resolved_samples = 0;
+    for (auto it = dump.queries.begin(); it != dump.queries.end();) {
+        u64 result{};
+        const auto vk_result = device.getQueryPoolResults(
+            *pixel_pipe_query_pool, *it, 1, sizeof(result), &result, sizeof(result),
+            vk::QueryResultFlagBits::e64);
+        if (vk_result == vk::Result::eSuccess) {
+            resolved_samples += result;
+            pixel_pipe_query_in_use[*it] = false;
+            it = dump.queries.erase(it);
+            continue;
+        }
+        if (vk_result == vk::Result::eNotReady) {
+            ++it;
+            continue;
+        }
+        LOG_WARNING(Render_Vulkan, "Failed to read pixel-pipe dump query: {}",
+                    vk::to_string(vk_result));
+        pixel_pipe_query_in_use[*it] = false;
+        it = dump.queries.erase(it);
+    }
+
+    dump.base_samples += resolved_samples;
+    if (!dump.queries.empty()) {
+        return false;
+    }
+
+    // If this dump was queued behind an older unresolved dump, its baseline is the
+    // cumulative counter at the time the older dumps resolve.  The samples produced
+    // by this dump's own queries must still be added on top of that deferred baseline.
+    const u64 samples = dump.defer_base_samples
+                            ? pixel_pipe_sample_counter + dump.base_samples
+                            : dump.base_samples;
+    pixel_pipe_sample_counter = std::max(pixel_pipe_sample_counter, samples);
+    WritePixelPipeStats(dump.address, dump.num_counter_pairs, samples);
+    dump.resolved = true;
+    return true;
+}
+
+bool Rasterizer::ResolvePendingPixelPipeDumps(bool wait, std::optional<VAddr> address, u64 size) {
+    scheduler.PopPendingOperations();
+
+    const VAddr end = address ? *address + size : 0;
+    const auto matches = [&](const PixelPipeStatsDump& dump) {
+        return !address || (dump.address >= *address && dump.address < end);
+    };
+
+    auto erase_resolved = [&] {
+        std::erase_if(pending_pixel_pipe_dumps, [](const PixelPipeStatsDump& dump) {
+            return dump.resolved;
+        });
+    };
+
+    auto resolve_until = [&](size_t count) {
+        bool blocked = false;
+        for (size_t i = 0; i < count && i < pending_pixel_pipe_dumps.size(); ++i) {
+            if (!TryResolvePixelPipeDump(pending_pixel_pipe_dumps[i])) {
+                blocked = true;
+                break;
+            }
+        }
+        erase_resolved();
+        return !blocked;
+    };
+
+    size_t required_count = pending_pixel_pipe_dumps.size();
+    if (address) {
+        required_count = 0;
+        for (size_t i = 0; i < pending_pixel_pipe_dumps.size(); ++i) {
+            if (matches(pending_pixel_pipe_dumps[i])) {
+                required_count = i + 1;
+            }
+        }
+    }
+
+    if (required_count == 0) {
+        return true;
+    }
+
+    if (resolve_until(required_count)) {
+        return true;
+    }
+    if (!wait) {
+        return false;
+    }
+
+    scheduler.Finish();
+    // A blocking wait means everything submitted so far is complete. Resolve the whole pending
+    // list in order so consecutive SET_PREDICATION packets do not perform one CPU/GPU sync per
+    // object.
+    return resolve_until(pending_pixel_pipe_dumps.size());
+}
+
+void Rasterizer::WritePixelPipeStats(VAddr address, u32 num_counter_pairs, u64 samples) {
+    static constexpr u64 OcclusionCounterValidMask = 0x8000000000000000ULL;
+    const u64 counter = samples | OcclusionCounterValidMask;
+    auto* memory = Core::Memory::Instance();
+    const u64 result_size = u64(num_counter_pairs) * sizeof(u64) * 2;
+    if (!memory->IsValidMapping(address, result_size)) {
+        LOG_WARNING(Render_Vulkan, "Pixel-pipe stats writeback address is invalid: {:#x}",
+                    address);
+        return;
+    }
+
+    for (u32 i = 0; i < num_counter_pairs; ++i) {
+        auto* dst = reinterpret_cast<void*>(address + i * sizeof(u64) * 2);
+        if (!memory->TryWriteBacking(dst, &counter, sizeof(counter))) {
+            std::memcpy(dst, &counter, sizeof(counter));
+        }
+    }
+}
+
+void Rasterizer::ControlPixelPipeStats() {
+    pixel_pipe_stats_enabled = !pixel_pipe_stats_enabled;
+}
+
+void Rasterizer::ResetPixelPipeStats() {
+    ResolvePendingPixelPipeDumps(true, std::nullopt, 0);
+    retired_pixel_pipe_queries.insert(retired_pixel_pipe_queries.end(),
+                                      active_pixel_pipe_queries.begin(),
+                                      active_pixel_pipe_queries.end());
+    active_pixel_pipe_queries.clear();
+    pixel_pipe_sample_counter = 0;
+}
+
+void Rasterizer::DumpPixelPipeStats(VAddr address, u32 num_counter_pairs) {
+    if (address == 0 || num_counter_pairs == 0) {
+        return;
+    }
+
+    if (active_pixel_pipe_queries.empty() && pending_pixel_pipe_dumps.empty()) {
+        WritePixelPipeStats(address, num_counter_pairs, pixel_pipe_sample_counter);
+        return;
+    }
+
+    const bool defer_base_samples = !pending_pixel_pipe_dumps.empty();
+
+    auto& dump = pending_pixel_pipe_dumps.emplace_back();
+    dump.address = address;
+    dump.num_counter_pairs = num_counter_pairs;
+    dump.defer_base_samples = defer_base_samples;
+    dump.base_samples = defer_base_samples ? 0 : pixel_pipe_sample_counter;
+    dump.queries = std::move(active_pixel_pipe_queries);
+    active_pixel_pipe_queries.clear();
+}
+
+bool Rasterizer::ResolvePixelPipeStats(VAddr address, u64 size, bool wait) {
+    return ResolvePendingPixelPipeDumps(wait, address, size);
 }
 
 bool Rasterizer::FilterDraw() {
@@ -213,6 +501,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
     UpdateDynamicState(pipeline, is_indexed);
+    const auto pixel_pipe_query = BeginPixelPipeQuery();
     scheduler.BeginRendering(state);
 
     const auto& vs_info = pipeline->GetStage(Shader::LogicalStage::Vertex);
@@ -221,6 +510,9 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
+    if (pixel_pipe_query) {
+        cmdbuf.beginQuery(*pixel_pipe_query_pool, *pixel_pipe_query, {});
+    }
 
     if (is_indexed) {
         cmdbuf.drawIndexed(regs.num_indices, regs.num_instances.NumInstances(), 0,
@@ -230,6 +522,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
                     instance_offset);
     }
 
+    EndPixelPipeQuery(pixel_pipe_query);
     ResetBindings();
 }
 
@@ -281,6 +574,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
     UpdateDynamicState(pipeline, is_indexed);
+    const auto pixel_pipe_query = BeginPixelPipeQuery();
     scheduler.BeginRendering(state);
 
     // We can safely ignore both SGPR UD indices and results of fetch shader parsing, as vertex and
@@ -288,6 +582,9 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
+    if (pixel_pipe_query) {
+        cmdbuf.beginQuery(*pixel_pipe_query_pool, *pixel_pipe_query, {});
+    }
 
     if (is_indexed) {
         ASSERT(sizeof(VkDrawIndexedIndirectCommand) == stride);
@@ -309,6 +606,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         }
     }
 
+    EndPixelPipeQuery(pixel_pipe_query);
     ResetBindings();
 }
 

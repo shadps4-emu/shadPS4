@@ -1215,9 +1215,47 @@ struct PM4CmdCondExec {
                                          ///< if bool pointed to is zero
     };
 
-    bool* Address() const {
-        return std::bit_cast<bool*>(u64(bool_addr_hi.Value()) << 32 | u64(bool_addr_lo.Value())
-                                                                          << 2);
+    VAddr Address() const {
+        return (u64(bool_addr_hi.Value()) << 32) | (u64(bool_addr_lo.Value()) << 2);
+    }
+};
+
+struct PM4CmdPredExec {
+    PM4Type3Header header;
+    union {
+        u32 control;
+        BitField<0, 14, u32> exec_count; ///< Number of following DWords controlled by predicate.
+        BitField<24, 8, u32> device_select;
+    };
+};
+
+enum class PredicationOp : u32 {
+    Clear = 0,
+    Zpass = 1,
+    PrimCount = 2,
+    Bool64 = 3,
+    Bool32 = 4,
+};
+
+enum class PredicationHint : u32 {
+    Wait = 0,
+    NowaitDraw = 1,
+};
+
+struct PM4CmdSetPredication {
+    PM4Type3Header header;
+    u32 start_addr_lo;
+    union {
+        u32 pred_properties;
+        BitField<0, 8, u32> start_addr_hi;
+        BitField<8, 1, u32> draw_visible;
+        BitField<12, 2, PredicationHint> hint;
+        BitField<16, 3, PredicationOp> pred_op;
+        BitField<31, 1, u32> continue_predication;
+    };
+
+    VAddr Address() const {
+        return (u64(start_addr_hi.Value()) << 32) | (u64(start_addr_lo) & 0xfffffff0ULL);
     }
 };
 

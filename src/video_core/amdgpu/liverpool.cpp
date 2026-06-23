@@ -65,6 +65,149 @@ static std::span<const u32> NextPacket(std::span<const u32> span, size_t offset)
     return span.subspan(offset);
 }
 
+Liverpool::PredicateReadResult Liverpool::ReadZpassPredicate(VAddr address, bool nowait_draw) {
+    static constexpr u64 OcclusionCounterValidMask = 0x8000000000000000ULL;
+    static constexpr u64 OcclusionCounterValueMask = ~OcclusionCounterValidMask;
+
+    if (address == 0) {
+        return {.value = true, .fail_open = true};
+    }
+
+    const u64 result_size = u64(num_counter_pairs) * sizeof(u64) * 2;
+
+    if (rasterizer) {
+        const bool resolved = rasterizer->ResolvePixelPipeStats(address, result_size, !nowait_draw);
+        if (!resolved) {
+            if (!nowait_draw) {
+                LOG_WARNING(Render, "IT_SET_PREDICATION: ZPASS result was not resolved");
+            }
+            return {.value = true, .fail_open = true};
+        }
+    }
+
+    auto* memory = Core::Memory::Instance();
+    if (!memory->IsValidMapping(address, result_size)) {
+        LOG_WARNING(Render, "IT_SET_PREDICATION: invalid ZPASS address {:#x}", address);
+        // Execute rather than hide draws on an emulator-side mapping failure.
+        return {.value = true, .fail_open = true};
+    }
+
+    const auto* results = reinterpret_cast<const u64*>(address);
+    bool visible = false;
+    bool all_valid = true;
+    for (u32 i = 0; i < num_counter_pairs; ++i) {
+        const u64 begin = results[i * 2];
+        const u64 end = results[i * 2 + 1];
+        const bool begin_valid = (begin & OcclusionCounterValidMask) != 0;
+        const bool end_valid = (end & OcclusionCounterValidMask) != 0;
+        if (!begin_valid || !end_valid) {
+            all_valid = false;
+            continue;
+        }
+
+        const u64 begin_count = begin & OcclusionCounterValueMask;
+        const u64 end_count = end & OcclusionCounterValueMask;
+        visible |= end_count != begin_count;
+    }
+
+    if (!all_valid) {
+        return {.value = true, .fail_open = true};
+    }
+
+    return {.value = visible};
+}
+
+Liverpool::PredicateReadResult Liverpool::ReadBoolPredicate(VAddr address, u32 width_bytes) {
+    if (address == 0) {
+        return {.value = true, .fail_open = true};
+    }
+
+    if (width_bytes != sizeof(u32) && width_bytes != sizeof(u64)) {
+        UNREACHABLE_MSG("Unsupported boolean predication width {}", width_bytes);
+    }
+
+    auto* memory = Core::Memory::Instance();
+    if (!memory->IsValidMapping(address, width_bytes)) {
+        LOG_WARNING(Render, "IT_SET_PREDICATION: invalid BOOL{} address {:#x}", width_bytes * 8,
+                    address);
+        // Execute rather than hide draws on an emulator-side mapping failure.
+        return {.value = true, .fail_open = true};
+    }
+
+    if (width_bytes == sizeof(u32)) {
+        return {.value = *reinterpret_cast<const u32*>(address) != 0};
+    }
+    return {.value = *reinterpret_cast<const u64*>(address) != 0};
+}
+
+bool Liverpool::IsPredicatedPacketEnabled() const {
+    if (!predication.enabled) {
+        return true;
+    }
+
+    bool predicate = true;
+    switch (predication.op) {
+    case PredicationOp::Clear:
+        predicate = true;
+        break;
+    case PredicationOp::Zpass:
+    case PredicationOp::Bool64:
+    case PredicationOp::Bool32:
+        predicate = predication.result;
+        break;
+    case PredicationOp::PrimCount:
+        // PRIMCOUNT predication is not implemented yet. Keep this path fail-open so an
+        // unsupported predicate cannot incorrectly hide draws.
+        predicate = true;
+        break;
+    default:
+        LOG_WARNING(Render, "Unknown IT_SET_PREDICATION op {}",
+                    static_cast<u32>(predication.op));
+        predicate = true;
+        break;
+    }
+
+    return predication.draw_visible ? predicate : !predicate;
+}
+
+bool Liverpool::ShouldExecutePredicatedPacket(const PM4Header* header, bool is_compute) {
+    if (header->type3.predicate != PM4Predicate::PredEnable) {
+        return true;
+    }
+
+    ++predication_stats.predicated_packets_checked;
+    const bool enabled = IsPredicatedPacketEnabled();
+    if (enabled) {
+        ++predication_stats.predicated_packets_executed;
+    } else {
+        ++predication_stats.predicated_packets_skipped;
+    }
+    return enabled;
+}
+
+void Liverpool::LogPredicationSummary(const char* queue_name) {
+    if (!predication_stats.HasWork()) {
+        return;
+    }
+
+    LOG_DEBUG(Render,
+              "PM4 predication [{}]: set(clear={}, zpass={}, bool32={}, bool64={}, primcount={}), "
+              "zpass(visible={}, occluded={}, fail_open={}), bool(true={}, false={}, "
+              "fail_open={}), packets(checked={}, executed={}, skipped={}), pred_exec(executed={}, "
+              "skipped={}), cond_exec(executed={}, skipped={})",
+              queue_name, predication_stats.clear, predication_stats.zpass,
+              predication_stats.bool32, predication_stats.bool64, predication_stats.prim_count,
+              predication_stats.zpass_visible, predication_stats.zpass_occluded,
+              predication_stats.zpass_fail_open, predication_stats.bool_true,
+              predication_stats.bool_false, predication_stats.bool_fail_open,
+              predication_stats.predicated_packets_checked,
+              predication_stats.predicated_packets_executed,
+              predication_stats.predicated_packets_skipped, predication_stats.pred_exec_executed,
+              predication_stats.pred_exec_skipped, predication_stats.cond_exec_executed,
+              predication_stats.cond_exec_skipped);
+    predication_stats = {};
+}
+
 Liverpool::Liverpool() {
     num_counter_pairs = Libraries::Kernel::sceKernelIsNeoMode() ? 16 : 8;
     process_thread = std::jthread{std::bind_front(&Liverpool::Process, this)};
@@ -254,6 +397,18 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         case 3:
             const u32 count = header->type3.NumWords();
             const PM4ItOpcode opcode = header->type3.opcode;
+
+            if (!ShouldExecutePredicatedPacket(header, false)) {
+                u32 skip_count = count + 1;
+                if (opcode == PM4ItOpcode::PredExec) {
+                    const auto* pred_exec = reinterpret_cast<const PM4CmdPredExec*>(header);
+                    skip_count += pred_exec->exec_count.Value();
+                    ++predication_stats.pred_exec_skipped;
+                }
+                dcb = NextPacket(dcb, skip_count);
+                continue;
+            }
+
             switch (opcode) {
             case PM4ItOpcode::Nop: {
                 const auto* nop = reinterpret_cast<const PM4CmdNop*>(header);
@@ -409,7 +564,77 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::SetPredication: {
-                LOG_WARNING(Render, "Unimplemented IT_SET_PREDICATION");
+                const auto* set_pred = reinterpret_cast<const PM4CmdSetPredication*>(header);
+                const auto pred_op = set_pred->pred_op.Value();
+                switch (pred_op) {
+                case PredicationOp::Clear:
+                    ++predication_stats.clear;
+                    predication = {};
+                    break;
+                case PredicationOp::Zpass: {
+                    const bool nowait_draw = set_pred->hint.Value() == PredicationHint::NowaitDraw;
+                    const auto zpass = ReadZpassPredicate(set_pred->Address(), nowait_draw);
+                    ++predication_stats.zpass;
+                    if (zpass.fail_open) {
+                        ++predication_stats.zpass_fail_open;
+                    } else if (zpass.value) {
+                        ++predication_stats.zpass_visible;
+                    } else {
+                        ++predication_stats.zpass_occluded;
+                    }
+                    predication.enabled = true;
+                    predication.op = PredicationOp::Zpass;
+                    predication.address = set_pred->Address();
+                    predication.draw_visible = set_pred->draw_visible.Value() != 0;
+                    predication.nowait_draw = nowait_draw;
+                    predication.result = set_pred->continue_predication.Value() != 0
+                                             ? predication.result || zpass.value
+                                             : zpass.value;
+                    break;
+                }
+                case PredicationOp::Bool64:
+                case PredicationOp::Bool32: {
+                    const bool nowait_draw = set_pred->hint.Value() == PredicationHint::NowaitDraw;
+                    const u32 width = pred_op == PredicationOp::Bool64 ? sizeof(u64) : sizeof(u32);
+                    const auto boolean = ReadBoolPredicate(set_pred->Address(), width);
+                    if (pred_op == PredicationOp::Bool64) {
+                        ++predication_stats.bool64;
+                    } else {
+                        ++predication_stats.bool32;
+                    }
+                    if (boolean.fail_open) {
+                        ++predication_stats.bool_fail_open;
+                    } else if (boolean.value) {
+                        ++predication_stats.bool_true;
+                    } else {
+                        ++predication_stats.bool_false;
+                    }
+                    predication.enabled = true;
+                    predication.op = pred_op;
+                    predication.address = set_pred->Address();
+                    predication.draw_visible = set_pred->draw_visible.Value() != 0;
+                    predication.nowait_draw = nowait_draw;
+                    predication.result = set_pred->continue_predication.Value() != 0
+                                             ? predication.result || boolean.value
+                                             : boolean.value;
+                    break;
+                }
+                case PredicationOp::PrimCount:
+                    ++predication_stats.prim_count;
+                    predication.enabled = true;
+                    predication.op = PredicationOp::PrimCount;
+                    predication.address = set_pred->Address();
+                    predication.draw_visible = set_pred->draw_visible.Value() != 0;
+                    predication.nowait_draw =
+                        set_pred->hint.Value() == PredicationHint::NowaitDraw;
+                    LOG_WARNING(Render, "Unimplemented IT_SET_PREDICATION PRIMCOUNT addr={:#x}",
+                                predication.address);
+                    break;
+                default:
+                    LOG_WARNING(Render, "Unknown IT_SET_PREDICATION op {}",
+                                static_cast<u32>(pred_op));
+                    break;
+                }
                 break;
             }
             case PM4ItOpcode::IndexType: {
@@ -676,15 +901,36 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     // TODO: handle proper synchronization, for now signal that update is done
                     // immediately
                     regs.cp_strmout_cntl.offset_update_done = 1;
-                } else if (event->event_index.Value() == EventIndex::ZpassDone) {
-                    if (event->event_type.Value() == EventType::PixelPipeStatDump) {
+                } else if (event->event_type.Value() == EventType::PixelPipeStatReset) {
+                    if (rasterizer) {
+                        rasterizer->ResetPixelPipeStats();
+                    }
+                } else if (event->event_type.Value() == EventType::PixelPipeStatControl) {
+                    if (rasterizer) {
+                        rasterizer->ControlPixelPipeStats();
+                    }
+                } else if (event->event_index.Value() == EventIndex::ZpassDone &&
+                           event->event_type.Value() == EventType::PixelPipeStatDump) {
+                    const VAddr address = event->Address<VAddr>();
+                    if (rasterizer) {
+                        rasterizer->DumpPixelPipeStats(address, num_counter_pairs);
+                    } else {
                         static constexpr u64 OcclusionCounterValidMask = 0x8000000000000000ULL;
-                        static constexpr u64 OcclusionCounterStep = 0x2FFFFFFULL;
-                        u64* results = event->Address<u64*>();
-                        for (s32 i = 0; i < num_counter_pairs; ++i, results += 2) {
-                            *results = pixel_counter | OcclusionCounterValidMask;
+                        const u64 counter = OcclusionCounterValidMask;
+                        auto* memory = Core::Memory::Instance();
+                        const u64 result_size = u64(num_counter_pairs) * sizeof(u64) * 2;
+                        if (!memory->IsValidMapping(address, result_size)) {
+                            LOG_WARNING(Render,
+                                        "Pixel-pipe stats writeback address is invalid: {:#x}",
+                                        address);
+                            break;
                         }
-                        pixel_counter += OcclusionCounterStep;
+                        for (u32 i = 0; i < num_counter_pairs; ++i) {
+                            auto* dst = reinterpret_cast<void*>(address + i * sizeof(u64) * 2);
+                            if (!memory->TryWriteBacking(dst, &counter, sizeof(counter))) {
+                                std::memcpy(dst, &counter, sizeof(counter));
+                            }
+                        }
                     }
                 }
                 break;
@@ -863,17 +1109,39 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 LOG_WARNING(Render_Vulkan, "Unimplemented IT_GET_LOD_STATS");
                 break;
             }
+            case PM4ItOpcode::PredExec: {
+                const auto* pred_exec = reinterpret_cast<const PM4CmdPredExec*>(header);
+                if (!IsPredicatedPacketEnabled()) {
+                    ++predication_stats.pred_exec_skipped;
+                    dcb = NextPacket(dcb, header->type3.NumWords() + 1 +
+                                              pred_exec->exec_count.Value());
+                    continue;
+                }
+                ++predication_stats.pred_exec_executed;
+                break;
+            }
             case PM4ItOpcode::CondExec: {
                 const auto* cond_exec = reinterpret_cast<const PM4CmdCondExec*>(header);
                 if (cond_exec->command.Value() != 0) {
                     LOG_WARNING(Render, "IT_COND_EXEC used a reserved command");
                 }
-                const auto skip = *cond_exec->Address() == false;
+
+                const VAddr address = cond_exec->Address();
+                bool skip = false;
+                auto* memory = Core::Memory::Instance();
+                if (address != 0 && memory->IsValidMapping(address, sizeof(u32))) {
+                    skip = *reinterpret_cast<const u32*>(address) == 0;
+                } else {
+                    LOG_WARNING(Render, "IT_COND_EXEC: invalid BOOL32 address {:#x}", address);
+                }
+
                 if (skip) {
+                    ++predication_stats.cond_exec_skipped;
                     dcb = NextPacket(dcb,
                                      header->type3.NumWords() + 1 + cond_exec->exec_count.Value());
                     continue;
                 }
+                ++predication_stats.cond_exec_executed;
                 break;
             }
             default:
@@ -892,6 +1160,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         ce_task.handle.destroy();
     }
 
+    LogPredicationSummary("graphics");
     FIBER_EXIT;
 }
 
@@ -952,6 +1221,20 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         }
 
         const PM4ItOpcode opcode = header->type3.opcode;
+
+        if (!ShouldExecutePredicatedPacket(header, true)) {
+            if (opcode == PM4ItOpcode::PredExec) {
+                const auto* pred_exec = reinterpret_cast<const PM4CmdPredExec*>(header);
+                next_dw_off += pred_exec->exec_count.Value();
+                ++predication_stats.pred_exec_skipped;
+            }
+            acb = NextPacket(acb, next_dw_off);
+            if constexpr (!is_indirect) {
+                *queue.read_addr += next_dw_off;
+                *queue.read_addr %= queue.ring_size_dw;
+            }
+            continue;
+        }
 
         const auto* it_body = reinterpret_cast<const u32*>(header) + 1;
         switch (opcode) {
@@ -1049,6 +1332,38 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             const auto* set_data = reinterpret_cast<const PM4CmdSetQueueReg*>(header);
             LOG_WARNING(Render, "Encountered compute SetQueueReg: vqid = {}, reg_offset = {:#x}",
                         set_data->vqid.Value(), set_data->reg_offset.Value());
+            break;
+        }
+        case PM4ItOpcode::PredExec: {
+            const auto* pred_exec = reinterpret_cast<const PM4CmdPredExec*>(header);
+            if (!IsPredicatedPacketEnabled()) {
+                next_dw_off += pred_exec->exec_count.Value();
+                ++predication_stats.pred_exec_skipped;
+            } else {
+                ++predication_stats.pred_exec_executed;
+            }
+            break;
+        }
+        case PM4ItOpcode::CondExec: {
+            const auto* cond_exec = reinterpret_cast<const PM4CmdCondExec*>(header);
+            if (cond_exec->command.Value() != 0) {
+                LOG_WARNING(Render, "Compute IT_COND_EXEC used a reserved command");
+            }
+
+            const VAddr address = cond_exec->Address();
+            bool skip = false;
+            auto* memory = Core::Memory::Instance();
+            if (address != 0 && memory->IsValidMapping(address, sizeof(u32))) {
+                skip = *reinterpret_cast<const u32*>(address) == 0;
+            } else {
+                LOG_WARNING(Render, "Compute IT_COND_EXEC: invalid BOOL32 address {:#x}", address);
+            }
+            if (skip) {
+                next_dw_off += cond_exec->exec_count.Value();
+                ++predication_stats.cond_exec_skipped;
+            } else {
+                ++predication_stats.cond_exec_executed;
+            }
             break;
         }
         case PM4ItOpcode::DispatchDirect: {
@@ -1163,6 +1478,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         }
     }
 
+    LogPredicationSummary(is_indirect ? "compute_ib" : "compute");
     FIBER_EXIT;
 }
 
