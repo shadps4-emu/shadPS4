@@ -185,8 +185,10 @@ struct GeneralSettings {
     Setting<int> big_picture_scale{1000};
     Setting<std::string> shadnet_server{"srv.shadps4.net:31313"};
     Setting<std::string> shadnet_webapi_server{"http://srv.shadps4.net:31315"};
-    Setting<std::string> shadnet_signaling_server{"srv.shadps4.net:31314"};
+    Setting<std::string> signaling_info{};
     Setting<bool> enable_upnp{true};
+
+    SETTING_FORWARD(m_general, SignalingInfo, signaling_info)
 
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
@@ -603,7 +605,7 @@ public:
     SETTING_FORWARD(m_general, BigPictureScale, big_picture_scale)
     SETTING_FORWARD(m_general, ShadNetServer, shadnet_server)
     SETTING_FORWARD(m_general, ShadNetWebApiServer, shadnet_webapi_server)
-    SETTING_FORWARD(m_general, ShadNetSignalingServer, shadnet_signaling_server)
+    SETTING_FORWARD(m_general, SignalingInfo, signaling_info)
     SETTING_FORWARD_BOOL(m_general, UPnPEnabled, enable_upnp)
 
     // Log settings
