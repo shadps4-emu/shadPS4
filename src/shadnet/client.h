@@ -61,7 +61,17 @@ enum class CommandType : u16 {
     RemoveFriend = 9,
     AddBlock = 10,
     RemoveBlock = 11,
-    // 12–29: room/lobby/ticket NOT implemented in shadNet
+    // Matchmaking
+    RegisterHandlers = 12,
+    CreateRoom = 13,
+    JoinRoom = 14,
+    LeaveRoom = 15,
+    GetRoomList = 16,
+    RequestSignalingInfos = 17,
+    SetRoomDataInternal = 20,
+    SetRoomDataExternal = 21,
+    KickoutRoomMember = 22,
+    // 23-29 reserved for future matchmaking commands
     GetBoardInfos = 30,
     RecordScore = 31,
     RecordScoreData = 32,
