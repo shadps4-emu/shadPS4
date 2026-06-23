@@ -102,8 +102,6 @@ std::vector<std::string> NPBindFile::GetNpCommIds() const {
     npcommids.reserve(m_bodies.size());
 
     for (const auto& body : m_bodies) {
-        printf("type=%04X size=%u data_size=%zu\n", body.npcommid.type, body.npcommid.size,
-               body.npcommid.data.size());
         // Convert binary data to string directly
         if (!body.npcommid.data.empty()) {
             std::string raw_string(reinterpret_cast<const char*>(body.npcommid.data.data()),

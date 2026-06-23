@@ -150,7 +150,7 @@ public:
         return trophy_index_map;
     }
 
-    [[nodiscard]] const std::vector<std::string> GetNpCommIds() const {
+    [[nodiscard]] const std::vector<std::string>& GetNpCommIds() const {
         return npCommIds;
     }
 
