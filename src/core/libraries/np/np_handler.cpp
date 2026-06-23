@@ -623,10 +623,8 @@ s32 NpHandler::RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId
     const std::string proto_bytes = proto.SerializeAsString();
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
-        LOG_ERROR(NpHandler,
-                  "{}: no valid NP Communication ID (npbind.dat missing or blank); "
-                  "rejecting request",
-                  __func__);
+        LOG_ERROR(NpHandler, "no valid NP Communication ID (npbind.dat missing or blank); "
+                             "rejecting request");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
@@ -682,10 +680,8 @@ s32 NpHandler::RecordGameData(s32 user_id, s32 service_label, u32 boardId, s32 p
     const std::string proto_bytes = proto.SerializeAsString();
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
-        LOG_ERROR(NpHandler,
-                  "{}: no valid NP Communication ID (npbind.dat missing or blank); "
-                  "rejecting request",
-                  __func__);
+        LOG_ERROR(NpHandler, "no valid NP Communication ID (npbind.dat missing or blank); "
+                             "rejecting request");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
@@ -743,10 +739,8 @@ s32 NpHandler::GetGameData(s32 user_id, s32 service_label, u32 boardId, const st
     const std::string proto_bytes = proto.SerializeAsString();
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
-        LOG_ERROR(NpHandler,
-                  "{}: no valid NP Communication ID (npbind.dat missing or blank); "
-                  "rejecting request",
-                  __func__);
+        LOG_ERROR(NpHandler, "no valid NP Communication ID (npbind.dat missing or blank); "
+                             "rejecting request");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
@@ -804,10 +798,8 @@ s32 NpHandler::GetGameDataByAccountId(s32 user_id, s32 service_label, u32 boardI
     const std::string proto_bytes = proto.SerializeAsString();
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
-        LOG_ERROR(NpHandler,
-                  "{}: no valid NP Communication ID (npbind.dat missing or blank); "
-                  "rejecting request",
-                  __func__);
+        LOG_ERROR(NpHandler, "no valid NP Communication ID (npbind.dat missing or blank); "
+                             "rejecting request");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
@@ -860,10 +852,8 @@ s32 NpHandler::GetBoardInfo(s32 user_id, s32 service_label, u32 boardId,
 
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
-        LOG_ERROR(NpHandler,
-                  "{}: no valid NP Communication ID (npbind.dat missing or blank); "
-                  "rejecting request",
-                  __func__);
+        LOG_ERROR(NpHandler, "no valid NP Communication ID (npbind.dat missing or blank); "
+                             "rejecting request");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
     std::vector<u8> payload;
@@ -932,10 +922,8 @@ s32 NpHandler::GetRankingByNpId(s32 user_id, s32 service_label, u32 boardId,
     const std::string proto_bytes = proto.SerializeAsString();
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
-        LOG_ERROR(NpHandler,
-                  "{}: no valid NP Communication ID (npbind.dat missing or blank); "
-                  "rejecting request",
-                  __func__);
+        LOG_ERROR(NpHandler, "no valid NP Communication ID (npbind.dat missing or blank); "
+                             "rejecting request");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
@@ -1003,10 +991,8 @@ s32 NpHandler::GetRankingByRange(s32 user_id, s32 service_label, u32 boardId, u3
     const std::string proto_bytes = proto.SerializeAsString();
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
-        LOG_ERROR(NpHandler,
-                  "{}: no valid NP Communication ID (npbind.dat missing or blank); "
-                  "rejecting request",
-                  __func__);
+        LOG_ERROR(NpHandler, "no valid NP Communication ID (npbind.dat missing or blank); "
+                             "rejecting request");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
@@ -1073,10 +1059,8 @@ s32 NpHandler::GetRankingByRangeA(s32 user_id, s32 service_label, u32 boardId, u
     const std::string proto_bytes = proto.SerializeAsString();
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
-        LOG_ERROR(NpHandler,
-                  "{}: no valid NP Communication ID (npbind.dat missing or blank); "
-                  "rejecting request",
-                  __func__);
+        LOG_ERROR(NpHandler, "no valid NP Communication ID (npbind.dat missing or blank); "
+                             "rejecting request");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
@@ -1151,10 +1135,8 @@ s32 NpHandler::GetRankingByAccountId(s32 user_id, s32 service_label, u32 boardId
     const std::string proto_bytes = proto.SerializeAsString();
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
-        LOG_ERROR(NpHandler,
-                  "{}: no valid NP Communication ID (npbind.dat missing or blank); "
-                  "rejecting request",
-                  __func__);
+        LOG_ERROR(NpHandler, "no valid NP Communication ID (npbind.dat missing or blank); "
+                             "rejecting request");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
@@ -1221,10 +1203,8 @@ s32 NpHandler::GetFriendsRanking(s32 user_id, s32 service_label, u32 boardId, bo
     const std::string proto_bytes = proto.SerializeAsString();
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
-        LOG_ERROR(NpHandler,
-                  "{}: no valid NP Communication ID (npbind.dat missing or blank); "
-                  "rejecting request",
-                  __func__);
+        LOG_ERROR(NpHandler, "no valid NP Communication ID (npbind.dat missing or blank); "
+                             "rejecting request");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
@@ -1291,10 +1271,8 @@ s32 NpHandler::GetFriendsRankingA(s32 user_id, s32 service_label, u32 boardId, b
     const std::string proto_bytes = proto.SerializeAsString();
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
-        LOG_ERROR(NpHandler,
-                  "{}: no valid NP Communication ID (npbind.dat missing or blank); "
-                  "rejecting request",
-                  __func__);
+        LOG_ERROR(NpHandler, "no valid NP Communication ID (npbind.dat missing or blank); "
+                             "rejecting request");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
