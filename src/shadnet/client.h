@@ -37,6 +37,10 @@ namespace ShadNet {
 // Protocol constants
 static constexpr u32 SHAD_HEADER_SIZE = 15;
 static constexpr u32 SHAD_CONNECT_TIMEOUT_MS = 10000; // 10 second connect/handshake timeout
+// MAX_ATTEMPTS * CONNECT_TIMEOUT + sum(backoffs).
+static constexpr u32 SHAD_CONNECT_MAX_ATTEMPTS = 4;
+static constexpr u32 SHAD_CONNECT_RETRY_BACKOFF_MS =
+    1000; // base backoff, doubled per retry (cap 8s)
 static constexpr u32 SHAD_PROTOCOL_VERSION = 1;
 static constexpr u32 SHAD_MAX_PACKET_SIZE = 0x800000; // 8 MiB
 

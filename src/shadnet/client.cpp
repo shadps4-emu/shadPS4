@@ -2,6 +2,10 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <chrono>
+#include <thread>
+
 #include "client.h"
 #include "common/logging/log.h"
 #include "shadnet.pb.h"
@@ -149,7 +153,25 @@ std::string ShadNetClient::GetBearerToken() const {
 // Threading
 
 void ShadNetClient::ConnectThread() {
-    if (!DoConnect()) {
+    bool connected = false;
+    u32 backoff_ms = SHAD_CONNECT_RETRY_BACKOFF_MS;
+    for (u32 attempt = 1; attempt <= SHAD_CONNECT_MAX_ATTEMPTS && !m_terminate; ++attempt) {
+        if (DoConnect()) {
+            connected = true;
+            break;
+        }
+        if (m_terminate || attempt == SHAD_CONNECT_MAX_ATTEMPTS)
+            break;
+        LOG_WARNING(ShadNet, "ShadNet: connect attempt {}/{} to {}:{} failed, retrying in {} ms",
+                    attempt, SHAD_CONNECT_MAX_ATTEMPTS, m_host, m_port, backoff_ms);
+        // Interruptible backoff: poll m_terminate so Stop() wakes us promptly.
+        for (u32 waited = 0; waited < backoff_ms && !m_terminate; waited += 100)
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        backoff_ms = std::min<u32>(backoff_ms * 2, 8000);
+    }
+
+    if (!connected) {
+        // m_state holds the last failure reason from DoConnect.
         m_sem_connected.release();
         m_sem_authenticated.release();
         return;
@@ -239,6 +261,7 @@ void ShadNetClient::WriterThread() {
 // Connect / Disconnect
 
 bool ShadNetClient::DoConnect() {
+    m_state = ShadNetState::Ok; // reset; this attempt sets a failure code only on error
     struct addrinfo hints{}, *res_list = nullptr;
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
