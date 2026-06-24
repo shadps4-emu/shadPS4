@@ -1492,9 +1492,12 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
 
     if (max_fd == -1) {
         // Only disk/device fds — they are immediately ready
-        if (readfds) *readfds = read_ready;
-        if (writefds) *writefds = write_ready;
-        if (exceptfds) FD_ZERO(exceptfds);
+        if (readfds)
+            *readfds = read_ready;
+        if (writefds)
+            *writefds = write_ready;
+        if (exceptfds)
+            FD_ZERO(exceptfds);
         return disk_ready;
     }
 
@@ -1533,8 +1536,10 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
 
     // Merge immediately-ready disk/device fds into output
     for (s32 i = 0; i < nfds; ++i) {
-        if (readfds && FD_ISSET(i, &read_ready)) FD_SET(i, readfds);
-        if (writefds && FD_ISSET(i, &write_ready)) FD_SET(i, writefds);
+        if (readfds && FD_ISSET(i, &read_ready))
+            FD_SET(i, readfds);
+        if (writefds && FD_ISSET(i, &write_ready))
+            FD_SET(i, writefds);
     }
     return ret + disk_ready;
 }
