@@ -1129,6 +1129,10 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_texture.h
           src/imgui/imgui_translations.cpp
           src/imgui/imgui_translations.h
+          src/imgui/friends_layer.cpp
+          src/imgui/friends_layer.h
+          src/imgui/shadnet_notifications_layer.cpp
+          src/imgui/shadnet_notifications_layer.h
           src/imgui/notifications_layer.cpp
           src/imgui/notifications_layer.h
           src/imgui/renderer/imgui_core.cpp
@@ -1169,6 +1173,27 @@ set(EMULATOR src/emulator.cpp
              src/sdl_window.cpp
 )
 
+# shadNet protobuf generation
+set(SHADNET_PROTO_OUT "${CMAKE_CURRENT_BINARY_DIR}/shadnet_proto_gen")
+file(MAKE_DIRECTORY "${SHADNET_PROTO_OUT}")
+add_custom_command(
+    OUTPUT
+        "${SHADNET_PROTO_OUT}/shadnet.pb.cc"
+        "${SHADNET_PROTO_OUT}/shadnet.pb.h"
+    COMMAND protobuf::protoc
+        "--proto_path=${CMAKE_CURRENT_SOURCE_DIR}/src/shadnet"
+        "--cpp_out=${SHADNET_PROTO_OUT}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/shadnet/shadnet.proto"
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/shadnet/shadnet.proto"
+    COMMENT "Generating shadnet protobuf sources"
+    VERBATIM
+)
+
+set(SHADNET src/shadnet/client.cpp
+            src/shadnet/client.h
+            "${SHADNET_PROTO_OUT}/shadnet.pb.cc"
+)
 if (APPLE)
     list(APPEND EMULATOR src/sdl_window_apple.mm)
 endif()
@@ -1184,6 +1209,7 @@ add_executable(shadps4
     ${SHADER_RECOMPILER}
     ${VIDEO_CORE}
     ${EMULATOR}
+    ${SHADNET}
     src/main.cpp
     src/emulator.cpp
     src/emulator.h
@@ -1198,6 +1224,8 @@ target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::to
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml)
 target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib miniupnpc::miniupnpc)
 target_link_libraries(shadps4 PRIVATE Freetype::Freetype)
+target_link_libraries(shadps4 PRIVATE libprotobuf)
+target_include_directories(shadps4 PRIVATE "${SHADNET_PROTO_OUT}")
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     target_link_libraries(shadps4 PRIVATE "/usr/lib/libusb.so")
