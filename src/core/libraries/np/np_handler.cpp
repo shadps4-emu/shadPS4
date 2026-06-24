@@ -1596,7 +1596,7 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         s32 orbis_err = ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE;
         switch (error) {
         case ShadNet::ErrorType::ScoreNotBest:
-            orbis_err = ORBIS_OK;
+            orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_NOT_BEST_SCORE;
             break;
         case ShadNet::ErrorType::ScoreInvalid:
             orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_INVALID_SCORE;
