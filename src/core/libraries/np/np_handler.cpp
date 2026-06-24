@@ -46,6 +46,7 @@ std::pair<std::string, u16> NpHandler::ParseServerAddress() const {
     }
     return {host, port};
 }
+
 bool NpHandler::ConnectUserById(s32 user_id) {
     if (!EmulatorSettings.IsShadNetEnabled())
         return false;
@@ -116,6 +117,12 @@ void NpHandler::Shutdown() {
         return;
 
     m_worker_running = false;
+
+    // Stop any pending reconnect retries.
+    {
+        std::lock_guard lock(m_mutex_clients);
+        m_reconnect.clear();
+    }
 
     // Collect user IDs to disconnect (avoid holding m_mutex_clients during Stop)
     std::vector<s32> ids;
@@ -220,6 +227,10 @@ void NpHandler::OnUserLoggedIn(s32 user_id) {
 }
 
 void NpHandler::OnUserLoggedOut(s32 user_id) {
+    {
+        std::lock_guard lock(m_mutex_clients);
+        m_reconnect.erase(user_id); // do not auto-reconnect
+    }
     DisconnectUser(user_id);
 }
 
@@ -240,8 +251,57 @@ void NpHandler::WorkerThread() {
         }
 
         for (s32 uid : dropped) {
-            LOG_WARNING(NpHandler, "NpHandler: user_id={} connection dropped", uid);
-            DisconnectUser(uid);
+            LOG_WARNING(NpHandler, "user_id={} connection dropped (network); will retry", uid);
+            DisconnectUser(uid);   // reports SignedOut + stops/removes the dead client
+            MarkForReconnect(uid); // schedule transparent reconnect (network drop, not logout)
+        }
+
+        TryReconnect();
+    }
+}
+
+void NpHandler::MarkForReconnect(s32 user_id) {
+    if (!EmulatorSettings.IsShadNetEnabled())
+        return; // offline mode: nothing to reconnect to
+    constexpr auto kInitialBackoff = std::chrono::milliseconds(2000);
+    std::lock_guard lock(m_mutex_clients);
+    auto& st = m_reconnect[user_id];
+    st.backoff = kInitialBackoff;
+    st.next_attempt = std::chrono::steady_clock::now() + st.backoff;
+}
+
+void NpHandler::TryReconnect() {
+    constexpr auto kMaxBackoff = std::chrono::milliseconds(30000);
+    const auto now = std::chrono::steady_clock::now();
+
+    std::vector<s32> due;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        for (auto& [uid, st] : m_reconnect) {
+            if (m_clients.count(uid) || now >= st.next_attempt)
+                due.push_back(uid);
+        }
+    }
+
+    for (s32 uid : due) {
+        if (!m_worker_running)
+            return;
+        if (!EmulatorSettings.IsShadNetEnabled()) {
+            std::lock_guard lock(m_mutex_clients);
+            m_reconnect.erase(uid);
+            continue;
+        }
+        // ConnectUserById locks m_mutex_clients internally; call it unlocked.
+        const bool ok = ConnectUserById(uid);
+        std::lock_guard lock(m_mutex_clients);
+        if (ok || m_clients.count(uid)) {
+            m_reconnect.erase(uid);
+            LOG_INFO(NpHandler, "user_id={} reconnected to shadNet", uid);
+        } else if (auto it = m_reconnect.find(uid); it != m_reconnect.end()) {
+            it->second.backoff = std::min(it->second.backoff * 2, kMaxBackoff);
+            it->second.next_attempt = std::chrono::steady_clock::now() + it->second.backoff;
+            LOG_DEBUG(NpHandler, "user_id={} reconnect failed; next attempt in {}ms", uid,
+                      it->second.backoff.count());
         }
     }
 }

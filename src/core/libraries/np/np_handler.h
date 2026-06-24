@@ -5,6 +5,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <functional>
 #include <map>
 #include <memory>
@@ -12,6 +13,7 @@
 #include <optional>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -201,6 +203,9 @@ private:
     void DisconnectUser(s32 user_id);
 
     void WorkerThread();
+    // Transparent reconnect after a network drop
+    void MarkForReconnect(s32 user_id);
+    void TryReconnect();
     void FireStateCallback(s32 user_id, NpManager::OrbisNpState state);
 
     // Notification forwarders wired into each client
@@ -251,6 +256,13 @@ private:
     std::atomic<bool> m_initialized{false};
     std::atomic<bool> m_worker_running{false};
     std::thread m_worker_thread;
+
+    // Users dropped by a network error and awaiting transparent reconnect
+    struct ReconnectState {
+        std::chrono::steady_clock::time_point next_attempt{};
+        std::chrono::milliseconds backoff{0};
+    };
+    std::unordered_map<s32, ReconnectState> m_reconnect;
 
     // State callbacks
     struct CbEntry {
