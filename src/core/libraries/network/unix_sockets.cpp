@@ -15,123 +15,6 @@
 
 namespace Libraries::Net {
 
-#ifdef _WIN32
-#define ERROR_CASE(errname)                                                                        \
-    case (WSA##errname):                                                                           \
-        *Libraries::Kernel::__Error() = ORBIS_NET_##errname;                                       \
-        return -1;
-#else
-#define ERROR_CASE(errname)                                                                        \
-    case (errname):                                                                                \
-        *Libraries::Kernel::__Error() = ORBIS_NET_##errname;                                       \
-        return -1;
-#endif
-
-static int ConvertReturnErrorCode(int retval) {
-    if (retval < 0) {
-#ifdef _WIN32
-        switch (WSAGetLastError()) {
-#else
-        switch (errno) {
-#endif
-#ifndef _WIN32 // These errorcodes don't exist in WinSock
-            ERROR_CASE(EPERM)
-            ERROR_CASE(ENOENT)
-            // ERROR_CASE(ESRCH)
-            // ERROR_CASE(EIO)
-            // ERROR_CASE(ENXIO)
-            // ERROR_CASE(E2BIG)
-            // ERROR_CASE(ENOEXEC)
-            // ERROR_CASE(EDEADLK)
-            ERROR_CASE(ENOMEM)
-            // ERROR_CASE(ECHILD)
-            // ERROR_CASE(EBUSY)
-            ERROR_CASE(EEXIST)
-            // ERROR_CASE(EXDEV)
-            ERROR_CASE(ENODEV)
-            // ERROR_CASE(ENOTDIR)
-            // ERROR_CASE(EISDIR)
-            ERROR_CASE(ENFILE)
-            // ERROR_CASE(ENOTTY)
-            // ERROR_CASE(ETXTBSY)
-            // ERROR_CASE(EFBIG)
-            ERROR_CASE(ENOSPC)
-            // ERROR_CASE(ESPIPE)
-            // ERROR_CASE(EROFS)
-            // ERROR_CASE(EMLINK)
-            ERROR_CASE(EPIPE)
-            // ERROR_CASE(EDOM)
-            // ERROR_CASE(ERANGE)
-            // ERROR_CASE(ENOLCK)
-            // ERROR_CASE(ENOSYS)
-            // ERROR_CASE(EIDRM)
-            // ERROR_CASE(EOVERFLOW)
-            // ERROR_CASE(EILSEQ)
-            // ERROR_CASE(ENOTSUP)
-            ERROR_CASE(ECANCELED)
-            // ERROR_CASE(EBADMSG)
-            ERROR_CASE(ENODATA)
-            // ERROR_CASE(ENOSR)
-            // ERROR_CASE(ENOSTR)
-            // ERROR_CASE(ETIME)
-#endif
-            ERROR_CASE(EINTR)
-            ERROR_CASE(EBADF)
-            ERROR_CASE(EACCES)
-            ERROR_CASE(EFAULT)
-            ERROR_CASE(EINVAL)
-            ERROR_CASE(EMFILE)
-            ERROR_CASE(EWOULDBLOCK)
-            ERROR_CASE(EINPROGRESS)
-            ERROR_CASE(EALREADY)
-            ERROR_CASE(ENOTSOCK)
-            ERROR_CASE(EDESTADDRREQ)
-            ERROR_CASE(EMSGSIZE)
-            ERROR_CASE(EPROTOTYPE)
-            ERROR_CASE(ENOPROTOOPT)
-            ERROR_CASE(EPROTONOSUPPORT)
-#if defined(__APPLE__) || defined(_WIN32)
-            ERROR_CASE(EOPNOTSUPP)
-#endif
-            ERROR_CASE(EAFNOSUPPORT)
-            ERROR_CASE(EADDRINUSE)
-            ERROR_CASE(EADDRNOTAVAIL)
-            ERROR_CASE(ENETDOWN)
-            ERROR_CASE(ENETUNREACH)
-            ERROR_CASE(ENETRESET)
-            ERROR_CASE(ECONNABORTED)
-            ERROR_CASE(ECONNRESET)
-            ERROR_CASE(ENOBUFS)
-            ERROR_CASE(EISCONN)
-            ERROR_CASE(ENOTCONN)
-            ERROR_CASE(ETIMEDOUT)
-            ERROR_CASE(ECONNREFUSED)
-            ERROR_CASE(ELOOP)
-            ERROR_CASE(ENAMETOOLONG)
-            ERROR_CASE(EHOSTUNREACH)
-            ERROR_CASE(ENOTEMPTY)
-        }
-        *Libraries::Kernel::__Error() = ORBIS_NET_EINTERNAL;
-        return -1;
-    }
-    // if it is 0 or positive return it as it is
-    return retval;
-}
-
-static int ConvertLevels(int level) {
-    switch (level) {
-    case ORBIS_NET_SOL_SOCKET:
-        return SOL_SOCKET;
-    case ORBIS_NET_IPPROTO_IP:
-        return IPPROTO_IP;
-    case ORBIS_NET_IPPROTO_TCP:
-        return IPPROTO_TCP;
-    case ORBIS_NET_IPPROTO_IPV6:
-        return IPPROTO_IPV6;
-    }
-    return -1;
-}
-
 static void convertOrbisNetSockaddrToUnix(const OrbisNetSockaddr* src, sockaddr_un* dst) {
     if (src == nullptr || dst == nullptr)
         return;
@@ -153,34 +36,11 @@ static void convertUnixSockaddrToOrbis(sockaddr* src, OrbisNetSockaddr* dst) {
     memcpy(&dst_in->sun_path, &src_in->sun_path, dst_in->sun_len);
 }
 
-bool UnixSocket::IsValid() const {
-#ifdef _WIN32
-    return sock != INVALID_SOCKET;
-#else
-    return sock != -1;
-#endif
-}
-
-int UnixSocket::Close() {
-    std::scoped_lock lock{m_mutex};
-#ifdef _WIN32
-    auto out = closesocket(sock);
-#else
-    auto out = ::close(sock);
-#endif
-    return ConvertReturnErrorCode(out);
-}
-
 int UnixSocket::Bind(const OrbisNetSockaddr* addr, u32 addrlen) {
     std::scoped_lock lock{m_mutex};
     sockaddr_un addr2;
     convertOrbisNetSockaddrToUnix(addr, &addr2);
     return ConvertReturnErrorCode(::bind(sock, (const sockaddr*)&addr2, sizeof(sockaddr_un)));
-}
-
-int UnixSocket::Listen(int backlog) {
-    std::scoped_lock lock{m_mutex};
-    return ConvertReturnErrorCode(::listen(sock, backlog));
 }
 
 int UnixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
@@ -204,7 +64,8 @@ int UnixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
     }
     return static_cast<int>(bytesSent);
 #else
-    int res = sendmsg(sock, reinterpret_cast<const msghdr*>(msg), flags);
+    msghdr native_msg = ConvertOrbisToNativeMsghdr(msg);
+    int res = sendmsg(sock, &native_msg, flags);
     return ConvertReturnErrorCode(res);
 #endif
 }
@@ -243,7 +104,9 @@ int UnixSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
     }
     return static_cast<int>(bytesReceived);
 #else
-    int res = recvmsg(sock, reinterpret_cast<msghdr*>(msg), flags);
+    msghdr native_msg = ConvertOrbisToNativeMsghdr(msg);
+    int res = recvmsg(sock, &native_msg, flags);
+    msg->msg_flags = native_msg.msg_flags;
     return ConvertReturnErrorCode(res);
 #endif
 }
@@ -371,23 +234,6 @@ int UnixSocket::GetPeerName(OrbisNetSockaddr* name, u32* namelen) {
         *namelen = sizeof(OrbisNetSockaddrUn);
     }
     return ConvertReturnErrorCode(res);
-}
-
-int UnixSocket::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
-#ifdef _WIN32
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    sb->st_mode = 0000777u | 0140000u;
-    return 0;
-#else
-    struct stat st{};
-    int result = ::fstat(sock, &st);
-    sb->st_mode = 0000777u | 0140000u;
-    sb->st_size = st.st_size;
-    sb->st_blocks = st.st_blocks;
-    sb->st_blksize = st.st_blksize;
-    // sb->st_flags = st.st_flags;
-    return ConvertReturnErrorCode(result);
-#endif
 }
 
 } // namespace Libraries::Net

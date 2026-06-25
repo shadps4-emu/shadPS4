@@ -367,7 +367,7 @@ int PS4_SYSV_ABI sceNetDumpDestroy();
 int PS4_SYSV_ABI sceNetDumpRead();
 int PS4_SYSV_ABI sceNetDuplicateIpStart();
 int PS4_SYSV_ABI sceNetDuplicateIpStop();
-int PS4_SYSV_ABI sceNetEpollAbort();
+int PS4_SYSV_ABI sceNetEpollAbort(OrbisNetId epollid, u32 flags);
 int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, OrbisNetId id,
                                     OrbisNetEpollEvent* event);
 int PS4_SYSV_ABI sceNetEpollCreate(const char* name, int flags);

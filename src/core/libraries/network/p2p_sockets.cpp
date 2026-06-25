@@ -1,88 +1,79 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <common/assert.h>
-#include "core/libraries/kernel/kernel.h"
 #include "net.h"
 #include "net_error.h"
 #include "sockets.h"
 
 namespace Libraries::Net {
 
-int P2PSocket::Close() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
-}
-
-int P2PSocket::SetSocketOptions(int level, int optname, const void* optval, u32 optlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
+P2PSocket::P2PSocket(int domain, int type, int protocol)
+    : PosixSocket(AF_INET, type == ORBIS_NET_SOCK_DGRAM_P2P ? SOCK_DGRAM : SOCK_STREAM,
+                  type == ORBIS_NET_SOCK_DGRAM_P2P ? IPPROTO_UDP : IPPROTO_TCP) {
+    // Store the original PS4 socket type so GetSocketOptions(SO_TYPE) returns the P2P value
+    socket_type = type;
+    LOG_INFO(Lib_Net, "P2P socket created: type={} (os_type={}), fd={}", type,
+             type == ORBIS_NET_SOCK_DGRAM_P2P ? int(SOCK_DGRAM) : int(SOCK_STREAM), sock);
 }
 
 int P2PSocket::GetSocketOptions(int level, int optname, void* optval, u32* optlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
+    // Intercept SO_TYPE to return the PS4 P2P socket type, not the native OS type
+    if (ConvertLevels(level) == SOL_SOCKET && optname == ORBIS_NET_SO_TYPE) {
+        *(int*)optval = socket_type;
+        *optlen = sizeof(int);
+        return 0;
+    }
+    return PosixSocket::GetSocketOptions(level, optname, optval, optlen);
 }
 
 int P2PSocket::Bind(const OrbisNetSockaddr* addr, u32 addrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
-}
-
-int P2PSocket::Listen(int backlog) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
-}
-
-int P2PSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    *Libraries::Kernel::__Error() = ORBIS_NET_EAGAIN;
-    return -1;
-}
-
-int P2PSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
-                          u32 tolen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    *Libraries::Kernel::__Error() = ORBIS_NET_EAGAIN;
-    return -1;
-}
-
-int P2PSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    *Libraries::Kernel::__Error() = ORBIS_NET_EAGAIN;
-    return -1;
-}
-
-int P2PSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from, u32* fromlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    *Libraries::Kernel::__Error() = ORBIS_NET_EAGAIN;
-    return -1;
-}
-
-SocketPtr P2PSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    *Libraries::Kernel::__Error() = ORBIS_NET_EAGAIN;
-    return nullptr;
+    // TODO: vport multiplexing not implemented, on PS4, P2P sockets multiplex
+    // virtual ports over a single UDP association. We extract the vport here for
+    // future use but don't perform any demuxing.
+    const auto* orbis_addr = reinterpret_cast<const OrbisNetSockaddrIn*>(addr);
+    if (orbis_addr && orbis_addr->sin_family == ORBIS_NET_AF_INET) {
+        vport = orbis_addr->sin_vport;
+        if (vport != 0) {
+            LOG_WARNING(Lib_Net, "P2P bind with vport={} — vport multiplexing is not implemented",
+                        vport);
+        }
+        LOG_INFO(Lib_Net, "P2P bind: port={}, vport={}", ntohs(orbis_addr->sin_port), vport);
+    }
+    return PosixSocket::Bind(addr, addrlen);
 }
 
 int P2PSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
+    // TODO: vport multiplexing not implemented
+    const auto* orbis_addr = reinterpret_cast<const OrbisNetSockaddrIn*>(addr);
+    if (orbis_addr && orbis_addr->sin_family == ORBIS_NET_AF_INET) {
+        vport = orbis_addr->sin_vport;
+        if (vport != 0) {
+            LOG_WARNING(Lib_Net,
+                        "P2P connect with vport={} — vport multiplexing is not implemented", vport);
+        }
+        LOG_INFO(Lib_Net, "P2P connect: vport={}", vport);
+    }
+    return PosixSocket::Connect(addr, namelen);
 }
 
-int P2PSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
-}
-
-int P2PSocket::GetPeerName(OrbisNetSockaddr* addr, u32* namelen) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
-}
-
-int P2PSocket::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return 0;
+SocketPtr P2PSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
+    std::scoped_lock lock{m_mutex};
+    sockaddr native_addr;
+    socklen_t len = sizeof(native_addr);
+    net_socket new_sock = ::accept(sock, &native_addr, &len);
+#ifdef _WIN32
+    if (new_sock == INVALID_SOCKET) {
+#else
+    if (new_sock < 0) {
+#endif
+        ConvertReturnErrorCode(-1);
+        return nullptr;
+    }
+    if (addr && addrlen) {
+        convertPosixSockaddrToOrbis(&native_addr, addr);
+        *addrlen = sizeof(OrbisNetSockaddrIn);
+    }
+    return std::make_shared<P2PSocket>(new_sock, socket_type, vport);
 }
 
 } // namespace Libraries::Net

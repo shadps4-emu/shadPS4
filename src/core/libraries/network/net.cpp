@@ -127,6 +127,8 @@ int PS4_SYSV_ABI sce_net_in6addr_nodelocal_allnodes() {
 }
 
 OrbisNetId PS4_SYSV_ABI sceNetAccept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
+    LOG_DEBUG(Lib_Net, "called, s = {}, addr = {}, paddrlen = {}", s, fmt::ptr(addr),
+              fmt::ptr(paddrlen));
     if (!g_isNetInitialized) {
         return ORBIS_NET_ERROR_ENOTINIT;
     }
@@ -615,8 +617,14 @@ int PS4_SYSV_ABI sceNetDuplicateIpStop() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetEpollAbort() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetEpollAbort(OrbisNetId epollid, u32 flags) {
+    auto file = FDTable::Instance()->GetEpoll(epollid);
+    if (!file) {
+        *sceNetErrnoLoc() = ORBIS_NET_EBADF;
+        return ORBIS_NET_ERROR_EBADF;
+    }
+    LOG_DEBUG(Lib_Net, "called, epollid = {} ({}), flags = {}", epollid, file->epoll->name, flags);
+    file->epoll->Abort();
     return ORBIS_OK;
 }
 
@@ -657,18 +665,24 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         case Core::FileSys::FileType::Socket: {
             auto native_handle = file->socket->Native();
             if (!native_handle) {
-                // P2P socket, cannot be added to epoll
-                LOG_ERROR(Lib_Net, "P2P socket cannot be added to epoll (unimplemented)");
+                LOG_ERROR(Lib_Net, "socket {} has no native handle", id);
                 *sceNetErrnoLoc() = ORBIS_NET_EBADF;
                 return ORBIS_NET_ERROR_EBADF;
             }
 
+            // P2P dgram sockets only support EPOLLIN (matches PS4 kernel behavior)
+            auto epoll_events = event->events;
+            if (file->socket->socket_type == ORBIS_NET_SOCK_DGRAM_P2P) {
+                epoll_events &= ORBIS_NET_EPOLLIN;
+            }
+
 #ifndef __FreeBSD__
-            epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
+            epoll_event native_event = {.events = ConvertEpollEventsIn(epoll_events),
                                         .data = {.fd = id}};
             ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_ADD, *native_handle, &native_event) == 0);
-            epoll->events.emplace_back(id, *event);
 #endif
+            // Emulator-level event tracking
+            epoll->events.emplace_back(id, *event);
             break;
         }
         case Core::FileSys::FileType::Resolver: {
@@ -707,18 +721,24 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         case Core::FileSys::FileType::Socket: {
             auto native_handle = file->socket->Native();
             if (!native_handle) {
-                // P2P socket, cannot be modified in epoll
-                LOG_ERROR(Lib_Net, "P2P socket cannot be modified in epoll (unimplemented)");
+                LOG_ERROR(Lib_Net, "socket {} has no native handle", id);
                 *sceNetErrnoLoc() = ORBIS_NET_EBADF;
                 return ORBIS_NET_ERROR_EBADF;
             }
 
+            // P2P dgram sockets only support EPOLLIN (matches PS4 kernel behavior)
+            auto epoll_events = event->events;
+            if (file->socket->socket_type == ORBIS_NET_SOCK_DGRAM_P2P) {
+                epoll_events &= ORBIS_NET_EPOLLIN;
+            }
+
 #ifndef __FreeBSD__
-            epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
+            epoll_event native_event = {.events = ConvertEpollEventsIn(epoll_events),
                                         .data = {.fd = id}};
             ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_MOD, *native_handle, &native_event) == 0);
-            *it = {id, *event};
 #endif
+            // Emulator-level event tracking
+            *it = {id, *event};
             break;
         }
         default:
@@ -751,15 +771,15 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         case Core::FileSys::FileType::Socket: {
             auto native_handle = file->socket->Native();
             if (!native_handle) {
-                // P2P socket, cannot be removed from epoll
-                LOG_ERROR(Lib_Net, "P2P socket cannot be removed from epoll (unimplemented)");
+                LOG_ERROR(Lib_Net, "socket {} has no native handle", id);
                 *sceNetErrnoLoc() = ORBIS_NET_EBADF;
                 return ORBIS_NET_ERROR_EBADF;
             }
+
 #ifndef __FreeBSD__
             ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_DEL, *native_handle, nullptr) == 0);
-            epoll->events.erase(it);
 #endif
+            epoll->events.erase(it);
             break;
         }
         case Core::FileSys::FileType::Resolver: {
@@ -827,20 +847,29 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
     LOG_DEBUG(Lib_Net, "called, epollid = {} ({}), maxevents = {}, timeout = {}", epollid,
               epoll->name, maxevents, timeout);
 
-    int sockets_waited_on = (epoll->events.size() - epoll->async_resolutions.size()) > 0;
+    if (epoll->aborted.load(std::memory_order_acquire)) {
+        epoll->ClearAbort();
+        *sceNetErrnoLoc() = ORBIS_NET_ECANCELED;
+        return ORBIS_NET_ERROR_ECANCELED;
+    }
 
-    std::vector<epoll_event> native_events{static_cast<size_t>(maxevents)};
+    // +1 for the abort fd which is also registered in the epoll instance
+    std::vector<epoll_event> native_events{static_cast<size_t>(maxevents + 1)};
     int result = ORBIS_OK;
-    if (sockets_waited_on) {
 #ifdef __linux__
-        const timespec epoll_timeout{.tv_sec = timeout / 1000000,
-                                     .tv_nsec = (timeout % 1000000) * 1000};
-        result = epoll_pwait2(epoll->epoll_fd, native_events.data(), maxevents,
-                              timeout < 0 ? nullptr : &epoll_timeout, nullptr);
+    const timespec epoll_timeout{.tv_sec = timeout / 1000000,
+                                 .tv_nsec = (timeout % 1000000) * 1000};
+    result = epoll_pwait2(epoll->epoll_fd, native_events.data(), maxevents + 1,
+                          timeout < 0 ? nullptr : &epoll_timeout, nullptr);
 #else
-        result = epoll_wait(epoll->epoll_fd, native_events.data(), maxevents,
-                            timeout < 0 ? timeout : timeout / 1000);
+    result = epoll_wait(epoll->epoll_fd, native_events.data(), maxevents + 1,
+                        timeout < 0 ? timeout : timeout / 1000);
 #endif
+
+    if (epoll->aborted.load(std::memory_order_acquire)) {
+        epoll->ClearAbort();
+        *sceNetErrnoLoc() = ORBIS_NET_ECANCELED;
+        return ORBIS_NET_ERROR_ECANCELED;
     }
 
     int i = 0;
@@ -863,9 +892,16 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
     } else if (result == 0) {
         LOG_TRACE(Lib_Net, "timed out");
     } else {
-        for (; i < result; ++i) {
-            const auto& current_event = native_events[i];
-            LOG_DEBUG(Lib_Net, "native_event[{}] = ( .events = {}, .data = {:#x} )", i,
+        for (int j = 0; j < result; ++j) {
+            if (i >= maxevents) {
+                break;
+            }
+            const auto& current_event = native_events[j];
+            // Skip the abort fd event (registered with data.fd = -1)
+            if (current_event.data.fd == -1) {
+                continue;
+            }
+            LOG_DEBUG(Lib_Net, "native_event[{}] = ( .events = {}, .data = {:#x} )", j,
                       current_event.events, current_event.data.u64);
             const auto it = std::ranges::find_if(
                 epoll->events, [&](auto& el) { return el.first == current_event.data.fd; });
@@ -877,6 +913,7 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
             };
             LOG_DEBUG(Lib_Net, "event[{}] = ( .events = {:#x}, .ident = {}, .data = {:#x} )", i,
                       events[i].events, events[i].ident, events[i].data.data_u64);
+            ++i;
         }
     }
 
