@@ -653,6 +653,8 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_handler.h
             src/core/libraries/np/np_commerce/np_commerce.cpp
             src/core/libraries/np/np_commerce/np_commerce.h
+            src/core/libraries/np/np_commerce/np_commerce_ui.cpp
+            src/core/libraries/np/np_commerce/np_commerce_ui.h
             src/core/libraries/np/np_profile_dialog/np_profile_dialog.cpp
             src/core/libraries/np/np_profile_dialog/np_profile_dialog.h
             src/core/libraries/np/np_profile_dialog/np_profile_dialog_ui.cpp
