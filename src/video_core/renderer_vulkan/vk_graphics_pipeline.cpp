@@ -7,6 +7,8 @@
 
 #include "common/assert.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_quad_rect.h"
+#include "shader_recompiler/info.h"
+#include "shader_recompiler/ir/attribute.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -16,6 +18,36 @@
 namespace Vulkan {
 
 using Shader::Backend::SPIRV::AuxShaderType;
+
+namespace {
+
+u64 BuildAuxTessPreviousStageOutputMask(const Shader::Info* vs_info,
+                                        const Shader::FragmentRuntimeInfo& fs_info) {
+    if (!vs_info) {
+        return 0;
+    }
+
+    u64 mask = 0;
+    if (fs_info.clip_distance_emulation &&
+        vs_info->stores.GetAny(Shader::IR::Attribute::ClipDistance)) {
+        mask |= 1ull;
+    }
+
+    for (u32 i = 0; i < Shader::IR::NumParams; ++i) {
+        const auto param = Shader::IR::Attribute::Param0 + static_cast<int>(i);
+        if (!vs_info->stores.GetAny(param)) {
+            continue;
+        }
+        const u32 location =
+            Shader::Backend::SPIRV::AuxTessAttributeLocation(i, fs_info.clip_distance_emulation);
+        if (location < 64u) {
+            mask |= 1ull << location;
+        }
+    }
+    return mask;
+}
+
+} // Anonymous namespace
 
 static constexpr std::array LogicalStageToStageBit = {
     vk::ShaderStageFlagBits::eFragment,
@@ -194,7 +226,11 @@ GraphicsPipeline::GraphicsPipeline(
         const auto type = is_quad_list ? AuxShaderType::QuadListTCS : AuxShaderType::RectListTCS;
         if (!preloading) {
             const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
-            sdata.tcs = Shader::Backend::SPIRV::EmitAuxilaryTessShader(type, fs_info);
+            const auto* vs_info = infos[u32(Shader::LogicalStage::Vertex)];
+            const u64 previous_stage_output_mask =
+                BuildAuxTessPreviousStageOutputMask(vs_info, fs_info);
+            sdata.tcs = Shader::Backend::SPIRV::EmitAuxilaryTessShader(type, fs_info,
+                                                                       previous_stage_output_mask);
         }
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationControl,

@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
+#include <vector>
+
 #include <sirit/sirit.h>
 #include "shader_recompiler/backend/spirv/emit_spirv_quad_rect.h"
 #include "shader_recompiler/runtime_info.h"
@@ -12,8 +15,17 @@ using Sirit::Id;
 constexpr u32 SPIRV_VERSION_1_5 = 0x00010500;
 
 struct QuadRectListEmitter : public Sirit::Module {
-    explicit QuadRectListEmitter(const FragmentRuntimeInfo& fs_info_)
-        : Sirit::Module{SPIRV_VERSION_1_5}, fs_info{fs_info_} {
+    struct AuxParam {
+        Id input;
+        Id output;
+        u32 location{};
+        bool has_input{};
+    };
+
+    explicit QuadRectListEmitter(const FragmentRuntimeInfo& fs_info_,
+                                 u64 previous_stage_output_mask_)
+        : Sirit::Module{SPIRV_VERSION_1_5}, fs_info{fs_info_},
+          previous_stage_output_mask{previous_stage_output_mask_} {
         void_id = TypeVoid();
         bool_id = TypeBool();
         float_id = TypeFloat(32);
@@ -24,9 +36,11 @@ struct QuadRectListEmitter : public Sirit::Module {
         vec3_id = TypeVector(float_id, 3);
         vec4_id = TypeVector(float_id, 4);
 
+        float_zero = Constant(float_id, 0.0f);
         float_one = Constant(float_id, 1.0f);
         float_min_one = Constant(float_id, -1.0f);
         int_zero = Constant(int_id, 0);
+        vec4_zero = ConstantComposite(vec4_id, float_zero, float_zero, float_zero, float_zero);
 
         const Id float_arr{TypeArray(float_id, Constant(uint_id, 1U))};
         gl_per_vertex_type = TypeStruct(vec4_id, float_id, float_arr, float_arr);
@@ -115,17 +129,24 @@ struct QuadRectListEmitter : public Sirit::Module {
         const Id position{OpSelect(vec4_id, invocation_3, pos3, OpLoad(vec4_id, in_ptr))};
         OpStore(OpAccessChain(output_vec4, gl_out, invocation_id, Int(0)), position);
 
-        // Set attributes
-        for (int i = 0; i < inputs.size(); i++) {
-            // vec4 in_paramN3 = interpolate(bary_coord, in_paramN[0], in_paramN[1], in_paramN[2]);
-            const Id v0{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], Int(0)))};
-            const Id v1{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], Int(1)))};
-            const Id v2{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], Int(2)))};
-            const Id in_param3{interpolate(v0, v1, v2)};
-            // out_paramN[gl_InvocationID] = gl_InvocationID == 3 ? in_paramN3 : in_paramN[index];
-            const Id in_param{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], index))};
-            const Id out_param{OpSelect(vec4_id, invocation_3, in_param3, in_param)};
-            OpStore(OpAccessChain(output_vec4, outputs[i], invocation_id), out_param);
+        // Set attributes. If a fragment input has no corresponding VS output, do not declare a
+        // TCS input for it; synthesize a neutral value instead. This keeps the VS->TCS interface
+        // valid while still producing a matching TCS->TES->FS interface.
+        for (const auto& param : params) {
+            Id out_param = vec4_zero;
+            if (param.has_input) {
+                // vec4 in_paramN3 = interpolate(bary_coord, in_paramN[0], in_paramN[1],
+                // in_paramN[2]);
+                const Id v0{OpLoad(vec4_id, OpAccessChain(input_vec4, param.input, Int(0)))};
+                const Id v1{OpLoad(vec4_id, OpAccessChain(input_vec4, param.input, Int(1)))};
+                const Id v2{OpLoad(vec4_id, OpAccessChain(input_vec4, param.input, Int(2)))};
+                const Id in_param3{interpolate(v0, v1, v2)};
+                // out_paramN[gl_InvocationID] = gl_InvocationID == 3 ? in_paramN3 :
+                // in_paramN[index];
+                const Id in_param{OpLoad(vec4_id, OpAccessChain(input_vec4, param.input, index))};
+                out_param = OpSelect(vec4_id, invocation_3, in_param3, in_param);
+            }
+            OpStore(OpAccessChain(output_vec4, param.output, invocation_id), out_param);
         }
 
         OpReturn();
@@ -161,10 +182,14 @@ struct QuadRectListEmitter : public Sirit::Module {
         const Id in_position{OpLoad(vec4_id, OpAccessChain(input_vec4, gl_in, index, Int(0)))};
         OpStore(OpAccessChain(output_vec4, gl_out, invocation_id, Int(0)), in_position);
 
-        for (int i = 0; i < inputs.size(); i++) {
-            // out_paramN[gl_InvocationID] = in_paramN[gl_InvocationID];
-            const Id in_param{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], index))};
-            OpStore(OpAccessChain(output_vec4, outputs[i], invocation_id), in_param);
+        for (const auto& param : params) {
+            // out_paramN[gl_InvocationID] = in_paramN[gl_InvocationID], or zero if the
+            // preceding VS does not export this location.
+            Id in_param = vec4_zero;
+            if (param.has_input) {
+                in_param = OpLoad(vec4_id, OpAccessChain(input_vec4, param.input, index));
+            }
+            OpStore(OpAccessChain(output_vec4, param.output, invocation_id), in_param);
         }
 
         OpReturn();
@@ -189,9 +214,9 @@ struct QuadRectListEmitter : public Sirit::Module {
         OpStore(OpAccessChain(output_vec4, gl_per_vertex, Int(0)), position);
 
         // out_paramN = in_paramN[index];
-        for (int i = 0; i < inputs.size(); i++) {
-            const Id param{OpLoad(vec4_id, OpAccessChain(input_vec4, inputs[i], index))};
-            OpStore(outputs[i], param);
+        for (const auto& param : params) {
+            const Id value{OpLoad(vec4_id, OpAccessChain(input_vec4, param.input, index))};
+            OpStore(param.output, value);
         }
 
         OpReturn();
@@ -235,6 +260,29 @@ private:
         AddLabel(OpLabel());
     }
 
+    u32 GetLocation(const FragmentRuntimeInfo::PsInput& input) const {
+        return AuxTessAttributeLocation(input.param_index, fs_info.clip_distance_emulation);
+    }
+
+    bool IsPreviousStageOutputAvailable(u32 location) const {
+        return location < 64u && ((previous_stage_output_mask >> location) & 1ull) != 0;
+    }
+
+    void AddClipDistanceParam(spv::ExecutionModel model) {
+        if (!fs_info.clip_distance_emulation) {
+            return;
+        }
+        AuxParam& param = params.emplace_back();
+        param.location = 0;
+        if (model == spv::ExecutionModel::TessellationEvaluation ||
+            IsPreviousStageOutputAvailable(param.location)) {
+            const Id float_arr{TypeArray(vec4_id, Int(32))};
+            param.input = AddInput(float_arr);
+            param.has_input = true;
+            Decorate(param.input, spv::Decoration::Location, param.location);
+        }
+    }
+
     void DefineOutputs(spv::ExecutionModel model) {
         if (model == spv::ExecutionModel::TessellationControl) {
             const Id gl_per_vertex_array{TypeArray(gl_per_vertex_type, Constant(uint_id, 4U))};
@@ -252,16 +300,12 @@ private:
         } else {
             gl_per_vertex = AddOutput(gl_per_vertex_type);
         }
-        outputs.reserve(fs_info.num_inputs);
-        for (int i = 0; i < fs_info.num_inputs; i++) {
-            const auto& input = fs_info.inputs[i];
-            if (input.IsDefault()) {
-                continue;
-            }
-            outputs.emplace_back(AddOutput(model == spv::ExecutionModel::TessellationControl
-                                               ? TypeArray(vec4_id, Int(4))
-                                               : vec4_id));
-            Decorate(outputs.back(), spv::Decoration::Location, input.param_index);
+
+        for (auto& param : params) {
+            param.output = AddOutput(model == spv::ExecutionModel::TessellationControl
+                                         ? TypeArray(vec4_id, Int(4))
+                                         : vec4_id);
+            Decorate(param.output, spv::Decoration::Location, param.location);
         }
     }
 
@@ -275,20 +319,32 @@ private:
         }
         const Id gl_per_vertex_array{TypeArray(gl_per_vertex_type, Constant(uint_id, 32U))};
         gl_in = AddInput(gl_per_vertex_array);
+
+        params.reserve(fs_info.num_inputs);
+        AddClipDistanceParam(model);
+
         const Id float_arr{TypeArray(vec4_id, Int(32))};
-        inputs.reserve(fs_info.num_inputs);
-        for (int i = 0; i < fs_info.num_inputs; i++) {
+        const u32 num_inputs =
+            fs_info.num_inputs - static_cast<u32>(fs_info.clip_distance_emulation);
+        for (u32 i = 0; i < num_inputs; i++) {
             const auto& input = fs_info.inputs[i];
             if (input.IsDefault()) {
                 continue;
             }
-            inputs.emplace_back(AddInput(float_arr));
-            Decorate(inputs.back(), spv::Decoration::Location, input.param_index);
+            AuxParam& param = params.emplace_back();
+            param.location = GetLocation(input);
+            if (model == spv::ExecutionModel::TessellationEvaluation ||
+                IsPreviousStageOutputAvailable(param.location)) {
+                param.input = AddInput(float_arr);
+                param.has_input = true;
+                Decorate(param.input, spv::Decoration::Location, param.location);
+            }
         }
     }
 
 private:
     FragmentRuntimeInfo fs_info;
+    u64 previous_stage_output_mask;
     Id main;
     Id void_id;
     Id bool_id;
@@ -299,9 +355,11 @@ private:
     Id vec2_id;
     Id vec3_id;
     Id vec4_id;
+    Id float_zero;
     Id float_one;
     Id float_min_one;
     Id int_zero;
+    Id vec4_zero;
     Id gl_per_vertex_type;
     Id gl_in;
     union {
@@ -314,13 +372,13 @@ private:
         Id gl_tess_coord;
         Id gl_invocation_id;
     };
-    std::vector<Id> inputs;
-    std::vector<Id> outputs;
+    std::vector<AuxParam> params;
     std::vector<Id> interfaces;
 };
 
-std::vector<u32> EmitAuxilaryTessShader(AuxShaderType type, const FragmentRuntimeInfo& fs_info) {
-    QuadRectListEmitter ctx{fs_info};
+std::vector<u32> EmitAuxilaryTessShader(AuxShaderType type, const FragmentRuntimeInfo& fs_info,
+                                        u64 previous_stage_output_mask) {
+    QuadRectListEmitter ctx{fs_info, previous_stage_output_mask};
     switch (type) {
     case AuxShaderType::RectListTCS:
         ctx.EmitRectListTCS();
