@@ -30,20 +30,34 @@ std::string toHex(u64 value, size_t byteSize) {
     return ss.str();
 }
 
+static bool isHexSym(const std::string& s) {
+    return (s.size() >= 2 && (s[0] == '$' || s[0] == '#'));
+}
+
+static bool isHex0x(const std::string& s) {
+    return (s.size() >= 3 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X'));
+}
+
+// possible prefixes == (s == `0x` || s == `#` || s == `$`) will be interpet as hex value, else is
+// decimal
+static int convertNumBase(const std::string& s) {
+    return (isHex0x(s) || isHexSym(s)) ? 16 : 10;
+}
+
 std::string convertValueToHex(const std::string type, const std::string valueStr) {
     std::string result;
 
     if (type == "byte") {
-        const u32 value = std::stoul(valueStr, nullptr, 16);
+        const u32 value = std::stoul(valueStr, nullptr, convertNumBase(valueStr));
         result = toHex(value, 1);
     } else if (type == "bytes16") {
-        const u32 value = std::stoul(valueStr, nullptr, 16);
+        const u32 value = std::stoul(valueStr, nullptr, convertNumBase(valueStr));
         result = toHex(value, 2);
     } else if (type == "bytes32") {
-        const u32 value = std::stoul(valueStr, nullptr, 16);
+        const u32 value = std::stoul(valueStr, nullptr, convertNumBase(valueStr));
         result = toHex(value, 4);
     } else if (type == "bytes64") {
-        const u64 value = std::stoull(valueStr, nullptr, 16);
+        const u64 value = std::stoull(valueStr, nullptr, convertNumBase(valueStr));
         result = toHex(value, 8);
     } else if (type == "float32") {
         union {
