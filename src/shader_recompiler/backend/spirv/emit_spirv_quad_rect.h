@@ -18,7 +18,13 @@ enum class AuxShaderType : u32 {
     PassthroughTES,
 };
 
+[[nodiscard]] constexpr u32 AuxTessAttributeLocation(u32 param_index,
+                                                     bool clip_distance_emulation) noexcept {
+    return param_index + (clip_distance_emulation ? 1u : 0u);
+}
+
 [[nodiscard]] std::vector<u32> EmitAuxilaryTessShader(AuxShaderType type,
-                                                      const FragmentRuntimeInfo& fs_info);
+                                                      const FragmentRuntimeInfo& fs_info,
+                                                      u64 previous_stage_output_mask = ~0ull);
 
 } // namespace Shader::Backend::SPIRV
