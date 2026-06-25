@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <array>
 #include <mutex>
+#include <ranges>
 
 template <typename T, size_t N, int INVALID_OBJECT_ID_ERROR, int OBJECT_NOT_FOUND_ERROR,
           int MAX_OBJECTS_ERROR>
