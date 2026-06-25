@@ -16,7 +16,7 @@ static constexpr ImVec2 BUTTON_SIZE{160.0f, 30.0f};
 static const char* ModeTitle(CommerceMode m) {
     switch (m) {
     case CommerceMode::CATEGORY:
-        return "PlayStation\u2122Store";
+        return "shadNet\u2122Store";
     case CommerceMode::PRODUCT:
         return "Product";
     case CommerceMode::PRODUCT_CODE:
@@ -26,9 +26,9 @@ static const char* ModeTitle(CommerceMode m) {
     case CommerceMode::DOWNLOADLIST:
         return "My Downloads";
     case CommerceMode::PLUS:
-        return "PlayStation\u2122Plus";
+        return "shadNet\u2122Plus";
     default:
-        return "PlayStation\u2122Store";
+        return "shadNet\u2122Store";
     }
 }
 
