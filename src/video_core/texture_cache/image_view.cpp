@@ -109,11 +109,12 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
         aspect = vk::ImageAspectFlagBits::eStencil;
     }
 
+    this->format = instance.GetSupportedFormat(format, image.format_features);
     const vk::ImageViewCreateInfo image_view_ci = {
         .pNext = &usage_ci,
         .image = image.GetImage(),
         .viewType = ConvertImageViewType(info.type),
-        .format = instance.GetSupportedFormat(format, image.format_features),
+        .format = this->format,
         .components = info.mapping,
         .subresourceRange{
             .aspectMask = aspect,
@@ -136,12 +137,14 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     const auto view_aspect = aspect & vk::ImageAspectFlagBits::eDepth     ? "Depth"
                              : aspect & vk::ImageAspectFlagBits::eStencil ? "Stencil"
                                                                           : "Color";
-    Vulkan::SetObjectName(
-        instance.GetDevice(), *image_view, "ImageView {}x{}x{} {:#x}:{:#x} {}:{} {}:{} ({})",
-        image.info.size.width, image.info.size.height, image.info.size.depth,
-        image.info.guest_address, image.info.guest_size, info.range.base.level,
-        info.range.base.level + info.range.extent.levels - 1, info.range.base.layer,
-        info.range.base.layer + info.range.extent.layers - 1, view_aspect);
+    Vulkan::SetObjectName(instance.GetDevice(), *image_view,
+                          "ImageView {}x{}x{} {:#x}:{:#x} {}:{} {}:{} ({}) req:{} view:{}",
+                          image.info.size.width, image.info.size.height, image.info.size.depth,
+                          image.info.guest_address, image.info.guest_size, info.range.base.level,
+                          info.range.base.level + info.range.extent.levels - 1,
+                          info.range.base.layer,
+                          info.range.base.layer + info.range.extent.layers - 1, view_aspect,
+                          vk::to_string(info.format), vk::to_string(this->format));
 }
 
 ImageView::~ImageView() = default;

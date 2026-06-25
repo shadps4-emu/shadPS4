@@ -20,6 +20,104 @@
 
 namespace Vulkan {
 
+namespace {
+
+enum class VkFormatNumberClass {
+    Float,
+    Sint,
+    Uint,
+    Unknown,
+};
+
+constexpr const char* NameOf(VkFormatNumberClass num_class) noexcept {
+    switch (num_class) {
+    case VkFormatNumberClass::Float:
+        return "Float";
+    case VkFormatNumberClass::Sint:
+        return "Sint";
+    case VkFormatNumberClass::Uint:
+        return "Uint";
+    case VkFormatNumberClass::Unknown:
+        return "Unknown";
+    }
+    return "Unknown";
+}
+
+constexpr VkFormatNumberClass GetFormatNumberClass(vk::Format format) noexcept {
+    switch (format) {
+    case vk::Format::eR8Uint:
+    case vk::Format::eR8G8Uint:
+    case vk::Format::eR8G8B8Uint:
+    case vk::Format::eR8G8B8A8Uint:
+    case vk::Format::eB8G8R8Uint:
+    case vk::Format::eB8G8R8A8Uint:
+    case vk::Format::eA8B8G8R8UintPack32:
+    case vk::Format::eR16Uint:
+    case vk::Format::eR16G16Uint:
+    case vk::Format::eR16G16B16Uint:
+    case vk::Format::eR16G16B16A16Uint:
+    case vk::Format::eR32Uint:
+    case vk::Format::eR32G32Uint:
+    case vk::Format::eR32G32B32Uint:
+    case vk::Format::eR32G32B32A32Uint:
+    case vk::Format::eR64Uint:
+    case vk::Format::eR64G64Uint:
+    case vk::Format::eR64G64B64Uint:
+    case vk::Format::eR64G64B64A64Uint:
+    case vk::Format::eA2B10G10R10UintPack32:
+    case vk::Format::eA2R10G10B10UintPack32:
+    case vk::Format::eS8Uint:
+        return VkFormatNumberClass::Uint;
+    case vk::Format::eR8Sint:
+    case vk::Format::eR8G8Sint:
+    case vk::Format::eR8G8B8Sint:
+    case vk::Format::eR8G8B8A8Sint:
+    case vk::Format::eB8G8R8Sint:
+    case vk::Format::eB8G8R8A8Sint:
+    case vk::Format::eA8B8G8R8SintPack32:
+    case vk::Format::eR16Sint:
+    case vk::Format::eR16G16Sint:
+    case vk::Format::eR16G16B16Sint:
+    case vk::Format::eR16G16B16A16Sint:
+    case vk::Format::eR32Sint:
+    case vk::Format::eR32G32Sint:
+    case vk::Format::eR32G32B32Sint:
+    case vk::Format::eR32G32B32A32Sint:
+    case vk::Format::eR64Sint:
+    case vk::Format::eR64G64Sint:
+    case vk::Format::eR64G64B64Sint:
+    case vk::Format::eR64G64B64A64Sint:
+    case vk::Format::eA2B10G10R10SintPack32:
+    case vk::Format::eA2R10G10B10SintPack32:
+        return VkFormatNumberClass::Sint;
+    case vk::Format::eUndefined:
+        return VkFormatNumberClass::Unknown;
+    default:
+        return VkFormatNumberClass::Float;
+    }
+}
+
+void LogImageViewNumberClassMismatch(const Shader::Info& stage,
+                                     const VideoCore::TextureCache::ImageDesc& desc,
+                                     const VideoCore::ImageView& image_view,
+                                     VideoCore::ImageId image_id) {
+    const auto expected = GetFormatNumberClass(desc.view_info.format);
+    const auto actual = GetFormatNumberClass(image_view.format);
+    if (expected == VkFormatNumberClass::Unknown || actual == VkFormatNumberClass::Unknown ||
+        expected == actual) {
+        return;
+    }
+
+    LOG_ERROR(Render_Vulkan,
+              "Image numeric type mismatch before descriptor write: stage={} image_id={} "
+              "expected={} requested_format={} actual={} actual_format={} storage={}",
+              stage.stage, image_id.index, NameOf(expected), vk::to_string(desc.view_info.format),
+              NameOf(actual), vk::to_string(image_view.format),
+              desc.type == VideoCore::TextureCache::BindingType::Storage);
+}
+
+} // Anonymous namespace
+
 static Shader::PushData MakeUserData(const AmdGpu::Regs& regs) {
     // TODO(roamic): Add support for multiple viewports and geometry shaders when ViewportIndex
     // is encountered and implemented in the recompiler.
@@ -742,7 +840,12 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             if (instance.IsNullDescriptorSupported()) {
                 image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
             } else {
-                auto& null_image_view = texture_cache.FindTexture(VideoCore::NULL_IMAGE_ID, desc);
+                const auto null_format = desc.view_info.format != vk::Format::eUndefined
+                                             ? desc.view_info.format
+                                             : desc.info.pixel_format;
+                const auto null_image_id = texture_cache.GetNullImage(null_format);
+                auto& null_image_view = texture_cache.FindTexture(null_image_id, desc);
+                LogImageViewNumberClassMismatch(stage, desc, null_image_view, null_image_id);
                 image_infos.emplace_back(VK_NULL_HANDLE, *null_image_view.image_view,
                                          vk::ImageLayout::eGeneral);
             }
@@ -757,6 +860,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
 
             auto& image = texture_cache.GetImage(image_id);
             auto& image_view = texture_cache.FindTexture(image_id, desc);
+            LogImageViewNumberClassMismatch(stage, desc, image_view, image_id);
 
             // The image is either bound as storage in a separate descriptor or bound as render
             // target in feedback loop. Depth images are excluded because they can't be bound as
