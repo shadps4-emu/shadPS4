@@ -326,6 +326,11 @@ s32 PS4_SYSV_ABI sceKernelGetProcessType(s32 pid) {
     return 0;
 }
 
+s32 PS4_SYSV_ABI __sys_regmgr_call(u32 op, u32 key, void* result, void* value, u64 len) {
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called, op: {:#x}, key: {}, len: {}", op, key, len);
+    return ORBIS_OK;
+}
+
 // Nominally: long sysconf(int name);
 u64 PS4_SYSV_ABI posix_sysconf(s32 name) {
     switch (name) {
@@ -481,6 +486,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", __Error);
     LIB_FUNCTION("k+AXqu2-eBc", "libkernel", 1, "libkernel", posix_getpagesize);
     LIB_FUNCTION("k+AXqu2-eBc", "libScePosix", 1, "libkernel", posix_getpagesize);
+    LIB_FUNCTION("7NwggrWJ5cA", "libkernel", 1, "libkernel", __sys_regmgr_call);
 
     LIB_FUNCTION("mkawd0NA9ts", "libkernel", 1, "libkernel", posix_sysconf);
     LIB_FUNCTION("mkawd0NA9ts", "libScePosix", 1, "libkernel", posix_sysconf);
