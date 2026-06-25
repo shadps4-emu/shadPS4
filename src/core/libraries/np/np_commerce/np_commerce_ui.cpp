@@ -16,7 +16,7 @@ static constexpr ImVec2 BUTTON_SIZE{160.0f, 30.0f};
 static const char* ModeTitle(CommerceMode m) {
     switch (m) {
     case CommerceMode::CATEGORY:
-        return "shadNet\u2122Store";
+        return "shadNet Store";
     case CommerceMode::PRODUCT:
         return "Product";
     case CommerceMode::PRODUCT_CODE:
@@ -26,9 +26,9 @@ static const char* ModeTitle(CommerceMode m) {
     case CommerceMode::DOWNLOADLIST:
         return "My Downloads";
     case CommerceMode::PLUS:
-        return "shadNet\u2122Plus";
+        return "shadNet Plus";
     default:
-        return "shadNet\u2122Store";
+        return "shadNet Store";
     }
 }
 
@@ -57,7 +57,7 @@ static const char* ModeEmptyText(CommerceMode m) {
     case CommerceMode::DOWNLOADLIST:
         return "All downloadable content.";
     case CommerceMode::PLUS:
-        return "Join shadNet\u2122Plus.";
+        return "Join shadNet Plus.";
     default:
         return "No product specified.";
     }
@@ -76,7 +76,7 @@ static const char* ModeDescription(CommerceMode m) {
     case CommerceMode::DOWNLOADLIST:
         return "Viewing owned downloads.";
     case CommerceMode::PLUS:
-        return "Joining shadNet\u2122Plus.";
+        return "Joining shadNet Plus.";
     default:
         return "";
     }
