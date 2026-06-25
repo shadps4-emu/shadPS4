@@ -349,7 +349,7 @@ void PsStoreIconLayer::Draw() {
         const ImVec2 p1{p0.x + icon.x, p0.y + icon.y};
         dl->AddRectFilled(p0, p1, IM_COL32(0, 55, 145, 230), 10.0f);
         dl->AddRect(p0, p1, IM_COL32(255, 255, 255, 210), 10.0f, 0, 2.0f);
-        const char* label = "PS";
+        const char* label = "SN";
         const ImVec2 ts = CalcTextSize(label);
         dl->AddText({p0.x + (icon.x - ts.x) * 0.5f, p0.y + (icon.y - ts.y) * 0.5f},
                     IM_COL32(255, 255, 255, 255), label);
