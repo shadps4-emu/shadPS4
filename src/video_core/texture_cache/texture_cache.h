@@ -105,6 +105,9 @@ public:
     /// Retrieves an image view with the properties of the specified image id.
     [[nodiscard]] ImageView& FindTexture(ImageId image_id, const ImageDesc& desc);
 
+    /// Gets or creates a null image for a particular Vulkan format.
+    [[nodiscard]] ImageId GetNullImage(vk::Format format);
+
     /// Retrieves the render target with specified properties
     [[nodiscard]] ImageView& FindRenderTarget(ImageId image_id, const ImageDesc& desc);
 
@@ -267,9 +270,6 @@ private:
             }
         }
     }
-
-    /// Gets or creates a null image for a particular format.
-    ImageId GetNullImage(vk::Format format);
 
     /// Copies image memory back to CPU.
     void DownloadImageMemory(ImageId image_id);

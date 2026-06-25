@@ -46,13 +46,15 @@ struct BufferSpecialization {
 
 struct ImageSpecialization {
     AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
-    bool is_integer = false;
+    AmdGpu::NumberClass num_class = AmdGpu::NumberClass::Float;
+    AmdGpu::DataFormat data_format = AmdGpu::DataFormat::FormatInvalid;
+    AmdGpu::NumberFormat num_format = AmdGpu::NumberFormat::Unorm;
     bool is_storage = false;
     bool is_cube = false;
     bool is_srgb = false;
+    bool is_null = false;
     AmdGpu::CompMapping dst_select{};
     AmdGpu::NumberConversion num_conversion{};
-    // FIXME any pipeline cache changes needed?
     u32 num_bindings = 0;
 
     bool operator==(const ImageSpecialization&) const = default;
@@ -134,20 +136,30 @@ struct StageSpecialization {
                              spec.element_size = sharp.element_size;
                          }
                      });
-        ForEachSharp(binding, images, info->images,
-                     [&](auto& spec, const auto& desc, AmdGpu::Image sharp) {
-                         spec.type = sharp.GetViewType(desc.is_array);
-                         spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
-                         spec.is_storage = desc.is_written;
-                         spec.is_cube = sharp.IsCube();
-                         if (spec.is_storage) {
-                             spec.dst_select = sharp.DstSelect();
-                         } else {
-                             spec.is_srgb = sharp.GetNumberFmt() == AmdGpu::NumberFormat::Srgb;
-                         }
-                         spec.num_conversion = sharp.GetNumberConversion();
-                         spec.num_bindings = desc.NumBindings(*info);
-                     });
+        for (const auto& desc : info->images) {
+            auto& spec = images.emplace_back();
+            const auto sharp = desc.GetSharp(*info);
+            if (!sharp.Valid() || sharp.GetDataFmt() == AmdGpu::DataFormat::FormatInvalid) {
+                binding++;
+                continue;
+            }
+            bitset.set(binding++);
+            const auto num_format = sharp.GetNumberFmt();
+            spec.type = sharp.GetViewType(desc.is_array);
+            spec.num_class = AmdGpu::GetNumberClass(num_format);
+            spec.data_format = sharp.GetDataFmt();
+            spec.num_format = num_format;
+            spec.is_storage = desc.is_written;
+            spec.is_cube = sharp.IsCube();
+            spec.is_null = !sharp;
+            if (spec.is_storage) {
+                spec.dst_select = sharp.DstSelect();
+            } else {
+                spec.is_srgb = num_format == AmdGpu::NumberFormat::Srgb;
+            }
+            spec.num_conversion = sharp.GetNumberConversion();
+            spec.num_bindings = desc.NumBindings(*info);
+        }
         ForEachSharp(binding, fmasks, info->fmasks,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
                          spec.width = sharp.width;
@@ -226,6 +238,10 @@ struct StageSpecialization {
         }
 
         if (start != other.start) {
+            return false;
+        }
+
+        if (bitset != other.bitset) {
             return false;
         }
 
