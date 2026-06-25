@@ -41,7 +41,7 @@ static const char* ModeActionLabel(CommerceMode m) {
     case CommerceMode::PRODUCT_CODE:
         return "Redeem code";
     case CommerceMode::PLUS:
-        return "Join PS Plus";
+        return "Join SN Plus";
     case CommerceMode::DOWNLOADLIST:
     default:
         return nullptr;
@@ -57,7 +57,7 @@ static const char* ModeEmptyText(CommerceMode m) {
     case CommerceMode::DOWNLOADLIST:
         return "All downloadable content.";
     case CommerceMode::PLUS:
-        return "Join PlayStation\u2122Plus.";
+        return "Join shadNet\u2122Plus.";
     default:
         return "No product specified.";
     }
@@ -76,7 +76,7 @@ static const char* ModeDescription(CommerceMode m) {
     case CommerceMode::DOWNLOADLIST:
         return "Viewing owned downloads.";
     case CommerceMode::PLUS:
-        return "Joining PlayStation\u2122Plus.";
+        return "Joining shadNet\u2122Plus.";
     default:
         return "";
     }
@@ -87,7 +87,7 @@ static std::string DescribeFeatures(u64 features) {
         return "none";
     }
     std::string out;
-    if (features & 0x1) { // SCE_NP_PLUS_FEATURE_REALTIME_MULTIPLAY
+    if (features & 0x1) { // ORBIS_NP_PLUS_FEATURE_REALTIME_MULTIPLAY
         out += "Realtime Multiplay";
     }
     if (out.empty()) {
