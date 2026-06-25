@@ -100,48 +100,6 @@ void Linker::Execute(const std::vector<std::string>& args) {
                 if (sym.nid_name.compare("_malloc_init") == 0) {
                     malloc_init = reinterpret_cast<PS4_SYSV_ABI s32 (*)()>(sym.virtual_address);
                 }
-                if (sym.nid_name.compare("malloc") == 0) {
-                    heap_api->heap_malloc =
-                        reinterpret_cast<PS4_SYSV_ABI void* (*)(u64)>(sym.virtual_address);
-                }
-                if (sym.nid_name.compare("free") == 0) {
-                    heap_api->heap_free =
-                        reinterpret_cast<PS4_SYSV_ABI void (*)(void*)>(sym.virtual_address);
-                }
-                if (sym.nid_name.compare("calloc") == 0) {
-                    heap_api->heap_calloc =
-                        reinterpret_cast<PS4_SYSV_ABI void* (*)(u64, u64)>(sym.virtual_address);
-                }
-                if (sym.nid_name.compare("realloc") == 0) {
-                    heap_api->heap_realloc =
-                        reinterpret_cast<PS4_SYSV_ABI void* (*)(void*, u64)>(sym.virtual_address);
-                }
-                if (sym.nid_name.compare("memalign") == 0) {
-                    heap_api->heap_memalign =
-                        reinterpret_cast<PS4_SYSV_ABI void* (*)(u64, u64)>(sym.virtual_address);
-                }
-                if (sym.nid_name.compare("posix_memalign") == 0) {
-                    heap_api->heap_posix_memalign =
-                        reinterpret_cast<PS4_SYSV_ABI s32 (*)(void**, u64, u64)>(
-                            sym.virtual_address);
-                }
-                if (sym.nid_name.compare("reallocalign") == 0) {
-                    heap_api->heap_reallocalign =
-                        reinterpret_cast<PS4_SYSV_ABI s32 (*)(void*, u64, u64)>(
-                            sym.virtual_address);
-                }
-                if (sym.nid_name.compare("malloc_stats") == 0) {
-                    heap_api->heap_malloc_stats =
-                        reinterpret_cast<PS4_SYSV_ABI s32 (*)(void*)>(sym.virtual_address);
-                }
-                if (sym.nid_name.compare("malloc_stats_fast") == 0) {
-                    heap_api->heap_malloc_stats_fast =
-                        reinterpret_cast<PS4_SYSV_ABI s32 (*)(void*)>(sym.virtual_address);
-                }
-                if (sym.nid_name.compare("malloc_usable_size") == 0) {
-                    heap_api->heap_malloc_usable_size =
-                        reinterpret_cast<PS4_SYSV_ABI u64 (*)(void*)>(sym.virtual_address);
-                }
             }
         }
     }
