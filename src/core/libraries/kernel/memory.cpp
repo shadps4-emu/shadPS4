@@ -356,17 +356,24 @@ s32 PS4_SYSV_ABI sceKernelMapNamedSystemFlexibleMemory(void** addr_in_out, u64 l
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
 
+    auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
+    if (True(map_flags & Core::MemoryMapFlags::Fixed) && in_addr == 0) {
+        if (Common::ElfInfo::FW_170 <= g_sdk_version) {
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        }
+        map_flags &= ~Core::MemoryMapFlags::Fixed;
+    }
+
     if (std::strlen(name) >= ORBIS_KERNEL_MAXIMUM_NAME_LENGTH) {
         LOG_ERROR(Kernel_Vmm, "name exceeds 32 bytes!");
         return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
 
-    VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
     if (in_addr == 0) {
         in_addr = 0x880000000;
     }
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
-    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     auto* memory = Core::Memory::Instance();
     const auto ret = memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
                                        Core::VMAType::System, name);
