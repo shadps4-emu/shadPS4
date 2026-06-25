@@ -100,6 +100,7 @@ enum class VMAType : u32 {
     Stack = 6,
     Code = 7,
     File = 8,
+    System = 9,
 };
 
 struct VirtualMemoryArea {
