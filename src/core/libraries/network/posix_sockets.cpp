@@ -658,6 +658,7 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
             CASE_GETSOCKOPT(ORBIS_SO_SNDBUF, SO_SNDBUF);
             CASE_GETSOCKOPT(ORBIS_SO_RCVBUF, SO_RCVBUF);
             CASE_GETSOCKOPT(ORBIS_SO_TYPE, SO_TYPE);
+            CASE_GETSOCKOPT(ORBIS_SO_ERROR, SO_ERROR);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_NBIO, sockopt_so_nbio);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_CONNECTTIMEO, sockopt_so_connecttimeo);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_ACCEPTTIMEO, sockopt_so_accepttimeo);
@@ -675,11 +676,14 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
         case ORBIS_SO_LINGER: {
             ::linger native_linger;
             socklen_t native_len = sizeof(native_linger);
-            auto retval = getsockopt(sock, native_level, SO_LINGER,
-                                     reinterpret_cast<char*>(&native_linger), &native_len);
-            OrbisNetLinger guest_linger{native_linger.l_linger, native_linger.l_onoff};
-            *optlen = std::min<u32>(sizeof(OrbisNetLinger), *optlen);
-            std::memcpy(optval, &guest_linger, *optlen);
+            auto retval = ConvertReturnErrorCode(getsockopt(sock, native_level, SO_LINGER,
+                                                            reinterpret_cast<char*>(&native_linger),
+                                                            &native_len));
+            if (retval == 0) {
+                OrbisNetLinger guest_linger{native_linger.l_linger, native_linger.l_onoff};
+                *optlen = std::min<u32>(sizeof(OrbisNetLinger), *optlen);
+                std::memcpy(optval, &guest_linger, *optlen);
+            }
             return retval;
         }
         case ORBIS_SO_SNDTIMEO:
@@ -692,21 +696,14 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
             std::memcpy(optval, &out_time, *optlen);
             return 0;
         }
-        case ORBIS_SO_ERROR: {
-            socklen_t optlen_temp = *optlen;
-            auto retval = ConvertReturnErrorCode(
-                getsockopt(sock, level, SO_ERROR, static_cast<char*>(optval), &optlen_temp));
-            *static_cast<u32*>(optval) = optlen_temp;
-            return retval;
-        }
         case ORBIS_NET_SO_ERROR_EX: {
-            socklen_t optlen_temp = *optlen;
-            auto retval = ConvertReturnErrorCode(
-                getsockopt(sock, level, SO_ERROR, static_cast<char*>(optval), &optlen_temp));
-            if (optlen_temp != 0) {
-                optlen_temp |= ORBIS_NET_ERROR_BASE;
+            u32 optval_temp = 0;
+            auto retval = ConvertReturnErrorCode(getsockopt(
+                sock, native_level, SO_ERROR, reinterpret_cast<char*>(&optval_temp), optlen));
+            if (retval == 0 && optval_temp != 0) {
+                optval_temp |= ORBIS_NET_ERROR_BASE;
+                *static_cast<u32*>(optval) = optval_temp;
             }
-            *static_cast<u32*>(optval) = optlen_temp;
             return retval;
         }
         }
