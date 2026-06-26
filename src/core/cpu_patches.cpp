@@ -138,8 +138,8 @@ static void GenerateTcbCompare(void* /* address */, const ZydisDecodedOperand* o
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
 #if defined(_WIN32)
-    // Prepare a scratch register
-    const Xbyak::Reg64 scratch = rax;
+    // Prepare a scratch register. Use rax where possible, rbx if rax is in use.
+    const Xbyak::Reg64 scratch = operands[0].reg.value == ZYDIS_REGISTER_RAX ? rbx : rax;
 
     // Set rsp to before red zone and save scratch register
     c.lea(rsp, ptr[rsp - 128]);
@@ -170,8 +170,8 @@ static void GenerateTcbExclusiveOr(void* /* address */, const ZydisDecodedOperan
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
 #if defined(_WIN32)
-    // Prepare a scratch register
-    const Xbyak::Reg64 scratch = rax;
+    // Prepare a scratch register. Use rax where possible, rbx if rax is in use.
+    const Xbyak::Reg64 scratch = operands[0].reg.value == ZYDIS_REGISTER_RAX ? rbx : rax;
 
     // Set rsp to before red zone and save scratch register
     c.lea(rsp, ptr[rsp - 128]);
