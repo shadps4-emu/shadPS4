@@ -38,7 +38,7 @@
 #include "core/libraries/np/np_commerce/np_commerce.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_manager.h"
-#include "core/libraries/np/np_matching2.h"
+#include "core/libraries/np/np_matching2/np_matching2.h"
 #include "core/libraries/np/np_partner.h"
 #include "core/libraries/np/np_party.h"
 #include "core/libraries/np/np_profile_dialog/np_profile_dialog.h"
