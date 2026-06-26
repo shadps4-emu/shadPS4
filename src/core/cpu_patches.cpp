@@ -565,7 +565,7 @@ static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches =
       {FilterTcbAccess, GenerateTcbAccess, need_tcb_trampoline}}},
     {ZYDIS_MNEMONIC_CMP, {{FilterTcbAccess, GenerateTcbCompare, need_tcb_trampoline}}}
 #endif
-}; // namespace Core
+};
 
 static std::once_flag init_flag;
 
