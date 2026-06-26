@@ -163,7 +163,17 @@ void ApplyPatchesFromXML(std::filesystem::path path) {
                             targetStr = patchLineIt->attribute("Target").value();
                             sizeStr = patchLineIt->attribute("Size").value();
                         } else {
-                            patchValue = convertValueToHex(type, patchValue);
+                            try {
+                                patchValue = convertValueToHex(type, patchValue);
+                            } catch (std::exception& e) {
+                                ASSERT_MSG(false,
+                                           "Failed to parse patch value \"{}\" for \"{}\" in "
+                                           "patch \"{}\", error: \"{}\"\n"
+                                           "If the patch was working on earlier versions, then it "
+                                           "was using a format that shadPS4 handled incorrectly, "
+                                           "and the patch should instead be fixed.",
+                                           patchValue, address, currentPatchName, e.what());
+                            }
                         }
 
                         bool littleEndian = false;
