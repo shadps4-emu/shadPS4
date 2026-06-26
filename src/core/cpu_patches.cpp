@@ -93,11 +93,8 @@ static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
            dst_op.reg.value <= ZYDIS_REGISTER_R15;
 }
 
-static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* operands,
-                              Xbyak::CodeGenerator& c) {
-    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
-
 #if defined(_WIN32)
+static void RetrieveTcbPointer(Xbyak::Reg dst, Xbyak::CodeGenerator& c) {
     // The following logic is based on the Kernel32.dll asm of TlsGetValue
     static constexpr u32 TlsSlotsOffset = 0x1480;
     static constexpr u32 TlsExpansionSlotsOffset = 0x1780;
@@ -118,6 +115,15 @@ static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* op
         // Load the pointer to our buffer.
         c.mov(dst, qword[dst + tls_index * sizeof(LPVOID)]);
     }
+}
+#endif
+
+static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* operands,
+                              Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+
+#if defined(_WIN32)
+    RetrieveTcbPointer(dst, c);
 #else
     const auto src = ZydisToXbyakMemoryOperand(operands[1]);
 
@@ -132,13 +138,6 @@ static void GenerateTcbCompare(void* /* address */, const ZydisDecodedOperand* o
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
 #if defined(_WIN32)
-    // The following logic is based on the Kernel32.dll asm of TlsGetValue
-    static constexpr u32 TlsSlotsOffset = 0x1480;
-    static constexpr u32 TlsExpansionSlotsOffset = 0x1780;
-    static constexpr u32 TlsMinimumAvailable = 64;
-
-    const auto slot = GetTcbKey();
-
     // Prepare a scratch register
     const Xbyak::Reg64 scratch = rax;
 
@@ -147,19 +146,8 @@ static void GenerateTcbCompare(void* /* address */, const ZydisDecodedOperand* o
     c.pushfq();
     c.push(scratch);
 
-    // Load the pointer to the table of TLS slots.
-    c.putSeg(gs);
-    if (slot < TlsMinimumAvailable) {
-        // Load the pointer to TLS slots.
-        c.mov(scratch, ptr[reinterpret_cast<void*>(TlsSlotsOffset + slot * sizeof(LPVOID))]);
-    } else {
-        const u32 tls_index = slot - TlsMinimumAvailable;
-
-        // Load the pointer to the table of TLS expansion slots.
-        c.mov(scratch, ptr[reinterpret_cast<void*>(TlsExpansionSlotsOffset)]);
-        // Load the pointer to our buffer.
-        c.mov(scratch, qword[scratch + tls_index * sizeof(LPVOID)]);
-    }
+    // Retrieve value from TCB and store it in the scratch register
+    RetrieveTcbPointer(scratch, c);
 
     // Preform compare op
     c.cmp(dst, scratch);
