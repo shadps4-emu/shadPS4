@@ -127,6 +127,56 @@ static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* op
 #endif
 }
 
+static void GenerateTcbCompare(void* /* address */, const ZydisDecodedOperand* operands,
+                               Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+
+#if defined(_WIN32)
+    // The following logic is based on the Kernel32.dll asm of TlsGetValue
+    static constexpr u32 TlsSlotsOffset = 0x1480;
+    static constexpr u32 TlsExpansionSlotsOffset = 0x1780;
+    static constexpr u32 TlsMinimumAvailable = 64;
+
+    const auto slot = GetTcbKey();
+
+    // Prepare a scratch register
+    const Xbyak::Reg64 scratch = rax;
+
+    // Set rsp to before red zone and save scratch register
+    c.lea(rsp, ptr[rsp - 128]);
+    c.pushfq();
+    c.push(scratch);
+
+    // Load the pointer to the table of TLS slots.
+    c.putSeg(gs);
+    if (slot < TlsMinimumAvailable) {
+        // Load the pointer to TLS slots.
+        c.mov(scratch, ptr[reinterpret_cast<void*>(TlsSlotsOffset + slot * sizeof(LPVOID))]);
+    } else {
+        const u32 tls_index = slot - TlsMinimumAvailable;
+
+        // Load the pointer to the table of TLS expansion slots.
+        c.mov(scratch, ptr[reinterpret_cast<void*>(TlsExpansionSlotsOffset)]);
+        // Load the pointer to our buffer.
+        c.mov(scratch, qword[scratch + tls_index * sizeof(LPVOID)]);
+    }
+
+    // Preform compare op
+    c.cmp(dst, scratch);
+
+    // Restore registers
+    c.pop(scratch);
+    c.popfq();
+    c.lea(rsp, ptr[rsp + 128]);
+#else
+    const auto src = ZydisToXbyakMemoryOperand(operands[1]);
+
+    // Replace fs compare with gs compare.
+    c.putSeg(gs);
+    c.cmp(dst, src);
+#endif
+}
+
 static bool FilterStackCheck(const ZydisDecodedOperand* operands) {
     const auto& dst_op = operands[0];
     const auto& src_op = operands[1];
@@ -489,7 +539,13 @@ static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches =
       {FilterTcbAccess, GenerateTcbAccess, false}
 #endif
      }},
+    {ZYDIS_MNEMONIC_CMP,
+     // Windows needs a trampoline for Tcb accesses.
+     {{FilterTcbAccess, GenerateTcbCompare, true}
+#else
+    {FilterTcbAccess, GenerateTcbCompare, false}
 #endif
+     }}
 };
 
 static std::once_flag init_flag;
