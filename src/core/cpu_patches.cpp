@@ -193,7 +193,7 @@ static void GenerateTcbExclusiveOr(void* /* address */, const ZydisDecodedOperan
 
     // Replace fs xor with gs xor.
     c.putSeg(gs);
-    c.xor (dst, src);
+    c.xor_(dst, src);
 #endif
 }
 
