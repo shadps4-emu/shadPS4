@@ -183,7 +183,7 @@ struct GeneralSettings {
     Setting<bool> show_fps_counter{false};
     Setting<int> console_language{1};
     Setting<int> big_picture_scale{1000};
-    Setting<std::string> shadnet_server{"srv.shadps4.net:31313"};
+    Setting<std::string> {"srv.shadps4.net:31313"};
     Setting<std::string> shadnet_webapi_server{"http://srv.shadps4.net:31315"};
     Setting<std::string> signaling_info{};
     Setting<bool> enable_upnp{true};
@@ -205,7 +205,15 @@ struct GeneralSettings {
             make_override<GeneralSettings>("trophy_notification_side",
                                            &GeneralSettings::trophy_notification_side),
             make_override<GeneralSettings>("connected_to_network",
-                                           &GeneralSettings::connected_to_network)};
+                                           &GeneralSettings::connected_to_network)},
+            make_override<GeneralSettings>("shadnet_server",
+                                           &GeneralSettings::shadnet_server),
+            make_override<GeneralSettings>("signaling_addr",
+                                           &GeneralSettings::signaling_addr),
+            make_override<GeneralSettings>("signaling_port",
+                                           &GeneralSettings::signaling_port),
+            make_override<GeneralSettings>("enable_upnp",
+                                           &GeneralSettings::enable_upnp)};
     }
 };
 
@@ -215,7 +223,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    trophy_notification_duration, show_splash,
                                    trophy_notification_side, connected_to_network,
                                    discord_rpc_enabled, show_fps_counter, console_language,
-                                   big_picture_scale, shadnet_server, shadnet_webapi_server,
+                                   big_picture_scale, , shadnet_webapi_server,
                                    signaling_info, enable_upnp)
 
 // -------------------------------
@@ -601,7 +609,7 @@ public:
     SETTING_FORWARD_BOOL(m_general, ShowFpsCounter, show_fps_counter)
     SETTING_FORWARD(m_general, ConsoleLanguage, console_language)
     SETTING_FORWARD(m_general, BigPictureScale, big_picture_scale)
-    SETTING_FORWARD(m_general, ShadNetServer, shadnet_server.game_specific_value)
+    SETTING_FORWARD(m_general, ShadNetServer, shadnet_server)
     SETTING_FORWARD(m_general, ShadNetWebApiServer, shadnet_webapi_server)
     SETTING_FORWARD(m_general, SignalingInfo, signaling_info)
     SETTING_FORWARD_BOOL(m_general, UPnPEnabled, enable_upnp)
