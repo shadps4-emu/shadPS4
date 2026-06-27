@@ -705,6 +705,7 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
     if (len == 0) {
         // If length is 0, mmap returns EINVAL.
         ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
+        LOG_ERROR(Kernel_Vmm, "Invalid length");
         return reinterpret_cast<void*>(-1);
     }
 
@@ -721,6 +722,7 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
     if (True(mem_flags & Core::MemoryMapFlags::Fixed) && vaddr != aligned_addr) {
         // If flags Fixed is specified, the input address must be aligned.
         ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
+        LOG_ERROR(Kernel_Vmm, "Misaligned input address");
         return reinterpret_cast<void*>(-1);
     }
 
@@ -748,9 +750,11 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
         // If the memory mappings fail, mmap sets errno to the appropriate error code,
         // then returns (void*)-1;
         ErrSceToPosix(result);
+        LOG_ERROR(Kernel_Vmm, "error = {}", *__Error());
         return reinterpret_cast<void*>(-1);
     }
 
+    LOG_INFO(Kernel_Vmm, "addr_out = {}", fmt::ptr(addr_out));
     return addr_out;
 }
 
@@ -760,7 +764,6 @@ s32 PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd,
 
     if (addr_out == reinterpret_cast<void*>(-1)) {
         // posix_mmap failed, calculate and return the appropriate kernel error code using errno.
-        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
 

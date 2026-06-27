@@ -12,6 +12,7 @@
 #include <ws2tcpip.h>
 #else
 #include <arpa/inet.h>
+#include <net/if.h>
 #endif
 
 namespace Libraries::Net {

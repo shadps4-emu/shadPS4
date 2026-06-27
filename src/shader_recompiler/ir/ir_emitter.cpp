@@ -372,13 +372,12 @@ U32U64 IREmitter::SharedAtomicAnd(const U32& address, const U32U64& data, bool i
 U32U64 IREmitter::SharedAtomicOr(const U32& address, const U32U64& data, bool is_gds) {
     switch (data.Type()) {
     case Type::U32:
-        return Inst<U32>(Opcode::SharedAtomicAnd32, Flags{is_gds}, address, data);
+        return Inst<U32>(Opcode::SharedAtomicOr32, Flags{is_gds}, address, data);
     case Type::U64:
-        return Inst<U64>(Opcode::SharedAtomicAnd64, Flags{is_gds}, address, data);
+        return Inst<U64>(Opcode::SharedAtomicOr64, Flags{is_gds}, address, data);
     default:
         ThrowInvalidType(data.Type());
     }
-    return Inst<U32>(Opcode::SharedAtomicOr32, address, data);
 }
 
 U32U64 IREmitter::SharedAtomicXor(const U32& address, const U32U64& data, bool is_gds) {

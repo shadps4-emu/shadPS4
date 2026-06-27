@@ -124,6 +124,8 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
         LOG_WARNING(Common_Filesystem, "No NPCommIDs in npbind.dat");
         return trophy_index_map;
     }
+    auto& game_info = Common::ElfInfo::Instance();
+    game_info.SetNpCommIds(np_comm_ids);
 
     if (!std::filesystem::exists(trophy_dir)) {
         LOG_WARNING(Common_Filesystem, "Game does not contain a trophy directory");

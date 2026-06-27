@@ -8,8 +8,11 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/np/np_handler.h"
 #include "core/libraries/np/np_manager.h"
-#include "core/libraries/np/np_matching2.h"
+#include "core/libraries/np/np_matching2/np_matching2.h"
+#include "core/libraries/np/np_matching2/np_matching2_internal.h"
+#include "core/libraries/np/np_matching2/np_matching2_types.h"
 #include "core/libraries/np/np_types.h"
 #include "core/libraries/system/userservice.h"
 
@@ -18,43 +21,12 @@ namespace Libraries::Np::NpMatching2 {
 static bool g_initialized = false;
 static OrbisNpMatching2ContextId contextId = 1;
 
-struct NpMatching2ContextEvent {
-    OrbisNpMatching2ContextId contextId;
-    OrbisNpMatching2Event event;
-    OrbisNpMatching2EventCause cause;
-    int errorCode;
-};
-
-struct NpMatching2LobbyEvent {
-    OrbisNpMatching2ContextId contextId;
-    OrbisNpMatching2LobbyId lobbyId;
-    OrbisNpMatching2Event event;
-    void* data;
-};
-
-struct NpMatching2RoomEvent {
-    OrbisNpMatching2ContextId contextId;
-    OrbisNpMatching2RoomId roomId;
-    OrbisNpMatching2Event event;
-    void* data;
-};
-
 static std::mutex g_events_mutex;
 static std::deque<NpMatching2ContextEvent> g_ctx_events;
 static std::deque<NpMatching2LobbyEvent> g_lobby_events;
 static std::deque<NpMatching2RoomEvent> g_room_events;
 static std::mutex g_responses_mutex;
 static std::deque<std::function<void()>> g_responses;
-
-struct OrbisNpMatching2CreateContextParameter {
-    Libraries::Np::OrbisNpId* npId;
-    void* npCommunicationId;
-    void* npPassphrase;
-    Libraries::Np::OrbisNpServiceLabel serviceLabel;
-    u64 size;
-};
-
-static_assert(sizeof(OrbisNpMatching2CreateContextParameter) == 0x28);
 
 int PS4_SYSV_ABI sceNpMatching2CreateContext(const OrbisNpMatching2CreateContextParameter* param,
                                              OrbisNpMatching2ContextId* ctxId) {
@@ -68,18 +40,8 @@ int PS4_SYSV_ABI sceNpMatching2CreateContext(const OrbisNpMatching2CreateContext
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    *ctxId = contextId++;
-
-    return ORBIS_OK;
+    return ContextManager::Instance().CreateContext(param->npId, param->serviceLabel, ctxId);
 }
-
-struct OrbisNpMatching2CreateContextParameterA {
-    Libraries::UserService::OrbisUserServiceUserId userId;
-    Libraries::Np::OrbisNpServiceLabel serviceLabel;
-    u64 size;
-};
-
-static_assert(sizeof(OrbisNpMatching2CreateContextParameterA) == 16);
 
 int PS4_SYSV_ABI sceNpMatching2CreateContextA(const OrbisNpMatching2CreateContextParameterA* param,
                                               OrbisNpMatching2ContextId* ctxId) {
@@ -93,23 +55,11 @@ int PS4_SYSV_ABI sceNpMatching2CreateContextA(const OrbisNpMatching2CreateContex
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    *ctxId = contextId++;
+    const Libraries::Np::OrbisNpId np_id =
+        Libraries::Np::NpHandler::GetInstance().GetNpId(param->userId);
 
-    return ORBIS_OK;
+    return ContextManager::Instance().CreateContext(&np_id, param->serviceLabel, ctxId);
 }
-
-using OrbisNpMatching2RequestCallback = PS4_SYSV_ABI void (*)(OrbisNpMatching2ContextId,
-                                                              OrbisNpMatching2RequestId,
-                                                              OrbisNpMatching2Event, int, void*,
-                                                              void*);
-
-struct OrbisNpMatching2RequestOptParam {
-    OrbisNpMatching2RequestCallback callback;
-    void* arg;
-    u32 timeout;
-    u16 appId;
-    u8 dummy[2];
-};
 
 static std::optional<OrbisNpMatching2RequestOptParam> defaultRequestOptParam = std::nullopt;
 
@@ -118,84 +68,6 @@ auto GetOptParam(OrbisNpMatching2RequestOptParam* requestOpt) {
                       : (defaultRequestOptParam ? defaultRequestOptParam
                                                 : std::optional<OrbisNpMatching2RequestOptParam>{});
 }
-
-struct OrbisNpMatching2CreateJoinRoomRequestA {
-    u16 maxSlot;
-    OrbisNpMatching2TeamId teamId;
-    u8 pad[5];
-    OrbisNpMatching2Flags flags;
-    OrbisNpMatching2WorldId worldId;
-    OrbisNpMatching2LobbyId lobbyId;
-    void* roomPasswd;
-    void* passwdSlotMask;
-    void* groupConfig;
-    u64 groupConfigs;
-    void* joinGroupLabel;
-    Libraries::Np::OrbisNpAccountId* allowedUser;
-    u64 allowedUsers;
-    Libraries::Np::OrbisNpAccountId* blockedUser;
-    u64 blockedUsers;
-    void* internalBinAttr;
-    u64 internalBinAttrs;
-    void* externalSearchIntAttr;
-    u64 externalSearchIntAttrs;
-    void* externalSearchBinAttr;
-    u64 externalSearchBinAttrs;
-    void* externalBinAttr;
-    u64 externalBinAttrs;
-    void* memberInternalBinAttr;
-    u64 memberInternalBinAttrs;
-    void* signalingParam;
-};
-
-static_assert(sizeof(OrbisNpMatching2CreateJoinRoomRequestA) == 184);
-
-struct OrbisNpMatching2RoomDataInternal {
-    u16 publicSlots;
-    u16 privateSlots;
-    u16 openPublicSlots;
-    u16 openPrivateSlots;
-    u16 maxSlot;
-    OrbisNpMatching2ServerId serverId;
-    OrbisNpMatching2WorldId worldId;
-    OrbisNpMatching2LobbyId lobbyId;
-    OrbisNpMatching2RoomId roomId;
-    u64 passwdSlotMask;
-    u64 joinedSlotMask;
-    void* roomGroup;
-    u64 roomGroups;
-    OrbisNpMatching2Flags flags;
-    u8 pad[4];
-    void* internalBinAttr;
-    u64 internalBinAttrs;
-};
-
-struct OrbisNpMatching2RoomMemberDataInternalA {
-    OrbisNpMatching2RoomMemberDataInternalA* next;
-    u64 joinDateTicks;
-    Libraries::Np::OrbisNpPeerAddressA user;
-    Libraries::Np::OrbisNpOnlineId onlineId;
-    u8 pad[4];
-    OrbisNpMatching2RoomMemberId memberId;
-    OrbisNpMatching2TeamId teamId;
-    OrbisNpMatching2NatType natType;
-    OrbisNpMatching2Flags flags;
-    void* roomGroup;
-    void* roomMemberInternalBinAttr;
-    u64 roomMemberInternalBinAttrs;
-};
-
-struct OrbisNpMatching2RoomMemberDataInternalListA {
-    OrbisNpMatching2RoomMemberDataInternalA* members;
-    u64 membersNum;
-    OrbisNpMatching2RoomMemberDataInternalA* me;
-    OrbisNpMatching2RoomMemberDataInternalA* owner;
-};
-
-struct OrbisNpMatching2CreateJoinRoomResponseA {
-    OrbisNpMatching2RoomDataInternal* roomData;
-    OrbisNpMatching2RoomMemberDataInternalListA members;
-};
 
 int PS4_SYSV_ABI sceNpMatching2CreateJoinRoomA(OrbisNpMatching2ContextId ctxId,
                                                OrbisNpMatching2CreateJoinRoomRequestA* request,
@@ -270,11 +142,6 @@ int PS4_SYSV_ABI sceNpMatching2CreateJoinRoomA(OrbisNpMatching2ContextId ctxId,
     return ORBIS_OK;
 }
 
-using OrbisNpMatching2ContextCallback = PS4_SYSV_ABI void (*)(OrbisNpMatching2ContextId contextId,
-                                                              OrbisNpMatching2Event event,
-                                                              OrbisNpMatching2EventCause cause,
-                                                              int errorCode, void* userdata);
-
 std::function<void(const NpMatching2ContextEvent*)> npMatching2ContextCallback = nullptr;
 
 int PS4_SYSV_ABI sceNpMatching2RegisterContextCallback(OrbisNpMatching2ContextCallback callback,
@@ -291,10 +158,6 @@ int PS4_SYSV_ABI sceNpMatching2RegisterContextCallback(OrbisNpMatching2ContextCa
 
     return ORBIS_OK;
 }
-
-using OrbisNpMatching2LobbyEventCallback =
-    PS4_SYSV_ABI void (*)(OrbisNpMatching2ContextId contextId, OrbisNpMatching2LobbyId lobbyId,
-                          OrbisNpMatching2Event event, void* data, void* userdata);
 
 std::function<void(const NpMatching2LobbyEvent*)> npMatching2LobbyCallback = nullptr;
 
@@ -313,11 +176,6 @@ int PS4_SYSV_ABI sceNpMatching2RegisterLobbyEventCallback(
     return ORBIS_OK;
 }
 
-using OrbisNpMatching2RoomEventCallback = PS4_SYSV_ABI void (*)(OrbisNpMatching2ContextId contextId,
-                                                                OrbisNpMatching2RoomId roomId,
-                                                                OrbisNpMatching2Event event,
-                                                                void* data, void* userdata);
-
 std::function<void(const NpMatching2RoomEvent*)> npMatching2RoomCallback = nullptr;
 
 int PS4_SYSV_ABI sceNpMatching2RegisterRoomEventCallback(OrbisNpMatching2ContextId ctxId,
@@ -335,19 +193,6 @@ int PS4_SYSV_ABI sceNpMatching2RegisterRoomEventCallback(OrbisNpMatching2Context
 
     return ORBIS_OK;
 }
-
-struct OrbisNpMatching2SignalingEvent {
-    OrbisNpMatching2ContextId contextId;
-    OrbisNpMatching2RoomId roomId;
-    OrbisNpMatching2RoomMemberId roomMemberId;
-    OrbisNpMatching2Event event;
-    int errorCode;
-};
-
-using OrbisNpMatching2SignalingCallback =
-    PS4_SYSV_ABI void (*)(OrbisNpMatching2ContextId contextId, OrbisNpMatching2RoomId roomId,
-                          OrbisNpMatching2RoomMemberId roomMemberId, OrbisNpMatching2Event event,
-                          int errorCode, void* userdata);
 
 std::function<void(const OrbisNpMatching2SignalingEvent*)> npMatching2SignalingCallback = nullptr;
 
@@ -421,11 +266,6 @@ void ProcessEvents() {
     }
 }
 
-struct OrbisNpMatching2InitializeParameter {
-    u64 poolSize;
-    //
-};
-
 int PS4_SYSV_ABI sceNpMatching2Initialize(OrbisNpMatching2InitializeParameter* param) {
     LOG_DEBUG(Lib_NpMatching2, "called");
 
@@ -433,7 +273,20 @@ int PS4_SYSV_ABI sceNpMatching2Initialize(OrbisNpMatching2InitializeParameter* p
         return ORBIS_NP_MATCHING2_ERROR_ALREADY_INITIALIZED;
     }
 
+    if (!param || (param->size != 0x30 && param->size != 0x28)) {
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+
+    LOG_INFO(Lib_NpMatching2, "poolSize={:#x} stackSize={:#x} priority={} size={:#x}",
+             param->poolSize, param->stackSize, param->priority, param->size);
+    if (param->size == 0x30) {
+        LOG_INFO(Lib_NpMatching2, "sslPoolSize={:#x}", param->sslPoolSize);
+    }
+
+    InitEventDispatcher();
+
     g_initialized = true;
+    g_state.initialized.store(true);
     Libraries::Np::NpManager::RegisterNpCallback("NpMatching2", ProcessEvents);
 
     return ORBIS_OK;
@@ -447,7 +300,11 @@ int PS4_SYSV_ABI sceNpMatching2Terminate() {
     }
 
     g_initialized = false;
+    g_state.initialized.store(false);
     Libraries::Np::NpManager::DeregisterNpCallback("NpMatching2");
+
+    TermEventDispatcher();
+    ContextManager::Instance().Reset();
 
     return ORBIS_OK;
 }
@@ -484,26 +341,6 @@ int PS4_SYSV_ABI sceNpMatching2GetServerId(OrbisNpMatching2ContextId ctxId,
     return ORBIS_OK;
 }
 
-struct OrbisNpMatching2GetWorldInfoListRequest {
-    OrbisNpMatching2ServerId serverId;
-};
-
-struct OrbisNpMatching2World {
-    OrbisNpMatching2World* next;
-    OrbisNpMatching2WorldId worldId;
-    u32 lobbiesNum;
-    u32 maxLobbyMembersNum;
-    u32 lobbyMembersNum;
-    u32 roomsNum;
-    u32 roomMembersNum;
-    u8 pad[3];
-};
-
-struct OrbisNpMatching2GetWorldInfoListResponse {
-    OrbisNpMatching2World* world;
-    u64 worldNum;
-};
-
 int PS4_SYSV_ABI sceNpMatching2GetWorldInfoList(OrbisNpMatching2ContextId ctxId,
                                                 OrbisNpMatching2GetWorldInfoListRequest* request,
                                                 OrbisNpMatching2RequestOptParam* requestOpt,
@@ -538,16 +375,6 @@ int PS4_SYSV_ABI sceNpMatching2GetWorldInfoList(OrbisNpMatching2ContextId ctxId,
     return ORBIS_OK;
 }
 
-struct OrbisNpMatching2PresenceOptionData {
-    u8 data[16];
-    u64 len;
-};
-
-struct OrbisNpMatching2LeaveRoomRequest {
-    OrbisNpMatching2RoomId roomId;
-    OrbisNpMatching2PresenceOptionData optData;
-};
-
 int PS4_SYSV_ABI sceNpMatching2LeaveRoom(OrbisNpMatching2ContextId ctxId,
                                          OrbisNpMatching2LeaveRoomRequest* request,
                                          OrbisNpMatching2RequestOptParam* requestOpt,
@@ -577,38 +404,6 @@ int PS4_SYSV_ABI sceNpMatching2LeaveRoom(OrbisNpMatching2ContextId ctxId,
 
     return ORBIS_OK;
 }
-
-struct OrbisNpMatching2RangeFilter {
-    u32 start;
-    u32 max;
-};
-
-struct OrbisNpMatching2SearchRoomRequest {
-    int option;
-    OrbisNpMatching2WorldId worldId;
-    OrbisNpMatching2LobbyId lobbyId;
-    OrbisNpMatching2RangeFilter rangeFilter;
-    OrbisNpMatching2Flags flags1;
-    OrbisNpMatching2Flags flags2;
-    void* intFilter;
-    u64 intFilters;
-    void* binFilter;
-    u64 binFilters;
-    OrbisNpMatching2AttributeId* attr;
-    u64 attrs;
-};
-
-struct OrbisNpMatching2Range {
-    u32 start;
-    u32 total;
-    u32 results;
-    u8 pad[4];
-};
-
-struct OrbisNpMatching2SearchRoomResponseA {
-    OrbisNpMatching2Range range;
-    void* roomDataExt;
-};
 
 int PS4_SYSV_ABI sceNpMatching2SearchRoom(OrbisNpMatching2ContextId ctxId,
                                           OrbisNpMatching2SearchRoomRequest* request,
@@ -641,13 +436,6 @@ int PS4_SYSV_ABI sceNpMatching2SearchRoom(OrbisNpMatching2ContextId ctxId,
 
     return ORBIS_OK;
 }
-
-struct OrbisNpMatching2SetUserInfoRequest {
-    OrbisNpMatching2ServerId serverId;
-    u8 padding[6];
-    void* userBinAttr;
-    u64 userBinAttrs;
-};
 
 int PS4_SYSV_ABI sceNpMatching2SetUserInfo(OrbisNpMatching2ContextId ctxId,
                                            OrbisNpMatching2SetUserInfoRequest* request,
