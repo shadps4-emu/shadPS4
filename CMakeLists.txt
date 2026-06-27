@@ -632,6 +632,8 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_manager.h
             src/core/libraries/np/np_matching2/np_matching2.cpp
             src/core/libraries/np/np_matching2/np_matching2.h
+            src/core/libraries/np/np_matching2/np_matching2_internal.cpp
+            src/core/libraries/np/np_matching2/np_matching2_internal.h
             src/core/libraries/np/np_matching2/np_matching2_types.h
             src/core/libraries/np/np_trophy.cpp
             src/core/libraries/np/np_trophy.h
