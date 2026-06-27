@@ -190,21 +190,23 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
         // Now we need to check if the requested library is allowed to LLE.
         // First, we allow all modules from game-specific sys_modules
         const auto& sys_module_path = EmulatorSettings.GetSysModulesDir();
-        const auto& game_specific_module_path =
-            sys_module_path / game_info->GameSerial() / mod_name;
-        if (std::filesystem::exists(game_specific_module_path)) {
-            // The requested module is present in the game-specific sys_modules, load it.
-            LOG_INFO(Loader, "Loading {} from game serial file {}", mod_name,
-                     game_info->GameSerial());
-            s32 handle =
-                linker->LoadAndStartModule(game_specific_module_path, argc, argv, &start_result);
-            ASSERT_MSG(handle >= 0, "Failed to load module {}", mod_name);
-            mod.handle = handle;
-            mod.is_loaded++;
-            if (res_out != nullptr) {
-                *res_out = start_result;
+        if (!game_info->GameSerial().empty()) {
+            const auto& game_specific_module_path =
+                sys_module_path / game_info->GameSerial() / mod_name;
+            if (std::filesystem::exists(game_specific_module_path)) {
+                // The requested module is present in the game-specific sys_modules, load it.
+                LOG_INFO(Loader, "Loading {} from game serial file {}", mod_name,
+                         game_info->GameSerial());
+                s32 handle = linker->LoadAndStartModule(game_specific_module_path, argc, argv,
+                                                        &start_result);
+                ASSERT_MSG(handle >= 0, "Failed to load module {}", mod_name);
+                mod.handle = handle;
+                mod.is_loaded++;
+                if (res_out != nullptr) {
+                    *res_out = start_result;
+                }
+                return ORBIS_OK;
             }
-            return ORBIS_OK;
         }
 
         // We need to check a few things here.
@@ -225,6 +227,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
              {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
              {"libSceFreeTypeOt.sprx", nullptr},
+             {"libSceWkFontConfig.sprx", nullptr},
              {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib}});
 
         // Iterate through the allowed array

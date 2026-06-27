@@ -337,7 +337,6 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/threads/sleepq.cpp
                src/core/libraries/kernel/threads/sleepq.h
                src/core/libraries/kernel/threads/stack.cpp
-               src/core/libraries/kernel/threads/stack.S
                src/core/libraries/kernel/threads/tcb.cpp
                src/core/libraries/kernel/threads/pthread.h
                src/core/libraries/kernel/threads/thread_state.cpp
@@ -364,7 +363,10 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/aio.h
 )
 
-set_source_files_properties(src/core/libraries/kernel/threads/stack.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+if (ARCHITECTURE STREQUAL "x86_64")
+    list(APPEND KERNEL_LIB src/core/libraries/kernel/threads/stack.S)
+    set_source_files_properties(src/core/libraries/kernel/threads/stack.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+endif()
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/http.h
@@ -625,21 +627,14 @@ set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
 
 set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_common.cpp
-            src/core/libraries/np/np_common.h
-            src/core/libraries/np/np_commerce.cpp
-            src/core/libraries/np/np_commerce.h
+            src/core/libraries/np/np_common.h  
             src/core/libraries/np/np_manager.cpp
             src/core/libraries/np/np_manager.h
-            src/core/libraries/np/np_matching2.cpp
-            src/core/libraries/np/np_matching2.h
-            src/core/libraries/np/np_signaling/np_signaling.cpp
-            src/core/libraries/np/np_signaling/np_signaling.h
-            src/core/libraries/np/np_signaling/np_signaling_state.cpp
-            src/core/libraries/np/np_signaling/np_signaling_state.h
-            src/core/libraries/np/np_signaling/np_signaling_helpers.cpp
-            src/core/libraries/np/np_signaling/np_signaling_helpers.h
-            src/core/libraries/np/np_signaling/np_signaling_stubs.cpp
-            src/core/libraries/np/np_signaling/np_signaling_stubs.h
+            src/core/libraries/np/np_matching2/np_matching2.cpp
+            src/core/libraries/np/np_matching2/np_matching2.h
+            src/core/libraries/np/np_matching2/np_matching2_internal.cpp
+            src/core/libraries/np/np_matching2/np_matching2_internal.h
+            src/core/libraries/np/np_matching2/np_matching2_types.h
             src/core/libraries/np/np_trophy.cpp
             src/core/libraries/np/np_trophy.h
             src/core/libraries/np/np_tus.cpp
@@ -652,10 +647,6 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_party.h
             src/core/libraries/np/np_auth.cpp
             src/core/libraries/np/np_auth.h
-            src/core/libraries/np/np_profile_dialog/np_profile_dialog.cpp
-            src/core/libraries/np/np_profile_dialog/np_profile_dialog.h
-            src/core/libraries/np/np_profile_dialog/np_profile_dialog_ui.cpp
-            src/core/libraries/np/np_profile_dialog/np_profile_dialog_ui.h
             src/core/libraries/np/np_sns_facebook_dialog.cpp
             src/core/libraries/np/np_sns_facebook_dialog.h
             src/core/libraries/np/np_partner.cpp
@@ -663,9 +654,25 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/object_manager.h
             src/core/libraries/np/np_handler.cpp
             src/core/libraries/np/np_handler.h
+            src/core/libraries/np/np_commerce/np_commerce.cpp
+            src/core/libraries/np/np_commerce/np_commerce.h
+            src/core/libraries/np/np_commerce/np_commerce_ui.cpp
+            src/core/libraries/np/np_commerce/np_commerce_ui.h
+            src/core/libraries/np/np_profile_dialog/np_profile_dialog.cpp
+            src/core/libraries/np/np_profile_dialog/np_profile_dialog.h
+            src/core/libraries/np/np_profile_dialog/np_profile_dialog_ui.cpp
+            src/core/libraries/np/np_profile_dialog/np_profile_dialog_ui.h
             src/core/libraries/np/np_score/np_score.cpp
             src/core/libraries/np/np_score/np_score.h
             src/core/libraries/np/np_score/np_score_ctx.h
+            src/core/libraries/np/np_signaling/np_signaling.cpp
+            src/core/libraries/np/np_signaling/np_signaling.h
+            src/core/libraries/np/np_signaling/np_signaling_state.cpp
+            src/core/libraries/np/np_signaling/np_signaling_state.h
+            src/core/libraries/np/np_signaling/np_signaling_helpers.cpp
+            src/core/libraries/np/np_signaling/np_signaling_helpers.h
+            src/core/libraries/np/np_signaling/np_signaling_stubs.cpp
+            src/core/libraries/np/np_signaling/np_signaling_stubs.h
             src/core/libraries/np/np_web_api/np_web_api.cpp
             src/core/libraries/np/np_web_api/np_web_api.h
             src/core/libraries/np/np_web_api/np_web_api_internal.cpp
@@ -888,7 +895,6 @@ set(CORE src/core/aerolib/stubs.cpp
          ${ZLIB_LIB}
          ${MISC_LIBS}
          ${IME_LIB}
-         ${FIBER_LIB}
          ${VDEC_LIB}
          ${VR_LIBS}
          ${CAMERA_LIBS}
@@ -924,7 +930,8 @@ set(CORE src/core/aerolib/stubs.cpp
 if (ARCHITECTURE STREQUAL "x86_64")
     set(CORE ${CORE}
              src/core/cpu_patches.cpp
-             src/core/cpu_patches.h)
+             src/core/cpu_patches.h
+             ${FIBER_LIB})
 endif()
 
 set(SHADER_RECOMPILER src/shader_recompiler/profile.h
@@ -1127,6 +1134,10 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_texture.h
           src/imgui/imgui_translations.cpp
           src/imgui/imgui_translations.h
+          src/imgui/friends_layer.cpp
+          src/imgui/friends_layer.h
+          src/imgui/shadnet_notifications_layer.cpp
+          src/imgui/shadnet_notifications_layer.h
           src/imgui/notifications_layer.cpp
           src/imgui/notifications_layer.h
           src/imgui/renderer/imgui_core.cpp
@@ -1167,6 +1178,27 @@ set(EMULATOR src/emulator.cpp
              src/sdl_window.cpp
 )
 
+# shadNet protobuf generation
+set(SHADNET_PROTO_OUT "${CMAKE_CURRENT_BINARY_DIR}/shadnet_proto_gen")
+file(MAKE_DIRECTORY "${SHADNET_PROTO_OUT}")
+add_custom_command(
+    OUTPUT
+        "${SHADNET_PROTO_OUT}/shadnet.pb.cc"
+        "${SHADNET_PROTO_OUT}/shadnet.pb.h"
+    COMMAND protobuf::protoc
+        "--proto_path=${CMAKE_CURRENT_SOURCE_DIR}/src/shadnet"
+        "--cpp_out=${SHADNET_PROTO_OUT}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/shadnet/shadnet.proto"
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/shadnet/shadnet.proto"
+    COMMENT "Generating shadnet protobuf sources"
+    VERBATIM
+)
+
+set(SHADNET src/shadnet/client.cpp
+            src/shadnet/client.h
+            "${SHADNET_PROTO_OUT}/shadnet.pb.cc"
+)
 if (APPLE)
     list(APPEND EMULATOR src/sdl_window_apple.mm)
 endif()
@@ -1182,6 +1214,7 @@ add_executable(shadps4
     ${SHADER_RECOMPILER}
     ${VIDEO_CORE}
     ${EMULATOR}
+    ${SHADNET}
     src/main.cpp
     src/emulator.cpp
     src/emulator.h
@@ -1196,6 +1229,8 @@ target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::to
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml)
 target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib miniupnpc::miniupnpc)
 target_link_libraries(shadps4 PRIVATE Freetype::Freetype)
+target_link_libraries(shadps4 PRIVATE libprotobuf)
+target_include_directories(shadps4 PRIVATE "${SHADNET_PROTO_OUT}")
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     target_link_libraries(shadps4 PRIVATE "/usr/lib/libusb.so")
