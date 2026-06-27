@@ -9,8 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(APPLE)
     list(APPEND ADDITIONAL_LANGUAGES OBJC)
-    # Starting with 15.4, Rosetta 2 has support for all the necessary instruction sets.
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.4 CACHE STRING "")
+    # Minimum OS version for KosmicKrisp
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 26.0 CACHE STRING "")
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -33,9 +33,13 @@ if(UNIX AND NOT APPLE)
     endif()
 endif()
 
+include(CMakeDependentOption)
+cmake_dependent_option(ENABLE_SYSTEM_VULKAN "Enable the system Vulkan driver" OFF APPLE OFF)
+
 option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
 option(ENABLE_UPDATER "Enables the options to updater" ON)
 option(ENABLE_TESTS "Build unit tests (requires GTest)" OFF)
+option(ENABLE_SYSTEM_LIBRARIES "Enable building against system libraries" OFF)
 
 # First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
 if (APPLE AND CMAKE_OSX_ARCHITECTURES)
@@ -60,6 +64,10 @@ if (ARCHITECTURE STREQUAL "x86_64")
     # instructions like AVX2 and maintaining support for older CPUs.
     add_compile_options(-march=x86-64-v3)
 endif()
+
+cmake_host_system_information(RESULT PROC_INFO QUERY PROCESSOR_DESCRIPTION)
+
+message(STATUS "${PROC_INFO}")
 
 if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
     # Exclude ARM homebrew path to avoid conflicts when cross compiling.
@@ -205,12 +213,13 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "15")
+set(EMULATOR_VERSION_MINOR "16")
 set(EMULATOR_VERSION_PATCH "1")
 
-set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
+set_source_files_properties(src/dist/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
 
-set(APP_VERSION "${EMULATOR_VERSION_MAJOR}.${EMULATOR_VERSION_MINOR}.${EMULATOR_VERSION_PATCH} WIP")
+set(APP_VERSION_NUM "${EMULATOR_VERSION_MAJOR}.${EMULATOR_VERSION_MINOR}.${EMULATOR_VERSION_PATCH}")
+set(APP_VERSION "${APP_VERSION_NUM} WIP")
 set(APP_IS_RELEASE false)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp" @ONLY)
 
@@ -222,43 +231,39 @@ if(NOT (GIT_REMOTE_URL_LOWER MATCHES "shadps4-emu/shadps4" AND (GIT_BRANCH STREQ
     set(ENABLE_UPDATER OFF)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-find_package(Boost 1.84.0 CONFIG)
-find_package(CLI11 2.6.1 CONFIG)
-find_package(FFmpeg 5.1.2 MODULE)
-find_package(fmt 12.0.0 CONFIG)
-find_package(glslang 15 CONFIG)
-find_package(half 1.12.0 MODULE)
-find_package(magic_enum 0.9.7 CONFIG)
-find_package(miniz 3.1 CONFIG)
-find_package(nlohmann_json 3.12 CONFIG)
-find_package(PNG 1.6 MODULE)
-find_package(OpenAL CONFIG)
-find_package(RenderDoc 1.6.0 MODULE)
-find_package(SDL3 3.1.2 CONFIG)
-find_package(stb MODULE)
-find_package(toml11 4.2.0 CONFIG)
-find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.329 CONFIG)
-find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
-find_package(xbyak 7.07 CONFIG)
-find_package(xxHash 0.8.2 MODULE)
-find_package(ZLIB 1.3 MODULE)
-find_package(Zydis 5.0.0 MODULE)
-find_package(pugixml 1.14 CONFIG)
-if (APPLE)
-    find_package(date 3.0.1 CONFIG)
-    find_package(epoll-shim 3.14 CONFIG)
-endif()
-list(POP_BACK CMAKE_MODULE_PATH)
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    # libc++ requires -fexperimental-library to enable std::jthread and std::stop_token support.
-    include(CheckCXXSymbolExists)
-    check_cxx_symbol_exists(_LIBCPP_VERSION version LIBCPP)
-    if(LIBCPP)
-        add_compile_options(-fexperimental-library)
+if (ENABLE_SYSTEM_LIBRARIES)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+    find_package(Boost 1.84.0 CONFIG)
+    find_package(CLI11 2.6.1 CONFIG)
+    find_package(FFmpeg 5.1.2 MODULE)
+    find_package(fmt 12.0.0 CONFIG)
+    find_package(Freetype 2.14.1 MODULE)
+    find_package(glslang 15 CONFIG)
+    find_package(half 1.12.0 MODULE)
+    find_package(magic_enum 0.9.7 CONFIG)
+    find_package(miniupnpc 2.3.3 MODULE)
+    find_package(miniz 3.1 CONFIG)
+    find_package(nlohmann_json 3.12 CONFIG)
+    find_package(PNG 1.6 MODULE)
+    find_package(OpenAL CONFIG)
+    find_package(LibreSSL 4.3.1 MODULE)
+    find_package(RenderDoc 1.6.0 MODULE)
+    find_package(SDL3 3.1.2 CONFIG)
+    find_package(stb MODULE)
+    find_package(toml11 4.2.0 CONFIG)
+    find_package(tsl-robin-map 1.3.0 CONFIG)
+    find_package(VulkanHeaders 1.4.330 CONFIG)
+    find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
+    find_package(xbyak 7.07 CONFIG)
+    find_package(xxHash 0.8.2 MODULE)
+    find_package(ZLIB 1.3 MODULE)
+    find_package(Zydis 5.0.0 MODULE)
+    find_package(pugixml 1.14 CONFIG)
+    if (APPLE)
+        find_package(date 3.0.1 CONFIG)
+        find_package(epoll-shim 3.14 CONFIG)
     endif()
+    list(POP_BACK CMAKE_MODULE_PATH)
 endif()
 
 add_subdirectory(externals)
@@ -312,7 +317,10 @@ set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
             src/core/libraries/gnmdriver/gnm_error.h
 )
 
-set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
+set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
+               src/core/libraries/kernel/coredump/coredump.h
+               src/core/libraries/kernel/coredump/coredump_error.h
+               src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/sync/mutex.h
                src/core/libraries/kernel/sync/semaphore.h
                src/core/libraries/kernel/threads/condvar.cpp
@@ -329,7 +337,6 @@ set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/threads/sleepq.cpp
                src/core/libraries/kernel/threads/sleepq.h
                src/core/libraries/kernel/threads/stack.cpp
-               src/core/libraries/kernel/threads/stack.S
                src/core/libraries/kernel/threads/tcb.cpp
                src/core/libraries/kernel/threads/pthread.h
                src/core/libraries/kernel/threads/thread_state.cpp
@@ -356,7 +363,10 @@ set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/aio.h
 )
 
-set_source_files_properties(src/core/libraries/kernel/threads/stack.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+if (ARCHITECTURE STREQUAL "x86_64")
+    list(APPEND KERNEL_LIB src/core/libraries/kernel/threads/stack.S)
+    set_source_files_properties(src/core/libraries/kernel/threads/stack.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+endif()
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/http.h
@@ -375,6 +385,8 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/net_epoll.h
                  src/core/libraries/network/net_resolver.cpp
                  src/core/libraries/network/net_resolver.h
+                 src/core/libraries/network/net_upnp.cpp
+                 src/core/libraries/network/net_upnp.h
                  src/core/libraries/network/net_error.h
                  src/core/libraries/network/net.h
                  src/core/libraries/network/ssl.cpp
@@ -484,14 +496,26 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/razor_cpu/razor_cpu.h
                 src/core/libraries/mouse/mouse.cpp
                 src/core/libraries/mouse/mouse.h
+                src/core/libraries/mouse/mouse_error.h
+                src/core/libraries/mouse/sdl_mouse.cpp
+                src/core/libraries/mouse/sdl_mouse.h
                 src/core/libraries/web_browser_dialog/webbrowserdialog.cpp
                 src/core/libraries/web_browser_dialog/webbrowserdialog.h
                 src/core/libraries/font/font.cpp
                 src/core/libraries/font/font.h
+                src/core/libraries/font/font_internal.cpp
+                src/core/libraries/font/font_internal.h
                 src/core/libraries/font/fontft.cpp
                 src/core/libraries/font/fontft.h
+                src/core/libraries/font/fontft_internal.cpp
+                src/core/libraries/font/fontft_internal.h
                 src/core/libraries/font/font_error.h
-
+                src/core/libraries/content_export/content_export.cpp
+                src/core/libraries/content_export/content_export.h
+                src/core/libraries/content_export/content_export_error.h
+                src/core/libraries/video_recording/video_recording.cpp
+                src/core/libraries/video_recording/video_recording.h
+                src/core/libraries/video_recording/video_recording_error.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -520,12 +544,16 @@ set(HLE_LIBC_INTERNAL_LIB src/core/libraries/libc_internal/libc_internal.cpp
 set(IME_LIB src/core/libraries/ime/error_dialog.cpp
             src/core/libraries/ime/error_dialog.h
             src/core/libraries/ime/ime_common.h
+            src/core/libraries/ime/ime_kb_layout.cpp
+            src/core/libraries/ime/ime_kb_layout.h
             src/core/libraries/ime/ime_dialog_ui.cpp
             src/core/libraries/ime/ime_dialog_ui.h
             src/core/libraries/ime/ime_dialog.cpp
             src/core/libraries/ime/ime_dialog.h
             src/core/libraries/ime/ime_ui.cpp
             src/core/libraries/ime/ime_ui.h
+            src/core/libraries/ime/ime_ui_shared.cpp
+            src/core/libraries/ime/ime_ui_shared.h
             src/core/libraries/ime/ime.cpp
             src/core/libraries/ime/ime.h
             src/core/libraries/ime/ime_error.h
@@ -599,41 +627,56 @@ set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
 
 set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_common.cpp
-            src/core/libraries/np/np_common.h
-            src/core/libraries/np/np_commerce.cpp
-            src/core/libraries/np/np_commerce.h
+            src/core/libraries/np/np_common.h  
             src/core/libraries/np/np_manager.cpp
             src/core/libraries/np/np_manager.h
-            src/core/libraries/np/np_matching2.cpp
-            src/core/libraries/np/np_matching2.h
-            src/core/libraries/np/np_score.cpp
-            src/core/libraries/np/np_score.h
+            src/core/libraries/np/np_matching2/np_matching2.cpp
+            src/core/libraries/np/np_matching2/np_matching2.h
+            src/core/libraries/np/np_matching2/np_matching2_internal.cpp
+            src/core/libraries/np/np_matching2/np_matching2_internal.h
+            src/core/libraries/np/np_matching2/np_matching2_types.h
             src/core/libraries/np/np_trophy.cpp
             src/core/libraries/np/np_trophy.h
             src/core/libraries/np/np_tus.cpp
             src/core/libraries/np/np_tus.h
             src/core/libraries/np/trophy_ui.cpp
             src/core/libraries/np/trophy_ui.h
-            src/core/libraries/np/np_web_api.cpp
-            src/core/libraries/np/np_web_api.h
-            src/core/libraries/np/np_web_api_error.h
-            src/core/libraries/np/np_web_api_internal.cpp
-            src/core/libraries/np/np_web_api_internal.h
             src/core/libraries/np/np_web_api2.cpp
             src/core/libraries/np/np_web_api2.h
             src/core/libraries/np/np_party.cpp
             src/core/libraries/np/np_party.h
             src/core/libraries/np/np_auth.cpp
             src/core/libraries/np/np_auth.h
-            src/core/libraries/np/np_profile_dialog/np_profile_dialog.cpp
-            src/core/libraries/np/np_profile_dialog/np_profile_dialog.h
-            src/core/libraries/np/np_profile_dialog/np_profile_dialog_ui.cpp
-            src/core/libraries/np/np_profile_dialog/np_profile_dialog_ui.h
             src/core/libraries/np/np_sns_facebook_dialog.cpp
             src/core/libraries/np/np_sns_facebook_dialog.h
             src/core/libraries/np/np_partner.cpp
             src/core/libraries/np/np_partner.h
             src/core/libraries/np/object_manager.h
+            src/core/libraries/np/np_handler.cpp
+            src/core/libraries/np/np_handler.h
+            src/core/libraries/np/np_commerce/np_commerce.cpp
+            src/core/libraries/np/np_commerce/np_commerce.h
+            src/core/libraries/np/np_commerce/np_commerce_ui.cpp
+            src/core/libraries/np/np_commerce/np_commerce_ui.h
+            src/core/libraries/np/np_profile_dialog/np_profile_dialog.cpp
+            src/core/libraries/np/np_profile_dialog/np_profile_dialog.h
+            src/core/libraries/np/np_profile_dialog/np_profile_dialog_ui.cpp
+            src/core/libraries/np/np_profile_dialog/np_profile_dialog_ui.h
+            src/core/libraries/np/np_score/np_score.cpp
+            src/core/libraries/np/np_score/np_score.h
+            src/core/libraries/np/np_score/np_score_ctx.h
+            src/core/libraries/np/np_signaling/np_signaling.cpp
+            src/core/libraries/np/np_signaling/np_signaling.h
+            src/core/libraries/np/np_signaling/np_signaling_state.cpp
+            src/core/libraries/np/np_signaling/np_signaling_state.h
+            src/core/libraries/np/np_signaling/np_signaling_helpers.cpp
+            src/core/libraries/np/np_signaling/np_signaling_helpers.h
+            src/core/libraries/np/np_signaling/np_signaling_stubs.cpp
+            src/core/libraries/np/np_signaling/np_signaling_stubs.h
+            src/core/libraries/np/np_web_api/np_web_api.cpp
+            src/core/libraries/np/np_web_api/np_web_api.h
+            src/core/libraries/np/np_web_api/np_web_api_internal.cpp
+            src/core/libraries/np/np_web_api/np_web_api_internal.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
@@ -707,7 +750,7 @@ set(COMMON src/common/logging/classes.h
            src/common/logging/formatter.h
            src/common/logging/log.cpp
            src/common/logging/log.h
-           src/common/logging/thread_name_formatter.h
+           src/common/logging/log_file_sink.h
            src/common/aes.h
            src/common/alignment.h
            src/common/arch.h
@@ -716,8 +759,6 @@ set(COMMON src/common/logging/classes.h
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
-           src/common/config.cpp
-           src/common/config.h
            src/common/cstring.h
            src/common/debug.h
            src/common/decoder.cpp
@@ -725,6 +766,7 @@ set(COMMON src/common/logging/classes.h
            src/common/elf_info.h
            src/common/endian.h
            src/common/enum.h
+           src/common/incremental_id.h
            src/common/io_file.cpp
            src/common/io_file.h
            src/common/lru_cache.h
@@ -851,7 +893,6 @@ set(CORE src/core/aerolib/stubs.cpp
          ${ZLIB_LIB}
          ${MISC_LIBS}
          ${IME_LIB}
-         ${FIBER_LIB}
          ${VDEC_LIB}
          ${VR_LIBS}
          ${CAMERA_LIBS}
@@ -887,7 +928,8 @@ set(CORE src/core/aerolib/stubs.cpp
 if (ARCHITECTURE STREQUAL "x86_64")
     set(CORE ${CORE}
              src/core/cpu_patches.cpp
-             src/core/cpu_patches.h)
+             src/core/cpu_patches.h
+             ${FIBER_LIB})
 endif()
 
 set(SHADER_RECOMPILER src/shader_recompiler/profile.h
@@ -1090,22 +1132,34 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_texture.h
           src/imgui/imgui_translations.cpp
           src/imgui/imgui_translations.h
+          src/imgui/friends_layer.cpp
+          src/imgui/friends_layer.h
+          src/imgui/shadnet_notifications_layer.cpp
+          src/imgui/shadnet_notifications_layer.h
+          src/imgui/notifications_layer.cpp
+          src/imgui/notifications_layer.h
           src/imgui/renderer/imgui_core.cpp
           src/imgui/renderer/imgui_core.h
           src/imgui/renderer/imgui_impl_sdl3.cpp
           src/imgui/renderer/imgui_impl_sdl3.h
-          src/imgui/renderer/imgui_impl_sdl3_bpm.cpp
-          src/imgui/renderer/imgui_impl_sdl3_bpm.h
-          src/imgui/renderer/imgui_impl_sdlrenderer3.cpp
-          src/imgui/renderer/imgui_impl_sdlrenderer3.h
           src/imgui/renderer/imgui_impl_vulkan.cpp
           src/imgui/renderer/imgui_impl_vulkan.h
+          src/imgui/renderer/font_data.cpp
+          src/imgui/renderer/font_data.h
+          src/imgui/renderer/font_stack.cpp
+          src/imgui/renderer/font_stack.h
           src/imgui/renderer/texture_manager.cpp
           src/imgui/renderer/texture_manager.h
-          src/imgui/big_picture.cpp
-          src/imgui/big_picture.h
-          src/imgui/settings_dialog_imgui.cpp
-          src/imgui/settings_dialog_imgui.h
+          src/imgui/big_picture/big_picture.cpp
+          src/imgui/big_picture/big_picture.h
+          src/imgui/big_picture/settings_dialog_imgui.cpp
+          src/imgui/big_picture/settings_dialog_imgui.h
+          src/imgui/big_picture/settings_dialog_layer.cpp
+          src/imgui/big_picture/settings_dialog_layer.h
+          src/imgui/big_picture/imgui_impl_sdl3_big_picture.cpp
+          src/imgui/big_picture/imgui_impl_sdl3_big_picture.h
+          src/imgui/big_picture/imgui_impl_sdlrenderer3.cpp
+          src/imgui/big_picture/imgui_impl_sdlrenderer3.h
 )
 
 set(INPUT src/input/controller.cpp
@@ -1122,6 +1176,31 @@ set(EMULATOR src/emulator.cpp
              src/sdl_window.cpp
 )
 
+# shadNet protobuf generation
+set(SHADNET_PROTO_OUT "${CMAKE_CURRENT_BINARY_DIR}/shadnet_proto_gen")
+file(MAKE_DIRECTORY "${SHADNET_PROTO_OUT}")
+add_custom_command(
+    OUTPUT
+        "${SHADNET_PROTO_OUT}/shadnet.pb.cc"
+        "${SHADNET_PROTO_OUT}/shadnet.pb.h"
+    COMMAND protobuf::protoc
+        "--proto_path=${CMAKE_CURRENT_SOURCE_DIR}/src/shadnet"
+        "--cpp_out=${SHADNET_PROTO_OUT}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/shadnet/shadnet.proto"
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/shadnet/shadnet.proto"
+    COMMENT "Generating shadnet protobuf sources"
+    VERBATIM
+)
+
+set(SHADNET src/shadnet/client.cpp
+            src/shadnet/client.h
+            "${SHADNET_PROTO_OUT}/shadnet.pb.cc"
+)
+if (APPLE)
+    list(APPEND EMULATOR src/sdl_window_apple.mm)
+endif()
+
 if(NOT ENABLE_TESTS)
 
 add_executable(shadps4
@@ -1133,6 +1212,7 @@ add_executable(shadps4
     ${SHADER_RECOMPILER}
     ${VIDEO_CORE}
     ${EMULATOR}
+    ${SHADNET}
     src/main.cpp
     src/emulator.cpp
     src/emulator.h
@@ -1142,9 +1222,13 @@ add_executable(shadps4
 
 create_target_directory_groups(shadps4)
 
+target_link_libraries(shadps4 PRIVATE spdlog::spdlog)
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui ImGuiFileDialog gcn half::half ZLIB::ZLIB PNG::PNG minimp3)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml)
-target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib spdlog::spdlog)
+target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib miniupnpc::miniupnpc)
+target_link_libraries(shadps4 PRIVATE Freetype::Freetype)
+target_link_libraries(shadps4 PRIVATE libprotobuf)
+target_include_directories(shadps4 PRIVATE "${SHADNET_PROTO_OUT}")
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     target_link_libraries(shadps4 PRIVATE "/usr/lib/libusb.so")
@@ -1170,25 +1254,30 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 endif()
 
 if (APPLE)
-    # Include MoltenVK, along with an ICD file so it can be found by the system Vulkan loader if used for loading layers.
-    set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
-    set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR})
-    set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/MoltenVK/libMoltenVK.dylib)
-    set(MVK_DYLIB_DST ${MVK_DST}/libMoltenVK.dylib)
-    set(MVK_ICD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/externals/MoltenVK/MoltenVK/icd/MoltenVK_icd.json)
-    set(MVK_ICD_DST ${MVK_DST}/MoltenVK_icd.json)
+    if (NOT ENABLE_SYSTEM_VULKAN)
+        # Bundle Vulkan loader and KosmicKrisp driver with the emulator.
+        set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
 
-    add_custom_command(
-        OUTPUT ${MVK_ICD_DST}
-        DEPENDS ${MVK_ICD_SRC} ${MVK_DST}
-        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_ICD_SRC} ${MVK_ICD_DST})
-    add_custom_command(
-        OUTPUT ${MVK_DYLIB_DST}
-        DEPENDS ${MVK_DYLIB_SRC} ${MVK_DST}
-        COMMAND ${CMAKE_COMMAND} -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
-    add_custom_target(CopyMoltenVK DEPENDS ${MVK_ICD_DST} ${MVK_DYLIB_DST})
-    add_dependencies(CopyMoltenVK MoltenVK)
-    add_dependencies(shadps4 CopyMoltenVK)
+        set(LOADER_DEST "${CMAKE_CURRENT_BINARY_DIR}/libvulkan.dylib")
+        set(DRIVER_DEST "${CMAKE_CURRENT_BINARY_DIR}/libvulkan_kosmickrisp.dylib")
+        set(ICD_DEST "${CMAKE_CURRENT_BINARY_DIR}/kosmickrisp_mesa_icd.json")
+
+        add_custom_command(
+            OUTPUT ${LOADER_DEST}
+            DEPENDS ${VULKAN_LOADER_PATH} vulkan
+            COMMAND ${CMAKE_COMMAND} -E copy ${VULKAN_LOADER_PATH} ${LOADER_DEST})
+        add_custom_command(
+            OUTPUT ${DRIVER_DEST}
+            DEPENDS ${VULKAN_DRIVER_PATH} kosmickrisp
+            COMMAND ${CMAKE_COMMAND} -E copy ${VULKAN_DRIVER_PATH} ${DRIVER_DEST})
+        add_custom_command(
+            OUTPUT ${ICD_DEST}
+            DEPENDS ${VULKAN_ICD_PATH} kosmickrisp
+            COMMAND ${CMAKE_COMMAND} -E copy ${VULKAN_ICD_PATH} ${ICD_DEST})
+
+        add_custom_target(CopyVulkanDriver DEPENDS ${LOADER_DEST} ${DRIVER_DEST} ${ICD_DEST})
+        add_dependencies(shadps4 CopyVulkanDriver)
+    endif()
 
     if (ARCHITECTURE STREQUAL "x86_64")
         # Reserve system-managed memory space.
@@ -1197,6 +1286,11 @@ if (APPLE)
 
     # Replacement for std::chrono::time_zone
     target_link_libraries(shadps4 PRIVATE date::date-tz epoll-shim)
+
+    # Create and embed Info.plist
+    set(INFO_PLIST_PATH ${CMAKE_CURRENT_BINARY_DIR}/src/dist/Info.plist)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/dist/MacOSBundleInfo.plist.in ${INFO_PLIST_PATH})
+    target_link_options(shadps4 PRIVATE LINKER:-sectcreate,__TEXT,__info_plist,${INFO_PLIST_PATH})
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     target_link_libraries(shadps4 PRIVATE date::date-tz epoll-shim)
 endif()
@@ -1246,7 +1340,7 @@ if (WIN32)
 endif()
 
 if (WIN32)
-    target_sources(shadps4 PRIVATE src/shadps4.rc)
+    target_sources(shadps4 PRIVATE src/dist/shadps4.rc)
 endif()
 
 add_compile_definitions(BOOST_ASIO_STANDALONE)
@@ -1266,20 +1360,20 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeRC.cmake")
 cmrc_add_resource_library(embedded-resources
         ALIAS res::embedded
         NAMESPACE res
-        src/images/big_picture/folder.png
-        src/images/big_picture/settings.png
-        src/images/big_picture/global-settings.png
-        src/images/big_picture/experimental.png
-        src/images/big_picture/graphics.png
-        src/images/big_picture/controller.png
-        src/images/big_picture/trophy.png
-        src/images/big_picture/log.png
-        src/images/big_picture/profiles.png
-	src/images/trophy.wav
-        src/images/bronze.png
-        src/images/gold.png
-        src/images/platinum.png
-        src/images/silver.png)
+        src/resources/big_picture/controller.png
+        src/resources/big_picture/experimental.png
+        src/resources/big_picture/folder.png
+        src/resources/big_picture/graphics.png
+        src/resources/big_picture/log.png
+        src/resources/big_picture/profiles.png
+        src/resources/big_picture/settings.png
+        src/resources/big_picture/trophy.png
+        src/resources/bronze.png
+        src/resources/gold.png
+        src/resources/platinum.png
+        src/resources/shadps4.png
+        src/resources/silver.png
+        src/resources/trophy.wav)
 target_link_libraries(shadps4 PRIVATE res::embedded)
 
 # ImGui resources

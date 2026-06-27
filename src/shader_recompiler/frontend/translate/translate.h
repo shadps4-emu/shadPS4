@@ -54,6 +54,9 @@ enum class NegateMode : u32 {
     Result,
 };
 
+template <typename T>
+using pk_type = std::pair<T, T>;
+
 static constexpr size_t MaxInterpVgpr = 16;
 
 class Translator {
@@ -183,6 +186,11 @@ public:
     void V_CVT_PKNORM_U16_F32(const GcnInst& inst);
     void V_CVT_PKNORM_I16_F32(const GcnInst& inst);
     void V_CVT_PKRTZ_F16_F32(const GcnInst& inst);
+    void V_ADD_F16(const GcnInst& inst);
+    void V_SUB_F16(const GcnInst& inst);
+    void V_MUL_F16(const GcnInst& inst);
+    void V_MAX_F16(const GcnInst& inst);
+    void V_MIN_F16(const GcnInst& inst);
 
     // VOP1
     void V_MOV(const GcnInst& inst);
@@ -270,6 +278,38 @@ public:
     void V_MUL_LO_U32(const GcnInst& inst);
     void V_MUL_HI_U32(bool is_signed, const GcnInst& inst);
     void V_MAD_U64_U32(const GcnInst& inst);
+    void V_LSHRREV_B16(const GcnInst& inst);
+    void V_ASHRREV_I16(const GcnInst& inst);
+    void V_LSHLREV_B16(const GcnInst& inst);
+    void V_LSHL_ADD_U32(const GcnInst& inst);
+    void V_ADD_LSHL_U32(const GcnInst& inst);
+    void V_MIN3_F16(const GcnInst& inst);
+    void V_MAX3_F16(const GcnInst& inst);
+    void V_MED3_F16(const GcnInst& inst);
+    void V_ADD3_U32(const GcnInst& inst);
+    void V_LSHL_OR_B32(const GcnInst& inst);
+    void V_AND_OR_B32(const GcnInst& inst);
+    void V_OR3_B32(const GcnInst& inst);
+
+    // VOP3P
+    void V_PK_MUL_LO_U16(const GcnInst& inst);
+    void V_PK_ADD_I16(const GcnInst& inst);
+    void V_PK_SUB_I16(const GcnInst& inst);
+    void V_PK_LSHLREV_B16(const GcnInst& inst);
+    void V_PK_LSHRREV_B16(const GcnInst& inst);
+    void V_PK_MAD_U16(const GcnInst& inst);
+    void V_PK_ADD_U16(const GcnInst& inst);
+    void V_PK_SUB_U16(const GcnInst& inst);
+    void V_PK_MAX_U16(const GcnInst& inst);
+    void V_PK_MIN_U16(const GcnInst& inst);
+    void V_PK_FMA_F16(const GcnInst& inst);
+    void V_PK_ADD_F16(const GcnInst& inst);
+    void V_PK_MUL_F16(const GcnInst& inst);
+    void V_PK_MIN_F16(const GcnInst& inst);
+    void V_PK_MAX_F16(const GcnInst& inst);
+    void V_MAD_MIX_F32(const GcnInst& inst);
+    void V_MAD_MIXLO_F16(const GcnInst& inst);
+    void V_MAD_MIXHI_F16(const GcnInst& inst);
 
     // Vector interpolation
     // VINTRP
@@ -310,11 +350,20 @@ private:
     IR::U1 GetSrc1(const InstOperand& operand);
     template <typename T = IR::U32>
     [[nodiscard]] T GetSrc(const InstOperand& operand);
+    template <typename T = IR::U32, bool is_signed = false>
+    [[nodiscard]] T GetSrc16(const InstOperand& operand);
     template <typename T = IR::U64>
     [[nodiscard]] T GetSrc64(const InstOperand& operand);
+    [[nodiscard]] IR::F32 GetSrcMix(const InstOperand& operand);
+    template <typename T = IR::U32, bool is_signed = false>
+    [[nodiscard]] pk_type<T> GetSrcPk(const InstOperand& operand);
     void SetDst1(const InstOperand& operand, const IR::U1& value);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
+    template <bool is_signed = false>
+    void SetDst16(const InstOperand& operand, const IR::U32F32& value);
     void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
+    template <typename T = IR::U32, bool is_signed = false>
+    void SetDstPk(const InstOperand& operand, const pk_type<T>& value);
 
     // Vector ALU Helpers
     IR::U32 GetCarryIn(const GcnInst& inst);

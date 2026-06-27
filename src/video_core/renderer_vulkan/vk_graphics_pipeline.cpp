@@ -26,15 +26,6 @@ static constexpr std::array LogicalStageToStageBit = {
     vk::ShaderStageFlagBits::eCompute,
 };
 
-static bool IsPrimitiveTopologyList(const vk::PrimitiveTopology topology) {
-    return topology == vk::PrimitiveTopology::ePointList ||
-           topology == vk::PrimitiveTopology::eLineList ||
-           topology == vk::PrimitiveTopology::eTriangleList ||
-           topology == vk::PrimitiveTopology::eLineListWithAdjacency ||
-           topology == vk::PrimitiveTopology::eTriangleListWithAdjacency ||
-           topology == vk::PrimitiveTopology::ePatchList;
-}
-
 GraphicsPipeline::GraphicsPipeline(
     const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
     const Shader::Profile& profile, const GraphicsPipelineKey& key_,
@@ -358,6 +349,10 @@ GraphicsPipeline::GraphicsPipeline(
         .blendConstants = std::array{1.0f, 1.0f, 1.0f, 1.0f},
     };
 
+    // Required by spec unless VK_EXT_extended_dynamic_state3 is supported.
+    // In practice, we use dynamic state for all of it.
+    constexpr vk::PipelineDepthStencilStateCreateInfo depth_stencil_info = {};
+
     const vk::GraphicsPipelineCreateInfo pipeline_info = {
         .pNext = &pipeline_rendering_ci,
         .stageCount = static_cast<u32>(shader_stages.size()),
@@ -368,6 +363,8 @@ GraphicsPipeline::GraphicsPipeline(
         .pViewportState = &viewport_info,
         .pRasterizationState = &raster_chain.get(),
         .pMultisampleState = &sdata.multisampling,
+        .pDepthStencilState =
+            !instance.IsExtendedDynamicState3Supported() ? &depth_stencil_info : nullptr,
         .pColorBlendState = &color_blending,
         .pDynamicState = &dynamic_info,
         .layout = *pipeline_layout,

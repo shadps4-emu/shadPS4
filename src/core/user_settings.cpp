@@ -74,7 +74,6 @@ bool UserSettingsImpl::Load() {
     const auto path = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "users.json";
     try {
         if (!std::filesystem::exists(path)) {
-            LOG_DEBUG(Config, "User settings file not found: {}", path.string());
             if (m_userManager.GetUsers().user.empty())
                 m_userManager.GetUsers() = m_userManager.CreateDefaultUsers();
             m_loaded = true;
@@ -102,8 +101,6 @@ bool UserSettingsImpl::Load() {
         } else {
             m_userManager.GetUsers() = default_users;
         }
-
-        LOG_DEBUG(Config, "User settings loaded successfully");
 
         m_loaded = true;
         if (m_userManager.GetUsers().commit_hash != Common::g_scm_rev)

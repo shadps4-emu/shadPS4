@@ -169,7 +169,14 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, s32 flags, u
 
     auto* memory = Core::Memory::Instance();
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
-    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+
+    if (True(map_flags & Core::MemoryMapFlags::Fixed) && in_addr == 0) {
+        if (Common::ElfInfo::FW_170 <= g_sdk_version) {
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        }
+        map_flags &= ~Core::MemoryMapFlags::Fixed;
+    }
 
     s32 result = memory->MapMemory(addr, in_addr, len, Core::MemoryProt::NoAccess, map_flags,
                                    Core::VMAType::Reserved, "anon", false, -1, alignment);
@@ -214,15 +221,24 @@ s32 PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, s32 prot, s
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
-    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
 
     auto* memory = Core::Memory::Instance();
     bool should_check = false;
-    if (g_sdk_version >= Common::ElfInfo::FW_25 && False(map_flags & Core::MemoryMapFlags::Stack)) {
+    if (g_sdk_version >= Common::ElfInfo::FW_250 &&
+        False(map_flags & Core::MemoryMapFlags::Stack)) {
         // Under these conditions, this would normally redirect to sceKernelMapDirectMemory2.
         should_check = !g_alias_dmem;
     }
+
+    if (True(map_flags & Core::MemoryMapFlags::Fixed) && in_addr == 0) {
+        if (Common::ElfInfo::FW_170 <= g_sdk_version) {
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        }
+        map_flags &= ~Core::MemoryMapFlags::Fixed;
+    }
+
     const auto ret =
         memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, name,
                           should_check, phys_addr, alignment);
@@ -306,8 +322,16 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, u64 len, s3
 
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
-    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     auto* memory = Core::Memory::Instance();
+
+    if (True(map_flags & Core::MemoryMapFlags::Fixed) && in_addr == 0) {
+        if (Common::ElfInfo::FW_170 <= g_sdk_version) {
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        }
+        map_flags &= ~Core::MemoryMapFlags::Fixed;
+    }
+
     const auto ret = memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
                                        Core::VMAType::Flexible, name);
     LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr_in_out));
@@ -681,6 +705,7 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
     if (len == 0) {
         // If length is 0, mmap returns EINVAL.
         ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
+        LOG_ERROR(Kernel_Vmm, "Invalid length");
         return reinterpret_cast<void*>(-1);
     }
 
@@ -697,6 +722,7 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
     if (True(mem_flags & Core::MemoryMapFlags::Fixed) && vaddr != aligned_addr) {
         // If flags Fixed is specified, the input address must be aligned.
         ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
+        LOG_ERROR(Kernel_Vmm, "Misaligned input address");
         return reinterpret_cast<void*>(-1);
     }
 
@@ -724,9 +750,11 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
         // If the memory mappings fail, mmap sets errno to the appropriate error code,
         // then returns (void*)-1;
         ErrSceToPosix(result);
+        LOG_ERROR(Kernel_Vmm, "error = {}", *__Error());
         return reinterpret_cast<void*>(-1);
     }
 
+    LOG_INFO(Kernel_Vmm, "addr_out = {}", fmt::ptr(addr_out));
     return addr_out;
 }
 
@@ -736,7 +764,6 @@ s32 PS4_SYSV_ABI sceKernelMmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd,
 
     if (addr_out == reinterpret_cast<void*>(-1)) {
         // posix_mmap failed, calculate and return the appropriate kernel error code using errno.
-        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
 
@@ -772,6 +799,17 @@ s32 PS4_SYSV_ABI posix_munmap(void* addr, u64 len) {
         return -1;
     }
     return result;
+}
+
+s32 PS4_SYSV_ABI sceKernelMlock(void* addr, u64 len) {
+    LOG_ERROR(Kernel_Vmm, "(STUBBED) called, addr = {}, len = {:#x}", fmt::ptr(addr), len);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI posix_msync(void* addr, u64 len, s32 flags) {
+    LOG_ERROR(Kernel_Vmm, "(STUBBED) called, addr = {}, len = {:#x}, flags = {}", fmt::ptr(addr),
+              len, flags);
+    return ORBIS_OK;
 }
 
 static constexpr s32 MAX_PRT_APERTURES = 3;
@@ -865,6 +903,9 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("BPE9s9vQQXo", "libScePosix", 1, "libkernel", posix_mmap);
     LIB_FUNCTION("UqDGjXA5yUM", "libkernel", 1, "libkernel", posix_munmap);
     LIB_FUNCTION("UqDGjXA5yUM", "libScePosix", 1, "libkernel", posix_munmap);
+    LIB_FUNCTION("3k6kx-zOOSQ", "libkernel", 1, "libkernel", sceKernelMlock);
+    LIB_FUNCTION("tZY4+SZNFhA", "libkernel", 1, "libkernel", posix_msync);
+    LIB_FUNCTION("tZY4+SZNFhA", "libScePosix", 1, "libkernel", posix_msync);
 
     // PRT memory management
     LIB_FUNCTION("BohYr-F7-is", "libkernel", 1, "libkernel", sceKernelSetPrtAperture);

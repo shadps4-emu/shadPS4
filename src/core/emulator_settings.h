@@ -116,24 +116,18 @@ inline OverrideItem make_override(const char* key, Setting<T> Struct::* member) 
     return OverrideItem{
         key,
         [member, key](void* base, const nlohmann::json& entry, std::vector<std::string>& changed) {
-            LOG_DEBUG(Config, "[make_override] Processing key: {}", key);
-            LOG_DEBUG(Config, "[make_override] Entry JSON: {}", entry.dump());
             Struct* obj = reinterpret_cast<Struct*>(base);
             Setting<T>& dst = obj->*member;
             try {
                 T newValue = entry.get<T>();
-                LOG_DEBUG(Config, "[make_override] Parsed value: {}", newValue);
-                LOG_DEBUG(Config, "[make_override] Current value: {}", dst.value);
                 if (dst.value != newValue) {
                     std::ostringstream oss;
-                    oss << key << " ( " << dst.value << " → " << newValue << " )";
+                    oss << key << " ( " << dst.value << " -> " << newValue << " )";
                     changed.push_back(oss.str());
-                    LOG_DEBUG(Config, "[make_override] Recorded change: {}", oss.str());
                 }
                 dst.game_specific_value = newValue;
-                LOG_DEBUG(Config, "[make_override] Successfully updated {}", key);
             } catch (const std::exception& e) {
-                LOG_ERROR(Config, "[make_override] ERROR parsing {}: {}", key, e.what());
+                LOG_ERROR(Config, "[make_override] error parsing {}: {}", key, e.what());
                 LOG_ERROR(Config, "[make_override] Entry was: {}", entry.dump());
                 LOG_ERROR(Config, "[make_override] Type name: {}", entry.type_name());
             }
@@ -189,7 +183,10 @@ struct GeneralSettings {
     Setting<bool> show_fps_counter{false};
     Setting<int> console_language{1};
     Setting<int> big_picture_scale{1000};
-    Setting<std::string> shadnet_server{""};
+    Setting<std::string> shadnet_server{"srv.shadps4.net:31313"};
+    Setting<std::string> shadnet_webapi_server{"http://srv.shadps4.net:31315"};
+    Setting<std::string> signaling_info{};
+    Setting<bool> enable_upnp{true};
 
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
@@ -208,7 +205,12 @@ struct GeneralSettings {
             make_override<GeneralSettings>("trophy_notification_side",
                                            &GeneralSettings::trophy_notification_side),
             make_override<GeneralSettings>("connected_to_network",
-                                           &GeneralSettings::connected_to_network)};
+                                           &GeneralSettings::connected_to_network),
+            make_override<GeneralSettings>("shadnet_server", &GeneralSettings::shadnet_server),
+            make_override<GeneralSettings>("shadnet_webapi_server",
+                                           &GeneralSettings::shadnet_webapi_server),
+            make_override<GeneralSettings>("signaling_info", &GeneralSettings::signaling_info),
+            make_override<GeneralSettings>("enable_upnp", &GeneralSettings::enable_upnp)};
     }
 };
 
@@ -218,7 +220,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    trophy_notification_duration, show_splash,
                                    trophy_notification_side, connected_to_network,
                                    discord_rpc_enabled, show_fps_counter, console_language,
-                                   big_picture_scale, shadnet_server)
+                                   big_picture_scale, shadnet_server, shadnet_webapi_server,
+                                   signaling_info, enable_upnp)
 
 // -------------------------------
 // Log settings
@@ -291,7 +294,11 @@ struct InputSettings {
     Setting<bool> use_unified_input_config{true};
     Setting<std::string> default_controller_id{""};
     Setting<bool> background_controller_input{false}; // specific
+    Setting<bool> ime_accessibility_enabled{false};   // specific
+    Setting<bool> ime_url_mail_short_panel{false};    // specific
+    Setting<bool> is_circle_enter{false};             // specific
     Setting<s32> camera_id{-1};
+    Setting<bool> use_mice_as_mice{false};
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -303,13 +310,21 @@ struct InputSettings {
                                          &InputSettings::motion_controls_enabled),
             make_override<InputSettings>("background_controller_input",
                                          &InputSettings::background_controller_input),
-            make_override<InputSettings>("camera_id", &InputSettings::camera_id)};
+            make_override<InputSettings>("ime_accessibility_enabled",
+                                         &InputSettings::ime_accessibility_enabled),
+            make_override<InputSettings>("ime_url_mail_short_panel",
+                                         &InputSettings::ime_url_mail_short_panel),
+            make_override<InputSettings>("is_circle_enter", &InputSettings::is_circle_enter),
+            make_override<InputSettings>("camera_id", &InputSettings::camera_id),
+            make_override<InputSettings>("use_mice_as_mice", &InputSettings::use_mice_as_mice)};
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_timeout,
                                    usb_device_backend, use_special_pad, special_pad_class,
                                    motion_controls_enabled, use_unified_input_config,
-                                   default_controller_id, background_controller_input, camera_id)
+                                   default_controller_id, background_controller_input,
+                                   ime_accessibility_enabled, ime_url_mail_short_panel, camera_id,
+                                   is_circle_enter, use_mice_as_mice)
 // -------------------------------
 // Audio settings
 // -------------------------------
@@ -592,6 +607,9 @@ public:
     SETTING_FORWARD(m_general, ConsoleLanguage, console_language)
     SETTING_FORWARD(m_general, BigPictureScale, big_picture_scale)
     SETTING_FORWARD(m_general, ShadNetServer, shadnet_server)
+    SETTING_FORWARD(m_general, ShadNetWebApiServer, shadnet_webapi_server)
+    SETTING_FORWARD(m_general, SignalingInfo, signaling_info)
+    SETTING_FORWARD_BOOL(m_general, UPnPEnabled, enable_upnp)
 
     // Log settings
     SETTING_FORWARD_BOOL(m_log, LogAppend, append)
@@ -661,11 +679,15 @@ public:
     SETTING_FORWARD(m_input, UsbDeviceBackend, usb_device_backend)
     SETTING_FORWARD_BOOL(m_input, MotionControlsEnabled, motion_controls_enabled)
     SETTING_FORWARD_BOOL(m_input, BackgroundControllerInput, background_controller_input)
+    SETTING_FORWARD_BOOL(m_input, ImeAccessibilityEnabled, ime_accessibility_enabled)
+    SETTING_FORWARD_BOOL(m_input, ImeUrlMailShortPanel, ime_url_mail_short_panel)
     SETTING_FORWARD(m_input, DefaultControllerId, default_controller_id)
     SETTING_FORWARD_BOOL(m_input, UsingSpecialPad, use_special_pad)
     SETTING_FORWARD(m_input, SpecialPadClass, special_pad_class)
     SETTING_FORWARD_BOOL(m_input, UseUnifiedInputConfig, use_unified_input_config)
     SETTING_FORWARD(m_input, CameraId, camera_id)
+    SETTING_FORWARD_BOOL(m_input, CircleEnter, is_circle_enter)
+    SETTING_FORWARD_BOOL(m_input, MiceUsedAsMice, use_mice_as_mice)
 
     // Vulkan settings
     SETTING_FORWARD(m_vulkan, GpuId, gpu_id)

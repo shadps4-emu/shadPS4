@@ -76,7 +76,7 @@ Check the build instructions for [**Linux**](https://github.com/shadps4-emu/shad
 Check the build instructions for [**macOS**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-macos.md).
 
 > [!IMPORTANT]
-> macOS users need at least macOS 15.4 to run shadPS4. Due to GPU issues there are currently heavy bugs on Intel Macs.
+> macOS users need at least macOS 26.0 to run shadPS4. Intel Macs are not supported.
 
 # Usage examples
 
@@ -156,7 +156,7 @@ The following firmware modules are supported and must be placed in shadPS4's `sy
 | libSceAudiodec.sprx      | libSceCesCs.sprx         | libSceFont.sprx          | libSceFontFt.sprx        |
 | libSceFreeTypeOt.sprx    | libSceJpegDec.sprx       | libSceJpegEnc.sprx       | libSceJson.sprx          |
 | libSceJson2.sprx         | libSceLibcInternal.sprx  | libSceNgs2.sprx          | libScePngEnc.sprx        |
-| libSceRtc.sprx           | libSceSystemGesture.sprx | libSceUlt.sprx           |                          |
+| libSceRtc.sprx           | libSceSystemGesture.sprx | libSceUlt.sprx           | libSceWkFontConfig.sprx  |
 </div>
 
 > [!Caution]

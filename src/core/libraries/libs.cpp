@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/arch.h"
 #include "core/libraries/ajm/ajm.h"
 #include "core/libraries/app_content/app_content.h"
 #include "core/libraries/audio/audioin.h"
@@ -11,7 +12,9 @@
 #include "core/libraries/camera/camera.h"
 #include "core/libraries/companion/companion_httpd.h"
 #include "core/libraries/companion/companion_util.h"
+#include "core/libraries/content_export/content_export.h"
 #include "core/libraries/disc_map/disc_map.h"
+#include "core/libraries/fiber/fiber.h"
 #include "core/libraries/game_live_streaming/gamelivestreaming.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/hmd/hmd.h"
@@ -32,18 +35,19 @@
 #include "core/libraries/network/ssl.h"
 #include "core/libraries/network/ssl2.h"
 #include "core/libraries/np/np_auth.h"
-#include "core/libraries/np/np_commerce.h"
+#include "core/libraries/np/np_commerce/np_commerce.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_manager.h"
-#include "core/libraries/np/np_matching2.h"
+#include "core/libraries/np/np_matching2/np_matching2.h"
 #include "core/libraries/np/np_partner.h"
 #include "core/libraries/np/np_party.h"
 #include "core/libraries/np/np_profile_dialog/np_profile_dialog.h"
-#include "core/libraries/np/np_score.h"
+#include "core/libraries/np/np_score/np_score.h"
+#include "core/libraries/np/np_signaling/np_signaling.h"
 #include "core/libraries/np/np_sns_facebook_dialog.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/np_tus.h"
-#include "core/libraries/np/np_web_api.h"
+#include "core/libraries/np/np_web_api/np_web_api.h"
 #include "core/libraries/np/np_web_api2.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/playgo/playgo.h"
@@ -65,6 +69,7 @@
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/ulobjmgr/ulobjmgr.h"
 #include "core/libraries/usbd/usbd.h"
+#include "core/libraries/video_recording/video_recording.h"
 #include "core/libraries/videodec/videodec.h"
 #include "core/libraries/videodec/videodec2.h"
 #include "core/libraries/videoout/video_out.h"
@@ -72,7 +77,6 @@
 #include "core/libraries/vr_tracker/vr_tracker.h"
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
 #include "core/libraries/zlib/zlib_sce.h"
-#include "fiber/fiber.h"
 
 namespace Libraries {
 
@@ -101,6 +105,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Np::NpCommon::RegisterLib(sym);
     Libraries::Np::NpManager::RegisterLib(sym);
     Libraries::Np::NpMatching2::RegisterLib(sym);
+    Libraries::Np::NpSignaling::RegisterLib(sym);
     Libraries::Np::NpScore::RegisterLib(sym);
     Libraries::Np::NpTrophy::RegisterLib(sym);
     Libraries::Np::NpWebApi::RegisterLib(sym);
@@ -136,7 +141,9 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Remoteplay::RegisterLib(sym);
     Libraries::RazorCpu::RegisterLib(sym);
     Libraries::Move::RegisterLib(sym);
+#ifdef ARCH_X86_64
     Libraries::Fiber::RegisterLib(sym);
+#endif
     Libraries::Mouse::RegisterLib(sym);
     Libraries::WebBrowserDialog::RegisterLib(sym);
     Libraries::Zlib::RegisterLib(sym);
@@ -151,6 +158,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Voice::RegisterLib(sym);
     Libraries::Rudp::RegisterLib(sym);
     Libraries::VrTracker::RegisterLib(sym);
+    Libraries::ContentExport::RegisterLib(sym);
+    Libraries::VideoRecording::RegisterLib(sym);
 
     // Loading libSceSsl is locked behind a title workaround that currently applies to nothing.
     // Libraries::Ssl::RegisterLib(sym);

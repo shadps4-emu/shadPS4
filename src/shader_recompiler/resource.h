@@ -56,7 +56,7 @@ struct BufferResource {
         AmdGpu::Buffer buffer{};
         if (inline_cbuf) {
             buffer = inline_cbuf;
-            if (inline_cbuf.base_address > 1) {
+            if (inline_cbuf.base_address != 1) {
                 buffer.base_address += info.pgm_base; // address fixup
             }
         } else {

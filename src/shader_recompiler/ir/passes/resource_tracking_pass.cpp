@@ -506,7 +506,7 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
         // is used to define an inline buffer resource
         std::array<u64, 2> raw;
         // Keep relative address, we'll do fixup of the address at buffer fetch later
-        raw[0] = (handle->Arg(0).U32() | u64(handle->Arg(1).U32()) << 32);
+        raw[0] = handle->Arg(0).U32() | u64(handle->Arg(1).U32()) << 32;
         raw[1] = handle->Arg(2).U32() | u64(handle->Arg(3).U32()) << 32;
         const auto buffer = std::bit_cast<AmdGpu::Buffer>(raw);
         buffer_binding = descriptors.Add(BufferResource{
@@ -1058,7 +1058,7 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
 
     auto texel = [&] -> IR::Value {
         if (is_msaa) {
-            return ir.ImageRead(handle, coords, ir.Imm32(0U), ir.Imm32(0U), inst_info);
+            return ir.ImageRead(handle, coords, {}, ir.Imm32(0U), inst_info);
         }
         if (inst_info.is_gather) {
             if (inst_info.is_depth) {

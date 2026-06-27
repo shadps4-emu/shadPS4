@@ -6,6 +6,7 @@
 #include "core/libraries/videoout/buffer.h"
 #include "shader_recompiler/resource.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
+#include "video_core/texture_cache/host_compatibility.h"
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/tile.h"
 
@@ -146,8 +147,9 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
 }
 
 bool ImageInfo::IsCompatible(const ImageInfo& info) const {
-    return (pixel_format == info.pixel_format && num_samples == info.num_samples &&
-            num_bits == info.num_bits);
+    return (IsVulkanFormatCompatible(pixel_format, info.pixel_format) ||
+            IsVulkanFormatCompatible(info.pixel_format, pixel_format)) &&
+           num_samples == info.num_samples && num_bits == info.num_bits;
 }
 
 void ImageInfo::UpdateSize() {
@@ -242,9 +244,13 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
         return -1;
     }
 
-    const auto mip_w = std::max(info.size.width >> mip, 1u);
-    const auto mip_h = std::max(info.size.height >> mip, 1u);
-    if ((size.width != mip_w) || (size.height != mip_h)) {
+    const auto curr_block_dim = BlockDim();
+    const auto info_block_dim = info.BlockDim();
+
+    // 2D block dimensions of both images should be the same.
+    const auto mip_w = std::max(info_block_dim.width >> mip, 1u);
+    const auto mip_h = std::max(info_block_dim.height >> mip, 1u);
+    if ((curr_block_dim.width != mip_w) || (curr_block_dim.height != mip_h)) {
         return -1;
     }
 
@@ -273,10 +279,13 @@ s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
         return -1;
     }
 
-    // 2D dimensions of both images should be the same.
-    const auto mip_w = std::max(info.size.width >> mip, 1u);
-    const auto mip_h = std::max(info.size.height >> mip, 1u);
-    if ((size.width != mip_w) || (size.height != mip_h)) {
+    const auto curr_block_dim = BlockDim();
+    const auto info_block_dim = info.BlockDim();
+
+    // 2D block dimensions of both images should be the same.
+    const auto mip_w = std::max(info_block_dim.width >> mip, 1u);
+    const auto mip_h = std::max(info_block_dim.height >> mip, 1u);
+    if ((curr_block_dim.width != mip_w) || (curr_block_dim.height != mip_h)) {
         return -1;
     }
 

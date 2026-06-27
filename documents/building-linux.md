@@ -23,9 +23,10 @@ sudo apt install build-essential clang git cmake libasound2-dev \
 #### Fedora
 
 ```bash
-sudo dnf install clang git cmake libatomic alsa-lib-devel \
+sudo dnf install ninja-build clang git cmake libatomic alsa-lib-devel \
     pipewire-jack-audio-connection-kit-devel openal-soft-devel \
     openssl-devel libevdev-devel libudev-devel libXext-devel \
+    libXcursor-devel libXi-devel libXrandr-devel libXScrnSaver-devel \
     vulkan-devel vulkan-validation-layers libpng-devel libuuid-devel
 ```
 
@@ -47,28 +48,22 @@ sudo zypper install clang git cmake libasound2 libpulse-devel \
     vulkan-devel vulkan-validationlayers libpng-devel
 ```
 
-#### NixOS
-
-```bash
-nix-shell shell.nix
-```
-
 #### Nix Flake Development Shell
 ```bash
 nix develop
-cmake -S . -B build/ -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_EXPORT_COMPILE_COMMANDS=ON  
+cmake -S . -B build/
 ln -s ./build/compile_commands.json .
 ```
 
 #### Nix Flake Build
 ```bash
-nix build .?submodules=1#linux.debug
+nix build .?submodules=1#debug
 ```
 ```bash
-nix build .?submodules=1#linux.release
+nix build .?submodules=1#release
 ```
 ```bash
-nix build .?submodules=1#linux.releaseWithDebugInfo
+nix build .?submodules=1#releaseWithDebugInfo
 ```
 #### Other Linux distributions
 

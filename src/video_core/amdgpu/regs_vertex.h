@@ -87,6 +87,7 @@ union ShaderStageEnable {
         Vs = 0u, // always enabled
         EsGs = 0xB0u,
         LsHs = 0x45u,
+        LsHsEsGs = 0xAD,
     };
 
     VgtStages raw;
