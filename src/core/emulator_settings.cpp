@@ -497,7 +497,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return false;
     }
-    auto Toml = [&]<typename T>(Setting<T>& n, toml::value const& t, std::string k) {
+    auto setFromToml = [&]<typename T>(Setting<T>& n, toml::value const& t, std::string k) {
         n = toml::get_optional<T>(t, k).value_or(n.default_value);
     };
     if (og_data.contains("General")) {
