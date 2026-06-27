@@ -4,12 +4,14 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstring>
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_score/np_score.h"
+#include "core/libraries/np/np_web_api/np_web_api.h"
 #include "core/user_settings.h"
 #include "imgui/shadnet_notifications_layer.h"
 #include "np_handler.h"
@@ -159,6 +161,9 @@ bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, cons
     };
     client->onFriendStatus = [this, user_id](const ShadNet::NotifyFriendStatus& n) {
         OnFriendStatus(user_id, n);
+    };
+    client->onWebApiPushEvent = [this, user_id](const ShadNet::NotifyWebApiPushEvent& n) {
+        OnWebApiPushEvent(user_id, n);
     };
     client->onAsyncReply = [this, user_id](ShadNet::CommandType cmd, u64 pkt_id,
                                            ShadNet::ErrorType err, const std::vector<u8>& body) {
@@ -444,6 +449,29 @@ void NpHandler::OnFriendStatus(s32 user_id, const ShadNet::NotifyFriendStatus& n
     } else {
         st.friends.push_back({n.npid, n.online});
     }
+}
+
+void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEvent& n) {
+    LOG_INFO(NpHandler, "user_id={} WebApiPushEvent svc='{}' type='{}' bytes={}", user_id,
+             n.npServiceName, n.dataType, n.data.size());
+    // Forward verbatim to the libSceNpWebApi push-event dispatch.it queues the event
+    // and delivers it on the game's thread during sceNpCheckCallback to any registered
+    // (and filter-matching) push-event callback.
+    NpWebApi::PushEventInput ev;
+    ev.targetUserId = user_id;
+    ev.npServiceName = n.npServiceName;
+    ev.npServiceLabel = n.npServiceLabel;
+    ev.dataType = n.dataType;
+    ev.data = n.data;
+    if (!n.fromNpid.empty()) {
+        ev.hasFrom = true;
+        std::strncpy(ev.fromOnlineId.data, n.fromNpid.c_str(), sizeof(ev.fromOnlineId.data) - 1);
+    }
+    if (!n.toNpid.empty()) {
+        ev.hasTo = true;
+        std::strncpy(ev.toOnlineId.data, n.toNpid.c_str(), sizeof(ev.toOnlineId.data) - 1);
+    }
+    NpWebApi::EnqueuePushEvent(ev);
 }
 
 void NpHandler::OnLoginResult(s32 user_id, const ShadNet::LoginResult& res) {

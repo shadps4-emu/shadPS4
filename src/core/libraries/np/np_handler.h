@@ -21,7 +21,6 @@
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_score/np_score.h"
 #include "core/libraries/np/np_score/np_score_ctx.h"
-#include "core/libraries/np/np_types.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/system/userservice.h"
 #include "shadnet/client.h"
@@ -213,6 +212,7 @@ private:
     void OnFriendNew(s32 user_id, const ShadNet::NotifyFriendNew& n);
     void OnFriendLost(s32 user_id, const ShadNet::NotifyFriendLost& n);
     void OnFriendStatus(s32 user_id, const ShadNet::NotifyFriendStatus& n);
+    void OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEvent& n);
     void OnLoginResult(s32 user_id, const ShadNet::LoginResult& res);
 
     // Async reply dispatch for score commands. Called from the per-user
