@@ -183,7 +183,7 @@ struct GeneralSettings {
     Setting<bool> show_fps_counter{false};
     Setting<int> console_language{1};
     Setting<int> big_picture_scale{1000};
-    Setting<std::string> {"srv.shadps4.net:31313"};
+    Setting<std::string> shadnet_server{"srv.shadps4.net:31313"};
     Setting<std::string> shadnet_webapi_server{"http://srv.shadps4.net:31315"};
     Setting<std::string> signaling_info{};
     Setting<bool> enable_upnp{true};
@@ -206,14 +206,10 @@ struct GeneralSettings {
                                            &GeneralSettings::trophy_notification_side),
             make_override<GeneralSettings>("connected_to_network",
                                            &GeneralSettings::connected_to_network),
-            make_override<GeneralSettings>("shadnet_server",
-                                           &GeneralSettings::shadnet_server),
-            make_override<GeneralSettings>("signaling_addr",
-                                           &GeneralSettings::signaling_addr),
-            make_override<GeneralSettings>("signaling_port",
-                                           &GeneralSettings::signaling_port),
-            make_override<GeneralSettings>("enable_upnp",
-                                           &GeneralSettings::enable_upnp)};
+            make_override<GeneralSettings>("shadnet_server", &GeneralSettings::shadnet_server),
+            make_override<GeneralSettings>("signaling_addr", &GeneralSettings::signaling_addr),
+            make_override<GeneralSettings>("signaling_port", &GeneralSettings::signaling_port),
+            make_override<GeneralSettings>("enable_upnp", &GeneralSettings::enable_upnp)};
     }
 };
 
