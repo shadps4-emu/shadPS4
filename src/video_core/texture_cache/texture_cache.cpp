@@ -135,7 +135,8 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     scheduler.EndRendering();
 
     if (image_addr == 0x50158c8000) {
-        LOG_CRITICAL(Render_Vulkan, "[gcd] Download with size {}, uid: {}", image_size, image.image_uid);
+        LOG_CRITICAL(Render_Vulkan, "[gcd] Download with size {}, uid: {}", image_size,
+                     image.image_uid);
     }
 
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
@@ -572,13 +573,12 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
         src_image.binding.needs_rebind = 1u;
     }
 
-    
     TrackImage(new_image_id);
     new_image.flags &= ~ImageFlagBits::Dirty;
     new_image.flags |= src_image.flags & ImageFlagBits::GpuModified;
-    
+
     FreeImage(image_id);
-    
+
     return new_image_id;
 }
 
@@ -672,7 +672,8 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     }
 
     if (info.guest_address == 0x50158c8000) {
-        LOG_CRITICAL(Render_Vulkan, "[gcd] FindImage with size {}, uid: {}", info.guest_size, image.image_uid);
+        LOG_CRITICAL(Render_Vulkan, "[gcd] FindImage with size {}, uid: {}", info.guest_size,
+                     image.image_uid);
     }
 
     return image_id;
