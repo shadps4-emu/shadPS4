@@ -497,7 +497,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return false;
     }
-    auto setFromToml = [&]<typename T>(Setting<T>& n, toml::value const& t, std::string k) {
+    auto Toml = [&]<typename T>(Setting<T>& n, toml::value const& t, std::string k) {
         n = toml::get_optional<T>(t, k).value_or(n.default_value);
     };
     if (og_data.contains("General")) {
@@ -513,6 +513,11 @@ bool EmulatorSettingsImpl::TransferSettings() {
         setFromToml(s.show_splash, general, "showSplash");
         setFromToml(s.trophy_notification_side, general, "sideTrophy");
         setFromToml(s.connected_to_network, general, "isConnectedToNetwork");
+        setFromToml(s.shad_net_enabled, general, "IsShadNetEnabled");
+        setFromToml(s.shadnet_server, general, "GetShadNetServer");
+        setFromToml(s.signaling_addr, general, "GetSignalingAddr");
+        setFromToml(s.signaling_port, general, "GetSignalingPort");
+        setFromToml(s.enable_upnp, general, "IsUPnPEnabled");
         setFromToml(s.sys_modules_dir, general, "sysModulesPath");
         setFromToml(s.font_dir, general, "fontsPath");
         // setFromToml(, general, "userName");
