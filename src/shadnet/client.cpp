@@ -653,7 +653,10 @@ void ShadNetClient::HandleGetTokenReply(const std::vector<u8>& payload) {
 void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& payload) {
     // Notification payload = u32 LE blob size + proto bytes
     const std::string blob = ExtractBlob(payload, 0);
-    if (blob.empty()) {
+    if (blob.empty() &&
+        static_cast<NotificationType>(cmd_raw) != NotificationType::WebApiPushEvent) {
+        // WebApiPushEvent is multi-field,its first field (service name) may be empty
+        // legitimately, so it parses its own payload below rather than relying on blob.
         LOG_WARNING(ShadNet, "Empty notification payload type={}", cmd_raw);
         return;
     }
@@ -712,6 +715,31 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
         LOG_DEBUG(ShadNet, "FriendStatus '{}' is {}", n.npid, n.online ? "online" : "offline");
         if (onFriendStatus)
             onFriendStatus(n);
+        break;
+    }
+    case NotificationType::WebApiPushEvent: {
+        // Length-prefixed fields: npServiceName, npServiceLabel(u32 LE), dataType,
+        // data, fromNpid, toNpid. ExtractBlob returns {} past the end, so a short
+        // payload degrades to empty trailing fields rather than reading OOB.
+        NotifyWebApiPushEvent n;
+        int off = 0;
+        n.npServiceName = ExtractBlob(payload, off);
+        off += 4 + static_cast<int>(n.npServiceName.size());
+        if (off + 4 <= static_cast<int>(payload.size())) {
+            n.npServiceLabel = GetLE32(payload.data() + off);
+            off += 4;
+        }
+        n.dataType = ExtractBlob(payload, off);
+        off += 4 + static_cast<int>(n.dataType.size());
+        n.data = ExtractBlob(payload, off);
+        off += 4 + static_cast<int>(n.data.size());
+        n.fromNpid = ExtractBlob(payload, off);
+        off += 4 + static_cast<int>(n.fromNpid.size());
+        n.toNpid = ExtractBlob(payload, off);
+        LOG_INFO(ShadNet, "WebApiPushEvent svc='{}' type='{}' from='{}' bytes={}", n.npServiceName,
+                 n.dataType, n.fromNpid, n.data.size());
+        if (onWebApiPushEvent)
+            onWebApiPushEvent(n);
         break;
     }
     default:

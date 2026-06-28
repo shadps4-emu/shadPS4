@@ -93,6 +93,7 @@ enum class NotificationType : u16 {
     FriendNew = 6,
     FriendLost = 7,
     FriendStatus = 8,
+    WebApiPushEvent = 17, // Generic NP WebApi push event
 };
 
 enum class ErrorType : uint8_t {
@@ -179,6 +180,14 @@ struct NotifyFriendStatus {
     bool online = false;
     u64 timestamp = 0;
 };
+struct NotifyWebApiPushEvent {
+    std::string npServiceName; // may be empty (catch-all listeners match any)
+    u32 npServiceLabel = 0;
+    std::string dataType; // e.g. "np:service:..."
+    std::string data;     // raw event body (typically PSN-format JSON)
+    std::string fromNpid; // may be empty
+    std::string toNpid;   // may be empty
+};
 
 // ShadNetClient
 
@@ -214,6 +223,7 @@ public:
     std::function<void(const NotifyFriendNew&)> onFriendNew;
     std::function<void(const NotifyFriendLost&)> onFriendLost;
     std::function<void(const NotifyFriendStatus&)> onFriendStatus;
+    std::function<void(const NotifyWebApiPushEvent&)> onWebApiPushEvent;
     // Async reply callback.
     //   cmd    —command this reply is for (matches the request's cmd)
     //   pkt_id —packet id echoed back from the original request header
