@@ -78,6 +78,7 @@ s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUs
     if (user_ctx) {
         LOG_ERROR(Lib_NpWebApi2, "User context already exists for user id {}", user_id);
         user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
         return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_ALREADY_EXIST;
     }
 
@@ -99,6 +100,50 @@ s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUs
 
     lib_ctx->RemoveUser();
     return user_ctx_id;
+}
+
+s32 createRequest(s32 user_ctx_id, const char* api_group, const char* path, const char* method,
+                  const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
+                  s64* request_id) {
+    LibraryContext* lib_ctx = getLibraryContext(user_ctx_id >> 0x10);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for user context id {:#x}", user_ctx_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context with id {:#x}", user_ctx_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    if (std::strlen(api_group) >= 63) {
+        LOG_ERROR(Lib_NpWebApi2, "API group is too long");
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_PARAMETER_TOO_LONG;
+    }
+
+    Request* request{};
+    s32 result =
+        user_ctx->CreateRequest(api_group, path, method, content_parameter, multipart, &request);
+    if (result < 0) {
+        // Request creation failed
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        if (request) {
+            delete request;
+        }
+        return result;
+    }
+
+    if (request_id) {
+        *request_id = request->GetId();
+    }
+    user_ctx->RemoveUser();
+    lib_ctx->RemoveUser();
+    return result;
 }
 
 }; // namespace Libraries::Np::NpWebApi2

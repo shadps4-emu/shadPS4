@@ -82,7 +82,7 @@ class UserContext {
 public:
     UserContext(LibraryContext* parent, s32 user_ctx_id,
                 Libraries::UserService::OrbisUserServiceUserId user_id)
-        : parent_ctx(parent), id(user_ctx_id), user_id(user_id) {};
+        : parent_ctx(parent), id(user_ctx_id), user_id(user_id) {}
 
     void Lock() {
         parent_ctx->Lock();
@@ -114,6 +114,10 @@ public:
 
     s32 Initialize();
 
+    s32 CreateRequest(const char* api_group, const char* path, const char* method,
+                      const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
+                      Request** request);
+
 private:
     s32 id{};
     Libraries::UserService::OrbisUserServiceUserId user_id{};
@@ -121,8 +125,37 @@ private:
     s32 http_template_id{};
     LibraryContext* parent_ctx{};
     std::string user_agent{};
+    std::map<s64, Request*> requests{};
 };
 
-class Request {};
+class Request {
+public:
+    Request(LibraryContext* parent, s64 request_id, const char* api_group, const char* path,
+            const char* method, bool multipart)
+        : parent_ctx(parent), id(request_id), api_group(api_group), path(path), method(method),
+          multipart_supported(multipart) {}
+    Request(LibraryContext* parent, s64 request_id, const char* api_group, const char* path,
+            const char* method, bool multipart,
+            const OrbisNpWebApi2ContentParameter* content_parameter)
+        : parent_ctx(parent), id(request_id), api_group(api_group), path(path), method(method),
+          multipart_supported(multipart), content_type(content_parameter->content_type) {}
+
+    s64 GetId() {
+        return id;
+    }
+
+    s32 Initialize();
+
+private:
+    s64 id{};
+    s32 user_count{};
+    s32 http_request_id{};
+    LibraryContext* parent_ctx{};
+    std::string api_group{};
+    std::string path{};
+    std::string method{};
+    std::string content_type{};
+    bool multipart_supported{};
+};
 
 }; // namespace Libraries::Np::NpWebApi2

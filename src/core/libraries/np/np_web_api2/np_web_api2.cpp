@@ -36,14 +36,54 @@ void PS4_SYSV_ABI sceNpWebApi2CheckTimeout() {
     LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2CreateMultipartRequest() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApi2CreateMultipartRequest(s32 user_ctx_id, const char* api_group,
+                                                    const char* path, const char* method,
+                                                    s64* request_id) {
+    if (!api_group || !path || !method) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
+        return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
+    }
+
+    LOG_INFO(Lib_NpWebApi2, "called, user_ctx_id = {:#x}, api_group = {}, path = {}, method = {}",
+             user_ctx_id, api_group, path, method);
+    s64 temp_request_id = 0;
+    s32 result =
+        createRequest(user_ctx_id, api_group, path, method, nullptr, true, &temp_request_id);
+    if (result == 0) {
+        LOG_INFO(Lib_NpWebApi2, "created request_id = {:#x}", temp_request_id);
+        if (request_id) {
+            *request_id = temp_request_id;
+        }
+    }
+    return result;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2CreateRequest() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApi2CreateRequest(s32 user_ctx_id, const char* api_group, const char* path,
+                                           const char* method,
+                                           const OrbisNpWebApi2ContentParameter* content_parameter,
+                                           s64* request_id) {
+    if (!api_group || !path || !method) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
+        return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
+    }
+    if (content_parameter && content_parameter->content_length != 0 &&
+        !content_parameter->content_type) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid content parameter");
+        return ORBIS_NP_WEBAPI2_ERROR_INVALID_CONTENT_PARAMETER;
+    }
+
+    LOG_INFO(Lib_NpWebApi2, "called, user_ctx_id = {:#x}, api_group = {}, path = {}, method = {}",
+             user_ctx_id, api_group, path, method);
+    s64 temp_request_id = 0;
+    s32 result = createRequest(user_ctx_id, api_group, path, method, content_parameter, false,
+                               &temp_request_id);
+    if (result == 0) {
+        LOG_INFO(Lib_NpWebApi2, "created request_id = {:#x}", temp_request_id);
+        if (request_id) {
+            *request_id = temp_request_id;
+        }
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2CreateUserContext(s32 lib_ctx_id,

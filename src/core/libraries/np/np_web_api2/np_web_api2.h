@@ -15,7 +15,7 @@ struct OrbisNpWebApi2IntInitializeArgs {
     s32 lib_http_ctx_id;
     s32 reserved;
     u64 pool_size;
-    char* name;
+    const char* name;
     u64 struct_size;
 };
 
@@ -23,7 +23,7 @@ struct OrbisNpWebApi2IntInitialize2Args {
     s32 lib_http_ctx_id;
     s32 reserved;
     u64 pool_size;
-    char* name;
+    const char* name;
     u32 push_config_group;
     s32 reserved2;
     u64 struct_size;
@@ -34,6 +34,12 @@ struct OrbisNpWebApi2MemoryPoolStats {
     u64 max_inuse_size;
     u64 current_inuse_size;
     s32 reserved;
+};
+
+struct OrbisNpWebApi2ContentParameter {
+    u64 content_length;
+    const char* content_type;
+    u8 reserved[16];
 };
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);

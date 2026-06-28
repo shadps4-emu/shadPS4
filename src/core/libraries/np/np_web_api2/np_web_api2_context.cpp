@@ -10,6 +10,7 @@
 namespace Libraries::Np::NpWebApi2 {
 
 s32 g_current_user_context_id{};
+s64 g_current_request_id{};
 
 s32 LibraryContext::CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id) {
     if (this->user_contexts.size() >= 0x10000) {
@@ -102,6 +103,32 @@ s32 UserContext::Initialize() {
 
     // TODO: sceNpPush2 interactions
     return result;
+}
+
+s32 UserContext::CreateRequest(const char* api_group, const char* path, const char* method,
+                               const OrbisNpWebApi2ContentParameter* content_parameter,
+                               bool multipart, Request** request) {
+    this->Lock();
+    s64 actual_request_id = 0;
+    do {
+        g_current_request_id++;
+        if (g_current_request_id >> 0x20 != 0) {
+            g_current_request_id = 1;
+        }
+        actual_request_id = (static_cast<s64>(this->id) << 0x20) | g_current_user_context_id;
+    } while (this->requests.contains(actual_request_id));
+
+    if (content_parameter) {
+        this->requests[actual_request_id] =
+            new Request(this->parent_ctx, actual_request_id, api_group, path, method, multipart,
+                        content_parameter);
+    } else {
+        this->requests[actual_request_id] =
+            new Request(this->parent_ctx, actual_request_id, api_group, path, method, multipart);
+    }
+    *request = this->requests[actual_request_id];
+    this->Unlock();
+    return ORBIS_OK;
 }
 
 }; // namespace Libraries::Np::NpWebApi2
