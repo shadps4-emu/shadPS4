@@ -165,9 +165,6 @@ bool IsInternalHeader(const char* header_name) {
 }
 
 s32 Request::AddHttpRequestHeader(const char* field_name, const char* field_value) {
-    std::string name{field_name};
-    std::string value{field_value};
-
     if (!this->parent_ctx->IsInternal() && IsInternalHeader(field_name)) {
         LOG_WARNING(Lib_NpWebApi2, "This is not an internal context, skipping field name {}",
                     field_name);
@@ -175,19 +172,7 @@ s32 Request::AddHttpRequestHeader(const char* field_name, const char* field_valu
     }
 
     this->Lock();
-    HttpRequestHeader* new_header = new HttpRequestHeader(nullptr, nullptr, name, value);
-    if (!this->http_headers) {
-        // Creates a new blank head node
-        this->http_headers = new HttpRequestHeader(nullptr, nullptr, "", "");
-        this->http_headers->prev = this->http_headers;
-        this->http_headers->next = this->http_headers;
-    }
-
-    new_header->prev = this->http_headers->prev;
-    new_header->next = this->http_headers;
-    this->http_headers->prev->next = new_header;
-    this->http_headers->prev = new_header;
-    http_header_count++;
+    this->http_headers.emplace_back(new HttpRequestHeader(field_name, field_value));
     this->Unlock();
     return ORBIS_OK;
 }

@@ -6,6 +6,7 @@
 #include "core/libraries/system/userservice.h"
 
 #include <atomic>
+#include <deque>
 #include <map>
 #include <mutex>
 #include <string>
@@ -208,12 +209,10 @@ private:
     bool sent{};
 
     struct HttpRequestHeader {
-        HttpRequestHeader* prev;
-        HttpRequestHeader* next;
         std::string field_name;
         std::string field_value;
-    }* http_headers{};
-    s32 http_header_count{};
+    };
+    std::deque<HttpRequestHeader*> http_headers{};
 };
 
 }; // namespace Libraries::Np::NpWebApi2
