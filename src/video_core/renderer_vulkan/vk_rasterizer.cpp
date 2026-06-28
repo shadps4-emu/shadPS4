@@ -723,7 +723,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                 // Redirect the access to the actual depth-stencil buffer.
                 image_id = depth_image_id;
                 image = &texture_cache.GetImage(image_id);
-                                desc.view_info.range.base.level =
+                desc.view_info.range.base.level =
                     std::min(desc.view_info.range.base.level, image->info.resources.levels - 1u);
                 desc.view_info.range.base.layer =
                     std::min(desc.view_info.range.base.layer, image->info.resources.layers - 1u);
