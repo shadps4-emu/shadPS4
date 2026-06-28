@@ -261,6 +261,20 @@ struct OrbisNpMatching2PresenceOptionData {
     u64 len;
 };
 
+struct OrbisNpMatching2RoomMemberUpdateA {
+    OrbisNpMatching2RoomMemberDataInternalA* roomMemberDataInternal;
+    OrbisNpMatching2EventCause eventCause;
+    u8 padding[7];
+    OrbisNpMatching2PresenceOptionData optData;
+};
+
+struct OrbisNpMatching2RoomUpdate {
+    OrbisNpMatching2EventCause eventCause;
+    u8 padding[3];
+    s32 errorCode;
+    OrbisNpMatching2PresenceOptionData optData;
+};
+
 struct OrbisNpMatching2JoinRoomRequest {
     OrbisNpMatching2RoomId roomId;
     OrbisNpMatching2SessionPassword* roomPasswd;
@@ -403,6 +417,13 @@ struct OrbisNpMatching2RoomMemberDataInternal {
     u64 roomMemberBinAttrInternalNum;
 };
 static_assert(sizeof(OrbisNpMatching2RoomMemberDataInternal) == 0x58);
+
+struct OrbisNpMatching2RoomMemberUpdate {
+    OrbisNpMatching2RoomMemberDataInternal* roomMemberDataInternal;
+    OrbisNpMatching2EventCause eventCause;
+    u8 padding[7];
+    OrbisNpMatching2PresenceOptionData optData;
+};
 
 struct OrbisNpMatching2RoomMemberDataInternalList {
     OrbisNpMatching2RoomMemberDataInternal* members;

@@ -19,6 +19,11 @@
 #include "core/libraries/np/np_matching2/np_matching2_types.h"
 #include "core/libraries/np/np_types.h"
 
+namespace shadnet {
+class CreateJoinRoomResponse;
+class GetWorldInfoListReply;
+} // namespace shadnet
+
 namespace Libraries::Np::NpMatching2 {
 
 struct PeerInfo {
@@ -27,13 +32,42 @@ struct PeerInfo {
     OrbisNpMatching2RoomMemberId member_id = 0;
     s32 conn_id = 0;
     s32 status = 0;
-    std::string online_id;
+    Libraries::Np::OrbisNpOnlineId online_id{};
+};
+
+struct MemberBinCache {
+    OrbisNpMatching2AttributeId id = 0;
+    u64 update_date = 0;
+    std::vector<u8> data;
+};
+
+struct MemberCache {
+    Libraries::Np::OrbisNpId np_id{};
+    u64 join_date = 0;
+    OrbisNpMatching2RoomMemberId member_id = 0;
+    OrbisNpMatching2TeamId team_id = 0;
+    OrbisNpMatching2RoomGroupId group_id = 0;
+    OrbisNpMatching2NatType nat_type = 0;
+    OrbisNpMatching2Flags flag_attr = 0;
+    u32 addr = 0;
+    u16 port = 0;
+    std::map<OrbisNpMatching2AttributeId, MemberBinCache> bins;
+};
+
+struct RoomCache {
+    u32 num_slots = 0;
+    u64 mask_password = 0;
+    std::map<OrbisNpMatching2RoomGroupId, OrbisNpMatching2RoomGroup> groups;
+    std::map<OrbisNpMatching2RoomMemberId, MemberCache> members;
+    bool owner = false;
 };
 
 struct CallbackPayload {
     std::unique_ptr<OrbisNpMatching2RoomDataInternal> room_data;
     std::unique_ptr<OrbisNpMatching2CreateJoinRoomResponse> create_join_response;
     std::unique_ptr<OrbisNpMatching2SearchRoomResponse> search_room_response;
+    std::unique_ptr<OrbisNpMatching2GetWorldInfoListResponse> world_info_response;
+    std::vector<OrbisNpMatching2World> world_list;
     std::vector<OrbisNpMatching2RoomMemberDataInternal> member_data;
     std::vector<OrbisNpMatching2RoomGroup> room_groups;
     std::vector<OrbisNpMatching2RoomBinAttrInternal> room_bin_attrs;
@@ -41,6 +75,11 @@ struct CallbackPayload {
     std::vector<OrbisNpMatching2RoomDataExternal> room_data_external;
     std::vector<std::vector<u8>> bin_buffers;
     void* request_data = nullptr;
+
+    std::unique_ptr<OrbisNpMatching2RoomMemberUpdate> room_member_update;
+    std::unique_ptr<OrbisNpMatching2RoomUpdate> room_update;
+    std::unique_ptr<OrbisNpMatching2RoomMemberDataInternal> event_member;
+    void* room_event_data = nullptr;
 
     void Reset() {
         *this = CallbackPayload{};
@@ -54,7 +93,7 @@ struct ContextObject {
     OrbisNpMatching2ServerId server_id = 1;
     OrbisNpServiceLabel service_label = 0;
     Libraries::Np::OrbisNpId owner_np_id{};
-    std::string online_id;
+    Libraries::Np::OrbisNpOnlineId online_id{};
 
     std::string signaling_addr;
     u16 signaling_port = 0;
@@ -71,7 +110,10 @@ struct ContextObject {
 
     std::map<OrbisNpMatching2RoomMemberId, PeerInfo> peers;
 
-    CallbackPayload payload;
+    std::map<OrbisNpMatching2RoomId, RoomCache> room_cache;
+
+    CallbackPayload request_payload;
+    CallbackPayload room_event_payload;
 
     OrbisNpMatching2ContextCallback context_callback = nullptr;
     void* context_callback_arg = nullptr;
@@ -107,6 +149,8 @@ public:
     s32 Start(OrbisNpMatching2ContextId ctx_id);
     s32 Stop(OrbisNpMatching2ContextId ctx_id);
 
+    void ApplyContextCallback(OrbisNpMatching2ContextCallback callback, void* arg);
+
     void Reset();
 
 private:
@@ -117,6 +161,9 @@ private:
     std::array<ContextObject, kMaxContexts + 1> m_contexts{};
     std::array<bool, kMaxContexts + 1> m_used{};
     OrbisNpMatching2ContextId m_next_id = 1;
+
+    OrbisNpMatching2ContextCallback m_pending_context_callback = nullptr;
+    void* m_pending_context_callback_arg = nullptr;
 };
 
 struct PendingEvent {
@@ -176,6 +223,9 @@ struct NpMatching2State {
 extern NpMatching2State g_state;
 
 OrbisNpMatching2RequestId AllocRequestId();
+
+void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRoomResponse& resp);
+void* BuildGetWorldInfoListPayload(ContextObject& ctx, const shadnet::GetWorldInfoListReply& resp);
 
 void InitEventDispatcher();
 void TermEventDispatcher();

@@ -10,6 +10,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
+#include "core/libraries/np/np_matching2/np_matching2_mm.h"
 #include "core/libraries/np/np_score/np_score.h"
 #include "core/libraries/np/np_web_api/np_web_api.h"
 #include "core/user_settings.h"
@@ -167,7 +168,7 @@ bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, cons
     };
     client->onAsyncReply = [this, user_id](ShadNet::CommandType cmd, u64 pkt_id,
                                            ShadNet::ErrorType err, const std::vector<u8>& body) {
-        OnScoreReply(user_id, cmd, pkt_id, err, body);
+        OnAsyncReply(user_id, cmd, pkt_id, err, body);
     };
     client->onLoginResult = [this, user_id](const ShadNet::LoginResult& res) {
         OnLoginResult(user_id, res);
@@ -193,6 +194,8 @@ bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, cons
 
     LOG_INFO(NpHandler, "user_id={} signed in npid='{}' accountId={}", user_id, npid,
              client->GetUserId());
+
+    NpMatching2::SetMmShadNetClient(client, host, port);
 
     // Build OrbisNpId
     {
@@ -1601,6 +1604,16 @@ static u32 FillRankArrayFromProto(const shadnet::GetScoreResponse& resp,
         ++found;
     }
     return found;
+}
+
+void NpHandler::OnAsyncReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
+                             ShadNet::ErrorType error, const std::vector<u8>& body) {
+    const auto cmd_val = static_cast<u16>(cmd);
+    if (cmd_val >= 12 && cmd_val <= 23) {
+        NpMatching2::OnMatchingReply(cmd, pkt_id, error, body);
+    } else {
+        OnScoreReply(user_id, cmd, pkt_id, error, body);
+    }
 }
 
 void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,

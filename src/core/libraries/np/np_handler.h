@@ -215,8 +215,11 @@ private:
     void OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEvent& n);
     void OnLoginResult(s32 user_id, const ShadNet::LoginResult& res);
 
-    // Async reply dispatch for score commands. Called from the per-user
-    // ShadNetClient on the reader thread.
+    // General async reply dispatch. Routes a reply to the owning subsystem by
+    // command. Called from the per-user ShadNetClient on the reader thread.
+    void OnAsyncReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
+                      const std::vector<u8>& body);
+
     void OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
                       const std::vector<u8>& body);
 

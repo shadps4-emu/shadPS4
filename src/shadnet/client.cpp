@@ -7,7 +7,9 @@
 #include <thread>
 
 #include "client.h"
+#include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "common/thread.h"
 #include "shadnet.pb.h"
 
 #ifdef _WIN32
@@ -132,6 +134,9 @@ u64 ShadNetClient::GetUserId() const {
 u32 ShadNetClient::GetAddrLocal() const {
     return m_addr_local.load();
 }
+u32 ShadNetClient::GetAddrServer() const {
+    return m_addr_server.load();
+}
 
 u32 ShadNetClient::GetNumFriends() const {
     std::lock_guard lock(m_mutex_friends);
@@ -153,6 +158,7 @@ std::string ShadNetClient::GetBearerToken() const {
 // Threading
 
 void ShadNetClient::ConnectThread() {
+    Common::SetCurrentThreadName("ShadNet:Connect");
     bool connected = false;
     u32 backoff_ms = SHAD_CONNECT_RETRY_BACKOFF_MS;
     for (u32 attempt = 1; attempt <= SHAD_CONNECT_MAX_ATTEMPTS && !m_terminate; ++attempt) {
@@ -187,6 +193,7 @@ void ShadNetClient::ConnectThread() {
     req.set_password(m_password);
     if (!m_token.empty())
         req.set_token(m_token);
+    req.set_title_id(std::string(Common::ElfInfo::Instance().GameSerial()));
 
     const u64 id = m_pkt_counter.fetch_add(1);
     if (!SendAll(BuildPacket(CommandType::Login, id, MakeProtoPayload(req)))) {
@@ -198,6 +205,7 @@ void ShadNetClient::ConnectThread() {
 }
 
 void ShadNetClient::ReaderThread() {
+    Common::SetCurrentThreadName("ShadNet:Reader");
     while (!m_terminate) {
         u8 hdr[SHAD_HEADER_SIZE];
         if (!RecvN(hdr, SHAD_HEADER_SIZE)) {
@@ -239,6 +247,7 @@ void ShadNetClient::ReaderThread() {
 }
 
 void ShadNetClient::WriterThread() {
+    Common::SetCurrentThreadName("ShadNet:Writer");
     while (!m_terminate) {
         std::unique_lock lock(m_mutex_send_queue);
         m_cv_send_queue.wait(lock, [&] { return m_terminate.load() || !m_send_queue.empty(); });
@@ -341,6 +350,11 @@ bool ShadNetClient::DoConnect() {
     socklen_t alen = sizeof(local);
     if (::getsockname(m_sock, reinterpret_cast<struct sockaddr*>(&local), &alen) == 0)
         m_addr_local.store(local.sin_addr.s_addr);
+
+    struct sockaddr_in peer{};
+    socklen_t plen = sizeof(peer);
+    if (::getpeername(m_sock, reinterpret_cast<struct sockaddr*>(&peer), &plen) == 0)
+        m_addr_server.store(peer.sin_addr.s_addr);
 
     LOG_INFO(ShadNet, "TCP connected to {}:{}", m_host, m_port);
 
@@ -715,6 +729,50 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
         LOG_DEBUG(ShadNet, "FriendStatus '{}' is {}", n.npid, n.online ? "online" : "offline");
         if (onFriendStatus)
             onFriendStatus(n);
+        break;
+    }
+    case NotificationType::RoomEvent: {
+        shadnet::NotifyRoomEvent pb;
+        if (!pb.ParseFromString(blob)) {
+            LOG_WARNING(ShadNet, "RoomEvent parse error");
+            break;
+        }
+        NotifyRoomEvent n;
+        n.ctx_id = pb.ctx_id();
+        n.room_id = pb.room_id();
+        n.event = pb.event();
+        n.event_cause = pb.event_cause();
+        n.error_code = pb.error_code();
+        n.flags = pb.flags();
+        if (pb.has_member()) {
+            const auto& m = pb.member();
+            n.member_npid = m.npid();
+            n.member_id = m.member_id();
+            n.member_team_id = m.team_id();
+            n.member_is_owner = m.is_owner();
+            n.member_join_date = m.join_date();
+            n.member_nat_type = m.nat_type();
+            n.member_flag_attr = m.flag_attr();
+            n.member_group_id = m.group_id();
+            n.member_addr = m.addr();
+            n.member_port = m.port();
+            for (const auto& a : m.bin_attrs_internal()) {
+                MatchingBinAttr ba;
+                ba.attr_id = a.attr_id();
+                ba.data.assign(a.data().begin(), a.data().end());
+                n.member_bin_attrs.push_back(std::move(ba));
+            }
+        }
+        for (const auto& a : pb.bin_attrs()) {
+            MatchingBinAttr ba;
+            ba.attr_id = a.attr_id();
+            ba.data.assign(a.data().begin(), a.data().end());
+            n.bin_attrs.push_back(std::move(ba));
+        }
+        LOG_DEBUG(ShadNet, "RoomEvent room_id={} event={:#x} cause={}", n.room_id, n.event,
+                  n.event_cause);
+        if (onRoomEvent)
+            onRoomEvent(n);
         break;
     }
     case NotificationType::WebApiPushEvent: {
