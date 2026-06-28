@@ -498,6 +498,15 @@ u64 ShadNetClient::RemoveBlock(const std::string& npid) {
     return SubmitRequest(CommandType::RemoveBlock, MakeProtoPayload(req));
 }
 
+u64 ShadNetClient::SetAppearOffline(bool enable) {
+    m_appear_offline = enable; // cache so the (re)login packet carries the current state
+    if (!IsAuthenticated())
+        return 0; // not connected yet -> login will carry the cached value
+    shadnet::SetAppearOfflineRequest req;
+    req.set_appear_offline(enable);
+    return SubmitRequest(CommandType::SetAppearOffline, MakeProtoPayload(req));
+}
+
 // Packet dispatch
 
 void ShadNetClient::DispatchPacket(PacketType type, u16 cmd_raw, u64 pkt_id,

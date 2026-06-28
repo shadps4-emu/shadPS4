@@ -87,6 +87,7 @@ enum class CommandType : u16 {
     GetScoreAccountId = 37,
     GetScoreGameDataByAccId = 38,
     GetToken = 39,
+    SetAppearOffline = 40,
 };
 
 enum class NotificationType : u16 {
@@ -246,6 +247,8 @@ public:
     u64 RemoveFriend(const std::string& npid);
     u64 AddBlock(const std::string& npid);
     u64 RemoveBlock(const std::string& npid);
+    // Set the Appear-Offline preference mid-session (server handles us as offline while set).
+    u64 SetAppearOffline(bool enable);
 
 private:
     void ConnectThread();

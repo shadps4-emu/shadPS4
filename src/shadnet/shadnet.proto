@@ -19,6 +19,11 @@ message LoginRequest {
     bool appear_offline = 6; // user's Appear-Offline preference
 }
 
+// Mid-session Appear-Offline toggle.
+message SetAppearOfflineRequest {
+    bool appear_offline = 1;
+}
+
 message FriendEntry {
     string npid     = 1;
     bool   online   = 2;
