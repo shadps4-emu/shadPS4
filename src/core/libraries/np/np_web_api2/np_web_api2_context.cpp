@@ -1,8 +1,107 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/logging/log.h"
+#include "core/libraries/network/http2.h"
+#include "core/libraries/np/np_common.h"
+#include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_context.h"
 
 namespace Libraries::Np::NpWebApi2 {
 
+s32 g_current_user_context_id{};
+
+s32 LibraryContext::CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id) {
+    if (this->user_contexts.size() >= 0x10000) {
+        LOG_ERROR(Lib_NpWebApi2, "Too many user contexts");
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_MAX;
+    }
+
+    s32 actual_user_ctx_id = 0;
+    do {
+        g_current_user_context_id++;
+        if (g_current_user_context_id >= 0x10000) {
+            g_current_user_context_id = 1;
+        }
+        actual_user_ctx_id = (this->id << 0x10) | g_current_user_context_id;
+    } while (this->user_contexts.contains(actual_user_ctx_id));
+
+    this->user_contexts[actual_user_ctx_id] = new UserContext(this, actual_user_ctx_id, user_id);
+    return actual_user_ctx_id;
+}
+
+UserContext* LibraryContext::GetUserContext(s32 user_ctx_id) {
+    std::scoped_lock lk{this->lock};
+    if (!this->user_contexts.contains(user_ctx_id)) {
+        return nullptr;
+    }
+
+    UserContext* user_ctx = this->user_contexts.at(user_ctx_id);
+    user_ctx->AddUser();
+    return user_ctx;
 };
+
+UserContext* LibraryContext::GetUserContextByUserId(
+    Libraries::UserService::OrbisUserServiceUserId user_id) {
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        return nullptr;
+    }
+
+    std::scoped_lock lk{this->lock};
+    for (auto& [user_ctx_id, user_ctx] : this->user_contexts) {
+        if (user_ctx->GetUserId() == user_id) {
+            user_ctx->AddUser();
+            return user_ctx;
+        }
+    }
+
+    return nullptr;
+};
+
+s32 PS4_SYSV_ABI internalPreSendCallback(s32 http_request_id, s32 ssl_id,
+                                         Libraries::Http2::OrbisHttp2PreSendCallbackData* data,
+                                         void* user_arg) {
+    s64 user_ctx_id = reinterpret_cast<s64>(user_arg);
+    LOG_ERROR(Lib_NpWebApi2,
+              "Unimplemented, http_request_id = {:#x}, ssl_id = {:#x}, user_ctx_id = {:#x}",
+              http_request_id, ssl_id, user_ctx_id);
+    return ORBIS_OK;
+}
+
+s32 UserContext::Initialize() {
+    const char* name = this->parent_ctx->GetName();
+
+    char sw_version[8];
+    memset(sw_version, 0, sizeof(sw_version));
+    Libraries::Np::NpCommon::sceNpGetSdkVersion(sw_version);
+
+    char user_agent_buf[0x40];
+    memset(user_agent_buf, 0, sizeof(user_agent_buf));
+    if (name) {
+        snprintf(user_agent_buf, sizeof(user_agent_buf), "NpWebApi2/%s (%s)", sw_version, name);
+    } else {
+        snprintf(user_agent_buf, sizeof(user_agent_buf), "NpWebApi2/%s", sw_version);
+    }
+    this->user_agent = std::string{user_agent_buf};
+
+    s32 http_ctx_id = this->parent_ctx->GetHttpCtxId();
+    s32 http_template_id = Libraries::Http2::sceHttp2CreateTemplate(
+        http_ctx_id, user_agent_buf,
+        Libraries::Http2::OrbisHttp2HttpVersion::ORBIS_HTTP2_VERSION_2_0, 0);
+    if (http_template_id < 0) {
+        LOG_ERROR(Lib_NpWebApi2, "Failed to create HTTP template, error = {:#x}", http_template_id);
+        return http_template_id;
+    }
+
+    s32 result = Libraries::Http2::sceHttp2SetPreSendCallback(
+        http_template_id, internalPreSendCallback, reinterpret_cast<void*>(this->id));
+    if (result < 0) {
+        LOG_ERROR(Lib_NpWebApi2, "Failed to set pre-send callback, error = {:#x}", result);
+        return result;
+    }
+
+    // TODO: sceNpPush2 interactions
+    return result;
+};
+
+}; // namespace Libraries::Np::NpWebApi2

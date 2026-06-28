@@ -49,14 +49,19 @@ s32 PS4_SYSV_ABI sceNpWebApi2CreateRequest() {
 s32 PS4_SYSV_ABI sceNpWebApi2CreateUserContext(s32 lib_ctx_id,
                                                UserService::OrbisUserServiceUserId user_id) {
     if (lib_ctx_id >= 0x8000) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid library context id {:#x}", lib_ctx_id);
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_LIB_CONTEXT_ID;
     }
     if (user_id == UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid user id");
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
     }
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, lib_ctx_id = {:#x}, user_id = {:#x}", lib_ctx_id,
-              user_id);
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_NpWebApi2, "called, lib_ctx_id = {:#x}, user_id = {:#x}", lib_ctx_id, user_id);
+    s32 user_ctx_id = createUserContext(lib_ctx_id, user_id);
+    if (user_ctx_id > 0) {
+        LOG_INFO(Lib_NpWebApi2, "created user_ctx_id = {:#x}", user_ctx_id);
+    }
+    return user_ctx_id;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2DeleteRequest(s64 request_id) {
@@ -90,7 +95,9 @@ s32 PS4_SYSV_ABI sceNpWebApi2Initialize(s32 lib_http_ctx_id, u64 pool_size) {
               pool_size);
 
     s32 ctx_id = createLibraryContext(lib_http_ctx_id, nullptr);
-    LOG_INFO(Lib_NpWebApi2, "created ctx_id = {:#x}", ctx_id);
+    if (ctx_id > 0) {
+        LOG_INFO(Lib_NpWebApi2, "created lib_ctx_id = {:#x}", ctx_id);
+    }
     return ctx_id;
 }
 
@@ -99,7 +106,9 @@ s32 PS4_SYSV_ABI sceNpWebApi2InitializeForPresence(s32 lib_http_ctx_id, u64 pool
               pool_size);
 
     s32 ctx_id = createLibraryContext(lib_http_ctx_id, nullptr);
-    LOG_INFO(Lib_NpWebApi2, "created ctx_id = {:#x}", ctx_id);
+    if (ctx_id > 0) {
+        LOG_INFO(Lib_NpWebApi2, "created lib_ctx_id = {:#x}", ctx_id);
+    }
     return ctx_id;
 }
 
@@ -117,7 +126,9 @@ s32 PS4_SYSV_ABI sceNpWebApi2IntInitialize(const OrbisNpWebApi2IntInitializeArgs
               args->lib_http_ctx_id, args->pool_size, args->name ? args->name : "(null)");
 
     s32 ctx_id = createLibraryContext(args->lib_http_ctx_id, args->name);
-    LOG_INFO(Lib_NpWebApi2, "created ctx_id = {:#x}", ctx_id);
+    if (ctx_id > 0) {
+        LOG_INFO(Lib_NpWebApi2, "created lib_ctx_id = {:#x}", ctx_id);
+    }
     return ctx_id;
 }
 
@@ -134,7 +145,9 @@ s32 PS4_SYSV_ABI sceNpWebApi2IntInitialize2(const OrbisNpWebApi2IntInitialize2Ar
         args->push_config_group);
 
     s32 ctx_id = createLibraryContext(args->lib_http_ctx_id, args->name);
-    LOG_INFO(Lib_NpWebApi2, "created ctx_id = {:#x}", ctx_id);
+    if (ctx_id > 0) {
+        LOG_INFO(Lib_NpWebApi2, "created lib_ctx_id = {:#x}", ctx_id);
+    }
     return ctx_id;
 }
 
