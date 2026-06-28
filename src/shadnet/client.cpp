@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "client.h"
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "shadnet.pb.h"
 
@@ -187,6 +188,8 @@ void ShadNetClient::ConnectThread() {
     req.set_password(m_password);
     if (!m_token.empty())
         req.set_token(m_token);
+    req.set_np_title_id(std::string(Common::ElfInfo::Instance().GameSerial()));
+    req.set_title_name(std::string(Common::ElfInfo::Instance().Title()));
 
     const u64 id = m_pkt_counter.fetch_add(1);
     if (!SendAll(BuildPacket(CommandType::Login, id, MakeProtoPayload(req)))) {
