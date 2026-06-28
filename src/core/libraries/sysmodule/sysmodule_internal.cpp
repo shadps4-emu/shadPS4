@@ -17,6 +17,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
 #include "core/libraries/rtc/rtc.h"
+#include "core/libraries/rudp/rudp.h"
 #include "core/libraries/sysmodule/sysmodule_error.h"
 #include "core/libraries/sysmodule/sysmodule_internal.h"
 #include "core/libraries/sysmodule/sysmodule_table.h"
@@ -224,11 +225,20 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
              {"libSceCesCs.sprx", nullptr},
              {"libSceAudiodec.sprx", nullptr},
-             {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
-             {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
+             {"libSceAudiodecCpu.sprx", nullptr},
+             {"libSceAudiodecCpuDdp.sprx", nullptr},
+             {"libSceAudiodecCpuM4aac.sprx", nullptr},
+             {"libSceAudiodecCpuDtsHdLbr.sprx", nullptr},
+             {"libSceAudiodecCpuHevag.sprx", nullptr},
+             {"libSceFont.sprx", &Libraries::Font::RegisterLib},
+             {"libSceFontFt.sprx", &Libraries::FontFt::RegisterLib},
              {"libSceFreeTypeOt.sprx", nullptr},
+             {"libSceFreeTypeOl.sprx", nullptr},
+             {"libSceFreeTypeOptOl.sprx", nullptr},
+             {"libSceRudp.sprx", &Libraries::Rudp::RegisterLib},
              {"libSceWkFontConfig.sprx", nullptr},
-             {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib}});
+             {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib},
+             {"libSceXml.sprx", nullptr}});
 
         // Iterate through the allowed array
         const auto it = std::ranges::find_if(
