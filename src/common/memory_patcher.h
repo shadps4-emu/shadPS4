@@ -26,12 +26,12 @@ enum PatchMask : uint8_t {
 };
 
 struct patchInfo {
-    const std::string& gameSerial;
-    const std::string& modNameStr;
-    const std::string& offsetStr;
-    const std::string& valueStr;
-    const std::string& targetStr;
-    const std::string& sizeStr;
+    std::string gameSerial;
+    std::string modNameStr;
+    std::string offsetStr;
+    std::string valueStr;
+    std::string targetStr;
+    std::string sizeStr;
     bool isOffset;
     bool littleEndian;
     PatchMask patchMask;
