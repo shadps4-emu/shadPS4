@@ -11,6 +11,7 @@
 #include <semaphore>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 #include "common/types.h"
 #ifdef _WIN32
@@ -187,6 +188,9 @@ struct NotifyWebApiPushEvent {
     std::string data;     // raw event body (typically PSN-format JSON)
     std::string fromNpid; // may be empty
     std::string toNpid;   // may be empty
+    // Optional extended-data (key,value) pairs (e.g. friendlist trigger/additionalTrigger,
+    // presence gameStatus/gameData). Empty when the server sends none / is older.
+    std::vector<std::pair<std::string, std::string>> extdData;
 };
 
 // ShadNetClient

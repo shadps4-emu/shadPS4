@@ -739,8 +739,28 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
         n.fromNpid = ExtractBlob(payload, off);
         off += 4 + static_cast<int>(n.fromNpid.size());
         n.toNpid = ExtractBlob(payload, off);
-        LOG_INFO(ShadNet, "WebApiPushEvent svc='{}' type='{}' from='{}' bytes={}", n.npServiceName,
-                 n.dataType, n.fromNpid, n.data.size());
+        off += 4 + static_cast<int>(n.toNpid.size());
+        // Optional extended-data section appended after toNpid: u32 LE count, then
+        // (blob key, blob value) per pair. Absent on older servers -> no bytes left ->
+        // zero pairs. Length-guarded throughout; count capped to avoid runaway on a
+        // malformed packet.
+        if (off + 4 <= static_cast<int>(payload.size())) {
+            const u32 count = GetLE32(payload.data() + off);
+            off += 4;
+            for (u32 i = 0; i < count && i < 256; ++i) {
+                if (off + 4 > static_cast<int>(payload.size()))
+                    break;
+                std::string key = ExtractBlob(payload, off);
+                off += 4 + static_cast<int>(key.size());
+                if (off + 4 > static_cast<int>(payload.size()))
+                    break;
+                std::string val = ExtractBlob(payload, off);
+                off += 4 + static_cast<int>(val.size());
+                n.extdData.emplace_back(std::move(key), std::move(val));
+            }
+        }
+        LOG_INFO(ShadNet, "WebApiPushEvent svc='{}' type='{}' from='{}' bytes={} extd={}",
+                 n.npServiceName, n.dataType, n.fromNpid, n.data.size(), n.extdData.size());
         if (onWebApiPushEvent)
             onWebApiPushEvent(n);
         break;

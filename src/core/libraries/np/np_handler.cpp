@@ -471,6 +471,7 @@ void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEv
         ev.hasTo = true;
         std::strncpy(ev.toOnlineId.data, n.toNpid.c_str(), sizeof(ev.toOnlineId.data) - 1);
     }
+    ev.extdData = n.extdData; // extended-data (key,value) pairs -> dispatched as pExtdData
     NpWebApi::EnqueuePushEvent(ev);
 }
 
