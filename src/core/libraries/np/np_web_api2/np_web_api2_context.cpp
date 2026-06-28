@@ -39,7 +39,7 @@ UserContext* LibraryContext::GetUserContext(s32 user_ctx_id) {
     UserContext* user_ctx = this->user_contexts.at(user_ctx_id);
     user_ctx->AddUser();
     return user_ctx;
-};
+}
 
 UserContext* LibraryContext::GetUserContextByUserId(
     Libraries::UserService::OrbisUserServiceUserId user_id) {
@@ -56,7 +56,7 @@ UserContext* LibraryContext::GetUserContextByUserId(
     }
 
     return nullptr;
-};
+}
 
 s32 PS4_SYSV_ABI internalPreSendCallback(s32 http_request_id, s32 ssl_id,
                                          Libraries::Http2::OrbisHttp2PreSendCallbackData* data,
@@ -102,6 +102,6 @@ s32 UserContext::Initialize() {
 
     // TODO: sceNpPush2 interactions
     return result;
-};
+}
 
 }; // namespace Libraries::Np::NpWebApi2

@@ -40,7 +40,7 @@ s32 createLibraryContext(s32 http_ctx_id, u64 pool_size, const char* name) {
             new LibraryContext(g_current_lib_context_id, http_ctx_id, pool_size, name);
     }
     return g_current_lib_context_id;
-};
+}
 
 LibraryContext* getLibraryContext(s32 lib_ctx_id) {
     std::scoped_lock lk{g_mutex};
@@ -99,6 +99,6 @@ s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUs
 
     lib_ctx->RemoveUser();
     return user_ctx_id;
-};
+}
 
 }; // namespace Libraries::Np::NpWebApi2

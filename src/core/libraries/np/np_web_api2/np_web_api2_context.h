@@ -96,21 +96,21 @@ public:
         parent_ctx->Lock();
         user_count++;
         parent_ctx->Unlock();
-    };
+    }
 
     void RemoveUser() {
         parent_ctx->Lock();
         user_count--;
         parent_ctx->Unlock();
-    };
+    }
 
     s32 GetId() {
         return id;
-    };
+    }
 
     Libraries::UserService::OrbisUserServiceUserId GetUserId() {
         return user_id;
-    };
+    }
 
     s32 Initialize();
 
