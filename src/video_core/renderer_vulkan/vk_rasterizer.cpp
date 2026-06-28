@@ -719,20 +719,22 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             image_id = texture_cache.FindImage(desc);
             auto* image = &texture_cache.GetImage(image_id);
             if (auto depth_image_id = texture_cache.GetAssociatedDepth(*image)) {
-                // If this image has an associated depth image, it's a stencil attachment.
-                // Redirect the access to the actual depth-stencil buffer.
                 image_id = depth_image_id;
                 image = &texture_cache.GetImage(image_id);
-                desc.view_info.range.base.level =
-                    std::min(desc.view_info.range.base.level, image->info.resources.levels - 1u);
-                desc.view_info.range.base.layer =
-                    std::min(desc.view_info.range.base.layer, image->info.resources.layers - 1u);
-                desc.view_info.range.extent.levels =
-                    std::min(desc.view_info.range.extent.levels,
-                             image->info.resources.levels - desc.view_info.range.base.level);
-                desc.view_info.range.extent.layers =
-                    std::min(desc.view_info.range.extent.layers,
-                             image->info.resources.layers - desc.view_info.range.base.layer);
+                const auto required_levels =
+                    desc.view_info.range.base.level + desc.view_info.range.extent.levels;
+                const auto required_layers =
+                    desc.view_info.range.base.layer + desc.view_info.range.extent.layers;
+                if (image->info.resources.levels < required_levels ||
+                    image->info.resources.layers < required_layers) {
+                    auto new_info = image->info;
+                    new_info.resources.levels =
+                        std::max(image->info.resources.levels, required_levels);
+                    new_info.resources.layers =
+                        std::max(image->info.resources.layers, required_layers);
+                    image_id = texture_cache.ExpandImage(new_info, image_id);
+                    image = &texture_cache.GetImage(image_id);
+                }
             }
             if (image->binding.is_bound) {
                 // The image is already bound. In case if it is about to be used as storage we
