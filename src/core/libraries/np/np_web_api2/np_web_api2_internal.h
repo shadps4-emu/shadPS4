@@ -7,4 +7,4 @@ namespace Libraries::Np::NpWebApi2 {
 
 s32 createLibraryContext(s32 http_ctx_id, const char* name);
 s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUserId user_id);
-};
+}; // namespace Libraries::Np::NpWebApi2

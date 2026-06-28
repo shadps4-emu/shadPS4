@@ -23,8 +23,9 @@ struct OrbisHttp2PreSendCallbackData {
     void* unk;
     void* cert;
 };
-using OrbisHttp2PreSendCallback = PS4_SYSV_ABI s32 (*)(
-    s32 request_id, s32 ssl_id, OrbisHttp2PreSendCallbackData* data, void* user_arg);
+using OrbisHttp2PreSendCallback = PS4_SYSV_ABI s32 (*)(s32 request_id, s32 ssl_id,
+                                                       OrbisHttp2PreSendCallbackData* data,
+                                                       void* user_arg);
 
 s32 PS4_SYSV_ABI sceHttp2AbortRequest();
 s32 PS4_SYSV_ABI sceHttp2AddCookie();

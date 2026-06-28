@@ -87,5 +87,4 @@ s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUs
     return user_ctx_id;
 };
 
-
 }; // namespace Libraries::Np::NpWebApi2
