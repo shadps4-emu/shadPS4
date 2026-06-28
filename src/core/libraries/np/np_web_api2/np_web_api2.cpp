@@ -86,15 +86,15 @@ s32 PS4_SYSV_ABI sceNpWebApi2GetHttpResponseHeaderValueLength() {
 
 s32 PS4_SYSV_ABI sceNpWebApi2GetMemoryPoolStats(s32 lib_ctx_id,
                                                 OrbisNpWebApi2MemoryPoolStats* stats) {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, lib_ctx_id = {:#x}", lib_ctx_id);
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi2, "called, lib_ctx_id = {:#x}", lib_ctx_id);
+    return getMemoryPoolStats(lib_ctx_id, stats);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2Initialize(s32 lib_http_ctx_id, u64 pool_size) {
     LOG_DEBUG(Lib_NpWebApi2, "called, lib_http_ctx_id = {:#x}, pool_size = {:#x}", lib_http_ctx_id,
               pool_size);
 
-    s32 ctx_id = createLibraryContext(lib_http_ctx_id, nullptr);
+    s32 ctx_id = createLibraryContext(lib_http_ctx_id, pool_size, nullptr);
     if (ctx_id > 0) {
         LOG_INFO(Lib_NpWebApi2, "created lib_ctx_id = {:#x}", ctx_id);
     }
@@ -105,7 +105,7 @@ s32 PS4_SYSV_ABI sceNpWebApi2InitializeForPresence(s32 lib_http_ctx_id, u64 pool
     LOG_DEBUG(Lib_NpWebApi2, "called, lib_http_ctx_id = {:#x}, pool_size = {:#x}", lib_http_ctx_id,
               pool_size);
 
-    s32 ctx_id = createLibraryContext(lib_http_ctx_id, nullptr);
+    s32 ctx_id = createLibraryContext(lib_http_ctx_id, pool_size, nullptr);
     if (ctx_id > 0) {
         LOG_INFO(Lib_NpWebApi2, "created lib_ctx_id = {:#x}", ctx_id);
     }
@@ -125,7 +125,7 @@ s32 PS4_SYSV_ABI sceNpWebApi2IntInitialize(const OrbisNpWebApi2IntInitializeArgs
     LOG_DEBUG(Lib_NpWebApi2, "called, lib_http_ctx_id = {:#x}, pool_size = {:#x}, name = {}",
               args->lib_http_ctx_id, args->pool_size, args->name ? args->name : "(null)");
 
-    s32 ctx_id = createLibraryContext(args->lib_http_ctx_id, args->name);
+    s32 ctx_id = createLibraryContext(args->lib_http_ctx_id, args->pool_size, args->name);
     if (ctx_id > 0) {
         LOG_INFO(Lib_NpWebApi2, "created lib_ctx_id = {:#x}", ctx_id);
     }
@@ -144,7 +144,7 @@ s32 PS4_SYSV_ABI sceNpWebApi2IntInitialize2(const OrbisNpWebApi2IntInitialize2Ar
         args->lib_http_ctx_id, args->pool_size, args->name ? args->name : "(null)",
         args->push_config_group);
 
-    s32 ctx_id = createLibraryContext(args->lib_http_ctx_id, args->name);
+    s32 ctx_id = createLibraryContext(args->lib_http_ctx_id, args->pool_size, args->name);
     if (ctx_id > 0) {
         LOG_INFO(Lib_NpWebApi2, "created lib_ctx_id = {:#x}", ctx_id);
     }

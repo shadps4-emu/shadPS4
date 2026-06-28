@@ -17,7 +17,7 @@ std::recursive_mutex g_mutex{};
 s32 g_current_lib_context_id{};
 std::map<s32, LibraryContext*> g_lib_contexts{};
 
-s32 createLibraryContext(s32 http_ctx_id, const char* name) {
+s32 createLibraryContext(s32 http_ctx_id, u64 pool_size, const char* name) {
     std::scoped_lock lk{g_mutex};
 
     if (g_lib_contexts.size() >= 0x8000) {
@@ -34,10 +34,10 @@ s32 createLibraryContext(s32 http_ctx_id, const char* name) {
 
     if (!name) {
         g_lib_contexts[g_current_lib_context_id] =
-            new LibraryContext(g_current_lib_context_id, http_ctx_id);
+            new LibraryContext(g_current_lib_context_id, http_ctx_id, pool_size);
     } else {
         g_lib_contexts[g_current_lib_context_id] =
-            new LibraryContext(g_current_lib_context_id, http_ctx_id, name);
+            new LibraryContext(g_current_lib_context_id, http_ctx_id, pool_size, name);
     }
     return g_current_lib_context_id;
 };
@@ -51,6 +51,20 @@ LibraryContext* getLibraryContext(s32 lib_ctx_id) {
     LibraryContext* lib_ctx = g_lib_contexts.at(lib_ctx_id);
     lib_ctx->AddUser();
     return lib_ctx;
+}
+
+s32 getMemoryPoolStats(s32 lib_ctx_id, OrbisNpWebApi2MemoryPoolStats* stats) {
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context with id {:#x}", lib_ctx_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    if (stats) {
+        memset(stats, 0, sizeof(*stats));
+        stats->pool_size = lib_ctx->GetPoolSize();
+    }
+    return ORBIS_OK;
 }
 
 s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUserId user_id) {

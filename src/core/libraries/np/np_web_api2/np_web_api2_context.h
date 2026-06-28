@@ -18,35 +18,40 @@ class Request;
 
 class LibraryContext {
 public:
-    LibraryContext(s32 ctx_id, s32 http_ctx_id) : id(ctx_id), http_ctx_id(http_ctx_id) {};
-    LibraryContext(s32 ctx_id, s32 http_ctx_id, const char* name)
-        : id(ctx_id), http_ctx_id(http_ctx_id), name(name) {};
+    LibraryContext(s32 ctx_id, s32 http_ctx_id, u64 pool_size)
+        : id(ctx_id), http_ctx_id(http_ctx_id), pool_size(pool_size) {}
+    LibraryContext(s32 ctx_id, s32 http_ctx_id, u64 pool_size, const char* name)
+        : id(ctx_id), http_ctx_id(http_ctx_id), pool_size(pool_size), name(name) {}
 
     void Lock() {
         lock.lock();
-    };
+    }
 
     void Unlock() {
         lock.unlock();
-    };
+    }
 
     void AddUser() {
         std::scoped_lock lk{lock};
         user_count++;
-    };
+    }
 
     void RemoveUser() {
         std::scoped_lock lk{lock};
         user_count--;
-    };
+    }
 
     s32 GetId() {
         return id;
-    };
+    }
 
     s32 GetHttpCtxId() {
         return http_ctx_id;
-    };
+    }
+
+    u64 GetPoolSize() {
+        return pool_size;
+    }
 
     const char* GetName() {
         return name.empty() ? nullptr : name.data();
@@ -59,12 +64,13 @@ public:
     void RemoveUserContext(s32 user_ctx_id) {
         std::scoped_lock lk{lock};
         user_contexts.erase(user_ctx_id);
-    };
+    }
 
 private:
     s32 id{};
     s32 http_ctx_id{};
     s32 user_count{};
+    u64 pool_size{};
     std::recursive_mutex lock{};
     std::string name{};
     std::map<s32, UserContext*> user_contexts{};
