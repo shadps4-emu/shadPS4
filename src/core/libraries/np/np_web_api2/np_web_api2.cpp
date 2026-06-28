@@ -17,9 +17,15 @@ s32 PS4_SYSV_ABI sceNpWebApi2AbortRequest(s64 request_id) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2AddHttpRequestHeader() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApi2AddHttpRequestHeader(s64 request_id, const char* field_name,
+                                                  const char* field_value) {
+    if (!field_name || !field_value) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
+        return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
+    }
+    LOG_INFO(Lib_NpWebApi2, "called, request_id = {:#x}, field_name = {}, field_value = {}",
+             request_id, field_name, field_value);
+    return addHttpRequestHeader(request_id, field_name, field_value);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2AddMultipartPart() {
@@ -134,7 +140,8 @@ s32 PS4_SYSV_ABI sceNpWebApi2Initialize(s32 lib_http_ctx_id, u64 pool_size) {
     LOG_DEBUG(Lib_NpWebApi2, "called, lib_http_ctx_id = {:#x}, pool_size = {:#x}", lib_http_ctx_id,
               pool_size);
 
-    s32 ctx_id = createLibraryContext(lib_http_ctx_id, pool_size, nullptr);
+    // Uses a sceLncUtilGetAppStatus check to enable debug mode. For now, default to normal.
+    s32 ctx_id = createLibraryContext(lib_http_ctx_id, 1, pool_size, nullptr);
     if (ctx_id > 0) {
         LOG_INFO(Lib_NpWebApi2, "created lib_ctx_id = {:#x}", ctx_id);
     }
@@ -145,7 +152,7 @@ s32 PS4_SYSV_ABI sceNpWebApi2InitializeForPresence(s32 lib_http_ctx_id, u64 pool
     LOG_DEBUG(Lib_NpWebApi2, "called, lib_http_ctx_id = {:#x}, pool_size = {:#x}", lib_http_ctx_id,
               pool_size);
 
-    s32 ctx_id = createLibraryContext(lib_http_ctx_id, pool_size, nullptr);
+    s32 ctx_id = createLibraryContext(lib_http_ctx_id, 3, pool_size, nullptr);
     if (ctx_id > 0) {
         LOG_INFO(Lib_NpWebApi2, "created lib_ctx_id = {:#x}", ctx_id);
     }
@@ -165,7 +172,7 @@ s32 PS4_SYSV_ABI sceNpWebApi2IntInitialize(const OrbisNpWebApi2IntInitializeArgs
     LOG_DEBUG(Lib_NpWebApi2, "called, lib_http_ctx_id = {:#x}, pool_size = {:#x}, name = {}",
               args->lib_http_ctx_id, args->pool_size, args->name ? args->name : "(null)");
 
-    s32 ctx_id = createLibraryContext(args->lib_http_ctx_id, args->pool_size, args->name);
+    s32 ctx_id = createLibraryContext(args->lib_http_ctx_id, 2, args->pool_size, args->name);
     if (ctx_id > 0) {
         LOG_INFO(Lib_NpWebApi2, "created lib_ctx_id = {:#x}", ctx_id);
     }
@@ -184,7 +191,7 @@ s32 PS4_SYSV_ABI sceNpWebApi2IntInitialize2(const OrbisNpWebApi2IntInitialize2Ar
         args->lib_http_ctx_id, args->pool_size, args->name ? args->name : "(null)",
         args->push_config_group);
 
-    s32 ctx_id = createLibraryContext(args->lib_http_ctx_id, args->pool_size, args->name);
+    s32 ctx_id = createLibraryContext(args->lib_http_ctx_id, 2, args->pool_size, args->name);
     if (ctx_id > 0) {
         LOG_INFO(Lib_NpWebApi2, "created lib_ctx_id = {:#x}", ctx_id);
     }

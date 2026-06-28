@@ -17,7 +17,7 @@ std::recursive_mutex g_mutex{};
 s32 g_current_lib_context_id{};
 std::map<s32, LibraryContext*> g_lib_contexts{};
 
-s32 createLibraryContext(s32 http_ctx_id, u64 pool_size, const char* name) {
+s32 createLibraryContext(s32 http_ctx_id, s32 type, u64 pool_size, const char* name) {
     std::scoped_lock lk{g_mutex};
 
     if (g_lib_contexts.size() >= 0x8000) {
@@ -34,10 +34,10 @@ s32 createLibraryContext(s32 http_ctx_id, u64 pool_size, const char* name) {
 
     if (!name) {
         g_lib_contexts[g_current_lib_context_id] =
-            new LibraryContext(g_current_lib_context_id, http_ctx_id, pool_size);
+            new LibraryContext(g_current_lib_context_id, type, http_ctx_id, pool_size);
     } else {
         g_lib_contexts[g_current_lib_context_id] =
-            new LibraryContext(g_current_lib_context_id, http_ctx_id, pool_size, name);
+            new LibraryContext(g_current_lib_context_id, type, http_ctx_id, pool_size, name);
     }
     return g_current_lib_context_id;
 }
@@ -141,6 +141,45 @@ s32 createRequest(s32 user_ctx_id, const char* api_group, const char* path, cons
     if (request_id) {
         *request_id = request->GetId();
     }
+    user_ctx->RemoveUser();
+    lib_ctx->RemoveUser();
+    return result;
+}
+
+s32 addHttpRequestHeader(s64 request_id, const char* field_name, const char* field_value) {
+    s32 lib_ctx_id = static_cast<s32>(request_id >> 0x30);
+    s32 user_ctx_id = static_cast<s32>(request_id >> 0x20);
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for request id {:#x}", request_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context for request id {:#x}", request_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    Request* request = user_ctx->GetRequest(request_id);
+    if (!request) {
+        LOG_ERROR(Lib_NpWebApi2, "No request with id {:#x}", request_id);
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (request->HasSent()) {
+        LOG_ERROR(Lib_NpWebApi2, "Request is already sent");
+        request->RemoveUser();
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_AFTER_SEND;
+    }
+
+    s32 result = request->AddHttpRequestHeader(field_name, field_value);
+    request->RemoveUser();
     user_ctx->RemoveUser();
     lib_ctx->RemoveUser();
     return result;

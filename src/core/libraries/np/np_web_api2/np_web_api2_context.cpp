@@ -73,15 +73,16 @@ s32 UserContext::Initialize() {
     const char* name = this->parent_ctx->GetName();
 
     char sw_version[8];
-    memset(sw_version, 0, sizeof(sw_version));
+    std::memset(sw_version, 0, sizeof(sw_version));
     Libraries::Np::NpCommon::sceNpGetSdkVersion(sw_version);
 
     char user_agent_buf[0x40];
-    memset(user_agent_buf, 0, sizeof(user_agent_buf));
+    std::memset(user_agent_buf, 0, sizeof(user_agent_buf));
     if (name) {
-        snprintf(user_agent_buf, sizeof(user_agent_buf), "NpWebApi2/%s (%s)", sw_version, name);
+        std::snprintf(user_agent_buf, sizeof(user_agent_buf), "NpWebApi2/%s (%s)", sw_version,
+                      name);
     } else {
-        snprintf(user_agent_buf, sizeof(user_agent_buf), "NpWebApi2/%s", sw_version);
+        std::snprintf(user_agent_buf, sizeof(user_agent_buf), "NpWebApi2/%s", sw_version);
     }
     this->user_agent = std::string{user_agent_buf};
 
@@ -127,6 +128,66 @@ s32 UserContext::CreateRequest(const char* api_group, const char* path, const ch
             new Request(this->parent_ctx, actual_request_id, api_group, path, method, multipart);
     }
     *request = this->requests[actual_request_id];
+    this->Unlock();
+    return ORBIS_OK;
+}
+
+Request* UserContext::GetRequest(s64 request_id) {
+    this->Lock();
+    if (!this->requests.contains(request_id)) {
+        return nullptr;
+    }
+
+    Request* request = this->requests[request_id];
+    request->AddUser();
+    this->Unlock();
+    return request;
+}
+
+bool IsInternalHeader(const char* header_name) {
+    std::string lower_name{header_name};
+    std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(),
+                   [](char c) { return std::tolower(c); });
+    // These headers are all skipped if the request's library context
+    // was not created through the IntInitialize functions.
+    return lower_name.compare("content-type") == 0 || lower_name.compare("user-agent") == 0 ||
+           lower_name.compare("authorization") == 0 ||
+           lower_name.compare("x-psn-np-title-id") == 0 ||
+           lower_name.compare("x-psn-np-title-token") == 0 ||
+           lower_name.compare("x-psn-request-id") == 0 ||
+           lower_name.compare("x-psn-sdk-ver") == 0 ||
+           lower_name.compare("x-psn-debug-settings") == 0 || lower_name.compare("npdebug") == 0 ||
+           lower_name.compare("x-psn-trc-check-notification-enabled") == 0 ||
+           lower_name.compare("x-psn-webtrace-enabled") == 0 ||
+           lower_name.compare("x-psn-npwebapi2-context") == 0 ||
+           lower_name.compare("x-psn-fake-rate-limit-enabled") == 0 ||
+           lower_name.compare("x-psn-fake-rate-limit-targets") == 0;
+}
+
+s32 Request::AddHttpRequestHeader(const char* field_name, const char* field_value) {
+    std::string name{field_name};
+    std::string value{field_value};
+
+    if (!this->parent_ctx->IsInternal() && IsInternalHeader(field_name)) {
+        LOG_WARNING(Lib_NpWebApi2, "This is not an internal context, skipping field name {}",
+                    field_name);
+        return ORBIS_OK;
+    }
+
+    this->Lock();
+    HttpRequestHeader* new_header = new HttpRequestHeader(nullptr, nullptr, name, value);
+    if (!this->http_headers) {
+        // Creates a new blank head node
+        this->http_headers = new HttpRequestHeader(nullptr, nullptr, "", "");
+        this->http_headers->prev = this->http_headers;
+        this->http_headers->next = this->http_headers;
+    }
+
+    new_header->prev = this->http_headers->prev;
+    new_header->next = this->http_headers;
+    this->http_headers->prev->next = new_header;
+    this->http_headers->prev = new_header;
+    http_header_count++;
     this->Unlock();
     return ORBIS_OK;
 }

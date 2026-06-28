@@ -18,10 +18,12 @@ class Request;
 
 class LibraryContext {
 public:
-    LibraryContext(s32 ctx_id, s32 http_ctx_id, u64 pool_size)
-        : id(ctx_id), http_ctx_id(http_ctx_id), pool_size(pool_size) {}
-    LibraryContext(s32 ctx_id, s32 http_ctx_id, u64 pool_size, const char* name)
-        : id(ctx_id), http_ctx_id(http_ctx_id), pool_size(pool_size), name(name) {}
+    LibraryContext(s32 ctx_id, s32 type, s32 http_ctx_id, u64 pool_size)
+        : id(ctx_id), type(static_cast<LibraryContextType>(type)), http_ctx_id(http_ctx_id),
+          pool_size(pool_size) {}
+    LibraryContext(s32 ctx_id, s32 type, s32 http_ctx_id, u64 pool_size, const char* name)
+        : id(ctx_id), type(static_cast<LibraryContextType>(type)), http_ctx_id(http_ctx_id),
+          pool_size(pool_size), name(name) {}
 
     void Lock() {
         lock.lock();
@@ -57,6 +59,22 @@ public:
         return name.empty() ? nullptr : name.data();
     }
 
+    bool IsDebug() {
+        return type == LibraryContextType::Debug;
+    }
+
+    bool IsNormal() {
+        return type == LibraryContextType::Normal;
+    }
+
+    bool IsInternal() {
+        return type == LibraryContextType::Internal;
+    }
+
+    bool IsPresence() {
+        return type == LibraryContextType::Presence;
+    }
+
     s32 CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id);
     UserContext* GetUserContext(s32 user_ctx_id);
     UserContext* GetUserContextByUserId(Libraries::UserService::OrbisUserServiceUserId user_id);
@@ -70,6 +88,12 @@ private:
     s32 id{};
     s32 http_ctx_id{};
     s32 user_count{};
+    enum LibraryContextType : s32 {
+        Debug = 0,
+        Normal = 1,
+        Internal = 2,
+        Presence = 3,
+    } type;
     u64 pool_size{};
     std::recursive_mutex lock{};
     std::string name{};
@@ -93,15 +117,15 @@ public:
     }
 
     void AddUser() {
-        parent_ctx->Lock();
+        Lock();
         user_count++;
-        parent_ctx->Unlock();
+        Unlock();
     }
 
     void RemoveUser() {
-        parent_ctx->Lock();
+        Lock();
         user_count--;
-        parent_ctx->Unlock();
+        Unlock();
     }
 
     s32 GetId() {
@@ -117,6 +141,7 @@ public:
     s32 CreateRequest(const char* api_group, const char* path, const char* method,
                       const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
                       Request** request);
+    Request* GetRequest(s64 request_id);
 
 private:
     s32 id{};
@@ -140,11 +165,35 @@ public:
         : parent_ctx(parent), id(request_id), api_group(api_group), path(path), method(method),
           multipart_supported(multipart), content_type(content_parameter->content_type) {}
 
+    void Lock() {
+        parent_ctx->Lock();
+    }
+
+    void Unlock() {
+        parent_ctx->Unlock();
+    }
+
+    void AddUser() {
+        Lock();
+        user_count++;
+        Unlock();
+    }
+
+    void RemoveUser() {
+        Lock();
+        user_count--;
+        Unlock();
+    }
+
     s64 GetId() {
         return id;
     }
 
-    s32 Initialize();
+    bool HasSent() {
+        return sent;
+    }
+
+    s32 AddHttpRequestHeader(const char* field_name, const char* field_value);
 
 private:
     s64 id{};
@@ -156,6 +205,15 @@ private:
     std::string method{};
     std::string content_type{};
     bool multipart_supported{};
+    bool sent{};
+
+    struct HttpRequestHeader {
+        HttpRequestHeader* prev;
+        HttpRequestHeader* next;
+        std::string field_name;
+        std::string field_value;
+    }* http_headers{};
+    s32 http_header_count{};
 };
 
 }; // namespace Libraries::Np::NpWebApi2
