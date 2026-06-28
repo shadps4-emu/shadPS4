@@ -8,6 +8,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -27,6 +28,23 @@ struct PeerInfo {
     s32 conn_id = 0;
     s32 status = 0;
     std::string online_id;
+};
+
+struct CallbackPayload {
+    std::unique_ptr<OrbisNpMatching2RoomDataInternal> room_data;
+    std::unique_ptr<OrbisNpMatching2CreateJoinRoomResponse> create_join_response;
+    std::unique_ptr<OrbisNpMatching2SearchRoomResponse> search_room_response;
+    std::vector<OrbisNpMatching2RoomMemberDataInternal> member_data;
+    std::vector<OrbisNpMatching2RoomGroup> room_groups;
+    std::vector<OrbisNpMatching2RoomBinAttrInternal> room_bin_attrs;
+    std::vector<OrbisNpMatching2RoomMemberBinAttrInternal> member_bin_attrs;
+    std::vector<OrbisNpMatching2RoomDataExternal> room_data_external;
+    std::vector<std::vector<u8>> bin_buffers;
+    void* request_data = nullptr;
+
+    void Reset() {
+        *this = CallbackPayload{};
+    }
 };
 
 struct ContextObject {
@@ -52,6 +70,8 @@ struct ContextObject {
     OrbisNpMatching2Flags flag_attr = 0;
 
     std::map<OrbisNpMatching2RoomMemberId, PeerInfo> peers;
+
+    CallbackPayload payload;
 
     OrbisNpMatching2ContextCallback context_callback = nullptr;
     void* context_callback_arg = nullptr;
