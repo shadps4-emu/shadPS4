@@ -3,6 +3,4 @@
 
 #include "core/libraries/np/np_web_api2/np_web_api2_push_event.h"
 
-namespace Libraries::Np::NpWebApi2 {
-
-};
+namespace Libraries::Np::NpWebApi2 {};
