@@ -16,6 +16,7 @@ message LoginRequest {
     string token       = 3;
     string np_title_id = 4;  
     string title_name  = 5;
+    bool appear_offline = 6; // user's Appear-Offline preference
 }
 
 message FriendEntry {

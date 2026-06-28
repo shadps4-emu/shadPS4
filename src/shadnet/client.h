@@ -277,6 +277,7 @@ private:
     std::string m_npid;
     std::string m_password;
     std::string m_token;
+    bool m_appear_offline = false; // user's Appear-Offline preference (sent at login)
 
     std::atomic<bool> m_terminate{false};
     std::atomic<bool> m_connected{false};
