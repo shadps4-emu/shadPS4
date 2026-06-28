@@ -53,6 +53,9 @@ public:
     // Set the Appear-Offline preference for all signed-in users (and future logins). While
     // enabled, shadNet handles the user as offline for everyone else. Call from the UI/config.
     void SetAppearOffline(bool enable);
+    bool IsAppearOffline() const {
+        return m_appear_offline.load();
+    }
 
     /// Full NP ID for this user, built once from shadnet_npid after login.
     OrbisNpId GetNpId(s32 user_id) const;
