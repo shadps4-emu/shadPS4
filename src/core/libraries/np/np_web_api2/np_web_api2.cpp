@@ -6,7 +6,8 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
-#include "core/libraries/np/np_web_api2.h"
+#include "core/libraries/np/np_web_api2/np_web_api2.h"
+#include "core/libraries/np/np_web_api2/np_web_api2_internal.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Libraries::Np::NpWebApi2 {
@@ -85,15 +86,21 @@ s32 PS4_SYSV_ABI sceNpWebApi2GetMemoryPoolStats(s32 lib_ctx_id,
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2Initialize(s32 lib_http_ctx_id, u64 pool_size) {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, lib_http_ctx_id = {:#x}, pool_size = {:#x}",
-              lib_http_ctx_id, pool_size);
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_NpWebApi2, "called, lib_http_ctx_id = {:#x}, pool_size = {:#x}", lib_http_ctx_id,
+              pool_size);
+
+    s32 ctx_id = createLibraryContext(lib_http_ctx_id, nullptr);
+    LOG_INFO(Lib_NpWebApi2, "created ctx_id = {:#x}", ctx_id);
+    return ctx_id;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2InitializeForPresence(s32 lib_http_ctx_id, u64 pool_size) {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, lib_http_ctx_id = {:#x}, pool_size = {:#x}",
-              lib_http_ctx_id, pool_size);
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_NpWebApi2, "called, lib_http_ctx_id = {:#x}, pool_size = {:#x}", lib_http_ctx_id,
+              pool_size);
+
+    s32 ctx_id = createLibraryContext(lib_http_ctx_id, nullptr);
+    LOG_INFO(Lib_NpWebApi2, "created ctx_id = {:#x}", ctx_id);
+    return ctx_id;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2IntCreateRequest() {
@@ -103,23 +110,32 @@ s32 PS4_SYSV_ABI sceNpWebApi2IntCreateRequest() {
 
 s32 PS4_SYSV_ABI sceNpWebApi2IntInitialize(const OrbisNpWebApi2IntInitializeArgs* args) {
     if (args == nullptr || args->struct_size != sizeof(OrbisNpWebApi2IntInitializeArgs)) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid arguments");
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
     }
-    LOG_ERROR(Lib_NpWebApi2,
-              "(STUBBED) called, lib_http_ctx_id = {:#x}, pool_size = {:#x}, name = '{}'",
-              args->lib_http_ctx_id, args->pool_size, args->name);
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_NpWebApi2, "called, lib_http_ctx_id = {:#x}, pool_size = {:#x}, name = {}",
+              args->lib_http_ctx_id, args->pool_size, args->name ? args->name : "(null)");
+
+    s32 ctx_id = createLibraryContext(args->lib_http_ctx_id, args->name);
+    LOG_INFO(Lib_NpWebApi2, "created ctx_id = {:#x}", ctx_id);
+    return ctx_id;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2IntInitialize2(const OrbisNpWebApi2IntInitialize2Args* args) {
+
     if (args == nullptr || args->struct_size != sizeof(OrbisNpWebApi2IntInitialize2Args)) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid arguments");
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
     }
-    LOG_ERROR(Lib_NpWebApi2,
-              "(STUBBED) called, lib_http_ctx_id = {:#x}, pool_size = {:#x}, name = '{}', "
-              "group = {:#x}",
-              args->lib_http_ctx_id, args->pool_size, args->name, args->push_config_group);
-    return ORBIS_OK;
+    LOG_DEBUG(
+        Lib_NpWebApi2,
+        "called, lib_http_ctx_id = {:#x}, pool_size = {:#x}, name = {}, push_config_group = {:#x}",
+        args->lib_http_ctx_id, args->pool_size, args->name ? args->name : "(null)",
+        args->push_config_group);
+
+    s32 ctx_id = createLibraryContext(args->lib_http_ctx_id, args->name);
+    LOG_INFO(Lib_NpWebApi2, "created ctx_id = {:#x}", ctx_id);
+    return ctx_id;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2IntPushEventCreateCtxIndFilter() {
