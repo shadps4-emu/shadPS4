@@ -272,4 +272,44 @@ s32 Request::GetAllHttpResponseHeaders() {
     return result;
 }
 
+s32 Request::Abort() {
+    this->Lock();
+    s32 result = 0;
+    if (this->Aborted()) {
+        // Nothing to do.
+        this->Unlock();
+        return result;
+    }
+    this->aborted = true;
+
+    // Real library has multiple states, we don't since our logic is simpler.
+    if (this->send_state == 3) {
+        // In the middle of an Http request, that needs aborting.
+        result = Libraries::Http2::sceHttp2AbortRequest(this->http_request_id);
+        if (result < 0) {
+            LOG_ERROR(Lib_NpWebApi2, "Failed to abort http request, error = {:#x}", result);
+        }
+    }
+    this->Unlock();
+    return result;
+}
+
+s32 Request::Delete(s32* http_request) {
+    for (HttpRequestHeader* header : this->http_headers) {
+        delete header;
+    }
+    this->http_headers.clear();
+
+    if (!http_request && this->http_request_id) {
+        Libraries::Http2::sceHttp2DeleteRequest(this->http_request_id);
+    } else {
+        *http_request = this->http_request_id;
+    }
+    while (this->user_count > 0) {
+        Libraries::Kernel::sceKernelUsleep(50000);
+    }
+    delete this;
+    return ORBIS_OK;
+}
+
 }; // namespace Libraries::Np::NpWebApi2

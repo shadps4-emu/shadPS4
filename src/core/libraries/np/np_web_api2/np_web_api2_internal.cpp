@@ -3,6 +3,7 @@
 
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/kernel/time.h"
 #include "core/libraries/network/http2.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_context.h"
@@ -247,6 +248,7 @@ s32 sendRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
     }
 
     request->Lock();
+    request->SetState(0);
     s32 result = checkRequestStatus(request, user_ctx, lib_ctx);
     request->Unlock();
     if (result != 0) {
@@ -279,6 +281,7 @@ s32 sendRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
     }
 
     request->Lock();
+    request->SetState(3);
     result = checkRequestStatus(request, user_ctx, lib_ctx);
     request->Unlock();
     if (result != 0) {
@@ -313,6 +316,7 @@ s32 sendRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
     }
 
     request->Lock();
+    request->SetState(0);
     s32 result2 = checkRequestStatus(request, user_ctx, lib_ctx);
     request->Unlock();
     if (result2 != 0) {
@@ -325,6 +329,94 @@ s32 sendRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
     user_ctx->RemoveUser();
     lib_ctx->RemoveUser();
     return result;
+}
+
+s32 abortRequest(s64 request_id) {
+    s32 lib_ctx_id = static_cast<s32>(request_id >> 0x30);
+    s32 user_ctx_id = static_cast<s32>(request_id >> 0x20);
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for request id {:#x}", request_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context for request id {:#x}", request_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    Request* request = user_ctx->GetRequest(request_id);
+    if (!request) {
+        LOG_ERROR(Lib_NpWebApi2, "No request with id {:#x}", request_id);
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    request->RemoveUser();
+    s32 result = request->Abort();
+    user_ctx->RemoveUser();
+    lib_ctx->RemoveUser();
+    return result;
+}
+
+s32 deleteRequest(s64 request_id) {
+    s32 lib_ctx_id = static_cast<s32>(request_id >> 0x30);
+    s32 user_ctx_id = static_cast<s32>(request_id >> 0x20);
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for request id {:#x}", request_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    lib_ctx->Lock();
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context for request id {:#x}", request_id);
+        lib_ctx->Unlock();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    Request* request = user_ctx->GetRequest(request_id);
+    if (!request) {
+        LOG_ERROR(Lib_NpWebApi2, "No request with id {:#x}", request_id);
+        user_ctx->RemoveUser();
+        lib_ctx->Unlock();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (request->IsDeleted()) {
+        // Already marked for deletion
+        LOG_ERROR(Lib_NpWebApi2, "Request with id {:#x} is already being deleted", request_id);
+        request->RemoveUser();
+        user_ctx->RemoveUser();
+        lib_ctx->Unlock();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    request->MarkForDeletion();
+    request->Abort();
+    while (request->IsBusy()) {
+        lib_ctx->Unlock();
+        Libraries::Kernel::sceKernelUsleep(50000);
+        lib_ctx->Lock();
+    }
+    user_ctx->RemoveRequest(request_id);
+    request->RemoveUser();
+
+    s32 http_request_id = 0;
+    request->Delete(&http_request_id);
+
+    user_ctx->RemoveUser();
+    lib_ctx->Unlock();
+    lib_ctx->RemoveUser();
+    Libraries::Http2::sceHttp2DeleteRequest(http_request_id);
+    return ORBIS_OK;
 }
 
 }; // namespace Libraries::Np::NpWebApi2

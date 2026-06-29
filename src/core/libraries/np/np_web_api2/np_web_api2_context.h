@@ -77,14 +77,16 @@ public:
         return type == LibraryContextType::Presence;
     }
 
+    void RemoveUserContext(s32 user_ctx_id) {
+        std::scoped_lock lk{lock};
+        if (user_contexts.contains(user_ctx_id)) {
+            user_contexts.erase(user_ctx_id);
+        }
+    }
+
     s32 CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id);
     UserContext* GetUserContext(s32 user_ctx_id);
     UserContext* GetUserContextByUserId(Libraries::UserService::OrbisUserServiceUserId user_id);
-
-    void RemoveUserContext(s32 user_ctx_id) {
-        std::scoped_lock lk{lock};
-        user_contexts.erase(user_ctx_id);
-    }
 
 private:
     s32 id{};
@@ -142,8 +144,15 @@ public:
         return http_template_id;
     }
 
-    s32 Initialize();
+    void RemoveRequest(s64 request_id) {
+        parent_ctx->Lock();
+        if (requests.contains(request_id)) {
+            requests.erase(request_id);
+        }
+        parent_ctx->Unlock();
+    }
 
+    s32 Initialize();
     s32 CreateRequest(const char* api_group, const char* path, const char* method,
                       const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
                       Request** request);
@@ -250,10 +259,32 @@ public:
         return content_type;
     }
 
+    void SetState(s32 state) {
+        send_state = state;
+    }
+
+    bool IsDeleted() {
+        return deleting;
+    }
+
+    void MarkForDeletion() {
+        deleting = true;
+    }
+
+    bool IsBusy() {
+        parent_ctx->Lock();
+        s32 users = user_count;
+        parent_ctx->Unlock();
+        // Assumes caller is a user
+        return users > 1;
+    }
+
     s32 AddHttpRequestHeader(const char* field_name, const char* field_value);
     s32 CreateHttpRequest(s32 http_template_id, const char* url);
     s32 SendHttpRequest(void* data, u64 data_size);
     s32 GetAllHttpResponseHeaders();
+    s32 Abort();
+    s32 Delete(s32* http_request_id);
 
 private:
     s64 id{};
@@ -264,10 +295,12 @@ private:
     s32 http_request_id{};
     s32 timeout{};
     s32 sent_data{};
+    s32 send_state{};
     bool multipart_supported{};
     bool sent{};
     bool aborted{};
     bool expired{};
+    bool deleting{};
     u64 end_time{};
     LibraryContext* parent_ctx{};
     std::string api_group{};

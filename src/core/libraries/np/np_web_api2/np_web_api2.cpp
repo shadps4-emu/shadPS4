@@ -13,8 +13,8 @@
 namespace Libraries::Np::NpWebApi2 {
 
 s32 PS4_SYSV_ABI sceNpWebApi2AbortRequest(s64 request_id) {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, request_id = {:#x}", request_id);
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi2, "called, request_id = {:#x}", request_id);
+    return abortRequest(request_id);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2AddHttpRequestHeader(s64 request_id, const char* field_name,
@@ -111,8 +111,8 @@ s32 PS4_SYSV_ABI sceNpWebApi2CreateUserContext(s32 lib_ctx_id,
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2DeleteRequest(s64 request_id) {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, request_id = {:#x}", request_id);
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi2, "called, request_id = {:#x}", request_id);
+    return deleteRequest(request_id);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2DeleteUserContext(s32 user_ctx_id) {
@@ -285,8 +285,8 @@ sceNpWebApi2SendMultipartRequest(s64 request_id, s32 part_index, void* data, u64
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
     }
 
-    LOG_INFO(Lib_NpWebApi2, "called, request_id = {:#x}, part_index = {}, data_size = {:#x}",
-             request_id, part_index, data_size);
+    LOG_WARNING(Lib_NpWebApi2, "called, request_id = {:#x}, part_index = {}, data_size = {:#x}",
+                request_id, part_index, data_size);
     return sendRequest(request_id, part_index, data, data_size, resp_info_option);
 }
 

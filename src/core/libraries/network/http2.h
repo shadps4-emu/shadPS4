@@ -27,7 +27,7 @@ using OrbisHttp2PreSendCallback = PS4_SYSV_ABI s32 (*)(s32 request_id, s32 ssl_i
                                                        OrbisHttp2PreSendCallbackData* data,
                                                        void* user_arg);
 
-s32 PS4_SYSV_ABI sceHttp2AbortRequest();
+s32 PS4_SYSV_ABI sceHttp2AbortRequest(s32 req_id);
 s32 PS4_SYSV_ABI sceHttp2AddCookie();
 s32 PS4_SYSV_ABI sceHttp2AddRequestHeader(s32 template_or_req_id, const char* name,
                                           const char* value, u32 mode);
@@ -41,7 +41,7 @@ s32 PS4_SYSV_ABI sceHttp2CreateRequestWithURL(s32 tmpl_id, const char* method, c
 s32 PS4_SYSV_ABI sceHttp2CreateTemplate(s32 ctx_id, const char* user_agent, s32 http_ver,
                                         s32 auto_proxy_conf);
 s32 PS4_SYSV_ABI sceHttp2DeleteCookieBox();
-s32 PS4_SYSV_ABI sceHttp2DeleteRequest();
+s32 PS4_SYSV_ABI sceHttp2DeleteRequest(s32 req_id);
 s32 PS4_SYSV_ABI sceHttp2DeleteTemplate();
 s32 PS4_SYSV_ABI sceHttp2GetAllResponseHeaders(s32 req_id, char** header, u64* header_size);
 s32 PS4_SYSV_ABI sceHttp2GetAuthEnabled();

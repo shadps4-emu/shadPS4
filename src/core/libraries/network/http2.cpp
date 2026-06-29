@@ -8,7 +8,7 @@
 
 namespace Libraries::Http2 {
 
-s32 PS4_SYSV_ABI sceHttp2AbortRequest() {
+s32 PS4_SYSV_ABI sceHttp2AbortRequest(s32 req_id) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -66,7 +66,7 @@ s32 PS4_SYSV_ABI sceHttp2DeleteCookieBox() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2DeleteRequest() {
+s32 PS4_SYSV_ABI sceHttp2DeleteRequest(s32 req_id) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
