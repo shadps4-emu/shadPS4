@@ -5,6 +5,7 @@
 #include "core/libraries/network/http2.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_handler.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_context.h"
 
 namespace Libraries::Np::NpWebApi2 {
@@ -144,7 +145,7 @@ Request* UserContext::GetRequest(s64 request_id) {
     return request;
 }
 
-bool IsInternalHeader(const char* header_name) {
+static bool IsInternalHeader(const char* header_name) {
     std::string lower_name{header_name};
     std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(),
                    [](char c) { return std::tolower(c); });
@@ -175,6 +176,100 @@ s32 Request::AddHttpRequestHeader(const char* field_name, const char* field_valu
     this->http_headers.emplace_back(new HttpRequestHeader(field_name, field_value));
     this->Unlock();
     return ORBIS_OK;
+}
+
+s32 Request::CreateHttpRequest(s32 http_template_id, const char* url) {
+    const char* method = this->method.empty() ? "UNKNOWN" : this->method.data();
+    s32 http_request_id = Libraries::Http2::sceHttp2CreateRequestWithURL(http_template_id, method,
+                                                                         url, this->content_length);
+    if (http_request_id < 0) {
+        LOG_ERROR(Lib_NpWebApi2, "Failed to create Http2 request, error = {:#x}", http_request_id);
+        return http_request_id;
+    }
+    this->http_request_id = http_request_id;
+    s32 result = Libraries::Http2::sceHttp2AddRequestHeader(http_request_id, "Content-Type",
+                                                            this->content_type.data(), 0);
+    if (result < 0) {
+        LOG_ERROR(Lib_NpWebApi2, "Failed to add Content-Type request header, error = {:#x}",
+                  result);
+        return result;
+    }
+
+    UserContext* user_ctx = this->parent_ctx->GetUserContext(this->id >> 0x20);
+    const std::string bearer = NpHandler::GetInstance().GetBearerToken(user_ctx->GetUserId());
+    if (!bearer.empty()) {
+        const std::string auth_value = "Bearer " + bearer;
+        result = Libraries::Http2::sceHttp2AddRequestHeader(http_request_id, "Authorization",
+                                                            auth_value.data(), 0);
+    }
+    if (bearer.empty() || result < 0) {
+        LOG_WARNING(Lib_NpWebApi2, "Failed to add Authorization request header");
+    }
+
+    // This would go on to add several other PSN-specific headers.
+    // As shadNet does not appear to use them, the logic is skipped for now.
+
+    for (HttpRequestHeader* header : this->http_headers) {
+        s32 result = Libraries::Http2::sceHttp2AddRequestHeader(
+            http_request_id, header->field_name.data(), header->field_value.data(), 0);
+        if (result < 0) {
+            LOG_ERROR(Lib_NpWebApi2,
+                      "Failed to add request header, name = {}, value = {}, error = {:#x}",
+                      header->field_name.data(), header->field_value.data(), result);
+            user_ctx->RemoveUser();
+            return result;
+        }
+    }
+    user_ctx->RemoveUser();
+    return result;
+}
+
+s32 Request::SendHttpRequest(void* data, u64 data_size) {
+    s32 result = 0;
+    if (this->content_length != 0 && this->sent_data == 0) {
+        // Real library seems to do some calculations, some parts including IPC calls.
+        // Not entirely sure how accurate this is in practice.
+        result = Libraries::Http2::sceHttp2SetRequestContentLength(this->http_request_id,
+                                                                   this->content_length);
+        if (result < 0) {
+            LOG_ERROR(Lib_NpWebApi2, "Failed to set content length, error = {:#x}", result);
+            return result;
+        }
+    }
+    if (!data || data_size == 0 || this->content_length == 0) {
+        result = Libraries::Http2::sceHttp2SendRequest(this->http_request_id, nullptr, 0);
+        if (result < 0) {
+            LOG_ERROR(Lib_NpWebApi2, "Failed to send request, error = {:#x}", result);
+            return result;
+        }
+    }
+
+    u64 actual_size = std::min<u64>(data_size, this->content_length - this->sent_data);
+    if (this->content_length <= this->sent_data) {
+        // Nothing left to send
+        return result;
+    }
+    result = Libraries::Http2::sceHttp2SendRequest(this->http_request_id, data, actual_size);
+    if (result < 0) {
+        LOG_ERROR(Lib_NpWebApi2, "Failed to send request, error = {:#x}", result);
+        return result;
+    }
+    this->sent_data += actual_size;
+    return result;
+}
+
+s32 Request::GetAllHttpResponseHeaders() {
+    char* header = nullptr;
+    u64 size = 0;
+    s32 result =
+        Libraries::Http2::sceHttp2GetAllResponseHeaders(this->http_request_id, &header, &size);
+    if (result < 0) {
+        LOG_ERROR(Lib_NpWebApi2, "Failed to get response headers, error = {:#x}", result);
+        return result;
+    }
+    this->http_response_headers = header;
+    this->http_response_header_size = size;
+    return result;
 }
 
 }; // namespace Libraries::Np::NpWebApi2

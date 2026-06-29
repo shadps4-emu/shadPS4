@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "core/libraries/np/np_web_api2/np_web_api2.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Libraries::Np::NpWebApi2 {
@@ -12,4 +13,6 @@ s32 createRequest(s32 user_ctx_id, const char* api_group, const char* path, cons
                   const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
                   s64* request_id);
 s32 addHttpRequestHeader(s64 request_id, const char* field_name, const char* field_value);
+s32 sendRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
+                OrbisNpWebApi2ResponseInformationOption* resp_info_option);
 }; // namespace Libraries::Np::NpWebApi2

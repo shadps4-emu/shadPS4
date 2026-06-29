@@ -42,5 +42,13 @@ struct OrbisNpWebApi2ContentParameter {
     u8 reserved[16];
 };
 
+struct OrbisNpWebApi2ResponseInformationOption {
+    s32 http_status;
+    s32 reserved;
+    char* error_object;
+    u64 error_object_size;
+    u64 response_data_size;
+};
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpWebApi2

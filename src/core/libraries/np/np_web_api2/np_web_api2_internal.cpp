@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/network/http2.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_context.h"
@@ -179,6 +180,147 @@ s32 addHttpRequestHeader(s64 request_id, const char* field_name, const char* fie
     }
 
     s32 result = request->AddHttpRequestHeader(field_name, field_value);
+    request->RemoveUser();
+    user_ctx->RemoveUser();
+    lib_ctx->RemoveUser();
+    return result;
+}
+
+static s32 checkRequestStatus(Request* request, UserContext* user_ctx, LibraryContext* lib_ctx) {
+    if (request->Expired()) {
+        LOG_ERROR(Lib_NpWebApi2, "Request timed out");
+        request->RemoveUser();
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_TIMEOUT;
+    }
+
+    if (request->Aborted()) {
+        LOG_ERROR(Lib_NpWebApi2, "Request aborted");
+        request->RemoveUser();
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_ABORTED;
+    }
+    return ORBIS_OK;
+}
+
+s32 sendRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
+                OrbisNpWebApi2ResponseInformationOption* resp_info_option) {
+    s32 lib_ctx_id = static_cast<s32>(request_id >> 0x30);
+    s32 user_ctx_id = static_cast<s32>(request_id >> 0x20);
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for request id {:#x}", request_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context for request id {:#x}", request_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    Request* request = user_ctx->GetRequest(request_id);
+    if (!request) {
+        LOG_ERROR(Lib_NpWebApi2, "No request with id {:#x}", request_id);
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    request->SetEndTime();
+    if (request->IsMultipart()) {
+        if (part_index == 0) {
+            LOG_ERROR(Lib_NpWebApi2, "part_index 0 is prohibited for multipart requests");
+            request->RemoveUser();
+            user_ctx->RemoveUser();
+            lib_ctx->RemoveUser();
+            return ORBIS_NP_WEBAPI2_ERROR_PROHIBITED_FUNCTION_CALL;
+        }
+        // TODO: Multipart logic
+    }
+
+    if (!request->HasSent()) {
+        request->MarkSent();
+    }
+
+    request->Lock();
+    s32 result = checkRequestStatus(request, user_ctx, lib_ctx);
+    request->Unlock();
+    if (result != 0) {
+        // Aborted or timed out.
+        return result;
+    }
+
+    if (!EmulatorSettings.IsShadNetEnabled()) {
+        LOG_INFO(Lib_NpWebApi2, "Cannot send request, you are not signed in to shadNet");
+        request->RemoveUser();
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_NOT_SIGNED_IN;
+    }
+
+    if (request->GetHttpRequestId() == 0) {
+        std::string base_url = EmulatorSettings.GetShadNetWebApiServer();
+        s32 template_id = user_ctx->GetHttpTemplateId();
+        // Technically this should be base_url + api_group + path,
+        // but shadNet doesn't seem to use the api_group for endpoints?
+        std::string full_url = base_url + request->GetPath();
+        result = request->CreateHttpRequest(template_id, full_url.data());
+        if (result < 0) {
+            // Underlying request creation failed, return.
+            request->RemoveUser();
+            user_ctx->RemoveUser();
+            lib_ctx->RemoveUser();
+            return result;
+        }
+    }
+
+    request->Lock();
+    result = checkRequestStatus(request, user_ctx, lib_ctx);
+    request->Unlock();
+    if (result != 0) {
+        // Aborted or timed out.
+        return result;
+    }
+
+    if (request->IsMultipart()) {
+        // TODO: Multipart sends
+        // result = request->SendMultipartHttpRequest(data, data_size, part_index);
+    } else {
+        result = request->SendHttpRequest(data, data_size);
+    }
+
+    if (result >= 0 && request->OutOfData()) {
+        result = request->GetAllHttpResponseHeaders();
+        if (result >= 0) {
+            s32 http_request_id = request->GetHttpRequestId();
+            s32 http_status{};
+            result = Libraries::Http2::sceHttp2GetStatusCode(http_request_id, &http_status);
+            if (result >= 0) {
+                if (resp_info_option) {
+                    resp_info_option->http_status = http_status;
+                }
+                if (http_status < 400) {
+                    result = http_status | 0x82f00000;
+                }
+            } else {
+                LOG_ERROR(Lib_NpWebApi2, "Failed to get http status code, error = {:#x}", result);
+            }
+        }
+    }
+
+    request->Lock();
+    s32 result2 = checkRequestStatus(request, user_ctx, lib_ctx);
+    request->Unlock();
+    if (result2 != 0) {
+        // Aborted or timed out.
+        return result2;
+    }
+
+    request->ClearEndTime();
     request->RemoveUser();
     user_ctx->RemoveUser();
     lib_ctx->RemoveUser();

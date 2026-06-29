@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "core/libraries/kernel/time.h"
 #include "core/libraries/np/np_web_api2/np_web_api2.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_push_event.h"
 #include "core/libraries/system/userservice.h"
@@ -137,6 +138,10 @@ public:
         return user_id;
     }
 
+    s32 GetHttpTemplateId() {
+        return http_template_id;
+    }
+
     s32 Initialize();
 
     s32 CreateRequest(const char* api_group, const char* path, const char* method,
@@ -164,7 +169,8 @@ public:
             const char* method, bool multipart,
             const OrbisNpWebApi2ContentParameter* content_parameter)
         : parent_ctx(parent), id(request_id), api_group(api_group), path(path), method(method),
-          multipart_supported(multipart), content_type(content_parameter->content_type) {}
+          multipart_supported(multipart), content_type(content_parameter->content_type),
+          content_length(content_parameter->content_length) {}
 
     void Lock() {
         parent_ctx->Lock();
@@ -190,23 +196,84 @@ public:
         return id;
     }
 
+    s32 GetHttpRequestId() {
+        return http_request_id;
+    }
+
+    bool IsMultipart() {
+        return multipart_supported;
+    }
+
     bool HasSent() {
         return sent;
     }
 
+    void MarkSent() {
+        sent = true;
+    }
+
+    bool Aborted() {
+        return aborted;
+    }
+
+    bool Expired() {
+        return expired;
+    }
+
+    bool OutOfData() {
+        return content_length == sent_data;
+    }
+
+    void SetEndTime() {
+        if (timeout != 0 && end_time == 0) {
+            end_time = Libraries::Kernel::sceKernelGetProcessTime() + timeout;
+        }
+    }
+
+    void ClearEndTime() {
+        end_time = 0;
+    }
+
+    std::string& GetApiGroup() {
+        return api_group;
+    }
+
+    std::string& GetPath() {
+        return path;
+    }
+
+    std::string& GetMethod() {
+        return method;
+    }
+
+    std::string& GetContentType() {
+        return content_type;
+    }
+
     s32 AddHttpRequestHeader(const char* field_name, const char* field_value);
+    s32 CreateHttpRequest(s32 http_template_id, const char* url);
+    s32 SendHttpRequest(void* data, u64 data_size);
+    s32 GetAllHttpResponseHeaders();
 
 private:
     s64 id{};
+    u64 content_length{};
+    char* http_response_headers{};
+    u64 http_response_header_size{};
     s32 user_count{};
     s32 http_request_id{};
+    s32 timeout{};
+    s32 sent_data{};
+    bool multipart_supported{};
+    bool sent{};
+    bool aborted{};
+    bool expired{};
+    u64 end_time{};
     LibraryContext* parent_ctx{};
     std::string api_group{};
     std::string path{};
     std::string method{};
     std::string content_type{};
-    bool multipart_supported{};
-    bool sent{};
 
     struct HttpRequestHeader {
         std::string field_name;

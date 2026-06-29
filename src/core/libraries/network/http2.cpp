@@ -18,7 +18,8 @@ s32 PS4_SYSV_ABI sceHttp2AddCookie() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2AddRequestHeader() {
+s32 PS4_SYSV_ABI sceHttp2AddRequestHeader(s32 template_or_req_id, const char* name,
+                                          const char* value, u32 mode) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -48,12 +49,13 @@ s32 PS4_SYSV_ABI sceHttp2CreateCookieBox() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2CreateRequestWithURL() {
+s32 PS4_SYSV_ABI sceHttp2CreateRequestWithURL(s32 tmpl_id, const char* method, const char* url,
+                                              u64 content_length) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2CreateTemplate(s32 ctx_id, char* user_agent, s32 http_ver,
+s32 PS4_SYSV_ABI sceHttp2CreateTemplate(s32 ctx_id, const char* user_agent, s32 http_ver,
                                         s32 auto_proxy_conf) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
@@ -74,7 +76,7 @@ s32 PS4_SYSV_ABI sceHttp2DeleteTemplate() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2GetAllResponseHeaders() {
+s32 PS4_SYSV_ABI sceHttp2GetAllResponseHeaders(s32 req_id, char** header, u64* header_size) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -114,7 +116,7 @@ s32 PS4_SYSV_ABI sceHttp2GetResponseContentLength() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2GetStatusCode() {
+s32 PS4_SYSV_ABI sceHttp2GetStatusCode(s32 request_id, s32* status_code) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -145,7 +147,7 @@ s32 PS4_SYSV_ABI sceHttp2RemoveRequestHeader() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2SendRequest() {
+s32 PS4_SYSV_ABI sceHttp2SendRequest(s32 req_id, const void* data, u64 size) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -236,7 +238,7 @@ s32 PS4_SYSV_ABI sceHttp2SetRedirectCallback() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2SetRequestContentLength() {
+s32 PS4_SYSV_ABI sceHttp2SetRequestContentLength(s32 req_id, u64 content_length) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }

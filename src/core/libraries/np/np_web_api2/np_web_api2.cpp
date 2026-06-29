@@ -277,18 +277,24 @@ s32 PS4_SYSV_ABI sceNpWebApi2ReadData(s64 request_id, void* data, u64 size) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2SendMultipartRequest() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI
+sceNpWebApi2SendMultipartRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
+                                 OrbisNpWebApi2ResponseInformationOption* resp_info_option) {
+    if (part_index <= 0 || !data || data_size == 0) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
+        return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
+    }
+
+    LOG_INFO(Lib_NpWebApi2, "called, request_id = {:#x}, part_index = {}, data_size = {:#x}",
+             request_id, part_index, data_size);
+    return sendRequest(request_id, part_index, data, data_size, resp_info_option);
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2SendRequest() {
-    if (!EmulatorSettings.IsShadNetEnabled()) {
-        LOG_INFO(Lib_NpWebApi2, "called, returning shadNet signed out.");
-        return ORBIS_NP_WEBAPI2_ERROR_NOT_SIGNED_IN;
-    }
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI
+sceNpWebApi2SendRequest(s64 request_id, void* data, u64 data_size,
+                        OrbisNpWebApi2ResponseInformationOption* resp_info_option) {
+    LOG_INFO(Lib_NpWebApi2, "called, request_id = {:#x}, data_size = {:#x}", request_id, data_size);
+    return sendRequest(request_id, 0, data, data_size, resp_info_option);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2SetMultipartContentType() {
