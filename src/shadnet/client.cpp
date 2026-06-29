@@ -196,9 +196,7 @@ void ShadNetClient::ConnectThread() {
     req.set_title_id(std::string(Common::ElfInfo::Instance().GameSerial()));
     req.set_title_name(std::string(Common::ElfInfo::Instance().Title()));
     // Appear-Offline preference. shadNet handles us as offline for everyone else while set.
-    // TODO: source from a user/account setting once shadPS4 exposes the toggle; false = visible.
     req.set_appear_offline(m_appear_offline);
-    
 
     const u64 id = m_pkt_counter.fetch_add(1);
     if (!SendAll(BuildPacket(CommandType::Login, id, MakeProtoPayload(req)))) {
