@@ -117,9 +117,13 @@ void DispatchRequestComplete(const PendingRequest& pr, ShadNet::ErrorType error,
 
     if (error_code == 0) {
         const std::string proto = ExtractProtoBytes(body);
-        if (pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_CREATE_JOIN_ROOM ||
-            pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_JOIN_ROOM) {
+        if (pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_CREATE_JOIN_ROOM) {
             shadnet::CreateRoomReply reply;
+            if (reply.ParseFromString(proto) && reply.has_details()) {
+                request_data = BuildCreateJoinRoomPayload(*ctx, reply.details());
+            }
+        } else if (pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_JOIN_ROOM) {
+            shadnet::JoinRoomReply reply;
             if (reply.ParseFromString(proto) && reply.has_details()) {
                 request_data = BuildCreateJoinRoomPayload(*ctx, reply.details());
             }
