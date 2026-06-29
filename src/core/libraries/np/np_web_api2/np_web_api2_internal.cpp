@@ -306,7 +306,7 @@ s32 sendRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
                 if (resp_info_option) {
                     resp_info_option->http_status = http_status;
                 }
-                if (http_status < 400) {
+                if (http_status >= 400) {
                     result = http_status | 0x82f00000;
                 }
             } else {

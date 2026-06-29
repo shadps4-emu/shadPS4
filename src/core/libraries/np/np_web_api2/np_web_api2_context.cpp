@@ -88,7 +88,7 @@ s32 UserContext::Initialize() {
     this->user_agent = std::string{user_agent_buf};
 
     s32 http_ctx_id = this->parent_ctx->GetHttpCtxId();
-    s32 http_template_id = Libraries::Http2::sceHttp2CreateTemplate(
+    http_template_id = Libraries::Http2::sceHttp2CreateTemplate(
         http_ctx_id, user_agent_buf,
         Libraries::Http2::OrbisHttp2HttpVersion::ORBIS_HTTP2_VERSION_2_0, 0);
     if (http_template_id < 0) {
