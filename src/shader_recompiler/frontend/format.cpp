@@ -4067,7 +4067,7 @@ constexpr std::array<InstFormat, 8> InstructionFormatMTBUF = {{
      ScalarType::Float32},
 }};
 
-constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
+constexpr std::array<InstFormat, 195> InstructionFormatMIMG = {{
     // 0 = IMAGE_LOAD
     {InstClass::VectorMemImgNoSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Float32},
@@ -4364,6 +4364,156 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     // 111 = IMAGE_SAMPLE_C_CD_CL_O
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
      ScalarType::Undefined},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    {},
+    // 160 = IMAGE_SAMPLE_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 161 = IMAGE_SAMPLE_CL_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 162 = IMAGE_SAMPLE_D_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 163 = IMAGE_SAMPLE_D_CL_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 164 = IMAGE_SAMPLE_L_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 165 = IMAGE_SAMPLE_B_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 166 = IMAGE_SAMPLE_B_CL_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 167 = IMAGE_SAMPLE_LZ_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 168 = IMAGE_SAMPLE_C_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 169 = IMAGE_SAMPLE_C_CL_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 170 = IMAGE_SAMPLE_C_D_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 171 = IMAGE_SAMPLE_C_D_CL_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 172 = IMAGE_SAMPLE_C_L_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 173 = IMAGE_SAMPLE_C_B_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 174 = IMAGE_SAMPLE_C_B_CL_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 175 = IMAGE_SAMPLE_C_LZ_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 176 = IMAGE_SAMPLE_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 177 = IMAGE_SAMPLE_CL_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 178 = IMAGE_SAMPLE_D_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 179 = IMAGE_SAMPLE_D_CL_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 181 = IMAGE_SAMPLE_L_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 182 = IMAGE_SAMPLE_B_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 183 = IMAGE_SAMPLE_B_CL_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 184 = IMAGE_SAMPLE_LZ_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 185 = IMAGE_SAMPLE_C_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 186 = IMAGE_SAMPLE_C_CL_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 187 = IMAGE_SAMPLE_C_D_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 188 = IMAGE_SAMPLE_C_D_CL_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 189 = IMAGE_SAMPLE_C_L_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 190 = IMAGE_SAMPLE_C_B_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 191 = IMAGE_SAMPLE_C_B_CL_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 192 = IMAGE_SAMPLE_C_LZ_O_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 193 = IMAGE_GATHER4_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
+    // 194 = IMAGE_GATHER4_CL_G16
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
 }};
 
 constexpr std::array<InstFormat, 1> InstructionFormatEXP = {{
@@ -4397,7 +4547,7 @@ InstFormat InstructionFormat(InstEncoding encoding, uint32_t opcode) {
     case InstEncoding::MTBUF:
         return InstructionFormatMTBUF[opcode];
     case InstEncoding::MIMG:
-        return InstructionFormatMIMG[opcode];
+        return InstructionFormatMIMG.at(opcode);
     case InstEncoding::SMRD:
         return InstructionFormatSMRD[opcode];
     case InstEncoding::SOPK:
