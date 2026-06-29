@@ -13,7 +13,8 @@ option optimize_for = LITE_RUNTIME;
 message LoginRequest {
     string npid     = 1;
     string password = 2;
-    string token    = 3;  
+    string token    = 3;
+    string title_id = 4;
 }
 
 message FriendEntry {
@@ -202,12 +203,6 @@ message MatchingRoomGroup {
     uint32 num_members = 6;
 }
 
-message MatchingCallbackEntry {
-    bool   enabled       = 1;
-    uint64 callback_addr = 2;
-    uint64 callback_arg  = 3;
-}
-
 // Room data structures
 
 message MatchingRoomDataInternal {
@@ -234,6 +229,12 @@ message MatchingRoomMemberData {
     bool                     is_owner           = 4;
     MatchingRoomGroup        group              = 5;
     repeated MatchingBinAttr bin_attrs_internal = 6;
+    uint64                   join_date          = 7;
+    uint32                   nat_type           = 8;
+    uint32                   flag_attr          = 9;
+    string                   addr               = 10;
+    uint32                   port               = 11;
+    uint32                   group_id           = 12;
 }
 
 message MatchingRoomDataExternal {
@@ -266,12 +267,12 @@ message CreateJoinRoomResponse {
 
 // Command requests
 
-message RegisterHandlersRequest {
-    string addr          = 1;
-    uint32 port          = 2;
-    uint32 ctx_id        = 3;
-    uint32 service_label = 4;
-    repeated MatchingCallbackEntry callbacks = 5;
+message ContextStartRequest {
+    uint32 ctx_id = 1;
+}
+
+message ContextStopRequest {
+    uint32 ctx_id = 1;
 }
 
 message CreateRoomRequest {
@@ -364,8 +365,52 @@ message JoinRoomReply {
     CreateJoinRoomResponse details = 6;
 }
 
-message GetRoomListReply {
+message MatchingIntSearchFilter {
+    uint32 op       = 1;  // 1=Eq 2=Ne 3=Lt 4=Le 5=Gt 6=Ge
+    uint32 attr_id  = 2;
+    uint32 attr_value = 3;
+}
+
+message MatchingBinSearchFilter {
+    uint32 op      = 1;  // 1=Eq 2=Ne
+    uint32 attr_id = 2;
+    bytes  data    = 3;
+}
+
+message SearchRoomRequest {
+    uint32 world_id            = 1;
+    uint64 lobby_id            = 2;
+    uint32 range_filter_start  = 3;
+    uint32 range_filter_max    = 4;
+    uint32 flag_filter         = 5;
+    uint32 flag_attr           = 6;
+    repeated MatchingIntSearchFilter int_filters = 7;
+    repeated MatchingBinSearchFilter bin_filters = 8;
+    repeated uint32 attr_ids    = 9;
+}
+
+message SearchRoomReply {
     repeated MatchingRoomDataExternal rooms = 1;
+    uint32 range_start  = 2;
+    uint32 range_total  = 3;
+    uint32 range_result = 4;
+}
+
+message MatchingWorld {
+    uint32 world_id             = 1;
+    uint32 lobbies_num          = 2;
+    uint32 max_lobby_members    = 3;
+    uint32 lobby_members_num    = 4;
+    uint32 rooms_num            = 5;
+    uint32 room_members_num     = 6;
+}
+
+message GetWorldInfoListRequest {
+    uint32 server_id = 1;
+}
+
+message GetWorldInfoListReply {
+    repeated MatchingWorld worlds = 1;
 }
 
 message RequestSignalingInfosReply {
@@ -382,74 +427,19 @@ message KickoutRoomMemberReply   { uint64 room_id = 1; }
 
 // Notification payloads
 // Every notification carries ctx_id so the client can route it to the owning
-// context (the server tracks ctx_id per connection from RegisterHandlersRequest).
+// context (the server tracks ctx_id per connection from ContextStartRequest).
 
-// NotificationType::RequestEvent (9)
-message NotifyRequestEvent {
-    uint32 ctx_id        = 1;
-    uint32 server_id     = 2;
-    uint32 world_id      = 3;
-    uint32 lobby_id      = 4;
-    uint32 req_event     = 5;
-    uint32 req_id        = 6;
-    uint32 error_code    = 7;
-    uint64 room_id       = 8;
-    uint32 member_id     = 9;
-    uint32 max_slots     = 10;
-    uint32 flags         = 11;
-    bool   is_owner      = 12;
-    bytes  response_blob = 13;
-}
-
-// NotificationType::MemberJoined (10)
-message NotifyMemberJoined {
-    uint64                   room_id   = 1;
-    uint32                   member_id = 2;
-    string                   npid      = 3;
-    string                   addr      = 4;
-    uint32                   port      = 5;
-    repeated MatchingBinAttr bin_attrs = 6;
-    uint32                   ctx_id    = 7;
-}
-
-// NotificationType::MemberLeft (11)
-message NotifyMemberLeft {
-    uint64 room_id   = 1;
-    uint32 member_id = 2;
-    string npid      = 3;
-    uint32 ctx_id    = 4;
-}
-
-// NotificationType::SignalingHelper (12)
-message NotifySignalingHelper {
-    string npid      = 1;
-    uint32 member_id = 2;
-    string addr      = 3;
-    uint32 port      = 4;
-    uint32 ctx_id    = 5;
-}
-
-// NotificationType::SignalingEvent (13)
-message NotifySignalingEvent {
-    uint32 event_type = 1;
-    uint64 room_id    = 2;
-    uint32 member_id  = 3;
-    uint32 conn_id    = 4;
-    uint32 ctx_id     = 5;
-}
-
-// NotificationType::RoomDataInternalUpdated (15)
-message NotifyRoomDataInternalUpdated {
-    uint64                   room_id   = 1;
-    uint32                   flags     = 2;
-    repeated MatchingBinAttr bin_attrs = 3;
-    uint32                   ctx_id    = 4;
-}
-
-// NotificationType::KickedOut (16)
-message NotifyKickedOut {
-    uint64 room_id     = 1;
-    int32  status_code = 2;
-    uint32 guard_value = 3;
-    uint32 ctx_id      = 4;
+// NotificationType::RoomEvent (10) — every room event maps onto
+// OrbisNpMatching2RoomEventCallback(ctxId, roomId, event, data). The Orbis
+// event id (0x11xx) is carried in `event`; the data shape depends on it:
+// member events fill `member`; room-data-updated fills bin_attrs + flags.
+message NotifyRoomEvent {
+    uint32                   ctx_id      = 1;
+    uint64                   room_id     = 2;
+    uint32                   event       = 3;
+    uint32                   event_cause = 4;
+    int32                    error_code  = 5;
+    MatchingRoomMemberData   member      = 6;
+    repeated MatchingBinAttr bin_attrs   = 7;
+    uint32                   flags       = 8;
 }

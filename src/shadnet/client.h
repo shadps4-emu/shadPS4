@@ -66,16 +66,18 @@ enum class CommandType : u16 {
     AddBlock = 10,
     RemoveBlock = 11,
     // Matchmaking
-    RegisterHandlers = 12,
+    ContextStart = 12,
     CreateRoom = 13,
     JoinRoom = 14,
     LeaveRoom = 15,
-    GetRoomList = 16,
+    SearchRoom = 16,
     RequestSignalingInfos = 17,
+    ContextStop = 18,
     SetRoomDataInternal = 20,
     SetRoomDataExternal = 21,
     KickoutRoomMember = 22,
-    // 23-29 reserved for future matchmaking commands
+    GetWorldInfoList = 23,
+    // 24-29 reserved for future matchmaking commands
     GetBoardInfos = 30,
     RecordScore = 31,
     RecordScoreData = 32,
@@ -93,6 +95,7 @@ enum class NotificationType : u16 {
     FriendNew = 6,
     FriendLost = 7,
     FriendStatus = 8,
+    RoomEvent = 10,
     WebApiPushEvent = 17, // Generic NP WebApi push event
 };
 
@@ -189,6 +192,34 @@ struct NotifyWebApiPushEvent {
     std::string toNpid;   // may be empty
 };
 
+struct MatchingBinAttr {
+    u32 attr_id = 0;
+    std::vector<u8> data;
+};
+
+struct NotifyRoomEvent {
+    u32 ctx_id = 0;
+    u64 room_id = 0;
+    u32 event = 0;
+    u32 event_cause = 0;
+    s32 error_code = 0;
+    u32 flags = 0;
+
+    std::string member_npid;
+    u32 member_id = 0;
+    u32 member_team_id = 0;
+    bool member_is_owner = false;
+    u64 member_join_date = 0;
+    u32 member_nat_type = 0;
+    u32 member_flag_attr = 0;
+    u32 member_group_id = 0;
+    std::string member_addr;
+    u32 member_port = 0;
+    std::vector<MatchingBinAttr> member_bin_attrs;
+
+    std::vector<MatchingBinAttr> bin_attrs;
+};
+
 // ShadNetClient
 
 class ShadNetClient {
@@ -212,6 +243,7 @@ public:
     const std::string& GetAvatarUrl() const;
     u64 GetUserId() const;
     u32 GetAddrLocal() const;
+    u32 GetAddrServer() const;
     u32 GetNumFriends() const;
     std::optional<std::string> GetFriendNpid(u32 index) const;
 
@@ -223,6 +255,7 @@ public:
     std::function<void(const NotifyFriendNew&)> onFriendNew;
     std::function<void(const NotifyFriendLost&)> onFriendLost;
     std::function<void(const NotifyFriendStatus&)> onFriendStatus;
+    std::function<void(const NotifyRoomEvent&)> onRoomEvent;
     std::function<void(const NotifyWebApiPushEvent&)> onWebApiPushEvent;
     // Async reply callback.
     //   cmd    —command this reply is for (matches the request's cmd)
@@ -298,6 +331,7 @@ private:
     mutable std::mutex m_mutex_bearer;
     std::string m_bearer_token;
     std::atomic<u32> m_addr_local{0};
+    std::atomic<u32> m_addr_server{0};
 
     mutable std::mutex m_mutex_friends;
     std::vector<FriendEntry> m_friends;
