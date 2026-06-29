@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <deque>
-#include <mutex>
+#include <chrono>
 
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
@@ -12,6 +11,7 @@
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_matching2/np_matching2.h"
 #include "core/libraries/np/np_matching2/np_matching2_internal.h"
+#include "core/libraries/np/np_matching2/np_matching2_mm.h"
 #include "core/libraries/np/np_matching2/np_matching2_types.h"
 #include "core/libraries/np/np_types.h"
 #include "core/libraries/system/userservice.h"
@@ -19,24 +19,18 @@
 namespace Libraries::Np::NpMatching2 {
 
 static bool g_initialized = false;
-static OrbisNpMatching2ContextId contextId = 1;
-
-static std::mutex g_events_mutex;
-static std::deque<NpMatching2ContextEvent> g_ctx_events;
-static std::deque<NpMatching2LobbyEvent> g_lobby_events;
-static std::deque<NpMatching2RoomEvent> g_room_events;
-static std::mutex g_responses_mutex;
-static std::deque<std::function<void()>> g_responses;
 
 int PS4_SYSV_ABI sceNpMatching2CreateContext(const OrbisNpMatching2CreateContextParameter* param,
                                              OrbisNpMatching2ContextId* ctxId) {
-    LOG_DEBUG(Lib_NpMatching2, "called, npId = {}, serviceLabel = {}, size = {}",
-              param->npId->handle.data, param->serviceLabel, param->size);
+    LOG_INFO(Lib_NpMatching2, "called, npId = {}, serviceLabel = {}, size = {}",
+             param->npId->handle.data, param->serviceLabel, param->size);
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
     if (!param || param->size != 0x28 || !ctxId) {
+        LOG_ERROR(Lib_NpMatching2, "param null, invalid size, or ctxId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
@@ -45,13 +39,15 @@ int PS4_SYSV_ABI sceNpMatching2CreateContext(const OrbisNpMatching2CreateContext
 
 int PS4_SYSV_ABI sceNpMatching2CreateContextA(const OrbisNpMatching2CreateContextParameterA* param,
                                               OrbisNpMatching2ContextId* ctxId) {
-    LOG_DEBUG(Lib_NpMatching2, "called, userId = {}, serviceLabel = {}, size = {}", param->userId,
-              param->serviceLabel, param->size);
+    LOG_INFO(Lib_NpMatching2, "called, userId = {}, serviceLabel = {}, size = {}", param->userId,
+             param->serviceLabel, param->size);
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
     if (!param || param->size != 0x10 || !ctxId) {
+        LOG_ERROR(Lib_NpMatching2, "param null, invalid size, or ctxId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
@@ -61,219 +57,215 @@ int PS4_SYSV_ABI sceNpMatching2CreateContextA(const OrbisNpMatching2CreateContex
     return ContextManager::Instance().CreateContext(&np_id, param->serviceLabel, ctxId);
 }
 
-static std::optional<OrbisNpMatching2RequestOptParam> defaultRequestOptParam = std::nullopt;
+static void StoreRequestCallback(ContextObject* ctx, OrbisNpMatching2RequestOptParam* requestOpt) {
+    if (requestOpt && requestOpt->callback) {
+        ctx->default_request_callback = requestOpt->callback;
+        ctx->default_request_callback_arg = requestOpt->arg;
+    }
+}
 
-auto GetOptParam(OrbisNpMatching2RequestOptParam* requestOpt) {
-    return requestOpt ? *requestOpt
-                      : (defaultRequestOptParam ? defaultRequestOptParam
-                                                : std::optional<OrbisNpMatching2RequestOptParam>{});
+int PS4_SYSV_ABI sceNpMatching2CreateJoinRoom(OrbisNpMatching2ContextId ctxId,
+                                              OrbisNpMatching2CreateJoinRoomRequest* request,
+                                              OrbisNpMatching2RequestOptParam* requestOpt,
+                                              OrbisNpMatching2RequestId* requestId) {
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}", ctxId);
+    if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
+
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmCreateJoinRoom(ctxId, reqId, *request);
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceNpMatching2JoinRoom(OrbisNpMatching2ContextId ctxId,
+                                        OrbisNpMatching2JoinRoomRequest* request,
+                                        OrbisNpMatching2RequestOptParam* requestOpt,
+                                        OrbisNpMatching2RequestId* requestId) {
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}", ctxId);
+    if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
+
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmJoinRoom(ctxId, reqId, *request);
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpMatching2CreateJoinRoomA(OrbisNpMatching2ContextId ctxId,
                                                OrbisNpMatching2CreateJoinRoomRequestA* request,
                                                OrbisNpMatching2RequestOptParam* requestOpt,
                                                OrbisNpMatching2RequestId* requestId) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
     if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    LOG_DEBUG(Lib_NpMatching2,
-              "maxSlot = {}, teamId = {}, worldId = {}, lobbyId = {}, groupConfig = {}, "
-              "joinGroupLabel = {}",
-              request->maxSlot, request->teamId, request->worldId, request->lobbyId,
-              request->groupConfig, request->joinGroupLabel);
-
-    static OrbisNpMatching2RequestId id = 10;
-    *requestId = id++;
-
-    if (auto optParam = GetOptParam(requestOpt); optParam) {
-        LOG_DEBUG(Lib_NpMatching2, "optParam.timeout = {}, optParam.appId = {}", optParam->timeout,
-                  optParam->appId);
-        std::scoped_lock lk{g_responses_mutex};
-        auto reqIdCopy = *requestId;
-        auto requestCopy = *request;
-        g_responses.emplace_back([=]() {
-            Libraries::Np::OrbisNpOnlineId onlineId{};
-            if (NpManager::sceNpGetOnlineId(1, &onlineId) != ORBIS_OK) {
-                return;
-            }
-
-            OrbisNpMatching2RoomMemberDataInternalA me{
-                nullptr,
-                0,
-                {0xace104e, Libraries::Np::OrbisNpPlatformType::PS4},
-                onlineId,
-                {0, 0, 0, 0},
-                1,
-                requestCopy.teamId,
-                1,
-                0,
-                nullptr,
-                nullptr,
-                0};
-            OrbisNpMatching2RoomDataInternal room{requestCopy.maxSlot,
-                                                  0,
-                                                  static_cast<u16>(requestCopy.maxSlot - 1u),
-                                                  0,
-                                                  15,
-                                                  0xac,
-                                                  requestCopy.worldId,
-                                                  requestCopy.lobbyId,
-                                                  0x10,
-                                                  0,
-                                                  0,
-                                                  nullptr,
-                                                  0,
-                                                  0,
-                                                  {0, 0, 0, 0},
-                                                  nullptr,
-                                                  0};
-            OrbisNpMatching2CreateJoinRoomResponseA resp{&room, {&me, 1, &me, &me}};
-            optParam->callback(ctxId, reqIdCopy,
-                               ORBIS_NP_MATCHING2_REQUEST_EVENT_CREATE_JOIN_ROOM_A, 0, &resp,
-                               optParam->arg);
-        });
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
+
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    LOG_WARNING(Lib_NpMatching2, "not implemented");
     return ORBIS_OK;
 }
-
-std::function<void(const NpMatching2ContextEvent*)> npMatching2ContextCallback = nullptr;
 
 int PS4_SYSV_ABI sceNpMatching2RegisterContextCallback(OrbisNpMatching2ContextCallback callback,
                                                        void* userdata) {
-    LOG_DEBUG(Lib_NpMatching2, "called, userdata = {}", userdata);
+    LOG_INFO(Lib_NpMatching2, "called, userdata = {}", userdata);
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
 
-    npMatching2ContextCallback = [callback, userdata](auto arg) {
-        callback(arg->contextId, arg->event, arg->cause, arg->errorCode, userdata);
-    };
-
+    ContextManager::Instance().ApplyContextCallback(callback, userdata);
     return ORBIS_OK;
 }
-
-std::function<void(const NpMatching2LobbyEvent*)> npMatching2LobbyCallback = nullptr;
 
 int PS4_SYSV_ABI sceNpMatching2RegisterLobbyEventCallback(
     OrbisNpMatching2ContextId ctxId, OrbisNpMatching2LobbyEventCallback callback, void* userdata) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}, userdata = {}", ctxId, userdata);
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, userdata = {}", ctxId, userdata);
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
 
-    npMatching2LobbyCallback = [callback, userdata](auto arg) {
-        callback(arg->contextId, arg->lobbyId, arg->event, arg->data, userdata);
-    };
-
+    ctx->lobby_event_callback = callback;
+    ctx->lobby_event_callback_arg = userdata;
     return ORBIS_OK;
 }
-
-std::function<void(const NpMatching2RoomEvent*)> npMatching2RoomCallback = nullptr;
 
 int PS4_SYSV_ABI sceNpMatching2RegisterRoomEventCallback(OrbisNpMatching2ContextId ctxId,
                                                          OrbisNpMatching2RoomEventCallback callback,
                                                          void* userdata) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}, userdata = {}", ctxId, userdata);
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, userdata = {}", ctxId, userdata);
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
 
-    npMatching2RoomCallback = [callback, userdata](auto arg) {
-        callback(arg->contextId, arg->roomId, arg->event, arg->data, userdata);
-    };
-
+    ctx->room_event_callback = callback;
+    ctx->room_event_callback_arg = userdata;
     return ORBIS_OK;
 }
-
-std::function<void(const OrbisNpMatching2SignalingEvent*)> npMatching2SignalingCallback = nullptr;
 
 int PS4_SYSV_ABI sceNpMatching2RegisterSignalingCallback(OrbisNpMatching2ContextId ctxId,
                                                          OrbisNpMatching2SignalingCallback callback,
                                                          void* userdata) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}, userdata = {}", ctxId, userdata);
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, userdata = {}", ctxId, userdata);
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
 
-    npMatching2SignalingCallback = [callback, userdata](auto arg) {
-        callback(arg->contextId, arg->roomId, arg->roomMemberId, arg->event, arg->errorCode,
-                 userdata);
-    };
-
+    ctx->signaling_callback = callback;
+    ctx->signaling_callback_arg = userdata;
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpMatching2ContextStart(OrbisNpMatching2ContextId ctxId, u64 timeout) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}, timeout = {}", ctxId, timeout);
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, timeout = {}", ctxId, timeout);
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
-
-    std::scoped_lock lk{g_events_mutex};
-    if (EmulatorSettings.IsConnectedToNetwork() && EmulatorSettings.IsShadNetEnabled()) {
-        g_ctx_events.emplace_back(ctxId, ORBIS_NP_MATCHING2_CONTEXT_EVENT_STARTED,
-                                  ORBIS_NP_MATCHING2_EVENT_CAUSE_CONTEXT_ACTION, 0);
-    } else {
+    if (!EmulatorSettings.IsConnectedToNetwork() || !EmulatorSettings.IsShadNetEnabled()) {
         // error confirmed with a real console disconnected from the internet
         constexpr int ORBIS_NET_ERROR_RESOLVER_ETIMEDOUT = 0x804101e2;
-        g_ctx_events.emplace_back(ctxId, ORBIS_NP_MATCHING2_CONTEXT_EVENT_START_OVER,
-                                  ORBIS_NP_MATCHING2_EVENT_CAUSE_CONTEXT_ERROR,
-                                  ORBIS_NET_ERROR_RESOLVER_ETIMEDOUT);
+        LOG_ERROR(Lib_NpMatching2, "not connected to network");
+        return ORBIS_NET_ERROR_RESOLVER_ETIMEDOUT;
     }
 
+    const s32 rc = ContextManager::Instance().Start(ctxId);
+    if (rc != ORBIS_OK) {
+        return rc;
+    }
+
+    MmContextStart(ctxId);
     return ORBIS_OK;
 }
 
-void ProcessEvents() {
-    {
-        std::scoped_lock lk{g_events_mutex};
+int PS4_SYSV_ABI sceNpMatching2ContextStop(OrbisNpMatching2ContextId ctxId) {
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}", ctxId);
 
-        if (npMatching2ContextCallback) {
-            while (!g_ctx_events.empty()) {
-                npMatching2ContextCallback(&g_ctx_events.front());
-                g_ctx_events.pop_front();
-            }
-        }
-        if (npMatching2LobbyCallback) {
-            while (!g_lobby_events.empty()) {
-                npMatching2LobbyCallback(&g_lobby_events.front());
-                g_lobby_events.pop_front();
-            }
-        }
-        if (npMatching2RoomCallback) {
-            while (!g_room_events.empty()) {
-                npMatching2RoomCallback(&g_room_events.front());
-                g_room_events.pop_front();
-            }
-        }
+    if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
 
-    std::scoped_lock lk{g_responses_mutex};
-    while (!g_responses.empty()) {
-        (g_responses.front())();
-        g_responses.pop_front();
+    const s32 rc = ContextManager::Instance().Stop(ctxId);
+    if (rc != ORBIS_OK) {
+        return rc;
     }
+
+    MmContextStop(ctxId);
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpMatching2Initialize(OrbisNpMatching2InitializeParameter* param) {
-    LOG_DEBUG(Lib_NpMatching2, "called");
+    LOG_INFO(Lib_NpMatching2, "called");
 
     if (g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "already initialized");
         return ORBIS_NP_MATCHING2_ERROR_ALREADY_INITIALIZED;
     }
 
     if (!param || (param->size != 0x30 && param->size != 0x28)) {
+        LOG_ERROR(Lib_NpMatching2, "param null or invalid size");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
@@ -287,21 +279,20 @@ int PS4_SYSV_ABI sceNpMatching2Initialize(OrbisNpMatching2InitializeParameter* p
 
     g_initialized = true;
     g_state.initialized.store(true);
-    Libraries::Np::NpManager::RegisterNpCallback("NpMatching2", ProcessEvents);
 
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpMatching2Terminate() {
-    LOG_DEBUG(Lib_NpMatching2, "called");
+    LOG_INFO(Lib_NpMatching2, "called");
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
 
     g_initialized = false;
     g_state.initialized.store(false);
-    Libraries::Np::NpManager::DeregisterNpCallback("NpMatching2");
 
     TermEventDispatcher();
     ContextManager::Instance().Reset();
@@ -311,32 +302,42 @@ int PS4_SYSV_ABI sceNpMatching2Terminate() {
 
 int PS4_SYSV_ABI sceNpMatching2SetDefaultRequestOptParam(
     OrbisNpMatching2ContextId ctxId, OrbisNpMatching2RequestOptParam* requestOpt) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}", ctxId);
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}", ctxId);
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
     if (!requestOpt) {
+        LOG_ERROR(Lib_NpMatching2, "requestOpt null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
 
-    defaultRequestOptParam = *requestOpt;
+    ctx->default_request_callback = requestOpt->callback;
+    ctx->default_request_callback_arg = requestOpt->arg;
 
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpMatching2GetServerId(OrbisNpMatching2ContextId ctxId,
                                            OrbisNpMatching2ServerId* serverId) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}", ctxId);
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}", ctxId);
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
     if (!serverId) {
+        LOG_ERROR(Lib_NpMatching2, "serverId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    *serverId = 0xac;
+    *serverId = 1;
 
     return ORBIS_OK;
 }
@@ -345,33 +346,28 @@ int PS4_SYSV_ABI sceNpMatching2GetWorldInfoList(OrbisNpMatching2ContextId ctxId,
                                                 OrbisNpMatching2GetWorldInfoListRequest* request,
                                                 OrbisNpMatching2RequestOptParam* requestOpt,
                                                 OrbisNpMatching2RequestId* requestId) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}, request.serverId = {}, requestOpt = {}", ctxId,
-              request ? request->serverId : 0xFFFF, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, request.serverId = {}, requestOpt = {}", ctxId,
+             request ? request->serverId : 0xFFFF, fmt::ptr(requestOpt));
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
     if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    static OrbisNpMatching2RequestId id = 1;
-    *requestId = id++;
-
-    if (auto optParam = GetOptParam(requestOpt); optParam) {
-        LOG_DEBUG(Lib_NpMatching2, "optParam.timeout = {}, optParam.appId = {}", optParam->timeout,
-                  optParam->appId);
-        auto reqIdCopy = *requestId;
-        std::scoped_lock lk{g_responses_mutex};
-        g_responses.emplace_back([=]() {
-            OrbisNpMatching2World w{nullptr, 1, 10, 0, 10, 0, {}};
-            OrbisNpMatching2GetWorldInfoListResponse resp{&w, 1};
-            optParam->callback(ctxId, reqIdCopy,
-                               ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_WORLD_INFO_LIST, 0, &resp,
-                               optParam->arg);
-        });
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
 
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmGetWorldInfoList(ctxId, reqId, *request);
     return ORBIS_OK;
 }
 
@@ -379,29 +375,26 @@ int PS4_SYSV_ABI sceNpMatching2LeaveRoom(OrbisNpMatching2ContextId ctxId,
                                          OrbisNpMatching2LeaveRoomRequest* request,
                                          OrbisNpMatching2RequestOptParam* requestOpt,
                                          OrbisNpMatching2RequestId* requestId) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
     if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
-
-    static OrbisNpMatching2RequestId id = 500;
-    *requestId = id++;
-
-    if (auto optParam = GetOptParam(requestOpt); optParam) {
-        LOG_DEBUG(Lib_NpMatching2, "optParam.timeout = {}, optParam.appId = {}", optParam->timeout,
-                  optParam->appId);
-        std::scoped_lock lk{g_responses_mutex};
-        auto reqIdCopy = *requestId;
-        g_responses.emplace_back([=]() {
-            optParam->callback(ctxId, reqIdCopy, ORBIS_NP_MATCHING2_REQUEST_EVENT_LEAVE_ROOM, 0,
-                               nullptr, optParam->arg);
-        });
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
 
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmLeaveRoom(ctxId, reqId, *request);
     return ORBIS_OK;
 }
 
@@ -409,31 +402,27 @@ int PS4_SYSV_ABI sceNpMatching2SearchRoom(OrbisNpMatching2ContextId ctxId,
                                           OrbisNpMatching2SearchRoomRequest* request,
                                           OrbisNpMatching2RequestOptParam* requestOpt,
                                           OrbisNpMatching2RequestId* requestId) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
     if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    static OrbisNpMatching2RequestId id = 1;
-    *requestId = id++;
-
-    if (auto optParam = GetOptParam(requestOpt); optParam) {
-        LOG_DEBUG(Lib_NpMatching2, "optParam.timeout = {}, optParam.appId = {}", optParam->timeout,
-                  optParam->appId);
-        std::scoped_lock lk{g_responses_mutex};
-        auto reqIdCopy = *requestId;
-        auto requestCopy = *request;
-        g_responses.emplace_back([=]() {
-            OrbisNpMatching2SearchRoomResponseA resp{{0, 0, 0, {}}, nullptr};
-            optParam->callback(ctxId, reqIdCopy, ORBIS_NP_MATCHING2_REQUEST_EVENT_SEARCH_ROOM_A, 0,
-                               &resp, optParam->arg);
-        });
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
 
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmSearchRoom(ctxId, reqId, *request);
     return ORBIS_OK;
 }
 
@@ -441,118 +430,104 @@ int PS4_SYSV_ABI sceNpMatching2SetUserInfo(OrbisNpMatching2ContextId ctxId,
                                            OrbisNpMatching2SetUserInfoRequest* request,
                                            OrbisNpMatching2RequestOptParam* requestOpt,
                                            OrbisNpMatching2RequestId* requestId) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
     if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    static OrbisNpMatching2RequestId id = 100;
-    *requestId = id++;
-
-    if (auto optParam = GetOptParam(requestOpt); optParam) {
-        LOG_DEBUG(Lib_NpMatching2, "optParam.timeout = {}, optParam.appId = {}", optParam->timeout,
-                  optParam->appId);
-        std::scoped_lock lk{g_responses_mutex};
-        auto reqIdCopy = *requestId;
-        g_responses.emplace_back([=]() {
-            optParam->callback(ctxId, reqIdCopy, ORBIS_NP_MATCHING2_REQUEST_EVENT_SET_USER_INFO, 0,
-                               nullptr, optParam->arg);
-        });
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
 
+    StoreRequestCallback(ctx, requestOpt);
+    *requestId = AllocRequestId();
+    LOG_WARNING(Lib_NpMatching2, "not implemented");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpMatching2SendRoomMessage(OrbisNpMatching2ContextId ctxId, void* request,
                                                OrbisNpMatching2RequestOptParam* requestOpt,
                                                OrbisNpMatching2RequestId* requestId) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
     if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    static OrbisNpMatching2RequestId id = 1000;
-    *requestId = id++;
-
-    if (auto optParam = GetOptParam(requestOpt); optParam) {
-        LOG_DEBUG(Lib_NpMatching2, "optParam.timeout = {}, optParam.appId = {}", optParam->timeout,
-                  optParam->appId);
-        std::scoped_lock lk{g_responses_mutex};
-        auto reqIdCopy = *requestId;
-        g_responses.emplace_back([=]() {
-            optParam->callback(ctxId, reqIdCopy, ORBIS_NP_MATCHING2_REQUEST_EVENT_SEND_ROOM_MESSAGE,
-                               0, nullptr, optParam->arg);
-        });
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
 
+    StoreRequestCallback(ctx, requestOpt);
+    *requestId = AllocRequestId();
+    LOG_WARNING(Lib_NpMatching2, "not implemented");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpMatching2SetRoomDataExternal(OrbisNpMatching2ContextId ctxId, void* request,
                                                    OrbisNpMatching2RequestOptParam* requestOpt,
                                                    OrbisNpMatching2RequestId* requestId) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
     if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    static OrbisNpMatching2RequestId id = 800;
-    *requestId = id++;
-
-    if (auto optParam = GetOptParam(requestOpt); optParam) {
-        LOG_DEBUG(Lib_NpMatching2, "optParam.timeout = {}, optParam.appId = {}", optParam->timeout,
-                  optParam->appId);
-        std::scoped_lock lk{g_responses_mutex};
-        auto reqIdCopy = *requestId;
-        g_responses.emplace_back([=]() {
-            optParam->callback(ctxId, reqIdCopy,
-                               ORBIS_NP_MATCHING2_REQUEST_EVENT_SET_ROOM_DATA_EXTERNAL, 0, nullptr,
-                               optParam->arg);
-        });
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
 
+    StoreRequestCallback(ctx, requestOpt);
+    *requestId = AllocRequestId();
+    LOG_WARNING(Lib_NpMatching2, "not implemented");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNpMatching2SetRoomDataInternal(OrbisNpMatching2ContextId ctxId, void* request,
                                                    OrbisNpMatching2RequestOptParam* requestOpt,
                                                    OrbisNpMatching2RequestId* requestId) {
-    LOG_DEBUG(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
 
     if (!g_initialized) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
     if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    static OrbisNpMatching2RequestId id = 200;
-    *requestId = id++;
-
-    if (auto optParam = GetOptParam(requestOpt); optParam) {
-        LOG_DEBUG(Lib_NpMatching2, "optParam.timeout = {}, optParam.appId = {}", optParam->timeout,
-                  optParam->appId);
-        std::scoped_lock lk{g_responses_mutex};
-        auto reqIdCopy = *requestId;
-        g_responses.emplace_back([=]() {
-            optParam->callback(ctxId, reqIdCopy,
-                               ORBIS_NP_MATCHING2_REQUEST_EVENT_SET_ROOM_DATA_INTERNAL, 0, nullptr,
-                               optParam->arg);
-        });
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
 
+    StoreRequestCallback(ctx, requestOpt);
+    *requestId = AllocRequestId();
+    LOG_WARNING(Lib_NpMatching2, "not implemented");
     return ORBIS_OK;
 }
 
@@ -567,6 +542,10 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpMatching2CreateContextA);
     LIB_FUNCTION("V6KSpKv9XJE", "libSceNpMatching2", 1, "libSceNpMatching2",
                  sceNpMatching2CreateJoinRoomA);
+    LIB_FUNCTION("zCWZmXXN600", "libSceNpMatching2", 1, "libSceNpMatching2",
+                 sceNpMatching2CreateJoinRoom);
+    LIB_FUNCTION("CSIMDsVjs-g", "libSceNpMatching2", 1, "libSceNpMatching2",
+                 sceNpMatching2JoinRoom);
     LIB_FUNCTION("fQQfP87I7hs", "libSceNpMatching2", 1, "libSceNpMatching2",
                  sceNpMatching2RegisterContextCallback);
     LIB_FUNCTION("4Nj7u5B5yCA", "libSceNpMatching2", 1, "libSceNpMatching2",
@@ -577,6 +556,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpMatching2RegisterSignalingCallback);
     LIB_FUNCTION("7vjNQ6Z1op0", "libSceNpMatching2", 1, "libSceNpMatching2",
                  sceNpMatching2ContextStart);
+    LIB_FUNCTION("-f6M4caNe8k", "libSceNpMatching2", 1, "libSceNpMatching2",
+                 sceNpMatching2ContextStop);
     LIB_FUNCTION("LhCPctIICxQ", "libSceNpMatching2", 1, "libSceNpMatching2",
                  sceNpMatching2GetServerId);
     LIB_FUNCTION("rJNPJqDCpiI", "libSceNpMatching2", 1, "libSceNpMatching2",

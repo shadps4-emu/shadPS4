@@ -261,6 +261,20 @@ struct OrbisNpMatching2PresenceOptionData {
     u64 len;
 };
 
+struct OrbisNpMatching2RoomMemberUpdateA {
+    OrbisNpMatching2RoomMemberDataInternalA* roomMemberDataInternal;
+    OrbisNpMatching2EventCause eventCause;
+    u8 padding[7];
+    OrbisNpMatching2PresenceOptionData optData;
+};
+
+struct OrbisNpMatching2RoomUpdate {
+    OrbisNpMatching2EventCause eventCause;
+    u8 padding[3];
+    s32 errorCode;
+    OrbisNpMatching2PresenceOptionData optData;
+};
+
 struct OrbisNpMatching2JoinRoomRequest {
     OrbisNpMatching2RoomId roomId;
     OrbisNpMatching2SessionPassword* roomPasswd;
@@ -313,6 +327,20 @@ struct OrbisNpMatching2Range {
 struct OrbisNpMatching2RangeFilter {
     u32 start;
     u32 max;
+};
+
+using OrbisNpMatching2Operator = u8;
+
+struct OrbisNpMatching2IntSearchFilter {
+    OrbisNpMatching2Operator searchOperator;
+    u8 padding[7];
+    OrbisNpMatching2IntAttr attr;
+};
+
+struct OrbisNpMatching2BinSearchFilter {
+    OrbisNpMatching2Operator searchOperator;
+    u8 padding[7];
+    OrbisNpMatching2BinAttr attr;
 };
 
 struct OrbisNpMatching2RequestOptParam {
@@ -404,6 +432,13 @@ struct OrbisNpMatching2RoomMemberDataInternal {
 };
 static_assert(sizeof(OrbisNpMatching2RoomMemberDataInternal) == 0x58);
 
+struct OrbisNpMatching2RoomMemberUpdate {
+    OrbisNpMatching2RoomMemberDataInternal* roomMemberDataInternal;
+    OrbisNpMatching2EventCause eventCause;
+    u8 padding[7];
+    OrbisNpMatching2PresenceOptionData optData;
+};
+
 struct OrbisNpMatching2RoomMemberDataInternalList {
     OrbisNpMatching2RoomMemberDataInternal* members;
     u64 membersNum;
@@ -450,9 +485,9 @@ struct OrbisNpMatching2SearchRoomRequest {
     OrbisNpMatching2RangeFilter rangeFilter;
     OrbisNpMatching2Flags flags1;
     OrbisNpMatching2Flags flags2;
-    void* intFilter;
+    OrbisNpMatching2IntSearchFilter* intFilter;
     u64 intFilters;
-    void* binFilter;
+    OrbisNpMatching2BinSearchFilter* binFilter;
     u64 binFilters;
     OrbisNpMatching2AttributeId* attr;
     u64 attrs;

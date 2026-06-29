@@ -51,5 +51,5 @@ s32 PS4_SYSV_ABI sceFontSelectGlyphsFt();
 const OrbisFontLibrarySelection* PS4_SYSV_ABI sceFontSelectLibraryFt(int value);
 const OrbisFontRendererSelection* PS4_SYSV_ABI sceFontSelectRendererFt(int value);
 
-void RegisterlibSceFontFt(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::FontFt
