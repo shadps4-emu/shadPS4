@@ -159,6 +159,110 @@ void* BuildGetWorldInfoListPayload(ContextObject& ctx, const shadnet::GetWorldIn
     return p.request_data;
 }
 
+void* BuildSearchRoomPayload(ContextObject& ctx, const shadnet::SearchRoomReply& resp) {
+    CallbackPayload& p = ctx.request_payload;
+    p.Reset();
+
+    const int room_count = resp.rooms_size();
+    p.room_data_external.resize(room_count);
+    for (int i = 0; i < room_count; ++i) {
+        const auto& r = resp.rooms(i);
+        auto& dst = p.room_data_external[i];
+        dst = OrbisNpMatching2RoomDataExternal{};
+        dst.next = (i + 1 < room_count) ? &p.room_data_external[i + 1] : nullptr;
+        dst.maxSlot = static_cast<u16>(r.max_slot());
+        dst.curMembers = static_cast<u16>(r.cur_members());
+        dst.flags = r.flags();
+        dst.serverId = static_cast<OrbisNpMatching2ServerId>(r.server_id());
+        dst.worldId = static_cast<OrbisNpMatching2WorldId>(r.world_id());
+        dst.lobbyId = r.lobby_id();
+        dst.roomId = r.room_id();
+        dst.passwdSlotMask = r.passwd_slot_mask();
+        dst.joinedSlotMask = r.joined_slot_mask();
+        dst.publicSlots = static_cast<u16>(r.public_slots());
+        dst.privateSlots = static_cast<u16>(r.private_slots());
+        dst.openPublicSlots = static_cast<u16>(r.open_public_slots());
+        dst.openPrivateSlots = static_cast<u16>(r.open_private_slots());
+
+        if (!r.owner_npid().empty()) {
+            auto& npid = p.ext_owner_npids.emplace_back();
+            npid = Libraries::Np::OrbisNpId{};
+            std::strncpy(npid.handle.data, r.owner_npid().c_str(), sizeof(npid.handle.data) - 1);
+            dst.ownerNpId = &npid;
+        }
+
+        if (r.groups_size() > 0) {
+            OrbisNpMatching2RoomGroupInfo* first = nullptr;
+            for (int g = 0; g < r.groups_size(); ++g) {
+                const auto& src = r.groups(g);
+                auto& gi = p.ext_room_groups.emplace_back();
+                gi = OrbisNpMatching2RoomGroupInfo{};
+                gi.id = static_cast<OrbisNpMatching2RoomGroupId>(src.group_id());
+                gi.hasPasswd = src.has_passwd();
+                gi.slots = src.slot_count();
+                gi.groupMembers = src.num_members();
+                if (!first) {
+                    first = &gi;
+                }
+            }
+            dst.roomGroup = first;
+            dst.roomGroups = static_cast<u64>(r.groups_size());
+        }
+
+        if (r.external_search_int_attrs_size() > 0) {
+            OrbisNpMatching2IntAttr* first = nullptr;
+            for (int a = 0; a < r.external_search_int_attrs_size(); ++a) {
+                const auto& src = r.external_search_int_attrs(a);
+                auto& ia = p.ext_int_attrs.emplace_back();
+                ia = OrbisNpMatching2IntAttr{};
+                ia.id = static_cast<OrbisNpMatching2AttributeId>(src.attr_id());
+                ia.num = src.attr_value();
+                if (!first) {
+                    first = &ia;
+                }
+            }
+            dst.externalSearchIntAttr = first;
+            dst.externalSearchIntAttrs = static_cast<u64>(r.external_search_int_attrs_size());
+        }
+
+        auto build_bin = [&](const auto& src_attrs, OrbisNpMatching2BinAttr*& out_ptr,
+                             u64& out_num) {
+            if (src_attrs.empty()) {
+                return;
+            }
+            OrbisNpMatching2BinAttr* first = nullptr;
+            for (const auto& src : src_attrs) {
+                p.bin_buffers.emplace_back(src.data().begin(), src.data().end());
+                auto& buf = p.bin_buffers.back();
+                auto& ba = p.ext_bin_attrs.emplace_back();
+                ba = OrbisNpMatching2BinAttr{};
+                ba.id = static_cast<OrbisNpMatching2AttributeId>(src.attr_id());
+                ba.data = buf.empty() ? nullptr : buf.data();
+                ba.dataSize = buf.size();
+                if (!first) {
+                    first = &ba;
+                }
+            }
+            out_ptr = first;
+            out_num = static_cast<u64>(src_attrs.size());
+        };
+        build_bin(r.external_search_bin_attrs(), dst.externalSearchBinAttr,
+                  dst.externalSearchBinAttrs);
+        build_bin(r.external_bin_attrs(), dst.externalBinAttr, dst.externalBinAttrs);
+    }
+
+    p.search_room_response = std::make_unique<OrbisNpMatching2SearchRoomResponse>();
+    auto& out = *p.search_room_response;
+    out = OrbisNpMatching2SearchRoomResponse{};
+    out.range.start = resp.range_start();
+    out.range.total = resp.range_total();
+    out.range.results = resp.range_result();
+    out.roomDataExt = p.room_data_external.empty() ? nullptr : p.room_data_external.data();
+
+    p.request_data = p.search_room_response.get();
+    return p.request_data;
+}
+
 ContextManager& ContextManager::Instance() {
     static ContextManager instance;
     return instance;

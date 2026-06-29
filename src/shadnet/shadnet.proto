@@ -377,7 +377,7 @@ message MatchingBinSearchFilter {
     bytes  data    = 3;
 }
 
-message GetRoomListRequest {
+message SearchRoomRequest {
     uint32 world_id            = 1;
     uint64 lobby_id            = 2;
     uint32 range_filter_start  = 3;
@@ -389,7 +389,7 @@ message GetRoomListRequest {
     repeated uint32 attr_ids    = 9;
 }
 
-message GetRoomListReply {
+message SearchRoomReply {
     repeated MatchingRoomDataExternal rooms = 1;
     uint32 range_start  = 2;
     uint32 range_total  = 3;

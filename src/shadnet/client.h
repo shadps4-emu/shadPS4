@@ -70,7 +70,7 @@ enum class CommandType : u16 {
     CreateRoom = 13,
     JoinRoom = 14,
     LeaveRoom = 15,
-    GetRoomList = 16,
+    SearchRoom = 16,
     RequestSignalingInfos = 17,
     ContextStop = 18,
     SetRoomDataInternal = 20,

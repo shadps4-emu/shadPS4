@@ -329,6 +329,20 @@ struct OrbisNpMatching2RangeFilter {
     u32 max;
 };
 
+using OrbisNpMatching2Operator = u8;
+
+struct OrbisNpMatching2IntSearchFilter {
+    OrbisNpMatching2Operator searchOperator;
+    u8 padding[7];
+    OrbisNpMatching2IntAttr attr;
+};
+
+struct OrbisNpMatching2BinSearchFilter {
+    OrbisNpMatching2Operator searchOperator;
+    u8 padding[7];
+    OrbisNpMatching2BinAttr attr;
+};
+
 struct OrbisNpMatching2RequestOptParam {
     OrbisNpMatching2RequestCallback callback;
     void* arg;
@@ -471,9 +485,9 @@ struct OrbisNpMatching2SearchRoomRequest {
     OrbisNpMatching2RangeFilter rangeFilter;
     OrbisNpMatching2Flags flags1;
     OrbisNpMatching2Flags flags2;
-    void* intFilter;
+    OrbisNpMatching2IntSearchFilter* intFilter;
     u64 intFilters;
-    void* binFilter;
+    OrbisNpMatching2BinSearchFilter* binFilter;
     u64 binFilters;
     OrbisNpMatching2AttributeId* attr;
     u64 attrs;

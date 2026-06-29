@@ -420,8 +420,9 @@ int PS4_SYSV_ABI sceNpMatching2SearchRoom(OrbisNpMatching2ContextId ctxId,
     }
 
     StoreRequestCallback(ctx, requestOpt);
-    *requestId = AllocRequestId();
-    LOG_WARNING(Lib_NpMatching2, "not implemented");
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmSearchRoom(ctxId, reqId, *request);
     return ORBIS_OK;
 }
 

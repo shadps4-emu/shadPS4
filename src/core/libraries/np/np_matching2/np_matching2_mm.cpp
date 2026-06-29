@@ -128,6 +128,11 @@ void DispatchRequestComplete(const PendingRequest& pr, ShadNet::ErrorType error,
             if (reply.ParseFromString(proto)) {
                 request_data = BuildGetWorldInfoListPayload(*ctx, reply);
             }
+        } else if (pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_SEARCH_ROOM) {
+            shadnet::SearchRoomReply reply;
+            if (reply.ParseFromString(proto)) {
+                request_data = BuildSearchRoomPayload(*ctx, reply);
+            }
         }
     }
 
@@ -451,6 +456,45 @@ s32 MmGetWorldInfoList(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2Request
     req.set_server_id(request.serverId);
     return MmSubmitRequest(ctx_id, req_id, ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_WORLD_INFO_LIST,
                            MmCommand::GetWorldInfoList, MakeProtoPayload(req));
+}
+
+s32 MmSearchRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                 const OrbisNpMatching2SearchRoomRequest& request) {
+    shadnet::SearchRoomRequest req;
+    req.set_world_id(request.worldId);
+    req.set_lobby_id(request.lobbyId);
+    req.set_range_filter_start(request.rangeFilter.start);
+    req.set_range_filter_max(request.rangeFilter.max);
+    req.set_flag_filter(request.flags1);
+    req.set_flag_attr(request.flags2);
+    LOG_DEBUG(Lib_NpMatching2,
+              "search world={} lobby={} range={}+{} flags={:#x}/{:#x} intN={} binN={} attrN={}",
+              request.worldId, request.lobbyId, request.rangeFilter.start, request.rangeFilter.max,
+              request.flags1, request.flags2, request.intFilters, request.binFilters,
+              request.attrs);
+    for (u64 i = 0; i < request.intFilters; ++i) {
+        const auto& f = request.intFilter[i];
+        LOG_DEBUG(Lib_NpMatching2, "  intFilter[{}] op={} id={:#x} num={}", i, f.searchOperator,
+                  f.attr.id, f.attr.num);
+        auto* dst = req.add_int_filters();
+        dst->set_op(f.searchOperator);
+        dst->set_attr_id(f.attr.id);
+        dst->set_attr_value(f.attr.num);
+    }
+    for (u64 i = 0; i < request.binFilters; ++i) {
+        const auto& f = request.binFilter[i];
+        auto* dst = req.add_bin_filters();
+        dst->set_op(f.searchOperator);
+        dst->set_attr_id(f.attr.id);
+        if (f.attr.data && f.attr.dataSize > 0) {
+            dst->set_data(f.attr.data, f.attr.dataSize);
+        }
+    }
+    for (u64 i = 0; i < request.attrs; ++i) {
+        req.add_attr_ids(request.attr[i]);
+    }
+    return MmSubmitRequest(ctx_id, req_id, ORBIS_NP_MATCHING2_REQUEST_EVENT_SEARCH_ROOM,
+                           MmCommand::SearchRoom, MakeProtoPayload(req));
 }
 
 u32 GetMmServerAddr() {

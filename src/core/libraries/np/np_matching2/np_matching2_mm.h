@@ -24,7 +24,7 @@ enum class MmCommand : u16 {
     CreateRoom = 13,
     JoinRoom = 14,
     LeaveRoom = 15,
-    GetRoomList = 16,
+    SearchRoom = 16,
     RequestSignalingInfos = 17,
     ContextStop = 18,
     SetRoomDataInternal = 20,
@@ -55,6 +55,8 @@ s32 MmLeaveRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_
                 const OrbisNpMatching2LeaveRoomRequest& request);
 s32 MmGetWorldInfoList(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
                        const OrbisNpMatching2GetWorldInfoListRequest& request);
+s32 MmSearchRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                 const OrbisNpMatching2SearchRoomRequest& request);
 
 u32 GetMmServerAddr();
 u16 GetMmServerUdpPort();

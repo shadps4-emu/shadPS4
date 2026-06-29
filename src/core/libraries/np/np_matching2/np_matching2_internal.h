@@ -7,6 +7,7 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <deque>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -22,6 +23,7 @@
 namespace shadnet {
 class CreateJoinRoomResponse;
 class GetWorldInfoListReply;
+class SearchRoomReply;
 } // namespace shadnet
 
 namespace Libraries::Np::NpMatching2 {
@@ -74,6 +76,10 @@ struct CallbackPayload {
     std::vector<OrbisNpMatching2RoomMemberBinAttrInternal> member_bin_attrs;
     std::vector<OrbisNpMatching2RoomDataExternal> room_data_external;
     std::vector<std::vector<u8>> bin_buffers;
+    std::deque<OrbisNpMatching2IntAttr> ext_int_attrs;
+    std::deque<OrbisNpMatching2BinAttr> ext_bin_attrs;
+    std::deque<OrbisNpMatching2RoomGroupInfo> ext_room_groups;
+    std::deque<Libraries::Np::OrbisNpId> ext_owner_npids;
     void* request_data = nullptr;
 
     std::unique_ptr<OrbisNpMatching2RoomMemberUpdate> room_member_update;
@@ -226,6 +232,7 @@ OrbisNpMatching2RequestId AllocRequestId();
 
 void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRoomResponse& resp);
 void* BuildGetWorldInfoListPayload(ContextObject& ctx, const shadnet::GetWorldInfoListReply& resp);
+void* BuildSearchRoomPayload(ContextObject& ctx, const shadnet::SearchRoomReply& resp);
 
 void InitEventDispatcher();
 void TermEventDispatcher();
