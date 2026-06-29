@@ -6,10 +6,10 @@
 #include "core/libraries/system/userservice.h"
 
 #include <atomic>
-#include <deque>
 #include <map>
 #include <mutex>
 #include <string>
+#include <vector>
 
 namespace Libraries::Np::NpWebApi2 {
 
@@ -309,7 +309,7 @@ private:
         std::string field_name;
         std::string field_value;
     };
-    std::deque<HttpRequestHeader*> http_headers{};
+    std::vector<HttpRequestHeader*> http_headers{};
 };
 
 }; // namespace Libraries::Np::NpWebApi2
