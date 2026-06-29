@@ -3,7 +3,6 @@
 
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/np/np_web_api2/np_web_api2.h"
-#include "core/libraries/np/np_web_api2/np_web_api2_push_event.h"
 #include "core/libraries/system/userservice.h"
 
 #include <atomic>
@@ -102,8 +101,6 @@ private:
     std::recursive_mutex lock{};
     std::string name{};
     std::map<s32, UserContext*> user_contexts{};
-    std::map<s32, PushEventHandle*> push_event_handles{};
-    std::map<s32, PushEventFilter*> push_event_filters{};
 };
 
 class UserContext {
