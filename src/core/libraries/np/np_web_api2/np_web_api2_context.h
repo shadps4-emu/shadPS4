@@ -129,6 +129,22 @@ public:
         Unlock();
     }
 
+    bool IsDeleted() {
+        return deleting;
+    }
+
+    void MarkForDeletion() {
+        deleting = true;
+    }
+
+    bool IsBusy() {
+        parent_ctx->Lock();
+        s32 users = user_count;
+        parent_ctx->Unlock();
+        // Assumes caller is a user
+        return users > 1;
+    }
+
     s32 GetId() {
         return id;
     }
@@ -154,12 +170,15 @@ public:
                       const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
                       Request** request);
     Request* GetRequest(s64 request_id);
-
+    bool HasBusyRequests();
+    void AbortAllRequests();
+    void Delete();
 private:
     s32 id{};
     Libraries::UserService::OrbisUserServiceUserId user_id{};
     s32 user_count{};
     s32 http_template_id{};
+    bool deleting{};
     LibraryContext* parent_ctx{};
     std::string user_agent{};
     std::map<s64, Request*> requests{};

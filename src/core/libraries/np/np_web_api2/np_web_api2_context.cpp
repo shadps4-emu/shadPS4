@@ -39,6 +39,9 @@ UserContext* LibraryContext::GetUserContext(s32 user_ctx_id) {
     }
 
     UserContext* user_ctx = this->user_contexts.at(user_ctx_id);
+    if (user_ctx->IsDeleted()) {
+        return nullptr;
+    }
     user_ctx->AddUser();
     return user_ctx;
 }
@@ -143,6 +146,42 @@ Request* UserContext::GetRequest(s64 request_id) {
     request->AddUser();
     this->Unlock();
     return request;
+}
+
+bool UserContext::HasBusyRequests() {
+    this->Lock();
+    for (auto& [request_id, request] : this->requests) {
+        request->AddUser();
+        bool busy = request->IsBusy();
+        request->RemoveUser();
+        if (busy) {
+            return true;
+        }
+    }
+    this->Unlock();
+    return false;
+}
+
+void UserContext::AbortAllRequests() {
+    this->Lock();
+    for (auto& [request_id, request] : this->requests) {
+        request->Abort();
+    }
+    this->Unlock();
+}
+
+void UserContext::Delete() {
+    if (this->http_template_id != 0) {
+        Libraries::Http2::sceHttp2DeleteTemplate(this->http_template_id);
+    }
+    this->parent_ctx->RemoveUserContext(this->id);
+    this->RemoveUser();
+
+    for (auto& [request_id, request] : this->requests) {
+        delete request;
+    }
+    this->requests.clear();
+    delete this;
 }
 
 static bool IsInternalHeader(const char* header_name) {

@@ -116,8 +116,8 @@ s32 PS4_SYSV_ABI sceNpWebApi2DeleteRequest(s64 request_id) {
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2DeleteUserContext(s32 user_ctx_id) {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, user_ctx_id = {:#x}", user_ctx_id);
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi2, "called, user_ctx_id = {:#x}", user_ctx_id);
+    return deleteUserContext(user_ctx_id);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2GetHttpResponseHeaderValue() {

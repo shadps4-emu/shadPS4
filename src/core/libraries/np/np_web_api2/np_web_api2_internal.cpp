@@ -104,6 +104,44 @@ s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUs
     return user_ctx_id;
 }
 
+s32 deleteUserContext(s32 user_ctx_id) {
+    LibraryContext* lib_ctx = getLibraryContext(user_ctx_id >> 0x10);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for user context id {:#x}", user_ctx_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+    lib_ctx->Lock();
+
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context with id {:#x}", user_ctx_id);
+        lib_ctx->Unlock();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    user_ctx->AbortAllRequests();
+    if (user_ctx->IsDeleted()) {
+        LOG_ERROR(Lib_NpWebApi2, "User context with id {:#x} is already deleted", user_ctx_id);
+        user_ctx->RemoveUser();
+        lib_ctx->Unlock();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    user_ctx->MarkForDeletion();
+    while (user_ctx->IsBusy() || user_ctx->HasBusyRequests()) {
+        lib_ctx->Unlock();
+        Libraries::Kernel::sceKernelUsleep(50000);
+        lib_ctx->Lock();
+    }
+
+    user_ctx->Delete();
+    lib_ctx->Unlock();
+    lib_ctx->RemoveUser();
+    return ORBIS_OK;
+}
+
 s32 createRequest(s32 user_ctx_id, const char* api_group, const char* path, const char* method,
                   const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
                   s64* request_id) {

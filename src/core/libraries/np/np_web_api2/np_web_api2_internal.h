@@ -9,6 +9,7 @@ namespace Libraries::Np::NpWebApi2 {
 s32 createLibraryContext(s32 http_ctx_id, s32 type, u64 pool_size, const char* name);
 s32 getMemoryPoolStats(s32 lib_ctx_id, OrbisNpWebApi2MemoryPoolStats* stats);
 s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUserId user_id);
+s32 deleteUserContext(s32 user_ctx_id);
 s32 createRequest(s32 user_ctx_id, const char* api_group, const char* path, const char* method,
                   const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
                   s64* request_id);

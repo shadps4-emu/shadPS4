@@ -112,9 +112,13 @@ s32 PS4_SYSV_ABI sceHttp2DeleteRequest(s32 req_id) {
     return result;
 }
 
-s32 PS4_SYSV_ABI sceHttp2DeleteTemplate() {
+s32 PS4_SYSV_ABI sceHttp2DeleteTemplate(s32 tmpl_id) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+    s32 result = Libraries::Http::sceHttpDeleteTemplate(tmpl_id);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to delete HTTP template, error = {:#x}", result);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceHttp2GetAllResponseHeaders(s32 req_id, char** header, u64* header_size) {
