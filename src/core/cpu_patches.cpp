@@ -93,11 +93,8 @@ static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
            dst_op.reg.value <= ZYDIS_REGISTER_R15;
 }
 
-static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* operands,
-                              Xbyak::CodeGenerator& c) {
-    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
-
 #if defined(_WIN32)
+static void RetrieveTcbPointer(Xbyak::Reg dst, Xbyak::CodeGenerator& c) {
     // The following logic is based on the Kernel32.dll asm of TlsGetValue
     static constexpr u32 TlsSlotsOffset = 0x1480;
     static constexpr u32 TlsExpansionSlotsOffset = 0x1780;
@@ -118,12 +115,85 @@ static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* op
         // Load the pointer to our buffer.
         c.mov(dst, qword[dst + tls_index * sizeof(LPVOID)]);
     }
+}
+#endif
+
+static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* operands,
+                              Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+
+#if defined(_WIN32)
+    RetrieveTcbPointer(dst, c);
 #else
     const auto src = ZydisToXbyakMemoryOperand(operands[1]);
 
     // Replace fs read with gs read.
     c.putSeg(gs);
     c.mov(dst, src);
+#endif
+}
+
+static void GenerateTcbCompare(void* /* address */, const ZydisDecodedOperand* operands,
+                               Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+
+#if defined(_WIN32)
+    // Prepare a scratch register. Use rax where possible, rbx if rax is in use.
+    const Xbyak::Reg64 scratch = operands[0].reg.value == ZYDIS_REGISTER_RAX ? rbx : rax;
+
+    // Set rsp to before red zone and save scratch register
+    c.lea(rsp, ptr[rsp - 128]);
+    c.pushfq();
+    c.push(scratch);
+
+    // Retrieve value from TCB and store it in the scratch register
+    RetrieveTcbPointer(scratch, c);
+
+    // Preform compare op
+    c.cmp(dst, scratch);
+
+    // Restore registers
+    c.pop(scratch);
+    c.popfq();
+    c.lea(rsp, ptr[rsp + 128]);
+#else
+    const auto src = ZydisToXbyakMemoryOperand(operands[1]);
+
+    // Replace fs compare with gs compare.
+    c.putSeg(gs);
+    c.cmp(dst, src);
+#endif
+}
+
+static void GenerateTcbExclusiveOr(void* /* address */, const ZydisDecodedOperand* operands,
+                                   Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+
+#if defined(_WIN32)
+    // Prepare a scratch register. Use rax where possible, rbx if rax is in use.
+    const Xbyak::Reg64 scratch = operands[0].reg.value == ZYDIS_REGISTER_RAX ? rbx : rax;
+
+    // Set rsp to before red zone and save scratch register
+    c.lea(rsp, ptr[rsp - 128]);
+    c.pushfq();
+    c.push(scratch);
+
+    // Retrieve value from TCB and store it in the scratch register
+    RetrieveTcbPointer(scratch, c);
+
+    // Preform xor
+    c.xor_(dst, scratch);
+
+    // Restore registers
+    c.pop(scratch);
+    c.popfq();
+    c.lea(rsp, ptr[rsp + 128]);
+#else
+    const auto src = ZydisToXbyakMemoryOperand(operands[1]);
+
+    // Replace fs xor with gs xor.
+    c.putSeg(gs);
+    c.xor_(dst, src);
 #endif
 }
 
@@ -469,6 +539,12 @@ struct PatchInfo {
     bool trampoline;
 };
 
+#if defined(_WIN32)
+static const bool need_tcb_trampoline = true;
+#else
+static const bool need_tcb_trampoline = false;
+#endif
+
 static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches = {
     // SSE4a
     {ZYDIS_MNEMONIC_EXTRQ, {{FilterNoSSE4a, GenerateEXTRQ, true}}},
@@ -478,17 +554,16 @@ static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches =
 
 #if !defined(__APPLE__)
     // FS segment patches
-    // These first two patches are for accesses to the stack canary, fs:[0x28]
-    {ZYDIS_MNEMONIC_XOR, {{FilterStackCheck, GenerateStackCheck, false}}},
+    // For most of these, Windows needs a trampoline while other platforms do not.
+    {ZYDIS_MNEMONIC_XOR,
+     // This is for stack checks emitted as xor reg, fs:[0x28]
+     {{FilterStackCheck, GenerateStackCheck, false},
+      {FilterTcbAccess, GenerateTcbExclusiveOr, need_tcb_trampoline}}},
     {ZYDIS_MNEMONIC_MOV,
+     // This is for getting the stack canary, emitted as mov reg, fs:[0x28]
      {{FilterStackCheck, GenerateStackCanary, false},
-#if defined(_WIN32)
-      // Windows needs a trampoline for Tcb accesses.
-      {FilterTcbAccess, GenerateTcbAccess, true}
-#else
-      {FilterTcbAccess, GenerateTcbAccess, false}
-#endif
-     }},
+      {FilterTcbAccess, GenerateTcbAccess, need_tcb_trampoline}}},
+    {ZYDIS_MNEMONIC_CMP, {{FilterTcbAccess, GenerateTcbCompare, need_tcb_trampoline}}}
 #endif
 };
 
