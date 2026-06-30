@@ -84,6 +84,16 @@ public:
 #endif
     }
 
+    bool try_acquire_non_alertable() {
+#ifdef _WIN64
+        return WaitForSingleObjectEx(sem, 0, false) == WAIT_OBJECT_0;
+#elif defined(__APPLE__)
+        return dispatch_semaphore_wait(sem, DISPATCH_TIME_NOW) == 0;
+#else
+        return sem.try_acquire();
+#endif
+    }
+
     template <class Rep, class Period>
     bool try_acquire_for(const std::chrono::duration<Rep, Period>& rel_time) {
 #ifdef _WIN64
