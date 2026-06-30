@@ -87,8 +87,33 @@ struct CallbackPayload {
     std::unique_ptr<OrbisNpMatching2RoomMemberDataInternal> event_member;
     void* room_event_data = nullptr;
 
+    CallbackPayload() = default;
+    CallbackPayload(const CallbackPayload&) = delete;
+    CallbackPayload& operator=(const CallbackPayload&) = delete;
+    CallbackPayload(CallbackPayload&&) = delete;
+    CallbackPayload& operator=(CallbackPayload&&) = delete;
+
     void Reset() {
-        *this = CallbackPayload{};
+        room_data.reset();
+        create_join_response.reset();
+        search_room_response.reset();
+        world_info_response.reset();
+        world_list.clear();
+        member_data.clear();
+        room_groups.clear();
+        room_bin_attrs.clear();
+        member_bin_attrs.clear();
+        room_data_external.clear();
+        bin_buffers.clear();
+        ext_int_attrs.clear();
+        ext_bin_attrs.clear();
+        ext_room_groups.clear();
+        ext_owner_npids.clear();
+        request_data = nullptr;
+        room_member_update.reset();
+        room_update.reset();
+        event_member.reset();
+        room_event_data = nullptr;
     }
 };
 
@@ -137,6 +162,45 @@ struct ContextObject {
     void* lobby_message_callback_arg = nullptr;
     OrbisNpMatching2SignalingCallback signaling_callback = nullptr;
     void* signaling_callback_arg = nullptr;
+
+    void Reset() {
+        ctx_id = 0;
+        started = false;
+        server_id = 1;
+        service_label = 0;
+        owner_np_id = {};
+        online_id = {};
+        signaling_addr.clear();
+        signaling_port = 0;
+        handler_registration_generation = 1;
+        world_id = 0;
+        lobby_id = 0;
+        room_id = 0;
+        my_member_id = 0;
+        is_room_owner = false;
+        max_slot = 5;
+        flag_attr = 0;
+        peers.clear();
+        room_cache.clear();
+        request_payload.Reset();
+        room_event_payload.Reset();
+        context_callback = nullptr;
+        context_callback_arg = nullptr;
+        default_request_callback = nullptr;
+        default_request_callback_arg = nullptr;
+        per_request_callback = nullptr;
+        per_request_callback_arg = nullptr;
+        room_event_callback = nullptr;
+        room_event_callback_arg = nullptr;
+        room_message_callback = nullptr;
+        room_message_callback_arg = nullptr;
+        lobby_event_callback = nullptr;
+        lobby_event_callback_arg = nullptr;
+        lobby_message_callback = nullptr;
+        lobby_message_callback_arg = nullptr;
+        signaling_callback = nullptr;
+        signaling_callback_arg = nullptr;
+    }
 };
 
 class ContextManager {

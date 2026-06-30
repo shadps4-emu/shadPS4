@@ -298,7 +298,7 @@ s32 ContextManager::CreateContext(const OrbisNpId* owner_np_id, OrbisNpServiceLa
     m_next_id = static_cast<OrbisNpMatching2ContextId>((id % kMaxContexts) + 1);
 
     ContextObject& ctx = m_contexts[id];
-    ctx = ContextObject{};
+    ctx.Reset();
     ctx.ctx_id = id;
     ctx.service_label = service_label;
     if (owner_np_id) {
@@ -330,7 +330,7 @@ bool ContextManager::Destroy(OrbisNpMatching2ContextId ctx_id) {
     if (!GetLocked(ctx_id)) {
         return false;
     }
-    m_contexts[ctx_id] = ContextObject{};
+    m_contexts[ctx_id].Reset();
     m_used[ctx_id] = false;
     LOG_DEBUG(Lib_NpMatching2, "context destroyed: id={}", ctx_id);
     return true;
@@ -378,7 +378,9 @@ void ContextManager::ApplyContextCallback(OrbisNpMatching2ContextCallback callba
 
 void ContextManager::Reset() {
     std::lock_guard lock(m_mutex);
-    m_contexts = {};
+    for (auto& ctx : m_contexts) {
+        ctx.Reset();
+    }
     m_used = {};
     m_next_id = 1;
     m_pending_context_callback = nullptr;
