@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -7,6 +7,8 @@
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
+#include "video_core/renderer_vulkan/render_target_sync.h"
+#include "video_core/renderer_vulkan/storage_image_sync.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/texture_cache/texture_cache.h"
 
@@ -122,6 +124,9 @@ private:
     VideoCore::PageManager page_manager;
     VideoCore::BufferCache buffer_cache;
     VideoCore::TextureCache texture_cache;
+    StorageImageSync storage_sync_;
+    RenderTargetSync rt_sync_;
+    VideoCore::ImageId pending_storage_image_id_{};
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     boost::icl::interval_set<VAddr> mapped_ranges;

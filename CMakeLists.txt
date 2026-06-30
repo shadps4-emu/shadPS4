@@ -1088,6 +1088,10 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/vk_platform.h
                src/video_core/renderer_vulkan/vk_presenter.cpp
                src/video_core/renderer_vulkan/vk_presenter.h
+               src/video_core/renderer_vulkan/render_target_sync.cpp
+               src/video_core/renderer_vulkan/render_target_sync.h
+               src/video_core/renderer_vulkan/storage_image_sync.cpp
+               src/video_core/renderer_vulkan/storage_image_sync.h
                src/video_core/renderer_vulkan/vk_rasterizer.cpp
                src/video_core/renderer_vulkan/vk_rasterizer.h
                src/video_core/renderer_vulkan/vk_resource_pool.cpp

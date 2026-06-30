@@ -141,11 +141,14 @@ void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
     UntrackImage(image_id);
 }
 
-void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
+void TextureCache::InvalidateMemory(VAddr addr, size_t size, ImageId exclude_image_id) {
     std::scoped_lock lock{mutex};
     const auto pages_start = PageManager::GetPageAddr(addr);
     const auto pages_end = PageManager::GetNextPageAddr(addr + size - 1);
     ForEachImageInRegion(pages_start, pages_end - pages_start, [&](ImageId image_id, Image& image) {
+        if (exclude_image_id && image_id == exclude_image_id) {
+            return;
+        }
         const auto image_begin = image.info.guest_address;
         const auto image_end = image.info.guest_address + image.info.guest_size;
         if (image.Overlaps(addr, size)) {

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -36,6 +36,7 @@ class TextureCache {
     static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 3_GB;
     static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
 
+public:
     using ImageIds = boost::container::small_vector<ImageId, 16>;
 
     struct Traits {
@@ -84,8 +85,14 @@ public:
         return tile_manager;
     }
 
+    [[nodiscard]] const PageTable& GetPageTable() const noexcept {
+        return page_table;
+    }
+
     /// Invalidates any image in the logical page range.
-    void InvalidateMemory(VAddr addr, size_t size);
+    /// @param exclude_image_id  If set, this image is skipped (used by storage sync to
+    ///                          exclude the producer storage image from invalidation).
+    void InvalidateMemory(VAddr addr, size_t size, ImageId exclude_image_id = {});
 
     /// Marks an image as dirty if it exists at the provided address.
     void InvalidateMemoryFromGPU(VAddr address, size_t max_size);
@@ -95,6 +102,11 @@ public:
 
     /// Schedules a copy of pending images for download back to CPU memory.
     void ProcessDownloadImages();
+
+    /// Add an image to the download queue for guest memory writeback on next submit.
+    void AddDownload(ImageId image_id) {
+        download_images.emplace(image_id);
+    }
 
     /// Retrieves the image handle of the image with the provided attributes.
     [[nodiscard]] ImageId FindImage(ImageDesc& desc, bool exact_fmt = false);

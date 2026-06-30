@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/debug.h"
@@ -36,8 +36,9 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
     : instance{instance_}, scheduler{scheduler_}, page_manager{this},
       buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, liverpool_, buffer_cache, page_manager},
-      liverpool{liverpool_}, memory{Core::Memory::Instance()},
-      pipeline_cache{instance, scheduler, liverpool} {
+      storage_sync_{scheduler, buffer_cache, texture_cache},
+      rt_sync_{instance, scheduler, texture_cache}, liverpool{liverpool_},
+      memory{Core::Memory::Instance()}, pipeline_cache{instance, scheduler, liverpool} {
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
@@ -339,6 +340,9 @@ void Rasterizer::DispatchDirect() {
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 
+    if (pending_storage_image_id_) {
+        storage_sync_.Sync(pending_storage_image_id_);
+    }
     ResetBindings();
 }
 
@@ -371,6 +375,9 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatchIndirect(buffer->Handle(), base);
 
+    if (pending_storage_image_id_) {
+        storage_sync_.Sync(pending_storage_image_id_);
+    }
     ResetBindings();
 }
 
@@ -391,6 +398,7 @@ void Rasterizer::OnSubmit() {
         buffer_cache.ProcessFaultBuffer();
     }
     texture_cache.ProcessDownloadImages();
+    rt_sync_.ClearRecords();
     texture_cache.RunGarbageCollector();
     buffer_cache.RunGarbageCollector();
 }
@@ -400,6 +408,8 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         IsComputeImageClear(pipeline)) {
         return false;
     }
+
+    pending_storage_image_id_ = {};
 
     set_write_index = 0;
     set_writes.clear();
@@ -717,6 +727,8 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             }
 
             image_id = texture_cache.FindImage(desc);
+            rt_sync_.CopyFromLastRt(desc.info.guest_address, image_id, desc.info.size.width,
+                                    desc.info.size.height);
             auto* image = &texture_cache.GetImage(image_id);
             if (auto depth_image_id = texture_cache.GetAssociatedDepth(*image)) {
                 // If this image has an associated depth image, it's a stencil attachment.
@@ -790,6 +802,10 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             image.usage.storage |= is_storage;
             image.usage.texture |= !is_storage;
 
+            if (is_storage) {
+                pending_storage_image_id_ = image_id;
+            }
+
             image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view,
                                      image.backing->state.layout);
         }
@@ -857,6 +873,11 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         texture_cache.UpdateImage(image_id);
         image->SetBackingSamples(key.color_samples[cb]);
         const auto& image_view = texture_cache.FindRenderTarget(image_id, desc);
+        rt_sync_.RecordRtWrite(desc.info.guest_address, image_id);
+        // 1×1 render target: force download to guest so CPU can read the result
+        if (desc.info.size.width == 1 && desc.info.size.height == 1) {
+            rt_sync_.Schedule1x1Readback(image_id);
+        }
         const auto slice = image_view.info.range.base.layer;
         const auto mip = image_view.info.range.base.level;
 
@@ -904,8 +925,11 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         auto& image = texture_cache.GetImage(image_id);
 
         const auto slice = image_view.info.range.base.layer;
-        const bool is_depth_clear = regs.depth_render_control.depth_clear_enable ||
-                                    texture_cache.IsMetaCleared(htile_address, slice);
+        // Only clear depth if writes are enabled —PS4 hardware ignores clear when
+        // depth_write_enable is false, otherwise data from a previous pass is lost.
+        const bool is_depth_clear = regs.depth_control.depth_write_enable &&
+                                    (regs.depth_render_control.depth_clear_enable ||
+                                     texture_cache.IsMetaCleared(htile_address, slice));
         const bool is_stencil_clear = regs.depth_render_control.stencil_clear_enable;
         texture_cache.TouchMeta(htile_address, slice, false);
         ASSERT(desc.view_info.range.extent.levels == 1 && !image.binding.needs_rebind);
