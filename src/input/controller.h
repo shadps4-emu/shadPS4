@@ -97,11 +97,9 @@ public:
 
     void Button(Libraries::Pad::OrbisPadButtonDataOffset button, bool isPressed);
     void Axis(Input::Axis axis, int value, bool smooth = true);
-    void Gyro(int id);
-    void Acceleration(int id);
     void UpdateGyro(const float gyro[3]);
     void UpdateAcceleration(const float acceleration[3]);
-    void UpdateAxisSmoothing();
+    void PollState();
     void SetLightBarRGB(u8 const r, u8 const g, u8 const b);
     void SetLightBarRGB(Colour const c);
     Colour GetLightBarRGB();
@@ -131,7 +129,8 @@ public:
     u64 last_touch_down_timestamp = 0;
 
 private:
-    void PushState();
+    // m_state_mutex must be held by the caller.
+    void PushStateLocked();
 
     bool m_connected = false;
     int m_connected_count = 0;
@@ -146,7 +145,7 @@ private:
 
     State m_state;
 
-    std::mutex m_states_queue_mutex;
+    std::mutex m_state_mutex;
     RingBufferQueue<State> m_states_queue;
 };
 

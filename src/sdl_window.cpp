@@ -83,9 +83,7 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
 
 static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
     auto* controller = reinterpret_cast<Input::GameController*>(userdata);
-    controller->UpdateAxisSmoothing();
-    controller->Gyro(0);
-    controller->Acceleration(0);
+    controller->PollState();
     return interval;
 }
 

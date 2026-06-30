@@ -92,6 +92,7 @@ void State::UpdateAxisSmoothing() {
 GameController::GameController() : m_states_queue(64) {}
 
 void GameController::ReadState(State* state, bool* isConnected, int* connectedCount) {
+    std::lock_guard lg(m_state_mutex);
     *isConnected = m_connected;
     *connectedCount = m_connected_count;
     *state = m_state;
@@ -99,55 +100,65 @@ void GameController::ReadState(State* state, bool* isConnected, int* connectedCo
 
 int GameController::ReadStates(State* states, int states_num, bool* isConnected,
                                int* connectedCount) {
+    std::lock_guard lg(m_state_mutex);
     *isConnected = m_connected;
     *connectedCount = m_connected_count;
 
+    if (!m_connected || states_num <= 0) {
+        return 0;
+    }
+
+    // The poll timer enqueues a controller snapshot every few milliseconds, far faster than
+    // most games drain the queue. A caller requesting fewer samples than have accumulated only
+    // cares about the most recent ones, so drop the stale backlog and keep at most states_num
+    // of the newest samples. This bounds input latency to the sampling interval without an
+    // arbitrary age limit, while preserving the chronological order multi-sample readers expect.
+    while (m_states_queue.Size() > static_cast<u64>(states_num)) {
+        m_states_queue.Pop();
+    }
+
     int ret_num = 0;
-    if (m_connected) {
-        std::lock_guard lg(m_states_queue_mutex);
-        for (int i = 0; i < states_num; i++) {
-            auto o_state = m_states_queue.Pop();
-            if (!o_state) {
-                break;
-            }
-            states[ret_num++] = *o_state;
+    for (int i = 0; i < states_num; i++) {
+        auto o_state = m_states_queue.Pop();
+        if (!o_state) {
+            break;
         }
+        states[ret_num++] = *o_state;
+    }
+
+    // If nothing was queued (e.g. right after (re)connecting, before the first poll tick), fall
+    // back to the current live state so a connected controller always reports something current.
+    if (ret_num == 0) {
+        states[ret_num++] = m_state;
     }
     return ret_num;
 }
 
 void GameController::Button(OrbisPadButtonDataOffset button, bool is_pressed) {
+    std::lock_guard lg(m_state_mutex);
     m_state.OnButton(button, is_pressed);
-    PushState();
+    PushStateLocked();
 }
 
 void GameController::Axis(Input::Axis axis, int value, bool smooth) {
+    std::lock_guard lg(m_state_mutex);
     m_state.OnAxis(axis, value, smooth);
-    PushState();
-}
-
-void GameController::Gyro(int id) {
-    m_state.OnGyro(gyro_buf);
-    PushState();
-}
-
-void GameController::Acceleration(int id) {
-    m_state.OnAccel(accel_buf);
-    PushState();
+    PushStateLocked();
 }
 
 void GameController::UpdateGyro(const float gyro[3]) {
-    std::scoped_lock l(m_states_queue_mutex);
+    std::scoped_lock l(m_state_mutex);
     std::memcpy(gyro_buf, gyro, sizeof(gyro_buf));
 }
 
 void GameController::UpdateAcceleration(const float acceleration[3]) {
-    std::scoped_lock l(m_states_queue_mutex);
+    std::scoped_lock l(m_state_mutex);
     std::memcpy(accel_buf, acceleration, sizeof(accel_buf));
 }
 
-void GameController::UpdateAxisSmoothing() {
-    m_state.UpdateAxisSmoothing();
+void GameController::PollState() {
+    std::lock_guard lg(m_state_mutex);
+    PushStateLocked();
 }
 
 void GameController::SetLightBarRGB(u8 const r, u8 const g, u8 const b) {
@@ -200,9 +211,10 @@ bool GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
 
 void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, float y) {
     if (touchIndex < 2) {
+        std::lock_guard lg(m_state_mutex);
         bool was_pressed = m_state.touchpad[0].state || m_state.touchpad[1].state;
         m_state.OnTouchpad(touchIndex, touchDown, x, y);
-        PushState();
+        PushStateLocked();
         if (!m_state.touchpad[0].state && !m_state.touchpad[1].state && was_pressed) {
             last_touch_down_timestamp = 0;
         } else if ((m_state.touchpad[0].state || m_state.touchpad[1].state) && !was_pressed) {
@@ -253,11 +265,15 @@ void GameControllers::CalculateOrientation(Libraries::Pad::OrbisFVector3& accele
 }
 
 void GameController::ConnectController(SDL_Gamepad* pad) {
+    std::scoped_lock l(m_state_mutex);
+    m_states_queue.Clear();
     m_sdl_gamepad = pad;
     m_connected_count = 1;
     m_connected = true;
 }
 void GameController::DisconnectController() {
+    std::scoped_lock l(m_state_mutex);
+    m_states_queue.Clear();
     m_sdl_gamepad = nullptr;
     m_connected_count = 0;
     m_connected = false;
@@ -408,8 +424,12 @@ void GameController::SetLastUpdate(std::chrono::steady_clock::time_point lastUpd
     m_last_update = lastUpdate;
 }
 
-void GameController::PushState() {
-    std::lock_guard lg(m_states_queue_mutex);
+void GameController::PushStateLocked() {
+    // Capture a complete snapshot (smoothed axes plus the latest motion data) and queue it.
+    // Called from the poll timer and from the input-event handlers; m_state_mutex is held.
+    m_state.UpdateAxisSmoothing();
+    m_state.OnGyro(gyro_buf);
+    m_state.OnAccel(accel_buf);
     m_state.time = Libraries::Kernel::sceKernelGetProcessTime();
     m_states_queue.Push(m_state);
 }
