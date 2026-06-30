@@ -1422,6 +1422,12 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
     FD_ZERO(&write_host);
     FD_ZERO(&except_host);
 
+    // Immediately-ready sets for Regular/Device fds
+    fd_set read_ready, write_ready;
+    FD_ZERO(&read_ready);
+    FD_ZERO(&write_ready);
+    s32 disk_ready = 0;
+
     std::map<s32, s32> host_to_guest;
     s32 max_fd = -1;
 
@@ -1439,12 +1445,22 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
                 return -1;
             }
 
+            // Regular files and devices are always ready; stdin (fd 0) never read-ready
+            if (file->type == Core::FileSys::FileType::Regular ||
+                file->type == Core::FileSys::FileType::Device) {
+                if (read && i != 0) {
+                    FD_SET(i, &read_ready);
+                    ++disk_ready;
+                }
+                if (write) {
+                    FD_SET(i, &write_ready);
+                    ++disk_ready;
+                }
+                continue;
+            }
+
             s32 native_fd = [&] {
                 switch (file->type) {
-                case Core::FileSys::FileType::Regular:
-                    return static_cast<s32>(file->f.GetFileMapping());
-                case Core::FileSys::FileType::Device:
-                    return -1;
                 case Core::FileSys::FileType::Socket: {
                     auto sock = file->socket->Native();
                     // until P2P sockets contain a proper socket
@@ -1475,8 +1491,14 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
     }
 
     if (max_fd == -1) {
-        LOG_WARNING(Kernel_Fs, "all requested file descriptors are unsupported");
-        return 0;
+        // Only disk/device fds — they are immediately ready
+        if (readfds)
+            *readfds = read_ready;
+        if (writefds)
+            *writefds = write_ready;
+        if (exceptfds)
+            FD_ZERO(exceptfds);
+        return disk_ready;
     }
 
     s32 ret = select(max_fd + 1, &read_host, &write_host, &except_host, (timeval*)timeout);
@@ -1509,9 +1531,17 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
         LOG_ERROR(Kernel_Fs, "native select call failed with {} ({})", error,
                   Common::NativeErrorToString(error));
         SetPosixErrno(error);
+        return ret;
     }
 
-    return ret;
+    // Merge immediately-ready disk/device fds into output
+    for (s32 i = 0; i < nfds; ++i) {
+        if (readfds && FD_ISSET(i, &read_ready))
+            FD_SET(i, readfds);
+        if (writefds && FD_ISSET(i, &write_ready))
+            FD_SET(i, writefds);
+    }
+    return ret + disk_ready;
 }
 #endif
 
