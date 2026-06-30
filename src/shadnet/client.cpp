@@ -194,6 +194,9 @@ void ShadNetClient::ConnectThread() {
     if (!m_token.empty())
         req.set_token(m_token);
     req.set_title_id(std::string(Common::ElfInfo::Instance().GameSerial()));
+    req.set_title_name(std::string(Common::ElfInfo::Instance().Title()));
+    // Appear-Offline preference. shadNet handles us as offline for everyone else while set.
+    req.set_appear_offline(m_appear_offline);
 
     const u64 id = m_pkt_counter.fetch_add(1);
     if (!SendAll(BuildPacket(CommandType::Login, id, MakeProtoPayload(req)))) {
@@ -506,6 +509,15 @@ u64 ShadNetClient::RemoveBlock(const std::string& npid) {
     return SubmitRequest(CommandType::RemoveBlock, MakeProtoPayload(req));
 }
 
+u64 ShadNetClient::SetAppearOffline(bool enable) {
+    m_appear_offline = enable; // cache so the (re)login packet carries the current state
+    if (!IsAuthenticated())
+        return 0; // not connected yet -> login will carry the cached value
+    shadnet::SetAppearOfflineRequest req;
+    req.set_appear_offline(enable);
+    return SubmitRequest(CommandType::SetAppearOffline, MakeProtoPayload(req));
+}
+
 // Packet dispatch
 
 void ShadNetClient::DispatchPacket(PacketType type, u16 cmd_raw, u64 pkt_id,
@@ -794,8 +806,28 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
         n.fromNpid = ExtractBlob(payload, off);
         off += 4 + static_cast<int>(n.fromNpid.size());
         n.toNpid = ExtractBlob(payload, off);
-        LOG_INFO(ShadNet, "WebApiPushEvent svc='{}' type='{}' from='{}' bytes={}", n.npServiceName,
-                 n.dataType, n.fromNpid, n.data.size());
+        off += 4 + static_cast<int>(n.toNpid.size());
+        // Optional extended-data section appended after toNpid: u32 LE count, then
+        // (blob key, blob value) per pair. Absent on older servers -> no bytes left ->
+        // zero pairs. Length-guarded throughout; count capped to avoid runaway on a
+        // malformed packet.
+        if (off + 4 <= static_cast<int>(payload.size())) {
+            const u32 count = GetLE32(payload.data() + off);
+            off += 4;
+            for (u32 i = 0; i < count && i < 256; ++i) {
+                if (off + 4 > static_cast<int>(payload.size()))
+                    break;
+                std::string key = ExtractBlob(payload, off);
+                off += 4 + static_cast<int>(key.size());
+                if (off + 4 > static_cast<int>(payload.size()))
+                    break;
+                std::string val = ExtractBlob(payload, off);
+                off += 4 + static_cast<int>(val.size());
+                n.extdData.emplace_back(std::move(key), std::move(val));
+            }
+        }
+        LOG_INFO(ShadNet, "WebApiPushEvent svc='{}' type='{}' from='{}' bytes={} extd={}",
+                 n.npServiceName, n.dataType, n.fromNpid, n.data.size(), n.extdData.size());
         if (onWebApiPushEvent)
             onWebApiPushEvent(n);
         break;

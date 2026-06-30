@@ -11,10 +11,17 @@ option optimize_for = LITE_RUNTIME;
 // Account
 
 message LoginRequest {
-    string npid     = 1;
-    string password = 2;
-    string token    = 3;
-    string title_id = 4;
+    string npid        = 1;
+    string password    = 2;
+    string token       = 3;
+    string title_id    = 4;  
+    string title_name  = 5;
+    bool appear_offline = 6; // user's Appear-Offline preference
+}
+
+// Mid-session Appear-Offline toggle.
+message SetAppearOfflineRequest {
+    bool appear_offline = 1;
 }
 
 message FriendEntry {
