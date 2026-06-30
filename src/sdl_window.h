@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <string>
 
 #include "common/types.h"
@@ -78,20 +79,28 @@ public:
 
     void RequestKeyboard();
     void ReleaseKeyboard();
+    void RequestStartupWindowReveal();
 
 private:
     void OnResize();
+    void RevealStartupWindow();
     void OnKeyboardMouseInput(const SDL_Event* event);
     void OnGamepadEvent(const SDL_Event* event);
 
 private:
     s32 width;
     s32 height;
+    s32 windowed_width;
+    s32 windowed_height;
+    s32 windowed_x{};
+    s32 windowed_y{};
+    bool has_windowed_position{};
     Input::GameControllers controllers{};
     WindowSystemInfo window_info{};
     SDL_Window* window{};
     bool is_shown{};
     bool is_open{true};
+    std::atomic_bool startup_window_reveal_needed{false};
 };
 
 void SetWindowIcon(SDL_Window* window, const std::vector<u8>& png);
