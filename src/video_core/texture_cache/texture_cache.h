@@ -5,6 +5,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <thread>
 #include <unordered_set>
 #include <boost/container/small_vector.hpp>
@@ -271,8 +272,24 @@ private:
     /// Gets or creates a null image for a particular format.
     ImageId GetNullImage(vk::Format format);
 
-    /// Copies image memory back to CPU.
+    struct PendingImageDownload {
+        u64 serial;
+        VAddr guest_address;
+        u8* data;
+        u32 size;
+    };
+
+    /// Schedules a copy of linear image memory into the download buffer.
+    [[nodiscard]] std::optional<PendingImageDownload> ScheduleImageDownload(ImageId image_id);
+
+    /// Copies a completed image download into guest memory unless a newer download superseded it.
+    void WritebackImageMemory(const PendingImageDownload& download);
+
+    /// Copies image memory back to CPU asynchronously.
     void DownloadImageMemory(ImageId image_id);
+
+    /// Makes GPU-written linear aliases visible before reuploading overlapping guest memory.
+    void SynchronizeGuestMemory(VAddr address, size_t size, const Image* excluded_image = nullptr);
 
     /// Thread function for copying downloaded images out to CPU memory.
     void DownloadedImagesThread(const std::stop_token& token);
@@ -323,6 +340,8 @@ private:
     tsl::robin_map<u64, Sampler> samplers;
     tsl::robin_map<vk::Format, ImageId> null_images;
     std::unordered_set<ImageId> download_images;
+    tsl::robin_map<VAddr, u64> latest_image_downloads;
+    u64 image_download_serial{};
     u64 total_used_memory = 0;
     u64 trigger_gc_memory = 0;
     u64 pressure_gc_memory = 0;
