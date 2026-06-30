@@ -710,12 +710,19 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             if (mip_fallback_mode == Shader::MipStorageFallbackMode::ConstantIndex) {
                 ASSERT(num_bindings == 1);
                 desc.view_info.range.base.level += image_desc.constant_mip_index;
+                // Cap to the last available mip so the view range stays within the image's
+                // actual subresources. Out-of-range constant LODs can occur when the shader's
+                // LOD immediate exceeds the TSHARP's last_level.
+                desc.view_info.range.base.level =
+                    std::min(desc.view_info.range.base.level, desc.info.resources.levels - 1);
                 desc.view_info.range.extent.levels = 1;
             } else if (mip_fallback_mode == Shader::MipStorageFallbackMode::DynamicIndex) {
                 desc.view_info.range.base.level += i;
                 desc.view_info.range.extent.levels = 1;
             }
 
+            // Save range before FindImage can overwrite base.level/base.layer from a parent image.
+            desc.initial_range = desc.view_info.range;
             image_id = texture_cache.FindImage(desc);
             auto* image = &texture_cache.GetImage(image_id);
             if (auto depth_image_id = texture_cache.GetAssociatedDepth(*image)) {
@@ -747,10 +754,22 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                                          vk::ImageLayout::eGeneral);
             }
         } else {
-            if (auto& old_image = texture_cache.GetImage(image_id);
-                old_image.binding.needs_rebind) {
-                old_image.binding = {};
-                image_id = texture_cache.FindImage(desc);
+            {
+                auto& old_image = texture_cache.GetImage(image_id);
+                // Re-find if (a) ExpandImage marked this image for rebind, or (b) the slot was
+                // silently reused between passes by another TSHARP's FindImage — detected by the
+                // stored range now being OOB for whatever image lives in that slot.
+                const bool range_oob =
+                    desc.view_info.range.base.level >= old_image.info.resources.levels ||
+                    desc.view_info.range.base.layer >= old_image.info.resources.layers;
+                const bool needs_rebind = old_image.binding.needs_rebind;
+                if (needs_rebind || range_oob) {
+                    old_image.binding = {};
+                    // Restore the pre-FindImage range so FindImage recomputes view_slice/view_mip
+                    // against whatever image the cache currently holds.
+                    desc.view_info.range = desc.initial_range;
+                    image_id = texture_cache.FindImage(desc);
+                }
             }
 
             bound_images.emplace_back(image_id);

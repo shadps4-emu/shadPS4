@@ -581,8 +581,10 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         if (exact_fmt && info.pixel_format != image_resolved.info.pixel_format) {
             // Cannot reuse this image as we need the exact requested format.
             image_id = {};
-        } else if (image_resolved.info.resources < info.resources) {
-            // The image was clearly picked up wrong.
+        } else if (image_resolved.info.resources.levels < info.resources.levels ||
+                   image_resolved.info.resources.layers < info.resources.layers) {
+            // SubresourceExtent's default operator< is lexicographic: {3 levels, 1 layer} is not
+            // less than {1 level, 6 layers} because levels=3 > levels=1 stops the comparison.
             FreeImage(image_id);
             image_id = {};
             LOG_WARNING(Render_Vulkan, "Image overlap resolve failed");
