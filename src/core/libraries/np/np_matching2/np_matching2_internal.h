@@ -23,6 +23,7 @@
 namespace shadnet {
 class CreateJoinRoomResponse;
 class GetWorldInfoListReply;
+class LeaveRoomReply;
 class SearchRoomReply;
 } // namespace shadnet
 
@@ -35,6 +36,13 @@ struct PeerInfo {
     s32 conn_id = 0;
     s32 status = 0;
     Libraries::Np::OrbisNpOnlineId online_id{};
+    bool handshake_started = false;
+    bool sent_check = false;
+    bool sent_established = false;
+    u64 nonce = 0;
+    u32 ping_us = 0;
+    std::chrono::steady_clock::time_point last_send{};
+    std::chrono::steady_clock::time_point last_check_send{};
 };
 
 struct MemberBinCache {
@@ -59,6 +67,22 @@ struct MemberCache {
 struct RoomCache {
     u32 num_slots = 0;
     u64 mask_password = 0;
+    OrbisNpMatching2SignalingType signaling_type = ORBIS_NP_MATCHING2_SIGNALING_TYPE_MESH;
+    OrbisNpMatching2RoomMemberId signaling_main_member = 0;
+    OrbisNpMatching2ServerId server_id = 0;
+    OrbisNpMatching2WorldId world_id = 0;
+    OrbisNpMatching2LobbyId lobby_id = 0;
+    OrbisNpMatching2RoomId room_id = 0;
+    u16 max_slot = 0;
+    u16 public_slots = 0;
+    u16 private_slots = 0;
+    u16 open_public_slots = 0;
+    u16 open_private_slots = 0;
+    u64 passwd_slot_mask = 0;
+    u64 joined_slot_mask = 0;
+    OrbisNpMatching2Flags flags = 0;
+    std::vector<OrbisNpMatching2RoomBinAttrInternal> bin_attrs_internal;
+    std::vector<std::vector<u8>> bin_buffers;
     std::map<OrbisNpMatching2RoomGroupId, OrbisNpMatching2RoomGroup> groups;
     std::map<OrbisNpMatching2RoomMemberId, MemberCache> members;
     bool owner = false;
@@ -67,8 +91,10 @@ struct RoomCache {
 struct CallbackPayload {
     std::unique_ptr<OrbisNpMatching2RoomDataInternal> room_data;
     std::unique_ptr<OrbisNpMatching2CreateJoinRoomResponse> create_join_response;
+    std::unique_ptr<OrbisNpMatching2LeaveRoomResponse> leave_room_response;
     std::unique_ptr<OrbisNpMatching2SearchRoomResponse> search_room_response;
     std::unique_ptr<OrbisNpMatching2GetWorldInfoListResponse> world_info_response;
+    std::unique_ptr<OrbisNpMatching2SignalingGetPingInfoResponse> ping_info_response;
     std::vector<OrbisNpMatching2World> world_list;
     std::vector<OrbisNpMatching2RoomMemberDataInternal> member_data;
     std::vector<OrbisNpMatching2RoomGroup> room_groups;
@@ -96,8 +122,10 @@ struct CallbackPayload {
     void Reset() {
         room_data.reset();
         create_join_response.reset();
+        leave_room_response.reset();
         search_room_response.reset();
         world_info_response.reset();
+        ping_info_response.reset();
         world_list.clear();
         member_data.clear();
         room_groups.clear();
@@ -295,8 +323,10 @@ extern NpMatching2State g_state;
 OrbisNpMatching2RequestId AllocRequestId();
 
 void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRoomResponse& resp);
+void* BuildLeaveRoomPayload(ContextObject& ctx, const shadnet::LeaveRoomReply& resp);
 void* BuildGetWorldInfoListPayload(ContextObject& ctx, const shadnet::GetWorldInfoListReply& resp);
 void* BuildSearchRoomPayload(ContextObject& ctx, const shadnet::SearchRoomReply& resp);
+void* BuildGetRoomDataInternalPayload(ContextObject& ctx, OrbisNpMatching2RoomId room_id);
 
 void InitEventDispatcher();
 void TermEventDispatcher();

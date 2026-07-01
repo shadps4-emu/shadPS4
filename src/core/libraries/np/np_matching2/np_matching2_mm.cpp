@@ -4,15 +4,20 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstring>
+#include <limits>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <thread>
+#include <vector>
 
 #include "common/logging/log.h"
 #include "core/libraries/network/net.h"
+#include "core/libraries/network/sockets.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_matching2/np_matching2_internal.h"
 #include "core/libraries/np/np_matching2/np_matching2_mm.h"
+#include "core/libraries/np/np_signaling/np_signaling_stubs.h"
 #include "shadnet.pb.h"
 #include "shadnet/client.h"
 
@@ -91,6 +96,391 @@ std::string ExtractProtoBytes(const std::vector<u8>& payload, size_t offset = 0)
     return std::string(reinterpret_cast<const char*>(payload.data() + offset + 4), len);
 }
 
+constexpr s32 kMatching2ConnInactive = 0;
+constexpr s32 kMatching2ConnPending = 1;
+constexpr s32 kMatching2ConnActive = 2;
+constexpr auto kMatching2HandshakeRetry = std::chrono::milliseconds(350);
+constexpr auto kMatching2HandshakeTimeout = std::chrono::seconds(10);
+
+std::atomic<bool> g_matching2_stop{false};
+std::mutex g_matching2_thread_mutex;
+std::thread g_matching2_thread;
+
+enum class Matching2HandshakeKind : u8 {
+    Offer = 1,
+    Accept = 2,
+    Check = 3,
+    CheckAck = 4,
+};
+
+#pragma pack(push, 1)
+struct Matching2HandshakePacket {
+    u8 magic[4] = {'S', 'H', 'A', 'D'};
+    u8 type = 0x21;
+    u8 kind = 0;
+    u64 room_id = 0;
+    u16 from_member_id = 0;
+    u16 to_member_id = 0;
+    u8 online_id_from[16]{};
+    u32 mapped_addr = 0;
+    u16 mapped_port = 0;
+    u16 reserved = 0;
+    u64 nonce = 0;
+};
+#pragma pack(pop)
+static_assert(sizeof(Matching2HandshakePacket) == 0x32);
+
+bool HasMatching2Magic(const Matching2HandshakePacket& pkt) {
+    return pkt.magic[0] == 'S' && pkt.magic[1] == 'H' && pkt.magic[2] == 'A' &&
+           pkt.magic[3] == 'D' && pkt.type == 0x21;
+}
+
+std::string OnlineIdToString(const Libraries::Np::OrbisNpOnlineId& online_id) {
+    char buf[ORBIS_NP_ONLINEID_MAX_LENGTH + 1]{};
+    std::memcpy(buf, online_id.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
+    return std::string(buf);
+}
+
+bool ShouldConnectToPeer(const RoomCache& room, OrbisNpMatching2RoomMemberId self,
+                         OrbisNpMatching2RoomMemberId peer) {
+    if (peer == 0 || peer == self) {
+        return false;
+    }
+    if (room.signaling_type == ORBIS_NP_MATCHING2_SIGNALING_TYPE_NONE) {
+        return false;
+    }
+    if (room.signaling_type == ORBIS_NP_MATCHING2_SIGNALING_TYPE_STAR &&
+        room.signaling_main_member != 0) {
+        return self == room.signaling_main_member || peer == room.signaling_main_member;
+    }
+    return true;
+}
+
+void QueueMatching2SignalingEvent(ContextObject& ctx, OrbisNpMatching2RoomId room_id,
+                                  OrbisNpMatching2RoomMemberId member_id,
+                                  OrbisNpMatching2Event event, s32 error_code) {
+    PendingEvent ev{};
+    ev.type = PendingEvent::SIGNALING_CB;
+    ev.ctx_id = ctx.ctx_id;
+    ev.fire_at = std::chrono::steady_clock::now();
+    ev.room_id = room_id;
+    ev.member_id = member_id;
+    ev.sig_event = event;
+    ev.error_code = error_code;
+    ScheduleEvent(std::move(ev));
+}
+
+void QueueMatching2DeadForRoomPeers(ContextObject& ctx, OrbisNpMatching2RoomId room_id,
+                                    s32 error_code) {
+    auto room_it = ctx.room_cache.find(room_id);
+    if (room_it == ctx.room_cache.end()) {
+        return;
+    }
+
+    for (const auto& [member_id, member] : room_it->second.members) {
+        if (member_id == 0 || member_id == ctx.my_member_id) {
+            continue;
+        }
+
+        auto peer_it = ctx.peers.find(member_id);
+        if (peer_it != ctx.peers.end()) {
+            peer_it->second.status = kMatching2ConnInactive;
+            peer_it->second.handshake_started = false;
+            peer_it->second.sent_check = false;
+        }
+
+        QueueMatching2SignalingEvent(ctx, room_id, member_id,
+                                     ORBIS_NP_MATCHING2_SIGNALING_EVENT_DEAD, error_code);
+        LOG_INFO(Lib_NpMatching2, "Matching2 signaling dead: ctx={} room={} member={} reason={:#x}",
+                 ctx.ctx_id, room_id, member_id, static_cast<u32>(error_code));
+    }
+}
+
+bool ResolvePeerEndpoint(const MemberCache& member, PeerInfo& peer) {
+    if (peer.addr != 0 && peer.port != 0) {
+        return true;
+    }
+    if (member.addr != 0 && member.port != 0) {
+        peer.addr = member.addr;
+        peer.port = member.port;
+        if (peer.online_id.data[0] == 0) {
+            std::strncpy(peer.online_id.data, member.np_id.handle.data,
+                         sizeof(peer.online_id.data) - 1);
+        }
+        return true;
+    }
+
+    const std::string online_id(member.np_id.handle.data);
+    u32 resolved_addr = 0;
+    u16 resolved_port = 0;
+    if (!online_id.empty() && RequestSignalingInfos(online_id, &resolved_addr, &resolved_port)) {
+        peer.addr = resolved_addr;
+        peer.port = resolved_port;
+    }
+    if (peer.online_id.data[0] == 0) {
+        std::strncpy(peer.online_id.data, member.np_id.handle.data,
+                     sizeof(peer.online_id.data) - 1);
+    }
+    return peer.addr != 0 && peer.port != 0;
+}
+
+void MarkMatching2PeerActive(ContextObject& ctx, OrbisNpMatching2RoomId room_id,
+                             OrbisNpMatching2RoomMemberId member_id, u32 addr, u16 port) {
+    if (member_id == 0 || member_id == ctx.my_member_id) {
+        return;
+    }
+
+    PeerInfo& peer = ctx.peers[member_id];
+    peer.member_id = member_id;
+    if (addr != 0) {
+        peer.addr = addr;
+    }
+    if (port != 0) {
+        peer.port = port;
+    }
+    const bool first_active = peer.status != kMatching2ConnActive;
+    peer.status = kMatching2ConnActive;
+    peer.handshake_started = true;
+
+    if (first_active && !peer.sent_established) {
+        peer.sent_established = true;
+        QueueMatching2SignalingEvent(ctx, room_id, member_id,
+                                     ORBIS_NP_MATCHING2_SIGNALING_EVENT_ESTABLISHED, ORBIS_OK);
+        LOG_INFO(Lib_NpMatching2,
+                 "Matching2 signaling established: ctx={} room={} member={} addr={:#x}:{}",
+                 ctx.ctx_id, room_id, member_id, peer.addr, Libraries::Net::sceNetNtohs(peer.port));
+    }
+}
+
+bool SendMatching2Handshake(ContextObject& ctx, OrbisNpMatching2RoomId room_id,
+                            OrbisNpMatching2RoomMemberId member_id, Matching2HandshakeKind kind,
+                            u64 nonce) {
+    auto room_it = ctx.room_cache.find(room_id);
+    if (room_it == ctx.room_cache.end()) {
+        return false;
+    }
+    auto member_it = room_it->second.members.find(member_id);
+    if (member_it == room_it->second.members.end()) {
+        return false;
+    }
+
+    PeerInfo& peer = ctx.peers[member_id];
+    peer.member_id = member_id;
+    if (!ResolvePeerEndpoint(member_it->second, peer)) {
+        LOG_WARNING(Lib_NpMatching2, "Matching2 signaling: unresolved endpoint room={} member={}",
+                    room_id, member_id);
+        return false;
+    }
+
+    Matching2HandshakePacket pkt{};
+    pkt.kind = static_cast<u8>(kind);
+    pkt.room_id = room_id;
+    pkt.from_member_id = ctx.my_member_id;
+    pkt.to_member_id = member_id;
+    std::memcpy(pkt.online_id_from, ctx.online_id.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
+    pkt.mapped_addr = Net::GetP2PAdvertisedAddr();
+    pkt.mapped_port = Net::GetP2PConfiguredPort() != 0
+                          ? Libraries::Net::sceNetHtons(Net::GetP2PConfiguredPort())
+                          : 0;
+    pkt.nonce = nonce;
+
+    const int rc = Net::P2PMatching2SendTo(&pkt, sizeof(pkt), peer.addr, peer.port);
+    const auto now = std::chrono::steady_clock::now();
+    peer.last_send = now;
+    if (kind == Matching2HandshakeKind::Check) {
+        peer.last_check_send = now;
+    }
+    LOG_DEBUG(Lib_NpMatching2,
+              "Matching2 handshake send kind={} ctx={} room={} {}->{} dst={:#x}:{} rc={}",
+              static_cast<u8>(kind), ctx.ctx_id, room_id, ctx.my_member_id, member_id, peer.addr,
+              Libraries::Net::sceNetNtohs(peer.port), rc);
+    return rc >= 0;
+}
+
+void StartMatching2PeerHandshake(ContextObject& ctx, OrbisNpMatching2RoomId room_id,
+                                 OrbisNpMatching2RoomMemberId member_id) {
+    auto room_it = ctx.room_cache.find(room_id);
+    if (room_it == ctx.room_cache.end() ||
+        !ShouldConnectToPeer(room_it->second, ctx.my_member_id, member_id)) {
+        return;
+    }
+    auto member_it = room_it->second.members.find(member_id);
+    if (member_it == room_it->second.members.end()) {
+        return;
+    }
+
+    Net::EnsureP2PTransport();
+
+    PeerInfo& peer = ctx.peers[member_id];
+    peer.member_id = member_id;
+    if (peer.status == kMatching2ConnActive) {
+        return;
+    }
+    ResolvePeerEndpoint(member_it->second, peer);
+    peer.status = kMatching2ConnPending;
+    peer.handshake_started = true;
+    peer.sent_check = false;
+    if (peer.nonce == 0) {
+        peer.nonce = static_cast<u64>(std::chrono::steady_clock::now().time_since_epoch().count() ^
+                                      (static_cast<u64>(ctx.ctx_id) << 48) ^
+                                      (static_cast<u64>(member_id) << 16));
+    }
+    SendMatching2Handshake(ctx, room_id, member_id, Matching2HandshakeKind::Offer, 0);
+}
+
+void StartMatching2SignalingForRoomPeers(ContextObject& ctx, OrbisNpMatching2RoomId room_id) {
+    const auto room_it = ctx.room_cache.find(room_id);
+    if (room_it == ctx.room_cache.end()) {
+        return;
+    }
+    for (const auto& [member_id, member] : room_it->second.members) {
+        StartMatching2PeerHandshake(ctx, room_id, member_id);
+    }
+}
+
+ContextObject* FindContextForMatching2Packet(const Matching2HandshakePacket& pkt) {
+    for (u32 id = 1; id <= ContextManager::kMaxContexts; ++id) {
+        ContextObject* ctx =
+            ContextManager::Instance().Get(static_cast<OrbisNpMatching2ContextId>(id));
+        if (!ctx || ctx->room_id != pkt.room_id || ctx->my_member_id != pkt.to_member_id) {
+            continue;
+        }
+        if (ctx->room_cache.find(static_cast<OrbisNpMatching2RoomId>(pkt.room_id)) !=
+            ctx->room_cache.end()) {
+            return ctx;
+        }
+    }
+    return nullptr;
+}
+
+void HandleMatching2HandshakePacket(u32 from_addr, u16 from_port,
+                                    const Matching2HandshakePacket& pkt) {
+    if (!HasMatching2Magic(pkt)) {
+        return;
+    }
+
+    ContextObject* ctx = FindContextForMatching2Packet(pkt);
+    if (!ctx) {
+        LOG_DEBUG(Lib_NpMatching2, "Matching2 handshake: no ctx for room={} to_member={}",
+                  pkt.room_id, pkt.to_member_id);
+        return;
+    }
+
+    const auto room_id = static_cast<OrbisNpMatching2RoomId>(pkt.room_id);
+    const auto member_id = static_cast<OrbisNpMatching2RoomMemberId>(pkt.from_member_id);
+    auto room_it = ctx->room_cache.find(room_id);
+    if (room_it == ctx->room_cache.end() ||
+        !ShouldConnectToPeer(room_it->second, ctx->my_member_id, member_id)) {
+        return;
+    }
+
+    PeerInfo& peer = ctx->peers[member_id];
+    peer.member_id = member_id;
+    peer.addr = pkt.mapped_addr != 0 ? pkt.mapped_addr : from_addr;
+    peer.port = pkt.mapped_port != 0 ? pkt.mapped_port : from_port;
+    peer.status =
+        peer.status == kMatching2ConnActive ? kMatching2ConnActive : kMatching2ConnPending;
+    peer.handshake_started = true;
+    std::memcpy(peer.online_id.data, pkt.online_id_from, ORBIS_NP_ONLINEID_MAX_LENGTH);
+
+    const auto kind = static_cast<Matching2HandshakeKind>(pkt.kind);
+    switch (kind) {
+    case Matching2HandshakeKind::Offer:
+        SendMatching2Handshake(*ctx, room_id, member_id, Matching2HandshakeKind::Accept, 0);
+        break;
+    case Matching2HandshakeKind::Accept:
+        peer.sent_check = true;
+        SendMatching2Handshake(*ctx, room_id, member_id, Matching2HandshakeKind::Check, peer.nonce);
+        break;
+    case Matching2HandshakeKind::Check:
+        SendMatching2Handshake(*ctx, room_id, member_id, Matching2HandshakeKind::CheckAck,
+                               pkt.nonce);
+        MarkMatching2PeerActive(*ctx, room_id, member_id, peer.addr, peer.port);
+        break;
+    case Matching2HandshakeKind::CheckAck:
+        if (pkt.nonce == 0 || pkt.nonce == peer.nonce) {
+            if (peer.last_check_send.time_since_epoch().count() != 0) {
+                const auto rtt = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::steady_clock::now() - peer.last_check_send);
+                peer.ping_us =
+                    static_cast<u32>(std::min<u64>(static_cast<u64>(std::max<s64>(0, rtt.count())),
+                                                   std::numeric_limits<u32>::max()));
+                peer.last_check_send = {};
+            }
+            MarkMatching2PeerActive(*ctx, room_id, member_id, peer.addr, peer.port);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void Matching2HandshakeThreadMain() {
+    while (!g_matching2_stop.load(std::memory_order_relaxed)) {
+        Matching2HandshakePacket pkt{};
+        u32 from_addr = 0;
+        u16 from_port = 0;
+        const int rc = Net::P2PMatching2RecvFrom(&pkt, sizeof(pkt), &from_addr, &from_port);
+        if (rc == sizeof(pkt)) {
+            HandleMatching2HandshakePacket(from_addr, from_port, pkt);
+        }
+
+        const auto now = std::chrono::steady_clock::now();
+        for (u32 id = 1; id <= ContextManager::kMaxContexts; ++id) {
+            ContextObject* ctx =
+                ContextManager::Instance().Get(static_cast<OrbisNpMatching2ContextId>(id));
+            if (!ctx || ctx->room_id == 0) {
+                continue;
+            }
+            auto room_it = ctx->room_cache.find(ctx->room_id);
+            if (room_it == ctx->room_cache.end()) {
+                continue;
+            }
+            for (auto& [member_id, peer] : ctx->peers) {
+                if (peer.status != kMatching2ConnPending || !peer.handshake_started) {
+                    continue;
+                }
+                if (peer.last_send.time_since_epoch().count() != 0 &&
+                    now - peer.last_send > kMatching2HandshakeTimeout) {
+                    peer.status = kMatching2ConnInactive;
+                    QueueMatching2SignalingEvent(*ctx, ctx->room_id, member_id,
+                                                 ORBIS_NP_MATCHING2_SIGNALING_EVENT_NETINFO_ERROR,
+                                                 ORBIS_NP_MATCHING2_SIGNALING_ERROR_TIMEOUT);
+                    continue;
+                }
+                if (peer.last_send.time_since_epoch().count() == 0 ||
+                    now - peer.last_send >= kMatching2HandshakeRetry) {
+                    SendMatching2Handshake(*ctx, ctx->room_id, member_id,
+                                           peer.sent_check ? Matching2HandshakeKind::Check
+                                                           : Matching2HandshakeKind::Offer,
+                                           peer.sent_check ? peer.nonce : 0);
+                }
+            }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+}
+
+void StartMatching2HandshakeThread() {
+    std::lock_guard lock(g_matching2_thread_mutex);
+    if (g_matching2_thread.joinable()) {
+        return;
+    }
+    g_matching2_stop.store(false, std::memory_order_relaxed);
+    g_matching2_thread = std::thread(Matching2HandshakeThreadMain);
+}
+
+void StopMatching2HandshakeThread() {
+    {
+        std::lock_guard lock(g_matching2_thread_mutex);
+        g_matching2_stop.store(true, std::memory_order_relaxed);
+    }
+    if (g_matching2_thread.joinable()) {
+        g_matching2_thread.join();
+    }
+}
+
 void DispatchRequestComplete(const PendingRequest& pr, ShadNet::ErrorType error,
                              const std::vector<u8>& body) {
     ContextObject* ctx = ContextManager::Instance().Get(pr.ctx_id);
@@ -127,6 +517,14 @@ void DispatchRequestComplete(const PendingRequest& pr, ShadNet::ErrorType error,
             if (reply.ParseFromString(proto) && reply.has_details()) {
                 request_data = BuildCreateJoinRoomPayload(*ctx, reply.details());
             }
+        } else if (pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_LEAVE_ROOM) {
+            shadnet::LeaveRoomReply reply;
+            if (reply.ParseFromString(proto)) {
+                QueueMatching2DeadForRoomPeers(
+                    *ctx, static_cast<OrbisNpMatching2RoomId>(reply.room_id()),
+                    ORBIS_NP_MATCHING2_SIGNALING_ERROR_TERMINATED_BY_MYSELF);
+                request_data = BuildLeaveRoomPayload(*ctx, reply);
+            }
         } else if (pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_WORLD_INFO_LIST) {
             shadnet::GetWorldInfoListReply reply;
             if (reply.ParseFromString(proto)) {
@@ -151,6 +549,11 @@ void DispatchRequestComplete(const PendingRequest& pr, ShadNet::ErrorType error,
     ev.request_cb_arg = ctx->default_request_callback_arg;
     ev.request_data = request_data;
     ScheduleEvent(std::move(ev));
+
+    if (error_code == 0 && (pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_CREATE_JOIN_ROOM ||
+                            pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_JOIN_ROOM)) {
+        StartMatching2SignalingForRoomPeers(*ctx, ctx->room_id);
+    }
 }
 
 void BuildMemberUpdate(CallbackPayload& p, const RoomCache& rc, const MemberCache& mc,
@@ -254,6 +657,9 @@ void HandleRoomEvent(const ShadNet::NotifyRoomEvent& n) {
             return;
         }
         BuildMemberUpdate(p, room_it->second, mem_it->second, cause);
+        QueueMatching2SignalingEvent(*ctx, room_id, member_id,
+                                     ORBIS_NP_MATCHING2_SIGNALING_EVENT_DEAD,
+                                     ORBIS_NP_MATCHING2_SIGNALING_ERROR_TERMINATED_BY_PEER);
         room_it->second.members.erase(mem_it);
         ctx->peers.erase(member_id);
         break;
@@ -283,6 +689,10 @@ void HandleRoomEvent(const ShadNet::NotifyRoomEvent& n) {
     ev.room_event = event;
     ev.room_event_data = p.room_event_data;
     ScheduleEvent(std::move(ev));
+
+    if (event == ORBIS_NP_MATCHING2_ROOM_EVENT_MEMBER_JOINED) {
+        StartMatching2PeerHandshake(*ctx, room_id, member_id);
+    }
 }
 
 } // namespace
@@ -315,6 +725,8 @@ void OnMatchingReply(ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType er
 
 void SetMmShadNetClient(std::shared_ptr<ShadNet::ShadNetClient> client,
                         std::string_view server_host, u16 tcp_port) {
+    u32 server_addr = 0;
+    u16 server_udp_port = 0;
     {
         std::lock_guard lock(g_mm.mutex);
         g_mm.client = client;
@@ -323,12 +735,31 @@ void SetMmShadNetClient(std::shared_ptr<ShadNet::ShadNetClient> client,
             g_mm.server_addr = IpStringToAddr(server_host);
         }
         g_mm.server_udp_port = Libraries::Net::sceNetHtons(static_cast<u16>(tcp_port + 1));
+        server_addr = g_mm.server_addr;
+        server_udp_port = g_mm.server_udp_port;
     }
 
     if (!client) {
+        NpSignaling::Stubs::SetTransportHooks({});
+        NpSignaling::Stubs::SetPeerResolver(nullptr);
+        NpSignaling::Stubs::SetMmServerEndpoint(0, 0);
+        StopMatching2HandshakeThread();
         return;
     }
 
+    NpSignaling::Stubs::SetTransportHooks({
+        .signaling_send = Net::P2PSignalingSendTo,
+        .signaling_recv = Net::P2PSignalingRecvFrom,
+        .control_send = Net::P2PControlSendTo,
+        .control_recv = Net::P2PControlRecvFrom,
+        .transport_ready = Net::P2PTransportIsReady,
+        .configured_port = Net::GetP2PConfiguredPort,
+        .advertised_addr = Net::GetP2PAdvertisedAddr,
+        .ensure_transport = Net::EnsureP2PTransport,
+    });
+    NpSignaling::Stubs::SetPeerResolver(RequestSignalingInfos);
+    NpSignaling::Stubs::SetMmServerEndpoint(server_addr, server_udp_port);
+    StartMatching2HandshakeThread();
     client->onRoomEvent = [](const ShadNet::NotifyRoomEvent& n) { HandleRoomEvent(n); };
 }
 
@@ -343,6 +774,10 @@ void ClearMmShadNetClient() {
     if (old_client) {
         old_client->onRoomEvent = nullptr;
     }
+    NpSignaling::Stubs::SetTransportHooks({});
+    NpSignaling::Stubs::SetPeerResolver(nullptr);
+    NpSignaling::Stubs::SetMmServerEndpoint(0, 0);
+    StopMatching2HandshakeThread();
     {
         std::lock_guard lock(g_mm.pending_mutex);
         g_mm.pending.clear();
@@ -499,6 +934,53 @@ s32 MmSearchRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req
     }
     return MmSubmitRequest(ctx_id, req_id, ORBIS_NP_MATCHING2_REQUEST_EVENT_SEARCH_ROOM,
                            MmCommand::SearchRoom, MakeProtoPayload(req));
+}
+
+s32 MmSetRoomDataInternal(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                          const OrbisNpMatching2SetRoomDataInternalRequest& request) {
+    shadnet::SetRoomDataInternalRequest req;
+    req.set_req_id(req_id);
+    req.set_room_id(request.roomId);
+    req.set_flag_filter(request.flagFilter);
+    req.set_flag_attr(request.flagAttr);
+    for (u64 i = 0; i < request.roomBinAttrInternalNum; ++i) {
+        AppendBinAttr(req.add_bin_attrs(), request.roomBinAttrInternal[i]);
+    }
+    if (request.passwordSlotMask) {
+        req.set_has_passwd_mask(true);
+        req.set_passwd_slot_mask(*request.passwordSlotMask);
+    }
+    return MmSubmitRequest(ctx_id, req_id, ORBIS_NP_MATCHING2_REQUEST_EVENT_SET_ROOM_DATA_INTERNAL,
+                           MmCommand::SetRoomDataInternal, MakeProtoPayload(req));
+}
+
+s32 MmSetRoomDataExternal(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                          const OrbisNpMatching2SetRoomDataExternalRequest& request) {
+    shadnet::SetRoomDataExternalRequest req;
+    req.set_req_id(req_id);
+    req.set_room_id(request.roomId);
+    for (u64 i = 0; i < request.roomSearchableIntAttrExternalNum; ++i) {
+        AppendIntAttr(req.add_search_int_attrs(), request.roomSearchableIntAttrExternal[i]);
+    }
+    for (u64 i = 0; i < request.roomSearchableBinAttrExternalNum; ++i) {
+        AppendBinAttr(req.add_search_bin_attrs(), request.roomSearchableBinAttrExternal[i]);
+    }
+    for (u64 i = 0; i < request.roomBinAttrExternalNum; ++i) {
+        AppendBinAttr(req.add_ext_bin_attrs(), request.roomBinAttrExternal[i]);
+    }
+    return MmSubmitRequest(ctx_id, req_id, ORBIS_NP_MATCHING2_REQUEST_EVENT_SET_ROOM_DATA_EXTERNAL,
+                           MmCommand::SetRoomDataExternal, MakeProtoPayload(req));
+}
+
+s32 MmKickoutRoomMember(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                        const OrbisNpMatching2KickoutRoomMemberRequest& request) {
+    shadnet::KickoutRoomMemberRequest req;
+    req.set_req_id(req_id);
+    req.set_room_id(request.roomId);
+    req.set_target_member_id(request.memberId);
+    req.set_block_kick_flag(request.blockKickFlag);
+    return MmSubmitRequest(ctx_id, req_id, ORBIS_NP_MATCHING2_REQUEST_EVENT_KICKOUT_ROOM_MEMBER,
+                           MmCommand::KickoutRoomMember, MakeProtoPayload(req));
 }
 
 u32 GetMmServerAddr() {
