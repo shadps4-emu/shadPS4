@@ -303,9 +303,9 @@ s32 PS4_SYSV_ABI sceNpWebApi2SetMultipartContentType() {
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2SetRequestTimeout(s64 request_id, u32 timeout) {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, request_id = {:#x}, timeout = {}", request_id,
+    LOG_INFO(Lib_NpWebApi2, "called, request_id = {:#x}, timeout = {}", request_id,
               timeout);
-    return ORBIS_OK;
+    return setRequestTimeout(request_id, timeout);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2Terminate(s32 lib_ctx_id) {

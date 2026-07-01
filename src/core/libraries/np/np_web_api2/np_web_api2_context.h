@@ -296,6 +296,11 @@ public:
     }
 
     s32 AddHttpRequestHeader(const char* field_name, const char* field_value);
+    
+    void SetTimeout(u32 new_timeout) {
+        this->timeout = new_timeout;
+    }
+
     s32 CreateHttpRequest(s32 http_template_id, const char* url);
     s32 SendHttpRequest(void* data, u64 data_size);
     s32 GetAllHttpResponseHeaders();
@@ -309,7 +314,7 @@ private:
     u64 http_response_header_size{};
     s32 user_count{};
     s32 http_request_id{};
-    s32 timeout{};
+    u32 timeout{};
     s32 sent_data{};
     s32 send_state{};
     bool multipart_supported{};

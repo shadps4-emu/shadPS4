@@ -225,6 +225,37 @@ s32 addHttpRequestHeader(s64 request_id, const char* field_name, const char* fie
     return result;
 }
 
+s32 setRequestTimeout(s64 request_id, u32 timeout) {
+    s32 lib_ctx_id = static_cast<s32>(request_id >> 0x30);
+    s32 user_ctx_id = static_cast<s32>(request_id >> 0x20);
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for request id {:#x}", request_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context for request id {:#x}", request_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    Request* request = user_ctx->GetRequest(request_id);
+    if (!request) {
+        LOG_ERROR(Lib_NpWebApi2, "No request with id {:#x}", request_id);
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    request->SetTimeout(timeout);
+    request->RemoveUser();
+    user_ctx->RemoveUser();
+    lib_ctx->RemoveUser();
+    return ORBIS_OK;
+}
+
 static s32 checkRequestStatus(Request* request, UserContext* user_ctx, LibraryContext* lib_ctx) {
     if (request->Expired()) {
         LOG_ERROR(Lib_NpWebApi2, "Request timed out");
