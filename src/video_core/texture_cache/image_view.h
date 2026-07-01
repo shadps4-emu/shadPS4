@@ -52,6 +52,7 @@ struct ImageView {
     ImageView& operator=(ImageView&&) = default;
 
     ImageViewInfo info;
+    vk::Format format = vk::Format::eUndefined;
     vk::UniqueImageView image_view;
 };
 
