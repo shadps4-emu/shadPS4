@@ -255,4 +255,31 @@ bool StreamBuffer::WaitPendingOperations(u64 requested_upper_bound, bool allow_w
     return true;
 }
 
+StreamBufferMapping::StreamBufferMapping(StreamBuffer& stream_buffer, u64 size, u64 alignment,
+                                         bool allow_wait) {
+    const auto [data, offset] = stream_buffer.Map(size, alignment, allow_wait);
+    if (!data) {
+        // This happens if the size is too big or no waiting is allowed when it is required
+        is_temp_buffer = true;
+        this->buffer = new VideoCore::Buffer(*stream_buffer.instance, *stream_buffer.scheduler,
+                                             stream_buffer.usage, 0, AllFlags, size);
+        this->data = this->buffer->mapped_data.data();
+        this->offset = 0;
+        ASSERT_MSG(this->data, "Failed to map temporary buffer");
+    } else {
+        is_temp_buffer = false;
+        buffer = &stream_buffer;
+        this->data = data;
+        this->offset = offset;
+    }
+}
+
+StreamBufferMapping::~StreamBufferMapping() {
+    if (is_temp_buffer) {
+        ASSERT(buffer);
+        auto scheduler = buffer->scheduler;
+        scheduler->DeferOperation([buffer = this->buffer]() mutable { delete buffer; });
+    }
+}
+
 } // namespace VideoCore
