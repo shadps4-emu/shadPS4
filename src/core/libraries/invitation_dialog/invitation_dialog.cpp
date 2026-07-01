@@ -3,8 +3,8 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/invitationdialog/invitation_dialog.h"
 
 namespace Libraries::InvitationDialog {
 
