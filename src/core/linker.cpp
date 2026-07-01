@@ -72,9 +72,36 @@ void Linker::Execute(const std::vector<std::string>& args) {
     Module* module = m_modules[0].get();
     static_tls_size = module->tls.offset = module->tls.image_size;
 
+    // Map libSceLibcInternal
+    const auto& libc_internal_path =
+        EmulatorSettings.GetSysModulesDir() / "libSceLibcInternal.sprx";
+    if (std::filesystem::exists(libc_internal_path)) {
+        LoadModule(libc_internal_path);
+    }
+
     // Relocate all modules
     for (const auto& m : m_modules) {
         Relocate(m.get());
+    }
+
+    // Before we can run guest code, we need to properly initialize the heap API and
+    // libSceLibcInternal. libSceLibcInternal's _malloc_init serves as an additional initialization
+    // function called by libkernel.
+    heap_api = new HeapAPI{};
+    static PS4_SYSV_ABI s32 (*malloc_init)() = nullptr;
+
+    for (const auto& m : m_modules) {
+        const auto& mod = m.get();
+        if (mod->name.contains("libSceLibcInternal.sprx")) {
+            // Found libSceLibcInternal, now search through function exports.
+            // Looking for _malloc_init to init libSceLibcInternal properly
+            // and for all the memory allocating functions, so we can initialize our heap API
+            for (const auto& sym : mod->export_sym.GetSymbols()) {
+                if (sym.nid_name.compare("_malloc_init") == 0) {
+                    malloc_init = reinterpret_cast<PS4_SYSV_ABI s32 (*)()>(sym.virtual_address);
+                }
+            }
+        }
     }
 
     // Configure the direct and flexible memory regions.
@@ -123,6 +150,15 @@ void Linker::Execute(const std::vector<std::string>& args) {
 #endif
         if (auto& ipc = IPC::Instance()) {
             ipc.WaitForStart();
+        }
+
+        // Load libSceLibcInternal, run malloc_init.
+        LoadLibcInternal();
+
+        if (malloc_init != nullptr) {
+            // Call _malloc_init
+            s32 ret = malloc_init();
+            ASSERT_MSG(ret == 0, "malloc_init failed");
         }
 
         // Have libSceSysmodule preload our libraries.

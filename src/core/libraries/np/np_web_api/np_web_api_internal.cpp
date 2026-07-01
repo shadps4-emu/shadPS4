@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <cctype>
+#include <cstdio>
+#include <cstring>
+#include <deque>
+#include <string>
+#include <string_view>
 #include <magic_enum/magic_enum.hpp>
 #include "common/elf_info.h"
 #include "core/emulator_settings.h"
@@ -16,6 +23,11 @@ namespace Libraries::Np::NpWebApi {
 static std::recursive_mutex g_global_mutex;
 static std::map<s32, OrbisNpWebApiContext*> g_contexts;
 static s32 g_library_context_count = 0;
+
+// Last WebApi error code parsed from an error response body
+static thread_local s32 g_last_webapi_error = ORBIS_OK;
+
+static s32 captureWebApiError(const char* body, u64 len);
 static s32 g_user_context_count = 0;
 static s32 g_handle_count = 0;
 static s32 g_push_event_filter_count = 0;
@@ -568,7 +580,7 @@ void checkRequestTimeout(OrbisNpWebApiRequest* request) {
 }
 
 s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s8 flag,
-                const OrbisNpWebApiResponseInformationOption* pRespInfoOption) {
+                OrbisNpWebApiResponseInformationOption* pRespInfoOption) {
     OrbisNpWebApiContext* context = findAndValidateContext(requestId >> 0x30);
     if (context == nullptr) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
@@ -710,6 +722,12 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
                         "be unauthenticated (expect 401 from server)",
                         user_context->userId, request->userPath);
         }
+
+        // Replay app-supplied headers
+        for (const auto& [hname, hvalue] : request->userHeaders) {
+            Libraries::Http::sceHttpAddRequestHeader(req_id, hname.c_str(), hvalue.c_str(),
+                                                     /*mode=*/0);
+        }
     }
 
     setRequestState(request, 4);
@@ -729,10 +747,52 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
              requestId, request->userApiGroup, request->userPath,
              magic_enum::enum_name(request->userMethod), request->http_request_id);
 
+    s32 sendResult = ORBIS_OK;
+    if (flag != 0) {
+        s32 status = 0;
+        if (Libraries::Http::sceHttpGetStatusCode(request->http_request_id, &status) >= 0) {
+            if (pRespInfoOption != nullptr) {
+                pRespInfoOption->httpStatus = status;
+            }
+            if (status >= 400) {
+                std::string errBody;
+                char buf[256];
+                for (;;) {
+                    const s32 n = Libraries::Http::sceHttpReadData(request->http_request_id, buf,
+                                                                   sizeof(buf));
+                    if (n <= 0)
+                        break;
+                    errBody.append(buf, static_cast<size_t>(n));
+                    if (errBody.size() > 64u * 1024u)
+                        break; // sanity cap on a runaway error body
+                }
+                if (pRespInfoOption != nullptr) {
+                    pRespInfoOption->responseDataSize = errBody.size();
+                    char* const dst = pRespInfoOption->pErrorObject;
+                    const u64 cap = pRespInfoOption->errorObjectSize;
+                    if (dst != nullptr && cap > 0) {
+                        const u64 n = std::min<u64>(errBody.size(), cap - 1);
+                        if (n > 0)
+                            std::memcpy(dst, errBody.data(), n);
+                        dst[n] = '\0';
+                    }
+                }
+                const s32 npErr = captureWebApiError(errBody.data(), errBody.size());
+                if (npErr > 0 && npErr < 0xc00000) {
+                    sendResult = static_cast<s32>(0x82000000u | static_cast<u32>(npErr));
+                } else if (status >= 100 && status < 600) {
+                    sendResult = static_cast<s32>(0x82f00000u | static_cast<u32>(status));
+                } else {
+                    sendResult = static_cast<s32>(0x82ffffffu);
+                }
+            }
+        }
+    }
+
     releaseRequest(request);
     releaseUserContext(user_context);
     releaseContext(context);
-    return ORBIS_OK;
+    return sendResult;
 }
 
 s32 abortRequestInternal(OrbisNpWebApiContext* context, OrbisNpWebApiUserContext* userContext,
@@ -1022,10 +1082,13 @@ s32 createPushEventFilterInternal(OrbisNpWebApiContext* context,
     filter->parentContext = context;
     filter->filterId = filterId;
 
+    LOG_INFO(Lib_NpWebApi, "createPushEventFilter: filterId={} dataTypeParams={}", filterId,
+             filterParamNum);
     if (pFilterParam != nullptr && filterParamNum != 0) {
         for (u64 param_idx = 0; param_idx < filterParamNum; param_idx++) {
             OrbisNpWebApiPushEventFilterParameter copy = OrbisNpWebApiPushEventFilterParameter{};
             memcpy(&copy, &pFilterParam[param_idx], sizeof(OrbisNpWebApiPushEventFilterParameter));
+            LOG_INFO(Lib_NpWebApi, "  filterParam[{}] dataType='{}'", param_idx, copy.dataType.val);
             filter->filterParams.emplace_back(copy);
         }
     }
@@ -1353,12 +1416,23 @@ s32 createExtendedPushEventFilterInternal(
 
     filter->npServiceLabel = npServiceLabel;
 
+    LOG_INFO(Lib_NpWebApi,
+             "createExtdPushEventFilter: filterId={} service='{}' label={:#x} dataTypeParams={}",
+             filterId, pNpServiceName ? pNpServiceName : "null", npServiceLabel, filterParamNum);
     if (pFilterParam != nullptr && filterParamNum != 0) {
         for (u64 param_idx = 0; param_idx < filterParamNum; param_idx++) {
             OrbisNpWebApiExtdPushEventFilterParameter copy =
                 OrbisNpWebApiExtdPushEventFilterParameter{};
             memcpy(&copy, &pFilterParam[param_idx],
                    sizeof(OrbisNpWebApiExtdPushEventFilterParameter));
+            LOG_INFO(Lib_NpWebApi, "  filterParam[{}] dataType='{}' extdKeys={}", param_idx,
+                     copy.dataType.val, copy.extdDataKeyNum); // debug
+            if (copy.pExtdDataKey != nullptr) {
+                for (u64 k = 0; k < copy.extdDataKeyNum; k++) {
+                    LOG_INFO(Lib_NpWebApi, "    extdDataKey[{}]='{}'", k,
+                             copy.pExtdDataKey[k].val); // debug
+                }
+            }
             filter->filterParams.emplace_back(copy);
             // TODO: Every parameter is registered with an extended data filter through
             // sceNpPushRegisterExtendedDataFilter
@@ -1497,6 +1571,156 @@ s32 PS4_SYSV_ABI getHttpRequestIdFromRequest(OrbisNpWebApiRequest* request)
 
 {
     return request->http_request_id;
+}
+
+// Request/response header support
+
+bool iEquals(const char* a, u64 aLen, const char* b) {
+    u64 i = 0;
+    for (; i < aLen && b[i]; ++i) {
+        if (std::tolower((unsigned char)a[i]) != std::tolower((unsigned char)b[i]))
+            return false;
+    }
+    return i == aLen && b[i] == '\0';
+}
+
+// Locate `field`'s value in a raw HTTP response header block (CRLF-separated
+// "Name: Value" lines, possibly led by a status line). Returns false if absent.
+bool findHeaderValue(const char* block, u64 blockLen, const char* field, std::string& outValue) {
+    u64 i = 0;
+    while (i < blockLen) {
+        u64 lineStart = i;
+        while (i < blockLen && block[i] != '\n')
+            ++i;
+        u64 lineEnd = i; // points at '\n' or end
+        if (i < blockLen)
+            ++i; // step past '\n'
+        // Trim a trailing '\r'.
+        if (lineEnd > lineStart && block[lineEnd - 1] == '\r')
+            --lineEnd;
+        // Split on the first ':'.
+        u64 colon = lineStart;
+        while (colon < lineEnd && block[colon] != ':')
+            ++colon;
+        if (colon >= lineEnd)
+            continue; // no colon (status line / blank)
+        u64 nameLen = colon - lineStart;
+        if (!iEquals(block + lineStart, nameLen, field))
+            continue;
+        u64 vs = colon + 1;
+        while (vs < lineEnd && (block[vs] == ' ' || block[vs] == '\t'))
+            ++vs;
+        outValue.assign(block + vs, lineEnd - vs);
+        return true;
+    }
+    return false;
+}
+
+// extraction of the numeric WebApi error code from an error JSON body
+// (e.g. {"error":{"code":2240512,...}} or {"code":...}). Returns true on success.
+bool parseErrorCode(const char* body, u64 len, s32& out) {
+    std::string_view sv(body, len);
+    size_t k = sv.find("\"code\"");
+    if (k == std::string_view::npos)
+        return false;
+    k += 6;
+    while (k < sv.size() && (sv[k] == ' ' || sv[k] == ':' || sv[k] == '"'))
+        ++k;
+    bool neg = false;
+    if (k < sv.size() && (sv[k] == '-' || sv[k] == '+')) {
+        neg = sv[k] == '-';
+        ++k;
+    }
+    if (k >= sv.size() || !std::isdigit((unsigned char)sv[k]))
+        return false;
+    long long v = 0;
+    while (k < sv.size() && std::isdigit((unsigned char)sv[k])) {
+        v = v * 10 + (sv[k] - '0');
+        ++k;
+    }
+    out = static_cast<s32>(neg ? -v : v);
+    return true;
+}
+
+static s32 captureWebApiError(const char* body, u64 len) {
+    s32 code = 0;
+    if (body != nullptr && len > 0 && parseErrorCode(body, len, code)) {
+        g_last_webapi_error = code;
+        return code;
+    }
+    return 0;
+}
+
+s32 getLastWebApiError() {
+    return g_last_webapi_error;
+}
+
+s32 addHttpRequestHeaderInternal(s64 requestId, const char* pFieldName, const char* pValue) {
+    OrbisNpWebApiContext* context = findAndValidateContext(requestId >> 0x30);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, requestId >> 0x20);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+    OrbisNpWebApiRequest* request = findRequest(user_context, requestId);
+    if (request == nullptr) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_REQUEST_NOT_FOUND;
+    }
+    request->userHeaders.emplace_back(pFieldName, pValue);
+    releaseRequest(request);
+    releaseUserContext(user_context);
+    releaseContext(context);
+    return ORBIS_OK;
+}
+
+s32 getHttpResponseHeaderValueInternal(s64 requestId, const char* pFieldName, char* pValue,
+                                       u64 valueSize, u64* pValueLength) {
+    OrbisNpWebApiContext* context = findAndValidateContext(requestId >> 0x30);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, requestId >> 0x20);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+    OrbisNpWebApiRequest* request = findRequestAndMarkBusy(user_context, requestId);
+    if (request == nullptr) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    char* block = nullptr;
+    u64 blockSize = 0;
+    const s32 httpReqId = getHttpRequestIdFromRequest(request);
+    const s32 err = Libraries::Http::sceHttpGetAllResponseHeaders(httpReqId, &block, &blockSize);
+
+    s32 result = ORBIS_OK;
+    if (err < 0) {
+        result = err;
+    } else {
+        std::string value;
+        const bool found = block != nullptr && findHeaderValue(block, blockSize, pFieldName, value);
+        if (pValueLength != nullptr)
+            *pValueLength = found ? value.size() : 0;
+        if (pValue != nullptr && valueSize > 0) {
+            const u64 n = found ? std::min<u64>(value.size(), valueSize - 1) : 0;
+            if (n > 0)
+                std::memcpy(pValue, value.data(), n);
+            pValue[n] = '\0';
+        }
+    }
+
+    releaseRequest(request);
+    releaseUserContext(user_context);
+    releaseContext(context);
+    return result;
 }
 
 s32 PS4_SYSV_ABI getHttpStatusCodeInternal(s64 requestId, s32* out_status_code) {
@@ -1640,6 +1864,22 @@ s32 PS4_SYSV_ABI readDataInternal(s64 requestId, void* pData, u64 size) {
         result = ORBIS_NP_WEBAPI_ERROR_ABORTED;
     } else {
         result = offset;
+        // Surface the server error code for sceNpWebApiGetErrorCode() when the body
+        // just read belongs to an error response
+        if (offset > 0) {
+            s32 sc = 0;
+            if (Libraries::Http::sceHttpGetStatusCode(getHttpRequestIdFromRequest(request), &sc) >=
+                    0 &&
+                sc >= 400) {
+                captureWebApiError(reinterpret_cast<const char*>(pData), offset);
+            }
+        }
+    }
+
+    if (result > 0) {
+        LOG_INFO(Lib_NpWebApi, "readData reqId={:#x} -> {} bytes: {:.256s}", requestId, result,
+                 std::string(reinterpret_cast<const char*>(pData),
+                             std::min<u64>(result, 256))); // debug to be removed
     }
 
     unlockContext(context);
@@ -1653,4 +1893,200 @@ s32 PS4_SYSV_ABI readDataInternal(s64 requestId, void* pData, u64 size) {
     return result;
 }
 
+// --- Push-event delivery -----------------------------------------------------
+//
+// Mirrors the native lib: notificationCallbackFunc -> FUN_0100e220 (extended) and the
+// service dispatch, with matching done by FUN_010049c0. Natively this is driven by the
+// NP manager's push listener thread (mnp:usr:npweblis)
+
+using ServiceCb = PS4_SYSV_ABI void (*)(s32, s32, const char*, OrbisNpServiceLabel,
+                                        const OrbisNpWebApiPushEventDataType*, const char*, u64,
+                                        void*);
+struct PushPeerAddress {
+    OrbisNpOnlineId onlineId;
+    s32 platform;
+};
+using BasicCb = PS4_SYSV_ABI void (*)(s32, s32, const PushPeerAddress*, const PushPeerAddress*,
+                                      const OrbisNpWebApiPushEventDataType*, const char*, u64,
+                                      void*);
+using ExtdCbA = PS4_SYSV_ABI void (*)(s32, s32, const char*, OrbisNpServiceLabel,
+                                      const OrbisNpPeerAddressA*, const OrbisNpOnlineId*,
+                                      const OrbisNpPeerAddressA*, const OrbisNpOnlineId*,
+                                      const OrbisNpWebApiPushEventDataType*, const char*, u64,
+                                      const OrbisNpWebApiExtdPushEventExtdData*, u64, void*);
+
+std::mutex g_push_mutex;
+std::deque<PushEventInput> g_push_queue;
+
+template <typename Filter>
+bool filterMatches(const Filter* flt, const std::string& evServiceName, bool evHasServiceName,
+                   const std::string& evDataType) {
+    const bool catch_all = flt->npServiceName.empty() && flt->npServiceLabel == 0xffffffffu;
+    if (catch_all) {
+        if (evHasServiceName) {
+            return false;
+        }
+    } else if (!evHasServiceName || flt->npServiceName != evServiceName) {
+        return false;
+    }
+    for (const auto& p : flt->filterParams) {
+        if (evDataType == p.dataType.val) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Network-thread hand-off only,the event is dispatched later from DrainPushEvents.
+void EnqueuePushEvent(const PushEventInput& ev) {
+    std::scoped_lock lk{g_push_mutex};
+    g_push_queue.push_back(ev);
+}
+
+// Runs on the game thread from sceNpCheckCallback
+void DrainPushEvents() {
+    std::deque<PushEventInput> local;
+    {
+        std::scoped_lock lk{g_push_mutex};
+        if (g_push_queue.empty()) {
+            return;
+        }
+        local.swap(g_push_queue);
+    }
+
+    for (const PushEventInput& ev : local) {
+        const bool ev_has_service = !ev.npServiceName.empty();
+        OrbisNpWebApiPushEventDataType dt{};
+        std::snprintf(dt.val, sizeof(dt.val), "%s", ev.dataType.c_str());
+        const OrbisNpOnlineId* from_p = ev.hasFrom ? &ev.fromOnlineId : nullptr;
+        const OrbisNpOnlineId* to_p = ev.hasTo ? &ev.toOnlineId : nullptr;
+
+        std::scoped_lock gl{g_global_mutex};
+        for (auto& [libId, context] : g_contexts) {
+            if (context == nullptr) {
+                continue;
+            }
+            std::scoped_lock cl{context->contextLock};
+            for (auto& [ucKey, uc] : context->userContexts) {
+                if (uc == nullptr) {
+                    continue;
+                }
+                if (uc->userId != ev.targetUserId) {
+                    continue;
+                }
+                const s32 title_user_ctx_id = ucKey;
+
+                for (auto& [cbId, cb] : uc->extendedPushEventCallbacks) {
+                    if (cb == nullptr) {
+                        continue;
+                    }
+                    void (*raw)() = cb->cbFuncA  ? reinterpret_cast<void (*)()>(cb->cbFuncA)
+                                    : cb->cbFunc ? reinterpret_cast<void (*)()>(cb->cbFunc)
+                                                 : nullptr;
+                    if (raw == nullptr) {
+                        continue;
+                    }
+                    auto fit = context->extendedPushEventFilters.find(cb->filterId);
+                    if (fit == context->extendedPushEventFilters.end()) {
+                        continue;
+                    }
+                    const OrbisNpWebApiExtendedPushEventFilter* flt = fit->second;
+                    if (!filterMatches(flt, ev.npServiceName, ev_has_service, ev.dataType)) {
+                        continue;
+                    }
+                    std::vector<OrbisNpWebApiExtdPushEventExtdData> exarr;
+                    exarr.reserve(ev.extdData.size());
+                    for (auto& [k, v] : ev.extdData) {
+                        OrbisNpWebApiExtdPushEventExtdData e{};
+                        std::snprintf(e.extdDataKey.val, sizeof(e.extdDataKey.val), "%s",
+                                      k.c_str());
+                        e.pData = const_cast<char*>(v.data());
+                        e.dataLen = v.size();
+                        exarr.push_back(e);
+                    }
+                    // Service name/label come from the FILTER
+                    const char* svc =
+                        flt->npServiceName.empty() ? nullptr : flt->npServiceName.c_str();
+                    // pData/pExtdData are NULL (and the counts 0) when the event
+                    // carries no payload / no matching extended data.
+                    const char* ext_data = ev.data.empty() ? nullptr : ev.data.data();
+                    const OrbisNpWebApiExtdPushEventExtdData* ext_arr =
+                        exarr.empty() ? nullptr : exarr.data();
+
+                    LOG_INFO(
+                        Lib_NpWebApi,
+                        "DrainPushEvents: invoking extd cb ctx={:#x} cbId={} dataType='{}'",
+                        title_user_ctx_id, cbId,
+                        ev.dataType); // debug confirm the listener callback fires. to be removed
+                    reinterpret_cast<ExtdCbA>(raw)(
+                        title_user_ctx_id, cbId, svc, flt->npServiceLabel, nullptr, to_p, nullptr,
+                        from_p, &dt, ext_data, ev.data.size(), ext_arr, exarr.size(), cb->pUserArg);
+                }
+
+                // Service push
+                for (auto& [cbId, cb] : uc->servicePushEventCallbacks) {
+                    if (cb == nullptr || cb->cbFunc == nullptr) {
+                        continue;
+                    }
+                    auto fit = context->servicePushEventFilters.find(cb->filterId);
+                    if (fit == context->servicePushEventFilters.end()) {
+                        continue;
+                    }
+                    const OrbisNpWebApiServicePushEventFilter* flt = fit->second;
+                    if (!filterMatches(flt, ev.npServiceName, ev_has_service, ev.dataType)) {
+                        continue;
+                    }
+                    const char* svc =
+                        flt->npServiceName.empty() ? nullptr : flt->npServiceName.c_str();
+                    const char* svc_data = ev.data.empty() ? nullptr : ev.data.data();
+                    reinterpret_cast<ServiceCb>(reinterpret_cast<void (*)()>(cb->cbFunc))(
+                        title_user_ctx_id, cbId, svc, flt->npServiceLabel, &dt, svc_data,
+                        ev.data.size(), cb->pUserArg);
+                }
+
+                // Basic push
+                if (!ev_has_service) {
+                    for (auto& [cbId, cb] : uc->pushEventCallbacks) {
+                        if (cb == nullptr || cb->cbFunc == nullptr) {
+                            continue;
+                        }
+                        auto fit = context->pushEventFilters.find(cb->filterId);
+                        if (fit == context->pushEventFilters.end()) {
+                            continue;
+                        }
+                        const OrbisNpWebApiPushEventFilter* flt = fit->second;
+                        bool matched = false;
+                        for (const auto& p : flt->filterParams) {
+                            if (ev.dataType == p.dataType.val) {
+                                matched = true;
+                                break;
+                            }
+                        }
+                        if (!matched) {
+                            continue;
+                        }
+                        LOG_INFO(Lib_NpWebApi,
+                                 "DrainPushEvents: invoking basic cb ctx={:#x} cbId={} "
+                                 "dataType='{}'",
+                                 title_user_ctx_id, cbId,
+                                 ev.dataType); // debug confirm the listener callback fires. to be
+                                               // removed
+                        PushPeerAddress to_peer{};   // notified user (self)
+                        PushPeerAddress from_peer{}; // user that caused the event
+                        if (ev.hasTo) {
+                            to_peer.onlineId = ev.toOnlineId;
+                        }
+                        if (ev.hasFrom) {
+                            from_peer.onlineId = ev.fromOnlineId;
+                        }
+                        const char* p_data = ev.data.empty() ? nullptr : ev.data.data();
+                        reinterpret_cast<BasicCb>(reinterpret_cast<void (*)()>(cb->cbFunc))(
+                            title_user_ctx_id, cbId, &to_peer, &from_peer, &dt, p_data,
+                            ev.data.size(), cb->pUserArg);
+                    }
+                }
+            }
+        }
+    }
+}
 }; // namespace Libraries::Np::NpWebApi
