@@ -67,6 +67,8 @@ public:
 
     [[nodiscard]] U1 GetScc();
     [[nodiscard]] U1 GetExec();
+    [[nodiscard]] U32 GetExecLo();
+    [[nodiscard]] U32 GetExecHi();
     [[nodiscard]] U1 GetVcc();
     [[nodiscard]] U32 GetVccLo();
     [[nodiscard]] U32 GetVccHi();
