@@ -77,6 +77,14 @@ public:
         return type == LibraryContextType::Presence;
     }
 
+    bool IsDeleted() {
+        return deleting;
+    }
+
+    void MarkForDeletion() {
+        deleting = true;
+    }
+
     s32 CreatePushEventHandle();
 
     s32 CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id);
@@ -101,6 +109,7 @@ private:
         Presence = 3,
     } type;
     u64 pool_size{};
+    bool deleting{};
     std::recursive_mutex lock{};
     std::string name{};
     std::map<s32, UserContext*> user_contexts{};

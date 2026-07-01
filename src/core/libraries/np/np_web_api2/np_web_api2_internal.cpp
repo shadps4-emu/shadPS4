@@ -51,6 +51,9 @@ LibraryContext* getLibraryContext(s32 lib_ctx_id) {
         return nullptr;
     }
     LibraryContext* lib_ctx = g_lib_contexts.at(lib_ctx_id);
+    if (lib_ctx->IsDeleted()) {
+        return nullptr;
+    }
     lib_ctx->AddUser();
     return lib_ctx;
 }
@@ -66,6 +69,7 @@ s32 getMemoryPoolStats(s32 lib_ctx_id, OrbisNpWebApi2MemoryPoolStats* stats) {
         memset(stats, 0, sizeof(*stats));
         stats->pool_size = lib_ctx->GetPoolSize();
     }
+    lib_ctx->RemoveUser();
     return ORBIS_OK;
 }
 
