@@ -12,6 +12,7 @@ class SymbolsResolver;
 namespace Libraries::Np::NpMatching2 {
 
 using OrbisNpMatching2AttributeId = u16;
+using OrbisNpMatching2BlockKickFlag = u8;
 using OrbisNpMatching2ContextId = u16;
 using OrbisNpMatching2Flags = u32;
 using OrbisNpMatching2LobbyId = u64;
@@ -83,6 +84,17 @@ enum OrbisNpMatching2SignalingType : u8 {
     ORBIS_NP_MATCHING2_SIGNALING_TYPE_NONE = 0,
     ORBIS_NP_MATCHING2_SIGNALING_TYPE_MESH = 1,
     ORBIS_NP_MATCHING2_SIGNALING_TYPE_STAR = 2,
+};
+
+enum OrbisNpMatching2SignalingConnectionInfoType : s32 {
+    ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_RTT = 1,
+    ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_BANDWIDTH = 2,
+    ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_PEER_NP_ID = 3,
+    ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_PEER_ADDR = 4,
+    ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_MAPPED_ADDR = 5,
+    ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_PACKET_LOSS = 6,
+    ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_PEER_NPID = 7,
+    ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_PEER_ADDRESS_A = 7,
 };
 
 enum OrbisNpMatching2AttrId : OrbisNpMatching2AttributeId {

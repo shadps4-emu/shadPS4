@@ -57,6 +57,12 @@ s32 MmGetWorldInfoList(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2Request
                        const OrbisNpMatching2GetWorldInfoListRequest& request);
 s32 MmSearchRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
                  const OrbisNpMatching2SearchRoomRequest& request);
+s32 MmSetRoomDataInternal(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                          const OrbisNpMatching2SetRoomDataInternalRequest& request);
+s32 MmSetRoomDataExternal(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                          const OrbisNpMatching2SetRoomDataExternalRequest& request);
+s32 MmKickoutRoomMember(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                        const OrbisNpMatching2KickoutRoomMemberRequest& request);
 
 u32 GetMmServerAddr();
 u16 GetMmServerUdpPort();
