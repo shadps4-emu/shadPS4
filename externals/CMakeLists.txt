@@ -383,6 +383,7 @@ if (APPLE AND NOT ENABLE_SYSTEM_VULKAN AND NOT ENABLE_TESTS)
 endif()
 
 # protobuf
+if (NOT TARGET protobuf::libprotobuf)
 set(protobuf_BUILD_TESTS              OFF CACHE INTERNAL "")
 set(protobuf_BUILD_EXAMPLES           OFF CACHE INTERNAL "")
 set(protobuf_BUILD_PROTOC_BINARIES    ON  CACHE INTERNAL "")
@@ -394,3 +395,4 @@ if(MSVC)
 set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
 endif()
 add_subdirectory(protobuf EXCLUDE_FROM_ALL)
+endif()
