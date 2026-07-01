@@ -5,13 +5,16 @@
 #include <boost/container/flat_map.hpp>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
+#include "common/alignment.h"
 #include "common/arch.h"
 #include "common/decoder.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/signal_context.h"
+#include "core/address_space.h"
 #include "core/emulator_settings.h"
+#include "core/memory.h"
 #include "core/signals.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
@@ -68,24 +71,69 @@ static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t code
 }
 
 static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
-    // Only handle if the fault address is within the SRT code range
-    const u8* code_start = g_srt_codegen_start;
+    // Only handle the fault if its RIP is inside the JIT'd SRT-walker code.
+    //
+    // Bound the check by the codegen buffer BASE (getCode()), not g_srt_codegen_start.
+    // g_srt_codegen_start is set to the first FLATTEN-PASS walker's address, but walkers emitted
+    // earlier via RegisterWalkerCode live BELOW it in the same buffer, so their faulting RIPs fell
+    // under code_start and the range check rejected them. The fault then went unhandled and the
+    // process segfaulted (~50% of boots for SRT-heavy titles). The whole g_srt_codegen buffer
+    // contains only walker code, so [getCode(), getCode()+getSize()) is the correct range.
+    const u8* code_start = static_cast<const u8*>(g_srt_codegen.getCode());
     const u8* code_end = code_start + g_srt_codegen.getSize();
     const void* code = Common::GetRip(context);
     if (code < code_start || code >= code_end) {
         return false; // Not in SRT code range
     }
 
-    // Patch instruction to zero register
+    // Decode the faulting load to learn its length and destination register.
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
     ZyanStatus status = Common::Decoder::Instance()->decodeInstruction(instruction, operands,
                                                                        const_cast<void*>(code), 15);
 
-    ASSERT(ZYAN_SUCCESS(status) && instruction.mnemonic == ZYDIS_MNEMONIC_MOV &&
-           operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
-           operands[1].type == ZYDIS_OPERAND_TYPE_MEMORY);
+    // The widened code range above also catches walker faults whose instruction is not the simple
+    // `MOV rdi/r10d, [mem]` load this handler heals. Gracefully DECLINE those (return false so the
+    // fault propagates to its normal handling) instead of asserting, which aborted the process.
+    if (!ZYAN_SUCCESS(status) || instruction.mnemonic != ZYDIS_MNEMONIC_MOV ||
+        operands[0].type != ZYDIS_OPERAND_TYPE_REGISTER ||
+        operands[1].type != ZYDIS_OPERAND_TYPE_MEMORY) {
+        return false;
+    }
 
+    // Page-in-and-retry before falling back to zeroing the load.
+    //
+    // The faulting load is the SRT walker chasing a guest pointer that is often only TRANSIENTLY
+    // non-resident (the engine's per-draw scratch / descriptor tables become valid moments later).
+    // Zeroing the load (below) feeds the geometry a null descriptor pointer (e.g. a null material
+    // T#) and can leave a black/untextured world even after the memory becomes valid. So if the
+    // faulting address is a valid mapping, make its page resident and RE-EXECUTE the load (return
+    // true without advancing RIP) -- the same self-heal GuestFaultSignalHandler performs for
+    // orphaned NoAccess protections. A bounded per-address retry (thread_local) prevents an
+    // infinite fault loop on a genuinely-unmapped pointer, in which case we fall through to zeroing.
+    {
+        const VAddr fa = reinterpret_cast<VAddr>(fault_address);
+        static thread_local VAddr tl_last_fa = 0;
+        static thread_local u32 tl_retries = 0;
+        auto* memory = Core::Memory::Instance();
+        if (memory && memory->IsValidMapping(fa, 1) && (fa != tl_last_fa || tl_retries < 16)) {
+            memory->GetAddressSpace().Protect(Common::AlignDown(fa, size_t(4096)), size_t(4096),
+                                              Core::MemoryPermission::ReadWrite);
+            if (fa == tl_last_fa) {
+                ++tl_retries;
+            } else {
+                tl_last_fa = fa;
+                tl_retries = 1;
+            }
+            return true; // re-execute the now-resident load
+        }
+        tl_last_fa = 0;
+        tl_retries = 0;
+    }
+
+    // Fallback: the pointer is genuinely unmapped (or retries exhausted). Patch the load in place to
+    // zero its destination register and re-execute -- the original behavior, now reached only after
+    // page-in attempts fail rather than on every transient fault.
     size_t len = instruction.length;
     const size_t patch_size = 3;
     u8* code_patch = const_cast<u8*>(reinterpret_cast<const u8*>(code));
@@ -106,7 +154,8 @@ static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
         code_patch[2] = 0xD2;
         break;
     default:
-        UNREACHABLE_MSG("Unsupported register for SRT walker patch");
+        // A MOV-load to a register other than rdi/r10d is a walker variant we don't handle; decline
+        // gracefully rather than abort.
         return false;
     }
 
