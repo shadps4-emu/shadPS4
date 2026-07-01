@@ -406,27 +406,45 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                     return ir.BitCast<IR::F32, IR::U32>(IR::U32{data});
                 };
 
-                auto get_factor_attr = [&](u32 gcn_factor_idx) -> IR::Patch {
-                    // The hull outputs tess factors in different formats depending on the shader.
-                    // For triangle domains, it seems to pack the entries into 4 consecutive floats,
-                    // with the 3 edge factors followed by the 1 interior factor.
-                    // For quads, it does 4 edge factors then 2 interior.
-                    // There is a tess factor stride member of the GNMX hull constants struct in
-                    // a hull program shader binary archive, but this doesn't seem to be
-                    // communicated to the driver.
-                    // The layout seems to be implied by the type of the abstract domain.
+                auto get_factor_attr = [&](u32 gcn_factor_idx) -> std::optional<IR::Patch> {
+                    // GCN always writes tess factors into a fixed 6-slot buffer regardless of
+                    // domain type, matching the Quad layout: outer0..3 at slots 0..3, then
+                    // inner0..1 at slots 4..5. Unused slots for smaller domains are written by
+                    // the shader but skipped here.
+                    // Triangle: outer0/1/2 -> slots 0/1/2, slot 3 unused,
+                    //           inner0 -> slot 4, slot 5 unused.
+                    // Isoline:  outer0/1 -> slots 0/1, slots 2-5 unused.
+                    // Quad:     outer0..3 -> slots 0..3, inner0/1 -> slots 4/5.
                     switch (runtime_info.hs_info.tess_type) {
                     case AmdGpu::TessellationType::Isoline:
-                        ASSERT(gcn_factor_idx < 2);
-                        return IR::PatchFactor(gcn_factor_idx);
-                    case AmdGpu::TessellationType::Triangle:
-                        ASSERT(gcn_factor_idx < 4);
-                        if (gcn_factor_idx == 3) {
-                            return IR::Patch::TessellationLodInteriorU;
+                        if (gcn_factor_idx >= 2) {
+                            return std::nullopt;
                         }
                         return IR::PatchFactor(gcn_factor_idx);
+                    case AmdGpu::TessellationType::Triangle:
+                        switch (gcn_factor_idx) {
+                        case 0:
+                        case 1:
+                        case 2:
+                            return IR::PatchFactor(gcn_factor_idx);
+                        case 3:
+                            return std::nullopt; // outer3, unused for Triangle
+                        case 4:
+                            return IR::Patch::TessellationLodInteriorU;
+                        case 5:
+                            return std::nullopt; // inner1, unused for Triangle
+                        default:
+                            LOG_WARNING(Render_Recompiler,
+                                        "Triangle tess factor index {} out of range",
+                                        gcn_factor_idx);
+                            return std::nullopt;
+                        }
                     case AmdGpu::TessellationType::Quad:
-                        ASSERT(gcn_factor_idx < 6);
+                        if (gcn_factor_idx >= 6) {
+                            LOG_WARNING(Render_Recompiler,
+                                        "Quad tess factor index {} out of range", gcn_factor_idx);
+                            return std::nullopt;
+                        }
                         return IR::PatchFactor(gcn_factor_idx);
                     default:
                         UNREACHABLE();
@@ -435,7 +453,9 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
 
                 inst.Invalidate();
                 if (num_dwords == 1) {
-                    ir.SetPatch(get_factor_attr(gcn_factor_idx), GetValue(data));
+                    if (const auto patch = get_factor_attr(gcn_factor_idx)) {
+                        ir.SetPatch(*patch, GetValue(data));
+                    }
                     break;
                 }
                 auto* inst = data.TryInstRecursive();
@@ -443,7 +463,9 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                                 inst->GetOpcode() == IR::Opcode::CompositeConstructU32x3 ||
                                 inst->GetOpcode() == IR::Opcode::CompositeConstructU32x4));
                 for (s32 i = 0; i < num_dwords; i++) {
-                    ir.SetPatch(get_factor_attr(gcn_factor_idx + i), GetValue(inst->Arg(i)));
+                    if (const auto patch = get_factor_attr(gcn_factor_idx + i)) {
+                        ir.SetPatch(*patch, GetValue(inst->Arg(i)));
+                    }
                 }
                 break;
             }
