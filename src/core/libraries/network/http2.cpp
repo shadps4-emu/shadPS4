@@ -183,9 +183,13 @@ s32 PS4_SYSV_ABI sceHttp2Init(s32 net_id, s32 ssl_id, u64 pool_size, s32 max_req
     return ctx_id;
 }
 
-s32 PS4_SYSV_ABI sceHttp2ReadData() {
+s32 PS4_SYSV_ABI sceHttp2ReadData(s32 req_id, void* data, u64 size) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+    s32 result = Libraries::Http::sceHttpReadData(req_id, data, size);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to read HTTP data, error = {:#x}", result);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceHttp2ReadDataAsync() {

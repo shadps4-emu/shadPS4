@@ -285,12 +285,11 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventUnregisterPushContextCallback() {
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2ReadData(s64 request_id, void* data, u64 size) {
-    if (data == nullptr || size == 0) {
+    if (!data || size == 0) {
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
     }
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, request_id = {:#x}, size = {:#x}", request_id,
-              size);
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi2, "called, request_id = {:#x}, size = {:#x}", request_id, size);
+    return readData(request_id, data, size);
 }
 
 s32 PS4_SYSV_ABI

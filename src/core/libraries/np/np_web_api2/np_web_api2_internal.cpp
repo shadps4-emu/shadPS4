@@ -432,6 +432,61 @@ s32 getHttpResponseHeaderData(s64 request_id, const char* field_name, char* valu
     return result;
 }
 
+s32 readData(s64 request_id, void* data, u64 size) {
+    s32 lib_ctx_id = static_cast<s32>(request_id >> 0x30);
+    s32 user_ctx_id = static_cast<s32>(request_id >> 0x20);
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for request id {:#x}", request_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context for request id {:#x}", request_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    Request* request = user_ctx->GetRequest(request_id);
+    if (!request) {
+        LOG_ERROR(Lib_NpWebApi2, "No request with id {:#x}", request_id);
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    request->SetEndTime();
+
+    request->Lock();
+    request->SetState(3);
+    s32 result = checkRequestStatus(request, user_ctx, lib_ctx);
+    request->Unlock();
+    if (result != 0) {
+        // Aborted or timed out.
+        return result;
+    }
+
+    s32 http_req_id = request->GetHttpRequestId();
+    s32 result2 = Libraries::Http2::sceHttp2ReadData(http_req_id, data, size);
+
+    request->Lock();
+    request->SetState(0);
+    result = checkRequestStatus(request, user_ctx, lib_ctx);
+    request->Unlock();
+    if (result != 0) {
+        // Aborted or timed out.
+        return result;
+    }
+
+    request->ClearEndTime();
+
+    request->RemoveUser();
+    user_ctx->RemoveUser();
+    lib_ctx->RemoveUser();
+    return result2;
+}
+
 s32 abortRequest(s64 request_id) {
     s32 lib_ctx_id = static_cast<s32>(request_id >> 0x30);
     s32 user_ctx_id = static_cast<s32>(request_id >> 0x20);

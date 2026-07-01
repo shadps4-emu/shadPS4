@@ -19,6 +19,7 @@ s32 sendRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
                 OrbisNpWebApi2ResponseInformationOption* resp_info_option);
 s32 getHttpResponseHeaderData(s64 request_id, const char* field_name, char* value, u64 value_size,
                               u64* value_size_out);
+s32 readData(s64 request_id, void* data, u64 size);
 s32 abortRequest(s64 request_id);
 s32 deleteRequest(s64 request_id);
 
