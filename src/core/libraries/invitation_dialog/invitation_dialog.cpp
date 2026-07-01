@@ -5,6 +5,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/libs.h"
+#include "magic_enum/magic_enum.hpp"
 
 namespace Libraries::InvitationDialog {
 
