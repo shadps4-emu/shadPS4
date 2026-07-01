@@ -43,6 +43,14 @@ u16 ConfiguredPort() {
     return g_transport.configured_port ? g_transport.configured_port() : 0;
 }
 
+u32 AdvertisedAddr() {
+    return g_transport.advertised_addr ? g_transport.advertised_addr() : 0;
+}
+
+bool EnsureTransport() {
+    return g_transport.ensure_transport ? g_transport.ensure_transport() : TransportIsReady();
+}
+
 void SetPeerResolver(PeerResolver fn) {
     g_peer_resolver = fn;
 }

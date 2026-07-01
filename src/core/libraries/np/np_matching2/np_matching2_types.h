@@ -221,6 +221,12 @@ struct OrbisNpMatching2GetWorldInfoListRequest {
     OrbisNpMatching2ServerId serverId;
 };
 
+struct OrbisNpMatching2GetRoomDataInternalRequest {
+    OrbisNpMatching2RoomId roomId;
+    const OrbisNpMatching2AttributeId* attrId;
+    u64 attrIdNum;
+};
+
 struct OrbisNpMatching2World {
     OrbisNpMatching2World* next;
     OrbisNpMatching2WorldId worldId;
@@ -297,14 +303,9 @@ static_assert(sizeof(OrbisNpMatching2JoinRoomRequest) == 0x58);
 struct OrbisNpMatching2KickoutRoomMemberRequest {
     OrbisNpMatching2RoomId roomId;
     OrbisNpMatching2RoomMemberId memberId;
-    u8 pad0[6];
-    u32 blockKickFlag;
-    u8 pad1[12];
-    u64 reserved;
-
-    int Validate() {
-        return 0;
-    }
+    OrbisNpMatching2BlockKickFlag blockKickFlag;
+    u8 padding[5];
+    OrbisNpMatching2PresenceOptionData optData;
 };
 static_assert(sizeof(OrbisNpMatching2KickoutRoomMemberRequest) == 0x28);
 
@@ -395,6 +396,12 @@ struct OrbisNpMatching2RoomGroupConfig {
     OrbisNpMatching2GroupLabel label;
     bool hasPassword;
     u8 pad[2];
+};
+
+struct OrbisNpMatching2RoomGroupPasswordConfig {
+    OrbisNpMatching2RoomGroupId groupId;
+    bool hasPassword;
+    u8 pad[1];
 };
 
 struct OrbisNpMatching2RoomGroupInfo {
@@ -505,29 +512,25 @@ struct OrbisNpMatching2SearchRoomResponseA {
 
 struct OrbisNpMatching2SetRoomDataExternalRequest {
     OrbisNpMatching2RoomId roomId;
-    OrbisNpMatching2IntAttr* roomSearchableIntAttrExternal;
-    u32 roomSearchableIntAttrExternalNum;
-    u8 pad1[4];
-    OrbisNpMatching2BinAttr* roomSearchableBinAttrExternal;
-    u32 roomSearchableBinAttrExternalNum;
-    u8 pad2[4];
-    OrbisNpMatching2BinAttr* roomBinAttrExternal;
-    u32 roomBinAttrExternalNum;
-    u8 pad3[4];
+    const OrbisNpMatching2IntAttr* roomSearchableIntAttrExternal;
+    u64 roomSearchableIntAttrExternalNum;
+    const OrbisNpMatching2BinAttr* roomSearchableBinAttrExternal;
+    u64 roomSearchableBinAttrExternalNum;
+    const OrbisNpMatching2BinAttr* roomBinAttrExternal;
+    u64 roomBinAttrExternalNum;
 };
 
 struct OrbisNpMatching2SetRoomDataInternalRequest {
     OrbisNpMatching2RoomId roomId;
     OrbisNpMatching2Flags flagFilter;
     OrbisNpMatching2Flags flagAttr;
-    OrbisNpMatching2BinAttr* roomBinAttrInternal;
-    u32 roomBinAttrInternalNum;
-    OrbisNpMatching2RoomGroupConfig* passwordConfig;
-    u32 passwordConfigNum;
-    u64* passwordSlotMask;
-    OrbisNpMatching2RoomMemberId* ownerPrivilegeRank;
-    u32 ownerPrivilegeRankNum;
-    u8 padding[4];
+    const OrbisNpMatching2BinAttr* roomBinAttrInternal;
+    u64 roomBinAttrInternalNum;
+    const OrbisNpMatching2RoomGroupPasswordConfig* passwordConfig;
+    u64 passwordConfigNum;
+    const OrbisNpMatching2RoomPasswordSlotMask* passwordSlotMask;
+    const OrbisNpMatching2RoomMemberId* ownerPrivilegeRank;
+    u64 ownerPrivilegeRankNum;
 };
 
 struct OrbisNpMatching2SetUserInfoRequest {
@@ -543,9 +546,23 @@ struct OrbisNpMatching2SignalingConnectionInfoAddr {
     u8 pad[2];
 };
 
-struct OrbisNpMatching2SignalingConnectionInfo {
+union OrbisNpMatching2SignalingConnectionInfo {
+    u32 rtt;
+    u32 bandwidth;
+    Libraries::Np::OrbisNpId npId;
     OrbisNpMatching2SignalingConnectionInfoAddr address;
+    u32 packetLoss;
 };
+static_assert(sizeof(OrbisNpMatching2SignalingConnectionInfo) == 0x24);
+
+union OrbisNpMatching2SignalingConnectionInfoA {
+    u32 rtt;
+    u32 bandwidth;
+    Libraries::Np::OrbisNpPeerAddressA peerAddrA;
+    OrbisNpMatching2SignalingConnectionInfoAddr address;
+    u32 packetLoss;
+};
+static_assert(sizeof(OrbisNpMatching2SignalingConnectionInfoA) == 0x10);
 
 // internal - to be removed.
 struct OrbisNpMatching2SignalingEvent {
@@ -570,9 +587,10 @@ struct OrbisNpMatching2SignalingGetPingInfoResponse {
     u8 pad[2];
     OrbisNpMatching2WorldId worldId;
     OrbisNpMatching2RoomId roomId;
-    u32 pingUs;
+    u32 rtt;
     u8 reserved[20];
 };
+static_assert(sizeof(OrbisNpMatching2SignalingGetPingInfoResponse) == 0x28);
 
 struct OrbisNpMatching2SignalingParam {
     int type;
