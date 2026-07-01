@@ -8,6 +8,7 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/network/net_upnp.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_matching2/np_matching2_mm.h"
@@ -177,6 +178,9 @@ bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, cons
     // Seed the current Appear-Offline preference so the login packet carries it (the send
     // is suppressed pre-auth; it just caches on the client).
     client->SetAppearOffline(m_appear_offline.load());
+    if (EmulatorSettings.IsUPnPEnabled()) {
+        Net::UPnPClient::Instance().Start();
+    }
     client->Start(host, port, npid, password, token);
 
     const ShadNet::ShadNetState conn_state = client->WaitForConnection();

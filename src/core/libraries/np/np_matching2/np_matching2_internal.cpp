@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 
 #include "common/logging/log.h"
 #include "common/thread.h"
+#include "core/libraries/network/net.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_matching2/np_matching2_internal.h"
@@ -14,6 +16,18 @@
 namespace Libraries::Np::NpMatching2 {
 
 NpMatching2State g_state;
+
+namespace {
+
+u32 IpStringToAddr(std::string_view ip) {
+    u32 a, b, c, d;
+    if (std::sscanf(std::string(ip).c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) != 4) {
+        return 0;
+    }
+    return a | (b << 8) | (c << 16) | (d << 24);
+}
+
+} // namespace
 
 void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRoomResponse& resp) {
     CallbackPayload& p = ctx.request_payload;
@@ -99,11 +113,33 @@ void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRo
         }
     }
 
+    if (ctx.room_id != 0 && ctx.room_id != room.roomId) {
+        ctx.room_cache.erase(ctx.room_id);
+    }
+    ctx.peers.clear();
+
     RoomCache& rc = ctx.room_cache[room.roomId];
     rc = RoomCache{};
     rc.num_slots = room.maxSlot;
     rc.mask_password = room.passwdSlotMask;
+    rc.server_id = room.serverId;
+    rc.world_id = room.worldId;
+    rc.lobby_id = room.lobbyId;
+    rc.room_id = room.roomId;
+    rc.max_slot = room.maxSlot;
+    rc.public_slots = room.publicSlots;
+    rc.private_slots = room.privateSlots;
+    rc.open_public_slots = room.openPublicSlots;
+    rc.open_private_slots = room.openPrivateSlots;
+    rc.passwd_slot_mask = room.passwdSlotMask;
+    rc.joined_slot_mask = room.joinedSlotMask;
+    rc.flags = room.flags;
     rc.owner = resp.me_member_id() == resp.owner_member_id();
+    rc.signaling_type = ORBIS_NP_MATCHING2_SIGNALING_TYPE_MESH;
+    rc.signaling_main_member = static_cast<OrbisNpMatching2RoomMemberId>(resp.owner_member_id());
+    ctx.room_id = room.roomId;
+    ctx.my_member_id = static_cast<OrbisNpMatching2RoomMemberId>(resp.me_member_id());
+    ctx.is_room_owner = rc.owner;
     for (const auto& g : p.room_groups) {
         rc.groups[g.id] = g;
     }
@@ -117,17 +153,44 @@ void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRo
         mc.flag_attr = m.flag_attr();
         mc.group_id = static_cast<OrbisNpMatching2RoomGroupId>(m.group_id());
         mc.join_date = m.join_date();
-        mc.addr = 0;
-        mc.port = 0;
+        mc.addr = IpStringToAddr(m.addr());
+        mc.port = Libraries::Net::sceNetHtons(static_cast<u16>(m.port()));
         std::strncpy(mc.np_id.handle.data, m.npid().c_str(), sizeof(mc.np_id.handle.data) - 1);
         for (const auto& a : m.bin_attrs_internal()) {
             MemberBinCache& b = mc.bins[a.attr_id()];
             b.id = static_cast<OrbisNpMatching2AttributeId>(a.attr_id());
             b.data.assign(a.data().begin(), a.data().end());
         }
+        if (mc.member_id != ctx.my_member_id) {
+            PeerInfo peer{};
+            peer.member_id = mc.member_id;
+            peer.addr = mc.addr;
+            peer.port = mc.port;
+            std::strncpy(peer.online_id.data, m.npid().c_str(), sizeof(peer.online_id.data) - 1);
+            ctx.peers[mc.member_id] = peer;
+        }
     }
 
     p.request_data = p.create_join_response.get();
+    return p.request_data;
+}
+
+void* BuildLeaveRoomPayload(ContextObject& ctx, const shadnet::LeaveRoomReply& resp) {
+    CallbackPayload& p = ctx.request_payload;
+    p.Reset();
+
+    p.leave_room_response = std::make_unique<OrbisNpMatching2LeaveRoomResponse>();
+    p.leave_room_response->roomId = static_cast<OrbisNpMatching2RoomId>(resp.room_id());
+
+    if (ctx.room_id == p.leave_room_response->roomId) {
+        ctx.room_cache.erase(ctx.room_id);
+        ctx.peers.clear();
+        ctx.room_id = 0;
+        ctx.my_member_id = 0;
+        ctx.is_room_owner = false;
+    }
+
+    p.request_data = p.leave_room_response.get();
     return p.request_data;
 }
 
@@ -260,6 +323,51 @@ void* BuildSearchRoomPayload(ContextObject& ctx, const shadnet::SearchRoomReply&
     out.roomDataExt = p.room_data_external.empty() ? nullptr : p.room_data_external.data();
 
     p.request_data = p.search_room_response.get();
+    return p.request_data;
+}
+
+void* BuildGetRoomDataInternalPayload(ContextObject& ctx, OrbisNpMatching2RoomId room_id) {
+    const auto rc_it = ctx.room_cache.find(room_id);
+    if (rc_it == ctx.room_cache.end()) {
+        return nullptr;
+    }
+    const RoomCache& rc = rc_it->second;
+
+    CallbackPayload& p = ctx.request_payload;
+    p.Reset();
+
+    p.room_groups.clear();
+    p.room_groups.reserve(rc.groups.size());
+    for (const auto& [gid, g] : rc.groups) {
+        p.room_groups.push_back(g);
+    }
+
+    p.room_bin_attrs.resize(rc.bin_attrs_internal.size());
+    for (size_t i = 0; i < rc.bin_attrs_internal.size(); ++i) {
+        p.room_bin_attrs[i] = rc.bin_attrs_internal[i];
+    }
+
+    p.room_data = std::make_unique<OrbisNpMatching2RoomDataInternal>();
+    auto& room = *p.room_data;
+    room = {};
+    room.publicSlots = rc.public_slots;
+    room.privateSlots = rc.private_slots;
+    room.openPublicSlots = rc.open_public_slots;
+    room.openPrivateSlots = rc.open_private_slots;
+    room.maxSlot = rc.max_slot;
+    room.serverId = rc.server_id;
+    room.worldId = rc.world_id;
+    room.lobbyId = rc.lobby_id;
+    room.roomId = rc.room_id;
+    room.passwdSlotMask = rc.passwd_slot_mask;
+    room.joinedSlotMask = rc.joined_slot_mask;
+    room.flags = rc.flags;
+    room.roomGroup = p.room_groups.empty() ? nullptr : p.room_groups.data();
+    room.roomGroups = p.room_groups.size();
+    room.internalBinAttr = p.room_bin_attrs.empty() ? nullptr : p.room_bin_attrs.data();
+    room.internalBinAttrs = p.room_bin_attrs.size();
+
+    p.request_data = p.room_data.get();
     return p.request_data;
 }
 
