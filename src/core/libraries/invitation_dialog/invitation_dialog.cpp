@@ -8,9 +8,15 @@
 
 namespace Libraries::InvitationDialog {
 
-s32 PS4_SYSV_ABI sceInvitationDialogClose() {
+static auto g_status = Libraries::CommonDialog::Status::NONE;
+
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogClose() {
     LOG_ERROR(Lib_InvitationDialog, "(STUBBED) called");
-    return ORBIS_OK;
+    if (g_status != Libraries::CommonDialog::Status::RUNNING) {
+        return Libraries::CommonDialog::Error::NOT_RUNNING;
+    }
+    LOG_INFO(Lib_InvitationDialog, "TODO: close invitation ui dialog");
+    return Libraries::CommonDialog::Error::OK;
 }
 
 s32 PS4_SYSV_ABI sceInvitationDialogGetResult() {
@@ -23,34 +29,68 @@ s32 PS4_SYSV_ABI sceInvitationDialogGetResultA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceInvitationDialogGetStatus() {
-    LOG_ERROR(Lib_InvitationDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Status PS4_SYSV_ABI sceInvitationDialogGetStatus() {
+    LOG_INFO(Lib_InvitationDialog, "called status={}", magic_enum::enum_name(g_status));
+    return g_status;
 }
 
-s32 PS4_SYSV_ABI sceInvitationDialogInitialize() {
-    LOG_ERROR(Lib_InvitationDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogInitialize() {
+    if (!CommonDialog::g_isInitialized) {
+        return Libraries::CommonDialog::Error::NOT_SYSTEM_INITIALIZED;
+    }
+    if (g_status != Libraries::CommonDialog::Status::NONE) {
+        LOG_ERROR(Lib_InvitationDialog, "already initialized");
+        return Libraries::CommonDialog::Error::ALREADY_INITIALIZED;
+    }
+    if (CommonDialog::g_isUsed) {
+        return Libraries::CommonDialog::Error::BUSY;
+    }
+    g_status = Libraries::CommonDialog::Status::INITIALIZED;
+    CommonDialog::g_isUsed = true;
+    return Libraries::CommonDialog::Error::OK;
 }
 
-s32 PS4_SYSV_ABI sceInvitationDialogOpen() {
-    LOG_ERROR(Lib_InvitationDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogOpen() {
+    if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
+        g_status != Libraries::CommonDialog::Status::FINISHED) {
+        LOG_INFO(Lib_InvitationDialog, "called without initialize");
+        return Libraries::CommonDialog::Error::INVALID_STATE;
+    }
+    LOG_ERROR(Lib_InvitationDialog, "(STUBBED) called"); // TODO open ui dialog
+    g_status = Libraries::CommonDialog::Status::RUNNING;
+    return Libraries::CommonDialog::Error::OK;
 }
 
-s32 PS4_SYSV_ABI sceInvitationDialogOpenA() {
-    LOG_ERROR(Lib_InvitationDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogOpenA() {
+    if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
+        g_status != Libraries::CommonDialog::Status::FINISHED) {
+        LOG_INFO(Lib_InvitationDialog, "called without initialize");
+        return Libraries::CommonDialog::Error::INVALID_STATE;
+    }
+    LOG_ERROR(Lib_InvitationDialog, "(STUBBED) called"); // TODO open ui dialog
+    g_status = Libraries::CommonDialog::Status::RUNNING;
+    return Libraries::CommonDialog::Error::OK;
 }
 
-s32 PS4_SYSV_ABI sceInvitationDialogTerminate() {
-    LOG_ERROR(Lib_InvitationDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogTerminate() {
+    if (g_status == Libraries::CommonDialog::Status::RUNNING) {
+        sceInvitationDialogClose();
+    }
+    if (g_status == Libraries::CommonDialog::Status::NONE) {
+        return Libraries::CommonDialog::Error::NOT_INITIALIZED;
+    }
+    g_status = Libraries::CommonDialog::Status::NONE;
+    CommonDialog::g_isUsed = false;
+    return Libraries::CommonDialog::Error::OK;
 }
 
-s32 PS4_SYSV_ABI sceInvitationDialogUpdateStatus() {
-    LOG_ERROR(Lib_InvitationDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Status PS4_SYSV_ABI sceInvitationDialogUpdateStatus() {
+    LOG_TRACE(Lib_InvitationDialog, "called status={}", magic_enum::enum_name(g_status));
+    if (g_status == Libraries::CommonDialog::Status::RUNNING) {
+        g_status = Libraries::CommonDialog::Status::FINISHED; // TODO removed it when implementing
+                                                              // real dialog
+    }
+    return g_status;
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {

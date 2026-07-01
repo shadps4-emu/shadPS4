@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <core/libraries/system/commondialog.h>
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -11,15 +12,15 @@ class SymbolsResolver;
 
 namespace Libraries::InvitationDialog {
 
-s32 PS4_SYSV_ABI sceInvitationDialogClose();
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogClose();
 s32 PS4_SYSV_ABI sceInvitationDialogGetResult();
 s32 PS4_SYSV_ABI sceInvitationDialogGetResultA();
-s32 PS4_SYSV_ABI sceInvitationDialogGetStatus();
-s32 PS4_SYSV_ABI sceInvitationDialogInitialize();
-s32 PS4_SYSV_ABI sceInvitationDialogOpen();
-s32 PS4_SYSV_ABI sceInvitationDialogOpenA();
-s32 PS4_SYSV_ABI sceInvitationDialogTerminate();
-s32 PS4_SYSV_ABI sceInvitationDialogUpdateStatus();
+Libraries::CommonDialog::Status PS4_SYSV_ABI sceInvitationDialogGetStatus();
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogInitialize();
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogOpen();
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogOpenA();
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogTerminate();
+Libraries::CommonDialog::Status PS4_SYSV_ABI sceInvitationDialogUpdateStatus();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::InvitationDialog
