@@ -50,5 +50,19 @@ struct OrbisNpWebApi2ResponseInformationOption {
     u64 response_data_size;
 };
 
+struct OrbisNpWebApi2PushEventDataType {
+    char val[65];
+};
+
+struct OrbisNpWebApi2PushEventExtdDataKey {
+    char val[33];
+};
+
+struct OrbisNpWebApi2PushEventFilterParameter {
+    OrbisNpWebApi2PushEventDataType data_type;
+    OrbisNpWebApi2PushEventExtdDataKey* extd_data_key;
+    u64 extd_data_key_num;
+};
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpWebApi2

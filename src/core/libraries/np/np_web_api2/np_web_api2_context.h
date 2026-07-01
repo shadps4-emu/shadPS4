@@ -87,6 +87,19 @@ public:
 
     s32 CreatePushEventHandle();
 
+    void SetHandleEndTime(s32 handle_id) {
+        std::scoped_lock lk{lock};
+        if (push_event_handles.contains(handle_id)) {
+            auto& handle = push_event_handles[handle_id];
+            handle->SetEndTime();
+        }
+    }
+
+    s32 CreatePushEventFilter(s32 handle_id, const char* np_service_name,
+                              OrbisNpServiceLabel np_service_label,
+                              const OrbisNpWebApi2PushEventFilterParameter* filter_param,
+                              u64 filter_param_num, bool internal);
+
     s32 CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id);
     UserContext* GetUserContext(s32 user_ctx_id);
     UserContext* GetUserContextByUserId(Libraries::UserService::OrbisUserServiceUserId user_id);

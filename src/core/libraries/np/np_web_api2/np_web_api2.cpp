@@ -6,6 +6,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_types.h"
 #include "core/libraries/np/np_web_api2/np_web_api2.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_internal.h"
 #include "core/libraries/system/userservice.h"
@@ -224,14 +225,46 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventAbortHandle() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2PushEventCreateFilter() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApi2PushEventCreateFilter(
+    s32 lib_ctx_id, s32 handle_id, const char* np_service_name,
+    OrbisNpServiceLabel np_service_label,
+    const OrbisNpWebApi2PushEventFilterParameter* filter_param, u64 filter_param_num) {
+    if ((np_service_name && np_service_label == ORBIS_NP_INVALID_SERVICE_LABEL) || !filter_param ||
+        filter_param_num == 0) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
+        return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
+    }
+    LOG_DEBUG(Lib_NpWebApi2,
+              "called, lib_ctx_id = {:#x}, handle_id = {:#x}, np_service_name = {}, "
+              "np_service_label = {:#x}, filter_param_num = {:#x}",
+              lib_ctx_id, handle_id, np_service_name ? np_service_name : "(null)",
+              static_cast<u32>(np_service_label), filter_param_num);
+    for (u64 i = 0; i < filter_param_num; i++) {
+        LOG_DEBUG(Lib_NpWebApi2, "filter_param[{:#x}].data_type.val = {}", i,
+                  filter_param[i].data_type.val);
+        LOG_DEBUG(Lib_NpWebApi2, "filter_param[{:#x}].extd_data_key_num = {:#x}", i,
+                  filter_param[i].extd_data_key_num);
+        for (u64 j = 0; j < filter_param[i].extd_data_key_num && filter_param[i].extd_data_key;
+             j++) {
+            LOG_DEBUG(Lib_NpWebApi2, "filter_param[{:#x}].extd_data_key[{:#x}].val = {}", i, j,
+                      filter_param[i].extd_data_key[j].val);
+        }
+    }
+    s32 filter_id = createPushEventFilter(lib_ctx_id, handle_id, np_service_name, np_service_label,
+                                          filter_param, filter_param_num, false);
+    if (filter_id > 0) {
+        LOG_INFO(Lib_NpWebApi2, "created filter_id = {:#x}", filter_id);
+    }
+    return filter_id;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2PushEventCreateHandle(s32 lib_ctx_id) {
-    LOG_INFO(Lib_NpWebApi2, "called, lib_ctx_id = {:#x}", lib_ctx_id);
-    return createPushEventHandle(lib_ctx_id);
+    LOG_DEBUG(Lib_NpWebApi2, "called, lib_ctx_id = {:#x}", lib_ctx_id);
+    s32 handle_id = createPushEventHandle(lib_ctx_id);
+    if (handle_id > 0) {
+        LOG_INFO(Lib_NpWebApi2, "created handle_id = {:#x}", handle_id);
+    }
+    return handle_id;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2PushEventCreatePushContext() {

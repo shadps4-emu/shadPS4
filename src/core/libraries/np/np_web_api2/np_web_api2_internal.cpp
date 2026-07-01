@@ -6,6 +6,7 @@
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/network/http2.h"
 #include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_types.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_context.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_internal.h"
 #include "core/libraries/system/userservice.h"
@@ -81,6 +82,23 @@ s32 createPushEventHandle(s32 lib_ctx_id) {
     }
 
     s32 result = lib_ctx->CreatePushEventHandle();
+    lib_ctx->RemoveUser();
+    return result;
+}
+
+s32 createPushEventFilter(s32 lib_ctx_id, s32 handle_id, const char* np_service_name,
+                          OrbisNpServiceLabel np_service_label,
+                          const OrbisNpWebApi2PushEventFilterParameter* filter_param,
+                          u64 filter_param_num, bool internal) {
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context with id {:#x}", lib_ctx_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    lib_ctx->SetHandleEndTime(handle_id);
+    s32 result = lib_ctx->CreatePushEventFilter(handle_id, np_service_name, np_service_label,
+                                                filter_param, filter_param_num, internal);
     lib_ctx->RemoveUser();
     return result;
 }
