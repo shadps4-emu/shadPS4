@@ -11,6 +11,7 @@
 
 namespace Libraries::Np::NpWebApi2 {
 
+s32 g_current_push_event_handle_id{};
 s32 g_current_user_context_id{};
 s64 g_current_request_id{};
 
@@ -31,6 +32,18 @@ s32 LibraryContext::CreateUserContext(Libraries::UserService::OrbisUserServiceUs
 
     this->user_contexts[actual_user_ctx_id] = new UserContext(this, actual_user_ctx_id, user_id);
     return actual_user_ctx_id;
+}
+
+s32 LibraryContext::CreatePushEventHandle() {
+    s32 new_handle_id = 1;
+    if (g_current_push_event_handle_id + 1 < 0xf0000000) {
+        new_handle_id = ++g_current_push_event_handle_id;
+    } else {
+        g_current_push_event_handle_id = 1;
+    }
+
+    this->push_event_handles[g_current_push_event_handle_id] = new PushEventHandle(new_handle_id);
+    return new_handle_id;
 }
 
 UserContext* LibraryContext::GetUserContext(s32 user_ctx_id) {

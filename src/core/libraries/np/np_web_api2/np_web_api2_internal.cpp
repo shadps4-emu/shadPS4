@@ -69,6 +69,18 @@ s32 getMemoryPoolStats(s32 lib_ctx_id, OrbisNpWebApi2MemoryPoolStats* stats) {
     return ORBIS_OK;
 }
 
+s32 createPushEventHandle(s32 lib_ctx_id) {
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context with id {:#x}", lib_ctx_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    s32 result = lib_ctx->CreatePushEventHandle();
+    lib_ctx->RemoveUser();
+    return result;
+}
+
 s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUserId user_id) {
     LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
     if (!lib_ctx) {

@@ -77,16 +77,18 @@ public:
         return type == LibraryContextType::Presence;
     }
 
+    s32 CreatePushEventHandle();
+
+    s32 CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id);
+    UserContext* GetUserContext(s32 user_ctx_id);
+    UserContext* GetUserContextByUserId(Libraries::UserService::OrbisUserServiceUserId user_id);
+
     void RemoveUserContext(s32 user_ctx_id) {
         std::scoped_lock lk{lock};
         if (user_contexts.contains(user_ctx_id)) {
             user_contexts.erase(user_ctx_id);
         }
     }
-
-    s32 CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id);
-    UserContext* GetUserContext(s32 user_ctx_id);
-    UserContext* GetUserContextByUserId(Libraries::UserService::OrbisUserServiceUserId user_id);
 
 private:
     s32 id{};
