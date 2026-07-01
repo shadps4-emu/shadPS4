@@ -173,6 +173,7 @@ public:
     bool HasBusyRequests();
     void AbortAllRequests();
     void Delete();
+
 private:
     s32 id{};
     Libraries::UserService::OrbisUserServiceUserId user_id{};
@@ -296,7 +297,7 @@ public:
     }
 
     s32 AddHttpRequestHeader(const char* field_name, const char* field_value);
-    
+
     void SetTimeout(u32 new_timeout) {
         this->timeout = new_timeout;
     }
@@ -304,6 +305,8 @@ public:
     s32 CreateHttpRequest(s32 http_template_id, const char* url);
     s32 SendHttpRequest(void* data, u64 data_size);
     s32 GetAllHttpResponseHeaders();
+    s32 ParseHttpResponseHeaders(const char* field_name, char* value, u64 value_size,
+                                 u64* value_size_out);
     s32 Abort();
     s32 Delete(s32* http_request_id);
 

@@ -400,6 +400,38 @@ s32 sendRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
     return result;
 }
 
+s32 getHttpResponseHeaderData(s64 request_id, const char* field_name, char* value, u64 value_size,
+                              u64* value_size_out) {
+    s32 lib_ctx_id = static_cast<s32>(request_id >> 0x30);
+    s32 user_ctx_id = static_cast<s32>(request_id >> 0x20);
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for request id {:#x}", request_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context for request id {:#x}", request_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    Request* request = user_ctx->GetRequest(request_id);
+    if (!request) {
+        LOG_ERROR(Lib_NpWebApi2, "No request with id {:#x}", request_id);
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    s32 result = request->ParseHttpResponseHeaders(field_name, value, value_size, value_size_out);
+    request->RemoveUser();
+    user_ctx->RemoveUser();
+    lib_ctx->RemoveUser();
+    return result;
+}
+
 s32 abortRequest(s64 request_id) {
     s32 lib_ctx_id = static_cast<s32>(request_id >> 0x30);
     s32 user_ctx_id = static_cast<s32>(request_id >> 0x20);

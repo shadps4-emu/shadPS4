@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
+#include "core/libraries/network/http.h"
 #include "core/libraries/network/http2.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_error.h"
@@ -308,6 +309,27 @@ s32 Request::GetAllHttpResponseHeaders() {
     }
     this->http_response_headers = header;
     this->http_response_header_size = size;
+    return result;
+}
+
+s32 Request::ParseHttpResponseHeaders(const char* field_name, char* value, u64 value_size,
+                                      u64* value_size_out) {
+    const char* temp_val{};
+    u64 temp_size{};
+    s32 result = Libraries::Http::sceHttpParseResponseHeader(this->http_response_headers,
+                                                             this->http_response_header_size,
+                                                             field_name, &temp_val, &temp_size);
+    if (result >= 0) {
+        if (value) {
+            std::memset(value, 0, value_size);
+            u64 size = std::min<u64>(value_size, temp_size);
+            std::memcpy(value, temp_val, size);
+        }
+        if (value_size_out) {
+            *value_size_out = temp_size;
+        }
+        result = ORBIS_OK;
+    }
     return result;
 }
 
