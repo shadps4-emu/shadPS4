@@ -60,7 +60,29 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     }
 
     range.base.level = image.base_level;
-    range.base.layer = image.base_array;
+    const bool is_array_image = image.GetType() == AmdGpu::ImageType::Color1DArray ||
+                                image.GetType() == AmdGpu::ImageType::Color2DArray ||
+                                image.GetType() == AmdGpu::ImageType::Color2DMsaaArray ||
+                                image.IsCube();
+    if (is_array_image) {
+        range.base.layer = image.base_array;
+        if (image.base_array > 0) {
+            LOG_DEBUG(Render_Vulkan,
+                      "ImageViewInfo: array texture base_array={} NumLayers()={} "
+                      "(type={} depth={}) using base_array as layer",
+                      image.base_array, image.NumLayers(), magic_enum::enum_name(image.GetType()),
+                      image.depth);
+        }
+    } else {
+        range.base.layer = 0u;
+        if (image.base_array > 0) {
+            LOG_DEBUG(Render_Vulkan,
+                      "ImageViewInfo: non-array texture base_array={} NumLayers()={} "
+                      "(type={} depth={}) using local layer 0",
+                      image.base_array, image.NumLayers(), magic_enum::enum_name(image.GetType()),
+                      image.depth);
+        }
+    }
     range.extent.levels = image.NumViewLevels(desc.is_array);
     range.extent.layers = image.NumViewLayers(desc.is_array);
     type = image.GetViewType(desc.is_array);
