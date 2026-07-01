@@ -23,6 +23,8 @@ vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
         return vk::ImageViewType::e2D;
     case AmdGpu::ImageType::Color2DArray:
         return vk::ImageViewType::e2DArray;
+    case AmdGpu::ImageType::Cube:
+        return vk::ImageViewType::eCubeArray;
     case AmdGpu::ImageType::Color3D:
         return vk::ImageViewType::e3D;
     default:
@@ -42,6 +44,8 @@ bool IsViewTypeCompatible(AmdGpu::ImageType view_type, AmdGpu::ImageType image_t
         return image_type == AmdGpu::ImageType::Color2D || image_type == AmdGpu::ImageType::Color3D;
     case AmdGpu::ImageType::Color3D:
         return image_type == AmdGpu::ImageType::Color3D;
+    case AmdGpu::ImageType::Cube:
+        return image_type == AmdGpu::ImageType::Color2D;
     default:
         UNREACHABLE();
     }
@@ -64,6 +68,18 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     range.extent.levels = image.NumViewLevels(desc.is_array);
     range.extent.layers = image.NumViewLayers(desc.is_array);
     type = image.GetViewType(desc.is_array);
+    if (image.IsCube() && !desc.is_written && !desc.is_storage) {
+        if (desc.is_depth) {
+            // TODO: native cube sampling for depth cubemaps needs the backing image created
+            // VK_IMAGE_CREATE_CUBE_COMPATIBLE; sample them as a 2D array until that is handled.
+            LOG_WARNING(Render_Vulkan,
+                        "Depth cubemap (format {}) sampled as a 2D array; "
+                        "native depth cube sampling is not implemented",
+                        vk::to_string(format));
+        } else {
+            type = AmdGpu::ImageType::Cube;
+        }
+    }
 
     if (!is_storage) {
         mapping = Vulkan::LiverpoolToVK::ComponentMapping(image.DstSelect());

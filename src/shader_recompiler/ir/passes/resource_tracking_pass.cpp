@@ -265,6 +265,7 @@ public:
         auto& image = image_resources[index];
         image.is_atomic |= desc.is_atomic;
         image.is_written |= desc.is_written;
+        image.is_storage |= desc.is_storage;
         return index;
     }
 
@@ -556,6 +557,7 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
         .is_atomic = is_atomic,
         .is_array = bool(inst_info.is_array),
         .is_written = is_written,
+        .is_storage = is_storage,
         .is_r128 = bool(inst_info.is_r128),
     };
 
@@ -889,11 +891,29 @@ IR::Value FixCubeCoords(IR::IREmitter& ir, const AmdGpu::Image& image, const IR:
     if (!image.IsCube()) {
         return ir.CompositeConstruct(x, y, face);
     }
-    // AMD cube math results in coordinates in the range [1.0, 2.0]. We need
-    // to convert this to the range [0.0, 1.0] to get correct results.
-    const auto fixed_x = ir.FPSub(IR::F32{x}, ir.Imm32(1.f));
-    const auto fixed_y = ir.FPSub(IR::F32{y}, ir.Imm32(1.f));
-    return ir.CompositeConstruct(fixed_x, fixed_y, face);
+    // The cube ALU already projected the sample direction onto the selected face, so x and y are
+    // the face coordinates and face is slice * 8 + face_id. Invert that here to rebuild the
+    // direction Vulkan samples a cube with.
+    const IR::F32 s{ir.FPSub(IR::F32{x}, ir.Imm32(1.f))};
+    const IR::F32 t{ir.FPSub(IR::F32{y}, ir.Imm32(1.f))};
+    const IR::F32 sc{ir.FPSub(ir.FPMul(s, ir.Imm32(2.f)), ir.Imm32(1.f))};
+    const IR::F32 tc{ir.FPSub(ir.FPMul(t, ir.Imm32(2.f)), ir.Imm32(1.f))};
+    const IR::F32 nsc{ir.FPNeg(sc)};
+    const IR::F32 ntc{ir.FPNeg(tc)};
+    const IR::F32 pos{ir.Imm32(1.f)};
+    const IR::F32 neg{ir.Imm32(-1.f)};
+    const IR::F32 cube_index{ir.FPFloor(ir.FPDiv(IR::F32{face}, ir.Imm32(8.f)))};
+    const IR::F32 face_id{ir.FPSub(IR::F32{face}, ir.FPMul(cube_index, ir.Imm32(8.f)))};
+    const auto on_face = [&](float f) -> IR::U1 { return ir.FPEqual(face_id, ir.Imm32(f)); };
+    const IR::F32 dir_x{ir.Select(on_face(0.f), pos,
+                                  ir.Select(on_face(1.f), neg, ir.Select(on_face(5.f), nsc, sc)))};
+    const IR::F32 dir_y{ir.Select(on_face(2.f), pos, ir.Select(on_face(3.f), neg, ntc))};
+    const IR::F32 dir_z{ir.Select(
+        on_face(0.f), nsc,
+        ir.Select(on_face(1.f), sc,
+                  ir.Select(on_face(2.f), tc,
+                            ir.Select(on_face(3.f), ntc, ir.Select(on_face(4.f), pos, neg)))))};
+    return ir.CompositeConstruct(dir_x, dir_y, dir_z, cube_index);
 }
 
 void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
