@@ -677,8 +677,6 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
         }
     }
 
-    ASSERT(info.tess_consts_dword_offset >= 0);
-
     TessConstantUseWalker walker;
 
     for (IR::Block* block : program.blocks) {
