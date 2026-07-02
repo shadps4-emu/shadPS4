@@ -83,7 +83,6 @@ namespace Libraries {
 void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     LOG_INFO(Lib_Kernel, "Initializing HLE libraries");
     Libraries::Kernel::RegisterLib(sym);
-    Libraries::LibcInternal::ForceRegisterLib(sym);
     Libraries::GnmDriver::RegisterLib(sym);
     Libraries::VideoOut::RegisterLib(sym);
     Libraries::UserService::RegisterLib(sym);
@@ -156,7 +155,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::CompanionHttpd::RegisterLib(sym);
     Libraries::CompanionUtil::RegisterLib(sym);
     Libraries::Voice::RegisterLib(sym);
-    Libraries::Rudp::RegisterLib(sym);
     Libraries::VrTracker::RegisterLib(sym);
     Libraries::ContentExport::RegisterLib(sym);
     Libraries::VideoRecording::RegisterLib(sym);

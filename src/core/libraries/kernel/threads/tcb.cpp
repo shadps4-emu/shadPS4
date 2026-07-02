@@ -68,7 +68,7 @@ void TcbDtor(Core::Tcb* oldtls) {
     ASSERT_MSG(num_dtvs <= max_tls_index, "Out of bounds DTV access");
 
     const u32 static_tls_size = linker->StaticTlsSize();
-    const u8* tls_base = (const u8*)oldtls - static_tls_size;
+    u8* tls_base = (u8*)oldtls - static_tls_size;
 
     for (int i = 1; i < num_dtvs; i++) {
         u8* dtv_ptr = dtv_table[i + 1].pointer;
@@ -76,8 +76,9 @@ void TcbDtor(Core::Tcb* oldtls) {
             linker->FreeTlsForNonPrimaryThread(dtv_ptr);
         }
     }
-
     delete[] dtv_table;
+
+    linker->FreeTlsForNonPrimaryThread(tls_base);
 }
 
 struct TlsIndex {

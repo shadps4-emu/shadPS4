@@ -361,7 +361,8 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
 
     const auto& new_frame = m_video_frames.Front();
     if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default) {
-        if (m_audio_stream_index) {
+        if (m_audio_stream_index && m_audio_decoder_thread.Joinable()) {
+            // Audio is available, sync video with it.
             if (new_frame.info.timestamp > m_last_audio_ts.value_or(0)) {
                 return false;
             }
@@ -573,12 +574,15 @@ void AvPlayerSource::DemuxerThread(std::stop_token stop) {
     m_audio_packets_cv.Notify();
     m_video_frames_cv.Notify();
     m_audio_frames_cv.Notify();
+    m_video_buffers_cv.Notify();
+    m_audio_buffers_cv.Notify();
 
     m_video_decoder_thread.Join();
     m_audio_decoder_thread.Join();
     m_state.OnEOF();
 
     LOG_INFO(Lib_AvPlayer, "Demuxer Thread exited normally");
+    m_demuxer_thread.Join();
 }
 
 AvPlayerSource::AVFramePtr AvPlayerSource::ConvertVideoFrame(const AVFrame& frame) {
@@ -709,8 +713,8 @@ void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
 
     LOG_INFO(Lib_AvPlayer, "Video Decoder Thread started");
     while ((!m_is_eof || m_video_packets.Size() != 0) && !stop.stop_requested()) {
-        if (!m_video_packets_cv.Wait(stop,
-                                     [this] { return m_video_packets.Size() != 0 || m_is_eof; })) {
+        if (m_video_packets.Size() == 0 &&
+            !m_video_packets_cv.Wait(stop, [this] { return m_video_packets.Size() != 0; })) {
             continue;
         }
         const auto packet = m_video_packets.Pop();
@@ -726,11 +730,9 @@ void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
             return;
         }
         while (res >= 0) {
-            if (!m_video_buffers_cv.Wait(stop, [this] { return m_video_buffers.Size() != 0; })) {
+            if (m_video_buffers.Size() == 0 &&
+                !m_video_buffers_cv.Wait(stop, [this] { return m_video_buffers.Size() != 0; })) {
                 break;
-            }
-            if (m_video_buffers.Size() == 0) {
-                continue;
             }
             auto up_frame = AVFramePtr(av_frame_alloc(), &ReleaseAVFrame);
             res = avcodec_receive_frame(m_video_codec_context.get(), up_frame.get());
@@ -767,6 +769,7 @@ void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
     }
 
     LOG_INFO(Lib_AvPlayer, "Video Decoder Thread exited normally");
+    m_video_decoder_thread.Join();
 }
 
 AvPlayerSource::AVFramePtr AvPlayerSource::ConvertAudioFrame(const AVFrame& frame) {
@@ -832,8 +835,8 @@ void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
 
     LOG_INFO(Lib_AvPlayer, "Audio Decoder Thread started");
     while ((!m_is_eof || m_audio_packets.Size() != 0) && !stop.stop_requested()) {
-        if (!m_audio_packets_cv.Wait(stop,
-                                     [this] { return m_audio_packets.Size() != 0 || m_is_eof; })) {
+        if (m_audio_packets.Size() == 0 &&
+            !m_audio_packets_cv.Wait(stop, [this] { return m_audio_packets.Size() != 0; })) {
             continue;
         }
         const auto packet = m_audio_packets.Pop();
@@ -848,11 +851,9 @@ void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
             return;
         }
         while (res >= 0) {
-            if (!m_audio_buffers_cv.Wait(stop, [this] { return m_audio_buffers.Size() != 0; })) {
+            if (m_audio_buffers.Size() == 0 &&
+                !m_audio_buffers_cv.Wait(stop, [this] { return m_audio_buffers.Size() != 0; })) {
                 break;
-            }
-            if (m_audio_buffers.Size() == 0) {
-                continue;
             }
 
             auto up_frame = AVFramePtr(av_frame_alloc(), &ReleaseAVFrame);
@@ -886,6 +887,7 @@ void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
     }
 
     LOG_INFO(Lib_AvPlayer, "Audio Decoder Thread exited normally");
+    m_audio_decoder_thread.Join();
 }
 
 bool AvPlayerSource::HasRunningThreads() const {

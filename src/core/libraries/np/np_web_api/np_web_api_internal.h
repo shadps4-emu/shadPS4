@@ -4,6 +4,9 @@
 #pragma once
 #include <map>
 #include <mutex>
+#include <string>
+#include <utility>
+#include <vector>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -63,6 +66,9 @@ struct OrbisNpWebApiRequest {
     OrbisNpWebApiHttpMethod userMethod;
     u64 userContentLength;
     std::string userContentType;
+    // App-supplied request headers (sceNpWebApiAddHttpRequestHeader), replayed onto
+    // the libSceHttp request in the send path after the lib-managed CT/Authorization.
+    std::vector<std::pair<std::string, std::string>> userHeaders;
     bool multipart;
     bool aborted;
     bool sent;
@@ -195,14 +201,26 @@ bool isRequestBusy(OrbisNpWebApiRequest* request);           // FUN_0100c1b0
 s32 setRequestTimeout(s64 requestId, u32 timeout);           // FUN_01003610
 void startRequestTimer(OrbisNpWebApiRequest* request);       // FUN_0100c0d0
 void checkRequestTimeout(OrbisNpWebApiRequest* request);     // FUN_0100c130
-s32 sendRequest(
-    s64 requestId, s32 partIndex, const void* data, u64 dataSize, s8 flag,
-    const OrbisNpWebApiResponseInformationOption* pResponseInformationOption); // FUN_01001c50
+s32 sendRequest(s64 requestId, s32 partIndex, const void* data, u64 dataSize, s8 flag,
+                OrbisNpWebApiResponseInformationOption* pResponseInformationOption); // FUN_01001c50
 s32 abortRequestInternal(OrbisNpWebApiContext* context, OrbisNpWebApiUserContext* userContext,
                          OrbisNpWebApiRequest* request); // FUN_01001b70
 s32 abortRequest(s64 requestId);                         // FUN_01002c70
 void releaseRequest(OrbisNpWebApiRequest* request);      // FUN_01009fb0
 s32 deleteRequest(s64 requestId);                        // FUN_010019a0
+
+// Request/response header helpers
+s32 addHttpRequestHeaderInternal(s64 requestId, const char* pFieldName, const char* pValue);
+s32 getHttpResponseHeaderValueInternal(s64 requestId, const char* pFieldName, char* pValue,
+                                       u64 valueSize, u64* pValueLength);
+// Returns the WebApi error code captured from the most recent error response body
+// read on this thread (sceNpWebApiGetErrorCode). 0 if none.
+s32 getLastWebApiError();
+
+// Game-thread pump: drains queued push events (EnqueuePushEvent) and dispatches them
+// to matching registered callbacks. Registered into the NpManager callback pump in
+// RegisterLib so it runs during sceNpCheckCallback.
+void DrainPushEvents();
 
 // Handle functions
 s32 createHandleInternal(OrbisNpWebApiContext* context); // FUN_01007730
