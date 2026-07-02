@@ -14,6 +14,7 @@ namespace Libraries::Np::NpMatching2 {
 using OrbisNpMatching2AttributeId = u16;
 using OrbisNpMatching2BlockKickFlag = u8;
 using OrbisNpMatching2ContextId = u16;
+using OrbisNpMatching2FlagAttr = u32;
 using OrbisNpMatching2Flags = u32;
 using OrbisNpMatching2LobbyId = u64;
 using OrbisNpMatching2LobbyMemberId = u16;
@@ -59,6 +60,7 @@ enum OrbisNpMatching2Event : u16 {
     ORBIS_NP_MATCHING2_CONTEXT_EVENT_STARTED = 0x6F02,
     ORBIS_NP_MATCHING2_CONTEXT_EVENT_STOPPED = 0x6F03,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_CREATE_JOIN_ROOM_A = 0x7101,
+    ORBIS_NP_MATCHING2_REQUEST_EVENT_JOIN_ROOM_A = 0x7102,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_SEARCH_ROOM_A = 0x7106,
     ORBIS_NP_MATCHING2_ROOM_EVENT_MEMBER_JOINED_A = 0x8101,
     ORBIS_NP_MATCHING2_ROOM_EVENT_MEMBER_LEFT_A = 0x8102,

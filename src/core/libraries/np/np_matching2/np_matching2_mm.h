@@ -45,12 +45,17 @@ void MmContextStart(OrbisNpMatching2ContextId ctx_id);
 void MmContextStop(OrbisNpMatching2ContextId ctx_id);
 
 s32 MmSubmitRequest(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
-                    OrbisNpMatching2Event req_event, MmCommand cmd, const std::vector<u8>& payload);
+                    OrbisNpMatching2Event req_event, MmCommand cmd, const std::vector<u8>& payload,
+                    bool a_variant = false);
 
 s32 MmCreateJoinRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
                      const OrbisNpMatching2CreateJoinRoomRequest& request);
+s32 MmCreateJoinRoomA(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                      const OrbisNpMatching2CreateJoinRoomRequestA& request);
 s32 MmJoinRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
                const OrbisNpMatching2JoinRoomRequest& request);
+s32 MmJoinRoomA(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                const OrbisNpMatching2JoinRoomRequestA& request);
 s32 MmLeaveRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
                 const OrbisNpMatching2LeaveRoomRequest& request);
 s32 MmGetWorldInfoList(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,

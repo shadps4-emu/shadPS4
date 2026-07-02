@@ -50,30 +50,6 @@ using OrbisNpMatching2SignalingCallback =
                           OrbisNpMatching2RoomMemberId roomMemberId, OrbisNpMatching2Event event,
                           int errorCode, void* userdata);
 
-// internal - to be removed.
-struct NpMatching2ContextEvent {
-    OrbisNpMatching2ContextId contextId;
-    OrbisNpMatching2Event event;
-    OrbisNpMatching2EventCause cause;
-    int errorCode;
-};
-
-// internal - to be removed.
-struct NpMatching2LobbyEvent {
-    OrbisNpMatching2ContextId contextId;
-    OrbisNpMatching2LobbyId lobbyId;
-    OrbisNpMatching2Event event;
-    void* data;
-};
-
-// internal - to be removed.
-struct NpMatching2RoomEvent {
-    OrbisNpMatching2ContextId contextId;
-    OrbisNpMatching2RoomId roomId;
-    OrbisNpMatching2Event event;
-    void* data;
-};
-
 struct OrbisNpMatching2BinAttr {
     OrbisNpMatching2AttributeId id;
     u8 pad[6];
@@ -281,6 +257,18 @@ struct OrbisNpMatching2RoomUpdate {
     OrbisNpMatching2PresenceOptionData optData;
 };
 
+struct OrbisNpMatching2RoomDataInternalUpdate {
+    OrbisNpMatching2RoomDataInternal* chgRoomDataInternal;
+    OrbisNpMatching2FlagAttr* chgFlagAttr;
+    OrbisNpMatching2FlagAttr* prevFlagAttr;
+    OrbisNpMatching2RoomPasswordSlotMask* chgRoomPasswordSlotMask;
+    OrbisNpMatching2RoomPasswordSlotMask* prevRoomPasswordSlotMask;
+    OrbisNpMatching2RoomGroup** chgRoomGroup;
+    u64 chgRoomGroupNum;
+    OrbisNpMatching2RoomBinAttrInternal** chgRoomBinAttrInternal;
+    u64 chgRoomBinAttrInternalNum;
+};
+
 struct OrbisNpMatching2JoinRoomRequest {
     OrbisNpMatching2RoomId roomId;
     OrbisNpMatching2SessionPassword* roomPasswd;
@@ -299,6 +287,25 @@ struct OrbisNpMatching2JoinRoomRequest {
     }
 };
 static_assert(sizeof(OrbisNpMatching2JoinRoomRequest) == 0x58);
+
+struct OrbisNpMatching2JoinRoomRequestA {
+    OrbisNpMatching2RoomId roomId;
+    OrbisNpMatching2SessionPassword* roomPasswd;
+    OrbisNpMatching2GroupLabel* joinGroupLabel;
+    OrbisNpMatching2BinAttr* roomMemberBinInternalAttr;
+    u64 roomMemberBinInternalAttrNum;
+    OrbisNpMatching2PresenceOptionData optData;
+    OrbisNpMatching2TeamId teamId;
+    u8 pad[3];
+    OrbisNpMatching2Flags flags;
+    Libraries::Np::OrbisNpAccountId* blockedUser;
+    u64 blockedUsers;
+
+    int Validate() {
+        return 0;
+    }
+};
+static_assert(sizeof(OrbisNpMatching2JoinRoomRequestA) == 0x58);
 
 struct OrbisNpMatching2KickoutRoomMemberRequest {
     OrbisNpMatching2RoomId roomId;
@@ -563,15 +570,6 @@ union OrbisNpMatching2SignalingConnectionInfoA {
     u32 packetLoss;
 };
 static_assert(sizeof(OrbisNpMatching2SignalingConnectionInfoA) == 0x10);
-
-// internal - to be removed.
-struct OrbisNpMatching2SignalingEvent {
-    OrbisNpMatching2ContextId contextId;
-    OrbisNpMatching2RoomId roomId;
-    OrbisNpMatching2RoomMemberId roomMemberId;
-    OrbisNpMatching2Event event;
-    int errorCode;
-};
 
 struct OrbisNpMatching2SignalingGetPingInfoRequest {
     OrbisNpMatching2RoomId roomId;
