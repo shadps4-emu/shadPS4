@@ -3,6 +3,11 @@
 
 #pragma once
 
+#include <array>
+#include <deque>
+#include <optional>
+#include <vector>
+
 #include "common/recursive_lock.h"
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -65,6 +70,10 @@ public:
     void UnmapMemory(VAddr addr, u64 size);
 
     void CpSync();
+    void ControlPixelPipeStats();
+    void ResetPixelPipeStats();
+    void DumpPixelPipeStats(VAddr address, u32 num_counter_pairs);
+    bool ResolvePixelPipeStats(VAddr address, u64 size, bool wait);
     u64 Flush();
     void Finish();
     void OnSubmit();
@@ -83,8 +92,18 @@ public:
     }
 
 private:
+    struct PixelPipeStatsDump;
+
     void PrepareRenderState(const GraphicsPipeline* pipeline);
     RenderState BeginRendering(const GraphicsPipeline* pipeline);
+    std::optional<u32> BeginPixelPipeQuery();
+    void EndPixelPipeQuery(std::optional<u32> query);
+    std::optional<u32> AcquirePixelPipeQuery();
+    void CollectActivePixelPipeQueries(bool wait);
+    void CollectRetiredPixelPipeQueries(bool wait);
+    bool TryResolvePixelPipeDump(PixelPipeStatsDump& dump);
+    bool ResolvePendingPixelPipeDumps(bool wait, std::optional<VAddr> address, u64 size);
+    void WritePixelPipeStats(VAddr address, u32 num_counter_pairs, u64 samples);
     void Resolve();
     void DepthStencilCopy(bool is_depth, bool is_stencil);
     void EliminateFastClear();
@@ -146,6 +165,24 @@ private:
     boost::container::static_vector<ImageBindingInfo, Shader::NUM_IMAGES> image_bindings;
     bool fault_process_pending{};
     bool attachment_feedback_loop{};
+
+    static constexpr u32 PixelPipeQueryPoolSize = 4096;
+    vk::UniqueQueryPool pixel_pipe_query_pool;
+    std::array<bool, PixelPipeQueryPoolSize> pixel_pipe_query_in_use{};
+    u32 pixel_pipe_query_cursor{};
+    bool pixel_pipe_stats_enabled{};
+    u64 pixel_pipe_sample_counter{};
+    std::vector<u32> active_pixel_pipe_queries;
+    std::vector<u32> retired_pixel_pipe_queries;
+    struct PixelPipeStatsDump {
+        VAddr address{};
+        u32 num_counter_pairs{};
+        u64 base_samples{};
+        bool defer_base_samples{};
+        bool resolved{};
+        std::vector<u32> queries;
+    };
+    std::deque<PixelPipeStatsDump> pending_pixel_pipe_dumps;
 };
 
 } // namespace Vulkan

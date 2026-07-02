@@ -30,6 +30,9 @@ struct VideoOutPort;
 
 namespace AmdGpu {
 
+enum class PredicationOp : u32;
+union PM4Header;
+
 struct Liverpool {
     static constexpr u32 GfxQueueId = 0u;
     static constexpr u32 NumGfxRings = 1u;     // actually 2, but HP is reserved by system software
@@ -186,6 +189,17 @@ private:
     void ProcessCommands();
     void Process(std::stop_token stoken);
 
+    struct PredicateReadResult {
+        bool value{};
+        bool fail_open{};
+    };
+
+    bool IsPredicatedPacketEnabled() const;
+    bool ShouldExecutePredicatedPacket(const PM4Header* header, bool is_compute);
+    PredicateReadResult ReadZpassPredicate(VAddr address, bool nowait_draw);
+    PredicateReadResult ReadBoolPredicate(VAddr address, u32 width_bytes);
+    void LogPredicationSummary(const char* queue_name);
+
     struct GpuQueue {
         std::mutex m_access{};
         std::atomic<u32> dcb_buffer_offset;
@@ -200,7 +214,41 @@ private:
 
     VAddr indirect_args_addr{};
     u32 num_counter_pairs{};
-    u64 pixel_counter{};
+
+    struct PredicationState {
+        bool enabled{};
+        PredicationOp op{};
+        VAddr address{};
+        bool draw_visible{};
+        bool nowait_draw{};
+        bool result{};
+    } predication{};
+
+    struct PredicationStats {
+        u64 clear{};
+        u64 zpass{};
+        u64 bool32{};
+        u64 bool64{};
+        u64 prim_count{};
+        u64 zpass_visible{};
+        u64 zpass_occluded{};
+        u64 zpass_fail_open{};
+        u64 bool_true{};
+        u64 bool_false{};
+        u64 bool_fail_open{};
+        u64 predicated_packets_checked{};
+        u64 predicated_packets_executed{};
+        u64 predicated_packets_skipped{};
+        u64 pred_exec_executed{};
+        u64 pred_exec_skipped{};
+        u64 cond_exec_executed{};
+        u64 cond_exec_skipped{};
+        [[nodiscard]] bool HasWork() const {
+            return clear != 0 || zpass != 0 || bool32 != 0 || bool64 != 0 || prim_count != 0 ||
+                   predicated_packets_checked != 0 || pred_exec_executed != 0 ||
+                   pred_exec_skipped != 0 || cond_exec_executed != 0 || cond_exec_skipped != 0;
+        }
+    } predication_stats{};
 
     struct ConstantEngine {
         void Reset() {
