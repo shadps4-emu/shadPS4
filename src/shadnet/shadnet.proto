@@ -8,6 +8,11 @@ package shadnet;
 
 option optimize_for = LITE_RUNTIME;
 
+enum MatchingUserIdKind {
+    MATCHING_USER_ID_ONLINE_ID  = 0;
+    MATCHING_USER_ID_ACCOUNT_ID = 1;
+}
+
 // Account
 
 message LoginRequest {
@@ -192,8 +197,10 @@ message GetScoreResponse {
 // Shared attribute types
 
 message MatchingBinAttr {
-    uint32 attr_id = 1;
-    bytes  data    = 2;
+    uint32 attr_id          = 1;
+    bytes  data             = 2;
+    uint64 update_date      = 3;
+    uint32 update_member_id = 4;
 }
 
 message MatchingIntAttr {
@@ -208,6 +215,13 @@ message MatchingRoomGroup {
     bytes  label       = 4;
     uint32 slot_count  = 5;
     uint32 num_members = 6;
+}
+
+message MatchingRoomGroupConfig {
+    uint32 slot_count = 1;
+    bool   has_label  = 2;
+    bytes  label      = 3;
+    bool   has_passwd = 4;
 }
 
 // Room data structures
@@ -242,6 +256,8 @@ message MatchingRoomMemberData {
     string                   addr               = 10;
     uint32                   port               = 11;
     uint32                   group_id           = 12;
+    uint64                   account_id         = 13;
+    uint32                   platform           = 14;
 }
 
 message MatchingRoomDataExternal {
@@ -302,6 +318,17 @@ message CreateRoomRequest {
     uint32 sig_type                 = 17;
     uint32 sig_flag                 = 18;
     uint32 sig_main_member          = 19;
+    repeated MatchingBinAttr internal_bin_attrs = 20;
+    MatchingUserIdKind user_id_kind = 21;
+    repeated string allowed_online_ids = 22;
+    repeated string blocked_online_ids = 23;
+    repeated uint64 allowed_account_ids = 24;
+    repeated uint64 blocked_account_ids = 25;
+    repeated MatchingRoomGroupConfig group_configs = 26;
+    bytes room_password = 27;
+    bool has_passwd_slot_mask = 28;
+    uint64 passwd_slot_mask = 29;
+    bytes join_group_label = 30;
 }
 
 message JoinRoomRequest {
@@ -313,6 +340,9 @@ message JoinRoomRequest {
     repeated MatchingBinAttr member_bin_attrs   = 6;
     bool   room_password_present    = 7;
     bool   join_group_label_present = 8;
+    MatchingUserIdKind user_id_kind = 9;
+    repeated string blocked_online_ids = 10;
+    repeated uint64 blocked_account_ids = 11;
 }
 
 message LeaveRoomRequest {
@@ -449,4 +479,6 @@ message NotifyRoomEvent {
     MatchingRoomMemberData   member      = 6;
     repeated MatchingBinAttr bin_attrs   = 7;
     uint32                   flags       = 8;
+    bool                     has_passwd_mask = 9;
+    uint64                   passwd_slot_mask = 10;
 }
