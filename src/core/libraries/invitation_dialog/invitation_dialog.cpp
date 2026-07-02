@@ -134,7 +134,7 @@ sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
 
     if (!param) {
         LOG_ERROR(Lib_InvitationDialog, "Parameter is NULL");
-        return Libraries::CommonDialog::Error::INVALID_ARGUMENT;
+        return Libraries::CommonDialog::Error::INVALID;
     }
 
     LOG_TRACE(Lib_InvitationDialog, "Param size={:#x}", param->size);
@@ -146,7 +146,7 @@ sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
         LOG_ERROR(Lib_InvitationDialog, "Invalid mode: {} (expected SEND={} or RECV={})",
                   param->mode, ORBIS_INVITATION_DIALOG_MODE_SEND,
                   ORBIS_INVITATION_DIALOG_MODE_RECV);
-        return Libraries::CommonDialog::Error::INVALID_ARGUMENT;
+        return Libraries::CommonDialog::Error::INVALID;
     }
 
     LOG_TRACE(Lib_InvitationDialog, "Param userId={:#x}", param->userId);
@@ -218,7 +218,7 @@ sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) {
 
     if (!param) {
         LOG_ERROR(Lib_InvitationDialog, "Parameter is NULL");
-        return Libraries::CommonDialog::Error::INVALID_ARGUMENT;
+        return Libraries::CommonDialog::Error::INVALID;
     }
 
     LOG_TRACE(Lib_InvitationDialog, "ParamA size={:#x}", param->size);
@@ -230,7 +230,7 @@ sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) {
         LOG_ERROR(Lib_InvitationDialog, "Invalid mode: {} (expected SEND={} or RECV={})",
                   param->mode, ORBIS_INVITATION_DIALOG_MODE_SEND,
                   ORBIS_INVITATION_DIALOG_MODE_RECV);
-        return Libraries::CommonDialog::Error::INVALID_ARGUMENT;
+        return Libraries::CommonDialog::Error::INVALID;
     }
 
     LOG_TRACE(Lib_InvitationDialog, "ParamA userId={:#x}", param->userId);
