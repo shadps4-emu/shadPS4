@@ -18,7 +18,7 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogClose() {
 
     if (g_status != Libraries::CommonDialog::Status::RUNNING) {
         LOG_WARNING(Lib_InvitationDialog, "Cannot close dialog: not running (status={})",
-                 magic_enum::enum_name(g_status));
+                    magic_enum::enum_name(g_status));
         return Libraries::CommonDialog::Error::NOT_RUNNING;
     }
 
@@ -188,7 +188,7 @@ sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
                           addressParam.addressInfo.UserSelectEnableAddress.onlineIdsMaxCount);
             } else {
                 LOG_WARNING(Lib_InvitationDialog, "  Invalid addressType: {}",
-                         addressParam.addressType);
+                            addressParam.addressType);
             }
         } else if (param->mode == ORBIS_INVITATION_DIALOG_MODE_RECV) {
             LOG_TRACE(Lib_InvitationDialog, "RecvInfo (receive mode - no additional data)");
@@ -272,7 +272,7 @@ sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) {
                           addressParam.addressInfo.UserSelectEnableAddress.userMaxCount);
             } else {
                 LOG_WARNING(Lib_InvitationDialog, "  Invalid addressType: {}",
-                         addressParam.addressType);
+                            addressParam.addressType);
             }
         } else if (param->mode == ORBIS_INVITATION_DIALOG_MODE_RECV) {
             LOG_TRACE(Lib_InvitationDialog, "RecvInfo (receive mode - no additional data)");
@@ -324,7 +324,7 @@ Libraries::CommonDialog::Status PS4_SYSV_ABI sceInvitationDialogUpdateStatus() {
         // TODO: Remove this when implementing real dialog
         // This is a stub that automatically transitions from RUNNING to FINISHED
         LOG_WARNING(Lib_InvitationDialog,
-                 "Auto-transitioning from RUNNING to FINISHED (stub behavior)");
+                    "Auto-transitioning from RUNNING to FINISHED (stub behavior)");
         g_status = Libraries::CommonDialog::Status::FINISHED;
     }
 
