@@ -199,6 +199,8 @@ struct NotifyWebApiPushEvent {
 
 struct MatchingBinAttr {
     u32 attr_id = 0;
+    u64 update_date = 0;
+    u32 update_member_id = 0;
     std::vector<u8> data;
 };
 
@@ -209,8 +211,12 @@ struct NotifyRoomEvent {
     u32 event_cause = 0;
     s32 error_code = 0;
     u32 flags = 0;
+    bool has_passwd_mask = false;
+    u64 passwd_slot_mask = 0;
 
     std::string member_npid;
+    u64 member_account_id = 0;
+    u32 member_platform = 0;
     u32 member_id = 0;
     u32 member_team_id = 0;
     bool member_is_owner = false;

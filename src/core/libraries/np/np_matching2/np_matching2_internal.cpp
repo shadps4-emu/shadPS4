@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <utility>
 
 #include "common/logging/log.h"
 #include "common/thread.h"
@@ -29,10 +30,9 @@ u32 IpStringToAddr(std::string_view ip) {
 
 } // namespace
 
-void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRoomResponse& resp) {
+void BuildCreateJoinRoomPayloadCommon(ContextObject& ctx,
+                                      const shadnet::CreateJoinRoomResponse& resp) {
     CallbackPayload& p = ctx.request_payload;
-    p.Reset();
-
     const auto& rd = resp.room_data();
 
     p.room_groups.resize(rd.groups_size());
@@ -56,11 +56,12 @@ void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRo
         auto& buf = p.bin_buffers.back();
         auto& dst = p.room_bin_attrs[i];
         dst = {};
+        dst.lastUpdate.tick = a.update_date();
+        dst.memberId = static_cast<OrbisNpMatching2RoomMemberId>(a.update_member_id());
         dst.binAttr.id = static_cast<OrbisNpMatching2AttributeId>(a.attr_id());
         dst.binAttr.data = buf.empty() ? nullptr : buf.data();
         dst.binAttr.dataSize = buf.size();
     }
-
     p.room_data = std::make_unique<OrbisNpMatching2RoomDataInternal>();
     auto& room = *p.room_data;
     room = {};
@@ -80,38 +81,6 @@ void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRo
     room.roomGroups = p.room_groups.size();
     room.internalBinAttr = p.room_bin_attrs.empty() ? nullptr : p.room_bin_attrs.data();
     room.internalBinAttrs = p.room_bin_attrs.size();
-
-    const int member_count = resp.members_size();
-    p.member_data.resize(member_count);
-    p.member_bin_attrs.clear();
-    for (int i = 0; i < member_count; ++i) {
-        const auto& m = resp.members(i);
-        auto& dst = p.member_data[i];
-        dst = {};
-        dst.next = (i + 1 < member_count) ? &p.member_data[i + 1] : nullptr;
-        std::strncpy(dst.npId.handle.data, m.npid().c_str(), sizeof(dst.npId.handle.data) - 1);
-        dst.memberId = static_cast<OrbisNpMatching2RoomMemberId>(m.member_id());
-        dst.teamId = static_cast<OrbisNpMatching2TeamId>(m.team_id());
-        if (m.is_owner()) {
-            dst.flagAttr |= ORBIS_NP_MATCHING2_ROOMMEMBER_FLAG_ATTR_OWNER;
-        }
-    }
-
-    p.create_join_response = std::make_unique<OrbisNpMatching2CreateJoinRoomResponse>();
-    auto& out = *p.create_join_response;
-    out.roomData = p.room_data.get();
-    out.members.members = p.member_data.empty() ? nullptr : p.member_data.data();
-    out.members.membersNum = p.member_data.size();
-    out.members.me = nullptr;
-    out.members.owner = nullptr;
-    for (auto& md : p.member_data) {
-        if (md.memberId == static_cast<OrbisNpMatching2RoomMemberId>(resp.me_member_id())) {
-            out.members.me = &md;
-        }
-        if (md.memberId == static_cast<OrbisNpMatching2RoomMemberId>(resp.owner_member_id())) {
-            out.members.owner = &md;
-        }
-    }
 
     if (ctx.room_id != 0 && ctx.room_id != room.roomId) {
         ctx.room_cache.erase(ctx.room_id);
@@ -137,12 +106,32 @@ void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRo
     rc.owner = resp.me_member_id() == resp.owner_member_id();
     rc.signaling_type = ORBIS_NP_MATCHING2_SIGNALING_TYPE_MESH;
     rc.signaling_main_member = static_cast<OrbisNpMatching2RoomMemberId>(resp.owner_member_id());
+    rc.bin_attrs_internal.resize(p.room_bin_attrs.size());
+    rc.bin_buffers.clear();
+    rc.bin_buffers.reserve(p.room_bin_attrs.size());
+    for (size_t i = 0; i < p.room_bin_attrs.size(); ++i) {
+        const auto& a = p.room_bin_attrs[i].binAttr;
+        if (a.data && a.dataSize > 0) {
+            rc.bin_buffers.emplace_back(a.data, a.data + a.dataSize);
+        } else {
+            rc.bin_buffers.emplace_back();
+        }
+        auto& buf = rc.bin_buffers.back();
+        auto& dst = rc.bin_attrs_internal[i];
+        dst = OrbisNpMatching2RoomBinAttrInternal{};
+        dst.lastUpdate = p.room_bin_attrs[i].lastUpdate;
+        dst.memberId = p.room_bin_attrs[i].memberId;
+        dst.binAttr.id = a.id;
+        dst.binAttr.data = buf.empty() ? nullptr : buf.data();
+        dst.binAttr.dataSize = buf.size();
+    }
     ctx.room_id = room.roomId;
     ctx.my_member_id = static_cast<OrbisNpMatching2RoomMemberId>(resp.me_member_id());
     ctx.is_room_owner = rc.owner;
     for (const auto& g : p.room_groups) {
         rc.groups[g.id] = g;
     }
+    const int member_count = resp.members_size();
     for (int i = 0; i < member_count; ++i) {
         const auto& m = resp.members(i);
         MemberCache& mc = rc.members[static_cast<OrbisNpMatching2RoomMemberId>(m.member_id())];
@@ -156,9 +145,12 @@ void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRo
         mc.addr = IpStringToAddr(m.addr());
         mc.port = Libraries::Net::sceNetHtons(static_cast<u16>(m.port()));
         std::strncpy(mc.np_id.handle.data, m.npid().c_str(), sizeof(mc.np_id.handle.data) - 1);
+        mc.account_id = static_cast<Libraries::Np::OrbisNpAccountId>(m.account_id());
+        mc.platform = static_cast<Libraries::Np::OrbisNpPlatformType>(m.platform());
         for (const auto& a : m.bin_attrs_internal()) {
             MemberBinCache& b = mc.bins[a.attr_id()];
             b.id = static_cast<OrbisNpMatching2AttributeId>(a.attr_id());
+            b.update_date = a.update_date();
             b.data.assign(a.data().begin(), a.data().end());
         }
         if (mc.member_id != ctx.my_member_id) {
@@ -170,8 +162,134 @@ void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRo
             ctx.peers[mc.member_id] = peer;
         }
     }
+}
+
+OrbisNpMatching2RoomGroup* FindPayloadGroup(CallbackPayload& p, OrbisNpMatching2RoomGroupId id) {
+    for (auto& group : p.room_groups) {
+        if (group.id == id) {
+            return &group;
+        }
+    }
+    return nullptr;
+}
+
+void ReserveMemberBinAttrs(CallbackPayload& p, const shadnet::CreateJoinRoomResponse& resp) {
+    size_t total = 0;
+    for (const auto& member : resp.members()) {
+        total += static_cast<size_t>(member.bin_attrs_internal_size());
+    }
+    p.member_bin_attrs.reserve(total);
+}
+
+OrbisNpMatching2RoomMemberBinAttrInternal* AppendMemberBinAttrs(
+    CallbackPayload& p, const shadnet::MatchingRoomMemberData& member, u64& count) {
+    const size_t first = p.member_bin_attrs.size();
+    count = static_cast<u64>(member.bin_attrs_internal_size());
+    for (const auto& a : member.bin_attrs_internal()) {
+        p.bin_buffers.emplace_back(a.data().begin(), a.data().end());
+        auto& buf = p.bin_buffers.back();
+        auto& dst = p.member_bin_attrs.emplace_back();
+        dst = OrbisNpMatching2RoomMemberBinAttrInternal{};
+        dst.lastUpdate.tick = a.update_date();
+        dst.binAttr.id = static_cast<OrbisNpMatching2AttributeId>(a.attr_id());
+        dst.binAttr.data = buf.empty() ? nullptr : buf.data();
+        dst.binAttr.dataSize = buf.size();
+    }
+    return count == 0 ? nullptr : &p.member_bin_attrs[first];
+}
+
+void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRoomResponse& resp) {
+    CallbackPayload& p = ctx.request_payload;
+    p.Reset();
+    BuildCreateJoinRoomPayloadCommon(ctx, resp);
+
+    const int member_count = resp.members_size();
+    p.member_data.resize(member_count);
+    ReserveMemberBinAttrs(p, resp);
+    for (int i = 0; i < member_count; ++i) {
+        const auto& m = resp.members(i);
+        auto& dst = p.member_data[i];
+        dst = OrbisNpMatching2RoomMemberDataInternal{};
+        dst.next = (i + 1 < member_count) ? &p.member_data[i + 1] : nullptr;
+        dst.joinDate = m.join_date();
+        std::strncpy(dst.npId.handle.data, m.npid().c_str(), sizeof(dst.npId.handle.data) - 1);
+        dst.memberId = static_cast<OrbisNpMatching2RoomMemberId>(m.member_id());
+        dst.teamId = static_cast<OrbisNpMatching2TeamId>(m.team_id());
+        dst.natType = static_cast<OrbisNpMatching2NatType>(m.nat_type());
+        dst.flagAttr = m.flag_attr();
+        if (m.is_owner()) {
+            dst.flagAttr |= ORBIS_NP_MATCHING2_ROOMMEMBER_FLAG_ATTR_OWNER;
+        }
+        dst.roomGroup = FindPayloadGroup(p, static_cast<OrbisNpMatching2RoomGroupId>(m.group_id()));
+        dst.roomMemberBinAttrInternal =
+            AppendMemberBinAttrs(p, m, dst.roomMemberBinAttrInternalNum);
+    }
+
+    p.create_join_response = std::make_unique<OrbisNpMatching2CreateJoinRoomResponse>();
+    auto& out = *p.create_join_response;
+    out.roomData = p.room_data.get();
+    out.members.members = p.member_data.empty() ? nullptr : p.member_data.data();
+    out.members.membersNum = p.member_data.size();
+    out.members.me = nullptr;
+    out.members.owner = nullptr;
+    for (auto& md : p.member_data) {
+        if (md.memberId == static_cast<OrbisNpMatching2RoomMemberId>(resp.me_member_id())) {
+            out.members.me = &md;
+        }
+        if (md.memberId == static_cast<OrbisNpMatching2RoomMemberId>(resp.owner_member_id())) {
+            out.members.owner = &md;
+        }
+    }
 
     p.request_data = p.create_join_response.get();
+    return p.request_data;
+}
+
+void* BuildCreateJoinRoomPayloadA(ContextObject& ctx, const shadnet::CreateJoinRoomResponse& resp) {
+    CallbackPayload& p = ctx.request_payload;
+    p.Reset();
+    BuildCreateJoinRoomPayloadCommon(ctx, resp);
+
+    const int member_count = resp.members_size();
+    p.member_data_a.resize(member_count);
+    ReserveMemberBinAttrs(p, resp);
+    for (int i = 0; i < member_count; ++i) {
+        const auto& m = resp.members(i);
+        auto& dst = p.member_data_a[i];
+        dst = OrbisNpMatching2RoomMemberDataInternalA{};
+        dst.next = (i + 1 < member_count) ? &p.member_data_a[i + 1] : nullptr;
+        dst.joinDateTicks.tick = m.join_date();
+        dst.user.accountId = static_cast<Libraries::Np::OrbisNpAccountId>(m.account_id());
+        dst.user.platform = static_cast<Libraries::Np::OrbisNpPlatformType>(m.platform());
+        std::strncpy(dst.onlineId.data, m.npid().c_str(), sizeof(dst.onlineId.data) - 1);
+        dst.memberId = static_cast<OrbisNpMatching2RoomMemberId>(m.member_id());
+        dst.teamId = static_cast<OrbisNpMatching2TeamId>(m.team_id());
+        dst.natType = static_cast<OrbisNpMatching2NatType>(m.nat_type());
+        dst.flags = m.flag_attr();
+        if (m.is_owner()) {
+            dst.flags |= ORBIS_NP_MATCHING2_ROOMMEMBER_FLAG_ATTR_OWNER;
+        }
+        dst.roomGroup = FindPayloadGroup(p, static_cast<OrbisNpMatching2RoomGroupId>(m.group_id()));
+        dst.roomMemberInternalBinAttr = AppendMemberBinAttrs(p, m, dst.roomMemberInternalBinAttrs);
+    }
+
+    p.create_join_response_a = std::make_unique<OrbisNpMatching2CreateJoinRoomResponseA>();
+    auto& out = *p.create_join_response_a;
+    out.roomData = p.room_data.get();
+    out.members.members = p.member_data_a.empty() ? nullptr : p.member_data_a.data();
+    out.members.membersNum = p.member_data_a.size();
+    out.members.me = nullptr;
+    out.members.owner = nullptr;
+    for (auto& md : p.member_data_a) {
+        if (md.memberId == static_cast<OrbisNpMatching2RoomMemberId>(resp.me_member_id())) {
+            out.members.me = &md;
+        }
+        if (md.memberId == static_cast<OrbisNpMatching2RoomMemberId>(resp.owner_member_id())) {
+            out.members.owner = &md;
+        }
+    }
+
+    p.request_data = p.create_join_response_a.get();
     return p.request_data;
 }
 
@@ -343,8 +461,23 @@ void* BuildGetRoomDataInternalPayload(ContextObject& ctx, OrbisNpMatching2RoomId
     }
 
     p.room_bin_attrs.resize(rc.bin_attrs_internal.size());
+    p.bin_buffers.clear();
+    p.bin_buffers.reserve(rc.bin_attrs_internal.size());
     for (size_t i = 0; i < rc.bin_attrs_internal.size(); ++i) {
-        p.room_bin_attrs[i] = rc.bin_attrs_internal[i];
+        const auto& src = rc.bin_attrs_internal[i];
+        const auto* data = static_cast<const u8*>(src.binAttr.data);
+        if (data && src.binAttr.dataSize > 0) {
+            p.bin_buffers.emplace_back(data, data + src.binAttr.dataSize);
+        } else {
+            p.bin_buffers.emplace_back();
+        }
+        auto& buf = p.bin_buffers.back();
+        auto& dst = p.room_bin_attrs[i];
+        dst = OrbisNpMatching2RoomBinAttrInternal{};
+        dst.lastUpdate = src.lastUpdate;
+        dst.binAttr.id = src.binAttr.id;
+        dst.binAttr.data = buf.empty() ? nullptr : buf.data();
+        dst.binAttr.dataSize = buf.size();
     }
 
     p.room_data = std::make_unique<OrbisNpMatching2RoomDataInternal>();
@@ -367,7 +500,38 @@ void* BuildGetRoomDataInternalPayload(ContextObject& ctx, OrbisNpMatching2RoomId
     room.internalBinAttr = p.room_bin_attrs.empty() ? nullptr : p.room_bin_attrs.data();
     room.internalBinAttrs = p.room_bin_attrs.size();
 
-    p.request_data = p.room_data.get();
+    p.member_data.clear();
+    p.member_data.reserve(rc.members.size());
+    for (const auto& [member_id, mc] : rc.members) {
+        auto& dst = p.member_data.emplace_back();
+        dst = OrbisNpMatching2RoomMemberDataInternal{};
+        dst.joinDate = mc.join_date;
+        dst.npId = mc.np_id;
+        dst.memberId = mc.member_id;
+        dst.teamId = mc.team_id;
+        dst.natType = mc.nat_type;
+        dst.flagAttr = mc.flag_attr;
+    }
+    for (size_t i = 0; i < p.member_data.size(); ++i) {
+        p.member_data[i].next = (i + 1 < p.member_data.size()) ? &p.member_data[i + 1] : nullptr;
+    }
+
+    p.create_join_response = std::make_unique<OrbisNpMatching2CreateJoinRoomResponse>();
+    auto& out = *p.create_join_response;
+    out = OrbisNpMatching2CreateJoinRoomResponse{};
+    out.roomData = p.room_data.get();
+    out.members.members = p.member_data.empty() ? nullptr : p.member_data.data();
+    out.members.membersNum = p.member_data.size();
+    for (auto& md : p.member_data) {
+        if (md.memberId == ctx.my_member_id) {
+            out.members.me = &md;
+        }
+        if (md.flagAttr & ORBIS_NP_MATCHING2_ROOMMEMBER_FLAG_ATTR_OWNER) {
+            out.members.owner = &md;
+        }
+    }
+
+    p.request_data = p.create_join_response.get();
     return p.request_data;
 }
 
@@ -502,6 +666,23 @@ OrbisNpMatching2RequestId AllocRequestId() {
         g_state.next_request_id = 1;
     }
     return id;
+}
+
+static bool g_initialized = false;
+
+bool IsInitialized() {
+    return g_initialized;
+}
+
+void SetInitialized(bool initialized) {
+    g_initialized = initialized;
+}
+
+void StoreRequestCallback(ContextObject* ctx, const OrbisNpMatching2RequestOptParam* requestOpt) {
+    if (requestOpt && requestOpt->callback) {
+        ctx->default_request_callback = requestOpt->callback;
+        ctx->default_request_callback_arg = requestOpt->arg;
+    }
 }
 
 namespace {

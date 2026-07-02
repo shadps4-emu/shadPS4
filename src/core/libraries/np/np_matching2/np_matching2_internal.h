@@ -53,6 +53,8 @@ struct MemberBinCache {
 
 struct MemberCache {
     Libraries::Np::OrbisNpId np_id{};
+    Libraries::Np::OrbisNpAccountId account_id = 0;
+    Libraries::Np::OrbisNpPlatformType platform = Libraries::Np::OrbisNpPlatformType::None;
     u64 join_date = 0;
     OrbisNpMatching2RoomMemberId member_id = 0;
     OrbisNpMatching2TeamId team_id = 0;
@@ -91,14 +93,18 @@ struct RoomCache {
 struct CallbackPayload {
     std::unique_ptr<OrbisNpMatching2RoomDataInternal> room_data;
     std::unique_ptr<OrbisNpMatching2CreateJoinRoomResponse> create_join_response;
+    std::unique_ptr<OrbisNpMatching2CreateJoinRoomResponseA> create_join_response_a;
     std::unique_ptr<OrbisNpMatching2LeaveRoomResponse> leave_room_response;
     std::unique_ptr<OrbisNpMatching2SearchRoomResponse> search_room_response;
     std::unique_ptr<OrbisNpMatching2GetWorldInfoListResponse> world_info_response;
     std::unique_ptr<OrbisNpMatching2SignalingGetPingInfoResponse> ping_info_response;
     std::vector<OrbisNpMatching2World> world_list;
     std::vector<OrbisNpMatching2RoomMemberDataInternal> member_data;
+    std::vector<OrbisNpMatching2RoomMemberDataInternalA> member_data_a;
     std::vector<OrbisNpMatching2RoomGroup> room_groups;
+    std::vector<OrbisNpMatching2RoomGroup*> room_group_ptrs;
     std::vector<OrbisNpMatching2RoomBinAttrInternal> room_bin_attrs;
+    std::vector<OrbisNpMatching2RoomBinAttrInternal*> room_bin_attr_ptrs;
     std::vector<OrbisNpMatching2RoomMemberBinAttrInternal> member_bin_attrs;
     std::vector<OrbisNpMatching2RoomDataExternal> room_data_external;
     std::vector<std::vector<u8>> bin_buffers;
@@ -110,6 +116,11 @@ struct CallbackPayload {
 
     std::unique_ptr<OrbisNpMatching2RoomMemberUpdate> room_member_update;
     std::unique_ptr<OrbisNpMatching2RoomUpdate> room_update;
+    std::unique_ptr<OrbisNpMatching2RoomDataInternalUpdate> room_data_internal_update;
+    std::unique_ptr<OrbisNpMatching2FlagAttr> event_chg_flag_attr;
+    std::unique_ptr<OrbisNpMatching2FlagAttr> event_prev_flag_attr;
+    std::unique_ptr<OrbisNpMatching2RoomPasswordSlotMask> event_chg_passwd_slot_mask;
+    std::unique_ptr<OrbisNpMatching2RoomPasswordSlotMask> event_prev_passwd_slot_mask;
     std::unique_ptr<OrbisNpMatching2RoomMemberDataInternal> event_member;
     void* room_event_data = nullptr;
 
@@ -122,14 +133,18 @@ struct CallbackPayload {
     void Reset() {
         room_data.reset();
         create_join_response.reset();
+        create_join_response_a.reset();
         leave_room_response.reset();
         search_room_response.reset();
         world_info_response.reset();
         ping_info_response.reset();
         world_list.clear();
         member_data.clear();
+        member_data_a.clear();
         room_groups.clear();
+        room_group_ptrs.clear();
         room_bin_attrs.clear();
+        room_bin_attr_ptrs.clear();
         member_bin_attrs.clear();
         room_data_external.clear();
         bin_buffers.clear();
@@ -140,6 +155,11 @@ struct CallbackPayload {
         request_data = nullptr;
         room_member_update.reset();
         room_update.reset();
+        room_data_internal_update.reset();
+        event_chg_flag_attr.reset();
+        event_prev_flag_attr.reset();
+        event_chg_passwd_slot_mask.reset();
+        event_prev_passwd_slot_mask.reset();
         event_member.reset();
         room_event_data = nullptr;
     }
@@ -322,7 +342,12 @@ extern NpMatching2State g_state;
 
 OrbisNpMatching2RequestId AllocRequestId();
 
+bool IsInitialized();
+void SetInitialized(bool initialized);
+void StoreRequestCallback(ContextObject* ctx, const OrbisNpMatching2RequestOptParam* requestOpt);
+
 void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRoomResponse& resp);
+void* BuildCreateJoinRoomPayloadA(ContextObject& ctx, const shadnet::CreateJoinRoomResponse& resp);
 void* BuildLeaveRoomPayload(ContextObject& ctx, const shadnet::LeaveRoomReply& resp);
 void* BuildGetWorldInfoListPayload(ContextObject& ctx, const shadnet::GetWorldInfoListReply& resp);
 void* BuildSearchRoomPayload(ContextObject& ctx, const shadnet::SearchRoomReply& resp);

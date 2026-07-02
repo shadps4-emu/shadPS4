@@ -756,9 +756,13 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
         n.event_cause = pb.event_cause();
         n.error_code = pb.error_code();
         n.flags = pb.flags();
+        n.has_passwd_mask = pb.has_passwd_mask();
+        n.passwd_slot_mask = pb.passwd_slot_mask();
         if (pb.has_member()) {
             const auto& m = pb.member();
             n.member_npid = m.npid();
+            n.member_account_id = m.account_id();
+            n.member_platform = m.platform();
             n.member_id = m.member_id();
             n.member_team_id = m.team_id();
             n.member_is_owner = m.is_owner();
@@ -771,6 +775,8 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
             for (const auto& a : m.bin_attrs_internal()) {
                 MatchingBinAttr ba;
                 ba.attr_id = a.attr_id();
+                ba.update_date = a.update_date();
+                ba.update_member_id = a.update_member_id();
                 ba.data.assign(a.data().begin(), a.data().end());
                 n.member_bin_attrs.push_back(std::move(ba));
             }
@@ -778,6 +784,8 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
         for (const auto& a : pb.bin_attrs()) {
             MatchingBinAttr ba;
             ba.attr_id = a.attr_id();
+            ba.update_date = a.update_date();
+            ba.update_member_id = a.update_member_id();
             ba.data.assign(a.data().begin(), a.data().end());
             n.bin_attrs.push_back(std::move(ba));
         }
