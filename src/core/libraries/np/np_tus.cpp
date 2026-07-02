@@ -162,6 +162,16 @@ s32 PS4_SYSV_ABI sceNpTusGetDataAsync(int reqId, OrbisNpId* npId, OrbisNpTusSlot
         Lib_NpTus,
         "reqId = {:#x}, slotId = {}, dataStatusSize = {}, data = {}, dataSize = {}, option = {}",
         reqId, slotId, dataStatusSize, data, dataSize, fmt::ptr(option));
+    NpTusRequest* req = nullptr;
+    if (auto ret = GetRequest(reqId, &req); ret < 0) {
+        return ret;
+    }
+
+    req->Start([=]() {
+        //
+        return 0;
+    });
+
     return ORBIS_OK;
 }
 
