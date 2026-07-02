@@ -20,12 +20,12 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogClose() {
     return Libraries::CommonDialog::Error::OK;
 }
 
-s32 PS4_SYSV_ABI sceInvitationDialogGetResult() {
+s32 PS4_SYSV_ABI sceInvitationDialogGetResult(OrbisInvitationDialogResult* result) {
     LOG_ERROR(Lib_InvitationDialog, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceInvitationDialogGetResultA() {
+s32 PS4_SYSV_ABI sceInvitationDialogGetResultA(OrbisInvitationDialogResultA* result) {
     LOG_ERROR(Lib_InvitationDialog, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -51,7 +51,8 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogInitialize() {
     return Libraries::CommonDialog::Error::OK;
 }
 
-Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogOpen() {
+Libraries::CommonDialog::Error PS4_SYSV_ABI
+sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
     if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
         g_status != Libraries::CommonDialog::Status::FINISHED) {
         LOG_INFO(Lib_InvitationDialog, "called without initialize");
@@ -62,7 +63,8 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogOpen() {
     return Libraries::CommonDialog::Error::OK;
 }
 
-Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogOpenA() {
+Libraries::CommonDialog::Error PS4_SYSV_ABI
+sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) {
     if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
         g_status != Libraries::CommonDialog::Status::FINISHED) {
         LOG_INFO(Lib_InvitationDialog, "called without initialize");
