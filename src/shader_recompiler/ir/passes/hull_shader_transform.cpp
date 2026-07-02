@@ -666,6 +666,41 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
                     }
                     return false;
                 }
+                case IR::Opcode::StoreBufferU32:
+                case IR::Opcode::StoreBufferU32x2:
+                case IR::Opcode::StoreBufferU32x3:
+                case IR::Opcode::StoreBufferU32x4: {
+                    // Offchip LS shaders write vertex data via buffer stores instead of
+                    // LDS writes. The address argument is still derived from ls_stride
+                    // read via ReadConstBuffer, so trace it the same way.
+                    IR::Value addr = inst.Arg(IR::StoreBufferArgs::Address);
+                    auto read_const_buffer = IR::BreadthFirstSearch(
+                        addr, [](IR::Inst* maybe_tess_const) -> std::optional<IR::Inst*> {
+                            if (maybe_tess_const->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                                return maybe_tess_const;
+                            }
+                            return std::nullopt;
+                        });
+                    if (read_const_buffer) {
+                        auto sharp_location = FindTessConstantSharp(read_const_buffer.value());
+                        if (sharp_location) {
+                            if (info.tess_consts_dword_offset >= 0) {
+                                ASSERT_MSG(static_cast<s32>(sharp_location->dword_off) ==
+                                                   info.tess_consts_dword_offset &&
+                                               sharp_location->ptr_base ==
+                                                   info.tess_consts_ptr_base,
+                                           "TessConstants V# is ambiguous");
+                            }
+                            InitTessConstants(sharp_location->ptr_base,
+                                              static_cast<s32>(sharp_location->dword_off), info,
+                                              runtime_info, tess_constants);
+                            return true;
+                        }
+                        // ReadConstBuffer in address chain but not a tess V# -- that's fine,
+                        // buffer stores can reference other constants (e.g. OffChipLdsBase).
+                    }
+                    return false;
+                }
                 default:
                     return false;
                 }
@@ -676,6 +711,8 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
             }
         }
     }
+
+    ASSERT(info.tess_consts_dword_offset >= 0);
 
     TessConstantUseWalker walker;
 
