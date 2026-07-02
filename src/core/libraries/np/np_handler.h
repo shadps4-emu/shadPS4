@@ -21,7 +21,6 @@
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_score/np_score.h"
 #include "core/libraries/np/np_score/np_score_ctx.h"
-#include "core/libraries/np/np_types.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/system/userservice.h"
 #include "shadnet/client.h"
@@ -50,6 +49,13 @@ public:
 
     /// True if any user is currently signed in
     bool IsAnySignedIn() const;
+
+    // Set the Appear-Offline preference for all signed-in users (and future logins). While
+    // enabled, shadNet handles the user as offline for everyone else. Call from the UI/config.
+    void SetAppearOffline(bool enable);
+    bool IsAppearOffline() const {
+        return m_appear_offline.load();
+    }
 
     /// Full NP ID for this user, built once from shadnet_npid after login.
     OrbisNpId GetNpId(s32 user_id) const;
@@ -213,15 +219,22 @@ private:
     void OnFriendNew(s32 user_id, const ShadNet::NotifyFriendNew& n);
     void OnFriendLost(s32 user_id, const ShadNet::NotifyFriendLost& n);
     void OnFriendStatus(s32 user_id, const ShadNet::NotifyFriendStatus& n);
+    void OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEvent& n);
     void OnLoginResult(s32 user_id, const ShadNet::LoginResult& res);
 
-    // Async reply dispatch for score commands. Called from the per-user
-    // ShadNetClient on the reader thread.
+    // General async reply dispatch. Routes a reply to the owning subsystem by
+    // command. Called from the per-user ShadNetClient on the reader thread.
+    void OnAsyncReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
+                      const std::vector<u8>& body);
+
     void OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
                       const std::vector<u8>& body);
 
     // 12-byte NP Communication ID
     std::string GetNpCommId(s32 service_label) const;
+
+    // Appear-Offline preference, applied to every client at login and on change.
+    std::atomic<bool> m_appear_offline{false};
 
     // Per-user client map
     mutable std::mutex m_mutex_clients;

@@ -35,10 +35,10 @@
 #include "core/libraries/network/ssl.h"
 #include "core/libraries/network/ssl2.h"
 #include "core/libraries/np/np_auth.h"
-#include "core/libraries/np/np_commerce.h"
+#include "core/libraries/np/np_commerce/np_commerce.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_manager.h"
-#include "core/libraries/np/np_matching2.h"
+#include "core/libraries/np/np_matching2/np_matching2.h"
 #include "core/libraries/np/np_partner.h"
 #include "core/libraries/np/np_party.h"
 #include "core/libraries/np/np_profile_dialog/np_profile_dialog.h"
@@ -83,7 +83,6 @@ namespace Libraries {
 void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     LOG_INFO(Lib_Kernel, "Initializing HLE libraries");
     Libraries::Kernel::RegisterLib(sym);
-    Libraries::LibcInternal::ForceRegisterLib(sym);
     Libraries::GnmDriver::RegisterLib(sym);
     Libraries::VideoOut::RegisterLib(sym);
     Libraries::UserService::RegisterLib(sym);
@@ -156,7 +155,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::CompanionHttpd::RegisterLib(sym);
     Libraries::CompanionUtil::RegisterLib(sym);
     Libraries::Voice::RegisterLib(sym);
-    Libraries::Rudp::RegisterLib(sym);
     Libraries::VrTracker::RegisterLib(sym);
     Libraries::ContentExport::RegisterLib(sym);
     Libraries::VideoRecording::RegisterLib(sym);
