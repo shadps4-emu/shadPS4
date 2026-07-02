@@ -17,7 +17,7 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceInvitationDialogClose() {
              magic_enum::enum_name(g_status));
 
     if (g_status != Libraries::CommonDialog::Status::RUNNING) {
-        LOG_WARN(Lib_InvitationDialog, "Cannot close dialog: not running (status={})",
+        LOG_WARNING(Lib_InvitationDialog, "Cannot close dialog: not running (status={})",
                  magic_enum::enum_name(g_status));
         return Libraries::CommonDialog::Error::NOT_RUNNING;
     }
@@ -187,7 +187,7 @@ sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
                 LOG_TRACE(Lib_InvitationDialog, "    onlineIdsMaxCount={}",
                           addressParam.addressInfo.UserSelectEnableAddress.onlineIdsMaxCount);
             } else {
-                LOG_WARN(Lib_InvitationDialog, "  Invalid addressType: {}",
+                LOG_WARNING(Lib_InvitationDialog, "  Invalid addressType: {}",
                          addressParam.addressType);
             }
         } else if (param->mode == ORBIS_INVITATION_DIALOG_MODE_RECV) {
@@ -271,7 +271,7 @@ sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) {
                 LOG_TRACE(Lib_InvitationDialog, "    userMaxCount={}",
                           addressParam.addressInfo.UserSelectEnableAddress.userMaxCount);
             } else {
-                LOG_WARN(Lib_InvitationDialog, "  Invalid addressType: {}",
+                LOG_WARNING(Lib_InvitationDialog, "  Invalid addressType: {}",
                          addressParam.addressType);
             }
         } else if (param->mode == ORBIS_INVITATION_DIALOG_MODE_RECV) {
@@ -323,7 +323,7 @@ Libraries::CommonDialog::Status PS4_SYSV_ABI sceInvitationDialogUpdateStatus() {
     if (g_status == Libraries::CommonDialog::Status::RUNNING) {
         // TODO: Remove this when implementing real dialog
         // This is a stub that automatically transitions from RUNNING to FINISHED
-        LOG_WARN(Lib_InvitationDialog,
+        LOG_WARNING(Lib_InvitationDialog,
                  "Auto-transitioning from RUNNING to FINISHED (stub behavior)");
         g_status = Libraries::CommonDialog::Status::FINISHED;
     }
