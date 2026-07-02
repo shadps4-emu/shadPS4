@@ -167,10 +167,7 @@ s32 PS4_SYSV_ABI sceNpTusGetDataAsync(int reqId, OrbisNpId* npId, OrbisNpTusSlot
         return ret;
     }
 
-    req->Start([=]() {
-        //
-        return 0;
-    });
+    req->Start([=]() { return 0; });
 
     return ORBIS_OK;
 }
@@ -258,10 +255,7 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync(int reqId, OrbisNpId* npId,
         return ret;
     }
 
-    req->Start([=]() {
-        //
-        return 0;
-    });
+    req->Start([=]() { return 0; });
 
     return ORBIS_OK;
 }
@@ -314,10 +308,7 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAsync(int reqId, OrbisNpId* npIds
         return ret;
     }
 
-    req->Start([=]() {
-        //
-        return 0;
-    });
+    req->Start([=]() { return 0; });
 
     return ORBIS_OK;
 }
@@ -368,10 +359,7 @@ s32 PS4_SYSV_ABI sceNpTusSetDataAsync(int reqId, OrbisNpId* npId, OrbisNpTusSlot
     if (auto ret = GetRequest(reqId, &req); ret < 0) {
         return ret;
     }
-    req->Start([=]() {
-        //
-        return 0;
-    });
+    req->Start([=]() { return 0; });
 
     return ORBIS_OK;
 }
@@ -441,10 +429,7 @@ s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAsync(int reqId, OrbisNpId* npId,
         return ret;
     }
 
-    req->Start([=]() {
-        //
-        return 0;
-    });
+    req->Start([=]() { return 0; });
 
     return ORBIS_OK;
 }
@@ -694,10 +679,7 @@ s32 PS4_SYSV_ABI sceNpTusGetDataAAsync(int reqId, OrbisNpAccountId accountId,
         return ret;
     }
 
-    req->Start([=]() {
-        //
-        return 0;
-    });
+    req->Start([=]() { return 0; });
 
     return ORBIS_OK;
 }
@@ -824,10 +806,7 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAAsync(int reqId, OrbisNpAccountI
         return ret;
     }
 
-    req->Start([=]() {
-        //
-        return 0;
-    });
+    req->Start([=]() { return 0; });
 
     return ORBIS_OK;
 }
@@ -1039,10 +1018,7 @@ s32 PS4_SYSV_ABI sceNpTusSetDataAAsync(int reqId, OrbisNpAccountId accountId,
         return ret;
     }
 
-    req->Start([=]() {
-        //
-        return 0;
-    });
+    req->Start([=]() { return 0; });
 
     return ORBIS_OK;
 }
