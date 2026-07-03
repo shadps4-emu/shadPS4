@@ -873,8 +873,30 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
                         user_context->userId, request->userPath);
         }
 
-        // Replay app-supplied headers
+        // Replay app-supplied headers. Content-Type is already emitted above from the
+        // ContentParameter (userContentType),skip a duplicate app-supplied Content-Type so the
+        // request never carries two
+        const auto isContentType = [](const std::string& name) {
+            constexpr std::string_view target = "content-type";
+            if (name.size() != target.size()) {
+                return false;
+            }
+            for (size_t i = 0; i < name.size(); ++i) {
+                char c = name[i];
+                if (c >= 'A' && c <= 'Z') {
+                    c = static_cast<char>(c - 'A' + 'a');
+                }
+                if (c != target[i]) {
+                    return false;
+                }
+            }
+            return true;
+        };
+        const bool haveContentType = !request->userContentType.empty();
         for (const auto& [hname, hvalue] : request->userHeaders) {
+            if (haveContentType && isContentType(hname)) {
+                continue;
+            }
             Libraries::Http::sceHttpAddRequestHeader(req_id, hname.c_str(), hvalue.c_str(),
                                                      /*mode=*/0);
         }
