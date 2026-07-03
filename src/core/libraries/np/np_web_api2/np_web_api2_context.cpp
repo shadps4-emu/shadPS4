@@ -12,6 +12,7 @@
 namespace Libraries::Np::NpWebApi2 {
 
 u32 g_current_push_event_handle_id{};
+u32 g_current_push_event_filter_id{};
 u32 g_current_user_context_id{};
 u64 g_current_request_id{};
 
@@ -43,7 +44,8 @@ s32 LibraryContext::CreatePushEventHandle() {
         g_current_push_event_handle_id = 1;
     }
 
-    this->push_event_handles[g_current_push_event_handle_id] = new PushEventHandle(new_handle_id);
+    s32 new_handle_id = g_current_push_event_handle_id;
+    this->push_event_handles[new_handle_id] = new PushEventHandle(new_handle_id);
     return new_handle_id;
 }
 
@@ -51,7 +53,34 @@ s32 LibraryContext::CreatePushEventFilter(
     s32 handle_id, const char* np_service_name, OrbisNpServiceLabel np_service_label,
     const OrbisNpWebApi2PushEventFilterParameter* filter_param, u64 filter_param_num,
     bool internal) {
-    return ORBIS_OK;
+    std::scoped_lock lk{this->lock};
+    if (!this->push_event_handles.contains(handle_id)) {
+        LOG_ERROR(Lib_NpWebApi2, "No push event handle with id {:#x}", handle_id);
+        return ORBIS_NP_WEBAPI2_ERROR_HANDLE_NOT_FOUND;
+    }
+    PushEventHandle* handle = this->push_event_handles[handle_id];
+    handle->AddUser();
+
+    if (g_current_push_event_filter_id + 1 < 0xf0000000) {
+        ++g_current_push_event_filter_id;
+    } else {
+        g_current_push_event_filter_id = 1;
+    }
+
+    s32 new_filter_id = g_current_push_event_filter_id;
+    this->push_event_filters[new_filter_id] =
+        new PushEventFilter(new_filter_id, np_service_name, np_service_label, internal);
+    PushEventFilter* filter = this->push_event_filters[new_filter_id];
+    s32 result = filter->Initialize(handle, filter_param, filter_param_num);
+    if (result < 0) {
+        // Failed to initialize filter.
+        delete filter;
+        this->push_event_filters.erase(new_filter_id);
+        handle->RemoveUser();
+        return result;
+    }
+    handle->RemoveUser();
+    return new_filter_id;
 }
 
 UserContext* LibraryContext::GetUserContext(s32 user_ctx_id) {

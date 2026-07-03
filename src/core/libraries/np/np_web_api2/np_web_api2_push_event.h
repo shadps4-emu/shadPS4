@@ -3,11 +3,11 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/kernel/time.h"
+#include "core/libraries/np/np_types.h"
 #include "core/libraries/np/np_web_api2/np_web_api2.h"
 
 namespace Libraries::Np::NpWebApi2 {
 
-// Forward declarations to prevent compile issues
 class PushEventHandle;
 class PushEventFilter;
 class PushEventCallback;
@@ -82,7 +82,24 @@ private:
     u64 end_time{};
 };
 
-class PushEventFilter {};
+class PushEventFilter {
+public:
+    PushEventFilter(s32 new_id, const char* service_name, OrbisNpServiceLabel service_label,
+                    bool is_internal)
+        : id(new_id), np_service_name(service_name ? service_name : ""),
+          np_service_label(service_label), internal(is_internal) {}
+
+    s32 Initialize(PushEventHandle* handle,
+                   const OrbisNpWebApi2PushEventFilterParameter* filter_param,
+                   u64 filter_param_num);
+
+private:
+    s32 id{};
+    OrbisNpServiceLabel np_service_label{};
+    bool internal{};
+    std::vector<OrbisNpWebApi2PushEventFilterParameter> filter_params{};
+    std::string np_service_name{};
+};
 
 class PushEventCallback {};
 
