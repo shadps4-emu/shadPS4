@@ -76,9 +76,9 @@ union OrbisInvitationDialogAddressInfo {
 };
 
 // addressType
-constexpr int ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_INVALID = 0;    // Invalid mode /initial value
-constexpr int ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_USERDISABL = 1; // Recipient list editing
-                                                                   // disabled
+constexpr int ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_INVALID = 0;     // Invalid mode /initial value
+constexpr int ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_USERDISABLE = 1; // Recipient list editing
+                                                                    // disabled
 constexpr int ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_USERENABLE = 2; // Recipient list editing enabled
 
 struct OrbisInvitationDialogAddressParam {
