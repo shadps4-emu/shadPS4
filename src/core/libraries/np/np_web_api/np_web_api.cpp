@@ -180,15 +180,9 @@ s32 PS4_SYSV_ABI sceNpWebApiAddHttpRequestHeader(s64 requestId, const char* pFie
 s32 PS4_SYSV_ABI sceNpWebApiAddMultipartPart(s64 requestId,
                                              const OrbisNpWebApiMultipartPartParameter* pParam,
                                              s32* pIndex) {
-    LOG_INFO(Lib_NpWebApi,
-             "called (STUBBED) : requestId = {:#x}, "
-             "pParam = {}, pIndex = {}",
-             requestId, fmt::ptr(pParam), fmt::ptr(pIndex));
-    if (pParam) {
-        LOG_ERROR(Lib_NpWebApi, "  Part params: headerNum = {}, contentLength = {}",
-                  pParam->headerNum, pParam->contentLength);
-    }
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi, "called : requestId = {:#x}, headerNum = {}, contentLength = {}",
+             requestId, (pParam ? pParam->headerNum : 0), (pParam ? pParam->contentLength : 0));
+    return addMultipartPart(requestId, pParam, pIndex);
 }
 
 void PS4_SYSV_ABI sceNpWebApiCheckTimeout() {
@@ -570,11 +564,9 @@ s32 PS4_SYSV_ABI sceNpWebApiSetMaxConnection(s32 libCtxId, s32 maxConnection) {
 
 s32 PS4_SYSV_ABI sceNpWebApiSetMultipartContentType(s64 requestId, const char* pTypeName,
                                                     const char* pBoundary) {
-    LOG_ERROR(Lib_NpWebApi,
-              "called (STUBBED) : requestId = {:#x}, "
-              "pTypeName = '{}', pBoundary = '{}'",
-              requestId, (pTypeName ? pTypeName : "null"), (pBoundary ? pBoundary : "null"));
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi, "called : requestId = {:#x}, pTypeName = '{}', pBoundary = '{}'",
+             requestId, (pTypeName ? pTypeName : "null"), (pBoundary ? pBoundary : "null"));
+    return setMultipartContentType(requestId, pTypeName, pBoundary);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiSetRequestTimeout(s64 requestId, u32 timeout) {
