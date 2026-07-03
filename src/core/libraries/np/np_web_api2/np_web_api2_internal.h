@@ -17,6 +17,8 @@ s32 createPushEventFilter(s32 lib_ctx_id, s32 handle_id, const char* np_service_
 s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUserId user_id);
 s32 deleteUserContext(s32 user_ctx_id);
 
+void processPushEvents();
+
 s32 createRequest(s32 user_ctx_id, const char* api_group, const char* path, const char* method,
                   const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
                   s64* request_id);

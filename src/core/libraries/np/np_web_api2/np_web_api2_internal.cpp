@@ -176,6 +176,10 @@ s32 deleteUserContext(s32 user_ctx_id) {
     return ORBIS_OK;
 }
 
+void processPushEvents() {
+    LOG_ERROR(Lib_NpWebApi2, "(STUBBED)");
+}
+
 s32 createRequest(s32 user_ctx_id, const char* api_group, const char* path, const char* method,
                   const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
                   s64* request_id) {

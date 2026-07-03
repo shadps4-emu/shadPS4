@@ -6,6 +6,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_types.h"
 #include "core/libraries/np/np_web_api2/np_web_api2.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_internal.h"
@@ -381,6 +382,8 @@ s32 PS4_SYSV_ABI Func_E0DF39A36F087DB9() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    Libraries::Np::NpManager::RegisterNpCallback("npwebapi2_push", processPushEvents);
+
     LIB_FUNCTION("zpiPsH7dbFQ", "libSceNpWebApi2", 1, "libSceNpWebApi2", sceNpWebApi2AbortRequest);
     LIB_FUNCTION("egOOvrnF6mI", "libSceNpWebApi2", 1, "libSceNpWebApi2",
                  sceNpWebApi2AddHttpRequestHeader);
