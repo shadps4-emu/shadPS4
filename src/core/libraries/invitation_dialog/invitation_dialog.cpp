@@ -153,11 +153,6 @@ sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
     LOG_TRACE(Lib_InvitationDialog, "Param callbackArg={}", fmt::ptr(param->callbackArg));
     LOG_TRACE(Lib_InvitationDialog, "Param dataParam={}", fmt::ptr(param->dataParam));
 
-    // Log base parameters
-    LOG_TRACE(Lib_InvitationDialog, "BaseParam mode={}",
-              magic_enum::enum_name(param->baseParam.mode));
-    LOG_TRACE(Lib_InvitationDialog, "BaseParam callback={}", fmt::ptr(param->baseParam.callback));
-
     // Log data parameters if present
     if (param->dataParam) {
         LOG_TRACE(Lib_InvitationDialog, "DataParam pointer: {}", fmt::ptr(param->dataParam));
@@ -175,7 +170,7 @@ sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
             // Log address parameters
             const auto& addressParam = param->dataParam->SendInfo.addressParam;
             LOG_TRACE(Lib_InvitationDialog, "  addressType={}", addressParam.addressType);
-            if (addressParam.addressType == ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_USERDISABL) {
+            if (addressParam.addressType == ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_USERDISABLE) {
                 LOG_TRACE(Lib_InvitationDialog, "  UserSelectDisableAddress:");
                 LOG_TRACE(Lib_InvitationDialog, "    onlineIds={}",
                           fmt::ptr(addressParam.addressInfo.UserSelectDisableAddress.onlineIds));
@@ -237,11 +232,6 @@ sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) {
     LOG_TRACE(Lib_InvitationDialog, "ParamA callbackArg={}", fmt::ptr(param->callbackArg));
     LOG_TRACE(Lib_InvitationDialog, "ParamA dataParam={}", fmt::ptr(param->dataParam));
 
-    // Log base parameters
-    LOG_TRACE(Lib_InvitationDialog, "BaseParam mode={}",
-              magic_enum::enum_name(param->baseParam.mode));
-    LOG_TRACE(Lib_InvitationDialog, "BaseParam callback={}", fmt::ptr(param->baseParam.callback));
-
     // Log data parameters if present
     if (param->dataParam) {
         LOG_TRACE(Lib_InvitationDialog, "DataParamA pointer: {}", fmt::ptr(param->dataParam));
@@ -259,7 +249,7 @@ sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) {
             // Log address parameters
             const auto& addressParam = param->dataParam->SendInfo.addressParam;
             LOG_TRACE(Lib_InvitationDialog, "  addressType={}", addressParam.addressType);
-            if (addressParam.addressType == ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_USERDISABL) {
+            if (addressParam.addressType == ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_USERDISABLE) {
                 LOG_TRACE(Lib_InvitationDialog, "  UserSelectDisableAddress:");
                 LOG_TRACE(Lib_InvitationDialog, "    accountIds={}",
                           fmt::ptr(addressParam.addressInfo.UserSelectDisableAddress.accountIds));
