@@ -1254,8 +1254,7 @@ s32 createPushEventFilterInternal(OrbisNpWebApiContext* context,
     filter->parentContext = context;
     filter->filterId = filterId;
 
-    LOG_INFO(Lib_NpWebApi, "createPushEventFilter: filterId={} dataTypeParams={}", filterId,
-             filterParamNum);
+    LOG_INFO(Lib_NpWebApi, "filterId={} dataTypeParams={}", filterId, filterParamNum);
     if (pFilterParam != nullptr && filterParamNum != 0) {
         for (u64 param_idx = 0; param_idx < filterParamNum; param_idx++) {
             OrbisNpWebApiPushEventFilterParameter copy = OrbisNpWebApiPushEventFilterParameter{};
@@ -1384,7 +1383,7 @@ s32 createServicePushEventFilterInternal(
 
     if (pNpServiceName != nullptr && !EmulatorSettings.IsShadNetEnabled()) {
         // Seems sceNpManagerIntGetUserList fails?
-        LOG_DEBUG(Lib_NpWebApi, "Cannot create service push event while PSN is disabled");
+        LOG_DEBUG(Lib_NpWebApi, "Cannot create service push event while shadNet is disabled");
         handle->userCount--;
         return ORBIS_NP_WEBAPI_ERROR_SIGNED_IN_USER_NOT_FOUND;
     }
@@ -1403,19 +1402,19 @@ s32 createServicePushEventFilterInternal(
     if (pNpServiceName == nullptr) {
         filter->internal = true;
     } else {
-        // TODO: if pNpServiceName is non-null, create an np request for this filter.
-        LOG_ERROR(Lib_NpWebApi, "Np behavior not handled");
         filter->npServiceName = std::string(pNpServiceName);
     }
 
     filter->npServiceLabel = npServiceLabel;
-
+    LOG_INFO(Lib_NpWebApi, "filterId={} dataTypeParams={}", filterId, filterParamNum);
     if (pFilterParam != nullptr && filterParamNum != 0) {
         for (u64 param_idx = 0; param_idx < filterParamNum; param_idx++) {
             OrbisNpWebApiServicePushEventFilterParameter copy =
                 OrbisNpWebApiServicePushEventFilterParameter{};
             memcpy(&copy, &pFilterParam[param_idx],
                    sizeof(OrbisNpWebApiServicePushEventFilterParameter));
+            LOG_INFO(Lib_NpWebApi, "  filterParam[{}] data_type='{}'", param_idx,
+                     copy.dataType.val);
             filter->filterParams.emplace_back(copy);
         }
     }
@@ -1561,7 +1560,7 @@ s32 createExtendedPushEventFilterInternal(
 
     if (pNpServiceName != nullptr && !EmulatorSettings.IsShadNetEnabled()) {
         // Seems sceNpManagerIntGetUserList fails?
-        LOG_DEBUG(Lib_NpWebApi, "Cannot create extended push event while PSN is disabled");
+        LOG_DEBUG(Lib_NpWebApi, "Cannot create extended push event while shadNet is disabled");
         handle->userCount--;
         return ORBIS_NP_WEBAPI_ERROR_SIGNED_IN_USER_NOT_FOUND;
     }
@@ -1581,16 +1580,13 @@ s32 createExtendedPushEventFilterInternal(
     if (pNpServiceName == nullptr) {
         npServiceLabel = ORBIS_NP_INVALID_SERVICE_LABEL;
     } else {
-        // TODO: if pNpServiceName is non-null, create an np request for this filter.
-        LOG_ERROR(Lib_NpWebApi, "Np behavior not handled");
         filter->npServiceName = std::string(pNpServiceName);
     }
 
     filter->npServiceLabel = npServiceLabel;
 
-    LOG_INFO(Lib_NpWebApi,
-             "createExtdPushEventFilter: filterId={} service='{}' label={:#x} dataTypeParams={}",
-             filterId, pNpServiceName ? pNpServiceName : "null", npServiceLabel, filterParamNum);
+    LOG_INFO(Lib_NpWebApi, "filterId={} service='{}' label={:#x} dataTypeParams={}", filterId,
+             pNpServiceName ? pNpServiceName : "null", npServiceLabel, filterParamNum);
     if (pFilterParam != nullptr && filterParamNum != 0) {
         for (u64 param_idx = 0; param_idx < filterParamNum; param_idx++) {
             OrbisNpWebApiExtdPushEventFilterParameter copy =
