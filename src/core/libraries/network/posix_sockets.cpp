@@ -698,8 +698,9 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
         }
         case ORBIS_NET_SO_ERROR_EX: {
             u32 optval_temp = 0;
-            auto retval = ConvertReturnErrorCode(getsockopt(
-                sock, native_level, SO_ERROR, reinterpret_cast<char*>(&optval_temp), optlen));
+            auto retval = ConvertReturnErrorCode(getsockopt(sock, native_level, SO_ERROR,
+                                                            reinterpret_cast<char*>(&optval_temp),
+                                                            reinterpret_cast<socklen_t*>(optlen)));
             if (retval == 0 && optval_temp != 0) {
                 optval_temp |= ORBIS_NET_ERROR_BASE;
                 *static_cast<u32*>(optval) = optval_temp;
