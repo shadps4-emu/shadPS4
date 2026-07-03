@@ -1665,7 +1665,7 @@ s32 addHttpRequestHeaderInternal(s64 requestId, const char* pFieldName, const ch
         releaseContext(context);
         return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
     }
-    OrbisNpWebApiRequest* request = findRequest(user_context, requestId);
+    OrbisNpWebApiRequest* request = findRequestAndMarkBusy(user_context, requestId);
     if (request == nullptr) {
         releaseUserContext(user_context);
         releaseContext(context);
@@ -1736,7 +1736,7 @@ s32 PS4_SYSV_ABI getHttpStatusCodeInternal(s64 requestId, s32* out_status_code) 
         return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
     }
 
-    OrbisNpWebApiRequest* request = findRequest(user_context, requestId);
+    OrbisNpWebApiRequest* request = findRequestAndMarkBusy(user_context, requestId);
     if (request == nullptr) {
         releaseUserContext(user_context);
         releaseContext(context);
@@ -1819,7 +1819,7 @@ s32 PS4_SYSV_ABI readDataInternal(s64 requestId, void* pData, u64 size) {
         return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
     }
 
-    OrbisNpWebApiRequest* request = findRequest(user_context, requestId);
+    OrbisNpWebApiRequest* request = findRequestAndMarkBusy(user_context, requestId);
     if (request == nullptr) {
         releaseUserContext(user_context);
         releaseContext(context);
