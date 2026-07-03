@@ -11,11 +11,12 @@
 
 namespace Libraries::Np::NpWebApi2 {
 
-s32 g_current_push_event_handle_id{};
-s32 g_current_user_context_id{};
-s64 g_current_request_id{};
+u32 g_current_push_event_handle_id{};
+u32 g_current_user_context_id{};
+u64 g_current_request_id{};
 
 s32 LibraryContext::CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id) {
+    std::scoped_lock lk{this->lock};
     if (this->user_contexts.size() >= 0x10000) {
         LOG_ERROR(Lib_NpWebApi2, "Too many user contexts");
         return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_MAX;
@@ -35,9 +36,9 @@ s32 LibraryContext::CreateUserContext(Libraries::UserService::OrbisUserServiceUs
 }
 
 s32 LibraryContext::CreatePushEventHandle() {
-    s32 new_handle_id = 1;
+    std::scoped_lock lk{this->lock};
     if (g_current_push_event_handle_id + 1 < 0xf0000000) {
-        new_handle_id = ++g_current_push_event_handle_id;
+        ++g_current_push_event_handle_id;
     } else {
         g_current_push_event_handle_id = 1;
     }
@@ -127,7 +128,6 @@ s32 UserContext::Initialize() {
         return result;
     }
 
-    // TODO: sceNpPush2 interactions
     return result;
 }
 
@@ -160,6 +160,7 @@ s32 UserContext::CreateRequest(const char* api_group, const char* path, const ch
 Request* UserContext::GetRequest(s64 request_id) {
     this->Lock();
     if (!this->requests.contains(request_id)) {
+        this->Unlock();
         return nullptr;
     }
 
@@ -176,6 +177,7 @@ bool UserContext::HasBusyRequests() {
         bool busy = request->IsBusy();
         request->RemoveUser();
         if (busy) {
+            this->Unlock();
             return true;
         }
     }
