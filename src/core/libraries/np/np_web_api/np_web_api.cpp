@@ -170,8 +170,8 @@ s32 PS4_SYSV_ABI sceNpWebApiAbortRequest(s64 requestId) {
 
 s32 PS4_SYSV_ABI sceNpWebApiAddHttpRequestHeader(s64 requestId, const char* pFieldName,
                                                  const char* pValue) {
-    LOG_INFO(Lib_NpWebApi, "called, requestId = {:#x}, pFieldName = '{}', pValue = '{}'",
-             requestId, (pFieldName ? pFieldName : "null"), (pValue ? pValue : "null"));
+    LOG_INFO(Lib_NpWebApi, "called, requestId = {:#x}, pFieldName = '{}', pValue = '{}'", requestId,
+             (pFieldName ? pFieldName : "null"), (pValue ? pValue : "null"));
     if (pFieldName == nullptr || pValue == nullptr)
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     return addHttpRequestHeaderInternal(requestId, pFieldName, pValue);
