@@ -579,6 +579,94 @@ void checkRequestTimeout(OrbisNpWebApiRequest* request) {
     }
 }
 
+s32 setMultipartContentType(s64 requestId, const char* pTypeName, const char* pBoundary) {
+    OrbisNpWebApiContext* context = findAndValidateContext(requestId >> 0x30);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, requestId >> 0x20);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+    OrbisNpWebApiRequest* request = findRequest(user_context, requestId);
+    if (request == nullptr) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_REQUEST_NOT_FOUND;
+    }
+    request->multipartContentType = (pTypeName != nullptr) ? pTypeName : "";
+    request->multipartBoundary = (pBoundary != nullptr) ? pBoundary : "";
+    releaseRequest(request);
+    releaseUserContext(user_context);
+    releaseContext(context);
+    return ORBIS_OK;
+}
+
+s32 addMultipartPart(s64 requestId, const OrbisNpWebApiMultipartPartParameter* pParam,
+                     s32* pIndex) {
+    if (pParam == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+    OrbisNpWebApiContext* context = findAndValidateContext(requestId >> 0x30);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, requestId >> 0x20);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+    OrbisNpWebApiRequest* request = findRequest(user_context, requestId);
+    if (request == nullptr) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    // The library supplies Content-Length itself (from contentLength), so skip an app-provided one.
+    const auto isContentLength = [](const char* name) {
+        const char* t = "content-length";
+        for (; *name != '\0' && *t != '\0'; ++name, ++t) {
+            char c = *name;
+            if (c >= 'A' && c <= 'Z') {
+                c = static_cast<char>(c - 'A' + 'a');
+            }
+            if (c != *t) {
+                return false;
+            }
+        }
+        return *name == '\0' && *t == '\0';
+    };
+
+    OrbisNpWebApiRequest::MultipartPart part;
+    part.contentLength = pParam->contentLength;
+    std::string headers;
+    for (u64 i = 0; i < pParam->headerNum; ++i) {
+        const OrbisNpWebApiHttpHeader& h = pParam->pHeaders[i];
+        if (h.pName == nullptr || h.pValue == nullptr || isContentLength(h.pName)) {
+            continue;
+        }
+        headers += h.pName;
+        headers += ": ";
+        headers += h.pValue;
+        headers += "\r\n";
+    }
+    headers += "Content-Length: ";
+    headers += std::to_string(pParam->contentLength);
+    headers += "\r\n\r\n";
+    part.rawHeaders = std::move(headers);
+
+    request->multipartParts.push_back(std::move(part));
+    if (pIndex != nullptr) {
+        *pIndex = static_cast<s32>(request->multipartParts.size()); // 1-based part index
+    }
+    releaseRequest(request);
+    releaseUserContext(user_context);
+    releaseContext(context);
+    return ORBIS_OK;
+}
+
 s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s8 flag,
                 OrbisNpWebApiResponseInformationOption* pRespInfoOption) {
     OrbisNpWebApiContext* context = findAndValidateContext(requestId >> 0x30);
@@ -601,7 +689,69 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
 
     startRequestTimer(request);
 
-    // TODO: multipart logic
+    // Multipart requests accumulate each part payload across sendMultipartRequest() calls,the
+    // full multipart/mixed body is framed and transmitted once every declared part is complete.
+    std::string multipartBody;
+    const void* sendData = pData;
+    u64 sendSize = dataSize;
+    if (request->multipart) {
+        if (partIndex < 1 || partIndex > static_cast<s32>(request->multipartParts.size())) {
+            releaseRequest(request);
+            releaseUserContext(user_context);
+            releaseContext(context);
+            return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+        }
+        auto& part = request->multipartParts[partIndex - 1];
+        if (pData != nullptr && dataSize > 0) {
+            part.data.append(static_cast<const char*>(pData), dataSize);
+        }
+        part.sentSize += dataSize;
+
+        bool allComplete = true;
+        for (const auto& p : request->multipartParts) {
+            if (p.sentSize < p.contentLength) {
+                allComplete = false;
+                break;
+            }
+        }
+        if (!allComplete) {
+            // Further part payloads still expected; nothing to transmit yet.
+            releaseRequest(request);
+            releaseUserContext(user_context);
+            releaseContext(context);
+            return ORBIS_OK;
+        }
+
+        std::string boundary = request->multipartBoundary;
+        if (boundary.empty()) {
+            // Fallback boundary derived from the unique request id.
+            static const char kHex[] = "0123456789abcdef";
+            boundary = "----shadPS4Boundary";
+            const u64 v = static_cast<u64>(requestId);
+            for (int shift = 60; shift >= 0; shift -= 4) {
+                boundary += kHex[(v >> shift) & 0xf];
+            }
+        }
+        const std::string typeName = request->multipartContentType.empty()
+                                         ? std::string("multipart/mixed")
+                                         : request->multipartContentType;
+        for (const auto& p : request->multipartParts) {
+            multipartBody += "--";
+            multipartBody += boundary;
+            multipartBody += "\r\n";
+            multipartBody += p.rawHeaders; // header lines + blank line separating headers/body
+            multipartBody += p.data;
+            multipartBody += "\r\n";
+        }
+        multipartBody += "--";
+        multipartBody += boundary;
+        multipartBody += "--\r\n";
+
+        request->userContentType = typeName + "; boundary=" + boundary;
+        request->userContentLength = multipartBody.size();
+        sendData = multipartBody.data();
+        sendSize = multipartBody.size();
+    }
 
     if (g_sdk_ver >= Common::ElfInfo::FW_250 && !request->sent) {
         request->sent = true;
@@ -733,7 +883,7 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
     setRequestState(request, 4);
 
     const s32 send_err =
-        Libraries::Http::sceHttpSendRequest(request->http_request_id, pData, dataSize);
+        Libraries::Http::sceHttpSendRequest(request->http_request_id, sendData, sendSize);
     if (send_err < 0) {
         LOG_ERROR(Lib_NpWebApi, "sendRequest: sceHttpSendRequest failed: {:#x}", send_err);
         releaseRequest(request);
