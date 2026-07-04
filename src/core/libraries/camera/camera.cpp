@@ -454,6 +454,9 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     }
     frame_data->meta.format[0][0] = output_config0.format.formatLevel0;
     frame_data->meta.format[1][0] = output_config1.format.formatLevel0;
+    // not fully correct, but good enough
+    frame_data->pFramePointerListGarlic[0][0] = frame_data->pFramePointerList[0][0];
+    frame_data->pFramePointerListGarlic[1][0] = frame_data->pFramePointerList[1][0];
     return ORBIS_OK;
 }
 
