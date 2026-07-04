@@ -173,9 +173,30 @@ s32 UserContext::CreatePushEventCallback(s32 filter_id, OrbisNpWebApi2PushEventC
 
     s32 new_callback_id = g_current_push_event_callback_id;
     this->push_event_callbacks[new_callback_id] =
-        new PushEventCallback(new_callback_id, filter_id, cb_func, user_arg);
+        new PushEventCallback(new_callback_id, filter_id, cb_func, user_arg, false);
     this->Unlock();
     return new_callback_id;
+}
+
+s32 UserContext::RemovePushEventCallback(s32 callback_id) {
+    this->Lock();
+    if (!this->push_event_callbacks.contains(callback_id)) {
+        this->Unlock();
+        LOG_ERROR(Lib_NpWebApi2, "No push event callback with id {:#x}", callback_id);
+        return ORBIS_NP_WEBAPI2_ERROR_PUSH_EVENT_CALLBACK_NOT_FOUND;
+    }
+
+    PushEventCallback* callback = this->push_event_callbacks[callback_id];
+    while (callback->is_busy) {
+        this->Unlock();
+        Libraries::Kernel::sceKernelUsleep(100000);
+        this->Lock();
+    }
+
+    delete callback;
+    this->push_event_callbacks.erase(callback_id);
+    this->Unlock();
+    return ORBIS_OK;
 }
 
 s32 UserContext::CreatePushContextCallback(s32 filter_id,
@@ -190,9 +211,30 @@ s32 UserContext::CreatePushContextCallback(s32 filter_id,
 
     s32 new_callback_id = g_current_push_context_callback_id;
     this->push_context_callbacks[new_callback_id] =
-        new PushEventPushContextCallback(new_callback_id, filter_id, cb_func, user_arg);
+        new PushEventPushContextCallback(new_callback_id, filter_id, cb_func, user_arg, false);
     this->Unlock();
     return new_callback_id;
+}
+
+s32 UserContext::RemovePushContextCallback(s32 callback_id) {
+    this->Lock();
+    if (!this->push_context_callbacks.contains(callback_id)) {
+        this->Unlock();
+        LOG_ERROR(Lib_NpWebApi2, "No push event push context callback with id {:#x}", callback_id);
+        return ORBIS_NP_WEBAPI2_ERROR_PUSH_EVENT_CALLBACK_NOT_FOUND;
+    }
+
+    PushEventPushContextCallback* callback = this->push_context_callbacks[callback_id];
+    while (callback->is_busy) {
+        this->Unlock();
+        Libraries::Kernel::sceKernelUsleep(100000);
+        this->Lock();
+    }
+
+    delete callback;
+    this->push_context_callbacks.erase(callback_id);
+    this->Unlock();
+    return ORBIS_OK;
 }
 
 s32 UserContext::CreateRequest(const char* api_group, const char* path, const char* method,

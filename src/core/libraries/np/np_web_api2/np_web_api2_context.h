@@ -196,9 +196,11 @@ public:
 
     s32 CreatePushEventCallback(s32 filter_id, OrbisNpWebApi2PushEventCallback cb_func,
                                 void* user_arg);
+    s32 RemovePushEventCallback(s32 callback_id);
 
     s32 CreatePushContextCallback(s32 filter_id, OrbisNpWebApi2PushEventPushContextCallback cb_func,
                                   void* user_arg);
+    s32 RemovePushContextCallback(s32 callback_id);
 
     s32 CreateRequest(const char* api_group, const char* path, const char* method,
                       const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,

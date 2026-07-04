@@ -330,14 +330,17 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventStartPushContextCallback() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2PushEventUnregisterCallback() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApi2PushEventUnregisterCallback(s32 user_ctx_id, s32 callback_id) {
+    LOG_INFO(Lib_NpWebApi2, "called, user_ctx_id = {:#x}, callback_id = {:#x}", user_ctx_id,
+             callback_id);
+    return unregisterPushEventCallback(user_ctx_id, callback_id);
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2PushEventUnregisterPushContextCallback() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApi2PushEventUnregisterPushContextCallback(s32 user_ctx_id,
+                                                                    s32 callback_id) {
+    LOG_INFO(Lib_NpWebApi2, "called, user_ctx_id = {:#x}, callback_id = {:#x}", user_ctx_id,
+             callback_id);
+    return unregisterPushContextCallback(user_ctx_id, callback_id);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2ReadData(s64 request_id, void* data, u64 size) {
