@@ -104,7 +104,7 @@ s32 PS4_SYSV_ABI sceNpWebApi2CreateUserContext(s32 lib_ctx_id,
         LOG_ERROR(Lib_NpWebApi2, "Invalid user id");
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
     }
-    LOG_DEBUG(Lib_NpWebApi2, "called, lib_ctx_id = {:#x}, user_id = {:#x}", lib_ctx_id, user_id);
+    LOG_DEBUG(Lib_NpWebApi2, "called, lib_ctx_id = {:#x}, user_id = {}", lib_ctx_id, user_id);
     s32 user_ctx_id = createUserContext(lib_ctx_id, user_id);
     if (user_ctx_id > 0) {
         LOG_INFO(Lib_NpWebApi2, "created user_ctx_id = {:#x}", user_ctx_id);
@@ -241,13 +241,13 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventCreateFilter(
               lib_ctx_id, handle_id, np_service_name ? np_service_name : "(null)",
               static_cast<u32>(np_service_label), filter_param_num);
     for (u64 i = 0; i < filter_param_num; i++) {
-        LOG_DEBUG(Lib_NpWebApi2, "filter_param[{:#x}].data_type.val = {}", i,
+        LOG_DEBUG(Lib_NpWebApi2, "filter_param[{}].data_type.val = {}", i,
                   filter_param[i].data_type.val);
-        LOG_DEBUG(Lib_NpWebApi2, "filter_param[{:#x}].extd_data_key_num = {:#x}", i,
+        LOG_DEBUG(Lib_NpWebApi2, "filter_param[{}].extd_data_key_num = {}", i,
                   filter_param[i].extd_data_key_num);
         for (u64 j = 0; j < filter_param[i].extd_data_key_num && filter_param[i].extd_data_key;
              j++) {
-            LOG_DEBUG(Lib_NpWebApi2, "filter_param[{:#x}].extd_data_key[{:#x}].val = {}", i, j,
+            LOG_DEBUG(Lib_NpWebApi2, "filter_param[{}].extd_data_key[{}].val = {}", i, j,
                       filter_param[i].extd_data_key[j].val);
         }
     }

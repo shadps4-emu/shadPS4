@@ -23,8 +23,18 @@ s32 PushEventFilter::Initialize(PushEventHandle* handle,
     }
 
     for (u64 i = 0; i < filter_param_num; i++) {
-        OrbisNpWebApi2PushEventFilterParameter new_param = OrbisNpWebApi2PushEventFilterParameter();
+        OrbisNpWebApi2PushEventFilterParameter new_param{};
         memcpy(&new_param, &filter_param[i], sizeof(OrbisNpWebApi2PushEventFilterParameter));
+        if (filter_param[i].extd_data_key != nullptr && filter_param[i].extd_data_key_num != 0) {
+            std::vector<OrbisNpWebApi2PushEventExtdDataKey> data_keys{};
+            for (u64 j = 0; j < filter_param[i].extd_data_key_num; j++) {
+                OrbisNpWebApi2PushEventExtdDataKey new_key{};
+                memcpy(&new_key, &filter_param[i].extd_data_key[j],
+                       sizeof(OrbisNpWebApi2PushEventExtdDataKey));
+                data_keys.emplace_back(new_key);
+            }
+            new_param.extd_data_key = data_keys.data();
+        }
         this->filter_params.push_back(new_param);
     }
 
