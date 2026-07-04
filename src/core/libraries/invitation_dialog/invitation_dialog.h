@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 #include <core/libraries/np/np_types.h>
 #include <core/libraries/system/commondialog.h>
 #include <core/libraries/system/userservice.h>
@@ -97,6 +99,30 @@ struct OrbisNpSessionId {
     char term;
     char padding[2];
 };
+
+constexpr int ORBIS_NP_INVITATION_ID_SIZE = 60;
+
+struct OrbisNpInvitationId {
+    char data[ORBIS_NP_INVITATION_ID_SIZE];
+    char term;
+};
+
+using OrbisNpSessionInvitationEventFlag = s32;
+constexpr OrbisNpSessionInvitationEventFlag ORBIS_NP_SESSION_INVITATION_EVENT_FLAG_INVITATION =
+    0x01;
+
+// Delivered via SceSystemServiceEvent::data::param on ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION
+struct OrbisNpSessionInvitationEventParam {
+    OrbisNpSessionId sessionId;
+    OrbisNpInvitationId invitationId;
+    OrbisNpSessionInvitationEventFlag flag;
+    char padding[4];
+    Libraries::Np::OrbisNpOnlineId onlineId;
+};
+static_assert(sizeof(OrbisNpSessionInvitationEventParam) == 0x8c,
+              "SESSION_INVITATION param must be 140 bytes");
+static_assert(offsetof(OrbisNpSessionInvitationEventParam, flag) == 112);
+static_assert(offsetof(OrbisNpSessionInvitationEventParam, onlineId) == 120);
 
 union OrbisInvitationDialogDataParam {
     struct {
