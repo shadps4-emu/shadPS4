@@ -61,6 +61,34 @@ PushEventHandle* LibraryContext::GetPushEventHandle(s32 handle_id) {
     return handle;
 }
 
+s32 LibraryContext::DeletePushEventHandle(PushEventHandle* handle) {
+    this->Lock();
+    s32 handle_id = handle->GetId();
+    if (handle->IsDeleted()) {
+        this->Unlock();
+        LOG_ERROR(Lib_NpWebApi2, "handle with id {:#x} is already deleted", handle_id);
+        return ORBIS_NP_WEBAPI2_ERROR_HANDLE_NOT_FOUND;
+    }
+
+    handle->MarkForDeletion();
+    handle->Abort();
+
+    while (handle->IsBusy()) {
+        handle->RemoveUser();
+        this->Unlock();
+        Libraries::Kernel::sceKernelUsleep(50000);
+        this->Lock();
+        handle->AddUser();
+    }
+
+    if (push_event_handles.contains(handle_id)) {
+        push_event_handles.erase(handle_id);
+    }
+    delete handle;
+
+    return ORBIS_OK;
+}
+
 s32 LibraryContext::CreatePushEventFilter(
     s32 handle_id, const char* np_service_name, OrbisNpServiceLabel np_service_label,
     const OrbisNpWebApi2PushEventFilterParameter* filter_param, u64 filter_param_num,

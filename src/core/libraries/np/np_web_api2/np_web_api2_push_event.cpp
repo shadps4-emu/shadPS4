@@ -6,6 +6,7 @@
 #include "core/libraries/np/np_web_api2/np_web_api2_push_event.h"
 
 namespace Libraries::Np::NpWebApi2 {
+
 s32 PushEventFilter::Initialize(PushEventHandle* handle,
                                 const OrbisNpWebApi2PushEventFilterParameter* filter_param,
                                 u64 filter_param_num) {

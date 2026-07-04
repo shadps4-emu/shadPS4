@@ -96,6 +96,8 @@ public:
         }
     }
 
+    s32 DeletePushEventHandle(PushEventHandle* handle);
+
     s32 CreatePushEventFilter(s32 handle_id, const char* np_service_name,
                               OrbisNpServiceLabel np_service_label,
                               const OrbisNpWebApi2PushEventFilterParameter* filter_param,
@@ -109,11 +111,13 @@ public:
         return push_event_filters[filter_id];
     }
 
-    void RemovePushEventFilter(s32 filter_id) {
+    void DeletePushEventFilter(PushEventFilter* filter) {
         std::scoped_lock lk{lock};
+        s32 filter_id = filter->GetId();
         if (push_event_filters.contains(filter_id)) {
             push_event_filters.erase(filter_id);
         }
+        delete filter;
     }
 
     s32 CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id);

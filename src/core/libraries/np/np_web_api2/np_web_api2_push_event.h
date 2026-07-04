@@ -72,6 +72,10 @@ public:
         timed_out = end_time != 0 && time > end_time;
     }
 
+    bool IsBusy() {
+        return user_count > 1;
+    }
+
 private:
     s32 id{};
     u32 timeout{};
@@ -93,6 +97,9 @@ public:
                    const OrbisNpWebApi2PushEventFilterParameter* filter_param,
                    u64 filter_param_num);
 
+    s32 GetId() {
+        return id;
+    }
 private:
     s32 id{};
     OrbisNpServiceLabel np_service_label{};
