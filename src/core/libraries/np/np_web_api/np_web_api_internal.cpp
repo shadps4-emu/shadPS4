@@ -784,7 +784,7 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
         const s32 tmpl_id = Libraries::Http::sceHttpCreateTemplate(
             context->libHttpCtxId, "libhttp", /*httpVer=*/2, /*isAutoProxyConf=*/0);
         if (tmpl_id < 0) {
-            LOG_ERROR(Lib_NpWebApi, "sendRequest: sceHttpCreateTemplate failed: {:#x}", tmpl_id);
+            LOG_ERROR(Lib_NpWebApi, "sceHttpCreateTemplate failed: {:#x}", tmpl_id);
             releaseRequest(request);
             releaseUserContext(user_context);
             releaseContext(context);
@@ -794,8 +794,7 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
         const int conn_id = Libraries::Http::sceHttpCreateConnectionWithURL(
             tmpl_id, base_url.c_str(), /*enableKeepalive=*/true);
         if (conn_id < 0) {
-            LOG_ERROR(Lib_NpWebApi, "sendRequest: sceHttpCreateConnectionWithURL failed: {:#x}",
-                      conn_id);
+            LOG_ERROR(Lib_NpWebApi, "sceHttpCreateConnectionWithURL failed: {:#x}", conn_id);
             Libraries::Http::sceHttpDeleteTemplate(tmpl_id);
             request->http_template_id = 0;
             releaseRequest(request);
@@ -829,7 +828,7 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
             sceMethod = 8; // out-of-band PATCH marker recognised by libhttp
             break;
         default:
-            LOG_ERROR(Lib_NpWebApi, "sendRequest: unknown method enum value {}",
+            LOG_ERROR(Lib_NpWebApi, "unknown method enum value {}",
                       static_cast<int>(request->userMethod));
             releaseRequest(request);
             releaseUserContext(user_context);
@@ -840,8 +839,7 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
         const int req_id = Libraries::Http::sceHttpCreateRequestWithURL(
             conn_id, sceMethod, full_url.c_str(), request->userContentLength);
         if (req_id < 0) {
-            LOG_ERROR(Lib_NpWebApi, "sendRequest: sceHttpCreateRequestWithURL failed: {:#x}",
-                      req_id);
+            LOG_ERROR(Lib_NpWebApi, "sceHttpCreateRequestWithURL failed: {:#x}", req_id);
             Libraries::Http::sceHttpDeleteConnection(conn_id);
             request->http_connection_id = 0;
             Libraries::Http::sceHttpDeleteTemplate(tmpl_id);
@@ -868,7 +866,7 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
                                                      /*mode=*/0);
         } else {
             LOG_WARNING(Lib_NpWebApi,
-                        "sendRequest: no bearer token for user_id={}; request to '{}' will "
+                        "no bearer token for user_id={}; request to '{}' will "
                         "be unauthenticated (expect 401 from server)",
                         user_context->userId, request->userPath);
         }
@@ -907,15 +905,14 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
     const s32 send_err =
         Libraries::Http::sceHttpSendRequest(request->http_request_id, sendData, sendSize);
     if (send_err < 0) {
-        LOG_ERROR(Lib_NpWebApi, "sendRequest: sceHttpSendRequest failed: {:#x}", send_err);
+        LOG_ERROR(Lib_NpWebApi, "sceHttpSendRequest failed: {:#x}", send_err);
         releaseRequest(request);
         releaseUserContext(user_context);
         releaseContext(context);
         return send_err;
     }
 
-    LOG_INFO(Lib_NpWebApi,
-             "sendRequest OK requestId={:#x} apiGroup='{}' path='{}' method={} httpReqId={}",
+    LOG_INFO(Lib_NpWebApi, "requestId={:#x} apiGroup='{}' path='{}' method={} httpReqId={}",
              requestId, request->userApiGroup, request->userPath,
              magic_enum::enum_name(request->userMethod), request->http_request_id);
 
@@ -1254,8 +1251,7 @@ s32 createPushEventFilterInternal(OrbisNpWebApiContext* context,
     filter->parentContext = context;
     filter->filterId = filterId;
 
-    LOG_INFO(Lib_NpWebApi, "createPushEventFilter: filterId={} dataTypeParams={}", filterId,
-             filterParamNum);
+    LOG_INFO(Lib_NpWebApi, "filterId={} dataTypeParams={}", filterId, filterParamNum);
     if (pFilterParam != nullptr && filterParamNum != 0) {
         for (u64 param_idx = 0; param_idx < filterParamNum; param_idx++) {
             OrbisNpWebApiPushEventFilterParameter copy = OrbisNpWebApiPushEventFilterParameter{};
@@ -1384,7 +1380,7 @@ s32 createServicePushEventFilterInternal(
 
     if (pNpServiceName != nullptr && !EmulatorSettings.IsShadNetEnabled()) {
         // Seems sceNpManagerIntGetUserList fails?
-        LOG_DEBUG(Lib_NpWebApi, "Cannot create service push event while PSN is disabled");
+        LOG_DEBUG(Lib_NpWebApi, "Cannot create service push event while shadNet is disabled");
         handle->userCount--;
         return ORBIS_NP_WEBAPI_ERROR_SIGNED_IN_USER_NOT_FOUND;
     }
@@ -1403,19 +1399,19 @@ s32 createServicePushEventFilterInternal(
     if (pNpServiceName == nullptr) {
         filter->internal = true;
     } else {
-        // TODO: if pNpServiceName is non-null, create an np request for this filter.
-        LOG_ERROR(Lib_NpWebApi, "Np behavior not handled");
         filter->npServiceName = std::string(pNpServiceName);
     }
 
     filter->npServiceLabel = npServiceLabel;
-
+    LOG_INFO(Lib_NpWebApi, "filterId={} dataTypeParams={}", filterId, filterParamNum);
     if (pFilterParam != nullptr && filterParamNum != 0) {
         for (u64 param_idx = 0; param_idx < filterParamNum; param_idx++) {
             OrbisNpWebApiServicePushEventFilterParameter copy =
                 OrbisNpWebApiServicePushEventFilterParameter{};
             memcpy(&copy, &pFilterParam[param_idx],
                    sizeof(OrbisNpWebApiServicePushEventFilterParameter));
+            LOG_INFO(Lib_NpWebApi, "  filterParam[{}] data_type='{}'", param_idx,
+                     copy.dataType.val);
             filter->filterParams.emplace_back(copy);
         }
     }
@@ -1561,7 +1557,7 @@ s32 createExtendedPushEventFilterInternal(
 
     if (pNpServiceName != nullptr && !EmulatorSettings.IsShadNetEnabled()) {
         // Seems sceNpManagerIntGetUserList fails?
-        LOG_DEBUG(Lib_NpWebApi, "Cannot create extended push event while PSN is disabled");
+        LOG_DEBUG(Lib_NpWebApi, "Cannot create extended push event while shadNet is disabled");
         handle->userCount--;
         return ORBIS_NP_WEBAPI_ERROR_SIGNED_IN_USER_NOT_FOUND;
     }
@@ -1581,16 +1577,13 @@ s32 createExtendedPushEventFilterInternal(
     if (pNpServiceName == nullptr) {
         npServiceLabel = ORBIS_NP_INVALID_SERVICE_LABEL;
     } else {
-        // TODO: if pNpServiceName is non-null, create an np request for this filter.
-        LOG_ERROR(Lib_NpWebApi, "Np behavior not handled");
         filter->npServiceName = std::string(pNpServiceName);
     }
 
     filter->npServiceLabel = npServiceLabel;
 
-    LOG_INFO(Lib_NpWebApi,
-             "createExtdPushEventFilter: filterId={} service='{}' label={:#x} dataTypeParams={}",
-             filterId, pNpServiceName ? pNpServiceName : "null", npServiceLabel, filterParamNum);
+    LOG_INFO(Lib_NpWebApi, "filterId={} service='{}' label={:#x} dataTypeParams={}", filterId,
+             pNpServiceName ? pNpServiceName : "null", npServiceLabel, filterParamNum);
     if (pFilterParam != nullptr && filterParamNum != 0) {
         for (u64 param_idx = 0; param_idx < filterParamNum; param_idx++) {
             OrbisNpWebApiExtdPushEventFilterParameter copy =
@@ -2049,7 +2042,7 @@ s32 PS4_SYSV_ABI readDataInternal(s64 requestId, void* pData, u64 size) {
     }
 
     if (result > 0) {
-        LOG_INFO(Lib_NpWebApi, "readData reqId={:#x} -> {} bytes: {:.256s}", requestId, result,
+        LOG_INFO(Lib_NpWebApi, "reqId={:#x} -> {} bytes: {:.256s}", requestId, result,
                  std::string(reinterpret_cast<const char*>(pData),
                              std::min<u64>(result, 256))); // debug to be removed
     }
@@ -2186,8 +2179,7 @@ void DrainPushEvents() {
                         exarr.empty() ? nullptr : exarr.data();
 
                     LOG_INFO(
-                        Lib_NpWebApi,
-                        "DrainPushEvents: invoking extd cb ctx={:#x} cbId={} dataType='{}'",
+                        Lib_NpWebApi, "invoking extd cb ctx={:#x} cbId={} dataType='{}'",
                         title_user_ctx_id, cbId,
                         ev.dataType); // debug confirm the listener callback fires. to be removed
                     reinterpret_cast<ExtdCbA>(raw)(
@@ -2238,7 +2230,7 @@ void DrainPushEvents() {
                             continue;
                         }
                         LOG_INFO(Lib_NpWebApi,
-                                 "DrainPushEvents: invoking basic cb ctx={:#x} cbId={} "
+                                 "invoking basic cb ctx={:#x} cbId={} "
                                  "dataType='{}'",
                                  title_user_ctx_id, cbId,
                                  ev.dataType); // debug confirm the listener callback fires. to be
