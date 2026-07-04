@@ -406,6 +406,7 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
         return ORBIS_CAMERA_ERROR_PARAM;
     }
     frame_data->status[0] = -1;
+    frame_data->status[1] = -1;
     if (handle < 1 || frame_data->sizeThis > 584) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
@@ -423,6 +424,7 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     frame = SDL_AcquireCameraFrame(sdl_camera, &timestampNS);
 
     frame_data->status[0] = frame != nullptr ? 0 : -1;
+    frame_data->status[1] = frame != nullptr ? 0 : -1;
     if (!frame) {
         return ORBIS_CAMERA_ERROR_BUSY;
     }
