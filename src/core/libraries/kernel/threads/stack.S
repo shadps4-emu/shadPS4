@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+#if defined(__x86_64__)
+
 .global _runOnAnotherStack
 _runOnAnotherStack:
   pushq %r12
@@ -35,3 +37,41 @@ _runOnAnotherStack:
   popq %r13
   popq %r12
   ret
+
+#elif defined(__arm64__) || defined(__aarch64__)
+
+.global _runOnAnotherStack
+_runOnAnotherStack:
+  // Save frame pointer (x29), link register (x30), and callee-saved registers x19, x20
+  stp x29, x30, [sp, #-32]!
+  mov x29, sp
+  stp x19, x20, [sp, #16]
+
+  // Save the current stack pointer into x19 (callee-saved)
+  mov x19, sp
+  // Save the current frame pointer into x20 (callee-saved)
+  mov x20, x29
+
+  // Align the target stack pointer (x2) to 16 bytes (ARM64 constraint)
+  and x2, x2, #-16
+
+  // Switch stack pointer to the new stack (x2)
+  mov sp, x2
+  // Switch frame pointer to the new stack (x2)
+  mov x29, x2
+
+  // Call the function (target address is in x1)
+  // Note: the argument is already in x0!
+  blr x1
+
+  // Restore the old stack pointer and frame pointer
+  mov sp, x19
+  mov x29, x20
+
+  // Restore saved registers and return
+  ldp x19, x20, [sp, #16]
+  ldp x29, x30, [sp], #32
+  ret
+
+#endif
+
