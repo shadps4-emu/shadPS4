@@ -367,7 +367,7 @@ void Linker::Relocate(Module* module) {
 
         if (rel_is_resolved) {
             std::memcpy(reinterpret_cast<void*>(rel_virtual_addr), &rel_value, sizeof(rel_value));
-        } else {
+        } else if (rel_sym_type == Loader::SymbolType::Function) {
             LOG_INFO(Core_Linker, "Function not patched! {}", rel_name);
         }
     });
