@@ -150,7 +150,11 @@ void InvitationDialogUi::Draw() {
                 TextWrapped("Message: %s", state->message.c_str());
             }
         } else {
+            // RECV: firmware passes no invitation payload (RecvInfo is reserved), so the pending
+            // invitation would be fetched from shadNet here -- deferred like SEND's networking.
             TextWrapped("You have received a game invitation.");
+            Spacing();
+            TextDisabled("Accept to join the session, or decline to dismiss.");
         }
 
         const auto ws = GetWindowSize();
@@ -174,12 +178,19 @@ void InvitationDialogUi::Draw() {
                 Finish(Result::USER_CANCELED);
             }
         } else {
-            SetCursorPos({ws.x / 2.0f - BUTTON_SIZE.x / 2.0f, y});
-            if (Button("Close", BUTTON_SIZE)) {
+            SetCursorPos({ws.x / 2.0f - BUTTON_SIZE.x - 10.0f, y});
+            if (Button("Accept", BUTTON_SIZE)) {
+                // TODO : fetch the pending invitation and raise the
+                // SCE_SYSTEM_SERVICE_EVENT_SESSION_INVITATION event so the title joins the session.
                 Finish(Result::OK);
             }
             if (first_render) {
                 SetItemCurrentNavFocus();
+            }
+            SameLine();
+            SetCursorPos({ws.x / 2.0f + 10.0f, y});
+            if (Button("Decline", BUTTON_SIZE)) {
+                Finish(Result::USER_CANCELED);
             }
         }
     }
