@@ -400,12 +400,13 @@ static void ConvertRGBA8888ToRAW8(const u8* src, u8* dst, int width, int height)
     }
 }
 
-static bool was_last_frame_valid = false;
-
 s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_data) {
     LOG_DEBUG(Lib_Camera, "called");
-    was_last_frame_valid = false;
-    if (handle < 1 || frame_data == nullptr || frame_data->sizeThis > 584) {
+    if (frame_data == nullptr) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    frame_data->status[0] = -1;
+    if (handle < 1 || frame_data->sizeThis > 584) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
     if (!g_library_opened || !sdl_camera) {
@@ -421,7 +422,7 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     }
     frame = SDL_AcquireCameraFrame(sdl_camera, &timestampNS);
 
-    was_last_frame_valid = frame != nullptr;
+    frame_data->status[0] = frame != nullptr ? 0 : -1;
     if (!frame) {
         return ORBIS_CAMERA_ERROR_BUSY;
     }
@@ -649,7 +650,7 @@ s32 PS4_SYSV_ABI sceCameraIsValidFrameData(s32 handle, OrbisCameraFrameData* fra
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
-    return was_last_frame_valid; // valid
+    return frame_data->status[0] == 0 && frame_data->status[1] == 0;
 }
 
 s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
