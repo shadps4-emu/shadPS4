@@ -719,22 +719,10 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             image_id = texture_cache.FindImage(desc);
             auto* image = &texture_cache.GetImage(image_id);
             if (auto depth_image_id = texture_cache.GetAssociatedDepth(*image)) {
+                // If this image has an associated depth image, it's a stencil attachment.
+                // Redirect the access to the actual depth-stencil buffer.
                 image_id = depth_image_id;
                 image = &texture_cache.GetImage(image_id);
-                const auto required_levels =
-                    desc.view_info.range.base.level + desc.view_info.range.extent.levels;
-                const auto required_layers =
-                    desc.view_info.range.base.layer + desc.view_info.range.extent.layers;
-                if (image->info.resources.levels < required_levels ||
-                    image->info.resources.layers < required_layers) {
-                    auto new_info = image->info;
-                    new_info.resources.levels =
-                        std::max(image->info.resources.levels, required_levels);
-                    new_info.resources.layers =
-                        std::max(image->info.resources.layers, required_layers);
-                    image_id = texture_cache.ExpandImage(new_info, image_id);
-                    image = &texture_cache.GetImage(image_id);
-                }
             }
             if (image->binding.is_bound) {
                 // The image is already bound. In case if it is about to be used as storage we
@@ -1001,6 +989,16 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
     VideoCore::SubresourceRange sub_range;
     sub_range.base.layer = liverpool->regs.depth_view.slice_start;
     sub_range.extent.layers = liverpool->regs.depth_view.NumSlices() - sub_range.base.layer;
+
+    LOG_DEBUG(Render_Vulkan,
+             "DepthStencilCopy: sub_range base_layer={} extent_layers={} | "
+             "read_image addr={:#x} size={:#x} levels={} layers={} | "
+             "write_image addr={:#x} size={:#x} levels={} layers={}",
+             sub_range.base.layer, sub_range.extent.layers, read_image.info.guest_address,
+             read_image.info.guest_size, read_image.info.resources.levels,
+             read_image.info.resources.layers, write_image.info.guest_address,
+             write_image.info.guest_size, write_image.info.resources.levels,
+             write_image.info.resources.layers);
 
     ScopeMarkerBegin(fmt::format(
         "DepthStencilCopy:DR={:#x}:SR={:#x}:DW={:#x}:SW={:#x}", regs.depth_buffer.DepthAddress(),
