@@ -128,7 +128,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     type = image.GetBaseType();
     props.is_tiled = image.IsTiled();
     props.is_volume = type == AmdGpu::ImageType::Color3D;
-    props.is_pow2 = image.pow2pad;
+    props.is_pow2 = image.pow2pad && image.NumLevels() > 1;
     props.is_block = AmdGpu::IsBlockCoded(image.GetDataFmt());
     size.width = image.width + 1;
     size.height = image.height + 1;
