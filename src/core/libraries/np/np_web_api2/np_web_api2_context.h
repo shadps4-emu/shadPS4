@@ -100,6 +100,14 @@ public:
                               const OrbisNpWebApi2PushEventFilterParameter* filter_param,
                               u64 filter_param_num, bool internal);
 
+    PushEventFilter* GetPushEventFilter(s32 filter_id) {
+        std::scoped_lock lk{lock};
+        if (!push_event_filters.contains(filter_id)) {
+            return nullptr;
+        }
+        return push_event_filters[filter_id];
+    }
+
     s32 CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id);
     UserContext* GetUserContext(s32 user_ctx_id);
     UserContext* GetUserContextByUserId(Libraries::UserService::OrbisUserServiceUserId user_id);
@@ -184,6 +192,18 @@ public:
         return http_template_id;
     }
 
+    s32 Initialize();
+
+    s32 CreatePushEventCallback(s32 filter_id, OrbisNpWebApi2PushEventCallback cb_func,
+                                void* user_arg);
+
+    s32 CreateRequest(const char* api_group, const char* path, const char* method,
+                      const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
+                      Request** request);
+    Request* GetRequest(s64 request_id);
+    bool HasBusyRequests();
+    void AbortAllRequests();
+
     void RemoveRequest(s64 request_id) {
         parent_ctx->Lock();
         if (requests.contains(request_id)) {
@@ -192,13 +212,6 @@ public:
         parent_ctx->Unlock();
     }
 
-    s32 Initialize();
-    s32 CreateRequest(const char* api_group, const char* path, const char* method,
-                      const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
-                      Request** request);
-    Request* GetRequest(s64 request_id);
-    bool HasBusyRequests();
-    void AbortAllRequests();
     void Delete();
 
 private:
@@ -210,6 +223,7 @@ private:
     LibraryContext* parent_ctx{};
     std::string user_agent{};
     std::map<s64, Request*> requests{};
+    std::map<s32, PushEventCallback*> push_event_callbacks{};
 };
 
 class Request {

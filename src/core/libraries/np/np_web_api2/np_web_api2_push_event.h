@@ -101,7 +101,12 @@ private:
     std::string np_service_name{};
 };
 
-class PushEventCallback {};
+struct PushEventCallback {
+    s32 id;
+    s32 filter_id;
+    OrbisNpWebApi2PushEventCallback cb_func;
+    void* user_arg;
+};
 
 class PushEventPushContext {};
 

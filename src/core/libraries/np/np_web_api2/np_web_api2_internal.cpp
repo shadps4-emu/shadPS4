@@ -176,6 +176,34 @@ s32 deleteUserContext(s32 user_ctx_id) {
     return ORBIS_OK;
 }
 
+s32 registerPushEventCallback(s32 user_ctx_id, s32 filter_id,
+                              OrbisNpWebApi2PushEventCallback cb_func, void* user_arg) {
+    LibraryContext* lib_ctx = getLibraryContext(user_ctx_id >> 0x10);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for user context id {:#x}", user_ctx_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context with id {:#x}", user_ctx_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    if (!lib_ctx->GetPushEventFilter(filter_id)) {
+        LOG_ERROR(Lib_NpWebApi2, "No push event filter with id {:#x}", filter_id);
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_PUSH_EVENT_FILTER_NOT_FOUND;
+    }
+
+    s32 result = user_ctx->CreatePushEventCallback(filter_id, cb_func, user_arg);
+    user_ctx->RemoveUser();
+    lib_ctx->RemoveUser();
+    return result;
+}
+
 void processPushEvents() {
     LOG_ERROR(Lib_NpWebApi2, "(STUBBED)");
 }
