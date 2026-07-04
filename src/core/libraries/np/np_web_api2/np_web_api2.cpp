@@ -320,9 +320,10 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventRegisterPushContextCallback(
     return callback_id;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2PushEventSetHandleTimeout() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApi2PushEventSetHandleTimeout(s32 lib_ctx_id, s32 handle_id, u32 timeout) {
+    LOG_INFO(Lib_NpWebApi2, "called, lib_ctx_id = {:#x}, handle_id = {:#x}, timeout = {}",
+             lib_ctx_id, handle_id, timeout);
+    return setHandleTimeout(lib_ctx_id, handle_id, timeout);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2PushEventStartPushContextCallback() {
