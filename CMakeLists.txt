@@ -363,9 +363,9 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/aio.h
 )
 
-if (ARCHITECTURE STREQUAL "x86_64")
+if (ARCHITECTURE STREQUAL "x86_64" OR ARCHITECTURE STREQUAL "arm64")
     list(APPEND KERNEL_LIB src/core/libraries/kernel/threads/stack.S)
-    set_source_files_properties(src/core/libraries/kernel/threads/stack.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+    set_source_files_properties(src/core/libraries/kernel/threads/stack.S PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
 endif()
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
