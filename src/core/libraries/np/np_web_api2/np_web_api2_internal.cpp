@@ -125,6 +125,28 @@ s32 createPushEventFilter(s32 lib_ctx_id, s32 handle_id, const char* np_service_
     return result;
 }
 
+s32 deletePushEventFilter(s32 lib_ctx_id, s32 filter_id) {
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context with id {:#x}", lib_ctx_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    PushEventFilter* filter = lib_ctx->GetPushEventFilter(filter_id);
+    if (!filter) {
+        LOG_ERROR(Lib_NpWebApi2, "No filter with id {:#x}", filter_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_PUSH_EVENT_FILTER_NOT_FOUND;
+    }
+
+    lib_ctx->Lock();
+    lib_ctx->RemovePushEventFilter(filter_id);
+    delete filter;
+    lib_ctx->Unlock();
+    lib_ctx->RemoveUser();
+    return ORBIS_OK;
+}
+
 s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUserId user_id) {
     LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
     if (!lib_ctx) {
@@ -143,6 +165,7 @@ s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUs
     s32 user_ctx_id = lib_ctx->CreateUserContext(user_id);
     if (user_ctx_id < 0) {
         // user_ctx_id contains an error code, return it.
+        lib_ctx->RemoveUser();
         return user_ctx_id;
     }
 

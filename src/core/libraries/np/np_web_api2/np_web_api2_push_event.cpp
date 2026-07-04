@@ -42,4 +42,5 @@ s32 PushEventFilter::Initialize(PushEventHandle* handle,
 
     return ORBIS_OK;
 }
+
 }; // namespace Libraries::Np::NpWebApi2

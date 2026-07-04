@@ -109,6 +109,13 @@ public:
         return push_event_filters[filter_id];
     }
 
+    void RemovePushEventFilter(s32 filter_id) {
+        std::scoped_lock lk{lock};
+        if (push_event_filters.contains(filter_id)) {
+            push_event_filters.erase(filter_id);
+        }
+    }
+
     s32 CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id);
     UserContext* GetUserContext(s32 user_ctx_id);
     UserContext* GetUserContextByUserId(Libraries::UserService::OrbisUserServiceUserId user_id);
