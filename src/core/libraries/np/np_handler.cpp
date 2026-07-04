@@ -9,12 +9,14 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/network/net_upnp.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_matching2/np_matching2_mm.h"
 #include "core/libraries/np/np_score/np_score.h"
 #include "core/libraries/np/np_web_api/np_web_api.h"
+#include "core/libraries/system/systemservice.h"
 #include "core/user_settings.h"
 #include "imgui/shadnet_notifications_layer.h"
 #include "np_handler.h"
@@ -474,6 +476,33 @@ bool NpHandler::SendSessionInvitation(s32 user_id, const std::string& session_id
     return true;
 }
 
+void NpHandler::PostSessionInvitationEvent(const std::string& session_id,
+                                           const std::string& invitation_id,
+                                           const std::string& accepter_online_id) {
+    using Libraries::InvitationDialog::ORBIS_NP_SESSION_INVITATION_EVENT_FLAG_INVITATION;
+    using Libraries::InvitationDialog::OrbisNpSessionInvitationEventParam;
+
+    Libraries::SystemService::OrbisSystemServiceEvent event{};
+    event.event_type = Libraries::SystemService::OrbisSystemServiceEventType::SessionInvitation;
+
+    auto* param = reinterpret_cast<OrbisNpSessionInvitationEventParam*>(event.param);
+    std::memset(param, 0, sizeof(*param));
+    std::strncpy(param->sessionId.data, session_id.c_str(), sizeof(param->sessionId.data) - 1);
+    if (!invitation_id.empty()) {
+        std::strncpy(param->invitationId.data, invitation_id.c_str(),
+                     sizeof(param->invitationId.data) - 1);
+        param->flag = ORBIS_NP_SESSION_INVITATION_EVENT_FLAG_INVITATION;
+    } else {
+        param->flag = 0; // join from session info (no invitation id in the push)
+    }
+    std::strncpy(param->onlineId.data, accepter_online_id.c_str(),
+                 sizeof(param->onlineId.data) - 1);
+
+    Libraries::SystemService::PushSystemServiceEvent(event);
+    LOG_INFO(NpHandler, "Posted SESSION_INVITATION session='{}' flag={} onlineId='{}'", session_id,
+             param->flag, accepter_online_id);
+}
+
 u32 NpHandler::GetLocalIpAddr(s32 user_id) const {
     std::lock_guard lock(m_mutex_clients);
     auto it = m_clients.find(user_id);
@@ -594,6 +623,22 @@ void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEv
     }
     ev.extdData = n.extdData; // extended-data (key,value) pairs -> dispatched as pExtdData
     NpWebApi::EnqueuePushEvent(ev);
+
+    // Also surface a SESSION_INVITATION system-service event for titles that watch it instead of
+    // (or in addition to) the WebAPI push callback
+    if (n.npServiceName == "sessionInvitation") {
+        std::string session_id, invitation_id;
+        for (const auto& kv : n.extdData) {
+            if (kv.first == "sessionId") {
+                session_id = kv.second;
+            } else if (kv.first == "invitationId") {
+                invitation_id = kv.second;
+            }
+        }
+        if (!session_id.empty()) {
+            PostSessionInvitationEvent(session_id, invitation_id, n.toNpid);
+        }
+    }
 }
 
 void NpHandler::OnLoginResult(s32 user_id, const ShadNet::LoginResult& res) {
