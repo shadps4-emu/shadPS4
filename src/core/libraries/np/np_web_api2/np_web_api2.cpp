@@ -35,9 +35,13 @@ s32 PS4_SYSV_ABI sceNpWebApi2AddMultipartPart() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2AddWebTraceTag() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApi2AddWebTraceTag(s64 request_id, const char* value) {
+    if (!value) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
+        return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
+    }
+    LOG_INFO(Lib_NpWebApi2, "called, request_id = {:#x}, value = {}", request_id, value);
+    return addHttpRequestHeader(request_id, "X-Psn-WebTrace-Tag", value);
 }
 
 void PS4_SYSV_ABI sceNpWebApi2CheckTimeout() {
