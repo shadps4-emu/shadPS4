@@ -72,6 +72,11 @@ public:
     // WebAPI bearer token
     std::string GetBearerToken(s32 user_id) const;
 
+    // Sends a session invitation via the WebAPI (POST /v1/sessions/<id>/invitations). Each 'to'
+    // entry is an online ID (npid) or a decimal account ID.Returns true on a 2xx/204 response.
+    bool SendSessionInvitation(s32 user_id, const std::string& session_id,
+                               const std::vector<std::string>& to, const std::string& message);
+
     // Local IP address (network byte order) as seen at connect time.
     u32 GetLocalIpAddr(s32 user_id) const;
 

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <httplib.h>
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
@@ -370,6 +371,107 @@ std::string NpHandler::GetBearerToken(s32 user_id) const {
     std::lock_guard lock(m_mutex_clients);
     auto it = m_clients.find(user_id);
     return it != m_clients.end() ? it->second->GetBearerToken() : std::string{};
+}
+
+// Minimal JSON string escaper for the invitation-request body (npids are safe but the user message
+// can contain quotes/backslashes/control chars).
+std::string JsonEscape(const std::string& in) {
+    std::string out;
+    out.reserve(in.size() + 8);
+    for (const char c : in) {
+        switch (c) {
+        case '"':
+            out += "\\\"";
+            break;
+        case '\\':
+            out += "\\\\";
+            break;
+        case '\n':
+            out += "\\n";
+            break;
+        case '\r':
+            out += "\\r";
+            break;
+        case '\t':
+            out += "\\t";
+            break;
+        default:
+            if (static_cast<unsigned char>(c) < 0x20) {
+                char buf[8];
+                std::snprintf(buf, sizeof(buf), "\\u%04x", c);
+                out += buf;
+            } else {
+                out += c;
+            }
+        }
+    }
+    return out;
+}
+
+bool NpHandler::SendSessionInvitation(s32 user_id, const std::string& session_id,
+                                      const std::vector<std::string>& to,
+                                      const std::string& message) {
+    if (session_id.empty() || to.empty()) {
+        LOG_ERROR(NpHandler, "SendSessionInvitation: empty session_id or recipient list");
+        return false;
+    }
+    const std::string base_url = EmulatorSettings.GetShadNetWebApiServer();
+    if (base_url.empty()) {
+        LOG_ERROR(NpHandler, "SendSessionInvitation: WebAPI server address is empty");
+        return false;
+    }
+    const std::string token = GetBearerToken(user_id);
+    if (token.empty()) {
+        LOG_ERROR(NpHandler, "SendSessionInvitation: no bearer token for user_id={}", user_id);
+        return false;
+    }
+
+    // invitation-request JSON: {"to":[...],"message":"..."}
+    std::string json = "{\"to\":[";
+    for (size_t i = 0; i < to.size(); ++i) {
+        if (i != 0) {
+            json += ',';
+        }
+        json += '"';
+        json += JsonEscape(to[i]);
+        json += '"';
+    }
+    json += ']';
+    if (!message.empty()) {
+        json += ",\"message\":\"";
+        json += JsonEscape(message);
+        json += '"';
+    }
+    json += '}';
+
+    // multipart/mixed with a single JSON part; shadNet keys on the Content-Description.
+    const std::string boundary = "shadps4invite" + std::to_string(user_id);
+    std::string body;
+    body += "--" + boundary + "\r\n";
+    body += "Content-Type: application/json; charset=utf-8\r\n";
+    body += "Content-Description: invitation-request\r\n\r\n";
+    body += json;
+    body += "\r\n--" + boundary + "--\r\n";
+
+    const std::string path = "/v1/sessions/" + session_id + "/invitations";
+    const std::string content_type = "multipart/mixed; boundary=" + boundary;
+
+    httplib::Client cli(base_url);
+    cli.set_connection_timeout(5);
+    cli.set_read_timeout(10);
+    const httplib::Headers headers = {{"Authorization", "Bearer " + token}};
+    const auto res = cli.Post(path.c_str(), headers, body, content_type.c_str());
+    if (!res) {
+        LOG_ERROR(NpHandler, "SendSessionInvitation: POST {} failed (no response)", path);
+        return false;
+    }
+    if (res->status != 200 && res->status != 204) {
+        LOG_ERROR(NpHandler, "SendSessionInvitation: POST {} -> HTTP {}", path, res->status);
+        return false;
+    }
+    LOG_INFO(NpHandler, "SendSessionInvitation: sent invite to {} recipient(s) for session '{}'",
+             to.size(), session_id);
+    return true;
 }
 
 u32 NpHandler::GetLocalIpAddr(s32 user_id) const {
