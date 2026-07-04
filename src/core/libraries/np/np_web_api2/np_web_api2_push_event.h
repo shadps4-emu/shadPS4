@@ -98,6 +98,7 @@ private:
     OrbisNpServiceLabel np_service_label{};
     bool internal{};
     std::vector<OrbisNpWebApi2PushEventFilterParameter> filter_params{};
+    std::vector<std::vector<OrbisNpWebApi2PushEventExtdDataKey>> data_key_copy_storage{};
     std::string np_service_name{};
 };
 
