@@ -100,6 +100,7 @@ public:
     s32 GetId() {
         return id;
     }
+
 private:
     s32 id{};
     OrbisNpServiceLabel np_service_label{};
