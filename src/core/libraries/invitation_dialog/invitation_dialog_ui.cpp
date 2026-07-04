@@ -108,9 +108,23 @@ void InvitationDialogUi::Draw() {
                 if (friend_list.friends.empty()) {
                     TextDisabled("No friends available. Add friends from the friends overlay.");
                 } else {
+                    SetNextItemWidth(-1.0f);
+                    InputTextWithHint("##invitation_friend_filter", "Search friends",
+                                      state->friend_filter, sizeof(state->friend_filter));
+                    const auto to_lower = [](std::string v) {
+                        std::transform(v.begin(), v.end(), v.begin(), [](unsigned char c) {
+                            return static_cast<char>(std::tolower(c));
+                        });
+                        return v;
+                    };
+                    const std::string filter = to_lower(state->friend_filter);
                     if (BeginChild("##invitation_friends", ImVec2(0.0f, 120.0f), true)) {
                         auto& sel = state->selected_npids;
                         for (const auto& f : friend_list.friends) {
+                            if (!filter.empty() &&
+                                to_lower(f.npid).find(filter) == std::string::npos) {
+                                continue; // filtered out of view; selection is unaffected
+                            }
                             PushID(f.npid.c_str());
                             const auto it = std::find(sel.begin(), sel.end(), f.npid);
                             bool checked = it != sel.end();

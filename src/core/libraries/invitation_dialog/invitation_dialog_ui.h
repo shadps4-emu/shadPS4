@@ -24,6 +24,9 @@ struct DialogState {
     Libraries::UserService::OrbisUserServiceUserId user_id =
         Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID;
     std::string session_id;
+    void* callback_arg = nullptr;
+    s32 error_code = 0;
+    std::vector<Libraries::Np::OrbisNpAccountId> online_ids;
 };
 
 // ImGui layer that renders the invitation dialog.
