@@ -27,6 +27,8 @@ struct DialogState {
     void* callback_arg = nullptr;
     s32 error_code = 0;
     std::vector<Libraries::Np::OrbisNpAccountId> online_ids;
+    // Online IDs actually sent (SEND mode), reported back via GetResult's sentOnlineIds.
+    std::vector<std::string> sent_online_ids;
 };
 
 // ImGui layer that renders the invitation dialog.

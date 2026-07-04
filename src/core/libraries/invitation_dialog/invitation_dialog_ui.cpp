@@ -151,7 +151,7 @@ void InvitationDialogUi::Draw() {
             }
         } else {
             // RECV: firmware passes no invitation payload (RecvInfo is reserved), so the pending
-            // invitation would be fetched from shadNet here -- deferred like SEND's networking.
+            // invitation would be fetched from shadNet here,deferred like SEND's networking.
             TextWrapped("You have received a game invitation.");
             Spacing();
             TextDisabled("Accept to join the session, or decline to dismiss.");
@@ -165,7 +165,24 @@ void InvitationDialogUi::Draw() {
             SetCursorPos({ws.x / 2.0f - BUTTON_SIZE.x - 10.0f, y});
             BeginDisabled(no_recipients);
             if (Button("Send", BUTTON_SIZE)) {
-                // TODO : Implement sending invitations
+                // USERENABLE: send the npids the user picked. USERDISABLE: send the app-fixed
+                // account IDs
+                std::vector<std::string> to;
+                if (state->user_editable) {
+                    to = state->selected_npids;
+                } else {
+                    to.reserve(state->online_ids.size());
+                    for (const auto id : state->online_ids) {
+                        to.push_back(std::to_string(id));
+                    }
+                }
+                auto& np = Libraries::Np::NpHandler::GetInstance();
+                const bool ok = np.SendSessionInvitation(static_cast<s32>(state->user_id),
+                                                         state->session_id, to, state->message);
+                // Report the online IDs actually sent (only the picker case carries npids).
+                if (ok && state->user_editable) {
+                    state->sent_online_ids = state->selected_npids;
+                }
                 Finish(Result::OK);
             }
             EndDisabled();
@@ -181,7 +198,8 @@ void InvitationDialogUi::Draw() {
             SetCursorPos({ws.x / 2.0f - BUTTON_SIZE.x - 10.0f, y});
             if (Button("Accept", BUTTON_SIZE)) {
                 // TODO : fetch the pending invitation and raise the
-                // SCE_SYSTEM_SERVICE_EVENT_SESSION_INVITATION event so the title joins the session.
+                // ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION event so the title joins the
+                // session.
                 Finish(Result::OK);
             }
             if (first_render) {

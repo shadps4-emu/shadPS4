@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
+
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
@@ -245,8 +247,8 @@ s32 PS4_SYSV_ABI sceInvitationDialogGetResult(OrbisInvitationDialogResult* resul
         return static_cast<s32>(Libraries::CommonDialog::Error::ARG_NULL);
     }
 
-    if (result->errorCode != 0) {
-        LOG_ERROR(Lib_InvitationDialog, "errorCode {} block all players", result->errorCode);
+    if (g_state.error_code != 0) {
+        LOG_ERROR(Lib_InvitationDialog, "errorCode {} block all players", g_state.error_code);
         return ORBIS_INVITATION_DIALOG_ERROR_BLOCKED_ALL_PLAYERS;
     }
 
@@ -271,10 +273,14 @@ s32 PS4_SYSV_ABI sceInvitationDialogGetResult(OrbisInvitationDialogResult* resul
     result->errorCode = g_state.error_code;
     result->result = g_state.result;
     if (result->sentOnlineIds != nullptr) {
-        // Account-id-only recipients: online IDs are left blank (no reverse lookup wired yet).
-        u32 count = static_cast<u32>(g_state.online_ids.size());
+        u32 count = static_cast<u32>(g_state.sent_online_ids.size());
         if (count > ORBIS_INVITATION_DIALOG_ADDRESS_USER_LIST_MAX_SIZE) {
             count = ORBIS_INVITATION_DIALOG_ADDRESS_USER_LIST_MAX_SIZE;
+        }
+        for (u32 i = 0; i < count; i++) {
+            auto& oid = result->sentOnlineIds->onlineId[i];
+            std::memset(&oid, 0, sizeof(oid));
+            std::strncpy(oid.data, g_state.sent_online_ids[i].c_str(), sizeof(oid.data) - 1);
         }
         result->sentOnlineIds->count =
             (g_state.result == Libraries::CommonDialog::Result::OK) ? count : 0;
