@@ -17,6 +17,7 @@
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
+#include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/sysmodule/sysmodule.h"
 #include "core/linker.h"
 #include "core/memory.h"
@@ -72,9 +73,42 @@ void Linker::Execute(const std::vector<std::string>& args) {
     Module* module = m_modules[0].get();
     static_tls_size = module->tls.offset = module->tls.image_size;
 
+    // Map libSceLibcInternal
+    const auto& libc_internal_path =
+        EmulatorSettings.GetSysModulesDir() / "libSceLibcInternal.sprx";
+    bool has_libcinternal = false;
+    if (std::filesystem::exists(libc_internal_path)) {
+        LoadModule(libc_internal_path);
+        has_libcinternal = true;
+    } else {
+        // Need to load HLE, LLE isn't present
+        LOG_INFO(Core_Linker, "Can't Load libSceLibcInternal.sprx switching to HLE");
+        Libraries::LibcInternal::RegisterLib(&GetHLESymbols());
+    }
+
     // Relocate all modules
-    for (const auto& m : m_modules) {
-        Relocate(m.get());
+    RelocateAllImports();
+
+    // Before we can run guest code, we need to properly initialize the heap API and
+    // libSceLibcInternal. libSceLibcInternal's _malloc_init serves as an additional initialization
+    // function called by libkernel.
+    heap_api = new HeapAPI{};
+    static PS4_SYSV_ABI s32 (*malloc_init)() = nullptr;
+
+    if (has_libcinternal) {
+        for (const auto& m : m_modules) {
+            const auto& mod = m.get();
+            if (mod->name.contains("libSceLibcInternal.sprx")) {
+                // Found libSceLibcInternal, now search through function exports.
+                // Looking for _malloc_init to init libSceLibcInternal properly
+                // and for all the memory allocating functions, so we can initialize our heap API
+                for (const auto& sym : mod->export_sym.GetSymbols()) {
+                    if (sym.nid_name.compare("_malloc_init") == 0) {
+                        malloc_init = reinterpret_cast<PS4_SYSV_ABI s32 (*)()>(sym.virtual_address);
+                    }
+                }
+            }
+        }
     }
 
     // Configure the direct and flexible memory regions.
@@ -112,7 +146,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
     memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
-    main_thread.Run([this, module, &args](std::stop_token) {
+    main_thread.Run([this, module, &args, has_libcinternal](std::stop_token) {
         Common::SetCurrentThreadName("Game:Main");
         std::set_terminate(Common::Log::Terminate);
 
@@ -123,6 +157,17 @@ void Linker::Execute(const std::vector<std::string>& args) {
 #endif
         if (auto& ipc = IPC::Instance()) {
             ipc.WaitForStart();
+        }
+
+        // Load libSceLibcInternal, run malloc_init.
+        if (has_libcinternal) {
+            LoadLibcInternal();
+
+            if (malloc_init != nullptr) {
+                // Call _malloc_init
+                s32 ret = malloc_init();
+                ASSERT_MSG(ret == 0, "malloc_init failed");
+            }
         }
 
         // Have libSceSysmodule preload our libraries.
@@ -322,7 +367,7 @@ void Linker::Relocate(Module* module) {
 
         if (rel_is_resolved) {
             std::memcpy(reinterpret_cast<void*>(rel_virtual_addr), &rel_value, sizeof(rel_value));
-        } else {
+        } else if (rel_sym_type == Loader::SymbolType::Function) {
             LOG_INFO(Core_Linker, "Function not patched! {}", rel_name);
         }
     });

@@ -363,9 +363,9 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/aio.h
 )
 
-if (ARCHITECTURE STREQUAL "x86_64")
+if (ARCHITECTURE STREQUAL "x86_64" OR ARCHITECTURE STREQUAL "arm64")
     list(APPEND KERNEL_LIB src/core/libraries/kernel/threads/stack.S)
-    set_source_files_properties(src/core/libraries/kernel/threads/stack.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+    set_source_files_properties(src/core/libraries/kernel/threads/stack.S PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
 endif()
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
@@ -634,6 +634,10 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_matching2/np_matching2.h
             src/core/libraries/np/np_matching2/np_matching2_internal.cpp
             src/core/libraries/np/np_matching2/np_matching2_internal.h
+            src/core/libraries/np/np_matching2/np_matching2_mm.cpp
+            src/core/libraries/np/np_matching2/np_matching2_mm.h
+            src/core/libraries/np/np_matching2/np_matching2_signaling.cpp
+            src/core/libraries/np/np_matching2/np_matching2_signaling.h
             src/core/libraries/np/np_matching2/np_matching2_types.h
             src/core/libraries/np/np_trophy.cpp
             src/core/libraries/np/np_trophy.h
