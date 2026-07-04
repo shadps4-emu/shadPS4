@@ -197,6 +197,9 @@ public:
     s32 CreatePushEventCallback(s32 filter_id, OrbisNpWebApi2PushEventCallback cb_func,
                                 void* user_arg);
 
+    s32 CreatePushContextCallback(s32 filter_id, OrbisNpWebApi2PushEventPushContextCallback cb_func,
+                                  void* user_arg);
+
     s32 CreateRequest(const char* api_group, const char* path, const char* method,
                       const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
                       Request** request);
@@ -224,6 +227,7 @@ private:
     std::string user_agent{};
     std::map<s64, Request*> requests{};
     std::map<s32, PushEventCallback*> push_event_callbacks{};
+    std::map<s32, PushEventPushContextCallback*> push_context_callbacks{};
 };
 
 class Request {

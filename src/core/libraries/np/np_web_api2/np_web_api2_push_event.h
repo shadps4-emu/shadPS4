@@ -111,6 +111,11 @@ struct PushEventCallback {
 
 class PushEventPushContext {};
 
-class PushEventPushContextCallback {};
+struct PushEventPushContextCallback {
+    s32 id;
+    s32 filter_id;
+    OrbisNpWebApi2PushEventPushContextCallback cb_func;
+    void* user_arg;
+};
 
 }; // namespace Libraries::Np::NpWebApi2

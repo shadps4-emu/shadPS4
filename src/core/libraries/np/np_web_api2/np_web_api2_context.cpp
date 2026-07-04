@@ -14,6 +14,7 @@ namespace Libraries::Np::NpWebApi2 {
 u32 g_current_push_event_handle_id{};
 u32 g_current_push_event_filter_id{};
 u32 g_current_push_event_callback_id{};
+u32 g_current_push_context_callback_id{};
 u32 g_current_user_context_id{};
 u64 g_current_request_id{};
 
@@ -173,6 +174,23 @@ s32 UserContext::CreatePushEventCallback(s32 filter_id, OrbisNpWebApi2PushEventC
     s32 new_callback_id = g_current_push_event_callback_id;
     this->push_event_callbacks[new_callback_id] =
         new PushEventCallback(new_callback_id, filter_id, cb_func, user_arg);
+    this->Unlock();
+    return new_callback_id;
+}
+
+s32 UserContext::CreatePushContextCallback(s32 filter_id,
+                                           OrbisNpWebApi2PushEventPushContextCallback cb_func,
+                                           void* user_arg) {
+    this->Lock();
+    if (g_current_push_context_callback_id + 1 < 0xf0000000) {
+        ++g_current_push_context_callback_id;
+    } else {
+        g_current_push_context_callback_id = 1;
+    }
+
+    s32 new_callback_id = g_current_push_context_callback_id;
+    this->push_context_callbacks[new_callback_id] =
+        new PushEventPushContextCallback(new_callback_id, filter_id, cb_func, user_arg);
     this->Unlock();
     return new_callback_id;
 }

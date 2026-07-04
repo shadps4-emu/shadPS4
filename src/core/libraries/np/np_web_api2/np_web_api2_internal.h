@@ -19,6 +19,9 @@ s32 deleteUserContext(s32 user_ctx_id);
 s32 registerPushEventCallback(s32 user_ctx_id, s32 filter_id,
                               OrbisNpWebApi2PushEventCallback cb_func, void* user_arg);
 
+s32 registerPushContextCallback(s32 user_ctx_id, s32 filter_id,
+                                OrbisNpWebApi2PushEventPushContextCallback cb_func, void* user_arg);
+
 void processPushEvents();
 
 s32 createRequest(s32 user_ctx_id, const char* api_group, const char* path, const char* method,
