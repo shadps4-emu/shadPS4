@@ -9,6 +9,7 @@ namespace Libraries::Np::NpWebApi2 {
 s32 createLibraryContext(s32 http_ctx_id, s32 type, u64 pool_size, const char* name);
 s32 getMemoryPoolStats(s32 lib_ctx_id, OrbisNpWebApi2MemoryPoolStats* stats);
 s32 createPushEventHandle(s32 lib_ctx_id);
+s32 abortPushEventHandle(s32 lib_ctx_id, s32 handle_id);
 s32 createPushEventFilter(s32 lib_ctx_id, s32 handle_id, const char* np_service_name,
                           OrbisNpServiceLabel np_service_label,
                           const OrbisNpWebApi2PushEventFilterParameter* filter_param,

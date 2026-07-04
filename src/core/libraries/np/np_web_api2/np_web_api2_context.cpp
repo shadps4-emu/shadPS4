@@ -51,6 +51,16 @@ s32 LibraryContext::CreatePushEventHandle() {
     return new_handle_id;
 }
 
+PushEventHandle* LibraryContext::GetPushEventHandle(s32 handle_id) {
+    std::scoped_lock lk{lock};
+    if (!push_event_handles.contains(handle_id)) {
+        return nullptr;
+    }
+    PushEventHandle* handle = push_event_handles[handle_id];
+    handle->AddUser();
+    return handle;
+}
+
 s32 LibraryContext::CreatePushEventFilter(
     s32 handle_id, const char* np_service_name, OrbisNpServiceLabel np_service_label,
     const OrbisNpWebApi2PushEventFilterParameter* filter_param, u64 filter_param_num,

@@ -86,6 +86,7 @@ public:
     }
 
     s32 CreatePushEventHandle();
+    PushEventHandle* GetPushEventHandle(s32 handle_id);
 
     void SetHandleEndTime(s32 handle_id) {
         std::scoped_lock lk{lock};

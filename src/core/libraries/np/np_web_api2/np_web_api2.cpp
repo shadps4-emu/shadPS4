@@ -221,9 +221,9 @@ s32 PS4_SYSV_ABI sceNpWebApi2IntPushEventCreateCtxIndFilter() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2PushEventAbortHandle() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApi2PushEventAbortHandle(s32 lib_ctx_id, s32 handle_id) {
+    LOG_INFO(Lib_NpWebApi2, "called, lib_ctx_id = {:#x}, handle_id = {:#x}", lib_ctx_id, handle_id);
+    return abortPushEventHandle(lib_ctx_id, handle_id);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2PushEventCreateFilter(

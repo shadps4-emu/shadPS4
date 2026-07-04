@@ -86,6 +86,28 @@ s32 createPushEventHandle(s32 lib_ctx_id) {
     return result;
 }
 
+s32 abortPushEventHandle(s32 lib_ctx_id, s32 handle_id) {
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context with id {:#x}", lib_ctx_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    PushEventHandle* handle = lib_ctx->GetPushEventHandle(handle_id);
+    if (!handle) {
+        LOG_ERROR(Lib_NpWebApi2, "No handle with id {:#x}", handle_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_HANDLE_NOT_FOUND;
+    }
+
+    lib_ctx->Lock();
+    handle->Abort();
+    lib_ctx->Unlock();
+    handle->RemoveUser();
+    lib_ctx->RemoveUser();
+    return ORBIS_OK;
+}
+
 s32 createPushEventFilter(s32 lib_ctx_id, s32 handle_id, const char* np_service_name,
                           OrbisNpServiceLabel np_service_label,
                           const OrbisNpWebApi2PushEventFilterParameter* filter_param,
