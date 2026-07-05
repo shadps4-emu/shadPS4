@@ -9,7 +9,6 @@
 
 #include "common/types.h"
 #include "core/libraries/np/np_matching2/np_matching2.h"
-#include "core/libraries/np/np_matching2/np_matching2_types.h"
 
 namespace ShadNet {
 class ShadNetClient;
@@ -31,6 +30,7 @@ enum class MmCommand : u16 {
     SetRoomDataExternal = 21,
     KickoutRoomMember = 22,
     GetWorldInfoList = 23,
+    GetRoomDataExternalList = 24,
 };
 
 void SetMmShadNetClient(std::shared_ptr<ShadNet::ShadNetClient> client,
@@ -45,18 +45,32 @@ void MmContextStart(OrbisNpMatching2ContextId ctx_id);
 void MmContextStop(OrbisNpMatching2ContextId ctx_id);
 
 s32 MmSubmitRequest(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
-                    OrbisNpMatching2Event req_event, MmCommand cmd, const std::vector<u8>& payload);
+                    OrbisNpMatching2Event req_event, MmCommand cmd, const std::vector<u8>& payload,
+                    bool a_variant = false);
 
 s32 MmCreateJoinRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
                      const OrbisNpMatching2CreateJoinRoomRequest& request);
+s32 MmCreateJoinRoomA(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                      const OrbisNpMatching2CreateJoinRoomRequestA& request);
 s32 MmJoinRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
                const OrbisNpMatching2JoinRoomRequest& request);
+s32 MmJoinRoomA(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                const OrbisNpMatching2JoinRoomRequestA& request);
 s32 MmLeaveRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
                 const OrbisNpMatching2LeaveRoomRequest& request);
 s32 MmGetWorldInfoList(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
                        const OrbisNpMatching2GetWorldInfoListRequest& request);
 s32 MmSearchRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
-                 const OrbisNpMatching2SearchRoomRequest& request);
+                 const OrbisNpMatching2SearchRoomRequest& request, bool a_variant = false);
+s32 MmGetRoomDataExternalList(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                              const OrbisNpMatching2GetRoomDataExternalListRequest& request,
+                              bool a_variant = false);
+s32 MmSetRoomDataInternal(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                          const OrbisNpMatching2SetRoomDataInternalRequest& request);
+s32 MmSetRoomDataExternal(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                          const OrbisNpMatching2SetRoomDataExternalRequest& request);
+s32 MmKickoutRoomMember(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                        const OrbisNpMatching2KickoutRoomMemberRequest& request);
 
 u32 GetMmServerAddr();
 u16 GetMmServerUdpPort();
