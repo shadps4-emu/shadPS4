@@ -216,7 +216,7 @@ s32 UserContext::CreatePushEventCallback(s32 filter_id, OrbisNpWebApi2PushEventC
     return new_callback_id;
 }
 
-s32 UserContext::RemovePushEventCallback(s32 callback_id) {
+s32 UserContext::DeletePushEventCallback(s32 callback_id) {
     this->Lock();
     if (!this->push_event_callbacks.contains(callback_id)) {
         this->Unlock();
@@ -237,6 +237,38 @@ s32 UserContext::RemovePushEventCallback(s32 callback_id) {
     return ORBIS_OK;
 }
 
+void UserContext::CreatePushContext(OrbisNpWebApi2PushEventPushContextId* push_ctx_id) {
+    this->Lock();
+    while (this->push_contexts_busy) {
+        this->Unlock();
+        Libraries::Kernel::sceKernelUsleep(10000);
+        this->Lock();
+    }
+    this->push_contexts_busy = true;
+    PushEventPushContext* push_ctx = new PushEventPushContext(5000, this);
+    push_ctx->Initialize();
+    OrbisNpWebApi2PushEventPushContextId* new_id = push_ctx->GetId();
+    std::memcpy(push_ctx_id, new_id, sizeof(*push_ctx_id));
+
+    s64 raw_id = push_ctx->GetFakeId();
+    this->push_contexts[raw_id] = push_ctx;
+    this->push_contexts_busy = false;
+    this->Unlock();
+}
+
+PushEventPushContext* UserContext::GetPushContext(
+    const OrbisNpWebApi2PushEventPushContextId* push_ctx_id) {
+    parent_ctx->Lock();
+    s64 raw_id{};
+    std::memcpy(&raw_id, push_ctx_id, sizeof(s64));
+    if (!push_contexts.contains(raw_id)) {
+        return nullptr;
+    }
+    PushEventPushContext* push_ctx = push_contexts[raw_id];
+    parent_ctx->Unlock();
+    return push_ctx;
+}
+
 s32 UserContext::CreatePushContextCallback(s32 filter_id,
                                            OrbisNpWebApi2PushEventPushContextCallback cb_func,
                                            void* user_arg) {
@@ -254,7 +286,7 @@ s32 UserContext::CreatePushContextCallback(s32 filter_id,
     return new_callback_id;
 }
 
-s32 UserContext::RemovePushContextCallback(s32 callback_id) {
+s32 UserContext::DeletePushContextCallback(s32 callback_id) {
     this->Lock();
     if (!this->push_context_callbacks.contains(callback_id)) {
         this->Unlock();

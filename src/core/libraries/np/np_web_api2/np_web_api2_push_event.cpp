@@ -7,6 +7,8 @@
 
 namespace Libraries::Np::NpWebApi2 {
 
+s64 g_current_push_event_push_context_id{};
+
 s32 PushEventFilter::Initialize(PushEventHandle* handle,
                                 const OrbisNpWebApi2PushEventFilterParameter* filter_param,
                                 u64 filter_param_num) {
@@ -42,6 +44,21 @@ s32 PushEventFilter::Initialize(PushEventHandle* handle,
     }
 
     return ORBIS_OK;
+}
+
+void PushEventPushContext::Initialize() {
+    // In the real library, there's a whole process of registering this with NpManager's Push2 API.
+    // For now, we'll just create the uuid for this push context.
+
+    // As for the ID itself, for now we'll cheat a bit.
+    // Real library does a mostly random string, but it's easier to just use an actual index.
+    ++g_current_push_event_push_context_id;
+    if (g_current_push_event_push_context_id < 0) {
+        g_current_push_event_push_context_id = 1;
+    }
+    s64 new_id = g_current_push_event_push_context_id;
+    std::memset(&this->id, 0, sizeof(this->id));
+    std::memcpy(&this->id, &new_id, sizeof(s64));
 }
 
 }; // namespace Libraries::Np::NpWebApi2

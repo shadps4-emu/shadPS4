@@ -19,17 +19,15 @@ s32 createPushEventFilter(s32 lib_ctx_id, s32 handle_id, const char* np_service_
 s32 deletePushEventFilter(s32 lib_ctx_id, s32 filter_id);
 s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUserId user_id);
 s32 deleteUserContext(s32 user_ctx_id);
-
 s32 registerPushEventCallback(s32 user_ctx_id, s32 filter_id,
                               OrbisNpWebApi2PushEventCallback cb_func, void* user_arg);
 s32 unregisterPushEventCallback(s32 user_ctx_id, s32 callback_id);
-
+s32 createPushContext(s32 user_ctx_id, OrbisNpWebApi2PushEventPushContextId* push_ctx_id);
+s32 startPushContextCallback(s32 user_ctx_id, const OrbisNpWebApi2PushEventPushContextId* push_ctx_id);
 s32 registerPushContextCallback(s32 user_ctx_id, s32 filter_id,
                                 OrbisNpWebApi2PushEventPushContextCallback cb_func, void* user_arg);
 s32 unregisterPushContextCallback(s32 user_ctx_id, s32 callback_id);
-
 void processPushEvents();
-
 s32 createRequest(s32 user_ctx_id, const char* api_group, const char* path, const char* method,
                   const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
                   s64* request_id);

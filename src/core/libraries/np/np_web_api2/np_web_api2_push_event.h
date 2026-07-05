@@ -8,11 +8,7 @@
 
 namespace Libraries::Np::NpWebApi2 {
 
-class PushEventHandle;
-class PushEventFilter;
-class PushEventCallback;
-class PushEventPushContext;
-class PushEventPushContextCallback;
+class UserContext;
 
 class PushEventHandle {
 public:
@@ -118,7 +114,37 @@ struct PushEventCallback {
     bool is_busy;
 };
 
-class PushEventPushContext {};
+class PushEventPushContext {
+public:
+    PushEventPushContext(u32 new_timeout, UserContext* user_ctx)
+        : timeout(new_timeout), parent_user_ctx(user_ctx) {}
+
+    void Initialize();
+
+    OrbisNpWebApi2PushEventPushContextId* GetId() {
+        return &id;
+    }
+
+    // Returns the actual numerical id currently stored in id.
+    s64 GetFakeId() {
+        s64 fake_id{};
+        std::memcpy(&fake_id, &id, sizeof(s64));
+        return fake_id;
+    }
+
+    void Start() {
+        started = true;
+    }
+
+private:
+    s32 state{};
+    u32 timeout{};
+    UserContext* parent_user_ctx{};
+    u64 end_time{};
+    u64 start_time{};
+    OrbisNpWebApi2PushEventPushContextId id{};
+    bool started{};
+};
 
 struct PushEventPushContextCallback {
     s32 id;

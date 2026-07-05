@@ -14,7 +14,6 @@
 
 namespace Libraries::Np::NpWebApi2 {
 
-class LibraryContext;
 class UserContext;
 class Request;
 
@@ -208,11 +207,14 @@ public:
 
     s32 CreatePushEventCallback(s32 filter_id, OrbisNpWebApi2PushEventCallback cb_func,
                                 void* user_arg);
-    s32 RemovePushEventCallback(s32 callback_id);
+    s32 DeletePushEventCallback(s32 callback_id);
+
+    void CreatePushContext(OrbisNpWebApi2PushEventPushContextId* push_ctx_id);
+    PushEventPushContext* GetPushContext(const OrbisNpWebApi2PushEventPushContextId* push_ctx_id);
 
     s32 CreatePushContextCallback(s32 filter_id, OrbisNpWebApi2PushEventPushContextCallback cb_func,
                                   void* user_arg);
-    s32 RemovePushContextCallback(s32 callback_id);
+    s32 DeletePushContextCallback(s32 callback_id);
 
     s32 CreateRequest(const char* api_group, const char* path, const char* method,
                       const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
@@ -237,10 +239,12 @@ private:
     s32 user_count{};
     s32 http_template_id{};
     bool deleting{};
+    bool push_contexts_busy{};
     LibraryContext* parent_ctx{};
     std::string user_agent{};
     std::map<s64, Request*> requests{};
     std::map<s32, PushEventCallback*> push_event_callbacks{};
+    std::map<s64, PushEventPushContext*> push_contexts{};
     std::map<s32, PushEventPushContextCallback*> push_context_callbacks{};
 };
 

@@ -272,9 +272,20 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventCreateHandle(s32 lib_ctx_id) {
     return handle_id;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2PushEventCreatePushContext() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApi2PushEventCreatePushContext(
+    s32 user_ctx_id, OrbisNpWebApi2PushEventPushContextId* push_ctx_id) {
+    if (!push_ctx_id) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
+        return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
+    }
+    LOG_DEBUG(Lib_NpWebApi2, "called, user_ctx_id = {:#x}", user_ctx_id);
+    s32 result = createPushContext(user_ctx_id, push_ctx_id);
+    if (result == 0) {
+        s64 raw_id{};
+        std::memcpy(&raw_id, push_ctx_id, sizeof(s64));
+        LOG_INFO(Lib_NpWebApi2, "created push_ctx_id = {:#x}", raw_id);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2PushEventDeleteFilter(s32 lib_ctx_id, s32 filter_id) {
@@ -330,9 +341,17 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventSetHandleTimeout(s32 lib_ctx_id, s32 handl
     return setHandleTimeout(lib_ctx_id, handle_id, timeout);
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2PushEventStartPushContextCallback() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApi2PushEventStartPushContextCallback(
+    s32 user_ctx_id, const OrbisNpWebApi2PushEventPushContextId* push_ctx_id) {
+    if (!push_ctx_id) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
+        return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
+    }
+    s64 raw_id{};
+    std::memcpy(&raw_id, push_ctx_id, sizeof(s64));
+    LOG_INFO(Lib_NpWebApi2, "called, user_ctx_id = {:#x}, push_ctx_id = {:#x}", user_ctx_id,
+             raw_id);
+    return startPushContextCallback(user_ctx_id, push_ctx_id);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2PushEventUnregisterCallback(s32 user_ctx_id, s32 callback_id) {
@@ -350,6 +369,7 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventUnregisterPushContextCallback(s32 user_ctx
 
 s32 PS4_SYSV_ABI sceNpWebApi2ReadData(s64 request_id, void* data, u64 size) {
     if (!data || size == 0) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
     }
     LOG_INFO(Lib_NpWebApi2, "called, request_id = {:#x}, size = {:#x}", request_id, size);

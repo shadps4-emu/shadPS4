@@ -301,10 +301,59 @@ s32 unregisterPushEventCallback(s32 user_ctx_id, s32 callback_id) {
         return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
     }
 
-    s32 result = user_ctx->RemovePushEventCallback(callback_id);
+    s32 result = user_ctx->DeletePushEventCallback(callback_id);
     user_ctx->RemoveUser();
     lib_ctx->RemoveUser();
     return result;
+}
+
+s32 createPushContext(s32 user_ctx_id, OrbisNpWebApi2PushEventPushContextId* push_ctx_id) {
+    LibraryContext* lib_ctx = getLibraryContext(user_ctx_id >> 0x10);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for user context id {:#x}", user_ctx_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context with id {:#x}", user_ctx_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    user_ctx->CreatePushContext(push_ctx_id);
+    user_ctx->RemoveUser();
+    lib_ctx->RemoveUser();
+    return ORBIS_OK;
+}
+
+s32 startPushContextCallback(s32 user_ctx_id,
+                             const OrbisNpWebApi2PushEventPushContextId* push_ctx_id) {
+    LibraryContext* lib_ctx = getLibraryContext(user_ctx_id >> 0x10);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for user context id {:#x}", user_ctx_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context with id {:#x}", user_ctx_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    PushEventPushContext* push_ctx = user_ctx->GetPushContext(push_ctx_id);
+    if (!push_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No push context with id {}", push_ctx_id->uuid);
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_PUSH_CONTEXT_NOT_FOUND;
+    }
+
+    push_ctx->Start();
+    user_ctx->RemoveUser();
+    lib_ctx->RemoveUser();
+    return ORBIS_OK;
 }
 
 s32 registerPushContextCallback(s32 user_ctx_id, s32 filter_id,
@@ -350,7 +399,7 @@ s32 unregisterPushContextCallback(s32 user_ctx_id, s32 callback_id) {
         return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
     }
 
-    s32 result = user_ctx->RemovePushContextCallback(callback_id);
+    s32 result = user_ctx->DeletePushContextCallback(callback_id);
     user_ctx->RemoveUser();
     lib_ctx->RemoveUser();
     return result;
