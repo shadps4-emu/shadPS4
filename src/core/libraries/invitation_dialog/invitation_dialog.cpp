@@ -7,6 +7,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/np/np_handler.h"
 #include "invitation_dialog_ui.h"
 #include "magic_enum/magic_enum.hpp"
 
@@ -16,39 +17,56 @@ static auto g_status = Libraries::CommonDialog::Status::NONE;
 static InvitationDialogUi g_dialog_ui;
 static DialogState g_state;
 
-s32 PS4_SYSV_ABI sceInvitationDialogGetResultA(OrbisInvitationDialogResultA* result) { // TODO
-    LOG_DEBUG(Lib_InvitationDialog, "sceInvitationDialogGetResultA() called (async version)");
-    LOG_INFO(Lib_InvitationDialog, "Getting invitation dialog result (async), result ptr={}",
-             fmt::ptr(result));
+s32 PS4_SYSV_ABI sceInvitationDialogGetResultA(OrbisInvitationDialogResultA* result) {
+    LOG_DEBUG(Lib_InvitationDialog, "Getting invitation dialog result (async), result ptr={}",
+              fmt::ptr(result));
 
-    if (!result) {
-        LOG_ERROR(Lib_InvitationDialog, "Result parameter is NULL");
+    if (g_status == Libraries::CommonDialog::Status::NONE) {
+        return static_cast<s32>(Libraries::CommonDialog::Error::NOT_INITIALIZED);
+    }
+    if (g_status != Libraries::CommonDialog::Status::FINISHED) {
+        return static_cast<s32>(Libraries::CommonDialog::Error::NOT_FINISHED);
+    }
+    if (result == nullptr) {
+        return static_cast<s32>(Libraries::CommonDialog::Error::ARG_NULL);
+    }
+
+    if (g_state.error_code != 0) {
+        LOG_ERROR(Lib_InvitationDialog, "errorCode {} block all players", g_state.error_code);
         return ORBIS_INVITATION_DIALOG_ERROR_BLOCKED_ALL_PLAYERS;
     }
 
-    // Log result fields
-    if (result->callbackArg) {
-        LOG_INFO(Lib_InvitationDialog, "ResultA callbackArg={}", fmt::ptr(result->callbackArg));
-    }
-    LOG_INFO(Lib_InvitationDialog, "ResultA errorCode={:#x}", result->errorCode);
-    LOG_INFO(Lib_InvitationDialog, "ResultA status={}", magic_enum::enum_name(result->result));
-
-    if (result->sentUsers) {
-        LOG_INFO(Lib_InvitationDialog, "ResultA sentUsers count={}", result->sentUsers->count);
-        for (u32 i = 0;
-             i < result->sentUsers->count && i < ORBIS_INVITATION_DIALOG_ADDRESS_USER_LIST_MAX_SIZE;
-             i++) {
-            LOG_INFO(Lib_InvitationDialog, "  sentUsers[{}]: onlineId={}, accountId={}", i,
-                     result->sentUsers->users[i].onlineId.data,
-                     result->sentUsers->users[i].accountId);
+    result->callbackArg = g_state.callback_arg;
+    result->errorCode = g_state.error_code;
+    result->result = g_state.result;
+    // sentUsers carries {onlineId, accountId} pairs; report whichever recipient form was sent --
+    // online IDs (picker / non-A fixed list) or account IDs (A fixed list). Only one is populated.
+    if (result->sentUsers != nullptr) {
+        u32 count = static_cast<u32>(g_state.sent_online_ids.size() > g_state.sent_account_ids.size()
+                                         ? g_state.sent_online_ids.size()
+                                         : g_state.sent_account_ids.size());
+        if (count > ORBIS_INVITATION_DIALOG_ADDRESS_USER_LIST_MAX_SIZE) {
+            count = ORBIS_INVITATION_DIALOG_ADDRESS_USER_LIST_MAX_SIZE;
         }
+        for (u32 i = 0; i < count; i++) {
+            auto& u = result->sentUsers->users[i];
+            std::memset(&u, 0, sizeof(u));
+            if (i < g_state.sent_online_ids.size()) {
+                std::strncpy(u.onlineId.data, g_state.sent_online_ids[i].c_str(),
+                             sizeof(u.onlineId.data) - 1);
+            }
+            if (i < g_state.sent_account_ids.size()) {
+                u.accountId = g_state.sent_account_ids[i];
+            }
+        }
+        result->sentUsers->count =
+            (g_state.result == Libraries::CommonDialog::Result::OK) ? count : 0;
     }
-
-    return ORBIS_OK;
+    return static_cast<s32>(g_state.result);
 }
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI
-sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) { // TODO
+sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) {
     LOG_DEBUG(Lib_InvitationDialog, "sceInvitationDialogOpenA() called (async version)");
     LOG_INFO(Lib_InvitationDialog, "Opening invitation dialog asynchronously, param ptr={}",
              fmt::ptr(param));
@@ -119,10 +137,49 @@ sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) { // TODO
         return Libraries::CommonDialog::Error::INVALID_STATE;
     }
 
-    LOG_ERROR(Lib_InvitationDialog,
-              "(STUBBED) Opening invitation dialog UI asynchronously - TODO implement actual UI");
+    g_state = DialogState{};
+    g_state.mode = param->mode;
+    g_state.callback_arg = param->callbackArg;
+    g_state.user_id = param->userId;
+
+    if (param->mode == ORBIS_INVITATION_DIALOG_MODE_SEND) {
+        if (param->dataParam == nullptr) {
+            return Libraries::CommonDialog::Error::PARAM_INVALID;
+        }
+        const auto& send = param->dataParam->SendInfo;
+        if (send.sessionId != nullptr) {
+            g_state.session_id = send.sessionId->data;
+        }
+        if (send.userMessage != nullptr) {
+            g_state.message = send.userMessage;
+        }
+        // USERDISABLE: the app fixes the recipient list up front (account IDs). USERENABLE: the
+        // user picks them in the dialog via the searchable friend picker.
+        if (send.addressParam.addressType == ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_USERENABLE) {
+            g_state.user_editable = true;
+        } else if (send.addressParam.addressType ==
+                   ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_USERDISABLE) {
+            const auto& addr = send.addressParam.addressInfo.UserSelectDisableAddress;
+            u32 count = addr.accountIdsCount;
+            if (count > ORBIS_INVITATION_DIALOG_ADDRESS_USER_LIST_MAX_SIZE) {
+                count = ORBIS_INVITATION_DIALOG_ADDRESS_USER_LIST_MAX_SIZE;
+            }
+            for (u32 i = 0; i < count && addr.accountIds != nullptr; i++) {
+                g_state.account_ids.push_back(addr.accountIds[i]);
+            }
+        }
+        LOG_INFO(Lib_InvitationDialog, "OpenA(SEND) user={} sessionId='{}' recipients={}",
+                 param->userId, g_state.session_id, g_state.account_ids.size());
+    } else {
+        g_state.recv_invitations =
+            Libraries::Np::NpHandler::GetInstance().GetPendingInvitations(param->userId);
+        g_state.recv_selected = g_state.recv_invitations.empty() ? -1 : 0;
+        LOG_INFO(Lib_InvitationDialog, "OpenA(RECV) user={} pending={}", param->userId,
+                 g_state.recv_invitations.size());
+    }
+
     g_status = Libraries::CommonDialog::Status::RUNNING;
-    LOG_INFO(Lib_InvitationDialog, "Invitation dialog opened successfully (async, stubbed)");
+    g_dialog_ui = InvitationDialogUi{&g_status, &g_state};
     return Libraries::CommonDialog::Error::OK;
 }
 
@@ -218,14 +275,18 @@ sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
             if (count > ORBIS_INVITATION_DIALOG_ADDRESS_USER_LIST_MAX_SIZE) {
                 count = ORBIS_INVITATION_DIALOG_ADDRESS_USER_LIST_MAX_SIZE;
             }
-            if (addr.onlineIdsCount != 0) {
+            if (count != 0 && addr.onlineIds != nullptr) {
                 g_state.online_ids.assign(addr.onlineIds, addr.onlineIds + count);
             }
         }
         LOG_INFO(Lib_InvitationDialog, "Open(SEND) user={} sessionId='{}' recipients={}",
                  param->userId, g_state.session_id, g_state.online_ids.size());
     } else {
-        LOG_INFO(Lib_InvitationDialog, "Open(RECV) user={}", param->userId);
+        auto pend = Libraries::Np::NpHandler::GetInstance().GetPendingInvitations(param->userId);
+        g_state.recv_invitations = std::move(pend);
+        g_state.recv_selected = g_state.recv_invitations.empty() ? -1 : 0;
+        LOG_INFO(Lib_InvitationDialog, "Open(RECV) user={} pending={}", param->userId,
+                 g_state.recv_invitations.size());
     }
 
     g_status = Libraries::CommonDialog::Status::RUNNING;

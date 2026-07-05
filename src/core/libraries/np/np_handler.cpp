@@ -503,6 +503,90 @@ void NpHandler::PostSessionInvitationEvent(const std::string& session_id,
              param->flag, accepter_online_id);
 }
 
+std::vector<NpHandler::PendingInvitation> NpHandler::GetPendingInvitations(s32 user_id) const {
+    std::lock_guard lk(m_mutex_pending_invites);
+    const auto it = m_pending_invites.find(user_id);
+    if (it == m_pending_invites.end()) {
+        return {};
+    }
+    const auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                         std::chrono::system_clock::now().time_since_epoch())
+                         .count();
+    std::vector<PendingInvitation> out;
+    out.reserve(it->second.size());
+    for (const auto& p : it->second) {
+        if (p.valid_until == 0 || now <= p.valid_until) {
+            out.push_back(p);
+        }
+    }
+    return out;
+}
+
+bool NpHandler::AcceptSessionInvitation(s32 user_id, const std::string& invitation_id) {
+    // Pull the matching stashed invite (and drop it).
+    PendingInvitation inv;
+    bool found = false;
+    {
+        std::lock_guard lk(m_mutex_pending_invites);
+        const auto mit = m_pending_invites.find(user_id);
+        if (mit != m_pending_invites.end()) {
+            auto& v = mit->second;
+            for (auto it = v.begin(); it != v.end(); ++it) {
+                if (it->invitation_id == invitation_id) {
+                    inv = *it;
+                    v.erase(it);
+                    found = true;
+                    break;
+                }
+            }
+        }
+    }
+    if (!found) {
+        LOG_ERROR(NpHandler, "AcceptSessionInvitation: no pending invite '{}' for user_id={}",
+                  invitation_id, user_id);
+        return false;
+    }
+    // Raise the join event now that the user has explicitly accepted.
+    PostSessionInvitationEvent(inv.session_id, invitation_id, inv.to_npid);
+    // Consume it server-side (PUT usedFlag=true).
+    const std::string base_url = EmulatorSettings.GetShadNetWebApiServer();
+    const std::string token = GetBearerToken(user_id);
+    if (base_url.empty() || token.empty()) {
+        LOG_ERROR(NpHandler, "AcceptSessionInvitation: no WebAPI server/token for user_id={}",
+                  user_id);
+        return false;
+    }
+    httplib::Client cli(base_url);
+    cli.set_connection_timeout(5);
+    cli.set_read_timeout(10);
+    const httplib::Headers headers = {{"Authorization", "Bearer " + token}};
+    const std::string path = "/v1/users/me/invitations/" + invitation_id;
+    const auto res = cli.Put(path.c_str(), headers, "{\"usedFlag\":true}", "application/json");
+    if (!res || (res->status != 200 && res->status != 204)) {
+        LOG_ERROR(NpHandler, "AcceptSessionInvitation: PUT {} failed ({})", path,
+                  res ? res->status : 0);
+        return false;
+    }
+    LOG_INFO(NpHandler, "AcceptSessionInvitation: consumed '{}' session='{}'", invitation_id,
+             inv.session_id);
+    return true;
+}
+
+void NpHandler::DeclineSessionInvitation(s32 user_id, const std::string& invitation_id) {
+    std::lock_guard lock(m_mutex_pending_invites);
+    auto uit = m_pending_invites.find(user_id);
+    if (uit == m_pending_invites.end()) {
+        return;
+    }
+    auto& v = uit->second;
+    v.erase(std::remove_if(
+                v.begin(), v.end(),
+                [&](const PendingInvitation& p) { return p.invitation_id == invitation_id; }),
+            v.end());
+    LOG_INFO(NpHandler, "DeclineSessionInvitation: dismissed '{}' for user_id={}", invitation_id,
+             user_id);
+}
+
 u32 NpHandler::GetLocalIpAddr(s32 user_id) const {
     std::lock_guard lock(m_mutex_clients);
     auto it = m_clients.find(user_id);
@@ -628,15 +712,29 @@ void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEv
     // (or in addition to) the WebAPI push callback
     if (n.npServiceName == "sessionInvitation") {
         std::string session_id, invitation_id;
+        int64_t valid_until = 0;
         for (const auto& kv : n.extdData) {
             if (kv.first == "sessionId") {
                 session_id = kv.second;
             } else if (kv.first == "invitationId") {
                 invitation_id = kv.second;
+            } else if (kv.first == "validUntil") {
+                valid_until = std::strtoll(kv.second.c_str(), nullptr, 10);
             }
         }
         if (!session_id.empty()) {
-            PostSessionInvitationEvent(session_id, invitation_id, n.toNpid);
+            {
+                std::lock_guard lk(m_mutex_pending_invites);
+                auto& v = m_pending_invites[user_id];
+                v.erase(std::remove_if(v.begin(), v.end(),
+                                       [&](const PendingInvitation& p) {
+                                           return p.invitation_id == invitation_id;
+                                       }),
+                        v.end());
+                v.push_back({session_id, invitation_id, n.fromNpid, n.toNpid, valid_until});
+            }
+            // Event is raised on the user's explicit Accept (see AcceptSessionInvitation), not on
+            // arrival. The WebAPI push callback above still fires for titles that watch invites.
         }
     }
 }

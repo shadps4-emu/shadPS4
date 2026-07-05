@@ -150,11 +150,30 @@ void InvitationDialogUi::Draw() {
                 TextWrapped("Message: %s", state->message.c_str());
             }
         } else {
-            // RECV: firmware passes no invitation payload (RecvInfo is reserved), so the pending
-            // invitation would be fetched from shadNet here,deferred like SEND's networking.
-            TextWrapped("You have received a game invitation.");
-            Spacing();
-            TextDisabled("Accept to join the session, or decline to dismiss.");
+            // RECV: list the pending invitations stashed by NpHandler; the user picks one.
+            if (state->recv_invitations.empty()) {
+                TextWrapped("You have no pending invitations.");
+            } else {
+                TextWrapped("You have %d pending invitation(s):",
+                            static_cast<int>(state->recv_invitations.size()));
+                Spacing();
+                if (BeginChild("##pending_invitations", ImVec2(0.0f, 120.0f), true)) {
+                    for (int i = 0; i < static_cast<int>(state->recv_invitations.size()); i++) {
+                        PushID(i);
+                        const auto& inv = state->recv_invitations[i];
+                        const std::string label =
+                            (inv.from_npid.empty() ? std::string("(unknown)") : inv.from_npid) +
+                            " invited you to a game session.";
+                        if (Selectable(label.c_str(), state->recv_selected == i)) {
+                            state->recv_selected = i;
+                        }
+                        PopID();
+                    }
+                }
+                EndChild();
+                Spacing();
+                TextDisabled("Accept to join the selected session, or decline to dismiss it.");
+            }
         }
 
         const auto ws = GetWindowSize();
@@ -166,22 +185,32 @@ void InvitationDialogUi::Draw() {
             BeginDisabled(no_recipients);
             if (Button("Send", BUTTON_SIZE)) {
                 // USERENABLE: send the npids the user picked. USERDISABLE: send the app-fixed
-                // account IDs
-                std::vector<std::string> to;
+                // list resolved at Open -- online IDs (non-A) or account IDs (A); only one is set.
+                // Resolve recipients: online IDs (picker or non-A fixed list) and/or account IDs
+                // (A fixed list). Only one form is populated per dialog.
+                std::vector<std::string> sent_npids;
                 if (state->user_editable) {
-                    to = state->selected_npids;
+                    sent_npids = state->selected_npids;
                 } else {
-                    to.reserve(state->online_ids.size());
-                    for (const auto id : state->online_ids) {
-                        to.push_back(std::to_string(id));
+                    for (const auto& oid : state->online_ids) {
+                        size_t n = 0;
+                        while (n < sizeof(oid.data) && oid.data[n] != '\0') {
+                            n++;
+                        }
+                        sent_npids.emplace_back(oid.data, n);
                     }
+                }
+                std::vector<std::string> to = sent_npids;
+                for (const auto id : state->account_ids) {
+                    to.push_back(std::to_string(id));
                 }
                 auto& np = Libraries::Np::NpHandler::GetInstance();
                 const bool ok = np.SendSessionInvitation(static_cast<s32>(state->user_id),
                                                          state->session_id, to, state->message);
-                // Report the online IDs actually sent (only the picker case carries npids).
-                if (ok && state->user_editable) {
-                    state->sent_online_ids = state->selected_npids;
+                // Record what was sent for GetResult/GetResultA (online IDs and/or account IDs).
+                if (ok) {
+                    state->sent_online_ids = sent_npids;
+                    state->sent_account_ids = state->account_ids;
                 }
                 Finish(Result::OK);
             }
@@ -196,20 +225,48 @@ void InvitationDialogUi::Draw() {
             }
         } else {
             SetCursorPos({ws.x / 2.0f - BUTTON_SIZE.x - 10.0f, y});
+            const bool no_selection =
+                state->recv_selected < 0 ||
+                state->recv_selected >= static_cast<int>(state->recv_invitations.size());
+            BeginDisabled(no_selection);
             if (Button("Accept", BUTTON_SIZE)) {
-                // TODO : fetch the pending invitation and raise the
-                // ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION event so the title joins the
-                // session.
-                Finish(Result::OK);
+                // Raises the SESSION_INVITATION join event and consumes the invitation server-side.
+                const auto& inv = state->recv_invitations[state->recv_selected];
+                const bool ok = Libraries::Np::NpHandler::GetInstance().AcceptSessionInvitation(
+                    static_cast<s32>(state->user_id), inv.invitation_id);
+                if (ok) {
+                    Finish(Result::OK);
+                } else {
+                    // Accept failed (expired/already used/network). Drop the dead entry; stay open
+                    // if others remain so the user can pick another, otherwise cancel.
+                    state->recv_invitations.erase(state->recv_invitations.begin() +
+                                                  state->recv_selected);
+                    state->recv_selected = state->recv_invitations.empty() ? -1 : 0;
+                    if (state->recv_invitations.empty()) {
+                        Finish(Result::USER_CANCELED);
+                    }
+                }
             }
+            EndDisabled();
             if (first_render) {
                 SetItemCurrentNavFocus();
             }
             SameLine();
             SetCursorPos({ws.x / 2.0f + 10.0f, y});
+            BeginDisabled(no_selection);
             if (Button("Decline", BUTTON_SIZE)) {
-                Finish(Result::USER_CANCELED);
+                // Dismiss the selected invite so it won't reappear; stay open for any others.
+                const auto& inv = state->recv_invitations[state->recv_selected];
+                Libraries::Np::NpHandler::GetInstance().DeclineSessionInvitation(
+                    static_cast<s32>(state->user_id), inv.invitation_id);
+                state->recv_invitations.erase(state->recv_invitations.begin() +
+                                              state->recv_selected);
+                state->recv_selected = state->recv_invitations.empty() ? -1 : 0;
+                if (state->recv_invitations.empty()) {
+                    Finish(Result::USER_CANCELED);
+                }
             }
+            EndDisabled();
         }
     }
     End();
