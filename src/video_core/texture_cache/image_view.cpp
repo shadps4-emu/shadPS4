@@ -59,8 +59,15 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
         format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(format);
     }
 
+    if (!desc.is_array && image.base_array != 0) {
+        LOG_DEBUG(Render_Vulkan,
+                 "Non-array image access has non-zero base_array={} (NumLayers={}); ignoring it "
+                 "for this view (is_storage={}, is_depth={})",
+                 image.base_array, image.NumLayers(), is_storage, desc.is_depth);
+    }
+
     range.base.level = image.base_level;
-    range.base.layer = image.base_array;
+    range.base.layer = desc.is_array ? image.base_array : 0;
     range.extent.levels = image.NumViewLevels(desc.is_array);
     range.extent.layers = image.NumViewLayers(desc.is_array);
     type = image.GetViewType(desc.is_array);
