@@ -18,6 +18,7 @@ bool SendMatching2StunPing(const ContextObject& ctx);
 void StartMatching2PeerHandshake(ContextObject& ctx, OrbisNpMatching2RoomId room_id,
                                  OrbisNpMatching2RoomMemberId member_id);
 void StartMatching2SignalingForRoomPeers(ContextObject& ctx, OrbisNpMatching2RoomId room_id);
+void QueueMatching2EstablishedForRoomPeers(ContextObject& ctx, OrbisNpMatching2RoomId room_id);
 void QueueMatching2DeadForRoomPeers(ContextObject& ctx, OrbisNpMatching2RoomId room_id,
                                     s32 error_code);
 void QueueMatching2SignalingEvent(ContextObject& ctx, OrbisNpMatching2RoomId room_id,

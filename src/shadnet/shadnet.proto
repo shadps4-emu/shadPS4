@@ -279,6 +279,8 @@ message MatchingRoomDataExternal {
     repeated MatchingBinAttr     external_search_bin_attrs = 16;
     repeated MatchingBinAttr     external_bin_attrs        = 17;
     string                       owner_npid                = 18;
+    uint64                       owner_account_id          = 19;
+    uint32                       owner_platform            = 20;
 }
 
 message CreateJoinRoomResponse {
@@ -431,6 +433,15 @@ message SearchRoomReply {
     uint32 range_start  = 2;
     uint32 range_total  = 3;
     uint32 range_result = 4;
+}
+
+message GetRoomDataExternalListRequest {
+    repeated uint64 room_ids = 1;
+    repeated uint32 attr_ids = 2;
+}
+
+message GetRoomDataExternalListReply {
+    repeated MatchingRoomDataExternal rooms = 1;
 }
 
 message MatchingWorld {
