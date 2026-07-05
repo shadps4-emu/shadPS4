@@ -77,10 +77,10 @@ public:
     bool SendSessionInvitation(s32 user_id, const std::string& session_id,
                                const std::vector<std::string>& to, const std::string& message);
 
-    // Raises SCE_SYSTEM_SERVICE_EVENT_SESSION_INVITATION (0x10000002) so titles that watch the
-    // system-service event can join.
+    // Raises ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION (0x10000002) so titles that watch the
+    // system-service event learn about the invite.
     void PostSessionInvitationEvent(const std::string& session_id, const std::string& invitation_id,
-                                    const std::string& accepter_online_id);
+                                    const std::string& sender_online_id);
 
     // A session invitation surfaced from a shadNet push, stashed until the user acts on it.
     struct PendingInvitation {

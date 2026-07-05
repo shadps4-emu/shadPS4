@@ -478,7 +478,7 @@ bool NpHandler::SendSessionInvitation(s32 user_id, const std::string& session_id
 
 void NpHandler::PostSessionInvitationEvent(const std::string& session_id,
                                            const std::string& invitation_id,
-                                           const std::string& accepter_online_id) {
+                                           const std::string& sender_online_id) {
     using Libraries::InvitationDialog::ORBIS_NP_SESSION_INVITATION_EVENT_FLAG_INVITATION;
     using Libraries::InvitationDialog::OrbisNpSessionInvitationEventParam;
 
@@ -495,12 +495,11 @@ void NpHandler::PostSessionInvitationEvent(const std::string& session_id,
     } else {
         param->flag = 0; // join from session info (no invitation id in the push)
     }
-    std::strncpy(param->onlineId.data, accepter_online_id.c_str(),
-                 sizeof(param->onlineId.data) - 1);
+    std::strncpy(param->onlineId.data, sender_online_id.c_str(), sizeof(param->onlineId.data) - 1);
 
     Libraries::SystemService::PushSystemServiceEvent(event);
     LOG_INFO(NpHandler, "Posted SESSION_INVITATION session='{}' flag={} onlineId='{}'", session_id,
-             param->flag, accepter_online_id);
+             param->flag, sender_online_id);
 }
 
 std::vector<NpHandler::PendingInvitation> NpHandler::GetPendingInvitations(s32 user_id) const {
@@ -546,8 +545,9 @@ bool NpHandler::AcceptSessionInvitation(s32 user_id, const std::string& invitati
                   invitation_id, user_id);
         return false;
     }
-    // Raise the join event now that the user has explicitly accepted.
-    PostSessionInvitationEvent(inv.session_id, invitation_id, inv.to_npid);
+    // The SESSION_INVITATION event was already raised on arrival (see OnWebApiPushEvent); the
+    // accept outcome itself is reported synchronously via sceInvitationDialogGetResult(A), so
+    // there's no need to post it again here.
     // Consume it server-side (PUT usedFlag=true).
     const std::string base_url = EmulatorSettings.GetShadNetWebApiServer();
     const std::string token = GetBearerToken(user_id);
@@ -733,8 +733,10 @@ void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEv
                         v.end());
                 v.push_back({session_id, invitation_id, n.fromNpid, n.toNpid, valid_until});
             }
-            // Event is raised on the user's explicit Accept (see AcceptSessionInvitation), not on
-            // arrival. The WebAPI push callback above still fires for titles that watch invites.
+            // Raise the event now, on arrival, so titles watching
+            // ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION learn about the invite immediately and
+            // can react (e.g. open sceInvitationDialogOpenA in RECV mode).
+            PostSessionInvitationEvent(session_id, invitation_id, n.fromNpid);
         }
     }
 }
