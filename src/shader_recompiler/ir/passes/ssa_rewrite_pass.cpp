@@ -44,6 +44,18 @@ struct GotoVariable : FlagTag {
     u32 index;
 };
 
+// Per-lane (U1) view of a thread mask spilled into a VGPR lane via V_WRITELANE_B32 and
+// restored via V_READLANE_B32. Keyed by (vgpr << 6) | lane. Inherits FlagTag so
+// UndefOpcode(FlagTag) resolves to UndefU1. See Translator::V_WRITELANE_B32.
+struct MaskLaneVariable : FlagTag {
+    MaskLaneVariable() = default;
+    explicit MaskLaneVariable(u32 index_) : index{index_} {}
+
+    auto operator<=>(const MaskLaneVariable&) const noexcept = default;
+
+    u32 index;
+};
+
 struct ThreadBitScalar : FlagTag {
     ThreadBitScalar() = default;
     explicit ThreadBitScalar(IR::ScalarReg sgpr_) : sgpr{sgpr_} {}
@@ -53,8 +65,9 @@ struct ThreadBitScalar : FlagTag {
     IR::ScalarReg sgpr;
 };
 
-using Variant = std::variant<IR::ScalarReg, IR::VectorReg, GotoVariable, ThreadBitScalar,
-                             SccFlagTag, ExecFlagTag, VccFlagTag, VccLoTag, VccHiTag, M0Tag>;
+using Variant =
+    std::variant<IR::ScalarReg, IR::VectorReg, GotoVariable, MaskLaneVariable, ThreadBitScalar,
+                 SccFlagTag, ExecFlagTag, VccFlagTag, VccLoTag, VccHiTag, M0Tag>;
 using ValueMap = std::unordered_map<IR::Block*, IR::Value>;
 
 struct DefTable {
@@ -77,6 +90,13 @@ struct DefTable {
     }
     void SetDef(IR::Block* block, GotoVariable variable, const IR::Value& value) {
         goto_vars[variable.index].insert_or_assign(block, value);
+    }
+
+    const IR::Value& Def(IR::Block* block, MaskLaneVariable variable) {
+        return mask_lane_vars[variable.index][block];
+    }
+    void SetDef(IR::Block* block, MaskLaneVariable variable, const IR::Value& value) {
+        mask_lane_vars[variable.index].insert_or_assign(block, value);
     }
 
     const IR::Value& Def(IR::Block* block, ThreadBitScalar variable) {
@@ -128,6 +148,7 @@ struct DefTable {
     }
 
     std::unordered_map<u32, ValueMap> goto_vars;
+    std::unordered_map<u32, ValueMap> mask_lane_vars;
     ValueMap scc_flag;
     ValueMap exec_flag;
     ValueMap vcc_flag;
@@ -346,6 +367,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     case IR::Opcode::SetGotoVariable:
         pass.WriteVariable(GotoVariable{inst.Arg(0).U32()}, block, inst.Arg(1));
         break;
+    case IR::Opcode::SetMaskLaneVariable:
+        pass.WriteVariable(MaskLaneVariable{inst.Arg(0).U32()}, block, inst.Arg(1));
+        break;
     case IR::Opcode::SetExec:
         pass.WriteVariable(ExecFlagTag{}, block, inst.Arg(0));
         break;
@@ -384,6 +408,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     }
     case IR::Opcode::GetGotoVariable:
         inst.ReplaceUsesWith(pass.ReadVariable(GotoVariable{inst.Arg(0).U32()}, block));
+        break;
+    case IR::Opcode::GetMaskLaneVariable:
+        inst.ReplaceUsesWith(pass.ReadVariable(MaskLaneVariable{inst.Arg(0).U32()}, block));
         break;
     case IR::Opcode::GetExec:
         inst.ReplaceUsesWith(pass.ReadVariable(ExecFlagTag{}, block));

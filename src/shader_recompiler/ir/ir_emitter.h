@@ -65,6 +65,9 @@ public:
     [[nodiscard]] U1 GetGotoVariable(u32 id);
     void SetGotoVariable(u32 id, const U1& value);
 
+    [[nodiscard]] U1 GetMaskLaneVariable(u32 key);
+    void SetMaskLaneVariable(u32 key, const U1& value);
+
     [[nodiscard]] U1 GetScc();
     [[nodiscard]] U1 GetExec();
     [[nodiscard]] U1 GetVcc();

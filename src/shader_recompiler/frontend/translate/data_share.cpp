@@ -104,6 +104,29 @@ void Translator::V_READLANE_B32(const GcnInst& inst) {
     const IR::U32 value{GetSrc(inst.src[0])};
     const IR::U32 lane{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ReadLane(value, lane));
+
+    // GCN compilers spill EXEC/VCC/SGPR-pair thread masks into VGPR lanes (v_writelane) and
+    // restore them later (v_readlane). SetDst above only defines the destination SGPR's U32
+    // view, while mask consumers (s_mov_b64 exec, s_not_b64, s_and_saveexec_b64) read the
+    // separate thread-bit U1 view; with no U1 definition here, SSA materializes UndefU1 and
+    // exec restores or store guards fed by it constant-fold to false. Restore the U1 view from
+    // the mask-lane shadow saved by V_WRITELANE_B32. A write to an SGPR architecturally
+    // clobbers both views, so unconditionally redefining the U1 view is strictly more faithful
+    // than leaving it stale.
+    if (lane.IsImmediate()) {
+        const u32 key = (inst.src[0].code << 6) | (lane.U32() & 63u);
+        const IR::U1 shadow = ir.GetMaskLaneVariable(key);
+        switch (inst.dst[0].field) {
+        case OperandField::ScalarGPR:
+            ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), shadow);
+            break;
+        case OperandField::VccLo:
+            ir.SetVcc(shadow);
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 void Translator::V_WRITELANE_B32(const GcnInst& inst) {
@@ -112,6 +135,26 @@ void Translator::V_WRITELANE_B32(const GcnInst& inst) {
     const IR::U32 lane{GetSrc(inst.src[1])};
     const IR::U32 old_value{GetSrc(inst.dst[0])};
     ir.SetVectorReg(dst, ir.WriteLane(old_value, value, lane));
+
+    // Shadow the per-lane (U1) view of spilled thread masks so V_READLANE_B32 can restore it
+    // (see the comment there). For non-mask (plain data) sources the shadowed U1 resolves to
+    // Undef, so a later mask-typed read of the restored SGPR behaves as if no shadow existed.
+    if (lane.IsImmediate()) {
+        const u32 key = (inst.dst[0].code << 6) | (lane.U32() & 63u);
+        switch (inst.src[0].field) {
+        case OperandField::ScalarGPR:
+            ir.SetMaskLaneVariable(key, ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
+            break;
+        case OperandField::VccLo:
+            ir.SetMaskLaneVariable(key, ir.GetVcc());
+            break;
+        case OperandField::ExecLo:
+            ir.SetMaskLaneVariable(key, ir.GetExec());
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 // DS

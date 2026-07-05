@@ -175,6 +175,10 @@ U1 IREmitter::GetGotoVariable(u32 id) {
     return Inst<U1>(Opcode::GetGotoVariable, id);
 }
 
+U1 IREmitter::GetMaskLaneVariable(u32 key) {
+    return Inst<U1>(Opcode::GetMaskLaneVariable, key);
+}
+
 U1 IREmitter::Condition(IR::Condition cond) {
     switch (cond) {
     case IR::Condition::False:
@@ -200,6 +204,10 @@ U1 IREmitter::Condition(IR::Condition cond) {
 
 void IREmitter::SetGotoVariable(u32 id, const U1& value) {
     Inst(Opcode::SetGotoVariable, id, value);
+}
+
+void IREmitter::SetMaskLaneVariable(u32 key, const U1& value) {
+    Inst(Opcode::SetMaskLaneVariable, key, value);
 }
 
 U1 IREmitter::GetScc() {
