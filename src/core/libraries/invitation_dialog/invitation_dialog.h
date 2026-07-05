@@ -69,7 +69,7 @@ union OrbisInvitationDialogAddressInfoA {
 
 union OrbisInvitationDialogAddressInfo {
     struct {
-        const Libraries::Np::OrbisNpAccountId* onlineIds;
+        const Libraries::Np::OrbisNpOnlineId* onlineIds;
         u32 onlineIdsCount;
     } UserSelectDisableAddress;
     struct {
