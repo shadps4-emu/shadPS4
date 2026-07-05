@@ -370,7 +370,7 @@ static void StopReceiveThread() {
 
 static void PingThreadMain() {
     while (!g_ping_stop) {
-        if (!Stubs::TransportIsReady()) {
+        if (!Stubs::EnsureTransport()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(kSigRetryMs));
             continue;
         }
@@ -400,6 +400,7 @@ static void PingThreadMain() {
             StunPing ping{};
             ping.cmd = 0x01;
             std::memcpy(ping.online_id, cs.online_id.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
+            ping.local_ip = Stubs::AdvertisedAddr();
 
             Stubs::SignalingSendTo(&ping, sizeof(ping), server_addr, server_port);
         }
