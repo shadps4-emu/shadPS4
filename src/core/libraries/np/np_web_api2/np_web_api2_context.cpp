@@ -399,9 +399,24 @@ void UserContext::Delete() {
     this->RemoveUser();
 
     for (auto& [request_id, request] : this->requests) {
-        delete request;
+        request->Delete(nullptr);
     }
     this->requests.clear();
+    
+    for (auto& [push_ctx_id, push_ctx] : this->push_contexts) {
+        delete push_ctx;
+    }
+    this->push_contexts.clear();
+
+    for (auto& [callback_id, callback] : this->push_event_callbacks) {
+        delete callback;
+    }
+    this->push_event_callbacks.clear();
+
+    for (auto& [callback_id, callback] : this->push_context_callbacks) {
+        delete callback;
+    }
+    this->push_context_callbacks.clear();
     delete this;
 }
 
