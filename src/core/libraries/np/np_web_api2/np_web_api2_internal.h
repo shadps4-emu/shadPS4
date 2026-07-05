@@ -43,5 +43,6 @@ s32 getHttpResponseHeaderData(s64 request_id, const char* field_name, char* valu
 s32 readData(s64 request_id, void* data, u64 size);
 s32 abortRequest(s64 request_id);
 s32 deleteRequest(s64 request_id);
+void checkTimeout();
 
 }; // namespace Libraries::Np::NpWebApi2

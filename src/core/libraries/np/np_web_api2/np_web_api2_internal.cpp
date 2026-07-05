@@ -19,6 +19,7 @@ namespace Libraries::Np::NpWebApi2 {
 std::recursive_mutex g_mutex{};
 s32 g_current_lib_context_id{};
 std::map<s32, LibraryContext*> g_lib_contexts{};
+u64 g_last_timeout_check{};
 
 s32 createLibraryContext(s32 http_ctx_id, s32 type, u64 pool_size, const char* name) {
     std::scoped_lock lk{g_mutex};
@@ -912,6 +913,20 @@ s32 deleteRequest(s64 request_id) {
         Libraries::Http2::sceHttp2DeleteRequest(http_request_id);
     }
     return ORBIS_OK;
+}
+
+void checkTimeout() {
+    u64 current_time = Libraries::Kernel::sceKernelGetProcessTime();
+    if (current_time < g_last_timeout_check + 1000) {
+        // Too soon, skip check.
+        return;
+    }
+
+    std::scoped_lock lk{g_mutex};
+    g_last_timeout_check = current_time;
+    for (auto& [lib_ctx_id, lib_ctx] : g_lib_contexts) {
+        lib_ctx->CheckTimeout();
+    }
 }
 
 }; // namespace Libraries::Np::NpWebApi2

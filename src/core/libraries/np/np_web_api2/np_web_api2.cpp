@@ -45,7 +45,8 @@ s32 PS4_SYSV_ABI sceNpWebApi2AddWebTraceTag(s64 request_id, const char* value) {
 }
 
 void PS4_SYSV_ABI sceNpWebApi2CheckTimeout() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
+    LOG_TRACE(Lib_NpWebApi2, "called");
+    return checkTimeout();
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2CreateMultipartRequest(s32 user_ctx_id, const char* api_group,

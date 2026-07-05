@@ -18,6 +18,17 @@ u32 g_current_push_context_callback_id{};
 u32 g_current_user_context_id{};
 u64 g_current_request_id{};
 
+void LibraryContext::CheckTimeout() {
+    u64 time = Libraries::Kernel::sceKernelGetProcessTime();
+    std::scoped_lock lk{this->lock};
+    for (auto& [user_ctx_id, user_ctx] : this->user_contexts) {
+        user_ctx->CheckTimeout();
+    }
+    for (auto& [handle_id, handle] : this->push_event_handles) {
+        handle->CheckTimeout(time);
+    }
+}
+
 s32 LibraryContext::CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id) {
     std::scoped_lock lk{this->lock};
     if (this->user_contexts.size() >= 0x10000) {
@@ -198,6 +209,14 @@ s32 UserContext::Initialize() {
     }
 
     return result;
+}
+
+void UserContext::CheckTimeout() {
+    parent_ctx->Lock();
+    for (auto& [request_id, request] : requests) {
+        request->CheckTimeout();
+    }
+    parent_ctx->Unlock();
 }
 
 s32 UserContext::CreatePushEventCallback(s32 filter_id, OrbisNpWebApi2PushEventCallback cb_func,
@@ -402,7 +421,7 @@ void UserContext::Delete() {
         request->Delete(nullptr);
     }
     this->requests.clear();
-    
+
     for (auto& [push_ctx_id, push_ctx] : this->push_contexts) {
         delete push_ctx;
     }

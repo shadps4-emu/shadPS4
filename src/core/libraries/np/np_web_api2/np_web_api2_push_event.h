@@ -65,7 +65,10 @@ public:
     }
 
     void CheckTimeout(u64 time) {
-        timed_out = end_time != 0 && time > end_time;
+        if (!timed_out && end_time != 0 && end_time < time) {
+            timed_out = true;
+            Abort();
+        }
     }
 
     bool IsBusy() {

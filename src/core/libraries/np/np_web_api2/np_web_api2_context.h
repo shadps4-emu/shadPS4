@@ -90,6 +90,8 @@ public:
         return user_count > 1;
     }
 
+    void CheckTimeout();
+
     s32 CreatePushEventHandle();
     PushEventHandle* GetPushEventHandle(s32 handle_id);
 
@@ -101,7 +103,31 @@ public:
         }
     }
 
+    void AbortAllPushEventHandles() {
+        std::scoped_lock lk{lock};
+        for (auto& [handle_id, handle] : push_event_handles) {
+            abortPushEventHandle(id, handle_id);
+        }
+    }
+
+    bool HasBusyPushEventHandles() {
+        std::scoped_lock lk{lock};
+        for (auto& [handle_id, handle] : push_event_handles) {
+            if (handle->IsBusy()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     s32 DeletePushEventHandle(PushEventHandle* handle);
+
+    void DeleteAllPushEventHandles() {
+        for (auto& [handle_id, handle] : push_event_handles) {
+            delete handle;
+        }
+        push_event_handles.clear();
+    }
 
     s32 CreatePushEventFilter(s32 handle_id, const char* np_service_name,
                               OrbisNpServiceLabel np_service_label,
@@ -125,6 +151,13 @@ public:
         delete filter;
     }
 
+    void DeleteAllPushEventFilters() {
+        for (auto& [filter_id, filter] : push_event_filters) {
+            delete filter;
+        }
+        push_event_filters.clear();
+    }
+
     s32 CreateUserContext(Libraries::UserService::OrbisUserServiceUserId user_id);
     UserContext* GetUserContext(s32 user_ctx_id);
     UserContext* GetUserContextByUserId(Libraries::UserService::OrbisUserServiceUserId user_id);
@@ -142,37 +175,6 @@ public:
             deleteUserContext(user_ctx_id);
         }
         user_contexts.clear();
-    }
-
-    void AbortAllPushEventHandles() {
-        std::scoped_lock lk{lock};
-        for (auto& [handle_id, handle] : push_event_handles) {
-            abortPushEventHandle(id, handle_id);
-        }
-    }
-
-    bool HasBusyPushEventHandles() {
-        std::scoped_lock lk{lock};
-        for (auto& [handle_id, handle] : push_event_handles) {
-            if (handle->IsBusy()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void DeleteAllPushEventHandles() {
-        for (auto& [handle_id, handle] : push_event_handles) {
-            delete handle;
-        }
-        push_event_handles.clear();
-    }
-
-    void DeleteAllPushEventFilters() {
-        for (auto& [filter_id, filter] : push_event_filters) {
-            delete filter;
-        }
-        push_event_filters.clear();
     }
 
 private:
@@ -249,6 +251,8 @@ public:
     }
 
     s32 Initialize();
+
+    void CheckTimeout();
 
     s32 CreatePushEventCallback(s32 filter_id, OrbisNpWebApi2PushEventCallback cb_func,
                                 void* user_arg);
@@ -409,6 +413,14 @@ public:
 
     void SetTimeout(u32 new_timeout) {
         this->timeout = new_timeout;
+    }
+
+    void CheckTimeout() {
+        u64 time = Libraries::Kernel::sceKernelGetProcessTime();
+        if (!expired && end_time != 0 && end_time < time) {
+            expired = true;
+            Abort();
+        }
     }
 
     s32 CreateHttpRequest(s32 http_template_id, const char* url);
