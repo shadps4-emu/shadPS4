@@ -1626,7 +1626,7 @@ static u32 FillRankArrayFromProto(const shadnet::GetScoreResponse& resp,
 void NpHandler::OnAsyncReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
                              ShadNet::ErrorType error, const std::vector<u8>& body) {
     const auto cmd_val = static_cast<u16>(cmd);
-    if (cmd_val >= 12 && cmd_val <= 23) {
+    if (cmd_val >= 12 && cmd_val <= 24) {
         NpMatching2::OnMatchingReply(cmd, pkt_id, error, body);
     } else {
         OnScoreReply(user_id, cmd, pkt_id, error, body);
