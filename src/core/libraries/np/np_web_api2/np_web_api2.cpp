@@ -415,8 +415,8 @@ s32 PS4_SYSV_ABI sceNpWebApi2SetRequestTimeout(s64 request_id, u32 timeout) {
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2Terminate(s32 lib_ctx_id) {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, lib_ctx_id = {:#x}", lib_ctx_id);
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi2, "called, lib_ctx_id = {:#x}", lib_ctx_id);
+    return terminateLibraryContext(lib_ctx_id);
 }
 
 s32 PS4_SYSV_ABI Func_A9A31C5F6FBA6620() {

@@ -185,6 +185,44 @@ s32 deletePushEventFilter(s32 lib_ctx_id, s32 filter_id) {
     return ORBIS_OK;
 }
 
+s32 terminateLibraryContext(s32 lib_ctx_id) {
+    LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context with id {:#x}", lib_ctx_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    lib_ctx->Lock();
+    lib_ctx->DeleteAllUserContexts();
+    lib_ctx->AbortAllPushEventHandles();
+
+    if (lib_ctx->IsDeleted()) {
+        LOG_ERROR(Lib_NpWebApi2, "Library context with id {:#x} is already deleted", lib_ctx_id);
+        lib_ctx->Unlock();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    lib_ctx->MarkForDeletion();
+    while (lib_ctx->IsBusy() || lib_ctx->HasBusyPushEventHandles()) {
+        lib_ctx->Unlock();
+        Libraries::Kernel::sceKernelUsleep(50000);
+        lib_ctx->Lock();
+    }
+    lib_ctx->Unlock();
+    lib_ctx->RemoveUser();
+
+    g_mutex.lock();
+    g_lib_contexts.erase(lib_ctx_id);
+    g_mutex.unlock();
+
+    lib_ctx->DeleteAllPushEventHandles();
+    lib_ctx->DeleteAllPushEventFilters();
+    delete lib_ctx;
+
+    return ORBIS_OK;
+}
+
 s32 createUserContext(s32 lib_ctx_id, Libraries::UserService::OrbisUserServiceUserId user_id) {
     LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
     if (!lib_ctx) {

@@ -3,6 +3,7 @@
 
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/np/np_web_api2/np_web_api2.h"
+#include "core/libraries/np/np_web_api2/np_web_api2_internal.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_push_event.h"
 #include "core/libraries/system/userservice.h"
 
@@ -84,6 +85,11 @@ public:
         deleting = true;
     }
 
+    bool IsBusy() {
+        std::scoped_lock lk{lock};
+        return user_count > 1;
+    }
+
     s32 CreatePushEventHandle();
     PushEventHandle* GetPushEventHandle(s32 handle_id);
 
@@ -128,6 +134,45 @@ public:
         if (user_contexts.contains(user_ctx_id)) {
             user_contexts.erase(user_ctx_id);
         }
+    }
+
+    void DeleteAllUserContexts() {
+        std::scoped_lock lk{lock};
+        for (auto& [user_ctx_id, user_ctx] : user_contexts) {
+            deleteUserContext(user_ctx_id);
+        }
+        user_contexts.clear();
+    }
+
+    void AbortAllPushEventHandles() {
+        std::scoped_lock lk{lock};
+        for (auto& [handle_id, handle] : push_event_handles) {
+            abortPushEventHandle(id, handle_id);
+        }
+    }
+
+    bool HasBusyPushEventHandles() {
+        std::scoped_lock lk{lock};
+        for (auto& [handle_id, handle] : push_event_handles) {
+            if (handle->IsBusy()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void DeleteAllPushEventHandles() {
+        for (auto& [handle_id, handle] : push_event_handles) {
+            delete handle;
+        }
+        push_event_handles.clear();
+    }
+
+    void DeleteAllPushEventFilters() {
+        for (auto& [filter_id, filter] : push_event_filters) {
+            delete filter;
+        }
+        push_event_filters.clear();
     }
 
 private:
