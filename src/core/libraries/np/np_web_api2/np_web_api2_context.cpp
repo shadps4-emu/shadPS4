@@ -269,6 +269,28 @@ PushEventPushContext* UserContext::GetPushContext(
     return push_ctx;
 }
 
+void UserContext::DeletePushContext(PushEventPushContext* push_ctx) {
+    this->Lock();
+    while (this->push_contexts_busy) {
+        this->Unlock();
+        Libraries::Kernel::sceKernelUsleep(10000);
+        this->Lock();
+    }
+    this->push_contexts_busy = true;
+
+    while (push_ctx->CallbackRunning()) {
+        this->Unlock();
+        Libraries::Kernel::sceKernelUsleep(100000);
+        this->Lock();
+    }
+
+    s64 raw_id = push_ctx->GetFakeId();
+    this->push_contexts.erase(raw_id);
+    delete push_ctx;
+    this->push_contexts_busy = false;
+    this->Unlock();
+}
+
 s32 UserContext::CreatePushContextCallback(s32 filter_id,
                                            OrbisNpWebApi2PushEventPushContextCallback cb_func,
                                            void* user_arg) {
@@ -317,7 +339,7 @@ s32 UserContext::CreateRequest(const char* api_group, const char* path, const ch
         if (g_current_request_id >> 0x20 != 0) {
             g_current_request_id = 1;
         }
-        actual_request_id = (static_cast<s64>(this->id) << 0x20) | g_current_user_context_id;
+        actual_request_id = (static_cast<s64>(this->id) << 0x20) | g_current_request_id;
     } while (this->requests.contains(actual_request_id));
 
     if (content_parameter) {

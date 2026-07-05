@@ -136,6 +136,14 @@ public:
         started = true;
     }
 
+    void SetState(s32 new_state) {
+        state = new_state;
+    }
+
+    bool CallbackRunning() {
+        return state == 2;
+    }
+
 private:
     s32 state{};
     u32 timeout{};

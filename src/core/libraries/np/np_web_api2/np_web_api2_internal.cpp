@@ -344,13 +344,45 @@ s32 startPushContextCallback(s32 user_ctx_id,
 
     PushEventPushContext* push_ctx = user_ctx->GetPushContext(push_ctx_id);
     if (!push_ctx) {
-        LOG_ERROR(Lib_NpWebApi2, "No push context with id {}", push_ctx_id->uuid);
+        s64 raw_id{};
+        std::memcpy(&raw_id, push_ctx_id, sizeof(s64));
+        LOG_ERROR(Lib_NpWebApi2, "No push context with id {}", raw_id);
         user_ctx->RemoveUser();
         lib_ctx->RemoveUser();
         return ORBIS_NP_WEBAPI2_ERROR_PUSH_CONTEXT_NOT_FOUND;
     }
 
     push_ctx->Start();
+    user_ctx->RemoveUser();
+    lib_ctx->RemoveUser();
+    return ORBIS_OK;
+}
+
+s32 deletePushContext(s32 user_ctx_id, const OrbisNpWebApi2PushEventPushContextId* push_ctx_id) {
+    LibraryContext* lib_ctx = getLibraryContext(user_ctx_id >> 0x10);
+    if (!lib_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No library context for user context id {:#x}", user_ctx_id);
+        return ORBIS_NP_WEBAPI2_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    UserContext* user_ctx = lib_ctx->GetUserContext(user_ctx_id);
+    if (!user_ctx) {
+        LOG_ERROR(Lib_NpWebApi2, "No user context with id {:#x}", user_ctx_id);
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    PushEventPushContext* push_ctx = user_ctx->GetPushContext(push_ctx_id);
+    if (!push_ctx) {
+        s64 raw_id{};
+        std::memcpy(&raw_id, push_ctx_id, sizeof(s64));
+        LOG_ERROR(Lib_NpWebApi2, "No push context with id {}", raw_id);
+        user_ctx->RemoveUser();
+        lib_ctx->RemoveUser();
+        return ORBIS_NP_WEBAPI2_ERROR_PUSH_CONTEXT_NOT_FOUND;
+    }
+
+    user_ctx->DeletePushContext(push_ctx);
     user_ctx->RemoveUser();
     lib_ctx->RemoveUser();
     return ORBIS_OK;
@@ -838,7 +870,9 @@ s32 deleteRequest(s64 request_id) {
     user_ctx->RemoveUser();
     lib_ctx->Unlock();
     lib_ctx->RemoveUser();
-    Libraries::Http2::sceHttp2DeleteRequest(http_request_id);
+    if (http_request_id != 0) {
+        Libraries::Http2::sceHttp2DeleteRequest(http_request_id);
+    }
     return ORBIS_OK;
 }
 

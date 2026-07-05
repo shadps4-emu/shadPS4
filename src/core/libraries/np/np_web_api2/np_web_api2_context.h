@@ -211,6 +211,7 @@ public:
 
     void CreatePushContext(OrbisNpWebApi2PushEventPushContextId* push_ctx_id);
     PushEventPushContext* GetPushContext(const OrbisNpWebApi2PushEventPushContextId* push_ctx_id);
+    void DeletePushContext(PushEventPushContext* push_ctx_id);
 
     s32 CreatePushContextCallback(s32 filter_id, OrbisNpWebApi2PushEventPushContextCallback cb_func,
                                   void* user_arg);

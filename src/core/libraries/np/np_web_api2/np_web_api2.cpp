@@ -298,9 +298,17 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventDeleteHandle(s32 lib_ctx_id, s32 handle_id
     return deletePushEventHandle(lib_ctx_id, handle_id);
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2PushEventDeletePushContext() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApi2PushEventDeletePushContext(
+    s32 user_ctx_id, OrbisNpWebApi2PushEventPushContextId* push_ctx_id) {
+    if (!push_ctx_id) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
+        return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
+    }
+    s64 raw_id{};
+    std::memcpy(&raw_id, push_ctx_id, sizeof(s64));
+    LOG_INFO(Lib_NpWebApi2, "called, user_ctx_id = {:#x}, push_ctx_id = {:#x}", user_ctx_id,
+             raw_id);
+    return deletePushContext(user_ctx_id, push_ctx_id);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2PushEventRegisterCallback(s32 user_ctx_id, s32 filter_id,
