@@ -23,7 +23,8 @@ s32 registerPushEventCallback(s32 user_ctx_id, s32 filter_id,
                               OrbisNpWebApi2PushEventCallback cb_func, void* user_arg);
 s32 unregisterPushEventCallback(s32 user_ctx_id, s32 callback_id);
 s32 createPushContext(s32 user_ctx_id, OrbisNpWebApi2PushEventPushContextId* push_ctx_id);
-s32 startPushContextCallback(s32 user_ctx_id, const OrbisNpWebApi2PushEventPushContextId* push_ctx_id);
+s32 startPushContextCallback(s32 user_ctx_id,
+                             const OrbisNpWebApi2PushEventPushContextId* push_ctx_id);
 s32 registerPushContextCallback(s32 user_ctx_id, s32 filter_id,
                                 OrbisNpWebApi2PushEventPushContextCallback cb_func, void* user_arg);
 s32 unregisterPushContextCallback(s32 user_ctx_id, s32 callback_id);
