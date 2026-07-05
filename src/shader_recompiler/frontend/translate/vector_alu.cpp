@@ -1186,7 +1186,15 @@ void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
         }
     }();
     if (set_exec) {
-        ir.SetExec(result);
+        // V_CMPX evaluates the compare on active lanes only and zeroes inactive lanes' bits in
+        // both EXEC and the VCC/SDST destination (vcc' = exec' = exec & result). Writing the
+        // raw result would re-activate lanes an enclosing mask has disabled and leak their set
+        // bits into VCC consumers such as s_cbranch_vccz guarded regions and scalar mask
+        // arithmetic.
+        const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
+        ir.SetExec(masked);
+        SetDst1(inst.dst[1], masked);
+        return;
     }
     SetDst1(inst.dst[1], result);
 }
@@ -1217,7 +1225,11 @@ void Translator::V_CMP_F64(ConditionOp op, bool set_exec, const GcnInst& inst) {
         }
     }();
     if (set_exec) {
-        ir.SetExec(result);
+        // V_CMPX zeroes inactive lanes' bits in both EXEC and the destination (see V_CMP_F32).
+        const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
+        ir.SetExec(masked);
+        SetDst1(inst.dst[1], masked);
+        return;
     }
     SetDst1(inst.dst[1], result);
 }
@@ -1248,7 +1260,11 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
         }
     }();
     if (set_exec) {
-        ir.SetExec(result);
+        // V_CMPX zeroes inactive lanes' bits in both EXEC and the destination (see V_CMP_F32).
+        const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
+        ir.SetExec(masked);
+        SetDst1(inst.dst[1], masked);
+        return;
     }
     SetDst1(inst.dst[1], result);
 }
