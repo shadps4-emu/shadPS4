@@ -42,9 +42,10 @@ s32 PS4_SYSV_ABI sceInvitationDialogGetResultA(OrbisInvitationDialogResultA* res
     // sentUsers carries {onlineId, accountId} pairs; report whichever recipient form was sent --
     // online IDs (picker / non-A fixed list) or account IDs (A fixed list). Only one is populated.
     if (result->sentUsers != nullptr) {
-        u32 count = static_cast<u32>(g_state.sent_online_ids.size() > g_state.sent_account_ids.size()
-                                         ? g_state.sent_online_ids.size()
-                                         : g_state.sent_account_ids.size());
+        u32 count =
+            static_cast<u32>(g_state.sent_online_ids.size() > g_state.sent_account_ids.size()
+                                 ? g_state.sent_online_ids.size()
+                                 : g_state.sent_account_ids.size());
         if (count > ORBIS_INVITATION_DIALOG_ADDRESS_USER_LIST_MAX_SIZE) {
             count = ORBIS_INVITATION_DIALOG_ADDRESS_USER_LIST_MAX_SIZE;
         }
