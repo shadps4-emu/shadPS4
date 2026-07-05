@@ -12,7 +12,7 @@
 #include "core/libraries/libs.h"
 #include "core/memory.h"
 
-#ifdef ARCH_X86_64
+#if defined(ARCH_X86_64) || defined(__arm64__) || defined(__aarch64__)
 extern "C" void* PS4_SYSV_ABI _runOnAnotherStack(void* arg, void* func,
                                                  void* stackb) asm("_runOnAnotherStack");
 #else

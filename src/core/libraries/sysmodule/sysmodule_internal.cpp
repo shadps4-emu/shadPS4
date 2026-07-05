@@ -222,7 +222,6 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
              {"libSceJson.sprx", nullptr},
              {"libSceJson2.sprx", nullptr},
-             {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
              {"libSceCesCs.sprx", nullptr},
              {"libSceAudiodec.sprx", nullptr},
              {"libSceAudiodecCpu.sprx", nullptr},
