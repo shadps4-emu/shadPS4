@@ -36,6 +36,7 @@ using OrbisNpMatching2RoomId = u64;
 using OrbisNpMatching2RoomMemberId = u16;
 using OrbisNpMatching2RoomPasswordSlotMask = u64;
 using OrbisNpMatching2ServerId = u16;
+using OrbisNpMatching2SessionType = u8;
 using OrbisNpMatching2SignalingFlag = u8;
 using OrbisNpMatching2SignalingRequestId = u32;
 using OrbisNpMatching2TeamId = u8;
@@ -44,9 +45,11 @@ using OrbisNpMatching2WorldId = u32;
 // Event of request/room/signaling/context functions
 enum OrbisNpMatching2Event : u16 {
     ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_WORLD_INFO_LIST = 0x0002,
+    ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_EXTERNAL_LIST = 0x0003,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_SET_ROOM_DATA_EXTERNAL = 0x0004,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_DATA_EXTERNAL_LIST = 0x0005,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_SET_USER_INFO = 0x0007,
+    ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_USER_INFO_LIST = 0x0008,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_CREATE_JOIN_ROOM = 0x0101,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_JOIN_ROOM = 0x0102,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_LEAVE_ROOM = 0x0103,
@@ -74,6 +77,7 @@ enum OrbisNpMatching2Event : u16 {
     ORBIS_NP_MATCHING2_CONTEXT_EVENT_STOPPED = 0x6F03,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_CREATE_JOIN_ROOM_A = 0x7101,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_JOIN_ROOM_A = 0x7102,
+    ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_EXTERNAL_LIST_A = 0x7003,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_DATA_EXTERNAL_LIST_A = 0x7005,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_SEARCH_ROOM_A = 0x7106,
     ORBIS_NP_MATCHING2_ROOM_EVENT_MEMBER_JOINED_A = 0x8101,
@@ -456,6 +460,25 @@ struct OrbisNpMatching2RoomMemberDataInternalListA {
     OrbisNpMatching2RoomMemberDataInternalA* owner;
 };
 
+// Room-external room member information
+struct OrbisNpMatching2RoomMemberDataExternal {
+    OrbisNpMatching2RoomMemberDataExternal* next;
+    Libraries::Np::OrbisNpId npId;
+    Libraries::Rtc::OrbisRtcTick joinDate;
+    OrbisNpMatching2Role role;
+    u8 padding[7];
+};
+
+// Room-external room member information (account-id variant)
+struct OrbisNpMatching2RoomMemberDataExternalA {
+    OrbisNpMatching2RoomMemberDataExternalA* next;
+    Libraries::Np::OrbisNpPeerAddressA user;
+    Libraries::Np::OrbisNpOnlineId onlineId;
+    Libraries::Rtc::OrbisRtcTick joinDate;
+    OrbisNpMatching2Role role;
+    u8 padding[7];
+};
+
 // Initialization parameter
 struct OrbisNpMatching2InitializeParameter {
     u64 poolSize;
@@ -689,6 +712,23 @@ struct OrbisNpMatching2GetRoomDataExternalListResponseA {
     u64 roomDataExternalNum;
 };
 
+// GetRoomMemberDataExternalList request
+struct OrbisNpMatching2GetRoomMemberDataExternalListRequest {
+    OrbisNpMatching2RoomId roomId;
+};
+
+// GetRoomMemberDataExternalList response
+struct OrbisNpMatching2GetRoomMemberDataExternalListResponse {
+    OrbisNpMatching2RoomMemberDataExternal* roomMemberDataExternal;
+    u64 roomMemberDataExternalNum;
+};
+
+// GetRoomMemberDataExternalList response (account-id variant)
+struct OrbisNpMatching2GetRoomMemberDataExternalListResponseA {
+    OrbisNpMatching2RoomMemberDataExternalA* roomMemberDataExternal;
+    u64 roomMemberDataExternalNum;
+};
+
 // SetRoomDataExternal request
 struct OrbisNpMatching2SetRoomDataExternalRequest {
     OrbisNpMatching2RoomId roomId;
@@ -727,6 +767,61 @@ struct OrbisNpMatching2SetUserInfoRequest {
     u8 padding[6];
     OrbisNpMatching2BinAttr* userBinAttr;
     u64 userBinAttrs;
+};
+
+// Session a user is currently joined to
+struct OrbisNpMatching2JoinedSessionInfo {
+    OrbisNpMatching2SessionType sessionType;
+    u8 padding[1];
+    OrbisNpMatching2ServerId serverId;
+    OrbisNpMatching2WorldId worldId;
+    OrbisNpMatching2LobbyId lobbyId;
+    OrbisNpMatching2RoomId roomId;
+    Libraries::Rtc::OrbisRtcTick joinDate;
+};
+
+// User information
+struct OrbisNpMatching2UserInfo {
+    OrbisNpMatching2UserInfo* next;
+    Libraries::Np::OrbisNpId npId;
+    OrbisNpMatching2BinAttr* userBinAttr;
+    u64 userBinAttrNum;
+    OrbisNpMatching2JoinedSessionInfo joinedSessionInfo;
+    u64 joinedSessionInfoNum;
+};
+
+// User information (account-id variant)
+struct OrbisNpMatching2UserInfoA {
+    OrbisNpMatching2UserInfoA* next;
+    Libraries::Np::OrbisNpPeerAddressA user;
+    Libraries::Np::OrbisNpOnlineId userOnlineId;
+    OrbisNpMatching2BinAttr* userBinAttr;
+    u64 userBinAttrNum;
+    OrbisNpMatching2JoinedSessionInfo joinedSessionInfo;
+    u64 joinedSessionInfoNum;
+};
+
+// GetUserInfoList request
+struct OrbisNpMatching2GetUserInfoListRequest {
+    OrbisNpMatching2ServerId serverId;
+    u8 padding[6];
+    Libraries::Np::OrbisNpId* npId;
+    u64 npIdNum;
+    const OrbisNpMatching2AttributeId* attrId;
+    u64 attrIdNum;
+    s32 option;
+};
+
+// GetUserInfoList response
+struct OrbisNpMatching2GetUserInfoListResponse {
+    OrbisNpMatching2UserInfo* userInfo;
+    u64 userInfoNum;
+};
+
+// GetUserInfoList response (account-id variant)
+struct OrbisNpMatching2GetUserInfoListResponseA {
+    OrbisNpMatching2UserInfoA* userInfo;
+    u64 userInfoNum;
 };
 
 // Room data internal update information
