@@ -14,6 +14,7 @@
 #include "core/libraries/np/np_handler.h"
 #include "imgui/imgui_layer.h"
 #include "imgui/invitation_prompt_layer.h"
+#include "imgui/renderer/imgui_core.h"
 #include "imgui/shadnet_notifications_layer.h"
 
 namespace ImGui::InvitationPrompt {
@@ -33,10 +34,14 @@ struct Prompt {
     State state = State::Waiting;
 };
 
-constexpr std::size_t kMaxPrompts = 4; // oldest dropped beyond this
+constexpr std::size_t kMaxPrompts = 4;    // oldest dropped beyond this
+constexpr float kFocusHoldSeconds = 0.6f; // hold Share/Back this long to focus the prompt
 
 std::mutex g_mutex;
 std::deque<Prompt> g_prompts;
+
+bool g_focused = false;
+bool g_capture_held = false;
 
 class InvitationPromptUI final : public ImGui::Layer {
 public:
@@ -92,6 +97,20 @@ void RunDecline(Prompt prompt) {
     }).detach();
 }
 
+void SetFocused(bool focused) {
+    if (g_focused == focused) {
+        return;
+    }
+    g_focused = focused;
+    if (focused && !g_capture_held) {
+        ImGui::Core::AcquireGamepadInputCapture();
+        g_capture_held = true;
+    } else if (!focused && g_capture_held) {
+        ImGui::Core::ReleaseGamepadInputCapture();
+        g_capture_held = false;
+    }
+}
+
 } // namespace
 
 void Push(s32 user_id, std::string invitation_id, std::string session_id, std::string from_npid) {
@@ -117,6 +136,7 @@ void Register() {
 }
 
 void Unregister() {
+    SetFocused(false);
     ImGui::Layer::RemoveLayer(&g_layer);
 }
 
@@ -124,28 +144,45 @@ void InvitationPromptUI::Draw() {
     std::vector<Prompt> snapshot;
     {
         std::lock_guard lock(g_mutex);
-        if (g_prompts.empty()) {
-            return;
-        }
         snapshot.assign(g_prompts.begin(), g_prompts.end());
+    }
+
+    if (snapshot.empty()) {
+        // Accepted/declined/dismissed elsewhere while focused: hand the pad back to the game.
+        SetFocused(false);
+        return;
+    }
+
+    if (!g_focused) {
+        const ImGuiKeyData* back = ImGui::GetKeyData(ImGuiKey_GamepadBack);
+        if (back->Down && back->DownDuration >= kFocusHoldSeconds) {
+            SetFocused(true);
+        }
+    } else {
+        // Stage 2 -> 1: Circle (nav cancel) or Escape returns control to the game.
+        if (ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight, false) ||
+            ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
+            SetFocused(false);
+        }
     }
 
     auto& io = ImGui::GetIO();
     const float scale = io.DisplaySize.x / 1920.0f;
-    const float width = 420.0f * scale;
+    const float width = 440.0f * scale;
     const float margin = 20.0f * scale;
 
-    // Top-center, below the top edge,the transient shadNet toasts live top-right so the two
-    // don't collide. Mouse-interactive but NoNav so gamepad navigation stays with the game.
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x / 2.0f, margin), ImGuiCond_Always,
                             ImVec2(0.5f, 0.0f));
     ImGui::SetNextWindowSize(ImVec2(width, 0.0f), ImGuiCond_Always);
-    ImGui::SetNextWindowBgAlpha(0.92f);
+    ImGui::SetNextWindowBgAlpha(g_focused ? 0.97f : 0.85f);
 
-    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoNav |
-                                   ImGuiWindowFlags_NoFocusOnAppearing |
-                                   ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoMove |
-                                   ImGuiWindowFlags_AlwaysAutoResize;
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
+                             ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize;
+    if (g_focused) {
+        ImGui::SetNextWindowFocus();
+    } else {
+        flags |= ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoFocusOnAppearing;
+    }
 
     if (ImGui::Begin("##invitation_prompts", nullptr, flags)) {
         bool first = true;
@@ -167,6 +204,9 @@ void InvitationPromptUI::Draw() {
             if (ImGui::Button(busy ? "Joining..." : "Accept", ImVec2(120.0f * scale, 0.0f))) {
                 RunAccept(p);
             }
+            if (g_focused && &p == snapshot.data()) {
+                ImGui::SetItemDefaultFocus(); // nav lands on Accept of the newest-focused prompt
+            }
             ImGui::SameLine();
             if (ImGui::Button("Decline", ImVec2(120.0f * scale, 0.0f))) {
                 RunDecline(p);
@@ -174,6 +214,10 @@ void InvitationPromptUI::Draw() {
             ImGui::PopID();
             ImGui::EndDisabled();
         }
+
+        ImGui::Spacing();
+        ImGui::TextDisabled(g_focused ? "D-Pad: select   Cross: confirm   Circle/Esc: back to game"
+                                      : "Hold Share/Back to respond, or click");
     }
     ImGui::End();
 }
