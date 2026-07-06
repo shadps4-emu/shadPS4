@@ -254,7 +254,9 @@ s32 DnsHook::AnalyzeQuery(u64 sock, const u8* buf, u32 len) {
         return -1;
     }
 
-    LOG_INFO(Lib_Net, "DNS override: answering '{}' locally", host);
+    const u8* ip_octets = reinterpret_cast<const u8*>(&*ip);
+    LOG_INFO(Lib_Net, "DNS swap: '{}' -> {}.{}.{}.{}", host, ip_octets[0], ip_octets[1],
+             ip_octets[2], ip_octets[3]);
 
     // Build a fake response: copy the query, flip it to an answer, append one A record.
     std::vector<u8> fake(buf, buf + len);
