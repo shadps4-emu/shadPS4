@@ -109,11 +109,12 @@ void Translator::V_READLANE_B32(const GcnInst& inst) {
     // store a bool value in case a user of the dst register sources it as a thread mask;
     // Get/SetMaskLaneVariable are connected by SSA in that case.
     if (lane.IsImmediate()) {
+        ASSERT(lane.U32() < 64);
         switch (inst.dst[0].field) {
         case OperandField::ScalarGPR:
         case OperandField::VccLo:
             SetDst1(inst.dst[0],
-                    ir.GetMaskLaneVariable(IR::VectorReg(inst.src[0].code), lane.U32() & 63u));
+                    ir.GetMaskLaneVariable(IR::VectorReg(inst.src[0].code), lane.U32()));
             break;
         default:
             break;
@@ -131,11 +132,12 @@ void Translator::V_WRITELANE_B32(const GcnInst& inst) {
     // This could be a thread mask being spilled from a scalar to a vector register. Store the
     // bool value alongside so V_READLANE_B32 can restore it; plain data sources store nothing.
     if (lane.IsImmediate()) {
+        ASSERT(lane.U32() < 64);
         switch (inst.src[0].field) {
         case OperandField::ScalarGPR:
         case OperandField::VccLo:
         case OperandField::ExecLo:
-            ir.SetMaskLaneVariable(dst, lane.U32() & 63u, GetSrc1(inst.src[0]));
+            ir.SetMaskLaneVariable(dst, lane.U32(), GetSrc1(inst.src[0]));
             break;
         default:
             break;
