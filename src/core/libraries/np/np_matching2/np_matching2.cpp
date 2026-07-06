@@ -441,8 +441,9 @@ int PS4_SYSV_ABI sceNpMatching2SetUserInfo(OrbisNpMatching2ContextId ctxId,
     }
 
     StoreRequestCallback(ctx, requestOpt);
-    *requestId = AllocRequestId();
-    LOG_WARNING(Lib_NpMatching2, "not implemented");
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmSetUserInfo(ctxId, reqId, *request);
     return ORBIS_OK;
 }
 
@@ -756,8 +757,30 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomDataInternal(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataExternalList() {
-    LOG_INFO(Lib_NpMatching2, "called");
+int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataExternalList(
+    OrbisNpMatching2ContextId ctxId, OrbisNpMatching2GetRoomMemberDataExternalListRequest* request,
+    OrbisNpMatching2RequestOptParam* requestOpt, OrbisNpMatching2RequestId* requestId) {
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+
+    if (!IsInitialized()) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
+
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmGetRoomMemberDataExternalList(ctxId, reqId, *request, ctx->a_variant);
     return ORBIS_OK;
 }
 
@@ -766,13 +789,59 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataInternal() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpMatching2GetUserInfoListA() {
-    LOG_INFO(Lib_NpMatching2, "called");
+int PS4_SYSV_ABI sceNpMatching2GetUserInfoListA(OrbisNpMatching2ContextId ctxId,
+                                                OrbisNpMatching2GetUserInfoListRequest* request,
+                                                OrbisNpMatching2RequestOptParam* requestOpt,
+                                                OrbisNpMatching2RequestId* requestId) {
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+
+    if (!IsInitialized()) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
+
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmGetUserInfoList(ctxId, reqId, *request, true);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpMatching2GetUserInfoList() {
-    LOG_INFO(Lib_NpMatching2, "called");
+int PS4_SYSV_ABI sceNpMatching2GetUserInfoList(OrbisNpMatching2ContextId ctxId,
+                                               OrbisNpMatching2GetUserInfoListRequest* request,
+                                               OrbisNpMatching2RequestOptParam* requestOpt,
+                                               OrbisNpMatching2RequestId* requestId) {
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+
+    if (!IsInitialized()) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
+
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmGetUserInfoList(ctxId, reqId, *request, ctx->a_variant);
     return ORBIS_OK;
 }
 

@@ -416,20 +416,6 @@ void StartMatching2SignalingForRoomPeers(ContextObject& ctx, OrbisNpMatching2Roo
     }
 }
 
-void QueueMatching2EstablishedForRoomPeers(ContextObject& ctx, OrbisNpMatching2RoomId room_id) {
-    const auto room_it = ctx.room_cache.find(room_id);
-    if (room_it == ctx.room_cache.end()) {
-        return;
-    }
-
-    for (const auto& [member_id, member] : room_it->second.members) {
-        if (member_id == 0 || member_id == ctx.my_member_id) {
-            continue;
-        }
-        MarkMatching2PeerActive(ctx, room_id, member_id, member.addr, member.port);
-    }
-}
-
 void QueueMatching2DeadForRoomPeers(ContextObject& ctx, OrbisNpMatching2RoomId room_id,
                                     s32 error_code) {
     auto room_it = ctx.room_cache.find(room_id);

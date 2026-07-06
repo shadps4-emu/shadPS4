@@ -22,6 +22,8 @@ namespace shadnet {
 class CreateJoinRoomResponse;
 class GetWorldInfoListReply;
 class GetRoomDataExternalListReply;
+class GetRoomMemberDataExternalListReply;
+class GetUserInfoListReply;
 class LeaveRoomReply;
 class SearchRoomReply;
 } // namespace shadnet
@@ -100,11 +102,19 @@ struct CallbackPayload {
         room_data_external_list_response;
     std::unique_ptr<OrbisNpMatching2GetRoomDataExternalListResponseA>
         room_data_external_list_response_a;
+    std::unique_ptr<OrbisNpMatching2GetRoomMemberDataExternalListResponse>
+        room_member_data_external_list_response;
+    std::unique_ptr<OrbisNpMatching2GetRoomMemberDataExternalListResponseA>
+        room_member_data_external_list_response_a;
+    std::unique_ptr<OrbisNpMatching2GetUserInfoListResponse> user_info_list_response;
+    std::unique_ptr<OrbisNpMatching2GetUserInfoListResponseA> user_info_list_response_a;
     std::unique_ptr<OrbisNpMatching2GetWorldInfoListResponse> world_info_response;
     std::unique_ptr<OrbisNpMatching2SignalingGetPingInfoResponse> ping_info_response;
     std::vector<OrbisNpMatching2World> world_list;
     std::vector<OrbisNpMatching2RoomMemberDataInternal> member_data;
     std::vector<OrbisNpMatching2RoomMemberDataInternalA> member_data_a;
+    std::vector<OrbisNpMatching2RoomMemberDataExternal> member_data_external;
+    std::vector<OrbisNpMatching2RoomMemberDataExternalA> member_data_external_a;
     std::vector<OrbisNpMatching2RoomGroup> room_groups;
     std::vector<OrbisNpMatching2RoomGroup*> room_group_ptrs;
     std::vector<OrbisNpMatching2RoomBinAttrInternal> room_bin_attrs;
@@ -112,6 +122,9 @@ struct CallbackPayload {
     std::vector<OrbisNpMatching2RoomMemberBinAttrInternal> member_bin_attrs;
     std::vector<OrbisNpMatching2RoomDataExternal> room_data_external;
     std::vector<OrbisNpMatching2RoomDataExternalA> room_data_external_a;
+    std::vector<OrbisNpMatching2UserInfo> user_info;
+    std::vector<OrbisNpMatching2UserInfoA> user_info_a;
+    std::vector<OrbisNpMatching2BinAttr> user_bin_attrs;
     std::vector<std::vector<u8>> bin_buffers;
     std::vector<OrbisNpMatching2IntAttr> ext_int_attrs;
     std::vector<OrbisNpMatching2BinAttr> ext_bin_attrs;
@@ -146,11 +159,17 @@ struct CallbackPayload {
         search_room_response_a.reset();
         room_data_external_list_response.reset();
         room_data_external_list_response_a.reset();
+        room_member_data_external_list_response.reset();
+        room_member_data_external_list_response_a.reset();
+        user_info_list_response.reset();
+        user_info_list_response_a.reset();
         world_info_response.reset();
         ping_info_response.reset();
         world_list.clear();
         member_data.clear();
         member_data_a.clear();
+        member_data_external.clear();
+        member_data_external_a.clear();
         room_groups.clear();
         room_group_ptrs.clear();
         room_bin_attrs.clear();
@@ -158,6 +177,9 @@ struct CallbackPayload {
         member_bin_attrs.clear();
         room_data_external.clear();
         room_data_external_a.clear();
+        user_info.clear();
+        user_info_a.clear();
+        user_bin_attrs.clear();
         bin_buffers.clear();
         ext_int_attrs.clear();
         ext_bin_attrs.clear();
@@ -371,6 +393,12 @@ void* BuildGetRoomDataExternalListPayload(ContextObject& ctx,
                                           const shadnet::GetRoomDataExternalListReply& resp);
 void* BuildGetRoomDataExternalListPayloadA(ContextObject& ctx,
                                            const shadnet::GetRoomDataExternalListReply& resp);
+void* BuildGetRoomMemberDataExternalListPayload(
+    ContextObject& ctx, const shadnet::GetRoomMemberDataExternalListReply& resp);
+void* BuildGetRoomMemberDataExternalListPayloadA(
+    ContextObject& ctx, const shadnet::GetRoomMemberDataExternalListReply& resp);
+void* BuildGetUserInfoListPayload(ContextObject& ctx, const shadnet::GetUserInfoListReply& resp);
+void* BuildGetUserInfoListPayloadA(ContextObject& ctx, const shadnet::GetUserInfoListReply& resp);
 void* BuildGetRoomDataInternalPayload(ContextObject& ctx, OrbisNpMatching2RoomId room_id);
 
 void InitEventDispatcher();
