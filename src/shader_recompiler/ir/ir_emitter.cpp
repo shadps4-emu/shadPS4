@@ -175,8 +175,8 @@ U1 IREmitter::GetGotoVariable(u32 id) {
     return Inst<U1>(Opcode::GetGotoVariable, id);
 }
 
-U1 IREmitter::GetMaskLaneVariable(u32 key) {
-    return Inst<U1>(Opcode::GetMaskLaneVariable, key);
+U1 IREmitter::GetMaskLaneVariable(IR::VectorReg vgpr, u32 lane) {
+    return Inst<U1>(Opcode::GetMaskLaneVariable, vgpr, Imm32(lane));
 }
 
 U1 IREmitter::Condition(IR::Condition cond) {
@@ -206,8 +206,8 @@ void IREmitter::SetGotoVariable(u32 id, const U1& value) {
     Inst(Opcode::SetGotoVariable, id, value);
 }
 
-void IREmitter::SetMaskLaneVariable(u32 key, const U1& value) {
-    Inst(Opcode::SetMaskLaneVariable, key, value);
+void IREmitter::SetMaskLaneVariable(IR::VectorReg vgpr, u32 lane, const U1& value) {
+    Inst(Opcode::SetMaskLaneVariable, vgpr, Imm32(lane), value);
 }
 
 U1 IREmitter::GetScc() {

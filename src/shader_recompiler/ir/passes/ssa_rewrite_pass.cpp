@@ -45,15 +45,16 @@ struct GotoVariable : FlagTag {
 };
 
 // Per-lane (U1) view of a thread mask spilled into a VGPR lane via V_WRITELANE_B32 and
-// restored via V_READLANE_B32. Keyed by (vgpr << 6) | lane. Inherits FlagTag so
-// UndefOpcode(FlagTag) resolves to UndefU1. See Translator::V_WRITELANE_B32.
+// restored via V_READLANE_B32. Inherits FlagTag so UndefOpcode(FlagTag) resolves to UndefU1.
+// See Translator::V_WRITELANE_B32.
 struct MaskLaneVariable : FlagTag {
     MaskLaneVariable() = default;
-    explicit MaskLaneVariable(u32 index_) : index{index_} {}
+    explicit MaskLaneVariable(IR::VectorReg vgpr_, u32 lane_) : vgpr{vgpr_}, lane{lane_} {}
 
     auto operator<=>(const MaskLaneVariable&) const noexcept = default;
 
-    u32 index;
+    IR::VectorReg vgpr{};
+    u32 lane{};
 };
 
 struct ThreadBitScalar : FlagTag {
@@ -93,10 +94,14 @@ struct DefTable {
     }
 
     const IR::Value& Def(IR::Block* block, MaskLaneVariable variable) {
-        return mask_lane_vars[variable.index][block];
+        return mask_lane_vars[MaskLaneKey(variable)][block];
     }
     void SetDef(IR::Block* block, MaskLaneVariable variable, const IR::Value& value) {
-        mask_lane_vars[variable.index].insert_or_assign(block, value);
+        mask_lane_vars[MaskLaneKey(variable)].insert_or_assign(block, value);
+    }
+
+    static u32 MaskLaneKey(MaskLaneVariable variable) {
+        return (u32(RegIndex(variable.vgpr)) << 6) | variable.lane;
     }
 
     const IR::Value& Def(IR::Block* block, ThreadBitScalar variable) {
@@ -368,7 +373,8 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         pass.WriteVariable(GotoVariable{inst.Arg(0).U32()}, block, inst.Arg(1));
         break;
     case IR::Opcode::SetMaskLaneVariable:
-        pass.WriteVariable(MaskLaneVariable{inst.Arg(0).U32()}, block, inst.Arg(1));
+        pass.WriteVariable(MaskLaneVariable{inst.Arg(0).VectorReg(), inst.Arg(1).U32()}, block,
+                           inst.Arg(2));
         break;
     case IR::Opcode::SetExec:
         pass.WriteVariable(ExecFlagTag{}, block, inst.Arg(0));
@@ -410,7 +416,8 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         inst.ReplaceUsesWith(pass.ReadVariable(GotoVariable{inst.Arg(0).U32()}, block));
         break;
     case IR::Opcode::GetMaskLaneVariable:
-        inst.ReplaceUsesWith(pass.ReadVariable(MaskLaneVariable{inst.Arg(0).U32()}, block));
+        inst.ReplaceUsesWith(
+            pass.ReadVariable(MaskLaneVariable{inst.Arg(0).VectorReg(), inst.Arg(1).U32()}, block));
         break;
     case IR::Opcode::GetExec:
         inst.ReplaceUsesWith(pass.ReadVariable(ExecFlagTag{}, block));

@@ -114,11 +114,11 @@ void Translator::V_READLANE_B32(const GcnInst& inst) {
     // clobbers both views, so unconditionally redefining the U1 view is strictly more faithful
     // than leaving it stale.
     if (lane.IsImmediate()) {
-        const u32 key = (inst.src[0].code << 6) | (lane.U32() & 63u);
         switch (inst.dst[0].field) {
         case OperandField::ScalarGPR:
         case OperandField::VccLo:
-            SetDst1(inst.dst[0], ir.GetMaskLaneVariable(key));
+            SetDst1(inst.dst[0],
+                    ir.GetMaskLaneVariable(IR::VectorReg(inst.src[0].code), lane.U32() & 63u));
             break;
         default:
             break;
@@ -137,12 +137,11 @@ void Translator::V_WRITELANE_B32(const GcnInst& inst) {
     // (see the comment there). For non-mask (plain data) sources the shadowed U1 resolves to
     // Undef, so a later mask-typed read of the restored SGPR behaves as if no shadow existed.
     if (lane.IsImmediate()) {
-        const u32 key = (inst.dst[0].code << 6) | (lane.U32() & 63u);
         switch (inst.src[0].field) {
         case OperandField::ScalarGPR:
         case OperandField::VccLo:
         case OperandField::ExecLo:
-            ir.SetMaskLaneVariable(key, GetSrc1(inst.src[0]));
+            ir.SetMaskLaneVariable(dst, lane.U32() & 63u, GetSrc1(inst.src[0]));
             break;
         default:
             break;
