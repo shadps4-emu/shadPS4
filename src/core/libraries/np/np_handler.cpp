@@ -5,16 +5,20 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <httplib.h>
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/network/net_upnp.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_matching2/np_matching2_mm.h"
 #include "core/libraries/np/np_score/np_score.h"
 #include "core/libraries/np/np_web_api/np_web_api.h"
+#include "core/libraries/system/systemservice.h"
 #include "core/user_settings.h"
+#include "imgui/invitation_prompt_layer.h"
 #include "imgui/shadnet_notifications_layer.h"
 #include "np_handler.h"
 #include "shadnet.pb.h"
@@ -372,6 +376,222 @@ std::string NpHandler::GetBearerToken(s32 user_id) const {
     return it != m_clients.end() ? it->second->GetBearerToken() : std::string{};
 }
 
+// Minimal JSON string escaper for the invitation-request body (npids are safe but the user message
+// can contain quotes/backslashes/control chars).
+std::string JsonEscape(const std::string& in) {
+    std::string out;
+    out.reserve(in.size() + 8);
+    for (const char c : in) {
+        switch (c) {
+        case '"':
+            out += "\\\"";
+            break;
+        case '\\':
+            out += "\\\\";
+            break;
+        case '\n':
+            out += "\\n";
+            break;
+        case '\r':
+            out += "\\r";
+            break;
+        case '\t':
+            out += "\\t";
+            break;
+        default:
+            if (static_cast<unsigned char>(c) < 0x20) {
+                char buf[8];
+                std::snprintf(buf, sizeof(buf), "\\u%04x", c);
+                out += buf;
+            } else {
+                out += c;
+            }
+        }
+    }
+    return out;
+}
+
+bool NpHandler::SendSessionInvitation(s32 user_id, const std::string& session_id,
+                                      const std::vector<std::string>& to,
+                                      const std::string& message) {
+    if (session_id.empty() || to.empty()) {
+        LOG_ERROR(NpHandler, "SendSessionInvitation: empty session_id or recipient list");
+        return false;
+    }
+    const std::string base_url = EmulatorSettings.GetShadNetWebApiServer();
+    if (base_url.empty()) {
+        LOG_ERROR(NpHandler, "SendSessionInvitation: WebAPI server address is empty");
+        return false;
+    }
+    const std::string token = GetBearerToken(user_id);
+    if (token.empty()) {
+        LOG_ERROR(NpHandler, "SendSessionInvitation: no bearer token for user_id={}", user_id);
+        return false;
+    }
+
+    // invitation-request JSON: {"to":[...],"message":"..."}
+    std::string json = "{\"to\":[";
+    for (size_t i = 0; i < to.size(); ++i) {
+        if (i != 0) {
+            json += ',';
+        }
+        json += '"';
+        json += JsonEscape(to[i]);
+        json += '"';
+    }
+    json += ']';
+    if (!message.empty()) {
+        json += ",\"message\":\"";
+        json += JsonEscape(message);
+        json += '"';
+    }
+    json += '}';
+
+    // multipart/mixed with a single JSON part; shadNet keys on the Content-Description.
+    const std::string boundary = "shadps4invite" + std::to_string(user_id);
+    std::string body;
+    body += "--" + boundary + "\r\n";
+    body += "Content-Type: application/json; charset=utf-8\r\n";
+    body += "Content-Description: invitation-request\r\n\r\n";
+    body += json;
+    body += "\r\n--" + boundary + "--\r\n";
+
+    const std::string path = "/v1/sessions/" + session_id + "/invitations";
+    const std::string content_type = "multipart/mixed; boundary=" + boundary;
+
+    httplib::Client cli(base_url);
+    cli.set_connection_timeout(5);
+    cli.set_read_timeout(10);
+    const httplib::Headers headers = {{"Authorization", "Bearer " + token}};
+    const auto res = cli.Post(path.c_str(), headers, body, content_type.c_str());
+    if (!res) {
+        LOG_ERROR(NpHandler, "SendSessionInvitation: POST {} failed (no response)", path);
+        return false;
+    }
+    if (res->status != 200 && res->status != 204) {
+        LOG_ERROR(NpHandler, "SendSessionInvitation: POST {} -> HTTP {}", path, res->status);
+        return false;
+    }
+    LOG_INFO(NpHandler, "SendSessionInvitation: sent invite to {} recipient(s) for session '{}'",
+             to.size(), session_id);
+    return true;
+}
+
+void NpHandler::PostSessionInvitationEvent(const std::string& session_id,
+                                           const std::string& invitation_id,
+                                           const std::string& accepter_online_id) {
+    using Libraries::InvitationDialog::ORBIS_NP_SESSION_INVITATION_EVENT_FLAG_INVITATION;
+    using Libraries::InvitationDialog::OrbisNpSessionInvitationEventParam;
+
+    Libraries::SystemService::OrbisSystemServiceEvent event{};
+    event.event_type = Libraries::SystemService::OrbisSystemServiceEventType::SessionInvitation;
+
+    auto* param = reinterpret_cast<OrbisNpSessionInvitationEventParam*>(event.param);
+    std::memset(param, 0, sizeof(*param));
+    std::strncpy(param->sessionId.data, session_id.c_str(), sizeof(param->sessionId.data) - 1);
+    if (!invitation_id.empty()) {
+        std::strncpy(param->invitationId.data, invitation_id.c_str(),
+                     sizeof(param->invitationId.data) - 1);
+        param->flag = ORBIS_NP_SESSION_INVITATION_EVENT_FLAG_INVITATION;
+    } else {
+        param->flag = 0; // join from session info (no invitation id in the push)
+    }
+    std::strncpy(param->onlineId.data, accepter_online_id.c_str(),
+                 sizeof(param->onlineId.data) - 1);
+
+    Libraries::SystemService::PushSystemServiceEvent(event);
+    LOG_INFO(NpHandler, "Posted SESSION_INVITATION session='{}' flag={} onlineId='{}'", session_id,
+             param->flag, accepter_online_id);
+}
+
+std::vector<NpHandler::PendingInvitation> NpHandler::GetPendingInvitations(s32 user_id) const {
+    std::lock_guard lk(m_mutex_pending_invites);
+    const auto it = m_pending_invites.find(user_id);
+    if (it == m_pending_invites.end()) {
+        return {};
+    }
+    const auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+                         std::chrono::system_clock::now().time_since_epoch())
+                         .count();
+    std::vector<PendingInvitation> out;
+    out.reserve(it->second.size());
+    for (const auto& p : it->second) {
+        if (p.valid_until == 0 || now <= p.valid_until) {
+            out.push_back(p);
+        }
+    }
+    return out;
+}
+
+bool NpHandler::AcceptSessionInvitation(s32 user_id, const std::string& invitation_id) {
+    // Pull the matching stashed invite (and drop it).
+    PendingInvitation inv;
+    bool found = false;
+    {
+        std::lock_guard lk(m_mutex_pending_invites);
+        const auto mit = m_pending_invites.find(user_id);
+        if (mit != m_pending_invites.end()) {
+            auto& v = mit->second;
+            for (auto it = v.begin(); it != v.end(); ++it) {
+                if (it->invitation_id == invitation_id) {
+                    inv = *it;
+                    v.erase(it);
+                    found = true;
+                    break;
+                }
+            }
+        }
+    }
+    // Whatever surface handled it (RECV dialog or the emulator prompt), retire the other one.
+    ImGui::InvitationPrompt::Dismiss(invitation_id);
+    if (!found) {
+        LOG_ERROR(NpHandler, "AcceptSessionInvitation: no pending invite '{}' for user_id={}",
+                  invitation_id, user_id);
+        return false;
+    }
+    // Raise the join event now that the user has explicitly accepted (via the RECV dialog or the
+    // emulator's system-UI equivalent).
+    PostSessionInvitationEvent(inv.session_id, invitation_id, inv.to_npid);
+    // Consume it server-side (PUT usedFlag=true).
+    const std::string base_url = EmulatorSettings.GetShadNetWebApiServer();
+    const std::string token = GetBearerToken(user_id);
+    if (base_url.empty() || token.empty()) {
+        LOG_ERROR(NpHandler, "AcceptSessionInvitation: no WebAPI server/token for user_id={}",
+                  user_id);
+        return false;
+    }
+    httplib::Client cli(base_url);
+    cli.set_connection_timeout(5);
+    cli.set_read_timeout(10);
+    const httplib::Headers headers = {{"Authorization", "Bearer " + token}};
+    const std::string path = "/v1/users/me/invitations/" + invitation_id;
+    const auto res = cli.Put(path.c_str(), headers, "{\"usedFlag\":true}", "application/json");
+    if (!res || (res->status != 200 && res->status != 204)) {
+        LOG_ERROR(NpHandler, "AcceptSessionInvitation: PUT {} failed ({})", path,
+                  res ? res->status : 0);
+        return false;
+    }
+    LOG_INFO(NpHandler, "AcceptSessionInvitation: consumed '{}' session='{}'", invitation_id,
+             inv.session_id);
+    return true;
+}
+
+void NpHandler::DeclineSessionInvitation(s32 user_id, const std::string& invitation_id) {
+    ImGui::InvitationPrompt::Dismiss(invitation_id);
+    std::lock_guard lock(m_mutex_pending_invites);
+    auto uit = m_pending_invites.find(user_id);
+    if (uit == m_pending_invites.end()) {
+        return;
+    }
+    auto& v = uit->second;
+    v.erase(std::remove_if(
+                v.begin(), v.end(),
+                [&](const PendingInvitation& p) { return p.invitation_id == invitation_id; }),
+            v.end());
+    LOG_INFO(NpHandler, "DeclineSessionInvitation: dismissed '{}' for user_id={}", invitation_id,
+             user_id);
+}
+
 u32 NpHandler::GetLocalIpAddr(s32 user_id) const {
     std::lock_guard lock(m_mutex_clients);
     auto it = m_clients.find(user_id);
@@ -492,6 +712,43 @@ void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEv
     }
     ev.extdData = n.extdData; // extended-data (key,value) pairs -> dispatched as pExtdData
     NpWebApi::EnqueuePushEvent(ev);
+
+    // Also surface a SESSION_INVITATION system-service event for titles that watch it instead of
+    // (or in addition to) the WebAPI push callback
+    if (n.npServiceName == "sessionInvitation") {
+        std::string session_id, invitation_id;
+        int64_t valid_until = 0;
+        for (const auto& kv : n.extdData) {
+            if (kv.first == "sessionId") {
+                session_id = kv.second;
+            } else if (kv.first == "invitationId") {
+                invitation_id = kv.second;
+            } else if (kv.first == "validUntil") {
+                valid_until = std::strtoll(kv.second.c_str(), nullptr, 10);
+            }
+        }
+        if (!session_id.empty()) {
+            {
+                std::lock_guard lk(m_mutex_pending_invites);
+                auto& v = m_pending_invites[user_id];
+                v.erase(std::remove_if(v.begin(), v.end(),
+                                       [&](const PendingInvitation& p) {
+                                           return p.invitation_id == invitation_id;
+                                       }),
+                        v.end());
+                v.push_back({session_id, invitation_id, n.fromNpid, n.toNpid, valid_until});
+            }
+            // ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION is a *join* event: it
+            // fires only after the user explicitly accepts, via the game-opened invitation dialog
+            // (RECV) or the system software UI. Posting it here on arrival makes titles silently
+            // auto-join. The event is raised from AcceptSessionInvitation instead. The WebAPI push
+            // callback above still fires on arrival for titles that watch invites themselves.
+            //
+            // The emulator has no ShellUI, so surface the "system software UI" half here: an
+            // overlay prompt whose Accept routes through AcceptSessionInvitation.
+            ImGui::InvitationPrompt::Push(user_id, invitation_id, session_id, n.fromNpid);
+        }
+    }
 }
 
 void NpHandler::OnLoginResult(s32 user_id, const ShadNet::LoginResult& res) {

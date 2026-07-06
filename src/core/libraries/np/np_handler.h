@@ -72,6 +72,33 @@ public:
     // WebAPI bearer token
     std::string GetBearerToken(s32 user_id) const;
 
+    // Sends a session invitation via the WebAPI (POST /v1/sessions/<id>/invitations). Each 'to'
+    // entry is an online ID (npid) or a decimal account ID
+    bool SendSessionInvitation(s32 user_id, const std::string& session_id,
+                               const std::vector<std::string>& to, const std::string& message);
+
+    // Raises ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION (0x10000002) so titles that watch the
+    // system-service event learn about the invite.
+    void PostSessionInvitationEvent(const std::string& session_id, const std::string& invitation_id,
+                                    const std::string& accepter_online_id);
+
+    // A session invitation surfaced from a shadNet push, stashed until the user acts on it.
+    struct PendingInvitation {
+        std::string session_id;
+        std::string invitation_id;
+        std::string from_npid;   // sender (for display)
+        std::string to_npid;     // local recipient / accepter
+        int64_t valid_until = 0; // ms since epoch; 0 = never expires
+    };
+    // Pending invitations stashed for a local user (newest last), populated on arrival.
+    std::vector<PendingInvitation> GetPendingInvitations(s32 user_id) const;
+    // Consumes an invitation server-side (PUT usedFlag=true) and drops it from the stash. Returns
+    // true if the invite was found and the consume succeeded.
+    bool AcceptSessionInvitation(s32 user_id, const std::string& invitation_id);
+    // Dismisses an invitation locally by dropping it from the stash. No server call (a declined
+    // invite is left unconsumed and simply ages out server-side).
+    void DeclineSessionInvitation(s32 user_id, const std::string& invitation_id);
+
     // Local IP address (network byte order) as seen at connect time.
     u32 GetLocalIpAddr(s32 user_id) const;
 
@@ -276,6 +303,9 @@ private:
         std::chrono::milliseconds backoff{0};
     };
     std::unordered_map<s32, ReconnectState> m_reconnect;
+
+    mutable std::mutex m_mutex_pending_invites;
+    std::unordered_map<s32, std::vector<PendingInvitation>> m_pending_invites;
 
     // State callbacks
     struct CbEntry {

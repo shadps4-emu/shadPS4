@@ -516,6 +516,10 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/video_recording/video_recording.cpp
                 src/core/libraries/video_recording/video_recording.h
                 src/core/libraries/video_recording/video_recording_error.h
+                src/core/libraries/invitation_dialog/invitation_dialog.cpp
+                src/core/libraries/invitation_dialog/invitation_dialog.h
+                src/core/libraries/invitation_dialog/invitation_dialog_ui.cpp
+                src/core/libraries/invitation_dialog/invitation_dialog_ui.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -1140,6 +1144,8 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_translations.h
           src/imgui/friends_layer.cpp
           src/imgui/friends_layer.h
+          src/imgui/invitation_prompt_layer.cpp
+          src/imgui/invitation_prompt_layer.h
           src/imgui/shadnet_notifications_layer.cpp
           src/imgui/shadnet_notifications_layer.h
           src/imgui/notifications_layer.cpp
