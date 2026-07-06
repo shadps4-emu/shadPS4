@@ -2064,13 +2064,16 @@ s32 PS4_SYSV_ABI readDataInternal(s64 requestId, void* pData, u64 size) {
 // service dispatch, with matching done by FUN_010049c0. Natively this is driven by the
 // NP manager's push listener thread (mnp:usr:npweblis)
 
-using ServiceCb = PS4_SYSV_ABI void (*)(s32, s32, const char*, OrbisNpServiceLabel,
-                                        const OrbisNpWebApiPushEventDataType*, const char*, u64,
-                                        void*);
 struct PushPeerAddress {
     OrbisNpOnlineId onlineId;
     s32 platform;
 };
+// Service callback = basic callback with pNpServiceName/npServiceLabel inserted after
+// callbackId; it still carries pTo/pFrom before pDataType.
+using ServiceCb = PS4_SYSV_ABI void (*)(s32, s32, const char*, OrbisNpServiceLabel,
+                                        const PushPeerAddress*, const PushPeerAddress*,
+                                        const OrbisNpWebApiPushEventDataType*, const char*, u64,
+                                        void*);
 using BasicCb = PS4_SYSV_ABI void (*)(s32, s32, const PushPeerAddress*, const PushPeerAddress*,
                                       const OrbisNpWebApiPushEventDataType*, const char*, u64,
                                       void*);
@@ -2203,9 +2206,17 @@ void DrainPushEvents() {
                     const char* svc =
                         flt->npServiceName.empty() ? nullptr : flt->npServiceName.c_str();
                     const char* svc_data = ev.data.empty() ? nullptr : ev.data.data();
+                    PushPeerAddress to_peer{};   // notified user (self)
+                    PushPeerAddress from_peer{}; // user that caused the event
+                    if (ev.hasTo) {
+                        to_peer.onlineId = ev.toOnlineId;
+                    }
+                    if (ev.hasFrom) {
+                        from_peer.onlineId = ev.fromOnlineId;
+                    }
                     reinterpret_cast<ServiceCb>(reinterpret_cast<void (*)()>(cb->cbFunc))(
-                        title_user_ctx_id, cbId, svc, flt->npServiceLabel, &dt, svc_data,
-                        ev.data.size(), cb->pUserArg);
+                        title_user_ctx_id, cbId, svc, flt->npServiceLabel, &to_peer, &from_peer,
+                        &dt, svc_data, ev.data.size(), cb->pUserArg);
                 }
 
                 // Basic push
