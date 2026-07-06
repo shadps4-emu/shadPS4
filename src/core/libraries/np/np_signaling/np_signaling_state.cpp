@@ -6,6 +6,7 @@
 #include <cstring>
 #include <mutex>
 #include <random>
+#include <string_view>
 
 #include "common/logging/log.h"
 #include "common/singleton.h"
@@ -1228,7 +1229,9 @@ void HandleControlPacket(u32 from_addr, u16 from_port, const SignalingControl& p
                 ci.conn_id = conn_id;
                 ci.ctx_id = ctx_id;
                 ci.locally_activated = false;
-                std::memcpy(ci.online_id.data, pkt.online_id_from, ORBIS_NP_ONLINEID_MAX_LENGTH);
+                SetNpOnlineId(ci.online_id,
+                              std::string_view(reinterpret_cast<const char*>(pkt.online_id_from),
+                                               ORBIS_NP_ONLINEID_MAX_LENGTH));
                 ci.npid.handle = ci.online_id;
                 g_connections[conn_id] = std::move(ci);
                 g_npid_to_conn[MakeCtxNpIdKey(ctx_id, g_connections[conn_id].npid)] = conn_id;
