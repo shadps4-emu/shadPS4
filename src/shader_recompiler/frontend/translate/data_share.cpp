@@ -115,13 +115,10 @@ void Translator::V_READLANE_B32(const GcnInst& inst) {
     // than leaving it stale.
     if (lane.IsImmediate()) {
         const u32 key = (inst.src[0].code << 6) | (lane.U32() & 63u);
-        const IR::U1 shadow = ir.GetMaskLaneVariable(key);
         switch (inst.dst[0].field) {
         case OperandField::ScalarGPR:
-            ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), shadow);
-            break;
         case OperandField::VccLo:
-            ir.SetVcc(shadow);
+            SetDst1(inst.dst[0], ir.GetMaskLaneVariable(key));
             break;
         default:
             break;
@@ -143,13 +140,9 @@ void Translator::V_WRITELANE_B32(const GcnInst& inst) {
         const u32 key = (inst.dst[0].code << 6) | (lane.U32() & 63u);
         switch (inst.src[0].field) {
         case OperandField::ScalarGPR:
-            ir.SetMaskLaneVariable(key, ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
-            break;
         case OperandField::VccLo:
-            ir.SetMaskLaneVariable(key, ir.GetVcc());
-            break;
         case OperandField::ExecLo:
-            ir.SetMaskLaneVariable(key, ir.GetExec());
+            ir.SetMaskLaneVariable(key, GetSrc1(inst.src[0]));
             break;
         default:
             break;
