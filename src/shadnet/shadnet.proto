@@ -260,6 +260,15 @@ message MatchingRoomMemberData {
     uint32                   platform           = 14;
 }
 
+message MatchingRoomMemberDataExternal {
+    string npid       = 1;
+    uint32 member_id  = 2;
+    uint64 account_id = 3;
+    uint32 platform   = 4;
+    uint64 join_date  = 5;
+    uint32 role       = 6;
+}
+
 message MatchingRoomDataExternal {
     uint32                       max_slot                  = 1;
     uint32                       cur_members               = 2;
@@ -442,6 +451,38 @@ message GetRoomDataExternalListRequest {
 
 message GetRoomDataExternalListReply {
     repeated MatchingRoomDataExternal rooms = 1;
+}
+
+message GetRoomMemberDataExternalListRequest {
+    uint64 room_id = 1;
+}
+
+message GetRoomMemberDataExternalListReply {
+    repeated MatchingRoomMemberDataExternal members = 1;
+}
+
+message MatchingUserInfo {
+    string npid                            = 1;
+    uint64 account_id                      = 2;
+    uint32 platform                        = 3;
+    repeated MatchingBinAttr user_bin_attrs = 4;
+}
+
+message SetUserInfoRequest {
+    uint32 server_id = 1;
+    repeated MatchingBinAttr user_bin_attrs = 2;
+}
+
+message SetUserInfoReply {}
+
+message GetUserInfoListRequest {
+    repeated string npids    = 1;
+    repeated uint32 attr_ids = 2;
+    int32           option   = 3;
+}
+
+message GetUserInfoListReply {
+    repeated MatchingUserInfo users = 1;
 }
 
 message MatchingWorld {

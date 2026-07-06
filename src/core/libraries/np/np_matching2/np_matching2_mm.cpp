@@ -204,6 +204,22 @@ void DispatchRequestComplete(const PendingRequest& pr, ShadNet::ErrorType error,
                 request_data = pr.a_variant ? BuildGetRoomDataExternalListPayloadA(*ctx, reply)
                                             : BuildGetRoomDataExternalListPayload(*ctx, reply);
             }
+        } else if (pr.req_event ==
+                       ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_EXTERNAL_LIST ||
+                   pr.req_event ==
+                       ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_EXTERNAL_LIST_A) {
+            shadnet::GetRoomMemberDataExternalListReply reply;
+            if (reply.ParseFromString(proto)) {
+                request_data = pr.a_variant
+                                   ? BuildGetRoomMemberDataExternalListPayloadA(*ctx, reply)
+                                   : BuildGetRoomMemberDataExternalListPayload(*ctx, reply);
+            }
+        } else if (pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_USER_INFO_LIST) {
+            shadnet::GetUserInfoListReply reply;
+            if (reply.ParseFromString(proto)) {
+                request_data = pr.a_variant ? BuildGetUserInfoListPayloadA(*ctx, reply)
+                                            : BuildGetUserInfoListPayload(*ctx, reply);
+            }
         }
     }
 
@@ -222,7 +238,6 @@ void DispatchRequestComplete(const PendingRequest& pr, ShadNet::ErrorType error,
     if (error_code == 0 && (pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_JOIN_ROOM ||
                             pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_JOIN_ROOM_A)) {
         StartMatching2SignalingForRoomPeers(*ctx, ctx->room_id);
-        QueueMatching2EstablishedForRoomPeers(*ctx, ctx->room_id);
     } else if (error_code == 0 &&
                (pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_CREATE_JOIN_ROOM ||
                 pr.req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_CREATE_JOIN_ROOM_A)) {
@@ -534,7 +549,6 @@ void HandleRoomEvent(const ShadNet::NotifyRoomEvent& n) {
 
     if (event == ORBIS_NP_MATCHING2_ROOM_EVENT_MEMBER_JOINED) {
         StartMatching2PeerHandshake(*ctx, room_id, member_id);
-        QueueMatching2EstablishedForRoomPeers(*ctx, room_id);
     }
 }
 
@@ -898,6 +912,48 @@ s32 MmGetRoomDataExternalList(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2
                                ? ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_DATA_EXTERNAL_LIST_A
                                : ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_DATA_EXTERNAL_LIST,
                            MmCommand::GetRoomDataExternalList, MakeProtoPayload(req), a_variant);
+}
+
+s32 MmGetRoomMemberDataExternalList(
+    OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+    const OrbisNpMatching2GetRoomMemberDataExternalListRequest& request, bool a_variant) {
+    shadnet::GetRoomMemberDataExternalListRequest req;
+    req.set_room_id(request.roomId);
+    LOG_DEBUG(Lib_NpMatching2, "getRoomMemberDataExternalList room={}", request.roomId);
+    return MmSubmitRequest(
+        ctx_id, req_id,
+        a_variant ? ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_EXTERNAL_LIST_A
+                  : ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_EXTERNAL_LIST,
+        MmCommand::GetRoomMemberDataExternalList, MakeProtoPayload(req), a_variant);
+}
+
+s32 MmGetUserInfoList(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                      const OrbisNpMatching2GetUserInfoListRequest& request, bool a_variant) {
+    shadnet::GetUserInfoListRequest req;
+    for (u64 i = 0; i < request.npIdNum; ++i) {
+        req.add_npids(request.npId[i].handle.data);
+    }
+    for (u64 i = 0; i < request.attrIdNum; ++i) {
+        req.add_attr_ids(request.attrId[i]);
+    }
+    req.set_option(request.option);
+    LOG_DEBUG(Lib_NpMatching2, "getUserInfoList npN={} attrN={}", request.npIdNum,
+              request.attrIdNum);
+    return MmSubmitRequest(ctx_id, req_id, ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_USER_INFO_LIST,
+                           MmCommand::GetUserInfoList, MakeProtoPayload(req), a_variant);
+}
+
+s32 MmSetUserInfo(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                  const OrbisNpMatching2SetUserInfoRequest& request) {
+    shadnet::SetUserInfoRequest req;
+    req.set_server_id(request.serverId);
+    for (u64 i = 0; request.userBinAttr && i < request.userBinAttrs; ++i) {
+        AppendBinAttr(req.add_user_bin_attrs(), request.userBinAttr[i]);
+    }
+    LOG_DEBUG(Lib_NpMatching2, "setUserInfo server={} binAttrs={}", request.serverId,
+              request.userBinAttrs);
+    return MmSubmitRequest(ctx_id, req_id, ORBIS_NP_MATCHING2_REQUEST_EVENT_SET_USER_INFO,
+                           MmCommand::SetUserInfo, MakeProtoPayload(req));
 }
 
 s32 MmSetRoomDataInternal(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,

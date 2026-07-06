@@ -26,11 +26,14 @@ enum class MmCommand : u16 {
     SearchRoom = 16,
     RequestSignalingInfos = 17,
     ContextStop = 18,
+    SetUserInfo = 19,
     SetRoomDataInternal = 20,
     SetRoomDataExternal = 21,
     KickoutRoomMember = 22,
     GetWorldInfoList = 23,
     GetRoomDataExternalList = 24,
+    GetUserInfoList = 25,
+    GetRoomMemberDataExternalList = 26,
 };
 
 void SetMmShadNetClient(std::shared_ptr<ShadNet::ShadNetClient> client,
@@ -65,6 +68,14 @@ s32 MmSearchRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req
 s32 MmGetRoomDataExternalList(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
                               const OrbisNpMatching2GetRoomDataExternalListRequest& request,
                               bool a_variant = false);
+s32 MmGetRoomMemberDataExternalList(
+    OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+    const OrbisNpMatching2GetRoomMemberDataExternalListRequest& request, bool a_variant = false);
+s32 MmGetUserInfoList(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                      const OrbisNpMatching2GetUserInfoListRequest& request,
+                      bool a_variant = false);
+s32 MmSetUserInfo(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
+                  const OrbisNpMatching2SetUserInfoRequest& request);
 s32 MmSetRoomDataInternal(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
                           const OrbisNpMatching2SetRoomDataInternalRequest& request);
 s32 MmSetRoomDataExternal(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
