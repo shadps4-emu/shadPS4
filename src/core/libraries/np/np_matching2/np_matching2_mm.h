@@ -45,7 +45,7 @@ void OnMatchingReply(ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType er
                      const std::vector<u8>& body);
 
 void MmContextStart(OrbisNpMatching2ContextId ctx_id);
-void MmContextStop(OrbisNpMatching2ContextId ctx_id);
+s32 MmContextStop(OrbisNpMatching2ContextId ctx_id);
 
 s32 MmSubmitRequest(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId req_id,
                     OrbisNpMatching2Event req_event, MmCommand cmd, const std::vector<u8>& payload,
