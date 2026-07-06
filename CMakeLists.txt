@@ -1144,6 +1144,8 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_translations.h
           src/imgui/friends_layer.cpp
           src/imgui/friends_layer.h
+          src/imgui/invitation_prompt_layer.cpp
+          src/imgui/invitation_prompt_layer.h
           src/imgui/shadnet_notifications_layer.cpp
           src/imgui/shadnet_notifications_layer.h
           src/imgui/notifications_layer.cpp

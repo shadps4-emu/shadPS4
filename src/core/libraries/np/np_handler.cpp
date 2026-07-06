@@ -18,6 +18,7 @@
 #include "core/libraries/np/np_web_api/np_web_api.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/user_settings.h"
+#include "imgui/invitation_prompt_layer.h"
 #include "imgui/shadnet_notifications_layer.h"
 #include "np_handler.h"
 #include "shadnet.pb.h"
@@ -541,6 +542,8 @@ bool NpHandler::AcceptSessionInvitation(s32 user_id, const std::string& invitati
             }
         }
     }
+    // Whatever surface handled it (RECV dialog or the emulator prompt), retire the other one.
+    ImGui::InvitationPrompt::Dismiss(invitation_id);
     if (!found) {
         LOG_ERROR(NpHandler, "AcceptSessionInvitation: no pending invite '{}' for user_id={}",
                   invitation_id, user_id);
@@ -574,6 +577,7 @@ bool NpHandler::AcceptSessionInvitation(s32 user_id, const std::string& invitati
 }
 
 void NpHandler::DeclineSessionInvitation(s32 user_id, const std::string& invitation_id) {
+    ImGui::InvitationPrompt::Dismiss(invitation_id);
     std::lock_guard lock(m_mutex_pending_invites);
     auto uit = m_pending_invites.find(user_id);
     if (uit == m_pending_invites.end()) {
@@ -734,6 +738,15 @@ void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEv
                         v.end());
                 v.push_back({session_id, invitation_id, n.fromNpid, n.toNpid, valid_until});
             }
+            // ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION is a *join* event: it
+            // fires only after the user explicitly accepts, via the game-opened invitation dialog
+            // (RECV) or the system software UI. Posting it here on arrival makes titles silently
+            // auto-join. The event is raised from AcceptSessionInvitation instead. The WebAPI push
+            // callback above still fires on arrival for titles that watch invites themselves.
+            //
+            // The emulator has no ShellUI, so surface the "system software UI" half here: an
+            // overlay prompt whose Accept routes through AcceptSessionInvitation.
+            ImGui::InvitationPrompt::Push(user_id, invitation_id, session_id, n.fromNpid);
         }
     }
 }
