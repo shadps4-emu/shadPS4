@@ -44,9 +44,7 @@ struct GotoVariable : FlagTag {
     u32 index;
 };
 
-// Per-lane (U1) view of a thread mask spilled into a VGPR lane via V_WRITELANE_B32 and
-// restored via V_READLANE_B32. Inherits FlagTag so UndefOpcode(FlagTag) resolves to UndefU1.
-// See Translator::V_WRITELANE_B32.
+// Thread-mask bool spilled to a VGPR lane by V_WRITELANE_B32 and restored by V_READLANE_B32.
 struct MaskLaneVariable : FlagTag {
     MaskLaneVariable() = default;
     explicit MaskLaneVariable(IR::VectorReg vgpr_, u32 lane_) : vgpr{vgpr_}, lane{lane_} {}
@@ -101,7 +99,7 @@ struct DefTable {
     }
 
     static u32 MaskLaneKey(MaskLaneVariable variable) {
-        return (u32(RegIndex(variable.vgpr)) << 6) | (variable.lane & 63u);
+        return (u32(RegIndex(variable.vgpr)) << 6) | variable.lane;
     }
 
     const IR::Value& Def(IR::Block* block, ThreadBitScalar variable) {
