@@ -118,7 +118,7 @@ void Translator::V_READLANE_B32(const GcnInst& inst) {
         case OperandField::ScalarGPR:
         case OperandField::VccLo:
             SetDst1(inst.dst[0],
-                    ir.GetMaskLaneVariable(IR::VectorReg(inst.src[0].code), lane.U32() & 63u));
+                    ir.GetMaskLaneVariable(IR::VectorReg(inst.src[0].code), lane.U32()));
             break;
         default:
             break;
@@ -141,7 +141,7 @@ void Translator::V_WRITELANE_B32(const GcnInst& inst) {
         case OperandField::ScalarGPR:
         case OperandField::VccLo:
         case OperandField::ExecLo:
-            ir.SetMaskLaneVariable(dst, lane.U32() & 63u, GetSrc1(inst.src[0]));
+            ir.SetMaskLaneVariable(dst, lane.U32(), GetSrc1(inst.src[0]));
             break;
         default:
             break;

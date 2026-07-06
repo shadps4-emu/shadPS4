@@ -101,7 +101,7 @@ struct DefTable {
     }
 
     static u32 MaskLaneKey(MaskLaneVariable variable) {
-        return (u32(RegIndex(variable.vgpr)) << 6) | variable.lane;
+        return (u32(RegIndex(variable.vgpr)) << 6) | (variable.lane & 63u);
     }
 
     const IR::Value& Def(IR::Block* block, ThreadBitScalar variable) {
