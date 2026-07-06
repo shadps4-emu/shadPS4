@@ -251,6 +251,7 @@ s32 DnsHook::AnalyzeQuery(u64 sock, const u8* buf, u32 len) {
 
     const auto ip = GetRedir(host);
     if (!ip) {
+        LOG_DEBUG(Lib_Net, "DNS swap: '{}' no match, passing through", host);
         return -1;
     }
 
