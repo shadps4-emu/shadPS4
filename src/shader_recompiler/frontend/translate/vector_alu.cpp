@@ -166,6 +166,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_FLOOR_F32(inst);
     case Opcode::V_EXP_F32:
         return V_EXP_F32(inst);
+    case Opcode::V_LOG_CLAMP_F32:
+        return V_LOG_F32(inst);
     case Opcode::V_LOG_F32:
         return V_LOG_F32(inst);
     case Opcode::V_RCP_F32:
