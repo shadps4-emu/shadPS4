@@ -43,9 +43,8 @@ std::deque<Prompt> g_prompts;
 bool g_focused = false;
 bool g_capture_held = false;
 float g_back_held_secs = 0.0f;
-rende
 
-    class InvitationPromptUI final : public ImGui::Layer {
+class InvitationPromptUI final : public ImGui::Layer {
 public:
     void Draw() override;
 };
