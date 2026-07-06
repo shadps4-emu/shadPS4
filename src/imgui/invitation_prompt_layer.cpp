@@ -42,8 +42,10 @@ std::deque<Prompt> g_prompts;
 
 bool g_focused = false;
 bool g_capture_held = false;
+float g_back_held_secs = 0.0f;
+rende
 
-class InvitationPromptUI final : public ImGui::Layer {
+    class InvitationPromptUI final : public ImGui::Layer {
 public:
     void Draw() override;
 };
@@ -148,15 +150,19 @@ void InvitationPromptUI::Draw() {
     }
 
     if (snapshot.empty()) {
-        // Accepted/declined/dismissed elsewhere while focused: hand the pad back to the game.
         SetFocused(false);
         return;
     }
 
     if (!g_focused) {
-        const ImGuiKeyData* back = ImGui::GetKeyData(ImGuiKey_GamepadBack);
-        if (back->Down && back->DownDuration >= kFocusHoldSeconds) {
-            SetFocused(true);
+        if (ImGui::IsKeyDown(ImGuiKey_GamepadBack)) {
+            g_back_held_secs += ImGui::GetIO().DeltaTime;
+            if (g_back_held_secs >= kFocusHoldSeconds) {
+                g_back_held_secs = 0.0f;
+                SetFocused(true);
+            }
+        } else {
+            g_back_held_secs = 0.0f;
         }
     } else {
         // Stage 2 -> 1: Circle (nav cancel) or Escape returns control to the game.
