@@ -336,6 +336,24 @@ static HostOverrideState LoadHostOverrideState() {
     }
     std::ifstream f(path);
     if (!f.is_open()) {
+        static constexpr std::string_view default_contents =
+            "{\n"
+            "    \"*\": \"http://localhost:8080\"\n"
+            "}\n";
+        std::error_code ec;
+        std::filesystem::create_directories(path.parent_path(), ec);
+        std::ofstream out(path);
+        if (out.is_open()) {
+            out << default_contents;
+            out.close();
+            LOG_INFO(Lib_Http, "no host overrides file found.Created default at {}", path.string());
+        } else {
+            LOG_ERROR(Lib_Http, "no host overrides file found and failed to create default at {}",
+                      path.string());
+        }
+        s.entries = ParseHostOverridesJson(std::string(default_contents));
+        LOG_INFO(Lib_Http, "loaded {} host override entries from {}", s.entries.size(),
+                 path.string());
         return s;
     }
     std::stringstream buf;
