@@ -344,7 +344,8 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
         }
     }
     if (dns.IsSpy(static_cast<u64>(sock))) {
-        const s32 intercepted = dns.AnalyzeQuery(static_cast<u64>(sock), (const u8*)msg, len);
+        const s32 intercepted = dns.AnalyzeQuery(static_cast<u64>(sock), (const u8*)msg, len,
+                                                 socket_type == ORBIS_NET_SOCK_STREAM);
         if (intercepted >= 0) {
             return intercepted; // swallow the real query; answer is queued
         }
@@ -450,9 +451,8 @@ int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* 
     // DNS override: hand back a forged answer if one is queued for this socket.
     auto& dns = DnsHook::Instance();
     if (dns.IsSpy(static_cast<u64>(sock)) && dns.HasQueued(static_cast<u64>(sock))) {
-        const auto packet = dns.PopPacket(static_cast<u64>(sock));
-        const u32 copy_len = std::min<u32>(len, static_cast<u32>(packet.size()));
-        memcpy(buf, packet.data(), copy_len);
+        const bool is_stream = (socket_type == ORBIS_NET_SOCK_STREAM);
+        const u32 copy_len = dns.ConsumeQueued(static_cast<u64>(sock), (u8*)buf, len, is_stream);
         if (from != nullptr) {
             sockaddr_in src{};
             src.sin_family = AF_INET;

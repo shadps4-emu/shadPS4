@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -23,18 +23,10 @@ public:
     // Mark/unmark a native socket as one carrying DNS traffic (dest port 53).
     void AddSpy(u64 sock);
     void RemoveSpy(u64 sock);
-
     bool IsSpy(u64 sock);
     bool HasQueued(u64 sock);
-
-    // Pop a forged DNS response previously queued for this socket.
-    std::vector<u8> PopPacket(u64 sock);
-
-    // Inspect an outgoing DNS query
-    s32 AnalyzeQuery(u64 sock, const u8* buf, u32 len);
-
-    // Look up an override IP (network-order u32) for a hostname using the same
-    // swap table as raw DNS interception.
+    u32 ConsumeQueued(u64 sock, u8* dst, u32 len, bool is_stream);
+    s32 AnalyzeQuery(u64 sock, const u8* buf, u32 len, bool is_stream);
     std::optional<u32> Lookup(const std::string& hostname);
 
     // Network-order IPv4 (u32) that forged answers appear to come from.

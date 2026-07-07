@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -44,6 +44,7 @@ static std::optional<u32> HostToIpv4(const std::string& host) {
     if (inet_pton(AF_INET, host.c_str(), &conv) == 1) {
         return conv.s_addr;
     }
+    // Not a literal - try to resolve the name (e.g. "localhost").
     addrinfo hints{};
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -89,7 +90,7 @@ void DnsHook::LoadSwapList() {
         if (out.is_open()) {
             out << default_contents;
             out.close();
-            LOG_INFO(Lib_Net, "DNS swap: no dns_swap.json found.Created default at {}",
+            LOG_INFO(Lib_Net, "DNS swap: no dns_swap.json found; created default at {}",
                      path.string());
         } else {
             LOG_ERROR(Lib_Net, "DNS swap: no dns_swap.json and failed to create default at {}",
@@ -126,9 +127,7 @@ void DnsHook::LoadSwapList() {
             continue;
         }
 
-        // Key -> hostname pattern (strip any scheme/port a user might have added).
         const std::string pattern = HostPart(it.key());
-        // Value -> IPv4 for the A-record answer (IP literal or a resolvable name).
         const auto ip = HostToIpv4(HostPart(value));
         if (!ip) {
             LOG_ERROR(Lib_Net, "DNS swap: could not resolve target '{}' for key '{}'", value,
@@ -193,31 +192,51 @@ bool DnsHook::HasQueued(u64 sock) {
     return it != spylist.end() && !it->second.empty();
 }
 
-std::vector<u8> DnsHook::PopPacket(u64 sock) {
+u32 DnsHook::ConsumeQueued(u64 sock, u8* dst, u32 len, bool is_stream) {
     std::lock_guard lock(mutex);
     const auto it = spylist.find(sock);
     if (it == spylist.end() || it->second.empty()) {
-        return {};
+        return 0;
     }
-    std::vector<u8> pkt = std::move(it->second.front());
-    it->second.pop();
-    return pkt;
+    auto& front = it->second.front();
+    const u32 n = std::min<u32>(len, static_cast<u32>(front.size()));
+    std::memcpy(dst, front.data(), n);
+    if (is_stream && n < front.size()) {
+        front.erase(front.begin(), front.begin() + n);
+    } else {
+        it->second.pop();
+    }
+    return n;
 }
 
-s32 DnsHook::AnalyzeQuery(u64 sock, const u8* buf, u32 len) {
+s32 DnsHook::AnalyzeQuery(u64 sock, const u8* buf, u32 len, bool is_stream) {
     std::lock_guard lock(mutex);
 
+    const u8* dns = buf;
+    u32 dns_len = len;
+    if (is_stream) {
+        if (len < 2) {
+            return -1;
+        }
+        const u16 declared = static_cast<u16>((buf[0] << 8) | buf[1]);
+        dns = buf + 2;
+        dns_len = len - 2;
+        if (declared != dns_len) {
+            return -1;
+        }
+    }
+
     // Minimum DNS header is 12 bytes.
-    if (len < 12) {
+    if (dns_len < 12) {
         return -1;
     }
 
     // Header fields are big-endian.
-    const u16 flags = static_cast<u16>((buf[2] << 8) | buf[3]);
-    const u16 qdcount = static_cast<u16>((buf[4] << 8) | buf[5]);
-    const u16 ancount = static_cast<u16>((buf[6] << 8) | buf[7]);
-    const u16 nscount = static_cast<u16>((buf[8] << 8) | buf[9]);
-    const u16 arcount = static_cast<u16>((buf[10] << 8) | buf[11]);
+    const u16 flags = static_cast<u16>((dns[2] << 8) | dns[3]);
+    const u16 qdcount = static_cast<u16>((dns[4] << 8) | dns[5]);
+    const u16 ancount = static_cast<u16>((dns[6] << 8) | dns[7]);
+    const u16 nscount = static_cast<u16>((dns[8] << 8) | dns[9]);
+    const u16 arcount = static_cast<u16>((dns[10] << 8) | dns[11]);
 
     const bool is_query = (flags & 0x8000) == 0;  // QR bit clear
     const bool truncated = (flags & 0x0200) != 0; // TC bit set
@@ -230,14 +249,14 @@ s32 DnsHook::AnalyzeQuery(u64 sock, const u8* buf, u32 len) {
     std::string host;
     u32 i = 12;
     u8 label_len = 0;
-    for (; i < len && buf[i] != 0; ++i) {
+    for (; i < dns_len && dns[i] != 0; ++i) {
         if (label_len == 0) {
-            label_len = buf[i];
+            label_len = dns[i];
             if (i != 12) {
                 host += '.';
             }
         } else {
-            host += static_cast<char>(buf[i]);
+            host += static_cast<char>(dns[i]);
             --label_len;
         }
     }
@@ -253,15 +272,16 @@ s32 DnsHook::AnalyzeQuery(u64 sock, const u8* buf, u32 len) {
     }
 
     const u8* ip_octets = reinterpret_cast<const u8*>(&*ip);
-    LOG_INFO(Lib_Net, "DNS swap: '{}' -> {}.{}.{}.{}", host, ip_octets[0], ip_octets[1],
-             ip_octets[2], ip_octets[3]);
+    LOG_INFO(Lib_Net, "DNS swap: '{}' -> {}.{}.{}.{} ({})", host, ip_octets[0], ip_octets[1],
+             ip_octets[2], ip_octets[3], is_stream ? "tcp" : "udp");
 
-    // Build a fake response: copy the query, flip it to an answer, append one A record.
-    std::vector<u8> fake(buf, buf + len);
-    fake[2] |= 0x80; // QR = response
-    fake[3] |= 0x80; // RA = recursion available
-    fake[6] = 0x00;  // ancount = 1
-    fake[7] = 0x01;
+    // Build the DNS response message: copy the query, flip it to an answer,
+    // append one A record.
+    std::vector<u8> msg(dns, dns + dns_len);
+    msg[2] |= 0x80; // QR = response
+    msg[3] |= 0x80; // RA = recursion available
+    msg[6] = 0x00;  // ancount = 1
+    msg[7] = 0x01;
 
     static const u8 answer_head[] = {
         0xC0, 0x0C,             // name: pointer to the question
@@ -270,9 +290,18 @@ s32 DnsHook::AnalyzeQuery(u64 sock, const u8* buf, u32 len) {
         0x00, 0x00, 0x00, 0x3B, // TTL
         0x00, 0x04,             // rdlength = 4
     };
-    fake.insert(fake.end(), std::begin(answer_head), std::end(answer_head));
+    msg.insert(msg.end(), std::begin(answer_head), std::end(answer_head));
     const u8* ip_bytes = reinterpret_cast<const u8*>(&*ip);
-    fake.insert(fake.end(), ip_bytes, ip_bytes + 4);
+    msg.insert(msg.end(), ip_bytes, ip_bytes + 4);
+
+    // Frame the response: TCP gets a 2-byte big-endian length prefix, UDP doesn't.
+    std::vector<u8> fake;
+    if (is_stream) {
+        const u16 msg_len = static_cast<u16>(msg.size());
+        fake.push_back(static_cast<u8>((msg_len >> 8) & 0xFF));
+        fake.push_back(static_cast<u8>(msg_len & 0xFF));
+    }
+    fake.insert(fake.end(), msg.begin(), msg.end());
 
     spylist[sock].push(std::move(fake));
     return static_cast<s32>(len);
