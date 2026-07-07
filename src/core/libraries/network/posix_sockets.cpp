@@ -20,15 +20,12 @@
 
 namespace Libraries::Net {
 
-// Format a POSIX IPv4 sockaddr as "a.b.c.d:port" for logging.
 static std::string FormatEndpoint(const sockaddr* sa) {
     const auto* in = reinterpret_cast<const sockaddr_in*>(sa);
     const u8* o = reinterpret_cast<const u8*>(&in->sin_addr);
     return fmt::format("{}.{}.{}.{}:{}", o[0], o[1], o[2], o[3], ntohs(in->sin_port));
 }
 
-// Remember the last destination logged per socket so connectionless sendto()
-// traffic is logged once per unique destination instead of once per packet.
 static std::mutex g_dest_log_mutex;
 static std::unordered_map<u64, u64> g_last_dest; // sock -> (ip << 16) | port
 

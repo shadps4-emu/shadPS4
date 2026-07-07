@@ -389,9 +389,6 @@ bool NetUtilInternal::RetrieveIp() {
 }
 
 int NetUtilInternal::ResolveHostname(const char* hostname, Libraries::Net::OrbisNetInAddr* addr) {
-    // DNS swap: honor dns_swap.json here too. The sceNetResolver path resolves
-    // synchronously via getaddrinfo and never emits raw DNS packets, so it isn't
-    // covered by the socket-level DNS hook,handle it explicitly.
     if (hostname != nullptr) {
         if (const auto ip = Libraries::Net::DnsHook::Instance().Lookup(hostname)) {
             addr->inaddr_addr = *ip;
