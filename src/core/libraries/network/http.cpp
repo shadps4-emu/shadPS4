@@ -368,10 +368,33 @@ static const HostOverrideState& GetHostOverrideState() {
     return s;
 }
 
+// Extract just the host from a URL/authority string, dropping any "scheme://"
+// prefix, ":port" suffix and "/path".
+static std::string ExtractHost(std::string_view value) {
+    if (const auto scheme_end = value.find("://"); scheme_end != std::string_view::npos) {
+        value = value.substr(scheme_end + 3);
+    }
+    if (const auto slash = value.find('/'); slash != std::string_view::npos) {
+        value = value.substr(0, slash);
+    }
+    if (const auto colon = value.find(':'); colon != std::string_view::npos) {
+        value = value.substr(0, colon);
+    }
+    return std::string(value);
+}
+
 bool ApplyHostOverride(std::string& scheme, std::string& host, u16& port, bool& is_secure) {
     const auto& state = GetHostOverrideState();
     if (state.entries.empty()) {
         return false;
+    }
+
+    // Never override the configured ShadNet WebAPI server
+    if (const std::string webapi = EmulatorSettings.GetShadNetWebApiServer(); !webapi.empty()) {
+        if (ExtractHost(webapi) == host) {
+            LOG_INFO(Lib_Http, "host override skipped for WebAPI server host '{}'", host);
+            return false;
+        }
     }
     // Look up most-specific match first. Keys can be:
     //   "scheme://host:port"  - matches that exact endpoint
