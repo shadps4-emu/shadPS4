@@ -504,9 +504,8 @@ int PosixSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
     sockaddr addr2;
     convertOrbisNetSockaddrToPosix(addr, &addr2);
 
-    // DNS override: a connected UDP socket to port 53 will later send() with no
-    // destination, so mark it here to catch those queries too.
-    if (socket_type == ORBIS_NET_SOCK_DGRAM && ntohs(((sockaddr_in*)&addr2)->sin_port) == 53) {
+    // DNS override: mark ANY socket connecting to port 53 as a DNS spy
+    if (ntohs(((sockaddr_in*)&addr2)->sin_port) == 53) {
         DnsHook::Instance().AddSpy(static_cast<u64>(sock));
     }
 
