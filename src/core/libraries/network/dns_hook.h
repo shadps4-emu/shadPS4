@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -6,20 +6,14 @@
 #include <cstdint>
 #include <mutex>
 #include <optional>
-#include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <queue>
 #include "common/types.h"
 
 namespace Libraries::Net {
 
-// Intercepts game DNS traffic and answers it locally, so hostnames resolve to an
-// override IP without ever reaching a real DNS server. This mirrors RPCS3's
-// np_dnshook. The redirect table is loaded from its own dns_swap.json (auto-created
-// with a catch-all "*": "127.0.0.1" entry if missing). Keys are hostname patterns
-// ('*' wildcard, case-insensitive); values are IPv4 addresses, or names that get
-// resolved to an IPv4 for the A-record answer.
 class DnsHook {
 public:
     static DnsHook& Instance();
@@ -34,12 +28,10 @@ public:
     // Pop a forged DNS response previously queued for this socket.
     std::vector<u8> PopPacket(u64 sock);
 
-    // Inspect an outgoing DNS query. If its hostname matches an override entry,
-    // a fake answer is queued for the socket and the original length is returned
-    // (so the caller swallows the real query). Returns -1 when not intercepted.
+    // Inspect an outgoing DNS query. Returns -1 when not intercepted.
     s32 AnalyzeQuery(u64 sock, const u8* buf, u32 len);
 
-    // Network-order IPv4 (u32) that forged answers appear to come from.
+    // Network-order IPv4
     u32 GetDnsServerAddr() const {
         return dns_server_addr;
     }
@@ -54,7 +46,7 @@ private:
     std::mutex mutex;
     std::unordered_map<u64, std::queue<std::vector<u8>>> spylist;
     std::vector<std::pair<std::string, u32>> redirs; // {pattern, network-order ip}
-    u32 dns_server_addr = 0; // 127.0.0.1 by default, set in ctor
+    u32 dns_server_addr = 0;                         // 127.0.0.1 by default
     bool loaded = false;
 };
 

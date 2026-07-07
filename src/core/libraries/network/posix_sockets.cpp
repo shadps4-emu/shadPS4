@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -314,8 +314,7 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
         }
     }
     if (dns.IsSpy(static_cast<u64>(sock))) {
-        const s32 intercepted =
-            dns.AnalyzeQuery(static_cast<u64>(sock), (const u8*)msg, len);
+        const s32 intercepted = dns.AnalyzeQuery(static_cast<u64>(sock), (const u8*)msg, len);
         if (intercepted >= 0) {
             return intercepted; // swallow the real query; answer is queued
         }
@@ -474,8 +473,7 @@ int PosixSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
 
     // DNS override: a connected UDP socket to port 53 will later send() with no
     // destination, so mark it here to catch those queries too.
-    if (socket_type == ORBIS_NET_SOCK_DGRAM &&
-        ntohs(((sockaddr_in*)&addr2)->sin_port) == 53) {
+    if (socket_type == ORBIS_NET_SOCK_DGRAM && ntohs(((sockaddr_in*)&addr2)->sin_port) == 53) {
         DnsHook::Instance().AddSpy(static_cast<u64>(sock));
     }
 

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -44,7 +44,7 @@ static std::optional<u32> HostToIpv4(const std::string& host) {
     if (inet_pton(AF_INET, host.c_str(), &conv) == 1) {
         return conv.s_addr;
     }
-    // Not a literal - try to resolve the name (e.g. "localhost").
+    // Not a literal,try to resolve the name (e.g. "localhost").
     addrinfo hints{};
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -75,19 +75,12 @@ DnsHook::DnsHook() {
 void DnsHook::LoadSwapList() {
     loaded = true;
 
-    std::filesystem::path path;
-    if (const char* path_env = std::getenv("SHADPS4_DNS_SWAP_JSON"); path_env && path_env[0]) {
-        // Explicit path - useful for dev / testing.
-        path = path_env;
-    } else {
-        path = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "dns_swap.json";
-    }
+    std::filesystem::path path =
+        Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "dns_swap.json";
 
     std::string contents;
     std::ifstream f(path);
     if (!f.is_open()) {
-        // No swap file present - create a default one with a catch-all entry that
-        // resolves every hostname to localhost.
         static constexpr std::string_view default_contents = "{\n"
                                                              "    \"*\": \"127.0.0.1\"\n"
                                                              "}\n";
@@ -134,9 +127,9 @@ void DnsHook::LoadSwapList() {
             continue;
         }
 
-        // Key -> hostname pattern (strip any scheme/port a user might have added).
+        // Key to hostname pattern (strip any scheme/port a user might have added).
         const std::string pattern = HostPart(it.key());
-        // Value -> IPv4 for the A-record answer (IP literal or a resolvable name).
+        // Value to IPv4 for the A-record answer (IP literal or a resolvable name).
         const auto ip = HostToIpv4(HostPart(value));
         if (!ip) {
             LOG_ERROR(Lib_Net, "DNS swap: could not resolve target '{}' for key '{}'", value,
@@ -222,8 +215,8 @@ s32 DnsHook::AnalyzeQuery(u64 sock, const u8* buf, u32 len) {
     const u16 nscount = static_cast<u16>((buf[8] << 8) | buf[9]);
     const u16 arcount = static_cast<u16>((buf[10] << 8) | buf[11]);
 
-    const bool is_query = (flags & 0x8000) == 0;      // QR bit clear
-    const bool truncated = (flags & 0x0200) != 0;     // TC bit set
+    const bool is_query = (flags & 0x8000) == 0;  // QR bit clear
+    const bool truncated = (flags & 0x0200) != 0; // TC bit set
     // Only handle a single, untruncated question with no other records.
     if (!is_query || truncated || qdcount != 1 || ancount != 0 || nscount != 0 || arcount != 0) {
         return -1;
