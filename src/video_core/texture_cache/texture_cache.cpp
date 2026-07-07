@@ -87,18 +87,18 @@ ImageId TextureCache::GetNullImage(const vk::Format format) {
 
 void TextureCache::ProcessDownloadImages() {
     for (const ImageId image_id : download_images) {
-        DownloadImageMemory(image_id);
+        DownloadImageMemory(image_id, true);
     }
     download_images.clear();
 }
 
-void TextureCache::DownloadImageMemory(ImageId image_id) {
+void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
     Image& image = slot_images[image_id];
     if (False(image.flags & ImageFlagBits::GpuModified)) {
         return;
     }
     auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
-    const u32 download_size = image.info.pitch * image.info.size.height *
+    const u32 download_size = image.info.pitch * image.info.size.height * image.info.size.depth *
                               image.info.resources.layers * (image.info.num_bits / 8);
     ASSERT(download_size <= image.info.guest_size);
     const auto [download, offset] = download_buffer.Map(download_size);
@@ -116,7 +116,7 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
                 .layerCount = image.info.resources.layers,
             },
         .imageOffset = {0, 0, 0},
-        .imageExtent = {image.info.size.width, image.info.size.height, 1},
+        .imageExtent = {image.info.size.width, image.info.size.height, image.info.size.depth},
     };
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -124,11 +124,17 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     cmdbuf.copyImageToBuffer(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
                              download_buffer.Handle(), image_download);
 
-    scheduler.DeferPriorityOperation(
-        [this, device_addr = image.info.guest_address, download, download_size] {
-            Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
-                                                      download_size);
-        });
+    const auto write_data = [this, device_addr = image.info.guest_address, download,
+                             download_size] {
+        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
+                                                  download_size);
+    };
+    if (sync) {
+        scheduler.Finish();
+        write_data();
+    } else {
+        scheduler.DeferPriorityOperation(write_data);
+    }
 }
 
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
