@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -44,7 +44,6 @@ static std::optional<u32> HostToIpv4(const std::string& host) {
     if (inet_pton(AF_INET, host.c_str(), &conv) == 1) {
         return conv.s_addr;
     }
-    // Not a literal,try to resolve the name (e.g. "localhost").
     addrinfo hints{};
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
@@ -90,7 +89,7 @@ void DnsHook::LoadSwapList() {
         if (out.is_open()) {
             out << default_contents;
             out.close();
-            LOG_INFO(Lib_Net, "DNS swap: no dns_swap.json found; created default at {}",
+            LOG_INFO(Lib_Net, "DNS swap: no dns_swap.json found.Created default at {}",
                      path.string());
         } else {
             LOG_ERROR(Lib_Net, "DNS swap: no dns_swap.json and failed to create default at {}",
@@ -127,9 +126,9 @@ void DnsHook::LoadSwapList() {
             continue;
         }
 
-        // Key to hostname pattern (strip any scheme/port a user might have added).
+        // Key -> hostname pattern (strip any scheme/port a user might have added).
         const std::string pattern = HostPart(it.key());
-        // Value to IPv4 for the A-record answer (IP literal or a resolvable name).
+        // Value -> IPv4 for the A-record answer (IP literal or a resolvable name).
         const auto ip = HostToIpv4(HostPart(value));
         if (!ip) {
             LOG_ERROR(Lib_Net, "DNS swap: could not resolve target '{}' for key '{}'", value,
@@ -166,6 +165,11 @@ std::optional<u32> DnsHook::GetRedir(const std::string& hostname) {
         }
     }
     return std::nullopt;
+}
+
+std::optional<u32> DnsHook::Lookup(const std::string& hostname) {
+    std::lock_guard lock(mutex);
+    return GetRedir(hostname);
 }
 
 void DnsHook::AddSpy(u64 sock) {

@@ -1,10 +1,12 @@
-// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
 #include <cstring>
+#include <unordered_map>
 #include <vector>
 #include <common/assert.h>
+#include <fmt/format.h>
 #include "common/error.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/kernel.h"
@@ -17,6 +19,30 @@
 #include "sockets.h"
 
 namespace Libraries::Net {
+
+// Format a POSIX IPv4 sockaddr as "a.b.c.d:port" for logging.
+static std::string FormatEndpoint(const sockaddr* sa) {
+    const auto* in = reinterpret_cast<const sockaddr_in*>(sa);
+    const u8* o = reinterpret_cast<const u8*>(&in->sin_addr);
+    return fmt::format("{}.{}.{}.{}:{}", o[0], o[1], o[2], o[3], ntohs(in->sin_port));
+}
+
+// Remember the last destination logged per socket so connectionless sendto()
+// traffic is logged once per unique destination instead of once per packet.
+static std::mutex g_dest_log_mutex;
+static std::unordered_map<u64, u64> g_last_dest; // sock -> (ip << 16) | port
+
+static bool DestChanged(u64 sock, const sockaddr* sa) {
+    const auto* in = reinterpret_cast<const sockaddr_in*>(sa);
+    const u64 key = (static_cast<u64>(in->sin_addr.s_addr) << 16) | ntohs(in->sin_port);
+    std::lock_guard lock(g_dest_log_mutex);
+    auto [it, inserted] = g_last_dest.try_emplace(sock, key);
+    if (inserted || it->second != key) {
+        it->second = key;
+        return true;
+    }
+    return false;
+}
 
 #ifdef _WIN32
 #define ERROR_CASE(errname)                                                                        \
@@ -168,6 +194,10 @@ bool PosixSocket::IsValid() const {
 int PosixSocket::Close() {
     std::scoped_lock lock{m_mutex};
     DnsHook::Instance().RemoveSpy(static_cast<u64>(sock));
+    {
+        std::lock_guard dlock(g_dest_log_mutex);
+        g_last_dest.erase(static_cast<u64>(sock));
+    }
 #ifdef _WIN32
     auto out = closesocket(sock);
 #else
@@ -325,6 +355,9 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
     } else {
         sockaddr addr{};
         convertOrbisNetSockaddrToPosix(to, &addr);
+        if (DestChanged(static_cast<u64>(sock), &addr)) {
+            LOG_INFO(Lib_Net, "sendto -> {}", FormatEndpoint(&addr));
+        }
         res = sendto(sock, (const char*)msg, len, posix_flags, &addr, tolen);
     }
     return ConvertReturnErrorCode(res);
@@ -476,6 +509,8 @@ int PosixSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
     if (socket_type == ORBIS_NET_SOCK_DGRAM && ntohs(((sockaddr_in*)&addr2)->sin_port) == 53) {
         DnsHook::Instance().AddSpy(static_cast<u64>(sock));
     }
+
+    LOG_INFO(Lib_Net, "connect -> {}", FormatEndpoint(&addr2));
 
     int result = ::connect(sock, &addr2, sizeof(sockaddr_in));
 #ifdef _WIN32

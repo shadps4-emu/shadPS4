@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -14,6 +14,8 @@
 
 namespace Libraries::Net {
 
+// Intercepts game DNS traffic and answers it locally, so hostnames resolve to an
+// override IP without ever reaching a real DNS server.
 class DnsHook {
 public:
     static DnsHook& Instance();
@@ -28,10 +30,14 @@ public:
     // Pop a forged DNS response previously queued for this socket.
     std::vector<u8> PopPacket(u64 sock);
 
-    // Inspect an outgoing DNS query. Returns -1 when not intercepted.
+    // Inspect an outgoing DNS query
     s32 AnalyzeQuery(u64 sock, const u8* buf, u32 len);
 
-    // Network-order IPv4
+    // Look up an override IP (network-order u32) for a hostname using the same
+    // swap table as raw DNS interception.
+    std::optional<u32> Lookup(const std::string& hostname);
+
+    // Network-order IPv4 (u32) that forged answers appear to come from.
     u32 GetDnsServerAddr() const {
         return dns_server_addr;
     }
