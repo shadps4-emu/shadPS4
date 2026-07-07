@@ -6,6 +6,7 @@
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/bit_field.h"
+#include "common/logging/log.h"
 #include "video_core/amdgpu/pixel_format.h"
 #include "video_core/amdgpu/tiling.h"
 
@@ -230,6 +231,18 @@ struct Image {
         } else if (IsCube()) {
             // Depth is the number of full cubes for Cube images.
             slices *= 6;
+        } else if (last_array + 1 > slices) {
+            // Even for non-array types, `base_array`/`last_array` may describe a single-slice
+            // view into a larger physical resource (e.g. a plain Texture2D view of one slice of
+            // an array-allocated surface). The `depth` field is only guaranteed to encode the
+            // full slice count for Array-typed descriptors, so on its own it can under-report
+            // the number of layers the underlying resource actually needs to have. Guarantee the
+            // resource is at least as large as the highest slice this descriptor can address.
+            LOG_DEBUG(Render_Vulkan,
+                     "Image descriptor depth field under-reports layer count (depth+1={}), "
+                     "raising to last_array+1={} to cover addressed slice range [{}, {}]",
+                     slices, last_array + 1, base_array, last_array);
+            slices = last_array + 1;
         }
         if (pow2pad) {
             slices = std::bit_ceil(slices);
