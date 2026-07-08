@@ -182,9 +182,6 @@ bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, cons
     // Seed the current Appear-Offline preference so the login packet carries it (the send
     // is suppressed pre-auth; it just caches on the client).
     client->SetAppearOffline(m_appear_offline.load());
-    if (EmulatorSettings.IsUPnPEnabled()) {
-        Net::UPnPClient::Instance().Start();
-    }
     client->Start(host, port, npid, password, token);
 
     const ShadNet::ShadNetState conn_state = client->WaitForConnection();
@@ -205,6 +202,11 @@ bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, cons
 
     LOG_INFO(NpHandler, "user_id={} signed in npid='{}' accountId={}", user_id, npid,
              client->GetUserId());
+
+    Net::UPnPClient::Instance().SetP2PFeaturesEnabled(client->IsMatching2Enabled());
+    if (client->IsMatching2Enabled() && EmulatorSettings.IsUPnPEnabled()) {
+        Net::UPnPClient::Instance().Start();
+    }
 
     NpMatching2::SetMmShadNetClient(client, host, port);
 
@@ -1883,7 +1885,7 @@ static u32 FillRankArrayFromProto(const shadnet::GetScoreResponse& resp,
 void NpHandler::OnAsyncReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
                              ShadNet::ErrorType error, const std::vector<u8>& body) {
     const auto cmd_val = static_cast<u16>(cmd);
-    if (cmd_val >= 12 && cmd_val <= 26) {
+    if (cmd_val >= 100 && cmd_val <= 200) {
         NpMatching2::OnMatchingReply(cmd, pkt_id, error, body);
     } else {
         OnScoreReply(user_id, cmd, pkt_id, error, body);
