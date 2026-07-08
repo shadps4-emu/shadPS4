@@ -31,6 +31,58 @@ static constexpr u32 AUDIO3D_OUTPUT_NUM_CHANNELS = 2;
 
 static std::unique_ptr<Audio3dState> state;
 
+struct AudioOutBufferInfo {
+    u32 channels;
+    u32 sample_size;
+};
+
+static AudioOutBufferInfo GetAudioOutBufferInfo(const AudioOut::OrbisAudioOutParamFormat format) {
+    using Format = AudioOut::OrbisAudioOutParamFormat;
+    switch (format) {
+    case Format::S16Mono:
+        return {1, sizeof(s16)};
+    case Format::S16Stereo:
+        return {2, sizeof(s16)};
+    case Format::S16_8CH:
+    case Format::S16_8CH_Std:
+        return {8, sizeof(s16)};
+    case Format::FloatMono:
+        return {1, sizeof(float)};
+    case Format::FloatStereo:
+        return {2, sizeof(float)};
+    case Format::Float_8CH:
+    case Format::Float_8CH_Std:
+        return {8, sizeof(float)};
+    default:
+        return {2, sizeof(s16)};
+    }
+}
+
+// Submit all sample buffers pending on the game's associated AudioOut handles.
+static s32 DrainAssociatedPorts(Port& port) {
+    while (true) {
+        s32 handle = -1;
+        std::vector<u8> buffer;
+        {
+            std::scoped_lock lock{port.mutex};
+            const auto it =
+                std::find_if(port.audioout_ports.begin(), port.audioout_ports.end(),
+                             [](const AssociatedAudioOutPort& p) { return !p.pending.empty(); });
+            if (it == port.audioout_ports.end()) {
+                return ORBIS_OK;
+            }
+            handle = it->handle;
+            buffer = std::move(it->pending.front());
+            it->pending.pop_front();
+        }
+
+        const s32 ret = AudioOut::sceAudioOutOutput(handle, buffer.data());
+        if (ret < 0) {
+            return ret;
+        }
+    }
+}
+
 static constexpr u32 SPATIAL_RING_SLACK = 2;
 static constexpr u64 SPATIAL_VOLUME_CHECK_INTERVAL_US = 50000;
 // Give up on a frame if the device hasn't consumed anything for this long.
@@ -172,6 +224,7 @@ static bool EnsureSpatial(Port& port) {
     }
     port.bed.available = port.bed.buffers;
 
+    // The bed carries the final stereo mix and must not be spatialized.
     alSourcef(source, AL_PITCH, 1.0f);
     alSource3f(source, AL_POSITION, 0.0f, 0.0f, 0.0f);
     alSource3f(source, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
@@ -229,7 +282,6 @@ static s32 SpatialSubmitFrame(Port& port, const AudioData& frame) {
                     return ORBIS_OK;
                 }
 
-                // Per-source underrun restart, same as the AudioOut OpenAL backend.
                 ALint al_state = 0;
                 alGetSourcei(port.bed.source, AL_SOURCE_STATE, &al_state);
                 if (al_state != AL_PLAYING) {
@@ -256,12 +308,11 @@ static s32 SpatialSubmitFrame(Port& port, const AudioData& frame) {
 s32 PS4_SYSV_ABI sceAudio3dAudioOutClose(const s32 handle) {
     LOG_INFO(Lib_Audio3d, "called, handle = {}", handle);
 
-    // Remove from any port that was tracking this handle.
     if (state) {
         for (auto& [port_id, port] : state->ports) {
             std::scoped_lock lock{port.mutex};
-            auto& handles = port.audioout_handles;
-            handles.erase(std::remove(handles.begin(), handles.end(), handle), handles.end());
+            std::erase_if(port.audioout_ports,
+                          [&](const AssociatedAudioOutPort& p) { return p.handle == handle; });
         }
     }
 
@@ -293,8 +344,12 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutOpen(
         return handle;
     }
 
-    // Track this handle in the port so sceAudio3dPortFlush can use it for sync.
-    state->ports[port_id].audioout_handles.push_back(handle);
+    const auto info = GetAudioOutBufferInfo(param.data_format.Value());
+    AssociatedAudioOutPort aout{};
+    aout.handle = handle;
+    aout.buffer_bytes = len * info.channels * info.sample_size;
+    aout.samples_per_buffer = len * info.channels;
+    state->ports[port_id].audioout_ports.push_back(std::move(aout));
     return handle;
 }
 
@@ -311,6 +366,36 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutOutput(const s32 handle, void* ptr) {
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
+    if (state) {
+        for (auto& [port_id, port] : state->ports) {
+            std::scoped_lock lock{port.mutex};
+            for (auto& aout : port.audioout_ports) {
+                if (aout.handle != handle) {
+                    continue;
+                }
+
+                if (aout.pending.size() >= port.parameters.queue_depth) {
+                    LOG_DEBUG(Lib_Audio3d,
+                              "AudioOut handle {} queue full ({}) without Push, "
+                              "submitting oldest",
+                              handle, aout.pending.size());
+                    std::vector<u8> oldest = std::move(aout.pending.front());
+                    aout.pending.pop_front();
+                    const s32 ret = AudioOut::sceAudioOutOutput(handle, oldest.data());
+                    if (ret < 0) {
+                        return ret;
+                    }
+                }
+
+                const u8* src = static_cast<const u8*>(ptr);
+                aout.pending.emplace_back(src, src + aout.buffer_bytes);
+
+                return static_cast<s32>(aout.samples_per_buffer);
+            }
+        }
+    }
+
+    // Handle isn't associated with any Audio3d port; forward directly.
     return AudioOut::sceAudioOutOutput(handle, ptr);
 }
 
@@ -323,7 +408,14 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutOutputs(AudioOut::OrbisAudioOutOutputParam* p
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    return AudioOut::sceAudioOutOutputs(param, num);
+    for (u32 i = 0; i < num; i++) {
+        const s32 ret = sceAudio3dAudioOutOutput(param[i].handle, param[i].ptr);
+        if (ret < 0) {
+            return ret;
+        }
+    }
+
+    return ORBIS_OK;
 }
 
 static s32 ConvertAndEnqueue(std::deque<AudioData>& queue, const OrbisAudio3dPcm& pcm,
@@ -824,10 +916,10 @@ s32 PS4_SYSV_ABI sceAudio3dPortClose(const OrbisAudio3dPortId port_id) {
             port.audio_out_handle = -1;
         }
 
-        for (const s32 handle : port.audioout_handles) {
-            AudioOut::sceAudioOutClose(handle);
+        for (const auto& aout : port.audioout_ports) {
+            AudioOut::sceAudioOutClose(aout.handle);
         }
-        port.audioout_handles.clear();
+        port.audioout_ports.clear();
 
         for (auto& data : port.mixed_queue) {
             std::free(data.sample_buffer);
@@ -883,9 +975,12 @@ s32 PS4_SYSV_ABI sceAudio3dPortFlush(const OrbisAudio3dPortId port_id) {
     auto& port = state->ports[port_id];
     std::scoped_lock lock{port.mutex};
 
-    if (!port.audioout_handles.empty()) {
-        for (const s32 handle : port.audioout_handles) {
-            const s32 ret = AudioOut::sceAudioOutOutput(handle, nullptr);
+    if (!port.audioout_ports.empty()) {
+        if (const s32 ret = DrainAssociatedPorts(port); ret < 0) {
+            return ret;
+        }
+        for (const auto& aout : port.audioout_ports) {
+            const s32 ret = AudioOut::sceAudioOutOutput(aout.handle, nullptr);
             if (ret < 0) {
                 return ret;
             }
@@ -1196,8 +1291,10 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
 
     const u32 depth = port.parameters.queue_depth;
 
-    // Prefer queueing on the port's own OpenAL source else fall back to AudioOut if
-    // spatial init failed.
+    if (const s32 ret = DrainAssociatedPorts(port); ret < 0) {
+        return ret;
+    }
+
     bool spatial;
     {
         std::scoped_lock lock{port.mutex};
@@ -1268,7 +1365,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
         return ORBIS_OK;
     }
 
-    // SYNC: ensure at least one slot is free (drain until size < depth).
     while (true) {
         {
             std::scoped_lock lock{port.mutex};

@@ -102,6 +102,13 @@ struct ObjectState {
     std::unordered_map<u32, std::vector<u8>> persistent_attributes;
 };
 
+struct AssociatedAudioOutPort {
+    s32 handle{-1};
+    u32 buffer_bytes{0};
+    u32 samples_per_buffer{0};
+    std::deque<std::vector<u8>> pending;
+};
+
 struct SpatialBed {
     u32 source{0};              // ALuint
     std::vector<u32> buffers;   // ALuint ring, sized queue_depth + slack
@@ -113,8 +120,8 @@ struct Port {
     OrbisAudio3dOpenParameters parameters{};
     // Opened lazily on the first sceAudio3dPortPush call.
     s32 audio_out_handle{-1};
-    // Handles explicitly opened by the game via sceAudio3dAudioOutOpen.
-    std::vector<s32> audioout_handles;
+    // AudioOut ports explicitly opened by the game via sceAudio3dAudioOutOpen.
+    std::vector<AssociatedAudioOutPort> audioout_ports;
     // Reserved objects and their state.
     std::unordered_map<OrbisAudio3dObjectId, ObjectState> objects;
     // Increasing counter for generating unique object IDs within this port.
