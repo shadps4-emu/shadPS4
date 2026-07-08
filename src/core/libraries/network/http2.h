@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/network/ssl2.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -11,62 +12,38 @@ class SymbolsResolver;
 
 namespace Libraries::Http2 {
 
-int PS4_SYSV_ABI _Z5dummyv();
-int PS4_SYSV_ABI sceHttp2AbortRequest();
-int PS4_SYSV_ABI sceHttp2AddCookie();
-int PS4_SYSV_ABI sceHttp2AddRequestHeader();
-int PS4_SYSV_ABI sceHttp2AuthCacheFlush();
-int PS4_SYSV_ABI sceHttp2CookieExport();
-int PS4_SYSV_ABI sceHttp2CookieFlush();
-int PS4_SYSV_ABI sceHttp2CookieImport();
-int PS4_SYSV_ABI sceHttp2CreateCookieBox();
-int PS4_SYSV_ABI sceHttp2CreateRequestWithURL();
-int PS4_SYSV_ABI sceHttp2CreateTemplate();
-int PS4_SYSV_ABI sceHttp2DeleteCookieBox();
-int PS4_SYSV_ABI sceHttp2DeleteRequest();
-int PS4_SYSV_ABI sceHttp2DeleteTemplate();
-int PS4_SYSV_ABI sceHttp2GetAllResponseHeaders();
-int PS4_SYSV_ABI sceHttp2GetAuthEnabled();
-int PS4_SYSV_ABI sceHttp2GetAutoRedirect();
-int PS4_SYSV_ABI sceHttp2GetCookie();
-int PS4_SYSV_ABI sceHttp2GetCookieBox();
-int PS4_SYSV_ABI sceHttp2GetCookieStats();
-int PS4_SYSV_ABI sceHttp2GetMemoryPoolStats();
-int PS4_SYSV_ABI sceHttp2GetResponseContentLength();
-int PS4_SYSV_ABI sceHttp2GetStatusCode();
-int PS4_SYSV_ABI sceHttp2Init(int net_id, int ssl_id, size_t pool_size, int max_requests);
-int PS4_SYSV_ABI sceHttp2ReadData();
-int PS4_SYSV_ABI sceHttp2ReadDataAsync();
-int PS4_SYSV_ABI sceHttp2RedirectCacheFlush();
-int PS4_SYSV_ABI sceHttp2RemoveRequestHeader();
-int PS4_SYSV_ABI sceHttp2SendRequest();
-int PS4_SYSV_ABI sceHttp2SendRequestAsync();
-int PS4_SYSV_ABI sceHttp2SetAuthEnabled();
-int PS4_SYSV_ABI sceHttp2SetAuthInfoCallback();
-int PS4_SYSV_ABI sceHttp2SetAutoRedirect();
-int PS4_SYSV_ABI sceHttp2SetConnectionWaitTimeOut();
-int PS4_SYSV_ABI sceHttp2SetConnectTimeOut();
-int PS4_SYSV_ABI sceHttp2SetCookieBox();
-int PS4_SYSV_ABI sceHttp2SetCookieMaxNum();
-int PS4_SYSV_ABI sceHttp2SetCookieMaxNumPerDomain();
-int PS4_SYSV_ABI sceHttp2SetCookieMaxSize();
-int PS4_SYSV_ABI sceHttp2SetCookieRecvCallback();
-int PS4_SYSV_ABI sceHttp2SetCookieSendCallback();
-int PS4_SYSV_ABI sceHttp2SetInflateGZIPEnabled();
-int PS4_SYSV_ABI sceHttp2SetMinSslVersion();
-int PS4_SYSV_ABI sceHttp2SetPreSendCallback();
-int PS4_SYSV_ABI sceHttp2SetRecvTimeOut();
-int PS4_SYSV_ABI sceHttp2SetRedirectCallback();
-int PS4_SYSV_ABI sceHttp2SetRequestContentLength();
-int PS4_SYSV_ABI sceHttp2SetResolveRetry();
-int PS4_SYSV_ABI sceHttp2SetResolveTimeOut();
-int PS4_SYSV_ABI sceHttp2SetSendTimeOut();
-int PS4_SYSV_ABI sceHttp2SetSslCallback();
-int PS4_SYSV_ABI sceHttp2SetTimeOut();
-int PS4_SYSV_ABI sceHttp2SslDisableOption();
-int PS4_SYSV_ABI sceHttp2SslEnableOption();
-int PS4_SYSV_ABI sceHttp2Term();
-int PS4_SYSV_ABI sceHttp2WaitAsync();
+enum OrbisHttp2HttpVersion : u32 {
+    ORBIS_HTTP2_VERSION_1_0 = 1,
+    ORBIS_HTTP2_VERSION_1_1 = 2,
+    ORBIS_HTTP2_VERSION_2_0 = 3,
+};
+
+// TODO: Figure out the whole struct. What's here is based on libSceNpWebApi2 use.
+struct OrbisHttp2PreSendCallbackData {
+    void* unk;
+    void* cert;
+};
+using OrbisHttp2PreSendCallback = PS4_SYSV_ABI s32 (*)(s32 request_id, s32 ssl_id,
+                                                       OrbisHttp2PreSendCallbackData* data,
+                                                       void* user_arg);
+
+s32 PS4_SYSV_ABI sceHttp2AbortRequest(s32 req_id);
+s32 PS4_SYSV_ABI sceHttp2AddRequestHeader(s32 template_or_req_id, const char* name,
+                                          const char* value, u32 mode);
+s32 PS4_SYSV_ABI sceHttp2CreateRequestWithURL(s32 tmpl_id, const char* method, const char* url,
+                                              u64 content_length);
+s32 PS4_SYSV_ABI sceHttp2CreateTemplate(s32 ctx_id, const char* user_agent, s32 http_ver,
+                                        s32 auto_proxy_conf);
+s32 PS4_SYSV_ABI sceHttp2DeleteRequest(s32 req_id);
+s32 PS4_SYSV_ABI sceHttp2DeleteTemplate(s32 tmpl_id);
+s32 PS4_SYSV_ABI sceHttp2GetAllResponseHeaders(s32 req_id, char** header, u64* header_size);
+s32 PS4_SYSV_ABI sceHttp2GetStatusCode(s32 request_id, s32* status_code);
+s32 PS4_SYSV_ABI sceHttp2Init(s32 net_id, s32 ssl_id, u64 pool_size, s32 max_requests);
+s32 PS4_SYSV_ABI sceHttp2ReadData(s32 req_id, void* data, u64 size);
+s32 PS4_SYSV_ABI sceHttp2SendRequest(s32 req_id, const void* data, u64 size);
+s32 PS4_SYSV_ABI sceHttp2SetPreSendCallback(s32 template_id, OrbisHttp2PreSendCallback cb_func,
+                                            void* user_arg);
+s32 PS4_SYSV_ABI sceHttp2SetRequestContentLength(s32 req_id, u64 content_length);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Http2

@@ -49,7 +49,7 @@
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/np_tus.h"
 #include "core/libraries/np/np_web_api/np_web_api.h"
-#include "core/libraries/np/np_web_api2.h"
+#include "core/libraries/np/np_web_api2/np_web_api2.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/playgo/playgo.h"
 #include "core/libraries/playgo/playgo_dialog.h"
