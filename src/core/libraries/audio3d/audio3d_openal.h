@@ -5,6 +5,7 @@
 
 #include <mutex>
 #include <optional>
+#include <string>
 #include <vector>
 #include <queue>
 
@@ -101,6 +102,12 @@ struct ObjectState {
     std::unordered_map<u32, std::vector<u8>> persistent_attributes;
 };
 
+struct SpatialBed {
+    u32 source{0};              // ALuint
+    std::vector<u32> buffers;   // ALuint ring, sized queue_depth + slack
+    std::vector<u32> available; // reclaimed / never-queued buffer ids
+};
+
 struct Port {
     mutable std::recursive_mutex mutex;
     OrbisAudio3dOpenParameters parameters{};
@@ -116,6 +123,15 @@ struct Port {
     std::deque<AudioData> bed_queue;
     // Mixed stereo frames ready to be consumed by sceAudio3dPortPush.
     std::deque<AudioData> mixed_queue;
+
+    // Spatial (direct OpenAL) output state.
+    bool spatial_init_attempted{false};
+    bool spatial_ready{false};
+    std::string device_name;
+    u64 period_us{0};
+    u64 last_volume_check_us{0};
+    float current_gain{-1.0f};
+    SpatialBed bed;
 };
 
 struct Audio3dState {

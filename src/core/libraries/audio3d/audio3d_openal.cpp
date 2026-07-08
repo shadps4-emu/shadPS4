@@ -2,16 +2,23 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <chrono>
+#include <thread>
 #include <vector>
+#include <AL/al.h>
+#include <AL/alc.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_error.h"
+#include "core/libraries/audio/openal_manager.h"
 #include "core/libraries/audio3d/audio3d_error.h"
 #include "core/libraries/audio3d/audio3d_openal.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Audio3dOpenAL {
@@ -23,6 +30,228 @@ static constexpr AudioOut::OrbisAudioOutParamFormat AUDIO3D_OUTPUT_FORMAT =
 static constexpr u32 AUDIO3D_OUTPUT_NUM_CHANNELS = 2;
 
 static std::unique_ptr<Audio3dState> state;
+
+static constexpr u32 SPATIAL_RING_SLACK = 2;
+static constexpr u64 SPATIAL_VOLUME_CHECK_INTERVAL_US = 50000;
+// Give up on a frame if the device hasn't consumed anything for this long.
+static constexpr u64 SPATIAL_SUBMIT_TIMEOUT_US = 1000000;
+// Minimum sleep while waiting for a free ring slot.
+static constexpr u64 SPATIAL_MIN_SLEEP_US = 500;
+
+static const char* ALErrorString(const ALenum error) {
+    switch (error) {
+    case AL_NO_ERROR:
+        return "AL_NO_ERROR";
+    case AL_INVALID_NAME:
+        return "AL_INVALID_NAME";
+    case AL_INVALID_ENUM:
+        return "AL_INVALID_ENUM";
+    case AL_INVALID_VALUE:
+        return "AL_INVALID_VALUE";
+    case AL_INVALID_OPERATION:
+        return "AL_INVALID_OPERATION";
+    case AL_OUT_OF_MEMORY:
+        return "AL_OUT_OF_MEMORY";
+    default:
+        return "Unknown AL error";
+    }
+}
+
+static void SpatialReclaimProcessedLocked(Port& port) {
+    ALint processed = 0;
+    alGetSourcei(port.bed.source, AL_BUFFERS_PROCESSED, &processed);
+
+    while (processed-- > 0) {
+        ALuint buffer_id = 0;
+        alSourceUnqueueBuffers(port.bed.source, 1, &buffer_id);
+        if (alGetError() != AL_NO_ERROR) {
+            break;
+        }
+        port.bed.available.push_back(buffer_id);
+    }
+}
+
+static void SpatialUpdateVolumeLocked(Port& port) {
+    const u64 now = Kernel::sceKernelGetProcessTime();
+    if (now - port.last_volume_check_us < SPATIAL_VOLUME_CHECK_INTERVAL_US) {
+        return;
+    }
+    port.last_volume_check_us = now;
+
+    const float slider_gain = EmulatorSettings.GetVolumeSlider() * 0.01f;
+    if (std::abs(slider_gain - port.current_gain) < 0.001f) {
+        return;
+    }
+
+    alSourcef(port.bed.source, AL_GAIN, slider_gain);
+    if (const ALenum err = alGetError(); err == AL_NO_ERROR) {
+        port.current_gain = slider_gain;
+    } else {
+        LOG_ERROR(Lib_Audio3d, "Failed to set spatial gain: {}", ALErrorString(err));
+    }
+}
+
+static void DestroySpatial(Port& port) {
+    if (!port.spatial_init_attempted) {
+        return;
+    }
+    port.spatial_init_attempted = false;
+
+    if (!port.spatial_ready) {
+        return;
+    }
+    port.spatial_ready = false;
+
+    auto& device = AudioOut::OpenALDevice::GetInstance();
+    if (device.MakeCurrent(port.device_name)) {
+        ALuint source = port.bed.source;
+        if (source != 0) {
+            alSourceStop(source);
+
+            ALint queued = 0;
+            alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
+            while (queued-- > 0) {
+                ALuint buffer_id = 0;
+                alSourceUnqueueBuffers(source, 1, &buffer_id);
+            }
+
+            alDeleteSources(1, &source);
+        }
+        if (!port.bed.buffers.empty()) {
+            alDeleteBuffers(static_cast<ALsizei>(port.bed.buffers.size()),
+                            reinterpret_cast<ALuint*>(port.bed.buffers.data()));
+        }
+    }
+
+    port.bed = SpatialBed{};
+    device.UnregisterPort(port.device_name);
+}
+
+static bool EnsureSpatial(Port& port) {
+    if (port.spatial_init_attempted) {
+        return port.spatial_ready;
+    }
+    port.spatial_init_attempted = true;
+
+    port.device_name = EmulatorSettings.GetOpenALMainOutputDevice();
+    auto& device = AudioOut::OpenALDevice::GetInstance();
+
+    if (!device.RegisterPort(port.device_name)) {
+        LOG_WARNING(Lib_Audio3d,
+                    "OpenAL device '{}' unavailable for spatial output, using AudioOut path",
+                    port.device_name);
+        return false;
+    }
+
+    if (!device.MakeCurrent(port.device_name)) {
+        LOG_ERROR(Lib_Audio3d, "Failed to make OpenAL context current for spatial output");
+        device.UnregisterPort(port.device_name);
+        return false;
+    }
+
+    alGetError();
+
+    ALuint source = 0;
+    alGenSources(1, &source);
+    if (alGetError() != AL_NO_ERROR) {
+        LOG_ERROR(Lib_Audio3d, "Failed to generate spatial source");
+        device.UnregisterPort(port.device_name);
+        return false;
+    }
+
+    const u32 ring_size = port.parameters.queue_depth + SPATIAL_RING_SLACK;
+    port.bed.buffers.resize(ring_size);
+    alGenBuffers(static_cast<ALsizei>(ring_size),
+                 reinterpret_cast<ALuint*>(port.bed.buffers.data()));
+    if (alGetError() != AL_NO_ERROR) {
+        LOG_ERROR(Lib_Audio3d, "Failed to generate spatial buffers");
+        alDeleteSources(1, &source);
+        port.bed.buffers.clear();
+        device.UnregisterPort(port.device_name);
+        return false;
+    }
+    port.bed.available = port.bed.buffers;
+
+    alSourcef(source, AL_PITCH, 1.0f);
+    alSource3f(source, AL_POSITION, 0.0f, 0.0f, 0.0f);
+    alSource3f(source, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
+    alSourcei(source, AL_LOOPING, AL_FALSE);
+    alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
+
+    const float slider_gain = EmulatorSettings.GetVolumeSlider() * 0.01f;
+    alSourcef(source, AL_GAIN, slider_gain);
+    port.current_gain = slider_gain;
+
+    port.bed.source = source;
+    port.period_us =
+        (1000000ULL * port.parameters.granularity + AUDIO3D_SAMPLE_RATE / 2) / AUDIO3D_SAMPLE_RATE;
+    port.spatial_ready = true;
+
+    LOG_INFO(Lib_Audio3d,
+             "Spatial output initialized on OpenAL device '{}' (granularity {}, ring {})",
+             port.device_name.empty() ? "Default Device" : port.device_name,
+             port.parameters.granularity, ring_size);
+    return true;
+}
+
+static s32 SpatialSubmitFrame(Port& port, const AudioData& frame) {
+    const u32 bytes = frame.num_samples * AUDIO3D_OUTPUT_NUM_CHANNELS * sizeof(s16);
+    u64 waited_us = 0;
+
+    while (true) {
+        {
+            std::scoped_lock lock{port.mutex};
+
+            if (!port.spatial_ready ||
+                !AudioOut::OpenALDevice::GetInstance().MakeCurrent(port.device_name)) {
+                LOG_ERROR(Lib_Audio3d, "Spatial output lost, dropping frame");
+                std::free(frame.sample_buffer);
+                return ORBIS_OK;
+            }
+
+            SpatialUpdateVolumeLocked(port);
+            SpatialReclaimProcessedLocked(port);
+
+            if (!port.bed.available.empty()) {
+                const ALuint buffer_id = port.bed.available.back();
+                port.bed.available.pop_back();
+
+                alGetError();
+                alBufferData(buffer_id, AL_FORMAT_STEREO16, frame.sample_buffer,
+                             static_cast<ALsizei>(bytes), AUDIO3D_SAMPLE_RATE);
+                ALuint queue_id = buffer_id;
+                alSourceQueueBuffers(port.bed.source, 1, &queue_id);
+
+                if (const ALenum err = alGetError(); err != AL_NO_ERROR) {
+                    LOG_ERROR(Lib_Audio3d, "Failed to queue spatial frame: {}", ALErrorString(err));
+                    port.bed.available.push_back(buffer_id);
+                    std::free(frame.sample_buffer);
+                    return ORBIS_OK;
+                }
+
+                // Per-source underrun restart, same as the AudioOut OpenAL backend.
+                ALint al_state = 0;
+                alGetSourcei(port.bed.source, AL_SOURCE_STATE, &al_state);
+                if (al_state != AL_PLAYING) {
+                    alSourcePlay(port.bed.source);
+                }
+
+                std::free(frame.sample_buffer);
+                return ORBIS_OK;
+            }
+        }
+
+        if (waited_us >= SPATIAL_SUBMIT_TIMEOUT_US) {
+            LOG_WARNING(Lib_Audio3d, "Spatial submit timed out, dropping frame");
+            std::free(frame.sample_buffer);
+            return ORBIS_OK;
+        }
+
+        const u64 sleep_us = std::max<u64>(port.period_us / 2, SPATIAL_MIN_SLEEP_US);
+        std::this_thread::sleep_for(std::chrono::microseconds(sleep_us));
+        waited_us += sleep_us;
+    }
+}
 
 s32 PS4_SYSV_ABI sceAudio3dAudioOutClose(const s32 handle) {
     LOG_INFO(Lib_Audio3d, "called, handle = {}", handle);
@@ -588,6 +817,8 @@ s32 PS4_SYSV_ABI sceAudio3dPortClose(const OrbisAudio3dPortId port_id) {
     {
         std::scoped_lock lock{port.mutex};
 
+        DestroySpatial(port);
+
         if (port.audio_out_handle >= 0) {
             AudioOut::sceAudioOutClose(port.audio_out_handle);
             port.audio_out_handle = -1;
@@ -678,7 +909,9 @@ s32 PS4_SYSV_ABI sceAudio3dPortFlush(const OrbisAudio3dPortId port_id) {
         return ORBIS_OK;
     }
 
-    if (port.audio_out_handle < 0) {
+    const bool spatial = EnsureSpatial(port);
+
+    if (!spatial && port.audio_out_handle < 0) {
         AudioOut::OrbisAudioOutParamExtendedInformation ext_info{};
         ext_info.data_format.Assign(AUDIO3D_OUTPUT_FORMAT);
         port.audio_out_handle =
@@ -693,8 +926,14 @@ s32 PS4_SYSV_ABI sceAudio3dPortFlush(const OrbisAudio3dPortId port_id) {
     while (!port.mixed_queue.empty()) {
         AudioData frame = port.mixed_queue.front();
         port.mixed_queue.pop_front();
-        const s32 ret = AudioOut::sceAudioOutOutput(port.audio_out_handle, frame.sample_buffer);
-        std::free(frame.sample_buffer);
+
+        s32 ret;
+        if (spatial) {
+            ret = SpatialSubmitFrame(port, frame);
+        } else {
+            ret = AudioOut::sceAudioOutOutput(port.audio_out_handle, frame.sample_buffer);
+            std::free(frame.sample_buffer);
+        }
         if (ret < 0) {
             return ret;
         }
@@ -957,7 +1196,15 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
 
     const u32 depth = port.parameters.queue_depth;
 
-    if (port.audio_out_handle < 0) {
+    // Prefer queueing on the port's own OpenAL source else fall back to AudioOut if
+    // spatial init failed.
+    bool spatial;
+    {
+        std::scoped_lock lock{port.mutex};
+        spatial = EnsureSpatial(port);
+    }
+
+    if (!spatial && port.audio_out_handle < 0) {
         AudioOut::OrbisAudioOutParamExtendedInformation ext_info{};
         ext_info.data_format.Assign(AUDIO3D_OUTPUT_FORMAT);
 
@@ -984,8 +1231,13 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
             port.mixed_queue.pop_front();
         }
 
-        const s32 ret = AudioOut::sceAudioOutOutput(port.audio_out_handle, frame.sample_buffer);
-        std::free(frame.sample_buffer);
+        s32 ret;
+        if (spatial) {
+            ret = SpatialSubmitFrame(port, frame);
+        } else {
+            ret = AudioOut::sceAudioOutOutput(port.audio_out_handle, frame.sample_buffer);
+            std::free(frame.sample_buffer);
+        }
 
         if (ret < 0)
             return ret;
