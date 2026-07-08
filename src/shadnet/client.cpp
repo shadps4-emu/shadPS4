@@ -277,8 +277,7 @@ void ShadNetClient::WriterThread() {
 
 bool ShadNetClient::DoConnect() {
     m_state = ShadNetState::Ok; // reset; this attempt sets a failure code only on error
-    struct addrinfo hints {
-    }, *res_list = nullptr;
+    struct addrinfo hints{}, *res_list = nullptr;
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
@@ -323,10 +322,8 @@ bool ShadNetClient::DoConnect() {
         fd_set wfds;
         FD_ZERO(&wfds);
         FD_SET(m_sock, &wfds);
-        struct timeval tv {
-            static_cast<long>(SHAD_CONNECT_TIMEOUT_MS / 1000),
-                static_cast<long>((SHAD_CONNECT_TIMEOUT_MS % 1000) * 1000)
-        };
+        struct timeval tv{static_cast<long>(SHAD_CONNECT_TIMEOUT_MS / 1000),
+                          static_cast<long>((SHAD_CONNECT_TIMEOUT_MS % 1000) * 1000)};
         if (::select(static_cast<int>(m_sock) + 1, nullptr, &wfds, nullptr, &tv) > 0) {
             int err = 0;
             socklen_t len = sizeof(err);
@@ -355,12 +352,12 @@ bool ShadNetClient::DoConnect() {
     }
 #endif
 
-    struct sockaddr_in local {};
+    struct sockaddr_in local{};
     socklen_t alen = sizeof(local);
     if (::getsockname(m_sock, reinterpret_cast<struct sockaddr*>(&local), &alen) == 0)
         m_addr_local.store(local.sin_addr.s_addr);
 
-    struct sockaddr_in peer {};
+    struct sockaddr_in peer{};
     socklen_t plen = sizeof(peer);
     if (::getpeername(m_sock, reinterpret_cast<struct sockaddr*>(&peer), &plen) == 0)
         m_addr_server.store(peer.sin_addr.s_addr);
@@ -372,10 +369,8 @@ bool ShadNetClient::DoConnect() {
 #ifdef _WIN32
     DWORD so_rcv = static_cast<DWORD>(SHAD_CONNECT_TIMEOUT_MS);
 #else
-    struct timeval so_rcv {
-        static_cast<long>(SHAD_CONNECT_TIMEOUT_MS / 1000),
-            static_cast<long>((SHAD_CONNECT_TIMEOUT_MS % 1000) * 1000)
-    };
+    struct timeval so_rcv{static_cast<long>(SHAD_CONNECT_TIMEOUT_MS / 1000),
+                          static_cast<long>((SHAD_CONNECT_TIMEOUT_MS % 1000) * 1000)};
 #endif
     ::setsockopt(m_sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&so_rcv),
                  sizeof(so_rcv));
@@ -419,9 +414,7 @@ bool ShadNetClient::DoConnect() {
 #ifdef _WIN32
     DWORD no_timeout = 0;
 #else
-    struct timeval no_timeout {
-        0, 0
-    };
+    struct timeval no_timeout{0, 0};
 #endif
     ::setsockopt(m_sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&no_timeout),
                  sizeof(no_timeout));
