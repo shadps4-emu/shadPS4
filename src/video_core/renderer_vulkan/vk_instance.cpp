@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <optional>
+
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
+#include "common/arch.h"
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/types.h"
@@ -15,6 +18,10 @@
 #include "video_core/renderer_vulkan/vk_platform.h"
 
 #include <vk_mem_alloc.h>
+
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
 
 namespace Vulkan {
 
@@ -85,6 +92,71 @@ std::string GetReadableVersion(u32 version) {
     return fmt::format("{}.{}.{}", VK_VERSION_MAJOR(version), VK_VERSION_MINOR(version),
                        VK_VERSION_PATCH(version));
 }
+
+#ifdef __APPLE__
+std::string ProcessArchitecture() {
+#if defined(ARCH_ARM64)
+    return "arm64";
+#elif defined(ARCH_X86_64)
+    return "x86_64";
+#else
+    return "unknown";
+#endif
+}
+
+std::optional<std::string> GetSysctlString(const char* name) {
+    size_t size = 0;
+    if (sysctlbyname(name, nullptr, &size, nullptr, 0) != 0 || size == 0) {
+        return std::nullopt;
+    }
+
+    std::string value(size, '\0');
+    if (sysctlbyname(name, value.data(), &size, nullptr, 0) != 0) {
+        return std::nullopt;
+    }
+
+    if (!value.empty() && value.back() == '\0') {
+        value.pop_back();
+    }
+    return value;
+}
+
+std::optional<int> GetSysctlInt(const char* name) {
+    int value = 0;
+    size_t size = sizeof(value);
+    if (sysctlbyname(name, &value, &size, nullptr, 0) != 0) {
+        return std::nullopt;
+    }
+    return value;
+}
+
+std::string HostArchitecture() {
+    if (const auto arm64 = GetSysctlInt("hw.optional.arm64"); arm64.value_or(0) == 1) {
+        return "arm64";
+    }
+    return GetSysctlString("hw.machine").value_or("unknown");
+}
+
+std::string OperatingSystemVersion() {
+    const auto product_version = GetSysctlString("kern.osproductversion");
+    const auto build_version = GetSysctlString("kern.osversion");
+
+    if (product_version && build_version) {
+        return fmt::format("macOS {} ({})", *product_version, *build_version);
+    }
+    if (product_version) {
+        return fmt::format("macOS {}", *product_version);
+    }
+    return "macOS";
+}
+
+std::string RosettaTranslated() {
+    if (const auto translated = GetSysctlInt("sysctl.proc_translated")) {
+        return *translated == 1 ? "Yes" : "No";
+    }
+    return "Unknown";
+}
+#endif
 
 } // Anonymous namespace
 
@@ -636,6 +708,12 @@ void Instance::CollectDeviceParameters() {
     const std::string api_version = GetReadableVersion(properties.apiVersion);
     const std::string extensions = fmt::format("{}", fmt::join(available_extensions, ", "));
 
+#ifdef __APPLE__
+    LOG_INFO(Render_Vulkan, "Host_OS: {}", OperatingSystemVersion());
+    LOG_INFO(Render_Vulkan, "Host_Arch: {}", HostArchitecture());
+    LOG_INFO(Render_Vulkan, "Process_Arch: {}", ProcessArchitecture());
+    LOG_INFO(Render_Vulkan, "Rosetta_Translated: {}", RosettaTranslated());
+#endif
     LOG_INFO(Render_Vulkan, "GPU_Vendor: {}", vendor_name);
     LOG_INFO(Render_Vulkan, "GPU_Model: {}", model_name);
     LOG_INFO(Render_Vulkan, "GPU_Integrated: {}", IsIntegrated() ? "Yes" : "No");
