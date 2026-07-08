@@ -240,8 +240,16 @@ struct Image {
             // resource is at least as large as the highest slice this descriptor can address.
             LOG_DEBUG(Render_Vulkan,
                      "Image descriptor depth field under-reports layer count (depth+1={}), "
-                     "raising to last_array+1={} to cover addressed slice range [{}, {}]",
-                     slices, last_array + 1, base_array, last_array);
+                     "raising to last_array+1={} to cover addressed slice range [{}, {}] | "
+                     "full T#: addr={:#x} type={} dfmt={} nfmt={} width={} height={} depth={} "
+                     "pitch={} base_level={} last_level={} base_array={} last_array={} "
+                     "tiling_index={} pow2pad={} atc={} interlaced={} mtype={} mtype2={} "
+                     "mtype_l2={} min_lod={} min_lod_warn={}",
+                     slices, last_array + 1, base_array, last_array, Address(),
+                     NameOf(GetType()), NameOf(GetDataFmt()), NameOf(GetNumberFmt()), width + 1,
+                     height + 1, depth, pitch, base_level, last_level, base_array, last_array,
+                     tiling_index, pow2pad, atc, interlaced, mtype, mtype2, mtype_l2, min_lod,
+                     min_lod_warn);
             slices = last_array + 1;
         }
         if (pow2pad) {
