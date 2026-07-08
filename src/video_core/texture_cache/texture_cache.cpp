@@ -124,16 +124,16 @@ void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
     cmdbuf.copyImageToBuffer(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
                              download_buffer.Handle(), image_download);
 
-    const auto write_data = [this, device_addr = image.info.guest_address, download,
-                             download_size] {
-        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
-                                                  download_size);
-    };
     if (sync) {
         scheduler.Finish();
-        write_data();
+        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(image.info.guest_address),
+                                                  download, download_size);
     } else {
-        scheduler.DeferPriorityOperation(write_data);
+        scheduler.DeferPriorityOperation(
+            [this, device_addr = image.info.guest_address, download, download_size] {
+                Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
+                                                          download_size);
+            });
     }
 }
 
