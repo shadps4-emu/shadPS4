@@ -66,22 +66,7 @@ enum class CommandType : u16 {
     RemoveFriend = 9,
     AddBlock = 10,
     RemoveBlock = 11,
-    // Matchmaking
-    ContextStart = 12,
-    CreateRoom = 13,
-    JoinRoom = 14,
-    LeaveRoom = 15,
-    SearchRoom = 16,
-    RequestSignalingInfos = 17,
-    ContextStop = 18,
-    SetUserInfo = 19,
-    SetRoomDataInternal = 20,
-    SetRoomDataExternal = 21,
-    KickoutRoomMember = 22,
-    GetWorldInfoList = 23,
-    GetRoomDataExternalList = 24,
-    GetUserInfoList = 25,
-    GetRoomMemberDataExternalList = 26,
+    GetServerFeatures = 12,
     GetBoardInfos = 30,
     RecordScore = 31,
     RecordScoreData = 32,
@@ -93,6 +78,23 @@ enum class CommandType : u16 {
     GetScoreGameDataByAccId = 38,
     GetToken = 39,
     SetAppearOffline = 40,
+    // Matchmaking
+    ContextStart = 100,
+    CreateRoom = 101,
+    JoinRoom = 102,
+    LeaveRoom = 103,
+    SearchRoom = 104,
+    RequestSignalingInfos = 105,
+    ContextStop = 106,
+    SetUserInfo = 107,
+    SetRoomDataInternal = 108,
+    SetRoomDataExternal = 109,
+    KickoutRoomMember = 110,
+    GetWorldInfoList = 111,
+    GetRoomDataExternalList = 112,
+    GetUserInfoList = 113,
+    GetRoomMemberDataExternalList = 114,
+    SendRoomMessage = 115,
 };
 
 enum class NotificationType : u16 {
@@ -101,6 +103,7 @@ enum class NotificationType : u16 {
     FriendLost = 7,
     FriendStatus = 8,
     RoomEvent = 10,
+    RoomMessage = 11,
     WebApiPushEvent = 17, // Generic NP WebApi push event
 };
 
@@ -234,6 +237,19 @@ struct NotifyRoomEvent {
     std::vector<MatchingBinAttr> bin_attrs;
 };
 
+struct NotifyRoomMessage {
+    u32 ctx_id = 0;
+    u64 room_id = 0;
+    u32 src_member_id = 0;
+    u32 event = 0;
+    u32 cast_type = 0;
+    std::vector<u32> dst_member_ids;
+    std::string src_npid;
+    u64 src_account_id = 0;
+    u32 src_platform = 0;
+    std::vector<u8> msg;
+};
+
 // ShadNetClient
 
 class ShadNetClient {
@@ -258,6 +274,7 @@ public:
     u64 GetUserId() const;
     u32 GetAddrLocal() const;
     u32 GetAddrServer() const;
+    bool IsMatching2Enabled() const;
     u32 GetNumFriends() const;
     std::optional<std::string> GetFriendNpid(u32 index) const;
 
@@ -270,6 +287,7 @@ public:
     std::function<void(const NotifyFriendLost&)> onFriendLost;
     std::function<void(const NotifyFriendStatus&)> onFriendStatus;
     std::function<void(const NotifyRoomEvent&)> onRoomEvent;
+    std::function<void(const NotifyRoomMessage&)> onRoomMessage;
     std::function<void(const NotifyWebApiPushEvent&)> onWebApiPushEvent;
     // Async reply callback.
     //   cmd    —command this reply is for (matches the request's cmd)
@@ -304,7 +322,9 @@ private:
     void DispatchPacket(PacketType type, u16 cmd_raw, u64 pkt_id, const std::vector<u8>& payload);
     void HandleLoginReply(const std::vector<u8>& payload);
     void HandleGetTokenReply(const std::vector<u8>& payload);
+    void HandleServerFeaturesReply(const std::vector<u8>& payload);
     void HandleNotification(u16 cmd_raw, const std::vector<u8>& payload);
+    bool RequestServerFeatures();
 
     // Helper: read a u32-LE-prefixed proto blob from a byte vector at pos.
     static std::string ExtractBlob(const std::vector<u8>& p, int pos);
@@ -349,6 +369,8 @@ private:
     std::string m_bearer_token;
     std::atomic<u32> m_addr_local{0};
     std::atomic<u32> m_addr_server{0};
+    std::atomic<bool> m_matching2_enabled{false};
+    std::atomic<bool> m_server_features_received{false};
 
     mutable std::mutex m_mutex_friends;
     std::vector<FriendEntry> m_friends;

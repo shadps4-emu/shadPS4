@@ -132,6 +132,16 @@ struct CallbackPayload {
     std::vector<Libraries::Np::OrbisNpId> ext_owner_npids;
     void* request_data = nullptr;
 
+    std::unique_ptr<OrbisNpMatching2RoomMessageInfo> room_message_info;
+    std::unique_ptr<OrbisNpMatching2RoomMessageInfoA> room_message_info_a;
+    std::unique_ptr<OrbisNpMatching2RoomMessageDestination> room_message_dst;
+    std::unique_ptr<Libraries::Np::OrbisNpId> room_message_src_npid;
+    std::unique_ptr<Libraries::Np::OrbisNpPeerAddressA> room_message_src_addr;
+    std::unique_ptr<Libraries::Np::OrbisNpOnlineId> room_message_src_online_id;
+    std::vector<OrbisNpMatching2RoomMemberId> room_message_multicast_members;
+    std::vector<u8> room_message_data;
+    void* room_message_callback_data = nullptr;
+
     std::unique_ptr<OrbisNpMatching2RoomMemberUpdate> room_member_update;
     std::unique_ptr<OrbisNpMatching2RoomMemberUpdateA> room_member_update_a;
     std::unique_ptr<OrbisNpMatching2RoomUpdate> room_update;
@@ -186,6 +196,15 @@ struct CallbackPayload {
         ext_room_groups.clear();
         ext_owner_npids.clear();
         request_data = nullptr;
+        room_message_info.reset();
+        room_message_info_a.reset();
+        room_message_dst.reset();
+        room_message_src_npid.reset();
+        room_message_src_addr.reset();
+        room_message_src_online_id.reset();
+        room_message_multicast_members.clear();
+        room_message_data.clear();
+        room_message_callback_data = nullptr;
         room_member_update.reset();
         room_member_update_a.reset();
         room_update.reset();
@@ -211,9 +230,6 @@ struct ContextObject {
     OrbisNpServiceLabel service_label = 0;
     Libraries::Np::OrbisNpId owner_np_id{};
     Libraries::Np::OrbisNpOnlineId online_id{};
-
-    std::string signaling_addr;
-    u16 signaling_port = 0;
 
     u64 handler_registration_generation = 1;
 
@@ -260,8 +276,6 @@ struct ContextObject {
         service_label = 0;
         owner_np_id = {};
         online_id = {};
-        signaling_addr.clear();
-        signaling_port = 0;
         handler_registration_generation = 1;
         world_id = 0;
         lobby_id = 0;
@@ -414,6 +428,9 @@ void* BuildGetRoomMemberDataExternalListPayloadA(
 void* BuildGetUserInfoListPayload(ContextObject& ctx, const shadnet::GetUserInfoListReply& resp);
 void* BuildGetUserInfoListPayloadA(ContextObject& ctx, const shadnet::GetUserInfoListReply& resp);
 void* BuildGetRoomDataInternalPayload(ContextObject& ctx, OrbisNpMatching2RoomId room_id);
+void* BuildRoomMessagePayload(CallbackPayload& p, bool a_variant, OrbisNpMatching2CastType castType,
+                              const std::vector<OrbisNpMatching2RoomMemberId>& dstMembers,
+                              const MemberCache* srcMember, const std::vector<u8>& msg);
 
 void InitEventDispatcher();
 void TermEventDispatcher();

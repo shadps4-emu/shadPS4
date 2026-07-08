@@ -42,6 +42,14 @@ using OrbisNpMatching2SignalingRequestId = u32;
 using OrbisNpMatching2TeamId = u8;
 using OrbisNpMatching2WorldId = u32;
 
+using OrbisNpMatching2CastType = u8;
+
+enum : OrbisNpMatching2CastType {
+    ORBIS_NP_MATCHING2_CASTTYPE_BROADCAST = 1,
+    ORBIS_NP_MATCHING2_CASTTYPE_UNICAST = 2,
+    ORBIS_NP_MATCHING2_CASTTYPE_MULTICAST = 3,
+};
+
 // Event of request/room/signaling/context functions
 enum OrbisNpMatching2Event : u16 {
     ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_WORLD_INFO_LIST = 0x0002,
@@ -83,6 +91,7 @@ enum OrbisNpMatching2Event : u16 {
     ORBIS_NP_MATCHING2_ROOM_EVENT_MEMBER_JOINED_A = 0x8101,
     ORBIS_NP_MATCHING2_ROOM_EVENT_MEMBER_LEFT_A = 0x8102,
     ORBIS_NP_MATCHING2_ROOM_EVENT_UPDATED_ROOM_MEMBER_DATA_INTERNAL_A = 0x8107,
+    ORBIS_NP_MATCHING2_ROOM_MSG_EVENT_MESSAGE = 0x2102,
     ORBIS_NP_MATCHING2_ROOM_MSG_EVENT_MESSAGE_A = 0x9102,
 };
 
@@ -306,6 +315,48 @@ struct OrbisNpMatching2RoomGroupInfo {
     u8 pad[2];
     u32 slots;
     u32 groupMembers;
+};
+
+union OrbisNpMatching2RoomMessageDestination {
+    OrbisNpMatching2RoomMemberId unicastTarget;
+
+    struct {
+        OrbisNpMatching2RoomMemberId* memberId;
+        u64 memberIdNum;
+    } multicastTarget;
+};
+static_assert(sizeof(OrbisNpMatching2RoomMessageDestination) == 0x10);
+
+struct OrbisNpMatching2SendRoomMessageRequest {
+    OrbisNpMatching2RoomId roomId;
+    OrbisNpMatching2CastType castType;
+    u8 padding[3];
+    OrbisNpMatching2RoomMessageDestination dst;
+    const void* msg;
+    u32 msgLen;
+    s32 option;
+};
+static_assert(sizeof(OrbisNpMatching2SendRoomMessageRequest) == 0x30);
+
+struct OrbisNpMatching2RoomMessageInfo {
+    bool filtered;
+    OrbisNpMatching2CastType castType;
+    u8 padding[2];
+    OrbisNpMatching2RoomMessageDestination* dst;
+    Libraries::Np::OrbisNpId* srcMember;
+    void* msg;
+    u32 msgLen;
+};
+
+struct OrbisNpMatching2RoomMessageInfoA {
+    bool filtered;
+    OrbisNpMatching2CastType castType;
+    u8 padding[2];
+    OrbisNpMatching2RoomMessageDestination* dst;
+    Libraries::Np::OrbisNpPeerAddressA* srcMember;
+    Libraries::Np::OrbisNpOnlineId* srcOnlineId;
+    void* msg;
+    u32 msgLen;
 };
 
 // Room-internal binary attribute
@@ -781,6 +832,7 @@ struct OrbisNpMatching2JoinedSessionInfo {
 };
 
 // User information
+// from PS3 this was NpUserInfo2; setting addresses like our other A and nonA types TODO: confirm
 struct OrbisNpMatching2UserInfo {
     OrbisNpMatching2UserInfo* next;
     Libraries::Np::OrbisNpId npId;
@@ -791,6 +843,7 @@ struct OrbisNpMatching2UserInfo {
 };
 
 // User information (account-id variant)
+// from PS3 this was NpUserInfo2; setting addresses like our other A and nonA types TODO: confirm
 struct OrbisNpMatching2UserInfoA {
     OrbisNpMatching2UserInfoA* next;
     Libraries::Np::OrbisNpPeerAddressA user;
