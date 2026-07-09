@@ -103,6 +103,12 @@ struct OrbisAudio3dPosition {
     float z;
 };
 
+enum class OrbisAudio3dPassthrough : u32 {
+    ORBIS_AUDIO3D_PASSTHROUGH_NONE = 0,
+    ORBIS_AUDIO3D_PASSTHROUGH_LEFT = 1,
+    ORBIS_AUDIO3D_PASSTHROUGH_RIGHT = 2,
+};
+
 struct SpatialSource {
     u32 source{0};
     std::vector<u32> buffers;   // ALuint ring, sized queue_depth + slack
@@ -122,6 +128,7 @@ struct SpatialObjectFrame {
     OrbisAudio3dPosition position{0.0f, 0.0f, 0.0f};
     bool has_position{false};
     float spread{0.0f};
+    OrbisAudio3dPassthrough passthrough{OrbisAudio3dPassthrough::ORBIS_AUDIO3D_PASSTHROUGH_NONE};
 };
 
 struct SpatialFrameBundle {
@@ -159,12 +166,14 @@ struct Port {
     bool spatial_init_attempted{false};
     bool spatial_ready{false};
     bool source_radius_supported{false};
+    bool direct_channels_supported{false};
     std::string device_name;
     u64 period_us{0};
     u64 last_volume_check_us{0};
     float current_gain{-1.0f};
     SpatialSource bed;
     std::vector<s16> spatial_scratch;
+    std::vector<s16> spatial_scratch_stereo;
 };
 
 struct Audio3dState {
