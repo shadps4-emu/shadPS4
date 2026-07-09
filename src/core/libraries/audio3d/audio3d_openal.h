@@ -97,8 +97,14 @@ struct AudioData {
     OrbisAudio3dFormat format{OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16};
 };
 
+struct OrbisAudio3dPosition {
+    float x;
+    float y;
+    float z;
+};
+
 struct SpatialSource {
-    u32 source{0};              // ALuint
+    u32 source{0};
     std::vector<u32> buffers;   // ALuint ring, sized queue_depth + slack
     std::vector<u32> available; // reclaimed / never-queued buffer ids
 };
@@ -113,6 +119,9 @@ struct SpatialObjectFrame {
     OrbisAudio3dObjectId object_id{};
     AudioData pcm{};
     float gain{0.0f};
+    OrbisAudio3dPosition position{0.0f, 0.0f, 0.0f};
+    bool has_position{false};
+    float spread{0.0f};
 };
 
 struct SpatialFrameBundle {
@@ -141,6 +150,7 @@ struct Port {
     // Bed audio queue.
     std::deque<AudioData> bed_queue;
     // Mixed stereo frames ready to be consumed by sceAudio3dPortPush
+    // (CPU-mix fallback path only).
     std::deque<AudioData> mixed_queue;
     // Per-tick frame bundles produced by PortAdvance in the spatial path.
     std::deque<SpatialFrameBundle> spatial_queue;
@@ -148,6 +158,7 @@ struct Port {
     // Spatial (direct OpenAL) output state.
     bool spatial_init_attempted{false};
     bool spatial_ready{false};
+    bool source_radius_supported{false};
     std::string device_name;
     u64 period_us{0};
     u64 last_volume_check_us{0};
