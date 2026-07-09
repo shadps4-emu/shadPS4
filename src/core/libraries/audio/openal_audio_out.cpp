@@ -240,8 +240,9 @@ private:
             al_buffer_float.resize(buffer_frames * num_channels);
             buffer_size_bytes = buffer_frames * num_channels * sizeof(float);
         } else {
-            al_buffer_s16.resize(buffer_frames * num_channels);
-            buffer_size_bytes = buffer_frames * num_channels * sizeof(s16);
+            const u32 out_channels = downmix_to_stereo ? 2u : num_channels;
+            al_buffer_s16.resize(buffer_frames * out_channels);
+            buffer_size_bytes = buffer_frames * out_channels * sizeof(s16);
         }
 
         // Select optimal converter function
@@ -372,6 +373,8 @@ private:
     }
 
     bool DetermineOpenALFormat() {
+        alGetError();
+
         // Try to use native float formats if extension is available
         if (is_float && has_float_ext) {
             switch (num_channels) {
@@ -431,6 +434,7 @@ private:
                 if (format == 0 || alGetError() != AL_NO_ERROR) {
                     LOG_WARNING(Lib_AudioOut, "5.1 format not supported, falling back to stereo");
                     format = AL_FORMAT_STEREO16;
+                    downmix_to_stereo = true;
                 }
                 break;
             case 8:
@@ -438,6 +442,7 @@ private:
                 if (format == 0 || alGetError() != AL_NO_ERROR) {
                     LOG_WARNING(Lib_AudioOut, "7.1 format not supported, falling back to stereo");
                     format = AL_FORMAT_STEREO16;
+                    downmix_to_stereo = true;
                 }
                 break;
             default:
@@ -458,6 +463,7 @@ private:
                 if (format == 0 || alGetError() != AL_NO_ERROR) {
                     LOG_WARNING(Lib_AudioOut, "5.1 format not supported, falling back to stereo");
                     format = AL_FORMAT_STEREO16;
+                    downmix_to_stereo = true;
                 }
                 break;
             case 8:
@@ -465,6 +471,7 @@ private:
                 if (format == 0 || alGetError() != AL_NO_ERROR) {
                     LOG_WARNING(Lib_AudioOut, "7.1 format not supported, falling back to stereo");
                     format = AL_FORMAT_STEREO16;
+                    downmix_to_stereo = true;
                 }
                 break;
             default:
@@ -506,6 +513,17 @@ private:
     }
 
     bool SelectConverter() {
+        if (downmix_to_stereo) {
+            // (which played 8ch interleaved data as garbled 4x-slow stereo).
+            if (is_float) {
+                convert =
+                    num_channels == 8 ? &DownmixF32_8CHToStereoS16 : &DownmixF32_6CHToStereoS16;
+            } else {
+                convert = num_channels == 8 ? &DownmixS16_8CHToStereo : &DownmixS16_6CHToStereo;
+            }
+            return true;
+        }
+
         if (is_float && use_native_float) {
             // Native float - just copy/remap if needed
             switch (num_channels) {
@@ -556,7 +574,7 @@ private:
                 convert = &ConvertS16Stereo;
                 break;
             case 8:
-                convert = &ConvertS16_8CH;
+                convert = is_std ? &ConvertS16Std8CH : &ConvertS16_8CH;
                 break;
             default:
                 LOG_ERROR(Lib_AudioOut, "Unsupported S16 channel count: {}", num_channels);
@@ -623,6 +641,67 @@ private:
 
         const u32 num_samples = frames << 3;
         std::memcpy(d, s, num_samples * sizeof(s16));
+    }
+    static void ConvertS16Std8CH(const void* src, void* dst, u32 frames, const float*) {
+        const s16* s = static_cast<const s16*>(src);
+        s16* d = static_cast<s16*>(dst);
+
+        for (u32 i = 0; i < frames; i++) {
+            const u32 offset = i << 3;
+            d[offset + FL] = s[offset + FL];
+            d[offset + FR] = s[offset + FR];
+            d[offset + FC] = s[offset + FC];
+            d[offset + LF] = s[offset + LF];
+            d[offset + SL] = s[offset + STD_SL];
+            d[offset + SR] = s[offset + STD_SR];
+            d[offset + BL] = s[offset + STD_BL];
+            d[offset + BR] = s[offset + STD_BR];
+        }
+    }
+
+    static inline s16 ClampSampleToS16(const float v) {
+        return static_cast<s16>(std::clamp(v, -32768.0f, 32767.0f));
+    }
+
+    static void DownmixS16_6CHToStereo(const void* src, void* dst, u32 frames, const float*) {
+        const s16* s = static_cast<const s16*>(src);
+        s16* d = static_cast<s16*>(dst);
+        for (u32 i = 0; i < frames; i++) {
+            const u32 o = i * 6;
+            const float center = 0.7071f * s[o + FC];
+            d[i * 2 + 0] = ClampSampleToS16(s[o + FL] + center + 0.7071f * s[o + 4]);
+            d[i * 2 + 1] = ClampSampleToS16(s[o + FR] + center + 0.7071f * s[o + 5]);
+        }
+    }
+    static void DownmixS16_8CHToStereo(const void* src, void* dst, u32 frames, const float*) {
+        const s16* s = static_cast<const s16*>(src);
+        s16* d = static_cast<s16*>(dst);
+        for (u32 i = 0; i < frames; i++) {
+            const u32 o = i << 3;
+            const float center = 0.7071f * s[o + FC];
+            d[i * 2 + 0] = ClampSampleToS16(s[o + FL] + center + 0.7071f * (s[o + 4] + s[o + 6]));
+            d[i * 2 + 1] = ClampSampleToS16(s[o + FR] + center + 0.7071f * (s[o + 5] + s[o + 7]));
+        }
+    }
+    static void DownmixF32_6CHToStereoS16(const void* src, void* dst, u32 frames, const float*) {
+        const float* s = static_cast<const float*>(src);
+        s16* d = static_cast<s16*>(dst);
+        for (u32 i = 0; i < frames; i++) {
+            const u32 o = i * 6;
+            const float center = 0.7071f * s[o + FC];
+            d[i * 2 + 0] = OrbisFloatToS16(s[o + FL] + center + 0.7071f * s[o + 4]);
+            d[i * 2 + 1] = OrbisFloatToS16(s[o + FR] + center + 0.7071f * s[o + 5]);
+        }
+    }
+    static void DownmixF32_8CHToStereoS16(const void* src, void* dst, u32 frames, const float*) {
+        const float* s = static_cast<const float*>(src);
+        s16* d = static_cast<s16*>(dst);
+        for (u32 i = 0; i < frames; i++) {
+            const u32 o = i << 3;
+            const float center = 0.7071f * s[o + FC];
+            d[i * 2 + 0] = OrbisFloatToS16(s[o + FL] + center + 0.7071f * (s[o + 4] + s[o + 6]));
+            d[i * 2 + 1] = OrbisFloatToS16(s[o + FR] + center + 0.7071f * (s[o + 5] + s[o + 7]));
+        }
     }
 
     // Float passthrough converters (for AL_EXT_FLOAT32)
@@ -814,6 +893,7 @@ private:
     // Extension support
     bool has_float_ext{false};
     bool use_native_float{false};
+    bool downmix_to_stereo{false};
 
     // Converter function pointer
     ConverterFunc convert{nullptr};
