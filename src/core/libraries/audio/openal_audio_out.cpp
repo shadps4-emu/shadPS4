@@ -10,6 +10,17 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <alext.h>
+
+// Fallbacks in case the alext.h in use predates these extensions.
+#ifndef ALC_SOFT_output_mode
+#define ALC_OUTPUT_MODE_SOFT 0x19AC
+#define ALC_SURROUND_5_1_SOFT 0x1504
+#define ALC_SURROUND_6_1_SOFT 0x1505
+#define ALC_SURROUND_7_1_SOFT 0x1506
+#endif
+#ifndef AL_SOFT_direct_channels_remix
+#define AL_REMIX_UNMATCHED_SOFT 0x0002
+#endif
 #include <queue>
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
@@ -96,6 +107,10 @@ public:
             convert(ptr, al_buffer_float.data(), buffer_frames, nullptr);
         } else {
             convert(ptr, al_buffer_s16.data(), buffer_frames, nullptr);
+        }
+
+        if (fold_lfe) {
+            FoldLfeIntoFronts();
         }
 
         // Reclaim processed buffers
@@ -233,6 +248,26 @@ private:
         if (!DetermineOpenALFormat()) {
             LOG_ERROR(Lib_AudioOut, "Unsupported audio format for OpenAL");
             return false;
+        }
+
+        ALCdevice* alc_dev = alcGetContextsDevice(alcGetCurrentContext());
+        ALCint output_mode = 0;
+        bool know_output_mode = false;
+        if (alc_dev && alcIsExtensionPresent(alc_dev, "ALC_SOFT_output_mode")) {
+            alcGetIntegerv(alc_dev, ALC_OUTPUT_MODE_SOFT, 1, &output_mode);
+            know_output_mode = true;
+        }
+        const bool output_has_lfe = output_mode == ALC_SURROUND_5_1_SOFT ||
+                                    output_mode == ALC_SURROUND_6_1_SOFT ||
+                                    output_mode == ALC_SURROUND_7_1_SOFT;
+        fold_lfe = know_output_mode && !output_has_lfe && num_channels >= 6 && !downmix_to_stereo;
+        if (fold_lfe) {
+            LOG_INFO(Lib_AudioOut, "Output has no LFE channel; folding buffer LFE into fronts");
+        }
+        if (alc_dev && alcIsExtensionPresent(alc_dev, "ALC_SOFT_HRTF")) {
+            ALCint hrtf_on = 0;
+            alcGetIntegerv(alc_dev, ALC_HRTF_SOFT, 1, &hrtf_on);
+            hrtf_active = hrtf_on == ALC_TRUE;
         }
 
         // Allocate buffers based on format
@@ -508,9 +543,13 @@ private:
         alSourcei(source, AL_LOOPING, AL_FALSE);
         alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
 
-        if ((num_channels == 2 || downmix_to_stereo) &&
-            alIsExtensionPresent("AL_SOFT_direct_channels")) {
-            alSourcei(source, AL_DIRECT_CHANNELS_SOFT, AL_TRUE);
+        if (alIsExtensionPresent("AL_SOFT_direct_channels")) {
+            if (num_channels == 2 || downmix_to_stereo) {
+                alSourcei(source, AL_DIRECT_CHANNELS_SOFT, AL_TRUE);
+            } else if (num_channels > 2 && !hrtf_active &&
+                       alIsExtensionPresent("AL_SOFT_direct_channels_remix")) {
+                alSourcei(source, AL_DIRECT_CHANNELS_SOFT, AL_REMIX_UNMATCHED_SOFT);
+            }
         }
 
         LOG_DEBUG(Lib_AudioOut, "Created OpenAL source {} with {} buffers", source, buffers.size());
@@ -649,7 +688,6 @@ private:
     static void ConvertS16Std8CH(const void* src, void* dst, u32 frames, const float*) {
         const s16* s = static_cast<const s16*>(src);
         s16* d = static_cast<s16*>(dst);
-
         for (u32 i = 0; i < frames; i++) {
             const u32 offset = i << 3;
             d[offset + FL] = s[offset + FL];
@@ -673,8 +711,9 @@ private:
         for (u32 i = 0; i < frames; i++) {
             const u32 o = i * 6;
             const float center = 0.7071f * s[o + FC];
-            d[i * 2 + 0] = ClampSampleToS16(s[o + FL] + center + 0.7071f * s[o + 4]);
-            d[i * 2 + 1] = ClampSampleToS16(s[o + FR] + center + 0.7071f * s[o + 5]);
+            const float lfe = 0.5f * s[o + LF];
+            d[i * 2 + 0] = ClampSampleToS16(s[o + FL] + center + lfe + 0.7071f * s[o + 4]);
+            d[i * 2 + 1] = ClampSampleToS16(s[o + FR] + center + lfe + 0.7071f * s[o + 5]);
         }
     }
     static void DownmixS16_8CHToStereo(const void* src, void* dst, u32 frames, const float*) {
@@ -683,8 +722,11 @@ private:
         for (u32 i = 0; i < frames; i++) {
             const u32 o = i << 3;
             const float center = 0.7071f * s[o + FC];
-            d[i * 2 + 0] = ClampSampleToS16(s[o + FL] + center + 0.7071f * (s[o + 4] + s[o + 6]));
-            d[i * 2 + 1] = ClampSampleToS16(s[o + FR] + center + 0.7071f * (s[o + 5] + s[o + 7]));
+            const float lfe = 0.5f * s[o + LF];
+            d[i * 2 + 0] =
+                ClampSampleToS16(s[o + FL] + center + lfe + 0.7071f * (s[o + 4] + s[o + 6]));
+            d[i * 2 + 1] =
+                ClampSampleToS16(s[o + FR] + center + lfe + 0.7071f * (s[o + 5] + s[o + 7]));
         }
     }
     static void DownmixF32_6CHToStereoS16(const void* src, void* dst, u32 frames, const float*) {
@@ -693,18 +735,46 @@ private:
         for (u32 i = 0; i < frames; i++) {
             const u32 o = i * 6;
             const float center = 0.7071f * s[o + FC];
-            d[i * 2 + 0] = OrbisFloatToS16(s[o + FL] + center + 0.7071f * s[o + 4]);
-            d[i * 2 + 1] = OrbisFloatToS16(s[o + FR] + center + 0.7071f * s[o + 5]);
+            const float lfe = 0.5f * s[o + LF];
+            d[i * 2 + 0] = OrbisFloatToS16(s[o + FL] + center + lfe + 0.7071f * s[o + 4]);
+            d[i * 2 + 1] = OrbisFloatToS16(s[o + FR] + center + lfe + 0.7071f * s[o + 5]);
         }
     }
+
+    void FoldLfeIntoFronts() {
+        constexpr float LFE_GAIN = 0.7071f;
+        if (use_native_float) {
+            float* d = al_buffer_float.data();
+            for (u32 i = 0; i < buffer_frames; i++) {
+                float* f = d + static_cast<size_t>(i) * num_channels;
+                const float lfe = f[LF] * LFE_GAIN;
+                f[FL] += lfe;
+                f[FR] += lfe;
+                f[LF] = 0.0f;
+            }
+        } else {
+            s16* d = al_buffer_s16.data();
+            for (u32 i = 0; i < buffer_frames; i++) {
+                s16* f = d + static_cast<size_t>(i) * num_channels;
+                const float lfe = static_cast<float>(f[LF]) * LFE_GAIN;
+                f[FL] = ClampSampleToS16(static_cast<float>(f[FL]) + lfe);
+                f[FR] = ClampSampleToS16(static_cast<float>(f[FR]) + lfe);
+                f[LF] = 0;
+            }
+        }
+    }
+
     static void DownmixF32_8CHToStereoS16(const void* src, void* dst, u32 frames, const float*) {
         const float* s = static_cast<const float*>(src);
         s16* d = static_cast<s16*>(dst);
         for (u32 i = 0; i < frames; i++) {
             const u32 o = i << 3;
             const float center = 0.7071f * s[o + FC];
-            d[i * 2 + 0] = OrbisFloatToS16(s[o + FL] + center + 0.7071f * (s[o + 4] + s[o + 6]));
-            d[i * 2 + 1] = OrbisFloatToS16(s[o + FR] + center + 0.7071f * (s[o + 5] + s[o + 7]));
+            const float lfe = 0.5f * s[o + LF];
+            d[i * 2 + 0] =
+                OrbisFloatToS16(s[o + FL] + center + lfe + 0.7071f * (s[o + 4] + s[o + 6]));
+            d[i * 2 + 1] =
+                OrbisFloatToS16(s[o + FR] + center + lfe + 0.7071f * (s[o + 5] + s[o + 7]));
         }
     }
 
@@ -898,6 +968,8 @@ private:
     bool has_float_ext{false};
     bool use_native_float{false};
     bool downmix_to_stereo{false};
+    bool fold_lfe{false};
+    bool hrtf_active{false};
 
     // Converter function pointer
     ConverterFunc convert{nullptr};
