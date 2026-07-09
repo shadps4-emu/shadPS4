@@ -83,6 +83,12 @@ enum class OrbisAudio3dAttributeId : u32 {
     ORBIS_AUDIO3D_ATTRIBUTE_OUTPUT_ROUTE = 11,
 };
 
+enum class OrbisAudio3dPortAttributeId : u32 {
+    ORBIS_AUDIO3D_PORT_ATTRIBUTE_LATE_REVERB_LEVEL = 0x10001,
+    ORBIS_AUDIO3D_PORT_ATTRIBUTE_DOWNMIX_SPREAD_RADIUS = 0x10002,
+    ORBIS_AUDIO3D_PORT_ATTRIBUTE_DOWNMIX_SPREAD_HEIGHT_AWARE = 0x10003,
+};
+
 struct OrbisAudio3dAttribute {
     OrbisAudio3dAttributeId attribute_id;
     int : 32;
@@ -174,6 +180,11 @@ struct Port {
     SpatialSource bed;
     std::vector<s16> spatial_scratch;
     std::vector<s16> spatial_scratch_stereo;
+    // EFX late reverb
+    bool reverb_supported{false};
+    u32 reverb_slot{0};   // ALuint
+    u32 reverb_effect{0}; // ALuint
+    float late_reverb_level{0.0f};
 };
 
 struct Audio3dState {
@@ -233,8 +244,8 @@ s32 PS4_SYSV_ABI sceAudio3dPortOpen(Libraries::UserService::OrbisUserServiceUser
 s32 PS4_SYSV_ABI sceAudio3dPortPush(OrbisAudio3dPortId port_id, OrbisAudio3dBlocking blocking);
 s32 PS4_SYSV_ABI sceAudio3dPortQueryDebug();
 s32 PS4_SYSV_ABI sceAudio3dPortSetAttribute(OrbisAudio3dPortId port_id,
-                                            OrbisAudio3dAttributeId attribute_id, void* attribute,
-                                            u64 attribute_size);
+                                            OrbisAudio3dPortAttributeId attribute_id,
+                                            void* attribute, u64 attribute_size);
 s32 PS4_SYSV_ABI sceAudio3dReportRegisterHandler();
 s32 PS4_SYSV_ABI sceAudio3dReportUnregisterHandler();
 s32 PS4_SYSV_ABI sceAudio3dSetGpuRenderer();

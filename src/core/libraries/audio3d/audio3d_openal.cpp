@@ -10,8 +10,8 @@
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <alext.h>
+#include <efx.h>
 #include <magic_enum/magic_enum.hpp>
-
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
@@ -187,6 +187,95 @@ static void FreeBundle(SpatialFrameBundle& bundle) {
     bundle.objects.clear();
 }
 
+static LPALGENEFFECTS p_alGenEffects;
+static LPALDELETEEFFECTS p_alDeleteEffects;
+static LPALEFFECTI p_alEffecti;
+static LPALEFFECTF p_alEffectf;
+static LPALGENAUXILIARYEFFECTSLOTS p_alGenAuxiliaryEffectSlots;
+static LPALDELETEAUXILIARYEFFECTSLOTS p_alDeleteAuxiliaryEffectSlots;
+static LPALAUXILIARYEFFECTSLOTI p_alAuxiliaryEffectSloti;
+static LPALAUXILIARYEFFECTSLOTF p_alAuxiliaryEffectSlotf;
+
+static bool LoadEfxFunctions() {
+    static bool attempted = false;
+    static bool ok = false;
+    if (attempted) {
+        return ok;
+    }
+    attempted = true;
+
+    p_alGenEffects = reinterpret_cast<LPALGENEFFECTS>(alGetProcAddress("alGenEffects"));
+    p_alDeleteEffects = reinterpret_cast<LPALDELETEEFFECTS>(alGetProcAddress("alDeleteEffects"));
+    p_alEffecti = reinterpret_cast<LPALEFFECTI>(alGetProcAddress("alEffecti"));
+    p_alEffectf = reinterpret_cast<LPALEFFECTF>(alGetProcAddress("alEffectf"));
+    p_alGenAuxiliaryEffectSlots = reinterpret_cast<LPALGENAUXILIARYEFFECTSLOTS>(
+        alGetProcAddress("alGenAuxiliaryEffectSlots"));
+    p_alDeleteAuxiliaryEffectSlots = reinterpret_cast<LPALDELETEAUXILIARYEFFECTSLOTS>(
+        alGetProcAddress("alDeleteAuxiliaryEffectSlots"));
+    p_alAuxiliaryEffectSloti =
+        reinterpret_cast<LPALAUXILIARYEFFECTSLOTI>(alGetProcAddress("alAuxiliaryEffectSloti"));
+    p_alAuxiliaryEffectSlotf =
+        reinterpret_cast<LPALAUXILIARYEFFECTSLOTF>(alGetProcAddress("alAuxiliaryEffectSlotf"));
+
+    ok = p_alGenEffects && p_alDeleteEffects && p_alEffecti && p_alEffectf &&
+         p_alGenAuxiliaryEffectSlots && p_alDeleteAuxiliaryEffectSlots &&
+         p_alAuxiliaryEffectSloti && p_alAuxiliaryEffectSlotf;
+    return ok;
+}
+
+static void CreateSpatialReverbLocked(Port& port) {
+    ALCcontext* context = alcGetCurrentContext();
+    ALCdevice* alc_device = context ? alcGetContextsDevice(context) : nullptr;
+    if (!alc_device || !alcIsExtensionPresent(alc_device, "ALC_EXT_EFX") || !LoadEfxFunctions()) {
+        LOG_INFO(Lib_Audio3d, "EFX unavailable; LATE_REVERB_LEVEL will have no effect");
+        return;
+    }
+
+    alGetError();
+
+    ALuint effect = 0;
+    ALuint slot = 0;
+    p_alGenEffects(1, &effect);
+    p_alGenAuxiliaryEffectSlots(1, &slot);
+    if (alGetError() != AL_NO_ERROR) {
+        if (effect != 0) {
+            p_alDeleteEffects(1, &effect);
+        }
+        if (slot != 0) {
+            p_alDeleteAuxiliaryEffectSlots(1, &slot);
+        }
+        LOG_WARNING(Lib_Audio3d, "Failed to create EFX reverb objects");
+        return;
+    }
+
+    p_alEffecti(effect, AL_EFFECT_TYPE, AL_EFFECT_REVERB);
+    p_alEffectf(effect, AL_REVERB_DECAY_TIME, 1.8f);
+    p_alAuxiliaryEffectSloti(slot, AL_EFFECTSLOT_EFFECT, static_cast<ALint>(effect));
+    p_alAuxiliaryEffectSlotf(slot, AL_EFFECTSLOT_GAIN,
+                             std::clamp(port.late_reverb_level, 0.0f, 1.0f));
+
+    if (alGetError() != AL_NO_ERROR) {
+        p_alDeleteAuxiliaryEffectSlots(1, &slot);
+        p_alDeleteEffects(1, &effect);
+        LOG_WARNING(Lib_Audio3d, "Failed to configure EFX reverb");
+        return;
+    }
+
+    port.reverb_effect = effect;
+    port.reverb_slot = slot;
+    port.reverb_supported = true;
+    LOG_INFO(Lib_Audio3d, "EFX late reverb ready (level {})", port.late_reverb_level);
+}
+
+static void SpatialApplyReverbLevelLocked(Port& port) {
+    if (!port.reverb_supported || !port.spatial_ready ||
+        !AudioOut::OpenALDevice::GetInstance().MakeCurrent(port.device_name)) {
+        return;
+    }
+    p_alAuxiliaryEffectSlotf(port.reverb_slot, AL_EFFECTSLOT_GAIN,
+                             std::clamp(port.late_reverb_level, 0.0f, 1.0f));
+}
+
 static void ResetObjectSpatialLocked(Port& port, ObjectState& obj) {
     if (obj.al.source == 0 || !port.spatial_ready ||
         !AudioOut::OpenALDevice::GetInstance().MakeCurrent(port.device_name)) {
@@ -242,12 +331,22 @@ static void DestroySpatial(Port& port) {
         for (auto& [object_id, obj] : port.objects) {
             DestroySpatialSourceLocked(obj.al);
         }
+        if (port.reverb_supported) {
+            ALuint slot = port.reverb_slot;
+            ALuint effect = port.reverb_effect;
+            p_alDeleteAuxiliaryEffectSlots(1, &slot);
+            p_alDeleteEffects(1, &effect);
+        }
     } else {
         port.bed = SpatialSource{};
         for (auto& [object_id, obj] : port.objects) {
             obj.al = SpatialSource{};
         }
     }
+
+    port.reverb_supported = false;
+    port.reverb_slot = 0;
+    port.reverb_effect = 0;
 
     for (auto& bundle : port.spatial_queue) {
         FreeBundle(bundle);
@@ -280,7 +379,6 @@ static bool EnsureSpatial(Port& port) {
     }
 
     alGetError();
-
     alDistanceModel(AL_NONE);
     alListener3f(AL_POSITION, 0.0f, 0.0f, 0.0f);
 
@@ -295,6 +393,8 @@ static bool EnsureSpatial(Port& port) {
     const float slider_gain = EmulatorSettings.GetVolumeSlider() * 0.01f;
     alSourcef(port.bed.source, AL_GAIN, slider_gain);
     port.current_gain = slider_gain;
+
+    CreateSpatialReverbLocked(port);
 
     port.period_us =
         (1000000ULL * port.parameters.granularity + AUDIO3D_SAMPLE_RATE / 2) / AUDIO3D_SAMPLE_RATE;
@@ -503,6 +603,13 @@ static s32 SpatialSubmitBundle(Port& port, SpatialFrameBundle bundle) {
                                   passthrough ? AL_TRUE : AL_FALSE);
                     }
 
+                    if (port.reverb_supported) {
+                        alSource3i(src.source, AL_AUXILIARY_SEND_FILTER,
+                                   passthrough ? AL_EFFECTSLOT_NULL
+                                               : static_cast<ALint>(port.reverb_slot),
+                                   0, AL_FILTER_NULL);
+                    }
+
                     if (passthrough) {
                         alSourcei(src.source, AL_SOURCE_RELATIVE, AL_TRUE);
                         alSource3f(src.source, AL_POSITION, 0.0f, 0.0f, 0.0f);
@@ -680,12 +787,14 @@ static s32 ConvertAndEnqueue(std::deque<AudioData>& queue, const OrbisAudio3dPcm
     const u32 bytes_per_sample =
         (pcm.format == OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16) ? sizeof(s16) : sizeof(float);
 
+    // Always allocate exactly granularity samples (zeroed = silence for padding).
     const u32 dst_bytes = granularity * num_channels * bytes_per_sample;
     u8* copy = static_cast<u8*>(std::calloc(1, dst_bytes));
     if (!copy) {
         return ORBIS_AUDIO3D_ERROR_OUT_OF_MEMORY;
     }
 
+    // Copy min(provided, granularity) samples — extra are dropped, shortage stays zero.
     const u32 samples_to_copy = std::min(pcm.num_samples, granularity);
     std::memcpy(copy, pcm.sample_buffer, samples_to_copy * num_channels * bytes_per_sample);
 
@@ -855,7 +964,6 @@ s32 PS4_SYSV_ABI sceAudio3dObjectReserve(const OrbisAudio3dPortId port_id,
         return ORBIS_AUDIO3D_ERROR_OUT_OF_RESOURCES;
     }
 
-    // Counter lives in the Port so it resets when the port is closed and reopened.
     do {
         ++port.next_object_id;
     } while (port.next_object_id == 0 ||
@@ -942,7 +1050,6 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
 
     auto& obj = port.objects[object_id];
 
-    // First pass: handle RESET_STATE.
     for (u64 i = 0; i < num_attributes; i++) {
         if (attribute_array[i].attribute_id ==
             OrbisAudio3dAttributeId::ORBIS_AUDIO3D_ATTRIBUTE_RESET_STATE) {
@@ -957,7 +1064,6 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
         }
     }
 
-    // Second pass: apply all other attributes.
     for (u64 i = 0; i < num_attributes; i++) {
         const auto& attr = attribute_array[i];
 
@@ -1013,12 +1119,10 @@ s32 PS4_SYSV_ABI sceAudio3dObjectUnreserve(const OrbisAudio3dPortId port_id,
         return ORBIS_AUDIO3D_ERROR_INVALID_OBJECT;
     }
 
-    // Free any queued PCM audio for this object.
     for (auto& data : port.objects[object_id].pcm_queue) {
         std::free(data.sample_buffer);
     }
 
-    // Release the object's OpenAL source, if it was ever created.
     if (auto& obj = port.objects[object_id];
         obj.al.source != 0 && port.spatial_ready &&
         AudioOut::OpenALDevice::GetInstance().MakeCurrent(port.device_name)) {
@@ -1066,7 +1170,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
         if (queue.empty())
             return;
 
-        // default gain is 0.0 — objects with no GAIN set are silent.
         if (gain == 0.0f) {
             AudioData data = queue.front();
             queue.pop_front();
@@ -1294,7 +1397,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortFlush(const OrbisAudio3dPortId port_id) {
         }
     }
 
-    // Drain all queued frames, blocking on each until consumed.
     while (!port.mixed_queue.empty()) {
         AudioData frame = port.mixed_queue.front();
         port.mixed_queue.pop_front();
@@ -1351,8 +1453,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported(OrbisAudio3dPortId port_id
     };
 
     if (capabilities) {
-        // Writes up to num_capabilities supported capabilities,
-        // then sets num_capabilities to how many were written.
         const u32 caps_to_write = std::min<u32>(*num_capabilities, supported.size());
         for (u32 i = 0; i < caps_to_write; i++) {
             capabilities[i] = supported[i];
@@ -1391,7 +1491,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetQueueLevel(const OrbisAudio3dPortId port_id, u
 
     const auto& port = state->ports[port_id];
     std::scoped_lock lock{port.mutex};
-    // Exactly one of these queues is in use depending on the output path.
     const size_t size = port.mixed_queue.size() + port.spatial_queue.size();
 
     if (queue_level) {
@@ -1658,7 +1757,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
         }
     }
 
-    // Submit one frame to free space.
     bool submitted = false;
     s32 ret = submit_one_frame(submitted);
     if (ret < 0)
@@ -1696,8 +1794,12 @@ s32 PS4_SYSV_ABI sceAudio3dPortQueryDebug() {
 }
 
 s32 PS4_SYSV_ABI sceAudio3dPortSetAttribute(const OrbisAudio3dPortId port_id,
-                                            const OrbisAudio3dAttributeId attribute_id,
+                                            const OrbisAudio3dPortAttributeId attribute_id,
                                             void* attribute, const u64 attribute_size) {
+    LOG_INFO(Lib_Audio3d,
+             "called, port_id = {}, attribute_id = {}, attribute = {}, attribute_size = {}",
+             port_id, static_cast<u32>(attribute_id), attribute, attribute_size);
+
     if (!state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
@@ -1708,12 +1810,32 @@ s32 PS4_SYSV_ABI sceAudio3dPortSetAttribute(const OrbisAudio3dPortId port_id,
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    LOG_INFO(
-        Lib_Audio3d,
-        "called (STUBBED), port_id = {}, attribute_id = {}, attribute = {}, attribute_size = {}",
-        port_id, static_cast<u32>(attribute_id), attribute, attribute_size);
+    auto& port = state->ports[port_id];
+    std::scoped_lock lock{port.mutex};
 
-    return ORBIS_OK;
+    switch (attribute_id) {
+    case OrbisAudio3dPortAttributeId::ORBIS_AUDIO3D_PORT_ATTRIBUTE_LATE_REVERB_LEVEL: {
+        if (attribute_size < sizeof(float)) {
+            LOG_ERROR(Lib_Audio3d, "LATE_REVERB_LEVEL attribute_size < sizeof(float)");
+            return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+        }
+        float level = 0.0f;
+        std::memcpy(&level, attribute, sizeof(float));
+        port.late_reverb_level = std::clamp(level, 0.0f, 1.0f);
+        SpatialApplyReverbLevelLocked(port);
+        LOG_INFO(Lib_Audio3d, "late reverb level = {}", port.late_reverb_level);
+        return ORBIS_OK;
+    }
+    case OrbisAudio3dPortAttributeId::ORBIS_AUDIO3D_PORT_ATTRIBUTE_DOWNMIX_SPREAD_RADIUS:
+    case OrbisAudio3dPortAttributeId::ORBIS_AUDIO3D_PORT_ATTRIBUTE_DOWNMIX_SPREAD_HEIGHT_AWARE:
+        LOG_DEBUG(Lib_Audio3d, "port attribute {:#x} accepted (not implemented)",
+                  static_cast<u32>(attribute_id));
+        return ORBIS_OK;
+    default:
+        LOG_WARNING(Lib_Audio3d, "unknown port attribute {:#x} (size {})",
+                    static_cast<u32>(attribute_id), attribute_size);
+        return ORBIS_OK;
+    }
 }
 
 s32 PS4_SYSV_ABI sceAudio3dReportRegisterHandler() {
