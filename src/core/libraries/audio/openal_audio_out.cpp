@@ -508,13 +508,17 @@ private:
         alSourcei(source, AL_LOOPING, AL_FALSE);
         alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
 
+        if ((num_channels == 2 || downmix_to_stereo) &&
+            alIsExtensionPresent("AL_SOFT_direct_channels")) {
+            alSourcei(source, AL_DIRECT_CHANNELS_SOFT, AL_TRUE);
+        }
+
         LOG_DEBUG(Lib_AudioOut, "Created OpenAL source {} with {} buffers", source, buffers.size());
         return true;
     }
 
     bool SelectConverter() {
         if (downmix_to_stereo) {
-            // (which played 8ch interleaved data as garbled 4x-slow stereo).
             if (is_float) {
                 convert =
                     num_channels == 8 ? &DownmixF32_8CHToStereoS16 : &DownmixF32_6CHToStereoS16;

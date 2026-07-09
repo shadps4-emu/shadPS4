@@ -12,6 +12,7 @@
 #include <alext.h>
 #include <efx.h>
 #include <magic_enum/magic_enum.hpp>
+
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
@@ -394,6 +395,10 @@ static bool EnsureSpatial(Port& port) {
     alSourcef(port.bed.source, AL_GAIN, slider_gain);
     port.current_gain = slider_gain;
 
+    if (port.direct_channels_supported) {
+        alSourcei(port.bed.source, AL_DIRECT_CHANNELS_SOFT, AL_TRUE);
+    }
+
     CreateSpatialReverbLocked(port);
 
     port.period_us =
@@ -551,6 +556,7 @@ static bool SpatialUploadLocked(SpatialSource& src, const void* samples, const u
         return true; // Slot existed; the frame itself is dropped.
     }
 
+    // Per-source underrun restart, same as the AudioOut OpenAL backend.
     ALint al_state = 0;
     alGetSourcei(src.source, AL_SOURCE_STATE, &al_state);
     if (al_state != AL_PLAYING) {
@@ -793,6 +799,7 @@ static s32 ConvertAndEnqueue(std::deque<AudioData>& queue, const OrbisAudio3dPcm
         return ORBIS_AUDIO3D_ERROR_OUT_OF_MEMORY;
     }
 
+    // Copy min(provided, granularity) samples — extra are dropped, shortage stays zero.
     const u32 samples_to_copy = std::min(pcm.num_samples, granularity);
     std::memcpy(copy, pcm.sample_buffer, samples_to_copy * num_channels * bytes_per_sample);
 
@@ -1082,8 +1089,6 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
             break;
         }
         default: {
-            // Store the other attributes in the ObjectState so they're available when we
-            // implement them.
             if (attr.value && attr.value_size > 0) {
                 const auto* src = static_cast<const u8*>(attr.value);
                 obj.persistent_attributes[static_cast<u32>(attr.attribute_id)].assign(
@@ -1224,7 +1229,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
         std::free(data.sample_buffer);
     };
 
-    // Bed is mixed at full gain (1.0).
     mix_in(port.bed_queue, 1.0f);
 
     SpatialFrameBundle bundle{};
@@ -1370,6 +1374,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortFlush(const OrbisAudio3dPortId port_id) {
     }
 
     if (port.mixed_queue.empty() && port.spatial_queue.empty()) {
+        // Only mix if there's actually something to mix.
         if (!port.bed_queue.empty() ||
             std::any_of(port.objects.begin(), port.objects.end(),
                         [](const auto& kv) { return !kv.second.pcm_queue.empty(); })) {
@@ -1459,7 +1464,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported(OrbisAudio3dPortId port_id
         }
         *num_capabilities = caps_to_write;
     } else {
-        // If capabilities is null, then just report the number of supported capabilities.
         *num_capabilities = static_cast<u32>(supported.size());
     }
     return ORBIS_OK;
@@ -1833,11 +1837,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortSetAttribute(const OrbisAudio3dPortId port_id,
         LOG_INFO(Lib_Audio3d, "late reverb level = {}", port.late_reverb_level);
         return ORBIS_OK;
     }
-    case OrbisAudio3dPortAttributeId::ORBIS_AUDIO3D_PORT_ATTRIBUTE_DOWNMIX_SPREAD_RADIUS:
-    case OrbisAudio3dPortAttributeId::ORBIS_AUDIO3D_PORT_ATTRIBUTE_DOWNMIX_SPREAD_HEIGHT_AWARE:
-        LOG_DEBUG(Lib_Audio3d, "port attribute {:#x} accepted (not implemented)",
-                  static_cast<u32>(attribute_id));
-        return ORBIS_OK;
     default:
         LOG_WARNING(Lib_Audio3d, "unknown port attribute {:#x} (size {})",
                     static_cast<u32>(attribute_id), attribute_size);
