@@ -105,19 +105,16 @@ void Translator::V_READLANE_B32(const GcnInst& inst) {
     const IR::U32 lane{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ReadLane(value, lane));
 
-    // This could be a thread mask spilled from a scalar to a vector register. Additionally
-    // store a bool value in case a user of the dst register sources it as a thread mask;
-    // Get/SetMaskLaneVariable are connected by SSA in that case.
+    // Restore a thread mask's per-lane bool spilled by V_WRITELANE_B32. Only the low (even) half
+    // of a 64-bit mask carries the view; SetDst1 routes it to the SGPR, VCC, or EXEC.
     if (lane.IsImmediate()) {
         ASSERT(lane.U32() < 64);
-        switch (inst.dst[0].field) {
-        case OperandField::ScalarGPR:
-        case OperandField::VccLo:
-            SetDst1(inst.dst[0],
-                    ir.GetMaskLaneVariable(IR::VectorReg(inst.src[0].code), lane.U32()));
-            break;
-        default:
-            break;
+        const auto& dst = inst.dst[0];
+        const bool is_mask_lo = (dst.field == OperandField::ScalarGPR && dst.code % 2 == 0) ||
+                                dst.field == OperandField::VccLo ||
+                                dst.field == OperandField::ExecLo;
+        if (is_mask_lo) {
+            SetDst1(dst, ir.GetMaskLaneVariable(IR::VectorReg(inst.src[0].code), lane.U32()));
         }
     }
 }
@@ -129,18 +126,16 @@ void Translator::V_WRITELANE_B32(const GcnInst& inst) {
     const IR::U32 old_value{GetSrc(inst.dst[0])};
     ir.SetVectorReg(dst, ir.WriteLane(old_value, value, lane));
 
-    // This could be a thread mask being spilled from a scalar to a vector register. Store the
-    // bool value alongside so V_READLANE_B32 can restore it; plain data sources store nothing.
+    // A thread mask may be spilled from a scalar to a vector lane. Shadow the low (even) half's
+    // per-lane bool so V_READLANE_B32 can restore it; the high half and plain data store nothing.
     if (lane.IsImmediate()) {
         ASSERT(lane.U32() < 64);
-        switch (inst.src[0].field) {
-        case OperandField::ScalarGPR:
-        case OperandField::VccLo:
-        case OperandField::ExecLo:
-            ir.SetMaskLaneVariable(dst, lane.U32(), GetSrc1(inst.src[0]));
-            break;
-        default:
-            break;
+        const auto& src = inst.src[0];
+        const bool is_mask_lo = (src.field == OperandField::ScalarGPR && src.code % 2 == 0) ||
+                                src.field == OperandField::VccLo ||
+                                src.field == OperandField::ExecLo;
+        if (is_mask_lo) {
+            ir.SetMaskLaneVariable(dst, lane.U32(), GetSrc1(src));
         }
     }
 }
