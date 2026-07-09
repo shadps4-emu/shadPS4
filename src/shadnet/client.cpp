@@ -137,6 +137,9 @@ u32 ShadNetClient::GetAddrLocal() const {
 u32 ShadNetClient::GetAddrServer() const {
     return m_addr_server.load();
 }
+bool ShadNetClient::IsMatching2Enabled() const {
+    return m_matching2_enabled.load();
+}
 
 u32 ShadNetClient::GetNumFriends() const {
     std::lock_guard lock(m_mutex_friends);
@@ -518,6 +521,19 @@ u64 ShadNetClient::SetAppearOffline(bool enable) {
     return SubmitRequest(CommandType::SetAppearOffline, MakeProtoPayload(req));
 }
 
+bool ShadNetClient::RequestServerFeatures() {
+    const u64 pkt_id = m_pkt_counter.fetch_add(1);
+    std::vector<u8> empty_payload;
+    std::vector<u8> pkt = BuildPacket(CommandType::GetServerFeatures, pkt_id, empty_payload);
+    {
+        std::lock_guard lock(m_mutex_send_queue);
+        m_send_queue.push_back(std::move(pkt));
+    }
+    m_cv_send_queue.notify_one();
+    LOG_DEBUG(ShadNet, "GetServerFeatures request fired pkt_id={}", pkt_id);
+    return true;
+}
+
 // Packet dispatch
 
 void ShadNetClient::DispatchPacket(PacketType type, u16 cmd_raw, u64 pkt_id,
@@ -530,6 +546,9 @@ void ShadNetClient::DispatchPacket(PacketType type, u16 cmd_raw, u64 pkt_id,
             break;
         case CommandType::GetToken:
             HandleGetTokenReply(payload);
+            break;
+        case CommandType::GetServerFeatures:
+            HandleServerFeaturesReply(payload);
             break;
         default:
             if (onAsyncReply) {
@@ -648,21 +667,21 @@ void ShadNetClient::HandleLoginReply(const std::vector<u8>& payload) {
 void ShadNetClient::HandleGetTokenReply(const std::vector<u8>& payload) {
     if (payload.empty()) {
         LOG_ERROR(ShadNet, "Empty GetToken reply");
-        m_sem_authenticated.release();
+        RequestServerFeatures();
         return;
     }
     const ErrorType err = static_cast<ErrorType>(payload[0]);
     if (err != ErrorType::NoError) {
         LOG_WARNING(ShadNet, "GetToken returned error={} — WebAPI calls will be unauthenticated",
                     static_cast<int>(err));
-        m_sem_authenticated.release();
+        RequestServerFeatures();
         return;
     }
     shadnet::GetTokenReply pb;
     const std::string blob = ExtractBlob(payload, 1);
     if (blob.empty() || !pb.ParseFromString(blob)) {
         LOG_ERROR(ShadNet, "Failed to parse GetTokenReply proto");
-        m_sem_authenticated.release();
+        RequestServerFeatures();
         return;
     }
     {
@@ -671,6 +690,33 @@ void ShadNetClient::HandleGetTokenReply(const std::vector<u8>& payload) {
     }
     LOG_INFO(ShadNet, "Bearer token captured ({} chars) for accountID={} canonical npid='{}'",
              pb.token().size(), pb.user_id(), pb.npid());
+    RequestServerFeatures();
+}
+
+void ShadNetClient::HandleServerFeaturesReply(const std::vector<u8>& payload) {
+    bool matching2_enabled = false;
+    bool parsed = false;
+
+    if (!payload.empty()) {
+        const ErrorType err = static_cast<ErrorType>(payload[0]);
+        if (err == ErrorType::NoError) {
+            shadnet::ServerFeaturesReply pb;
+            const std::string blob = ExtractBlob(payload, 1);
+            if (!blob.empty() && pb.ParseFromString(blob)) {
+                matching2_enabled = pb.matching2_enabled();
+                parsed = true;
+            }
+        } else {
+            LOG_WARNING(ShadNet,
+                        "GetServerFeatures returned error={} - assuming Matching2 disabled",
+                        static_cast<int>(err));
+        }
+    }
+
+    m_matching2_enabled.store(matching2_enabled);
+    m_server_features_received.store(parsed);
+    LOG_INFO(ShadNet, "Server features: matching2_enabled={}{}",
+             matching2_enabled ? "true" : "false", parsed ? "" : " (defaulted)");
     m_sem_authenticated.release();
 }
 
@@ -793,6 +839,28 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
                   n.event_cause);
         if (onRoomEvent)
             onRoomEvent(n);
+        break;
+    }
+    case NotificationType::RoomMessage: {
+        shadnet::NotifyRoomMessage pb;
+        if (!pb.ParseFromString(blob)) {
+            break;
+        }
+        NotifyRoomMessage n;
+        n.ctx_id = pb.ctx_id();
+        n.room_id = pb.room_id();
+        n.src_member_id = pb.src_member_id();
+        n.event = pb.event();
+        n.cast_type = pb.cast_type();
+        for (const u32 member_id : pb.dst_member_ids()) {
+            n.dst_member_ids.push_back(member_id);
+        }
+        n.src_npid = pb.src_npid();
+        n.src_account_id = pb.src_account_id();
+        n.src_platform = pb.src_platform();
+        n.msg.assign(pb.msg().begin(), pb.msg().end());
+        if (onRoomMessage)
+            onRoomMessage(n);
         break;
     }
     case NotificationType::WebApiPushEvent: {

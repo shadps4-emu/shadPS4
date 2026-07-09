@@ -20,6 +20,10 @@ NpMatching2State g_state;
 
 namespace {
 
+CallbackPayload& RequestPayload(ContextObject& ctx) {
+    return ctx.request_payload_override ? *ctx.request_payload_override : ctx.request_payload;
+}
+
 u32 IpStringToAddr(std::string_view ip) {
     u32 a, b, c, d;
     if (std::sscanf(std::string(ip).c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) != 4) {
@@ -60,7 +64,7 @@ void ReserveExternalRoomPayloadStorage(CallbackPayload& p, const Reply& resp) {
 
 void BuildCreateJoinRoomPayloadCommon(ContextObject& ctx,
                                       const shadnet::CreateJoinRoomResponse& resp) {
-    CallbackPayload& p = ctx.request_payload;
+    CallbackPayload& p = RequestPayload(ctx);
     const auto& rd = resp.room_data();
 
     p.room_groups.resize(rd.groups_size());
@@ -172,7 +176,7 @@ void BuildCreateJoinRoomPayloadCommon(ContextObject& ctx,
         mc.join_date = m.join_date();
         mc.addr = IpStringToAddr(m.addr());
         mc.port = Libraries::Net::sceNetHtons(static_cast<u16>(m.port()));
-        std::strncpy(mc.np_id.handle.data, m.npid().c_str(), sizeof(mc.np_id.handle.data) - 1);
+        SetNpId(mc.np_id, m.npid());
         mc.account_id = static_cast<Libraries::Np::OrbisNpAccountId>(m.account_id());
         mc.platform = static_cast<Libraries::Np::OrbisNpPlatformType>(m.platform());
         for (const auto& a : m.bin_attrs_internal()) {
@@ -186,7 +190,7 @@ void BuildCreateJoinRoomPayloadCommon(ContextObject& ctx,
             peer.member_id = mc.member_id;
             peer.addr = mc.addr;
             peer.port = mc.port;
-            std::strncpy(peer.online_id.data, m.npid().c_str(), sizeof(peer.online_id.data) - 1);
+            SetNpOnlineId(peer.online_id, m.npid());
             ctx.peers[mc.member_id] = peer;
         }
     }
@@ -227,7 +231,7 @@ OrbisNpMatching2RoomMemberBinAttrInternal* AppendMemberBinAttrs(
 }
 
 void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRoomResponse& resp) {
-    CallbackPayload& p = ctx.request_payload;
+    CallbackPayload& p = RequestPayload(ctx);
     p.Reset();
     BuildCreateJoinRoomPayloadCommon(ctx, resp);
 
@@ -240,7 +244,7 @@ void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRo
         dst = OrbisNpMatching2RoomMemberDataInternal{};
         dst.next = (i + 1 < member_count) ? &p.member_data[i + 1] : nullptr;
         dst.joinDate = m.join_date();
-        std::strncpy(dst.npId.handle.data, m.npid().c_str(), sizeof(dst.npId.handle.data) - 1);
+        SetNpId(dst.npId, m.npid());
         dst.memberId = static_cast<OrbisNpMatching2RoomMemberId>(m.member_id());
         dst.teamId = static_cast<OrbisNpMatching2TeamId>(m.team_id());
         dst.natType = static_cast<OrbisNpMatching2NatType>(m.nat_type());
@@ -274,7 +278,7 @@ void* BuildCreateJoinRoomPayload(ContextObject& ctx, const shadnet::CreateJoinRo
 }
 
 void* BuildCreateJoinRoomPayloadA(ContextObject& ctx, const shadnet::CreateJoinRoomResponse& resp) {
-    CallbackPayload& p = ctx.request_payload;
+    CallbackPayload& p = RequestPayload(ctx);
     p.Reset();
     BuildCreateJoinRoomPayloadCommon(ctx, resp);
 
@@ -289,7 +293,7 @@ void* BuildCreateJoinRoomPayloadA(ContextObject& ctx, const shadnet::CreateJoinR
         dst.joinDateTicks.tick = m.join_date();
         dst.user.accountId = static_cast<Libraries::Np::OrbisNpAccountId>(m.account_id());
         dst.user.platform = static_cast<Libraries::Np::OrbisNpPlatformType>(m.platform());
-        std::strncpy(dst.onlineId.data, m.npid().c_str(), sizeof(dst.onlineId.data) - 1);
+        SetNpOnlineId(dst.onlineId, m.npid());
         dst.memberId = static_cast<OrbisNpMatching2RoomMemberId>(m.member_id());
         dst.teamId = static_cast<OrbisNpMatching2TeamId>(m.team_id());
         dst.natType = static_cast<OrbisNpMatching2NatType>(m.nat_type());
@@ -322,7 +326,7 @@ void* BuildCreateJoinRoomPayloadA(ContextObject& ctx, const shadnet::CreateJoinR
 }
 
 void* BuildLeaveRoomPayload(ContextObject& ctx, const shadnet::LeaveRoomReply& resp) {
-    CallbackPayload& p = ctx.request_payload;
+    CallbackPayload& p = RequestPayload(ctx);
     p.Reset();
 
     p.leave_room_response = std::make_unique<OrbisNpMatching2LeaveRoomResponse>();
@@ -341,7 +345,7 @@ void* BuildLeaveRoomPayload(ContextObject& ctx, const shadnet::LeaveRoomReply& r
 }
 
 void* BuildGetWorldInfoListPayload(ContextObject& ctx, const shadnet::GetWorldInfoListReply& resp) {
-    CallbackPayload& p = ctx.request_payload;
+    CallbackPayload& p = RequestPayload(ctx);
     p.Reset();
 
     p.world_list.resize(resp.worlds_size());
@@ -369,7 +373,7 @@ void* BuildGetWorldInfoListPayload(ContextObject& ctx, const shadnet::GetWorldIn
 }
 
 void* BuildSearchRoomPayload(ContextObject& ctx, const shadnet::SearchRoomReply& resp) {
-    CallbackPayload& p = ctx.request_payload;
+    CallbackPayload& p = RequestPayload(ctx);
     p.Reset();
     ReserveExternalRoomPayloadStorage(p, resp);
 
@@ -396,8 +400,7 @@ void* BuildSearchRoomPayload(ContextObject& ctx, const shadnet::SearchRoomReply&
 
         if (!r.owner_npid().empty()) {
             auto& npid = p.ext_owner_npids.emplace_back();
-            npid = Libraries::Np::OrbisNpId{};
-            std::strncpy(npid.handle.data, r.owner_npid().c_str(), sizeof(npid.handle.data) - 1);
+            SetNpId(npid, r.owner_npid());
             dst.ownerNpId = &npid;
         }
 
@@ -474,7 +477,7 @@ void* BuildSearchRoomPayload(ContextObject& ctx, const shadnet::SearchRoomReply&
 }
 
 void* BuildSearchRoomPayloadA(ContextObject& ctx, const shadnet::SearchRoomReply& resp) {
-    CallbackPayload& p = ctx.request_payload;
+    CallbackPayload& p = RequestPayload(ctx);
     p.Reset();
     ReserveExternalRoomPayloadStorage(p, resp);
 
@@ -500,8 +503,7 @@ void* BuildSearchRoomPayloadA(ContextObject& ctx, const shadnet::SearchRoomReply
         dst.openPrivateSlots = static_cast<u16>(r.open_private_slots());
 
         if (!r.owner_npid().empty()) {
-            std::strncpy(dst.ownerOnlineId.data, r.owner_npid().c_str(),
-                         sizeof(dst.ownerOnlineId.data) - 1);
+            SetNpOnlineId(dst.ownerOnlineId, r.owner_npid());
         }
         dst.owner.accountId = static_cast<Libraries::Np::OrbisNpAccountId>(r.owner_account_id());
         dst.owner.platform = static_cast<Libraries::Np::OrbisNpPlatformType>(r.owner_platform());
@@ -580,7 +582,7 @@ void* BuildSearchRoomPayloadA(ContextObject& ctx, const shadnet::SearchRoomReply
 
 void* BuildGetRoomDataExternalListPayload(ContextObject& ctx,
                                           const shadnet::GetRoomDataExternalListReply& resp) {
-    CallbackPayload& p = ctx.request_payload;
+    CallbackPayload& p = RequestPayload(ctx);
     p.Reset();
     ReserveExternalRoomPayloadStorage(p, resp);
 
@@ -607,8 +609,7 @@ void* BuildGetRoomDataExternalListPayload(ContextObject& ctx,
 
         if (!r.owner_npid().empty()) {
             auto& npid = p.ext_owner_npids.emplace_back();
-            npid = Libraries::Np::OrbisNpId{};
-            std::strncpy(npid.handle.data, r.owner_npid().c_str(), sizeof(npid.handle.data) - 1);
+            SetNpId(npid, r.owner_npid());
             dst.ownerNpId = &npid;
         }
 
@@ -685,7 +686,7 @@ void* BuildGetRoomDataExternalListPayload(ContextObject& ctx,
 
 void* BuildGetRoomDataExternalListPayloadA(ContextObject& ctx,
                                            const shadnet::GetRoomDataExternalListReply& resp) {
-    CallbackPayload& p = ctx.request_payload;
+    CallbackPayload& p = RequestPayload(ctx);
     p.Reset();
     ReserveExternalRoomPayloadStorage(p, resp);
 
@@ -711,8 +712,7 @@ void* BuildGetRoomDataExternalListPayloadA(ContextObject& ctx,
         dst.openPrivateSlots = static_cast<u16>(r.open_private_slots());
 
         if (!r.owner_npid().empty()) {
-            std::strncpy(dst.ownerOnlineId.data, r.owner_npid().c_str(),
-                         sizeof(dst.ownerOnlineId.data) - 1);
+            SetNpOnlineId(dst.ownerOnlineId, r.owner_npid());
         }
         dst.owner.accountId = static_cast<Libraries::Np::OrbisNpAccountId>(r.owner_account_id());
         dst.owner.platform = static_cast<Libraries::Np::OrbisNpPlatformType>(r.owner_platform());
@@ -788,6 +788,168 @@ void* BuildGetRoomDataExternalListPayloadA(ContextObject& ctx,
     return p.request_data;
 }
 
+void* BuildGetRoomMemberDataExternalListPayload(
+    ContextObject& ctx, const shadnet::GetRoomMemberDataExternalListReply& resp) {
+    CallbackPayload& p = RequestPayload(ctx);
+    p.Reset();
+
+    const int member_count = resp.members_size();
+    p.member_data_external.resize(member_count);
+    for (int i = 0; i < member_count; ++i) {
+        const auto& src = resp.members(i);
+        auto& dst = p.member_data_external[i];
+        dst = OrbisNpMatching2RoomMemberDataExternal{};
+        dst.next = (i + 1 < member_count) ? &p.member_data_external[i + 1] : nullptr;
+        SetNpId(dst.npId, src.npid());
+        dst.joinDate.tick = src.join_date();
+        dst.role = static_cast<OrbisNpMatching2Role>(src.role());
+    }
+
+    p.room_member_data_external_list_response =
+        std::make_unique<OrbisNpMatching2GetRoomMemberDataExternalListResponse>();
+    auto& out = *p.room_member_data_external_list_response;
+    out = OrbisNpMatching2GetRoomMemberDataExternalListResponse{};
+    out.roomMemberDataExternal =
+        p.member_data_external.empty() ? nullptr : p.member_data_external.data();
+    out.roomMemberDataExternalNum = static_cast<u64>(p.member_data_external.size());
+
+    p.request_data = p.room_member_data_external_list_response.get();
+    return p.request_data;
+}
+
+void* BuildGetRoomMemberDataExternalListPayloadA(
+    ContextObject& ctx, const shadnet::GetRoomMemberDataExternalListReply& resp) {
+    CallbackPayload& p = RequestPayload(ctx);
+    p.Reset();
+
+    const int member_count = resp.members_size();
+    p.member_data_external_a.resize(member_count);
+    for (int i = 0; i < member_count; ++i) {
+        const auto& src = resp.members(i);
+        auto& dst = p.member_data_external_a[i];
+        dst = OrbisNpMatching2RoomMemberDataExternalA{};
+        dst.next = (i + 1 < member_count) ? &p.member_data_external_a[i + 1] : nullptr;
+        dst.user.accountId = static_cast<Libraries::Np::OrbisNpAccountId>(src.account_id());
+        dst.user.platform = static_cast<Libraries::Np::OrbisNpPlatformType>(src.platform());
+        SetNpOnlineId(dst.onlineId, src.npid());
+        dst.joinDate.tick = src.join_date();
+        dst.role = static_cast<OrbisNpMatching2Role>(src.role());
+    }
+
+    p.room_member_data_external_list_response_a =
+        std::make_unique<OrbisNpMatching2GetRoomMemberDataExternalListResponseA>();
+    auto& out = *p.room_member_data_external_list_response_a;
+    out = OrbisNpMatching2GetRoomMemberDataExternalListResponseA{};
+    out.roomMemberDataExternal =
+        p.member_data_external_a.empty() ? nullptr : p.member_data_external_a.data();
+    out.roomMemberDataExternalNum = static_cast<u64>(p.member_data_external_a.size());
+
+    p.request_data = p.room_member_data_external_list_response_a.get();
+    return p.request_data;
+}
+
+void* BuildGetUserInfoListPayload(ContextObject& ctx, const shadnet::GetUserInfoListReply& resp) {
+    CallbackPayload& p = RequestPayload(ctx);
+    p.Reset();
+
+    size_t total_bin_attrs = 0;
+    for (int i = 0; i < resp.users_size(); ++i) {
+        total_bin_attrs += static_cast<size_t>(resp.users(i).user_bin_attrs_size());
+    }
+    p.user_bin_attrs.reserve(total_bin_attrs);
+    p.bin_buffers.reserve(total_bin_attrs);
+
+    const int user_count = resp.users_size();
+    p.user_info.resize(user_count);
+    for (int i = 0; i < user_count; ++i) {
+        const auto& u = resp.users(i);
+        auto& dst = p.user_info[i];
+        dst = OrbisNpMatching2UserInfo{};
+        dst.next = (i + 1 < user_count) ? &p.user_info[i + 1] : nullptr;
+        SetNpId(dst.npId, u.npid());
+
+        if (u.user_bin_attrs_size() > 0) {
+            OrbisNpMatching2BinAttr* first = nullptr;
+            for (int a = 0; a < u.user_bin_attrs_size(); ++a) {
+                const auto& src = u.user_bin_attrs(a);
+                p.bin_buffers.emplace_back(src.data().begin(), src.data().end());
+                auto& buf = p.bin_buffers.back();
+                auto& ba = p.user_bin_attrs.emplace_back();
+                ba = OrbisNpMatching2BinAttr{};
+                ba.id = static_cast<OrbisNpMatching2AttributeId>(src.attr_id());
+                ba.data = buf.empty() ? nullptr : buf.data();
+                ba.dataSize = buf.size();
+                if (!first) {
+                    first = &ba;
+                }
+            }
+            dst.userBinAttr = first;
+            dst.userBinAttrNum = static_cast<u64>(u.user_bin_attrs_size());
+        }
+    }
+
+    p.user_info_list_response = std::make_unique<OrbisNpMatching2GetUserInfoListResponse>();
+    auto& out = *p.user_info_list_response;
+    out = OrbisNpMatching2GetUserInfoListResponse{};
+    out.userInfo = p.user_info.empty() ? nullptr : p.user_info.data();
+    out.userInfoNum = static_cast<u64>(p.user_info.size());
+
+    p.request_data = p.user_info_list_response.get();
+    return p.request_data;
+}
+
+void* BuildGetUserInfoListPayloadA(ContextObject& ctx, const shadnet::GetUserInfoListReply& resp) {
+    CallbackPayload& p = RequestPayload(ctx);
+    p.Reset();
+
+    size_t total_bin_attrs = 0;
+    for (int i = 0; i < resp.users_size(); ++i) {
+        total_bin_attrs += static_cast<size_t>(resp.users(i).user_bin_attrs_size());
+    }
+    p.user_bin_attrs.reserve(total_bin_attrs);
+    p.bin_buffers.reserve(total_bin_attrs);
+
+    const int user_count = resp.users_size();
+    p.user_info_a.resize(user_count);
+    for (int i = 0; i < user_count; ++i) {
+        const auto& u = resp.users(i);
+        auto& dst = p.user_info_a[i];
+        dst = OrbisNpMatching2UserInfoA{};
+        dst.next = (i + 1 < user_count) ? &p.user_info_a[i + 1] : nullptr;
+        SetNpOnlineId(dst.userOnlineId, u.npid());
+        dst.user.accountId = static_cast<Libraries::Np::OrbisNpAccountId>(u.account_id());
+        dst.user.platform = static_cast<Libraries::Np::OrbisNpPlatformType>(u.platform());
+
+        if (u.user_bin_attrs_size() > 0) {
+            OrbisNpMatching2BinAttr* first = nullptr;
+            for (int a = 0; a < u.user_bin_attrs_size(); ++a) {
+                const auto& src = u.user_bin_attrs(a);
+                p.bin_buffers.emplace_back(src.data().begin(), src.data().end());
+                auto& buf = p.bin_buffers.back();
+                auto& ba = p.user_bin_attrs.emplace_back();
+                ba = OrbisNpMatching2BinAttr{};
+                ba.id = static_cast<OrbisNpMatching2AttributeId>(src.attr_id());
+                ba.data = buf.empty() ? nullptr : buf.data();
+                ba.dataSize = buf.size();
+                if (!first) {
+                    first = &ba;
+                }
+            }
+            dst.userBinAttr = first;
+            dst.userBinAttrNum = static_cast<u64>(u.user_bin_attrs_size());
+        }
+    }
+
+    p.user_info_list_response_a = std::make_unique<OrbisNpMatching2GetUserInfoListResponseA>();
+    auto& out = *p.user_info_list_response_a;
+    out = OrbisNpMatching2GetUserInfoListResponseA{};
+    out.userInfo = p.user_info_a.empty() ? nullptr : p.user_info_a.data();
+    out.userInfoNum = static_cast<u64>(p.user_info_a.size());
+
+    p.request_data = p.user_info_list_response_a.get();
+    return p.request_data;
+}
+
 void* BuildGetRoomDataInternalPayload(ContextObject& ctx, OrbisNpMatching2RoomId room_id) {
     const auto rc_it = ctx.room_cache.find(room_id);
     if (rc_it == ctx.room_cache.end()) {
@@ -795,7 +957,7 @@ void* BuildGetRoomDataInternalPayload(ContextObject& ctx, OrbisNpMatching2RoomId
     }
     const RoomCache& rc = rc_it->second;
 
-    CallbackPayload& p = ctx.request_payload;
+    CallbackPayload& p = RequestPayload(ctx);
     p.Reset();
 
     p.room_groups.clear();
@@ -879,6 +1041,68 @@ void* BuildGetRoomDataInternalPayload(ContextObject& ctx, OrbisNpMatching2RoomId
     return p.request_data;
 }
 
+void* BuildRoomMessagePayload(CallbackPayload& p, bool a_variant, OrbisNpMatching2CastType castType,
+                              const std::vector<OrbisNpMatching2RoomMemberId>& dstMembers,
+                              const MemberCache* srcMember, const std::vector<u8>& msg) {
+    p.Reset();
+
+    p.room_message_dst = std::make_unique<OrbisNpMatching2RoomMessageDestination>();
+    *p.room_message_dst = {};
+    if (castType == ORBIS_NP_MATCHING2_CASTTYPE_UNICAST && !dstMembers.empty()) {
+        p.room_message_dst->unicastTarget = dstMembers.front();
+    } else if (castType == ORBIS_NP_MATCHING2_CASTTYPE_MULTICAST && !dstMembers.empty()) {
+        p.room_message_multicast_members = dstMembers;
+        p.room_message_dst->multicastTarget.memberId = p.room_message_multicast_members.data();
+        p.room_message_dst->multicastTarget.memberIdNum = p.room_message_multicast_members.size();
+    }
+
+    p.room_message_data = msg;
+    void* msg_ptr = p.room_message_data.empty() ? nullptr : p.room_message_data.data();
+
+    if (a_variant) {
+        p.room_message_src_addr = std::make_unique<Libraries::Np::OrbisNpPeerAddressA>();
+        p.room_message_src_online_id = std::make_unique<Libraries::Np::OrbisNpOnlineId>();
+        *p.room_message_src_addr = {};
+        *p.room_message_src_online_id = {};
+        if (srcMember) {
+            p.room_message_src_addr->accountId = srcMember->account_id;
+            p.room_message_src_addr->platform = srcMember->platform;
+            *p.room_message_src_online_id = srcMember->np_id.handle;
+        }
+
+        p.room_message_info_a = std::make_unique<OrbisNpMatching2RoomMessageInfoA>();
+        auto& info = *p.room_message_info_a;
+        info = {};
+        info.filtered = false;
+        info.castType = castType;
+        info.dst = p.room_message_dst.get();
+        info.srcMember = p.room_message_src_addr.get();
+        info.srcOnlineId = p.room_message_src_online_id.get();
+        info.msg = msg_ptr;
+        info.msgLen = static_cast<u32>(p.room_message_data.size());
+        p.room_message_callback_data = p.room_message_info_a.get();
+        return p.room_message_callback_data;
+    }
+
+    p.room_message_src_npid = std::make_unique<Libraries::Np::OrbisNpId>();
+    *p.room_message_src_npid = {};
+    if (srcMember) {
+        *p.room_message_src_npid = srcMember->np_id;
+    }
+
+    p.room_message_info = std::make_unique<OrbisNpMatching2RoomMessageInfo>();
+    auto& info = *p.room_message_info;
+    info = {};
+    info.filtered = false;
+    info.castType = castType;
+    info.dst = p.room_message_dst.get();
+    info.srcMember = p.room_message_src_npid.get();
+    info.msg = msg_ptr;
+    info.msgLen = static_cast<u32>(p.room_message_data.size());
+    p.room_message_callback_data = p.room_message_info.get();
+    return p.room_message_callback_data;
+}
+
 ContextManager& ContextManager::Instance() {
     static ContextManager instance;
     return instance;
@@ -944,13 +1168,34 @@ ContextObject* ContextManager::Get(OrbisNpMatching2ContextId ctx_id) {
 
 bool ContextManager::Destroy(OrbisNpMatching2ContextId ctx_id) {
     std::lock_guard lock(m_mutex);
-    if (!GetLocked(ctx_id)) {
+    ContextObject* ctx = GetLocked(ctx_id);
+    if (!ctx) {
         return false;
+    }
+    if (ctx->stop_pending) {
+        ctx->destroy_pending = true;
+        LOG_DEBUG(Lib_NpMatching2, "context destroy deferred until stop callback: id={}", ctx_id);
+        return true;
     }
     m_contexts[ctx_id].Reset();
     m_used[ctx_id] = false;
     LOG_DEBUG(Lib_NpMatching2, "context destroyed: id={}", ctx_id);
     return true;
+}
+
+void ContextManager::CompleteStop(OrbisNpMatching2ContextId ctx_id) {
+    std::lock_guard lock(m_mutex);
+    ContextObject* ctx = GetLocked(ctx_id);
+    if (!ctx) {
+        return;
+    }
+    ctx->stop_pending = false;
+    if (!ctx->destroy_pending) {
+        return;
+    }
+    m_contexts[ctx_id].Reset();
+    m_used[ctx_id] = false;
+    LOG_DEBUG(Lib_NpMatching2, "context destroyed after stop callback: id={}", ctx_id);
 }
 
 s32 ContextManager::Start(OrbisNpMatching2ContextId ctx_id) {
@@ -963,6 +1208,8 @@ s32 ContextManager::Start(OrbisNpMatching2ContextId ctx_id) {
         return ORBIS_NP_MATCHING2_ERROR_CONTEXT_ALREADY_STARTED;
     }
     ctx->started = true;
+    ctx->stop_pending = false;
+    ctx->destroy_pending = false;
     LOG_DEBUG(Lib_NpMatching2, "context started: id={}", ctx_id);
     return ORBIS_OK;
 }
@@ -977,6 +1224,7 @@ s32 ContextManager::Stop(OrbisNpMatching2ContextId ctx_id) {
         return ORBIS_NP_MATCHING2_ERROR_CONTEXT_NOT_STARTED;
     }
     ctx->started = false;
+    ctx->stop_pending = true;
     LOG_DEBUG(Lib_NpMatching2, "context stopped: id={}", ctx_id);
     return ORBIS_OK;
 }
@@ -1024,10 +1272,27 @@ void SetInitialized(bool initialized) {
 }
 
 void StoreRequestCallback(ContextObject* ctx, const OrbisNpMatching2RequestOptParam* requestOpt) {
+    ctx->per_request_callback = nullptr;
+    ctx->per_request_callback_arg = nullptr;
     if (requestOpt && requestOpt->callback) {
-        ctx->default_request_callback = requestOpt->callback;
-        ctx->default_request_callback_arg = requestOpt->arg;
+        ctx->per_request_callback = requestOpt->callback;
+        ctx->per_request_callback_arg = requestOpt->arg;
     }
+}
+
+RequestCallbackInfo ConsumeRequestCallback(ContextObject* ctx) {
+    RequestCallbackInfo cb{};
+    if (ctx->per_request_callback) {
+        cb.callback = ctx->per_request_callback;
+        cb.arg = ctx->per_request_callback_arg;
+        ctx->per_request_callback = nullptr;
+        ctx->per_request_callback_arg = nullptr;
+        return cb;
+    }
+
+    cb.callback = ctx->default_request_callback;
+    cb.arg = ctx->default_request_callback_arg;
+    return cb;
 }
 
 namespace {
@@ -1050,6 +1315,9 @@ void FireEvent(const PendingEvent& ev) {
         } else {
             LOG_WARNING(Lib_NpMatching2, "callback CONTEXT ctx={} event={:#x} SKIPPED: no callback",
                         ev.ctx_id, static_cast<u16>(ev.ctx_event));
+        }
+        if (ev.ctx_event == ORBIS_NP_MATCHING2_CONTEXT_EVENT_STOPPED) {
+            ContextManager::Instance().CompleteStop(ev.ctx_id);
         }
         break;
     case PendingEvent::REQUEST_CB:

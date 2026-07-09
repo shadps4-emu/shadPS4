@@ -516,6 +516,10 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/video_recording/video_recording.cpp
                 src/core/libraries/video_recording/video_recording.h
                 src/core/libraries/video_recording/video_recording_error.h
+                src/core/libraries/invitation_dialog/invitation_dialog.cpp
+                src/core/libraries/invitation_dialog/invitation_dialog.h
+                src/core/libraries/invitation_dialog/invitation_dialog_ui.cpp
+                src/core/libraries/invitation_dialog/invitation_dialog_ui.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -645,8 +649,6 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_tus.h
             src/core/libraries/np/trophy_ui.cpp
             src/core/libraries/np/trophy_ui.h
-            src/core/libraries/np/np_web_api2.cpp
-            src/core/libraries/np/np_web_api2.h
             src/core/libraries/np/np_party.cpp
             src/core/libraries/np/np_party.h
             src/core/libraries/np/np_auth.cpp
@@ -681,6 +683,14 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_web_api/np_web_api.h
             src/core/libraries/np/np_web_api/np_web_api_internal.cpp
             src/core/libraries/np/np_web_api/np_web_api_internal.h
+            src/core/libraries/np/np_web_api2/np_web_api2.cpp
+            src/core/libraries/np/np_web_api2/np_web_api2.h
+            src/core/libraries/np/np_web_api2/np_web_api2_internal.cpp
+            src/core/libraries/np/np_web_api2/np_web_api2_internal.h
+            src/core/libraries/np/np_web_api2/np_web_api2_context.cpp
+            src/core/libraries/np/np_web_api2/np_web_api2_context.h
+            src/core/libraries/np/np_web_api2/np_web_api2_push_event.cpp
+            src/core/libraries/np/np_web_api2/np_web_api2_push_event.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
@@ -1140,6 +1150,8 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_translations.h
           src/imgui/friends_layer.cpp
           src/imgui/friends_layer.h
+          src/imgui/invitation_prompt_layer.cpp
+          src/imgui/invitation_prompt_layer.h
           src/imgui/shadnet_notifications_layer.cpp
           src/imgui/shadnet_notifications_layer.h
           src/imgui/notifications_layer.cpp

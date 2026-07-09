@@ -1068,6 +1068,10 @@ bool Rasterizer::ReadMemory(VAddr addr, u64 size) {
     return true;
 }
 
+void Rasterizer::ProcessDownloadImages() {
+    texture_cache.ProcessDownloadImages();
+}
+
 bool Rasterizer::IsMapped(VAddr addr, u64 size) {
     if (size == 0) {
         // There is no memory, so not mapped.

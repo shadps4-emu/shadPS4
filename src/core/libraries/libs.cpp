@@ -22,6 +22,7 @@
 #include "core/libraries/ime/error_dialog.h"
 #include "core/libraries/ime/ime.h"
 #include "core/libraries/ime/ime_dialog.h"
+#include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libpng/pngdec.h"
@@ -48,7 +49,7 @@
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/np_tus.h"
 #include "core/libraries/np/np_web_api/np_web_api.h"
-#include "core/libraries/np/np_web_api2.h"
+#include "core/libraries/np/np_web_api2/np_web_api2.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/playgo/playgo.h"
 #include "core/libraries/playgo/playgo_dialog.h"
@@ -158,6 +159,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::VrTracker::RegisterLib(sym);
     Libraries::ContentExport::RegisterLib(sym);
     Libraries::VideoRecording::RegisterLib(sym);
+    Libraries::InvitationDialog::RegisterLib(sym);
 
     // Loading libSceSsl is locked behind a title workaround that currently applies to nothing.
     // Libraries::Ssl::RegisterLib(sym);
