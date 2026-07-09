@@ -89,10 +89,9 @@ void Linker::Execute(const std::vector<std::string>& args) {
     // Relocate all modules
     RelocateAllImports();
 
-    // Before we can run guest code, we need to properly initialize the heap API and
-    // libSceLibcInternal. libSceLibcInternal's _malloc_init serves as an additional initialization
-    // function called by libkernel.
-    heap_api = new HeapAPI{};
+    // If we're running LLE libSceLibcInternal,
+    // we need to find the _malloc_init function and run it manually.
+    // This is something libkernel runs during initialization.
     static PS4_SYSV_ABI s32 (*malloc_init)() = nullptr;
 
     if (has_libcinternal) {
@@ -501,7 +500,7 @@ void* Linker::AllocateTlsForThread(bool is_primary) {
 }
 
 void Linker::FreeTlsForNonPrimaryThread(void* pointer) {
-    if (heap_api) {
+    if (heap_api && heap_api->heap_free) {
         heap_api->heap_free(pointer);
     } else {
         std::free(pointer);
