@@ -12,6 +12,7 @@
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 
+// ALC_SOFT_HRTF constants, in case the alext.h in use predates the extension.
 #ifndef ALC_SOFT_HRTF
 #define ALC_HRTF_SOFT 0x1992
 #define ALC_DONT_CARE_SOFT 0x0002
@@ -212,21 +213,23 @@ private:
             return false;
         }
 
-        // Create context, requesting HRTF per the user setting when the device
-        // supports ALC_SOFT_HRTF. In Auto mode OpenAL Soft decides on its own
-        const ALCint* attr_ptr = nullptr;
-        std::array<ALCint, 3> attrs{};
+        std::array<ALCint, 5> attrs{};
+        std::size_t attr_count = 0;
+        attrs[attr_count++] = ALC_FREQUENCY;
+        attrs[attr_count++] = 48000;
+
         const bool has_hrtf_ext = alcIsExtensionPresent(ctx.device, "ALC_SOFT_HRTF");
         if (has_hrtf_ext) {
             const u32 hrtf_mode = EmulatorSettings.GetOpenALHrtf();
             const ALCint hrtf_value = hrtf_mode == OpenALHrtfMode::HrtfOn    ? ALC_TRUE
                                       : hrtf_mode == OpenALHrtfMode::HrtfOff ? ALC_FALSE
                                                                              : ALC_DONT_CARE_SOFT;
-            attrs = {ALC_HRTF_SOFT, hrtf_value, 0};
-            attr_ptr = attrs.data();
+            attrs[attr_count++] = ALC_HRTF_SOFT;
+            attrs[attr_count++] = hrtf_value;
         }
+        attrs[attr_count] = 0;
 
-        ctx.context = alcCreateContext(ctx.device, attr_ptr);
+        ctx.context = alcCreateContext(ctx.device, attrs.data());
         if (!ctx.context) {
             LOG_ERROR(Lib_AudioOut, "Failed to create OpenAL context");
             alcCloseDevice(ctx.device);
@@ -242,6 +245,13 @@ private:
             actual_name = alcGetString(ctx.device, ALC_DEVICE_SPECIFIER);
         }
         ctx.device_name = actual_name ? actual_name : "Unknown";
+        ALCint mixer_rate = 0;
+        alcGetIntegerv(ctx.device, ALC_FREQUENCY, 1, &mixer_rate);
+        LOG_INFO(Lib_AudioOut, "OpenAL mixer rate for '{}': {} Hz", ctx.device_name, mixer_rate);
+        if (mixer_rate != 0 && mixer_rate != 48000) {
+            LOG_WARNING(Lib_AudioOut,
+                        "OpenAL mixer is not running at 48000 Hz per-source resampling active");
+        }
 
         if (has_hrtf_ext) {
             ALCint status = ALC_HRTF_DISABLED_SOFT;
