@@ -1,12 +1,28 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
+#include <array>
 #include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <AL/al.h>
 #include <AL/alc.h>
+
+#include "common/logging/log.h"
+#include "core/emulator_settings.h"
+
+#ifndef ALC_SOFT_HRTF
+#define ALC_HRTF_SOFT 0x1992
+#define ALC_DONT_CARE_SOFT 0x0002
+#define ALC_HRTF_STATUS_SOFT 0x1993
+#define ALC_HRTF_DISABLED_SOFT 0x0000
+#define ALC_HRTF_ENABLED_SOFT 0x0001
+#define ALC_HRTF_DENIED_SOFT 0x0002
+#define ALC_HRTF_REQUIRED_SOFT 0x0003
+#define ALC_HRTF_HEADPHONES_DETECTED_SOFT 0x0004
+#define ALC_HRTF_UNSUPPORTED_FORMAT_SOFT 0x0005
+#endif
 
 namespace Libraries::AudioOut {
 
@@ -196,8 +212,21 @@ private:
             return false;
         }
 
-        // Create context
-        ctx.context = alcCreateContext(ctx.device, nullptr);
+        // Create context, requesting HRTF per the user setting when the device
+        // supports ALC_SOFT_HRTF. In Auto mode OpenAL Soft decides on its own
+        const ALCint* attr_ptr = nullptr;
+        std::array<ALCint, 3> attrs{};
+        const bool has_hrtf_ext = alcIsExtensionPresent(ctx.device, "ALC_SOFT_HRTF");
+        if (has_hrtf_ext) {
+            const u32 hrtf_mode = EmulatorSettings.GetOpenALHrtf();
+            const ALCint hrtf_value = hrtf_mode == OpenALHrtfMode::HrtfOn    ? ALC_TRUE
+                                      : hrtf_mode == OpenALHrtfMode::HrtfOff ? ALC_FALSE
+                                                                             : ALC_DONT_CARE_SOFT;
+            attrs = {ALC_HRTF_SOFT, hrtf_value, 0};
+            attr_ptr = attrs.data();
+        }
+
+        ctx.context = alcCreateContext(ctx.device, attr_ptr);
         if (!ctx.context) {
             LOG_ERROR(Lib_AudioOut, "Failed to create OpenAL context");
             alcCloseDevice(ctx.device);
@@ -214,8 +243,37 @@ private:
         }
         ctx.device_name = actual_name ? actual_name : "Unknown";
 
+        if (has_hrtf_ext) {
+            ALCint status = ALC_HRTF_DISABLED_SOFT;
+            alcGetIntegerv(ctx.device, ALC_HRTF_STATUS_SOFT, 1, &status);
+            LOG_INFO(Lib_AudioOut, "OpenAL HRTF status for '{}': {}", ctx.device_name,
+                     HrtfStatusString(status));
+        } else {
+            LOG_INFO(Lib_AudioOut, "OpenAL device '{}' does not support ALC_SOFT_HRTF",
+                     ctx.device_name);
+        }
+
         LOG_INFO(Lib_AudioOut, "OpenAL device initialized: '{}'", ctx.device_name);
         return true;
+    }
+
+    static const char* HrtfStatusString(const ALCint status) {
+        switch (status) {
+        case ALC_HRTF_DISABLED_SOFT:
+            return "disabled";
+        case ALC_HRTF_ENABLED_SOFT:
+            return "enabled";
+        case ALC_HRTF_DENIED_SOFT:
+            return "denied by configuration";
+        case ALC_HRTF_REQUIRED_SOFT:
+            return "required by configuration";
+        case ALC_HRTF_HEADPHONES_DETECTED_SOFT:
+            return "enabled (headphones detected)";
+        case ALC_HRTF_UNSUPPORTED_FORMAT_SOFT:
+            return "unsupported output format";
+        default:
+            return "unknown";
+        }
     }
 
     std::unordered_map<std::string, DeviceContext> devices;
