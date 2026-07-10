@@ -78,8 +78,6 @@ static s32 DrainAssociatedPorts(Port& port) {
 s32 PS4_SYSV_ABI sceAudio3dAudioOutClose(const s32 handle) {
     LOG_INFO(Lib_Audio3d, "called, handle = {}", handle);
 
-    // Remove from any port that was tracking this handle. Pending buffers that
-    // were never pushed are discarded, matching an immediate close.
     if (state) {
         for (auto& [port_id, port] : state->ports) {
             std::scoped_lock lock{port.mutex};
@@ -601,8 +599,29 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
                     left = v;
                     right = v;
                 } else {
-                    left = src[i * channels + 0] / 32768.0f;
-                    right = src[i * channels + 1] / 32768.0f;
+                    const auto sample = [&](const u32 c) {
+                        return src[i * channels + c] / 32768.0f;
+                    };
+                    left = sample(0);
+                    right = sample(1);
+                    if (channels >= 3) {
+                        const float center = 0.7071f * sample(2);
+                        left += center;
+                        right += center;
+                    }
+                    if (channels >= 4) {
+                        const float lfe = 0.5f * sample(3);
+                        left += lfe;
+                        right += lfe;
+                    }
+                    if (channels >= 6) {
+                        left += 0.7071f * sample(4);
+                        right += 0.7071f * sample(5);
+                    }
+                    if (channels >= 8) {
+                        left += 0.7071f * sample(6);
+                        right += 0.7071f * sample(7);
+                    }
                 }
 
                 mix_float[i * 2 + 0] += left * gain;
@@ -619,8 +638,28 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
                     left = src[i];
                     right = src[i];
                 } else {
-                    left = src[i * channels + 0];
-                    right = src[i * channels + 1];
+                    // Same multichannel fold as the S16 branch above.
+                    const auto sample = [&](const u32 c) { return src[i * channels + c]; };
+                    left = sample(0);
+                    right = sample(1);
+                    if (channels >= 3) {
+                        const float center = 0.7071f * sample(2);
+                        left += center;
+                        right += center;
+                    }
+                    if (channels >= 4) {
+                        const float lfe = 0.5f * sample(3);
+                        left += lfe;
+                        right += lfe;
+                    }
+                    if (channels >= 6) {
+                        left += 0.7071f * sample(4);
+                        right += 0.7071f * sample(5);
+                    }
+                    if (channels >= 8) {
+                        left += 0.7071f * sample(6);
+                        right += 0.7071f * sample(7);
+                    }
                 }
 
                 mix_float[i * 2 + 0] += left * gain;

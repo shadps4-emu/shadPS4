@@ -380,6 +380,7 @@ static bool EnsureSpatial(Port& port) {
     }
 
     alGetError();
+
     alDistanceModel(AL_NONE);
     alListener3f(AL_POSITION, 0.0f, 0.0f, 0.0f);
 
@@ -755,8 +756,6 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutOutput(const s32 handle, void* ptr) {
 
                 const u8* src = static_cast<const u8*>(ptr);
                 aout.pending.emplace_back(src, src + aout.buffer_bytes);
-
-                // Mirror sceAudioOutOutput's return of samples sent.
                 return static_cast<s32>(aout.samples_per_buffer);
             }
         }
@@ -1199,8 +1198,29 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
                     left = v;
                     right = v;
                 } else {
-                    left = src[i * channels + 0] / 32768.0f;
-                    right = src[i * channels + 1] / 32768.0f;
+                    const auto sample = [&](const u32 c) {
+                        return src[i * channels + c] / 32768.0f;
+                    };
+                    left = sample(0);
+                    right = sample(1);
+                    if (channels >= 3) {
+                        const float center = 0.7071f * sample(2);
+                        left += center;
+                        right += center;
+                    }
+                    if (channels >= 4) {
+                        const float lfe = 0.5f * sample(3);
+                        left += lfe;
+                        right += lfe;
+                    }
+                    if (channels >= 6) {
+                        left += 0.7071f * sample(4);
+                        right += 0.7071f * sample(5);
+                    }
+                    if (channels >= 8) {
+                        left += 0.7071f * sample(6);
+                        right += 0.7071f * sample(7);
+                    }
                 }
 
                 mix_float[i * 2 + 0] += left * gain;
@@ -1217,8 +1237,28 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
                     left = src[i];
                     right = src[i];
                 } else {
-                    left = src[i * channels + 0];
-                    right = src[i * channels + 1];
+                    // Same multichannel fold as the S16 branch above.
+                    const auto sample = [&](const u32 c) { return src[i * channels + c]; };
+                    left = sample(0);
+                    right = sample(1);
+                    if (channels >= 3) {
+                        const float center = 0.7071f * sample(2);
+                        left += center;
+                        right += center;
+                    }
+                    if (channels >= 4) {
+                        const float lfe = 0.5f * sample(3);
+                        left += lfe;
+                        right += lfe;
+                    }
+                    if (channels >= 6) {
+                        left += 0.7071f * sample(4);
+                        right += 0.7071f * sample(5);
+                    }
+                    if (channels >= 8) {
+                        left += 0.7071f * sample(6);
+                        right += 0.7071f * sample(7);
+                    }
                 }
 
                 mix_float[i * 2 + 0] += left * gain;
