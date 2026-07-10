@@ -169,6 +169,8 @@ void ShadNetClient::ConnectThread() {
             connected = true;
             break;
         }
+        if (m_state == ShadNetState::FailureProtocol)
+            break;
         if (m_terminate || attempt == SHAD_CONNECT_MAX_ATTEMPTS)
             break;
         LOG_WARNING(ShadNet, "ShadNet: connect attempt {}/{} to {}:{} failed, retrying in {} ms",
@@ -400,11 +402,12 @@ bool ShadNetClient::DoConnect() {
     }
     if (payload_sz >= 4) {
         const u32 server_ver = GetLE32(si_payload.data());
+        m_server_protocol_version.store(server_ver);
         if (server_ver != SHAD_PROTOCOL_VERSION) {
             LOG_ERROR(ShadNet, "Protocol version mismatch server={} client={}", server_ver,
                       SHAD_PROTOCOL_VERSION);
             DoDisconnect();
-            m_state = ShadNetState::FailureServerInfo;
+            m_state = ShadNetState::FailureProtocol;
             return false;
         }
     }
