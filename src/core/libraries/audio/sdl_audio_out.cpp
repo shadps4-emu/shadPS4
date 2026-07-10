@@ -109,6 +109,7 @@ public:
             const float channel_gain = static_cast<float>(ch_volumes[i]) * INV_VOLUME_0DB;
             max_channel_gain = std::max(max_channel_gain, channel_gain);
         }
+        game_gain.store(max_channel_gain, std::memory_order_release);
 
         const float slider_gain = EmulatorSettings.GetVolumeSlider() * 0.01f; // Faster than /100.0f
         const float total_gain = max_channel_gain * slider_gain;
@@ -201,7 +202,8 @@ private:
 
         last_volume_check_time = current_time;
 
-        const float config_volume = EmulatorSettings.GetVolumeSlider() * 0.01f;
+        const float config_volume =
+            EmulatorSettings.GetVolumeSlider() * 0.01f * game_gain.load(std::memory_order_acquire);
         const float stored_gain = current_gain.load(std::memory_order_acquire);
 
         // Only update if the difference is significant
@@ -587,6 +589,7 @@ private:
 
     // Volume management
     alignas(64) std::atomic<float> current_gain{1.0f};
+    std::atomic<float> game_gain{1.0f};
 
     // SDL audio stream
     SDL_AudioStream* stream{nullptr};
