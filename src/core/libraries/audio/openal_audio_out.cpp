@@ -14,6 +14,11 @@
 // Fallbacks in case the alext.h in use predates these extensions.
 #ifndef ALC_SOFT_output_mode
 #define ALC_OUTPUT_MODE_SOFT 0x19AC
+#define ALC_MONO_SOFT 0x1500
+#define ALC_STEREO_SOFT 0x1501
+#define ALC_STEREO_BASIC_SOFT 0x19AE
+#define ALC_STEREO_UHJ_SOFT 0x19AF
+#define ALC_STEREO_HRTF_SOFT 0x19B2
 #define ALC_SURROUND_5_1_SOFT 0x1504
 #define ALC_SURROUND_6_1_SOFT 0x1505
 #define ALC_SURROUND_7_1_SOFT 0x1506
@@ -268,6 +273,20 @@ private:
             ALCint hrtf_on = 0;
             alcGetIntegerv(alc_dev, ALC_HRTF_SOFT, 1, &hrtf_on);
             hrtf_active = hrtf_on == ALC_TRUE;
+        }
+
+        const bool stereo_output = output_mode == ALC_MONO_SOFT || output_mode == ALC_STEREO_SOFT ||
+                                   output_mode == ALC_STEREO_BASIC_SOFT ||
+                                   output_mode == ALC_STEREO_UHJ_SOFT ||
+                                   output_mode == ALC_STEREO_HRTF_SOFT;
+        if (know_output_mode && stereo_output && !hrtf_active && num_channels >= 6 &&
+            !downmix_to_stereo) {
+            downmix_to_stereo = true;
+            use_native_float = false;
+            format = AL_FORMAT_STEREO16;
+            fold_lfe = false; // The downmix converters already carry LFE.
+            LOG_INFO(Lib_AudioOut, "Stereo output: using internal {}ch->stereo downmix",
+                     num_channels);
         }
 
         // Allocate buffers based on format
@@ -654,7 +673,6 @@ private:
         if (std::abs(v) < 1.0e-20f)
             v = 0.0f;
 
-        // Sony behavior: +1.0f -> 32767, -1.0f -> -32768
         const float scaled = v * 32768.0f;
 
         if (scaled >= 32767.0f)
@@ -740,7 +758,6 @@ private:
             d[i * 2 + 1] = OrbisFloatToS16(s[o + FR] + center + lfe + 0.7071f * s[o + 5]);
         }
     }
-
     void FoldLfeIntoFronts() {
         constexpr float LFE_GAIN = 0.7071f;
         if (use_native_float) {
