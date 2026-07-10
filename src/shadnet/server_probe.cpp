@@ -92,8 +92,9 @@ ProbeInfo ProbeServer(const std::string& host, u16 port, u32 timeout_ms) {
         fd_set wfds;
         FD_ZERO(&wfds);
         FD_SET(sock, &wfds);
-        struct timeval tv{static_cast<long>(timeout_ms / 1000),
-                          static_cast<long>((timeout_ms % 1000) * 1000)};
+        struct timeval tv{};
+        tv.tv_sec = static_cast<decltype(tv.tv_sec)>(timeout_ms / 1000);
+        tv.tv_usec = static_cast<decltype(tv.tv_usec)>((timeout_ms % 1000) * 1000);
         if (::select(static_cast<int>(sock) + 1, nullptr, &wfds, nullptr, &tv) > 0) {
             int err = 0;
             socklen_t len = sizeof(err);
@@ -121,8 +122,9 @@ ProbeInfo ProbeServer(const std::string& host, u16 port, u32 timeout_ms) {
         int fl = ::fcntl(sock, F_GETFL, 0);
         ::fcntl(sock, F_SETFL, fl & ~O_NONBLOCK);
     }
-    struct timeval so_rcv{static_cast<long>(timeout_ms / 1000),
-                          static_cast<long>((timeout_ms % 1000) * 1000)};
+    struct timeval so_rcv{};
+    so_rcv.tv_sec = static_cast<decltype(so_rcv.tv_sec)>(timeout_ms / 1000);
+    so_rcv.tv_usec = static_cast<decltype(so_rcv.tv_usec)>((timeout_ms % 1000) * 1000);
 #endif
     ::setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&so_rcv),
                  sizeof(so_rcv));
