@@ -223,6 +223,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceJson.sprx", nullptr},
              {"libSceJson2.sprx", nullptr},
              {"libSceCesCs.sprx", nullptr},
+             {"libSceAt9Enc.sprx", nullptr},
              {"libSceAudiodec.sprx", nullptr},
              {"libSceAudiodecCpu.sprx", nullptr},
              {"libSceAudiodecCpuDdp.sprx", nullptr},
