@@ -264,18 +264,9 @@ private:
             return false;
         }
 
-        SDL_AudioSpec dev_spec{};
-        if (num_channels >= 6 && SDL_GetAudioDeviceFormat(dev_id, &dev_spec, nullptr) &&
-            dev_spec.channels <= 2) {
-            ps4_downmix = true;
-            internal_buffer_size = buffer_frames * sizeof(float) * 2;
-            LOG_INFO(Lib_AudioOut, "Stereo device: using PS4-accurate {}ch->stereo downmix",
-                     num_channels);
-        }
-
         const SDL_AudioSpec fmt = {
             .format = SDL_AUDIO_F32LE,
-            .channels = static_cast<u8>(ps4_downmix ? 2u : num_channels),
+            .channels = static_cast<u8>(num_channels),
             .freq = static_cast<int>(sample_rate),
         };
 
@@ -284,6 +275,28 @@ private:
         if (!stream) {
             LOG_ERROR(Lib_AudioOut, "Failed to create SDL audio stream: {}", SDL_GetError());
             return false;
+        }
+
+        SDL_AudioSpec dev_spec{};
+        if (num_channels >= 6 &&
+            SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(stream), &dev_spec, nullptr) &&
+            dev_spec.channels >= 1 && dev_spec.channels <= 2) {
+            ps4_downmix = true;
+            internal_buffer_size = buffer_frames * sizeof(float) * 2;
+            LOG_INFO(Lib_AudioOut, "Stereo device: using PS4-accurate {}ch->stereo downmix",
+                     num_channels);
+
+            SDL_DestroyAudioStream(stream);
+            const SDL_AudioSpec stereo_fmt = {
+                .format = SDL_AUDIO_F32LE,
+                .channels = 2,
+                .freq = static_cast<int>(sample_rate),
+            };
+            stream = SDL_OpenAudioDeviceStream(dev_id, &stereo_fmt, nullptr, nullptr);
+            if (!stream) {
+                LOG_ERROR(Lib_AudioOut, "Failed to recreate SDL audio stream: {}", SDL_GetError());
+                return false;
+            }
         }
 
         // Configure channel mapping (input is already stereo when folding)
@@ -617,6 +630,7 @@ private:
     const u32 num_channels;
     const bool is_float;
     const bool is_std;
+    // Set when the output device is stereo and we fold 5.1/7.1 ourselves.
     bool ps4_downmix{false};
     const std::array<int, 8> channel_layout;
 
