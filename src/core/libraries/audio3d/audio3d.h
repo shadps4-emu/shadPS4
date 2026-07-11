@@ -101,13 +101,15 @@ struct AudioData {
 struct ObjectState {
     std::deque<AudioData> pcm_queue;
     std::unordered_map<u32, std::vector<u8>> persistent_attributes;
+    bool unreserved{false};
 };
 
-// An AudioOut port opened by the game through sceAudio3dAudioOutOpen.
+// An AudioOut port opened by the game through sceAudio3dAudioOutOpen
 struct AssociatedAudioOutPort {
     s32 handle{-1};
     u32 buffer_bytes{0};
     u32 samples_per_buffer{0};
+    bool is_float{false};
     std::deque<std::vector<u8>> pending;
 };
 

@@ -125,6 +125,7 @@ struct ObjectState {
     std::deque<AudioData> pcm_queue;
     std::unordered_map<u32, std::vector<u8>> persistent_attributes;
     SpatialSource al;
+    bool unreserved{false};
 };
 
 struct SpatialObjectFrame {
@@ -146,6 +147,7 @@ struct AssociatedAudioOutPort {
     s32 handle{-1};
     u32 buffer_bytes{0};
     u32 samples_per_buffer{0};
+    bool is_float{false};
     std::deque<std::vector<u8>> pending;
 };
 
@@ -178,7 +180,9 @@ struct Port {
     u64 last_volume_check_us{0};
     float current_gain{-1.0f};
     SpatialSource bed;
+    // Scratch for converting object frames to mono S16 (guarded by mutex).
     std::vector<s16> spatial_scratch;
+    // Scratch for hard-panned stereo frames of pass-through objects.
     std::vector<s16> spatial_scratch_stereo;
     // EFX late reverb
     bool reverb_supported{false};
