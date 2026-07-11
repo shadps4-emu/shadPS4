@@ -33,6 +33,11 @@ static constexpr AudioOut::OrbisAudioOutParamFormat AUDIO3D_OUTPUT_FORMAT =
     AudioOut::OrbisAudioOutParamFormat::S16Stereo;
 static constexpr u32 AUDIO3D_OUTPUT_NUM_CHANNELS = 2;
 
+static constexpr float DOWNMIX_FRONT = 1.0f;
+static constexpr float DOWNMIX_CENTER = 0.7071f;
+static constexpr float DOWNMIX_SURROUND = 0.7071f;
+static constexpr float DOWNMIX_LFE = 0.0f;
+
 static std::unique_ptr<Audio3dState> state;
 
 struct AudioOutBufferInfo {
@@ -158,7 +163,6 @@ static bool CreateSpatialSource(const Port& port, SpatialSource& src) {
     return true;
 }
 
-// Caller must hold port.mutex and have the port's context current.
 static void DestroySpatialSourceLocked(SpatialSource& src) {
     if (src.source != 0) {
         alSourceStop(src.source);
@@ -396,7 +400,6 @@ static bool EnsureSpatial(Port& port) {
     const float slider_gain = EmulatorSettings.GetVolumeSlider() * 0.01f;
     alSourcef(port.bed.source, AL_GAIN, slider_gain);
     port.current_gain = slider_gain;
-
     if (port.direct_channels_supported) {
         alSourcei(port.bed.source, AL_DIRECT_CHANNELS_SOFT, AL_TRUE);
     }
@@ -749,8 +752,6 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutOutput(const s32 handle, void* ptr) {
                     continue;
                 }
 
-                // Per the spec, buffers must be naturally aligned to the
-                // port's sample datatype.
                 const uintptr_t align_mask = aout.is_float ? 3u : 1u;
                 if ((reinterpret_cast<uintptr_t>(ptr) & align_mask) != 0) {
                     LOG_ERROR(Lib_Audio3d, "sample buffer for handle {} is misaligned", handle);
@@ -764,7 +765,6 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutOutput(const s32 handle, void* ptr) {
                 const u8* src = static_cast<const u8*>(ptr);
                 aout.pending.emplace_back(src, src + aout.buffer_bytes);
 
-                // Mirror sceAudioOutOutput's return of samples sent.
                 return static_cast<s32>(aout.samples_per_buffer);
             }
         }
@@ -979,14 +979,12 @@ s32 PS4_SYSV_ABI sceAudio3dObjectReserve(const OrbisAudio3dPortId port_id,
     auto& port = state->ports[port_id];
     std::scoped_lock lock{port.mutex};
 
-    // Enforce the max_objects limit set at PortOpen time.
     if (port.objects.size() >= port.parameters.max_objects) {
         LOG_ERROR(Lib_Audio3d, "port has no available objects (max_objects = {})",
                   port.parameters.max_objects);
         return ORBIS_AUDIO3D_ERROR_OUT_OF_RESOURCES;
     }
 
-    // Counter lives in the Port so it resets when the port is closed and reopened.
     do {
         ++port.next_object_id;
     } while (port.next_object_id == 0 ||
@@ -1205,6 +1203,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
         if (queue.empty())
             return;
 
+        // default gain is 0.0 — objects with no GAIN set are silent.
         if (gain == 0.0f) {
             AudioData data = queue.front();
             queue.pop_front();
@@ -1233,25 +1232,27 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
                     const auto sample = [&](const u32 c) {
                         return src[i * channels + c] / 32768.0f;
                     };
-                    left = sample(0);
-                    right = sample(1);
+                    left = DOWNMIX_FRONT * sample(0);
+                    right = DOWNMIX_FRONT * sample(1);
                     if (channels >= 3) {
-                        const float center = 0.7071f * sample(2);
+                        const float center = DOWNMIX_CENTER * sample(2);
                         left += center;
                         right += center;
                     }
-                    if (channels >= 4) {
-                        const float lfe = 0.5f * sample(3);
-                        left += lfe;
-                        right += lfe;
+                    if constexpr (DOWNMIX_LFE != 0.0f) {
+                        if (channels >= 4) {
+                            const float lfe = DOWNMIX_LFE * sample(3);
+                            left += lfe;
+                            right += lfe;
+                        }
                     }
                     if (channels >= 6) {
-                        left += 0.7071f * sample(4);
-                        right += 0.7071f * sample(5);
+                        left += DOWNMIX_SURROUND * sample(4);
+                        right += DOWNMIX_SURROUND * sample(5);
                     }
                     if (channels >= 8) {
-                        left += 0.7071f * sample(6);
-                        right += 0.7071f * sample(7);
+                        left += DOWNMIX_SURROUND * sample(6);
+                        right += DOWNMIX_SURROUND * sample(7);
                     }
                 }
 
@@ -1269,27 +1270,28 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
                     left = src[i];
                     right = src[i];
                 } else {
-                    // Same multichannel fold as the S16 branch above.
                     const auto sample = [&](const u32 c) { return src[i * channels + c]; };
-                    left = sample(0);
-                    right = sample(1);
+                    left = DOWNMIX_FRONT * sample(0);
+                    right = DOWNMIX_FRONT * sample(1);
                     if (channels >= 3) {
-                        const float center = 0.7071f * sample(2);
+                        const float center = DOWNMIX_CENTER * sample(2);
                         left += center;
                         right += center;
                     }
-                    if (channels >= 4) {
-                        const float lfe = 0.5f * sample(3);
-                        left += lfe;
-                        right += lfe;
+                    if constexpr (DOWNMIX_LFE != 0.0f) {
+                        if (channels >= 4) {
+                            const float lfe = DOWNMIX_LFE * sample(3);
+                            left += lfe;
+                            right += lfe;
+                        }
                     }
                     if (channels >= 6) {
-                        left += 0.7071f * sample(4);
-                        right += 0.7071f * sample(5);
+                        left += DOWNMIX_SURROUND * sample(4);
+                        right += DOWNMIX_SURROUND * sample(5);
                     }
                     if (channels >= 8) {
-                        left += 0.7071f * sample(6);
-                        right += 0.7071f * sample(7);
+                        left += DOWNMIX_SURROUND * sample(6);
+                        right += DOWNMIX_SURROUND * sample(7);
                     }
                 }
 
@@ -1375,7 +1377,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
         }
     } else {
         port.mixed_queue.push_back(out_frame);
-
         std::erase_if(port.objects, [](const auto& kv) {
             return kv.second.unreserved && kv.second.pcm_queue.empty();
         });
@@ -1476,6 +1477,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortFlush(const OrbisAudio3dPortId port_id) {
     }
 
     if (port.mixed_queue.empty() && port.spatial_queue.empty()) {
+        // Only mix if there's actually something to mix.
         if (!port.bed_queue.empty() ||
             std::any_of(port.objects.begin(), port.objects.end(),
                         [](const auto& kv) { return !kv.second.pcm_queue.empty(); })) {
@@ -1597,6 +1599,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetQueueLevel(const OrbisAudio3dPortId port_id, u
 
     const auto& port = state->ports[port_id];
     std::scoped_lock lock{port.mutex};
+    // Exactly one of these queues is in use depending on the output path.
     const size_t size = port.mixed_queue.size() + port.spatial_queue.size();
 
     if (queue_level) {
@@ -1857,7 +1860,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
         return ORBIS_OK;
     };
 
-    // If not full, return immediately.
     {
         std::scoped_lock lock{port.mutex};
         if (port.mixed_queue.size() + port.spatial_queue.size() < depth) {

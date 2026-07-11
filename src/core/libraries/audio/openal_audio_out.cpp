@@ -735,15 +735,21 @@ private:
         return static_cast<s16>(std::clamp(v, -32768.0f, 32767.0f));
     }
 
+    static constexpr float DOWNMIX_FRONT = 1.0f;
+    static constexpr float DOWNMIX_CENTER = 0.7071f;
+    static constexpr float DOWNMIX_SURROUND = 0.7071f;
+    static constexpr float DOWNMIX_LFE = 0.0f; // console excludes LFE
     static void DownmixS16_6CHToStereo(const void* src, void* dst, u32 frames, const float*) {
         const s16* s = static_cast<const s16*>(src);
         s16* d = static_cast<s16*>(dst);
         for (u32 i = 0; i < frames; i++) {
             const u32 o = i * 6;
-            const float center = 0.7071f * s[o + FC];
-            const float lfe = 0.5f * s[o + LF];
-            d[i * 2 + 0] = ClampSampleToS16(s[o + FL] + center + lfe + 0.7071f * s[o + 4]);
-            d[i * 2 + 1] = ClampSampleToS16(s[o + FR] + center + lfe + 0.7071f * s[o + 5]);
+            const float center = DOWNMIX_CENTER * s[o + FC];
+            const float lfe = DOWNMIX_LFE * s[o + LF];
+            d[i * 2 + 0] = ClampSampleToS16(DOWNMIX_FRONT * s[o + FL] + center + lfe +
+                                            DOWNMIX_SURROUND * s[o + 4]);
+            d[i * 2 + 1] = ClampSampleToS16(DOWNMIX_FRONT * s[o + FR] + center + lfe +
+                                            DOWNMIX_SURROUND * s[o + 5]);
         }
     }
     static void DownmixS16_8CHToStereo(const void* src, void* dst, u32 frames, const float*) {
@@ -751,12 +757,12 @@ private:
         s16* d = static_cast<s16*>(dst);
         for (u32 i = 0; i < frames; i++) {
             const u32 o = i << 3;
-            const float center = 0.7071f * s[o + FC];
-            const float lfe = 0.5f * s[o + LF];
-            d[i * 2 + 0] =
-                ClampSampleToS16(s[o + FL] + center + lfe + 0.7071f * (s[o + 4] + s[o + 6]));
-            d[i * 2 + 1] =
-                ClampSampleToS16(s[o + FR] + center + lfe + 0.7071f * (s[o + 5] + s[o + 7]));
+            const float center = DOWNMIX_CENTER * s[o + FC];
+            const float lfe = DOWNMIX_LFE * s[o + LF];
+            d[i * 2 + 0] = ClampSampleToS16(DOWNMIX_FRONT * s[o + FL] + center + lfe +
+                                            DOWNMIX_SURROUND * (s[o + 4] + s[o + 6]));
+            d[i * 2 + 1] = ClampSampleToS16(DOWNMIX_FRONT * s[o + FR] + center + lfe +
+                                            DOWNMIX_SURROUND * (s[o + 5] + s[o + 7]));
         }
     }
     static void DownmixF32_6CHToStereoS16(const void* src, void* dst, u32 frames, const float*) {
@@ -764,10 +770,12 @@ private:
         s16* d = static_cast<s16*>(dst);
         for (u32 i = 0; i < frames; i++) {
             const u32 o = i * 6;
-            const float center = 0.7071f * s[o + FC];
-            const float lfe = 0.5f * s[o + LF];
-            d[i * 2 + 0] = OrbisFloatToS16(s[o + FL] + center + lfe + 0.7071f * s[o + 4]);
-            d[i * 2 + 1] = OrbisFloatToS16(s[o + FR] + center + lfe + 0.7071f * s[o + 5]);
+            const float center = DOWNMIX_CENTER * s[o + FC];
+            const float lfe = DOWNMIX_LFE * s[o + LF];
+            d[i * 2 + 0] = OrbisFloatToS16(DOWNMIX_FRONT * s[o + FL] + center + lfe +
+                                           DOWNMIX_SURROUND * s[o + 4]);
+            d[i * 2 + 1] = OrbisFloatToS16(DOWNMIX_FRONT * s[o + FR] + center + lfe +
+                                           DOWNMIX_SURROUND * s[o + 5]);
         }
     }
 
@@ -800,10 +808,12 @@ private:
         float* d = static_cast<float*>(dst);
         for (u32 i = 0; i < frames; i++) {
             const u32 o = i * 6;
-            const float center = 0.7071f * s[o + FC];
-            const float lfe = 0.5f * s[o + LF];
-            d[i * 2 + 0] = (s[o + FL] + center + lfe + 0.7071f * s[o + 4]) * INV;
-            d[i * 2 + 1] = (s[o + FR] + center + lfe + 0.7071f * s[o + 5]) * INV;
+            const float center = DOWNMIX_CENTER * s[o + FC];
+            const float lfe = DOWNMIX_LFE * s[o + LF];
+            d[i * 2 + 0] =
+                (DOWNMIX_FRONT * s[o + FL] + center + lfe + DOWNMIX_SURROUND * s[o + 4]) * INV;
+            d[i * 2 + 1] =
+                (DOWNMIX_FRONT * s[o + FR] + center + lfe + DOWNMIX_SURROUND * s[o + 5]) * INV;
         }
     }
     static void DownmixS16_8CHToStereoF32(const void* src, void* dst, u32 frames, const float*) {
@@ -812,10 +822,14 @@ private:
         float* d = static_cast<float*>(dst);
         for (u32 i = 0; i < frames; i++) {
             const u32 o = i << 3;
-            const float center = 0.7071f * s[o + FC];
-            const float lfe = 0.5f * s[o + LF];
-            d[i * 2 + 0] = (s[o + FL] + center + lfe + 0.7071f * (s[o + 4] + s[o + 6])) * INV;
-            d[i * 2 + 1] = (s[o + FR] + center + lfe + 0.7071f * (s[o + 5] + s[o + 7])) * INV;
+            const float center = DOWNMIX_CENTER * s[o + FC];
+            const float lfe = DOWNMIX_LFE * s[o + LF];
+            d[i * 2 + 0] = (DOWNMIX_FRONT * s[o + FL] + center + lfe +
+                            DOWNMIX_SURROUND * (s[o + 4] + s[o + 6])) *
+                           INV;
+            d[i * 2 + 1] = (DOWNMIX_FRONT * s[o + FR] + center + lfe +
+                            DOWNMIX_SURROUND * (s[o + 5] + s[o + 7])) *
+                           INV;
         }
     }
     static void DownmixF32_6CHToStereoF32(const void* src, void* dst, u32 frames, const float*) {
@@ -823,10 +837,10 @@ private:
         float* d = static_cast<float*>(dst);
         for (u32 i = 0; i < frames; i++) {
             const u32 o = i * 6;
-            const float center = 0.7071f * s[o + FC];
-            const float lfe = 0.5f * s[o + LF];
-            d[i * 2 + 0] = s[o + FL] + center + lfe + 0.7071f * s[o + 4];
-            d[i * 2 + 1] = s[o + FR] + center + lfe + 0.7071f * s[o + 5];
+            const float center = DOWNMIX_CENTER * s[o + FC];
+            const float lfe = DOWNMIX_LFE * s[o + LF];
+            d[i * 2 + 0] = DOWNMIX_FRONT * s[o + FL] + center + lfe + DOWNMIX_SURROUND * s[o + 4];
+            d[i * 2 + 1] = DOWNMIX_FRONT * s[o + FR] + center + lfe + DOWNMIX_SURROUND * s[o + 5];
         }
     }
     static void DownmixF32_8CHToStereoF32(const void* src, void* dst, u32 frames, const float*) {
@@ -834,10 +848,12 @@ private:
         float* d = static_cast<float*>(dst);
         for (u32 i = 0; i < frames; i++) {
             const u32 o = i << 3;
-            const float center = 0.7071f * s[o + FC];
-            const float lfe = 0.5f * s[o + LF];
-            d[i * 2 + 0] = s[o + FL] + center + lfe + 0.7071f * (s[o + 4] + s[o + 6]);
-            d[i * 2 + 1] = s[o + FR] + center + lfe + 0.7071f * (s[o + 5] + s[o + 7]);
+            const float center = DOWNMIX_CENTER * s[o + FC];
+            const float lfe = DOWNMIX_LFE * s[o + LF];
+            d[i * 2 + 0] =
+                DOWNMIX_FRONT * s[o + FL] + center + lfe + DOWNMIX_SURROUND * (s[o + 4] + s[o + 6]);
+            d[i * 2 + 1] =
+                DOWNMIX_FRONT * s[o + FR] + center + lfe + DOWNMIX_SURROUND * (s[o + 5] + s[o + 7]);
         }
     }
 
@@ -846,12 +862,12 @@ private:
         s16* d = static_cast<s16*>(dst);
         for (u32 i = 0; i < frames; i++) {
             const u32 o = i << 3;
-            const float center = 0.7071f * s[o + FC];
-            const float lfe = 0.5f * s[o + LF];
-            d[i * 2 + 0] =
-                OrbisFloatToS16(s[o + FL] + center + lfe + 0.7071f * (s[o + 4] + s[o + 6]));
-            d[i * 2 + 1] =
-                OrbisFloatToS16(s[o + FR] + center + lfe + 0.7071f * (s[o + 5] + s[o + 7]));
+            const float center = DOWNMIX_CENTER * s[o + FC];
+            const float lfe = DOWNMIX_LFE * s[o + LF];
+            d[i * 2 + 0] = OrbisFloatToS16(DOWNMIX_FRONT * s[o + FL] + center + lfe +
+                                           DOWNMIX_SURROUND * (s[o + 4] + s[o + 6]));
+            d[i * 2 + 1] = OrbisFloatToS16(DOWNMIX_FRONT * s[o + FR] + center + lfe +
+                                           DOWNMIX_SURROUND * (s[o + 5] + s[o + 7]));
         }
     }
 

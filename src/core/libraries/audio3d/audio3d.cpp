@@ -22,6 +22,11 @@ static constexpr AudioOut::OrbisAudioOutParamFormat AUDIO3D_OUTPUT_FORMAT =
     AudioOut::OrbisAudioOutParamFormat::S16Stereo;
 static constexpr u32 AUDIO3D_OUTPUT_NUM_CHANNELS = 2;
 
+static constexpr float DOWNMIX_FRONT = 1.0f;
+static constexpr float DOWNMIX_CENTER = 0.7071f;
+static constexpr float DOWNMIX_SURROUND = 0.7071f;
+static constexpr float DOWNMIX_LFE = 0.0f;
+
 static std::unique_ptr<Audio3dState> state;
 
 struct AudioOutBufferInfo {
@@ -431,7 +436,6 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttribute(const OrbisAudio3dPortId port_id,
         return ORBIS_AUDIO3D_ERROR_INVALID_OBJECT;
     }
 
-    // RESET_STATE clears all attributes and queued PCM; it takes no value.
     if (attribute_id == OrbisAudio3dAttributeId::ORBIS_AUDIO3D_ATTRIBUTE_RESET_STATE) {
         for (auto& data : obj.pcm_queue) {
             std::free(data.sample_buffer);
@@ -442,8 +446,6 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttribute(const OrbisAudio3dPortId port_id,
         return ORBIS_OK;
     }
 
-    // we don't handle any attributes yet, but store them in the ObjectState so they're available
-    // when we do
     const auto* src = static_cast<const u8*>(attribute);
     obj.persistent_attributes[static_cast<u32>(attribute_id)].assign(src, src + attribute_size);
 
@@ -507,7 +509,6 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
                 continue;
             }
             const auto pcm = static_cast<OrbisAudio3dPcm*>(attribute.value);
-            // Object audio is always mono (1 channel).
             if (const auto ret =
                     ConvertAndEnqueue(obj.pcm_queue, *pcm, 1, port.parameters.granularity,
                                       port.parameters.queue_depth);
@@ -517,8 +518,6 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
             break;
         }
         default: {
-            // store the other attributes in the ObjectState so they're available when we implement
-            // them
             if (attribute.value && attribute.value_size > 0) {
                 const auto* src = static_cast<const u8*>(attribute.value);
                 obj.persistent_attributes[static_cast<u32>(attribute.attribute_id)].assign(
@@ -629,25 +628,27 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
                     const auto sample = [&](const u32 c) {
                         return src[i * channels + c] / 32768.0f;
                     };
-                    left = sample(0);
-                    right = sample(1);
+                    left = DOWNMIX_FRONT * sample(0);
+                    right = DOWNMIX_FRONT * sample(1);
                     if (channels >= 3) {
-                        const float center = 0.7071f * sample(2);
+                        const float center = DOWNMIX_CENTER * sample(2);
                         left += center;
                         right += center;
                     }
-                    if (channels >= 4) {
-                        const float lfe = 0.5f * sample(3);
-                        left += lfe;
-                        right += lfe;
+                    if constexpr (DOWNMIX_LFE != 0.0f) {
+                        if (channels >= 4) {
+                            const float lfe = DOWNMIX_LFE * sample(3);
+                            left += lfe;
+                            right += lfe;
+                        }
                     }
                     if (channels >= 6) {
-                        left += 0.7071f * sample(4);
-                        right += 0.7071f * sample(5);
+                        left += DOWNMIX_SURROUND * sample(4);
+                        right += DOWNMIX_SURROUND * sample(5);
                     }
                     if (channels >= 8) {
-                        left += 0.7071f * sample(6);
-                        right += 0.7071f * sample(7);
+                        left += DOWNMIX_SURROUND * sample(6);
+                        right += DOWNMIX_SURROUND * sample(7);
                     }
                 }
 
@@ -667,25 +668,27 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
                 } else {
                     // Same multichannel fold as the S16 branch above.
                     const auto sample = [&](const u32 c) { return src[i * channels + c]; };
-                    left = sample(0);
-                    right = sample(1);
+                    left = DOWNMIX_FRONT * sample(0);
+                    right = DOWNMIX_FRONT * sample(1);
                     if (channels >= 3) {
-                        const float center = 0.7071f * sample(2);
+                        const float center = DOWNMIX_CENTER * sample(2);
                         left += center;
                         right += center;
                     }
-                    if (channels >= 4) {
-                        const float lfe = 0.5f * sample(3);
-                        left += lfe;
-                        right += lfe;
+                    if constexpr (DOWNMIX_LFE != 0.0f) {
+                        if (channels >= 4) {
+                            const float lfe = DOWNMIX_LFE * sample(3);
+                            left += lfe;
+                            right += lfe;
+                        }
                     }
                     if (channels >= 6) {
-                        left += 0.7071f * sample(4);
-                        right += 0.7071f * sample(5);
+                        left += DOWNMIX_SURROUND * sample(4);
+                        right += DOWNMIX_SURROUND * sample(5);
                     }
                     if (channels >= 8) {
-                        left += 0.7071f * sample(6);
-                        right += 0.7071f * sample(7);
+                        left += DOWNMIX_SURROUND * sample(6);
+                        right += DOWNMIX_SURROUND * sample(7);
                     }
                 }
 
@@ -697,10 +700,8 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
         std::free(data.sample_buffer);
     };
 
-    // Bed is mixed at full gain (1.0)
     mix_in(port.bed_queue, 1.0f);
 
-    // Mix all object PCM queues, applying each object's GAIN persistent attribute.
     for (auto& [obj_id, obj] : port.objects) {
         float gain = 0.0f;
         const auto gain_key =
@@ -733,8 +734,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
                                          .num_channels = AUDIO3D_OUTPUT_NUM_CHANNELS,
                                          .format = OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16});
 
-    // Object audio is consumed by the mix above, so drained unreserved
-    // objects can be retired right away.
     std::erase_if(port.objects, [](const auto& kv) {
         return kv.second.unreserved && kv.second.pcm_queue.empty();
     });
@@ -888,8 +887,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported(OrbisAudio3dPortId port_id
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
-    // We support three attributes, PCM, Gain, and ResetState
-    // In the future, supported attributes should be stored in the port.
     if (capabilities) {
         // Writes up to num_capabilities supported capabilities,
         // then sets num_capabilities to how many were written.
@@ -1141,7 +1138,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
             return port.audio_out_handle;
     }
 
-    // Function that submits exactly one frame (if available)
     auto submit_one_frame = [&](bool& submitted) -> s32 {
         AudioData frame;
         {
@@ -1167,7 +1163,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
         return ORBIS_OK;
     };
 
-    // if not full, return immediately
     {
         std::scoped_lock lock{port.mutex};
         if (port.mixed_queue.size() < depth) {
@@ -1175,7 +1170,6 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
         }
     }
 
-    // Submit one frame to free space
     bool submitted = false;
     s32 ret = submit_one_frame(submitted);
     if (ret < 0)
@@ -1184,13 +1178,10 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
     if (!submitted)
         return ORBIS_OK;
 
-    // ASYNC: free exactly one slot and return
     if (blocking == OrbisAudio3dBlocking::ORBIS_AUDIO3D_BLOCKING_ASYNC) {
         return ORBIS_OK;
     }
 
-    // SYNC: ensure at least one slot is free
-    // (drain until size < depth)
     while (true) {
         {
             std::scoped_lock lock{port.mutex};
