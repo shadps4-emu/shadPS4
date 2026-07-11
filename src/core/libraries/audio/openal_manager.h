@@ -12,6 +12,21 @@
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 
+// ALC_SOFT_output_mode constants, in case the alext.h in use predates them.
+#ifndef ALC_OUTPUT_MODE_SOFT
+#define ALC_OUTPUT_MODE_SOFT 0x19AC
+#define ALC_ANY_SOFT 0x19AD
+#define ALC_MONO_SOFT 0x1500
+#define ALC_STEREO_SOFT 0x1501
+#define ALC_STEREO_BASIC_SOFT 0x19AE
+#define ALC_STEREO_UHJ_SOFT 0x19AF
+#define ALC_STEREO_HRTF_SOFT 0x19B2
+#define ALC_QUAD_SOFT 0x1503
+#define ALC_SURROUND_5_1_SOFT 0x1504
+#define ALC_SURROUND_6_1_SOFT 0x1505
+#define ALC_SURROUND_7_1_SOFT 0x1506
+#endif
+
 // ALC_SOFT_HRTF constants, in case the alext.h in use predates the extension.
 #ifndef ALC_SOFT_HRTF
 #define ALC_HRTF_SOFT 0x1992
@@ -213,10 +228,35 @@ private:
             return false;
         }
 
-        std::array<ALCint, 5> attrs{};
+        std::array<ALCint, 7> attrs{};
         std::size_t attr_count = 0;
         attrs[attr_count++] = ALC_FREQUENCY;
         attrs[attr_count++] = 48000;
+
+        const bool has_mode_ext = alcIsExtensionPresent(ctx.device, "ALC_SOFT_output_mode");
+        if (has_mode_ext) {
+            ALCint requested_mode = ALC_ANY_SOFT;
+            switch (EmulatorSettings.GetOpenALOutputMode()) {
+            case OpenALOutputMode::OutputStereo:
+                requested_mode = ALC_STEREO_SOFT;
+                break;
+            case OpenALOutputMode::OutputQuad:
+                requested_mode = ALC_QUAD_SOFT;
+                break;
+            case OpenALOutputMode::OutputSurround51:
+                requested_mode = ALC_SURROUND_5_1_SOFT;
+                break;
+            case OpenALOutputMode::OutputSurround71:
+                requested_mode = ALC_SURROUND_7_1_SOFT;
+                break;
+            default:
+                break; // Auto: let OpenAL Soft negotiate.
+            }
+            if (requested_mode != ALC_ANY_SOFT) {
+                attrs[attr_count++] = ALC_OUTPUT_MODE_SOFT;
+                attrs[attr_count++] = requested_mode;
+            }
+        }
 
         const bool has_hrtf_ext = alcIsExtensionPresent(ctx.device, "ALC_SOFT_HRTF");
         if (has_hrtf_ext) {
@@ -245,12 +285,20 @@ private:
             actual_name = alcGetString(ctx.device, ALC_DEVICE_SPECIFIER);
         }
         ctx.device_name = actual_name ? actual_name : "Unknown";
+
         ALCint mixer_rate = 0;
         alcGetIntegerv(ctx.device, ALC_FREQUENCY, 1, &mixer_rate);
         LOG_INFO(Lib_AudioOut, "OpenAL mixer rate for '{}': {} Hz", ctx.device_name, mixer_rate);
+
+        if (has_mode_ext) {
+            ALCint mode = 0;
+            alcGetIntegerv(ctx.device, ALC_OUTPUT_MODE_SOFT, 1, &mode);
+            LOG_INFO(Lib_AudioOut, "OpenAL output mode for '{}': {}", ctx.device_name,
+                     OutputModeString(mode));
+        }
         if (mixer_rate != 0 && mixer_rate != 48000) {
             LOG_WARNING(Lib_AudioOut,
-                        "OpenAL mixer is not running at 48000 Hz per-source resampling active");
+                        "OpenAL mixer is not running at 48000 Hz; per-source resampling active");
         }
 
         if (has_hrtf_ext) {
@@ -265,6 +313,30 @@ private:
 
         LOG_INFO(Lib_AudioOut, "OpenAL device initialized: '{}'", ctx.device_name);
         return true;
+    }
+
+    static const char* OutputModeString(const ALCint mode) {
+        switch (mode) {
+        case ALC_MONO_SOFT:
+            return "mono";
+        case ALC_STEREO_SOFT:
+        case ALC_STEREO_BASIC_SOFT:
+            return "stereo";
+        case ALC_STEREO_UHJ_SOFT:
+            return "stereo (UHJ)";
+        case ALC_STEREO_HRTF_SOFT:
+            return "stereo (HRTF)";
+        case ALC_QUAD_SOFT:
+            return "quadraphonic";
+        case ALC_SURROUND_5_1_SOFT:
+            return "5.1 surround";
+        case ALC_SURROUND_6_1_SOFT:
+            return "6.1 surround";
+        case ALC_SURROUND_7_1_SOFT:
+            return "7.1 surround";
+        default:
+            return "unknown";
+        }
     }
 
     static const char* HrtfStatusString(const ALCint status) {
