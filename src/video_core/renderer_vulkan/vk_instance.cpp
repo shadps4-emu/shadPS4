@@ -203,7 +203,8 @@ bool Instance::CreateDevice() {
                           vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
                           vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
                           vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
-                          vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
+                          vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT,
+                          vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -333,6 +334,14 @@ bool Instance::CreateDevice() {
                  image_2d_view_of_3d_features.image2DViewOf3D);
         LOG_INFO(Render_Vulkan, "- sampler2DViewOf3D: {}",
                  image_2d_view_of_3d_features.sampler2DViewOf3D);
+    }
+    conditional_rendering = add_extension(VK_EXT_CONDITIONAL_RENDERING_EXTENSION_NAME);
+    if (conditional_rendering) {
+        const auto conditional_rendering_features =
+            feature_chain.get<vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
+        conditional_rendering = conditional_rendering_features.conditionalRendering;
+        LOG_INFO(Render_Vulkan, "- conditionalRendering: {}",
+                 conditional_rendering_features.conditionalRendering);
     }
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
     const bool calibrated_timestamps =
@@ -502,6 +511,9 @@ bool Instance::CreateDevice() {
             .image2DViewOf3D = image_2d_view_of_3d_features.image2DViewOf3D,
             .sampler2DViewOf3D = image_2d_view_of_3d_features.sampler2DViewOf3D,
         },
+        vk::PhysicalDeviceConditionalRenderingFeaturesEXT{
+            .conditionalRendering = true,
+        },
     };
 
     if (!custom_border_color) {
@@ -549,6 +561,9 @@ bool Instance::CreateDevice() {
     }
     if (!image_2d_view_of_3d) {
         device_chain.unlink<vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
+    }
+    if (!conditional_rendering) {
+        device_chain.unlink<vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
