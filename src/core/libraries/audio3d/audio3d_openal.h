@@ -170,7 +170,6 @@ struct Port {
     // Per-tick frame bundles produced by PortAdvance in the spatial path.
     std::deque<SpatialFrameBundle> spatial_queue;
 
-    // Spatial (direct OpenAL) output state.
     bool spatial_init_attempted{false};
     bool spatial_ready{false};
     bool source_radius_supported{false};
@@ -180,9 +179,8 @@ struct Port {
     u64 last_volume_check_us{0};
     float current_gain{-1.0f};
     SpatialSource bed;
-    // Scratch for converting object frames to mono S16 (guarded by mutex).
+    u32 bed_channels{2};
     std::vector<s16> spatial_scratch;
-    // Scratch for hard-panned stereo frames of pass-through objects.
     std::vector<s16> spatial_scratch_stereo;
     // EFX late reverb
     bool reverb_supported{false};
