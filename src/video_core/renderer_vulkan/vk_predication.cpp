@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <span>
+#include <boost/container/small_vector.hpp>
 
 #include "common/assert.h"
 #include "common/logging/log.h"
@@ -53,6 +55,54 @@ static void RecordBufferBarrier(vk::CommandBuffer cmdbuf, const vk::BufferMemory
         .bufferMemoryBarrierCount = 1,
         .pBufferMemoryBarriers = &barrier,
     });
+}
+
+template <typename Callback>
+static void ForEachContiguousRun(std::span<const u32> slots, Callback&& callback) {
+    for (size_t i = 0; i < slots.size();) {
+        u32 run = 1;
+        while (i + run < slots.size() && slots[i + run] == slots[i] + run) {
+            ++run;
+        }
+        callback(slots[i], run, i);
+        i += run;
+    }
+}
+
+static u64 ReadQuerySamples(vk::Device device, vk::QueryPool query_pool,
+                            std::span<const u32> slots) {
+    boost::container::small_vector<u64, 64> results(slots.size());
+    u64 samples = 0;
+    ForEachContiguousRun(slots, [&](u32 first, u32 count, size_t offset) {
+        u64* const run_results = results.data() + offset;
+        const auto batch_result = device.getQueryPoolResults(
+            query_pool, first, count, count * sizeof(u64), run_results, sizeof(u64),
+            vk::QueryResultFlagBits::e64);
+        if (batch_result == vk::Result::eSuccess) {
+            for (u32 i = 0; i < count; ++i) {
+                samples += run_results[i];
+            }
+            return;
+        }
+
+        // Preserve the original per-query path as a driver-safe fallback. Besides handling
+        // unusual implementations, this also lets any available query in a rejected run
+        // contribute to the guest counter.
+        for (u32 i = 0; i < count; ++i) {
+            u64 result{};
+            const u32 slot = first + i;
+            const auto query_result = device.getQueryPoolResults(
+                query_pool, slot, 1, sizeof(result), &result, sizeof(result),
+                vk::QueryResultFlagBits::e64);
+            if (query_result == vk::Result::eSuccess) {
+                samples += result;
+            } else {
+                LOG_WARNING(Render_Vulkan, "ZPASS query {} unavailable at writeback: {}", slot,
+                            vk::to_string(query_result));
+            }
+        }
+    });
+    return samples;
 }
 
 static vk::BufferUsageFlags PredicateBufferUsage(const Instance& instance) {
@@ -394,34 +444,19 @@ void PredicationManager::ReleaseQuerySlotsWhenDone(std::vector<u32>&& slots) {
         }
         // The GPU tick containing the last use of these slots has completed, so they can be
         // host-reset here in contiguous runs instead of one driver call per draw at acquire.
-        std::ranges::sort(slots);
-        const auto device = instance.GetDevice();
-        for (size_t i = 0; i < slots.size();) {
-            size_t run = 1;
-            while (i + run < slots.size() && slots[i + run] == slots[i] + run) {
-                ++run;
-            }
-            device.resetQueryPool(*query_pool, slots[i], static_cast<u32>(run));
-            i += run;
+        if (!std::ranges::is_sorted(slots)) {
+            std::ranges::sort(slots);
         }
+        const auto device = instance.GetDevice();
+        ForEachContiguousRun(slots, [&](u32 first, u32 count, size_t) {
+            device.resetQueryPool(*query_pool, first, count);
+        });
     });
 }
 
 void PredicationManager::ResolveRecord(const DumpRecord& record) {
     const auto device = instance.GetDevice();
-    u64 samples = 0;
-    for (const u32 slot : record.queries) {
-        u64 result{};
-        const auto vk_result =
-            device.getQueryPoolResults(*query_pool, slot, 1, sizeof(result), &result,
-                                       sizeof(result), vk::QueryResultFlagBits::e64);
-        if (vk_result == vk::Result::eSuccess) {
-            samples += result;
-        } else {
-            LOG_WARNING(Render_Vulkan, "ZPASS query {} unavailable at writeback: {}", slot,
-                        vk::to_string(vk_result));
-        }
-    }
+    const u64 samples = ReadQuerySamples(device, *query_pool, record.queries);
     zpass_counter += samples;
     WriteGuestCounters(record.address, record.num_counter_pairs, zpass_counter);
     LOG_DEBUG(Render_Vulkan, "PredDump\taddr={:#x}\tqueries={}\tsamples={}\tcounter={}",
@@ -522,22 +557,22 @@ bool PredicationManager::BuildFromQueries(const std::vector<u32>& queries, bool 
 
     // Copy the query results into the scratch buffer as contiguous runs. The GPU waits for
     // result availability itself (kPredicationZPassHintWait semantics), so the CPU never does.
-    std::vector<u32> sorted{queries};
-    std::ranges::sort(sorted);
+    std::vector<u32> sorted_storage;
+    std::span<const u32> sorted = queries;
+    if (!std::ranges::is_sorted(queries)) {
+        sorted_storage.assign(queries.begin(), queries.end());
+        std::ranges::sort(sorted_storage);
+        sorted = sorted_storage;
+    }
     const u32 count = static_cast<u32>(sorted.size());
     const u32 base = AllocScratchQwords(count);
     u32 dst = base;
-    for (u32 i = 0; i < count;) {
-        u32 run = 1;
-        while (i + run < count && sorted[i + run] == sorted[i] + run) {
-            ++run;
-        }
-        cmdbuf.copyQueryPoolResults(*query_pool, sorted[i], run, counter_scratch.Handle(),
+    ForEachContiguousRun(sorted, [&](u32 first, u32 run, size_t) {
+        cmdbuf.copyQueryPoolResults(*query_pool, first, run, counter_scratch.Handle(),
                                     dst * sizeof(u64), sizeof(u64),
                                     vk::QueryResultFlagBits::e64 | vk::QueryResultFlagBits::eWait);
         dst += run;
-        i += run;
-    }
+    });
 
     bool combine_on_gpu = false;
     const u32 slot = SelectPredicateSlot(cmdbuf, combine, combine_on_gpu);
