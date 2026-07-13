@@ -310,6 +310,9 @@ private:
         DeleteImage(image_id);
     }
 
+    void GarbageCollectImages();
+    void GarbageCollectSamplers();
+
 private:
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
@@ -327,11 +330,17 @@ private:
     u64 trigger_gc_memory = 0;
     u64 pressure_gc_memory = 0;
     u64 critical_gc_memory = 0;
+    u64 total_used_samplers = 0;
+    u64 trigger_gc_samplers = 0;
+    u64 pressure_gc_samplers = 0;
+    u64 critical_gc_samplers = 0;
     u64 gc_tick = 0;
     Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
+    Common::LeastRecentlyUsedCache<u64, u64> sampler_lru_cache;
     bool readback_linear_images;
     PageTable page_table;
     std::mutex mutex;
+    std::mutex samplers_mutex;
     struct MetaDataInfo {
         enum class Type {
             CMask,
