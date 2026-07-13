@@ -86,17 +86,25 @@ ImageId TextureCache::GetNullImage(const vk::Format format) {
 }
 
 void TextureCache::ProcessDownloadImages() {
+    std::scoped_lock lock{mutex};
+    boost::container::small_vector<PendingImageDownload, 8> downloads;
+    downloads.reserve(download_images.size());
     for (const ImageId image_id : download_images) {
-        DownloadImageMemory(image_id, true);
+        if (auto download = ScheduleImageDownload(image_id)) {
+            downloads.push_back(*download);
+        }
     }
     download_images.clear();
+    CompleteImageDownloads(downloads);
 }
 
-void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
+std::optional<TextureCache::PendingImageDownload> TextureCache::ScheduleImageDownload(
+    ImageId image_id) {
     Image& image = slot_images[image_id];
-    if (False(image.flags & ImageFlagBits::GpuModified)) {
-        return;
+    if (!image.SafeToDownload() || image.info.props.is_tiled || image.info.guest_address == 0) {
+        return {};
     }
+
     auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
     const u32 download_size = image.info.pitch * image.info.size.height * image.info.size.depth *
                               image.info.resources.layers * (image.info.num_bits / 8);
@@ -118,23 +126,73 @@ void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
         .imageOffset = {0, 0, 0},
         .imageExtent = {image.info.size.width, image.info.size.height, image.info.size.depth},
     };
-    scheduler.EndRendering();
-    const auto cmdbuf = scheduler.CommandBuffer();
-    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-    cmdbuf.copyImageToBuffer(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
-                             download_buffer.Handle(), image_download);
+    image.Download(std::span{&image_download, 1}, download_buffer.Handle(), offset, download_size);
 
-    if (sync) {
-        scheduler.Finish();
-        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(image.info.guest_address),
-                                                  download, download_size);
-    } else {
-        scheduler.DeferPriorityOperation(
-            [this, device_addr = image.info.guest_address, download, download_size] {
-                Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
-                                                          download_size);
-            });
+    const u64 serial = ++image_download_serial;
+    latest_image_downloads[image.info.guest_address] = serial;
+    return PendingImageDownload{
+        .serial = serial,
+        .guest_address = image.info.guest_address,
+        .data = download,
+        .size = download_size,
+    };
+}
+
+void TextureCache::WritebackImageMemory(const PendingImageDownload& download) {
+    const auto it = latest_image_downloads.find(download.guest_address);
+    if (it == latest_image_downloads.end() || it->second != download.serial) {
+        return;
     }
+    if (!Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(download.guest_address),
+                                                   download.data, download.size)) {
+        return;
+    }
+    latest_image_downloads.erase(it);
+}
+
+void TextureCache::CompleteImageDownloads(std::span<const PendingImageDownload> downloads) {
+    if (downloads.empty()) {
+        return;
+    }
+    scheduler.Finish();
+    for (const auto& download : downloads) {
+        WritebackImageMemory(download);
+    }
+}
+
+void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
+    const auto download = ScheduleImageDownload(image_id);
+    if (!download) {
+        return;
+    }
+    if (sync) {
+        CompleteImageDownloads(std::span{&*download, size_t{1}});
+        return;
+    }
+    scheduler.DeferPriorityOperation([this, download = *download] {
+        std::scoped_lock lock{mutex};
+        WritebackImageMemory(download);
+    });
+}
+
+void TextureCache::SynchronizeGuestMemory(VAddr address, size_t size, const Image* excluded_image) {
+    if (!readback_linear_images) {
+        return;
+    }
+
+    boost::container::small_vector<PendingImageDownload, 8> downloads;
+    ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
+        if (&image == excluded_image) {
+            return;
+        }
+        if (auto download = ScheduleImageDownload(image_id)) {
+            downloads.push_back(*download);
+            download_images.erase(image_id);
+        }
+    });
+    // The requested alias may be uploaded from guest memory immediately after this call. Wait for
+    // overlapping linear images to reach the download buffer before exposing their contents.
+    CompleteImageDownloads(downloads);
 }
 
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
@@ -563,6 +621,13 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         image_id = cache_id;
     }
 
+    // A different representation may be uploaded from guest memory while an overlapping linear
+    // image still contains newer GPU-written data. Resolve pending writes before touching the
+    // overlap set.
+    if (!image_id) {
+        SynchronizeGuestMemory(info.guest_address, info.guest_size);
+    }
+
     // Try to resolve overlaps (if any)
     int view_mip{-1};
     int view_slice{-1};
@@ -726,6 +791,10 @@ void TextureCache::RefreshImage(Image& image) {
     if (False(image.flags & ImageFlagBits::Dirty) || image.info.num_samples > 1) {
         return;
     }
+
+    // RefreshImage reuploads from guest memory. Make overlapping GPU-written linear aliases
+    // visible before obtaining the upload source.
+    SynchronizeGuestMemory(image.info.guest_address, image.info.guest_size, &image);
 
     RENDERER_TRACE;
     TRACE_HINT(fmt::format("{:x}:{:x}", image.info.guest_address, image.info.guest_size));
