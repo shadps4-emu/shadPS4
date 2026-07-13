@@ -29,9 +29,6 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
       buffer_cache{buffer_cache_}, tracker{tracker_}, blit_helper{instance, scheduler},
       tile_manager{instance, scheduler, buffer_cache.GetUtilityBuffer(MemoryUsage::Stream)},
       readback_linear_images{EmulatorSettings.IsReadbackLinearImagesEnabled()} {
-    // Create basic null image at fixed image ID.
-    const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
-    ASSERT(null_id.index == NULL_IMAGE_ID.index);
 
     u32 max_samplers = instance.GetMaxSamplerAllocationCount();
     trigger_gc_samplers = max_samplers * 3 / 4;
@@ -62,33 +59,6 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
 }
 
 TextureCache::~TextureCache() = default;
-
-ImageId TextureCache::GetNullImage(const vk::Format format) {
-    const auto existing_image = null_images.find(format);
-    if (existing_image != null_images.end()) {
-        return existing_image->second;
-    }
-
-    ImageInfo info{};
-    info.pixel_format = format;
-    info.type = AmdGpu::ImageType::Color2D;
-    info.tile_mode = AmdGpu::TileMode::Thin1DThin;
-    info.num_bits = 32;
-    info.UpdateSize();
-
-    const ImageId null_id =
-        slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
-    auto& image = slot_images[null_id];
-    Vulkan::SetObjectName(instance.GetDevice(), image.GetImage(),
-                          fmt::format("Null Image ({})", vk::to_string(format)));
-
-    image.flags = ImageFlagBits::Empty;
-    image.track_addr = image.info.guest_address;
-    image.track_addr_end = image.info.guest_address + image.info.guest_size;
-
-    null_images.emplace(format, null_id);
-    return null_id;
-}
 
 void TextureCache::ProcessDownloadImages() {
     for (const ImageId image_id : download_images) {
@@ -534,10 +504,7 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
 
 ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     const auto& info = desc.info;
-
-    if (info.guest_address == 0) [[unlikely]] {
-        return GetNullImage(info.pixel_format);
-    }
+    ASSERT(info.guest_address != 0);
 
     std::scoped_lock lock{mutex};
     ImageIds image_ids;

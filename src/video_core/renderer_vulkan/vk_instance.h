@@ -165,11 +165,6 @@ public:
         return vertex_input_dynamic_state;
     }
 
-    /// Returns true when the nullDescriptor feature of VK_EXT_robustness2 is supported.
-    bool IsNullDescriptorSupported() const {
-        return robustness2 && robustness2_features.nullDescriptor;
-    }
-
     /// Returns true when VK_KHR_fragment_shader_barycentric is supported.
     bool IsFragmentShaderBarycentricSupported() const {
         return fragment_shader_barycentric;
@@ -485,7 +480,6 @@ private:
     vk::PhysicalDeviceVulkan12Features vk12_features;
     vk::PhysicalDeviceVulkan13Features vk13_features;
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
-    vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;
     vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
     vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
         workgroup_memory_explicit_layout_features;
@@ -510,7 +504,6 @@ private:
     bool dynamic_state_3{};
     bool depth_range_unrestricted{};
     bool vertex_input_dynamic_state{};
-    bool robustness2{};
     bool list_restart{};
     bool legacy_vertex_attributes{};
     bool provoking_vertex{};

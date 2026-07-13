@@ -641,11 +641,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 const auto [data, offset] = lds_buffer.Map(lds_size, alignment);
                 std::memset(data, 0, lds_size);
                 buffer_infos.emplace_back(lds_buffer.Handle(), offset, lds_size);
-            } else if (instance.IsNullDescriptorSupported()) {
-                buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
             } else {
-                auto& null_buffer = buffer_cache.GetBuffer(VideoCore::NULL_BUFFER_ID);
-                buffer_infos.emplace_back(null_buffer.Handle(), 0, VK_WHOLE_SIZE);
+                buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
             }
         } else {
             const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
@@ -694,7 +691,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a shader (texture)");
         }
 
-        if (tsharp.GetDataFmt() == AmdGpu::DataFormat::FormatInvalid) {
+        if (tsharp.Address() == 0 || tsharp.GetDataFmt() == AmdGpu::DataFormat::FormatInvalid) {
             image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
             image_descriptor_array_sizes.push_back(1);
             continue;
@@ -739,13 +736,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
     for (auto& [image_id, desc] : image_bindings) {
         bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
         if (!image_id) {
-            if (instance.IsNullDescriptorSupported()) {
-                image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
-            } else {
-                auto& null_image_view = texture_cache.FindTexture(VideoCore::NULL_IMAGE_ID, desc);
-                image_infos.emplace_back(VK_NULL_HANDLE, *null_image_view.image_view,
-                                         vk::ImageLayout::eGeneral);
-            }
+            image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         } else {
             if (auto& old_image = texture_cache.GetImage(image_id);
                 old_image.binding.needs_rebind) {
