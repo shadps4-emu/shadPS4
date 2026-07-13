@@ -15,6 +15,10 @@ protected:
     void SetUp() override {}
 
     void TearDown() override {}
+
+    static void TearDownTestSuite() {
+        gcn_test::Runner::DestroyInstance();
+    }
 };
 
 struct F32x2 {
