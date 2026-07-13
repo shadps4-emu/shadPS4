@@ -27,6 +27,12 @@ constexpr int ORBIS_AUDIO3D_OBJECT_INVALID = 0xFFFFFFFF;
 constexpr OrbisAudio3dPortId ORBIS_AUDIO3D_PORT_INVALID = 0xFFFFFFFFu;
 constexpr OrbisAudio3dPortId MaxPorts = 4;
 
+struct OrbisAudio3dPosition {
+    float fX;
+    float fY;
+    float fZ;
+};
+
 struct OrbisAudio3dSpeakerArrayParameters {
     OrbisAudio3dPosition* speaker_positions;
     u32 num_speakers; // max 16
@@ -110,12 +116,6 @@ struct AudioData {
     u32 num_samples;
     u32 num_channels{1};
     OrbisAudio3dFormat format{OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16};
-};
-
-struct OrbisAudio3dPosition {
-    float x;
-    float y;
-    float z;
 };
 
 enum class OrbisAudio3dPassthrough : u32 {
