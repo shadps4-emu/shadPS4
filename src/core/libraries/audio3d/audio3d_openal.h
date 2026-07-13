@@ -21,10 +21,19 @@ namespace Libraries::Audio3dOpenAL {
 using OrbisAudio3dPortId = u32;
 using OrbisAudio3dObjectId = u32;
 using OrbisAudio3dAmbisonics = u32;
+using OrbisAudio3dSpeakerArrayHandle = void*;
 
 constexpr int ORBIS_AUDIO3D_OBJECT_INVALID = 0xFFFFFFFF;
 constexpr OrbisAudio3dPortId ORBIS_AUDIO3D_PORT_INVALID = 0xFFFFFFFFu;
 constexpr OrbisAudio3dPortId MaxPorts = 4;
+
+struct OrbisAudio3dSpeakerArrayParameters {
+    OrbisAudio3dPosition* speaker_positions;
+    u32 num_speakers; // max 16
+    bool is_3d;
+    void* buffer;
+    u64 size;
+};
 
 enum class OrbisAudio3dRate : u32 {
     ORBIS_AUDIO3D_RATE_48000 = 0,
@@ -116,7 +125,7 @@ enum class OrbisAudio3dPassthrough : u32 {
 };
 
 struct SpatialSource {
-    u32 source{0};
+    u32 source{0};              // ALuint
     std::vector<u32> buffers;   // ALuint ring, sized queue_depth + slack
     std::vector<u32> available; // reclaimed / never-queued buffer ids
 };
@@ -170,6 +179,7 @@ struct Port {
     // Per-tick frame bundles produced by PortAdvance in the spatial path.
     std::deque<SpatialFrameBundle> spatial_queue;
 
+    // Spatial (direct OpenAL) output state.
     bool spatial_init_attempted{false};
     bool spatial_ready{false};
     bool source_radius_supported{false};
@@ -180,18 +190,31 @@ struct Port {
     float current_gain{-1.0f};
     SpatialSource bed;
     u32 bed_channels{2};
+    // Scratch for converting object frames to mono S16 (guarded by mutex).
     std::vector<s16> spatial_scratch;
+    // Scratch for hard-panned stereo frames of pass-through objects.
     std::vector<s16> spatial_scratch_stereo;
     // EFX late reverb
     bool reverb_supported{false};
     u32 reverb_slot{0};   // ALuint
     u32 reverb_effect{0}; // ALuint
     float late_reverb_level{0.0f};
+    // DOWNMIX_SPREAD_RADIUS port attribute
+    float downmix_spread_radius{2.0f};
+};
+
+struct SpeakerArray {
+    std::vector<OrbisAudio3dPosition> speakers;
+    bool is_3d{false};
 };
 
 struct Audio3dState {
     std::mutex ports_mutex;
     std::unordered_map<OrbisAudio3dPortId, Port> ports;
+
+    std::mutex speaker_arrays_mutex;
+    std::unordered_map<u64, SpeakerArray> speaker_arrays;
+    u64 next_speaker_array_id{1};
 };
 
 s32 PS4_SYSV_ABI sceAudio3dAudioOutClose(s32 handle);
@@ -206,11 +229,15 @@ s32 PS4_SYSV_ABI sceAudio3dBedWrite(OrbisAudio3dPortId port_id, u32 num_channels
 s32 PS4_SYSV_ABI sceAudio3dBedWrite2(OrbisAudio3dPortId port_id, u32 num_channels,
                                      OrbisAudio3dFormat format, void* buffer, u32 num_samples,
                                      OrbisAudio3dOutputRoute output_route, bool restricted);
-s32 PS4_SYSV_ABI sceAudio3dCreateSpeakerArray();
-s32 PS4_SYSV_ABI sceAudio3dDeleteSpeakerArray();
+s32 PS4_SYSV_ABI sceAudio3dCreateSpeakerArray(OrbisAudio3dSpeakerArrayHandle* handle,
+                                              const OrbisAudio3dSpeakerArrayParameters* parameters);
+s32 PS4_SYSV_ABI sceAudio3dDeleteSpeakerArray(OrbisAudio3dSpeakerArrayHandle handle);
 s32 PS4_SYSV_ABI sceAudio3dGetDefaultOpenParameters(OrbisAudio3dOpenParameters* params);
-s32 PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMemorySize();
-s32 PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMixCoefficients();
+u64 PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMemorySize(u32 num_speakers, bool is_3d);
+s32 PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMixCoefficients(OrbisAudio3dSpeakerArrayHandle handle,
+                                                          OrbisAudio3dPosition pos, float spread,
+                                                          float* coefficients,
+                                                          u32 num_coefficients);
 s32 PS4_SYSV_ABI sceAudio3dGetSpeakerArrayMixCoefficients2();
 s32 PS4_SYSV_ABI sceAudio3dInitialize(s64 reserved);
 s32 PS4_SYSV_ABI sceAudio3dObjectReserve(OrbisAudio3dPortId port_id,
