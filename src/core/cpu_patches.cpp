@@ -181,7 +181,7 @@ static void GenerateTcbExclusiveOr(void* /* address */, const ZydisDecodedOperan
     // Retrieve value from TCB and store it in the scratch register
     RetrieveTcbPointer(scratch, c);
 
-    // Preform xor
+    // Perform xor
     c.xor_(dst, scratch);
 
     // Restore registers
