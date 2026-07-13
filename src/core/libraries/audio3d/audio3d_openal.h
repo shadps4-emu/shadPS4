@@ -28,9 +28,9 @@ constexpr OrbisAudio3dPortId ORBIS_AUDIO3D_PORT_INVALID = 0xFFFFFFFFu;
 constexpr OrbisAudio3dPortId MaxPorts = 4;
 
 struct OrbisAudio3dPosition {
-    float fX;
-    float fY;
-    float fZ;
+    float x;
+    float y;
+    float z;
 };
 
 struct OrbisAudio3dSpeakerArrayParameters {
