@@ -149,7 +149,7 @@ static void GenerateTcbCompare(void* /* address */, const ZydisDecodedOperand* o
     // Retrieve value from TCB and store it in the scratch register
     RetrieveTcbPointer(scratch, c);
 
-    // Preform compare op
+    // Perform compare op
     c.cmp(dst, scratch);
 
     // Restore registers
