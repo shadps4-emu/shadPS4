@@ -268,9 +268,6 @@ private:
         }
     }
 
-    /// Gets or creates a null image for a particular format.
-    ImageId GetNullImage(vk::Format format);
-
     /// Copies image memory back to CPU.
     void DownloadImageMemory(ImageId image_id, bool sync = false);
 
@@ -321,7 +318,6 @@ private:
     Common::SlotVector<Image> slot_images;
     Common::SlotVector<ImageView> slot_image_views;
     tsl::robin_map<u64, Sampler> samplers;
-    tsl::robin_map<vk::Format, ImageId> null_images;
     std::unordered_set<ImageId> download_images;
     u64 total_used_memory = 0;
     u64 trigger_gc_memory = 0;
