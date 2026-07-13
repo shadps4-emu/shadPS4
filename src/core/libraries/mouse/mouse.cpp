@@ -19,10 +19,15 @@ namespace Libraries::Mouse {
 RingBufferQueue<OrbisMouseData> mouse_states[2]{{64}, {64}};
 s32 mouse_handles[2]{-1, -1};
 s32 mouse_sdl_handles[2]{-1, -1};
-bool g_lib_init = false, g_is_merged_mode = false;
+bool g_lib_init = false, g_is_merged_mode = false, g_are_mice_enabled;
 
 int PS4_SYSV_ABI sceMouseClose(s32 handle) {
-    LOG_ERROR(Lib_Mouse, "(STUBBED) called");
+    LOG_INFO(Lib_Mouse, "(DUMMY) called, handle: {}", handle);
+    if (mouse_handles[0] != handle && mouse_handles[1] != handle) {
+        return ORBIS_MOUSE_ERROR_INVALID_HANDLE;
+    }
+    u64 m = mouse_handles[0] == handle ? 0 : 1;
+    mouse_handles[m] = -1;
     return ORBIS_OK;
 }
 
@@ -57,7 +62,8 @@ int PS4_SYSV_ABI sceMouseGetDeviceInfo() {
 }
 
 int PS4_SYSV_ABI sceMouseInit() {
-    if (EmulatorSettings.IsMiceUsedAsMice()) {
+    g_are_mice_enabled = EmulatorSettings.IsMiceUsedAsMice();
+    if (g_are_mice_enabled) {
         SDL_WarpMouseInWindow(g_window->GetSDLWindow(), 1, 1);
         SDL_SetWindowRelativeMouseMode(g_window->GetSDLWindow(), true);
     }
@@ -103,7 +109,7 @@ int PS4_SYSV_ABI sceMouseOpen(Libraries::UserService::OrbisUserServiceUserId use
 
 int PS4_SYSV_ABI sceMouseRead(s32 handle, OrbisMouseData* pData, s32 num) {
     LOG_DEBUG(Lib_Mouse, "(DUMMY) called, h: {}, n: {}", handle, num);
-    if (!pData || num > 64) {
+    if (!pData || num < 1 || num > 64) {
         return ORBIS_MOUSE_ERROR_INVALID_ARG;
     }
     if (mouse_handles[0] != handle && mouse_handles[1] != handle) {
@@ -111,13 +117,16 @@ int PS4_SYSV_ABI sceMouseRead(s32 handle, OrbisMouseData* pData, s32 num) {
     }
     u64 m = mouse_handles[0] == handle ? 0 : 1;
     int i = 0;
+    if (!g_are_mice_enabled) {
+        pData[0] = {.connected = false};
+        return 1;
+    }
     for (; i < num; i++) {
         std::optional<OrbisMouseData> st = mouse_states[m].Pop();
         if (!st) {
             break;
         }
         pData[i] = *st;
-        pData[i].connected = mouse_sdl_handles[m] != -1;
     }
     return i;
 }

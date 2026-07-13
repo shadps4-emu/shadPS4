@@ -8,12 +8,29 @@ package shadnet;
 
 option optimize_for = LITE_RUNTIME;
 
+enum MatchingUserIdKind {
+    MATCHING_USER_ID_ONLINE_ID  = 0;
+    MATCHING_USER_ID_ACCOUNT_ID = 1;
+}
+
 // Account
 
 message LoginRequest {
-    string npid     = 1;
-    string password = 2;
-    string token    = 3;  
+    string npid        = 1;
+    string password    = 2;
+    string token       = 3;
+    string title_id    = 4;  
+    string title_name  = 5;
+    bool appear_offline = 6; // user's Appear-Offline preference
+}
+
+// Mid-session Appear-Offline toggle.
+message SetAppearOfflineRequest {
+    bool appear_offline = 1;
+}
+
+message ServerFeaturesReply {
+    bool matching2_enabled = 1;
 }
 
 message FriendEntry {
@@ -177,4 +194,372 @@ message GetScoreResponse {
     repeated ScoreInfo     infoArray    = 3;
     uint64                 lastSortDate = 4;
     uint32                 totalRecord  = 5;
+}
+
+// ── Matching ──────────────────────────────────────────────────────────────────
+
+// Shared attribute types
+
+message MatchingBinAttr {
+    uint32 attr_id          = 1;
+    bytes  data             = 2;
+    uint64 update_date      = 3;
+    uint32 update_member_id = 4;
+}
+
+message MatchingIntAttr {
+    uint32 attr_id    = 1;
+    uint32 attr_value = 2;
+}
+
+message MatchingRoomGroup {
+    uint32 group_id    = 1;
+    bool   has_passwd  = 2;
+    bool   has_label   = 3;
+    bytes  label       = 4;
+    uint32 slot_count  = 5;
+    uint32 num_members = 6;
+}
+
+message MatchingRoomGroupConfig {
+    uint32 slot_count = 1;
+    bool   has_label  = 2;
+    bytes  label      = 3;
+    bool   has_passwd = 4;
+}
+
+// Room data structures
+
+message MatchingRoomDataInternal {
+    uint32                   public_slots       = 1;
+    uint32                   private_slots      = 2;
+    uint32                   open_public_slots  = 3;
+    uint32                   open_private_slots = 4;
+    uint32                   max_slot           = 5;
+    uint32                   server_id          = 6;
+    uint32                   world_id           = 7;
+    uint32                   lobby_id           = 8;
+    uint64                   room_id            = 9;
+    uint64                   passwd_slot_mask   = 10;
+    uint32                   joined_slot_mask   = 11;
+    repeated MatchingRoomGroup groups           = 12;
+    uint32                   flags              = 13;
+    repeated MatchingBinAttr bin_attrs_internal = 14;
+}
+
+message MatchingRoomMemberData {
+    string                   npid               = 1;
+    uint32                   member_id          = 2;
+    uint32                   team_id            = 3;
+    bool                     is_owner           = 4;
+    MatchingRoomGroup        group              = 5;
+    repeated MatchingBinAttr bin_attrs_internal = 6;
+    uint64                   join_date          = 7;
+    uint32                   nat_type           = 8;
+    uint32                   flag_attr          = 9;
+    string                   addr               = 10;
+    uint32                   port               = 11;
+    uint32                   group_id           = 12;
+    uint64                   account_id         = 13;
+    uint32                   platform           = 14;
+}
+
+message MatchingRoomMemberDataExternal {
+    string npid       = 1;
+    uint32 member_id  = 2;
+    uint64 account_id = 3;
+    uint32 platform   = 4;
+    uint64 join_date  = 5;
+    uint32 role       = 6;
+}
+
+message MatchingRoomDataExternal {
+    uint32                       max_slot                  = 1;
+    uint32                       cur_members               = 2;
+    uint32                       flags                     = 3;
+    uint32                       server_id                 = 4;
+    uint32                       world_id                  = 5;
+    uint64                       lobby_id                  = 6;
+    uint64                       room_id                   = 7;
+    uint64                       passwd_slot_mask          = 8;
+    uint64                       joined_slot_mask          = 9;
+    uint32                       public_slots              = 10;
+    uint32                       private_slots             = 11;
+    uint32                       open_public_slots         = 12;
+    uint32                       open_private_slots        = 13;
+    repeated MatchingRoomGroup   groups                    = 14;
+    repeated MatchingIntAttr     external_search_int_attrs = 15;
+    repeated MatchingBinAttr     external_search_bin_attrs = 16;
+    repeated MatchingBinAttr     external_bin_attrs        = 17;
+    string                       owner_npid                = 18;
+    uint64                       owner_account_id          = 19;
+    uint32                       owner_platform            = 20;
+}
+
+message CreateJoinRoomResponse {
+    MatchingRoomDataInternal        room_data       = 1;
+    repeated MatchingRoomMemberData members         = 2;
+    uint32                          me_member_id    = 3;
+    uint32                          owner_member_id = 4;
+}
+
+// Command requests
+
+message ContextStartRequest {
+    uint32 ctx_id = 1;
+}
+
+message ContextStopRequest {
+    uint32 ctx_id = 1;
+}
+
+message CreateRoomRequest {
+    uint32 req_id                  = 1;
+    uint32 max_slots               = 2;
+    uint32 team_id                 = 3;
+    uint32 world_id                = 4;
+    uint32 lobby_id                = 5;
+    uint32 flags                   = 6;
+    uint32 group_config_count      = 7;
+    uint32 allowed_user_count      = 8;
+    uint32 blocked_user_count      = 9;
+    uint32 internal_bin_attr_count = 10;
+    repeated MatchingIntAttr external_search_int_attrs = 11;
+    repeated MatchingBinAttr external_search_bin_attrs = 12;
+    repeated MatchingBinAttr external_bin_attrs        = 13;
+    repeated MatchingBinAttr member_bin_attrs          = 14;
+    bool   join_group_label_present = 15;
+    bool   room_password_present    = 16;
+    uint32 sig_type                 = 17;
+    uint32 sig_flag                 = 18;
+    uint32 sig_main_member          = 19;
+    repeated MatchingBinAttr internal_bin_attrs = 20;
+    MatchingUserIdKind user_id_kind = 21;
+    repeated string allowed_online_ids = 22;
+    repeated string blocked_online_ids = 23;
+    repeated uint64 allowed_account_ids = 24;
+    repeated uint64 blocked_account_ids = 25;
+    repeated MatchingRoomGroupConfig group_configs = 26;
+    bytes room_password = 27;
+    bool has_passwd_slot_mask = 28;
+    uint64 passwd_slot_mask = 29;
+    bytes join_group_label = 30;
+}
+
+message JoinRoomRequest {
+    uint64 room_id              = 1;
+    uint32 req_id               = 2;
+    uint32 team_id              = 3;
+    uint32 join_flags           = 4;
+    uint32 blocked_user_count   = 5;
+    repeated MatchingBinAttr member_bin_attrs   = 6;
+    bool   room_password_present    = 7;
+    bool   join_group_label_present = 8;
+    MatchingUserIdKind user_id_kind = 9;
+    repeated string blocked_online_ids = 10;
+    repeated uint64 blocked_account_ids = 11;
+}
+
+message LeaveRoomRequest {
+    uint64 room_id = 1;
+    uint32 req_id  = 2;
+}
+
+message RequestSignalingInfosRequest {
+    string target_npid = 1;
+}
+
+message SetRoomDataInternalRequest {
+    uint32 req_id           = 1;
+    uint64 room_id          = 2;
+    uint32 flag_filter      = 3;
+    uint32 flag_attr        = 4;
+    repeated MatchingBinAttr bin_attrs = 5;
+    bool   has_passwd_mask  = 6;
+    uint64 passwd_slot_mask = 7;
+}
+
+message SetRoomDataExternalRequest {
+    uint32 req_id  = 1;
+    uint64 room_id = 2;
+    repeated MatchingIntAttr search_int_attrs = 3;
+    repeated MatchingBinAttr search_bin_attrs = 4;
+    repeated MatchingBinAttr ext_bin_attrs    = 5;
+}
+
+message KickoutRoomMemberRequest {
+    uint64 room_id          = 1;
+    uint32 req_id           = 2;
+    uint32 target_member_id = 3;
+    uint32 block_kick_flag  = 4;
+}
+
+// Command replies
+
+message CreateRoomReply {
+    uint64 room_id     = 1;
+    uint32 server_id   = 2;
+    uint32 world_id    = 3;
+    uint32 lobby_id    = 4;
+    uint32 member_id   = 5;
+    uint32 max_slots   = 6;
+    uint32 flags       = 7;
+    uint32 cur_members = 8;
+    CreateJoinRoomResponse details = 9;
+}
+
+message JoinRoomReply {
+    uint64 room_id     = 1;
+    uint32 member_id   = 2;
+    uint32 max_slots   = 3;
+    uint32 flags       = 4;
+    uint32 cur_members = 5;
+    CreateJoinRoomResponse details = 6;
+}
+
+message MatchingIntSearchFilter {
+    uint32 op       = 1;  // 1=Eq 2=Ne 3=Lt 4=Le 5=Gt 6=Ge
+    uint32 attr_id  = 2;
+    uint32 attr_value = 3;
+}
+
+message MatchingBinSearchFilter {
+    uint32 op      = 1;  // 1=Eq 2=Ne
+    uint32 attr_id = 2;
+    bytes  data    = 3;
+}
+
+message SearchRoomRequest {
+    uint32 world_id            = 1;
+    uint64 lobby_id            = 2;
+    uint32 range_filter_start  = 3;
+    uint32 range_filter_max    = 4;
+    uint32 flag_filter         = 5;
+    uint32 flag_attr           = 6;
+    repeated MatchingIntSearchFilter int_filters = 7;
+    repeated MatchingBinSearchFilter bin_filters = 8;
+    repeated uint32 attr_ids    = 9;
+}
+
+message SearchRoomReply {
+    repeated MatchingRoomDataExternal rooms = 1;
+    uint32 range_start  = 2;
+    uint32 range_total  = 3;
+    uint32 range_result = 4;
+}
+
+message GetRoomDataExternalListRequest {
+    repeated uint64 room_ids = 1;
+    repeated uint32 attr_ids = 2;
+}
+
+message GetRoomDataExternalListReply {
+    repeated MatchingRoomDataExternal rooms = 1;
+}
+
+message GetRoomMemberDataExternalListRequest {
+    uint64 room_id = 1;
+}
+
+message GetRoomMemberDataExternalListReply {
+    repeated MatchingRoomMemberDataExternal members = 1;
+}
+
+message MatchingUserInfo {
+    string npid                            = 1;
+    uint64 account_id                      = 2;
+    uint32 platform                        = 3;
+    repeated MatchingBinAttr user_bin_attrs = 4;
+}
+
+message SetUserInfoRequest {
+    uint32 server_id = 1;
+    repeated MatchingBinAttr user_bin_attrs = 2;
+}
+
+message SetUserInfoReply {}
+
+message GetUserInfoListRequest {
+    repeated string npids    = 1;
+    repeated uint32 attr_ids = 2;
+    int32           option   = 3;
+}
+
+message GetUserInfoListReply {
+    repeated MatchingUserInfo users = 1;
+}
+
+message MatchingWorld {
+    uint32 world_id             = 1;
+    uint32 lobbies_num          = 2;
+    uint32 max_lobby_members    = 3;
+    uint32 lobby_members_num    = 4;
+    uint32 rooms_num            = 5;
+    uint32 room_members_num     = 6;
+}
+
+message GetWorldInfoListRequest {
+    uint32 server_id = 1;
+}
+
+message GetWorldInfoListReply {
+    repeated MatchingWorld worlds = 1;
+}
+
+message RequestSignalingInfosReply {
+    string target_npid      = 1;
+    string target_ip        = 2;
+    uint32 target_port      = 3;
+    uint32 target_member_id = 4;
+}
+
+message LeaveRoomReply           { uint64 room_id = 1; }
+message SetRoomDataInternalReply { uint64 room_id = 1; }
+message SetRoomDataExternalReply { uint64 room_id = 1; }
+message KickoutRoomMemberReply   { uint64 room_id = 1; }
+
+message SendRoomMessageRequest {
+    uint64 room_id = 1;
+    uint32 cast_type = 2;
+    repeated uint32 dst_member_ids = 3;
+    bytes msg = 4;
+    int32 option = 5;
+}
+
+message SendRoomMessageReply { uint64 room_id = 1; }
+
+// Notification payloads
+// Every notification carries ctx_id so the client can route it to the owning
+// context (the server tracks ctx_id per connection from ContextStartRequest).
+
+// NotificationType::RoomEvent (10) — every room event maps onto
+// OrbisNpMatching2RoomEventCallback(ctxId, roomId, event, data). The Orbis
+// event id (0x11xx) is carried in `event`; the data shape depends on it:
+// member events fill `member`; room-data-updated fills bin_attrs + flags.
+message NotifyRoomEvent {
+    uint32                   ctx_id      = 1;
+    uint64                   room_id     = 2;
+    uint32                   event       = 3;
+    uint32                   event_cause = 4;
+    int32                    error_code  = 5;
+    MatchingRoomMemberData   member      = 6;
+    repeated MatchingBinAttr bin_attrs   = 7;
+    uint32                   flags       = 8;
+    bool                     has_passwd_mask = 9;
+    uint64                   passwd_slot_mask = 10;
+}
+
+// NotificationType::RoomMessage (11) maps onto
+// OrbisNpMatching2RoomMessageCallback(ctxId, roomId, srcMemberId, event, data).
+message NotifyRoomMessage {
+    uint32 ctx_id = 1;
+    uint64 room_id = 2;
+    uint32 src_member_id = 3;
+    uint32 event = 4;
+    uint32 cast_type = 5;
+    repeated uint32 dst_member_ids = 6;
+    string src_npid = 7;
+    uint64 src_account_id = 8;
+    uint32 src_platform = 9;
+    bytes msg = 10;
 }

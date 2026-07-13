@@ -833,7 +833,7 @@ int PS4_SYSV_ABI sceNpTrophyRegisterContext(OrbisNpTrophyContext context,
         np_comm_id = it->second;
 
         const auto trophy_base =
-            Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / np_comm_id;
+            Common::FS::GetUserPath(Common::FS::PathType::TrophyDir) / np_comm_id;
         ctx.xml_save_file = EmulatorSettings.GetHomeDir() / std::to_string(ctx.user_id) / "trophy" /
                             (np_comm_id + ".xml");
         ctx.xml_dir = trophy_base / "Xml";

@@ -206,9 +206,9 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     }
     const auto state = BeginRendering(pipeline);
 
-    buffer_cache.BindVertexBuffers(*pipeline);
+    buffer_cache.BindVertexBuffers(*pipeline, buffer_barriers);
     if (is_indexed) {
-        buffer_cache.BindIndexBuffer(index_offset);
+        buffer_cache.BindIndexBuffer(index_offset, buffer_barriers);
     }
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
@@ -254,9 +254,9 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     }
     const auto state = BeginRendering(pipeline);
 
-    buffer_cache.BindVertexBuffers(*pipeline);
+    buffer_cache.BindVertexBuffers(*pipeline, buffer_barriers);
     if (is_indexed) {
-        buffer_cache.BindIndexBuffer(0);
+        buffer_cache.BindIndexBuffer(0, buffer_barriers);
     }
 
     const auto& [buffer, base] =
@@ -1066,6 +1066,10 @@ bool Rasterizer::ReadMemory(VAddr addr, u64 size) {
     }
     buffer_cache.ReadMemory(addr, size);
     return true;
+}
+
+void Rasterizer::ProcessDownloadImages() {
+    texture_cache.ProcessDownloadImages();
 }
 
 bool Rasterizer::IsMapped(VAddr addr, u64 size) {

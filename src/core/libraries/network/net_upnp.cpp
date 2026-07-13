@@ -30,11 +30,20 @@ UPnPClient::~UPnPClient() {
 }
 
 void UPnPClient::Start() {
+    if (!m_p2p_features_enabled.load()) {
+        LOG_INFO(Lib_Net, "UPNP: skipped because Matching2 is disabled");
+        return;
+    }
+
     bool expected = false;
     if (!m_started.compare_exchange_strong(expected, true))
         return;
     LOG_INFO(Lib_Net, "UPNP: starting discovery thread");
     m_thread = std::thread(&UPnPClient::DiscoverThread, this);
+}
+
+void UPnPClient::SetP2PFeaturesEnabled(bool enabled) {
+    m_p2p_features_enabled.store(enabled);
 }
 
 bool UPnPClient::WaitReady(int timeout_ms) {
@@ -106,6 +115,9 @@ void UPnPClient::DiscoverThread() {
 }
 
 void UPnPClient::AddMapping(u16 port) {
+    if (!m_p2p_features_enabled.load())
+        return;
+
     if (!m_available.load())
         return;
 

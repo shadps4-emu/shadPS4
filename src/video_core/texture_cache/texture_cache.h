@@ -272,7 +272,7 @@ private:
     ImageId GetNullImage(vk::Format format);
 
     /// Copies image memory back to CPU.
-    void DownloadImageMemory(ImageId image_id);
+    void DownloadImageMemory(ImageId image_id, bool sync = false);
 
     /// Thread function for copying downloaded images out to CPU memory.
     void DownloadedImagesThread(const std::stop_token& token);
