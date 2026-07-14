@@ -10,8 +10,12 @@
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/system/systemservice.h"
+#include "imgui/friends_layer.h"
+#include "imgui/invitation_prompt_layer.h"
+#include "imgui/notifications_layer.h"
 #include "imgui/renderer/imgui_core.h"
 #include "imgui/renderer/imgui_impl_vulkan.h"
+#include "imgui/shadnet_notifications_layer.h"
 #include "sdl_window.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/renderdoc.h"
@@ -30,6 +34,7 @@
 #include <cstring>
 #include <ctime>
 #include <filesystem>
+#include <fstream>
 #include <iomanip>
 #include <limits>
 #include <memory>
@@ -453,6 +458,15 @@ static void SavePendingScreenshots(const std::vector<ScreenshotReadback>& readba
 
         LOG_INFO(Render_Vulkan, "Saved screenshot: {}", primary_path.string());
 
+        std::ifstream file(primary_path, std::ios::binary);
+        std::vector<u8> imgdata;
+        if (file) {
+            imgdata = std::vector<u8>(std::istreambuf_iterator<char>(file),
+                                      std::istreambuf_iterator<char>());
+        }
+        shadNotifications::QueueNotification("Saved screenshot:\n" + primary_path.string(), 3.0f,
+                                             shadNotifications::position::BottomRight, imgdata);
+
         for (size_t i = 1; i < readback.paths.size(); ++i) {
             const auto& path = readback.paths[i];
             std::error_code ec{};
@@ -467,6 +481,14 @@ static void SavePendingScreenshots(const std::vector<ScreenshotReadback>& readba
             }
 
             LOG_INFO(Render_Vulkan, "Saved screenshot: {}", path.string());
+            std::ifstream file(path, std::ios::binary);
+            std::vector<u8> imgdata;
+            if (file) {
+                imgdata = std::vector<u8>(std::istreambuf_iterator<char>(file),
+                                          std::istreambuf_iterator<char>());
+            }
+            shadNotifications::QueueNotification("Saved screenshot:\n" + path.string(), 3.0f,
+                                                 shadNotifications::position::BottomRight, imgdata);
         }
     }
 }
@@ -502,9 +524,15 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
     pp_pass.Create(device, swapchain.GetSurfaceFormat().format);
 
     ImGui::Layer::AddLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
+    ImGui::Friends::Register();
+    ImGui::ShadNetNotify::Register();
+    ImGui::InvitationPrompt::Register();
 }
 
 Presenter::~Presenter() {
+    ImGui::InvitationPrompt::Unregister();
+    ImGui::ShadNetNotify::Unregister();
+    ImGui::Friends::Unregister();
     ImGui::Layer::RemoveLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
 
     draw_scheduler.Finish();
@@ -1025,7 +1053,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
                                                     : vk::ImageLayout::eColorAttachmentOptimal;
         const vk::ImageMemoryBarrier post_barrier{
             .srcAccessMask = post_src_access_mask,
-            .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
+            .dstAccessMask = vk::AccessFlagBits::eNone,
             .oldLayout = post_old_layout,
             .newLayout = vk::ImageLayout::ePresentSrcKHR,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,

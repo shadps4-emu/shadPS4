@@ -175,6 +175,10 @@ U1 IREmitter::GetGotoVariable(u32 id) {
     return Inst<U1>(Opcode::GetGotoVariable, id);
 }
 
+U1 IREmitter::GetMaskLaneVariable(IR::VectorReg vgpr, u32 lane) {
+    return Inst<U1>(Opcode::GetMaskLaneVariable, vgpr, Imm32(lane));
+}
+
 U1 IREmitter::Condition(IR::Condition cond) {
     switch (cond) {
     case IR::Condition::False:
@@ -200,6 +204,10 @@ U1 IREmitter::Condition(IR::Condition cond) {
 
 void IREmitter::SetGotoVariable(u32 id, const U1& value) {
     Inst(Opcode::SetGotoVariable, id, value);
+}
+
+void IREmitter::SetMaskLaneVariable(IR::VectorReg vgpr, u32 lane, const U1& value) {
+    Inst(Opcode::SetMaskLaneVariable, vgpr, Imm32(lane), value);
 }
 
 U1 IREmitter::GetScc() {
@@ -372,13 +380,12 @@ U32U64 IREmitter::SharedAtomicAnd(const U32& address, const U32U64& data, bool i
 U32U64 IREmitter::SharedAtomicOr(const U32& address, const U32U64& data, bool is_gds) {
     switch (data.Type()) {
     case Type::U32:
-        return Inst<U32>(Opcode::SharedAtomicAnd32, Flags{is_gds}, address, data);
+        return Inst<U32>(Opcode::SharedAtomicOr32, Flags{is_gds}, address, data);
     case Type::U64:
-        return Inst<U64>(Opcode::SharedAtomicAnd64, Flags{is_gds}, address, data);
+        return Inst<U64>(Opcode::SharedAtomicOr64, Flags{is_gds}, address, data);
     default:
         ThrowInvalidType(data.Type());
     }
-    return Inst<U32>(Opcode::SharedAtomicOr32, address, data);
 }
 
 U32U64 IREmitter::SharedAtomicXor(const U32& address, const U32U64& data, bool is_gds) {
@@ -1386,35 +1393,29 @@ U1 IREmitter::FPUnordered(const F32F64& lhs, const F32F64& rhs) {
     return LogicalOr(FPIsNan(lhs), FPIsNan(rhs));
 }
 
-F32F64 IREmitter::FPMax(const F32F64& lhs, const F32F64& rhs, bool is_legacy) {
+F32F64 IREmitter::FPMax(const F32F64& lhs, const F32F64& rhs) {
     if (lhs.Type() != rhs.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
     }
 
     switch (lhs.Type()) {
     case Type::F32:
-        return Inst<F32>(Opcode::FPMax32, lhs, rhs, is_legacy);
+        return Inst<F32>(Opcode::FPMax32, lhs, rhs);
     case Type::F64:
-        if (is_legacy) {
-            UNREACHABLE_MSG("F64 cannot be used with LEGACY ops");
-        }
         return Inst<F64>(Opcode::FPMax64, lhs, rhs);
     default:
         ThrowInvalidType(lhs.Type());
     }
 }
 
-F32F64 IREmitter::FPMin(const F32F64& lhs, const F32F64& rhs, bool is_legacy) {
+F32F64 IREmitter::FPMin(const F32F64& lhs, const F32F64& rhs) {
     if (lhs.Type() != rhs.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", lhs.Type(), rhs.Type());
     }
     switch (lhs.Type()) {
     case Type::F32:
-        return Inst<F32>(Opcode::FPMin32, lhs, rhs, is_legacy);
+        return Inst<F32>(Opcode::FPMin32, lhs, rhs);
     case Type::F64:
-        if (is_legacy) {
-            UNREACHABLE_MSG("F64 cannot be used with LEGACY ops");
-        }
         return Inst<F64>(Opcode::FPMin64, lhs, rhs);
     default:
         ThrowInvalidType(lhs.Type());
@@ -1926,6 +1927,13 @@ U8U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U8U16U32U64& value)
             return Inst<U32>(Opcode::ConvertU32U8, value);
         case Type::U16:
             return Inst<U32>(Opcode::ConvertU32U16, value);
+        default:
+            break;
+        }
+    case 64:
+        switch (value.Type()) {
+        case Type::U32:
+            return Inst<U64>(Opcode::ConvertU64U32, value);
         default:
             break;
         }

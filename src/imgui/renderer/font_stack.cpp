@@ -25,6 +25,7 @@ constexpr int kNotoSansCjkFontIndexTc = 3;
 constexpr ImWchar kLatinExtendedRanges[] = {
     0x0100, 0x024F, // Latin Extended-A + Latin Extended-B
     0x1E00, 0x1EFF, // Latin Extended Additional
+    0x2122, 0x2122, // TM symbol
     0,
 };
 
@@ -38,10 +39,12 @@ constexpr ImWchar kArabicRanges[] = {
 };
 
 constexpr ImWchar kSymbolsRanges[] = {
+    0x2000, 0x206F, // General punctuation
     0x20A0, 0x20CF, // Currency symbols
     0x2100, 0x214F, // Letterlike symbols
     0x2190, 0x21FF, // Arrows
     0x2200, 0x22FF, // Math operators
+    0x2300, 0x23FF, // Misc technical (includes keyboard symbol)
     0x2460, 0x24FF, // Enclosed alphanumerics
     0x25A0, 0x25FF, // Geometric shapes
     0x2600, 0x26FF, // Misc symbols
@@ -95,6 +98,7 @@ const ImWchar* GetPrimaryTextRanges(ImFontAtlas* atlas) {
         rb.AddRanges(atlas->GetGlyphRangesCyrillic());
         rb.AddRanges(atlas->GetGlyphRangesVietnamese());
         rb.AddRanges(kLatinExtendedRanges);
+        rb.AddRanges(kSymbolsRanges);
         rb.BuildRanges(&ranges);
     }
     return ranges.Data;

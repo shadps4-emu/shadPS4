@@ -10,6 +10,7 @@
 #include <shared_mutex>
 
 #include "common/enum.h"
+#include "common/shared_first_mutex.h"
 #include "core/libraries/kernel/sync/mutex.h"
 #include "core/libraries/kernel/sync/semaphore.h"
 #include "core/libraries/kernel/time.h"
@@ -27,13 +28,20 @@ namespace Libraries::Kernel {
 constexpr int PthreadInheritSched = 4;
 
 constexpr int ORBIS_KERNEL_PRIO_FIFO_DEFAULT = 700;
-constexpr int ORBIS_KERNEL_PRIO_FIFO_HIGHEST = 256;
-constexpr int ORBIS_KERNEL_PRIO_FIFO_LOWEST = 767;
+constexpr int ORBIS_KERNEL_PRIO_FIFO_LOWEST = 256;
+constexpr int ORBIS_KERNEL_PRIO_FIFO_HIGHEST = 767;
+constexpr int ORBIS_KERNEL_PRIO_OTHER_DEFAULT = 900;
+constexpr int ORBIS_KERNEL_PRIO_OTHER_LOWEST = 768;
+constexpr int ORBIS_KERNEL_PRIO_OTHER_HIGHEST = 959;
+constexpr int ORBIS_KERNEL_PRIO_RR_DEFAULT = 700;
+constexpr int ORBIS_KERNEL_PRIO_RR_LOWEST = 256;
+constexpr int ORBIS_KERNEL_PRIO_RR_HIGHEST = 767;
 
 struct Pthread;
 
 enum class PthreadMutexFlags : u32 {
     TypeMask = 0xff,
+    Private = 0x100,
     Deferred = 0x200,
 };
 DECLARE_ENUM_FLAG_OPERATORS(PthreadMutexFlags)
@@ -53,13 +61,14 @@ enum class PthreadMutexProt : u32 {
 };
 
 struct PthreadMutex {
-    TimedMutex m_lock;
-    PthreadMutexFlags m_flags;
     Pthread* m_owner;
     int m_count;
     int m_spinloops;
     int m_yieldloops;
     PthreadMutexProt m_protocol;
+    u64 : 64;
+    PthreadMutexFlags m_flags;
+    TimedMutex m_lock;
     std::string name;
 
     [[nodiscard]] PthreadMutexType Type() const noexcept {
@@ -91,6 +100,9 @@ struct PthreadMutex {
     int IsOwned(Pthread* curthread) const;
 };
 using PthreadMutexT = PthreadMutex*;
+
+// libc and libSceLibcInternal modify the m_flags of a mutex, make sure it's in the right spot.
+static_assert(offsetof(PthreadMutex, m_flags) == 0x20, "Incorrect offset for mutex flags");
 
 struct PthreadMutexAttr {
     PthreadMutexType m_type;
@@ -150,6 +162,7 @@ struct PthreadCleanup {
 };
 
 enum class PthreadAttrFlags : u32 {
+    ScopeProcess = 0,
     Detached = 1,
     ScopeSystem = 2,
     InheritSched = 4,
@@ -159,7 +172,7 @@ enum class PthreadAttrFlags : u32 {
 DECLARE_ENUM_FLAG_OPERATORS(PthreadAttrFlags)
 
 enum class SchedPolicy : u32 {
-    Fifo = 0,
+    Fifo = 1,
     Other = 2,
     RoundRobin = 3,
 };
@@ -190,11 +203,12 @@ static constexpr u32 ThrGuardDefault = ThrPageSize;
 
 struct PthreadRwlockAttr {
     int pshared;
+    int type;
 };
 using PthreadRwlockAttrT = PthreadRwlockAttr*;
 
 struct PthreadRwlock {
-    std::shared_timed_mutex lock;
+    Common::SharedFirstMutex lock;
     Pthread* owner;
 
     int Wrlock(const OrbisKernelTimespec* abstime);

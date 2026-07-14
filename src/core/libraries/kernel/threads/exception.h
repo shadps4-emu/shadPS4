@@ -120,7 +120,7 @@ struct ExStack {
 };
 
 struct Sigset {
-    u64 bits[2];
+    u32 bits[4];
 };
 
 union Sigval {
@@ -133,45 +133,47 @@ union Sigval {
 };
 
 struct Siginfo {
-    int _si_signo; /* signal number */
-    int _si_errno; /* errno association */
+    s32 _si_signo; /* signal number */
+    s32 _si_errno; /* errno association */
     /*
      * Cause of signal, one of the SI_ macros or signal-specific
      * values, i.e. one of the FPE_... values for SIGFPE.  This
      * value is equivalent to the second argument to an old-style
      * FreeBSD signal handler.
      */
-    int _si_code;           /* signal code */
+    s32 _si_code;           /* signal code */
     s32 _si_pid;            /* sending process */
     u32 _si_uid;            /* sender's ruid */
-    int _si_status;         /* exit value */
+    s32 _si_status;         /* exit value */
     void* _si_addr;         /* faulting instruction */
     union Sigval _si_value; /* signal value */
     union {
         struct {
-            int _trapno; /* machine specific trap code */
+            s32 _trapno; /* machine specific trap code */
         } _fault;
         struct {
-            int _timerid;
-            int _overrun;
+            s32 _timerid;
+            s32 _overrun;
         } _timer;
         struct {
-            int _mqd;
+            s32 _mqd;
         } _mesgq;
         struct {
-            long _band; /* band event for SIGPOLL */
-        } _poll;        /* was this ever used ? */
+            s64 _band; /* band event for SIGPOLL */
+        } _poll;       /* was this ever used ? */
         struct {
-            long __spare1__;
-            int __spare2__[7];
+            s64 __spare1__;
+            s32 __spare2__[7];
         } __spare__;
     } _reason;
 };
 
+using SigHandler = void PS4_SYSV_ABI (*)(int);
+
 struct Sigaction {
     union {
-        void (*handler)(int);
-        void (*sigaction)(int, struct Siginfo*, void*);
+        void PS4_SYSV_ABI (*handler)(int);
+        void PS4_SYSV_ABI (*sigaction)(int, struct Siginfo*, void*);
     } __sigaction_handler;
     int sa_flags;
     Sigset sa_mask;

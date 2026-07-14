@@ -133,6 +133,7 @@ GcnInst GcnDecodeContext::decodeInstruction(GcnCodeSlice& code) {
     if (encodingLen == sizeof(u32)) {
         decodeLiteralConstant(encoding, code);
         decodeSubDwordAddressing(encoding, code);
+        decodeDataParallelPrimitive(encoding, code);
     }
 
     repairOperandType();
@@ -505,6 +506,41 @@ void GcnDecodeContext::decodeSubDwordAddressing(InstEncoding encoding, GcnCodeSl
     }
 }
 
+void GcnDecodeContext::decodeDataParallelPrimitive(InstEncoding encoding, GcnCodeSlice& code) {
+    // Find if the instruction contains DPP
+    if (m_instruction.src[0].field == OperandField::Dpp) {
+        m_instruction.src[0].code = code.readu32();
+        m_instruction.length += sizeof(u32);
+
+        Dpp dpp = *reinterpret_cast<Dpp*>(&m_instruction.src[0].code);
+
+        m_instruction.src[0].field = OperandField::VectorGPR;
+        m_instruction.src[0].code = dpp.src0;
+
+        if (dpp.src0_abs) {
+            m_instruction.src[0].input_modifier.abs = true;
+        }
+        if (dpp.src0_neg) {
+            m_instruction.src[0].input_modifier.neg = true;
+        }
+        if (dpp.src1_abs) {
+            m_instruction.src[1].input_modifier.abs = true;
+        }
+        if (dpp.src1_neg) {
+            m_instruction.src[1].input_modifier.neg = true;
+        }
+
+        auto op = dpp.GetOperation();
+        LOG_ERROR(
+            Render_Recompiler,
+            "unhandled DPP operation: {} ({:#x}), value {}, bc {}, row_mask {:#b}, bank_mask {:#b}",
+            magic_enum::enum_name(op.op), u32(op.op), op.value, bool(dpp.bc), u8(dpp.row_mask),
+            u8(dpp.bank_mask));
+
+        m_instruction.src[0].dpp = op;
+    }
+}
+
 void GcnDecodeContext::decodeInstructionSOP1(u32 hexInstruction) {
     u32 ssrc0 = bit::extract(hexInstruction, 7, 0);
     u32 op = bit::extract(hexInstruction, 15, 8);
@@ -766,11 +802,19 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction) {
 
     // update input modifier
     auto& control = m_instruction.control.vop3;
-    for (u32 i = 0; i != 3; ++i) {
-        if (control.abs & (1u << i)) {
-            m_instruction.src[i].input_modifier.abs = true;
-        }
 
+    // update output modifier
+    auto& outputMod = m_instruction.dst[0].output_modifier;
+
+    if (!IsVop3BEncoding(m_instruction.opcode)) {
+        for (u32 i = 0; i != 3; ++i) {
+            if (control.abs & (1u << i)) {
+                m_instruction.src[i].input_modifier.abs = true;
+            }
+        }
+        outputMod.clamp = static_cast<bool>(control.clmp);
+    }
+    for (u32 i = 0; i != 3; ++i) {
         if (control.neg & (1u << i)) {
             m_instruction.src[i].input_modifier.neg = true;
         }
@@ -782,10 +826,6 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction) {
 
     m_instruction.dst[0].op_sel.op_sel = control.op_sel & (1u << 3);
 
-    // update output modifier
-    auto& outputMod = m_instruction.dst[0].output_modifier;
-
-    outputMod.clamp = static_cast<bool>(control.clmp);
     switch (control.omod) {
     case 0:
         outputMod.multiplier = 0.f;

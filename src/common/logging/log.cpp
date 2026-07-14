@@ -2,23 +2,34 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdlib>
+#include <iostream>
 #include <string>
-
-#include "common/assert.h"
-#include "common/config.h"
-#include "common/logging/log.h"
-#include "common/logging/thread_name_formatter.h"
-#include "common/types.h"
-#include "core/emulator_settings.h"
+#include <fmt/std.h>
+#include <spdlog/sinks/async_sink.h>
+#include <spdlog/sinks/dup_filter_sink.h>
 #ifdef _WIN32
 #include <Windows.h>
 #endif
+
+#include "common/assert.h"
+#include "common/logging/log.h"
+#include "common/logging/log_file_sink.h"
+#include "common/types.h"
+#include "core/emulator_settings.h"
+
+// return codes above 'standard'
+// https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes
+enum class ShadPs4ReturnCode : u32 {
+    TERMINATE_WITHOUT_EXCEPTION = 20'000,
+    TERMINATE_WITH_EXCEPTION = 20'001,
+    TERMINATE_WITH_UNKNOWN_EXCEPTION = 20'002,
+};
 
 namespace Common::Log {
 bool g_should_append = false;
 
 static std::shared_ptr<spdlog_stdout> g_console_sink;
-static std::shared_ptr<spdlog::sinks::basic_file_sink_mt> g_shad_file_sink;
+static std::shared_ptr<LogFileSink> g_shad_file_sink;
 
 std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGERS{
     {Class::Common, nullptr},
@@ -51,6 +62,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_CommonDlg, nullptr},
     {Class::Lib_CompanionHttpd, nullptr},
     {Class::Lib_CompanionUtil, nullptr},
+    {Class::Lib_ContentExport, nullptr},
     {Class::Lib_DiscMap, nullptr},
     {Class::Lib_ErrorDialog, nullptr},
     {Class::Lib_Fiber, nullptr},
@@ -64,6 +76,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_Http2, nullptr},
     {Class::Lib_Ime, nullptr},
     {Class::Lib_ImeDialog, nullptr},
+    {Class::Lib_InvitationDialog, nullptr},
     {Class::Lib_Jpeg, nullptr},
     {Class::Lib_Kernel, nullptr},
     {Class::Lib_LibcInternal, nullptr},
@@ -78,6 +91,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_NpCommon, nullptr},
     {Class::Lib_NpManager, nullptr},
     {Class::Lib_NpMatching2, nullptr},
+    {Class::Lib_NpSignaling, nullptr},
     {Class::Lib_NpPartner, nullptr},
     {Class::Lib_NpParty, nullptr},
     {Class::Lib_NpProfileDialog, nullptr},
@@ -111,15 +125,18 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_Vdec2, nullptr},
     {Class::Lib_VideoOut, nullptr},
     {Class::Lib_Videodec, nullptr},
+    {Class::Lib_VideoRecording, nullptr},
     {Class::Lib_Voice, nullptr},
     {Class::Lib_VrTracker, nullptr},
     {Class::Lib_WebBrowserDialog, nullptr},
     {Class::Lib_Zlib, nullptr},
     {Class::Loader, nullptr},
     {Class::Log, nullptr},
+    {Class::NpHandler, nullptr},
     {Class::Render, nullptr},
     {Class::Render_Recompiler, nullptr},
     {Class::Render_Vulkan, nullptr},
+    {Class::ShadNet, nullptr},
     {Class::Tty, nullptr},
 };
 
@@ -159,14 +176,21 @@ static auto UpdateColorLevels(T sink) {
     return sink;
 }
 
-void Setup(std::string_view log_filename) {
-    static bool already_registered = false;
+void Setup(std::string_view shadps4_filename) {
+    static std::once_flag already_registered;
 
-    if (!already_registered) {
-        already_registered = true;
+    std::call_once(already_registered, []() {
         std::atexit(Shutdown);
         std::at_quick_exit(Flush);
+        std::set_terminate(Terminate);
+    });
+
+    for (auto& [name, logger] : ALL_LOGGERS) {
+        logger = std::make_shared<spdlog::logger>(std::string(name));
+        logger->set_level(spdlog::level::trace);
     }
+
+    // Setup console
 
 #ifdef _WIN32
     if (EmulatorSettings.GetLogType() == "wincolor") {
@@ -179,57 +203,25 @@ void Setup(std::string_view log_filename) {
     g_console_sink = UpdateColorLevels(std::make_shared<spdlog_stdout>(spdlog::color_mode::always));
 #endif
 
-    g_console_sink->set_formatter(std::make_unique<thread_name_formatter>(UNLIMITED_SIZE));
+    g_console_sink->set_pattern("%^%v%$");
 
-    g_shad_file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-        (GetUserPath(Common::FS::PathType::LogDir) / log_filename).string(), !g_should_append);
-    g_shad_file_sink->set_formatter(
-        std::make_unique<thread_name_formatter>(EmulatorSettings.GetLogSizeLimit()));
+    // Setup file
 
-    std::initializer_list<spdlog::sink_ptr> sinks{g_console_sink, g_shad_file_sink};
+    g_shad_file_sink = std::make_shared<LogFileSink>(
+        (GetUserPath(Common::FS::PathType::LogDir) / shadps4_filename).string(), false,
+        EmulatorSettings.GetLogSizeLimit());
+    g_shad_file_sink->set_pattern("%^%v%$");
 
-    std::initializer_list<spdlog::sink_ptr> async_sink{std::make_shared<spdlog::sinks::async_sink>(
-        spdlog::sinks::async_sink::config{.sinks = sinks})};
+    UpdateSinks();
+}
 
-    std::initializer_list<spdlog::sink_ptr> dup_filter{
-        std::make_shared<spdlog::sinks::dup_filter_sink_mt>(
-            std::chrono::milliseconds(EmulatorSettings.GetLogMaxSkipDuration()),
-            EmulatorSettings.IsLogSync() ? sinks : async_sink)};
+void Switch(std::string_view game_filename) {
+    UpdateSinks();
+    UpdateLogLevels(EmulatorSettings.GetLogFilter());
 
-    spdlog::level default_log_level = spdlog::level::info;
-    std::unordered_map<std::string, spdlog::level> log_level_per_class;
-
-    if (EmulatorSettings.IsLogEnable()) {
-        for (const auto class_level : std::views::split(EmulatorSettings.GetLogFilter(), ',')) {
-            const auto class_level_pair =
-                std::views::split(class_level, '=') | std::ranges::to<std::vector<std::string>>();
-
-            if (class_level_pair.size() == 1) {
-                default_log_level = spdlog::level_from_str(class_level_pair.front() |
-                                                           std::ranges::to<std::string>());
-            } else {
-                log_level_per_class[class_level_pair.front() | std::ranges::to<std::string>()] =
-                    spdlog::level_from_str(class_level_pair.back() |
-                                           std::ranges::to<std::string>());
-            }
-        }
-    }
-
-    for (auto& [name, logger] : ALL_LOGGERS) {
-        logger = std::make_shared<spdlog::logger>(
-            std::string(name), EmulatorSettings.IsLogSkipDuplicate()
-                                   ? dup_filter
-                                   : (EmulatorSettings.IsLogSync() ? sinks : async_sink));
-
-        if (EmulatorSettings.IsLogEnable()) {
-            const auto level_it = log_level_per_class.find(std::string(name));
-
-            logger->set_level(level_it != log_level_per_class.end() ? level_it->second
-                                                                    : default_log_level);
-        } else {
-            logger->set_level(spdlog::level::off);
-        }
-    }
+    g_shad_file_sink->_size_limit = EmulatorSettings.GetLogSizeLimit();
+    g_shad_file_sink->session_file_helper_.open(
+        (GetUserPath(Common::FS::PathType::LogDir) / game_filename).string(), !g_should_append);
 }
 
 void Shutdown() {
@@ -248,6 +240,81 @@ void Flush() {
 
     if (g_console_sink != nullptr) {
         g_console_sink->flush();
+    }
+}
+
+void Terminate() {
+    try {
+        if (std::exception_ptr eptr{std::current_exception()}) {
+            std::rethrow_exception(eptr);
+        }
+
+        LOG_CRITICAL(Debug, "Exiting without exception");
+
+        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITHOUT_EXCEPTION));
+    } catch (const std::exception& exception) {
+        LOG_CRITICAL(Debug, "Exception: {}", exception);
+
+        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITH_EXCEPTION));
+    } catch (...) {
+        LOG_CRITICAL(Debug, "Unknown exception caught");
+
+        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITH_UNKNOWN_EXCEPTION));
+    }
+}
+
+void UpdateSinks() {
+    std::initializer_list<spdlog::sink_ptr> sinks{g_console_sink, g_shad_file_sink};
+
+    std::initializer_list<spdlog::sink_ptr> async_sink{std::make_shared<spdlog::sinks::async_sink>(
+        spdlog::sinks::async_sink::config{.sinks = sinks})};
+
+    std::initializer_list<spdlog::sink_ptr> dup_filter{
+        std::make_shared<spdlog::sinks::dup_filter_sink_mt>(
+            std::chrono::milliseconds(EmulatorSettings.GetLogMaxSkipDuration()),
+            EmulatorSettings.IsLogSync() ? sinks : async_sink)};
+
+    for (auto& [name, logger] : ALL_LOGGERS) {
+        logger->sinks() = EmulatorSettings.IsLogSkipDuplicate()
+                              ? dup_filter
+                              : (EmulatorSettings.IsLogSync() ? sinks : async_sink);
+    }
+}
+
+void UpdateLogLevels(std::string_view log_filter) {
+    spdlog::level default_log_level = spdlog::level::info;
+    std::unordered_map<std::string, spdlog::level> log_level_per_class;
+
+    if (EmulatorSettings.IsLogEnable()) {
+        for (const auto class_level : std::views::split(log_filter, ' ')) {
+            const auto class_level_pair =
+                std::views::split(class_level, ':') | std::ranges::to<std::vector<std::string>>();
+
+            if (class_level_pair.size() != 2) {
+                LOG_ERROR(Config, "bad log filter provided");
+                continue;
+            }
+
+            if (class_level_pair.front()[0] == '*') {
+                default_log_level = spdlog::level_from_str(class_level_pair.back() |
+                                                           std::ranges::to<std::string>());
+            } else {
+                log_level_per_class[class_level_pair.front() | std::ranges::to<std::string>()] =
+                    spdlog::level_from_str(class_level_pair.back() |
+                                           std::ranges::to<std::string>());
+            }
+        }
+    }
+
+    for (auto& [name, logger] : ALL_LOGGERS) {
+        if (EmulatorSettings.IsLogEnable()) {
+            const auto level_it = log_level_per_class.find(std::string(name));
+
+            logger->set_level(level_it != log_level_per_class.end() ? level_it->second
+                                                                    : default_log_level);
+        } else {
+            logger->set_level(spdlog::level::off);
+        }
     }
 }
 } // namespace Common::Log

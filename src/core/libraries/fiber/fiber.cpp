@@ -29,7 +29,7 @@ extern "C" void PS4_SYSV_ABI _sceFiberSwitchEntry(OrbisFiberData* data,
                                                   bool set_fpu) asm("_sceFiberSwitchEntry");
 extern "C" void PS4_SYSV_ABI _sceFiberForceQuit(u64 ret) asm("_sceFiberForceQuit");
 
-extern "C" void PS4_SYSV_ABI _sceFiberForceQuit(u64 ret) {
+extern "C" void __attribute__((used)) PS4_SYSV_ABI _sceFiberForceQuit(u64 ret) {
     OrbisFiberContext* g_ctx = GetFiberContext();
     g_ctx->return_val = ret;
     _sceFiberLongJmp(g_ctx);
@@ -177,7 +177,7 @@ s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, Orb
     }
 
     u32 user_flags = flags;
-    if (build_ver >= Common::ElfInfo::FW_35) {
+    if (build_ver >= Common::ElfInfo::FW_350) {
         user_flags |= FiberFlags::SetFpuRegs;
     }
     if (context_size_check) {

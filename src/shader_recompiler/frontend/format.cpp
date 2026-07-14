@@ -2283,7 +2283,9 @@ constexpr std::array<InstFormat, 883> InstructionFormatVOP3 = {
       ScalarType::Float16},
      {},
      {},
-     {},
+     // 855 = V_MED3_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 3, 1, ScalarType::Float16,
+      ScalarType::Float16},
      {},
      {},
      {},

@@ -7,6 +7,7 @@
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/sleepq.h"
+#include "core/libraries/kernel/threads/thread_state.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
@@ -179,6 +180,14 @@ int PS4_SYSV_ABI posix_pthread_cond_reltimedwait_np(PthreadCondT* cond, PthreadM
 
 int PthreadCond::Signal(Pthread* thread) {
     Pthread* curthread = g_curthread;
+    if (thread) {
+        auto* thread_state = ThrState::Instance();
+        int ret = thread_state->FindThread(thread, false);
+        if (ret != ORBIS_OK) {
+            return ret;
+        }
+        thread->lock.unlock();
+    }
 
     SleepqLock(this);
     SleepQueue* sq = SleepqLookup(this);
@@ -339,37 +348,55 @@ int PS4_SYSV_ABI posix_pthread_condattr_setpshared(PthreadCondAttrT* attr, int p
 void RegisterCond(Core::Loader::SymbolsResolver* sym) {
     // Posix
     LIB_FUNCTION("mKoTx03HRWA", "libScePosix", 1, "libkernel", posix_pthread_condattr_init);
-    LIB_FUNCTION("dJcuQVn6-Iw", "libScePosix", 1, "libkernel", posix_pthread_condattr_destroy);
+    LIB_FUNCTION("3BpP850hBT4", "libScePosix", 1, "libkernel", posix_pthread_condattr_setpshared);
     LIB_FUNCTION("EjllaAqAPZo", "libScePosix", 1, "libkernel", posix_pthread_condattr_setclock);
+    LIB_FUNCTION("h0qUqSuOmC8", "libScePosix", 1, "libkernel", posix_pthread_condattr_getpshared);
+    LIB_FUNCTION("cTDYxTUNPhM", "libScePosix", 1, "libkernel", posix_pthread_condattr_getclock);
+    LIB_FUNCTION("dJcuQVn6-Iw", "libScePosix", 1, "libkernel", posix_pthread_condattr_destroy);
     LIB_FUNCTION("0TyVk4MSLt0", "libScePosix", 1, "libkernel", posix_pthread_cond_init);
-    LIB_FUNCTION("2MOy+rUfuhQ", "libScePosix", 1, "libkernel", posix_pthread_cond_signal);
-    LIB_FUNCTION("RXXqi4CtF8w", "libScePosix", 1, "libkernel", posix_pthread_cond_destroy);
-    LIB_FUNCTION("Op8TBGY5KHg", "libScePosix", 1, "libkernel", posix_pthread_cond_wait);
+    LIB_FUNCTION("K953PF5u6Pc", "libScePosix", 1, "libkernel", posix_pthread_cond_reltimedwait_np);
     LIB_FUNCTION("27bAgiJmOh0", "libScePosix", 1, "libkernel", posix_pthread_cond_timedwait);
+    LIB_FUNCTION("Op8TBGY5KHg", "libScePosix", 1, "libkernel", posix_pthread_cond_wait);
+    LIB_FUNCTION("2MOy+rUfuhQ", "libScePosix", 1, "libkernel", posix_pthread_cond_signal);
+    LIB_FUNCTION("CI6Qy73ae10", "libScePosix", 1, "libkernel", posix_pthread_cond_signalto_np);
     LIB_FUNCTION("mkx2fVhNMsg", "libScePosix", 1, "libkernel", posix_pthread_cond_broadcast);
+    LIB_FUNCTION("RXXqi4CtF8w", "libScePosix", 1, "libkernel", posix_pthread_cond_destroy);
 
     // Posix-Kernel
-    LIB_FUNCTION("0TyVk4MSLt0", "libkernel", 1, "libkernel", posix_pthread_cond_init);
-    LIB_FUNCTION("EjllaAqAPZo", "libkernel", 1, "libkernel", posix_pthread_condattr_setclock);
-    LIB_FUNCTION("Op8TBGY5KHg", "libkernel", 1, "libkernel", posix_pthread_cond_wait);
-    LIB_FUNCTION("mkx2fVhNMsg", "libkernel", 1, "libkernel", posix_pthread_cond_broadcast);
-    LIB_FUNCTION("2MOy+rUfuhQ", "libkernel", 1, "libkernel", posix_pthread_cond_signal);
-    LIB_FUNCTION("RXXqi4CtF8w", "libkernel", 1, "libkernel", posix_pthread_cond_destroy);
-    LIB_FUNCTION("27bAgiJmOh0", "libkernel", 1, "libkernel", posix_pthread_cond_timedwait);
     LIB_FUNCTION("mKoTx03HRWA", "libkernel", 1, "libkernel", posix_pthread_condattr_init);
+    LIB_FUNCTION("3BpP850hBT4", "libkernel", 1, "libkernel", posix_pthread_condattr_setpshared);
+    LIB_FUNCTION("EjllaAqAPZo", "libkernel", 1, "libkernel", posix_pthread_condattr_setclock);
+    LIB_FUNCTION("h0qUqSuOmC8", "libkernel", 1, "libkernel", posix_pthread_condattr_getpshared);
+    LIB_FUNCTION("cTDYxTUNPhM", "libkernel", 1, "libkernel", posix_pthread_condattr_getclock);
     LIB_FUNCTION("dJcuQVn6-Iw", "libkernel", 1, "libkernel", posix_pthread_condattr_destroy);
+    LIB_FUNCTION("0TyVk4MSLt0", "libkernel", 1, "libkernel", posix_pthread_cond_init);
+    LIB_FUNCTION("K953PF5u6Pc", "libkernel", 1, "libkernel", posix_pthread_cond_reltimedwait_np);
+    LIB_FUNCTION("27bAgiJmOh0", "libkernel", 1, "libkernel", posix_pthread_cond_timedwait);
+    LIB_FUNCTION("Op8TBGY5KHg", "libkernel", 1, "libkernel", posix_pthread_cond_wait);
+    LIB_FUNCTION("2MOy+rUfuhQ", "libkernel", 1, "libkernel", posix_pthread_cond_signal);
+    LIB_FUNCTION("CI6Qy73ae10", "libkernel", 1, "libkernel", posix_pthread_cond_signalto_np);
+    LIB_FUNCTION("mkx2fVhNMsg", "libkernel", 1, "libkernel", posix_pthread_cond_broadcast);
+    LIB_FUNCTION("RXXqi4CtF8w", "libkernel", 1, "libkernel", posix_pthread_cond_destroy);
 
     // Orbis
-    LIB_FUNCTION("2Tb92quprl0", "libkernel", 1, "libkernel", ORBIS(scePthreadCondInit));
     LIB_FUNCTION("m5-2bsNfv7s", "libkernel", 1, "libkernel", ORBIS(posix_pthread_condattr_init));
-    LIB_FUNCTION("JGgj7Uvrl+A", "libkernel", 1, "libkernel", ORBIS(posix_pthread_cond_broadcast));
-    LIB_FUNCTION("WKAXJ4XBPQ4", "libkernel", 1, "libkernel", ORBIS(posix_pthread_cond_wait));
+    LIB_FUNCTION("6xMew9+rZwI", "libkernel", 1, "libkernel",
+                 ORBIS(posix_pthread_condattr_setpshared));
+    LIB_FUNCTION("c-bxj027czs", "libkernel", 1, "libkernel",
+                 ORBIS(posix_pthread_condattr_setclock));
+    LIB_FUNCTION("Dn-DRWi9t54", "libkernel", 1, "libkernel",
+                 ORBIS(posix_pthread_condattr_getpshared));
+    LIB_FUNCTION("6qM3kO5S3Oo", "libkernel", 1, "libkernel",
+                 ORBIS(posix_pthread_condattr_getclock));
     LIB_FUNCTION("waPcxYiR3WA", "libkernel", 1, "libkernel", ORBIS(posix_pthread_condattr_destroy));
-    LIB_FUNCTION("kDh-NfxgMtE", "libkernel", 1, "libkernel", ORBIS(posix_pthread_cond_signal));
+    LIB_FUNCTION("2Tb92quprl0", "libkernel", 1, "libkernel", ORBIS(scePthreadCondInit));
     LIB_FUNCTION("BmMjYxmew1w", "libkernel", 1, "libkernel",
                  ORBIS(posix_pthread_cond_reltimedwait_np));
-    LIB_FUNCTION("g+PZd2hiacg", "libkernel", 1, "libkernel", ORBIS(posix_pthread_cond_destroy));
+    LIB_FUNCTION("WKAXJ4XBPQ4", "libkernel", 1, "libkernel", ORBIS(posix_pthread_cond_wait));
+    LIB_FUNCTION("kDh-NfxgMtE", "libkernel", 1, "libkernel", ORBIS(posix_pthread_cond_signal));
     LIB_FUNCTION("o69RpYO-Mu0", "libkernel", 1, "libkernel", ORBIS(posix_pthread_cond_signalto_np));
+    LIB_FUNCTION("JGgj7Uvrl+A", "libkernel", 1, "libkernel", ORBIS(posix_pthread_cond_broadcast));
+    LIB_FUNCTION("g+PZd2hiacg", "libkernel", 1, "libkernel", ORBIS(posix_pthread_cond_destroy));
 }
 
 } // namespace Libraries::Kernel

@@ -72,7 +72,7 @@ s32 PS4_SYSV_ABI sceCameraChangeAppModuleState() {
 }
 
 s32 PS4_SYSV_ABI sceCameraClose(s32 handle) {
-    LOG_DEBUG(Lib_Camera, "called");
+    LOG_INFO(Lib_Camera, "called, handle: {}", handle);
     if (handle < 1) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
@@ -148,7 +148,7 @@ s32 PS4_SYSV_ABI sceCameraGetAutoExposureGain(s32 handle, OrbisCameraChannel cha
         channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || enable == nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (option != nullptr && (g_firmware_version < Common::ElfInfo::FW_30 ||
+    if (option != nullptr && (g_firmware_version < Common::ElfInfo::FW_300 ||
                               option->sizeThis != sizeof(OrbisCameraAutoExposureGainTarget))) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
@@ -329,7 +329,7 @@ s32 PS4_SYSV_ABI sceCameraGetExposureGain(s32 handle, OrbisCameraChannel channel
 
     // Return default parameters
     exposure_gain->exposureControl = 0;
-    exposure_gain->exposure = 83;
+    exposure_gain->exposure = 20;
     exposure_gain->gain = 100;
     exposure_gain->mode = 0;
     return ORBIS_OK;
@@ -402,7 +402,12 @@ static void ConvertRGBA8888ToRAW8(const u8* src, u8* dst, int width, int height)
 
 s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_data) {
     LOG_DEBUG(Lib_Camera, "called");
-    if (handle < 1 || frame_data == nullptr || frame_data->sizeThis > 584) {
+    if (frame_data == nullptr) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    frame_data->status[0] = -1;
+    frame_data->status[1] = -1;
+    if (handle < 1 || frame_data->sizeThis > 584) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
     if (!g_library_opened || !sdl_camera) {
@@ -418,6 +423,8 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     }
     frame = SDL_AcquireCameraFrame(sdl_camera, &timestampNS);
 
+    frame_data->status[0] = frame != nullptr ? 0 : -1;
+    frame_data->status[1] = frame != nullptr ? 0 : -1;
     if (!frame) {
         return ORBIS_CAMERA_ERROR_BUSY;
     }
@@ -454,6 +461,14 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     }
     frame_data->meta.format[0][0] = output_config0.format.formatLevel0;
     frame_data->meta.format[1][0] = output_config1.format.formatLevel0;
+
+    // on older firmwares, this wasn't present, and the original library also checks struct size
+    // instead of the SDK version, and without this check, we'd smash the stack in those games
+    if (frame_data->sizeThis == 584) {
+        // not fully correct, but good enough
+        frame_data->pFramePointerListGarlic[0][0] = frame_data->pFramePointerList[0][0];
+        frame_data->pFramePointerListGarlic[1][0] = frame_data->pFramePointerList[1][0];
+    }
     return ORBIS_OK;
 }
 
@@ -614,7 +629,13 @@ s32 PS4_SYSV_ABI sceCameraInitializeRegistryCalibData() {
 }
 
 s32 PS4_SYSV_ABI sceCameraIsAttached(s32 index) {
-    LOG_INFO(Lib_Camera, "called");
+    static bool first_log = true;
+    if (first_log) {
+        LOG_INFO(Lib_Camera, "called");
+        first_log = false;
+    } else {
+        LOG_DEBUG(Lib_Camera, "called");
+    }
     if (index != 0) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
@@ -636,7 +657,7 @@ s32 PS4_SYSV_ABI sceCameraIsValidFrameData(s32 handle, OrbisCameraFrameData* fra
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
-    return 1; // valid
+    return frame_data->status[0] == 0 && frame_data->status[1] == 0;
 }
 
 s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
@@ -644,6 +665,7 @@ s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId us
     LOG_INFO(Lib_Camera, "called");
     if (user_id != Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM || type != 0 ||
         index != 0) {
+        LOG_ERROR(Lib_Camera, "ORBIS_CAMERA_ERROR_PARAM");
         return ORBIS_CAMERA_ERROR_PARAM;
     }
 
@@ -693,7 +715,7 @@ s32 PS4_SYSV_ABI sceCameraSetAutoExposureGain(s32 handle, OrbisCameraChannel cha
         return ORBIS_CAMERA_ERROR_PARAM;
     }
     if (option != nullptr) {
-        if (g_firmware_version < Common::ElfInfo::FW_30 ||
+        if (g_firmware_version < Common::ElfInfo::FW_300 ||
             option->sizeThis != sizeof(OrbisCameraAutoExposureGainTarget)) {
             return ORBIS_CAMERA_ERROR_PARAM;
         }
@@ -731,12 +753,15 @@ s32 PS4_SYSV_ABI sceCameraSetCalibData() {
 s32 PS4_SYSV_ABI sceCameraSetConfig(s32 handle, OrbisCameraConfig* config) {
     LOG_INFO(Lib_Camera, "called");
     if (handle < 1 || config == nullptr || config->sizeThis != sizeof(OrbisCameraConfig)) {
+        LOG_ERROR(Lib_Camera, "ORBIS_CAMERA_ERROR_PARAM");
         return ORBIS_CAMERA_ERROR_PARAM;
     }
     if (!g_library_opened) {
+        LOG_ERROR(Lib_Camera, "ORBIS_CAMERA_ERROR_NOT_OPEN");
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
     if (EmulatorSettings.GetCameraId() == -1) {
+        LOG_ERROR(Lib_Camera, "ORBIS_CAMERA_ERROR_NOT_CONNECTED");
         return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
     }
 
@@ -751,7 +776,8 @@ s32 PS4_SYSV_ABI sceCameraSetConfig(s32 handle, OrbisCameraConfig* config) {
     case ORBIS_CAMERA_CONFIG_TYPE5:
         int sdk_ver;
         Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
-        if (sdk_ver < Common::ElfInfo::FW_45) {
+        if (sdk_ver < Common::ElfInfo::FW_450) {
+            LOG_ERROR(Lib_Camera, "ORBIS_CAMERA_ERROR_UNKNOWN_CONFIG");
             return ORBIS_CAMERA_ERROR_UNKNOWN_CONFIG;
         }
         output_config0 = camera_config_types[config->configType - 1][0];
@@ -944,7 +970,7 @@ s32 PS4_SYSV_ABI sceCameraSetSharpness(s32 handle, OrbisCameraChannel channel, u
         channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_35 && sharpness > 10) {
+    if (g_firmware_version >= Common::ElfInfo::FW_350 && sharpness > 10) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
     if (!g_library_opened) {
@@ -1002,14 +1028,17 @@ s32 PS4_SYSV_ABI sceCameraSetWhiteBalance(s32 handle, OrbisCameraChannel channel
 s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
     LOG_INFO(Lib_Camera, "called");
     if (handle < 1 || param == nullptr || param->sizeThis != sizeof(OrbisCameraStartParameter)) {
+        LOG_ERROR(Lib_Camera, "ORBIS_CAMERA_ERROR_PARAM");
         return ORBIS_CAMERA_ERROR_PARAM;
     }
     if (!g_library_opened) {
+        LOG_ERROR(Lib_Camera, "ORBIS_CAMERA_ERROR_NOT_OPEN");
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_25 &&
-        (param->formatLevel[0] >= 0xf || param->formatLevel[1] >= 0xf ||
+    if (g_firmware_version >= Common::ElfInfo::FW_250 &&
+        (param->formatLevel[0] > 0xf || param->formatLevel[1] > 0xf ||
          (param->formatLevel[0] | param->formatLevel[1]) == 0)) {
+        LOG_ERROR(Lib_Camera, "ORBIS_CAMERA_ERROR_FORMAT_UNKNOWN");
         return ORBIS_CAMERA_ERROR_FORMAT_UNKNOWN;
     }
 

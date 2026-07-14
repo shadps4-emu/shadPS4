@@ -149,12 +149,7 @@ static void InitTessConstants(IR::ScalarReg sharp_ptr_base, s32 sharp_dword_offs
     info.tess_consts_ptr_base = sharp_ptr_base;
     info.tess_consts_dword_offset = sharp_dword_offset;
     info.ReadTessConstantBuffer(tess_constants);
-    if (info.l_stage == LogicalStage::TessellationControl) {
-        runtime_info.hs_info.InitFromTessConstants(tess_constants);
-    } else {
-        runtime_info.vs_info.InitFromTessConstants(tess_constants);
-    }
-
+    runtime_info.InitFromTessConstants(tess_constants);
     return;
 }
 
@@ -470,7 +465,7 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                         if (off_dw > 0) {
                             addr = ir.IAdd(addr, ir.Imm32(off_dw));
                         }
-                        const u32 stride = runtime_info.hs_info.hs_output_cp_stride;
+                        const u32 stride = runtime_info.hs_es_vs_info.hs_output_cp_stride;
                         // Invocation ID array index is implicit, handled by SPIRV backend
                         const IR::U32 opt_addr = TryOptimizeAddressModulo(addr, stride, ir);
                         const IR::U32 offset = ir.IMod(opt_addr, ir.Imm32(stride));
@@ -508,8 +503,9 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                                region == AttributeRegion::OutputCP,
                            "Unhandled read of patchconst attribute in hull shader");
                 const bool is_tcs_output_read = region == AttributeRegion::OutputCP;
-                const u32 stride = is_tcs_output_read ? runtime_info.hs_info.hs_output_cp_stride
-                                                      : runtime_info.hs_info.ls_stride;
+                const u32 stride = is_tcs_output_read
+                                       ? runtime_info.hs_es_vs_info.hs_output_cp_stride
+                                       : runtime_info.hs_info.ls_stride;
                 IR::Value attr_read;
                 if (num_dwords == 1) {
                     attr_read = ir.BitCast<IR::U32>(
@@ -585,7 +581,8 @@ void DomainShaderTransform(const IR::Program& program, const RuntimeInfo& runtim
                 const auto GetInput = [&](IR::U32 addr, u32 off_dw) -> IR::F32 {
                     if (region == AttributeRegion::OutputCP) {
                         return ReadTessControlPointAttribute(
-                            addr, runtime_info.vs_info.hs_output_cp_stride, ir, off_dw, false);
+                            addr, runtime_info.hs_es_vs_info.hs_output_cp_stride, ir, off_dw,
+                            false);
                     } else {
                         ASSERT(region == AttributeRegion::PatchConst);
                         return ir.GetPatch(IR::PatchGeneric((addr.U32() >> 2) + off_dw));

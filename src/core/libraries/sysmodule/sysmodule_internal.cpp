@@ -17,6 +17,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
 #include "core/libraries/rtc/rtc.h"
+#include "core/libraries/rudp/rudp.h"
 #include "core/libraries/sysmodule/sysmodule_error.h"
 #include "core/libraries/sysmodule/sysmodule_internal.h"
 #include "core/libraries/sysmodule/sysmodule_table.h"
@@ -94,17 +95,17 @@ bool validateModuleId(s32 id) {
                "Failed to retrieve compiled SDK version");
 
     // libSceGameCustomDialog isn't loadable on SDK >= 7.50
-    if (id == 0xb8 && sdk_ver >= Common::ElfInfo::FW_75) {
+    if (id == 0xb8 && sdk_ver >= Common::ElfInfo::FW_750) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }
 
     // libSceNpSnsFacebookDialog isn't loadable on SDK >= 7.00
-    if (id == 0xb0 && sdk_ver >= Common::ElfInfo::FW_70) {
+    if (id == 0xb0 && sdk_ver >= Common::ElfInfo::FW_700) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }
 
     // libSceJson isn't loadable on SDK >= 3.00
-    if (id == 0x80 && sdk_ver >= Common::ElfInfo::FW_30) {
+    if (id == 0x80 && sdk_ver >= Common::ElfInfo::FW_300) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }
 
@@ -190,21 +191,23 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
         // Now we need to check if the requested library is allowed to LLE.
         // First, we allow all modules from game-specific sys_modules
         const auto& sys_module_path = EmulatorSettings.GetSysModulesDir();
-        const auto& game_specific_module_path =
-            sys_module_path / game_info->GameSerial() / mod_name;
-        if (std::filesystem::exists(game_specific_module_path)) {
-            // The requested module is present in the game-specific sys_modules, load it.
-            LOG_INFO(Loader, "Loading {} from game serial file {}", mod_name,
-                     game_info->GameSerial());
-            s32 handle =
-                linker->LoadAndStartModule(game_specific_module_path, argc, argv, &start_result);
-            ASSERT_MSG(handle >= 0, "Failed to load module {}", mod_name);
-            mod.handle = handle;
-            mod.is_loaded++;
-            if (res_out != nullptr) {
-                *res_out = start_result;
+        if (!game_info->GameSerial().empty()) {
+            const auto& game_specific_module_path =
+                sys_module_path / game_info->GameSerial() / mod_name;
+            if (std::filesystem::exists(game_specific_module_path)) {
+                // The requested module is present in the game-specific sys_modules, load it.
+                LOG_INFO(Loader, "Loading {} from game serial file {}", mod_name,
+                         game_info->GameSerial());
+                s32 handle = linker->LoadAndStartModule(game_specific_module_path, argc, argv,
+                                                        &start_result);
+                ASSERT_MSG(handle >= 0, "Failed to load module {}", mod_name);
+                mod.handle = handle;
+                mod.is_loaded++;
+                if (res_out != nullptr) {
+                    *res_out = start_result;
+                }
+                return ORBIS_OK;
             }
-            return ORBIS_OK;
         }
 
         // We need to check a few things here.
@@ -219,13 +222,23 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
              {"libSceJson.sprx", nullptr},
              {"libSceJson2.sprx", nullptr},
-             {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
              {"libSceCesCs.sprx", nullptr},
+             {"libSceAt9Enc.sprx", nullptr},
              {"libSceAudiodec.sprx", nullptr},
-             {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
-             {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
+             {"libSceAudiodecCpu.sprx", nullptr},
+             {"libSceAudiodecCpuDdp.sprx", nullptr},
+             {"libSceAudiodecCpuM4aac.sprx", nullptr},
+             {"libSceAudiodecCpuDtsHdLbr.sprx", nullptr},
+             {"libSceAudiodecCpuHevag.sprx", nullptr},
+             {"libSceFont.sprx", &Libraries::Font::RegisterLib},
+             {"libSceFontFt.sprx", &Libraries::FontFt::RegisterLib},
              {"libSceFreeTypeOt.sprx", nullptr},
-             {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib}});
+             {"libSceFreeTypeOl.sprx", nullptr},
+             {"libSceFreeTypeOptOl.sprx", nullptr},
+             {"libSceRudp.sprx", &Libraries::Rudp::RegisterLib},
+             {"libSceWkFontConfig.sprx", nullptr},
+             {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib},
+             {"libSceXml.sprx", nullptr}});
 
         // Iterate through the allowed array
         const auto it = std::ranges::find_if(
@@ -405,7 +418,7 @@ s32 preloadModulesForLibkernel() {
         }
 
         // libSceDiscMap case, skipped on newer SDK versions.
-        if (module_index == 0x22 && sdk_ver >= Common::ElfInfo::FW_20) {
+        if (module_index == 0x22 && sdk_ver >= Common::ElfInfo::FW_200) {
             continue;
         }
 
@@ -416,18 +429,25 @@ s32 preloadModulesForLibkernel() {
         }
 
         // libSceRazorCpu, skipped for old non-devkit consoles.
-        if (module_index == 0x25 && sdk_ver < Common::ElfInfo::FW_45 &&
+        if (module_index == 0x25 && sdk_ver < Common::ElfInfo::FW_450 &&
             !EmulatorSettings.IsDevKit()) {
             continue;
         }
 
         // libSceHttp2, skipped for SDK versions below 7.00.
-        if (module_index == 0x28 && sdk_ver < Common::ElfInfo::FW_70) {
+        if (module_index == 0x28 && sdk_ver < Common::ElfInfo::FW_700) {
             continue;
         }
 
         // libSceNpWebApi2 and libSceNpGameIntent, skipped for SDK versions below 7.50
-        if ((module_index == 0x29 || module_index == 0x2a) && sdk_ver < Common::ElfInfo::FW_75) {
+        if ((module_index == 0x29 || module_index == 0x2a) && sdk_ver < Common::ElfInfo::FW_750) {
+            continue;
+        }
+
+        if (module_index == 1 || module_index == 2) {
+            // libkernel and libSceLibcInternal aren't directly loaded here.
+            // All we do for those is increment is_loaded
+            g_modules_array[module_index].is_loaded++;
             continue;
         }
 
