@@ -52,6 +52,7 @@ constexpr auto Lib_Http = "Lib.Http";                               ///< The Lib
 constexpr auto Lib_Http2 = "Lib.Http2";                             ///< The LibSceHttp2 implementation.
 constexpr auto Lib_Ime = "Lib.Ime";                                 ///< The LibSceIme implementation
 constexpr auto Lib_ImeDialog = "Lib.ImeDialog";                     ///< The LibSceImeDialog implementation.
+constexpr auto Lib_InvitationDialog="Lib.InvitationDialog";         ///< The LibSceInvitationDialog implementation.
 constexpr auto Lib_Jpeg = "Lib.Jpeg";                               ///< The LibSceJpeg implementation.
 constexpr auto Lib_Kernel = "Lib.Kernel";                           ///< The LibKernel implementation.
 constexpr auto Lib_LibcInternal = "Lib.LibcInternal";               ///< The LibSceLibcInternal implementation.

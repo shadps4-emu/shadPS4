@@ -313,7 +313,17 @@ void PipelineCache::WarmUp() {
                                            std::move(profile_data));
         return;
     }
-    if (std::memcmp(profile_data.data(), &profile, sizeof(profile)) != 0) {
+    if (profile_data.size() != sizeof(Shader::Profile)) {
+        LOG_WARNING(Render,
+                    "Pipeline cache profile has unexpected size ({} != {}). Ignoring the cache",
+                    profile_data.size(), sizeof(Shader::Profile));
+        Storage::DataBase::Instance().Close();
+        return;
+    }
+
+    Shader::Profile cached_profile{};
+    std::memcpy(&cached_profile, profile_data.data(), sizeof(cached_profile));
+    if (cached_profile != profile) {
         LOG_WARNING(Render,
                     "Pipeline cache isn't compatible with current system. Ignoring the cache");
         Storage::DataBase::Instance().Close();
