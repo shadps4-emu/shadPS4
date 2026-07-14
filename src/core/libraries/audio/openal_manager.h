@@ -1,12 +1,44 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
+#include <array>
 #include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <AL/al.h>
 #include <AL/alc.h>
+
+#include "common/logging/log.h"
+#include "core/emulator_settings.h"
+
+// ALC_SOFT_output_mode constants, in case the alext.h in use predates them.
+#ifndef ALC_OUTPUT_MODE_SOFT
+#define ALC_OUTPUT_MODE_SOFT 0x19AC
+#define ALC_ANY_SOFT 0x19AD
+#define ALC_MONO_SOFT 0x1500
+#define ALC_STEREO_SOFT 0x1501
+#define ALC_STEREO_BASIC_SOFT 0x19AE
+#define ALC_STEREO_UHJ_SOFT 0x19AF
+#define ALC_STEREO_HRTF_SOFT 0x19B2
+#define ALC_QUAD_SOFT 0x1503
+#define ALC_SURROUND_5_1_SOFT 0x1504
+#define ALC_SURROUND_6_1_SOFT 0x1505
+#define ALC_SURROUND_7_1_SOFT 0x1506
+#endif
+
+// ALC_SOFT_HRTF constants, in case the alext.h in use predates the extension.
+#ifndef ALC_SOFT_HRTF
+#define ALC_HRTF_SOFT 0x1992
+#define ALC_DONT_CARE_SOFT 0x0002
+#define ALC_HRTF_STATUS_SOFT 0x1993
+#define ALC_HRTF_DISABLED_SOFT 0x0000
+#define ALC_HRTF_ENABLED_SOFT 0x0001
+#define ALC_HRTF_DENIED_SOFT 0x0002
+#define ALC_HRTF_REQUIRED_SOFT 0x0003
+#define ALC_HRTF_HEADPHONES_DETECTED_SOFT 0x0004
+#define ALC_HRTF_UNSUPPORTED_FORMAT_SOFT 0x0005
+#endif
 
 namespace Libraries::AudioOut {
 
@@ -196,8 +228,48 @@ private:
             return false;
         }
 
-        // Create context
-        ctx.context = alcCreateContext(ctx.device, nullptr);
+        std::array<ALCint, 7> attrs{};
+        std::size_t attr_count = 0;
+        attrs[attr_count++] = ALC_FREQUENCY;
+        attrs[attr_count++] = 48000;
+
+        const bool has_mode_ext = alcIsExtensionPresent(ctx.device, "ALC_SOFT_output_mode");
+        if (has_mode_ext) {
+            ALCint requested_mode = ALC_ANY_SOFT;
+            switch (EmulatorSettings.GetOpenALOutputMode()) {
+            case OpenALOutputMode::OutputStereo:
+                requested_mode = ALC_STEREO_SOFT;
+                break;
+            case OpenALOutputMode::OutputQuad:
+                requested_mode = ALC_QUAD_SOFT;
+                break;
+            case OpenALOutputMode::OutputSurround51:
+                requested_mode = ALC_SURROUND_5_1_SOFT;
+                break;
+            case OpenALOutputMode::OutputSurround71:
+                requested_mode = ALC_SURROUND_7_1_SOFT;
+                break;
+            default:
+                break; // Auto: let OpenAL Soft negotiate.
+            }
+            if (requested_mode != ALC_ANY_SOFT) {
+                attrs[attr_count++] = ALC_OUTPUT_MODE_SOFT;
+                attrs[attr_count++] = requested_mode;
+            }
+        }
+
+        const bool has_hrtf_ext = alcIsExtensionPresent(ctx.device, "ALC_SOFT_HRTF");
+        if (has_hrtf_ext) {
+            const u32 hrtf_mode = EmulatorSettings.GetOpenALHrtf();
+            const ALCint hrtf_value = hrtf_mode == OpenALHrtfMode::HrtfOn    ? ALC_TRUE
+                                      : hrtf_mode == OpenALHrtfMode::HrtfOff ? ALC_FALSE
+                                                                             : ALC_DONT_CARE_SOFT;
+            attrs[attr_count++] = ALC_HRTF_SOFT;
+            attrs[attr_count++] = hrtf_value;
+        }
+        attrs[attr_count] = 0;
+
+        ctx.context = alcCreateContext(ctx.device, attrs.data());
         if (!ctx.context) {
             LOG_ERROR(Lib_AudioOut, "Failed to create OpenAL context");
             alcCloseDevice(ctx.device);
@@ -214,8 +286,76 @@ private:
         }
         ctx.device_name = actual_name ? actual_name : "Unknown";
 
+        ALCint mixer_rate = 0;
+        alcGetIntegerv(ctx.device, ALC_FREQUENCY, 1, &mixer_rate);
+        LOG_INFO(Lib_AudioOut, "OpenAL mixer rate for '{}': {} Hz", ctx.device_name, mixer_rate);
+
+        if (has_mode_ext) {
+            ALCint mode = 0;
+            alcGetIntegerv(ctx.device, ALC_OUTPUT_MODE_SOFT, 1, &mode);
+            LOG_INFO(Lib_AudioOut, "OpenAL output mode for '{}': {}", ctx.device_name,
+                     OutputModeString(mode));
+        }
+        if (mixer_rate != 0 && mixer_rate != 48000) {
+            LOG_WARNING(Lib_AudioOut,
+                        "OpenAL mixer is not running at 48000 Hz; per-source resampling active");
+        }
+
+        if (has_hrtf_ext) {
+            ALCint status = ALC_HRTF_DISABLED_SOFT;
+            alcGetIntegerv(ctx.device, ALC_HRTF_STATUS_SOFT, 1, &status);
+            LOG_INFO(Lib_AudioOut, "OpenAL HRTF status for '{}': {}", ctx.device_name,
+                     HrtfStatusString(status));
+        } else {
+            LOG_INFO(Lib_AudioOut, "OpenAL device '{}' does not support ALC_SOFT_HRTF",
+                     ctx.device_name);
+        }
+
         LOG_INFO(Lib_AudioOut, "OpenAL device initialized: '{}'", ctx.device_name);
         return true;
+    }
+
+    static const char* OutputModeString(const ALCint mode) {
+        switch (mode) {
+        case ALC_MONO_SOFT:
+            return "mono";
+        case ALC_STEREO_SOFT:
+        case ALC_STEREO_BASIC_SOFT:
+            return "stereo";
+        case ALC_STEREO_UHJ_SOFT:
+            return "stereo (UHJ)";
+        case ALC_STEREO_HRTF_SOFT:
+            return "stereo (HRTF)";
+        case ALC_QUAD_SOFT:
+            return "quadraphonic";
+        case ALC_SURROUND_5_1_SOFT:
+            return "5.1 surround";
+        case ALC_SURROUND_6_1_SOFT:
+            return "6.1 surround";
+        case ALC_SURROUND_7_1_SOFT:
+            return "7.1 surround";
+        default:
+            return "unknown";
+        }
+    }
+
+    static const char* HrtfStatusString(const ALCint status) {
+        switch (status) {
+        case ALC_HRTF_DISABLED_SOFT:
+            return "disabled";
+        case ALC_HRTF_ENABLED_SOFT:
+            return "enabled";
+        case ALC_HRTF_DENIED_SOFT:
+            return "denied by configuration";
+        case ALC_HRTF_REQUIRED_SOFT:
+            return "required by configuration";
+        case ALC_HRTF_HEADPHONES_DETECTED_SOFT:
+            return "enabled (headphones detected)";
+        case ALC_HRTF_UNSUPPORTED_FORMAT_SOFT:
+            return "unsupported output format";
+        default:
+            return "unknown";
+        }
     }
 
     std::unordered_map<std::string, DeviceContext> devices;

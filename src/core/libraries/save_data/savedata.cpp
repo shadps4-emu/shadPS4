@@ -1259,7 +1259,7 @@ Error PS4_SYSV_ABI sceSaveDataMount(const OrbisSaveDataMount* mount,
         LOG_INFO(Lib_SaveData, "called without initialize");
         return setNotInitializedError();
     }
-    if (mount == nullptr && mount->dirName != nullptr) {
+    if (mount == nullptr || mount->dirName == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
         return Error::PARAMETER;
     }
@@ -1280,7 +1280,7 @@ Error PS4_SYSV_ABI sceSaveDataMount2(const OrbisSaveDataMount2* mount,
         LOG_INFO(Lib_SaveData, "called without initialize");
         return setNotInitializedError();
     }
-    if (mount == nullptr && mount->dirName != nullptr) {
+    if (mount == nullptr || mount->dirName == nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
         return Error::PARAMETER;
     }
