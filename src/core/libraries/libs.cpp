@@ -181,10 +181,18 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
         });
 
         for (auto mod : ModulesToLoad) {
-            if (!std::filesystem::exists(game_specific_modules_path / mod.module_name)) {
-                mod.callback(sym);
-            } else {
+            if (mod.module_name == "libSceGnmDriver.sprx") {
+                auto lle_file =
+                    EmulatorSettings.IsNeo() ? "libSceGnmDriverForNeoMode.sprx" : mod.module_name;
+                if (std::filesystem::exists(game_specific_modules_path / lle_file)) {
+                    LOG_WARNING(Loader, "{} LLEd", lle_file);
+                } else {
+                    mod.callback(sym);
+                }
+            } else if (std::filesystem::exists(game_specific_modules_path / mod.module_name)) {
                 LOG_WARNING(Loader, "{} LLEd", mod.module_name);
+            } else {
+                mod.callback(sym);
             }
         }
     }
