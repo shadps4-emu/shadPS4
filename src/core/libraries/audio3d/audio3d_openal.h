@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 #include <queue>
-
 #include "common/types.h"
 #include "core/libraries/audio/audioout.h"
 
@@ -125,7 +124,7 @@ enum class OrbisAudio3dPassthrough : u32 {
 };
 
 struct SpatialSource {
-    u32 source{0};              // ALuint
+    u32 source{0};
     std::vector<u32> buffers;   // ALuint ring, sized queue_depth + slack
     std::vector<u32> available; // reclaimed / never-queued buffer ids
 };
@@ -163,20 +162,12 @@ struct AssociatedAudioOutPort {
 struct Port {
     mutable std::recursive_mutex mutex;
     OrbisAudio3dOpenParameters parameters{};
-    // Opened lazily on the first sceAudio3dPortPush call.
     s32 audio_out_handle{-1};
-    // AudioOut ports explicitly opened by the game via sceAudio3dAudioOutOpen.
     std::vector<AssociatedAudioOutPort> audioout_ports;
-    // Reserved objects and their state.
     std::unordered_map<OrbisAudio3dObjectId, ObjectState> objects;
-    // Increasing counter for generating unique object IDs within this port.
     OrbisAudio3dObjectId next_object_id{0};
-    // Bed audio queue.
     std::deque<AudioData> bed_queue;
-    // Mixed stereo frames ready to be consumed by sceAudio3dPortPush
-    // (CPU-mix fallback path only).
     std::deque<AudioData> mixed_queue;
-    // Per-tick frame bundles produced by PortAdvance in the spatial path.
     std::deque<SpatialFrameBundle> spatial_queue;
 
     // Spatial (direct OpenAL) output state.
@@ -190,16 +181,13 @@ struct Port {
     float current_gain{-1.0f};
     SpatialSource bed;
     u32 bed_channels{2};
-    // Scratch for converting object frames to mono S16 (guarded by mutex).
     std::vector<s16> spatial_scratch;
-    // Scratch for hard-panned stereo frames of pass-through objects.
     std::vector<s16> spatial_scratch_stereo;
     // EFX late reverb
     bool reverb_supported{false};
-    u32 reverb_slot{0};   // ALuint
-    u32 reverb_effect{0}; // ALuint
+    u32 reverb_slot{0};
+    u32 reverb_effect{0};
     float late_reverb_level{0.0f};
-    // DOWNMIX_SPREAD_RADIUS port attribute
     float downmix_spread_radius{2.0f};
 };
 
