@@ -1266,7 +1266,7 @@ private:
         u64 src2 : 9;
         u64 omod : 2;
         u64 neg : 3;
-    } i;
+    } i{};
 
     static_assert(sizeof(VOP3Internal) == sizeof(u64));
 };
@@ -1345,7 +1345,7 @@ private:
         u64 src2 : 9;
         u64 op_sel_hi01 : 2;
         u64 neg : 3;
-    } i;
+    } i{};
 
     static_assert(sizeof(VOP3PInternal) == sizeof(u64));
 };

@@ -8,6 +8,7 @@ namespace Libraries::Np::NpSignaling::Stubs {
 namespace {
 TransportHooks g_transport{};
 PeerResolver g_peer_resolver = nullptr;
+bool g_matching2_enabled = false;
 u32 g_mm_server_addr = 0;
 u16 g_mm_server_udp_port = 0;
 } // namespace
@@ -43,8 +44,20 @@ u16 ConfiguredPort() {
     return g_transport.configured_port ? g_transport.configured_port() : 0;
 }
 
+u32 AdvertisedAddr() {
+    return g_transport.advertised_addr ? g_transport.advertised_addr() : 0;
+}
+
+bool EnsureTransport() {
+    return g_transport.ensure_transport ? g_transport.ensure_transport() : TransportIsReady();
+}
+
 void SetPeerResolver(PeerResolver fn) {
     g_peer_resolver = fn;
+}
+
+void SetMatching2Enabled(bool enabled) {
+    g_matching2_enabled = enabled;
 }
 
 void SetMmServerEndpoint(u32 addr, u16 udp_port) {
@@ -54,6 +67,10 @@ void SetMmServerEndpoint(u32 addr, u16 udp_port) {
 
 bool ResolvePeer(std::string_view online_id, u32* out_addr, u16* out_port) {
     return g_peer_resolver ? g_peer_resolver(online_id, out_addr, out_port) : false;
+}
+
+bool Matching2Enabled() {
+    return g_matching2_enabled;
 }
 
 u32 MmServerAddr() {
