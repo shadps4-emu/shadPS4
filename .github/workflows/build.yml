@@ -186,6 +186,23 @@ jobs:
         name: shadps4-win64-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: ${{github.workspace}}/build/shadPS4.exe
 
+  windows-vs-sdl:
+    runs-on: windows-2025-vs2026
+    needs: get-info
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        submodules: recursive
+
+    - name: Print CPU Info
+      run: bash -c "cat /proc/cpuinfo"
+
+    - name: Configure CMake
+      run: cmake --fresh -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -T ClangCL
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --target shadPS4 --config ${{env.BUILD_TYPE}} --parallel $env:NUMBER_OF_PROCESSORS
+
   macos-sdl:
     runs-on: macos-26
     needs: get-info
