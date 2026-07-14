@@ -1186,7 +1186,12 @@ void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
         }
     }();
     if (set_exec) {
-        ir.SetExec(result);
+        // V_CMPX evaluates on active lanes only; hardware writes exec & result to both EXEC
+        // and the VCC/SDST destination, zeroing inactive lanes' bits.
+        const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
+        ir.SetExec(masked);
+        SetDst1(inst.dst[1], masked);
+        return;
     }
     SetDst1(inst.dst[1], result);
 }
@@ -1217,7 +1222,11 @@ void Translator::V_CMP_F64(ConditionOp op, bool set_exec, const GcnInst& inst) {
         }
     }();
     if (set_exec) {
-        ir.SetExec(result);
+        // See the V_CMPX note in V_CMP_F32.
+        const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
+        ir.SetExec(masked);
+        SetDst1(inst.dst[1], masked);
+        return;
     }
     SetDst1(inst.dst[1], result);
 }
@@ -1248,7 +1257,11 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
         }
     }();
     if (set_exec) {
-        ir.SetExec(result);
+        // See the V_CMPX note in V_CMP_F32.
+        const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
+        ir.SetExec(masked);
+        SetDst1(inst.dst[1], masked);
+        return;
     }
     SetDst1(inst.dst[1], result);
 }
