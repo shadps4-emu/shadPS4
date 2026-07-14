@@ -311,7 +311,7 @@ void Matching2HandshakeThreadMain() {
                     now - peer.last_send > kMatching2HandshakeTimeout) {
                     peer.status = kMatching2ConnInactive;
                     QueueMatching2SignalingEvent(*ctx, ctx->room_id, member_id,
-                                                 ORBIS_NP_MATCHING2_SIGNALING_EVENT_NETINFO_ERROR,
+                                                 ORBIS_NP_MATCHING2_SIGNALING_EVENT_DEAD,
                                                  ORBIS_NP_MATCHING2_SIGNALING_ERROR_TIMEOUT);
                     continue;
                 }
@@ -335,6 +335,9 @@ void Matching2HandshakeThreadMain() {
 } // namespace
 
 bool SendMatching2StunPing(const ContextObject& ctx) {
+    if (!NpSignaling::Stubs::Matching2Enabled()) {
+        return false;
+    }
     if (!ctx.started || ctx.online_id.data[0] == '\0') {
         return false;
     }

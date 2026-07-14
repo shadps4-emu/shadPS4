@@ -400,7 +400,6 @@ void* BuildSearchRoomPayload(ContextObject& ctx, const shadnet::SearchRoomReply&
 
         if (!r.owner_npid().empty()) {
             auto& npid = p.ext_owner_npids.emplace_back();
-            npid = Libraries::Np::OrbisNpId{};
             SetNpId(npid, r.owner_npid());
             dst.ownerNpId = &npid;
         }
@@ -610,7 +609,6 @@ void* BuildGetRoomDataExternalListPayload(ContextObject& ctx,
 
         if (!r.owner_npid().empty()) {
             auto& npid = p.ext_owner_npids.emplace_back();
-            npid = Libraries::Np::OrbisNpId{};
             SetNpId(npid, r.owner_npid());
             dst.ownerNpId = &npid;
         }
@@ -1041,6 +1039,68 @@ void* BuildGetRoomDataInternalPayload(ContextObject& ctx, OrbisNpMatching2RoomId
 
     p.request_data = p.create_join_response.get();
     return p.request_data;
+}
+
+void* BuildRoomMessagePayload(CallbackPayload& p, bool a_variant, OrbisNpMatching2CastType castType,
+                              const std::vector<OrbisNpMatching2RoomMemberId>& dstMembers,
+                              const MemberCache* srcMember, const std::vector<u8>& msg) {
+    p.Reset();
+
+    p.room_message_dst = std::make_unique<OrbisNpMatching2RoomMessageDestination>();
+    *p.room_message_dst = {};
+    if (castType == ORBIS_NP_MATCHING2_CASTTYPE_UNICAST && !dstMembers.empty()) {
+        p.room_message_dst->unicastTarget = dstMembers.front();
+    } else if (castType == ORBIS_NP_MATCHING2_CASTTYPE_MULTICAST && !dstMembers.empty()) {
+        p.room_message_multicast_members = dstMembers;
+        p.room_message_dst->multicastTarget.memberId = p.room_message_multicast_members.data();
+        p.room_message_dst->multicastTarget.memberIdNum = p.room_message_multicast_members.size();
+    }
+
+    p.room_message_data = msg;
+    void* msg_ptr = p.room_message_data.empty() ? nullptr : p.room_message_data.data();
+
+    if (a_variant) {
+        p.room_message_src_addr = std::make_unique<Libraries::Np::OrbisNpPeerAddressA>();
+        p.room_message_src_online_id = std::make_unique<Libraries::Np::OrbisNpOnlineId>();
+        *p.room_message_src_addr = {};
+        *p.room_message_src_online_id = {};
+        if (srcMember) {
+            p.room_message_src_addr->accountId = srcMember->account_id;
+            p.room_message_src_addr->platform = srcMember->platform;
+            *p.room_message_src_online_id = srcMember->np_id.handle;
+        }
+
+        p.room_message_info_a = std::make_unique<OrbisNpMatching2RoomMessageInfoA>();
+        auto& info = *p.room_message_info_a;
+        info = {};
+        info.filtered = false;
+        info.castType = castType;
+        info.dst = p.room_message_dst.get();
+        info.srcMember = p.room_message_src_addr.get();
+        info.srcOnlineId = p.room_message_src_online_id.get();
+        info.msg = msg_ptr;
+        info.msgLen = static_cast<u32>(p.room_message_data.size());
+        p.room_message_callback_data = p.room_message_info_a.get();
+        return p.room_message_callback_data;
+    }
+
+    p.room_message_src_npid = std::make_unique<Libraries::Np::OrbisNpId>();
+    *p.room_message_src_npid = {};
+    if (srcMember) {
+        *p.room_message_src_npid = srcMember->np_id;
+    }
+
+    p.room_message_info = std::make_unique<OrbisNpMatching2RoomMessageInfo>();
+    auto& info = *p.room_message_info;
+    info = {};
+    info.filtered = false;
+    info.castType = castType;
+    info.dst = p.room_message_dst.get();
+    info.srcMember = p.room_message_src_npid.get();
+    info.msg = msg_ptr;
+    info.msgLen = static_cast<u32>(p.room_message_data.size());
+    p.room_message_callback_data = p.room_message_info.get();
+    return p.room_message_callback_data;
 }
 
 ContextManager& ContextManager::Instance() {

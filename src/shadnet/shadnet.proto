@@ -29,6 +29,10 @@ message SetAppearOfflineRequest {
     bool appear_offline = 1;
 }
 
+message ServerFeaturesReply {
+    bool matching2_enabled = 1;
+}
+
 message FriendEntry {
     string npid     = 1;
     bool   online   = 2;
@@ -514,6 +518,16 @@ message SetRoomDataInternalReply { uint64 room_id = 1; }
 message SetRoomDataExternalReply { uint64 room_id = 1; }
 message KickoutRoomMemberReply   { uint64 room_id = 1; }
 
+message SendRoomMessageRequest {
+    uint64 room_id = 1;
+    uint32 cast_type = 2;
+    repeated uint32 dst_member_ids = 3;
+    bytes msg = 4;
+    int32 option = 5;
+}
+
+message SendRoomMessageReply { uint64 room_id = 1; }
+
 // Notification payloads
 // Every notification carries ctx_id so the client can route it to the owning
 // context (the server tracks ctx_id per connection from ContextStartRequest).
@@ -533,4 +547,19 @@ message NotifyRoomEvent {
     uint32                   flags       = 8;
     bool                     has_passwd_mask = 9;
     uint64                   passwd_slot_mask = 10;
+}
+
+// NotificationType::RoomMessage (11) maps onto
+// OrbisNpMatching2RoomMessageCallback(ctxId, roomId, srcMemberId, event, data).
+message NotifyRoomMessage {
+    uint32 ctx_id = 1;
+    uint64 room_id = 2;
+    uint32 src_member_id = 3;
+    uint32 event = 4;
+    uint32 cast_type = 5;
+    repeated uint32 dst_member_ids = 6;
+    string src_npid = 7;
+    uint64 src_account_id = 8;
+    uint32 src_platform = 9;
+    bytes msg = 10;
 }

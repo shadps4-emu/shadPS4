@@ -390,19 +390,21 @@ static void PingThreadMain() {
             }
         }
 
-        const u32 server_addr = Stubs::MmServerAddr();
-        const u16 server_port = Stubs::MmServerUdpPort();
+        if (Stubs::Matching2Enabled()) {
+            const u32 server_addr = Stubs::MmServerAddr();
+            const u16 server_port = Stubs::MmServerUdpPort();
 
-        for (const auto& cs : contexts) {
-            if (server_addr == 0 || server_port == 0) {
-                break;
+            for (const auto& cs : contexts) {
+                if (server_addr == 0 || server_port == 0) {
+                    break;
+                }
+                StunPing ping{};
+                ping.cmd = 0x01;
+                std::memcpy(ping.online_id, cs.online_id.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
+                ping.local_ip = Stubs::AdvertisedAddr();
+
+                Stubs::SignalingSendTo(&ping, sizeof(ping), server_addr, server_port);
             }
-            StunPing ping{};
-            ping.cmd = 0x01;
-            std::memcpy(ping.online_id, cs.online_id.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
-            ping.local_ip = Stubs::AdvertisedAddr();
-
-            Stubs::SignalingSendTo(&ping, sizeof(ping), server_addr, server_port);
         }
 
         SendEchoPings();

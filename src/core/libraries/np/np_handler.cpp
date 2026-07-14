@@ -22,6 +22,7 @@
 #include "imgui/shadnet_notifications_layer.h"
 #include "np_handler.h"
 #include "shadnet.pb.h"
+#include "shadnet/server_probe.h"
 
 namespace Libraries::Np {
 
@@ -100,6 +101,51 @@ void NpHandler::Initialize() {
     if (!EmulatorSettings.IsShadNetEnabled()) {
         LOG_INFO(NpHandler, "shadNet disabled globally we are in offline mode");
         return;
+    }
+
+    {
+        const auto [host, port] = ParseServerAddress();
+        const ShadNet::ProbeInfo probe = ShadNet::ProbeServer(host, port);
+        if (probe.result != ShadNet::ProbeResult::Ok) {
+            EmulatorSettings.SetShadNetSessionDisabled(true);
+            switch (probe.result) {
+            case ShadNet::ProbeResult::VersionMismatch:
+                LOG_WARNING(NpHandler,
+                            "shadNet server {}:{} protocol version mismatch (server v{}, emulator "
+                            "v{}); disabling shadNet for this run (saved setting unchanged)",
+                            host, port, probe.server_version, ShadNet::SHAD_PROTOCOL_VERSION);
+                ImGui::ShadNetNotify::Push(
+                    ImGui::ShadNetNotify::Kind::Info,
+                    fmt::format("shadNet protocol version mismatch (server v{}, emulator v{}). "
+                                "Please update shadPS4. Online features are disabled for this "
+                                "session.",
+                                probe.server_version, ShadNet::SHAD_PROTOCOL_VERSION));
+                break;
+            case ShadNet::ProbeResult::ProtocolError:
+                LOG_WARNING(NpHandler,
+                            "shadNet server {}:{} sent an invalid ServerInfo handshake; disabling "
+                            "shadNet for this run (saved setting unchanged)",
+                            host, port);
+                ImGui::ShadNetNotify::Push(
+                    ImGui::ShadNetNotify::Kind::Info,
+                    fmt::format("shadNet server ({}:{}) uses an incompatible protocol. Online "
+                                "features are disabled for this session.",
+                                host, port));
+                break;
+            default: // Unreachable
+                LOG_WARNING(NpHandler,
+                            "shadNet server {}:{} is offline/unreachable; disabling shadNet for "
+                            "this run (saved setting unchanged)",
+                            host, port);
+                ImGui::ShadNetNotify::Push(
+                    ImGui::ShadNetNotify::Kind::Info,
+                    fmt::format("shadNet server ({}:{}) is offline. Online features are disabled "
+                                "for this session.",
+                                host, port));
+                break;
+            }
+            return;
+        }
     }
 
     const auto logged_in = UserManagement.GetLoggedInUsers(); // get all login users
@@ -182,15 +228,42 @@ bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, cons
     // Seed the current Appear-Offline preference so the login packet carries it (the send
     // is suppressed pre-auth; it just caches on the client).
     client->SetAppearOffline(m_appear_offline.load());
-    if (EmulatorSettings.IsUPnPEnabled()) {
-        Net::UPnPClient::Instance().Start();
-    }
     client->Start(host, port, npid, password, token);
+
+    // Shared handling for an incompatible-protocol failure (version mismatch or
+    // corrupt/unparseable stream): tell the user and disable shadNet for this run,
+    // since reconnect attempts against an incompatible server are pointless.
+    const auto handle_protocol_mismatch = [&client](ShadNet::ShadNetState st) {
+        if (st != ShadNet::ShadNetState::FailureProtocol)
+            return;
+        const u32 server_ver = client->GetServerProtocolVersion();
+        EmulatorSettings.SetShadNetSessionDisabled(true);
+        if (server_ver != 0) {
+            LOG_ERROR(NpHandler,
+                      "shadNet protocol version mismatch (server v{}, emulator v{}); disabling "
+                      "shadNet for this run (saved setting unchanged)",
+                      server_ver, ShadNet::SHAD_PROTOCOL_VERSION);
+            ImGui::ShadNetNotify::Push(
+                ImGui::ShadNetNotify::Kind::Info,
+                fmt::format("shadNet protocol version mismatch (server v{}, emulator v{}). "
+                            "Please update shadPS4. Online features are disabled for this "
+                            "session.",
+                            server_ver, ShadNet::SHAD_PROTOCOL_VERSION));
+        } else {
+            LOG_ERROR(NpHandler, "shadNet protocol error during handshake; disabling shadNet for "
+                                 "this run (saved setting unchanged)");
+            ImGui::ShadNetNotify::Push(
+                ImGui::ShadNetNotify::Kind::Info,
+                "shadNet server uses an incompatible protocol. Online features are disabled "
+                "for this session.");
+        }
+    };
 
     const ShadNet::ShadNetState conn_state = client->WaitForConnection();
     if (conn_state != ShadNet::ShadNetState::Ok) {
         LOG_ERROR(NpHandler, "user_id={} connection failed (state={})", user_id,
                   static_cast<int>(conn_state));
+        handle_protocol_mismatch(conn_state);
         client->Stop();
         return false;
     }
@@ -199,12 +272,18 @@ bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, cons
     if (auth_state != ShadNet::ShadNetState::Ok) {
         LOG_ERROR(NpHandler, "user_id={} authentication failed (state={})", user_id,
                   static_cast<int>(auth_state));
+        handle_protocol_mismatch(auth_state);
         client->Stop();
         return false;
     }
 
     LOG_INFO(NpHandler, "user_id={} signed in npid='{}' accountId={}", user_id, npid,
              client->GetUserId());
+
+    Net::UPnPClient::Instance().SetP2PFeaturesEnabled(client->IsMatching2Enabled());
+    if (client->IsMatching2Enabled() && EmulatorSettings.IsUPnPEnabled()) {
+        Net::UPnPClient::Instance().Start();
+    }
 
     NpMatching2::SetMmShadNetClient(client, host, port);
 
@@ -1883,7 +1962,7 @@ static u32 FillRankArrayFromProto(const shadnet::GetScoreResponse& resp,
 void NpHandler::OnAsyncReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
                              ShadNet::ErrorType error, const std::vector<u8>& body) {
     const auto cmd_val = static_cast<u16>(cmd);
-    if (cmd_val >= 12 && cmd_val <= 26) {
+    if (cmd_val >= 100 && cmd_val <= 200) {
         NpMatching2::OnMatchingReply(cmd, pkt_id, error, body);
     } else {
         OnScoreReply(user_id, cmd, pkt_id, error, body);

@@ -31,9 +31,11 @@ bool EnsureTransport();
 
 using PeerResolver = bool (*)(std::string_view online_id, u32* out_addr, u16* out_port);
 void SetPeerResolver(PeerResolver fn);
+void SetMatching2Enabled(bool enabled);
 void SetMmServerEndpoint(u32 addr, u16 udp_port);
 
 bool ResolvePeer(std::string_view online_id, u32* out_addr, u16* out_port);
+bool Matching2Enabled();
 u32 MmServerAddr();
 u16 MmServerUdpPort();
 
