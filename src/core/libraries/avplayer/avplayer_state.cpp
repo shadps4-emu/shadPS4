@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/thread.h"
 #include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_state.h"
+#include "core/libraries/kernel/process.h"
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -138,9 +140,12 @@ bool AvPlayerState::AddSource(std::string_view path, AvPlayerSourceType source_t
             return false;
         }
 
-        m_up_source = std::make_unique<AvPlayerSource>(
-            *this, m_post_init_data.video_decoder_init.decoder_type.video_type ==
-                       AvPlayerVideoDecoderType::Software2);
+        s32 sdk_ver{};
+        Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
+        bool uses_vdec2 = m_post_init_data.video_decoder_init.decoder_type.video_type ==
+                              AvPlayerVideoDecoderType::Software2 ||
+                          sdk_ver >= Common::ElfInfo::FW_550;
+        m_up_source = std::make_unique<AvPlayerSource>(*this, uses_vdec2);
         if (!m_up_source->Init(m_init_data, path)) {
             SetState(AvState::Error);
             m_up_source.reset();
