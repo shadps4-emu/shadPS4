@@ -67,7 +67,6 @@
 #include "core/libraries/sysmodule/sysmodule.h"
 #include "core/libraries/system/commondialog.h"
 #include "core/libraries/system/msgdialog.h"
-#include "core/libraries/system/posix.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/ulobjmgr/ulobjmgr.h"
@@ -122,7 +121,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceSaveDataDialog.sprx", Libraries::SaveData::Dialog::RegisterLib},
             {"libSceSsl2.sprx", Libraries::Ssl2::RegisterLib},
             {"libSceSysmodule.sprx", Libraries::SysModule::RegisterLib},
-            {"libScePosix.sprx", Libraries::Posix::RegisterLib},
             {"libSceNpCommerce.sprx", Libraries::Np::NpCommerce::RegisterLib},
             {"libSceNpCommon.sprx", Libraries::Np::NpCommon::RegisterLib},
             {"libSceNpManager.sprx", Libraries::Np::NpManager::RegisterLib},
