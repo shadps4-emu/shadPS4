@@ -112,12 +112,15 @@ public:
     [[nodiscard]] ImageView& FindDepthTarget(ImageId image_id, const ImageDesc& desc);
 
     /// Updates image contents if it was modified by CPU.
-    void UpdateImage(ImageId image_id) {
+    void UpdateImage(ImageId image_id, bool synchronize_alias = false) {
         std::scoped_lock lock{mutex};
         Image& image = slot_images[image_id];
         TrackImage(image_id);
         TouchImage(image);
         RefreshImage(image);
+        if (synchronize_alias) {
+            SynchronizeAlias(image_id);
+        }
     }
 
     /// Resolves overlap between existing cache image and pending merged image
@@ -295,6 +298,10 @@ private:
 
     void MarkAsMaybeDirty(ImageId image_id, Image& image);
 
+    void SynchronizeAlias(ImageId image_id);
+
+    void MarkGpuWrite(ImageId image_id);
+
     /// Removes the image and any views/surface metas that reference it.
     void DeleteImage(ImageId image_id);
 
@@ -322,6 +329,15 @@ private:
     Common::SlotVector<ImageView> slot_image_views;
     tsl::robin_map<u64, Sampler> samplers;
     std::unordered_set<ImageId> download_images;
+    struct AliasState {
+        ImageId writer{};
+        u64 writer_uid{};
+        bool has_alias{};
+        bool download_pending{};
+    };
+    tsl::robin_map<VAddr, AliasState> alias_states;
+    boost::container::small_vector<VAddr, 4> pending_alias_downloads;
+    u64 alias_generation{};
     u64 total_used_memory = 0;
     u64 trigger_gc_memory = 0;
     u64 pressure_gc_memory = 0;
