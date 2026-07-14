@@ -463,7 +463,7 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
         if (heap_api && heap_api->heap_malloc) {
             dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
         } else {
-            dest = std::malloc(module->tls.image_size);
+            dest = reinterpret_cast<u8*>(std::malloc(module->tls.image_size));
         }
         const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
         std::memcpy(dest, src, init_image_size);
