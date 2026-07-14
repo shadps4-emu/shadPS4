@@ -42,6 +42,7 @@ struct ErrorInfo {
 class Runner {
 public:
     static std::expected<Runner*, ErrorInfo> instance();
+    static void DestroyInstance();
 
     std::expected<void, ErrorInfo> run_raw(
         std::span<const std::uint32_t> spirv,

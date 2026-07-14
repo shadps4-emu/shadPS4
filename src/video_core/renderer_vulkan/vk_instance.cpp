@@ -245,6 +245,16 @@ bool Instance::CreateDevice() {
     ASSERT_MSG(add_extension(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME),
                "Required Vulkan extension unavailable: {}",
                VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME);
+    ASSERT_MSG(add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME),
+               "Required Vulkan extension unavailable: {}", VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
+
+    const auto robustness2_features = feature_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>();
+    ASSERT_MSG(robustness2_features.robustBufferAccess2,
+               "Required Vulkan feature unavailable: robustBufferAccess2");
+    ASSERT_MSG(robustness2_features.robustImageAccess2,
+               "Required Vulkan feature unavailable: robustImageAccess2");
+    ASSERT_MSG(robustness2_features.nullDescriptor,
+               "Required Vulkan feature unavailable: nullDescriptor");
 
     // Optional
     maintenance_8 = add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
@@ -264,15 +274,6 @@ bool Instance::CreateDevice() {
             feature_chain.get<vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
         LOG_INFO(Render_Vulkan, "- extendedDynamicState3ColorWriteMask: {}",
                  dynamic_state_3_features.extendedDynamicState3ColorWriteMask);
-    }
-    robustness2 = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
-    if (robustness2) {
-        robustness2_features = feature_chain.get<vk::PhysicalDeviceRobustness2FeaturesEXT>();
-        LOG_INFO(Render_Vulkan, "- robustBufferAccess2: {}",
-                 robustness2_features.robustBufferAccess2);
-        LOG_INFO(Render_Vulkan, "- robustImageAccess2: {}",
-                 robustness2_features.robustImageAccess2);
-        LOG_INFO(Render_Vulkan, "- nullDescriptor: {}", robustness2_features.nullDescriptor);
     }
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
     depth_clip_control = add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
@@ -450,9 +451,9 @@ bool Instance::CreateDevice() {
             .depthClipEnable = true,
         },
         vk::PhysicalDeviceRobustness2FeaturesEXT{
-            .robustBufferAccess2 = robustness2_features.robustBufferAccess2,
-            .robustImageAccess2 = robustness2_features.robustImageAccess2,
-            .nullDescriptor = robustness2_features.nullDescriptor,
+            .robustBufferAccess2 = true,
+            .robustImageAccess2 = true,
+            .nullDescriptor = true,
         },
         vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT{
             .vertexInputDynamicState = true,
@@ -515,9 +516,6 @@ bool Instance::CreateDevice() {
     }
     if (!depth_clip_enable) {
         device_chain.unlink<vk::PhysicalDeviceDepthClipEnableFeaturesEXT>();
-    }
-    if (!robustness2) {
-        device_chain.unlink<vk::PhysicalDeviceRobustness2FeaturesEXT>();
     }
     if (!vertex_input_dynamic_state) {
         device_chain.unlink<vk::PhysicalDeviceVertexInputDynamicStateFeaturesEXT>();

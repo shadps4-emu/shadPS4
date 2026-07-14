@@ -73,6 +73,7 @@ OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, Orb
                                          s32 fd, s32 s_mode, s32 flag) {
     if (file == nullptr) {
         *Kernel::__Error() = POSIX_ENOMEM;
+        return nullptr;
     }
 
     // Preserve mode and index

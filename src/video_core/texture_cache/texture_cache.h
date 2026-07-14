@@ -268,9 +268,6 @@ private:
         }
     }
 
-    /// Gets or creates a null image for a particular format.
-    ImageId GetNullImage(vk::Format format);
-
     /// Copies image memory back to CPU.
     void DownloadImageMemory(ImageId image_id, bool sync = false);
 
@@ -310,6 +307,9 @@ private:
         DeleteImage(image_id);
     }
 
+    void GarbageCollectImages();
+    void GarbageCollectSamplers();
+
 private:
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
@@ -321,17 +321,22 @@ private:
     Common::SlotVector<Image> slot_images;
     Common::SlotVector<ImageView> slot_image_views;
     tsl::robin_map<u64, Sampler> samplers;
-    tsl::robin_map<vk::Format, ImageId> null_images;
     std::unordered_set<ImageId> download_images;
     u64 total_used_memory = 0;
     u64 trigger_gc_memory = 0;
     u64 pressure_gc_memory = 0;
     u64 critical_gc_memory = 0;
+    u64 total_used_samplers = 0;
+    u64 trigger_gc_samplers = 0;
+    u64 pressure_gc_samplers = 0;
+    u64 critical_gc_samplers = 0;
     u64 gc_tick = 0;
     Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
+    Common::LeastRecentlyUsedCache<u64, u64> sampler_lru_cache;
     bool readback_linear_images;
     PageTable page_table;
     std::mutex mutex;
+    std::mutex samplers_mutex;
     struct MetaDataInfo {
         enum class Type {
             CMask,
