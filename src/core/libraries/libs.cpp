@@ -162,7 +162,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceHmd.sprx", Libraries::Hmd::RegisterLib},
             {"libSceHmdSetupDialog.sprx", Libraries::HmdSetupDialog::RegisterLib},
             {"libSceDiscMap.sprx", Libraries::DiscMap::RegisterLib},
-            {"libSceUlobjmgr.sprx", Libraries::Ulobjmgr::RegisterLib},
+            {"ulobjmgr.sprx", Libraries::Ulobjmgr::RegisterLib},
             {"libSceSigninDialog.sprx", Libraries::SigninDialog::RegisterLib},
             {"libSceCamera.sprx", Libraries::Camera::RegisterLib},
             {"libSceCompanionHttpd.sprx", Libraries::CompanionHttpd::RegisterLib},
