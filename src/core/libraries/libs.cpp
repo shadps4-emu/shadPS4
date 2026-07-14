@@ -140,7 +140,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceAppContent.sprx", Libraries::AppContent::RegisterLib},
             {"libScePngDec.sprx", Libraries::PngDec::RegisterLib},
             {"libScePlayGo.sprx", Libraries::PlayGo::RegisterLib},
-            {"libScePlayGo.sprx", Libraries::PlayGo::Dialog::RegisterLib},
+            {"libScePlayGoDialog.sprx", Libraries::PlayGo::Dialog::RegisterLib},
             {"libSceRandom.sprx", Libraries::Random::RegisterLib},
             {"libSceUsbd.sprx", Libraries::Usbd::RegisterLib},
             {"libScePad.sprx", Libraries::Pad::RegisterLib},
