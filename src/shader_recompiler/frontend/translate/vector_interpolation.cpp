@@ -100,8 +100,7 @@ void Translator::V_INTERP_MOV_F32(const GcnInst& inst) {
     auto& interp = info.fs_interpolation[attr_index];
     ASSERT(attr.is_flat || inst.src[0].code == 2);
     if (profile.supports_amd_shader_explicit_vertex_parameter ||
-        (profile.supports_fragment_shader_barycentric &&
-         !profile.has_incomplete_fragment_shader_barycentric)) {
+        profile.supports_fragment_shader_barycentric) {
         // VSRC 0=P10, 1=P20, 2=P0
         interp.primary = Qualifier::PerVertex;
         SetDst(inst.dst[0],

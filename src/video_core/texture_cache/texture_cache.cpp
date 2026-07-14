@@ -5,6 +5,7 @@
 
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/div_ceil.h"
 #include "common/scope_exit.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
@@ -28,9 +29,11 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
       buffer_cache{buffer_cache_}, tracker{tracker_}, blit_helper{instance, scheduler},
       tile_manager{instance, scheduler, buffer_cache.GetUtilityBuffer(MemoryUsage::Stream)},
       readback_linear_images{EmulatorSettings.IsReadbackLinearImagesEnabled()} {
-    // Create basic null image at fixed image ID.
-    const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
-    ASSERT(null_id.index == NULL_IMAGE_ID.index);
+
+    u32 max_samplers = instance.GetMaxSamplerAllocationCount();
+    trigger_gc_samplers = max_samplers * 3 / 4;
+    pressure_gc_samplers = max_samplers * 7 / 8;
+    critical_gc_samplers = max_samplers * 15 / 16;
 
     // Set up garbage collection parameters.
     if (!instance.CanReportMemoryUsage()) {
@@ -57,47 +60,20 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
 
 TextureCache::~TextureCache() = default;
 
-ImageId TextureCache::GetNullImage(const vk::Format format) {
-    const auto existing_image = null_images.find(format);
-    if (existing_image != null_images.end()) {
-        return existing_image->second;
-    }
-
-    ImageInfo info{};
-    info.pixel_format = format;
-    info.type = AmdGpu::ImageType::Color2D;
-    info.tile_mode = AmdGpu::TileMode::Thin1DThin;
-    info.num_bits = 32;
-    info.UpdateSize();
-
-    const ImageId null_id =
-        slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
-    auto& image = slot_images[null_id];
-    Vulkan::SetObjectName(instance.GetDevice(), image.GetImage(),
-                          fmt::format("Null Image ({})", vk::to_string(format)));
-
-    image.flags = ImageFlagBits::Empty;
-    image.track_addr = image.info.guest_address;
-    image.track_addr_end = image.info.guest_address + image.info.guest_size;
-
-    null_images.emplace(format, null_id);
-    return null_id;
-}
-
 void TextureCache::ProcessDownloadImages() {
     for (const ImageId image_id : download_images) {
-        DownloadImageMemory(image_id);
+        DownloadImageMemory(image_id, true);
     }
     download_images.clear();
 }
 
-void TextureCache::DownloadImageMemory(ImageId image_id) {
+void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
     Image& image = slot_images[image_id];
     if (False(image.flags & ImageFlagBits::GpuModified)) {
         return;
     }
     auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
-    const u32 download_size = image.info.pitch * image.info.size.height *
+    const u32 download_size = image.info.pitch * image.info.size.height * image.info.size.depth *
                               image.info.resources.layers * (image.info.num_bits / 8);
     ASSERT(download_size <= image.info.guest_size);
     const auto [download, offset] = download_buffer.Map(download_size);
@@ -115,7 +91,7 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
                 .layerCount = image.info.resources.layers,
             },
         .imageOffset = {0, 0, 0},
-        .imageExtent = {image.info.size.width, image.info.size.height, 1},
+        .imageExtent = {image.info.size.width, image.info.size.height, image.info.size.depth},
     };
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -123,11 +99,17 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     cmdbuf.copyImageToBuffer(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
                              download_buffer.Handle(), image_download);
 
-    scheduler.DeferPriorityOperation(
-        [this, device_addr = image.info.guest_address, download, download_size] {
-            Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
-                                                      download_size);
-        });
+    if (sync) {
+        scheduler.Finish();
+        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(image.info.guest_address),
+                                                  download, download_size);
+    } else {
+        scheduler.DeferPriorityOperation(
+            [this, device_addr = image.info.guest_address, download, download_size] {
+                Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
+                                                          download_size);
+            });
+    }
 }
 
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
@@ -522,10 +504,7 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
 
 ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     const auto& info = desc.info;
-
-    if (info.guest_address == 0) [[unlikely]] {
-        return GetNullImage(info.pixel_format);
-    }
+    ASSERT(info.guest_address != 0);
 
     std::scoped_lock lock{mutex};
     ImageIds image_ids;
@@ -707,9 +686,9 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
                 slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
             RegisterImage(stencil_id);
         }
-        Image& image = slot_images[stencil_id];
-        TouchImage(image);
-        image.AssociateDepth(image_id);
+        Image& stencil_image = slot_images[stencil_id];
+        TouchImage(stencil_image);
+        stencil_image.AssociateDepth(image_id, image.image_uid);
     }
 
     return image.FindView(desc.view_info, false);
@@ -731,7 +710,10 @@ void TextureCache::RefreshImage(Image& image) {
         const auto addr = std::bit_cast<u8*>(image.info.guest_address);
         const u32 w = std::min(image.info.size.width, u32(8));
         const u32 h = std::min(image.info.size.height, u32(8));
-        const u32 size = w * h * image.info.num_bits >> (3 + image.info.props.is_block ? 4 : 0);
+
+        const u32 s_w = image.info.props.is_block ? Common::DivCeil(w, 4u) : w;
+        const u32 s_h = image.info.props.is_block ? Common::DivCeil(h, 4u) : h;
+        const u32 size = s_w * s_h * (image.info.num_bits / 8);
         const u64 hash = XXH3_64bits(addr, size);
         if (image.hash == hash) {
             image.flags &= ~ImageFlagBits::MaybeCpuDirty;
@@ -810,7 +792,15 @@ void TextureCache::RefreshImage(Image& image) {
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler,
                                      AmdGpu::BorderColorBuffer border_color_base) {
     const u64 hash = XXH3_64bits(&sampler, sizeof(sampler));
+
+    std::scoped_lock lock{samplers_mutex};
     const auto [it, new_sampler] = samplers.try_emplace(hash, instance, sampler, border_color_base);
+    if (new_sampler) {
+        samplers.at(hash).lru_id = sampler_lru_cache.Insert(hash, gc_tick);
+    } else {
+        sampler_lru_cache.Touch(it->second.lru_id, gc_tick);
+    }
+
     return it->second.Handle();
 }
 
@@ -956,10 +946,7 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
     tracker.UpdatePageWatchers<false>(addr, size);
 }
 
-void TextureCache::RunGarbageCollector() {
-    SCOPE_EXIT {
-        ++gc_tick;
-    };
+void TextureCache::GarbageCollectImages() {
     if (instance.CanReportMemoryUsage()) {
         total_used_memory = instance.GetDeviceMemoryUsage();
     }
@@ -1021,6 +1008,55 @@ void TextureCache::RunGarbageCollector() {
         configure(true);
         lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
     }
+}
+
+void TextureCache::GarbageCollectSamplers() {
+    total_used_samplers = samplers.size();
+    if (total_used_samplers < trigger_gc_samplers) {
+        return;
+    }
+    std::scoped_lock lock{samplers_mutex};
+    bool pressured = false;
+    bool aggresive = false;
+    u64 ticks_to_destroy = 0;
+    size_t num_deletions = 0;
+
+    const auto configure = [&](bool allow_aggressive) {
+        pressured = total_used_samplers >= pressure_gc_samplers;
+        aggresive = allow_aggressive && total_used_samplers >= critical_gc_samplers;
+        ticks_to_destroy = aggresive ? 160 : pressured ? 80 : 16;
+        ticks_to_destroy = std::min(ticks_to_destroy, gc_tick);
+        num_deletions = aggresive ? 40 : pressured ? 20 : 10;
+    };
+    const auto clean_up = [&](u64 hash) {
+        if (num_deletions == 0) {
+            return true;
+        }
+        --num_deletions;
+        const size_t lru_id = samplers.at(hash).lru_id;
+        samplers.erase(hash);
+        sampler_lru_cache.Free(lru_id);
+        return false;
+    };
+
+    // Try to remove anything old enough and not high priority.
+    configure(false);
+    sampler_lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
+
+    if (total_used_samplers >= critical_gc_samplers) {
+        // If we are still over the critical limit, run an aggressive GC
+        configure(true);
+        sampler_lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
+    }
+}
+
+void TextureCache::RunGarbageCollector() {
+    SCOPE_EXIT {
+        ++gc_tick;
+    };
+
+    GarbageCollectImages();
+    GarbageCollectSamplers();
 }
 
 void TextureCache::TouchImage(const Image& image) {

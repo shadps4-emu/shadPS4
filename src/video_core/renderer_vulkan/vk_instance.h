@@ -165,11 +165,6 @@ public:
         return vertex_input_dynamic_state;
     }
 
-    /// Returns true when the nullDescriptor feature of VK_EXT_robustness2 is supported.
-    bool IsNullDescriptorSupported() const {
-        return robustness2 && robustness2_features.nullDescriptor;
-    }
-
     /// Returns true when VK_KHR_fragment_shader_barycentric is supported.
     bool IsFragmentShaderBarycentricSupported() const {
         return fragment_shader_barycentric;
@@ -180,9 +175,14 @@ public:
         return amd_shader_explicit_vertex_parameter;
     }
 
-    /// Returns true when VK_EXT_primitive_topology_list_restart is supported.
+    /// Returns true when VK_EXT_primitive_topology_list_restart is supported for regular lists.
     bool IsListRestartSupported() const {
-        return list_restart;
+        return list_restart && list_restart_features.primitiveTopologyListRestart;
+    }
+
+    /// Returns true when VK_EXT_primitive_topology_list_restart is supported for patch lists.
+    bool IsPatchListRestartSupported() const {
+        return list_restart && list_restart_features.primitiveTopologyPatchListRestart;
     }
 
     /// Returns true when VK_EXT_legacy_vertex_attributes is supported.
@@ -263,16 +263,6 @@ public:
     /// Returns true when tessellation is supported by the device
     bool IsTessellationSupported() const {
         return features.tessellationShader;
-    }
-
-    /// Returns true when tessellation isolines are supported by the device
-    bool IsTessellationIsolinesSupported() const {
-        return !portability_subset || portability_features.tessellationIsolines;
-    }
-
-    /// Returns true when tessellation point mode is supported by the device
-    bool IsTessellationPointModeSupported() const {
-        return !portability_subset || portability_features.tessellationPointMode;
     }
 
     /// Returns the vendor ID of the physical device
@@ -405,6 +395,17 @@ public:
         return properties.limits.maxFramebufferHeight;
     }
 
+    /// Returns the maximum number of samplers that can be allocated at once.
+    u32 GetMaxSamplerAllocationCount() const {
+        if (driver_id == vk::DriverId::eMesaKosmickrisp) {
+            // FIXME: KosmicKrisp has an internal 1024 unique sampler limit before
+            // vkCreateSampler starts returning VK_ERROR_OUT_OF_HOST_MEMORY. Work
+            // around this for now by reducing the value to 1024.
+            return 1024;
+        }
+        return properties.limits.maxSamplerAllocationCount;
+    }
+
     /// Returns the sample count flags supported by color buffers.
     vk::SampleCountFlags GetColorSampleCounts() const {
         return properties.limits.framebufferColorSampleCounts;
@@ -425,6 +426,12 @@ public:
     /// images.
     bool IsBlockTexelViewSupported() const {
         return supports_block_texel_view;
+    }
+
+    /// Returns whether VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT is supported on 3D images
+    bool Is2dViewOf3dSupported() const {
+        return image_2d_view_of_3d && image_2d_view_of_3d_features.image2DViewOf3D &&
+               image_2d_view_of_3d_features.sampler2DViewOf3D;
     }
 
     /// Returns whether the device can report memory usage.
@@ -472,12 +479,12 @@ private:
     vk::PhysicalDeviceFeatures features;
     vk::PhysicalDeviceVulkan12Features vk12_features;
     vk::PhysicalDeviceVulkan13Features vk13_features;
-    vk::PhysicalDevicePortabilitySubsetFeaturesKHR portability_features;
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
-    vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;
     vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
     vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
         workgroup_memory_explicit_layout_features;
+    vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT image_2d_view_of_3d_features;
+    vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT list_restart_features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};
     std::string vendor_name;
@@ -497,7 +504,6 @@ private:
     bool dynamic_state_3{};
     bool depth_range_unrestricted{};
     bool vertex_input_dynamic_state{};
-    bool robustness2{};
     bool list_restart{};
     bool legacy_vertex_attributes{};
     bool provoking_vertex{};
@@ -510,9 +516,9 @@ private:
     bool shader_atomic_float{};
     bool shader_atomic_float2{};
     bool workgroup_memory_explicit_layout{};
-    bool portability_subset{};
     bool maintenance_8{};
     bool attachment_feedback_loop{};
+    bool image_2d_view_of_3d{};
     bool supports_memory_budget{};
     bool supports_block_texel_view{};
     u64 total_memory_budget{};

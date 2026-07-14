@@ -35,6 +35,20 @@ vk::StencilOp StencilOp(AmdGpu::StencilFunc op) {
         return vk::StencilOp::eDecrementAndWrap;
     case AmdGpu::StencilFunc::ReplaceOp:
         return vk::StencilOp::eReplace;
+    case AmdGpu::StencilFunc::Ones:
+        LOG_WARNING(Render_Vulkan, "Unsupported stencil op {}, using Replace.",
+                    static_cast<u32>(op));
+        return vk::StencilOp::eReplace;
+    case AmdGpu::StencilFunc::And:
+    case AmdGpu::StencilFunc::Or:
+    case AmdGpu::StencilFunc::Xor:
+    case AmdGpu::StencilFunc::Nand:
+    case AmdGpu::StencilFunc::Nor:
+    case AmdGpu::StencilFunc::Xnor:
+        // Bitwise stencil operations have no Vulkan equivalent; eKeep is the safest fallback.
+        LOG_WARNING(Render_Vulkan, "Unsupported bitwise stencil op {}, using Keep.",
+                    static_cast<u32>(op));
+        return vk::StencilOp::eKeep;
     default:
         UNREACHABLE();
         return vk::StencilOp::eKeep;

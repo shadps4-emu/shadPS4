@@ -7,7 +7,6 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_auth.h"
-#include "core/libraries/np/np_auth_error.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/system/userservice.h"
 

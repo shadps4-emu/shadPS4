@@ -3,6 +3,10 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cstring>
+#include <string_view>
+
 #include "common/types.h"
 #include "core/libraries/error_codes.h"
 
@@ -10,6 +14,15 @@
 namespace Libraries::Np {
 
 using OrbisNpAccountId = u64;
+
+struct OrbisNpTitleId {
+    char id[13];
+    u8 padding[3];
+};
+
+struct OrbisNpTitleSecret {
+    u8 data[128];
+};
 
 constexpr s32 ORBIS_NP_ONLINEID_MAX_LENGTH = 16;
 
@@ -24,6 +37,20 @@ struct OrbisNpId {
     u8 opt[8];
     u8 reserved[8];
 };
+
+inline void SetNpOnlineId(OrbisNpOnlineId& dst, std::string_view src) {
+    dst = {};
+    const size_t len = std::min(src.size(), static_cast<size_t>(ORBIS_NP_ONLINEID_MAX_LENGTH));
+    if (len > 0) {
+        std::memcpy(dst.data, src.data(), len);
+    }
+    dst.term = 0;
+}
+
+inline void SetNpId(OrbisNpId& dst, std::string_view online_id) {
+    dst = {};
+    SetNpOnlineId(dst.handle, online_id);
+}
 
 struct OrbisNpClientId {
     char id[129];

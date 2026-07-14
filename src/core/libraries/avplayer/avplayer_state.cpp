@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/thread.h"
 #include "core/libraries/avplayer/avplayer_error.h"
-#include "core/libraries/avplayer/avplayer_source.h"
 #include "core/libraries/avplayer/avplayer_state.h"
-#include "core/tls.h"
+#include "core/libraries/kernel/process.h"
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -140,9 +140,12 @@ bool AvPlayerState::AddSource(std::string_view path, AvPlayerSourceType source_t
             return false;
         }
 
-        m_up_source = std::make_unique<AvPlayerSource>(
-            *this, m_post_init_data.video_decoder_init.decoder_type.video_type ==
-                       AvPlayerVideoDecoderType::Software2);
+        s32 sdk_ver{};
+        Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
+        bool uses_vdec2 = m_post_init_data.video_decoder_init.decoder_type.video_type ==
+                              AvPlayerVideoDecoderType::Software2 ||
+                          sdk_ver >= Common::ElfInfo::FW_550;
+        m_up_source = std::make_unique<AvPlayerSource>(*this, uses_vdec2);
         if (!m_up_source->Init(m_init_data, path)) {
             SetState(AvState::Error);
             m_up_source.reset();
@@ -177,6 +180,7 @@ bool AvPlayerState::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
 bool AvPlayerState::Start() {
     std::shared_lock lock(m_source_mutex);
     if (m_current_state == AvState::Ready || m_current_state == AvState::Stop || Stop()) {
+        m_eof_stop_event_sent = false;
         SetState(AvState::Starting);
         if (!m_up_source->Start()) {
             LOG_ERROR(Lib_AvPlayer, "Could not start playback.");
@@ -199,13 +203,16 @@ bool AvPlayerState::Pause() {
         return true;
     }
     if (m_up_source == nullptr || m_current_state == AvState::Pause ||
-        m_current_state == AvState::Ready || m_current_state == AvState::Initial ||
-        m_current_state == AvState::Unknown || m_current_state == AvState::AddingSource) {
+        m_current_state == AvState::Stop || m_current_state == AvState::Ready ||
+        m_current_state == AvState::Initial || m_current_state == AvState::Unknown ||
+        m_current_state == AvState::AddingSource) {
         LOG_ERROR(Lib_AvPlayer, "Could not pause playback.");
         return false;
     }
     m_up_source->Pause();
-    SetState(AvState::Pause);
+    if (!SetState(AvState::Pause)) {
+        return false;
+    }
     OnPlaybackStateChanged(AvState::Pause);
     return true;
 }
@@ -286,6 +293,7 @@ bool AvPlayerState::Stop() {
     if (!SetState(AvState::Stop)) {
         return false;
     }
+    m_eof_stop_event_sent = true;
     OnPlaybackStateChanged(AvState::Stop);
     return true;
 }
@@ -320,7 +328,7 @@ bool AvPlayerState::IsActive() {
         return false;
     }
     return m_current_state != AvState::Stop && m_current_state != AvState::Error &&
-           m_current_state != AvState::EndOfFile && m_up_source->IsActive();
+           m_up_source->IsActive();
 }
 
 u64 AvPlayerState::CurrentTime() {
@@ -359,6 +367,16 @@ void AvPlayerState::OnError() {
 
 void AvPlayerState::OnEOF() {
     SetState(AvState::EndOfFile);
+}
+
+void AvPlayerState::UpdateEndOfFileState() {
+    std::shared_lock lock(m_source_mutex);
+    if (m_up_source == nullptr || m_up_source->IsActive() || m_eof_stop_event_sent.exchange(true)) {
+        return;
+    }
+    lock.unlock();
+
+    EmitEvent(AvPlayerEvents::StateStop);
 }
 
 // Called inside CONTROLLER thread
@@ -466,7 +484,9 @@ void AvPlayerState::ProcessEvent() {
 
 // Called inside CONTROLLER thread
 void AvPlayerState::UpdateBufferingState() {
-    if (m_current_state == AvState::Buffering) {
+    if (m_current_state == AvState::EndOfFile) {
+        UpdateEndOfFileState();
+    } else if (m_current_state == AvState::Buffering) {
         const auto has_frames = OnBufferingCheckEvent(10);
         if (!has_frames.has_value()) {
             return;

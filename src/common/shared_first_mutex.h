@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <condition_variable>
 #include <mutex>
 
@@ -26,6 +27,16 @@ public:
         return true;
     }
 
+    template <typename Clock, typename Duration>
+    bool try_lock_until(const std::chrono::time_point<Clock, Duration>& abs_time) {
+        std::unique_lock<std::mutex> lock(mtx);
+        if (!cv.wait_until(lock, abs_time, [this]() { return !writer_active && readers == 0; })) {
+            return false;
+        }
+        writer_active = true;
+        return true;
+    }
+
     void unlock() {
         std::lock_guard<std::mutex> lock(mtx);
         writer_active = false;
@@ -36,6 +47,25 @@ public:
         std::unique_lock<std::mutex> lock(mtx);
         cv.wait(lock, [this]() { return !writer_active; });
         ++readers;
+    }
+
+    bool try_lock_shared() {
+        std::lock_guard<std::mutex> lock(mtx);
+        if (writer_active) {
+            return false;
+        }
+        ++readers;
+        return true;
+    }
+
+    template <typename Clock, typename Duration>
+    bool try_lock_shared_until(const std::chrono::time_point<Clock, Duration>& abs_time) {
+        std::unique_lock<std::mutex> lock(mtx);
+        if (!cv.wait_until(lock, abs_time, [this]() { return !writer_active; })) {
+            return false;
+        }
+        ++readers;
+        return true;
     }
 
     void unlock_shared() {

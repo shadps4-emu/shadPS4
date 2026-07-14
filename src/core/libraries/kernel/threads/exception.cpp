@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/arch.h"
 #include "common/assert.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -187,12 +188,14 @@ s32 OrbisToNativeSignal(s32 s) {
 #endif
 
 std::array<OrbisKernelExceptionHandler, 130> Handlers{};
+Sigset g_sigintr{};
 
 #ifndef _WIN64
 void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context) {
     const auto handler = Handlers[NativeToOrbisSignal(native_signum)];
     if (handler) {
         auto ctx = Ucontext{};
+#ifdef ARCH_X86_64
 #ifdef __APPLE__
         const auto& regs = raw_context->uc_mcontext->__ss;
         ctx.uc_mcontext.mc_r8 = regs.__r8;
@@ -260,6 +263,9 @@ void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context
         ctx.uc_mcontext.mc_rip = (regs[REG_RIP]);
         ctx.uc_mcontext.mc_addr = reinterpret_cast<uint64_t>(inf->si_addr);
 #endif
+#else
+        UNREACHABLE_MSG("SigactionHandler not implemented for current architecture.");
+#endif
         handler(NativeToOrbisSignal(native_signum), &ctx);
     } else {
         UNREACHABLE_MSG("Unhandled exception");
@@ -301,11 +307,55 @@ void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
 s32 PS4_SYSV_ABI posix_sigemptyset(Sigset* s) {
     s->bits[0] = 0;
     s->bits[1] = 0;
-    return 0;
+    s->bits[2] = 0;
+    s->bits[3] = 0;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI posix_sigfillset(Sigset* s) {
+    s->bits[0] = ~0U;
+    s->bits[1] = ~0U;
+    s->bits[2] = ~0U;
+    s->bits[3] = ~0U;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI posix_sigaddset(Sigset* s, s32 sig) {
+    s32 val = sig - 1;
+    if (val >= 0x80) {
+        *Libraries::Kernel::__Error() = POSIX_EINVAL;
+        return ORBIS_FAIL;
+    }
+    s->bits[val >> 5] |= 1 << (val & 0x1f);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI posix_sigdelset(Sigset* s, s32 sig) {
+    s32 val = sig - 1;
+    if (val >= 0x80) {
+        *Libraries::Kernel::__Error() = POSIX_EINVAL;
+        return ORBIS_FAIL;
+    }
+    s->bits[val >> 5] &= ~(1 << (val & 0x1f));
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI posix_sigismember(Sigset* s, s32 sig) {
+    s32 val = sig - 1;
+    if (val >= 0x80) {
+        *Libraries::Kernel::__Error() = POSIX_EINVAL;
+        return ORBIS_FAIL;
+    }
+    return ((s->bits[val >> 5] >> (val & 0x1f)) & 1) != 0;
 }
 
 bool PS4_SYSV_ABI posix_sigisemptyset(Sigset* s) {
-    return s->bits[0] == 0 && s->bits[1] == 0;
+    return s->bits[0] == 0 && s->bits[1] == 0 && s->bits[2] == 0 && s->bits[3] == 0;
+}
+
+s32 PS4_SYSV_ABI posix_sigprocmask(s32 how, const Sigset* set, Sigset* oset) {
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called, how = {}", how);
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI posix_sigalstack(const OrbisKernelExceptionHandlerStack* ss,
@@ -401,6 +451,22 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     return ORBIS_OK;
 }
 
+SigHandler PS4_SYSV_ABI posix_signal(s32 sig, SigHandler func) {
+    Sigaction act{};
+    act.__sigaction_handler.handler = func;
+    posix_sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    if (posix_sigismember(&g_sigintr, sig) == 0) {
+        act.sa_flags |= POSIX_SA_RESTART;
+    }
+    Sigaction oact{};
+    s32 result = posix_sigaction(sig, &act, &oact);
+    if (result >= ORBIS_OK) {
+        return oact.__sigaction_handler.handler;
+    }
+    return reinterpret_cast<SigHandler>(-1);
+}
+
 s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
     if (sig < 1 || sig > 128) { // off-by-one error?
         return POSIX_EINVAL;
@@ -487,7 +553,7 @@ int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
     return ret;
 }
 
-s32 PS4_SYSV_ABI sceKernelDebugRaiseException(s32 error, s64 unk) {
+s32 PS4_SYSV_ABI sceKernelDebugRaiseException(u32 error, s64 unk) {
     if (unk != 0) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
@@ -495,7 +561,7 @@ s32 PS4_SYSV_ABI sceKernelDebugRaiseException(s32 error, s64 unk) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceKernelDebugRaiseExceptionOnReleaseMode(s32 error, s64 unk) {
+s32 PS4_SYSV_ABI sceKernelDebugRaiseExceptionOnReleaseMode(u32 error, s64 unk) {
     if (unk != 0) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
@@ -504,6 +570,8 @@ s32 PS4_SYSV_ABI sceKernelDebugRaiseExceptionOnReleaseMode(s32 error, s64 unk) {
 }
 
 void RegisterException(Core::Loader::SymbolsResolver* sym) {
+    LIB_OBJ("nQVWJEGHObc", "libkernel", 1, "libkernel", &g_sigintr);
+
     LIB_FUNCTION("il03nluKfMk", "libkernel_unity", 1, "libkernel", sceKernelRaiseException);
     LIB_FUNCTION("WkwEd3N7w0Y", "libkernel_unity", 1, "libkernel",
                  sceKernelInstallExceptionHandler);
@@ -515,12 +583,24 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Qhv5ARAoOEc", "libkernel", 1, "libkernel", sceKernelRemoveExceptionHandler);
 
     LIB_FUNCTION("KiJEPEWRyUY", "libkernel", 1, "libkernel", posix_sigaction);
+    LIB_FUNCTION("VADc3MNQ3cM", "libkernel", 1, "libkernel", posix_signal);
     LIB_FUNCTION("+F7C-hdk7+E", "libkernel", 1, "libkernel", posix_sigemptyset);
+    LIB_FUNCTION("VkTAsrZDcJ0", "libkernel", 1, "libkernel", posix_sigfillset);
+    LIB_FUNCTION("JUimFtKe0Kc", "libkernel", 1, "libkernel", posix_sigaddset);
+    LIB_FUNCTION("Nd-u09VFSCA", "libkernel", 1, "libkernel", posix_sigdelset);
+    LIB_FUNCTION("JnNl8Xr-z4Y", "libkernel", 1, "libkernel", posix_sigismember);
+    LIB_FUNCTION("aPcyptbOiZs", "libkernel", 1, "libkernel", posix_sigprocmask);
     LIB_FUNCTION("yH-uQW3LbX0", "libkernel", 1, "libkernel", posix_pthread_kill);
     LIB_FUNCTION("sHziAegVp74", "libkernel", 1, "libkernel", posix_sigalstack);
 
     LIB_FUNCTION("KiJEPEWRyUY", "libScePosix", 1, "libkernel", posix_sigaction);
+    LIB_FUNCTION("VADc3MNQ3cM", "libScePosix", 1, "libkernel", posix_signal);
     LIB_FUNCTION("+F7C-hdk7+E", "libScePosix", 1, "libkernel", posix_sigemptyset);
+    LIB_FUNCTION("VkTAsrZDcJ0", "libScePosix", 1, "libkernel", posix_sigfillset);
+    LIB_FUNCTION("JUimFtKe0Kc", "libScePosix", 1, "libkernel", posix_sigaddset);
+    LIB_FUNCTION("Nd-u09VFSCA", "libScePosix", 1, "libkernel", posix_sigdelset);
+    LIB_FUNCTION("JnNl8Xr-z4Y", "libScePosix", 1, "libkernel", posix_sigismember);
+    LIB_FUNCTION("aPcyptbOiZs", "libScePosix", 1, "libkernel", posix_sigprocmask);
     LIB_FUNCTION("yH-uQW3LbX0", "libScePosix", 1, "libkernel", posix_pthread_kill);
     LIB_FUNCTION("sHziAegVp74", "libScePosix", 1, "libkernel", posix_sigalstack);
 }

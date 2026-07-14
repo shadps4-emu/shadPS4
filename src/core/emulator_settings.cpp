@@ -89,7 +89,6 @@ std::optional<T> get_optional(const toml::value& v, const std::string& key) {
 
 void EmulatorSettingsImpl::PrintChangedSummary(const std::vector<std::string>& changed) {
     if (changed.empty()) {
-        LOG_DEBUG(Config, "No game-specific overrides applied");
         return;
     }
     LOG_DEBUG(Config, "Game-specific overrides applied:");
@@ -232,7 +231,6 @@ void EmulatorSettingsImpl::ClearGameSpecificOverrides() {
     ClearGroupOverrides(m_audio);
     ClearGroupOverrides(m_gpu);
     ClearGroupOverrides(m_vulkan);
-    LOG_DEBUG(Config, "All game-specific overrides cleared");
 }
 
 void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
@@ -364,7 +362,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             // ── Global config ──────────────────────────────────────────
             const auto userDir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
             const auto configPath = userDir / "config.json";
-            LOG_DEBUG(Config, "Loading global config from: {}", configPath.string());
 
             if (std::ifstream in{configPath}; in.good()) {
                 json gj;
@@ -385,14 +382,12 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 mergeGroup(m_audio, "Audio");
                 mergeGroup(m_gpu, "GPU");
                 mergeGroup(m_vulkan, "Vulkan");
-
-                LOG_DEBUG(Config, "Global config loaded successfully");
             } else {
                 if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
                                             "config.toml")) {
                     SDL_MessageBoxButtonData btns[2]{
-                        {0, 0, "Defaults"},
-                        {0, 1, "Update"},
+                        {0, 0, "Update"},
+                        {0, 1, "Defaults"},
                     };
                     SDL_MessageBoxData msg_box{
                         0,
@@ -407,7 +402,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                     };
                     int result = 1;
                     SDL_ShowMessageBox(&msg_box, &result);
-                    if (result == 1) {
+                    if (result == 0) {
                         if (TransferSettings()) {
                             m_loaded = true;
                             Save();
@@ -420,7 +415,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                         }
                     }
                 }
-                LOG_DEBUG(Config, "Global config not found - using defaults");
                 SetDefaultValues();
                 Save();
             }
@@ -436,16 +430,13 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             // base configuration.
             const auto gamePath =
                 Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (serial + ".json");
-            LOG_DEBUG(Config, "Applying game config: {}", gamePath.string());
 
             if (!std::filesystem::exists(gamePath)) {
-                LOG_DEBUG(Config, "No game-specific config found for {}", serial);
                 return false;
             }
 
             std::ifstream in(gamePath);
             if (!in) {
-                LOG_ERROR(Config, "Failed to open game config: {}", gamePath.string());
                 return false;
             }
 
