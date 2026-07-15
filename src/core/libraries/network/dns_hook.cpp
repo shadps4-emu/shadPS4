@@ -77,7 +77,6 @@ void DnsHook::LoadSwapList() {
 
     std::filesystem::path path =
         Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "dns_swap.json";
-
     std::string contents;
     std::ifstream f(path);
     if (!f.is_open()) {
@@ -90,7 +89,7 @@ void DnsHook::LoadSwapList() {
         if (out.is_open()) {
             out << default_contents;
             out.close();
-            LOG_INFO(Lib_Net, "DNS swap: no dns_swap.json found; created default at {}",
+            LOG_INFO(Lib_Net, "DNS swap: no dns_swap.json found.Created default at {}",
                      path.string());
         } else {
             LOG_ERROR(Lib_Net, "DNS swap: no dns_swap.json and failed to create default at {}",
@@ -140,6 +139,35 @@ void DnsHook::LoadSwapList() {
     LOG_INFO(Lib_Net, "DNS swap: loaded {} entries from {}", redirs.size(), path.string());
 }
 
+static bool IsNonPublicLiteral(const std::string& host) {
+    in_addr conv{};
+    if (inet_pton(AF_INET, host.c_str(), &conv) != 1) {
+        return false; // not a literal - it's a name, let the rule apply
+    }
+    const u32 a = ntohl(conv.s_addr);
+    const u8 b1 = static_cast<u8>(a >> 24);
+    const u8 b2 = static_cast<u8>((a >> 16) & 0xFF);
+    if (b1 == 0 || b1 == 127) {
+        return true; // 0.0.0.0/8, loopback
+    }
+    if (b1 == 10) {
+        return true; // 10.0.0.0/8
+    }
+    if (b1 == 172 && b2 >= 16 && b2 <= 31) {
+        return true; // 172.16.0.0/12
+    }
+    if (b1 == 192 && b2 == 168) {
+        return true; // 192.168.0.0/16
+    }
+    if (b1 == 169 && b2 == 254) {
+        return true; // 169.254.0.0/16 link-local
+    }
+    if (b1 >= 224) {
+        return true; // multicast + reserved + 255.255.255.255
+    }
+    return false;
+}
+
 std::optional<u32> DnsHook::GetRedir(const std::string& hostname) {
     for (const auto& [pattern, ip] : redirs) {
         // Escape dots, turn '*' into '.*', match case-insensitively.
@@ -156,9 +184,15 @@ std::optional<u32> DnsHook::GetRedir(const std::string& hostname) {
         }
         try {
             const std::regex re(rx, std::regex_constants::icase);
-            if (std::regex_match(hostname, re)) {
-                return ip;
+            if (!std::regex_match(hostname, re)) {
+                continue;
             }
+            // A wildcard rule must not hijack local/LAN literals
+            if (pattern.find('*') != std::string::npos && IsNonPublicLiteral(hostname)) {
+                LOG_DEBUG(Lib_Net, "DNS swap: '{}' is local/LAN, wildcard rule skipped", hostname);
+                continue;
+            }
+            return ip;
         } catch (const std::exception&) {
             // Bad pattern - skip.
         }
