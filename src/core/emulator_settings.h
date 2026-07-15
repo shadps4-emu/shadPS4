@@ -174,6 +174,9 @@ struct GeneralSettings {
     Setting<bool> neo_mode{false};
     Setting<bool> dev_kit_mode{false};
     Setting<int> extra_dmem_in_mbytes{0};
+    Setting<u32> app0_read_bandwidth_mibps{0};
+    Setting<bool> app0_read_disable_time_stretching{false};
+    Setting<bool> app0_read_unlimited_sequential_read_speed{false};
     Setting<bool> shad_net_enabled{false};
     Setting<bool> trophy_popup_disabled{false};
     Setting<double> trophy_notification_duration{6.0};
@@ -197,6 +200,13 @@ struct GeneralSettings {
             make_override<GeneralSettings>("dev_kit_mode", &GeneralSettings::dev_kit_mode),
             make_override<GeneralSettings>("extra_dmem_in_mbytes",
                                            &GeneralSettings::extra_dmem_in_mbytes),
+            make_override<GeneralSettings>("app0_read_bandwidth_mibps",
+                                           &GeneralSettings::app0_read_bandwidth_mibps),
+            make_override<GeneralSettings>("app0_read_disable_time_stretching",
+                                           &GeneralSettings::app0_read_disable_time_stretching),
+            make_override<GeneralSettings>(
+                "app0_read_unlimited_sequential_read_speed",
+                &GeneralSettings::app0_read_unlimited_sequential_read_speed),
             make_override<GeneralSettings>("shad_net_enabled", &GeneralSettings::shad_net_enabled),
             make_override<GeneralSettings>("trophy_popup_disabled",
                                            &GeneralSettings::trophy_popup_disabled),
@@ -215,14 +225,13 @@ struct GeneralSettings {
     }
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_dir, home_dir,
-                                   sys_modules_dir, font_dir, volume_slider, neo_mode, dev_kit_mode,
-                                   extra_dmem_in_mbytes, shad_net_enabled, trophy_popup_disabled,
-                                   trophy_notification_duration, show_splash,
-                                   trophy_notification_side, connected_to_network,
-                                   discord_rpc_enabled, show_fps_counter, console_language,
-                                   big_picture_scale, shadnet_server, shadnet_webapi_server,
-                                   signaling_info, enable_upnp)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
+    GeneralSettings, install_dirs, addon_install_dir, home_dir, sys_modules_dir, font_dir,
+    volume_slider, neo_mode, dev_kit_mode, extra_dmem_in_mbytes, app0_read_bandwidth_mibps,
+    app0_read_disable_time_stretching, app0_read_unlimited_sequential_read_speed, shad_net_enabled,
+    trophy_popup_disabled, trophy_notification_duration, show_splash, trophy_notification_side,
+    connected_to_network, discord_rpc_enabled, show_fps_counter, console_language,
+    big_picture_scale, shadnet_server, shadnet_webapi_server, signaling_info, enable_upnp)
 
 // -------------------------------
 // Log settings
@@ -601,6 +610,11 @@ public:
     SETTING_FORWARD_BOOL(m_general, Neo, neo_mode)
     SETTING_FORWARD_BOOL(m_general, DevKit, dev_kit_mode)
     SETTING_FORWARD(m_general, ExtraDmemInMBytes, extra_dmem_in_mbytes)
+    SETTING_FORWARD(m_general, App0ReadBandwidthMiBps, app0_read_bandwidth_mibps)
+    SETTING_FORWARD_BOOL(m_general, App0ReadDisableTimeStretching,
+                         app0_read_disable_time_stretching)
+    SETTING_FORWARD_BOOL(m_general, App0ReadUnlimitedSequentialReadSpeed,
+                         app0_read_unlimited_sequential_read_speed)
     bool IsShadNetEnabled() const {
         return m_general.shad_net_enabled.get(m_configMode) &&
                !m_shadnet_session_disabled.load(std::memory_order_relaxed);
