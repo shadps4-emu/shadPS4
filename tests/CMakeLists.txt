@@ -9,7 +9,7 @@ include(FetchContent)
 )
 FetchContent_MakeAvailable(googletest)
 
-set(TEST_TARGETS shadps4_settings_test shadps4_gcn_test)
+set(TEST_TARGETS shadps4_settings_test shadps4_gcn_test shadps4_video_core_test)
 
 set(SETTINGS_TEST_SOURCES
     # Under test
@@ -128,8 +128,13 @@ set(GCN_TEST_SOURCES
     gcn/test_gcn_instructions.cpp
 )
 
+set(VIDEO_CORE_TEST_SOURCES
+    test_depth_stencil_state.cpp
+)
+
 add_executable(shadps4_settings_test ${SETTINGS_TEST_SOURCES})
 add_executable(shadps4_gcn_test ${GCN_TEST_SOURCES})
+add_executable(shadps4_video_core_test ${VIDEO_CORE_TEST_SOURCES})
 
 foreach(t ${TEST_TARGETS})
     target_include_directories(${t} PRIVATE
@@ -160,6 +165,11 @@ target_link_libraries(shadps4_gcn_test PRIVATE
     SDL3::SDL3
     spdlog::spdlog
     half::half
+)
+target_link_libraries(shadps4_video_core_test PRIVATE
+    GTest::gtest_main
+    fmt::fmt
+    spdlog::spdlog
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
