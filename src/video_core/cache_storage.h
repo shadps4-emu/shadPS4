@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <atomic>
+
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "common/types.h"
@@ -28,10 +30,11 @@ public:
 
     void Open();
     void Close();
+    bool Reset();
     [[nodiscard]] bool IsOpened() const {
-        return opened;
+        return opened.load(std::memory_order_acquire);
     }
-    void FinishPreload();
+    bool FinishPreload();
 
     bool Save(BlobType type, const std::string& name, std::vector<u8>&& data);
     bool Save(BlobType type, const std::string& name, std::vector<u32>&& data);
@@ -44,7 +47,10 @@ public:
 private:
     std::jthread io_worker{};
     std::filesystem::path cache_path{};
-    bool opened{};
+    std::filesystem::path archive_work_path{};
+    std::filesystem::path archive_publish_path{};
+    std::atomic_bool opened{};
+    bool archive_mode{};
 };
 
 } // namespace Storage

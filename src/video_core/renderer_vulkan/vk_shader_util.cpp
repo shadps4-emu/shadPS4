@@ -1,17 +1,29 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
 #include <memory>
+#include <type_traits>
+
 #include <glslang/Include/ResourceLimits.h>
 #include <glslang/Public/ShaderLang.h>
 #include <glslang/SPIRV/GlslangToSpv.h>
+#include <glslang/build_info.h>
+
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/path_util.h"
+#include "common/sha1.h"
+#include "core/emulator_settings.h"
+#include "video_core/host_shader_cache.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 
 namespace Vulkan {
 
 namespace {
+// Increment when compiler options or resources change without a glslang version change.
+constexpr u32 HostShaderCompilerRevision = 1;
+
 constexpr TBuiltInResource DefaultTBuiltInResource = {
     .maxLights = 32,
     .maxClipPlanes = 6,
@@ -157,10 +169,72 @@ bool InitializeCompiler() {
     glslang_initialized = true;
     return true;
 }
+
+template <typename T>
+void HashValue(sha1::SHA1& hash, const T& value) {
+    static_assert(std::is_trivially_copyable_v<T>);
+    hash.processBytes(&value, sizeof(value));
+}
+
+void HashString(sha1::SHA1& hash, std::string_view value) {
+    const auto size = static_cast<u64>(value.size());
+    HashValue(hash, size);
+    hash.processBytes(value.data(), value.size());
+}
+
+std::string FinishHash(sha1::SHA1& hash) {
+    constexpr std::string_view HexDigits{"0123456789abcdef"};
+    sha1::SHA1::digest8_t digest{};
+    hash.getDigestBytes(digest);
+
+    std::string result;
+    result.reserve(sizeof(digest) * 2);
+    for (const u8 value : digest) {
+        result.push_back(HexDigits[value >> 4]);
+        result.push_back(HexDigits[value & 0xf]);
+    }
+    return result;
+}
+
+std::string GetGeneration(const HostShaders::ShaderSource& source, vk::ShaderStageFlagBits stage) {
+    sha1::SHA1 hash;
+    HashString(hash, source.code);
+    HashValue(hash, stage);
+    HashValue(hash, HostShaderCompilerRevision);
+    HashValue(hash, GLSLANG_VERSION_MAJOR);
+    HashValue(hash, GLSLANG_VERSION_MINOR);
+    HashValue(hash, GLSLANG_VERSION_PATCH);
+    return FinishHash(hash);
+}
+
+std::string GetPermutation(std::span<const std::string> defines) {
+    sha1::SHA1 hash;
+    const auto count = static_cast<u64>(defines.size());
+    HashValue(hash, count);
+    for (const auto& define : defines) {
+        HashString(hash, define);
+    }
+    return FinishHash(hash);
+}
+
+Storage::HostShaderCache& GetHostShaderCache() {
+    static Storage::HostShaderCache cache{Common::FS::GetUserPath(Common::FS::PathType::CacheDir) /
+                                          "host_shaders"};
+    return cache;
+}
 } // Anonymous namespace
 
-vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, vk::Device device,
-                         std::vector<std::string> defines) {
+vk::ShaderModule Compile(const HostShaders::ShaderSource& source, vk::ShaderStageFlagBits stage,
+                         vk::Device device, std::vector<std::string> defines) {
+    const auto generation = GetGeneration(source, stage);
+    const auto permutation = GetPermutation(defines);
+    if (EmulatorSettings.IsPipelineCacheEnabled()) {
+        if (auto spirv = GetHostShaderCache().Load(source.name, generation, permutation)) {
+            LOG_INFO(Render_Vulkan, "Loaded host shader {} from cache", source.name);
+            return CompileSPV(*spirv, device);
+        }
+    }
+
     if (!InitializeCompiler()) {
         return {};
     }
@@ -171,8 +245,8 @@ vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, v
     EShLanguage lang = ToEshShaderStage(stage);
 
     const int default_version = 450;
-    const char* pass_source_code = code.data();
-    int pass_source_code_length = static_cast<int>(code.size());
+    const char* pass_source_code = source.code.data();
+    int pass_source_code_length = static_cast<int>(source.code.size());
 
     auto shader = std::make_unique<glslang::TShader>(lang);
     shader->setEnvTarget(glslang::EShTargetSpv,
@@ -207,7 +281,7 @@ vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, v
                   "Shader Info Log:\n"
                   "{}\n{}",
                   shader->getInfoLog(), shader->getInfoDebugLog());
-        LOG_ERROR(Render_Vulkan, "Shader Source:\n{}", code);
+        LOG_ERROR(Render_Vulkan, "Shader Source:\n{}", source.code);
         return {};
     }
 
@@ -218,7 +292,7 @@ vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, v
                   "Shader Info Log:\n"
                   "{}\n{}",
                   shader->getInfoLog(), shader->getInfoDebugLog());
-        LOG_ERROR(Render_Vulkan, "Shader Source:\n{}", code);
+        LOG_ERROR(Render_Vulkan, "Shader Source:\n{}", source.code);
         return {};
     }
 
@@ -251,6 +325,10 @@ vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, v
         LOG_INFO(Render_Vulkan, "SPIR-V conversion messages: {}", spv_messages);
     }
 
+    if (EmulatorSettings.IsPipelineCacheEnabled() &&
+        !GetHostShaderCache().Store(source.name, generation, permutation, out_code)) {
+        LOG_WARNING(Render_Vulkan, "Failed to cache host shader {}", source.name);
+    }
     return CompileSPV(out_code, device);
 }
 
