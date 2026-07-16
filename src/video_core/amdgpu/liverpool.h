@@ -133,13 +133,11 @@ public:
     }
 
     struct AscQueueInfo {
-        static constexpr size_t Pm4BufferSize = 1024;
         VAddr map_addr;
         u32* read_addr;
         u32 ring_size_dw;
         u32 pipe_id;
-        std::array<u32, Pm4BufferSize> tmp_packet;
-        u32 tmp_dwords;
+        std::vector<u32> pending_packet;
     };
     Common::SlotVector<AscQueueInfo> asc_queues{};
 

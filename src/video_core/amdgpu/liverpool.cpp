@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+
 #include <boost/preprocessor/stringize.hpp>
 
 #include "common/assert.h"
@@ -919,21 +921,33 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         ProcessCommands();
 
         auto* header = reinterpret_cast<const PM4Header*>(acb.data());
-        u32 next_dw_off = header->type3.NumWords() + 1;
+        size_t next_dw_off = header->type == 2 ? 1 : header->type3.NumWords() + 1;
+        const bool has_pending_packet = !queue.pending_packet.empty();
 
-        // If we have a buffered packet, use it.
-        if (queue.tmp_dwords > 0) [[unlikely]] {
-            header = reinterpret_cast<const PM4Header*>(queue.tmp_packet.data());
-            next_dw_off = header->type3.NumWords() + 1 - queue.tmp_dwords;
-            std::memcpy(queue.tmp_packet.data() + queue.tmp_dwords, acb.data(),
-                        next_dw_off * sizeof(u32));
-            queue.tmp_dwords = 0;
-        }
+        if (has_pending_packet) [[unlikely]] {
+            header = reinterpret_cast<const PM4Header*>(queue.pending_packet.data());
+            const size_t packet_dwords = header->type3.NumWords() + 1;
+            ASSERT_MSG(queue.pending_packet.size() < packet_dwords,
+                       "Buffered PM4 packet is already complete");
 
-        // If the packet is split across ring boundary, buffer until next submission
-        if (next_dw_off > acb.size()) [[unlikely]] {
-            std::memcpy(queue.tmp_packet.data(), acb.data(), acb.size_bytes());
-            queue.tmp_dwords = acb.size();
+            const size_t remaining_dwords = packet_dwords - queue.pending_packet.size();
+            next_dw_off = std::min(remaining_dwords, acb.size());
+            queue.pending_packet.insert(queue.pending_packet.end(), acb.begin(),
+                                        acb.begin() + next_dw_off);
+
+            // DingDong can expose one large PM4 packet through several ring fragments. Keep the
+            // packet buffered until it is complete; parsing a partial body would read past the
+            // current submission and corrupt the ASC queue state.
+            if (next_dw_off < remaining_dwords) {
+                if constexpr (!is_indirect) {
+                    *queue.read_addr += next_dw_off;
+                    *queue.read_addr %= queue.ring_size_dw;
+                }
+                break;
+            }
+            header = reinterpret_cast<const PM4Header*>(queue.pending_packet.data());
+        } else if (next_dw_off > acb.size()) [[unlikely]] {
+            queue.pending_packet.assign(acb.begin(), acb.end());
             if constexpr (!is_indirect) {
                 *queue.read_addr += acb.size();
                 *queue.read_addr %= queue.ring_size_dw;
@@ -1169,6 +1183,10 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         if constexpr (!is_indirect) {
             *queue.read_addr += next_dw_off;
             *queue.read_addr %= queue.ring_size_dw;
+        }
+
+        if (has_pending_packet) [[unlikely]] {
+            queue.pending_packet.clear();
         }
     }
 
