@@ -10,6 +10,7 @@
 
 #include "common/concepts.h"
 #include "common/types.h"
+#include "common/zar_fs.h"
 #include "enum.h"
 
 namespace Common::FS {
@@ -104,7 +105,12 @@ public:
     }
 
     bool IsOpen() const {
-        return file != nullptr;
+        return file != nullptr || zar_file != nullptr;
+    }
+
+    /// Returns whether the file is backed by an archive entry.
+    bool IsZarBacked() const {
+        return zar_file != nullptr;
     }
 
     bool IsWriteOnly() const {
@@ -113,6 +119,9 @@ public:
     }
 
     uintptr_t GetFileMapping();
+
+    /// Materializes an archive entry as a host file while preserving the current offset.
+    bool MaterializeToHost();
 
     int Open(const std::filesystem::path& path, FileAccessMode mode,
              FileType type = FileType::BinaryFile,
@@ -168,6 +177,9 @@ public:
 
     template <typename T>
     size_t ReadRaw(void* data, size_t size) const {
+        if (zar_file) {
+            return zar_file->Read(data, size * sizeof(T)) / sizeof(T);
+        }
         return std::fread(data, sizeof(T), size, file);
     }
 
@@ -175,7 +187,7 @@ public:
     size_t WriteSpan(std::span<const T> data) const {
         static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
 
-        if (!IsOpen()) {
+        if (!IsOpen() || zar_file) {
             return 0;
         }
 
@@ -190,12 +202,18 @@ public:
         if (!IsOpen()) {
             return false;
         }
+        if (zar_file) {
+            return zar_file->Read(&object, sizeof(T)) == sizeof(T);
+        }
 
         return std::fread(&object, sizeof(T), 1, file) == 1;
     }
 
     template <typename T>
     size_t WriteRaw(const void* data, size_t size) const {
+        if (zar_file) {
+            return 0;
+        }
         auto bytes = std::fwrite(data, sizeof(T), size, file);
         std::fflush(file);
         return bytes;
@@ -206,7 +224,7 @@ public:
         static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
         static_assert(!std::is_pointer_v<T>, "T must not be a pointer to an object.");
 
-        if (!IsOpen()) {
+        if (!IsOpen() || zar_file) {
             return false;
         }
 
@@ -229,6 +247,8 @@ private:
     std::filesystem::path file_path;
     FileAccessMode file_access_mode{};
     FileType file_type{};
+
+    std::unique_ptr<Zar::FileHandle> zar_file;
 
     uintptr_t file_mapping = 0;
 };

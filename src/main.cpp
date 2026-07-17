@@ -14,6 +14,7 @@
 #include "common/logging/log.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
+#include "common/zar_fs.h"
 #include "core/debugger.h"
 #include "core/emulator_settings.h"
 #include "core/emulator_state.h"
@@ -78,7 +79,7 @@ int main(int argc, char* argv[]) {
     // FULLSCREEN: behavior-identical
     app.add_option("-f,--fullscreen", fullscreenStr, "Fullscreen mode (true|false)");
 
-    app.add_option("--override-root", overrideRoot)->check(CLI::ExistingDirectory);
+    app.add_option("--override-root", overrideRoot)->check(CLI::ExistingPath);
 
     app.add_flag("--wait-for-debugger", waitForDebugger);
     app.add_option("--wait-for-pid", waitPid);
@@ -209,11 +210,16 @@ int main(int argc, char* argv[]) {
 
     // ---- Resolve game path or ID ----
     std::filesystem::path ebootPath(*gamePath);
-    if (!std::filesystem::exists(ebootPath)) {
+    if (!Common::FS::Zar::Exists(ebootPath)) {
         bool found = false;
         constexpr int maxDepth = 5;
         for (const auto& installDir : EmulatorSettings.GetGameInstallDirs()) {
             if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth)) {
+                ebootPath = *foundPath;
+                found = true;
+                break;
+            }
+            if (auto foundPath = Common::FS::Zar::FindGameByID(installDir, *gamePath, maxDepth)) {
                 ebootPath = *foundPath;
                 found = true;
                 break;

@@ -2,9 +2,12 @@
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
+#include <limits>
 #include <stb_image.h>
 
+#include "common/io_file.h"
 #include "common/logging/log.h"
+#include "common/zar_fs.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
@@ -137,9 +140,14 @@ SDL_Texture* LoadSdlTextureData(std::vector<u8> data) {
 }
 
 SDL_Texture* LoadSdlTextureDataFromFile(std::filesystem::path filePath) {
-    std::ifstream file(filePath, std::ios::binary);
-    std::vector<u8> data =
-        std::vector<u8>(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+    Common::FS::IOFile file(filePath, Common::FS::FileAccessMode::Read);
+    if (!file.IsOpen() || file.GetSize() > std::numeric_limits<size_t>::max()) {
+        return nullptr;
+    }
+    std::vector<u8> data(static_cast<size_t>(file.GetSize()));
+    if (file.ReadRaw<u8>(data.data(), data.size()) != data.size()) {
+        return nullptr;
+    }
     return LoadSdlTextureData(data);
 }
 
@@ -149,8 +157,11 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
     for (const auto& installLoc : EmulatorSettings.GetAllGameInstallDirs()) {
         if (installLoc.enabled && std::filesystem::exists(installLoc.path)) {
             for (const auto& entry : std::filesystem::directory_iterator(installLoc.path)) {
-                if (entry.path().filename().string().ends_with("-UPDATE") ||
-                    entry.path().filename().string().ends_with("-patch") || !entry.is_directory()) {
+                const auto entry_name = entry.path().filename().string();
+                const bool is_zar =
+                    entry.is_regular_file() && Common::FS::Zar::IsZarArchive(entry.path());
+                if (entry_name.ends_with("-UPDATE") || entry_name.ends_with("-patch") ||
+                    (!entry.is_directory() && !is_zar)) {
                     continue;
                 }
 
@@ -159,7 +170,7 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
                 const std::string sfoFileName = "param.sfo";
                 std::filesystem::path sfoPath = UpdateChecker(sfoFileName, entry.path());
 
-                if (std::filesystem::exists(sfoPath) && psf.Open(sfoPath)) {
+                if (Common::FS::Zar::Exists(sfoPath) && psf.Open(sfoPath)) {
                     if (const auto title = psf.GetString("TITLE"); title.has_value()) {
                         icon.title = *title;
                     }

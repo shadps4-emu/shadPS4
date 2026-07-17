@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <limits>
+
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_init.h>
@@ -191,7 +193,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
 WindowSDL::~WindowSDL() = default;
 
 void WindowSDL::SetIcon(const std::filesystem::path& path) {
-    if (!std::filesystem::exists(path)) {
+    if (!Common::FS::Zar::Exists(path)) {
         LOG_WARNING(Core, "Could not find icon file '{}', using default icon.",
                     fmt::UTF(path.u8string()));
         SetDefaultWindowIcon(window);
@@ -208,7 +210,12 @@ void WindowSDL::SetIcon(const std::filesystem::path& path) {
     }
 
     const u64 fileSize = file.GetSize();
-    std::vector<u8> buf(fileSize);
+    if (fileSize > std::numeric_limits<size_t>::max()) {
+        LOG_ERROR(Core, "Window icon file '{}' is too large.", fmt::UTF(path.u8string()));
+        SetDefaultWindowIcon(window);
+        return;
+    }
+    std::vector<u8> buf(static_cast<size_t>(fileSize));
     const size_t bytesRead = file.ReadRaw<u8>(buf.data(), fileSize);
     file.Close();
     if (bytesRead < fileSize) {

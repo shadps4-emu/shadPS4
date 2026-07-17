@@ -3,9 +3,12 @@
 
 #include <algorithm>
 #include "common/string_util.h"
+#include "common/zar_fs.h"
 #include "core/file_sys/devices/logger.h"
 #include "core/file_sys/devices/nop_device.h"
 #include "core/file_sys/fs.h"
+
+namespace Zar = Common::FS::Zar;
 
 namespace Core::FileSys {
 
@@ -112,6 +115,12 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         return patch_path;
     }
 
+    // Paths inside a ZArchive-mounted game cannot be probed on the host filesystem, and
+    // ZArchive lookups are case-insensitive already, so no case correction is needed.
+    if (Zar::IsZarInnerPath(host_path)) {
+        return host_path;
+    }
+
     if (!NeedsCaseInsensitiveSearch) {
         return host_path;
     }
@@ -205,26 +214,28 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
     callback(base_path / "..", false);
 
     // Pass 1: Any files that existed in the base directory, using mod/patch directory if needed.
-    if (std::filesystem::exists(base_path)) {
-        for (const auto& entry : std::filesystem::directory_iterator(base_path)) {
-            const auto mod_entry_path = mod_path / entry.path().filename();
-            const auto patch_entry_path = patch_path / entry.path().filename();
-            if (std::filesystem::exists(mod_entry_path)) {
-                callback(mod_entry_path, !std::filesystem::is_directory(mod_entry_path));
-                continue;
-            } else if (std::filesystem::exists(patch_entry_path)) {
-                callback(patch_entry_path, !std::filesystem::is_directory(patch_entry_path));
-                continue;
-            }
-            callback(entry.path(), !entry.is_directory());
-        }
+    // The base directory may live inside a ZArchive; mod/patch overlays are always host folders.
+    if (Zar::Exists(base_path)) {
+        Zar::IterateDirectory(
+            base_path, [&](const std::filesystem::path& entry_path, bool entry_is_file) {
+                const auto mod_entry_path = mod_path / entry_path.filename();
+                const auto patch_entry_path = patch_path / entry_path.filename();
+                if (std::filesystem::exists(mod_entry_path)) {
+                    callback(mod_entry_path, !std::filesystem::is_directory(mod_entry_path));
+                    return;
+                } else if (std::filesystem::exists(patch_entry_path)) {
+                    callback(patch_entry_path, !std::filesystem::is_directory(patch_entry_path));
+                    return;
+                }
+                callback(entry_path, entry_is_file);
+            });
     }
 
     // Pass 2: Any files that exist only in the patch directory.
     if (std::filesystem::exists(patch_path)) {
         for (const auto& entry : std::filesystem::directory_iterator(patch_path)) {
             const auto base_entry_path = base_path / entry.path().filename();
-            if (!std::filesystem::exists(base_entry_path)) {
+            if (!Zar::Exists(base_entry_path)) {
                 const auto mod_entry_path = mod_path / entry.path().filename();
                 if (std::filesystem::exists(mod_entry_path)) {
                     callback(mod_entry_path, !std::filesystem::is_directory(mod_entry_path));
@@ -240,8 +251,7 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
         for (const auto& entry : std::filesystem::directory_iterator(mod_path)) {
             const auto base_entry_path = base_path / entry.path().filename();
             const auto patch_entry_path = patch_path / entry.path().filename();
-            if (!std::filesystem::exists(base_entry_path) &&
-                !std::filesystem::exists(patch_entry_path)) {
+            if (!Zar::Exists(base_entry_path) && !std::filesystem::exists(patch_entry_path)) {
                 callback(entry.path(), !entry.is_directory());
             }
         }

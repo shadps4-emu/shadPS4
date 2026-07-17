@@ -1,7 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+#include <cerrno>
 #include <vector>
+
+#include <fmt/format.h>
 
 #include "common/alignment.h"
 #include "common/assert.h"
@@ -164,6 +168,8 @@ IOFile::IOFile(IOFile&& other) noexcept {
     std::swap(file_access_mode, other.file_access_mode);
     std::swap(file_type, other.file_type);
     std::swap(file, other.file);
+    std::swap(zar_file, other.zar_file);
+    std::swap(file_mapping, other.file_mapping);
 }
 
 IOFile& IOFile::operator=(IOFile&& other) noexcept {
@@ -171,6 +177,8 @@ IOFile& IOFile::operator=(IOFile&& other) noexcept {
     std::swap(file_access_mode, other.file_access_mode);
     std::swap(file_type, other.file_type);
     std::swap(file, other.file);
+    std::swap(zar_file, other.zar_file);
+    std::swap(file_mapping, other.file_mapping);
     return *this;
 }
 
@@ -180,6 +188,22 @@ int IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileS
     file_path = path;
     file_access_mode = mode;
     file_type = type;
+
+    if (Zar::IsZarInnerPath(path)) {
+        if (mode != FileAccessMode::Read) {
+            // Archives are read-only.
+            LOG_ERROR(Common_Filesystem, "Cannot open file inside ZArchive for writing: {}",
+                      PathToUTF8String(path));
+            return EACCES;
+        }
+        zar_file = Zar::OpenFile(path);
+        if (!zar_file) {
+            LOG_ERROR(Common_Filesystem, "Failed to open file inside ZArchive: {}",
+                      PathToUTF8String(path));
+            return ENOENT;
+        }
+        return 0;
+    }
 
     errno = 0;
     int result = 0;
@@ -206,7 +230,10 @@ int IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileS
 }
 
 void IOFile::Close() {
-    if (!IsOpen()) {
+    zar_file.reset();
+
+    if (file == nullptr) {
+        file_mapping = 0;
         return;
     }
 
@@ -227,10 +254,16 @@ void IOFile::Close() {
         CloseHandle(std::bit_cast<HANDLE>(file_mapping));
     }
 #endif
+    file_mapping = 0;
 }
 
 void IOFile::Unlink() {
     if (!IsOpen()) {
+        return;
+    }
+    if (zar_file) {
+        LOG_ERROR(Common_Filesystem, "Cannot unlink file inside ZArchive: {}",
+                  PathToUTF8String(file_path));
         return;
     }
 
@@ -259,6 +292,9 @@ uintptr_t IOFile::GetFileMapping() {
     if (file_mapping) {
         return file_mapping;
     }
+    if (zar_file && !MaterializeToHost()) {
+        return 0;
+    }
 #ifdef _WIN64
     const int fd = fileno(file);
 
@@ -281,6 +317,76 @@ uintptr_t IOFile::GetFileMapping() {
 #endif
 }
 
+bool IOFile::MaterializeToHost() {
+    if (!zar_file) {
+        return file != nullptr;
+    }
+
+    const auto spill_dir = Zar::GetSpillDirectory();
+    std::error_code ec;
+    fs::create_directories(spill_dir, ec);
+    if (ec) {
+        LOG_ERROR(Common_Filesystem, "Failed to create ZArchive spill directory at {}: {}",
+                  PathToUTF8String(spill_dir), ec.message());
+        return false;
+    }
+
+    static std::atomic<u32> spill_counter{0};
+#ifdef _WIN32
+    const u32 pid = GetCurrentProcessId();
+#else
+    const u32 pid = static_cast<u32>(getpid());
+#endif
+    const auto spill_path = spill_dir / fmt::format("{}_{}_{}", pid, spill_counter++,
+                                                    PathToUTF8String(file_path.filename()));
+
+    // Stream the archived contents out to the spill file.
+    {
+        IOFile out(spill_path, FileAccessMode::Create);
+        if (!out.IsOpen()) {
+            LOG_ERROR(Common_Filesystem, "Failed to create ZArchive spill file at {}",
+                      PathToUTF8String(spill_path));
+            return false;
+        }
+        const u64 old_offset = zar_file->GetOffset();
+        zar_file->SetOffset(0);
+        std::vector<u8> buffer(1_MB);
+        u64 remaining = zar_file->GetSize();
+        while (remaining > 0) {
+            const u64 chunk =
+                zar_file->Read(buffer.data(), std::min<u64>(remaining, buffer.size()));
+            if (chunk == 0 || out.WriteRaw<u8>(buffer.data(), chunk) != chunk) {
+                LOG_ERROR(Common_Filesystem, "Failed to extract {} to spill file",
+                          PathToUTF8String(file_path));
+                zar_file->SetOffset(old_offset);
+                return false;
+            }
+            remaining -= chunk;
+        }
+        zar_file->SetOffset(old_offset);
+    }
+
+#ifdef _WIN32
+    file = _wfsopen(spill_path.c_str(), L"rb", _SH_DENYWR);
+#else
+    file = std::fopen(spill_path.c_str(), "rb");
+#endif
+    if (file == nullptr) {
+        LOG_ERROR(Common_Filesystem, "Failed to reopen ZArchive spill file at {}",
+                  PathToUTF8String(spill_path));
+        return false;
+    }
+
+    LOG_INFO(Common_Filesystem, "Extracted {} from ZArchive to {}", PathToUTF8String(file_path),
+             PathToUTF8String(spill_path));
+
+    const u64 offset = zar_file->GetOffset();
+    zar_file.reset();
+    file_path = spill_path;
+    Seek(static_cast<s64>(offset));
+    return true;
+}
+
 std::string IOFile::ReadString(size_t length) const {
     std::vector<char> string_buffer(length);
 
@@ -293,6 +399,9 @@ std::string IOFile::ReadString(size_t length) const {
 bool IOFile::Flush() const {
     if (!IsOpen()) {
         return false;
+    }
+    if (zar_file) {
+        return true;
     }
 
     errno = 0;
@@ -316,6 +425,9 @@ bool IOFile::Commit() const {
     if (!IsOpen()) {
         return false;
     }
+    if (zar_file) {
+        return true;
+    }
 
     errno = 0;
 
@@ -335,7 +447,7 @@ bool IOFile::Commit() const {
 }
 
 bool IOFile::SetSize(u64 size) const {
-    if (!IsOpen()) {
+    if (!IsOpen() || zar_file) {
         return false;
     }
 
@@ -360,6 +472,9 @@ u64 IOFile::GetSize() const {
     if (!IsOpen()) {
         return 0;
     }
+    if (zar_file) {
+        return zar_file->GetSize();
+    }
 
     // Flush any unwritten buffered data into the file prior to retrieving the file size.
     std::fflush(file);
@@ -381,6 +496,30 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
     if (!IsOpen()) {
         return false;
     }
+    if (zar_file) {
+        s64 base = 0;
+        switch (origin) {
+        case SeekOrigin::SetOrigin:
+            base = 0;
+            break;
+        case SeekOrigin::CurrentPosition:
+            base = static_cast<s64>(zar_file->GetOffset());
+            break;
+        case SeekOrigin::End:
+            base = static_cast<s64>(zar_file->GetSize());
+            break;
+        default:
+            UNREACHABLE_MSG("Impossible SeekOrigin {}", static_cast<u32>(origin));
+        }
+        const s64 target = base + offset;
+        if (target < 0) {
+            errno = EINVAL;
+            return false;
+        }
+        // Like fseek, seeking past the end is allowed; reads there return 0 bytes.
+        zar_file->SetOffset(static_cast<u64>(target));
+        return true;
+    }
 
     errno = 0;
 
@@ -399,6 +538,9 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
 s64 IOFile::Tell() const {
     if (!IsOpen()) {
         return 0;
+    }
+    if (zar_file) {
+        return static_cast<s64>(zar_file->GetOffset());
     }
 
     errno = 0;

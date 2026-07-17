@@ -16,6 +16,7 @@
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "common/thread.h"
+#include "common/zar_fs.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/system/msgdialog_ui.h"
 #include "save_instance.h"
@@ -143,9 +144,9 @@ void SetIcon(u32 slot_id, void* buf, size_t buf_size) {
         if (fs::exists(icon_path)) {
             fs::remove(icon_path);
         }
-        if (fs::exists(src_icon)) {
+        if (Common::FS::Zar::Exists(src_icon)) {
             fs::create_directories(icon_path.parent_path());
-            fs::copy_file(src_icon, icon_path);
+            Common::FS::Zar::CopyFile(src_icon, icon_path);
         }
     } else {
         IOFile file(icon_path, Common::FS::FileAccessMode::Create);
