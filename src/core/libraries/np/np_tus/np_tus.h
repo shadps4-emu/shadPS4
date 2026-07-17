@@ -9,7 +9,7 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
-namespace Libraries::NpTus {
+namespace Libraries::Np::NpTus {
 
 s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx();
 s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtxA();
@@ -155,4 +155,4 @@ s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUserAsync();
 s32 PS4_SYSV_ABI sceNpTusWaitAsync();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
-} // namespace Libraries::NpTus
+} // namespace Libraries::Np::NpTus

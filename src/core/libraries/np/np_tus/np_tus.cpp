@@ -6,7 +6,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_tus/np_tus.h"
 
-namespace Libraries::NpTus {
+namespace Libraries::Np::NpTus {
 
 s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
@@ -999,4 +999,4 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpTusTryAndSetVariableVUserAsync);
 };
 
-} // namespace Libraries::NpTus
+} // namespace Libraries::Np::NpTus
