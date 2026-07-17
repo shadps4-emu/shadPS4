@@ -83,9 +83,7 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
 
 static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
     auto* controller = reinterpret_cast<Input::GameController*>(userdata);
-    controller->UpdateAxisSmoothing();
-    controller->Gyro(0);
-    controller->Acceleration(0);
+    controller->PollState();
     return interval;
 }
 
@@ -173,7 +171,6 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     // input handler init-s
     Input::ControllerOutput::LinkJoystickAxes();
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
-    controllers.TryOpenSDLControllers();
 
     if (EmulatorSettings.IsBackgroundControllerInput()) {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");

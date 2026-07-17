@@ -3,7 +3,10 @@
 
 #pragma once
 
+#include <optional>
+#include <utility>
 #include <vector>
+
 #include "common/types.h"
 
 template <class T>
@@ -36,6 +39,11 @@ public:
             return {};
         }
         return m_storage[m_begin];
+    }
+
+    void Clear() {
+        m_begin = 0;
+        m_size = 0;
     }
 
 private:

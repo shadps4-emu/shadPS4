@@ -14,6 +14,7 @@ class SymbolsResolver;
 namespace Libraries::Pad {
 
 constexpr int ORBIS_PAD_MAX_TOUCH_NUM = 2;
+constexpr int ORBIS_PAD_MAX_DATA_NUM = 64;
 constexpr int ORBIS_PAD_MAX_DEVICE_UNIQUE_DATA_SIZE = 12;
 
 constexpr int ORBIS_PAD_PORT_TYPE_STANDARD = 0;
