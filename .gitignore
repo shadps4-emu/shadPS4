@@ -421,7 +421,3 @@ cmake-build-*
 
 # Nix Result symlink
 result
-
-# Local AI development guidance
-/AGENTS.md
-/documents/georgemoralis_style_reference.md

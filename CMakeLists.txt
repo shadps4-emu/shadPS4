@@ -1050,6 +1050,8 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/amdgpu/liverpool.h
                src/video_core/amdgpu/pixel_format.cpp
                src/video_core/amdgpu/pixel_format.h
+               src/video_core/amdgpu/pm4_packet_assembler.cpp
+               src/video_core/amdgpu/pm4_packet_assembler.h
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
                src/video_core/amdgpu/regs_color.h

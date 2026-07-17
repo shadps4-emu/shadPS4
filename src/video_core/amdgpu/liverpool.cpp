@@ -920,44 +920,16 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     while (!acb.empty()) {
         ProcessCommands();
 
-        auto* header = reinterpret_cast<const PM4Header*>(acb.data());
-        size_t next_dw_off = header->type == 2 ? 1 : header->type3.NumWords() + 1;
-        const bool has_pending_packet = !queue.pending_packet.empty();
-
-        if (has_pending_packet) [[unlikely]] {
-            header = reinterpret_cast<const PM4Header*>(queue.pending_packet.data());
-            const size_t packet_dwords = header->type3.NumWords() + 1;
-            ASSERT_MSG(queue.pending_packet.size() < packet_dwords,
-                       "Buffered PM4 packet is already complete");
-
-            const size_t remaining_dwords = packet_dwords - queue.pending_packet.size();
-            next_dw_off = std::min(remaining_dwords, acb.size());
-            queue.pending_packet.insert(queue.pending_packet.end(), acb.begin(),
-                                        acb.begin() + next_dw_off);
-
-            // DingDong can expose one large PM4 packet through several ring fragments. Keep the
-            // packet buffered until it is complete; parsing a partial body would read past the
-            // current submission and corrupt the ASC queue state.
-            if (next_dw_off < remaining_dwords) {
-                if constexpr (!is_indirect) {
-                    *queue.read_addr += next_dw_off;
-                    *queue.read_addr %= queue.ring_size_dw;
-                }
-                break;
-            }
-            header = reinterpret_cast<const PM4Header*>(queue.pending_packet.data());
-        } else if (next_dw_off > acb.size()) [[unlikely]] {
-            queue.pending_packet.assign(acb.begin(), acb.end());
-            if constexpr (!is_indirect) {
-                *queue.read_addr += acb.size();
-                *queue.read_addr %= queue.ring_size_dw;
-            }
-            break;
-        }
+        const bool has_pending_packet = !is_indirect && queue.packet_assembler.HasPendingPacket();
+        const std::span<const u32> pending_packet =
+            has_pending_packet ? queue.packet_assembler.PendingPacket() : std::span<const u32>{};
+        auto* header = reinterpret_cast<const PM4Header*>(has_pending_packet ? pending_packet.data()
+                                                                             : acb.data());
 
         if (header->type == 2) {
+            ASSERT_MSG(!has_pending_packet, "Buffered ASC PM4 packet has invalid type 2");
             // Type-2 packet are used for padding purposes
-            next_dw_off = 1;
+            constexpr size_t next_dw_off = 1;
             acb = NextPacket(acb, next_dw_off);
             if constexpr (!is_indirect) {
                 *queue.read_addr += next_dw_off;
@@ -969,6 +941,40 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         if (header->type != 3) {
             // No other types of packets were spotted so far
             UNREACHABLE_MSG("Invalid PM4 type {}", header->type.Value());
+        }
+
+        const size_t packet_dwords = header->type3.NumWords() + 1;
+        size_t next_dw_off = packet_dwords;
+        std::vector<u32> completed_packet;
+
+        if constexpr (!is_indirect) {
+            auto assembly_result = queue.packet_assembler.Consume(acb, packet_dwords);
+            ASSERT_MSG(assembly_result.status != Pm4PacketAssembler::Status::Invalid,
+                       "ASC PM4 packet assembler rejected queue state");
+
+            next_dw_off = assembly_result.consumed_dwords;
+
+            if (assembly_result.status == Pm4PacketAssembler::Status::Incomplete) [[unlikely]] {
+                *queue.read_addr += next_dw_off;
+                *queue.read_addr %= queue.ring_size_dw;
+                break;
+            }
+
+            // Consume() transfers a reconstructed packet out of the queue before dispatch. The
+            // local vector remains alive across coroutine yields, while recursive indirect-buffer
+            // processing observes an empty queue assembler instead of the completed outer packet.
+            completed_packet = std::move(assembly_result.completed_packet);
+            if (!completed_packet.empty()) [[unlikely]] {
+                header = reinterpret_cast<const PM4Header*>(completed_packet.data());
+            }
+        } else if (packet_dwords > acb.size()) [[unlikely]] {
+            // Indirect buffers describe one contiguous command range and have no later DingDong
+            // fragment. Never leak a truncated indirect packet into the direct queue assembler.
+            LOG_ERROR(
+                Lib_GnmDriver,
+                "Indirect PM4 packet exceeds its buffer. Packet dwords={}, remaining dwords={}",
+                packet_dwords, acb.size());
+            break;
         }
 
         const PM4ItOpcode opcode = header->type3.opcode;
@@ -1183,10 +1189,6 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         if constexpr (!is_indirect) {
             *queue.read_addr += next_dw_off;
             *queue.read_addr %= queue.ring_size_dw;
-        }
-
-        if (has_pending_packet) [[unlikely]] {
-            queue.pending_packet.clear();
         }
     }
 
