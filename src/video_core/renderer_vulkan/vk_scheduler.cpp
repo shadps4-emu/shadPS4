@@ -10,8 +10,6 @@
 
 namespace Vulkan {
 
-std::mutex Scheduler::submit_mutex;
-
 Scheduler::Scheduler(const Instance& instance)
     : instance{instance}, master_semaphore{instance}, command_pool{instance, &master_semaphore} {
 #if TRACY_GPU_ENABLED
@@ -148,7 +146,7 @@ void Scheduler::AllocateWorkerCommandBuffers() {
 }
 
 void Scheduler::SubmitExecution(SubmitInfo& info) {
-    std::scoped_lock lk{submit_mutex};
+    std::scoped_lock lk{instance.GetGraphicsQueueMutex()};
     const u64 signal_value = master_semaphore.NextTick();
 
 #if TRACY_GPU_ENABLED
@@ -165,11 +163,6 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     const vk::Semaphore timeline = master_semaphore.Handle();
     info.AddSignal(timeline, signal_value);
 
-    static constexpr std::array<vk::PipelineStageFlags, 2> wait_stage_masks = {
-        vk::PipelineStageFlagBits::eAllCommands,
-        vk::PipelineStageFlagBits::eColorAttachmentOutput,
-    };
-
     const vk::TimelineSemaphoreSubmitInfo timeline_si = {
         .waitSemaphoreValueCount = info.num_wait_semas,
         .pWaitSemaphoreValues = info.wait_ticks.data(),
@@ -181,7 +174,7 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
         .pNext = &timeline_si,
         .waitSemaphoreCount = info.num_wait_semas,
         .pWaitSemaphores = info.wait_semas.data(),
-        .pWaitDstStageMask = wait_stage_masks.data(),
+        .pWaitDstStageMask = info.wait_stages.data(),
         .commandBufferCount = 1U,
         .pCommandBuffers = &current_cmdbuf,
         .signalSemaphoreCount = info.num_signal_semas,

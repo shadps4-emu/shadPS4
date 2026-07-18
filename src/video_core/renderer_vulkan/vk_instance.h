@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <mutex>
 #include <span>
 #include <unordered_map>
 
@@ -73,6 +74,20 @@ public:
 
     vk::Queue GetPresentQueue() const {
         return present_queue;
+    }
+
+    /// Vulkan queues require externally synchronized host access. Submission and presentation use
+    /// the same queue to preserve ordering expected by capture and overlay implicit layers.
+    std::mutex& GetGraphicsQueueMutex() const {
+        return graphics_queue_mutex;
+    }
+
+    std::mutex& GetPresentQueueMutex() const {
+        return graphics_queue_mutex;
+    }
+
+    bool HasSwapchainMaintenance1() const {
+        return swapchain_maintenance1;
     }
 
     TracyVkCtx GetProfilerContext() const {
@@ -491,11 +506,13 @@ private:
     VmaAllocator allocator{};
     vk::Queue present_queue;
     vk::Queue graphics_queue;
+    mutable std::mutex graphics_queue_mutex;
     std::vector<vk::PhysicalDevice> physical_devices;
     std::vector<std::string> available_extensions;
     std::unordered_map<vk::Format, vk::FormatProperties3> format_properties;
     TracyVkCtx profiler_context{};
     u32 queue_family_index{0};
+    bool swapchain_maintenance1{};
     bool custom_border_color{};
     bool fragment_shader_barycentric{};
     bool amd_shader_explicit_vertex_parameter{};

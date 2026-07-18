@@ -92,6 +92,14 @@ public:
         return needs_hdr;
     }
 
+    bool IsFIFO() const {
+        return present_mode == vk::PresentModeKHR::eFifo;
+    }
+
+    bool IsMailbox() const {
+        return present_mode == vk::PresentModeKHR::eMailbox;
+    }
+
 private:
     /// Selects the best available swapchain image format
     void FindPresentFormat();
@@ -126,6 +134,8 @@ private:
     std::vector<vk::ImageView> images_view;
     std::vector<vk::Semaphore> image_acquired;
     std::vector<vk::Semaphore> present_ready;
+    std::vector<vk::Fence> present_fences;
+    std::vector<u8> present_fence_pending;
     u32 width = 0;
     u32 height = 0;
     u32 image_count = 0;
