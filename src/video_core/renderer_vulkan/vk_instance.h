@@ -500,7 +500,6 @@ private:
     bool depth_range_unrestricted{};
     bool vertex_input_dynamic_state{};
     bool list_restart{};
-    bool legacy_vertex_attributes{};
     bool provoking_vertex{};
     bool shader_stencil_export{};
     bool image_load_store_lod{};
