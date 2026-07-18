@@ -185,11 +185,6 @@ public:
         return list_restart && list_restart_features.primitiveTopologyPatchListRestart;
     }
 
-    /// Returns true when VK_EXT_legacy_vertex_attributes is supported.
-    bool IsLegacyVertexAttributesSupported() const {
-        return legacy_vertex_attributes;
-    }
-
     /// Returns true when VK_EXT_provoking_vertex is supported.
     bool IsProvokingVertexSupported() const {
         return provoking_vertex;
@@ -505,7 +500,6 @@ private:
     bool depth_range_unrestricted{};
     bool vertex_input_dynamic_state{};
     bool list_restart{};
-    bool legacy_vertex_attributes{};
     bool provoking_vertex{};
     bool shader_stencil_export{};
     bool image_load_store_lod{};

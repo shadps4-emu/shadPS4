@@ -400,6 +400,21 @@ static void ConvertRGBA8888ToRAW8(const u8* src, u8* dst, int width, int height)
     }
 }
 
+static s32 SizeOfFormat(OrbisCameraBaseFormat const f) {
+    switch (f) {
+    case ORBIS_CAMERA_FORMAT_YUV422:
+        return 2;
+    case ORBIS_CAMERA_FORMAT_RAW16:
+        return 2;
+    case ORBIS_CAMERA_FORMAT_RAW8:
+        return 1;
+    case ORBIS_CAMERA_FORMAT_NO_USE:
+        return 0;
+    default:
+        UNREACHABLE();
+    }
+}
+
 s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_data) {
     LOG_DEBUG(Lib_Camera, "called");
     if (frame_data == nullptr) {
@@ -461,6 +476,10 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     }
     frame_data->meta.format[0][0] = output_config0.format.formatLevel0;
     frame_data->meta.format[1][0] = output_config1.format.formatLevel0;
+    frame_data->frameSize[0][0] =
+        c_width * c_height * SizeOfFormat(output_config0.format.formatLevel0);
+    frame_data->frameSize[1][0] =
+        c_width * c_height * SizeOfFormat(output_config1.format.formatLevel0);
 
     // on older firmwares, this wasn't present, and the original library also checks struct size
     // instead of the SDK version, and without this check, we'd smash the stack in those games

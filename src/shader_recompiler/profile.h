@@ -33,7 +33,6 @@ struct Profile {
     bool support_fp16_signed_zero_inf_nan_preserve{};
     bool support_fp32_signed_zero_inf_nan_preserve{};
     bool support_fp64_signed_zero_inf_nan_preserve{};
-    bool support_legacy_vertex_attributes{};
     bool supports_image_load_store_lod{};
     bool supports_native_cube_calc{};
     bool supports_trinary_minmax{};
