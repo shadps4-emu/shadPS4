@@ -222,15 +222,24 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id color_type = texture.data_types->Get(4);
     ImageOperands operands;
-    operands.Add(spv::ImageOperandsMask::Sample, ms);
     Id texel;
     if (!texture.is_storage) {
         const Id image = ctx.OpLoad(texture.image_type, texture.id);
-        if (texture.view_type != AmdGpu::ImageType::Color2DMsaa) {
+        if (texture.view_type == AmdGpu::ImageType::Color2DMsaa) {
+            // GCN hardware wraps out-of-range MSAA sample indices (e.g., index 2→0, 3→1 on 2x).
+            // Vulkan requires valid sample indices and returns undefined values otherwise.
+            // Replicate GCN behavior: compute ms %= actual_sample_count via OpImageQuerySamples.
+            if (Sirit::ValidId(ms)) {
+                const Id sample_count = ctx.OpImageQuerySamples(ctx.U32[1], image);
+                const Id wrapped_ms = ctx.OpUMod(ctx.U32[1], ms, sample_count);
+                operands.Add(spv::ImageOperandsMask::Sample, wrapped_ms);
+            }
+        } else {
             if (Sirit::ValidId(ms)) {
                 LOG_ERROR(Render_Recompiler, "image is not MS but ms operand is provided");
             }
             operands.Add(spv::ImageOperandsMask::Lod, lod);
+            operands.Add(spv::ImageOperandsMask::Sample, ms);
         }
         texel = ctx.OpImageFetch(color_type, image, coords, operands.mask, operands.operands);
     } else {
