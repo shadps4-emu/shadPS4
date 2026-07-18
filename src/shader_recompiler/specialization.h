@@ -100,7 +100,7 @@ struct StageSpecialization {
         if (info_.stage == Stage::Vertex && fetch_shader_data) {
             // Specialize shader on VS input number types to follow spec.
             ForEachSharp(vs_attribs, fetch_shader_data->attributes,
-                         [&profile_, this](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
+                         [this](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                              using InstanceIdType = Shader::Gcn::VertexAttribute::InstanceIdType;
                              if (const auto step_rate = desc.GetStepRate();
                                  step_rate != InstanceIdType::None) {
@@ -110,9 +110,7 @@ struct StageSpecialization {
                                                            ? runtime_info.vs_info.step_rate_1
                                                            : 1);
                              }
-                             spec.num_class = profile_.support_legacy_vertex_attributes
-                                                  ? AmdGpu::NumberClass{}
-                                                  : AmdGpu::GetNumberClass(sharp.GetNumberFmt());
+                             spec.num_class = AmdGpu::GetNumberClass(sharp.GetNumberFmt());
                              spec.dst_select = sharp.DstSelect();
                          });
         }
