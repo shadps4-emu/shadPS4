@@ -185,11 +185,6 @@ public:
         return list_restart && list_restart_features.primitiveTopologyPatchListRestart;
     }
 
-    /// Returns true when VK_EXT_legacy_vertex_attributes is supported.
-    bool IsLegacyVertexAttributesSupported() const {
-        return legacy_vertex_attributes;
-    }
-
     /// Returns true when VK_EXT_provoking_vertex is supported.
     bool IsProvokingVertexSupported() const {
         return provoking_vertex;
