@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <core/libraries/rtc/rtc.h>
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -11,10 +12,43 @@ class SymbolsResolver;
 
 namespace Libraries::Np::NpTus {
 
+enum class OrbisNpTssStatus : int {
+    Ok = 0,
+    Partial = 1,
+    NotModified = 2,
+};
+
+struct OrbisNpTssDataStatus {
+    Libraries::Rtc::OrbisRtcTick modified;
+    OrbisNpTssStatus status;
+    u64 contentLength;
+};
+
+enum class OrbisNpTssIfType : int {
+    IfModifiedSince = 0,
+    IfRange = 1,
+};
+
+struct OrbisNpTssIfModifiedSinceParam {
+    OrbisNpTssIfType ifType;
+    s8 padding[4];
+    Libraries::Rtc::OrbisRtcTick lastModified;
+};
+
+struct OrbisNpTssGetDataOptParam {
+    u64 size;
+    u64* offset;
+    u64* lastByte;
+    OrbisNpTssIfModifiedSinceParam* ifParam;
+};
+
 s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx();
-s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtxA();
+s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtxA(OrbisNpServiceLabel serviceLabel,
+                                           Libraries::UserService::OrbisUserServiceUserId userId);
 s32 PS4_SYSV_ABI sceNpTssGetData();
-s32 PS4_SYSV_ABI sceNpTssGetDataAsync();
+s32 PS4_SYSV_ABI sceNpTssGetDataAsync(int reqId, s32 slotId, OrbisNpTssDataStatus* dataStatus,
+                                      u64 dataStatusSize, void* data, u64 dataSize,
+                                      OrbisNpTssGetDataOptParam* option);
 s32 PS4_SYSV_ABI sceNpTssGetSmallStorage();
 s32 PS4_SYSV_ABI sceNpTssGetSmallStorageAsync();
 s32 PS4_SYSV_ABI sceNpTssGetStorage();
@@ -33,9 +67,10 @@ s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUserAsync();
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUser();
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUserAsync();
 s32 PS4_SYSV_ABI sceNpTusChangeModeForOtherSaveDataOwners();
-s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtx();
-s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtxA();
-s32 PS4_SYSV_ABI sceNpTusCreateRequest();
+s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId);
+s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtxA(OrbisNpServiceLabel serviceLabel,
+                                           Libraries::UserService::OrbisUserServiceUserId userId);
+s32 PS4_SYSV_ABI sceNpTusCreateRequest(int libCtxId);
 s32 PS4_SYSV_ABI sceNpTusCreateTitleCtx();
 s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotData();
 s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataA();
@@ -50,7 +85,7 @@ s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableAsync();
 s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUser();
 s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUserAsync();
 s32 PS4_SYSV_ABI sceNpTusDeleteNpTitleCtx();
-s32 PS4_SYSV_ABI sceNpTusDeleteRequest();
+s32 PS4_SYSV_ABI sceNpTusDeleteRequest(int requestId);
 s32 PS4_SYSV_ABI sceNpTusGetData();
 s32 PS4_SYSV_ABI sceNpTusGetDataA();
 s32 PS4_SYSV_ABI sceNpTusGetDataAAsync();
@@ -123,7 +158,7 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUser();
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUserAsync();
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableVUser();
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusPollAsync();
+s32 PS4_SYSV_ABI sceNpTusPollAsync(int reqId, int* result);
 s32 PS4_SYSV_ABI sceNpTusSetData();
 s32 PS4_SYSV_ABI sceNpTusSetDataA();
 s32 PS4_SYSV_ABI sceNpTusSetDataAAsync();
