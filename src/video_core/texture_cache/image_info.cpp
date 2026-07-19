@@ -221,10 +221,13 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
         return -1;
     }
 
-    // Currently we expect only on level to be copied.
+    // Currently we expect only one level to be copied.
     if (resources.levels != 1) {
         return -1;
     }
+
+    const auto info_dim = info.props.is_block ? 2 : 0;
+    const auto this_dim = props.is_block ? 2 : 0;
 
     // Find mip
     auto mip = -1;
@@ -234,7 +237,8 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
         const VAddr mip_end = mip_base + mip_size;
         const u32 slice_size = mip_size / info.resources.layers;
         if (guest_address >= mip_base && guest_address < mip_end &&
-            (guest_address - mip_base) % slice_size == 0) {
+            (guest_address - mip_base) % slice_size == 0 &&
+            (pitch >> this_dim) == (mip_pitch >> info_dim)) {
             mip = m;
             break;
         }
@@ -243,18 +247,13 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
     if (mip < 0) {
         return -1;
     }
-
-    const auto curr_block_dim = BlockDim();
-    const auto info_block_dim = info.MipBlockDim(mip);
-
+    
     // 2D block dimensions of both images should be the same.
-    const auto mip_w = std::max(info_block_dim.width, 1u);
-    const auto mip_h = std::max(info_block_dim.height, 1u);
-
-    // Current dimensions need to be padded to a tile.
-    const auto cur_w = std::max(curr_block_dim.width, 8u);
-    const auto cur_h = std::max(curr_block_dim.height, 8u);
-    if ((cur_w != mip_w) || (cur_h != mip_h)) {
+    const auto mip_w = std::max(info.size.width >> (mip + info_dim), 1u);
+    const auto mip_h = std::max(info.size.height >> (mip + info_dim), 1u);
+    const auto this_w = std::max(size.width >> this_dim, 1u);
+    const auto this_h = std::max(size.height >> this_dim, 1u);
+    if ((this_w != mip_w) || (this_h != mip_h)) {
         return -1;
     }
 
@@ -283,17 +282,15 @@ s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
         return -1;
     }
 
-    const auto curr_block_dim = BlockDim();
-    const auto info_block_dim = info.MipBlockDim(mip);
-
     // 2D block dimensions of both images should be the same.
-    const auto mip_w = std::max(info_block_dim.width, 1u);
-    const auto mip_h = std::max(info_block_dim.height, 1u);
+    const auto info_dim = info.props.is_block ? 2 : 0;
+    const auto mip_w = std::max(info.size.width >> (mip + info_dim), 1u);
+    const auto mip_h = std::max(info.size.height >> (mip + info_dim), 1u);
 
-    // Current dimensions need to be padded to a tile.
-    const auto cur_w = std::max(curr_block_dim.width, 8u);
-    const auto cur_h = std::max(curr_block_dim.height, 8u);
-    if ((cur_w != mip_w) || (cur_h != mip_h)) {
+    const auto this_dim = props.is_block ? 2 : 0;
+    const auto this_w = std::max(size.width >> this_dim, 1u);
+    const auto this_h = std::max(size.height >> this_dim, 1u);
+    if ((this_w != mip_w) || (this_h != mip_h)) {
         return -1;
     }
 
