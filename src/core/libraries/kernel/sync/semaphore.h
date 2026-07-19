@@ -29,10 +29,10 @@ public:
     {
 #ifdef _WIN64
         sem = CreateSemaphore(nullptr, initialCount, max, nullptr);
-        ASSERT(sem);
+        ASSERT_MSG(sem != nullptr, "Failed to create Win32 semaphore");
 #elif defined(__APPLE__)
         sem = dispatch_semaphore_create(initialCount);
-        ASSERT(sem);
+        ASSERT_MSG(sem != nullptr, "Failed to create dispatch semaphore");
 #endif
     }
 
@@ -77,6 +77,18 @@ public:
     bool try_acquire() {
 #ifdef _WIN64
         return WaitForSingleObjectEx(sem, 0, true) == WAIT_OBJECT_0;
+#elif defined(__APPLE__)
+        return dispatch_semaphore_wait(sem, DISPATCH_TIME_NOW) == 0;
+#else
+        return sem.try_acquire();
+#endif
+    }
+
+    // Consume a pending permit without entering an alertable wait. Windows needs a dedicated
+    // non-alertable call; the native Darwin and standard C++ semaphore calls already behave so.
+    bool try_acquire_pending() {
+#ifdef _WIN64
+        return WaitForSingleObjectEx(sem, 0, false) == WAIT_OBJECT_0;
 #elif defined(__APPLE__)
         return dispatch_semaphore_wait(sem, DISPATCH_TIME_NOW) == 0;
 #else

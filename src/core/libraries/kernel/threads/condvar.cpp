@@ -117,6 +117,8 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
     mp->CvUnlock(&recurse);
 
     curthread->mutex_obj = mp;
+    const u64 wait_generation = curthread->BeginCondWaitGeneration();
+    curthread->ArmCondWaitGeneration(wait_generation);
     SleepqAdd(this, curthread);
 
     const bool is_reltime = abstime == THR_RELTIME;
@@ -148,7 +150,17 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
         }
         //_thr_cancel_leave(curthread, 0);
 
+        curthread->ClearCondWaitGenerationArm();
+
         SleepqLock(this);
+        const u64 last_wake_generation = curthread->GetLastCondWakeGeneration();
+        if (error == 0 && curthread->wchan != nullptr && last_wake_generation != 0 &&
+            last_wake_generation != wait_generation) {
+            curthread->ClearWake();
+            curthread->ArmCondWaitGeneration(wait_generation);
+            SleepqUnlock(this);
+            continue;
+        }
         if (curthread->wchan == nullptr) {
             if (error == POSIX_ETIMEDOUT) {
                 LOG_WARNING(Lib_Kernel,
@@ -170,6 +182,8 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
             }
             SleepqUnlock(this);
             curthread->mutex_obj = nullptr;
+            curthread->ClearCondWaitGenerationArm();
+            curthread->ClearWake();
             mp->CvLock(recurse);
             return 0;
         } else if (error == POSIX_ETIMEDOUT) {
@@ -201,7 +215,9 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
     }
     SleepqUnlock(this);
     curthread->mutex_obj = nullptr;
+    curthread->ClearCondWaitGenerationArm();
     const int error2 = mp->CvLock(recurse);
+    curthread->ClearWake();
     if (error == 0) {
         error = error2;
     }
@@ -273,6 +289,7 @@ int PthreadCond::Signal(Pthread* thread) {
     }
 
     PthreadMutex* mp = td->mutex_obj;
+    const u64 td_wait_generation = td->GetCondWaitGeneration();
     const void* wait_wchan = td->wchan;
     has_user_waiters = SleepqRemove(sq, td);
 
@@ -281,7 +298,7 @@ int PthreadCond::Signal(Pthread* thread) {
                     td->name, name);
     }
 
-    BinarySemaphore* waddr = &td->wake_sema;
+    bool wake_immediately = true;
     if (mp != nullptr && curthread != nullptr && mp->m_owner == curthread) {
         if (curthread->nwaiter_defer >= Pthread::MaxDeferWaiters) {
             LOG_WARNING(Lib_Kernel,
@@ -289,22 +306,22 @@ int PthreadCond::Signal(Pthread* thread) {
                         curthread->name, curthread->nwaiter_defer);
             curthread->WakeAll();
         }
-        curthread->defer_waiters[curthread->nwaiter_defer++] = &td->wake_sema;
+        curthread->defer_waiters[curthread->nwaiter_defer++] = {td, td_wait_generation};
         mp->m_flags |= PthreadMutexFlags::Deferred;
         LOG_DEBUG(
             Lib_Kernel,
             "PthreadCond::Signal deferred wake cond '{}' owner '{}' target '{}' wait_wchan={:#x}",
             name, curthread->name, td->name,
             static_cast<u64>(reinterpret_cast<uintptr_t>(wait_wchan)));
-        waddr = nullptr;
+        wake_immediately = false;
     }
 
     SleepqUnlock(this);
-    if (waddr != nullptr) {
+    if (wake_immediately) {
         LOG_DEBUG(Lib_Kernel,
                   "PthreadCond::Signal direct wake cond '{}' target '{}' wait_wchan={:#x}", name,
                   td->name, static_cast<u64>(reinterpret_cast<uintptr_t>(wait_wchan)));
-        waddr->release();
+        td->TryCondWake(td_wait_generation);
     }
     return 0;
 }
@@ -312,7 +329,7 @@ int PthreadCond::Signal(Pthread* thread) {
 struct BroadcastArg {
     Pthread* curthread;
     const char* cond_name;
-    BinarySemaphore* waddrs[Pthread::MaxDeferWaiters];
+    Pthread::DeferredWakeEntry immediate_wakes[Pthread::MaxDeferWaiters];
     const char* waiter_names[Pthread::MaxDeferWaiters];
     int count;
 };
@@ -327,6 +344,7 @@ int PthreadCond::Broadcast() {
         auto* ba2 = static_cast<BroadcastArg*>(arg);
         Pthread* curthread = ba2->curthread;
         PthreadMutex* mp = td->mutex_obj;
+        const u64 td_wait_generation = td->GetCondWaitGeneration();
 
         if (mp != nullptr && curthread != nullptr && mp->m_owner == curthread) {
             if (curthread->nwaiter_defer >= Pthread::MaxDeferWaiters) {
@@ -336,7 +354,7 @@ int PthreadCond::Broadcast() {
                     curthread->name, curthread->nwaiter_defer);
                 curthread->WakeAll();
             }
-            curthread->defer_waiters[curthread->nwaiter_defer++] = &td->wake_sema;
+            curthread->defer_waiters[curthread->nwaiter_defer++] = {td, td_wait_generation};
             mp->m_flags |= PthreadMutexFlags::Deferred;
             LOG_DEBUG(Lib_Kernel,
                       "PthreadCond::Broadcast deferred wake cond '{}' owner '{}' target '{}' "
@@ -357,11 +375,12 @@ int PthreadCond::Broadcast() {
                     LOG_DEBUG(Lib_Kernel,
                               "PthreadCond::Broadcast direct wake cond '{}' target '{}'",
                               ba2->cond_name, ba2->waiter_names[i]);
-                    ba2->waddrs[i]->release();
+                    const auto entry = ba2->immediate_wakes[i];
+                    entry.thread->TryCondWake(entry.wait_generation);
                 }
                 ba2->count = 0;
             }
-            ba2->waddrs[ba2->count++] = &td->wake_sema;
+            ba2->immediate_wakes[ba2->count++] = {td, td_wait_generation};
             ba2->waiter_names[ba2->count - 1] = td->name.c_str();
         }
     };
@@ -380,7 +399,8 @@ int PthreadCond::Broadcast() {
     for (int i = 0; i < ba.count; i++) {
         LOG_DEBUG(Lib_Kernel, "PthreadCond::Broadcast direct wake cond '{}' target '{}'",
                   ba.cond_name, ba.waiter_names[i]);
-        ba.waddrs[i]->release();
+        const auto entry = ba.immediate_wakes[i];
+        entry.thread->TryCondWake(entry.wait_generation);
     }
     return 0;
 }
