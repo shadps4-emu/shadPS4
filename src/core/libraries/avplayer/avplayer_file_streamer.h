@@ -3,7 +3,10 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string_view>
+
+#include "common/io_file.h"
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/avplayer/avplayer_data_streamer.h"
 
@@ -13,9 +16,11 @@ namespace Libraries::AvPlayer {
 
 class AvPlayerFileStreamer : public IDataStreamer {
 public:
-    AvPlayerFileStreamer(const AvPlayerFileReplacement& file_replacement);
+    explicit AvPlayerFileStreamer(const AvPlayerFileReplacement& file_replacement);
+    explicit AvPlayerFileStreamer(std::filesystem::path path);
     ~AvPlayerFileStreamer();
 
+    bool Init();
     bool Init(std::string_view path) override;
     void Reset() override;
 
@@ -24,10 +29,14 @@ public:
     }
 
 private:
+    bool InitAvioContext();
+
     static s32 ReadPacket(void* opaque, u8* buffer, s32 size);
     static s64 Seek(void* opaque, s64 buffer, int whence);
 
-    AvPlayerFileReplacement m_file_replacement;
+    AvPlayerFileReplacement m_file_replacement{};
+    std::filesystem::path m_path;
+    Common::FS::IOFile m_file;
 
     int m_fd = -1;
     u64 m_position{};

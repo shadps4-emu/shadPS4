@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
-#include "common/io_file.h"
 #include "common/singleton.h"
 #include "common/thread.h"
 #include "common/zar_fs.h"
@@ -51,18 +50,20 @@ bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view pa
         }
     } else {
         const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-        auto filepath = mnt->GetHostPath(path);
+        const auto filepath = mnt->GetHostPath(path);
         if (Common::FS::Zar::IsZarInnerPath(filepath)) {
-            // FFmpeg cannot read from inside a ZArchive; extract the media to a host file.
-            Common::FS::IOFile media(filepath, Common::FS::FileAccessMode::Read);
-            if (!media.IsOpen() || !media.MaterializeToHost()) {
-                LOG_ERROR(Lib_AvPlayer, "Failed to extract {} from ZArchive", path);
+            auto data_streamer = std::make_unique<AvPlayerFileStreamer>(filepath);
+            if (!data_streamer->Init()) {
+                LOG_ERROR(Lib_AvPlayer, "Failed to open {} from ZArchive", path);
                 return false;
             }
-            filepath = media.GetPath();
-        }
-        if (AVPLAYER_IS_ERROR(
-                avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
+            context->pb = data_streamer->GetContext();
+            m_up_data_streamer = std::move(data_streamer);
+            if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
+                return false;
+            }
+        } else if (AVPLAYER_IS_ERROR(avformat_open_input(&context, filepath.string().c_str(),
+                                                         nullptr, nullptr))) {
             return false;
         }
     }
