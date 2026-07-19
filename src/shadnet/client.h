@@ -286,6 +286,8 @@ public:
 
     const std::string& GetAvatarUrl() const;
     u64 GetUserId() const;
+    // Online ID this client logged in with (set once in Start()).
+    const std::string& GetNpid() const;
     u32 GetServerProtocolVersion() const {
         return m_server_protocol_version.load();
     }

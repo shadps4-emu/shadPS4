@@ -8,6 +8,7 @@
 #include <httplib.h>
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "common/string_util.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/network/net_upnp.h"
@@ -1996,7 +1997,8 @@ s32 NpHandler::TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std
     proto.set_ownernpid(ownerNpId);
     if (!virtualUser.empty()) {
         proto.set_virtualuser(virtualUser);
-    } else {
+    } else if (ownerNpId.empty() ||
+               Common::ToLower(ownerNpId) == Common::ToLower(client->GetNpid())) {
         proto.set_owneraccountid(static_cast<s64>(client->GetUserId()));
     }
     for (s32 s : slotIds) {
@@ -2036,7 +2038,8 @@ s32 NpHandler::TusSetMultiSlotVariable(s32 user_id, s32 service_label, const std
     proto.set_ownernpid(ownerNpId);
     if (!virtualUser.empty()) {
         proto.set_virtualuser(virtualUser);
-    } else {
+    } else if (ownerNpId.empty() ||
+               Common::ToLower(ownerNpId) == Common::ToLower(client->GetNpid())) {
         proto.set_owneraccountid(static_cast<s64>(client->GetUserId()));
     }
 
@@ -2379,6 +2382,10 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         switch (error) {
         case ShadNet::ErrorType::Unauthorized:
             orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_FORBIDDEN;
+            break;
+        case ShadNet::ErrorType::NotFound:
+            // Owner npid did not resolve to a registered user.
+            orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_USER_PROFILE_NOT_FOUND;
             break;
         case ShadNet::ErrorType::DbFail:
             orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_INTERNAL_SERVER_ERROR;

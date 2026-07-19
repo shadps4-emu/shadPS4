@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <map>
 #include <core/libraries/np/np_error.h>
 #include <core/libraries/np/np_handler.h>
@@ -27,6 +28,7 @@ struct NpTusTitleContext {
 
 constexpr size_t TusMaxTitleCtx = 32;
 constexpr size_t TusMaxRequests = 256;
+constexpr int TusMaxSlotsPerRequest = 64;
 
 static std::mutex g_mutex;
 static std::map<int, NpTusTitleContext> g_title_ctxs;
@@ -187,19 +189,28 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s
              "arrayLen = {}, option = {}",
              reqId, npId ? npId->handle.data : "", fmt::ptr(slotIds), fmt::ptr(variableArray),
              variablesSize, arrayLen, fmt::ptr(option));
+    if (!slotIds || !variableArray) {
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (arrayLen < 1 || option) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen > TusMaxSlotsPerRequest) {
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_SLOTID;
+    }
+    if (std::any_of(slotIds, slotIds + arrayLen, [](s32 id) { return id < 0; })) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (variablesSize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariable)) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+
     NpTusRequest* req = nullptr;
     u32 svc = 0;
     s32 uid = -1;
     std::string self;
     if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
         return ret;
-    }
-    if (!slotIds || !variableArray || arrayLen < 1) {
-        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
-    }
-
-    if (variablesSize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariable)) {
-        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
     }
     const std::string owner =
         (npId && npId->handle.data[0]) ? std::string(npId->handle.data) : self;
@@ -229,11 +240,10 @@ s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s
     if (arrayLen < 1 || option) {
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
-    if (arrayLen > 64) {
+    if (arrayLen > TusMaxSlotsPerRequest) {
         return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_SLOTID;
     }
-    if (std::ranges::any_of(std::vector<std::reference_wrapper<s32>>(slotIds, slotIds + arrayLen),
-                            [](auto id) { return id < 0; })) {
+    if (std::any_of(slotIds, slotIds + arrayLen, [](s32 id) { return id < 0; })) {
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
