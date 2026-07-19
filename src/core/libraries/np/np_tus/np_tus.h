@@ -42,20 +42,20 @@ struct OrbisNpTssGetDataOptParam {
     OrbisNpTssIfModifiedSinceParam* ifParam;
 };
 
-struct OrbisNpTusDataStatus {
-    OrbisNpId ownerId;
-    s32 hasData;
-    Libraries::Rtc::OrbisRtcTick lastChangedDate;
-    OrbisNpId lastChangedAuthorId;
-    u8 pad[4];
-    void* data;
-    u64 dataSize;
-    u8 pad[4];
-};
-
 struct OrbisNpTusDataInfo {
     u64 size;
     u8 data[384];
+};
+
+struct OrbisNpTusDataStatus {
+    OrbisNpId npId;
+    int set;
+    Libraries::Rtc::OrbisRtcTick lastChanged;
+    OrbisNpId lastChangedAuthor;
+    u8 pad2[4];
+    void* data;
+    u64 dataSize;
+    OrbisNpTusDataInfo info; // recheck
 };
 
 struct OrbisNpTusDataStatusA {
