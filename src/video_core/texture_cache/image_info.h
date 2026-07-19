@@ -46,9 +46,15 @@ struct ImageInfo {
     bool IsTiled() const {
         return tile_mode != AmdGpu::TileMode::DisplayLinearAligned;
     }
+
     Extent2D BlockDim() const {
         const auto dim = props.is_block ? 2 : 0;
         return Extent2D{pitch >> dim, size.height >> dim};
+    }
+
+    Extent2D MipBlockDim(s32 mip) const {
+        const auto dim = props.is_block ? 2 : 0;
+        return Extent2D{mips_layout[mip].pitch >> dim, mips_layout[mip].height >> dim};
     }
 
     s32 MipOf(const ImageInfo& info) const;

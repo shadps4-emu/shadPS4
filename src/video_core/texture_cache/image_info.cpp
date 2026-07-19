@@ -245,12 +245,16 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
     }
 
     const auto curr_block_dim = BlockDim();
-    const auto info_block_dim = info.BlockDim();
+    const auto info_block_dim = info.MipBlockDim(mip);
 
     // 2D block dimensions of both images should be the same.
-    const auto mip_w = std::max(info_block_dim.width >> mip, 1u);
-    const auto mip_h = std::max(info_block_dim.height >> mip, 1u);
-    if ((curr_block_dim.width != mip_w) || (curr_block_dim.height != mip_h)) {
+    const auto mip_w = std::max(info_block_dim.width, 1u);
+    const auto mip_h = std::max(info_block_dim.height, 1u);
+
+    // Current dimensions need to be padded to a tile.
+    const auto cur_w = std::max(curr_block_dim.width, 8u);
+    const auto cur_h = std::max(curr_block_dim.height, 8u);
+    if ((cur_w != mip_w) || (cur_h != mip_h)) {
         return -1;
     }
 
@@ -280,12 +284,16 @@ s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
     }
 
     const auto curr_block_dim = BlockDim();
-    const auto info_block_dim = info.BlockDim();
+    const auto info_block_dim = info.MipBlockDim(mip);
 
     // 2D block dimensions of both images should be the same.
-    const auto mip_w = std::max(info_block_dim.width >> mip, 1u);
-    const auto mip_h = std::max(info_block_dim.height >> mip, 1u);
-    if ((curr_block_dim.width != mip_w) || (curr_block_dim.height != mip_h)) {
+    const auto mip_w = std::max(info_block_dim.width, 1u);
+    const auto mip_h = std::max(info_block_dim.height, 1u);
+
+    // Current dimensions need to be padded to a tile.
+    const auto cur_w = std::max(curr_block_dim.width, 8u);
+    const auto cur_h = std::max(curr_block_dim.height, 8u);
+    if ((cur_w != mip_w) || (cur_h != mip_h)) {
         return -1;
     }
 
