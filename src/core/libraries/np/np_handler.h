@@ -21,6 +21,9 @@
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_score/np_score.h"
 #include "core/libraries/np/np_score/np_score_ctx.h"
+#include "core/libraries/np/np_tus/np_tus.h"
+#include "core/libraries/np/np_tus/np_tus_ctx.h"
+#include "core/libraries/np/np_types.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/system/userservice.h"
 #include "shadnet/client.h"
@@ -208,6 +211,12 @@ public:
                            Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
                            std::shared_ptr<NpScore::ScoreRequestCtx> req);
 
+    // Title User Storage (TUS)
+    s32 TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
+                                const std::string& virtualUser, const std::vector<s32>& slotIds,
+                                NpTus::OrbisNpTusVariable* variablesOut, u64 arrayNum,
+                                std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                                s64* rawValuesOut = nullptr);
     // State callbacks
     using StateCallback = std::function<void(Libraries::UserService::OrbisUserServiceUserId user_id,
                                              NpManager::OrbisNpState state)>;
@@ -257,6 +266,10 @@ private:
     void OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
                       const std::vector<u8>& body);
 
+    // Async reply dispatch for TUS commands.
+    void OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
+                    const std::vector<u8>& body);
+
     // 12-byte NP Communication ID
     std::string GetNpCommId(s32 service_label) const;
 
@@ -291,6 +304,26 @@ private:
     };
     mutable std::mutex m_mutex_pending_score;
     std::map<u64, PendingScoreRequest> m_pending_score;
+
+    // TUS requests awaiting a reply, keyed by the submit packet id.
+    struct PendingTusRequest {
+        std::shared_ptr<NpTus::TusRequestCtx> req;
+        ShadNet::CommandType cmd;
+        // Only the fields relevant to `cmd` are set.
+        NpTus::OrbisNpTusVariable* variableArray = nullptr; // variable gets / add
+        s64* variableValuesOut = nullptr; // raw-int64 variable get (base GetMultiSlotVariable)
+        NpTus::OrbisNpTusVariableA* variableArrayA = nullptr; // account-variant variable gets
+        NpTus::OrbisNpTusVariableForCrossSave* variableArrayCS = nullptr; // cross-save variant
+        NpTus::OrbisNpTusDataStatus* statusArray = nullptr;   // data get / status families
+        NpTus::OrbisNpTusDataStatusA* statusArrayA = nullptr; // account-variant data status
+        NpTus::OrbisNpTusDataStatusForCrossSave* statusArrayCS = nullptr; // cross-save data status
+        void* dataOut = nullptr;                                          // GetData payload
+        u64 dataCap = 0;                                                  // GetData buffer capacity
+        u32* totalOut = nullptr;                                          // friends total
+        u64 arrayNum = 0;                                                 // expected entry count
+    };
+    mutable std::mutex m_mutex_pending_tus;
+    std::map<u64, PendingTusRequest> m_pending_tus;
 
     // Worker thread
     std::atomic<bool> m_initialized{false};

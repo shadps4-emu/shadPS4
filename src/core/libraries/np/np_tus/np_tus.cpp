@@ -182,7 +182,7 @@ s32 PS4_SYSV_ABI sceNpTusPollAsync(int reqId, int* result) {
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s32* slotIds,
                                                    s64* variables, u64 variablesSize, int arrayLen,
                                                    void* option) {
-    LOG_ERROR(Lib_NpTus,
+    LOG_INFO(Lib_NpTus,
               "reqId = {}, npId = {}, slotIds = {}, variables = {}, variablesSize = {}, arrayLen = "
               "{}, option = {}",
               reqId, npId ? npId->handle.data : "", fmt::ptr(slotIds), fmt::ptr(variables),
@@ -197,9 +197,19 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s
     if (!slotIds || !variables || arrayLen < 1) {
         return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
     }
-
+    const std::string owner =
+        (npId && npId->handle.data[0]) ? std::string(npId->handle.data) : self;
+    std::vector<s32> slots(slotIds, slotIds + arrayLen);
+    s64* out = variables;
+    const int n = arrayLen;
     auto ctx = std::make_shared<TusRequestCtx>();
     req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetMultiSlotVariable(
+        uid, static_cast<s32>(svc), owner, std::string(), slots, /*variablesOut=*/nullptr,
+        static_cast<u64>(n), ctx, out);
+    if (submit < 0) {
+        return submit;
+    }
     return ORBIS_OK;
 }
 
