@@ -247,7 +247,7 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
     if (mip < 0) {
         return -1;
     }
-    
+
     // 2D block dimensions of both images should be the same.
     const auto mip_w = std::max(info.size.width >> (mip + info_dim), 1u);
     const auto mip_h = std::max(info.size.height >> (mip + info_dim), 1u);
