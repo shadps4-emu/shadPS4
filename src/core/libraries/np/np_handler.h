@@ -313,7 +313,7 @@ private:
         std::shared_ptr<NpTus::TusRequestCtx> req;
         ShadNet::CommandType cmd;
         // Only the fields relevant to `cmd` are set.
-        NpTus::OrbisNpTusVariable* variableArray = nullptr; // variable gets / add
+        NpTus::OrbisNpTusVariable* variableArray = nullptr;   // variable gets / add
         NpTus::OrbisNpTusVariableA* variableArrayA = nullptr; // account-variant variable gets
         NpTus::OrbisNpTusVariableForCrossSave* variableArrayCS = nullptr; // cross-save variant
         NpTus::OrbisNpTusDataStatus* statusArray = nullptr;   // data get / status families
