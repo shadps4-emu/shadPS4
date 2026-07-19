@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <atomic>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -46,6 +48,19 @@ class InvitationDialogUi final : public ImGui::Layer {
     bool first_render{false};
     CommonDialog::Status* status{nullptr};
     DialogState* state{nullptr};
+    struct PendingAccept {
+        std::atomic<bool> done{false};
+        std::atomic<bool> success{false};
+        std::string invitation_id;
+    };
+    struct PendingSend {
+        std::atomic<bool> done{false};
+        std::atomic<bool> success{false};
+        std::vector<std::string> sent_npids;
+        std::vector<Libraries::Np::OrbisNpAccountId> sent_account_ids;
+    };
+    std::shared_ptr<PendingAccept> pending_accept;
+    std::shared_ptr<PendingSend> pending_send;
 
 public:
     explicit InvitationDialogUi(CommonDialog::Status* status = nullptr,
