@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "common/types.h"
 
@@ -23,6 +24,10 @@ bool IsZarArchive(const std::filesystem::path& path);
 
 /// Returns whether path identifies an entry within a host ZArchive.
 bool IsZarInnerPath(const std::filesystem::path& path);
+
+/// Returns a loose overlay path beside a game directory or ZArchive.
+std::filesystem::path GetLooseOverlayPath(const std::filesystem::path& game_path,
+                                          std::string_view suffix);
 
 /// Searches for <game_id>.zar and returns its eboot.bin path.
 std::optional<std::filesystem::path> FindGameByID(const std::filesystem::path& dir,

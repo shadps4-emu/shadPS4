@@ -154,6 +154,15 @@ bool IsZarInnerPath(const fs::path& path) {
     return located && !located->inner.empty();
 }
 
+fs::path GetLooseOverlayPath(const fs::path& game_path, std::string_view suffix) {
+    auto overlay_path = game_path;
+    if (IsZarArchive(overlay_path)) {
+        overlay_path.replace_extension();
+    }
+    overlay_path += suffix;
+    return overlay_path;
+}
+
 std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& game_id,
                                      int max_depth) {
     if (max_depth < 0) {

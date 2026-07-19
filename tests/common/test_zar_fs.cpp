@@ -144,6 +144,16 @@ TEST_F(ZarFsTest, FindsArchivedGameById) {
     EXPECT_EQ(*found, archive_path / "eboot.bin");
 }
 
+TEST_F(ZarFsTest, ResolvesLooseOverlayPaths) {
+    EXPECT_EQ(GetLooseOverlayPath(archive_path, "-UPDATE"), test_dir / "CUSA00001-UPDATE");
+    EXPECT_EQ(GetLooseOverlayPath(archive_path, "-patch"), test_dir / "CUSA00001-patch");
+    EXPECT_EQ(GetLooseOverlayPath(archive_path, "-mods"), test_dir / "CUSA00001-mods");
+
+    const auto directory_path = test_dir / "CUSA00002";
+    ASSERT_TRUE(fs::create_directory(directory_path));
+    EXPECT_EQ(GetLooseOverlayPath(directory_path, "-UPDATE"), test_dir / "CUSA00002-UPDATE");
+}
+
 TEST_F(ZarFsTest, KeepsOpenFileValidAfterCacheEviction) {
     auto file = OpenFile(archive_path / "eboot.bin");
     ASSERT_NE(file, nullptr);

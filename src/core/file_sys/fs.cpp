@@ -69,17 +69,14 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     const auto corrected_path_sanitized = RemoveTrailingSlashes(corrected_path);
     std::filesystem::path host_path = mount->host_path;
 
-    // Update folder is either mount + "-UPDATE" or mount + "-patch"
-    std::filesystem::path patch_path = mount->host_path;
-    patch_path += "-UPDATE";
+    // Update folder is either loose overlay base + "-UPDATE" or + "-patch".
+    std::filesystem::path patch_path = Zar::GetLooseOverlayPath(mount->host_path, "-UPDATE");
     if (!std::filesystem::exists(patch_path)) {
-        patch_path = mount->host_path;
-        patch_path += "-patch";
+        patch_path = Zar::GetLooseOverlayPath(mount->host_path, "-patch");
     }
 
-    // Mods folder can only be at mount + "-mods"
-    std::filesystem::path mods_path = mount->host_path;
-    mods_path += "-mods";
+    // Mods folder can only be at loose overlay base + "-mods".
+    std::filesystem::path mods_path = Zar::GetLooseOverlayPath(mount->host_path, "-mods");
 
     // If we're just retrieving the mount, return the correct mount path.
     if (corrected_path_sanitized == mount->mount) {

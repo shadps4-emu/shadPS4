@@ -37,11 +37,8 @@ namespace {
 
 std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder) {
     std::filesystem::path outputPath;
-    auto update_folder = game_folder;
-    update_folder += "-UPDATE";
-
-    auto patch_folder = game_folder;
-    patch_folder += "-patch";
+    const auto update_folder = Common::FS::Zar::GetLooseOverlayPath(game_folder, "-UPDATE");
+    const auto patch_folder = Common::FS::Zar::GetLooseOverlayPath(game_folder, "-patch");
 
     if (std::filesystem::exists(update_folder / "sce_sys" / sceItem)) {
         outputPath = update_folder / "sce_sys" / sceItem;
