@@ -1982,8 +1982,7 @@ s32 NpHandler::TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std
                                        const std::string& virtualUser,
                                        const std::vector<s32>& slotIds,
                                        NpTus::OrbisNpTusVariable* variablesOut, u64 arrayNum,
-                                       std::shared_ptr<NpTus::TusRequestCtx> ctx,
-                                       s64* rawValuesOut) {
+                                       std::shared_ptr<NpTus::TusRequestCtx> ctx) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2014,7 +2013,6 @@ s32 NpHandler::TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std
     p.req = std::move(ctx);
     p.cmd = ShadNet::CommandType::TusGetMultiSlotVariable;
     p.variableArray = variablesOut;
-    p.variableValuesOut = rawValuesOut;
     p.arrayNum = arrayNum;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
@@ -2520,12 +2518,6 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
             filled = std::min<u64>(pending.arrayNum, resp.variables_size());
             for (u64 i = 0; i < filled; ++i) {
                 fillVariable(pending.variableArray[i], resp.variables(static_cast<int>(i)));
-            }
-        } else if (pending.variableValuesOut) {
-            // Base GetMultiSlotVariable exposes only the raw int64 values.
-            filled = std::min<u64>(pending.arrayNum, resp.variables_size());
-            for (u64 i = 0; i < filled; ++i) {
-                pending.variableValuesOut[i] = resp.variables(static_cast<int>(i)).variable();
             }
         }
         // GetMultiSlotVariable / GetMultiUserVariable return the count of variables read;
