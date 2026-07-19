@@ -73,7 +73,6 @@ void InvitationDialogUi::Finish(Result result) {
 
 void InvitationDialogUi::Draw() {
     using namespace ImGui;
-
     if (pending_accept && pending_accept->done.load(std::memory_order_acquire)) {
         const bool ok = pending_accept->success.load(std::memory_order_acquire);
         const std::string finished_id = pending_accept->invitation_id;
@@ -270,11 +269,13 @@ void InvitationDialogUi::Draw() {
             }
             EndDisabled();
         } else {
-            SetCursorPos({ws.x / 2.0f - BUTTON_SIZE.x - 10.0f, y});
             const bool no_selection =
                 state->recv_selected < 0 ||
                 state->recv_selected >= static_cast<int>(state->recv_invitations.size());
             const bool busy = static_cast<bool>(pending_accept);
+            const float total_w = BUTTON_SIZE.x * 3.0f + 20.0f;
+            float x = ws.x / 2.0f - total_w / 2.0f;
+            SetCursorPos({x, y});
             BeginDisabled(no_selection || busy);
             if (Button(busy ? "Accepting..." : "Accept", BUTTON_SIZE)) {
                 const auto& inv = state->recv_invitations[state->recv_selected];
@@ -290,11 +291,12 @@ void InvitationDialogUi::Draw() {
                 }).detach();
             }
             EndDisabled();
-            if (first_render) {
+            if (first_render && !no_selection) {
                 SetItemCurrentNavFocus();
             }
             SameLine();
-            SetCursorPos({ws.x / 2.0f + 10.0f, y});
+            x += BUTTON_SIZE.x + 10.0f;
+            SetCursorPos({x, y});
             BeginDisabled(no_selection || busy);
             if (Button("Decline", BUTTON_SIZE)) {
                 const auto& inv = state->recv_invitations[state->recv_selected];
@@ -308,6 +310,17 @@ void InvitationDialogUi::Draw() {
                 }
             }
             EndDisabled();
+            SameLine();
+            x += BUTTON_SIZE.x + 10.0f;
+            SetCursorPos({x, y});
+            BeginDisabled(busy);
+            if (Button("Cancel", BUTTON_SIZE)) {
+                Finish(Result::USER_CANCELED);
+            }
+            EndDisabled();
+            if (first_render && no_selection) {
+                SetItemCurrentNavFocus();
+            }
         }
     }
     End();
