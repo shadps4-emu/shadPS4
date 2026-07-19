@@ -286,11 +286,13 @@ s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
     const auto info_dim = info.props.is_block ? 2 : 0;
     const auto mip_w = std::max(info.size.width >> (mip + info_dim), 1u);
     const auto mip_h = std::max(info.size.height >> (mip + info_dim), 1u);
+    const auto mip_p = std::max(info.pitch >> (mip + info_dim), 1u);
 
     const auto this_dim = props.is_block ? 2 : 0;
     const auto this_w = std::max(size.width >> this_dim, 1u);
     const auto this_h = std::max(size.height >> this_dim, 1u);
-    if ((this_w != mip_w) || (this_h != mip_h)) {
+    const auto this_p = std::max(pitch >> this_dim, 1u);
+    if ((this_w != mip_w) || (this_h != mip_h) || (this_p != mip_p)) {
         return -1;
     }
 
