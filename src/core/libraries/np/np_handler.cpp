@@ -1997,6 +1997,8 @@ s32 NpHandler::TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std
     proto.set_ownernpid(ownerNpId);
     if (!virtualUser.empty()) {
         proto.set_virtualuser(virtualUser);
+    } else {
+        proto.set_owneraccountid(static_cast<s64>(client->GetUserId()));
     }
     for (s32 s : slotIds) {
         proto.add_slotids(s);
@@ -2014,6 +2016,48 @@ s32 NpHandler::TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std
     p.variableArray = variablesOut;
     p.variableValuesOut = rawValuesOut;
     p.arrayNum = arrayNum;
+    m_pending_tus.emplace(pkt_id, std::move(p));
+    return ORBIS_OK;
+}
+
+s32 NpHandler::TusSetMultiSlotVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
+                                       const std::string& virtualUser,
+                                       const std::vector<s32>& slotIds,
+                                       const std::vector<s64>& values,
+                                       std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    shadnet::TusSetMultiSlotVariableRequest proto;
+    proto.set_ownernpid(ownerNpId);
+    if (!virtualUser.empty()) {
+        proto.set_virtualuser(virtualUser);
+    } else {
+        proto.set_owneraccountid(static_cast<s64>(client->GetUserId()));
+    }
+
+    for (s32 s : slotIds) {
+        proto.add_slotids(s);
+    }
+    for (s64 v : values) {
+        proto.add_values(v);
+    }
+    const std::string com_id = GetNpCommId(service_label);
+    if (!IsValidNpCommId(com_id)) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::TusSetMultiSlotVariable,
+                                             BuildTusPayload(com_id, proto.SerializeAsString()));
+    std::lock_guard lock(m_mutex_pending_tus);
+    PendingTusRequest p;
+    p.req = std::move(ctx);
+    p.cmd = ShadNet::CommandType::TusSetMultiSlotVariable;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
 }

@@ -281,7 +281,8 @@ s32 PS4_SYSV_ABI sceNpTusSetDataVUserAsync();
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariable();
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableA();
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAAsync();
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAsync();
+s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s32* slotIds,
+                                                   s64* variables, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableVUser();
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableVUserAsync();
 s32 PS4_SYSV_ABI sceNpTusSetThreadParam();

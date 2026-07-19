@@ -217,6 +217,10 @@ public:
                                 NpTus::OrbisNpTusVariable* variablesOut, u64 arrayNum,
                                 std::shared_ptr<NpTus::TusRequestCtx> ctx,
                                 s64* rawValuesOut = nullptr);
+    s32 TusSetMultiSlotVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
+                                const std::string& virtualUser, const std::vector<s32>& slotIds,
+                                const std::vector<s64>& values,
+                                std::shared_ptr<NpTus::TusRequestCtx> ctx);
     // State callbacks
     using StateCallback = std::function<void(Libraries::UserService::OrbisUserServiceUserId user_id,
                                              NpManager::OrbisNpState state)>;
