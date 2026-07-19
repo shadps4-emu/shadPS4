@@ -366,18 +366,16 @@ int PS4_SYSV_ABI scePadOutputReport() {
 }
 
 int ProcessStates(OrbisPadData* pData, const Input::State* states, s32 num) {
+    if (num > 0 && !states[0].connected) {
+        pData[0] = {};
+        pData[0].orientation = {0.0f, 0.0f, 0.0f, 1.0f};
+        pData[0].connected = false;
+        return 1;
+    }
+
     const bool gamepad_input_intercepted = ImGui::Core::IsGamepadInputCaptured();
     for (int i = 0; i < num; i++) {
         pData[i] = {};
-        if (!states[i].connected) {
-            pData[i].leftStick = {128, 128};
-            pData[i].rightStick = {128, 128};
-            pData[i].orientation = {0.0f, 0.0f, 0.0f, 1.0f};
-            pData[i].connected = false;
-            pData[i].timestamp = states[i].time;
-            pData[i].connectedCount = states[i].connected_count;
-            continue;
-        }
         if (gamepad_input_intercepted) {
             pData[i].buttons = OrbisPadButtonDataOffset::Intercepted;
             pData[i].leftStick = {128, 128};
