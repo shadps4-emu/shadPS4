@@ -71,6 +71,11 @@ int GameController::ReadStates(State* states, int states_num) {
         return 0;
     }
 
+    if (!m_state.connected) {
+        states[0] = m_state;
+        return 1;
+    }
+
     if (states_num == 1) {
         // Retained history can make a later multi-sample read return up to 64 stale reports, so
         // mixed single- and multi-sample reads require dedicated tests.
