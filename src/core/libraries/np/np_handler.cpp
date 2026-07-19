@@ -2394,6 +2394,27 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         return;
     }
 
+    auto parseTusBody = [&](auto& msg) -> bool {
+        if (body.size() < 4) {
+            LOG_ERROR(NpHandler, "OnTusReply: cmd={} body too small ({})", static_cast<int>(cmd),
+                      body.size());
+            return false;
+        }
+        const u32 proto_size = static_cast<u32>(body[0]) | (static_cast<u32>(body[1]) << 8) |
+                               (static_cast<u32>(body[2]) << 16) |
+                               (static_cast<u32>(body[3]) << 24);
+        if (static_cast<size_t>(4) + proto_size > body.size()) {
+            LOG_ERROR(NpHandler, "OnTusReply: cmd={} proto size {} exceeds body size {}",
+                      static_cast<int>(cmd), proto_size, body.size());
+            return false;
+        }
+        if (!msg.ParseFromArray(body.data() + 4, static_cast<int>(proto_size))) {
+            LOG_ERROR(NpHandler, "OnTusReply: cmd={} proto parse failed", static_cast<int>(cmd));
+            return false;
+        }
+        return true;
+    };
+
     auto fillVariable = [](NpTus::OrbisNpTusVariable& v, const shadnet::TusVariable& s) {
         v = NpTus::OrbisNpTusVariable{};
         CopyNpHandle(v.ownerId, s.ownernpid());
@@ -2479,7 +2500,10 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
     case ShadNet::CommandType::TusGetFriendsVariable:
     case ShadNet::CommandType::TusAddAndGetVariable: {
         shadnet::TusVariableResponse resp;
-        resp.ParseFromArray(body.data(), static_cast<int>(body.size()));
+        if (!parseTusBody(resp)) {
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            return;
+        }
         u64 filled = 0;
         if (pending.variableArrayA) {
             filled = std::min<u64>(pending.arrayNum, resp.variables_size());
@@ -2515,7 +2539,10 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
     }
     case ShadNet::CommandType::TusGetData: {
         shadnet::TusGetDataResponse resp;
-        resp.ParseFromArray(body.data(), static_cast<int>(body.size()));
+        if (!parseTusBody(resp)) {
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            return;
+        }
         // dataSize in the status is the TOTAL size (set by the fill) the return
         // value is the number of bytes actually received into dataOut this call.
         u64 recv = 0;
@@ -2546,7 +2573,10 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
     case ShadNet::CommandType::TusGetMultiUserDataStatus:
     case ShadNet::CommandType::TusGetFriendsDataStatus: {
         shadnet::TusDataStatusResponse resp;
-        resp.ParseFromArray(body.data(), static_cast<int>(body.size()));
+        if (!parseTusBody(resp)) {
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            return;
+        }
         if (pending.statusArrayA) {
             const u64 n = std::min<u64>(pending.arrayNum, resp.statuses_size());
             for (u64 i = 0; i < n; ++i) {
