@@ -672,12 +672,15 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
 void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
     const auto& src_info = src_image.info;
 
-    const auto src_block_dim = src_info.BlockDim();
-    const auto dst_block_dim = info.BlockDim();
-    const auto mip_block_w = std::max(dst_block_dim.width >> mip, 1u);
-    const auto mip_block_h = std::max(dst_block_dim.height >> mip, 1u);
-    ASSERT(mip_block_w == src_block_dim.width);
-    ASSERT(mip_block_h == src_block_dim.height);
+    const auto dst_dim = info.props.is_block ? 2 : 0;
+    const auto mip_block_w = std::max(info.size.width >> (mip + dst_dim), 1u);
+    const auto mip_block_h = std::max(info.size.height >> (mip + dst_dim), 1u);
+    const auto mip_block_p = std::max(info.mips_layout[mip].pitch >> dst_dim, 1u);
+
+    const auto src_dim = src_info.props.is_block ? 2 : 0;
+    ASSERT(mip_block_w == (src_info.size.width >> src_dim));
+    ASSERT(mip_block_h == (src_info.size.height >> src_dim));
+    ASSERT(mip_block_p == (src_info.pitch >> src_dim));
 
     const auto [src_layers, dst_layers] = SanitizeCopyLayers(src_info, info, src_info.size.depth);
 
