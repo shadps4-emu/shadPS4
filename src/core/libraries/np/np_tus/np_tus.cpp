@@ -183,10 +183,10 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s
                                                    s64* variables, u64 variablesSize, int arrayLen,
                                                    void* option) {
     LOG_INFO(Lib_NpTus,
-              "reqId = {}, npId = {}, slotIds = {}, variables = {}, variablesSize = {}, arrayLen = "
-              "{}, option = {}",
-              reqId, npId ? npId->handle.data : "", fmt::ptr(slotIds), fmt::ptr(variables),
-              variablesSize, arrayLen, fmt::ptr(option));
+             "reqId = {}, npId = {}, slotIds = {}, variables = {}, variablesSize = {}, arrayLen = "
+             "{}, option = {}",
+             reqId, npId ? npId->handle.data : "", fmt::ptr(slotIds), fmt::ptr(variables),
+             variablesSize, arrayLen, fmt::ptr(option));
     NpTusRequest* req = nullptr;
     u32 svc = 0;
     s32 uid = -1;
