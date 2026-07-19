@@ -62,6 +62,7 @@ u32 PS4_SYSV_ABI sceNpJoinThread(Libraries::Kernel::PthreadT thread, void** ret)
 s32 PS4_SYSV_ABI sceNpGetSystemClockUsec(s64* usec);
 s32 PS4_SYSV_ABI sceNpGetPlatformType(const OrbisNpId* np_id);
 s32 PS4_SYSV_ABI sceNpIntIsValidOnlineId(const OrbisNpOnlineId* id);
+void PS4_SYSV_ABI sceNpGetSdkVersion(char* version_buf);
 s32 PS4_SYSV_ABI sceNpCalloutInitCtx(OrbisNpCalloutContext* ctx, const char* name, u64 stack_size,
                                      s32 priority, u64 affinity_mask);
 s32 PS4_SYSV_ABI sceNpCalloutStartOnCtx(OrbisNpCalloutContext* ctx, OrbisNpCalloutEntry* callout,

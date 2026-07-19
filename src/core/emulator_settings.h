@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -45,6 +46,20 @@ enum AudioBackend : int {
     SDL,
     OpenAL,
     // Add more backends as needed
+};
+
+enum OpenALHrtfMode : int {
+    HrtfAuto, // Let OpenAL Soft decide (on for headphone-like stereo outputs)
+    HrtfOn,   // Force HRTF binaural rendering
+    HrtfOff,  // Never use HRTF
+};
+
+enum OpenALOutputMode : int {
+    OutputAuto,       // Let OpenAL Soft negotiate with the device
+    OutputStereo,     // Force stereo output
+    OutputQuad,       // Force quadraphonic output
+    OutputSurround51, // Force 5.1 surround output
+    OutputSurround71, // Force 7.1 surround output
 };
 
 template <typename T>
@@ -183,9 +198,9 @@ struct GeneralSettings {
     Setting<bool> show_fps_counter{false};
     Setting<int> console_language{1};
     Setting<int> big_picture_scale{1000};
-    Setting<std::string> shadnet_server{""};
-    Setting<std::string> signaling_addr{""};
-    Setting<u16> signaling_port{};
+    Setting<std::string> shadnet_server{"srv.shadps4.net:31313"};
+    Setting<std::string> shadnet_webapi_server{"http://srv.shadps4.net:31315"};
+    Setting<std::string> signaling_info{};
     Setting<bool> enable_upnp{true};
 
     // return a vector of override descriptors (runtime, but tiny)
@@ -206,8 +221,10 @@ struct GeneralSettings {
                                            &GeneralSettings::trophy_notification_side),
             make_override<GeneralSettings>("connected_to_network",
                                            &GeneralSettings::connected_to_network),
-            make_override<GeneralSettings>("signaling_addr", &GeneralSettings::signaling_addr),
-            make_override<GeneralSettings>("signaling_port", &GeneralSettings::signaling_port),
+            make_override<GeneralSettings>("shadnet_server", &GeneralSettings::shadnet_server),
+            make_override<GeneralSettings>("shadnet_webapi_server",
+                                           &GeneralSettings::shadnet_webapi_server),
+            make_override<GeneralSettings>("signaling_info", &GeneralSettings::signaling_info),
             make_override<GeneralSettings>("enable_upnp", &GeneralSettings::enable_upnp)};
     }
 };
@@ -218,8 +235,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    trophy_notification_duration, show_splash,
                                    trophy_notification_side, connected_to_network,
                                    discord_rpc_enabled, show_fps_counter, console_language,
-                                   big_picture_scale, shadnet_server, signaling_addr,
-                                   signaling_port, enable_upnp)
+                                   big_picture_scale, shadnet_server, shadnet_webapi_server,
+                                   signaling_info, enable_upnp)
 
 // -------------------------------
 // Log settings
@@ -334,6 +351,8 @@ struct AudioSettings {
     Setting<std::string> openal_mic_device{"Default Device"};
     Setting<std::string> openal_main_output_device{"Default Device"};
     Setting<std::string> openal_padSpk_output_device{"Default Device"};
+    Setting<u32> openal_hrtf{OpenALHrtfMode::HrtfAuto};
+    Setting<u32> openal_output_mode{OpenALOutputMode::OutputAuto};
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -347,14 +366,16 @@ struct AudioSettings {
             make_override<AudioSettings>("openal_main_output_device",
                                          &AudioSettings::openal_main_output_device),
             make_override<AudioSettings>("openal_padSpk_output_device",
-                                         &AudioSettings::openal_padSpk_output_device)};
+                                         &AudioSettings::openal_padSpk_output_device),
+            make_override<AudioSettings>("openal_hrtf", &AudioSettings::openal_hrtf),
+            make_override<AudioSettings>("openal_output_mode", &AudioSettings::openal_output_mode)};
     }
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioSettings, audio_backend, sdl_mic_device,
                                    sdl_main_output_device, sdl_padSpk_output_device,
                                    openal_mic_device, openal_main_output_device,
-                                   openal_padSpk_output_device)
+                                   openal_padSpk_output_device, openal_hrtf, openal_output_mode)
 
 // -------------------------------
 // GPU settings
@@ -516,6 +537,10 @@ private:
     VulkanSettings m_vulkan{};
     ConfigMode m_configMode{ConfigMode::Default};
 
+    // Runtime-only override: when true, IsShadNetEnabled() reports false for the
+    // rest of this run regardless of the persisted setting
+    std::atomic<bool> m_shadnet_session_disabled{false};
+
     bool m_loaded{false};
 
     static std::shared_ptr<EmulatorSettingsImpl> s_instance;
@@ -594,7 +619,22 @@ public:
     SETTING_FORWARD_BOOL(m_general, Neo, neo_mode)
     SETTING_FORWARD_BOOL(m_general, DevKit, dev_kit_mode)
     SETTING_FORWARD(m_general, ExtraDmemInMBytes, extra_dmem_in_mbytes)
-    SETTING_FORWARD_BOOL(m_general, ShadNetEnabled, shad_net_enabled)
+    bool IsShadNetEnabled() const {
+        return m_general.shad_net_enabled.get(m_configMode) &&
+               !m_shadnet_session_disabled.load(std::memory_order_relaxed);
+    }
+    void SetShadNetEnabled(bool v, bool specific = false) {
+        m_general.shad_net_enabled.set(v, specific);
+    }
+    bool IsShadNetEnabledSetting() const {
+        return m_general.shad_net_enabled.get(m_configMode);
+    }
+    void SetShadNetSessionDisabled(bool v) {
+        m_shadnet_session_disabled.store(v, std::memory_order_relaxed);
+    }
+    bool IsShadNetSessionDisabled() const {
+        return m_shadnet_session_disabled.load(std::memory_order_relaxed);
+    }
     SETTING_FORWARD_BOOL(m_general, TrophyPopupDisabled, trophy_popup_disabled)
     SETTING_FORWARD(m_general, TrophyNotificationDuration, trophy_notification_duration)
     SETTING_FORWARD(m_general, TrophyNotificationSide, trophy_notification_side)
@@ -605,8 +645,8 @@ public:
     SETTING_FORWARD(m_general, ConsoleLanguage, console_language)
     SETTING_FORWARD(m_general, BigPictureScale, big_picture_scale)
     SETTING_FORWARD(m_general, ShadNetServer, shadnet_server)
-    SETTING_FORWARD(m_general, SignalingAddr, signaling_addr)
-    SETTING_FORWARD(m_general, SignalingPort, signaling_port)
+    SETTING_FORWARD(m_general, ShadNetWebApiServer, shadnet_webapi_server)
+    SETTING_FORWARD(m_general, SignalingInfo, signaling_info)
     SETTING_FORWARD_BOOL(m_general, UPnPEnabled, enable_upnp)
 
     // Log settings
@@ -630,6 +670,8 @@ public:
     SETTING_FORWARD(m_audio, OpenALMicDevice, openal_mic_device)
     SETTING_FORWARD(m_audio, OpenALMainOutputDevice, openal_main_output_device)
     SETTING_FORWARD(m_audio, OpenALPadSpkOutputDevice, openal_padSpk_output_device)
+    SETTING_FORWARD(m_audio, OpenALHrtf, openal_hrtf)
+    SETTING_FORWARD(m_audio, OpenALOutputMode, openal_output_mode)
 
     // Debug settings
     SETTING_FORWARD_BOOL(m_debug, DebugDump, debug_dump)

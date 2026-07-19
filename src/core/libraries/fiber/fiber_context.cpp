@@ -1,6 +1,13 @@
-# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
-# SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/types.h"
+
+#if defined(__x86_64__)
+asm(".att_syntax prefix");
+#endif
+
+asm(R"(
 .global _sceFiberSetJmp
 _sceFiberSetJmp:
     movq %rax, 0x0(%rdi)
@@ -119,3 +126,4 @@ _sceFiberSwitchEntry:
     movl $1, %edi
     call _sceFiberForceQuit
     ret
+)");

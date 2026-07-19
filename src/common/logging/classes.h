@@ -52,6 +52,7 @@ constexpr auto Lib_Http = "Lib.Http";                               ///< The Lib
 constexpr auto Lib_Http2 = "Lib.Http2";                             ///< The LibSceHttp2 implementation.
 constexpr auto Lib_Ime = "Lib.Ime";                                 ///< The LibSceIme implementation
 constexpr auto Lib_ImeDialog = "Lib.ImeDialog";                     ///< The LibSceImeDialog implementation.
+constexpr auto Lib_InvitationDialog="Lib.InvitationDialog";         ///< The LibSceInvitationDialog implementation.
 constexpr auto Lib_Jpeg = "Lib.Jpeg";                               ///< The LibSceJpeg implementation.
 constexpr auto Lib_Kernel = "Lib.Kernel";                           ///< The LibKernel implementation.
 constexpr auto Lib_LibcInternal = "Lib.LibcInternal";               ///< The LibSceLibcInternal implementation.
@@ -107,9 +108,11 @@ constexpr auto Lib_WebBrowserDialog = "Lib.WebBrowserDialog";       ///< The Lib
 constexpr auto Lib_Zlib = "Lib.Zlib";                               ///< The LibSceZlib implementation.
 constexpr auto Loader = "Loader";                                   ///< ROM loader
 constexpr auto Log = "Log";                                         ///< Messages about the log system itself
+constexpr auto NpHandler = "NpHandler";                             ///< NpHandler shadNet manager
 constexpr auto Render = "Render";                                   ///< Video Core
 constexpr auto Render_Recompiler = "Render.Recompiler";             ///< Shader recompiler
 constexpr auto Render_Vulkan = "Render.Vulkan";                     ///< Vulkan backend
+constexpr auto ShadNet = "ShadNet";                                 ///< shadNet binary protocol client
 constexpr auto Tty = "Tty";                                         ///< Debug output from emu
 // clang-format on
 } // namespace Common::Log::Class

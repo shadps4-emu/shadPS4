@@ -76,6 +76,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_Http2, nullptr},
     {Class::Lib_Ime, nullptr},
     {Class::Lib_ImeDialog, nullptr},
+    {Class::Lib_InvitationDialog, nullptr},
     {Class::Lib_Jpeg, nullptr},
     {Class::Lib_Kernel, nullptr},
     {Class::Lib_LibcInternal, nullptr},
@@ -131,9 +132,11 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_Zlib, nullptr},
     {Class::Loader, nullptr},
     {Class::Log, nullptr},
+    {Class::NpHandler, nullptr},
     {Class::Render, nullptr},
     {Class::Render_Recompiler, nullptr},
     {Class::Render_Vulkan, nullptr},
+    {Class::ShadNet, nullptr},
     {Class::Tty, nullptr},
 };
 

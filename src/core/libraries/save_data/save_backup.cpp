@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <deque>
 #include <mutex>
+#include <ranges>
 #include <semaphore>
 
 #include <magic_enum/magic_enum.hpp>

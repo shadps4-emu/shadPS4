@@ -165,11 +165,6 @@ public:
         return vertex_input_dynamic_state;
     }
 
-    /// Returns true when the nullDescriptor feature of VK_EXT_robustness2 is supported.
-    bool IsNullDescriptorSupported() const {
-        return robustness2 && robustness2_features.nullDescriptor;
-    }
-
     /// Returns true when VK_KHR_fragment_shader_barycentric is supported.
     bool IsFragmentShaderBarycentricSupported() const {
         return fragment_shader_barycentric;
@@ -188,11 +183,6 @@ public:
     /// Returns true when VK_EXT_primitive_topology_list_restart is supported for patch lists.
     bool IsPatchListRestartSupported() const {
         return list_restart && list_restart_features.primitiveTopologyPatchListRestart;
-    }
-
-    /// Returns true when VK_EXT_legacy_vertex_attributes is supported.
-    bool IsLegacyVertexAttributesSupported() const {
-        return legacy_vertex_attributes;
     }
 
     /// Returns true when VK_EXT_provoking_vertex is supported.
@@ -400,6 +390,17 @@ public:
         return properties.limits.maxFramebufferHeight;
     }
 
+    /// Returns the maximum number of samplers that can be allocated at once.
+    u32 GetMaxSamplerAllocationCount() const {
+        if (driver_id == vk::DriverId::eMesaKosmickrisp) {
+            // FIXME: KosmicKrisp has an internal 1024 unique sampler limit before
+            // vkCreateSampler starts returning VK_ERROR_OUT_OF_HOST_MEMORY. Work
+            // around this for now by reducing the value to 1024.
+            return 1024;
+        }
+        return properties.limits.maxSamplerAllocationCount;
+    }
+
     /// Returns the sample count flags supported by color buffers.
     vk::SampleCountFlags GetColorSampleCounts() const {
         return properties.limits.framebufferColorSampleCounts;
@@ -474,7 +475,6 @@ private:
     vk::PhysicalDeviceVulkan12Features vk12_features;
     vk::PhysicalDeviceVulkan13Features vk13_features;
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
-    vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;
     vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
     vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
         workgroup_memory_explicit_layout_features;
@@ -499,9 +499,7 @@ private:
     bool dynamic_state_3{};
     bool depth_range_unrestricted{};
     bool vertex_input_dynamic_state{};
-    bool robustness2{};
     bool list_restart{};
-    bool legacy_vertex_attributes{};
     bool provoking_vertex{};
     bool shader_stencil_export{};
     bool image_load_store_lod{};
