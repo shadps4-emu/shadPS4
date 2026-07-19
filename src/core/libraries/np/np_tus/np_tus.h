@@ -42,6 +42,89 @@ struct OrbisNpTssGetDataOptParam {
     OrbisNpTssIfModifiedSinceParam* ifParam;
 };
 
+struct OrbisNpTusDataStatus {
+    OrbisNpId ownerId;
+    s32 hasData;
+    Libraries::Rtc::OrbisRtcTick lastChangedDate;
+    OrbisNpId lastChangedAuthorId;
+    u8 pad[4];
+    void* data;
+    u64 dataSize;
+    u8 pad[4];
+};
+
+struct OrbisNpTusDataInfo {
+    u64 size;
+    u8 data[384];
+};
+
+struct OrbisNpTusDataStatusA {
+    OrbisNpOnlineId ownerId;
+    u8 reserved1[16];
+    s32 hasData;
+    Libraries::Rtc::OrbisRtcTick lastChangedDate;
+    OrbisNpOnlineId lastChangedAuthorId;
+    u8 reserved2[16];
+    u8 pad[4];
+    void* data;
+    u64 dataSize;
+    OrbisNpTusDataInfo info;
+    OrbisNpAccountId ownerAccountId;
+    OrbisNpAccountId lastChangedAuthorAccountId;
+    u8 reserved[16];
+} SceNpTusDataStatusA;
+
+struct OrbisNpTusVariable {
+    OrbisNpId ownerId;
+    s32 hasData;
+    u8 pad[4];
+    Libraries::Rtc::OrbisRtcTick lastChangedDate;
+    OrbisNpId lastChangedAuthorId;
+    s64 variable;
+    s64 oldVariable;
+    u8 reserved[16];
+} SceNpTusVariable;
+
+struct OrbisNpTusVariableA {
+    OrbisNpOnlineId ownerId;
+    u8 reserved1[16];
+    s32 hasData;
+    Libraries::Rtc::OrbisRtcTick lastChangedDate;
+    u8 pad[4];
+    OrbisNpOnlineId lastChangedAuthorId;
+    u8 reserved2[16];
+    s64 variable;
+    s64 oldVariable;
+    OrbisNpAccountId ownerAccountId;
+    OrbisNpAccountId lastChangedAuthorAccountId;
+};
+
+struct OrbisNpTusDataStatusForCrossSave {
+    OrbisNpId ownerId;
+    s32 hasData;
+    Libraries::Rtc::OrbisRtcTick lastChangedDate;
+    OrbisNpId lastChangedAuthorId;
+    u8 pad[4];
+    void* data;
+    u64 dataSize;
+    OrbisNpTusDataInfo info;
+    OrbisNpAccountId ownerAccountId;
+    OrbisNpAccountId lastChangedAuthorAccountId;
+    u8 reserved[16];
+};
+
+struct OrbisNpTusVariableForCrossSave {
+    OrbisNpId ownerId;
+    s32 hasData;
+    Libraries::Rtc::OrbisRtcTick lastChangedDate;
+    u8 pad[4];
+    OrbisNpId lastChangedAuthorId;
+    s64 variable;
+    s64 oldVariable;
+    OrbisNpAccountId ownerAccountId;
+    OrbisNpAccountId lastChangedAuthorAccountId;
+};
+
 s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx();
 s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtxA(OrbisNpServiceLabel serviceLabel,
                                            Libraries::UserService::OrbisUserServiceUserId userId);
