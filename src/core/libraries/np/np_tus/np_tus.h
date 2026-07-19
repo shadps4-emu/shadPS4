@@ -12,6 +12,33 @@ class SymbolsResolver;
 
 namespace Libraries::Np::NpTus {
 
+enum OrbisNpTusOpeType : s32 {
+    ORBIS_NP_TUS_OPETYPE_EQUAL = 1,
+    ORBIS_NP_TUS_OPETYPE_NOT_EQUAL = 2,
+    ORBIS_NP_TUS_OPETYPE_GREATER_THAN = 3,
+    ORBIS_NP_TUS_OPETYPE_GREATER_OR_EQUAL = 4,
+    ORBIS_NP_TUS_OPETYPE_LESS_THAN = 5,
+    ORBIS_NP_TUS_OPETYPE_LESS_OR_EQUAL = 6,
+};
+
+enum OrbisNpTusDataStatusSortType : s32 {
+    ORBIS_NP_TUS_DATASTATUS_SORTTYPE_DESCENDING_DATE = 1,
+    ORBIS_NP_TUS_DATASTATUS_SORTTYPE_ASCENDING_DATE = 2,
+};
+
+enum OrbisNpTusVariableSortType : s32 {
+    ORBIS_NP_TUS_VARIABLE_SORTTYPE_DESCENDING_DATE = 1,
+    ORBIS_NP_TUS_VARIABLE_SORTTYPE_ASCENDING_DATE = 2,
+    ORBIS_NP_TUS_VARIABLE_SORTTYPE_DESCENDING_VALUE = 3,
+    ORBIS_NP_TUS_VARIABLE_SORTTYPE_ASCENDING_VALUE = 4,
+};
+
+struct OrbisNpTusVirtualUserId {
+    char data[ORBIS_NP_ONLINEID_MAX_LENGTH];
+    char term;
+    char dummy[3];
+};
+
 enum class OrbisNpTssStatus : int {
     Ok = 0,
     Partial = 1,
@@ -59,20 +86,19 @@ struct OrbisNpTusDataStatus {
 };
 
 struct OrbisNpTusDataStatusA {
-    OrbisNpOnlineId ownerId;
-    u8 reserved1[16];
-    s32 hasData;
-    Libraries::Rtc::OrbisRtcTick lastChangedDate;
-    OrbisNpOnlineId lastChangedAuthorId;
-    u8 reserved2[16];
-    u8 pad[4];
+    OrbisNpOnlineId onlineId;
+    u8 pad[16];
+    int set;
+    Libraries::Rtc::OrbisRtcTick lastChanged;
+    OrbisNpOnlineId lastChangedAuthor;
+    u8 pad2[20];
     void* data;
     u64 dataSize;
     OrbisNpTusDataInfo info;
-    OrbisNpAccountId ownerAccountId;
-    OrbisNpAccountId lastChangedAuthorAccountId;
-    u8 reserved[16];
-} SceNpTusDataStatusA;
+    OrbisNpAccountId owner;
+    OrbisNpAccountId lastChangedAuthorId;
+    u8 pad3[16];
+};
 
 struct OrbisNpTusVariable {
     OrbisNpId ownerId;
@@ -83,7 +109,7 @@ struct OrbisNpTusVariable {
     s64 variable;
     s64 oldVariable;
     u8 reserved[16];
-} SceNpTusVariable;
+};
 
 struct OrbisNpTusVariableA {
     OrbisNpOnlineId ownerId;
@@ -93,6 +119,18 @@ struct OrbisNpTusVariableA {
     u8 pad[4];
     OrbisNpOnlineId lastChangedAuthorId;
     u8 reserved2[16];
+    s64 variable;
+    s64 oldVariable;
+    OrbisNpAccountId ownerAccountId;
+    OrbisNpAccountId lastChangedAuthorAccountId;
+};
+
+struct OrbisNpTusVariableForCrossSave {
+    OrbisNpId ownerId;
+    s32 hasData;
+    Libraries::Rtc::OrbisRtcTick lastChangedDate;
+    u8 pad[4];
+    OrbisNpId lastChangedAuthorId;
     s64 variable;
     s64 oldVariable;
     OrbisNpAccountId ownerAccountId;
@@ -111,18 +149,6 @@ struct OrbisNpTusDataStatusForCrossSave {
     OrbisNpAccountId ownerAccountId;
     OrbisNpAccountId lastChangedAuthorAccountId;
     u8 reserved[16];
-};
-
-struct OrbisNpTusVariableForCrossSave {
-    OrbisNpId ownerId;
-    s32 hasData;
-    Libraries::Rtc::OrbisRtcTick lastChangedDate;
-    u8 pad[4];
-    OrbisNpId lastChangedAuthorId;
-    s64 variable;
-    s64 oldVariable;
-    OrbisNpAccountId ownerAccountId;
-    OrbisNpAccountId lastChangedAuthorAccountId;
 };
 
 s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx();
