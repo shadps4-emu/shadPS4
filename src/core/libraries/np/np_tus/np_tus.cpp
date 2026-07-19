@@ -3,6 +3,7 @@
 
 #include <map>
 #include <core/libraries/np/np_error.h>
+#include <core/libraries/np/np_handler.h>
 #include <core/libraries/np/np_types.h>
 #include <core/libraries/system/userservice.h>
 #include "common/logging/log.h"
@@ -42,7 +43,33 @@ s32 GetRequest(int requestId, NpTusRequest** out) {
     *out = &it->second;
     return ORBIS_OK;
 }
+static s32 ResolveTus(int requestId, NpTusRequest** req_out, u32* svc_out, s32* uid_out,
+                      std::string* selfNpId_out) {
+    OrbisNpId selfNp{};
+    {
+        std::lock_guard lock(g_mutex);
+        auto rit = g_requests.find(requestId);
+        if (rit == g_requests.end()) {
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        auto cit = g_title_ctxs.find(rit->second.titleCtxId);
+        if (cit == g_title_ctxs.end()) {
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        *req_out = &rit->second;
+        *svc_out = cit->second.serviceLabel;
+        selfNp = cit->second.npId;
+    }
+    *uid_out = Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(selfNp.handle);
+    if (selfNpId_out) {
+        *selfNpId_out = std::string(selfNp.handle.data);
+    }
+    return ORBIS_OK;
+}
 
+//***********************************
+// Title context management functions
+//***********************************
 s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId) {
     if (!npId) {
         return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
@@ -83,6 +110,9 @@ s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtxA(OrbisNpServiceLabel serviceLabel,
     return sceNpTusCreateNpTitleCtxA(serviceLabel, userId);
 }
 
+//***********************************
+// Request management functions
+//***********************************
 s32 PS4_SYSV_ABI sceNpTusCreateRequest(int libCtxId) {
     LOG_INFO(Lib_NpTus, "libCtxId = {}", libCtxId);
 
@@ -114,7 +144,68 @@ s32 PS4_SYSV_ABI sceNpTusDeleteRequest(int requestId) {
     g_requests.erase(it);
     return ORBIS_OK;
 }
+//***********************************
+// Async functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpTusPollAsync(int reqId, int* result) {
+    LOG_INFO(Lib_NpTus, "reqId = {:#x}", reqId);
 
+    std::shared_ptr<TusRequestCtx> ctx;
+    {
+        std::lock_guard glock(g_mutex);
+        auto it = g_requests.find(reqId);
+        if (it == g_requests.end()) {
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        ctx = it->second.ctx;
+    }
+
+    if (!ctx) {
+        LOG_ERROR(Lib_NpTus, "request not started");
+        return 1;
+    }
+
+    std::lock_guard lock(ctx->mutex);
+    if (!ctx->result.has_value()) {
+        return 1; // still running
+    }
+    if (result) {
+        *result = *ctx->result;
+    }
+    LOG_DEBUG(Lib_NpTus, "request finished");
+    return 0;
+}
+
+//***********************************
+// TUS functions - WIP TODO
+//***********************************
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s32* slotIds,
+                                                   s64* variables, u64 variablesSize, int arrayLen,
+                                                   void* option) {
+    LOG_ERROR(Lib_NpTus,
+              "reqId = {}, npId = {}, slotIds = {}, variables = {}, variablesSize = {}, arrayLen = "
+              "{}, option = {}",
+              reqId, npId ? npId->handle.data : "", fmt::ptr(slotIds), fmt::ptr(variables),
+              variablesSize, arrayLen, fmt::ptr(option));
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    if (!slotIds || !variables || arrayLen < 1) {
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    return ORBIS_OK;
+}
+
+//***********************************
+// TSS functions - WIP TODO
+//***********************************
 s32 PS4_SYSV_ABI sceNpTssGetDataAsync(int reqId, s32 slotId, OrbisNpTssDataStatus* dataStatus,
                                       u64 dataStatusSize, void* data, u64 dataSize,
                                       OrbisNpTssGetDataOptParam* option) { // dummy atm TODO
@@ -512,11 +603,6 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAAsync() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAVUser() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
@@ -675,35 +761,6 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableVUser() {
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableVUserAsync() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusPollAsync(int reqId, int* result) {
-    LOG_INFO(Lib_NpTus, "reqId = {:#x}", reqId);
-
-    std::shared_ptr<TusRequestCtx> ctx;
-    {
-        std::lock_guard glock(g_mutex);
-        auto it = g_requests.find(reqId);
-        if (it == g_requests.end()) {
-            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
-        }
-        ctx = it->second.ctx;
-    }
-
-    if (!ctx) {
-        LOG_ERROR(Lib_NpTus, "request not started");
-        return 1;
-    }
-
-    std::lock_guard lock(ctx->mutex);
-    if (!ctx->result.has_value()) {
-        return 1; // still running
-    }
-    if (result) {
-        *result = *ctx->result;
-    }
-    LOG_DEBUG(Lib_NpTus, "request finished");
-    return 0;
 }
 
 s32 PS4_SYSV_ABI sceNpTusSetData() {
