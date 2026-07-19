@@ -286,7 +286,7 @@ s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
     const auto info_dim = info.props.is_block ? 2 : 0;
     const auto mip_w = std::max(info.size.width >> (mip + info_dim), 1u);
     const auto mip_h = std::max(info.size.height >> (mip + info_dim), 1u);
-    const auto mip_p = std::max(info.pitch >> (mip + info_dim), 1u);
+    const auto mip_p = std::max(info.mips_layout[mip].pitch >> info_dim, 1u);
 
     const auto this_dim = props.is_block ? 2 : 0;
     const auto this_w = std::max(size.width >> this_dim, 1u);
