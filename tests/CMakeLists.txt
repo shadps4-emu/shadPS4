@@ -11,6 +11,7 @@ FetchContent_MakeAvailable(googletest)
 
 set(TEST_TARGETS
     shadps4_settings_test
+    shadps4_ngs2_test
     shadps4_buffer_cache_test
     shadps4_gcn_test
 )
@@ -35,6 +36,30 @@ set(SETTINGS_TEST_SOURCES
 
     # Tests
     test_emulator_settings.cpp
+)
+
+set(NGS2_TEST_SOURCES
+    # Under test
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/ngs2/ngs2_impl.cpp
+
+    # Minimal common and kernel support
+    ${CMAKE_SOURCE_DIR}/src/core/emulator_settings.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/emulator_state.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/kernel/sync/mutex.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/path_util.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/assert.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/error.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/string_util.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/logging/log.cpp
+
+    # Stubs that replace dependencies
+    stubs/common_stub.cpp
+    stubs/core_stub.cpp
+    stubs/scm_rev_stub.cpp
+    stubs/sdl_stub.cpp
+
+    # Tests
+    test_ngs2.cpp
 )
 
 set(BUFFER_CACHE_TEST_SOURCES
@@ -138,6 +163,7 @@ set(GCN_TEST_SOURCES
 )
 
 add_executable(shadps4_settings_test ${SETTINGS_TEST_SOURCES})
+add_executable(shadps4_ngs2_test ${NGS2_TEST_SOURCES})
 add_executable(shadps4_buffer_cache_test ${BUFFER_CACHE_TEST_SOURCES})
 add_executable(shadps4_gcn_test ${GCN_TEST_SOURCES})
 
@@ -151,6 +177,14 @@ foreach(t ${TEST_TARGETS})
 endforeach()
 
 target_link_libraries(shadps4_settings_test PRIVATE
+    GTest::gtest_main
+    fmt::fmt
+    nlohmann_json::nlohmann_json
+    toml11::toml11
+    SDL3::SDL3
+    spdlog::spdlog
+)
+target_link_libraries(shadps4_ngs2_test PRIVATE
     GTest::gtest_main
     fmt::fmt
     nlohmann_json::nlohmann_json
