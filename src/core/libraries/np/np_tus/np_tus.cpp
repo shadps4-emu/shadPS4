@@ -34,6 +34,19 @@ constexpr int TusMaxSlotsPerRequest = 64;
 static std::mutex g_mutex;
 static std::map<int, NpTusTitleContext> g_title_ctxs;
 static std::map<int, NpTusRequest> g_requests;
+
+static s32 FakeAsyncComplete(int reqId,
+                             s32 result = ORBIS_OK) { // temp function to complete async requests
+    std::lock_guard lock(g_mutex);
+    auto it = g_requests.find(reqId);
+    if (it == g_requests.end()) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+    }
+    auto ctx = std::make_shared<TusRequestCtx>();
+    ctx->SetResult(result);
+    it->second.ctx = std::move(ctx);
+    return ORBIS_OK;
+}
 static int g_next_ctx_id = 1; // 0 stays invalid
 static int g_next_req_id = 1;
 
@@ -111,6 +124,29 @@ s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtxA(OrbisNpServiceLabel serviceLabel,
                                            Libraries::UserService::OrbisUserServiceUserId userId) {
     LOG_INFO(Lib_NpTus, "redirecting to sceNpTusCreateNpTitleCtxA");
     return sceNpTusCreateNpTitleCtxA(serviceLabel, userId);
+}
+
+s32 PS4_SYSV_ABI sceNpTusDeleteNpTitleCtx(int ctxId) {
+    LOG_INFO(Lib_NpTus, "ctxId = {}", ctxId);
+
+    std::lock_guard lock(g_mutex);
+    auto it = g_title_ctxs.find(ctxId);
+    if (it == g_title_ctxs.end()) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+    }
+
+    for (auto rit = g_requests.begin(); rit != g_requests.end();) {
+        if (rit->second.titleCtxId == ctxId) {
+            if (rit->second.ctx) {
+                rit->second.ctx->SetResult(ORBIS_NP_COMMUNITY_ERROR_ABORTED);
+            }
+            rit = g_requests.erase(rit);
+        } else {
+            ++rit;
+        }
+    }
+    g_title_ctxs.erase(it);
+    return ORBIS_OK;
 }
 
 //***********************************
@@ -518,9 +554,9 @@ s32 PS4_SYSV_ABI sceNpTssGetSmallStorage() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTssGetSmallStorageAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTssGetSmallStorageAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTssGetStorage() {
@@ -528,9 +564,9 @@ s32 PS4_SYSV_ABI sceNpTssGetStorage() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTssGetStorageAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTssGetStorageAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariable() {
@@ -543,14 +579,14 @@ s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAVUser() {
@@ -558,9 +594,9 @@ s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSave() {
@@ -568,9 +604,9 @@ s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSave() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUser() {
@@ -578,9 +614,9 @@ s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUser() {
@@ -588,9 +624,9 @@ s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusChangeModeForOtherSaveDataOwners() {
@@ -613,14 +649,14 @@ s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataVUser() {
@@ -628,9 +664,9 @@ s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariable() {
@@ -643,14 +679,14 @@ s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUser() {
@@ -658,14 +694,9 @@ s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusDeleteNpTitleCtx() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetData() {
@@ -678,14 +709,14 @@ s32 PS4_SYSV_ABI sceNpTusGetDataA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetDataAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetDataAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetDataAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetDataAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetDataAVUser() {
@@ -693,9 +724,9 @@ s32 PS4_SYSV_ABI sceNpTusGetDataAVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetDataAVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetDataAVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSave() {
@@ -703,9 +734,9 @@ s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSave() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveVUser() {
@@ -713,9 +744,9 @@ s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetDataVUser() {
@@ -723,9 +754,9 @@ s32 PS4_SYSV_ABI sceNpTusGetDataVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetDataVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetDataVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatus() {
@@ -738,14 +769,14 @@ s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSave() {
@@ -753,9 +784,9 @@ s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSave() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSaveAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSaveAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetFriendsVariable() {
@@ -768,14 +799,14 @@ s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSave() {
@@ -783,9 +814,9 @@ s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSave() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSaveAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSaveAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatus() {
@@ -798,14 +829,14 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAVUser() {
@@ -813,9 +844,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSave() {
@@ -823,9 +854,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSave() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUser() {
@@ -833,9 +864,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUser() {
@@ -843,9 +874,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableA() {
@@ -853,9 +884,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSave() {
@@ -863,9 +894,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSave() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUser() {
@@ -873,9 +904,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableVUser() {
@@ -883,9 +914,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatus() {
@@ -898,14 +929,14 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAVUser() {
@@ -913,9 +944,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSave() {
@@ -923,9 +954,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSave() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUser() {
@@ -933,9 +964,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusVUser() {
@@ -943,9 +974,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariable() {
@@ -958,14 +989,14 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAVUser() {
@@ -973,9 +1004,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSave() {
@@ -983,9 +1014,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSave() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUser() {
@@ -993,9 +1024,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableVUser() {
@@ -1003,9 +1034,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusSetData() {
@@ -1018,14 +1049,14 @@ s32 PS4_SYSV_ABI sceNpTusSetDataA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusSetDataAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusSetDataAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
-s32 PS4_SYSV_ABI sceNpTusSetDataAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusSetDataAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusSetDataAVUser() {
@@ -1033,9 +1064,9 @@ s32 PS4_SYSV_ABI sceNpTusSetDataAVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusSetDataAVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusSetDataAVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusSetDataVUser() {
@@ -1043,9 +1074,9 @@ s32 PS4_SYSV_ABI sceNpTusSetDataVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusSetDataVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusSetDataVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableA() {
@@ -1053,9 +1084,9 @@ s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusSetThreadParam() {
@@ -1078,14 +1109,14 @@ s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAVUser() {
@@ -1093,9 +1124,9 @@ s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSave() {
@@ -1103,9 +1134,9 @@ s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSave() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUser() {
@@ -1113,9 +1144,9 @@ s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUser() {
@@ -1123,9 +1154,9 @@ s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUser() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUserAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
