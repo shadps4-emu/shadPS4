@@ -446,6 +446,7 @@ OPCODE(ImageAtomicCmpSwap32,                                U32,            Opaq
 OPCODE(CubeFaceIndex,                                       F32,            F32x3,                                                                          )
 
 // Warp operations
+OPCODE(GuestLaneId,                                         U32,                                                                                            )
 OPCODE(LaneId,                                              U32,                                                                                            )
 OPCODE(WarpId,                                              U32,                                                                                            )
 OPCODE(QuadShuffle,                                         U32,            U32,            U32                                                             )
