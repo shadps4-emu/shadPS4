@@ -125,6 +125,7 @@ set(GCN_TEST_SOURCES
     gcn/translator.cpp
 
     # Tests
+    gcn/test_dma_fault_bitmap.cpp
     gcn/test_gcn_instructions.cpp
 )
 

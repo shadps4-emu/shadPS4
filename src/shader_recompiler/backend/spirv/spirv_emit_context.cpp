@@ -1186,9 +1186,10 @@ Id EmitContext::DefineGetBdaPointer() {
     const auto page_mask{OpShiftLeftLogical(U32[1], u32_one_value, page_mod32)};
     const auto fault_ptr{
         OpAccessChain(fault_pointer_type, fault_buffer_id, u32_zero_value, page_div32)};
-    const auto fault_value{OpLoad(U32[1], fault_ptr)};
-    const auto fault_value_masked{OpBitwiseOr(U32[1], fault_value, page_mask)};
-    OpStore(fault_ptr, fault_value_masked);
+    // Different invocations can fault pages covered by the same bitmap word. A load/OR/store
+    // sequence can lose one of those faults, so update the shared device buffer atomically.
+    const auto device_scope{ConstU32(static_cast<u32>(spv::Scope::Device))};
+    OpAtomicOr(U32[1], fault_ptr, device_scope, u32_zero_value, page_mask);
 
     // Return null pointer
     const auto fallback_result{u64_zero_value};
