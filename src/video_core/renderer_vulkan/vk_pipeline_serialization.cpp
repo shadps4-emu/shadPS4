@@ -299,67 +299,78 @@ void PipelineCache::WarmUp() {
         return;
     }
 
-    Storage::DataBase::Instance().Open();
+    auto& database = Storage::DataBase::Instance();
+    database.Open();
+
+    const auto save_profile = [&] {
+        if (!database.FinishPreload()) {
+            return;
+        }
+
+        std::vector<u8> data(sizeof(profile));
+        std::memcpy(data.data(), &profile, sizeof(profile));
+        database.Save(Storage::BlobType::ShaderProfile, "profile", std::move(data));
+    };
 
     // Check if cache is compatible
     std::vector<u8> profile_data{};
-    Storage::DataBase::Instance().Load(Storage::BlobType::ShaderProfile, "profile", profile_data);
+    database.Load(Storage::BlobType::ShaderProfile, "profile", profile_data);
     if (profile_data.empty()) {
-        Storage::DataBase::Instance().FinishPreload();
-
-        profile_data.resize(sizeof(profile));
-        std::memcpy(profile_data.data(), &profile, sizeof(profile));
-        Storage::DataBase::Instance().Save(Storage::BlobType::ShaderProfile, "profile",
-                                           std::move(profile_data));
+        save_profile();
         return;
     }
+    bool cache_compatible{};
     if (profile_data.size() != sizeof(Shader::Profile)) {
         LOG_WARNING(Render,
-                    "Pipeline cache profile has unexpected size ({} != {}). Ignoring the cache",
+                    "Pipeline cache profile has unexpected size ({} != {}). Rebuilding the cache",
                     profile_data.size(), sizeof(Shader::Profile));
-        Storage::DataBase::Instance().Close();
-        return;
+    } else {
+        Shader::Profile cached_profile{};
+        std::memcpy(&cached_profile, profile_data.data(), sizeof(cached_profile));
+        cache_compatible = cached_profile == profile;
+        if (!cache_compatible) {
+            LOG_WARNING(
+                Render,
+                "Pipeline cache isn't compatible with current system. Rebuilding the cache");
+        }
     }
-
-    Shader::Profile cached_profile{};
-    std::memcpy(&cached_profile, profile_data.data(), sizeof(cached_profile));
-    if (cached_profile != profile) {
-        LOG_WARNING(Render,
-                    "Pipeline cache isn't compatible with current system. Ignoring the cache");
-        Storage::DataBase::Instance().Close();
+    if (!cache_compatible) {
+        if (!database.Reset()) {
+            return;
+        }
+        save_profile();
         return;
     }
 
     u32 num_pipelines{};
     u32 num_total_pipelines{};
 
-    Storage::DataBase::Instance().ForEachBlob(
-        Storage::BlobType::PipelineKey, [&](std::vector<u8>&& data) {
-            ++num_total_pipelines;
+    database.ForEachBlob(Storage::BlobType::PipelineKey, [&](std::vector<u8>&& data) {
+        ++num_total_pipelines;
 
-            Serialization::Archive ar{std::move(data)};
-            Serialization::Reader pldata{ar};
+        Serialization::Archive ar{std::move(data)};
+        Serialization::Reader pldata{ar};
 
-            u32 version{};
-            pldata.Read(version);
-            if (version != Serialization::PipelineKeyVersion) {
-                return;
-            }
+        u32 version{};
+        pldata.Read(version);
+        if (version != Serialization::PipelineKeyVersion) {
+            return;
+        }
 
-            u32 is_compute{};
-            pldata.Read(is_compute);
+        u32 is_compute{};
+        pldata.Read(is_compute);
 
-            bool result{};
-            if (is_compute) {
-                result = LoadComputePipeline(ar);
-            } else {
-                result = LoadGraphicsPipeline(ar);
-            }
+        bool result{};
+        if (is_compute) {
+            result = LoadComputePipeline(ar);
+        } else {
+            result = LoadGraphicsPipeline(ar);
+        }
 
-            if (result) {
-                ++num_pipelines;
-            }
-        });
+        if (result) {
+            ++num_pipelines;
+        }
+    });
 
     LOG_INFO(Render, "Preloaded {} pipelines", num_pipelines);
     if (num_total_pipelines > num_pipelines) {
@@ -367,7 +378,7 @@ void PipelineCache::WarmUp() {
                     num_total_pipelines - num_pipelines);
     }
 
-    Storage::DataBase::Instance().FinishPreload();
+    database.FinishPreload();
 }
 
 void PipelineCache::Sync() {

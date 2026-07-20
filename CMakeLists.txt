@@ -1111,6 +1111,9 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/host_passes/fsr_pass.h
                src/video_core/renderer_vulkan/host_passes/pp_pass.cpp
                src/video_core/renderer_vulkan/host_passes/pp_pass.h
+               src/video_core/host_shader_cache.cpp
+               src/video_core/host_shader_cache.h
+               src/video_core/host_shaders/host_shader.h
                src/video_core/texture_cache/blit_helper.cpp
                src/video_core/texture_cache/blit_helper.h
                src/video_core/texture_cache/host_compatibility.cpp
@@ -1128,8 +1131,11 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/texture_cache/tile_manager.cpp
                src/video_core/texture_cache/tile_manager.h
                src/video_core/texture_cache/types.h
+               src/video_core/cache_archive.cpp
+               src/video_core/cache_archive.h
                src/video_core/cache_storage.cpp
                src/video_core/cache_storage.h
+               src/video_core/cache_task_queue.h
                src/video_core/page_manager.cpp
                src/video_core/page_manager.h
                src/video_core/multi_level_page_table.h

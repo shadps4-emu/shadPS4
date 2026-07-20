@@ -6,18 +6,21 @@
 #include <span>
 
 #include "common/types.h"
+#include "video_core/host_shaders/host_shader.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
 namespace Vulkan {
 
 /**
  * @brief Creates a vulkan shader module from GLSL by converting it to SPIR-V using glslang.
- * @param code The string containing GLSL code.
- * @param stage The pipeline stage the shader will be used in.
+ *
+ * @param source The named GLSL source used to identify its persistent cache.
+ * @param stage The
+ * pipeline stage the shader will be used in.
  * @param device The vulkan device handle.
  */
-vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, vk::Device device,
-                         std::vector<std::string> defines = {});
+vk::ShaderModule Compile(const HostShaders::ShaderSource& source, vk::ShaderStageFlagBits stage,
+                         vk::Device device, std::vector<std::string> defines = {});
 
 /**
  * @brief Creates a vulkan shader module from SPIR-V bytecode.
