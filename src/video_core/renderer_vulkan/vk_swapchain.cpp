@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <utility>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
@@ -17,6 +18,70 @@ static constexpr vk::SurfaceFormatKHR SURFACE_FORMAT_HDR = {
     .format = vk::Format::eA2B10G10R10UnormPack32,
     .colorSpace = vk::ColorSpaceKHR::eHdr10St2084EXT,
 };
+
+namespace {
+
+struct RetiredSwapchain {
+    vk::SwapchainKHR handle{};
+    std::vector<vk::ImageView> image_views;
+    std::vector<vk::Semaphore> image_acquired;
+    std::vector<vk::Semaphore> present_ready;
+    std::vector<vk::Fence> present_fences;
+    std::vector<u8> present_fence_pending;
+
+    explicit operator bool() const noexcept {
+        return handle || !image_views.empty() || !image_acquired.empty() ||
+               !present_ready.empty() || !present_fences.empty();
+    }
+};
+
+void WaitForRetiredSwapchain(const Instance& instance, RetiredSwapchain& retired) {
+    if (!instance.HasSwapchainMaintenance1()) {
+        std::scoped_lock queue_lock{instance.GetPresentQueueMutex()};
+        const auto result = instance.GetPresentQueue().waitIdle();
+        if (result != vk::Result::eSuccess) {
+            LOG_WARNING(Render_Vulkan, "Failed to wait for the presentation queue: {}",
+                        vk::to_string(result));
+        }
+        return;
+    }
+
+    std::vector<vk::Fence> pending_fences;
+    pending_fences.reserve(retired.present_fences.size());
+    for (std::size_t i = 0; i < retired.present_fences.size(); ++i) {
+        if (retired.present_fence_pending[i]) {
+            pending_fences.push_back(retired.present_fences[i]);
+        }
+    }
+    if (!pending_fences.empty()) {
+        const auto result = instance.GetDevice().waitForFences(pending_fences, true,
+                                                               std::numeric_limits<u64>::max());
+        ASSERT_MSG(result == vk::Result::eSuccess,
+                   "Failed waiting for retired swapchain presents: {}", vk::to_string(result));
+    }
+}
+
+void DestroyRetiredSwapchain(const Instance& instance, RetiredSwapchain& retired) {
+    const vk::Device device = instance.GetDevice();
+    WaitForRetiredSwapchain(instance, retired);
+    for (const auto image_view : retired.image_views) {
+        device.destroyImageView(image_view);
+    }
+    for (const auto semaphore : retired.image_acquired) {
+        device.destroySemaphore(semaphore);
+    }
+    for (const auto semaphore : retired.present_ready) {
+        device.destroySemaphore(semaphore);
+    }
+    for (const auto fence : retired.present_fences) {
+        device.destroyFence(fence);
+    }
+    if (retired.handle) {
+        device.destroySwapchainKHR(retired.handle);
+    }
+}
+
+} // namespace
 
 Swapchain::Swapchain(const Instance& instance_, const Frontend::WindowSDL& window_)
     : instance{instance_}, window{window_}, surface{CreateSurface(instance.GetInstance(), window)} {
@@ -33,11 +98,21 @@ Swapchain::~Swapchain() {
 }
 
 void Swapchain::Create(u32 width_, u32 height_) {
+    RetiredSwapchain retired{
+        .handle = std::exchange(swapchain, {}),
+        .image_views = std::move(images_view),
+        .image_acquired = std::move(image_acquired),
+        .present_ready = std::move(present_ready),
+        .present_fences = std::move(present_fences),
+        .present_fence_pending = std::move(present_fence_pending),
+    };
+    images.clear();
+
     width = width_;
     height = height_;
     needs_recreation = false;
-
-    Destroy();
+    frame_index = 0;
+    image_index = 0;
 
     SetSurfaceProperties();
 
@@ -67,7 +142,7 @@ void Swapchain::Create(u32 width_, u32 height_) {
         .compositeAlpha = composite_alpha,
         .presentMode = present_mode,
         .clipped = true,
-        .oldSwapchain = nullptr,
+        .oldSwapchain = retired.handle,
     };
 
     auto [swapchain_result, chain] = instance.GetDevice().createSwapchainKHR(swapchain_info);
@@ -77,6 +152,12 @@ void Swapchain::Create(u32 width_, u32 height_) {
 
     SetupImages();
     RefreshSemaphores();
+
+    if (retired) {
+        // Creation uses oldSwapchain and never waits while holding the queue mutex. With
+        // swapchain-maintenance1, per-present fences retire only the old presentation resources.
+        DestroyRetiredSwapchain(instance, retired);
+    }
 }
 
 void Swapchain::Recreate(u32 width_, u32 height_) {
@@ -88,12 +169,6 @@ void Swapchain::Recreate(u32 width_, u32 height_) {
 void Swapchain::SetHDR(bool hdr) {
     if (needs_hdr == hdr) {
         return;
-    }
-
-    auto result = instance.GetDevice().waitIdle();
-    if (result != vk::Result::eSuccess) {
-        LOG_WARNING(ImGui, "Failed to wait for Vulkan device idle on mode change: {}",
-                    vk::to_string(result));
     }
 
     needs_hdr = hdr;
@@ -128,8 +203,27 @@ bool Swapchain::AcquireNextImage() {
 }
 
 bool Swapchain::Present() {
+    vk::SwapchainPresentFenceInfoEXT present_fence_info{};
+    if (instance.HasSwapchainMaintenance1()) {
+        if (present_fence_pending[image_index]) {
+            const auto wait_result = instance.GetDevice().waitForFences(
+                present_fences[image_index], true, std::numeric_limits<u64>::max());
+            ASSERT_MSG(wait_result == vk::Result::eSuccess,
+                       "Failed waiting for reusable swapchain present fence: {}",
+                       vk::to_string(wait_result));
+            present_fence_pending[image_index] = false;
+        }
+        const auto reset_result = instance.GetDevice().resetFences(present_fences[image_index]);
+        ASSERT_MSG(reset_result == vk::Result::eSuccess,
+                   "Failed resetting swapchain present fence: {}", vk::to_string(reset_result));
+        present_fence_info = {
+            .swapchainCount = 1,
+            .pFences = &present_fences[image_index],
+        };
+    }
 
     const vk::PresentInfoKHR present_info = {
+        .pNext = instance.HasSwapchainMaintenance1() ? &present_fence_info : nullptr,
         .waitSemaphoreCount = 1,
         .pWaitSemaphores = &present_ready[image_index],
         .swapchainCount = 1,
@@ -137,7 +231,12 @@ bool Swapchain::Present() {
         .pImageIndices = &image_index,
     };
 
+    std::scoped_lock queue_lock{instance.GetPresentQueueMutex()};
     auto result = instance.GetPresentQueue().presentKHR(present_info);
+    if (instance.HasSwapchainMaintenance1() &&
+        (result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR)) {
+        present_fence_pending[image_index] = true;
+    }
     if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
         needs_recreation = true;
     } else {
@@ -255,37 +354,30 @@ void Swapchain::SetSurfaceProperties() {
 }
 
 void Swapchain::Destroy() {
-    vk::Device device = instance.GetDevice();
-    const auto wait_result = device.waitIdle();
-    if (wait_result != vk::Result::eSuccess) {
-        LOG_WARNING(Render_Vulkan, "Failed to wait for device to become idle: {}",
-                    vk::to_string(wait_result));
+    RetiredSwapchain retired{
+        .handle = std::exchange(swapchain, {}),
+        .image_views = std::move(images_view),
+        .image_acquired = std::move(image_acquired),
+        .present_ready = std::move(present_ready),
+        .present_fences = std::move(present_fences),
+        .present_fence_pending = std::move(present_fence_pending),
+    };
+    images.clear();
+    if (!retired) {
+        return;
     }
 
-    for (auto& image_view : images_view) {
-        device.destroyImageView(image_view);
-    }
-    images_view.clear();
-
-    if (swapchain) {
-        device.destroySwapchainKHR(swapchain);
-    }
-
-    for (const auto& sem : image_acquired) {
-        device.destroySemaphore(sem);
-    }
-    for (const auto& sem : present_ready) {
-        device.destroySemaphore(sem);
-    }
-
-    image_acquired.clear();
-    present_ready.clear();
+    DestroyRetiredSwapchain(instance, retired);
 }
 
 void Swapchain::RefreshSemaphores() {
     const vk::Device device = instance.GetDevice();
     image_acquired.resize(image_count);
     present_ready.resize(image_count);
+    if (instance.HasSwapchainMaintenance1()) {
+        present_fences.resize(image_count);
+        present_fence_pending.assign(image_count, false);
+    }
 
     for (vk::Semaphore& semaphore : image_acquired) {
         auto [semaphore_result, sem] = device.createSemaphore({});
@@ -300,10 +392,20 @@ void Swapchain::RefreshSemaphores() {
                    "Failed to create present ready semaphore: {}", vk::to_string(semaphore_result));
         semaphore = sem;
     }
+    for (vk::Fence& fence : present_fences) {
+        auto [fence_result, created_fence] =
+            device.createFence({.flags = vk::FenceCreateFlagBits::eSignaled});
+        ASSERT_MSG(fence_result == vk::Result::eSuccess,
+                   "Failed to create swapchain present fence: {}", vk::to_string(fence_result));
+        fence = created_fence;
+    }
 
     for (u32 i = 0; i < image_count; ++i) {
         SetObjectName(device, image_acquired[i], "Swapchain Semaphore: image_acquired {}", i);
         SetObjectName(device, present_ready[i], "Swapchain Semaphore: present_ready {}", i);
+        if (instance.HasSwapchainMaintenance1()) {
+            SetObjectName(device, present_fences[i], "Swapchain Fence: present_done {}", i);
+        }
     }
 }
 

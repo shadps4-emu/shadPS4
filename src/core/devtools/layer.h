@@ -14,6 +14,8 @@ public:
 
     void Draw() override;
 
+    bool NeedsRender() const override;
+
     // Must be inside a window
     static void DrawNullGpuNotice();
 

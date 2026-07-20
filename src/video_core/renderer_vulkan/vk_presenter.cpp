@@ -6,6 +6,7 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
+#include "common/thread.h"
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
@@ -497,16 +498,18 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
     : window{window_}, liverpool{liverpool_},
       instance{window, EmulatorSettings.GetGpuId(), EmulatorSettings.IsVkValidationEnabled(),
                EmulatorSettings.IsVkCrashDiagnosticEnabled()},
-      draw_scheduler{instance}, present_scheduler{instance}, flip_scheduler{instance},
-      swapchain{instance, window},
+      draw_scheduler{instance}, present_scheduler{instance}, swapchain{instance, window},
       rasterizer{std::make_unique<Rasterizer>(instance, draw_scheduler, liverpool)},
       texture_cache{rasterizer->GetTextureCache()} {
     const u32 num_images = swapchain.GetImageCount();
+    // Four source frames cover all independent ownership states during a host stall: last shown,
+    // active present, mailbox and next producer. Keep the old +1 policy for larger swapchains.
+    const u32 num_frames = std::max(num_images + 1, 4U);
     const vk::Device device = instance.GetDevice();
 
     // Create presentation frames.
-    present_frames.resize(num_images);
-    for (u32 i = 0; i < num_images; i++) {
+    present_frames.resize(num_frames);
+    for (u32 i = 0; i < num_frames; i++) {
         Frame& frame = present_frames[i];
         frame.id = i;
         auto fence = Check<"create present done fence">(
@@ -514,6 +517,7 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
         frame.present_done = fence;
         free_queue.push(&frame);
     }
+    recycle_thread = std::jthread([this](std::stop_token token) { RecycleThread(token); });
 
     fsr_settings.enable = EmulatorSettings.IsFsrEnabled();
     fsr_settings.use_rcas = EmulatorSettings.IsRcasEnabled();
@@ -535,12 +539,14 @@ Presenter::~Presenter() {
     ImGui::Friends::Unregister();
     ImGui::Layer::RemoveLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
 
+    recycle_thread.request_stop();
+    recycle_cv.notify_all();
+    recycle_thread.join();
+
     draw_scheduler.Finish();
     present_scheduler.Finish();
-    flip_scheduler.Finish();
     Check(draw_scheduler.CommandBuffer().reset());
     Check(present_scheduler.CommandBuffer().reset());
-    Check(flip_scheduler.CommandBuffer().reset());
 
     const vk::Device device = instance.GetDevice();
     for (auto& frame : present_frames) {
@@ -548,6 +554,158 @@ Presenter::~Presenter() {
         device.destroyImageView(frame.image_view);
         device.destroyFence(frame.present_done);
     }
+}
+
+void Presenter::ReturnFrame(Frame* frame) {
+    if (frame == nullptr) {
+        return;
+    }
+    std::scoped_lock lock{free_mutex};
+    free_queue.push(frame);
+    free_cv.notify_one();
+}
+
+void Presenter::RetireSubmittedFrame(Frame* frame) {
+    if (frame == nullptr) {
+        return;
+    }
+
+    vk::Result result;
+    do {
+        result = instance.GetDevice().waitForFences(frame->present_done, false,
+                                                    std::numeric_limits<u64>::max());
+    } while (result == vk::Result::eTimeout);
+    ASSERT_MSG(result == vk::Result::eSuccess, "Failed retiring presentation frame: {}",
+               vk::to_string(result));
+    ReturnFrame(frame);
+}
+
+void Presenter::RecycleFrameAsync(Frame* frame) {
+    if (frame == nullptr) {
+        return;
+    }
+    {
+        std::scoped_lock lock{recycle_mutex};
+        recycle_queue.push(frame);
+    }
+    recycle_cv.notify_one();
+}
+
+void Presenter::RecycleThread(std::stop_token token) {
+    Common::SetCurrentThreadName("shadPS4:FrameRecycle");
+    while (true) {
+        Frame* frame;
+        {
+            std::unique_lock lock{recycle_mutex};
+            recycle_cv.wait(lock, token, [this] { return !recycle_queue.empty(); });
+            if (recycle_queue.empty()) {
+                if (token.stop_requested()) {
+                    return;
+                }
+                continue;
+            }
+            frame = recycle_queue.front();
+            recycle_queue.pop();
+        }
+
+        if (frame->ready_semaphore && frame->ready_tick != 0) {
+            const vk::SemaphoreWaitInfo wait_info = {
+                .semaphoreCount = 1,
+                .pSemaphores = &frame->ready_semaphore,
+                .pValues = &frame->ready_tick,
+            };
+            const auto result =
+                instance.GetDevice().waitSemaphores(wait_info, std::numeric_limits<u64>::max());
+            ASSERT_MSG(result == vk::Result::eSuccess,
+                       "Failed waiting for a superseded presentation frame: {}",
+                       vk::to_string(result));
+        }
+        ReturnFrame(frame);
+    }
+}
+
+Presenter::FifoTimingFeedback Presenter::GetFifoTimingFeedback() const {
+    return {
+        .last_present_call_ns = last_present_call_ns.load(std::memory_order_acquire),
+        .present_call_period_ns = present_call_period_ns.load(std::memory_order_acquire),
+        .present_call_samples = present_call_samples.load(std::memory_order_acquire),
+        .generation = timing_generation.load(std::memory_order_acquire),
+        .is_fifo = swapchain.IsFIFO(),
+    };
+}
+
+void Presenter::ResetFifoTimingFeedback() {
+    std::scoped_lock lock{feedback_mutex};
+    ResetFifoTimingFeedbackLocked();
+}
+
+void Presenter::ClearPresentCallHistoryLocked() {
+    last_present_call_ns.store(0, std::memory_order_release);
+    present_call_period_ns.store(0, std::memory_order_release);
+    present_call_samples.store(0, std::memory_order_release);
+    present_call_period_history.fill(0);
+    present_call_period_history_index = 0;
+    present_call_period_history_size = 0;
+}
+
+void Presenter::ResetFifoTimingFeedbackLocked() {
+    ClearPresentCallHistoryLocked();
+    timing_generation.fetch_add(1, std::memory_order_acq_rel);
+}
+
+void Presenter::SetPresentationEpoch(const u64 epoch) {
+    std::scoped_lock lock{feedback_mutex};
+    if (presentation_epoch == epoch) {
+        return;
+    }
+    presentation_epoch = epoch;
+    ResetFifoTimingFeedbackLocked();
+}
+
+void Presenter::RecordPresentCall(const u64 epoch) {
+    if (epoch == 0) {
+        return;
+    }
+
+    std::scoped_lock lock{feedback_mutex};
+    if (epoch != presentation_epoch) {
+        return;
+    }
+
+    const auto now = std::chrono::steady_clock::now().time_since_epoch();
+    const s64 now_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
+    const s64 previous_ns = last_present_call_ns.exchange(now_ns, std::memory_order_acq_rel);
+    if (previous_ns == 0) {
+        return;
+    }
+
+    const s64 sample = now_ns - previous_ns;
+    if (sample <= 1'000'000 || sample >= 100'000'000) {
+        // Discard intervals that cannot represent steady FIFO pacing and require a fresh sample
+        // window before applying another guest-timer correction.
+        ClearPresentCallHistoryLocked();
+        return;
+    }
+
+    present_call_period_history[present_call_period_history_index] = sample;
+    present_call_period_history_index =
+        (present_call_period_history_index + 1) % PresentCallPeriodWindow;
+    present_call_period_history_size =
+        std::min(present_call_period_history_size + 1, PresentCallPeriodWindow);
+
+    auto sorted = present_call_period_history;
+    std::sort(sorted.begin(), sorted.begin() + present_call_period_history_size);
+    const u32 middle = present_call_period_history_size / 2;
+    const s64 median = present_call_period_history_size % 2 != 0
+                           ? sorted[middle]
+                           : (sorted[middle - 1] + sorted[middle]) / 2;
+    present_call_period_ns.store(median, std::memory_order_release);
+    present_call_samples.store(present_call_period_history_size, std::memory_order_release);
+}
+
+void Presenter::RecreateSwapchain() {
+    swapchain.Recreate(window.GetWidth(), window.GetHeight());
+    ResetFifoTimingFeedback();
 }
 
 bool Presenter::IsVideoOutSurface(const AmdGpu::ColorBuffer& color_buffer) const {
@@ -642,38 +800,8 @@ Frame* Presenter::PrepareLastFrame() {
                    "Device lost during waiting for a frame");
     }
 
-    auto& scheduler = flip_scheduler;
-    scheduler.EndRendering();
-    const auto cmdbuf = scheduler.CommandBuffer();
-
-    const auto frame_subresources = vk::ImageSubresourceRange{
-        .aspectMask = vk::ImageAspectFlagBits::eColor,
-        .baseMipLevel = 0,
-        .levelCount = 1,
-        .baseArrayLayer = 0,
-        .layerCount = VK_REMAINING_ARRAY_LAYERS,
-    };
-
-    const auto pre_barrier =
-        vk::ImageMemoryBarrier2{.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-                                .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentRead,
-                                .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-                                .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
-                                .oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-                                .newLayout = vk::ImageLayout::eGeneral,
-                                .image = frame->image,
-                                .subresourceRange{frame_subresources}};
-
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .imageMemoryBarrierCount = 1,
-        .pImageMemoryBarriers = &pre_barrier,
-    });
-
-    // Flush frame creation commands.
-    frame->ready_semaphore = scheduler.GetMasterSemaphore()->Handle();
-    frame->ready_tick = scheduler.CurrentTick();
-    SubmitInfo info{};
-    scheduler.Flush(info);
+    // The prior presentation leaves the source image shader-readable. Re-presentation only reads
+    // it again, so no layout round-trip or extra queue submission is necessary.
     return frame;
 }
 
@@ -857,28 +985,30 @@ Frame* Presenter::PrepareBlankFrame(bool present_thread) {
     return frame;
 }
 
-void Presenter::Present(Frame* frame, bool is_reusing_frame) {
-    // Free the frame for reuse
-    const auto free_frame = [&] {
-        if (!is_reusing_frame) {
-            last_submit_frame = frame;
-            std::scoped_lock fl{free_mutex};
-            free_queue.push(frame);
-            free_cv.notify_one();
+void Presenter::Present(Frame* frame, bool is_reusing_frame, const u64 presentation_epoch) {
+    if (presentation_epoch != 0) {
+        std::scoped_lock lock{feedback_mutex};
+        if (presentation_epoch != this->presentation_epoch) {
+            if (!is_reusing_frame) {
+                RecycleFrameAsync(frame);
+            }
+            return;
         }
-    };
+    }
 
     // Recreate the swapchain if the window was resized.
     if (window.GetWidth() != swapchain.GetWidth() || window.GetHeight() != swapchain.GetHeight()) {
-        swapchain.Recreate(window.GetWidth(), window.GetHeight());
+        RecreateSwapchain();
     }
 
     if (!swapchain.AcquireNextImage()) {
-        swapchain.Recreate(window.GetWidth(), window.GetHeight());
+        RecreateSwapchain();
         if (!swapchain.AcquireNextImage()) {
             // User resizes the window too fast and GPU can't keep up. Skip this frame.
             LOG_WARNING(Render_Vulkan, "Skipping frame!");
-            free_frame();
+            if (!is_reusing_frame) {
+                RecycleFrameAsync(frame);
+            }
             return;
         }
     }
@@ -915,26 +1045,31 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
                           MarkersPalette::GpuMarkerColor, profiler_ctx != nullptr);
 
         const vk::Extent2D extent = swapchain.GetExtent();
-        const std::array pre_barriers{
-            vk::ImageMemoryBarrier{
-                .srcAccessMask = vk::AccessFlagBits::eNone,
-                .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-                .oldLayout = vk::ImageLayout::eUndefined,
-                .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image = swapchain_image,
-                .subresourceRange{
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .baseMipLevel = 0,
-                    .levelCount = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
-                },
+        const vk::ImageMemoryBarrier swapchain_pre_barrier{
+            .srcAccessMask = vk::AccessFlagBits::eNone,
+            .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+            .oldLayout = vk::ImageLayout::eUndefined,
+            .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = swapchain_image,
+            .subresourceRange{
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
-            vk::ImageMemoryBarrier{
+        };
+
+        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                               vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                               vk::DependencyFlagBits::eByRegion, {}, {}, swapchain_pre_barrier);
+
+        if (!is_reusing_frame) {
+            const vk::ImageMemoryBarrier frame_pre_barrier{
                 .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-                .dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead,
+                .dstAccessMask = vk::AccessFlagBits::eShaderRead,
                 .oldLayout = vk::ImageLayout::eGeneral,
                 .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -947,14 +1082,13 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
                     .baseArrayLayer = 0,
                     .layerCount = VK_REMAINING_ARRAY_LAYERS,
                 },
-            },
-        };
+            };
+            cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                                   vk::PipelineStageFlagBits::eFragmentShader,
+                                   vk::DependencyFlagBits::eByRegion, {}, {}, frame_pre_barrier);
+        }
 
         bool swapchain_copied_for_screenshot = false;
-
-        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                               vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                               vk::DependencyFlagBits::eByRegion, {}, {}, pre_barriers);
 
         { // Draw the game
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0.0f});
@@ -1089,22 +1223,32 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
     }
 
     SubmitInfo info{};
-    info.AddWait(swapchain.GetImageAcquiredSemaphore());
-    info.AddWait(frame->ready_semaphore, frame->ready_tick);
+    info.AddWait(swapchain.GetImageAcquiredSemaphore(), 1,
+                 vk::PipelineStageFlagBits::eColorAttachmentOutput);
+    info.AddWait(frame->ready_semaphore, frame->ready_tick,
+                 vk::PipelineStageFlagBits::eFragmentShader);
     info.AddSignal(swapchain.GetPresentReadySemaphore());
     info.AddSignal(frame->present_done);
     scheduler.Flush(info);
-
     // Present to swapchain.
-    {
-        std::scoped_lock submit_lock{Scheduler::submit_mutex};
-        if (!swapchain.Present()) {
-            swapchain.Recreate(window.GetWidth(), window.GetHeight());
-        }
+    const bool present_succeeded = swapchain.Present();
+    if (!present_succeeded) {
+        // An out-of-date present may not consume its wait semaphore or signal a maintenance
+        // fence. Finish only this scheduler timeline before retiring the old swapchain resources;
+        // the wait happens on the host presentation thread and never on the guest vblank thread.
+        present_scheduler.Finish();
+        RecreateSwapchain();
+    } else if (!is_reusing_frame) {
+        RecordPresentCall(presentation_epoch);
     }
 
-    free_frame();
     if (!is_reusing_frame) {
+        if (present_succeeded) {
+            RetireSubmittedFrame(last_submit_frame);
+            last_submit_frame = frame;
+        } else {
+            RetireSubmittedFrame(frame);
+        }
         DebugState.IncFlipFrameNum();
     }
 }
@@ -1120,24 +1264,6 @@ Frame* Presenter::GetRenderFrame() {
         // Take the frame from the queue
         frame = free_queue.front();
         free_queue.pop();
-    }
-
-    const vk::Device device = instance.GetDevice();
-    vk::Result result{};
-
-    const auto wait = [&]() {
-        result = device.waitForFences(frame->present_done, false, std::numeric_limits<u64>::max());
-        return result;
-    };
-
-    // Wait for the presentation to be finished so all frame resources are free
-    while (wait() != vk::Result::eSuccess) {
-        ASSERT_MSG(result != vk::Result::eErrorDeviceLost,
-                   "Device lost during waiting for a frame");
-        // Retry if the waiting times out
-        if (result == vk::Result::eTimeout) {
-            continue;
-        }
     }
 
     if (frame->width != expected_frame_width || frame->height != expected_frame_height ||

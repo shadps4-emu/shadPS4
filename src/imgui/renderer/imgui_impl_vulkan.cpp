@@ -252,7 +252,10 @@ void UploadTextureData::Destroy() {
     VkData* bd = GetBackendData();
     const InitInfo& v = bd->init_info;
 
-    CheckVkErr(v.device.waitIdle());
+    // Texture resources are consumed only by graphics submissions. The caller serializes this
+    // operation with that queue, so idling the entire device (and the presentation queue) is both
+    // unnecessary and harmful to decoupled presentation.
+    CheckVkErr(v.queue.waitIdle());
     RemoveTexture(im_texture);
     im_texture = nullptr;
 
