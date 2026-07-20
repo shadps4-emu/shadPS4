@@ -310,6 +310,42 @@ void NpHandler::SetAppearOffline(bool enable) {
     }
 }
 
+void NpHandler::FailPendingRequests(s32 user_id, s32 error_code) {
+    size_t failed = 0;
+    {
+        std::lock_guard lock(m_mutex_pending_tus);
+        for (auto it = m_pending_tus.begin(); it != m_pending_tus.end();) {
+            if (it->second.user_id == user_id) {
+                if (it->second.req) {
+                    it->second.req->SetResult(error_code);
+                }
+                it = m_pending_tus.erase(it);
+                ++failed;
+            } else {
+                ++it;
+            }
+        }
+    }
+    {
+        std::lock_guard lock(m_mutex_pending_score);
+        for (auto it = m_pending_score.begin(); it != m_pending_score.end();) {
+            if (it->second.user_id == user_id) {
+                if (it->second.req) {
+                    it->second.req->SetResult(error_code);
+                }
+                it = m_pending_score.erase(it);
+                ++failed;
+            } else {
+                ++it;
+            }
+        }
+    }
+    if (failed > 0) {
+        LOG_WARNING(NpHandler, "user_id={} failed {} pending request(s) with {:#x}", user_id,
+                    failed, static_cast<u32>(error_code));
+    }
+}
+
 void NpHandler::DisconnectUser(s32 user_id) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
@@ -325,6 +361,9 @@ void NpHandler::DisconnectUser(s32 user_id) {
         m_friend_state.erase(user_id);
     }
     client->Stop();
+    // The reader thread is joined, so no reply can race us: complete every
+    // in-flight request now, or PollAsync spins and WaitAsync blocks forever.
+    FailPendingRequests(user_id, ORBIS_NP_ERROR_SIGNED_OUT);
     FireStateCallback(user_id, NpManager::OrbisNpState::SignedOut);
     LOG_INFO(NpHandler, "user_id={} disconnected", user_id);
 }
@@ -1098,6 +1137,7 @@ s32 NpHandler::RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId
         PendingScoreRequest pending;
         pending.req = std::move(req);
         pending.cmd = ShadNet::CommandType::RecordScore;
+        pending.user_id = user_id;
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
@@ -1158,6 +1198,7 @@ s32 NpHandler::RecordGameData(s32 user_id, s32 service_label, u32 boardId, s32 p
         PendingScoreRequest pending;
         pending.req = std::move(req);
         pending.cmd = ShadNet::CommandType::RecordScoreData;
+        pending.user_id = user_id;
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
@@ -1217,6 +1258,7 @@ s32 NpHandler::GetGameData(s32 user_id, s32 service_label, u32 boardId, const st
         pending.dataOut = dataOut;
         pending.recvSize = recvSize;
         pending.totalSizeOut = totalSizeOut;
+        pending.user_id = user_id;
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
@@ -1277,6 +1319,7 @@ s32 NpHandler::GetGameDataByAccountId(s32 user_id, s32 service_label, u32 boardI
         pending.dataOut = dataOut;
         pending.recvSize = recvSize;
         pending.totalSizeOut = totalSizeOut;
+        pending.user_id = user_id;
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
@@ -1325,6 +1368,7 @@ s32 NpHandler::GetBoardInfo(s32 user_id, s32 service_label, u32 boardId,
         pending.req = std::move(req);
         pending.cmd = ShadNet::CommandType::GetBoardInfos;
         pending.boardInfo = boardInfo;
+        pending.user_id = user_id;
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler, "GetBoardInfo: user_id={} service_label={} board={} pkt_id={} com_id='{}'",
@@ -1404,6 +1448,7 @@ s32 NpHandler::GetRankingByNpId(s32 user_id, s32 service_label, u32 boardId,
         pending.lastSortDate = lastSortDate;
         pending.totalRecord = totalRecord;
         pending.arrayNum = npIds.size();
+        pending.user_id = user_id;
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
@@ -1472,6 +1517,7 @@ s32 NpHandler::GetRankingByRange(s32 user_id, s32 service_label, u32 boardId, u3
         pending.lastSortDate = lastSortDate;
         pending.totalRecord = totalRecord;
         pending.arrayNum = arrayNum;
+        pending.user_id = user_id;
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
@@ -1543,6 +1589,7 @@ s32 NpHandler::GetRankingByRangeA(s32 user_id, s32 service_label, u32 boardId, u
         pending.lastSortDate = lastSortDate;
         pending.totalRecord = totalRecord;
         pending.arrayNum = arrayNum;
+        pending.user_id = user_id;
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
@@ -1616,6 +1663,7 @@ s32 NpHandler::GetRankingByAccountId(s32 user_id, s32 service_label, u32 boardId
         pending.lastSortDate = lastSortDate;
         pending.totalRecord = totalRecord;
         pending.arrayNum = accountIds.size();
+        pending.user_id = user_id;
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
@@ -1684,6 +1732,7 @@ s32 NpHandler::GetFriendsRanking(s32 user_id, s32 service_label, u32 boardId, bo
         pending.lastSortDate = lastSortDate;
         pending.totalRecord = totalRecord;
         pending.arrayNum = arrayNum;
+        pending.user_id = user_id;
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
@@ -1754,6 +1803,7 @@ s32 NpHandler::GetFriendsRankingA(s32 user_id, s32 service_label, u32 boardId, b
         pending.lastSortDate = lastSortDate;
         pending.totalRecord = totalRecord;
         pending.arrayNum = arrayNum;
+        pending.user_id = user_id;
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
@@ -2018,6 +2068,7 @@ s32 NpHandler::TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std
     p.variableArray = variablesOut;
     p.variableArrayA = variablesAOut;
     p.arrayNum = arrayNum;
+    p.user_id = user_id;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
 }
@@ -2061,6 +2112,7 @@ s32 NpHandler::TusSetMultiSlotVariable(s32 user_id, s32 service_label, const std
     PendingTusRequest p;
     p.req = std::move(ctx);
     p.cmd = ShadNet::CommandType::TusSetMultiSlotVariable;
+    p.user_id = user_id;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
 }

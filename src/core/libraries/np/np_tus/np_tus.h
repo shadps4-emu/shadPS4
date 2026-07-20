@@ -162,7 +162,7 @@ s32 PS4_SYSV_ABI sceNpTssGetSmallStorage();
 s32 PS4_SYSV_ABI sceNpTssGetSmallStorageAsync();
 s32 PS4_SYSV_ABI sceNpTssGetStorage();
 s32 PS4_SYSV_ABI sceNpTssGetStorageAsync();
-s32 PS4_SYSV_ABI sceNpTusAbortRequest();
+s32 PS4_SYSV_ABI sceNpTusAbortRequest(int reqId);
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariable();
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableA();
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAAsync();

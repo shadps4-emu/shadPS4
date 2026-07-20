@@ -147,6 +147,25 @@ s32 PS4_SYSV_ABI sceNpTusDeleteRequest(int requestId) {
     g_requests.erase(it);
     return ORBIS_OK;
 }
+
+s32 PS4_SYSV_ABI sceNpTusAbortRequest(int reqId) {
+    LOG_INFO(Lib_NpTus, "reqId = {:#x}", reqId);
+
+    std::shared_ptr<TusRequestCtx> ctx;
+    {
+        std::lock_guard lock(g_mutex);
+        auto it = g_requests.find(reqId);
+        if (it == g_requests.end()) {
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        ctx = it->second.ctx;
+    }
+    if (ctx) {
+        ctx->SetResult(ORBIS_NP_COMMUNITY_ERROR_ABORTED);
+    }
+    return ORBIS_OK;
+}
+
 //***********************************
 // Async functions
 //***********************************
@@ -510,11 +529,6 @@ s32 PS4_SYSV_ABI sceNpTssGetStorage() {
 }
 
 s32 PS4_SYSV_ABI sceNpTssGetStorageAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusAbortRequest() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
 }

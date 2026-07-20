@@ -247,6 +247,9 @@ private:
 
     // Disconnect and remove one user's client.
     void DisconnectUser(s32 user_id);
+    // Fail every pending score/TUS request submitted by this user so pollers
+    // and blocked WaitAsync callers wake up instead of hanging forever.
+    void FailPendingRequests(s32 user_id, s32 error_code);
 
     void WorkerThread();
     // Transparent reconnect after a network drop
@@ -290,6 +293,7 @@ private:
     struct PendingScoreRequest {
         std::shared_ptr<NpScore::ScoreRequestCtx> req;
         ShadNet::CommandType cmd;
+        s32 user_id = -1; // submitting user, for flushing on disconnect
         std::vector<std::string> requestedNpIds;
         NpScore::OrbisNpScorePlayerRankData* rankArray = nullptr;
         NpScore::OrbisNpScoreRankData* plainRankArray = nullptr;
@@ -313,6 +317,7 @@ private:
     struct PendingTusRequest {
         std::shared_ptr<NpTus::TusRequestCtx> req;
         ShadNet::CommandType cmd;
+        s32 user_id = -1; // submitting user, for flushing on disconnect
         // Only the fields relevant to `cmd` are set.
         NpTus::OrbisNpTusVariable* variableArray = nullptr;   // variable gets / add
         NpTus::OrbisNpTusVariableA* variableArrayA = nullptr; // account-variant variable gets
