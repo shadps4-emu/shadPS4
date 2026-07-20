@@ -54,6 +54,7 @@ s32 GetRequest(int requestId, NpTusRequest** out) {
     std::lock_guard lock(g_mutex);
     auto it = g_requests.find(requestId);
     if (it == g_requests.end()) {
+        LOG_ERROR(Lib_NpTus, "Invalid requestId {}", requestId);
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
     }
     *out = &it->second;
@@ -70,6 +71,8 @@ static s32 ResolveTus(int requestId, NpTusRequest** req_out, u32* svc_out, s32* 
         }
         auto cit = g_title_ctxs.find(rit->second.titleCtxId);
         if (cit == g_title_ctxs.end()) {
+            LOG_ERROR(Lib_NpTus, " Invalid titleCtxId {} for request {}", rit->second.titleCtxId,
+                      requestId);
             return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
         }
         *req_out = &rit->second;
@@ -88,15 +91,18 @@ static s32 ResolveTus(int requestId, NpTusRequest** req_out, u32* svc_out, s32* 
 //***********************************
 s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId) {
     if (!npId) {
+        LOG_ERROR(Lib_NpTus, "npId is null");
         return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
     }
     if (serviceLabel == ORBIS_NP_INVALID_SERVICE_LABEL) {
+        LOG_ERROR(Lib_NpTus, "Invalid serviceLabel {}", serviceLabel);
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
     LOG_INFO(Lib_NpTus, "serviceLabel = {}, npId->data = {}", serviceLabel, npId->handle.data);
 
     std::lock_guard lock(g_mutex);
     if (g_title_ctxs.size() >= TusMaxTitleCtx) {
+        LOG_ERROR(Lib_NpTus, "Max title contexts reached");
         return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
     }
     const int id = g_next_ctx_id++;
@@ -132,6 +138,7 @@ s32 PS4_SYSV_ABI sceNpTusDeleteNpTitleCtx(int ctxId) {
     std::lock_guard lock(g_mutex);
     auto it = g_title_ctxs.find(ctxId);
     if (it == g_title_ctxs.end()) {
+        LOG_ERROR(Lib_NpTus, "Invalid ctxId {}", ctxId);
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
     }
 

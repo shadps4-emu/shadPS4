@@ -2482,6 +2482,9 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         CopyNpHandle(v.lastChangedAuthorId, s.lastchangedauthornpid());
         v.variable = s.variable();
         v.oldVariable = s.oldvariable();
+        v.ownerAccountId = static_cast<OrbisNpAccountId>(s.owneraccountid());
+        v.lastChangedAuthorAccountId =
+            static_cast<OrbisNpAccountId>(s.lastchangedauthoraccountid());
     };
     auto fillVariableA = [](NpTus::OrbisNpTusVariableA& v, const shadnet::TusVariable& s) {
         v = NpTus::OrbisNpTusVariableA{};

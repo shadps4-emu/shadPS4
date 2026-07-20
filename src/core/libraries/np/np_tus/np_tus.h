@@ -109,7 +109,8 @@ struct OrbisNpTusVariable {
     OrbisNpId lastChangedAuthorId;
     s64 variable;
     s64 oldVariable;
-    u8 reserved[16];
+    OrbisNpAccountId ownerAccountId;
+    OrbisNpAccountId lastChangedAuthorAccountId;
 };
 #pragma pack(pop)
 
