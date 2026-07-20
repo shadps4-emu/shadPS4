@@ -154,7 +154,7 @@ struct OrbisNpTusDataStatusForCrossSave {
     u8 reserved[16];
 };
 
-s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx();
+s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId);
 s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtxA(OrbisNpServiceLabel serviceLabel,
                                            Libraries::UserService::OrbisUserServiceUserId userId);
 s32 PS4_SYSV_ABI sceNpTssGetData();

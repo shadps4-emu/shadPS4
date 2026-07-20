@@ -113,6 +113,11 @@ s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, Orbi
     return id;
 }
 
+s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId) {
+    LOG_INFO(Lib_NpTus, "redirecting to sceNpTusCreateNpTitleCtx");
+    return sceNpTusCreateNpTitleCtx(serviceLabel, npId);
+}
+
 s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtxA(OrbisNpServiceLabel serviceLabel,
                                            Libraries::UserService::OrbisUserServiceUserId userId) {
     LOG_INFO(Lib_NpTus, "serviceLabel = {}, userId = {}", serviceLabel, userId);
@@ -543,11 +548,6 @@ s32 PS4_SYSV_ABI sceNpTssGetDataAsync(int reqId, s32 slotId, OrbisNpTssDataStatu
     }
     ctx->SetResult(0);
 
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
 }
 
