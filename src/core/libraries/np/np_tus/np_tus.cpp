@@ -179,6 +179,33 @@ s32 PS4_SYSV_ABI sceNpTusPollAsync(int reqId, int* result) {
     return 0;
 }
 
+s32 PS4_SYSV_ABI sceNpTusWaitAsync(int reqId, int* result) {
+    LOG_INFO(Lib_NpTus, "reqId = {:#x}", reqId);
+
+    std::shared_ptr<TusRequestCtx> ctx;
+    {
+        std::lock_guard glock(g_mutex);
+        auto it = g_requests.find(reqId);
+        if (it == g_requests.end()) {
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        ctx = it->second.ctx;
+    }
+
+    if (!ctx) {
+        LOG_ERROR(Lib_NpTus, "request not started");
+        return 1;
+    }
+
+    std::unique_lock lock(ctx->mutex);
+    ctx->cv.wait(lock, [&] { return ctx->result.has_value(); });
+    if (result) {
+        *result = *ctx->result;
+    }
+    LOG_DEBUG(Lib_NpTus, "request finished");
+    return ORBIS_OK;
+}
+
 //***********************************
 // TUS functions
 //***********************************
@@ -228,6 +255,20 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariable(int reqId, OrbisNpId* npId, s32* slotIds,
+                                              OrbisNpTusVariable* variableArray, u64 variablesSize,
+                                              int arrayLen, void* option) {
+    auto ret = sceNpTusGetMultiSlotVariableAsync(reqId, npId, slotIds, variableArray, variablesSize,
+                                                 arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+
+    sceNpTusWaitAsync(reqId, &ret);
+
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s32* slotIds,
                                                    s64* variables, int arrayLen, void* option) {
     LOG_INFO(Lib_NpTus,
@@ -268,6 +309,16 @@ s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s
     }
 
     return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariable(int reqId, OrbisNpId* npId, s32* slotIds,
+                                              s64* variables, int arrayLen, void* option) {
+    auto ret = sceNpTusSetMultiSlotVariableAsync(reqId, npId, slotIds, variables, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+    sceNpTusWaitAsync(reqId, &ret);
+    return ret;
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAVUserAsync(
@@ -319,6 +370,18 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAVUserAsync(
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAVUser(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32* slotIds,
+    OrbisNpTusVariableA* variables, u64 variablesSize, int arrayLen, void* option) {
+    auto ret = sceNpTusGetMultiSlotVariableAVUserAsync(reqId, targetVirtualUserId, slotIds,
+                                                       variables, variablesSize, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+    sceNpTusWaitAsync(reqId, &ret);
+    return ret;
+}
+
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableVUserAsync(
     int reqId, const OrbisNpTusVirtualUserId* virtualUserId, s32* slotIds, const s64* variables,
     int arrayLen, void* option) {
@@ -362,6 +425,20 @@ s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableVUserAsync(
         return submit;
     }
     return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI
+sceNpTusSetMultiSlotVariableVUser(int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId,
+                                  s32* slotIds, s64* variables, int arrayLen, void* option) {
+    auto ret = sceNpTusSetMultiSlotVariableVUserAsync(reqId, targetVirtualUserId, slotIds,
+                                                      variables, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+
+    sceNpTusWaitAsync(reqId, &ret);
+
+    return ret;
 }
 
 //***********************************
@@ -749,22 +826,12 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUserAsync() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariable() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableA() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAVUser() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -959,22 +1026,12 @@ s32 PS4_SYSV_ABI sceNpTusSetDataVUserAsync() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariable() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableA() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableVUser() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -1045,11 +1102,6 @@ s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUser() {
 }
 
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUserAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusWaitAsync() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
 }
