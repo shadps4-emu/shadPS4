@@ -61,6 +61,8 @@ TEST(DmaFaultBitmap, AtomicallyPreservesConcurrentPageFaults) {
     std::unordered_set<u32> access_chains;
     std::unordered_set<u32> shift_results;
     std::vector<u32> stored_pointers;
+    bool has_page_bounds_check = false;
+    u32 conditional_branch_count = 0;
 
     struct AtomicOr {
         u32 pointer;
@@ -99,6 +101,12 @@ TEST(DmaFaultBitmap, AtomicallyPreservesConcurrentPageFaults) {
                 .value = spirv[offset + 6],
             });
             break;
+        case spv::Op::OpULessThan:
+            has_page_bounds_check = true;
+            break;
+        case spv::Op::OpBranchConditional:
+            ++conditional_branch_count;
+            break;
         case spv::Op::OpStore:
             ASSERT_GE(word_count, 3);
             stored_pointers.push_back(spirv[offset + 1]);
@@ -118,6 +126,8 @@ TEST(DmaFaultBitmap, AtomicallyPreservesConcurrentPageFaults) {
     ASSERT_TRUE(constants.contains(atomic.semantics));
     EXPECT_EQ(constants.at(atomic.semantics), 0U);
     EXPECT_FALSE(std::ranges::contains(stored_pointers, atomic.pointer));
+    EXPECT_TRUE(has_page_bounds_check);
+    EXPECT_GE(conditional_branch_count, 2U);
 }
 
 } // namespace

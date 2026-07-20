@@ -9,7 +9,11 @@ include(FetchContent)
 )
 FetchContent_MakeAvailable(googletest)
 
-set(TEST_TARGETS shadps4_settings_test shadps4_gcn_test)
+set(TEST_TARGETS
+    shadps4_settings_test
+    shadps4_buffer_cache_test
+    shadps4_gcn_test
+)
 
 set(SETTINGS_TEST_SOURCES
     # Under test
@@ -31,6 +35,10 @@ set(SETTINGS_TEST_SOURCES
 
     # Tests
     test_emulator_settings.cpp
+)
+
+set(BUFFER_CACHE_TEST_SOURCES
+    test_fault_address.cpp
 )
 
 set(GCN_TEST_SOURCES
@@ -130,6 +138,7 @@ set(GCN_TEST_SOURCES
 )
 
 add_executable(shadps4_settings_test ${SETTINGS_TEST_SOURCES})
+add_executable(shadps4_buffer_cache_test ${BUFFER_CACHE_TEST_SOURCES})
 add_executable(shadps4_gcn_test ${GCN_TEST_SOURCES})
 
 foreach(t ${TEST_TARGETS})
@@ -149,6 +158,7 @@ target_link_libraries(shadps4_settings_test PRIVATE
     SDL3::SDL3
     spdlog::spdlog
 )
+target_link_libraries(shadps4_buffer_cache_test PRIVATE GTest::gtest_main)
 target_link_libraries(shadps4_gcn_test PRIVATE
     GTest::gtest_main
     fmt::fmt

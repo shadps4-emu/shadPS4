@@ -26,6 +26,10 @@ static const char* ccb_task_name{"CCB_TASK"};
 #define MAX_NAMES 56
 static_assert(Liverpool::NumComputeRings <= MAX_NAMES);
 
+bool Liverpool::IsMapped(VAddr addr, u64 size) const {
+    return rasterizer && rasterizer->IsMapped(addr, size);
+}
+
 #define NAME_NUM(z, n, name) BOOST_PP_STRINGIZE(name) BOOST_PP_STRINGIZE(n),
 #define NAME_ARRAY(name, num) {BOOST_PP_REPEAT(num, NAME_NUM, name)}
 
