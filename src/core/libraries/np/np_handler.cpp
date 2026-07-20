@@ -1983,7 +1983,8 @@ s32 NpHandler::TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std
                                        const std::string& virtualUser,
                                        const std::vector<s32>& slotIds,
                                        NpTus::OrbisNpTusVariable* variablesOut, u64 arrayNum,
-                                       std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+                                       std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                                       NpTus::OrbisNpTusVariableA* variablesAOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2015,6 +2016,7 @@ s32 NpHandler::TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std
     p.req = std::move(ctx);
     p.cmd = ShadNet::CommandType::TusGetMultiSlotVariable;
     p.variableArray = variablesOut;
+    p.variableArrayA = variablesAOut;
     p.arrayNum = arrayNum;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
