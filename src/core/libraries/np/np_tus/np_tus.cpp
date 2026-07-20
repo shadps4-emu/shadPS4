@@ -194,7 +194,7 @@ s32 PS4_SYSV_ABI sceNpTusWaitAsync(int reqId, int* result) {
 
     if (!ctx) {
         LOG_ERROR(Lib_NpTus, "request not started");
-        return 1;
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
     std::unique_lock lock(ctx->mutex);
@@ -264,9 +264,11 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariable(int reqId, OrbisNpId* npId, s32* s
         return ret;
     }
 
-    sceNpTusWaitAsync(reqId, &ret);
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
 
-    return ORBIS_OK;
+    return ret;
 }
 
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s32* slotIds,
@@ -317,7 +319,9 @@ s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariable(int reqId, OrbisNpId* npId, s32* s
     if (ret < 0) {
         return ret;
     }
-    sceNpTusWaitAsync(reqId, &ret);
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
     return ret;
 }
 
@@ -378,7 +382,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAVUser(
     if (ret < 0) {
         return ret;
     }
-    sceNpTusWaitAsync(reqId, &ret);
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
     return ret;
 }
 
@@ -436,7 +442,9 @@ sceNpTusSetMultiSlotVariableVUser(int reqId, const OrbisNpTusVirtualUserId* targ
         return ret;
     }
 
-    sceNpTusWaitAsync(reqId, &ret);
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
 
     return ret;
 }
