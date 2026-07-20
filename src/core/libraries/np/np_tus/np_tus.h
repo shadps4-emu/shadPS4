@@ -238,7 +238,9 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s
                                                    OrbisNpTusVariable* variableArray,
                                                    u64 variablesSize, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAVUserAsync();
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAVUserAsync(
+    int reqId, const OrbisNpTusVirtualUserId* virtualUserId, s32* slotIds,
+    OrbisNpTusVariableA* variableArray, u64 variablesSize, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSave();
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveAsync();
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUser();
@@ -284,7 +286,9 @@ s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAAsync();
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s32* slotIds,
                                                    s64* variables, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableVUser();
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableVUserAsync();
+s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableVUserAsync(
+    int reqId, const OrbisNpTusVirtualUserId* virtualUserId, s32* slotIds, const s64* variables,
+    int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusSetThreadParam();
 s32 PS4_SYSV_ABI sceNpTusSetTimeout();
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariable();

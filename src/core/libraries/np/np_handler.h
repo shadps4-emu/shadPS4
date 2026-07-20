@@ -215,7 +215,8 @@ public:
     s32 TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
                                 const std::string& virtualUser, const std::vector<s32>& slotIds,
                                 NpTus::OrbisNpTusVariable* variablesOut, u64 arrayNum,
-                                std::shared_ptr<NpTus::TusRequestCtx> ctx);
+                                std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                                NpTus::OrbisNpTusVariableA* variablesAOut = nullptr);
     s32 TusSetMultiSlotVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
                                 const std::string& virtualUser, const std::vector<s32>& slotIds,
                                 const std::vector<s64>& values,
@@ -313,7 +314,7 @@ private:
         std::shared_ptr<NpTus::TusRequestCtx> req;
         ShadNet::CommandType cmd;
         // Only the fields relevant to `cmd` are set.
-        NpTus::OrbisNpTusVariable* variableArray = nullptr;   // variable gets / add
+        NpTus::OrbisNpTusVariable* variableArray = nullptr; // variable gets / add
         NpTus::OrbisNpTusVariableA* variableArrayA = nullptr; // account-variant variable gets
         NpTus::OrbisNpTusVariableForCrossSave* variableArrayCS = nullptr; // cross-save variant
         NpTus::OrbisNpTusDataStatus* statusArray = nullptr;   // data get / status families
