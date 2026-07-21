@@ -4,32 +4,35 @@
 #pragma once
 
 #include <string_view>
-
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/avplayer/avplayer_data_streamer.h"
+
+struct AVIOContext;
 
 namespace Libraries::AvPlayer {
 
 class AvPlayerFileStreamer : public IDataStreamer {
 public:
-    explicit AvPlayerFileStreamer(const AvPlayerFileReplacement& file_replacement);
+    AvPlayerFileStreamer(const AvPlayerFileReplacement& file_replacement);
     ~AvPlayerFileStreamer();
 
-    bool Init(std::string_view path);
+    bool Init(std::string_view path) override;
     void Reset() override;
 
-private:
-    s32 Read(u8* buffer, s32 size) override;
-    s64 Seek(s64 offset, int whence) override;
-    u64 GetSize() const override {
-        return m_file_size;
+    AVIOContext* GetContext() override {
+        return m_avio_context;
     }
 
-    AvPlayerFileReplacement m_file_replacement{};
+private:
+    static s32 ReadPacket(void* opaque, u8* buffer, s32 size);
+    static s64 Seek(void* opaque, s64 buffer, int whence);
+
+    AvPlayerFileReplacement m_file_replacement;
 
     int m_fd = -1;
     u64 m_position{};
     u64 m_file_size{};
+    AVIOContext* m_avio_context{};
 };
 
 } // namespace Libraries::AvPlayer

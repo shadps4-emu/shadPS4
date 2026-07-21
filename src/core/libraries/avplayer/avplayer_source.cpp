@@ -41,15 +41,11 @@ bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view pa
 
     AVFormatContext* context = avformat_alloc_context();
     if (init_data.file_replacement.open != nullptr) {
-        auto data_streamer = std::make_unique<AvPlayerFileStreamer>(init_data.file_replacement);
-        if (!data_streamer->Init(path)) {
+        m_up_data_streamer = std::make_unique<AvPlayerFileStreamer>(init_data.file_replacement);
+        if (!m_up_data_streamer->Init(path)) {
             return false;
         }
-        m_up_data_streamer = std::move(data_streamer);
-        if (!m_avio_context.Init(*m_up_data_streamer)) {
-            return false;
-        }
-        context->pb = m_avio_context.Get();
+        context->pb = m_up_data_streamer->GetContext();
         if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
             return false;
         }
@@ -57,17 +53,12 @@ bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view pa
         const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
         const auto filepath = mnt->GetHostPath(path);
         if (Common::FS::Zar::IsZarInnerPath(filepath)) {
-            auto data_streamer = std::make_unique<AvPlayerZarStreamer>(filepath);
-            if (!data_streamer->Init()) {
+            m_up_data_streamer = std::make_unique<AvPlayerZarStreamer>();
+            if (!m_up_data_streamer->Init(filepath.string())) {
                 LOG_ERROR(Lib_AvPlayer, "Failed to open {} from ZArchive", path);
                 return false;
             }
-            m_up_data_streamer = std::move(data_streamer);
-            if (!m_avio_context.Init(*m_up_data_streamer)) {
-                LOG_ERROR(Lib_AvPlayer, "Failed to initialize AVIO for {}", path);
-                return false;
-            }
-            context->pb = m_avio_context.Get();
+            context->pb = m_up_data_streamer->GetContext();
             if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
                 return false;
             }

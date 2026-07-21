@@ -3,18 +3,18 @@
 
 #pragma once
 
-#include "common/types.h"
+#include <string_view>
+
+struct AVIOContext;
 
 namespace Libraries::AvPlayer {
 
 class IDataStreamer {
 public:
     virtual ~IDataStreamer() = default;
-
+    virtual bool Init(std::string_view path) = 0;
     virtual void Reset() = 0;
-    virtual s32 Read(u8* buffer, s32 size) = 0;
-    virtual s64 Seek(s64 offset, int whence) = 0;
-    virtual u64 GetSize() const = 0;
+    virtual AVIOContext* GetContext() = 0;
 };
 
 } // namespace Libraries::AvPlayer

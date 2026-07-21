@@ -15,7 +15,6 @@
 
 #include "common/assert.h"
 #include "core/libraries/avplayer/avplayer.h"
-#include "core/libraries/avplayer/avplayer_avio_context.h"
 #include "core/libraries/avplayer/avplayer_common.h"
 #include "core/libraries/avplayer/avplayer_data_streamer.h"
 #include "core/libraries/kernel/threads.h"
@@ -23,6 +22,7 @@
 struct AVCodecContext;
 struct AVFormatContext;
 struct AVFrame;
+struct AVIOContext;
 struct AVPacket;
 struct SwrContext;
 struct SwsContext;
@@ -201,7 +201,6 @@ private:
     std::atomic_bool m_is_eof = false;
 
     std::unique_ptr<IDataStreamer> m_up_data_streamer;
-    AvioContext m_avio_context;
 
     AvPlayerQueue<GuestBuffer> m_audio_buffers;
     AvPlayerQueue<GuestBuffer> m_video_buffers;

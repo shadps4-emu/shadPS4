@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <filesystem>
+#include <string_view>
 
 #include "common/io_file.h"
 #include "core/libraries/avplayer/avplayer_data_streamer.h"
@@ -12,22 +12,23 @@ namespace Libraries::AvPlayer {
 
 class AvPlayerZarStreamer : public IDataStreamer {
 public:
-    explicit AvPlayerZarStreamer(std::filesystem::path path);
+    ~AvPlayerZarStreamer();
 
-    bool Init();
+    bool Init(std::string_view path) override;
     void Reset() override;
 
-private:
-    s32 Read(u8* buffer, s32 size) override;
-    s64 Seek(s64 offset, int whence) override;
-    u64 GetSize() const override {
-        return m_file_size;
+    AVIOContext* GetContext() override {
+        return m_avio_context;
     }
 
-    std::filesystem::path m_path;
+private:
+    static s32 ReadPacket(void* opaque, u8* buffer, s32 size);
+    static s64 Seek(void* opaque, s64 offset, int whence);
+
     Common::FS::IOFile m_file;
     u64 m_position{};
     u64 m_file_size{};
+    AVIOContext* m_avio_context{};
 };
 
 } // namespace Libraries::AvPlayer

@@ -402,9 +402,6 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
 
 set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
                  src/core/libraries/avplayer/avplayer_common.h
-                 src/core/libraries/avplayer/avplayer_avio_context.cpp
-                 src/core/libraries/avplayer/avplayer_avio_context.h
-                 src/core/libraries/avplayer/avplayer_data_streamer.h
                  src/core/libraries/avplayer/avplayer_file_streamer.cpp
                  src/core/libraries/avplayer/avplayer_file_streamer.h
                  src/core/libraries/avplayer/avplayer_impl.cpp
