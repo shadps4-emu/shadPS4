@@ -7,6 +7,8 @@
 #include "core/libraries/libs.h"
 
 #include "SDL3/SDL_keyboard.h"
+#include "keyboard.h"
+#include "core/emulator_settings.h"
 
 namespace Libraries::Keyboard {
 
@@ -80,6 +82,10 @@ s32 PS4_SYSV_ABI sceKeyboardReadState(s32 handle, OrbisKeyboardData* data) {
     if (handle != 1) {
         return ORBIS_KEYBOARD_ERROR_INVALID_HANDLE;
     }
+    if (!EmulatorSettings.IsKeyboardUsedAsKeyboard()) {
+        data->nkeys = 0;
+        return ORBIS_OK;
+    }
     static bool prev_state[SDL_SCANCODE_COUNT]{};
     s32 numkeys;
     auto buf = SDL_GetKeyboardState(&numkeys);
@@ -136,6 +142,13 @@ s32 PS4_SYSV_ABI sceDbgKeyboardRead() {
 s32 PS4_SYSV_ABI sceDbgKeyboardReadState() {
     LOG_ERROR(Lib_Keyboard, "(STUBBED) called");
     return ORBIS_OK;
+}
+
+bool PushSDLEvent(SDL_Event& e) {
+    if (!EmulatorSettings.IsKeyboardUsedAsKeyboard()) {
+        return false;
+    }
+    return (e.type == SDL_EVENT_KEY_DOWN || e.type == SDL_EVENT_KEY_UP);
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
