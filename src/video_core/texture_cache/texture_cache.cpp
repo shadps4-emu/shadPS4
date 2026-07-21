@@ -65,7 +65,115 @@ void TextureCache::ProcessDownloadImages() {
     for (const ImageId image_id : download_images) {
         DownloadImageMemory(image_id, true);
     }
+    for (const VAddr address : pending_alias_downloads) {
+        const auto state_it = alias_states.find(address);
+        if (state_it == alias_states.end()) {
+            continue;
+        }
+        AliasState& state = alias_states.at(address);
+        if (!state.download_pending) {
+            continue;
+        }
+        state.download_pending = false;
+        if (!slot_images.is_allocated(state.writer)) {
+            continue;
+        }
+        const Image& image = slot_images[state.writer];
+        if (image.image_uid == state.writer_uid && image.info.guest_address == address &&
+            !download_images.contains(state.writer)) {
+            DownloadImageMemory(state.writer, true);
+        }
+    }
+    pending_alias_downloads.clear();
     download_images.clear();
+}
+
+void TextureCache::SynchronizeAlias(ImageId image_id) {
+    Image& dst = slot_images[image_id];
+    const auto state_it = alias_states.find(dst.info.guest_address);
+    if (state_it == alias_states.end()) {
+        return;
+    }
+    AliasState& state = alias_states.at(dst.info.guest_address);
+    if (!slot_images.is_allocated(state.writer)) {
+        alias_states.erase(dst.info.guest_address);
+        return;
+    }
+    Image& src = slot_images[state.writer];
+    if (src.image_uid != state.writer_uid) {
+        alias_states.erase(dst.info.guest_address);
+        return;
+    }
+    if (state.writer == image_id || src.alias_generation <= dst.alias_generation ||
+        src.info.guest_address != dst.info.guest_address ||
+        src.info.pixel_format != dst.info.pixel_format || src.info.num_bits != dst.info.num_bits ||
+        src.info.num_samples != dst.info.num_samples || src.info.props.is_depth ||
+        dst.info.props.is_depth || src.info.props.is_block != dst.info.props.is_block ||
+        src.info.tile_mode != dst.info.tile_mode || src.info.array_mode != dst.info.array_mode ||
+        src.info.bank_swizzle != dst.info.bank_swizzle || src.info.alt_tile != dst.info.alt_tile ||
+        src.info.size.width < dst.info.size.width || src.info.size.height < dst.info.size.height ||
+        src.info.size.depth < dst.info.size.depth) {
+        return;
+    }
+
+    scheduler.EndRendering();
+    src.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
+    dst.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
+
+    const vk::ImageCopy region = {
+        .srcSubresource =
+            {
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = std::min(src.info.resources.layers, dst.info.resources.layers),
+            },
+        .srcOffset = {0, 0, 0},
+        .dstSubresource =
+            {
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = std::min(src.info.resources.layers, dst.info.resources.layers),
+            },
+        .dstOffset = {0, 0, 0},
+        .extent = {dst.info.size.width, dst.info.size.height, dst.info.size.depth},
+    };
+    scheduler.CommandBuffer().copyImage(src.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
+                                        dst.GetImage(), vk::ImageLayout::eTransferDstOptimal,
+                                        region);
+    dst.alias_generation = src.alias_generation;
+    dst.flags |= ImageFlagBits::GpuModified;
+    dst.flags &= ~ImageFlagBits::Dirty;
+    state.has_alias = true;
+}
+
+void TextureCache::MarkGpuWrite(ImageId image_id) {
+    std::scoped_lock lock{mutex};
+    Image& image = slot_images[image_id];
+    image.alias_generation = ++alias_generation;
+
+    AliasState& state = alias_states[image.info.guest_address];
+    if (state.writer) {
+        if (slot_images.is_allocated(state.writer) &&
+            slot_images[state.writer].image_uid == state.writer_uid) {
+            state.has_alias |= state.writer != image_id;
+        } else {
+            state = {};
+        }
+    }
+    state.writer = image_id;
+    state.writer_uid = image.image_uid;
+
+    constexpr u64 SmallAliasReadbackLimit = 4_KB;
+    const u64 download_size = static_cast<u64>(image.info.pitch) * image.info.size.height *
+                              image.info.size.depth * image.info.resources.layers *
+                              (image.info.num_bits / 8);
+    const bool needs_download = state.has_alias && download_size <= SmallAliasReadbackLimit;
+    if (needs_download && !state.download_pending) {
+        pending_alias_downloads.push_back(image.info.guest_address);
+    }
+    state.download_pending = needs_download;
 }
 
 void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
@@ -133,6 +241,8 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
         if (image.Overlaps(addr, size)) {
             // Modified region overlaps image, so the image was definitely accessed by this fault.
             // Untrack the image, so that the range is unprotected and the guest can write freely.
+            alias_states.erase(image.info.guest_address);
+            image.alias_generation = 0;
             image.flags |= ImageFlagBits::CpuDirty;
             UntrackImage(image_id);
         } else if (pages_end < image_end) {
@@ -163,6 +273,8 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
             return;
         }
         // Ensure image is reuploaded when accessed again.
+        alias_states.erase(image.info.guest_address);
+        image.alias_generation = 0;
         image.flags |= ImageFlagBits::GpuDirty;
     });
 }
@@ -620,14 +732,15 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
 
 ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
+    UpdateImage(image_id, true);
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
+        MarkGpuWrite(image_id);
         if (readback_linear_images && !image.info.props.is_tiled && image.info.guest_address != 0) {
             std::unique_lock lk{download_images_mutex};
             download_images.emplace(image_id);
         }
     }
-    UpdateImage(image_id);
     return image.FindView(desc.view_info);
 }
 
@@ -640,6 +753,7 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
     }
     image.usage.render_target = 1u;
     UpdateImage(image_id);
+    MarkGpuWrite(image_id);
 
     // Register meta data for this color buffer
     if (desc.info.meta_info.cmask_addr) {
@@ -1070,6 +1184,14 @@ void TextureCache::DeleteImage(ImageId image_id) {
     Image& image = slot_images[image_id];
     ASSERT_MSG(!image.IsTracked(), "Image was not untracked");
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered), "Image was not unregistered");
+
+    const auto alias_it = alias_states.find(image.info.guest_address);
+    if (alias_it != alias_states.end()) {
+        const AliasState& state = alias_it->second;
+        if (state.writer == image_id && state.writer_uid == image.image_uid) {
+            alias_states.erase(image.info.guest_address);
+        }
+    }
 
     // Remove any registered meta areas.
     const auto& meta_info = image.info.meta_info;

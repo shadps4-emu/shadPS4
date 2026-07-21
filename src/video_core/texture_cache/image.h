@@ -176,6 +176,7 @@ public:
     BackingImage* backing{};
     boost::container::static_vector<u64, 16> mip_hashes{};
     u64 image_uid{};
+    u64 alias_generation{};
     u64 lru_id{};
     u64 tick_accessed_last{};
     u64 hash{};
