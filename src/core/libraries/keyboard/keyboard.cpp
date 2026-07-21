@@ -148,7 +148,7 @@ bool PushSDLEvent(SDL_Event& e) {
     if (!EmulatorSettings.IsKeyboardUsedAsKeyboard()) {
         return false;
     }
-    return (e.type == SDL_EVENT_KEY_DOWN || e.type == SDL_EVENT_KEY_UP);
+    return e.type == SDL_EVENT_KEY_DOWN || e.type == SDL_EVENT_KEY_UP;
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
