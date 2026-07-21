@@ -9,6 +9,7 @@
 #include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
+#include "core/libraries/avplayer/avplayer_zar_streamer.h"
 #include "core/libraries/videodec/video_utils.h"
 #include "core/memory.h"
 
@@ -40,11 +41,15 @@ bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view pa
 
     AVFormatContext* context = avformat_alloc_context();
     if (init_data.file_replacement.open != nullptr) {
-        m_up_data_streamer = std::make_unique<AvPlayerFileStreamer>(init_data.file_replacement);
-        if (!m_up_data_streamer->Init(path)) {
+        auto data_streamer = std::make_unique<AvPlayerFileStreamer>(init_data.file_replacement);
+        if (!data_streamer->Init(path)) {
             return false;
         }
-        context->pb = m_up_data_streamer->GetContext();
+        m_up_data_streamer = std::move(data_streamer);
+        if (!m_avio_context.Init(*m_up_data_streamer)) {
+            return false;
+        }
+        context->pb = m_avio_context.Get();
         if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
             return false;
         }
@@ -52,13 +57,17 @@ bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view pa
         const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
         const auto filepath = mnt->GetHostPath(path);
         if (Common::FS::Zar::IsZarInnerPath(filepath)) {
-            auto data_streamer = std::make_unique<AvPlayerFileStreamer>(filepath);
+            auto data_streamer = std::make_unique<AvPlayerZarStreamer>(filepath);
             if (!data_streamer->Init()) {
                 LOG_ERROR(Lib_AvPlayer, "Failed to open {} from ZArchive", path);
                 return false;
             }
-            context->pb = data_streamer->GetContext();
             m_up_data_streamer = std::move(data_streamer);
+            if (!m_avio_context.Init(*m_up_data_streamer)) {
+                LOG_ERROR(Lib_AvPlayer, "Failed to initialize AVIO for {}", path);
+                return false;
+            }
+            context->pb = m_avio_context.Get();
             if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
                 return false;
             }

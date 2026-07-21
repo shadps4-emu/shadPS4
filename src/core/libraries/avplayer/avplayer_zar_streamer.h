@@ -1,21 +1,20 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
-#include <string_view>
+#include <filesystem>
 
-#include "core/libraries/avplayer/avplayer.h"
+#include "common/io_file.h"
 #include "core/libraries/avplayer/avplayer_data_streamer.h"
 
 namespace Libraries::AvPlayer {
 
-class AvPlayerFileStreamer : public IDataStreamer {
+class AvPlayerZarStreamer : public IDataStreamer {
 public:
-    explicit AvPlayerFileStreamer(const AvPlayerFileReplacement& file_replacement);
-    ~AvPlayerFileStreamer();
+    explicit AvPlayerZarStreamer(std::filesystem::path path);
 
-    bool Init(std::string_view path);
+    bool Init();
     void Reset() override;
 
 private:
@@ -25,9 +24,8 @@ private:
         return m_file_size;
     }
 
-    AvPlayerFileReplacement m_file_replacement{};
-
-    int m_fd = -1;
+    std::filesystem::path m_path;
+    Common::FS::IOFile m_file;
     u64 m_position{};
     u64 m_file_size{};
 };
