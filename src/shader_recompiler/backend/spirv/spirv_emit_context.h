@@ -285,6 +285,7 @@ public:
     Id shared_memory_u32_type{};
     Id shared_memory_u64_type{};
 
+    Id bary_coord{};
     Id bary_coord_smooth{};
     Id bary_coord_smooth_centroid{};
     Id bary_coord_smooth_sample{};

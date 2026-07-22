@@ -128,15 +128,33 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(ctx.input_f32, ctx.tess_coord, ctx.ConstU32(1U)));
     case IR::Attribute::BaryCoordSmooth:
-        return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth,
-                                                        ctx.ConstU32(comp)));
+        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
+            return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth,
+                                                            ctx.ConstU32(comp)));
+        } else {
+            return ctx.OpCompositeExtract(ctx.F32[1], ctx.OpLoad(ctx.F32[3], ctx.bary_coord), comp);
+        }
     case IR::Attribute::BaryCoordSmoothCentroid:
-        return ctx.OpLoad(
-            ctx.F32[1],
-            ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth_centroid, ctx.ConstU32(comp)));
+        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
+            return ctx.OpLoad(ctx.F32[1],
+                              ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth_centroid,
+                                                ctx.ConstU32(comp)));
+        } else {
+            return ctx.OpCompositeExtract(
+                ctx.F32[1], ctx.OpInterpolateAtCentroid(ctx.F32[3], ctx.bary_coord), comp);
+        }
     case IR::Attribute::BaryCoordSmoothSample:
-        return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth_sample,
-                                                        ctx.ConstU32(comp)));
+        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
+            return ctx.OpLoad(
+                ctx.F32[1],
+                ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth_sample, ctx.ConstU32(comp)));
+        } else {
+            return ctx.OpCompositeExtract(
+                ctx.F32[1],
+                ctx.OpInterpolateAtSample(ctx.F32[3], ctx.bary_coord,
+                                          ctx.OpLoad(ctx.U32[1], ctx.sample_index)),
+                comp);
+        }
     case IR::Attribute::BaryCoordNoPersp:
         return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp,
                                                         ctx.ConstU32(comp)));
