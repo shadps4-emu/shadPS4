@@ -527,6 +527,7 @@ bool PipelineCache::RefreshGraphicsStages() {
             return false;
         }
         break;
+    case AmdGpu::ShaderStageEnable::VgtStages::LsHsDynamic:
     case AmdGpu::ShaderStageEnable::VgtStages::LsHs:
         if (!instance.IsTessellationSupported()) {
             return false;

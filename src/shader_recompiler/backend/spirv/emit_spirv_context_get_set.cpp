@@ -194,6 +194,14 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
             return ctx.OpShiftLeftLogical(ctx.U32[1], invocation_id, ctx.ConstU32(8u));
         }
     }
+    case IR::Attribute::OffChipLdsBase:
+        // In GCN, OffChipLdsBase is the per-wave byte offset into the offchip LDS ring
+        // buffer used for writing control point outputs. In our Vulkan TCS mapping we use
+        // native TCS outputs (written via the on-chip LDS path in HullShaderTransform), so
+        // any buffer stores using this as soffset are redundant. Return 0 so they harmlessly
+        // write to the start of whatever offchip buffer handle is bound.
+        // TODO: intercept these StoreBufferU32x* instructions in HullShaderTransform instead.
+        return ctx.u32_zero_value;
     default:
         UNREACHABLE_MSG("Read U32 attribute {}", attr);
     }
