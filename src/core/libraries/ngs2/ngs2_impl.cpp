@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "ngs2.h"
 #include "ngs2_error.h"
 #include "ngs2_impl.h"
 
@@ -182,6 +183,27 @@ s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo*
     LOG_ERROR(Lib_Ngs2, "Invalid system buffer size ({}<{}[byte])", hostBufferInfo->hostBufferSize,
               requiredBufferSize);
     return ORBIS_NGS2_ERROR_INVALID_BUFFER_SIZE;
+}
+
+s32 RackQueryBufferSize(const OrbisNgs2RackOption* option,
+                        OrbisNgs2ContextBufferInfo* outBufferInfo) {
+    if (!outBufferInfo) {
+        return ORBIS_NGS2_ERROR_INVALID_BUFFER_ADDRESS;
+    }
+    if (option && option->size < sizeof(OrbisNgs2RackOption)) {
+        return ORBIS_NGS2_ERROR_INVALID_OPTION_SIZE;
+    }
+
+    StackBuffer stackBuffer;
+    size_t requiredBufferSize = 0;
+    const u8 optionFlags = option ? static_cast<u8>(option->flags >> 31) : 0;
+    StackBufferOpen(&stackBuffer, nullptr, 0, nullptr, optionFlags);
+    StackBufferClose(&stackBuffer, &requiredBufferSize);
+
+    outBufferInfo->hostBuffer = nullptr;
+    outBufferInfo->hostBufferSize = requiredBufferSize;
+    MemoryClear(outBufferInfo->reserved, sizeof(outBufferInfo->reserved));
+    return ORBIS_OK;
 }
 
 } // namespace Libraries::Ngs2
