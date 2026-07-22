@@ -8,7 +8,6 @@
 #ifdef _WIN64
 #include <windows.h>
 #include "common/ntapi.h"
-#include "core/veh_stack.h"
 #else
 #include <csignal>
 #include <pthread.h>
@@ -22,41 +21,6 @@ namespace Core {
 
 static constexpr u32 ORBIS_MXCSR = 0x9fc0;
 static constexpr u32 ORBIS_FPUCW = 0x037f;
-
-#ifdef _WIN64
-#define KGDT64_R3_DATA (0x28)
-#define KGDT64_R3_CODE (0x30)
-#define KGDT64_R3_CMTEB (0x50)
-#define RPL_MASK (0x03)
-#define EFLAGS_INTERRUPT_MASK (0x200)
-
-void InitializeTeb(INITIAL_TEB* teb, const ::Libraries::Kernel::PthreadAttr* attr) {
-    teb->StackBase = (void*)((u64)attr->stackaddr_attr + attr->stacksize_attr);
-    teb->StackLimit = nullptr;
-    teb->StackAllocationBase = attr->stackaddr_attr;
-}
-
-void InitializeContext(CONTEXT* ctx, ThreadFunc func, void* arg,
-                       const ::Libraries::Kernel::PthreadAttr* attr) {
-    /* Note: The stack has to be reversed */
-    ctx->Rsp = (u64)attr->stackaddr_attr + attr->stacksize_attr;
-    ctx->Rbp = (u64)attr->stackaddr_attr + attr->stacksize_attr;
-    ctx->Rcx = (u64)arg;
-    ctx->Rip = (u64)func;
-
-    ctx->SegGs = KGDT64_R3_DATA | RPL_MASK;
-    ctx->SegEs = KGDT64_R3_DATA | RPL_MASK;
-    ctx->SegDs = KGDT64_R3_DATA | RPL_MASK;
-    ctx->SegCs = KGDT64_R3_CODE | RPL_MASK;
-    ctx->SegSs = KGDT64_R3_DATA | RPL_MASK;
-    ctx->SegFs = KGDT64_R3_CMTEB | RPL_MASK;
-
-    ctx->EFlags = 0x3000 | EFLAGS_INTERRUPT_MASK;
-
-    ctx->ContextFlags =
-        CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT;
-}
-#endif
 
 NativeThread::NativeThread() : native_handle{0} {}
 
@@ -83,9 +47,6 @@ void NativeThread::Exit() {
     tid = 0;
 
 #ifdef _WIN64
-    CleanupVehStackForCurrentThread();
-
-    NtClose(native_handle);
     native_handle = nullptr;
     ExitThread(0);
 #else
@@ -111,8 +72,6 @@ void NativeThread::Initialize() {
 #endif
 #if _WIN64
     tid = GetCurrentThreadId();
-    ASSERT_MSG(InitializeVehStackForCurrentThread(),
-               "Failed to initialize dedicated Windows VEH stack");
 #else
     tid = (u64)pthread_self();
 
