@@ -20,6 +20,22 @@
 
 namespace Vulkan {
 
+static void LogIfRangeOutOfBounds(std::string_view call_site, const VideoCore::Image& image,
+                                  const VideoCore::SubresourceRange& range) {
+    const bool level_oob = range.base.level + range.extent.levels > image.info.resources.levels;
+    const bool layer_oob = range.base.layer + range.extent.layers > image.info.resources.layers;
+    if (!level_oob && !layer_oob) {
+        return;
+    }
+    LOG_DEBUG(Render_Vulkan,
+             "{}: subresource range out of bounds for image {:#x}:{:#x} format={} "
+             "levels={} layers={} | requested range base={{{},{}}} extent={{{},{}}}",
+             call_site, image.info.guest_address, image.info.guest_size,
+             vk::to_string(image.info.pixel_format), image.info.resources.levels,
+             image.info.resources.layers, range.base.level, range.base.layer, range.extent.levels,
+             range.extent.layers);
+}
+
 static Shader::PushData MakeUserData(const AmdGpu::Regs& regs) {
     // TODO(roamic): Add support for multiple viewports and geometry shaders when ViewportIndex
     // is encountered and implemented in the recompiler.
@@ -766,11 +782,13 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                               {});
             } else {
                 if (is_storage) {
+                    LogIfRangeOutOfBounds("BindTextures(storage)", image, desc.view_info.range);
                     image.Transit(vk::ImageLayout::eGeneral,
                                   vk::AccessFlagBits2::eShaderRead |
                                       vk::AccessFlagBits2::eShaderWrite,
                                   desc.view_info.range);
                 } else {
+                    LogIfRangeOutOfBounds("BindTextures(texture)", image, desc.view_info.range);
                     const auto new_layout = image.info.props.is_depth
                                                 ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
                                                 : vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -864,6 +882,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
                            vk::AccessFlagBits2::eColorAttachmentWrite, {});
             attachment_feedback_loop = true;
         } else {
+            LogIfRangeOutOfBounds("BeginRendering(color)", *image, desc.view_info.range);
             image->Transit(vk::ImageLayout::eColorAttachmentOptimal,
                            vk::AccessFlagBits2::eColorAttachmentWrite |
                                vk::AccessFlagBits2::eColorAttachmentRead,
@@ -912,6 +931,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
                                     ? vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal
                                 : has_stencil ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
                                               : vk::ImageLayout::eDepthReadOnlyOptimal;
+        LogIfRangeOutOfBounds("BeginRendering(depth)", image, desc.view_info.range);
         image.Transit(new_layout,
                       vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
                           vk::AccessFlagBits2::eDepthStencilAttachmentRead,
@@ -980,6 +1000,16 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
     VideoCore::SubresourceRange sub_range;
     sub_range.base.layer = liverpool->regs.depth_view.slice_start;
     sub_range.extent.layers = liverpool->regs.depth_view.NumSlices() - sub_range.base.layer;
+
+    LOG_DEBUG(Render_Vulkan,
+             "DepthStencilCopy: sub_range base_layer={} extent_layers={} | "
+             "read_image addr={:#x} size={:#x} levels={} layers={} | "
+             "write_image addr={:#x} size={:#x} levels={} layers={}",
+             sub_range.base.layer, sub_range.extent.layers, read_image.info.guest_address,
+             read_image.info.guest_size, read_image.info.resources.levels,
+             read_image.info.resources.layers, write_image.info.guest_address,
+             write_image.info.guest_size, write_image.info.resources.levels,
+             write_image.info.resources.layers);
 
     ScopeMarkerBegin(fmt::format(
         "DepthStencilCopy:DR={:#x}:SR={:#x}:DW={:#x}:SW={:#x}", regs.depth_buffer.DepthAddress(),
