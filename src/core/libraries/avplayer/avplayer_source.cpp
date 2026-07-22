@@ -1,9 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
 #include "common/singleton.h"
 #include "common/thread.h"
+#include "core/libraries/videodec/video_utils.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
@@ -624,38 +625,11 @@ static u64 FrameTimestampMillis(const AVFrame& frame, AVRational time_base) {
     return millis > 0 ? u64(millis) : 0;
 }
 
-static void CopyNV12Data(u8* dst, const AVFrame& src) {
-    const auto dst_pitch = Common::AlignUp<u32>(src.width, 64);
-    const auto dst_height = Common::AlignUp<u32>(src.height, 16);
-
-    const auto luma_dst = dst;
-    const auto chroma_dst = dst + dst_pitch * dst_height;
-
-    if (dst_height != src.height) {
-        std::memset(luma_dst + src.height * dst_pitch, 0x10, dst_pitch * (dst_height - src.height));
-        std::memset(chroma_dst + (src.height * dst_pitch) / 2, 0x80,
-                    dst_pitch * (dst_height - src.height) / 2);
-    }
-    if (src.width == dst_pitch) {
-        std::memcpy(luma_dst, src.data[0], src.width * src.height);
-        std::memcpy(chroma_dst, src.data[1], (src.width * src.height) / 2);
-        return;
-    }
-
-    for (u32 y = 0; y < src.height; ++y) {
-        std::memcpy(luma_dst + y * dst_pitch, src.data[0] + y * src.linesize[0], src.width);
-    }
-
-    for (u32 y = 0; y < src.height / 2; ++y) {
-        std::memcpy(chroma_dst + y * dst_pitch, src.data[1] + y * src.linesize[1], src.width);
-    }
-}
-
 Frame AvPlayerSource::PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame) {
     ASSERT(frame.format == AV_PIX_FMT_NV12);
 
     auto p_buffer = buffer.GetBuffer();
-    CopyNV12Data(p_buffer, frame);
+    Videodec::CopyNV12Data(p_buffer, frame);
 
     const auto stream = m_avformat_context->streams[m_video_stream_index.value()];
     const auto timestamp = FrameTimestampMillis(frame, stream->time_base);
