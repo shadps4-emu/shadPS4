@@ -631,6 +631,11 @@ static void CopyNV12Data(u8* dst, const AVFrame& src) {
     const auto luma_dst = dst;
     const auto chroma_dst = dst + dst_pitch * dst_height;
 
+    if (dst_height != src.height) {
+        std::memset(luma_dst + src.height * dst_pitch, 0x10, dst_pitch * (dst_height - src.height));
+        std::memset(chroma_dst + (src.height * dst_pitch) / 2, 0x80,
+                    dst_pitch * (dst_height - src.height) / 2);
+    }
     if (src.width == dst_pitch) {
         std::memcpy(luma_dst, src.data[0], src.width * src.height);
         std::memcpy(chroma_dst, src.data[1], (src.width * src.height) / 2);
