@@ -233,9 +233,9 @@ bool AvPlayerSource::Start() {
                       m_video_stream_index.value());
             return false;
         }
-        const auto width = Common::AlignUp<u32>(m_video_codec_context->width, 16);
+        const auto pitch = Common::AlignUp<u32>(m_video_codec_context->width, 64);
         const auto height = Common::AlignUp<u32>(m_video_codec_context->height, 16);
-        const auto size = (width * height * 3) / 2;
+        const auto size = (pitch * height * 3) / 2;
         for (u64 index = 0; index < m_max_num_video_framebuffers; ++index) {
             m_video_buffers.Push(GuestBuffer(m_memory_replacement, 0x100, size, true));
         }
@@ -263,7 +263,7 @@ bool AvPlayerSource::Start() {
         constexpr u8 max_channels = 8;
         constexpr size_t max_sample_size = sizeof(s32);
         const auto size = max_channels * max_sample_size * 1024;
-        for (u64 index = 0; index < 4; ++index) {
+        for (u64 index = 0; index < (m_max_num_video_framebuffers * 2); ++index) {
             m_audio_buffers.Push(GuestBuffer(m_memory_replacement, 0x10, size, false));
         }
     }
@@ -625,26 +625,24 @@ static u64 FrameTimestampMillis(const AVFrame& frame, AVRational time_base) {
 }
 
 static void CopyNV12Data(u8* dst, const AVFrame& src) {
-    const auto dst_width = Common::AlignUp<u32>(src.width, 16);
+    const auto dst_pitch = Common::AlignUp<u32>(src.width, 64);
     const auto dst_height = Common::AlignUp<u32>(src.height, 16);
 
-    const auto src_width = u32(src.width);
-    const auto src_height = u32(src.height);
-    const auto dst_size = (dst_width * dst_height * 3) / 2;
-
-    DEBUG_ASSERT(src.data[0] != nullptr);
-    DEBUG_ASSERT(src.data[1] != nullptr);
-    DEBUG_ASSERT(src.linesize[0] >= s32(src_width));
-    DEBUG_ASSERT(src.linesize[1] >= s32(src_width));
-
     const auto luma_dst = dst;
-    for (u32 y = 0; y < src_height; ++y) {
-        std::memcpy(luma_dst + y * dst_width, src.data[0] + y * src.linesize[0], src_width);
+    const auto chroma_dst = dst + dst_pitch * dst_height;
+
+    if (src.width == dst_pitch) {
+        std::memcpy(luma_dst, src.data[0], src.width * src.height);
+        std::memcpy(chroma_dst, src.data[1], (src.width * src.height) / 2);
+        return;
     }
 
-    const auto chroma_dst = dst + dst_width * dst_height;
-    for (u32 y = 0; y < src_height / 2; ++y) {
-        std::memcpy(chroma_dst + y * dst_width, src.data[1] + y * src.linesize[1], src_width);
+    for (u32 y = 0; y < src.height; ++y) {
+        std::memcpy(luma_dst + y * dst_pitch, src.data[0] + y * src.linesize[0], src.width);
+    }
+
+    for (u32 y = 0; y < src.height / 2; ++y) {
+        std::memcpy(chroma_dst + y * dst_pitch, src.data[1] + y * src.linesize[1], src.width);
     }
 }
 
@@ -658,6 +656,7 @@ Frame AvPlayerSource::PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame
     const auto timestamp = FrameTimestampMillis(frame, stream->time_base);
 
     const auto width = Common::AlignUp<u32>(frame.width, 16);
+    const auto pitch = Common::AlignUp<u32>(frame.width, 64);
     const auto height = Common::AlignUp<u32>(frame.height, 16);
     Core::Memory::Instance()->InvalidateMemory(reinterpret_cast<VAddr>(p_buffer),
                                                (width * height * 3) / 2);
@@ -676,11 +675,11 @@ Frame AvPlayerSource::PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame
                                 .height = height,
                                 .aspect_ratio = (float)av_q2d(frame.sample_aspect_ratio),
                                 .crop_left_offset = u32(frame.crop_left),
-                                .crop_right_offset = u32(frame.crop_right + (width - frame.width)),
+                                .crop_right_offset = u32(frame.crop_right + (pitch - frame.width)),
                                 .crop_top_offset = u32(frame.crop_top),
                                 .crop_bottom_offset =
                                     u32(frame.crop_bottom + (height - frame.height)),
-                                .pitch = width,
+                                .pitch = pitch,
                                 .luma_bit_depth = 8,
                                 .chroma_bit_depth = 8,
                             },
