@@ -169,22 +169,12 @@ public:
 
     template <typename T>
     size_t ReadRaw(void* data, size_t size) const {
-        if (std::ferror(file)) {
-            LOG_ERROR(Core, "file {} in error state?", file_path.string().data());
-            std::clearerr(file);
-        }
         u64 read = std::fread(data, sizeof(T), size, file);
         if (std::ferror(file)) {
             LOG_ERROR(
                 Core,
                 "file read errored, file = {}, data = {}, offset = {:#x}, size = {:#x}, errno = {}",
                 file_path.string().data(), fmt::ptr(data), Tell(), size, std::strerror(errno));
-            std::clearerr(file);
-        }
-        if (std::feof(file)) {
-            LOG_ERROR(Core,
-                      "end of file reached, file = {}, data = {}, offset = {:#x}, size = {:#x}",
-                      file_path.string().data(), fmt::ptr(data), Tell(), size);
             std::clearerr(file);
         }
         return read;
