@@ -24,6 +24,15 @@ struct VehStackState {
 
 thread_local VehStackState g_veh_stack_state{};
 
+bool IsCurrentStackRegisteredWithWindows() noexcept {
+    ULONG_PTR stack_limit{};
+    ULONG_PTR stack_base{};
+    GetCurrentThreadStackLimits(&stack_limit, &stack_base);
+    const uintptr_t current_stack = reinterpret_cast<uintptr_t>(&stack_limit);
+    return stack_limit != 0 && stack_base != 0 && current_stack >= stack_limit &&
+           current_stack < stack_base;
+}
+
 VOID WINAPI VehStackFiberProc(LPVOID param) {
     auto* state = static_cast<VehStackState*>(param);
     for (;;) {
@@ -42,10 +51,13 @@ VOID WINAPI VehStackFiberProc(LPVOID param) {
 
 } // namespace
 
-void InitializeVehStackForCurrentThread() noexcept {
+bool InitializeVehStackForCurrentThread() noexcept {
     auto& state = g_veh_stack_state;
     if (state.initialized) {
-        return;
+        return state.main_fiber != nullptr && state.handler_fiber != nullptr;
+    }
+    if (!IsCurrentStackRegisteredWithWindows()) {
+        return false;
     }
 
     void* main_fiber = ConvertThreadToFiberEx(nullptr, FIBER_FLAG_FLOAT_SWITCH);
@@ -54,9 +66,7 @@ void InitializeVehStackForCurrentThread() noexcept {
         if (err == ERROR_ALREADY_FIBER) {
             main_fiber = GetCurrentFiber();
         } else {
-            // Unable to set up a dedicated handler stack for this thread. Keep going without it.
-            state.initialized = true;
-            return;
+            return false;
         }
     } else {
         state.converted_thread = true;
@@ -71,34 +81,41 @@ void InitializeVehStackForCurrentThread() noexcept {
 
     state.handler_fiber = CreateFiberEx(commit_size, reserve_size, FIBER_FLAG_FLOAT_SWITCH,
                                         VehStackFiberProc, &state);
+    if (state.handler_fiber == nullptr) {
+        if (state.converted_thread) {
+            ConvertFiberToThread();
+        }
+        state = {};
+        return false;
+    }
     state.initialized = true;
+    return true;
 }
 
 void CleanupVehStackForCurrentThread() noexcept {
     auto& state = g_veh_stack_state;
-    if (state.handler_fiber) {
-        // Don't attempt to delete the currently executing fiber.
-        if (state.main_fiber && GetCurrentFiber() != state.handler_fiber) {
-            DeleteFiber(state.handler_fiber);
-            state.handler_fiber = nullptr;
-        }
+    if (!state.initialized || GetCurrentFiber() != state.main_fiber) {
+        return;
     }
 
-    if (state.converted_thread && state.main_fiber && GetCurrentFiber() == state.main_fiber) {
-        ConvertFiberToThread();
-        state.main_fiber = nullptr;
-        state.converted_thread = false;
+    if (state.handler_fiber) {
+        DeleteFiber(state.handler_fiber);
     }
+
+    if (state.converted_thread) {
+        ConvertFiberToThread();
+    }
+    state = {};
 }
 
 long RunOnVehStack(VehHandlerFn fn, _EXCEPTION_POINTERS* exp) noexcept {
     auto& state = g_veh_stack_state;
     if (!state.initialized) {
-        InitializeVehStackForCurrentThread();
-    }
-
-    if (!state.main_fiber || !state.handler_fiber) {
-        return fn(exp);
+        // Native host threads can initialize lazily. Guest execution deliberately clears the TEB
+        // stack bounds, so never convert a thread to a fiber from a guest exception context.
+        if (!IsCurrentStackRegisteredWithWindows() || !InitializeVehStackForCurrentThread()) {
+            return EXCEPTION_CONTINUE_SEARCH;
+        }
     }
 
     // If we're already on the handler fiber, just run directly.

@@ -14,15 +14,15 @@ namespace Core {
 using VehHandlerFn = long (*)(_EXCEPTION_POINTERS* exp) noexcept;
 
 // Prepares a dedicated stack for running vectored exception handler (VEH) work on the calling
-// thread. Safe to call multiple times.
-void InitializeVehStackForCurrentThread() noexcept;
+// thread. Safe to call multiple times. Returns false when Windows cannot create the fiber.
+[[nodiscard]] bool InitializeVehStackForCurrentThread() noexcept;
 
 // Releases any resources allocated by InitializeVehStackForCurrentThread() on the calling thread.
 // Safe to call multiple times.
 void CleanupVehStackForCurrentThread() noexcept;
 
-// Runs the provided function on the calling thread's VEH stack (if available), otherwise executes
-// it on the current stack.
+// Runs the provided function on the calling thread's VEH stack. Returns CONTINUE_SEARCH if a
+// dedicated stack cannot be initialized safely.
 long RunOnVehStack(VehHandlerFn fn, _EXCEPTION_POINTERS* exp) noexcept;
 
 } // namespace Core

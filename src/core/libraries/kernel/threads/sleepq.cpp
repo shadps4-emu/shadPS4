@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
-#include "common/logging/log.h"
 #include "common/spin_lock.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/sleepq.h"
-#include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
 
@@ -25,6 +23,9 @@ struct SleepQueueChain {
 static std::array<SleepQueueChain, HASHSIZE> sc_table{};
 
 void SleepqLock(void* wchan) {
+    if (g_curthread != nullptr) {
+        g_curthread->locklevel.fetch_add(1, std::memory_order_acq_rel);
+    }
     SleepQueueChain* sc = SC_LOOKUP(wchan);
     sc->sc_lock.lock();
 }
@@ -32,6 +33,13 @@ void SleepqLock(void* wchan) {
 void SleepqUnlock(void* wchan) {
     SleepQueueChain* sc = SC_LOOKUP(wchan);
     sc->sc_lock.unlock();
+    if (g_curthread != nullptr) {
+        const int previous = g_curthread->locklevel.fetch_sub(1, std::memory_order_acq_rel);
+        ASSERT(previous > 0);
+        if (previous == 1) {
+            PthreadCancelInterrupt();
+        }
+    }
 }
 
 SleepQueue* SleepqLookup(void* wchan) {
@@ -57,22 +65,20 @@ void SleepqAdd(void* wchan, Pthread* td) {
     }
     td->sleepqueue = nullptr;
     td->wchan = wchan;
-    sq->sq_blocked.push_front(td);
+    // libkernel uses a TAILQ here. Signal therefore selects the oldest waiter.
+    sq->sq_blocked.push_back(td);
 }
 
 bool SleepqRemove(SleepQueue* sq, Pthread* td) {
+    ASSERT_MSG(sq != nullptr, "Cannot remove a thread from a null sleep queue");
     if (sq == nullptr) [[unlikely]] {
         return false;
     }
 
     const auto removed = std::erase(sq->sq_blocked, td);
     const bool has_waiters = !sq->sq_blocked.empty();
+    ASSERT_MSG(removed == 1, "Thread is missing from its sleep queue");
     if (removed == 0) [[unlikely]] {
-        LOG_WARNING(Lib_Kernel,
-                    "SleepqRemove: thread '{}' not found in queue for wchan={:#x}, "
-                    "blocked_non_empty={}",
-                    td != nullptr ? td->name : "<null>",
-                    static_cast<u64>(reinterpret_cast<uintptr_t>(sq->sq_wchan)), has_waiters);
         return has_waiters;
     }
 
@@ -83,6 +89,7 @@ bool SleepqRemove(SleepQueue* sq, Pthread* td) {
         return false;
     }
 
+    ASSERT_MSG(!sq->sq_freeq.empty(), "Sleep queue free list is empty while waiters remain");
     td->sleepqueue = std::addressof(sq->sq_freeq.front());
     sq->sq_freeq.pop_front();
     return true;

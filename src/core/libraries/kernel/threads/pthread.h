@@ -4,6 +4,7 @@
 #pragma once
 
 #include <atomic>
+#include <condition_variable>
 #include <forward_list>
 #include <list>
 #include <mutex>
@@ -61,7 +62,7 @@ enum class PthreadMutexProt : u32 {
 };
 
 struct PthreadMutex {
-    Pthread* m_owner;
+    std::atomic<Pthread*> m_owner;
     int m_count;
     int m_spinloops;
     int m_yieldloops;
@@ -274,28 +275,23 @@ struct Pthread {
     static constexpr u32 ThrMagic = 0xd09ba115U;
     static constexpr u32 MaxDeferWaiters = 50;
 
-    struct DeferredWakeEntry {
-        Pthread* thread;
-        u64 wait_generation;
-    };
-
     std::atomic<s32> tid;
     std::mutex lock;
     u32 cycle;
-    int locklevel;
-    int critical_count;
+    std::atomic_int locklevel;
+    std::atomic_int critical_count;
     int sigblock;
     int refcount;
     PthreadEntryFunc start_routine;
     void* arg;
     Core::NativeThread native_thr;
     PthreadAttr attr;
-    bool cancel_enable;
-    bool cancel_pending;
-    bool cancel_point;
-    bool no_cancel;
-    bool cancel_async;
-    bool cancelling;
+    std::atomic_bool cancel_enable;
+    std::atomic_bool cancel_pending;
+    std::atomic_bool cancel_point;
+    std::atomic_bool no_cancel;
+    std::atomic_bool cancel_async;
+    std::atomic_bool cancelling;
     u64 sigmask;
     bool unblock_sigcancel;
     bool in_sigsuspend;
@@ -317,20 +313,21 @@ struct Pthread {
     int report_events;
     int event_mask;
     std::string name;
-    BinarySemaphore wake_sema{0};
+    WakeSemaphore wake_sema{0};
     SleepQueue* sleepqueue;
     void* wchan;
     PthreadMutex* mutex_obj;
     bool will_sleep;
     bool has_user_waiters;
     int nwaiter_defer;
-    DeferredWakeEntry defer_waiters[MaxDeferWaiters]{};
-    std::atomic<u64> cond_wait_generation{0};
-    std::atomic<u64> cond_wait_armed_generation{0};
-    std::atomic<u64> last_cond_wake_generation{0};
+    WakeSemaphore* defer_waiters[MaxDeferWaiters]{};
+    Pthread* join_target{};
+    std::mutex join_wait_mutex;
+    std::condition_variable join_wait_cv;
 
     bool InCritical() const noexcept {
-        return locklevel > 0 || critical_count > 0;
+        return locklevel.load(std::memory_order_acquire) > 0 ||
+               critical_count.load(std::memory_order_acquire) > 0;
     }
 
     bool ShouldCollect() const noexcept {
@@ -341,50 +338,12 @@ struct Pthread {
         return cancel_pending && cancel_enable && no_cancel == 0;
     }
 
-    u64 BeginCondWaitGeneration() noexcept {
-        return cond_wait_generation.fetch_add(1, std::memory_order_relaxed) + 1;
-    }
-
-    u64 GetCondWaitGeneration() const noexcept {
-        return cond_wait_generation.load(std::memory_order_relaxed);
-    }
-
-    void ArmCondWaitGeneration(u64 generation) noexcept {
-        cond_wait_armed_generation.store(generation, std::memory_order_relaxed);
-    }
-
-    u64 GetCondWaitArmedGeneration() const noexcept {
-        return cond_wait_armed_generation.load(std::memory_order_relaxed);
-    }
-
-    void ClearCondWaitGenerationArm() noexcept {
-        cond_wait_armed_generation.store(0, std::memory_order_relaxed);
-    }
-
-    void SetLastCondWakeGeneration(u64 generation) noexcept {
-        last_cond_wake_generation.store(generation, std::memory_order_relaxed);
-    }
-
-    u64 GetLastCondWakeGeneration() const noexcept {
-        return last_cond_wake_generation.load(std::memory_order_relaxed);
-    }
-
-    bool TryCondWake(u64 wait_generation) {
-        if (GetCondWaitGeneration() != wait_generation ||
-            GetCondWaitArmedGeneration() != wait_generation) {
-            return false;
-        }
-        SetLastCondWakeGeneration(wait_generation);
-        wake_sema.release();
-        return true;
-    }
-
     void WakeAll() {
         for (int i = 0; i < nwaiter_defer; i++) {
-            const DeferredWakeEntry entry = defer_waiters[i];
-            defer_waiters[i] = {};
-            if (entry.thread != nullptr) {
-                entry.thread->TryCondWake(entry.wait_generation);
+            WakeSemaphore* waiter = defer_waiters[i];
+            defer_waiters[i] = nullptr;
+            if (waiter != nullptr) {
+                waiter->release();
             }
         }
         nwaiter_defer = 0;
@@ -395,15 +354,46 @@ struct Pthread {
         }
     }
 
-    bool Sleep(const OrbisKernelTimespec* abstime, u64 usec) {
+    bool Sleep(const OrbisKernelTimespec* abstime, u64 usec, ClockId clock_id = ClockId::Realtime) {
         will_sleep = false;
         if (nwaiter_defer > 0) {
             WakeAll();
         }
         if (abstime == THR_RELTIME) {
-            return wake_sema.try_acquire_for(std::chrono::microseconds(usec));
+            constexpr u64 MaxUsec =
+                static_cast<u64>(std::chrono::duration_cast<std::chrono::microseconds>(
+                                     std::chrono::nanoseconds::max())
+                                     .count());
+            const auto timeout = std::chrono::microseconds(std::min(usec, MaxUsec));
+            return wake_sema.try_acquire_for(timeout);
         } else if (abstime != nullptr) {
-            return wake_sema.try_acquire_until(abstime->TimePoint());
+            OrbisKernelTimespec now{};
+            if (posix_clock_gettime(static_cast<u32>(clock_id), &now) != 0) {
+                return false;
+            }
+
+            if (abstime->tv_sec < now.tv_sec ||
+                (abstime->tv_sec == now.tv_sec && abstime->tv_nsec <= now.tv_nsec)) {
+                return wake_sema.try_acquire_pending();
+            }
+
+            s64 seconds = abstime->tv_sec - now.tv_sec;
+            s64 nanoseconds = abstime->tv_nsec - now.tv_nsec;
+            if (nanoseconds < 0) {
+                --seconds;
+                nanoseconds += 1'000'000'000;
+            }
+
+            constexpr auto MaxTimeout = std::chrono::nanoseconds::max();
+            constexpr s64 MaxSeconds =
+                std::chrono::duration_cast<std::chrono::seconds>(MaxTimeout).count();
+            const auto seconds_part = std::chrono::seconds(std::min(seconds, MaxSeconds));
+            const auto max_nanoseconds = MaxTimeout - seconds_part;
+            const auto timeout =
+                seconds > MaxSeconds || std::chrono::nanoseconds(nanoseconds) > max_nanoseconds
+                    ? MaxTimeout
+                    : seconds_part + std::chrono::nanoseconds(nanoseconds);
+            return wake_sema.try_acquire_for(timeout);
         } else {
             wake_sema.acquire();
             return true;
@@ -415,6 +405,13 @@ struct Pthread {
 using PthreadT = Pthread*;
 
 extern thread_local Pthread* g_curthread;
+
+void PthreadTestCancel();
+void PthreadCancelInterrupt() noexcept;
+#ifndef _WIN32
+bool IsPthreadCancelSignal(int native_signal) noexcept;
+#endif
+void PS4_SYSV_ABI posix_pthread_exit(void* status);
 
 void RegisterMutex(Core::Loader::SymbolsResolver* sym);
 void RegisterCond(Core::Loader::SymbolsResolver* sym);
