@@ -87,18 +87,22 @@ enum OrbisNetSocketTcpOption : u32 {
 };
 
 enum OrbisNetSocketSoOption : u32 {
-    ORBIS_NET_SO_REUSEADDR = 0x00000004,
-    ORBIS_NET_SO_KEEPALIVE = 0x00000008,
-    ORBIS_NET_SO_BROADCAST = 0x00000020,
-    ORBIS_NET_SO_LINGER = 0x00000080,
-    ORBIS_NET_SO_REUSEPORT = 0x00000200,
-    ORBIS_NET_SO_ONESBCAST = 0x00010000,
-    ORBIS_NET_SO_USECRYPTO = 0x00020000,
-    ORBIS_NET_SO_USESIGNATURE = 0x00040000,
-    ORBIS_NET_SO_SNDBUF = 0x1001,
-    ORBIS_NET_SO_RCVBUF = 0x1002,
-    ORBIS_NET_SO_ERROR = 0x1007,
-    ORBIS_NET_SO_TYPE = 0x1008,
+    ORBIS_SO_REUSEADDR = 0x4,
+    ORBIS_SO_KEEPALIVE = 0x8,
+    ORBIS_SO_BROADCAST = 0x20,
+    ORBIS_SO_LINGER = 0x80,
+    ORBIS_SO_REUSEPORT = 0x200,
+    ORBIS_SO_ONESBCAST = 0x10000,
+    ORBIS_SO_USECRYPTO = 0x20000,
+    ORBIS_SO_USESIGNATURE = 0x40000,
+    ORBIS_SO_SNDBUF = 0x1001,
+    ORBIS_SO_RCVBUF = 0x1002,
+    ORBIS_SO_SNDLOWAT = 0x1003,
+    ORBIS_SO_RCVLOWAT = 0x1004,
+    ORBIS_SO_SNDTIMEO = 0x1005,
+    ORBIS_SO_RCVTIMEO = 0x1006,
+    ORBIS_SO_ERROR = 0x1007,
+    ORBIS_SO_TYPE = 0x1008,
     ORBIS_NET_SO_SNDTIMEO = 0x1105,
     ORBIS_NET_SO_RCVTIMEO = 0x1106,
     ORBIS_NET_SO_ERROR_EX = 0x1107,
@@ -121,30 +125,38 @@ enum OrbisNetFlags : u32 {
 
 constexpr std::string_view NameOf(OrbisNetSocketSoOption o) {
     switch (o) {
-    case ORBIS_NET_SO_REUSEADDR:
-        return "ORBIS_NET_SO_REUSEADDR";
-    case ORBIS_NET_SO_KEEPALIVE:
-        return "ORBIS_NET_SO_KEEPALIVE";
-    case ORBIS_NET_SO_BROADCAST:
-        return "ORBIS_NET_SO_BROADCAST";
-    case ORBIS_NET_SO_LINGER:
-        return "ORBIS_NET_SO_LINGER";
-    case ORBIS_NET_SO_REUSEPORT:
-        return "ORBIS_NET_SO_REUSEPORT";
-    case ORBIS_NET_SO_ONESBCAST:
-        return "ORBIS_NET_SO_ONESBCAST";
-    case ORBIS_NET_SO_USECRYPTO:
-        return "ORBIS_NET_SO_USECRYPTO";
-    case ORBIS_NET_SO_USESIGNATURE:
-        return "ORBIS_NET_SO_USESIGNATURE";
-    case ORBIS_NET_SO_SNDBUF:
-        return "ORBIS_NET_SO_SNDBUF";
-    case ORBIS_NET_SO_RCVBUF:
-        return "ORBIS_NET_SO_RCVBUF";
-    case ORBIS_NET_SO_ERROR:
-        return "ORBIS_NET_SO_ERROR";
-    case ORBIS_NET_SO_TYPE:
-        return "ORBIS_NET_SO_TYPE";
+    case ORBIS_SO_REUSEADDR:
+        return "ORBIS_SO_REUSEADDR";
+    case ORBIS_SO_KEEPALIVE:
+        return "ORBIS_SO_KEEPALIVE";
+    case ORBIS_SO_BROADCAST:
+        return "ORBIS_SO_BROADCAST";
+    case ORBIS_SO_LINGER:
+        return "ORBIS_SO_LINGER";
+    case ORBIS_SO_REUSEPORT:
+        return "ORBIS_SO_REUSEPORT";
+    case ORBIS_SO_ONESBCAST:
+        return "ORBIS_SO_ONESBCAST";
+    case ORBIS_SO_USECRYPTO:
+        return "ORBIS_SO_USECRYPTO";
+    case ORBIS_SO_USESIGNATURE:
+        return "ORBIS_SO_USESIGNATURE";
+    case ORBIS_SO_SNDBUF:
+        return "ORBIS_SO_SNDBUF";
+    case ORBIS_SO_RCVBUF:
+        return "ORBIS_SO_RCVBUF";
+    case ORBIS_SO_SNDLOWAT:
+        return "ORBIS_SO_SNDLOWAT";
+    case ORBIS_SO_RCVLOWAT:
+        return "ORBIS_SO_RCVLOWAT";
+    case ORBIS_SO_SNDTIMEO:
+        return "ORBIS_SO_SNDTIMEO";
+    case ORBIS_SO_RCVTIMEO:
+        return "ORBIS_SO_RCVTIMEO";
+    case ORBIS_SO_ERROR:
+        return "ORBIS_SO_ERROR";
+    case ORBIS_SO_TYPE:
+        return "ORBIS_SO_TYPE";
     case ORBIS_NET_SO_SNDTIMEO:
         return "ORBIS_NET_SO_SNDTIMEO";
     case ORBIS_NET_SO_RCVTIMEO:
