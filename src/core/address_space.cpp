@@ -124,7 +124,8 @@ struct AddressSpace::Impl {
         RTL_OSVERSIONINFOW os_version_info{};
         RtlGetVersion(&os_version_info);
 
-        u64 supported_user_max = USER_MAX;
+        const VAddr va_size = reinterpret_cast<VAddr>(sys_info.lpMaximumApplicationAddress);
+        u64 supported_user_max = va_size;
         // This is the build number for Windows 11 22H2
         static constexpr s32 AffectedBuildNumber = 22621;
 
@@ -144,7 +145,17 @@ struct AddressSpace::Impl {
         }
 
         // Determine the free address ranges we can access.
+        const bool is_39bit = va_size <= 0x7FFFFFFFFFULL;
+
         VAddr next_addr = SYSTEM_MANAGED_MIN;
+        if (is_39bit) {
+            supported_user_max = 0x7000000000ULL;
+            LOG_WARNING(
+                Core, "39-bit address space detected, reducing user max to {:#x} to avoid problems",
+                supported_user_max);
+            next_addr = 0x80000000ULL;
+        }
+
         MEMORY_BASIC_INFORMATION info{};
         while (next_addr <= supported_user_max) {
             ASSERT_MSG(VirtualQuery(reinterpret_cast<PVOID>(next_addr), &info, sizeof(info)),
