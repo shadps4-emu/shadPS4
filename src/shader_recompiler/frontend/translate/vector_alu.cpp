@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/opcodes.h"
@@ -377,6 +377,10 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CMP_U64(ConditionOp::LG, false, false, inst);
     case Opcode::V_CMP_GT_U64:
         return V_CMP_U64(ConditionOp::GT, false, false, inst);
+
+        //     V_CMPX_{OP8}_U64
+    case Opcode::V_CMPX_NE_U64:
+        return V_CMP_U64(ConditionOp::LG, false, true, inst);
 
     case Opcode::V_CMP_CLASS_F32:
         return V_CMP_CLASS_F32(inst);
@@ -1270,31 +1274,44 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
 void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
     const bool is_zero = inst.src[1].field == OperandField::ConstZero;
     const bool is_neg_one = inst.src[1].field == OperandField::SignedConstIntNeg;
-    ASSERT(is_zero || is_neg_one);
-    if (is_neg_one) {
-        ASSERT_MSG(-s32(inst.src[1].code) + SignedConstIntNegMin - 1 == -1,
-                   "SignedConstIntNeg must be -1");
-    }
+    const bool src0_thread_bit =
+        inst.src[0].field == OperandField::ScalarGPR || inst.src[0].field == OperandField::VccLo;
 
-    const IR::U1 src0 = [&] {
-        switch (inst.src[0].field) {
-        case OperandField::ScalarGPR:
-            return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
-        case OperandField::VccLo:
-            return ir.GetVcc();
-        default:
-            UNREACHABLE_MSG("src0 = {}", u32(inst.src[0].field));
+    const IR::U1 result = [&]() -> IR::U1 {
+        if (src0_thread_bit && (is_zero || is_neg_one)) {
+            if (is_neg_one) {
+                ASSERT_MSG(-s32(inst.src[1].code) + SignedConstIntNegMin - 1 == -1,
+                           "SignedConstIntNeg must be -1");
+            }
+            const IR::U1 src0 = [&] {
+                switch (inst.src[0].field) {
+                case OperandField::ScalarGPR:
+                    return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
+                case OperandField::VccLo:
+                    return ir.GetVcc();
+                default:
+                    UNREACHABLE_MSG("src0 = {}", u32(inst.src[0].field));
+                }
+            }();
+            switch (op) {
+            case ConditionOp::EQ:
+                return is_zero ? ir.LogicalNot(src0) : src0;
+            case ConditionOp::LG: // NE
+                return is_zero ? src0 : ir.LogicalNot(src0);
+            case ConditionOp::GT:
+                ASSERT(is_zero);
+                return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
+            default:
+                UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
+            }
         }
-    }();
-    const IR::U1 result = [&] {
+        const IR::U64 src0{GetSrc64(inst.src[0])};
+        const IR::U64 src1{GetSrc64(inst.src[1])};
         switch (op) {
         case ConditionOp::EQ:
-            return is_zero ? ir.LogicalNot(src0) : src0;
+            return ir.IEqual(src0, src1);
         case ConditionOp::LG: // NE
-            return is_zero ? src0 : ir.LogicalNot(src0);
-        case ConditionOp::GT:
-            ASSERT(is_zero);
-            return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
+            return ir.INotEqual(src0, src1);
         default:
             UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
         }
@@ -1304,7 +1321,7 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
         UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
     }
     if (set_exec) {
-        UNREACHABLE_MSG("Exec setting for V_CMP_U64 is not supported");
+        ir.SetExec(result);
     }
     SetDst1(inst.dst[1], result);
 }
