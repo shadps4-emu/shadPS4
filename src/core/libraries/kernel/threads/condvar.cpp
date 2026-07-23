@@ -158,8 +158,6 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
                             : POSIX_ETIMEDOUT;
             }
         }
-        curthread->cancel_point = false;
-
         SleepqLock(this);
         if (curthread->wchan == nullptr) {
             error = 0;
@@ -174,6 +172,7 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
             SleepqUnlock(this);
             curthread->mutex_obj = nullptr;
             mp->CvLock(recurse);
+            curthread->cancel_point = false;
             PthreadTestCancel();
             return 0;
         } else if (error == POSIX_ETIMEDOUT) {
@@ -189,6 +188,8 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
     SleepqUnlock(this);
     curthread->mutex_obj = nullptr;
     const int error2 = mp->CvLock(recurse);
+    curthread->cancel_point = false;
+    PthreadCancelInterrupt();
     if (error == 0) {
         error = error2;
     }

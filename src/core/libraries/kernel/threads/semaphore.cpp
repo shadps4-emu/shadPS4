@@ -438,13 +438,12 @@ s32 PS4_SYSV_ABI posix_sem_post(PthreadSem** sem) {
 
     {
         std::scoped_lock lock{(*sem)->wait_mutex};
-        if (!(*sem)->waiters.empty()) {
-            Pthread* waiter = (*sem)->waiters.front();
-            (*sem)->waiters.pop_front();
-            // Keep the waiter published until its wake has been recorded. This prevents a timed
-            // out detached thread from being reclaimed between removal and release.
+        // libkernel wakes every waiter after incrementing the value. Only waiters that win the
+        // value CAS return; the rest publish themselves again and continue waiting.
+        for (Pthread* waiter : (*sem)->waiters) {
             waiter->wake_sema.release();
         }
+        (*sem)->waiters.clear();
     }
     return 0;
 }

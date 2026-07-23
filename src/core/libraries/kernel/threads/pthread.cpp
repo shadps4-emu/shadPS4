@@ -66,10 +66,12 @@ static void ExitThread() {
 
     /*
      * Kernel will do wakeup at the address, so joiner thread
-     * will be resumed if it is
-     * sleeping at the address.
+     * will be resumed if it is sleeping at the address.
      */
-    curthread->tid.store(TidTerminated, std::memory_order_release);
+    {
+        std::scoped_lock wait_lock{curthread->join_wait_mutex};
+        curthread->tid.store(TidTerminated, std::memory_order_release);
+    }
     curthread->tid.notify_all();
     curthread->join_wait_cv.notify_all();
 
@@ -239,6 +241,13 @@ int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread) {
     return 0;
 }
 
+#ifndef _WIN32
+namespace {
+int HostPthreadCancelSignal() noexcept;
+void UnblockPthreadCancelSignal();
+} // namespace
+#endif
+
 #ifdef WIN32
 static DWORD RunThread(void* arg) {
 #else
@@ -251,6 +260,10 @@ static void* RunThread(void* arg) {
     Core::InitializeTLS();
 
     curthread->native_thr.Initialize();
+
+#ifndef _WIN32
+    UnblockPthreadCancelSignal();
+#endif
 
 #ifdef WIN32
     std::set_terminate(Common::Log::Terminate);
@@ -647,6 +660,14 @@ int HostPthreadCancelSignal() noexcept {
 #endif
 }
 
+void UnblockPthreadCancelSignal() {
+    sigset_t signal_set{};
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, HostPthreadCancelSignal());
+    ASSERT_MSG(::pthread_sigmask(SIG_UNBLOCK, &signal_set, nullptr) == 0,
+               "Failed to unblock pthread cancellation signal");
+}
+
 void HostPthreadCancelSignalHandler(int, siginfo_t*, void*) {
     PthreadCancelInterrupt();
 }
@@ -660,6 +681,7 @@ void InstallPthreadCancelSignalHandler() {
     sigfillset(&action.sa_mask);
     ASSERT_MSG(sigaction(HostPthreadCancelSignal(), &action, nullptr) == 0,
                "Failed to register pthread cancellation signal handler");
+    UnblockPthreadCancelSignal();
 }
 #endif
 
@@ -714,13 +736,20 @@ int PS4_SYSV_ABI posix_pthread_cancel(PthreadT thread) {
         return ret;
     }
 
-    const bool newly_pending = !thread->cancel_pending.exchange(true);
+    Pthread* join_target = thread->join_target;
+    bool newly_pending;
+    if (join_target != nullptr) {
+        std::scoped_lock wait_lock{join_target->join_wait_mutex};
+        newly_pending = !thread->cancel_pending.exchange(true);
+    } else {
+        newly_pending = !thread->cancel_pending.exchange(true);
+    }
     // libkernel interrupts the target only when cancellation first becomes pending. The
     // per-thread wake predicate is the host equivalent and is drained before each wait.
     if (newly_pending) {
         thread->wake_sema.release();
-        if (thread->join_target != nullptr) {
-            thread->join_target->join_wait_cv.notify_all();
+        if (join_target != nullptr) {
+            join_target->join_wait_cv.notify_all();
         }
         if (thread != g_curthread) {
             InterruptPthreadForCancellation(thread);
@@ -746,9 +775,7 @@ int PS4_SYSV_ABI posix_pthread_setcancelstate(PthreadCancelState state,
         break;
     case PthreadCancelState::Enable:
         curthread->cancel_enable = true;
-        if (curthread->cancel_async.load(std::memory_order_acquire)) {
-            PthreadTestCancel();
-        }
+        PthreadTestCancel();
         break;
     default:
         return POSIX_EINVAL;
