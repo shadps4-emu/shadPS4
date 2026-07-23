@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
@@ -8,6 +8,7 @@
 #include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
+#include "core/libraries/videodec/video_utils.h"
 #include "core/memory.h"
 
 #include <magic_enum/magic_enum.hpp>
@@ -25,8 +26,7 @@ extern "C" {
 
 namespace Libraries::AvPlayer {
 
-AvPlayerSource::AvPlayerSource(AvPlayerStateCallback& state, bool use_vdec2)
-    : m_state(state), m_use_vdec2(use_vdec2) {}
+AvPlayerSource::AvPlayerSource(AvPlayerStateCallback& state) : m_state(state) {}
 
 AvPlayerSource::~AvPlayerSource() {
     Stop();
@@ -135,12 +135,8 @@ bool AvPlayerSource::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
         LOG_INFO(Lib_AvPlayer, "Stream {} is a video stream.", stream_index);
         info.details.video.aspect_ratio =
             f32(p_stream->codecpar->width) / p_stream->codecpar->height;
-        auto width = u32(p_stream->codecpar->width);
-        auto height = u32(p_stream->codecpar->height);
-        if (!m_use_vdec2) {
-            width = Common::AlignUp(width, 16);
-            height = Common::AlignUp(height, 16);
-        }
+        const auto width = Common::AlignUp<u32>(p_stream->codecpar->width, 16);
+        const auto height = Common::AlignUp<u32>(p_stream->codecpar->height, 16);
         info.details.video.width = width;
         info.details.video.height = height;
         if (p_lang_node != nullptr) {
@@ -238,13 +234,9 @@ bool AvPlayerSource::Start() {
                       m_video_stream_index.value());
             return false;
         }
-        auto width = u32(m_video_codec_context->width);
-        auto height = u32(m_video_codec_context->height);
-        if (!m_use_vdec2) {
-            width = Common::AlignUp(width, 16);
-            height = Common::AlignUp(height, 16);
-        }
-        const auto size = (width * height * 3) / 2;
+        const auto pitch = Common::AlignUp<u32>(m_video_codec_context->width, 64);
+        const auto height = Common::AlignUp<u32>(m_video_codec_context->height, 16);
+        const auto size = (pitch * height * 3) / 2;
         for (u64 index = 0; index < m_max_num_video_framebuffers; ++index) {
             m_video_buffers.Push(GuestBuffer(m_memory_replacement, 0x100, size, true));
         }
@@ -269,11 +261,11 @@ bool AvPlayerSource::Start() {
                       m_audio_stream_index.value());
             return false;
         }
-        const auto num_channels = m_audio_codec_context->ch_layout.nb_channels;
-        const auto align = num_channels * sizeof(u16);
-        const auto size = num_channels * sizeof(u16) * 1024;
-        for (u64 index = 0; index < 8; ++index) {
-            m_audio_buffers.Push(GuestBuffer(m_memory_replacement, 0x100, size, false));
+        constexpr u8 max_channels = 8;
+        constexpr size_t max_sample_size = sizeof(s32);
+        const auto size = max_channels * max_sample_size * 1024;
+        for (u64 index = 0; index < (m_max_num_video_framebuffers * 2); ++index) {
+            m_audio_buffers.Push(GuestBuffer(m_memory_replacement, 0x10, size, false));
         }
     }
     m_demuxer_thread.Run([this](std::stop_token stop) { this->DemuxerThread(stop); });
@@ -633,50 +625,18 @@ static u64 FrameTimestampMillis(const AVFrame& frame, AVRational time_base) {
     return millis > 0 ? u64(millis) : 0;
 }
 
-static void CopyNV12Data(u8* dst, const AVFrame& src, bool use_vdec2) {
-    auto dst_width = u32(src.width);
-    auto dst_height = u32(src.height);
-    if (!use_vdec2) {
-        dst_width = Common::AlignUp(dst_width, 16);
-        dst_height = Common::AlignUp(dst_height, 16);
-    }
-
-    const auto src_width = u32(src.width);
-    const auto src_height = u32(src.height);
-    const auto dst_size = (dst_width * dst_height * 3) / 2;
-    std::memset(dst, 0, dst_size);
-
-    ASSERT(src.data[0] != nullptr);
-    ASSERT(src.data[1] != nullptr);
-    ASSERT(src.linesize[0] >= s32(src_width));
-    ASSERT(src.linesize[1] >= s32(src_width));
-
-    const auto luma_dst = dst;
-    for (u32 y = 0; y < src_height; ++y) {
-        std::memcpy(luma_dst + y * dst_width, src.data[0] + y * src.linesize[0], src_width);
-    }
-
-    const auto chroma_dst = dst + dst_width * dst_height;
-    for (u32 y = 0; y < src_height / 2; ++y) {
-        std::memcpy(chroma_dst + y * dst_width, src.data[1] + y * src.linesize[1], src_width);
-    }
-}
-
 Frame AvPlayerSource::PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame) {
     ASSERT(frame.format == AV_PIX_FMT_NV12);
 
     auto p_buffer = buffer.GetBuffer();
-    CopyNV12Data(p_buffer, frame, m_use_vdec2);
+    Videodec::CopyNV12Data(p_buffer, frame);
 
     const auto stream = m_avformat_context->streams[m_video_stream_index.value()];
     const auto timestamp = FrameTimestampMillis(frame, stream->time_base);
 
-    auto width = u32(frame.width);
-    auto height = u32(frame.height);
-    if (!m_use_vdec2) {
-        width = Common::AlignUp(width, 16);
-        height = Common::AlignUp(height, 16);
-    }
+    const auto width = Common::AlignUp<u32>(frame.width, 16);
+    const auto pitch = Common::AlignUp<u32>(frame.width, 64);
+    const auto height = Common::AlignUp<u32>(frame.height, 16);
     Core::Memory::Instance()->InvalidateMemory(reinterpret_cast<VAddr>(p_buffer),
                                                (width * height * 3) / 2);
 
@@ -694,11 +654,11 @@ Frame AvPlayerSource::PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame
                                 .height = height,
                                 .aspect_ratio = (float)av_q2d(frame.sample_aspect_ratio),
                                 .crop_left_offset = u32(frame.crop_left),
-                                .crop_right_offset = u32(frame.crop_right + (width - frame.width)),
+                                .crop_right_offset = u32(frame.crop_right + (pitch - frame.width)),
                                 .crop_top_offset = u32(frame.crop_top),
                                 .crop_bottom_offset =
                                     u32(frame.crop_bottom + (height - frame.height)),
-                                .pitch = width,
+                                .pitch = pitch,
                                 .luma_bit_depth = 8,
                                 .chroma_bit_depth = 8,
                             },

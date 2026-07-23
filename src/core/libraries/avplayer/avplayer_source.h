@@ -142,7 +142,7 @@ private:
 
 class AvPlayerSource {
 public:
-    AvPlayerSource(AvPlayerStateCallback& state, bool use_vdec2);
+    AvPlayerSource(AvPlayerStateCallback& state);
     ~AvPlayerSource();
 
     bool Init(const AvPlayerInitData& init_data, std::string_view path);
@@ -192,7 +192,6 @@ private:
     Frame PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame);
 
     AvPlayerStateCallback& m_state;
-    bool m_use_vdec2 = false;
 
     AvPlayerMemAllocator m_memory_replacement{};
     u32 m_max_num_video_framebuffers{};

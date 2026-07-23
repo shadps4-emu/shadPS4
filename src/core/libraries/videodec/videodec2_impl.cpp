@@ -3,34 +3,17 @@
 
 #include "videodec2_impl.h"
 
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
-#include "core/libraries/videodec/videodec_error.h"
+#include "video_utils.h"
+#include "videodec_error.h"
 
 #include "common/support/avdec.h"
 
 namespace Libraries::Videodec2 {
 
 std::vector<OrbisVideodec2AvcPictureInfo> gPictureInfos;
-
-static inline void CopyNV12Data(u8* dst, const AVFrame& src) {
-    if (src.width == src.linesize[0]) {
-        std::memcpy(dst, src.data[0], src.width * src.height);
-        std::memcpy(dst + (src.width * src.height), src.data[1], (src.width * src.height) / 2);
-        return;
-    }
-
-    for (u16 row = 0; row < src.height; row++) {
-        u64 dst_offset = row * src.width;
-        std::memcpy(dst + dst_offset, src.data[0] + (row * src.linesize[0]), src.width);
-    }
-
-    u64 dst_base = src.width * src.height;
-    for (u16 row = 0; row < src.height / 2; row++) {
-        u64 dst_offset = row * src.width;
-        std::memcpy(dst + dst_base + dst_offset, src.data[1] + (row * src.linesize[1]), src.width);
-    }
-}
 
 VdecDecoder::VdecDecoder(const OrbisVideodec2DecoderConfigInfo& configInfo,
                          const OrbisVideodec2DecoderMemoryInfo& memoryInfo) {
@@ -99,61 +82,62 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
         return ORBIS_VIDEODEC2_ERROR_API_FAIL;
     }
 
-    while (true) {
-        ret = avcodec_receive_frame(mCodecContext, frame);
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-            break;
-        } else if (ret < 0) {
-            LOG_ERROR(Lib_Vdec2, "Error receiving frame from decoder: {}", ret);
-            av_packet_free(&packet);
-            av_frame_free(&frame);
-            return ORBIS_VIDEODEC2_ERROR_API_FAIL;
-        }
-
-        if (frame->format != AV_PIX_FMT_NV12) {
-            AVFrame* nv12_frame = ConvertNV12Frame(*frame);
-            ASSERT(nv12_frame);
-            av_frame_free(&frame);
-            frame = nv12_frame;
-        }
-
-        CopyNV12Data((u8*)frameBuffer.frameBuffer, *frame);
-        frameBuffer.isAccepted = true;
-
-        outputInfo.codecType = 1; // FIXME: Hardcoded to AVC
-        outputInfo.frameWidth = frame->width;
-        outputInfo.frameHeight = frame->height;
-        outputInfo.framePitch = frame->width;
-        outputInfo.frameBufferSize = frameBuffer.frameBufferSize;
-        outputInfo.frameBuffer = frameBuffer.frameBuffer;
-
-        outputInfo.isValid = true;
-        outputInfo.isErrorFrame = false;
-        outputInfo.pictureCount = 1; // TODO: 2 pictures for interlaced video
-
-        // Only set framePitchInBytes if the game uses the newer struct version.
-        if (outputInfo.thisSize == sizeof(OrbisVideodec2OutputInfo)) {
-            outputInfo.framePitchInBytes = frame->width;
-        }
-
-        if (outputInfo.isValid) {
-            OrbisVideodec2AvcPictureInfo pictureInfo = {};
-
-            pictureInfo.thisSize = sizeof(OrbisVideodec2AvcPictureInfo);
-            pictureInfo.isValid = true;
-
-            pictureInfo.ptsData = inputData.ptsData;
-            pictureInfo.dtsData = inputData.dtsData;
-            pictureInfo.attachedData = inputData.attachedData;
-
-            pictureInfo.frameCropLeftOffset = frame->crop_left;
-            pictureInfo.frameCropRightOffset = frame->crop_right;
-            pictureInfo.frameCropTopOffset = frame->crop_top;
-            pictureInfo.frameCropBottomOffset = frame->crop_bottom;
-
-            gPictureInfos.push_back(pictureInfo);
-        }
+    ret = avcodec_receive_frame(mCodecContext, frame);
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+        av_frame_free(&frame);
+        return ORBIS_OK;
+    } else if (ret < 0) {
+        LOG_ERROR(Lib_Vdec2, "Error receiving frame from decoder: {}", ret);
+        av_packet_free(&packet);
+        av_frame_free(&frame);
+        return ORBIS_VIDEODEC2_ERROR_API_FAIL;
     }
+
+    if (frame->format != AV_PIX_FMT_NV12) {
+        AVFrame* nv12_frame = ConvertNV12Frame(*frame);
+        ASSERT(nv12_frame);
+        av_frame_free(&frame);
+        frame = nv12_frame;
+    }
+
+    Videodec::CopyNV12Data((u8*)frameBuffer.frameBuffer, *frame);
+    frameBuffer.isAccepted = true;
+
+    const auto width = Common::AlignUp<u32>(frame->width, 16);
+    const auto pitch = Common::AlignUp<u32>(frame->width, 64);
+    const auto height = Common::AlignUp<u32>(frame->height, 16);
+
+    outputInfo.codecType = 1; // FIXME: Hardcoded to AVC
+    outputInfo.frameWidth = width;
+    outputInfo.framePitch = pitch;
+    outputInfo.frameHeight = height;
+    outputInfo.frameBuffer = frameBuffer.frameBuffer;
+    outputInfo.frameBufferSize = (pitch * height * 3) / 2;
+
+    outputInfo.isValid = true;
+    outputInfo.isErrorFrame = false;
+    outputInfo.pictureCount = 1; // TODO: 2 pictures for interlaced video
+
+    // Only set framePitchInBytes if the game uses the newer struct version.
+    if (outputInfo.thisSize == sizeof(OrbisVideodec2OutputInfo)) {
+        outputInfo.framePitchInBytes = pitch;
+    }
+
+    OrbisVideodec2AvcPictureInfo pictureInfo = {};
+
+    pictureInfo.thisSize = sizeof(OrbisVideodec2AvcPictureInfo);
+    pictureInfo.isValid = true;
+
+    pictureInfo.ptsData = inputData.ptsData;
+    pictureInfo.dtsData = inputData.dtsData;
+    pictureInfo.attachedData = inputData.attachedData;
+
+    pictureInfo.frameCropTopOffset = 0;
+    pictureInfo.frameCropLeftOffset = 0;
+    pictureInfo.frameCropRightOffset = pitch - frame->width;
+    pictureInfo.frameCropBottomOffset = height - frame->height;
+
+    gPictureInfos.push_back(pictureInfo);
 
     av_packet_free(&packet);
     av_frame_free(&frame);
@@ -178,44 +162,62 @@ s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frameBuffer,
         return ORBIS_VIDEODEC2_ERROR_API_FAIL;
     }
 
-    while (true) {
-        int ret = avcodec_receive_frame(mCodecContext, frame);
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-            break;
-        } else if (ret < 0) {
-            LOG_ERROR(Lib_Vdec2, "Error receiving frame from decoder: {}", ret);
-            av_frame_free(&frame);
-            return ORBIS_VIDEODEC2_ERROR_API_FAIL;
-        }
-
-        if (frame->format != AV_PIX_FMT_NV12) {
-            AVFrame* nv12_frame = ConvertNV12Frame(*frame);
-            ASSERT(nv12_frame);
-            av_frame_free(&frame);
-            frame = nv12_frame;
-        }
-
-        CopyNV12Data((u8*)frameBuffer.frameBuffer, *frame);
-        frameBuffer.isAccepted = true;
-
-        outputInfo.codecType = 1; // FIXME: Hardcoded to AVC
-        outputInfo.frameWidth = frame->width;
-        outputInfo.frameHeight = frame->height;
-        outputInfo.framePitch = frame->width;
-        outputInfo.frameBufferSize = frameBuffer.frameBufferSize;
-        outputInfo.frameBuffer = frameBuffer.frameBuffer;
-
-        outputInfo.isValid = true;
-        outputInfo.isErrorFrame = false;
-        outputInfo.pictureCount = 1; // TODO: 2 pictures for interlaced video
-
-        // Only set framePitchInBytes if the game uses the newer struct version.
-        if (outputInfo.thisSize == sizeof(OrbisVideodec2OutputInfo)) {
-            outputInfo.framePitchInBytes = frame->width;
-        }
-
-        // FIXME: Should we add picture info here too?
+    avcodec_send_packet(mCodecContext, nullptr);
+    int ret = avcodec_receive_frame(mCodecContext, frame);
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+        av_frame_free(&frame);
+        return ORBIS_OK;
+    } else if (ret < 0) {
+        LOG_ERROR(Lib_Vdec2, "Error receiving frame from decoder: {}", ret);
+        av_frame_free(&frame);
+        return ORBIS_VIDEODEC2_ERROR_API_FAIL;
     }
+
+    if (frame->format != AV_PIX_FMT_NV12) {
+        AVFrame* nv12_frame = ConvertNV12Frame(*frame);
+        ASSERT(nv12_frame);
+        av_frame_free(&frame);
+        frame = nv12_frame;
+    }
+
+    Videodec::CopyNV12Data((u8*)frameBuffer.frameBuffer, *frame);
+    frameBuffer.isAccepted = true;
+
+    const auto width = Common::AlignUp<u32>(frame->width, 16);
+    const auto pitch = Common::AlignUp<u32>(frame->width, 64);
+    const auto height = Common::AlignUp<u32>(frame->height, 16);
+
+    outputInfo.codecType = 1; // FIXME: Hardcoded to AVC
+    outputInfo.frameWidth = width;
+    outputInfo.framePitch = pitch;
+    outputInfo.frameHeight = height;
+    outputInfo.frameBuffer = frameBuffer.frameBuffer;
+    outputInfo.frameBufferSize = (pitch * height * 3) / 2;
+
+    outputInfo.isValid = true;
+    outputInfo.isErrorFrame = false;
+    outputInfo.pictureCount = 1; // TODO: 2 pictures for interlaced video
+
+    // Only set framePitchInBytes if the game uses the newer struct version.
+    if (outputInfo.thisSize == sizeof(OrbisVideodec2OutputInfo)) {
+        outputInfo.framePitchInBytes = pitch;
+    }
+
+    OrbisVideodec2AvcPictureInfo pictureInfo = {};
+
+    pictureInfo.thisSize = sizeof(OrbisVideodec2AvcPictureInfo);
+    pictureInfo.isValid = true;
+
+    pictureInfo.ptsData = frame->pts;
+    pictureInfo.dtsData = frame->pkt_dts;
+    pictureInfo.attachedData = 0;
+
+    pictureInfo.frameCropTopOffset = 0;
+    pictureInfo.frameCropLeftOffset = 0;
+    pictureInfo.frameCropRightOffset = pitch - frame->width;
+    pictureInfo.frameCropBottomOffset = height - frame->height;
+
+    gPictureInfos.push_back(pictureInfo);
 
     av_frame_free(&frame);
     return ORBIS_OK;
