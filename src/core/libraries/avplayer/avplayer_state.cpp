@@ -200,9 +200,8 @@ bool AvPlayerState::Pause() {
         return true;
     }
     if (m_up_source == nullptr || m_current_state == AvState::Pause ||
-        m_current_state == AvState::Stop || m_current_state == AvState::Ready ||
-        m_current_state == AvState::Initial || m_current_state == AvState::Unknown ||
-        m_current_state == AvState::AddingSource) {
+        m_current_state == AvState::Ready || m_current_state == AvState::Initial ||
+        m_current_state == AvState::Unknown || m_current_state == AvState::AddingSource) {
         LOG_ERROR(Lib_AvPlayer, "Could not pause playback.");
         return false;
     }
@@ -460,7 +459,7 @@ void AvPlayerState::ProcessEvent() {
     }
     case AvEventType::AddSource: {
         std::shared_lock lock(m_source_mutex);
-        if (m_up_source->FindStreamInfo()) {
+        if (m_up_source->HasStreams()) {
             SetState(AvState::Ready);
             OnPlaybackStateChanged(AvState::Ready);
         } else {
