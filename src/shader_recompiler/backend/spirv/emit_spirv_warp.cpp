@@ -6,6 +6,13 @@
 
 namespace Shader::Backend::SPIRV {
 
+Id EmitGuestLaneId(EmitContext& ctx) {
+    ASSERT(ctx.l_stage == LogicalStage::Compute);
+    constexpr u32 guest_wave_size = 64;
+    const Id invocation_index = ctx.OpLoad(ctx.U32[1], ctx.local_invocation_index);
+    return ctx.OpBitwiseAnd(ctx.U32[1], invocation_index, ctx.ConstU32(guest_wave_size - 1));
+}
+
 Id SubgroupScope(EmitContext& ctx) {
     return ctx.ConstU32(static_cast<u32>(spv::Scope::Subgroup));
 }

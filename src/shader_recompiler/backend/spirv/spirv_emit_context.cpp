@@ -307,6 +307,12 @@ void EmitContext::DefineWorkgroupIndex() {
 }
 
 void EmitContext::DefineInputs() {
+    if (info.uses_guest_lane_id) {
+        ASSERT(l_stage == LogicalStage::Compute);
+        local_invocation_index =
+            DefineVariable(U32[1], spv::BuiltIn::LocalInvocationIndex, spv::StorageClass::Input);
+        Decorate(local_invocation_index, spv::Decoration::Flat);
+    }
     if (info.uses_lane_id) {
         subgroup_local_invocation_id = DefineVariable(
             U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);

@@ -152,7 +152,9 @@ set(GCN_TEST_SOURCES
     gcn/translator.cpp
 
     # Tests
+    gcn/test_guest_lane_id.cpp
     gcn/test_gcn_instructions.cpp
+    gcn/test_mbcnt.cpp
 )
 
 add_executable(shadps4_settings_test ${SETTINGS_TEST_SOURCES})
