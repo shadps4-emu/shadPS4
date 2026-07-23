@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 #include "common/types.h"
+#include "core/memory.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
@@ -182,7 +183,13 @@ public:
     /// Maps and commits a memory region with user provided data
     u64 Copy(auto src, size_t size, size_t alignment = 0) {
         const auto [data, offset] = Map(size, alignment);
-        std::memcpy(data, reinterpret_cast<const void*>(src), size);
+        auto* memory = Core::Memory::Instance();
+        const VAddr src_vaddr = reinterpret_cast<const VAddr>(src);
+        if (memory->IsValidMapping(src_vaddr)) {
+            memory->CopySparseMemory(src_vaddr, data, size);
+        } else {
+            std::memcpy(data, reinterpret_cast<const void*>(src), size);
+        }
         Commit();
         return offset;
     }
