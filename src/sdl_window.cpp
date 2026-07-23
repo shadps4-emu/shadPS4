@@ -34,6 +34,7 @@
 #include <SDL3/SDL_metal.h>
 #endif
 #include <core/emulator_settings.h>
+#include "core/libraries/keyboard/keyboard.h"
 #include "core/libraries/mouse/sdl_mouse.h"
 
 CMRC_DECLARE(res);
@@ -228,7 +229,7 @@ void WindowSDL::WaitEvent() {
         return;
     }
 
-    if (Libraries::Mouse::PushSDLEvent(event)) {
+    if (Libraries::Mouse::PushSDLEvent(event) || Libraries::Keyboard::PushSDLEvent(event)) {
         return;
     }
 
