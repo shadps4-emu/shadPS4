@@ -24,10 +24,11 @@ AvPlayerZarStreamer::~AvPlayerZarStreamer() {
 }
 
 bool AvPlayerZarStreamer::Init(std::string_view path) {
-    if (m_file.Open(std::filesystem::path{path}, Common::FS::FileAccessMode::Read) != 0) {
+    m_file = Common::FS::Zar::OpenFile(std::filesystem::path{path});
+    if (!m_file) {
         return false;
     }
-    m_file_size = m_file.GetSize();
+    m_file_size = m_file->GetSize();
 
     // The buffer is owned and deallocated by avio_context_free after a successful allocation.
     auto* buffer = static_cast<u8*>(av_malloc(AvioBufferSize));
@@ -46,7 +47,7 @@ bool AvPlayerZarStreamer::Init(std::string_view path) {
 
 void AvPlayerZarStreamer::Reset() {
     m_position = 0;
-    m_file.Seek(0);
+    m_file->SetOffset(0);
 }
 
 s32 AvPlayerZarStreamer::ReadPacket(void* opaque, u8* buffer, s32 size) {
@@ -57,7 +58,7 @@ s32 AvPlayerZarStreamer::ReadPacket(void* opaque, u8* buffer, s32 size) {
     if (self->m_position + size > self->m_file_size) {
         size = self->m_file_size - self->m_position;
     }
-    const auto bytes_read = static_cast<s32>(self->m_file.ReadRaw<u8>(buffer, size));
+    const auto bytes_read = static_cast<s32>(self->m_file->Read(buffer, size));
     if (bytes_read == 0 && size != 0) {
         return AVERROR_EOF;
     }
@@ -84,9 +85,7 @@ s64 AvPlayerZarStreamer::Seek(void* opaque, s64 offset, int whence) {
         return -1;
     }
 
-    if (!self->m_file.Seek(static_cast<s64>(position))) {
-        return -1;
-    }
+    self->m_file->SetOffset(position);
     self->m_position = position;
     return position;
 }

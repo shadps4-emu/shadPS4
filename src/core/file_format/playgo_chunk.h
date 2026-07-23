@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <mutex>
 #include <vector>
-#include "common/io_file.h"
+#include "common/file.h"
 #include "core/libraries/playgo/playgo_types.h"
 
 constexpr u32 PLAYGO_MAGIC = 0x6F676C70;
@@ -111,7 +111,7 @@ public:
     ~PlaygoFile() = default;
 
     bool Open(const std::filesystem::path& filepath);
-    bool LoadChunks(const Common::FS::IOFile& file);
+    bool LoadChunks(const Common::FS::File& file);
 
     PlaygoHeader& GetPlaygoHeader() {
         return playgoHeader;
@@ -121,7 +121,7 @@ public:
     }
 
 private:
-    bool load_chunk_data(const Common::FS::IOFile& file, const chunk_t chunk, std::string& data);
+    bool load_chunk_data(const Common::FS::File& file, const chunk_t chunk, std::string& data);
 
 private:
     PlaygoHeader playgoHeader;

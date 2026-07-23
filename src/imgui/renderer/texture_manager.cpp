@@ -6,7 +6,7 @@
 
 #include <imgui.h>
 #include "common/assert.h"
-#include "common/io_file.h"
+#include "common/file.h"
 #include "common/polyfill_thread.h"
 #include "common/stb.h"
 #include "common/thread.h"
@@ -158,7 +158,7 @@ void WorkerLoop() {
             }
 
             if (!path.empty()) { // Decode PNG from file
-                Common::FS::IOFile file(path, Common::FS::FileAccessMode::Read);
+                Common::FS::File file(path, Common::FS::FileAccessMode::Read);
                 if (!file.IsOpen()) {
                     LOG_ERROR(ImGui, "Failed to open PNG file: {}", path.string());
                     continue;

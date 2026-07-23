@@ -7,13 +7,13 @@
 #include <sstream>
 #include <vector>
 
-#include "common/io_file.h"
+#include "common/file.h"
 #include "npbind.h"
 
 bool NPBindFile::Load(const std::filesystem::path& path) {
     Clear(); // Clear any existing data
 
-    Common::FS::IOFile f(path, Common::FS::FileAccessMode::Read);
+    Common::FS::File f(path, Common::FS::FileAccessMode::Read);
     if (!f.IsOpen())
         return false;
 

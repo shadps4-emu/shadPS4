@@ -8,9 +8,9 @@
 #include <span>
 #include <type_traits>
 
+#include "common/assert.h"
 #include "common/concepts.h"
 #include "common/types.h"
-#include "common/zar_fs.h"
 #include "enum.h"
 
 namespace Common::FS {
@@ -105,12 +105,7 @@ public:
     }
 
     bool IsOpen() const {
-        return file != nullptr || zar_file != nullptr;
-    }
-
-    /// Returns whether the file is backed by an archive entry.
-    bool IsZarBacked() const {
-        return zar_file != nullptr;
+        return file != nullptr;
     }
 
     bool IsWriteOnly() const {
@@ -119,9 +114,6 @@ public:
     }
 
     uintptr_t GetFileMapping();
-
-    /// Materializes an archive entry as a host file while preserving the current offset.
-    bool MaterializeToHost();
 
     int Open(const std::filesystem::path& path, FileAccessMode mode,
              FileType type = FileType::BinaryFile,
@@ -177,21 +169,24 @@ public:
 
     template <typename T>
     size_t ReadRaw(void* data, size_t size) const {
-        if (zar_file) {
-            return zar_file->Read(data, size * sizeof(T)) / sizeof(T);
-        }
-        return std::fread(data, sizeof(T), size, file);
+        u64 read = std::fread(data, sizeof(T), size, file);
+        ASSERT_MSG(std::ferror(file) == 0, "Failed to read file, error = {}", std::strerror(errno));
+        return read;
     }
 
     template <typename T>
     size_t WriteSpan(std::span<const T> data) const {
         static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
 
-        if (!IsOpen() || zar_file) {
+        if (!IsOpen()) {
             return 0;
         }
 
-        return std::fwrite(data.data(), sizeof(T), data.size(), file);
+        u64 written = std::fwrite(data.data(), sizeof(T), data.size(), file);
+        ASSERT_MSG(std::ferror(file) == 0, "Failed to write to file, error = {}",
+                   std::strerror(errno));
+        std::fflush(file);
+        return written;
     }
 
     template <typename T>
@@ -202,19 +197,17 @@ public:
         if (!IsOpen()) {
             return false;
         }
-        if (zar_file) {
-            return zar_file->Read(&object, sizeof(T)) == sizeof(T);
-        }
 
-        return std::fread(&object, sizeof(T), 1, file) == 1;
+        bool success = std::fread(&object, sizeof(T), 1, file) == 1;
+        ASSERT_MSG(std::ferror(file) == 0, "Failed to read file, error = {}", std::strerror(errno));
+        return success;
     }
 
     template <typename T>
     size_t WriteRaw(const void* data, size_t size) const {
-        if (zar_file) {
-            return 0;
-        }
-        auto bytes = std::fwrite(data, sizeof(T), size, file);
+        u64 bytes = std::fwrite(data, sizeof(T), size, file);
+        ASSERT_MSG(std::ferror(file) == 0, "Failed to write to file, error = {}",
+                   std::strerror(errno));
         std::fflush(file);
         return bytes;
     }
@@ -224,11 +217,14 @@ public:
         static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
         static_assert(!std::is_pointer_v<T>, "T must not be a pointer to an object.");
 
-        if (!IsOpen() || zar_file) {
+        if (!IsOpen()) {
             return false;
         }
 
-        return std::fwrite(&object, sizeof(T), 1, file) == 1;
+        u64 bytes = std::fwrite(&object, sizeof(T), 1, file) == 1;
+        ASSERT_MSG(std::ferror(file) == 0, "Failed to read file, error = {}", std::strerror(errno));
+        std::fflush(file);
+        return bytes;
     }
 
     std::string ReadString(size_t length) const;
@@ -247,8 +243,6 @@ private:
     std::filesystem::path file_path;
     FileAccessMode file_access_mode{};
     FileType file_type{};
-
-    std::unique_ptr<Zar::FileHandle> zar_file;
 
     uintptr_t file_mapping = 0;
 };

@@ -33,7 +33,7 @@ std::filesystem::path GetLooseOverlayPath(const std::filesystem::path& game_path
 std::optional<std::filesystem::path> FindGameByID(const std::filesystem::path& dir,
                                                   const std::string& game_id, int max_depth);
 
-/// Filesystem queries that also accept archive paths. An archive itself is a directory.
+/// Filesystem queries for archive paths. An archive itself is a directory.
 bool Exists(const std::filesystem::path& path);
 bool IsDirectory(const std::filesystem::path& path);
 bool IsRegularFile(const std::filesystem::path& path);
@@ -43,7 +43,7 @@ std::optional<std::filesystem::file_time_type> GetLastWriteTime(const std::files
 using DirectoryEntryCallback =
     std::function<void(const std::filesystem::path& entry_path, bool is_file)>;
 
-/// Iterates a host or archive directory. Returns false when dir is not a directory.
+/// Iterates an archive directory. Returns false when dir is not a directory.
 bool IterateDirectory(const std::filesystem::path& dir, const DirectoryEntryCallback& callback);
 
 /// Read handle for a file within an archive.
@@ -79,8 +79,12 @@ private:
 /// Opens an archive entry, returning nullptr when it cannot be resolved.
 std::unique_ptr<FileHandle> OpenFile(const std::filesystem::path& path);
 
-/// Copies a host or archive file to a host destination, replacing it if necessary.
+/// Copies an archive entry to a host destination, replacing it if necessary.
 bool CopyFile(const std::filesystem::path& src, const std::filesystem::path& dst);
+
+/// Materializes an archive entry as a host file and returns its temporary path.
+std::optional<std::filesystem::path> MaterializeFile(FileHandle& file,
+                                                     const std::filesystem::path& source_path);
 
 /// Returns the directory used when archive entries require host-file semantics.
 std::filesystem::path GetSpillDirectory();

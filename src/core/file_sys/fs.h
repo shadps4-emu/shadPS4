@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 #include <tsl/robin_map.h>
-#include "common/io_file.h"
+#include "common/file.h"
 #include "common/logging/formatter.h"
 #include "core/file_sys/devices/base_device.h"
 #include "core/file_sys/directories/base_directory.h"
@@ -102,7 +102,7 @@ struct File {
     std::atomic<FileType> type{FileType::Regular};
     std::filesystem::path m_host_name;
     std::string m_guest_name;
-    Common::FS::IOFile f;
+    Common::FS::File f;
     std::mutex m_mutex;
     std::shared_ptr<Directories::BaseDirectory> directory; // only valid for type == Directory
     std::shared_ptr<Devices::BaseDevice> device;           // only valid for type == Device

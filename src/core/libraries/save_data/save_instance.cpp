@@ -6,9 +6,9 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
+#include "common/file.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
-#include "common/zar_fs.h"
 #include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
 #include "save_backup.h"
@@ -153,12 +153,12 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
         CreateFiles();
         if (copy_icon) {
             const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
-            if (Common::FS::Zar::Exists(src_icon)) {
+            if (Common::FS::Exists(src_icon)) {
                 auto output_icon = GetIconPath();
                 if (fs::exists(output_icon)) {
                     fs::remove(output_icon);
                 }
-                Common::FS::Zar::CopyFile(src_icon, output_icon);
+                Common::FS::CopyFile(src_icon, output_icon);
             }
         }
         exists = true;

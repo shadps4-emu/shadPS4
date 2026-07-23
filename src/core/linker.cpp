@@ -5,12 +5,12 @@
 #include "common/arch.h"
 #include "common/assert.h"
 #include "common/elf_info.h"
+#include "common/file.h"
 #include "common/logging/formatter.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
 #include "common/thread.h"
-#include "common/zar_fs.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
 #include "core/devtools/widget/module_list.h"
@@ -220,7 +220,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
     std::scoped_lock lk{mutex};
 
-    if (!Common::FS::Zar::Exists(elf_name)) {
+    if (!Common::FS::Exists(elf_name)) {
         LOG_ERROR(Core_Linker, "Provided file {} does not exist", elf_name.string());
         return -1;
     }

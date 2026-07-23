@@ -13,11 +13,11 @@
 #include <gtest/gtest.h>
 #include <zarchive/zarchivewriter.h>
 
-#include "common/io_file.h"
+#include "common/file.h"
 #include "common/path_util.h"
 #include "common/zar_fs.h"
 
-namespace Common::FS::Zar {
+namespace Common::FS {
 namespace {
 
 namespace fs = std::filesystem;
@@ -80,7 +80,7 @@ protected:
     }
 
     void TearDown() override {
-        ClearCache();
+        Zar::ClearCache();
         SetUserPath(PathType::TempDataDir, original_temp_dir);
         std::error_code ec;
         fs::remove_all(test_dir, ec);
@@ -92,13 +92,13 @@ protected:
 };
 
 TEST_F(ZarFsTest, QueriesAndIteratesArchive) {
-    EXPECT_TRUE(IsZarArchive(archive_path));
+    EXPECT_TRUE(Zar::IsZarArchive(archive_path));
     EXPECT_TRUE(Exists(archive_path));
     EXPECT_TRUE(IsDirectory(archive_path));
-    EXPECT_FALSE(IsZarInnerPath(archive_path));
+    EXPECT_FALSE(Zar::IsZarInnerPath(archive_path));
 
     const auto param_path = archive_path / "SCE_SYS" / "param.sfo";
-    EXPECT_TRUE(IsZarInnerPath(param_path));
+    EXPECT_TRUE(Zar::IsZarInnerPath(param_path));
     EXPECT_TRUE(Exists(param_path));
     EXPECT_TRUE(IsRegularFile(param_path));
     EXPECT_EQ(GetFileSize(param_path), 14);
@@ -113,11 +113,10 @@ TEST_F(ZarFsTest, QueriesAndIteratesArchive) {
 
 TEST_F(ZarFsTest, ReadsSeeksAndCopiesFiles) {
     const auto nested_zar_path = archive_path / "data" / "part.zar";
-    EXPECT_TRUE(IsZarInnerPath(nested_zar_path));
+    EXPECT_TRUE(Zar::IsZarInnerPath(nested_zar_path));
 
-    IOFile file{nested_zar_path, FileAccessMode::Read};
+    File file{nested_zar_path, FileAccessMode::Read};
     ASSERT_TRUE(file.IsOpen());
-    EXPECT_TRUE(file.IsZarBacked());
     ASSERT_TRUE(file.Seek(-9, SeekOrigin::End));
 
     std::string suffix(9, '\0');
@@ -131,31 +130,29 @@ TEST_F(ZarFsTest, ReadsSeeksAndCopiesFiles) {
     EXPECT_EQ(copied_contents, "executable data");
 
     SetUserPath(PathType::TempDataDir, test_dir);
-    IOFile materialized{archive_path / "eboot.bin", FileAccessMode::Read};
-    ASSERT_TRUE(materialized.MaterializeToHost());
-    EXPECT_FALSE(materialized.IsZarBacked());
-    EXPECT_TRUE(fs::is_regular_file(materialized.GetPath()));
+    File materialized{archive_path / "eboot.bin", FileAccessMode::Read};
+    ASSERT_NE(materialized.GetFileMapping(), 0);
     EXPECT_EQ(materialized.ReadString(15), "executable data");
 }
 
 TEST_F(ZarFsTest, FindsArchivedGameById) {
-    const auto found = FindGameByID(test_dir, "CUSA00001", 0);
+    const auto found = Zar::FindGameByID(test_dir, "CUSA00001", 0);
     ASSERT_TRUE(found.has_value());
     EXPECT_EQ(*found, archive_path / "eboot.bin");
 }
 
 TEST_F(ZarFsTest, ResolvesLooseOverlayPaths) {
-    EXPECT_EQ(GetLooseOverlayPath(archive_path, "-UPDATE"), test_dir / "CUSA00001-UPDATE");
-    EXPECT_EQ(GetLooseOverlayPath(archive_path, "-patch"), test_dir / "CUSA00001-patch");
-    EXPECT_EQ(GetLooseOverlayPath(archive_path, "-mods"), test_dir / "CUSA00001-mods");
+    EXPECT_EQ(Zar::GetLooseOverlayPath(archive_path, "-UPDATE"), test_dir / "CUSA00001-UPDATE");
+    EXPECT_EQ(Zar::GetLooseOverlayPath(archive_path, "-patch"), test_dir / "CUSA00001-patch");
+    EXPECT_EQ(Zar::GetLooseOverlayPath(archive_path, "-mods"), test_dir / "CUSA00001-mods");
 
     const auto directory_path = test_dir / "CUSA00002";
     ASSERT_TRUE(fs::create_directory(directory_path));
-    EXPECT_EQ(GetLooseOverlayPath(directory_path, "-UPDATE"), test_dir / "CUSA00002-UPDATE");
+    EXPECT_EQ(Zar::GetLooseOverlayPath(directory_path, "-UPDATE"), test_dir / "CUSA00002-UPDATE");
 }
 
 TEST_F(ZarFsTest, KeepsOpenFileValidAfterCacheEviction) {
-    auto file = OpenFile(archive_path / "eboot.bin");
+    auto file = Zar::OpenFile(archive_path / "eboot.bin");
     ASSERT_NE(file, nullptr);
 
     for (int i = 0; i < 9; ++i) {
@@ -170,4 +167,4 @@ TEST_F(ZarFsTest, KeepsOpenFileValidAfterCacheEviction) {
 }
 
 } // Anonymous namespace
-} // namespace Common::FS::Zar
+} // namespace Common::FS

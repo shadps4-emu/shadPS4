@@ -11,7 +11,7 @@
 #include FT_OUTLINE_H
 #include FT_TRUETYPE_TABLES_H
 
-#include "common/io_file.h"
+#include "common/file.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/font/fontft_internal.h"
 #include "core/libraries/kernel/kernel.h"
@@ -920,7 +920,7 @@ std::filesystem::path ResolveGuestPath(const char* guest_path) {
 
 bool LoadGuestFileBytes(const std::filesystem::path& host_path,
                         std::vector<unsigned char>& out_bytes) {
-    Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::Read);
+    Common::FS::File file(host_path, Common::FS::FileAccessMode::Read);
     if (!file.IsOpen()) {
         return false;
     }

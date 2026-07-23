@@ -14,7 +14,7 @@
 
 #include "common/assert.h"
 #include "common/elf_info.h"
-#include "common/io_file.h"
+#include "common/file.h"
 #include "common/logging/formatter.h"
 #include "common/scope_exit.h"
 #include "core/debug_state.h"
@@ -193,16 +193,15 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
 WindowSDL::~WindowSDL() = default;
 
 void WindowSDL::SetIcon(const std::filesystem::path& path) {
-    if (!Common::FS::Zar::Exists(path)) {
+    if (!Common::FS::Exists(path)) {
         LOG_WARNING(Core, "Could not find icon file '{}', using default icon.",
                     fmt::UTF(path.u8string()));
         SetDefaultWindowIcon(window);
         return;
     }
 
-    Common::FS::IOFile file{path, Common::FS::FileAccessMode::Read,
-                            Common::FS::FileType::BinaryFile,
-                            Common::FS::FileShareFlag::ShareReadWrite};
+    Common::FS::File file{path, Common::FS::FileAccessMode::Read, Common::FS::FileType::BinaryFile,
+                          Common::FS::FileShareFlag::ShareReadWrite};
     if (!file.IsOpen()) {
         LOG_ERROR(Core, "Failed to open window icon file '{}'.", fmt::UTF(path.u8string()));
         SetDefaultWindowIcon(window);

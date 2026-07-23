@@ -788,6 +788,8 @@ set(COMMON src/common/logging/classes.h
            src/common/lru_cache.h
            src/common/error.cpp
            src/common/error.h
+           src/common/file.cpp
+           src/common/file.h
            src/common/fixed_value.h
            src/common/func_traits.h
            src/common/native_clock.cpp

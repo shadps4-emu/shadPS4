@@ -62,7 +62,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, std::string npCommId,
         if (trophyPath.extension() != ".trp") {
             return false;
         }
-        Common::FS::IOFile file(trophyPath, Common::FS::FileAccessMode::Read);
+        Common::FS::File file(trophyPath, Common::FS::FileAccessMode::Read);
         if (!file.IsOpen()) {
             LOG_ERROR(Common_Filesystem, "Unable to open trophy file: {}", trophyPath.string());
             return false;
@@ -146,7 +146,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, std::string npCommId,
     return success;
 }
 
-bool TRP::ProcessPngEntry(Common::FS::IOFile& file, const TrpEntry& entry,
+bool TRP::ProcessPngEntry(Common::FS::File& file, const TrpEntry& entry,
                           const std::filesystem::path& outputPath, std::string_view name) {
     if (!file.Seek(entry.entry_pos)) {
         LOG_ERROR(Common_Filesystem, "Failed to seek to PNG entry offset");
@@ -170,7 +170,7 @@ bool TRP::ProcessPngEntry(Common::FS::IOFile& file, const TrpEntry& entry,
     return true;
 }
 
-bool TRP::ProcessEncryptedXmlEntry(Common::FS::IOFile& file, const TrpEntry& entry,
+bool TRP::ProcessEncryptedXmlEntry(Common::FS::File& file, const TrpEntry& entry,
                                    const std::filesystem::path& outputPath, std::string_view name,
                                    const std::array<u8, 16>& user_key,
                                    const std::string& npCommId) {

@@ -27,7 +27,7 @@
 #include FT_SYSTEM_H
 #include FT_TRUETYPE_TABLES_H
 
-#include "common/io_file.h"
+#include "common/file.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "common/zar_fs.h"
@@ -3063,7 +3063,7 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
 
             if (Common::FS::Zar::IsZarInnerPath(cand_path)) {
                 // FreeType cannot open files inside a ZArchive; load into memory instead.
-                Common::FS::IOFile file(cand_path, Common::FS::FileAccessMode::Read);
+                Common::FS::File file(cand_path, Common::FS::FileAccessMode::Read);
                 if (!file.IsOpen()) {
                     continue;
                 }

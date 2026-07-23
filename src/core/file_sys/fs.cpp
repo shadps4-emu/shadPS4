@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include "common/file.h"
 #include "common/string_util.h"
 #include "common/zar_fs.h"
 #include "core/file_sys/devices/logger.h"
@@ -212,8 +213,8 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
 
     // Pass 1: Any files that existed in the base directory, using mod/patch directory if needed.
     // The base directory may live inside a ZArchive; mod/patch overlays are always host folders.
-    if (Zar::Exists(base_path)) {
-        Zar::IterateDirectory(
+    if (Common::FS::Exists(base_path)) {
+        Common::FS::IterateDirectory(
             base_path, [&](const std::filesystem::path& entry_path, bool entry_is_file) {
                 const auto mod_entry_path = mod_path / entry_path.filename();
                 const auto patch_entry_path = patch_path / entry_path.filename();
@@ -232,7 +233,7 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
     if (std::filesystem::exists(patch_path)) {
         for (const auto& entry : std::filesystem::directory_iterator(patch_path)) {
             const auto base_entry_path = base_path / entry.path().filename();
-            if (!Zar::Exists(base_entry_path)) {
+            if (!Common::FS::Exists(base_entry_path)) {
                 const auto mod_entry_path = mod_path / entry.path().filename();
                 if (std::filesystem::exists(mod_entry_path)) {
                     callback(mod_entry_path, !std::filesystem::is_directory(mod_entry_path));
@@ -248,7 +249,8 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
         for (const auto& entry : std::filesystem::directory_iterator(mod_path)) {
             const auto base_entry_path = base_path / entry.path().filename();
             const auto patch_entry_path = patch_path / entry.path().filename();
-            if (!Zar::Exists(base_entry_path) && !std::filesystem::exists(patch_entry_path)) {
+            if (!Common::FS::Exists(base_entry_path) &&
+                !std::filesystem::exists(patch_entry_path)) {
                 callback(entry.path(), !entry.is_directory());
             }
         }

@@ -19,6 +19,7 @@
 #include "common/discord_rpc_handler.h"
 #endif
 #include "common/elf_info.h"
+#include "common/file.h"
 #include "common/memory_patcher.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
@@ -128,14 +129,13 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
     auto& game_info = Common::ElfInfo::Instance();
     game_info.SetNpCommIds(np_comm_ids);
 
-    if (!Common::FS::Zar::Exists(trophy_dir)) {
+    if (!Common::FS::Exists(trophy_dir)) {
         LOG_WARNING(Common_Filesystem, "Game does not contain a trophy directory");
         return trophy_index_map;
     }
 
     std::string pattern = "trophy";
-    Common::FS::Zar::IterateDirectory(trophy_dir, [&](const std::filesystem::path& entry,
-                                                      bool is_file) {
+    Common::FS::IterateDirectory(trophy_dir, [&](const std::filesystem::path& entry, bool is_file) {
         if (is_file && entry.extension() == ".trp") {
             std::string filename = entry.stem().string(); // "trophy00", "trophy01", etc.
 
@@ -230,7 +230,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     mnt->Mount(game_folder, "/hostapp", true);
 
     const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");
-    const auto param_sfo_exists = Common::FS::Zar::Exists(param_sfo_path);
+    const auto param_sfo_exists = Common::FS::Exists(param_sfo_path);
 
     // Load param.sfo details if it exists
     std::string id;
@@ -300,13 +300,13 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     game_info.psf_attributes = psf_attributes;
 
     const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
-    if (Common::FS::Zar::Exists(pic1_path)) {
+    if (Common::FS::Exists(pic1_path)) {
         game_info.splash_path = pic1_path;
     }
 
     game_info.game_folder = game_folder;
 
-    if (!Common::FS::Zar::Exists(file)) {
+    if (!Common::FS::Exists(file)) {
         LOG_CRITICAL(Loader, "eboot.bin does not exist: {}",
                      std::filesystem::absolute(file).string());
         std::quick_exit(0);

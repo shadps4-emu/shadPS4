@@ -136,7 +136,6 @@ set(GCN_TEST_SOURCES
     ${CMAKE_SOURCE_DIR}/src/common/assert.cpp
     ${CMAKE_SOURCE_DIR}/src/common/error.cpp
     ${CMAKE_SOURCE_DIR}/src/common/io_file.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/zar_fs.cpp
     ${CMAKE_SOURCE_DIR}/src/common/string_util.cpp
     ${CMAKE_SOURCE_DIR}/src/common/logging/log.cpp
     ${CMAKE_SOURCE_DIR}/src/common/ntapi.cpp
@@ -159,6 +158,7 @@ set(GCN_TEST_SOURCES
 
 set(ZAR_TEST_SOURCES
     # Under test
+    ${CMAKE_SOURCE_DIR}/src/common/file.cpp
     ${CMAKE_SOURCE_DIR}/src/common/io_file.cpp
     ${CMAKE_SOURCE_DIR}/src/common/zar_fs.cpp
 
@@ -224,7 +224,6 @@ target_link_libraries(shadps4_gcn_test PRIVATE
     SDL3::SDL3
     spdlog::spdlog
     half::half
-    ZArchive::zarchive
 )
 target_link_libraries(shadps4_zar_test PRIVATE
     GTest::gtest_main

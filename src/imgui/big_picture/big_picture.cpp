@@ -5,7 +5,7 @@
 #include <limits>
 #include <stb_image.h>
 
-#include "common/io_file.h"
+#include "common/file.h"
 #include "common/logging/log.h"
 #include "common/zar_fs.h"
 #include "core/devtools/layer.h"
@@ -137,7 +137,7 @@ SDL_Texture* LoadSdlTextureData(std::vector<u8> data) {
 }
 
 SDL_Texture* LoadSdlTextureDataFromFile(std::filesystem::path filePath) {
-    Common::FS::IOFile file(filePath, Common::FS::FileAccessMode::Read);
+    Common::FS::File file(filePath, Common::FS::FileAccessMode::Read);
     if (!file.IsOpen() || file.GetSize() > std::numeric_limits<size_t>::max()) {
         return nullptr;
     }
@@ -167,7 +167,7 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
                 const std::string sfoFileName = "param.sfo";
                 std::filesystem::path sfoPath = UpdateChecker(sfoFileName, entry.path());
 
-                if (Common::FS::Zar::Exists(sfoPath) && psf.Open(sfoPath)) {
+                if (Common::FS::Exists(sfoPath) && psf.Open(sfoPath)) {
                     if (const auto title = psf.GetString("TITLE"); title.has_value()) {
                         icon.title = *title;
                     }

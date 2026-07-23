@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <atomic>
 #include <cctype>
 #include <fstream>
 #include <map>
@@ -10,11 +11,18 @@
 #include <string>
 #include <vector>
 
+#include <fmt/format.h>
 #include <zarchive/zarchivereader.h>
 
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/zar_fs.h"
+
+#ifdef _WIN32
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
 
 namespace Common::FS::Zar {
 
@@ -191,55 +199,51 @@ std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& gam
 }
 
 bool Exists(const fs::path& path) {
-    if (const auto split = Split(path)) {
-        return split->archive->reader->LookUp(split->inner, true, true) != ZARCHIVE_INVALID_NODE;
+    const auto split = Split(path);
+    if (!split) {
+        return false;
     }
-    std::error_code ec;
-    return fs::exists(path, ec);
+    return split->archive->reader->LookUp(split->inner, true, true) != ZARCHIVE_INVALID_NODE;
 }
 
 bool IsDirectory(const fs::path& path) {
-    if (const auto split = Split(path)) {
-        const auto node = split->archive->reader->LookUp(split->inner, false, true);
-        return node != ZARCHIVE_INVALID_NODE && split->archive->reader->IsDirectory(node);
+    const auto split = Split(path);
+    if (!split) {
+        return false;
     }
-    std::error_code ec;
-    return fs::is_directory(path, ec);
+    const auto node = split->archive->reader->LookUp(split->inner, false, true);
+    return node != ZARCHIVE_INVALID_NODE && split->archive->reader->IsDirectory(node);
 }
 
 bool IsRegularFile(const fs::path& path) {
-    if (const auto split = Split(path)) {
-        const auto node = split->archive->reader->LookUp(split->inner, true, false);
-        return node != ZARCHIVE_INVALID_NODE && split->archive->reader->IsFile(node);
+    const auto split = Split(path);
+    if (!split) {
+        return false;
     }
-    std::error_code ec;
-    return fs::is_regular_file(path, ec);
+    const auto node = split->archive->reader->LookUp(split->inner, true, false);
+    return node != ZARCHIVE_INVALID_NODE && split->archive->reader->IsFile(node);
 }
 
 u64 GetFileSize(const fs::path& path) {
-    if (const auto split = Split(path)) {
-        const auto node = split->archive->reader->LookUp(split->inner, true, false);
-        if (node == ZARCHIVE_INVALID_NODE || !split->archive->reader->IsFile(node)) {
-            return 0;
-        }
-        return split->archive->reader->GetFileSize(node);
+    const auto split = Split(path);
+    if (!split) {
+        return 0;
     }
-    std::error_code ec;
-    const auto size = fs::file_size(path, ec);
-    return ec ? 0 : size;
+    const auto node = split->archive->reader->LookUp(split->inner, true, false);
+    if (node == ZARCHIVE_INVALID_NODE || !split->archive->reader->IsFile(node)) {
+        return 0;
+    }
+    return split->archive->reader->GetFileSize(node);
 }
 
 std::optional<fs::file_time_type> GetLastWriteTime(const fs::path& path) {
-    std::error_code ec;
-    if (const auto split = Split(path)) {
-        // Entries inside an archive share the modification time of the archive itself.
-        const auto time = fs::last_write_time(split->archive->path, ec);
-        if (ec) {
-            return std::nullopt;
-        }
-        return time;
+    const auto split = Split(path);
+    if (!split) {
+        return std::nullopt;
     }
-    const auto time = fs::last_write_time(path, ec);
+    // Entries inside an archive share the modification time of the archive itself.
+    std::error_code ec;
+    const auto time = fs::last_write_time(split->archive->path, ec);
     if (ec) {
         return std::nullopt;
     }
@@ -247,40 +251,26 @@ std::optional<fs::file_time_type> GetLastWriteTime(const fs::path& path) {
 }
 
 bool IterateDirectory(const fs::path& dir, const DirectoryEntryCallback& callback) {
-    if (const auto split = Split(dir)) {
-        const auto& reader = split->archive->reader;
-        const auto node = reader->LookUp(split->inner, false, true);
-        if (node == ZARCHIVE_INVALID_NODE || !reader->IsDirectory(node)) {
-            return false;
-        }
-        const u32 count = reader->GetDirEntryCount(node);
-        for (u32 i = 0; i < count; i++) {
-            ZArchiveReader::DirEntry entry;
-            if (!reader->GetDirEntry(node, i, entry)) {
-                continue;
-            }
-            const std::u8string_view name{reinterpret_cast<const char8_t*>(entry.name.data()),
-                                          entry.name.size()};
-            callback(dir / name, entry.isFile);
-        }
-        return true;
-    }
-    std::error_code ec;
-    if (!fs::is_directory(dir, ec)) {
+    const auto split = Split(dir);
+    if (!split) {
         return false;
     }
-    fs::directory_iterator iterator{dir, ec};
-    const fs::directory_iterator end;
-    while (!ec && iterator != end) {
-        const auto& entry = *iterator;
-        std::error_code entry_ec;
-        const bool is_directory = entry.is_directory(entry_ec);
-        if (!entry_ec) {
-            callback(entry.path(), !is_directory);
-        }
-        iterator.increment(ec);
+    const auto& reader = split->archive->reader;
+    const auto node = reader->LookUp(split->inner, false, true);
+    if (node == ZARCHIVE_INVALID_NODE || !reader->IsDirectory(node)) {
+        return false;
     }
-    return !ec;
+    const u32 count = reader->GetDirEntryCount(node);
+    for (u32 i = 0; i < count; i++) {
+        ZArchiveReader::DirEntry entry;
+        if (!reader->GetDirEntry(node, i, entry)) {
+            continue;
+        }
+        const std::u8string_view name{reinterpret_cast<const char8_t*>(entry.name.data()),
+                                      entry.name.size()};
+        callback(dir / name, entry.isFile);
+    }
+    return true;
 }
 
 FileHandle::FileHandle(std::shared_ptr<Archive> archive_, u32 node_, u64 size_)
@@ -322,8 +312,7 @@ std::unique_ptr<FileHandle> OpenFile(const fs::path& path) {
 bool CopyFile(const fs::path& src, const fs::path& dst) {
     auto handle = OpenFile(src);
     if (!handle) {
-        std::error_code ec;
-        return fs::copy_file(src, dst, fs::copy_options::overwrite_existing, ec);
+        return false;
     }
     std::ofstream out(dst, std::ios::binary | std::ios::trunc);
     if (!out) {
@@ -344,6 +333,57 @@ bool CopyFile(const fs::path& src, const fs::path& dst) {
         remaining -= chunk;
     }
     return out.good();
+}
+
+std::optional<fs::path> MaterializeFile(FileHandle& file, const fs::path& source_path) {
+    const auto spill_dir = GetSpillDirectory();
+    std::error_code ec;
+    fs::create_directories(spill_dir, ec);
+    if (ec) {
+        LOG_ERROR(Common_Filesystem, "Failed to create ZArchive spill directory at {}: {}",
+                  PathToUTF8String(spill_dir), ec.message());
+        return std::nullopt;
+    }
+
+    static std::atomic<u32> spill_counter{};
+#ifdef _WIN32
+    const u32 pid = static_cast<u32>(_getpid());
+#else
+    const u32 pid = static_cast<u32>(getpid());
+#endif
+    const auto spill_path = spill_dir / fmt::format("{}_{}_{}", pid, spill_counter++,
+                                                    PathToUTF8String(source_path.filename()));
+
+    std::ofstream out(spill_path, std::ios::binary | std::ios::trunc);
+    if (!out) {
+        LOG_ERROR(Common_Filesystem, "Failed to create ZArchive spill file at {}",
+                  PathToUTF8String(spill_path));
+        return std::nullopt;
+    }
+
+    const u64 old_offset = file.GetOffset();
+    file.SetOffset(0);
+    std::vector<u8> buffer(1_MB);
+    u64 remaining = file.GetSize();
+    while (remaining > 0) {
+        const u64 chunk = file.Read(buffer.data(), std::min<u64>(remaining, buffer.size()));
+        if (chunk == 0) {
+            file.SetOffset(old_offset);
+            return std::nullopt;
+        }
+        out.write(reinterpret_cast<const char*>(buffer.data()),
+                  static_cast<std::streamsize>(chunk));
+        if (!out) {
+            file.SetOffset(old_offset);
+            return std::nullopt;
+        }
+        remaining -= chunk;
+    }
+    file.SetOffset(old_offset);
+
+    LOG_INFO(Common_Filesystem, "Extracted {} from ZArchive to {}", PathToUTF8String(source_path),
+             PathToUTF8String(spill_path));
+    return spill_path;
 }
 
 fs::path GetSpillDirectory() {

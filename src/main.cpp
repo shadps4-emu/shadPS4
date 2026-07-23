@@ -10,6 +10,7 @@
 #include <SDL3/SDL_messagebox.h>
 
 #include "common/arch.h"
+#include "common/file.h"
 #include "common/key_manager.h"
 #include "common/logging/log.h"
 #include "common/memory_patcher.h"
@@ -210,7 +211,7 @@ int main(int argc, char* argv[]) {
 
     // ---- Resolve game path or ID ----
     std::filesystem::path ebootPath(*gamePath);
-    if (!Common::FS::Zar::Exists(ebootPath)) {
+    if (!Common::FS::Exists(ebootPath)) {
         bool found = false;
         constexpr int maxDepth = 5;
         for (const auto& installDir : EmulatorSettings.GetGameInstallDirs()) {

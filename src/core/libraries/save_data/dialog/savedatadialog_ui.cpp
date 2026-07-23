@@ -6,9 +6,9 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/elf_info.h"
+#include "common/file.h"
 #include "common/singleton.h"
 #include "common/string_util.h"
-#include "common/zar_fs.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/save_data/save_instance.h"
@@ -140,7 +140,7 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             icon = RefCountedTexture::DecodePngTexture({buf, buf + new_item->iconSize});
         } else {
             const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
-            if (Common::FS::Zar::Exists(src_icon)) {
+            if (Common::FS::Exists(src_icon)) {
                 icon = RefCountedTexture::DecodePngFile(src_icon);
             }
         }

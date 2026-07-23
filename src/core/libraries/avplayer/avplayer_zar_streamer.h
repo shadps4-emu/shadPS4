@@ -3,9 +3,10 @@
 
 #pragma once
 
+#include <memory>
 #include <string_view>
 
-#include "common/io_file.h"
+#include "common/zar_fs.h"
 #include "core/libraries/avplayer/avplayer_data_streamer.h"
 
 namespace Libraries::AvPlayer {
@@ -25,7 +26,7 @@ private:
     static s32 ReadPacket(void* opaque, u8* buffer, s32 size);
     static s64 Seek(void* opaque, s64 offset, int whence);
 
-    Common::FS::IOFile m_file;
+    std::unique_ptr<Common::FS::Zar::FileHandle> m_file;
     u64 m_position{};
     u64 m_file_size{};
     AVIOContext* m_avio_context{};
