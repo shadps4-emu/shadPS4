@@ -3,12 +3,10 @@
 
 #pragma once
 
-#include <condition_variable>
 #include <mutex>
-#include <thread>
+#include <stop_token>
 #include <unordered_set>
 #include <boost/container/small_vector.hpp>
-#include <queue>
 #include <tsl/robin_map.h>
 
 #include "common/lru_cache.h"
@@ -55,6 +53,13 @@ public:
         VideoOut,
     };
 
+    enum class DownloadMemoryFlags : u32 {
+        None = 0,
+        Sync = 1 << 0,
+        Priority = 1 << 1,
+        InvalidateBufferCache = 1 << 2,
+    };
+
     struct ImageDesc {
         ImageInfo info;
         ImageViewInfo view_info;
@@ -77,7 +82,8 @@ public:
 
 public:
     TextureCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                 AmdGpu::Liverpool* liverpool, BufferCache& buffer_cache, PageManager& tracker);
+                 AmdGpu::Liverpool* liverpool, BufferCache& buffer_cache,
+                 PageManager& page_manager);
     ~TextureCache();
 
     TileManager& GetTileManager() noexcept {
@@ -89,6 +95,9 @@ public:
 
     /// Marks an image as dirty if it exists at the provided address.
     void InvalidateMemoryFromGPU(VAddr address, size_t max_size);
+
+    /// Marks an image as maybe reused if it exists within the provided range.
+    void MarkAsMaybeReused(VAddr addr, size_t size);
 
     /// Evicts any images that overlap the unmapped range.
     void UnmapMemory(VAddr cpu_addr, size_t size);
@@ -269,7 +278,8 @@ private:
     }
 
     /// Copies image memory back to CPU.
-    void DownloadImageMemory(ImageId image_id, bool sync = false);
+    void DownloadImageMemory(ImageId image_id,
+                             DownloadMemoryFlags flags = DownloadMemoryFlags::None);
 
     /// Thread function for copying downloaded images out to CPU memory.
     void DownloadedImagesThread(const std::stop_token& token);
@@ -299,7 +309,7 @@ private:
     void DeleteImage(ImageId image_id);
 
     /// Touch the image in the LRU cache.
-    void TouchImage(const Image& image);
+    void TouchImage(Image& image);
 
     void FreeImage(ImageId image_id) {
         UntrackImage(image_id);
@@ -315,7 +325,7 @@ private:
     Vulkan::Scheduler& scheduler;
     AmdGpu::Liverpool* liverpool;
     BufferCache& buffer_cache;
-    PageManager& tracker;
+    PageManager& page_manager;
     BlitHelper blit_helper;
     TileManager tile_manager;
     Common::SlotVector<Image> slot_images;
@@ -349,5 +359,6 @@ private:
     };
     tsl::robin_map<VAddr, MetaDataInfo> surface_metas;
 };
+DECLARE_ENUM_FLAG_OPERATORS(TextureCache::DownloadMemoryFlags)
 
 } // namespace VideoCore
