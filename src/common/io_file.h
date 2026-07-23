@@ -8,8 +8,8 @@
 #include <span>
 #include <type_traits>
 
+#include "common/assert.h"
 #include "common/concepts.h"
-#include "common/logging/log.h"
 #include "common/types.h"
 #include "enum.h"
 
@@ -170,13 +170,7 @@ public:
     template <typename T>
     size_t ReadRaw(void* data, size_t size) const {
         u64 read = std::fread(data, sizeof(T), size, file);
-        if (std::ferror(file)) {
-            LOG_ERROR(
-                Core,
-                "file read errored, file = {}, data = {}, offset = {:#x}, size = {:#x}, errno = {}",
-                file_path.string().data(), fmt::ptr(data), Tell(), size, std::strerror(errno));
-            std::clearerr(file);
-        }
+        ASSERT_MSG(std::ferror(file) == 0, "Failed to read file, error = {}", std::strerror(errno));
         return read;
     }
 
@@ -188,7 +182,10 @@ public:
             return 0;
         }
 
-        return std::fwrite(data.data(), sizeof(T), data.size(), file);
+        u64 written = std::fwrite(data.data(), sizeof(T), data.size(), file);
+        ASSERT_MSG(std::ferror(file) == 0, "Failed to write to file, error = {}",
+                   std::strerror(errno));
+        return written;
     }
 
     template <typename T>
@@ -200,12 +197,16 @@ public:
             return false;
         }
 
-        return std::fread(&object, sizeof(T), 1, file) == 1;
+        bool success = std::fread(&object, sizeof(T), 1, file) == 1;
+        ASSERT_MSG(std::ferror(file) == 0, "Failed to read file, error = {}", std::strerror(errno));
+        return success;
     }
 
     template <typename T>
     size_t WriteRaw(const void* data, size_t size) const {
-        auto bytes = std::fwrite(data, sizeof(T), size, file);
+        u64 bytes = std::fwrite(data, sizeof(T), size, file);
+        ASSERT_MSG(std::ferror(file) == 0, "Failed to write to file, error = {}",
+                   std::strerror(errno));
         std::fflush(file);
         return bytes;
     }
@@ -219,7 +220,9 @@ public:
             return false;
         }
 
-        return std::fwrite(&object, sizeof(T), 1, file) == 1;
+        u64 bytes = std::fwrite(&object, sizeof(T), 1, file) == 1;
+        ASSERT_MSG(std::ferror(file) == 0, "Failed to read file, error = {}", std::strerror(errno));
+        return bytes;
     }
 
     std::string ReadString(size_t length) const;
