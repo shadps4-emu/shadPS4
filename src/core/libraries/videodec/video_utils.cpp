@@ -7,6 +7,8 @@
 
 #include <libavutil/frame.h>
 
+#include <cstring>
+
 namespace Libraries::Videodec {
 
 void CopyNV12Data(u8* dst, const AVFrame& src) {
