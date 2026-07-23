@@ -612,7 +612,9 @@ set(FIBER_LIB src/core/libraries/fiber/fiber_context.cpp
               src/core/libraries/fiber/fiber_error.h
 )
 
-set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
+set(VDEC_LIB src/core/libraries/videodec/video_utils.cpp
+             src/core/libraries/videodec/video_utils.h
+             src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h
              src/core/libraries/videodec/videodec2.cpp
              src/core/libraries/videodec/videodec2.h
