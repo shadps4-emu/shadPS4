@@ -79,6 +79,7 @@ struct ImageResource {
     bool is_atomic{};
     bool is_array{};
     bool is_written{};
+    bool is_storage{};
     bool is_r128{};
     MipStorageFallbackMode mip_fallback_mode{};
     u32 constant_mip_index{};
