@@ -865,6 +865,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_sys/directories/normal_directory.h
          src/core/file_sys/directories/pfs_directory.cpp
          src/core/file_sys/directories/pfs_directory.h
+         src/core/file_sys/storage_scheduler.cpp
+         src/core/file_sys/storage_scheduler.h
          src/core/file_format/pfs.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h

@@ -97,11 +97,18 @@ enum class FileType {
     Equeue
 };
 
+enum class StorageClass {
+    Native,
+    App0,
+};
+
 struct File {
     std::atomic_bool is_opened{};
     std::atomic<FileType> type{FileType::Regular};
     std::filesystem::path m_host_name;
     std::string m_guest_name;
+    u64 m_size{};
+    StorageClass storage_class{StorageClass::Native};
     Common::FS::IOFile f;
     std::mutex m_mutex;
     std::shared_ptr<Directories::BaseDirectory> directory; // only valid for type == Directory
@@ -109,6 +116,11 @@ struct File {
     std::shared_ptr<Libraries::Net::Socket> socket;        // only valid for type == Socket
     std::shared_ptr<Libraries::Net::Epoll> epoll;          // only valid for type == Epoll
     std::shared_ptr<Libraries::Net::Resolver> resolver;    // only valid for type == Resolver
+
+    // Positional I/O preserving the current file offset; locks m_mutex internally.
+    // Returns bytes transferred, or -1 when the seek fails.
+    s64 PRead(void* buffer, u64 nbytes, u64 offset);
+    s64 PWrite(const void* buffer, u64 nbytes, u64 offset);
 };
 
 class HandleTable {
@@ -118,6 +130,11 @@ public:
 
     int CreateHandle();
     void DeleteHandle(int d);
+    std::shared_ptr<File> TakeHandle(int d);
+    std::shared_ptr<File> GetFileShared(int d);
+    // Returns a raw pointer without extending the file's lifetime: a caller racing close()
+    // can observe a dangling pointer. New call sites should prefer GetFileShared; existing
+    // ones still need to be migrated.
     File* GetFile(int d);
     File* GetSocket(int d);
     File* GetEpoll(int d);
@@ -128,7 +145,7 @@ public:
     void CreateStdHandles();
 
 private:
-    std::vector<File*> m_files;
+    std::vector<std::shared_ptr<File>> m_files;
     std::mutex m_mutex;
 };
 
