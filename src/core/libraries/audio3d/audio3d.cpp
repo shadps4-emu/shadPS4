@@ -201,6 +201,7 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutOutputs(AudioOut::OrbisAudioOutOutputParam* p
 static s32 ConvertAndEnqueue(std::deque<AudioData>& queue, const OrbisAudio3dPcm& pcm,
                              const u32 num_channels, const u32 granularity, const u32 max_entries) {
     if (!pcm.sample_buffer || !pcm.num_samples) {
+        LOG_ERROR(Lib_Audio3d, "!pcm.sample_buffer || !pcm.num_samples");
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
@@ -208,16 +209,19 @@ static s32 ConvertAndEnqueue(std::deque<AudioData>& queue, const OrbisAudio3dPcm
         (pcm.format == OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16) ? sizeof(s16) : sizeof(float);
 
     if ((reinterpret_cast<uintptr_t>(pcm.sample_buffer) & (bytes_per_sample - 1)) != 0) {
+        LOG_ERROR(Lib_Audio3d, "pcm.sample_buffer is misaligned");
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
     if (queue.size() >= max_entries) {
+        LOG_ERROR(Lib_Audio3d, "queue.size() >= max_entries");
         return ORBIS_AUDIO3D_ERROR_NOT_READY;
     }
 
     const u32 dst_bytes = granularity * num_channels * bytes_per_sample;
     u8* copy = static_cast<u8*>(std::calloc(1, dst_bytes));
     if (!copy) {
+        LOG_ERROR(Lib_Audio3d, "out of memory");
         return ORBIS_AUDIO3D_ERROR_OUT_OF_MEMORY;
     }
 
@@ -565,27 +569,7 @@ s32 PS4_SYSV_ABI sceAudio3dObjectUnreserve(const OrbisAudio3dPortId port_id,
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
-    LOG_DEBUG(Lib_Audio3d, "called, port_id = {}", port_id);
-
-    if (!state->ports.contains(port_id)) {
-        LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
-        return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
-    }
-
-    auto& port = state->ports[port_id];
-
-    if (port.parameters.buffer_mode == OrbisAudio3dBufferMode::ORBIS_AUDIO3D_BUFFER_NO_ADVANCE) {
-        LOG_ERROR(Lib_Audio3d, "port doesn't have advance capability");
-        return ORBIS_AUDIO3D_ERROR_NOT_SUPPORTED;
-    }
-
-    if (port.mixed_queue.size() >= port.parameters.queue_depth) {
-        LOG_WARNING(Lib_Audio3d, "mixed queue full (depth={}), dropping advance",
-                    port.parameters.queue_depth);
-        return ORBIS_AUDIO3D_ERROR_NOT_READY;
-    }
-
+static u32 ProcessMixQueue(Port& port) {
     const u32 granularity = port.parameters.granularity;
     const u32 out_samples = granularity * AUDIO3D_OUTPUT_NUM_CHANNELS;
 
@@ -740,6 +724,30 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
 
     return ORBIS_OK;
 }
+
+s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
+    LOG_DEBUG(Lib_Audio3d, "called, port_id = {}", port_id);
+
+    if (!state->ports.contains(port_id)) {
+        LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
+    }
+
+    auto& port = state->ports[port_id];
+
+    if (port.parameters.buffer_mode == OrbisAudio3dBufferMode::ORBIS_AUDIO3D_BUFFER_NO_ADVANCE) {
+        LOG_ERROR(Lib_Audio3d, "port doesn't have advance capability");
+        return ORBIS_AUDIO3D_ERROR_NOT_SUPPORTED;
+    }
+
+    if (port.mixed_queue.size() >= port.parameters.queue_depth) {
+        LOG_WARNING(Lib_Audio3d, "mixed queue full (depth={}), dropping advance",
+                    port.parameters.queue_depth);
+        return ORBIS_AUDIO3D_ERROR_NOT_READY;
+    }
+
+    return ProcessMixQueue(port);
+}
 s32 PS4_SYSV_ABI sceAudio3dPortClose(const OrbisAudio3dPortId port_id) {
     LOG_INFO(Lib_Audio3d, "called, port_id = {}", port_id);
 
@@ -834,7 +842,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortFlush(const OrbisAudio3dPortId port_id) {
         if (!port.bed_queue.empty() ||
             std::any_of(port.objects.begin(), port.objects.end(),
                         [](const auto& kv) { return !kv.second.pcm_queue.empty(); })) {
-            const s32 ret = sceAudio3dPortAdvance(port_id);
+            const s32 ret = ProcessMixQueue(port);
             if (ret != ORBIS_OK && ret != ORBIS_AUDIO3D_ERROR_NOT_READY) {
                 return ret;
             }
