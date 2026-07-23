@@ -39,6 +39,11 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
     Vulkan::SetObjectName(instance.GetDevice(), bda_pagetable_buffer.Handle(),
                           "BDA Page Table Buffer");
 
+    // Unregistered pages must contain a null BDA. Device-local allocation contents are undefined,
+    // and treating arbitrary nonzero data as a physical storage-buffer pointer can cause a device
+    // loss before the DMA fault path can cache the guest page.
+    bda_pagetable_buffer.Fill(0, static_cast<u32>(BDA_PAGETABLE_SIZE), 0);
+
     memory_tracker = std::make_unique<MemoryTracker>(tracker);
 
     std::memset(gds_buffer.mapped_data.data(), 0, DataShareBufferSize);
@@ -421,6 +426,10 @@ std::pair<Buffer*, u32> BufferCache::ObtainBufferForImage(VAddr gpu_addr, u32 si
 bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
     // Check if we are missing some edge case here
     return buffer_ranges.Intersects(addr, size);
+}
+
+bool BufferCache::IsRegionGpuMapped(VAddr addr, size_t size) const {
+    return liverpool->IsMapped(addr, size);
 }
 
 bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {

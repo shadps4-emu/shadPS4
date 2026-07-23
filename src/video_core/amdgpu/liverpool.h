@@ -87,6 +87,8 @@ public:
         return num_submits == 0;
     }
 
+    bool IsMapped(VAddr addr, u64 size) const;
+
     void SetVoPort(Libraries::VideoOut::VideoOutPort* port) {
         vo_port = port;
     }
