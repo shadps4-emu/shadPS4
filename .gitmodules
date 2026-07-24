@@ -158,3 +158,10 @@
 [submodule "externals/protobuf"]
 	path = externals/protobuf
 	url = https://github.com/shadexternals/protobuf.git
+[submodule "externals/ZArchive"]
+	path = externals/ZArchive
+	url = https://github.com/shadexternals/ZArchive.git
+	branch = master
+[submodule "externals/zstd"]
+	path = externals/zstd
+	url = https://github.com/shadexternals/zstd.git
