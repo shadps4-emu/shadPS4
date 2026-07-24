@@ -300,9 +300,11 @@ public:
     }
 
     s32 GetConfiguration(libusb_device_handle* dev, s32* config) override {
-        config = nullptr;
-        return LIBUSB_SUCCESS;
+    if (config != nullptr) {
+        *config = 0; // Indentasi diperbaiki
     }
+    return LIBUSB_SUCCESS;
+}
 
     s32 GetDeviceDescriptor(libusb_device* dev, libusb_device_descriptor* desc) override {
         std::memcpy(desc, FillDeviceDescriptor(), sizeof(libusb_device_descriptor));
@@ -340,24 +342,24 @@ public:
         return 0;
     }
     s32 GetMaxPacketSize(libusb_device* dev, u8 endpoint) override {
-        libusb_device_descriptor* desc = nullptr;
+        libusb_device_descriptor desc{};
 
-        int r = GetDeviceDescriptor(dev, desc);
+        int r = GetDeviceDescriptor(dev, &desc);
         if (r < LIBUSB_SUCCESS) {
             return LIBUSB_ERROR_OTHER;
         }
-        return desc->bMaxPacketSize0;
+        return desc.bMaxPacketSize0;
     }
 
     s32 OpenDevice(libusb_device* dev, libusb_device_handle** dev_handle) override {
-        auto* _dev_handle = static_cast<UsbDeviceHandle*>(calloc(1, sizeof(libusb_device_handle*)));
-        if (!_dev_handle) {
-            return LIBUSB_ERROR_NO_MEM;
-        }
-        _dev_handle->dev = dev;
-        *dev_handle = reinterpret_cast<libusb_device_handle*>(_dev_handle);
-        return LIBUSB_SUCCESS;
+    auto* _dev_handle = static_cast<UsbDeviceHandle*>(calloc(1, sizeof(UsbDeviceHandle)));
+    if (!_dev_handle) {
+        return LIBUSB_ERROR_NO_MEM;
     }
+    _dev_handle->dev = dev;
+    *dev_handle = reinterpret_cast<libusb_device_handle*>(_dev_handle);
+    return LIBUSB_SUCCESS;
+}
     void CloseDevice(libusb_device_handle* dev_handle) override {
         LOG_WARNING(Lib_Usbd, "Guest decided to close device, might be an implementation issue");
         free(dev_handle);
