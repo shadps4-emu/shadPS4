@@ -23,6 +23,9 @@ struct SleepQueueChain {
 static std::array<SleepQueueChain, HASHSIZE> sc_table{};
 
 void SleepqLock(void* wchan) {
+    if (g_curthread != nullptr) {
+        g_curthread->locklevel.fetch_add(1, std::memory_order_acq_rel);
+    }
     SleepQueueChain* sc = SC_LOOKUP(wchan);
     sc->sc_lock.lock();
 }
@@ -30,6 +33,13 @@ void SleepqLock(void* wchan) {
 void SleepqUnlock(void* wchan) {
     SleepQueueChain* sc = SC_LOOKUP(wchan);
     sc->sc_lock.unlock();
+    if (g_curthread != nullptr) {
+        const int previous = g_curthread->locklevel.fetch_sub(1, std::memory_order_acq_rel);
+        ASSERT(previous > 0);
+        if (previous == 1) {
+            PthreadCancelInterrupt();
+        }
+    }
 }
 
 SleepQueue* SleepqLookup(void* wchan) {
@@ -55,22 +65,34 @@ void SleepqAdd(void* wchan, Pthread* td) {
     }
     td->sleepqueue = nullptr;
     td->wchan = wchan;
-    sq->sq_blocked.push_front(td);
+    // libkernel uses a TAILQ here. Signal therefore selects the oldest waiter.
+    sq->sq_blocked.push_back(td);
 }
 
 bool SleepqRemove(SleepQueue* sq, Pthread* td) {
-    std::erase(sq->sq_blocked, td);
-    if (sq->sq_blocked.empty()) {
+    ASSERT_MSG(sq != nullptr, "Cannot remove a thread from a null sleep queue");
+    if (sq == nullptr) [[unlikely]] {
+        return false;
+    }
+
+    const auto removed = std::erase(sq->sq_blocked, td);
+    const bool has_waiters = !sq->sq_blocked.empty();
+    ASSERT_MSG(removed == 1, "Thread is missing from its sleep queue");
+    if (removed == 0) [[unlikely]] {
+        return has_waiters;
+    }
+
+    td->wchan = nullptr;
+    if (!has_waiters) {
         td->sleepqueue = sq;
         sq->unlink();
-        td->wchan = nullptr;
         return false;
-    } else {
-        td->sleepqueue = std::addressof(sq->sq_freeq.front());
-        sq->sq_freeq.pop_front();
-        td->wchan = nullptr;
-        return true;
     }
+
+    ASSERT_MSG(!sq->sq_freeq.empty(), "Sleep queue free list is empty while waiters remain");
+    td->sleepqueue = std::addressof(sq->sq_freeq.front());
+    sq->sq_freeq.pop_front();
+    return true;
 }
 
 void SleepqDrop(SleepQueue* sq, void (*callback)(Pthread*, void*), void* arg) {

@@ -70,7 +70,7 @@ static s32 MutexInit(PthreadMutexT* mutex, const PthreadMutexAttr* mutex_attr, c
     }
 
     pmutex->m_flags = PthreadMutexFlags(attr->m_type);
-    pmutex->m_owner = nullptr;
+    pmutex->m_owner.store(nullptr, std::memory_order_relaxed);
     pmutex->m_count = 0;
     pmutex->m_spinloops = 0;
     pmutex->m_yieldloops = 0;
@@ -113,7 +113,7 @@ s32 PS4_SYSV_ABI posix_pthread_mutex_destroy(PthreadMutexT* mutex) {
     if (m == THR_MUTEX_DESTROYED) {
         return POSIX_EINVAL;
     }
-    if (m->m_owner != nullptr) {
+    if (m->m_owner.load(std::memory_order_acquire) != nullptr) {
         return POSIX_EBUSY;
     }
     *mutex = THR_MUTEX_DESTROYED;
@@ -192,7 +192,7 @@ s32 PthreadMutex::SelfLock(const OrbisKernelTimespec* abstime, u64 usec) {
 
 s32 PthreadMutex::Lock(const OrbisKernelTimespec* abstime, u64 usec) {
     Pthread* curthread = g_curthread;
-    if (m_owner == curthread) {
+    if (m_owner.load(std::memory_order_acquire) == curthread) {
         return SelfLock(abstime, usec);
     }
 
@@ -206,7 +206,7 @@ s32 PthreadMutex::Lock(const OrbisKernelTimespec* abstime, u64 usec) {
         s32 count = m_spinloops;
         while (count--) {
             if (m_lock.try_lock()) {
-                m_owner = curthread;
+                m_owner.store(curthread, std::memory_order_release);
                 return 0;
             }
             CPU_SPINWAIT;
@@ -216,7 +216,7 @@ s32 PthreadMutex::Lock(const OrbisKernelTimespec* abstime, u64 usec) {
         while (count--) {
             std::this_thread::yield();
             if (m_lock.try_lock()) {
-                m_owner = curthread;
+                m_owner.store(curthread, std::memory_order_release);
                 return 0;
             }
         }
@@ -236,19 +236,19 @@ s32 PthreadMutex::Lock(const OrbisKernelTimespec* abstime, u64 usec) {
         }
     }
     if (ret == 0) {
-        m_owner = curthread;
+        m_owner.store(curthread, std::memory_order_release);
     }
     return ret;
 }
 
 s32 PthreadMutex::TryLock() {
     Pthread* curthread = g_curthread;
-    if (m_owner == curthread) {
+    if (m_owner.load(std::memory_order_acquire) == curthread) {
         return SelfTryLock();
     }
     const s32 ret = m_lock.try_lock() ? 0 : POSIX_EBUSY;
     if (ret == 0) {
-        m_owner = curthread;
+        m_owner.store(curthread, std::memory_order_release);
     }
     return ret;
 }
@@ -279,7 +279,7 @@ s32 PthreadMutex::Unlock() {
     /*
      * Check if the running thread is not the owner of the mutex.
      */
-    if (m_owner != curthread) [[unlikely]] {
+    if (m_owner.load(std::memory_order_acquire) != curthread) [[unlikely]] {
         return POSIX_EPERM;
     }
 
@@ -289,7 +289,7 @@ s32 PthreadMutex::Unlock() {
         const bool deferred = True(m_flags & PthreadMutexFlags::Deferred);
         m_flags &= ~PthreadMutexFlags::Deferred;
 
-        m_owner = nullptr;
+        m_owner.store(nullptr, std::memory_order_release);
         m_lock.unlock();
 
         if (curthread->will_sleep == 0 && deferred) {
@@ -337,7 +337,7 @@ s32 PS4_SYSV_ABI posix_pthread_mutex_isowned_np(PthreadMutexT* mutex) {
     if (m <= THR_MUTEX_DESTROYED) {
         return 0;
     }
-    return m->m_owner == g_curthread;
+    return m->m_owner.load(std::memory_order_acquire) == g_curthread;
 }
 
 s32 PthreadMutex::IsOwned(Pthread* curthread) const {
@@ -347,7 +347,7 @@ s32 PthreadMutex::IsOwned(Pthread* curthread) const {
         }
         return POSIX_EPERM;
     }
-    if (m_owner != curthread) {
+    if (m_owner.load(std::memory_order_acquire) != curthread) {
         return POSIX_EPERM;
     }
     return 0;

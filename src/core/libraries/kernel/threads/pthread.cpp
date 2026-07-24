@@ -3,8 +3,15 @@
 
 #include "common/assert.h"
 #include "common/thread.h"
+#ifdef _WIN32
+#include "common/ntapi.h"
+#else
+#include <csignal>
+#include <pthread.h>
+#endif
 #include "core/debug_state.h"
 #include "core/libraries/kernel/kernel.h"
+#include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/kernel/threads/pthread.h"
@@ -61,8 +68,12 @@ static void ExitThread() {
      * Kernel will do wakeup at the address, so joiner thread
      * will be resumed if it is sleeping at the address.
      */
-    curthread->tid.store(TidTerminated);
+    {
+        std::scoped_lock wait_lock{curthread->join_wait_mutex};
+        curthread->tid.store(TidTerminated, std::memory_order_release);
+    }
     curthread->tid.notify_all();
+    curthread->join_wait_cv.notify_all();
 
     curthread->native_thr.Exit();
     UNREACHABLE();
@@ -127,10 +138,19 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
     }
     /* Set the running thread to be the joiner: */
     pthread->joiner = curthread;
+    {
+        std::scoped_lock lock{curthread->lock};
+        curthread->join_target = pthread;
+    }
     pthread->lock.unlock();
 
     const auto backout_join = [](void* arg) PS4_SYSV_ABI {
         auto* pthread2 = static_cast<Pthread*>(arg);
+        Pthread* current = g_curthread;
+        {
+            std::scoped_lock lk{current->lock};
+            current->join_target = nullptr;
+        }
         std::scoped_lock lk{pthread2->lock};
         pthread2->joiner = nullptr;
     };
@@ -138,16 +158,34 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
     PthreadCleanup cup{backout_join, pthread, 0};
     curthread->cleanup.push_front(&cup);
 
-    //_thr_cancel_enter(curthread);
+    curthread->cancel_point = true;
+    PthreadTestCancel();
 
-    const s32 tid = pthread->tid;
-    while (pthread->tid.load() != TidTerminated) {
-        //_thr_testcancel(curthread);
-        ASSERT(abstime == nullptr);
-        pthread->tid.wait(tid);
+    std::unique_lock wait_lock{pthread->join_wait_mutex};
+    const auto finished_or_cancelled = [&] {
+        return pthread->tid.load(std::memory_order_acquire) == TidTerminated ||
+               curthread->ShouldCancel();
+    };
+    while (pthread->tid.load(std::memory_order_acquire) != TidTerminated) {
+        if (curthread->ShouldCancel()) {
+            wait_lock.unlock();
+            PthreadTestCancel();
+        }
+        if (abstime == nullptr) {
+            pthread->join_wait_cv.wait(wait_lock, finished_or_cancelled);
+        } else if (!pthread->join_wait_cv.wait_until(wait_lock, abstime->TimePoint(),
+                                                     finished_or_cancelled)) {
+            ret = POSIX_ETIMEDOUT;
+            break;
+        }
     }
+    wait_lock.unlock();
 
-    //_thr_cancel_leave(curthread, 0);
+    curthread->cancel_point = false;
+    {
+        std::scoped_lock lock{curthread->lock};
+        curthread->join_target = nullptr;
+    }
     curthread->cleanup.pop_front();
 
     if (ret == POSIX_ETIMEDOUT) {
@@ -203,6 +241,13 @@ int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread) {
     return 0;
 }
 
+#ifndef _WIN32
+namespace {
+int HostPthreadCancelSignal() noexcept;
+void UnblockPthreadCancelSignal();
+} // namespace
+#endif
+
 #ifdef WIN32
 static DWORD RunThread(void* arg) {
 #else
@@ -215,6 +260,10 @@ static void* RunThread(void* arg) {
     Core::InitializeTLS();
 
     curthread->native_thr.Initialize();
+
+#ifndef _WIN32
+    UnblockPthreadCancelSignal();
+#endif
 
 #ifdef WIN32
     std::set_terminate(Common::Log::Terminate);
@@ -589,12 +638,131 @@ enum class PthreadCancelState : u32 {
     Disable = 1,
 };
 
+enum class PthreadCancelType : u32 {
+    Deferred = 0,
+    Asynchronous = 2,
+};
+
 #define POSIX_PTHREAD_CANCELED ((void*)1)
 
-static inline void TestCancel(const Pthread* curthread) {
+namespace {
+
+#ifdef _WIN32
+void PthreadCancelApc(void*, void*, void*, PCONTEXT) {
+    PthreadCancelInterrupt();
+}
+#else
+int HostPthreadCancelSignal() noexcept {
+#if defined(__APPLE__) || defined(__FreeBSD__)
+    return SIGUSR2;
+#else
+    return SIGRTMAX;
+#endif
+}
+
+void UnblockPthreadCancelSignal() {
+    sigset_t signal_set{};
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, HostPthreadCancelSignal());
+    ASSERT_MSG(::pthread_sigmask(SIG_UNBLOCK, &signal_set, nullptr) == 0,
+               "Failed to unblock pthread cancellation signal");
+}
+
+void HostPthreadCancelSignalHandler(int, siginfo_t*, void*) {
+    PthreadCancelInterrupt();
+}
+
+void InstallPthreadCancelSignalHandler() {
+    struct sigaction action{};
+    action.sa_sigaction = HostPthreadCancelSignalHandler;
+    // Async cancellation may terminate from this handler. Keep it on the normal guest stack
+    // because NativeThread::Exit tears down the alternate fault stack.
+    action.sa_flags = SA_SIGINFO;
+    sigfillset(&action.sa_mask);
+    ASSERT_MSG(sigaction(HostPthreadCancelSignal(), &action, nullptr) == 0,
+               "Failed to register pthread cancellation signal handler");
+    UnblockPthreadCancelSignal();
+}
+#endif
+
+void InterruptPthreadForCancellation(Pthread* thread) noexcept {
+#ifdef _WIN32
+    USER_APC_OPTION option{};
+    option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
+    const u64 result = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr.GetHandle()),
+                                          option, PthreadCancelApc, nullptr, nullptr, nullptr);
+    if (result != 0) {
+        LOG_ERROR(Lib_Kernel, "Failed to deliver pthread cancellation APC: {:#x}", result);
+    }
+#else
+    const auto native_thread = reinterpret_cast<pthread_t>(thread->native_thr.GetHandle());
+    const int result = pthread_kill(native_thread, HostPthreadCancelSignal());
+    if (result != 0) {
+        LOG_ERROR(Lib_Kernel, "Failed to deliver pthread cancellation signal: {}", result);
+    }
+#endif
+}
+
+} // namespace
+
+void PthreadTestCancel() {
+    const Pthread* curthread = g_curthread;
     if (curthread->ShouldCancel() && !curthread->InCritical()) [[unlikely]] {
         posix_pthread_exit(POSIX_PTHREAD_CANCELED);
     }
+}
+
+void PthreadCancelInterrupt() noexcept {
+    Pthread* curthread = g_curthread;
+    // posix_pthread_cancel has already released the thread's host wake semaphore. Matching
+    // libkernel's SIGTHR handler, a cancellation point must finish its normal wake/relock path;
+    // only asynchronous cancellation outside a cancellation point exits immediately.
+    if (curthread != nullptr && !curthread->cancel_point.load(std::memory_order_acquire) &&
+        curthread->cancel_async.load(std::memory_order_acquire)) {
+        PthreadTestCancel();
+    }
+}
+
+#ifndef _WIN32
+bool IsPthreadCancelSignal(int native_signal) noexcept {
+    return native_signal == HostPthreadCancelSignal();
+}
+#endif
+
+int PS4_SYSV_ABI posix_pthread_cancel(PthreadT thread) {
+    auto* thread_state = ThrState::Instance();
+    const int ret = thread_state->FindThread(thread, /*include dead*/ false);
+    if (ret != 0) {
+        return ret;
+    }
+
+    Pthread* join_target = thread->join_target;
+    bool newly_pending;
+    if (join_target != nullptr) {
+        std::scoped_lock wait_lock{join_target->join_wait_mutex};
+        newly_pending = !thread->cancel_pending.exchange(true);
+    } else {
+        newly_pending = !thread->cancel_pending.exchange(true);
+    }
+    // libkernel interrupts the target only when cancellation first becomes pending. The
+    // per-thread wake predicate is the host equivalent and is drained before each wait.
+    if (newly_pending) {
+        thread->wake_sema.release();
+        if (join_target != nullptr) {
+            join_target->join_wait_cv.notify_all();
+        }
+        if (thread != g_curthread) {
+            InterruptPthreadForCancellation(thread);
+        }
+    }
+    const bool cancel_self =
+        thread == g_curthread && thread->cancel_async.load() && !thread->cancel_point.load();
+    thread->lock.unlock();
+
+    if (cancel_self) {
+        PthreadTestCancel();
+    }
+    return 0;
 }
 
 int PS4_SYSV_ABI posix_pthread_setcancelstate(PthreadCancelState state,
@@ -607,7 +775,7 @@ int PS4_SYSV_ABI posix_pthread_setcancelstate(PthreadCancelState state,
         break;
     case PthreadCancelState::Enable:
         curthread->cancel_enable = true;
-        TestCancel(curthread);
+        PthreadTestCancel();
         break;
     default:
         return POSIX_EINVAL;
@@ -617,6 +785,50 @@ int PS4_SYSV_ABI posix_pthread_setcancelstate(PthreadCancelState state,
         *oldstate = oldval ? PthreadCancelState::Enable : PthreadCancelState::Disable;
     }
     return 0;
+}
+
+int PS4_SYSV_ABI posix_pthread_setcanceltype(PthreadCancelType type, PthreadCancelType* oldtype) {
+    Pthread* curthread = g_curthread;
+    const bool old_async = curthread->cancel_async.load();
+    switch (type) {
+    case PthreadCancelType::Deferred:
+        curthread->cancel_async = false;
+        break;
+    case PthreadCancelType::Asynchronous:
+        curthread->cancel_async = true;
+        PthreadTestCancel();
+        break;
+    default:
+        return POSIX_EINVAL;
+    }
+
+    if (oldtype != nullptr) {
+        *oldtype = old_async ? PthreadCancelType::Asynchronous : PthreadCancelType::Deferred;
+    }
+    return 0;
+}
+
+void PS4_SYSV_ABI posix_pthread_testcancel() {
+    PthreadTestCancel();
+}
+
+int PS4_SYSV_ABI scePthreadCancel(PthreadT thread) {
+    const int ret = posix_pthread_cancel(thread);
+    return ret == 0 ? ORBIS_OK : ErrnoToSceKernelError(ret);
+}
+
+int PS4_SYSV_ABI scePthreadSetcancelstate(PthreadCancelState state, PthreadCancelState* oldstate) {
+    const int ret = posix_pthread_setcancelstate(state, oldstate);
+    return ret == 0 ? ORBIS_OK : ErrnoToSceKernelError(ret);
+}
+
+int PS4_SYSV_ABI scePthreadSetcanceltype(PthreadCancelType type, PthreadCancelType* oldtype) {
+    const int ret = posix_pthread_setcanceltype(type, oldtype);
+    return ret == 0 ? ORBIS_OK : ErrnoToSceKernelError(ret);
+}
+
+void PS4_SYSV_ABI scePthreadTestcancel() {
+    PthreadTestCancel();
 }
 
 int Pthread::SetAffinity(const Cpuset* cpuset) {
@@ -724,6 +936,10 @@ int PS4_SYSV_ABI scePthreadSetaffinity(PthreadT thread, const u64 mask) {
 }
 
 void RegisterThread(Core::Loader::SymbolsResolver* sym) {
+#ifndef _WIN32
+    InstallPthreadCancelSignalHandler();
+#endif
+
     // Posix
     LIB_FUNCTION("Z4QosVuAsA0", "libScePosix", 1, "libkernel", posix_pthread_once);
     LIB_FUNCTION("7Xl257M4VNI", "libScePosix", 1, "libkernel", posix_pthread_equal);
@@ -734,9 +950,13 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("+U1R4WtXvoc", "libScePosix", 1, "libkernel", posix_pthread_detach);
     LIB_FUNCTION("FJrT5LuUBAU", "libScePosix", 1, "libkernel", posix_pthread_exit);
     LIB_FUNCTION("h9CcP3J0oVM", "libScePosix", 1, "libkernel", posix_pthread_join);
+    LIB_FUNCTION("PkS44IGrDkM", "libScePosix", 1, "libkernel", posix_pthread_timedjoin_np);
     LIB_FUNCTION("OxhIB8LB-PQ", "libScePosix", 1, "libkernel", posix_pthread_create);
     LIB_FUNCTION("Jmi+9w9u0E4", "libScePosix", 1, "libkernel", posix_pthread_create_name_np);
+    LIB_FUNCTION("0D4-FVvEikw", "libScePosix", 1, "libkernel", posix_pthread_cancel);
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", posix_pthread_setcancelstate);
+    LIB_FUNCTION("2dEhvvjlq30", "libScePosix", 1, "libkernel", posix_pthread_setcanceltype);
+    LIB_FUNCTION("nYBrkGDqxh8", "libScePosix", 1, "libkernel", posix_pthread_testcancel);
     LIB_FUNCTION("a2P9wYGeZvc", "libScePosix", 1, "libkernel", posix_pthread_setprio);
     LIB_FUNCTION("9vyP6Z7bqzc", "libScePosix", 1, "libkernel", posix_pthread_rename_np);
     LIB_FUNCTION("FIs3-UQT9sg", "libScePosix", 1, "libkernel", posix_pthread_getschedparam);
@@ -749,13 +969,17 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", posix_pthread_self);
     LIB_FUNCTION("OxhIB8LB-PQ", "libkernel", 1, "libkernel", posix_pthread_create);
     LIB_FUNCTION("Jmi+9w9u0E4", "libkernel", 1, "libkernel", posix_pthread_create_name_np);
+    LIB_FUNCTION("0D4-FVvEikw", "libkernel", 1, "libkernel", posix_pthread_cancel);
     LIB_FUNCTION("lZzFeSxPl08", "libkernel", 1, "libkernel", posix_pthread_setcancelstate);
+    LIB_FUNCTION("2dEhvvjlq30", "libkernel", 1, "libkernel", posix_pthread_setcanceltype);
+    LIB_FUNCTION("nYBrkGDqxh8", "libkernel", 1, "libkernel", posix_pthread_testcancel);
     LIB_FUNCTION("CBNtXOoef-E", "libkernel", 1, "libkernel", posix_sched_get_priority_max);
     LIB_FUNCTION("m0iS6jNsXds", "libkernel", 1, "libkernel", posix_sched_get_priority_min);
     LIB_FUNCTION("Xs9hdiD7sAA", "libkernel", 1, "libkernel", posix_pthread_setschedparam);
     LIB_FUNCTION("+U1R4WtXvoc", "libkernel", 1, "libkernel", posix_pthread_detach);
     LIB_FUNCTION("7Xl257M4VNI", "libkernel", 1, "libkernel", posix_pthread_equal);
     LIB_FUNCTION("h9CcP3J0oVM", "libkernel", 1, "libkernel", posix_pthread_join);
+    LIB_FUNCTION("PkS44IGrDkM", "libkernel", 1, "libkernel", posix_pthread_timedjoin_np);
     LIB_FUNCTION("Jb2uGFMr688", "libkernel", 1, "libkernel", posix_pthread_getaffinity_np);
     LIB_FUNCTION("5KWrg7-ZqvE", "libkernel", 1, "libkernel", posix_pthread_setaffinity_np);
     LIB_FUNCTION("3eqs37G74-s", "libkernel", 1, "libkernel", posix_pthread_getthreadid_np);
@@ -771,6 +995,10 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("How7B8Oet6k", "libkernel", 1, "libkernel", ORBIS(posix_pthread_getname_np));
     LIB_FUNCTION("3kg7rT0NQIs", "libkernel", 1, "libkernel", posix_pthread_exit);
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", posix_pthread_self);
+    LIB_FUNCTION("qBDmpCyGssE", "libkernel", 1, "libkernel", scePthreadCancel);
+    LIB_FUNCTION("OAmWq+OHSjw", "libkernel", 1, "libkernel", scePthreadSetcancelstate);
+    LIB_FUNCTION("sCJd99Phct0", "libkernel", 1, "libkernel", scePthreadSetcanceltype);
+    LIB_FUNCTION("LapIb799SSE", "libkernel", 1, "libkernel", scePthreadTestcancel);
     LIB_FUNCTION("oxMp8uPqa+U", "libkernel", 1, "libkernel", posix_pthread_set_name_np);
     LIB_FUNCTION("3PtV6p3QNX4", "libkernel", 1, "libkernel", posix_pthread_equal);
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", posix_pthread_yield);
