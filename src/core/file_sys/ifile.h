@@ -16,7 +16,7 @@
 
 namespace Core::FileSys {
 
-/// Policy declared by an IFile backend for host mmap.
+// Policy declared by an IFile backend for host mmap.
 enum class MmapPolicy {
     Native,      // Backed by a real host file,mmap the fd directly.
     Copy,        // Backend can populate anon pages on demand (decompression, etc.).
@@ -43,6 +43,10 @@ public:
 
     virtual std::optional<std::filesystem::path> GetHostPath() const {
         return std::nullopt;
+    }
+
+    virtual std::optional<std::filesystem::path> GetMetadataHostPath() const {
+        return GetHostPath();
     }
 
     virtual Common::FS::IOFile* GetHostFile() {
@@ -153,7 +157,6 @@ public:
     virtual std::unique_ptr<IDirectory> OpenDir(std::string_view rel_path) = 0;
 
     virtual bool IsReadOnly() const = 0;
-
     virtual std::optional<std::filesystem::path> RootHostPath() const {
         return std::nullopt;
     }

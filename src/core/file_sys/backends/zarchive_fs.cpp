@@ -3,7 +3,6 @@
 
 #include <cstring>
 #include <string>
-
 #include <zarchive/zarchivereader.h>
 #include "common/logging/log.h"
 #include "core/file_sys/backends/zarchive_fs.h"
@@ -18,8 +17,10 @@ std::string_view NormalizeRel(std::string_view rel) {
     return rel;
 }
 
-ZArchiveFile::ZArchiveFile(std::shared_ptr<ZArchiveReader> reader, uint32_t node, u64 size)
-    : m_reader(std::move(reader)), m_node(node), m_size(size) {}
+ZArchiveFile::ZArchiveFile(std::shared_ptr<ZArchiveReader> reader, uint32_t node, u64 size,
+                           std::filesystem::path archive_path)
+    : m_reader(std::move(reader)), m_node(node), m_size(size),
+      m_archive_path(std::move(archive_path)) {}
 
 s64 ZArchiveFile::Read(void* dst, u64 size) {
     if (!m_reader || size == 0) {
@@ -145,7 +146,7 @@ std::unique_ptr<IFile> ZArchiveBackend::Open(std::string_view rel_path, bool wri
         return nullptr;
     }
     const auto size = m_reader->GetFileSize(node);
-    return std::make_unique<ZArchiveFile>(m_reader, node, size);
+    return std::make_unique<ZArchiveFile>(m_reader, node, size, m_archive_path);
 }
 
 std::unique_ptr<IDirectory> ZArchiveBackend::OpenDir(std::string_view rel_path) {

@@ -15,10 +15,11 @@ class ZArchiveReader;
 
 namespace Core::FileSys {
 
-/// IFile implementation backed by a node inside a ZArchive (.zar) file.
+// IFile implementation backed by a node inside a ZArchive (.zar) file.
 class ZArchiveFile final : public IFile {
 public:
-    ZArchiveFile(std::shared_ptr<ZArchiveReader> reader, uint32_t node, u64 size);
+    ZArchiveFile(std::shared_ptr<ZArchiveReader> reader, uint32_t node, u64 size,
+                 std::filesystem::path archive_path);
     ~ZArchiveFile() override = default;
 
     s64 Read(void* dst, u64 size) override;
@@ -28,6 +29,10 @@ public:
     u64 Size() const override;
     bool Flush() override;
     bool IsOpen() const override;
+
+    std::optional<std::filesystem::path> GetMetadataHostPath() const override {
+        return m_archive_path;
+    }
 
     MmapPolicy GetMmapPolicy() const override {
         return MmapPolicy::Copy;
@@ -41,6 +46,7 @@ private:
     std::shared_ptr<ZArchiveReader> m_reader;
     uint32_t m_node;
     u64 m_size;
+    std::filesystem::path m_archive_path;
     std::atomic<u64> m_position{0};
 };
 
@@ -80,7 +86,6 @@ public:
     bool IsReadOnly() const override {
         return true;
     }
-
     std::optional<std::filesystem::path> RootHostPath() const override {
         return std::nullopt;
     }

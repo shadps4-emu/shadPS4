@@ -206,7 +206,6 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
     } else {
         file->type = Core::FileSys::FileType::Regular;
-
         file->handle = mnt->Open(file->m_guest_name, write || rdwr);
         const bool non_host = file->handle && !file->handle->GetHostPath().has_value();
 
@@ -794,30 +793,47 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         sb->st_size = file->GetSize();
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
-#if defined(__linux__) || defined(__FreeBSD__)
-        struct stat filestat = {};
-        stat(file->f.GetPath().c_str(), &filestat);
-        sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atim);
-        sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtim);
-        sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctim);
-#elif defined(__APPLE__)
-        struct stat filestat = {};
-        stat(file->f.GetPath().c_str(), &filestat);
-        sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atimespec);
-        sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtimespec);
-        sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctimespec);
-#else
-        const auto ft = std::filesystem::last_write_time(file->f.GetPath());
-        const auto sctp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
-            ft - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
-        const auto secs = std::chrono::time_point_cast<std::chrono::seconds>(sctp);
-        const auto nsecs = std::chrono::duration_cast<std::chrono::nanoseconds>(sctp - secs);
+        std::filesystem::path stat_path;
+        if (file->handle) {
+            if (auto p = file->handle->GetMetadataHostPath(); p.has_value()) {
+                stat_path = *p;
+            }
+        }
+        if (stat_path.empty() && file->f.IsOpen()) {
+            stat_path = file->f.GetPath();
+        }
 
-        sb->st_mtim.tv_sec = static_cast<int64_t>(secs.time_since_epoch().count());
-        sb->st_mtim.tv_nsec = static_cast<int64_t>(nsecs.count());
-        sb->st_atim = sb->st_mtim;
-        sb->st_ctim = sb->st_mtim;
+        if (!stat_path.empty()) {
+#if defined(__linux__) || defined(__FreeBSD__)
+            struct stat filestat = {};
+            stat(stat_path.string().c_str(), &filestat);
+            sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atim);
+            sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtim);
+            sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctim);
+#elif defined(__APPLE__)
+            struct stat filestat = {};
+            stat(stat_path.string().c_str(), &filestat);
+            sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atimespec);
+            sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtimespec);
+            sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctimespec);
+#else
+            std::error_code ec;
+            const auto ft = std::filesystem::last_write_time(stat_path, ec);
+            if (!ec) {
+                const auto sctp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
+                    ft - std::filesystem::file_time_type::clock::now() +
+                    std::chrono::system_clock::now());
+                const auto secs = std::chrono::time_point_cast<std::chrono::seconds>(sctp);
+                const auto nsecs =
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(sctp - secs);
+
+                sb->st_mtim.tv_sec = static_cast<int64_t>(secs.time_since_epoch().count());
+                sb->st_mtim.tv_nsec = static_cast<int64_t>(nsecs.count());
+                sb->st_atim = sb->st_mtim;
+                sb->st_ctim = sb->st_mtim;
+            }
 #endif
+        }
         // TODO incomplete
         break;
     }
