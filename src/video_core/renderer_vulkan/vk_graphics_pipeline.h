@@ -77,6 +77,7 @@ public:
         vk::PipelineMultisampleStateCreateInfo multisampling{};
         std::vector<u32> tcs{};
         std::vector<u32> tes{};
+        std::vector<u32> fragment{};
 
         void Serialize(Serialization::Archive& ar) const;
         bool Deserialize(Serialization::Archive& ar);
