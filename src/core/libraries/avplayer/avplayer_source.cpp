@@ -7,6 +7,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
+#include "core/libraries/avplayer/avplayer_handle_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
 #include "core/libraries/videodec/video_utils.h"
 #include "core/memory.h"
@@ -69,10 +70,29 @@ bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view pa
         }
     } else {
         const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-        const auto filepath = mnt->GetHostPath(path);
-        if (AVPLAYER_IS_ERROR(
-                avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
-            return false;
+        auto handle = mnt->Open(path, /*writable=*/false);
+        if (handle) {
+            if (auto host = handle->GetHostPath(); host.has_value()) {
+                if (AVPLAYER_IS_ERROR(
+                        avformat_open_input(&context, host->string().c_str(), nullptr, nullptr))) {
+                    return false;
+                }
+            } else {
+                m_up_data_streamer = std::make_unique<AvPlayerHandleStreamer>(std::move(handle));
+                if (!m_up_data_streamer->Init(path)) {
+                    return false;
+                }
+                context->pb = m_up_data_streamer->GetContext();
+                if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
+                    return false;
+                }
+            }
+        } else {
+            const auto filepath = mnt->GetHostPath(path);
+            if (AVPLAYER_IS_ERROR(
+                    avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
+                return false;
+            }
         }
     }
     m_avformat_context = AVFormatContextPtr(context, &ReleaseAVFormatContext);

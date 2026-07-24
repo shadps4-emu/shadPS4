@@ -404,6 +404,8 @@ set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
                  src/core/libraries/avplayer/avplayer_common.h
                  src/core/libraries/avplayer/avplayer_file_streamer.cpp
                  src/core/libraries/avplayer/avplayer_file_streamer.h
+                 src/core/libraries/avplayer/avplayer_handle_streamer.cpp
+                 src/core/libraries/avplayer/avplayer_handle_streamer.h
                  src/core/libraries/avplayer/avplayer_impl.cpp
                  src/core/libraries/avplayer/avplayer_impl.h
                  src/core/libraries/avplayer/avplayer_source.cpp
