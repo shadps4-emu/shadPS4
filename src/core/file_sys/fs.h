@@ -4,6 +4,7 @@
 #pragma once
 
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -13,6 +14,7 @@
 #include "common/logging/formatter.h"
 #include "core/file_sys/devices/base_device.h"
 #include "core/file_sys/directories/base_directory.h"
+#include "core/file_sys/ifile.h"
 
 namespace Libraries::Net {
 struct Socket;
@@ -34,6 +36,7 @@ public:
         std::filesystem::path host_path;
         std::string mount; // e.g /app0
         bool read_only;
+        std::vector<std::shared_ptr<IBackend>> backends;
     };
 
     enum class HostPathType {
@@ -58,6 +61,22 @@ public:
         std::function<void(const std::filesystem::path& host_path, bool is_file)>;
     void IterateDirectory(std::string_view guest_directory,
                           const IterateDirectoryCallback& callback);
+
+    /// Returns true if the guest path exists in any backend of the
+    /// mount stack. Mirrors fs::exists() on the resolved host path.
+    bool Exists(std::string_view guest_path);
+
+    /// Returns true if the guest path resolves to a directory in any
+    /// backend of the mount stack.
+    bool IsDirectory(std::string_view guest_path);
+
+    /// Opens the guest path through the mount's backend stack. Returns
+    /// nullptr when the path does not exist or the caller requested
+    /// writable access on a read-only mount.
+    std::unique_ptr<IFile> Open(std::string_view guest_path, bool writable = false);
+
+    /// Opens a directory through the mount's backend stack.
+    std::unique_ptr<IDirectory> OpenDir(std::string_view guest_path);
 
     const MntPair* GetMountFromHostPath(const std::string& host_path) {
         std::scoped_lock lock{m_mutex};
@@ -103,12 +122,82 @@ struct File {
     std::filesystem::path m_host_name;
     std::string m_guest_name;
     Common::FS::IOFile f;
+    std::unique_ptr<IFile> handle;
     std::mutex m_mutex;
     std::shared_ptr<Directories::BaseDirectory> directory; // only valid for type == Directory
     std::shared_ptr<Devices::BaseDevice> device;           // only valid for type == Device
     std::shared_ptr<Libraries::Net::Socket> socket;        // only valid for type == Socket
     std::shared_ptr<Libraries::Net::Epoll> epoll;          // only valid for type == Epoll
     std::shared_ptr<Libraries::Net::Resolver> resolver;    // only valid for type == Resolver
+
+    bool IsBackendOpen() const {
+        return f.IsOpen() || (handle && handle->IsOpen());
+    }
+
+    s64 Read(void* dst, u64 size) {
+        if (f.IsOpen()) {
+            return static_cast<s64>(f.ReadRaw<u8>(dst, size));
+        }
+        if (handle) {
+            return handle->Read(dst, size);
+        }
+        return -1;
+    }
+
+    s64 Write(const void* src, u64 size) {
+        if (f.IsOpen()) {
+            return static_cast<s64>(f.WriteRaw<u8>(src, size));
+        }
+        if (handle) {
+            return handle->Write(src, size);
+        }
+        return -1;
+    }
+
+    bool Seek(s64 offset, Common::FS::SeekOrigin origin = Common::FS::SeekOrigin::SetOrigin) {
+        if (f.IsOpen()) {
+            return f.Seek(offset, origin);
+        }
+        if (handle) {
+            return handle->Seek(offset, origin);
+        }
+        return false;
+    }
+
+    s64 Tell() const {
+        if (f.IsOpen()) {
+            return f.Tell();
+        }
+        if (handle) {
+            return static_cast<s64>(handle->Tell());
+        }
+        return -1;
+    }
+
+    u64 GetSize() const {
+        if (f.IsOpen()) {
+            return f.GetSize();
+        }
+        if (handle) {
+            return handle->Size();
+        }
+        return 0;
+    }
+
+    bool Flush() {
+        if (f.IsOpen()) {
+            return f.Flush();
+        }
+        if (handle) {
+            return handle->Flush();
+        }
+        return false;
+    }
+
+    bool IsWriteOnly() const {
+        // Non-host backends are read-only
+        return f.IsOpen() && f.IsWriteOnly();
+    }
 };
 
 class HandleTable {

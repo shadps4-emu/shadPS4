@@ -131,7 +131,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool read_only = false;
     file->m_guest_name = path;
     file->m_host_name = mnt->GetHostPath(file->m_guest_name, &read_only);
-    bool exists = fs::exists(file->m_host_name);
+    bool exists = mnt->Exists(file->m_guest_name);
     s32 e = 0;
 
     if (create) {
@@ -162,14 +162,14 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         return -1;
     }
 
-    if (fs::is_directory(file->m_host_name) || directory) {
+    if (mnt->IsDirectory(file->m_guest_name) || directory) {
         // Directories can be opened even if the directory flag isn't set.
         // In these cases, error behavior is identical to the directory code path.
         directory = true;
     }
 
     if (directory) {
-        if (!fs::is_directory(file->m_host_name)) {
+        if (!mnt->IsDirectory(file->m_guest_name)) {
             // If the opened file is not a directory, return ENOTDIR.
             // This will trigger when create & directory is specified, this is expected.
             h->DeleteHandle(handle);
@@ -207,7 +207,18 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     } else {
         file->type = Core::FileSys::FileType::Regular;
 
-        if (truncate && read_only) {
+        file->handle = mnt->Open(file->m_guest_name, write || rdwr);
+        const bool non_host = file->handle && !file->handle->GetHostPath().has_value();
+
+        if (non_host) {
+            if (write || rdwr || truncate) {
+                h->DeleteHandle(handle);
+                *__Error() = POSIX_EROFS;
+                LOG_ERROR(Kernel_Fs, "Opening {} for writing failed, backend is read-only",
+                          raw_path);
+                return -1;
+            }
+        } else if (truncate && read_only) {
             // Can't open files with truncate flag in a read only directory
             h->DeleteHandle(handle);
             *__Error() = POSIX_EROFS;
@@ -223,31 +234,33 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             }
         }
 
-        if (read) {
-            // Open exclusively for reading
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-        } else if (read_only) {
-            // Can't open files with write/read-write access in a read only directory
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EROFS;
-            LOG_ERROR(Kernel_Fs, "Opening {} for writing failed, path is read-only", raw_path);
-            return -1;
-        } else if (write) {
-            if (append) {
-                // Open exclusively for appending
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
-            } else {
-                // Open exclusively for writing
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
-            }
-        } else if (rdwr) {
-            // Read and write
-            if (append) {
-                // Open for reading and appending
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadAppend);
-            } else {
-                // Open for reading and writing
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
+        if (!non_host) {
+            if (read) {
+                // Open exclusively for reading
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
+            } else if (read_only) {
+                // Can't open files with write/read-write access in a read only directory
+                h->DeleteHandle(handle);
+                *__Error() = POSIX_EROFS;
+                LOG_ERROR(Kernel_Fs, "Opening {} for writing failed, path is read-only", raw_path);
+                return -1;
+            } else if (write) {
+                if (append) {
+                    // Open exclusively for appending
+                    e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
+                } else {
+                    // Open exclusively for writing
+                    e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
+                }
+            } else if (rdwr) {
+                // Read and write
+                if (append) {
+                    // Open for reading and appending
+                    e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadAppend);
+                } else {
+                    // Open for reading and writing
+                    e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
+                }
             }
         }
     }
@@ -257,6 +270,13 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         h->DeleteHandle(handle);
         SetPosixErrno(e);
         LOG_ERROR(Kernel_Fs, "Opening {} failed, error = {}", raw_path, *__Error());
+        return -1;
+    }
+
+    if (file->type == Core::FileSys::FileType::Regular && !file->IsBackendOpen()) {
+        h->DeleteHandle(handle);
+        *__Error() = POSIX_EIO;
+        LOG_ERROR(Kernel_Fs, "Opening {} failed, no backend served the file", raw_path);
         return -1;
     }
 
@@ -289,6 +309,7 @@ s32 PS4_SYSV_ABI close(s32 fd) {
     }
     if (file->type == Core::FileSys::FileType::Regular) {
         file->f.Close();
+        file->handle.reset();
     } else if (file->type == Core::FileSys::FileType::Socket) {
         file->socket->Close();
     }
@@ -336,7 +357,7 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
         return -1;
     }
 
-    return file->f.WriteRaw<u8>(buf, nbytes);
+    return file->Write(buf, nbytes);
 }
 
 s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, u64 nbytes) {
@@ -354,15 +375,18 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
 
 static thread_local std::vector<u8> file_buf{};
 
-s64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
+s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
-    const auto remaining = file.GetSize() - file.Tell();
+    const auto remaining = file->GetSize() - file->Tell();
     memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
     if (file_buf.capacity() < nbytes) {
         file_buf.reserve(nbytes);
     }
-    u64 bytes = file.ReadRaw<u8>(file_buf.data(), nbytes);
+    s64 bytes = file->Read(file_buf.data(), nbytes);
+    if (bytes < 0) {
+        return bytes;
+    }
     std::memcpy(buf, file_buf.data(), bytes);
     return bytes;
 }
@@ -392,14 +416,14 @@ s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
         return result;
     }
 
-    if (file->f.IsWriteOnly()) {
+    if (file->IsWriteOnly()) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
 
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
+        total_read += ReadFile(file, iov[i].iov_base, iov[i].iov_len);
     }
     return total_read;
 }
@@ -441,7 +465,7 @@ s64 PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
 
     s64 total_written = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_written += file->f.WriteRaw<u8>(iov[i].iov_base, iov[i].iov_len);
+        total_written += file->Write(iov[i].iov_base, iov[i].iov_len);
     }
     return total_written;
 }
@@ -501,7 +525,7 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
         return -1;
     }
 
-    if (!file->f.Seek(offset, origin)) {
+    if (!file->Seek(offset, origin)) {
         if (errno != 0) {
             // Seek failed in platform-specific code, errno needs to be converted.
             SetPosixErrno(errno);
@@ -511,7 +535,7 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
         return -1;
     }
 
-    s64 result = file->f.Tell();
+    s64 result = file->Tell();
     if (result < 0) {
         // Tell failed in platform-specific code, errno needs to be converted.
         SetPosixErrno(errno);
@@ -557,12 +581,12 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
         return file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
     }
 
-    if (file->f.IsWriteOnly()) {
+    if (file->IsWriteOnly()) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
 
-    return ReadFile(file->f, buf, nbytes);
+    return ReadFile(file, buf, nbytes);
 }
 
 s64 PS4_SYSV_ABI posix_read(s32 fd, void* buf, u64 nbytes) {
@@ -767,7 +791,7 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     }
     case Core::FileSys::FileType::Regular: {
         sb->st_mode = 0000777u | 0100000u;
-        sb->st_size = file->f.GetSize();
+        sb->st_size = file->GetSize();
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
 #if defined(__linux__) || defined(__FreeBSD__)
@@ -969,22 +993,22 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 off
         return result;
     }
 
-    if (file->f.IsWriteOnly()) {
+    if (file->IsWriteOnly()) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
 
-    const s64 pos = file->f.Tell();
+    const s64 pos = file->Tell();
     SCOPE_EXIT {
-        file->f.Seek(pos);
+        file->Seek(pos);
     };
-    if (!file->f.Seek(offset)) {
+    if (!file->Seek(offset)) {
         *__Error() = POSIX_EIO;
         return -1;
     }
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
+        total_read += ReadFile(file, iov[i].iov_base, iov[i].iov_len);
     }
     return total_read;
 }
@@ -1024,7 +1048,7 @@ s32 PS4_SYSV_ABI posix_fsync(s32 fd) {
         }
         return result;
     }
-    file->f.Flush();
+    file->Flush();
     return ORBIS_OK;
 }
 
@@ -1138,17 +1162,17 @@ s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, 
         return -1;
     }
 
-    const s64 pos = file->f.Tell();
+    const s64 pos = file->Tell();
     SCOPE_EXIT {
-        file->f.Seek(pos);
+        file->Seek(pos);
     };
-    if (!file->f.Seek(offset)) {
+    if (!file->Seek(offset)) {
         *__Error() = POSIX_EIO;
         return -1;
     }
     s64 total_written = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_written += file->f.WriteRaw<u8>(iov[i].iov_base, iov[i].iov_len);
+        total_written += file->Write(iov[i].iov_base, iov[i].iov_len);
     }
     return total_written;
 }

@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include "common/string_util.h"
+#include "core/file_sys/backends/host_fs.h"
+#include "core/file_sys/backends/zarchive_fs.h"
 #include "core/file_sys/devices/logger.h"
 #include "core/file_sys/devices/nop_device.h"
 #include "core/file_sys/fs.h"
@@ -24,7 +26,70 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
                       bool read_only) {
     std::scoped_lock lock{m_mutex};
     const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
-    m_mnt_pairs.emplace_back(host_folder, guest_folder_sanitized, read_only);
+
+    // Build the backend stack for this mount
+    std::vector<std::shared_ptr<IBackend>> stack;
+    const bool eligible_for_overlays =
+        guest_folder_sanitized == "/app0" || guest_folder_sanitized == "/hostapp";
+
+    const auto make_backend = [](const std::filesystem::path& p,
+                                 bool ro) -> std::shared_ptr<IBackend> {
+        if (std::filesystem::is_directory(p)) {
+            return std::make_shared<HostFsBackend>(p, ro);
+        }
+        if (std::filesystem::is_regular_file(p) && p.extension() == ".zar") {
+            auto backend = std::make_shared<ZArchiveBackend>(p);
+            if (backend->IsOpen()) {
+                return backend;
+            }
+        }
+        return nullptr;
+    };
+    // check for mods , updates,patch
+    const auto probe_overlay =
+        [&make_backend](const std::filesystem::path& base,
+                        std::string_view suffix) -> std::shared_ptr<IBackend> {
+        std::filesystem::path dir_path = base;
+        dir_path += std::string{suffix};
+        if (auto b = make_backend(dir_path, /*ro=*/true)) {
+            return b;
+        }
+        std::filesystem::path zar_path = base;
+        zar_path += std::string{suffix};
+        zar_path += ".zar";
+        if (auto b = make_backend(zar_path, /*ro=*/true)) {
+            return b;
+        }
+        return nullptr;
+    };
+
+    if (eligible_for_overlays) {
+        if (auto mods = probe_overlay(host_folder, "-mods")) {
+            stack.push_back(std::move(mods));
+        }
+        if (!ignore_game_patches) {
+            auto patch = probe_overlay(host_folder, "-UPDATE");
+            if (!patch) {
+                patch = probe_overlay(host_folder, "-patch");
+            }
+            if (patch) {
+                stack.push_back(std::move(patch));
+            }
+        }
+    }
+
+    std::shared_ptr<IBackend> base = make_backend(host_folder, read_only);
+    if (!base) {
+        std::filesystem::path zar_candidate = host_folder;
+        zar_candidate += ".zar";
+        base = make_backend(zar_candidate, read_only);
+    }
+    if (!base) {
+        base = std::make_shared<HostFsBackend>(host_folder, read_only);
+    }
+    stack.push_back(std::move(base));
+
+    m_mnt_pairs.emplace_back(host_folder, guest_folder_sanitized, read_only, std::move(stack));
 }
 
 void MntPoints::Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder) {
@@ -246,6 +311,110 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
             }
         }
     }
+}
+
+// Normalize a guest path
+std::optional<std::string> SanitizeGuestPath(std::string_view path) {
+    if (path.length() > 255) {
+        return std::nullopt;
+    }
+    std::string corrected(path);
+    size_t pos = corrected.find("//");
+    while (pos != std::string::npos) {
+        corrected.replace(pos, 2, "/");
+        pos = corrected.find("//", pos + 1);
+    }
+    return corrected;
+}
+
+// Strip the mount prefix from a corrected guest path
+std::string_view RelativeToMount(const std::string& corrected, const MntPoints::MntPair& mount) {
+    if (corrected.size() <= mount.mount.size() + 1) {
+        return {};
+    }
+    return std::string_view{corrected}.substr(mount.mount.size() + 1);
+}
+
+bool MntPoints::Exists(std::string_view guest_path) {
+    const auto corrected = SanitizeGuestPath(guest_path);
+    if (!corrected) {
+        return false;
+    }
+    const auto mount = GetMount(*corrected);
+    if (!mount || mount->backends.empty()) {
+        return false;
+    }
+    const auto rel = RelativeToMount(*corrected, *mount);
+    for (const auto& backend : mount->backends) {
+        if (backend->Exists(rel)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MntPoints::IsDirectory(std::string_view guest_path) {
+    const auto corrected = SanitizeGuestPath(guest_path);
+    if (!corrected) {
+        return false;
+    }
+    const auto mount = GetMount(*corrected);
+    if (!mount || mount->backends.empty()) {
+        return false;
+    }
+    const auto rel = RelativeToMount(*corrected, *mount);
+    for (const auto& backend : mount->backends) {
+        if (backend->Exists(rel)) {
+            return backend->IsDirectory(rel);
+        }
+    }
+    return false;
+}
+
+std::unique_ptr<IFile> MntPoints::Open(std::string_view guest_path, bool writable) {
+    const auto corrected = SanitizeGuestPath(guest_path);
+    if (!corrected) {
+        return nullptr;
+    }
+    const auto mount = GetMount(*corrected);
+    if (!mount || mount->backends.empty()) {
+        return nullptr;
+    }
+    if (writable && mount->read_only) {
+        return nullptr;
+    }
+    const auto rel = RelativeToMount(*corrected, *mount);
+    const std::string rel_copy{rel};
+
+    for (const auto& backend : mount->backends) {
+        if (writable && backend->IsReadOnly()) {
+            continue;
+        }
+        if (backend->Exists(rel) && !backend->IsDirectory(rel)) {
+            return backend->Open(rel_copy, writable);
+        }
+    }
+    return nullptr;
+}
+
+std::unique_ptr<IDirectory> MntPoints::OpenDir(std::string_view guest_path) {
+    const auto corrected = SanitizeGuestPath(guest_path);
+    if (!corrected) {
+        return nullptr;
+    }
+    const auto mount = GetMount(*corrected);
+    if (!mount || mount->backends.empty()) {
+        return nullptr;
+    }
+    const auto rel = RelativeToMount(*corrected, *mount);
+    const std::string rel_copy{rel};
+
+    for (const auto& backend : mount->backends) {
+        if (backend->Exists(rel) && backend->IsDirectory(rel)) {
+            return backend->OpenDir(rel_copy);
+        }
+    }
+    return nullptr;
 }
 
 int HandleTable::CreateHandle() {
