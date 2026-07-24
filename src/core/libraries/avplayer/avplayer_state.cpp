@@ -52,16 +52,16 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, AvPlayerEve
                     audio_stream_index = stream_index;
                 }
                 if (!default_language.empty() &&
-                    default_language == info.details.video.language_code) {
+                    default_language == info.details.audio.language_code) {
                     audio_stream_index = stream_index;
                 }
                 break;
             case AvPlayerStreamType::TimedText:
-                if (default_language.empty()) {
+                if (timedtext_stream_index == -1) {
                     timedtext_stream_index = stream_index;
-                    break;
                 }
-                if (default_language == info.details.video.language_code) {
+                if (!default_language.empty() &&
+                    default_language == info.details.subs.language_code) {
                     timedtext_stream_index = stream_index;
                 }
                 break;
@@ -142,10 +142,7 @@ bool AvPlayerState::AddSource(std::string_view path, AvPlayerSourceType source_t
 
         s32 sdk_ver{};
         Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
-        bool uses_vdec2 = m_post_init_data.video_decoder_init.decoder_type.video_type ==
-                              AvPlayerVideoDecoderType::Software2 ||
-                          sdk_ver >= Common::ElfInfo::FW_550;
-        m_up_source = std::make_unique<AvPlayerSource>(*this, uses_vdec2);
+        m_up_source = std::make_unique<AvPlayerSource>(*this);
         if (!m_up_source->Init(m_init_data, path)) {
             SetState(AvState::Error);
             m_up_source.reset();
@@ -203,9 +200,8 @@ bool AvPlayerState::Pause() {
         return true;
     }
     if (m_up_source == nullptr || m_current_state == AvState::Pause ||
-        m_current_state == AvState::Stop || m_current_state == AvState::Ready ||
-        m_current_state == AvState::Initial || m_current_state == AvState::Unknown ||
-        m_current_state == AvState::AddingSource) {
+        m_current_state == AvState::Ready || m_current_state == AvState::Initial ||
+        m_current_state == AvState::Unknown || m_current_state == AvState::AddingSource) {
         LOG_ERROR(Lib_AvPlayer, "Could not pause playback.");
         return false;
     }
@@ -463,7 +459,7 @@ void AvPlayerState::ProcessEvent() {
     }
     case AvEventType::AddSource: {
         std::shared_lock lock(m_source_mutex);
-        if (m_up_source->FindStreamInfo()) {
+        if (m_up_source->HasStreams()) {
             SetState(AvState::Ready);
             OnPlaybackStateChanged(AvState::Ready);
         } else {

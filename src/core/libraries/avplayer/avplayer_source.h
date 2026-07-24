@@ -142,11 +142,11 @@ private:
 
 class AvPlayerSource {
 public:
-    AvPlayerSource(AvPlayerStateCallback& state, bool use_vdec2);
+    AvPlayerSource(AvPlayerStateCallback& state);
     ~AvPlayerSource();
 
     bool Init(const AvPlayerInitData& init_data, std::string_view path);
-    bool FindStreamInfo();
+    bool HasStreams();
     s32 GetStreamCount();
     bool GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info);
     bool EnableStream(u32 stream_index);
@@ -164,6 +164,7 @@ public:
 
 private:
     u64 DurationMillis() const;
+    AvPlayerStreamInfo CreateStreamInfo(u32 stream_index);
 
     static void ReleaseAVPacket(AVPacket* packet);
     static void ReleaseAVFrame(AVFrame* frame);
@@ -192,7 +193,13 @@ private:
     Frame PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame);
 
     AvPlayerStateCallback& m_state;
-    bool m_use_vdec2 = false;
+
+    struct Stream {
+        size_t ffmpeg_index = 0;
+        AvPlayerStreamInfo info;
+    };
+
+    std::vector<Stream> m_streams;
 
     AvPlayerMemAllocator m_memory_replacement{};
     u32 m_max_num_video_framebuffers{};
