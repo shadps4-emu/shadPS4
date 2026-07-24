@@ -355,7 +355,7 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
 
 static thread_local std::vector<u8> file_buf{};
 
-s64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
+s64 ReadFile(Common::FS::File& file, void* buf, u64 nbytes) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = file.GetSize() - file.Tell();
