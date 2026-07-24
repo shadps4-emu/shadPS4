@@ -5,7 +5,7 @@
 
 #include <vector>
 #include "common/endian.h"
-#include "common/io_file.h"
+#include "common/file.h"
 #include "common/types.h"
 
 static constexpr u32 TRP_MAGIC = 0xDCA24D00;
@@ -40,9 +40,9 @@ public:
                  const std::filesystem::path& outputPath);
 
 private:
-    bool ProcessPngEntry(Common::FS::IOFile& file, const TrpEntry& entry,
+    bool ProcessPngEntry(Common::FS::File& file, const TrpEntry& entry,
                          const std::filesystem::path& outputPath, std::string_view name);
-    bool ProcessEncryptedXmlEntry(Common::FS::IOFile& file, const TrpEntry& entry,
+    bool ProcessEncryptedXmlEntry(Common::FS::File& file, const TrpEntry& entry,
                                   const std::filesystem::path& outputPath, std::string_view name,
                                   const std::array<u8, 16>& user_key, const std::string& npCommId);
 

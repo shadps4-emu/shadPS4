@@ -2,26 +2,27 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
-#include <fstream>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <vector>
+
+#include "common/file.h"
 #include "npbind.h"
 
-bool NPBindFile::Load(const std::string& path) {
+bool NPBindFile::Load(const std::filesystem::path& path) {
     Clear(); // Clear any existing data
 
-    std::ifstream f(path, std::ios::binary | std::ios::ate);
-    if (!f)
+    Common::FS::File f(path, Common::FS::FileAccessMode::Read);
+    if (!f.IsOpen())
         return false;
 
-    std::streamsize sz = f.tellg();
-    if (sz <= 0)
+    const u64 sz = f.GetSize();
+    if (sz == 0 || sz > std::numeric_limits<size_t>::max())
         return false;
 
-    f.seekg(0, std::ios::beg);
     std::vector<u8> buf(static_cast<size_t>(sz));
-    if (!f.read(reinterpret_cast<char*>(buf.data()), sz))
+    if (f.ReadRaw<u8>(buf.data(), buf.size()) != buf.size())
         return false;
 
     const u64 size = buf.size();

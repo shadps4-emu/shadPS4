@@ -4,12 +4,14 @@
 #include "font_internal.h"
 
 #include <array>
+#include <limits>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_OUTLINE_H
 #include FT_TRUETYPE_TABLES_H
 
+#include "common/file.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/font/fontft_internal.h"
 #include "core/libraries/kernel/kernel.h"
@@ -918,25 +920,20 @@ std::filesystem::path ResolveGuestPath(const char* guest_path) {
 
 bool LoadGuestFileBytes(const std::filesystem::path& host_path,
                         std::vector<unsigned char>& out_bytes) {
-    std::ifstream file(host_path, std::ios::binary | std::ios::ate);
-    if (!file) {
+    Common::FS::File file(host_path, Common::FS::FileAccessMode::Read);
+    if (!file.IsOpen()) {
         return false;
     }
-    const std::streamoff size = file.tellg();
-    if (size < 0) {
-        return false;
-    }
+    const u64 size = file.GetSize();
     if (size == 0) {
         out_bytes.clear();
         return true;
     }
-    if (static_cast<std::uint64_t>(size) > std::numeric_limits<std::size_t>::max()) {
+    if (size > std::numeric_limits<size_t>::max()) {
         return false;
     }
-    out_bytes.resize(static_cast<std::size_t>(size));
-    file.seekg(0, std::ios::beg);
-    if (!file.read(reinterpret_cast<char*>(out_bytes.data()),
-                   static_cast<std::streamsize>(out_bytes.size()))) {
+    out_bytes.resize(static_cast<size_t>(size));
+    if (file.ReadRaw<unsigned char>(out_bytes.data(), out_bytes.size()) != out_bytes.size()) {
         out_bytes.clear();
         return false;
     }

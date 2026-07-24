@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "common/io_file.h"
+#include "common/file.h"
 #include "common/types.h"
 
 struct self_header {
@@ -508,7 +508,7 @@ public:
     void PHeaderDebugDump(const std::filesystem::path& file_name);
 
 private:
-    Common::FS::IOFile m_f{};
+    Common::FS::File m_f{};
     bool is_self{};
     self_header m_self{};
     std::vector<self_segment_header> m_self_segments;

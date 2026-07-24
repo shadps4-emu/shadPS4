@@ -4,10 +4,12 @@
 #include "common/alignment.h"
 #include "common/singleton.h"
 #include "common/thread.h"
+#include "common/zar_fs.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
+#include "core/libraries/avplayer/avplayer_zar_streamer.h"
 #include "core/libraries/videodec/video_utils.h"
 #include "core/memory.h"
 
@@ -70,8 +72,18 @@ bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view pa
     } else {
         const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
         const auto filepath = mnt->GetHostPath(path);
-        if (AVPLAYER_IS_ERROR(
-                avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
+        if (Common::FS::Zar::IsZarInnerPath(filepath)) {
+            m_up_data_streamer = std::make_unique<AvPlayerZarStreamer>();
+            if (!m_up_data_streamer->Init(filepath.string())) {
+                LOG_ERROR(Lib_AvPlayer, "Failed to open {} from ZArchive", path);
+                return false;
+            }
+            context->pb = m_up_data_streamer->GetContext();
+            if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
+                return false;
+            }
+        } else if (AVPLAYER_IS_ERROR(avformat_open_input(&context, filepath.string().c_str(),
+                                                         nullptr, nullptr))) {
             return false;
         }
     }

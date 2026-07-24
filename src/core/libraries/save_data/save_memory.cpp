@@ -12,6 +12,7 @@
 
 #include "boost/icl/concept/interval.hpp"
 #include "common/elf_info.h"
+#include "common/file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
@@ -143,9 +144,9 @@ void SetIcon(u32 slot_id, void* buf, size_t buf_size) {
         if (fs::exists(icon_path)) {
             fs::remove(icon_path);
         }
-        if (fs::exists(src_icon)) {
+        if (Common::FS::Exists(src_icon)) {
             fs::create_directories(icon_path.parent_path());
-            fs::copy_file(src_icon, icon_path);
+            Common::FS::CopyFile(src_icon, icon_path);
         }
     } else {
         IOFile file(icon_path, Common::FS::FileAccessMode::Create);

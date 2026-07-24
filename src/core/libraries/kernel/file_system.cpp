@@ -7,6 +7,7 @@
 
 #include "common/assert.h"
 #include "common/error.h"
+#include "common/file.h"
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
@@ -131,7 +132,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool read_only = false;
     file->m_guest_name = path;
     file->m_host_name = mnt->GetHostPath(file->m_guest_name, &read_only);
-    bool exists = fs::exists(file->m_host_name);
+    bool exists = Common::FS::Exists(file->m_host_name);
     s32 e = 0;
 
     if (create) {
@@ -162,14 +163,14 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         return -1;
     }
 
-    if (fs::is_directory(file->m_host_name) || directory) {
+    if (Common::FS::IsDirectory(file->m_host_name) || directory) {
         // Directories can be opened even if the directory flag isn't set.
         // In these cases, error behavior is identical to the directory code path.
         directory = true;
     }
 
     if (directory) {
-        if (!fs::is_directory(file->m_host_name)) {
+        if (!Common::FS::IsDirectory(file->m_host_name)) {
             // If the opened file is not a directory, return ENOTDIR.
             // This will trigger when create & directory is specified, this is expected.
             h->DeleteHandle(handle);
@@ -354,7 +355,7 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
 
 static thread_local std::vector<u8> file_buf{};
 
-s64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
+s64 ReadFile(Common::FS::File& file, void* buf, u64 nbytes) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = file.GetSize() - file.Tell();
@@ -593,7 +594,7 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     bool ro = false;
     const auto dir_name = mnt->GetHostPath(path, &ro);
 
-    if (fs::exists(dir_name)) {
+    if (Common::FS::Exists(dir_name)) {
         *__Error() = POSIX_EEXIST;
         return -1;
     }
@@ -679,8 +680,8 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto path_name = mnt->GetHostPath(path);
     std::memset(sb, 0, sizeof(OrbisKernelStat));
-    const bool is_dir = fs::is_directory(path_name);
-    const bool is_file = fs::is_regular_file(path_name);
+    const bool is_dir = Common::FS::IsDirectory(path_name);
+    const bool is_file = Common::FS::IsRegularFile(path_name);
     if (!is_dir && !is_file) {
         *__Error() = POSIX_ENOENT;
         return -1;
@@ -690,10 +691,10 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     const auto now_sys = std::chrono::system_clock::now();
     const auto now_file = fs::file_time_type::clock::now();
     // calculate the file modified time
-    const auto mtime = fs::last_write_time(path_name);
+    const auto mtime = Common::FS::GetLastWriteTime(path_name).value_or(now_file);
     const auto mtimestamp = now_sys + (mtime - now_file);
 
-    if (fs::is_directory(path_name)) {
+    if (is_dir) {
         sb->st_mode = 0000777u | 0040000u;
         sb->st_size = 65536;
         sb->st_blksize = 65536;
@@ -703,7 +704,7 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         // TODO incomplete
     } else {
         sb->st_mode = 0000777u | 0100000u;
-        sb->st_size = static_cast<s64>(fs::file_size(path_name));
+        sb->st_size = static_cast<s64>(Common::FS::GetFileSize(path_name));
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
         sb->st_mtim.tv_sec =
@@ -736,7 +737,7 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
         }
     }
     const auto path_name = mnt->GetHostPath(guest_path);
-    if (!fs::exists(path_name)) {
+    if (!Common::FS::Exists(path_name)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
@@ -770,30 +771,38 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         sb->st_size = file->f.GetSize();
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
-#if defined(__linux__) || defined(__FreeBSD__)
-        struct stat filestat = {};
-        stat(file->f.GetPath().c_str(), &filestat);
-        sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atim);
-        sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtim);
-        sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctim);
-#elif defined(__APPLE__)
-        struct stat filestat = {};
-        stat(file->f.GetPath().c_str(), &filestat);
-        sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atimespec);
-        sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtimespec);
-        sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctimespec);
-#else
-        const auto ft = std::filesystem::last_write_time(file->f.GetPath());
-        const auto sctp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
-            ft - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
-        const auto secs = std::chrono::time_point_cast<std::chrono::seconds>(sctp);
-        const auto nsecs = std::chrono::duration_cast<std::chrono::nanoseconds>(sctp - secs);
+        const auto set_file_times = [&](const std::filesystem::file_time_type ft) {
+            const auto sctp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
+                ft - std::filesystem::file_time_type::clock::now() +
+                std::chrono::system_clock::now());
+            const auto secs = std::chrono::time_point_cast<std::chrono::seconds>(sctp);
+            const auto nsecs = std::chrono::duration_cast<std::chrono::nanoseconds>(sctp - secs);
 
-        sb->st_mtim.tv_sec = static_cast<int64_t>(secs.time_since_epoch().count());
-        sb->st_mtim.tv_nsec = static_cast<int64_t>(nsecs.count());
-        sb->st_atim = sb->st_mtim;
-        sb->st_ctim = sb->st_mtim;
+            sb->st_mtim.tv_sec = static_cast<int64_t>(secs.time_since_epoch().count());
+            sb->st_mtim.tv_nsec = static_cast<int64_t>(nsecs.count());
+            sb->st_atim = sb->st_mtim;
+            sb->st_ctim = sb->st_mtim;
+        };
+        if (!file->f.IsHostFile()) {
+            set_file_times(
+                file->f.GetLastWriteTime().value_or(std::filesystem::file_time_type::clock::now()));
+        } else {
+#if defined(__linux__) || defined(__FreeBSD__)
+            struct stat filestat = {};
+            stat(file->f.GetPath().c_str(), &filestat);
+            sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atim);
+            sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtim);
+            sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctim);
+#elif defined(__APPLE__)
+            struct stat filestat = {};
+            stat(file->f.GetPath().c_str(), &filestat);
+            sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atimespec);
+            sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtimespec);
+            sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctimespec);
+#else
+            set_file_times(std::filesystem::file_time_type::clock::now());
 #endif
+        }
         // TODO incomplete
         break;
     }
@@ -857,6 +866,11 @@ s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
         return -1;
     }
 
+    if (!file->f.SupportsWrites()) {
+        *__Error() = POSIX_EROFS;
+        return -1;
+    }
+
     file->f.SetSize(length);
     return ORBIS_OK;
 }
@@ -882,7 +896,7 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
-    if (!fs::exists(src_path)) {
+    if (!Common::FS::Exists(src_path)) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }

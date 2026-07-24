@@ -410,6 +410,8 @@ set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
                  src/core/libraries/avplayer/avplayer_source.h
                  src/core/libraries/avplayer/avplayer_state.cpp
                  src/core/libraries/avplayer/avplayer_state.h
+                 src/core/libraries/avplayer/avplayer_zar_streamer.cpp
+                 src/core/libraries/avplayer/avplayer_zar_streamer.h
                  src/core/libraries/avplayer/avplayer.cpp
                  src/core/libraries/avplayer/avplayer.h
                  src/core/libraries/avplayer/avplayer_error.h
@@ -781,9 +783,13 @@ set(COMMON src/common/logging/classes.h
            src/common/incremental_id.h
            src/common/io_file.cpp
            src/common/io_file.h
+           src/common/zar_fs.cpp
+           src/common/zar_fs.h
            src/common/lru_cache.h
            src/common/error.cpp
            src/common/error.h
+           src/common/file.cpp
+           src/common/file.h
            src/common/fixed_value.h
            src/common/func_traits.h
            src/common/native_clock.cpp
@@ -1244,6 +1250,7 @@ target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::to
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml)
 target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib miniupnpc::miniupnpc)
 target_link_libraries(shadps4 PRIVATE Freetype::Freetype)
+target_link_libraries(shadps4 PRIVATE ZArchive::zarchive)
 target_link_libraries(shadps4 PRIVATE libprotobuf)
 target_include_directories(shadps4 PRIVATE "${SHADNET_PROTO_OUT}")
 

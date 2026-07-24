@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include "common/elf_info.h"
+#include "common/file.h"
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
 
@@ -38,7 +39,7 @@ public:
         const auto game_modules_path = Common::ElfInfo::Instance().GetGameFolder() / "sce_module";
         const auto prx_path = game_modules_path / name;
 
-        if (!std::filesystem::exists(prx_path)) {
+        if (!Common::FS::Exists(prx_path)) {
             return true;
         }
         return false;

@@ -2,9 +2,12 @@
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
+#include <limits>
 #include <stb_image.h>
 
+#include "common/file.h"
 #include "common/logging/log.h"
+#include "common/zar_fs.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
@@ -34,11 +37,8 @@ namespace {
 
 std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder) {
     std::filesystem::path outputPath;
-    auto update_folder = game_folder;
-    update_folder += "-UPDATE";
-
-    auto patch_folder = game_folder;
-    patch_folder += "-patch";
+    const auto update_folder = Common::FS::Zar::GetLooseOverlayPath(game_folder, "-UPDATE");
+    const auto patch_folder = Common::FS::Zar::GetLooseOverlayPath(game_folder, "-patch");
 
     if (std::filesystem::exists(update_folder / "sce_sys" / sceItem)) {
         outputPath = update_folder / "sce_sys" / sceItem;
@@ -137,9 +137,14 @@ SDL_Texture* LoadSdlTextureData(std::vector<u8> data) {
 }
 
 SDL_Texture* LoadSdlTextureDataFromFile(std::filesystem::path filePath) {
-    std::ifstream file(filePath, std::ios::binary);
-    std::vector<u8> data =
-        std::vector<u8>(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+    Common::FS::File file(filePath, Common::FS::FileAccessMode::Read);
+    if (!file.IsOpen() || file.GetSize() > std::numeric_limits<size_t>::max()) {
+        return nullptr;
+    }
+    std::vector<u8> data(static_cast<size_t>(file.GetSize()));
+    if (file.ReadRaw<u8>(data.data(), data.size()) != data.size()) {
+        return nullptr;
+    }
     return LoadSdlTextureData(data);
 }
 
@@ -149,8 +154,11 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
     for (const auto& installLoc : EmulatorSettings.GetAllGameInstallDirs()) {
         if (installLoc.enabled && std::filesystem::exists(installLoc.path)) {
             for (const auto& entry : std::filesystem::directory_iterator(installLoc.path)) {
-                if (entry.path().filename().string().ends_with("-UPDATE") ||
-                    entry.path().filename().string().ends_with("-patch") || !entry.is_directory()) {
+                const auto entry_name = entry.path().filename().string();
+                const bool is_zar =
+                    entry.is_regular_file() && Common::FS::Zar::IsZarArchive(entry.path());
+                if (entry_name.ends_with("-UPDATE") || entry_name.ends_with("-patch") ||
+                    (!entry.is_directory() && !is_zar)) {
                     continue;
                 }
 
@@ -159,7 +167,7 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
                 const std::string sfoFileName = "param.sfo";
                 std::filesystem::path sfoPath = UpdateChecker(sfoFileName, entry.path());
 
-                if (std::filesystem::exists(sfoPath) && psf.Open(sfoPath)) {
+                if (Common::FS::Exists(sfoPath) && psf.Open(sfoPath)) {
                     if (const auto title = psf.GetString("TITLE"); title.has_value()) {
                         icon.title = *title;
                     }

@@ -27,8 +27,10 @@
 #include FT_SYSTEM_H
 #include FT_TRUETYPE_TABLES_H
 
+#include "common/file.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
+#include "common/zar_fs.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/font/font_internal.h"
 #include "core/libraries/kernel/kernel.h"
@@ -3054,6 +3056,39 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
                     shared_data = builtin_bytes;
                     data = builtin_bytes->data();
                     size = static_cast<u32>(builtin_bytes->size());
+                    break;
+                }
+                continue;
+            }
+
+            if (Common::FS::Zar::IsZarInnerPath(cand_path)) {
+                // FreeType cannot open files inside a ZArchive; load into memory instead.
+                Common::FS::File file(cand_path, Common::FS::FileAccessMode::Read);
+                if (!file.IsOpen()) {
+                    continue;
+                }
+                const u64 file_size = file.GetSize();
+                const u64 max_size =
+                    std::min({static_cast<u64>(std::numeric_limits<size_t>::max()),
+                              static_cast<u64>(std::numeric_limits<FT_Long>::max()),
+                              static_cast<u64>(std::numeric_limits<u32>::max())});
+                if (file_size > max_size) {
+                    continue;
+                }
+                auto bytes =
+                    std::make_shared<std::vector<unsigned char>>(static_cast<size_t>(file_size));
+                if (file.ReadRaw<unsigned char>(bytes->data(), bytes->size()) != bytes->size()) {
+                    continue;
+                }
+                attempted_open = true;
+                ft_err = FT_New_Memory_Face(
+                    ctx->ft_lib, reinterpret_cast<const FT_Byte*>(bytes->data()),
+                    static_cast<FT_Long>(bytes->size()), static_cast<FT_Long>(subFontIndex), &face);
+                last_ft_err = ft_err;
+                if (ft_err == 0 && face) {
+                    shared_data = std::move(bytes);
+                    data = shared_data->data();
+                    size = static_cast<u32>(shared_data->size());
                     break;
                 }
                 continue;

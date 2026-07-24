@@ -19,12 +19,14 @@
 #include "common/discord_rpc_handler.h"
 #endif
 #include "common/elf_info.h"
+#include "common/file.h"
 #include "common/memory_patcher.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"
 #include "common/singleton.h"
+#include "common/zar_fs.h"
 #include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
 #include "core/emulator_settings.h"
@@ -114,7 +116,7 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
     std::map<s32, std::string> trophy_index_map{};
 
     NPBindFile npbind;
-    if (!npbind.Load(npbind_path.string())) {
+    if (!npbind.Load(npbind_path)) {
         LOG_WARNING(Common_Filesystem, "Failed to load npbind.dat file");
         return trophy_index_map;
     }
@@ -127,19 +129,19 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
     auto& game_info = Common::ElfInfo::Instance();
     game_info.SetNpCommIds(np_comm_ids);
 
-    if (!std::filesystem::exists(trophy_dir)) {
+    if (!Common::FS::Exists(trophy_dir)) {
         LOG_WARNING(Common_Filesystem, "Game does not contain a trophy directory");
         return trophy_index_map;
     }
 
     std::string pattern = "trophy";
-    for (const auto& entry : std::filesystem::directory_iterator(trophy_dir)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".trp") {
-            std::string filename = entry.path().stem().string(); // "trophy00", "trophy01", etc.
+    Common::FS::IterateDirectory(trophy_dir, [&](const std::filesystem::path& entry, bool is_file) {
+        if (is_file && entry.extension() == ".trp") {
+            std::string filename = entry.stem().string(); // "trophy00", "trophy01", etc.
 
             // Check if filename starts with "trophy"
             if (filename.find(pattern) != 0) {
-                continue;
+                return;
             }
 
             // Extract the number part
@@ -150,7 +152,7 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
                 // This logic currently assumes each NPCommID corresponds to a trophy index.
                 LOG_WARNING(Common_Filesystem,
                             "Trophy index {} does not have a corresponding NPCommId", trophy_index);
-                continue;
+                return;
             }
 
             // Add the relevant trophies to our trophy index map.
@@ -166,7 +168,7 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
                 TRP trp;
                 if (!trp.Extract(entry, np_comm_id, trophy_output_dir)) {
                     LOG_ERROR(Loader, "Couldn't extract trophy file {}", filename);
-                    continue;
+                    return;
                 }
             }
 
@@ -184,7 +186,7 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
                 }
             }
         }
-    }
+    });
     return trophy_index_map;
 }
 
@@ -195,7 +197,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         Debugger::WaitForDebuggerAttach();
     }
 
-    if (std::filesystem::is_directory(file)) {
+    if (std::filesystem::is_directory(file) || Common::FS::Zar::IsZarArchive(file)) {
         file /= "eboot.bin";
     }
 
@@ -217,7 +219,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
 
-    std::filesystem::path eboot_name = std::filesystem::relative(file, game_folder);
+    std::filesystem::path eboot_name = Common::FS::Zar::IsZarInnerPath(file)
+                                           ? file.lexically_relative(game_folder)
+                                           : std::filesystem::relative(file, game_folder);
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
@@ -226,7 +230,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     mnt->Mount(game_folder, "/hostapp", true);
 
     const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");
-    const auto param_sfo_exists = std::filesystem::exists(param_sfo_path);
+    const auto param_sfo_exists = Common::FS::Exists(param_sfo_path);
 
     // Load param.sfo details if it exists
     std::string id;
@@ -296,13 +300,13 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     game_info.psf_attributes = psf_attributes;
 
     const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
-    if (std::filesystem::exists(pic1_path)) {
+    if (Common::FS::Exists(pic1_path)) {
         game_info.splash_path = pic1_path;
     }
 
     game_info.game_folder = game_folder;
 
-    if (!std::filesystem::exists(file)) {
+    if (!Common::FS::Exists(file)) {
         LOG_CRITICAL(Loader, "eboot.bin does not exist: {}",
                      std::filesystem::absolute(file).string());
         std::quick_exit(0);
@@ -378,8 +382,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         args.insert(args.begin(), guest_eboot_path);
     }
 
-    std::filesystem::path mods_folder = game_folder;
-    mods_folder += "-mods";
+    const auto mods_folder = Common::FS::Zar::GetLooseOverlayPath(game_folder, "-mods");
 
     if (std::filesystem::exists(mods_folder) && !std::filesystem::is_empty(mods_folder)) {
         LOG_INFO(Loader, "Files found in game mods folder");
@@ -437,6 +440,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir);
     mnt->Mount(mount_data_dir, "/data");
+
+    // Remove stale files extracted from ZArchives on previous runs.
+    Common::FS::Zar::CleanupSpillFiles();
 
     // Mounting temp folders
     const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;

@@ -4,7 +4,7 @@
 #include "playgo_chunk.h"
 
 bool PlaygoFile::Open(const std::filesystem::path& filepath) {
-    Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Read);
+    Common::FS::File file(filepath, Common::FS::FileAccessMode::Read);
     if (file.IsOpen()) {
         file.Read(playgoHeader);
         if (LoadChunks(file)) {
@@ -14,7 +14,7 @@ bool PlaygoFile::Open(const std::filesystem::path& filepath) {
     return false;
 }
 
-bool PlaygoFile::LoadChunks(const Common::FS::IOFile& file) {
+bool PlaygoFile::LoadChunks(const Common::FS::File& file) {
     if (file.IsOpen()) {
         if (playgoHeader.magic == PLAYGO_MAGIC) {
             bool ret = true;
@@ -60,7 +60,7 @@ bool PlaygoFile::LoadChunks(const Common::FS::IOFile& file) {
     return false;
 }
 
-bool PlaygoFile::load_chunk_data(const Common::FS::IOFile& file, const chunk_t chunk,
+bool PlaygoFile::load_chunk_data(const Common::FS::File& file, const chunk_t chunk,
                                  std::string& data) {
     if (file.IsOpen()) {
         if (file.Seek(chunk.offset)) {
