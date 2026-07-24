@@ -703,14 +703,22 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
         prot |= MemoryProt::CpuRead;
     }
 
-    handle = file->f.GetFileMapping();
+    // Detect a non-host backend (ZArchive)
+    const bool non_host_backed = !file->f.IsOpen() && file->handle;
 
-    if (False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Write) &&
-        False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Append)) {
-        // If the file does not have write access, ensure prot does not contain write
-        // permissions. On real hardware, these mappings succeed, but the memory cannot be
-        // written to.
+    if (non_host_backed) {
+        // Non-host backends are read-only
         prot &= ~MemoryProt::CpuWrite;
+    } else {
+        handle = file->f.GetFileMapping();
+
+        if (False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Write) &&
+            False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Append)) {
+            // If the file does not have write access, ensure prot does not contain write
+            // permissions. On real hardware, these mappings succeed, but the memory cannot be
+            // written to.
+            prot &= ~MemoryProt::CpuWrite;
+        }
     }
 
     if (prot >= MemoryProt::GpuRead) {
@@ -761,7 +769,46 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     auto mapped_addr = new_vma.base;
     bool is_exec = True(prot & MemoryProt::CpuExec);
 
-    impl.MapFile(mapped_addr, size, phys_addr, std::bit_cast<u32>(prot), handle);
+    if (non_host_backed) {
+        // Anon-alloc path
+        constexpr auto kAnonMarker = static_cast<u64>(-1);
+        constexpr auto kNoFd = static_cast<uintptr_t>(-1);
+        const auto rw_prot = std::bit_cast<u32>(MemoryProt::CpuRead | MemoryProt::CpuWrite);
+        impl.MapFile(mapped_addr, size, kAnonMarker, rw_prot, kNoFd);
+
+        // Populate from the backend at the requested file offset.
+        {
+            const s64 saved = file->handle->Tell();
+            file->handle->Seek(static_cast<s64>(phys_addr), Common::FS::SeekOrigin::SetOrigin);
+            u8* dst = reinterpret_cast<u8*>(mapped_addr);
+            u64 remaining = size;
+            while (remaining > 0) {
+                const s64 got = file->handle->Read(dst, remaining);
+                if (got <= 0) {
+                    std::memset(dst, 0, remaining);
+                    break;
+                }
+                dst += got;
+                remaining -= static_cast<u64>(got);
+            }
+            file->handle->Seek(saved, Common::FS::SeekOrigin::SetOrigin);
+        }
+
+        // Apply the requested protection
+        Core::MemoryPermission perms{};
+        if (True(prot & MemoryProt::CpuRead)) {
+            perms |= Core::MemoryPermission::Read;
+        }
+        if (True(prot & MemoryProt::CpuReadWrite)) {
+            perms |= Core::MemoryPermission::ReadWrite;
+        }
+        if (True(prot & MemoryProt::CpuExec)) {
+            perms |= Core::MemoryPermission::Execute;
+        }
+        impl.Protect(mapped_addr, size, perms);
+    } else {
+        impl.MapFile(mapped_addr, size, phys_addr, std::bit_cast<u32>(prot), handle);
+    }
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
     return ORBIS_OK;
