@@ -90,9 +90,20 @@ void Emulator::Shutdown() {
     exit_done = true;
 }
 
-s32 ReadCompiledSdkVersion(const std::filesystem::path& file) {
+s32 ReadCompiledSdkVersion(const std::string& guest_or_host_path) {
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    std::unique_ptr<Core::FileSys::IFile> handle;
+    if (!guest_or_host_path.empty() && guest_or_host_path.front() == '/') {
+        handle = mnt->Open(guest_or_host_path, /*writable=*/false);
+    }
+
     Core::Loader::Elf elf;
-    elf.Open(file);
+    if (handle) {
+        elf.Open(std::move(handle));
+    } else {
+        elf.Open(std::filesystem::path{guest_or_host_path});
+    }
+
     if (!elf.IsElfFile()) {
         return 0;
     }
@@ -283,7 +294,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                                                                           : "shad_log.txt");
 
     auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
-    const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
 
     auto& game_info = Common::ElfInfo::Instance();
     game_info.initialized = true;
@@ -292,7 +302,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     game_info.app_ver = app_version;
     game_info.firmware_ver = fw_version & 0xFFF00000;
     game_info.raw_firmware_ver = fw_version;
-    game_info.sdk_ver = ReadCompiledSdkVersion(eboot_path);
+    game_info.sdk_ver = ReadCompiledSdkVersion(guest_eboot_path);
     game_info.psf_attributes = psf_attributes;
 
     const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
@@ -492,10 +502,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
-    // Load the module with the linker
-    if (linker->LoadModule(eboot_path) == -1) {
-        LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}",
-                     Common::FS::PathToUTF8String(std::filesystem::absolute(eboot_path)));
+    // Load the module with the linker.
+    if (linker->LoadModule(guest_eboot_path) == -1) {
+        LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}", guest_eboot_path);
         std::quick_exit(0);
     }
 
