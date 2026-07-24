@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <unordered_set>
 #include "common/string_util.h"
 #include "core/file_sys/backends/host_fs.h"
 #include "core/file_sys/backends/zarchive_fs.h"
@@ -27,7 +28,7 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
     std::scoped_lock lock{m_mutex};
     const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
 
-    // Build the backend stack for this mount
+    // Build the backend stack for this mount.
     std::vector<std::shared_ptr<IBackend>> stack;
     const bool eligible_for_overlays =
         guest_folder_sanitized == "/app0" || guest_folder_sanitized == "/hostapp";
@@ -45,7 +46,7 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
         }
         return nullptr;
     };
-    // check for mods , updates,patch
+
     const auto probe_overlay =
         [&make_backend](const std::filesystem::path& base,
                         std::string_view suffix) -> std::shared_ptr<IBackend> {
@@ -62,7 +63,7 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
         }
         return nullptr;
     };
-
+    // check for mods , updates,patch
     if (eligible_for_overlays) {
         if (auto mods = probe_overlay(host_folder, "-mods")) {
             stack.push_back(std::move(mods));
@@ -77,7 +78,6 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
             }
         }
     }
-
     std::shared_ptr<IBackend> base = make_backend(host_folder, read_only);
     if (!base) {
         std::filesystem::path zar_candidate = host_folder;
@@ -256,63 +256,6 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     return host_path;
 }
 
-// TODO: Does not handle mount points inside mount points.
-void MntPoints::IterateDirectory(std::string_view guest_directory,
-                                 const IterateDirectoryCallback& callback) {
-    const auto base_path = GetHostPath(guest_directory, nullptr, HostPathType::Base);
-
-    // Forces path types so as not to resolve to base path
-    const auto patch_path = GetHostPath(guest_directory, nullptr, HostPathType::Patch);
-    const auto mod_path = GetHostPath(guest_directory, nullptr, HostPathType::Mod);
-
-    // Prepend entries for . and .., as both are treated as files on PS4.
-    callback(base_path / ".", false);
-    callback(base_path / "..", false);
-
-    // Pass 1: Any files that existed in the base directory, using mod/patch directory if needed.
-    if (std::filesystem::exists(base_path)) {
-        for (const auto& entry : std::filesystem::directory_iterator(base_path)) {
-            const auto mod_entry_path = mod_path / entry.path().filename();
-            const auto patch_entry_path = patch_path / entry.path().filename();
-            if (std::filesystem::exists(mod_entry_path)) {
-                callback(mod_entry_path, !std::filesystem::is_directory(mod_entry_path));
-                continue;
-            } else if (std::filesystem::exists(patch_entry_path)) {
-                callback(patch_entry_path, !std::filesystem::is_directory(patch_entry_path));
-                continue;
-            }
-            callback(entry.path(), !entry.is_directory());
-        }
-    }
-
-    // Pass 2: Any files that exist only in the patch directory.
-    if (std::filesystem::exists(patch_path)) {
-        for (const auto& entry : std::filesystem::directory_iterator(patch_path)) {
-            const auto base_entry_path = base_path / entry.path().filename();
-            if (!std::filesystem::exists(base_entry_path)) {
-                const auto mod_entry_path = mod_path / entry.path().filename();
-                if (std::filesystem::exists(mod_entry_path)) {
-                    callback(mod_entry_path, !std::filesystem::is_directory(mod_entry_path));
-                    continue;
-                }
-                callback(entry.path(), !entry.is_directory());
-            }
-        }
-    }
-
-    // Pass 3: Any files that exist only in the mod directory (confirmed this can be valid)
-    if (std::filesystem::exists(mod_path)) {
-        for (const auto& entry : std::filesystem::directory_iterator(mod_path)) {
-            const auto base_entry_path = base_path / entry.path().filename();
-            const auto patch_entry_path = patch_path / entry.path().filename();
-            if (!std::filesystem::exists(base_entry_path) &&
-                !std::filesystem::exists(patch_entry_path)) {
-                callback(entry.path(), !entry.is_directory());
-            }
-        }
-    }
-}
-
 // Normalize a guest path
 std::optional<std::string> SanitizeGuestPath(std::string_view path) {
     if (path.length() > 255) {
@@ -333,6 +276,81 @@ std::string_view RelativeToMount(const std::string& corrected, const MntPoints::
         return {};
     }
     return std::string_view{corrected}.substr(mount.mount.size() + 1);
+}
+
+void MntPoints::IterateDirectory(std::string_view guest_directory,
+                                 const IterateDirectoryCallback& callback) {
+    const auto corrected_opt = SanitizeGuestPath(guest_directory);
+    if (!corrected_opt) {
+        return;
+    }
+    const auto& corrected = *corrected_opt;
+    const auto mount = GetMount(corrected);
+    if (!mount || mount->backends.empty()) {
+        return;
+    }
+    const auto rel = std::string{RelativeToMount(corrected, *mount)};
+
+    const auto& base_backend = mount->backends.back();
+    std::filesystem::path base_host;
+    if (auto root = base_backend->RootHostPath(); root.has_value()) {
+        base_host = rel.empty() ? *root : (*root / rel);
+    } else {
+        base_host = std::filesystem::path(corrected);
+    }
+
+    // Prepend "." and ".." (PS4 exposes these as file entries via getdents).
+    callback(base_host / ".", false);
+    callback(base_host / "..", false);
+
+    const auto resolve =
+        [&](const std::string& leaf) -> std::optional<std::pair<std::filesystem::path, bool>> {
+        const std::string entry_rel = rel.empty() ? leaf : rel + "/" + leaf;
+        for (const auto& b : mount->backends) {
+            if (!b->Exists(entry_rel)) {
+                continue;
+            }
+            const bool is_dir = b->IsDirectory(entry_rel);
+            std::filesystem::path host;
+            if (auto root = b->RootHostPath(); root.has_value()) {
+                host = rel.empty() ? (*root / leaf) : (*root / rel / leaf);
+            } else {
+                host = base_host / leaf;
+            }
+            return std::make_pair(host, is_dir);
+        }
+        return std::nullopt;
+    };
+
+    std::unordered_set<std::string> emitted;
+
+    if (auto dir = base_backend->OpenDir(rel)) {
+        DirEntry entry;
+        while (dir->Next(entry)) {
+            if (auto hit = resolve(entry.name)) {
+                emitted.insert(entry.name);
+                callback(hit->first, /*is_file=*/!hit->second);
+            }
+        }
+    }
+
+    for (size_t i = mount->backends.size() - 1; i-- > 0;) {
+        const auto& overlay = mount->backends[i];
+        auto dir = overlay->OpenDir(rel);
+        if (!dir) {
+            continue;
+        }
+        DirEntry entry;
+        while (dir->Next(entry)) {
+            if (emitted.contains(entry.name)) {
+                continue;
+            }
+            if (auto hit = resolve(entry.name)) {
+                emitted.insert(entry.name);
+                callback(hit->first, /*is_file=*/!hit->second);
+            }
+        }
+    }
 }
 
 bool MntPoints::Exists(std::string_view guest_path) {
@@ -387,6 +405,8 @@ std::unique_ptr<IFile> MntPoints::Open(std::string_view guest_path, bool writabl
     const std::string rel_copy{rel};
 
     for (const auto& backend : mount->backends) {
+        // Skip read-only overlays when we need write access; writes
+        // always land on the base backend.
         if (writable && backend->IsReadOnly()) {
             continue;
         }
