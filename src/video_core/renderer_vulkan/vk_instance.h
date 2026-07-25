@@ -429,9 +429,9 @@ public:
                image_2d_view_of_3d_features.sampler2DViewOf3D;
     }
 
-    /// Returns whether the minLod feature of VK_EXT_image_view_min_lod is supported.
+    /// Returns whether VK_EXT_image_view_min_lod is supported.
     bool IsImageViewMinLodSupported() const {
-        return image_view_min_lod && image_view_min_lod_features.minLod;
+        return image_view_min_lod;
     }
 
     /// Returns whether the device can report memory usage.
@@ -484,7 +484,6 @@ private:
     vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
         workgroup_memory_explicit_layout_features;
     vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT image_2d_view_of_3d_features;
-    vk::PhysicalDeviceImageViewMinLodFeaturesEXT image_view_min_lod_features;
     vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT list_restart_features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};
