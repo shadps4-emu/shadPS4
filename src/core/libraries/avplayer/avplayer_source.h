@@ -146,7 +146,7 @@ public:
     ~AvPlayerSource();
 
     bool Init(const AvPlayerInitData& init_data, std::string_view path);
-    bool HasStreams();
+    bool FindStreams();
     s32 GetStreamCount();
     bool GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info);
     bool EnableStream(u32 stream_index);
@@ -200,6 +200,7 @@ private:
     };
 
     std::vector<Stream> m_streams;
+    u64 m_duration = 0;
 
     AvPlayerMemAllocator m_memory_replacement{};
     u32 m_max_num_video_framebuffers{};
