@@ -134,7 +134,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceNpSnsFacebookDialog.sprx", Libraries::Np::NpSnsFacebookDialog::RegisterLib},
             {"libSceNpAuth.sprx", Libraries::Np::NpAuth::RegisterLib},
             {"libSceNpParty.sprx", Libraries::Np::NpParty::RegisterLib},
-            {"libSceNpPartner.sprx", Libraries::Np::NpPartner::RegisterLib},
+            {"libSceNpPartner001.sprx", Libraries::Np::NpPartner::RegisterLib},
             {"libSceNpTus.sprx", Libraries::Np::NpTus::RegisterLib},
             {"libSceScreenShot.sprx", Libraries::ScreenShot::RegisterLib},
             {"libSceAppContent.sprx", Libraries::AppContent::RegisterLib},

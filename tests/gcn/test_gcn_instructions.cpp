@@ -54,6 +54,23 @@ TEST_F(GcnTest, add_f32) {
     EXPECT_EQ(*result, 7.5f);
 }
 
+TEST_F(GcnTest, add_i32_carry_feeds_addc_u32) {
+    auto runner = gcn_test::Runner::instance().value();
+    const std::array<u64, 2> instructions{
+        VOP2(OpcodeVOP2::V_ADD_I32, VOperand8::V1, SOperand9::S0, VOperand8::V1).Get(),
+        VOP2(OpcodeVOP2::V_ADDC_U32, VOperand8::V0, SOperand9::S2, VOperand8::V3).Get(),
+    };
+    const auto spirv = TranslateToSpirv(instructions);
+
+    const auto overflow = runner->run<u32>(spirv, std::array{0xffffffffU, 1U, 7U, 0U});
+    ASSERT_TRUE(overflow.has_value());
+    EXPECT_EQ(*overflow, 8U);
+
+    const auto no_overflow = runner->run<u32>(spirv, std::array{2U, 1U, 7U, 0U});
+    ASSERT_TRUE(no_overflow.has_value());
+    EXPECT_EQ(*no_overflow, 7U);
+}
+
 TEST_F(GcnTest, add_nan) {
     auto runner = gcn_test::Runner::instance().value();
 
