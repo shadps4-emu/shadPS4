@@ -226,11 +226,28 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         }
         break;
     case LogicalStage::Geometry:
-        switch (runtime_info.gs_info.out_primitive[0]) {
-        case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
+        // The GS wave receives one ES vertex offset per input primitive vertex in V0-V6, with
+        // the primitive id in V2. The offset count is a property of the input primitive type;
+        // adjacency primitives carry up to 6 vertices.
+        switch (runtime_info.gs_info.in_primitive) {
+        case AmdGpu::PrimitiveType::AdjTriangleList:
+        case AmdGpu::PrimitiveType::AdjTriangleStrip:
+            ir.SetVectorReg(IR::VectorReg::V6, ir.Imm32(5u)); // vertex 5
+            ir.SetVectorReg(IR::VectorReg::V5, ir.Imm32(4u)); // vertex 4
+            [[fallthrough]];
+        case AmdGpu::PrimitiveType::AdjLineList:
+        case AmdGpu::PrimitiveType::AdjLineStrip:
+            ir.SetVectorReg(IR::VectorReg::V4, ir.Imm32(3u)); // vertex 3
+            [[fallthrough]];
+        case AmdGpu::PrimitiveType::TriangleList:
+        case AmdGpu::PrimitiveType::TriangleStrip:
+        case AmdGpu::PrimitiveType::RectList:
             ir.SetVectorReg(IR::VectorReg::V3, ir.Imm32(2u)); // vertex 2
-        case AmdGpu::GsOutputPrimitiveType::LineStrip:
+            [[fallthrough]];
+        case AmdGpu::PrimitiveType::LineList:
+        case AmdGpu::PrimitiveType::LineStrip:
             ir.SetVectorReg(IR::VectorReg::V1, ir.Imm32(1u)); // vertex 1
+            [[fallthrough]];
         default:
             ir.SetVectorReg(IR::VectorReg::V0, ir.Imm32(0u)); // vertex 0
             break;
