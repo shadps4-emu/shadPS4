@@ -242,7 +242,7 @@ enum class PthreadOnceState : u32 {
 
 struct PthreadOnce {
     std::atomic<PthreadOnceState> state;
-    Pthread* mutex;
+    PthreadMutexT mutex;
 };
 
 enum class ThreadFlags : u32 {
