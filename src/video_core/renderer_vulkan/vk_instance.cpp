@@ -203,7 +203,8 @@ bool Instance::CreateDevice() {
                           vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
                           vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
                           vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
-                          vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
+                          vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT,
+                          vk::PhysicalDeviceImageViewMinLodFeaturesEXT>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -333,6 +334,12 @@ bool Instance::CreateDevice() {
                  image_2d_view_of_3d_features.image2DViewOf3D);
         LOG_INFO(Render_Vulkan, "- sampler2DViewOf3D: {}",
                  image_2d_view_of_3d_features.sampler2DViewOf3D);
+    }
+    image_view_min_lod = add_extension(VK_EXT_IMAGE_VIEW_MIN_LOD_EXTENSION_NAME);
+    if (image_view_min_lod) {
+        image_view_min_lod_features =
+            feature_chain.get<vk::PhysicalDeviceImageViewMinLodFeaturesEXT>();
+        LOG_INFO(Render_Vulkan, "- minLod: {}", image_view_min_lod_features.minLod);
     }
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
     const bool calibrated_timestamps =
@@ -499,6 +506,9 @@ bool Instance::CreateDevice() {
             .image2DViewOf3D = image_2d_view_of_3d_features.image2DViewOf3D,
             .sampler2DViewOf3D = image_2d_view_of_3d_features.sampler2DViewOf3D,
         },
+        vk::PhysicalDeviceImageViewMinLodFeaturesEXT{
+            .minLod = image_view_min_lod_features.minLod,
+        },
     };
 
     if (!custom_border_color) {
@@ -540,6 +550,9 @@ bool Instance::CreateDevice() {
     }
     if (!image_2d_view_of_3d) {
         device_chain.unlink<vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
+    }
+    if (!image_view_min_lod) {
+        device_chain.unlink<vk::PhysicalDeviceImageViewMinLodFeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
