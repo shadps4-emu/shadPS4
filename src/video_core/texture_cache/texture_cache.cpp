@@ -3,9 +3,13 @@
 
 #include <xxhash.h>
 
+#include <unordered_map>
+
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/div_ceil.h"
+#include "common/io_file.h"
+#include "common/path_util.h"
 #include "common/scope_exit.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
@@ -620,6 +624,39 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
 
 ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
+    const bool probe_sig = image.info.props.is_tiled && image.info.props.is_block &&
+                           image.info.resources.levels == 12 && image.info.size.width == 2048;
+    if (probe_sig || desc.view_info.min_lod != 0) {
+        static std::mutex probe_mutex;
+        static std::unordered_map<VAddr, u32> probe_min_lods;
+        static std::unordered_map<VAddr, u64> probe_mem_hashes;
+        std::scoped_lock lk{probe_mutex};
+        auto [it, inserted] = probe_min_lods.try_emplace(image.info.guest_address, ~0u);
+        if (it->second != desc.view_info.min_lod) {
+            it->second = desc.view_info.min_lod;
+            LOG_WARNING(Render_Vulkan,
+                        "PROBE minlod addr={:#x} size={:#x} min_lod={} base={} levels={} {}x{}",
+                        image.info.guest_address, image.info.guest_size,
+                        desc.view_info.min_lod / 256.f, desc.view_info.range.base.level,
+                        image.info.resources.levels, image.info.size.width, image.info.size.height);
+        }
+        if (probe_sig) {
+            const auto* addr = std::bit_cast<const u8*>(image.info.guest_address);
+            const auto& m0 = image.info.mips_layout[0];
+            const auto& m1 = image.info.mips_layout[1];
+            u64 hash = XXH3_64bits(addr, 0x4000);
+            hash = XXH3_64bits_withSeed(addr + m0.size / 2, 0x4000, hash);
+            hash = XXH3_64bits_withSeed(addr + m1.offset, 0x4000, hash);
+            auto [ht, h_inserted] = probe_mem_hashes.try_emplace(image.info.guest_address, 0);
+            if (ht->second != hash) {
+                ht->second = hash;
+                LOG_WARNING(Render_Vulkan,
+                            "PROBE memchg addr={:#x} hash={:#x} flags={:#x} min_lod={}",
+                            image.info.guest_address, hash, static_cast<u32>(image.flags),
+                            desc.view_info.min_lod / 256.f);
+            }
+        }
+    }
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
         if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8) &&
@@ -724,6 +761,33 @@ void TextureCache::RefreshImage(Image& image) {
             return;
         }
         image.hash = hash;
+    }
+
+    const bool probe_sig = image.info.props.is_tiled && image.info.props.is_block &&
+                           image.info.resources.levels == 12 && image.info.size.width == 2048;
+    if (probe_sig) {
+        static std::mutex probe_mutex;
+        static std::unordered_map<VAddr, u32> probe_dump_counts;
+        std::scoped_lock lk{probe_mutex};
+        auto& count = probe_dump_counts[image.info.guest_address];
+        if (count < 4) {
+            using namespace Common::FS;
+            const auto dump_dir = GetUserPath(PathType::LogDir) / "probe";
+            if (!std::filesystem::exists(dump_dir)) {
+                std::filesystem::create_directories(dump_dir);
+            }
+            const auto filename = fmt::format("guest_{:x}_{}.bin", image.info.guest_address, count);
+            const auto file = IOFile{dump_dir / filename, FileAccessMode::Create};
+            file.WriteRaw<u8>(std::bit_cast<const u8*>(image.info.guest_address),
+                              image.info.guest_size);
+            const bool gpu_mod =
+                buffer_cache.IsRegionGpuModified(image.info.guest_address, image.info.guest_size);
+            LOG_WARNING(Render_Vulkan,
+                        "PROBE dump {} addr={:#x} size={:#x} gpu_modified={} flags={:#x}", filename,
+                        image.info.guest_address, image.info.guest_size, gpu_mod,
+                        static_cast<u32>(image.flags));
+            ++count;
+        }
     }
 
     const u32 num_layers = image.info.resources.layers;
