@@ -119,6 +119,11 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
     SDL_SetNumberProperty(props, "flags", SDL_WINDOW_VULKAN);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, true);
+    // Creating the window directly in fullscreen avoids a visible windowed -> fullscreen
+    // transition on startup. SDL sizes the window to the display and keeps the requested
+    // width/height as the windowed size to restore when leaving fullscreen.
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_FULLSCREEN_BOOLEAN,
+                           EmulatorSettings.IsFullScreen());
     window = SDL_CreateWindowWithProperties(props);
     SDL_DestroyProperties(props);
     if (window == nullptr) {
@@ -129,7 +134,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
 
     bool error = false;
     const SDL_DisplayID displayIndex = SDL_GetDisplayForWindow(window);
-    if (displayIndex < 0) {
+    if (displayIndex == 0) {
         LOG_ERROR(Frontend, "Error getting display index: {}", SDL_GetError());
         error = true;
     }
@@ -144,6 +149,9 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     }
     SDL_SetWindowFullscreen(window, EmulatorSettings.IsFullScreen());
     SDL_SyncWindow(window);
+    // The window geometry is only final once the fullscreen transition has settled; refresh
+    // the cached size so the first swapchain and the splashscreen use the real drawable size.
+    SDL_GetWindowSizeInPixels(window, &width, &height);
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
 
@@ -232,6 +240,8 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_MAXIMIZED:
     case SDL_EVENT_WINDOW_RESTORED:
+    case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
+    case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
         OnResize();
         break;
     case SDL_EVENT_WINDOW_MINIMIZED:
