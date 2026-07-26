@@ -78,6 +78,10 @@ public:
     /// Opens a directory through the mount's backend stack.
     std::unique_ptr<IDirectory> OpenDir(std::string_view guest_path);
 
+    /// open + read the whole file as bytes. Returns nullopt
+    /// when the file does not exist or is unreadable.
+    std::optional<std::vector<u8>> ReadFile(std::string_view guest_path);
+
     const MntPair* GetMountFromHostPath(const std::string& host_path) {
         std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
