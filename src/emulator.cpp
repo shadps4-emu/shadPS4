@@ -120,12 +120,15 @@ s32 ReadCompiledSdkVersion(const std::string& guest_or_host_path) {
     return 0;
 }
 
-std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_path,
-                                           const std::filesystem::path& trophy_dir) {
+std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
+                                           std::string_view trophy_dir_guest) {
     std::map<s32, std::string> trophy_index_map{};
 
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+
     NPBindFile npbind;
-    if (!npbind.Load(npbind_path.string())) {
+    const auto npbind_bytes = mnt->ReadFile(npbind_guest);
+    if (!npbind_bytes || !npbind.Load(std::span<const u8>{*npbind_bytes})) {
         LOG_WARNING(Common_Filesystem, "Failed to load npbind.dat file");
         return trophy_index_map;
     }
@@ -138,64 +141,103 @@ std::map<s32, std::string> ExtractTrophies(const std::filesystem::path& npbind_p
     auto& game_info = Common::ElfInfo::Instance();
     game_info.SetNpCommIds(np_comm_ids);
 
-    if (!std::filesystem::exists(trophy_dir)) {
+    if (!mnt->IsDirectory(trophy_dir_guest)) {
         LOG_WARNING(Common_Filesystem, "Game does not contain a trophy directory");
         return trophy_index_map;
     }
 
-    std::string pattern = "trophy";
-    for (const auto& entry : std::filesystem::directory_iterator(trophy_dir)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".trp") {
-            std::string filename = entry.path().stem().string(); // "trophy00", "trophy01", etc.
+    auto dir = mnt->OpenDir(trophy_dir_guest);
+    if (!dir) {
+        return trophy_index_map;
+    }
 
-            // Check if filename starts with "trophy"
-            if (filename.find(pattern) != 0) {
-                continue;
-            }
+    const std::string pattern = "trophy";
+    Core::FileSys::DirEntry entry;
+    while (dir->Next(entry)) {
+        if (entry.is_directory) {
+            continue;
+        }
+        // Extension check: entry names carry the raw leaf, no path.
+        if (entry.name.size() < 4 || entry.name.compare(entry.name.size() - 4, 4, ".trp") != 0) {
+            continue;
+        }
+        const std::string stem = entry.name.substr(0, entry.name.size() - 4);
+        if (stem.find(pattern) != 0) {
+            continue;
+        }
 
-            // Extract the number part
-            std::string num_str = filename.substr(pattern.length());
-            s32 trophy_index = std::stoi(num_str);
+        // Extract the number part
+        const std::string num_str = stem.substr(pattern.length());
+        s32 trophy_index;
+        try {
+            trophy_index = std::stoi(num_str);
+        } catch (...) {
+            continue;
+        }
 
-            if (np_comm_ids.size() <= trophy_index) {
-                // This logic currently assumes each NPCommID corresponds to a trophy index.
-                LOG_WARNING(Common_Filesystem,
-                            "Trophy index {} does not have a corresponding NPCommId", trophy_index);
-                continue;
-            }
+        if (static_cast<s32>(np_comm_ids.size()) <= trophy_index) {
+            LOG_WARNING(Common_Filesystem, "Trophy index {} does not have a corresponding NPCommId",
+                        trophy_index);
+            continue;
+        }
 
-            // Add the relevant trophies to our trophy index map.
-            // This currently assumes the order of NPCommIDs matches the order of trophies.
-            std::string np_comm_id = np_comm_ids[trophy_index];
-            trophy_index_map[trophy_index] = np_comm_id;
-            LOG_DEBUG(Loader, "Mapped trophy index {} to NPCommID: {}", trophy_index, np_comm_id);
+        const std::string np_comm_id = np_comm_ids[trophy_index];
+        trophy_index_map[trophy_index] = np_comm_id;
+        LOG_DEBUG(Loader, "Mapped trophy index {} to NPCommID: {}", trophy_index, np_comm_id);
 
-            // Extract the actual trophies if they're no extracted yet
-            const auto& trophy_output_dir =
-                Common::FS::GetUserPath(Common::FS::PathType::TrophyDir) / np_comm_id;
-            if (!std::filesystem::exists(trophy_output_dir)) {
-                TRP trp;
-                if (!trp.Extract(entry, np_comm_id, trophy_output_dir)) {
-                    LOG_ERROR(Loader, "Couldn't extract trophy file {}", filename);
-                    continue;
+        // Extract the actual trophies if they're not extracted yet.
+        const auto& trophy_output_dir =
+            Common::FS::GetUserPath(Common::FS::PathType::TrophyDir) / np_comm_id;
+        if (!std::filesystem::exists(trophy_output_dir)) {
+            const std::string entry_guest = std::string(trophy_dir_guest) + "/" + entry.name;
+            std::filesystem::path trp_source;
+            std::filesystem::path temp_extract;
+            if (auto handle = mnt->Open(entry_guest, /*writable=*/false)) {
+                if (auto host = handle->GetHostPath(); host.has_value()) {
+                    trp_source = *host;
+                } else {
+                    // Archive-backed: dump bytes to a temp file for TRP.
+                    if (auto bytes = mnt->ReadFile(entry_guest)) {
+                        temp_extract = std::filesystem::temp_directory_path() /
+                                       (np_comm_id + "_" + entry.name);
+                        Common::FS::IOFile out(temp_extract, Common::FS::FileAccessMode::Create);
+                        out.WriteRaw<u8>(bytes->data(), bytes->size());
+                        out.Close();
+                        trp_source = temp_extract;
+                    }
                 }
             }
+            if (trp_source.empty()) {
+                LOG_ERROR(Loader, "Couldn't read trophy file {}", entry.name);
+                continue;
+            }
+            TRP trp;
+            const bool ok = trp.Extract(trp_source, np_comm_id, trophy_output_dir);
+            if (!temp_extract.empty()) {
+                std::error_code ec;
+                std::filesystem::remove(temp_extract, ec);
+            }
+            if (!ok) {
+                LOG_ERROR(Loader, "Couldn't extract trophy file {}", entry.name);
+                continue;
+            }
+        }
 
-            // Move extracted trophy contents into each user's folder
-            for (User user : UserSettings.GetUserManager().GetValidUsers()) {
-                auto const user_trophy_file = EmulatorSettings.GetHomeDir() /
-                                              std::to_string(user.user_id) / "trophy" /
-                                              (np_comm_id + ".xml");
-                if (!std::filesystem::exists(user_trophy_file)) {
-                    auto temp = user_trophy_file.parent_path();
-                    std::filesystem::create_directories(temp);
-                    std::error_code discard;
-                    std::filesystem::copy_file(trophy_output_dir / "Xml" / "TROPCONF.XML",
-                                               user_trophy_file, discard);
-                }
+        // Move extracted trophy contents into each user's folder
+        for (User user : UserSettings.GetUserManager().GetValidUsers()) {
+            auto const user_trophy_file = EmulatorSettings.GetHomeDir() /
+                                          std::to_string(user.user_id) / "trophy" /
+                                          (np_comm_id + ".xml");
+            if (!std::filesystem::exists(user_trophy_file)) {
+                auto temp = user_trophy_file.parent_path();
+                std::filesystem::create_directories(temp);
+                std::error_code discard;
+                std::filesystem::copy_file(trophy_output_dir / "Xml" / "TROPCONF.XML",
+                                           user_trophy_file, discard);
             }
         }
     }
+
     return trophy_index_map;
 }
 
@@ -211,6 +253,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     std::filesystem::path game_folder;
+
+    // eboot name in the same way it does for directory inputs.
     const bool from_archive = std::filesystem::is_regular_file(file) && file.extension() == ".zar";
     if (from_archive) {
         game_folder = file;
@@ -253,6 +297,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     u32 fw_version;
     bool param_sfo_exists = false;
     Common::PSFAttributes psf_attributes{};
+
     if (auto psf_handle = mnt->Open("/app0/sce_sys/param.sfo", /*writable=*/false)) {
         std::vector<u8> psf_buf(psf_handle->Size());
         if (psf_handle->Read(psf_buf.data(), psf_buf.size()) == static_cast<s64>(psf_buf.size())) {
@@ -317,9 +362,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     game_info.sdk_ver = ReadCompiledSdkVersion(guest_eboot_path);
     game_info.psf_attributes = psf_attributes;
 
-    const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
-    if (std::filesystem::exists(pic1_path)) {
-        game_info.splash_path = pic1_path;
+    if (auto splash_handle = mnt->Open("/app0/sce_sys/pic1.png", /*writable=*/false)) {
+        if (auto host = splash_handle->GetHostPath(); host.has_value()) {
+            game_info.splash_path = *host;
+        }
     }
 
     game_info.game_folder = game_folder;
@@ -422,10 +468,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         MemoryPatcher::g_game_serial = id;
     }
 
-    // Extract and load trophies
-    std::filesystem::path npbind_path = mnt->GetHostPath("/app0/sce_sys/npbind.dat");
-    std::filesystem::path trophy_dir = mnt->GetHostPath("/app0/sce_sys/trophy");
-    game_info.trophy_index_map = ExtractTrophies(npbind_path, trophy_dir);
+    // Extract and load trophies.
+    game_info.trophy_index_map =
+        ExtractTrophies("/app0/sce_sys/npbind.dat", "/app0/sce_sys/trophy");
 
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
     std::string window_title = "";
@@ -453,8 +498,12 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     g_window = window.get();
 
-    std::filesystem::path icon_path = mnt->GetHostPath("/app0/sce_sys/icon0.png");
-    window->SetIcon(icon_path);
+    // Window icon: same host-only guard as the splash above.
+    if (auto icon_handle = mnt->Open("/app0/sce_sys/icon0.png", /*writable=*/false)) {
+        if (auto host = icon_handle->GetHostPath(); host.has_value()) {
+            window->SetIcon(*host);
+        }
+    }
 
     const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir);
     mnt->Mount(mount_data_dir, "/data");
