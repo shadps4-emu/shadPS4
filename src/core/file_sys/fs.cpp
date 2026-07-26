@@ -120,6 +120,9 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         *is_read_only = mount->read_only;
     }
 
+    const bool host_backed =
+        +mount->backends.empty() || mount->backends.back()->RootHostPath().has_value();
+
     const auto corrected_path_sanitized = RemoveTrailingSlashes(corrected_path);
     std::filesystem::path host_path = mount->host_path;
 
@@ -169,7 +172,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         return patch_path;
     }
 
-    if (!NeedsCaseInsensitiveSearch) {
+    if (!NeedsCaseInsensitiveSearch || !host_backed) {
         return host_path;
     }
 
