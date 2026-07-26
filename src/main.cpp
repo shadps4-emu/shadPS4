@@ -20,6 +20,7 @@
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
 #include "core/user_settings.h"
+#include "core/windows_fault_tracker.h"
 #include "emulator.h"
 #include "imgui/big_picture/big_picture.h"
 
@@ -30,6 +31,10 @@
 #endif
 
 int main(int argc, char* argv[]) {
+    if (const auto monitor_result = Core::WindowsFaultTracker::Bootstrap(argc, argv)) {
+        return *monitor_result;
+    }
+
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif

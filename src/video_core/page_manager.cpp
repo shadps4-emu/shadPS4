@@ -9,6 +9,7 @@
 #include "common/signal_context.h"
 #include "core/memory.h"
 #include "core/signals.h"
+#include "core/windows_fault_tracker.h"
 #include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
@@ -195,7 +196,12 @@ struct PageManager::Impl {
     }
 
     void OnUnmap(VAddr address, size_t size) {
-        // No-op
+#ifdef _WIN64
+        Core::WindowsFaultTracker::WatchMemory(
+            address, size, Core::WindowsFaultTracker::MemoryAccess::Read, false);
+        Core::WindowsFaultTracker::WatchMemory(
+            address, size, Core::WindowsFaultTracker::MemoryAccess::Write, false);
+#endif
     }
 
     void Protect(VAddr address, size_t size, Core::MemoryPermission perms) {
@@ -204,6 +210,30 @@ struct PageManager::Impl {
         auto& impl = memory->GetAddressSpace();
         ASSERT_MSG(perms != Core::MemoryPermission::Write,
                    "Attempted to protect region as write-only which is not a valid permission");
+#ifdef _WIN64
+        if (Core::WindowsFaultTracker::IsEnabled()) {
+            const bool allow_write = True(perms & Core::MemoryPermission::Write);
+            const bool allow_read = True(perms & Core::MemoryPermission::Read);
+            if (!allow_write) {
+                Core::WindowsFaultTracker::WatchMemory(
+                    address, size, Core::WindowsFaultTracker::MemoryAccess::Write, true);
+            }
+            if (!allow_read) {
+                Core::WindowsFaultTracker::WatchMemory(
+                    address, size, Core::WindowsFaultTracker::MemoryAccess::Read, true);
+            }
+            impl.Protect(address, size, perms);
+            if (allow_write) {
+                Core::WindowsFaultTracker::WatchMemory(
+                    address, size, Core::WindowsFaultTracker::MemoryAccess::Write, false);
+            }
+            if (allow_read) {
+                Core::WindowsFaultTracker::WatchMemory(
+                    address, size, Core::WindowsFaultTracker::MemoryAccess::Read, false);
+            }
+            return;
+        }
+#endif
         impl.Protect(address, size, perms);
     }
 

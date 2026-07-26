@@ -4,6 +4,7 @@
 #include "common/debug.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
+#include "core/windows_fault_tracker.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
@@ -42,9 +43,23 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
         liverpool->BindRasterizer(this);
     }
     memory->SetRasterizer(this);
+    Core::WindowsFaultTracker::InstallFaultHandler(
+        [this](VAddr address, u64 size, Core::WindowsFaultTracker::MemoryAccess access) {
+            if (access == Core::WindowsFaultTracker::MemoryAccess::Write) {
+                constexpr u64 InvalidationGranularity = VideoCore::BufferCache::CACHING_PAGESIZE;
+                const VAddr aligned_address = address & ~(InvalidationGranularity - 1);
+                if (InvalidateMemory(aligned_address, InvalidationGranularity)) {
+                    return true;
+                }
+                return InvalidateMemory(address, size);
+            }
+            return ReadMemory(address, size);
+        });
 }
 
-Rasterizer::~Rasterizer() = default;
+Rasterizer::~Rasterizer() {
+    Core::WindowsFaultTracker::RemoveFaultHandler();
+}
 
 void Rasterizer::CpSync() {
     scheduler.EndRendering();
