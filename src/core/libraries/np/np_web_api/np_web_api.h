@@ -146,5 +146,18 @@ struct PushEventInput {
 };
 void EnqueuePushEvent(const PushEventInput& ev);
 
+s32 PS4_SYSV_ABI sceNpWebApiInitialize(s32 libHttpCtxId, u64 poolSize);
+s32 PS4_SYSV_ABI sceNpWebApiTerminate(s32 libCtxId);
+s32 PS4_SYSV_ABI sceNpWebApiCreateContextA(s32 libCtxId,
+                                           Libraries::UserService::OrbisUserServiceUserId userId);
+s32 PS4_SYSV_ABI sceNpWebApiDeleteContext(s32 titleUserCtxId);
+s32 PS4_SYSV_ABI sceNpWebApiCreateRequest(s32 titleUserCtxId, const char* pApiGroup,
+                                          const char* pPath, OrbisNpWebApiHttpMethod method,
+                                          const OrbisNpWebApiContentParameter* pContentParameter,
+                                          s64* pRequestId);
+s32 PS4_SYSV_ABI sceNpWebApiSendRequest2(s64 requestId, const void* pData, u64 dataSize,
+                                         OrbisNpWebApiResponseInformationOption* pRespInfoOption);
+s32 PS4_SYSV_ABI sceNpWebApiDeleteRequest(s64 requestId);
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpWebApi

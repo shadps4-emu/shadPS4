@@ -89,10 +89,9 @@ void Linker::Execute(const std::vector<std::string>& args) {
     // Relocate all modules
     RelocateAllImports();
 
-    // Before we can run guest code, we need to properly initialize the heap API and
-    // libSceLibcInternal. libSceLibcInternal's _malloc_init serves as an additional initialization
-    // function called by libkernel.
-    heap_api = new HeapAPI{};
+    // If we're running LLE libSceLibcInternal,
+    // we need to find the _malloc_init function and run it manually.
+    // This is something libkernel runs during initialization.
     static PS4_SYSV_ABI s32 (*malloc_init)() = nullptr;
 
     if (has_libcinternal) {
@@ -367,7 +366,7 @@ void Linker::Relocate(Module* module) {
 
         if (rel_is_resolved) {
             std::memcpy(reinterpret_cast<void*>(rel_virtual_addr), &rel_value, sizeof(rel_value));
-        } else {
+        } else if (rel_sym_type == Loader::SymbolType::Function) {
             LOG_INFO(Core_Linker, "Function not patched! {}", rel_name);
         }
     });
@@ -460,7 +459,12 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     if (!addr) {
         // Module was just loaded by above code. Allocate TLS block for it.
         const u32 init_image_size = module->tls.init_image_size;
-        u8* dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
+        u8* dest{};
+        if (heap_api && heap_api->heap_malloc) {
+            dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
+        } else {
+            dest = reinterpret_cast<u8*>(std::malloc(module->tls.image_size));
+        }
         const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
         std::memcpy(dest, src, init_image_size);
         std::memset(dest + init_image_size, 0, module->tls.image_size - init_image_size);
@@ -491,7 +495,7 @@ void* Linker::AllocateTlsForThread(bool is_primary) {
             &addr_out, tls_aligned, 3, 0, "SceKernelPrimaryTcbTls");
         ASSERT_MSG(ret == 0, "Unable to allocate TLS+TCB for the primary thread");
     } else {
-        if (heap_api) {
+        if (heap_api && heap_api->heap_malloc) {
             addr_out = heap_api->heap_malloc(total_tls_size);
         } else {
             addr_out = std::malloc(total_tls_size);
@@ -501,7 +505,7 @@ void* Linker::AllocateTlsForThread(bool is_primary) {
 }
 
 void Linker::FreeTlsForNonPrimaryThread(void* pointer) {
-    if (heap_api) {
+    if (heap_api && heap_api->heap_free) {
         heap_api->heap_free(pointer);
     } else {
         std::free(pointer);
