@@ -2,8 +2,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <chrono>
 #include <cstring>
+#include <filesystem>
 #include <string>
+
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#include <sys/stat.h>
+#endif
 
 #include <zarchive/zarchivereader.h>
 
@@ -100,6 +106,76 @@ bool ZArchiveFile::Flush() {
 
 bool ZArchiveFile::IsOpen() const {
     return m_reader && m_reader->reader != nullptr;
+}
+
+void ZArchiveFile::Stat(FileStat& out) {
+    out.size = m_size;
+    out.is_directory = false;
+    // Every entry inside a .zar shares the archive's mtime
+#if defined(__linux__) || defined(__FreeBSD__)
+    struct stat st = {};
+    if (::stat(m_archive_path.string().c_str(), &st) == 0) {
+        out.mtime_sec = static_cast<s64>(st.st_mtim.tv_sec);
+        out.mtime_nsec = static_cast<s64>(st.st_mtim.tv_nsec);
+        out.atime_sec = static_cast<s64>(st.st_atim.tv_sec);
+        out.atime_nsec = static_cast<s64>(st.st_atim.tv_nsec);
+        out.ctime_sec = static_cast<s64>(st.st_ctim.tv_sec);
+        out.ctime_nsec = static_cast<s64>(st.st_ctim.tv_nsec);
+    }
+#elif defined(__APPLE__)
+    struct stat st = {};
+    if (::stat(m_archive_path.string().c_str(), &st) == 0) {
+        out.mtime_sec = static_cast<s64>(st.st_mtimespec.tv_sec);
+        out.mtime_nsec = static_cast<s64>(st.st_mtimespec.tv_nsec);
+        out.atime_sec = static_cast<s64>(st.st_atimespec.tv_sec);
+        out.atime_nsec = static_cast<s64>(st.st_atimespec.tv_nsec);
+        out.ctime_sec = static_cast<s64>(st.st_ctimespec.tv_sec);
+        out.ctime_nsec = static_cast<s64>(st.st_ctimespec.tv_nsec);
+    }
+#else
+    std::error_code ec;
+    const auto ft = std::filesystem::last_write_time(m_archive_path, ec);
+    if (!ec) {
+        const auto sctp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
+            ft - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+        const auto secs = std::chrono::time_point_cast<std::chrono::seconds>(sctp);
+        const auto nsecs = std::chrono::duration_cast<std::chrono::nanoseconds>(sctp - secs);
+        out.mtime_sec = static_cast<s64>(secs.time_since_epoch().count());
+        out.mtime_nsec = static_cast<s64>(nsecs.count());
+        out.atime_sec = out.mtime_sec;
+        out.atime_nsec = out.mtime_nsec;
+        out.ctime_sec = out.mtime_sec;
+        out.ctime_nsec = out.mtime_nsec;
+    }
+#endif
+}
+
+bool ZArchiveFile::Map(u8* addr, u64 size, u64 offset, u32 raw_prot, const FileMapContext& ctx) {
+    if (!IsOpen()) {
+        return false;
+    }
+    // Reserve writable anonymous pages, populate them from the archive at
+    // the requested offset, then drop to the requested protection.
+    ctx.map_anonymous(addr, size);
+
+    // Read straight into the mapped region.
+    u8* dst = addr;
+    u64 remaining = size;
+    u64 pos = offset;
+    while (remaining > 0) {
+        std::scoped_lock lk{m_reader->mutex};
+        const u64 got = m_reader->reader->ReadFromFile(m_node, pos, remaining, dst);
+        if (got == 0) {
+            std::memset(dst, 0, remaining);
+            break;
+        }
+        dst += got;
+        pos += got;
+        remaining -= got;
+    }
+
+    ctx.protect(addr, size, raw_prot);
+    return true;
 }
 
 ZArchiveDirectory::ZArchiveDirectory(std::shared_ptr<SharedReader> reader, uint32_t node)

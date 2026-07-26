@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <chrono>
 #include <system_error>
+
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
+#include <sys/stat.h>
+#endif
 
 #include "core/file_sys/backends/host_fs.h"
 
@@ -54,6 +59,47 @@ bool HostFile::Flush() {
 
 bool HostFile::IsOpen() const {
     return m_file.IsOpen();
+}
+
+void HostFile::Stat(FileStat& out) {
+    out.size = Size();
+    out.is_directory = false;
+#if defined(__linux__) || defined(__FreeBSD__)
+    struct stat st = {};
+    if (::stat(m_path.string().c_str(), &st) == 0) {
+        out.mtime_sec = static_cast<s64>(st.st_mtim.tv_sec);
+        out.mtime_nsec = static_cast<s64>(st.st_mtim.tv_nsec);
+        out.atime_sec = static_cast<s64>(st.st_atim.tv_sec);
+        out.atime_nsec = static_cast<s64>(st.st_atim.tv_nsec);
+        out.ctime_sec = static_cast<s64>(st.st_ctim.tv_sec);
+        out.ctime_nsec = static_cast<s64>(st.st_ctim.tv_nsec);
+    }
+#elif defined(__APPLE__)
+    struct stat st = {};
+    if (::stat(m_path.string().c_str(), &st) == 0) {
+        out.mtime_sec = static_cast<s64>(st.st_mtimespec.tv_sec);
+        out.mtime_nsec = static_cast<s64>(st.st_mtimespec.tv_nsec);
+        out.atime_sec = static_cast<s64>(st.st_atimespec.tv_sec);
+        out.atime_nsec = static_cast<s64>(st.st_atimespec.tv_nsec);
+        out.ctime_sec = static_cast<s64>(st.st_ctimespec.tv_sec);
+        out.ctime_nsec = static_cast<s64>(st.st_ctimespec.tv_nsec);
+    }
+#else
+    std::error_code ec;
+    const auto ft = std::filesystem::last_write_time(m_path, ec);
+    if (!ec) {
+        const auto sctp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
+            ft - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+        const auto secs = std::chrono::time_point_cast<std::chrono::seconds>(sctp);
+        const auto nsecs = std::chrono::duration_cast<std::chrono::nanoseconds>(sctp - secs);
+        out.mtime_sec = static_cast<s64>(secs.time_since_epoch().count());
+        out.mtime_nsec = static_cast<s64>(nsecs.count());
+        out.atime_sec = out.mtime_sec;
+        out.atime_nsec = out.mtime_nsec;
+        out.ctime_sec = out.mtime_sec;
+        out.ctime_nsec = out.mtime_nsec;
+    }
+#endif
 }
 
 HostDirectory::HostDirectory(const std::filesystem::path& root) : m_root(root) {

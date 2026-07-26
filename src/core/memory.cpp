@@ -703,7 +703,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
         prot |= MemoryProt::CpuRead;
     }
 
-    // Detect a non-host backend (ZArchive, ...)
+    // Detect a non-host backend (ZArchive, ...).
     Common::FS::IOFile* host_file =
         file->handle ? file->handle->GetHostFile() : (file->f.IsOpen() ? &file->f : nullptr);
     const bool non_host_backed = file->handle && host_file == nullptr;
@@ -769,48 +769,36 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     auto& new_vma = new_vma_handle->second;
     new_vma.fd = fd;
     auto mapped_addr = new_vma.base;
-    bool is_exec = True(prot & MemoryProt::CpuExec);
 
-    if (non_host_backed) {
-        // Anon-alloc path
+    // Delegate the actual mapping to the file backend.
+    Core::FileSys::FileMapContext map_ctx{};
+    map_ctx.mapping_handle = handle;
+    map_ctx.map_native = [&](u8* addr, u64 sz, u64 off, u32 p, uintptr_t map_handle) {
+        impl.MapFile(reinterpret_cast<VAddr>(addr), sz, off, p, map_handle);
+    };
+    map_ctx.map_anonymous = [&](u8* addr, u64 sz) {
         constexpr auto kAnonMarker = static_cast<u64>(-1);
         constexpr auto kNoFd = static_cast<uintptr_t>(-1);
         const auto rw_prot = std::bit_cast<u32>(MemoryProt::CpuRead | MemoryProt::CpuWrite);
-        impl.MapFile(mapped_addr, size, kAnonMarker, rw_prot, kNoFd);
-
-        // Populate from the backend at the requested file offset.
-        {
-            const s64 saved = file->handle->Tell();
-            file->handle->Seek(static_cast<s64>(phys_addr), Common::FS::SeekOrigin::SetOrigin);
-            u8* dst = reinterpret_cast<u8*>(mapped_addr);
-            u64 remaining = size;
-            while (remaining > 0) {
-                const s64 got = file->handle->Read(dst, remaining);
-                if (got <= 0) {
-                    std::memset(dst, 0, remaining);
-                    break;
-                }
-                dst += got;
-                remaining -= static_cast<u64>(got);
-            }
-            file->handle->Seek(saved, Common::FS::SeekOrigin::SetOrigin);
-        }
-
-        // Apply the requested protection
+        impl.MapFile(reinterpret_cast<VAddr>(addr), sz, kAnonMarker, rw_prot, kNoFd);
+    };
+    map_ctx.protect = [&](u8* addr, u64 sz, u32 p) {
+        const auto mp = std::bit_cast<MemoryProt>(p);
         Core::MemoryPermission perms{};
-        if (True(prot & MemoryProt::CpuRead)) {
+        if (True(mp & MemoryProt::CpuRead)) {
             perms |= Core::MemoryPermission::Read;
         }
-        if (True(prot & MemoryProt::CpuReadWrite)) {
+        if (True(mp & MemoryProt::CpuReadWrite)) {
             perms |= Core::MemoryPermission::ReadWrite;
         }
-        if (True(prot & MemoryProt::CpuExec)) {
+        if (True(mp & MemoryProt::CpuExec)) {
             perms |= Core::MemoryPermission::Execute;
         }
-        impl.Protect(mapped_addr, size, perms);
-    } else {
-        impl.MapFile(mapped_addr, size, phys_addr, std::bit_cast<u32>(prot), handle);
-    }
+        impl.Protect(reinterpret_cast<VAddr>(addr), sz, perms);
+    };
+
+    file->handle->Map(reinterpret_cast<u8*>(mapped_addr), size, phys_addr, std::bit_cast<u32>(prot),
+                      map_ctx);
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
     return ORBIS_OK;

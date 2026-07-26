@@ -45,6 +45,8 @@ public:
         return m_file.IsOpen() && m_file.IsWriteOnly();
     }
 
+    void Stat(FileStat& out) override;
+
 private:
     std::filesystem::path m_path;
     Common::FS::IOFile m_file;
@@ -74,8 +76,7 @@ public:
     bool Exists(std::string_view rel_path) override;
     bool IsDirectory(std::string_view rel_path) override;
 
-    std::unique_ptr<IFile> Open(std::string_view rel_path,
-                                Common::FS::FileAccessMode mode) override;
+    std::unique_ptr<IFile> Open(std::string_view rel_path, Common::FS::FileAccessMode mode) override;
     std::unique_ptr<IDirectory> OpenDir(std::string_view rel_path) override;
 
     bool IsReadOnly() const override {

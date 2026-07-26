@@ -45,9 +45,13 @@ public:
         return m_archive_path;
     }
 
+    void Stat(FileStat& out) override;
+
     MmapPolicy GetMmapPolicy() const override {
         return MmapPolicy::Copy;
     }
+
+    bool Map(u8* addr, u64 size, u64 offset, u32 raw_prot, const FileMapContext& ctx) override;
 
     bool IsReadOnly() const override {
         return true;

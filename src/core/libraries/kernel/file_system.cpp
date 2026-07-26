@@ -697,15 +697,30 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     } else {
         sb->st_mode = 0000777u | 0100000u;
         if (auto handle = mnt->Open(path, /*writable=*/false)) {
-            sb->st_size = static_cast<s64>(handle->Size());
+            Core::FileSys::FileStat fst{};
+            handle->Stat(fst);
+            sb->st_size = static_cast<s64>(fst.size);
+            if (fst.mtime_sec != 0 || fst.mtime_nsec != 0) {
+                sb->st_mtim.tv_sec = fst.mtime_sec;
+                sb->st_mtim.tv_nsec = fst.mtime_nsec;
+                sb->st_atim.tv_sec = fst.atime_sec;
+                sb->st_atim.tv_nsec = fst.atime_nsec;
+                sb->st_ctim.tv_sec = fst.ctime_sec;
+                sb->st_ctim.tv_nsec = fst.ctime_nsec;
+            } else {
+                sb->st_mtim.tv_sec =
+                    std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch())
+                        .count();
+            }
         } else {
             sb->st_size =
                 fs::exists(path_name, ec) ? static_cast<s64>(fs::file_size(path_name, ec)) : 0;
+            sb->st_mtim.tv_sec =
+                std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch())
+                    .count();
         }
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
-        sb->st_mtim.tv_sec =
-            std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch()).count();
         // TODO incomplete
     }
 
@@ -765,50 +780,21 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     }
     case Core::FileSys::FileType::Regular: {
         sb->st_mode = 0000777u | 0100000u;
-        sb->st_size = file->GetSize();
         sb->st_blksize = 512;
-        sb->st_blocks = (sb->st_size + 511) / 512;
-        std::filesystem::path stat_path;
+        Core::FileSys::FileStat fst{};
         if (file->handle) {
-            if (auto p = file->handle->GetMetadataHostPath(); p.has_value()) {
-                stat_path = *p;
-            }
+            file->handle->Stat(fst);
+        } else if (file->f.IsOpen()) {
+            fst.size = file->f.GetSize();
         }
-        if (stat_path.empty() && file->f.IsOpen()) {
-            stat_path = file->f.GetPath();
-        }
-
-        if (!stat_path.empty()) {
-#if defined(__linux__) || defined(__FreeBSD__)
-            struct stat filestat = {};
-            stat(stat_path.string().c_str(), &filestat);
-            sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atim);
-            sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtim);
-            sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctim);
-#elif defined(__APPLE__)
-            struct stat filestat = {};
-            stat(stat_path.string().c_str(), &filestat);
-            sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atimespec);
-            sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtimespec);
-            sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctimespec);
-#else
-            std::error_code ec;
-            const auto ft = std::filesystem::last_write_time(stat_path, ec);
-            if (!ec) {
-                const auto sctp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
-                    ft - std::filesystem::file_time_type::clock::now() +
-                    std::chrono::system_clock::now());
-                const auto secs = std::chrono::time_point_cast<std::chrono::seconds>(sctp);
-                const auto nsecs =
-                    std::chrono::duration_cast<std::chrono::nanoseconds>(sctp - secs);
-
-                sb->st_mtim.tv_sec = static_cast<int64_t>(secs.time_since_epoch().count());
-                sb->st_mtim.tv_nsec = static_cast<int64_t>(nsecs.count());
-                sb->st_atim = sb->st_mtim;
-                sb->st_ctim = sb->st_mtim;
-            }
-#endif
-        }
+        sb->st_size = static_cast<s64>(fst.size);
+        sb->st_blocks = (sb->st_size + 511) / 512;
+        sb->st_mtim.tv_sec = fst.mtime_sec;
+        sb->st_mtim.tv_nsec = fst.mtime_nsec;
+        sb->st_atim.tv_sec = fst.atime_sec;
+        sb->st_atim.tv_nsec = fst.atime_nsec;
+        sb->st_ctim.tv_sec = fst.ctime_sec;
+        sb->st_ctim.tv_nsec = fst.ctime_nsec;
         // TODO incomplete
         break;
     }
