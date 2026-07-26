@@ -310,6 +310,7 @@ bool AvPlayerSource::Stop() {
     m_video_frames.Clear();
 
     m_last_audio_ts.reset();
+    m_last_data_time.reset();
     m_start_time.reset();
     m_pause_time = {};
     m_pause_duration = {};
@@ -353,19 +354,11 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
         return false;
     }
 
+    const auto current_time = CurrentTime();
     const auto& new_frame = m_video_frames.Front();
     if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default) {
-        if (m_audio_stream_index && m_audio_decoder_thread.Joinable()) {
-            // Audio is available, sync video with it.
-            if (new_frame.info.timestamp > m_last_audio_ts.value_or(0)) {
-                return false;
-            }
-        } else {
-            // Sync with the internal timer since audio is not available
-            const auto current_time = CurrentTime();
-            if (0 < current_time && current_time < new_frame.info.timestamp) {
-                return false;
-            }
+        if (new_frame.info.timestamp > current_time) {
+            return false;
         }
     }
 
@@ -377,6 +370,7 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
 
     auto frame = m_video_frames.Pop();
     video_info = frame->info;
+
     m_current_video_frame = std::move(frame);
     return true;
 }
@@ -398,6 +392,8 @@ bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
 
     auto frame = m_audio_frames.Pop();
     m_last_audio_ts = frame->info.timestamp;
+    m_last_data_time = std::chrono::high_resolution_clock::now();
+    m_pause_duration = std::chrono::high_resolution_clock::duration(0);
 
     audio_info = {};
     audio_info.timestamp = frame->info.timestamp;
@@ -462,6 +458,13 @@ u64 AvPlayerSource::CurrentTime() {
 
     using namespace std::chrono;
     const auto now = m_is_paused.load() ? m_pause_time : high_resolution_clock::now();
+    if (m_audio_stream_index) {
+        const auto last_audio = m_last_data_time.value_or(now);
+        const auto elapsed =
+            duration_cast<milliseconds>(now - last_audio - m_pause_duration).count();
+        return m_last_audio_ts.value_or(0) + elapsed;
+    }
+
     const auto elapsed =
         duration_cast<milliseconds>(now - m_start_time.value() - m_pause_duration).count();
     if (elapsed <= 0) {
