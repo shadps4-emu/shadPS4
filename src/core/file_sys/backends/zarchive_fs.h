@@ -91,7 +91,8 @@ public:
     bool Exists(std::string_view rel_path) override;
     bool IsDirectory(std::string_view rel_path) override;
 
-    std::unique_ptr<IFile> Open(std::string_view rel_path, bool writable) override;
+    std::unique_ptr<IFile> Open(std::string_view rel_path,
+                                Common::FS::FileAccessMode mode) override;
     std::unique_ptr<IDirectory> OpenDir(std::string_view rel_path) override;
 
     bool IsReadOnly() const override {

@@ -703,17 +703,19 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
         prot |= MemoryProt::CpuRead;
     }
 
-    // Detect a non-host backend (ZArchive)
-    const bool non_host_backed = !file->f.IsOpen() && file->handle;
+    // Detect a non-host backend (ZArchive, ...)
+    Common::FS::IOFile* host_file =
+        file->handle ? file->handle->GetHostFile() : (file->f.IsOpen() ? &file->f : nullptr);
+    const bool non_host_backed = file->handle && host_file == nullptr;
 
     if (non_host_backed) {
         // Non-host backends are read-only
         prot &= ~MemoryProt::CpuWrite;
     } else {
-        handle = file->f.GetFileMapping();
+        handle = host_file->GetFileMapping();
 
-        if (False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Write) &&
-            False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Append)) {
+        if (False(host_file->GetAccessMode() & Common::FS::FileAccessMode::Write) &&
+            False(host_file->GetAccessMode() & Common::FS::FileAccessMode::Append)) {
             // If the file does not have write access, ensure prot does not contain write
             // permissions. On real hardware, these mappings succeed, but the memory cannot be
             // written to.

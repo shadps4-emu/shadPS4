@@ -74,6 +74,8 @@ public:
     /// nullptr when the path does not exist or the caller requested
     /// writable access on a read-only mount.
     std::unique_ptr<IFile> Open(std::string_view guest_path, bool writable = false);
+    // Open with an explicit host access mode.
+    std::unique_ptr<IFile> Open(std::string_view guest_path, Common::FS::FileAccessMode mode);
 
     /// Opens a directory through the mount's backend stack.
     std::unique_ptr<IDirectory> OpenDir(std::string_view guest_path);
@@ -199,8 +201,13 @@ struct File {
     }
 
     bool IsWriteOnly() const {
-        // Non-host backends are read-only
-        return f.IsOpen() && f.IsWriteOnly();
+        if (f.IsOpen()) {
+            return f.IsWriteOnly();
+        }
+        if (handle) {
+            return handle->IsWriteOnly();
+        }
+        return false;
     }
 };
 

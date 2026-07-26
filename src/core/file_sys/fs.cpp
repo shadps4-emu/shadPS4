@@ -382,6 +382,12 @@ bool MntPoints::IsDirectory(std::string_view guest_path) {
 }
 
 std::unique_ptr<IFile> MntPoints::Open(std::string_view guest_path, bool writable) {
+    return Open(guest_path, writable ? Common::FS::FileAccessMode::ReadWrite
+                                     : Common::FS::FileAccessMode::Read);
+}
+
+std::unique_ptr<IFile> MntPoints::Open(std::string_view guest_path,
+                                       Common::FS::FileAccessMode mode) {
     const auto corrected = SanitizeGuestPath(guest_path);
     if (!corrected) {
         return nullptr;
@@ -390,15 +396,20 @@ std::unique_ptr<IFile> MntPoints::Open(std::string_view guest_path, bool writabl
     if (!mount || mount->backends.empty()) {
         return nullptr;
     }
+    const bool writable = mode != Common::FS::FileAccessMode::Read;
     if (writable && mount->read_only) {
         return nullptr;
     }
     const auto rel = RelativeToMount(*corrected, *mount);
     const std::string rel_copy{rel};
 
+    if (mode == Common::FS::FileAccessMode::Create) {
+        return mount->backends.back()->Open(rel_copy, mode);
+    }
+
     for (const auto& backend : mount->backends) {
         if (backend->Exists(rel) && !backend->IsDirectory(rel)) {
-            return backend->Open(rel_copy, writable);
+            return backend->Open(rel_copy, mode);
         }
     }
     return nullptr;

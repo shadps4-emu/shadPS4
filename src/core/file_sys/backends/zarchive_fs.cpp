@@ -166,8 +166,10 @@ bool ZArchiveBackend::IsDirectory(std::string_view rel_path) {
     return m_reader->reader->IsDirectory(node);
 }
 
-std::unique_ptr<IFile> ZArchiveBackend::Open(std::string_view rel_path, bool writable) {
-    if (writable) {
+std::unique_ptr<IFile> ZArchiveBackend::Open(std::string_view rel_path,
+                                             Common::FS::FileAccessMode mode) {
+    // ZArchive is read-only,any write/create/append mode is rejected.
+    if (mode != Common::FS::FileAccessMode::Read) {
         return nullptr;
     }
     const auto node = LookUp(rel_path, /*allow_file=*/true, /*allow_directory=*/false);

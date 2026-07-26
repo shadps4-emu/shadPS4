@@ -132,7 +132,6 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     file->m_guest_name = path;
     file->m_host_name = mnt->GetHostPath(file->m_guest_name, &read_only);
     bool exists = mnt->Exists(file->m_guest_name);
-    s32 e = 0;
 
     if (create) {
         if (excl && exists) {
@@ -206,77 +205,45 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
     } else {
         file->type = Core::FileSys::FileType::Regular;
-        file->handle = mnt->Open(file->m_guest_name, write || rdwr);
-        const bool non_host = file->handle && !file->handle->GetHostPath().has_value();
 
-        if (non_host) {
-            if (write || rdwr || truncate) {
-                h->DeleteHandle(handle);
-                *__Error() = POSIX_EROFS;
-                LOG_ERROR(Kernel_Fs, "Opening {} for writing failed, backend is read-only",
-                          raw_path);
-                return -1;
-            }
-        } else if (truncate && read_only) {
-            // Can't open files with truncate flag in a read only directory
+        // Reject writes to read-only mounts up front, so we can report
+        // the right errno instead of a generic open failure.
+        if ((write || rdwr || truncate) && read_only) {
             h->DeleteHandle(handle);
             *__Error() = POSIX_EROFS;
-            LOG_ERROR(Kernel_Fs, "Truncating {} failed, path is read-only", raw_path);
+            LOG_ERROR(Kernel_Fs, "Opening {} for writing failed, path is read-only", raw_path);
             return -1;
-        } else if (truncate) {
-            // Open the file as read-write so we can truncate regardless of flags.
-            // Since open starts by closing the file, this won't interfere with later open calls.
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
-            if (e == 0) {
-                // If the file was opened successfully, reduce size to 0
-                file->f.SetSize(0);
-            }
         }
 
-        if (!non_host) {
-            if (read) {
-                // Open exclusively for reading
-                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-            } else if (read_only) {
-                // Can't open files with write/read-write access in a read only directory
-                h->DeleteHandle(handle);
-                *__Error() = POSIX_EROFS;
-                LOG_ERROR(Kernel_Fs, "Opening {} for writing failed, path is read-only", raw_path);
-                return -1;
-            } else if (write) {
-                if (append) {
-                    // Open exclusively for appending
-                    e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
-                } else {
-                    // Open exclusively for writing
-                    e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
-                }
-            } else if (rdwr) {
-                // Read and write
-                if (append) {
-                    // Open for reading and appending
-                    e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadAppend);
-                } else {
-                    // Open for reading and writing
-                    e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
-                }
+        // Map the guest open flags onto a single host access mode.
+        Common::FS::FileAccessMode access_mode;
+        if (truncate) {
+            access_mode = Common::FS::FileAccessMode::ReadWrite;
+        } else if (read) {
+            access_mode = Common::FS::FileAccessMode::Read;
+        } else if (write) {
+            access_mode =
+                append ? Common::FS::FileAccessMode::Append : Common::FS::FileAccessMode::Write;
+        } else if (rdwr) {
+            access_mode = append ? Common::FS::FileAccessMode::ReadAppend
+                                 : Common::FS::FileAccessMode::ReadWrite;
+        } else {
+            access_mode = Common::FS::FileAccessMode::Read;
+        }
+
+        file->handle = mnt->Open(file->m_guest_name, access_mode);
+        if (!file->handle || !file->handle->IsOpen()) {
+            h->DeleteHandle(handle);
+            *__Error() = (write || rdwr || truncate) ? POSIX_EROFS : POSIX_EIO;
+            LOG_ERROR(Kernel_Fs, "Opening {} failed, backend did not serve the file", raw_path);
+            return -1;
+        }
+
+        if (truncate) {
+            if (auto* host = file->handle->GetHostFile()) {
+                host->SetSize(0);
             }
         }
-    }
-
-    if (e != 0) {
-        // Open failed in platform-specific code, errno needs to be converted.
-        h->DeleteHandle(handle);
-        SetPosixErrno(e);
-        LOG_ERROR(Kernel_Fs, "Opening {} failed, error = {}", raw_path, *__Error());
-        return -1;
-    }
-
-    if (file->type == Core::FileSys::FileType::Regular && !file->IsBackendOpen()) {
-        h->DeleteHandle(handle);
-        *__Error() = POSIX_EIO;
-        LOG_ERROR(Kernel_Fs, "Opening {} failed, no backend served the file", raw_path);
-        return -1;
     }
 
     file->is_opened = true;
@@ -967,10 +934,18 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto file = h->GetFile(src_path);
     if (file) {
-        auto access_mode = file->f.GetAccessMode();
+        Common::FS::FileAccessMode access_mode = Common::FS::FileAccessMode::ReadWrite;
+        if (auto* host = file->handle ? file->handle->GetHostFile() : nullptr) {
+            access_mode = host->GetAccessMode();
+        } else if (file->f.IsOpen()) {
+            access_mode = file->f.GetAccessMode();
+        }
+        file->handle.reset();
         file->f.Close();
         fs::remove(src_path);
-        file->f.Open(dst_path, access_mode);
+        // Reopen through the mount stack at the destination guest path.
+        file->handle = mnt->Open(std::string_view(to), access_mode);
+        file->m_guest_name = to;
     } else {
         fs::remove_all(src_path);
     }

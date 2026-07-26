@@ -60,6 +60,10 @@ public:
     virtual bool IsReadOnly() const {
         return true;
     }
+
+    virtual bool IsWriteOnly() const {
+        return false;
+    }
 };
 
 class FileReader {
@@ -152,8 +156,8 @@ public:
 
     virtual bool Exists(std::string_view rel_path) = 0;
     virtual bool IsDirectory(std::string_view rel_path) = 0;
-
-    virtual std::unique_ptr<IFile> Open(std::string_view rel_path, bool writable) = 0;
+    virtual std::unique_ptr<IFile> Open(std::string_view rel_path,
+                                        Common::FS::FileAccessMode mode) = 0;
     virtual std::unique_ptr<IDirectory> OpenDir(std::string_view rel_path) = 0;
 
     virtual bool IsReadOnly() const = 0;

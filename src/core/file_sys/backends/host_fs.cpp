@@ -104,17 +104,17 @@ bool HostFsBackend::IsDirectory(std::string_view rel_path) {
     return std::filesystem::is_directory(Resolve(rel_path), ec);
 }
 
-std::unique_ptr<IFile> HostFsBackend::Open(std::string_view rel_path, bool writable) {
+std::unique_ptr<IFile> HostFsBackend::Open(std::string_view rel_path,
+                                           Common::FS::FileAccessMode mode) {
+    const bool writable = mode != Common::FS::FileAccessMode::Read;
     if (writable && m_read_only) {
         return nullptr;
     }
     const auto path = Resolve(rel_path);
     std::error_code ec;
-    if (!std::filesystem::is_regular_file(path, ec)) {
+    if (mode != Common::FS::FileAccessMode::Create && !std::filesystem::is_regular_file(path, ec)) {
         return nullptr;
     }
-    const auto mode =
-        writable ? Common::FS::FileAccessMode::ReadWrite : Common::FS::FileAccessMode::Read;
     auto handle = std::make_unique<HostFile>(path, mode, m_read_only || !writable);
     if (!handle->IsOpen()) {
         return nullptr;
