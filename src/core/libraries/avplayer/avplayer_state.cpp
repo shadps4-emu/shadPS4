@@ -459,7 +459,7 @@ void AvPlayerState::ProcessEvent() {
     }
     case AvEventType::AddSource: {
         std::shared_lock lock(m_source_mutex);
-        if (m_up_source->HasStreams()) {
+        if (m_up_source->FindStreams()) {
             SetState(AvState::Ready);
             OnPlaybackStateChanged(AvState::Ready);
         } else {
