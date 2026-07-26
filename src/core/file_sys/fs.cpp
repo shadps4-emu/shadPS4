@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <unordered_set>
+#include "common/assert.h"
 #include "common/string_util.h"
 #include "core/file_sys/backends/host_fs.h"
 #include "core/file_sys/backends/zarchive_fs.h"
@@ -36,30 +37,29 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
         if (std::filesystem::is_directory(p)) {
             return std::make_shared<HostFsBackend>(p, ro);
         }
-        if (std::filesystem::is_regular_file(p) && p.extension() == ".zar") {
-            auto backend = std::make_shared<ZArchiveBackend>(p);
-            if (backend->IsOpen()) {
-                return backend;
+        const auto try_zar = [ro](const std::filesystem::path& zar) -> std::shared_ptr<IBackend> {
+            if (std::filesystem::is_regular_file(zar) && zar.extension() == ".zar") {
+                auto backend = std::make_shared<ZArchiveBackend>(zar);
+                if (backend->IsOpen()) {
+                    return backend;
+                }
             }
+            return nullptr;
+        };
+        if (auto b = try_zar(p)) {
+            return b;
         }
-        return nullptr;
+        std::filesystem::path with_ext = p;
+        with_ext += ".zar";
+        return try_zar(with_ext);
     };
 
     const auto probe_overlay =
         [&make_backend](const std::filesystem::path& base,
                         std::string_view suffix) -> std::shared_ptr<IBackend> {
-        std::filesystem::path dir_path = base;
-        dir_path += std::string{suffix};
-        if (auto b = make_backend(dir_path, /*ro=*/true)) {
-            return b;
-        }
-        std::filesystem::path zar_path = base;
-        zar_path += std::string{suffix};
-        zar_path += ".zar";
-        if (auto b = make_backend(zar_path, /*ro=*/true)) {
-            return b;
-        }
-        return nullptr;
+        std::filesystem::path path = base;
+        path += std::string{suffix};
+        return make_backend(path, /*ro=*/true);
     };
     // check for mods , updates,patch
     if (eligible_for_overlays) {
@@ -78,14 +78,7 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
     }
 
     std::shared_ptr<IBackend> base = make_backend(host_folder, read_only);
-    if (!base) {
-        std::filesystem::path zar_candidate = host_folder;
-        zar_candidate += ".zar";
-        base = make_backend(zar_candidate, read_only);
-    }
-    if (!base) {
-        base = std::make_shared<HostFsBackend>(host_folder, read_only);
-    }
+    ASSERT_MSG(base, "Mount: base path does not resolve to a backend: {}", host_folder.string());
     stack.push_back(std::move(base));
 
     m_mnt_pairs.emplace_back(host_folder, guest_folder_sanitized, read_only, std::move(stack));
@@ -404,11 +397,6 @@ std::unique_ptr<IFile> MntPoints::Open(std::string_view guest_path, bool writabl
     const std::string rel_copy{rel};
 
     for (const auto& backend : mount->backends) {
-        // Skip read-only overlays when we need write access; writes
-        // always land on the base backend.
-        if (writable && backend->IsReadOnly()) {
-            continue;
-        }
         if (backend->Exists(rel) && !backend->IsDirectory(rel)) {
             return backend->Open(rel_copy, writable);
         }

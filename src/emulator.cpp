@@ -279,7 +279,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                 }
             }
         }
-    } // if (!from_archive)
+    }
 
     std::filesystem::path eboot_name = std::filesystem::relative(file, game_folder);
 
