@@ -607,15 +607,28 @@ void Emulator::Restart(std::filesystem::path eboot_path,
                        const std::vector<std::string>& guest_args) {
     std::vector<std::string> args;
 
-    auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    auto game_path = mnt->GetHostPath("/app0");
+    auto& game_info = Common::ElfInfo::Instance();
+    const auto& game_folder = game_info.GetGameFolder();
+    const bool from_archive =
+        std::filesystem::is_regular_file(game_folder) && game_folder.extension() == ".zar";
 
     args.push_back("--log-append");
-    args.push_back("--game");
-    args.push_back(Common::FS::PathToUTF8String(eboot_path));
 
-    args.push_back("--override-root");
-    args.push_back(Common::FS::PathToUTF8String(game_path));
+    if (from_archive) {
+        // Archive-backed base game: relaunch by pointing --game at the
+        // .zar itself. Run() re-detects the extension and re-mounts it.
+        args.push_back("--game");
+        args.push_back(Common::FS::PathToUTF8String(game_folder));
+    } else {
+        auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+        auto game_path = mnt->GetHostPath("/app0");
+
+        args.push_back("--game");
+        args.push_back(Common::FS::PathToUTF8String(eboot_path));
+
+        args.push_back("--override-root");
+        args.push_back(Common::FS::PathToUTF8String(game_path));
+    }
 
     if (FileSys::MntPoints::ignore_game_patches) {
         args.push_back("--ignore-game-patch");
