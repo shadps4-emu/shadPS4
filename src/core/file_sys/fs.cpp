@@ -27,14 +27,12 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
                       bool read_only) {
     std::scoped_lock lock{m_mutex};
     const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
-
     // Build the backend stack for this mount.
     std::vector<std::shared_ptr<IBackend>> stack;
     const bool eligible_for_overlays =
         guest_folder_sanitized == "/app0" || guest_folder_sanitized == "/hostapp";
-
-    const auto make_backend = [](const std::filesystem::path& p,
-                                 bool ro) -> std::shared_ptr<IBackend> {
+    .const auto make_backend = [](const std::filesystem::path& p,
+                                  bool ro) -> std::shared_ptr<IBackend> {
         if (std::filesystem::is_directory(p)) {
             return std::make_shared<HostFsBackend>(p, ro);
         }
@@ -78,6 +76,7 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
             }
         }
     }
+
     std::shared_ptr<IBackend> base = make_backend(host_folder, read_only);
     if (!base) {
         std::filesystem::path zar_candidate = host_folder;
@@ -435,6 +434,23 @@ std::unique_ptr<IDirectory> MntPoints::OpenDir(std::string_view guest_path) {
         }
     }
     return nullptr;
+}
+
+std::optional<std::vector<u8>> MntPoints::ReadFile(std::string_view guest_path) {
+    auto handle = Open(guest_path, /*writable=*/false);
+    if (!handle) {
+        return std::nullopt;
+    }
+    const u64 size = handle->Size();
+    std::vector<u8> buf(size);
+    if (size == 0) {
+        return buf;
+    }
+    const s64 got = handle->Read(buf.data(), size);
+    if (got < 0 || static_cast<u64>(got) != size) {
+        return std::nullopt;
+    }
+    return buf;
 }
 
 int HandleTable::CreateHandle() {
