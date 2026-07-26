@@ -17,7 +17,8 @@ enum class MemoryAccess : u8 {
 /**
  * On Windows, starts a small child monitor which attaches to the emulator before memory tracking
  * begins. First-chance debug events arrive before Windows builds a user-mode exception frame on
- * the guest stack, so tracked accesses do not destroy System V red-zone data.
+ * the guest stack, so tracked accesses and CPU patch exceptions do not destroy System V red-zone
+ * data.
  *
  * The normal emulator process retains its PID and window ownership. The monitor returns from main
  * immediately after its debug loop ends.
@@ -36,6 +37,13 @@ void InstallFaultHandler(std::function<bool(VAddr, u64, MemoryAccess)> callback)
 
 /// Removes the callback before its target is destroyed.
 void RemoveFaultHandler();
+
+/**
+ * Routes first-chance illegal-instruction exceptions through the alternate-stack trampoline before
+ * normal Windows exception dispatch. The trampoline invokes the registered SignalDispatch
+ * handlers using the captured guest context.
+ */
+void InstallIllegalInstructionHandler();
 
 /// Adds or removes watches for every 4 KiB page touching the range.
 void WatchMemory(VAddr address, u64 size, MemoryAccess access, bool enable) noexcept;

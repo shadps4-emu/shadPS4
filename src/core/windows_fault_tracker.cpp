@@ -21,6 +21,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include "core/signals.h"
 
 namespace Core::WindowsFaultTracker {
 namespace {
@@ -28,13 +29,13 @@ namespace {
 constexpr wchar_t MappingEnvironment[] = L"SHADPS4_WINDOWS_FAULT_TRACKER";
 constexpr wchar_t TargetPidEnvironment[] = L"SHADPS4_WINDOWS_FAULT_TRACKER_PID";
 constexpr wchar_t ReadyEventSuffix[] = L".Ready";
-constexpr u64 SharedMagic = 0x5348345746543036ULL; // "SH4WFT06"
-constexpr u32 SharedVersion = 6;
+constexpr u32 SharedVersion = 8;
 constexpr u32 MonitorStarting = 0;
 constexpr u32 MonitorReady = 1;
 constexpr u32 MonitorFailed = 2;
-constexpr u32 HandlerEnabled = 1U << 31;
-constexpr u32 HandlerCallCountMask = HandlerEnabled - 1;
+constexpr u32 MemoryHandlerEnabled = 1U << 31;
+constexpr u32 IllegalInstructionHandlerEnabled = 1U << 30;
+constexpr u32 HandlerCallCountMask = IllegalInstructionHandlerEnabled - 1;
 constexpr size_t GuestAddressBits = 40;
 constexpr size_t PageBits = 12;
 constexpr size_t PageSize = 1ULL << PageBits;
@@ -46,6 +47,11 @@ constexpr size_t HandlerHomeSpaceSize = 32;
 constexpr DWORD ContextFlags =
     CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_XSTATE;
 
+enum class FaultKind : u8 {
+    Memory,
+    IllegalInstruction,
+};
+
 struct alignas(64) FaultSlot {
     u64 generation{};
     u64 completed_generation{};
@@ -54,11 +60,11 @@ struct alignas(64) FaultSlot {
     u32 context_size{};
     u32 callback_handled{};
     MemoryAccess access{};
-    u8 reserved[7]{};
+    FaultKind kind{};
+    u8 reserved[6]{};
 };
 
 struct alignas(64) SharedHeader {
-    u64 magic{};
     u32 version{};
     u32 slot_count{};
     alignas(64) u32 handler_state{};
@@ -92,6 +98,7 @@ struct MonitorSlot {
     CONTEXT* context{};
     DWORD context_length{};
     bool fallback{};
+    FaultKind kind{};
     u64 fault_instruction{};
     VAddr fault_address{};
     MemoryAccess fault_access{};
@@ -137,8 +144,7 @@ std::optional<MappingLayout> QueryMappingLayout() {
 }
 
 bool HasExpectedLayout(const SharedHeader* shared, const MappingLayout& layout) {
-    return shared->magic == SharedMagic && shared->version == SharedVersion &&
-           shared->slot_count == MaxFaultSlots &&
+    return shared->version == SharedVersion && shared->slot_count == MaxFaultSlots &&
            shared->context_buffer_size == layout.context_buffer_size &&
            shared->context_buffer_stride == layout.context_buffer_stride &&
            shared->context_buffers_offset == layout.context_buffers_offset &&
@@ -183,9 +189,9 @@ std::atomic_ref<u32> Atomic(u32& value) {
 static_assert(std::atomic_ref<u64>::is_always_lock_free);
 static_assert(std::atomic_ref<u32>::is_always_lock_free);
 
-bool AcquireHandlerCall(SharedHeader* shared) {
+bool AcquireHandlerCall(SharedHeader* shared, u32 required_handler) {
     auto state = Atomic(shared->handler_state).load(std::memory_order_acquire);
-    while ((state & HandlerEnabled) != 0 &&
+    while ((state & required_handler) != 0 &&
            (state & HandlerCallCountMask) != HandlerCallCountMask) {
         if (Atomic(shared->handler_state)
                 .compare_exchange_weak(state, state + 1, std::memory_order_acq_rel,
@@ -220,12 +226,24 @@ bool IsTrackingCandidate(std::byte* view, VAddr address) {
 
 [[noreturn]] void FaultTrampoline(FaultSlot* slot) noexcept {
     const u64 generation = Atomic(slot->generation).load(std::memory_order_acquire);
-    const bool handled = fault_callback(slot->fault_address, 8, slot->access);
+    auto* context = reinterpret_cast<CONTEXT*>(debuggee_view + slot->context_offset);
+    bool handled = false;
+    if (slot->kind == FaultKind::Memory) {
+        handled = fault_callback && fault_callback(slot->fault_address, 8, slot->access);
+    } else {
+        EXCEPTION_RECORD record{};
+        record.ExceptionCode = EXCEPTION_ILLEGAL_INSTRUCTION;
+        record.ExceptionAddress = reinterpret_cast<void*>(context->Rip);
+        EXCEPTION_POINTERS pointers{
+            .ExceptionRecord = &record,
+            .ContextRecord = context,
+        };
+        handled = Signals::Instance()->DispatchIllegalInstruction(&pointers);
+    }
     Atomic(slot->callback_handled).store(handled, std::memory_order_relaxed);
     Atomic(slot->completed_generation).store(generation, std::memory_order_release);
     ReleaseHandlerCall(Header(debuggee_view));
 
-    auto* context = reinterpret_cast<CONTEXT*>(debuggee_view + slot->context_offset);
     RtlRestoreContext(context, nullptr);
     __assume(false);
 }
@@ -266,6 +284,7 @@ void ReleaseThreadSlots(MonitorState& state, u32 thread_id) {
             slot.thread_id = 0;
             slot.generation = 0;
             slot.fallback = false;
+            slot.kind = FaultKind::Memory;
         }
     }
 }
@@ -290,6 +309,7 @@ size_t AcquireFaultSlot(MonitorState& state, u32 thread_id) {
                 monitor_slot.thread_id = 0;
                 monitor_slot.generation = 0;
                 monitor_slot.fallback = false;
+                monitor_slot.kind = FaultKind::Memory;
             }
         }
     }
@@ -325,7 +345,8 @@ bool ShouldBypassRetry(MonitorState& state, const DEBUG_EVENT& event, VAddr faul
             continue;
         }
 
-        const bool same_fault = monitor_slot.fault_instruction == instruction &&
+        const bool same_fault = monitor_slot.kind == FaultKind::Memory &&
+                                monitor_slot.fault_instruction == instruction &&
                                 monitor_slot.fault_address == fault_address &&
                                 monitor_slot.fault_access == access;
         const bool handled =
@@ -335,6 +356,39 @@ bool ShouldBypassRetry(MonitorState& state, const DEBUG_EVENT& event, VAddr faul
         monitor_slot.thread_id = 0;
         monitor_slot.generation = 0;
         monitor_slot.fallback = false;
+        monitor_slot.kind = FaultKind::Memory;
+    }
+    return bypass_retry;
+}
+
+bool ShouldBypassIllegalInstructionRetry(MonitorState& state, const DEBUG_EVENT& event) {
+    // An unhandled illegal instruction resumes at the same RIP. Forward that retry to the normal
+    // Windows exception path instead of repeatedly entering the alternate-stack trampoline.
+    auto* shared = Header(state.view);
+    const u64 instruction =
+        reinterpret_cast<u64>(event.u.Exception.ExceptionRecord.ExceptionAddress);
+    bool bypass_retry = false;
+    for (size_t index = 0; index < MaxFaultSlots; ++index) {
+        auto& monitor_slot = state.slots[index];
+        if (monitor_slot.thread_id != event.dwThreadId) {
+            continue;
+        }
+        const u64 completed =
+            Atomic(shared->fault_slots[index].completed_generation).load(std::memory_order_acquire);
+        if (completed < monitor_slot.generation) {
+            continue;
+        }
+
+        const bool same_fault = monitor_slot.kind == FaultKind::IllegalInstruction &&
+                                monitor_slot.fault_instruction == instruction;
+        const bool handled =
+            Atomic(shared->fault_slots[index].callback_handled).load(std::memory_order_relaxed) !=
+            0;
+        bypass_retry |= same_fault && !handled;
+        monitor_slot.thread_id = 0;
+        monitor_slot.generation = 0;
+        monitor_slot.fallback = false;
+        monitor_slot.kind = FaultKind::Memory;
     }
     return bypass_retry;
 }
@@ -392,30 +446,13 @@ bool PrepareContextBuffer(MonitorState& state, size_t slot_index) {
     return true;
 }
 
-bool RedirectTrackedAccess(MonitorState& state, const DEBUG_EVENT& event) {
+bool RedirectToTrampoline(MonitorState& state, const DEBUG_EVENT& event, FaultKind kind,
+                          VAddr fault_address, MemoryAccess access, bool fallback) {
     const auto& exception = event.u.Exception.ExceptionRecord;
-    if (event.u.Exception.dwFirstChance == 0 ||
-        exception.ExceptionCode != EXCEPTION_ACCESS_VIOLATION || exception.NumberParameters < 2 ||
-        exception.ExceptionInformation[0] > 1) {
-        return false;
-    }
-
-    const VAddr fault_address = exception.ExceptionInformation[1];
-    const MemoryAccess access =
-        exception.ExceptionInformation[0] == 1 ? MemoryAccess::Write : MemoryAccess::Read;
     auto* shared = Header(state.view);
-    const bool tracked = IsTrackedAccess(state.view, fault_address, access);
-    if (ShouldBypassRetry(state, event, fault_address, access, tracked)) {
-        return false;
-    }
-    // Protection and bitmap updates occur on another guest thread. An access violation can already
-    // be in flight when that thread clears the watch, so accept one provisional callback for any
-    // page that has previously participated in tracking. ShouldBypassRetry forwards an unresolved
-    // retry as a genuine exception.
-    if (!tracked && !IsTrackingCandidate(state.view, fault_address)) {
-        return false;
-    }
-    if (!AcquireHandlerCall(shared)) {
+    const u32 required_handler =
+        kind == FaultKind::Memory ? MemoryHandlerEnabled : IllegalInstructionHandlerEnabled;
+    if (!AcquireHandlerCall(shared, required_handler)) {
         return false;
     }
 
@@ -426,6 +463,7 @@ bool RedirectTrackedAccess(MonitorState& state, const DEBUG_EVENT& event) {
     }
     auto& monitor_slot = state.slots[slot_index];
     monitor_slot.fallback = false;
+    monitor_slot.kind = kind;
     if (!PrepareHandlerStack(state, monitor_slot)) {
         ReleaseHandlerCall(shared);
         return false;
@@ -458,12 +496,14 @@ bool RedirectTrackedAccess(MonitorState& state, const DEBUG_EVENT& event) {
     if (monitor_slot.generation == 0) {
         monitor_slot.generation++;
     }
-    monitor_slot.fallback = !tracked;
+    monitor_slot.fallback = fallback;
+    monitor_slot.kind = kind;
     monitor_slot.fault_instruction = reinterpret_cast<u64>(exception.ExceptionAddress);
     monitor_slot.fault_address = fault_address;
     monitor_slot.fault_access = access;
     fault_slot.fault_address = fault_address;
     fault_slot.access = access;
+    fault_slot.kind = kind;
     fault_slot.context_offset =
         static_cast<u64>(reinterpret_cast<std::byte*>(original_context) - state.view);
     fault_slot.context_size = monitor_slot.context_length;
@@ -486,11 +526,48 @@ bool RedirectTrackedAccess(MonitorState& state, const DEBUG_EVENT& event) {
         monitor_slot.thread_id = 0;
         monitor_slot.generation = 0;
         monitor_slot.fallback = false;
+        monitor_slot.kind = FaultKind::Memory;
         ReleaseHandlerCall(shared);
         return false;
     }
 
     return true;
+}
+
+bool RedirectTrackedAccess(MonitorState& state, const DEBUG_EVENT& event) {
+    const auto& exception = event.u.Exception.ExceptionRecord;
+    if (event.u.Exception.dwFirstChance == 0 ||
+        exception.ExceptionCode != EXCEPTION_ACCESS_VIOLATION || exception.NumberParameters < 2 ||
+        exception.ExceptionInformation[0] > 1) {
+        return false;
+    }
+
+    const VAddr fault_address = exception.ExceptionInformation[1];
+    const MemoryAccess access =
+        exception.ExceptionInformation[0] == 1 ? MemoryAccess::Write : MemoryAccess::Read;
+    const bool tracked = IsTrackedAccess(state.view, fault_address, access);
+    if (ShouldBypassRetry(state, event, fault_address, access, tracked)) {
+        return false;
+    }
+    // Protection and bitmap updates occur on another guest thread. An access violation can already
+    // be in flight when that thread clears the watch, so accept one provisional callback for any
+    // page that has previously participated in tracking. ShouldBypassRetry forwards an unresolved
+    // retry as a genuine exception.
+    if (!tracked && !IsTrackingCandidate(state.view, fault_address)) {
+        return false;
+    }
+    return RedirectToTrampoline(state, event, FaultKind::Memory, fault_address, access, !tracked);
+}
+
+bool RedirectIllegalInstruction(MonitorState& state, const DEBUG_EVENT& event) {
+    const auto& exception = event.u.Exception.ExceptionRecord;
+    if (event.u.Exception.dwFirstChance == 0 ||
+        exception.ExceptionCode != EXCEPTION_ILLEGAL_INSTRUCTION ||
+        ShouldBypassIllegalInstructionRetry(state, event)) {
+        return false;
+    }
+    return RedirectToTrampoline(state, event, FaultKind::IllegalInstruction, 0, MemoryAccess::Read,
+                                false);
 }
 
 std::wstring MakeMappingName() {
@@ -557,7 +634,8 @@ int MonitorAttachedProcess(std::byte* view, DWORD target_pid, HANDLE ready_event
                 exception.ExceptionCode == EXCEPTION_BREAKPOINT && initial_breakpoint;
             initial_breakpoint &= !startup_breakpoint;
             signal_ready_after_continue = startup_breakpoint;
-            const bool redirected = RedirectTrackedAccess(state, event);
+            const bool redirected =
+                RedirectTrackedAccess(state, event) || RedirectIllegalInstruction(state, event);
             if (!redirected && !startup_breakpoint &&
                 exception.ExceptionCode != DBG_PRINTEXCEPTION_C &&
                 exception.ExceptionCode != DBG_PRINTEXCEPTION_WIDE_C &&
@@ -696,7 +774,6 @@ std::optional<int> Bootstrap(int argc, char* argv[]) {
 
     // A new paging-file-backed mapping is demand-zeroed. Do not eagerly touch its context slots
     // and sparse page bitmaps.
-    Header(view)->magic = SharedMagic;
     Header(view)->version = SharedVersion;
     Header(view)->slot_count = MaxFaultSlots;
     Header(view)->context_buffer_size = layout->context_buffer_size;
@@ -764,20 +841,23 @@ std::optional<int> Bootstrap(int argc, char* argv[]) {
 bool IsEnabled() noexcept {
     return debuggee_view != nullptr &&
            (Atomic(Header(debuggee_view)->handler_state).load(std::memory_order_acquire) &
-            HandlerEnabled) != 0;
+            MemoryHandlerEnabled) != 0;
 }
 
 void InstallFaultHandler(std::function<bool(VAddr, u64, MemoryAccess)> callback) {
-    if (!debuggee_view ||
-        Atomic(Header(debuggee_view)->handler_state).load(std::memory_order_acquire) != 0) {
+    if (!debuggee_view || !callback) {
         return;
     }
 
-    fault_callback = std::move(callback);
     auto* header = Header(debuggee_view);
+    if ((Atomic(header->handler_state).load(std::memory_order_acquire) & MemoryHandlerEnabled) !=
+        0) {
+        return;
+    }
+    fault_callback = std::move(callback);
     header->debuggee_view_address = reinterpret_cast<uintptr_t>(debuggee_view);
     header->trampoline_address = reinterpret_cast<uintptr_t>(&FaultTrampoline);
-    Atomic(header->handler_state).store(HandlerEnabled, std::memory_order_release);
+    Atomic(header->handler_state).fetch_or(MemoryHandlerEnabled, std::memory_order_release);
 }
 
 void RemoveFaultHandler() {
@@ -785,11 +865,23 @@ void RemoveFaultHandler() {
         return;
     }
     auto& handler_state = Header(debuggee_view)->handler_state;
-    Atomic(handler_state).fetch_and(~HandlerEnabled, std::memory_order_acq_rel);
+    Atomic(handler_state).fetch_and(~MemoryHandlerEnabled, std::memory_order_acq_rel);
     while ((Atomic(handler_state).load(std::memory_order_acquire) & HandlerCallCountMask) != 0) {
         Sleep(0);
     }
     fault_callback = {};
+}
+
+void InstallIllegalInstructionHandler() {
+    if (!debuggee_view) {
+        return;
+    }
+
+    auto* header = Header(debuggee_view);
+    header->debuggee_view_address = reinterpret_cast<uintptr_t>(debuggee_view);
+    header->trampoline_address = reinterpret_cast<uintptr_t>(&FaultTrampoline);
+    Atomic(header->handler_state)
+        .fetch_or(IllegalInstructionHandlerEnabled, std::memory_order_release);
 }
 
 static void UpdateBitmap(u64* bitmap, u64* sticky_bitmap, VAddr address, u64 size,
@@ -847,6 +939,8 @@ bool IsEnabled() noexcept {
 void InstallFaultHandler(std::function<bool(VAddr, u64, MemoryAccess)>) {}
 
 void RemoveFaultHandler() {}
+
+void InstallIllegalInstructionHandler() {}
 
 void WatchMemory(VAddr, u64, MemoryAccess, bool) noexcept {}
 

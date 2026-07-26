@@ -17,6 +17,7 @@
 #include "common/types.h"
 #include "core/signals.h"
 #include "core/tls.h"
+#include "core/windows_fault_tracker.h"
 #include "cpu_patches.h"
 
 #ifdef _WIN32
@@ -941,6 +942,7 @@ static void PatchesInit() {
         constexpr auto priority = std::numeric_limits<u32>::max();
         signals->RegisterAccessViolationHandler(PatchesAccessViolationHandler, priority);
         signals->RegisterIllegalInstructionHandler(PatchesIllegalInstructionHandler, priority);
+        WindowsFaultTracker::InstallIllegalInstructionHandler();
     }
 }
 
