@@ -92,7 +92,7 @@ public:
         return it == m_mnt_pairs.end() ? nullptr : &*it;
     }
 
-    const std::optional<MntPair> GetMount(const std::string& guest_path) {
+    const MntPair* GetMount(const std::string& guest_path) {
         std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const auto& mount) {
             // When doing starts-with check, add a trailing slash to make sure we don't match
@@ -100,9 +100,9 @@ public:
             return guest_path == mount.mount || guest_path.starts_with(mount.mount + "/");
         });
         if (it == m_mnt_pairs.end()) {
-            return std::nullopt;
+            return nullptr;
         }
-        return *it;
+        return &*it;
     }
 
 private:
@@ -127,7 +127,6 @@ struct File {
     std::atomic<FileType> type{FileType::Regular};
     std::filesystem::path m_host_name;
     std::string m_guest_name;
-    Common::FS::IOFile f;
     std::unique_ptr<IFile> handle;
     std::mutex m_mutex;
     std::shared_ptr<Directories::BaseDirectory> directory; // only valid for type == Directory
@@ -137,77 +136,39 @@ struct File {
     std::shared_ptr<Libraries::Net::Resolver> resolver;    // only valid for type == Resolver
 
     bool IsBackendOpen() const {
-        return f.IsOpen() || (handle && handle->IsOpen());
+        return handle && handle->IsOpen();
     }
 
     s64 Read(void* dst, u64 size) {
-        if (f.IsOpen()) {
-            return static_cast<s64>(f.ReadRaw<u8>(dst, size));
-        }
-        if (handle) {
-            return handle->Read(dst, size);
-        }
-        return -1;
+        return handle ? handle->Read(dst, size) : -1;
     }
 
     s64 Write(const void* src, u64 size) {
-        if (f.IsOpen()) {
-            return static_cast<s64>(f.WriteRaw<u8>(src, size));
-        }
-        if (handle) {
-            return handle->Write(src, size);
-        }
-        return -1;
+        return handle ? handle->Write(src, size) : -1;
     }
 
     bool Seek(s64 offset, Common::FS::SeekOrigin origin = Common::FS::SeekOrigin::SetOrigin) {
-        if (f.IsOpen()) {
-            return f.Seek(offset, origin);
-        }
-        if (handle) {
-            return handle->Seek(offset, origin);
-        }
-        return false;
+        return handle ? handle->Seek(offset, origin) : false;
     }
 
     s64 Tell() const {
-        if (f.IsOpen()) {
-            return f.Tell();
-        }
-        if (handle) {
-            return static_cast<s64>(handle->Tell());
-        }
-        return -1;
+        return handle ? static_cast<s64>(handle->Tell()) : -1;
     }
 
     u64 GetSize() const {
-        if (f.IsOpen()) {
-            return f.GetSize();
-        }
-        if (handle) {
-            return handle->Size();
-        }
-        return 0;
+        return handle ? handle->Size() : 0;
     }
 
     bool Flush() {
-        if (f.IsOpen()) {
-            return f.Flush();
-        }
-        if (handle) {
-            return handle->Flush();
-        }
-        return false;
+        return handle ? handle->Flush() : false;
     }
 
     bool IsWriteOnly() const {
-        if (f.IsOpen()) {
-            return f.IsWriteOnly();
-        }
-        if (handle) {
-            return handle->IsWriteOnly();
-        }
-        return false;
+        return handle ? handle->IsWriteOnly() : false;
+    }
+
+    Common::FS::IOFile* GetHostFile() const {
+        return handle ? handle->GetHostFile() : nullptr;
     }
 };
 

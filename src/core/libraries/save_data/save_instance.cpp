@@ -106,7 +106,7 @@ SaveInstance::SaveInstance(int slot_num, Libraries::UserService::OrbisUserServic
     mount_point = "/savedata" + std::to_string(slot_num);
 
     this->exists = fs::exists(param_sfo_path);
-    this->mounted = g_mnt->GetMount(mount_point) != std::nullopt;
+    this->mounted = g_mnt->GetMount(mount_point) != nullptr;
 }
 
 SaveInstance::~SaveInstance() {

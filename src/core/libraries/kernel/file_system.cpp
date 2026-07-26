@@ -274,7 +274,6 @@ s32 PS4_SYSV_ABI close(s32 fd) {
         return -1;
     }
     if (file->type == Core::FileSys::FileType::Regular) {
-        file->f.Close();
         file->handle.reset();
     } else if (file->type == Core::FileSys::FileType::Socket) {
         file->socket->Close();
@@ -784,8 +783,6 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         Core::FileSys::FileStat fst{};
         if (file->handle) {
             file->handle->Stat(fst);
-        } else if (file->f.IsOpen()) {
-            fst.size = file->f.GetSize();
         }
         sb->st_size = static_cast<s64>(fst.size);
         sb->st_blocks = (sb->st_size + 511) / 512;
@@ -857,8 +854,12 @@ s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
         *__Error() = POSIX_EACCES;
         return -1;
     }
-
-    file->f.SetSize(length);
+    auto* host = file->GetHostFile();
+    if (host == nullptr) {
+        *__Error() = POSIX_EROFS;
+        return -1;
+    }
+    host->SetSize(length);
     return ORBIS_OK;
 }
 
@@ -921,13 +922,10 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     auto file = h->GetFile(src_path);
     if (file) {
         Common::FS::FileAccessMode access_mode = Common::FS::FileAccessMode::ReadWrite;
-        if (auto* host = file->handle ? file->handle->GetHostFile() : nullptr) {
+        if (auto* host = file->GetHostFile()) {
             access_mode = host->GetAccessMode();
-        } else if (file->f.IsOpen()) {
-            access_mode = file->f.GetAccessMode();
         }
         file->handle.reset();
-        file->f.Close();
         fs::remove(src_path);
         // Reopen through the mount stack at the destination guest path.
         file->handle = mnt->Open(std::string_view(to), access_mode);
@@ -1220,8 +1218,8 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
         // File to unlink hasn't been opened, manually open and unlink it.
         Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::ReadWrite);
         file.Unlink();
-    } else {
-        file->f.Unlink();
+    } else if (auto* host = file->GetHostFile()) {
+        host->Unlink();
     }
 
     LOG_INFO(Kernel_Fs, "Unlinked {}", path);
@@ -1288,7 +1286,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
         }
 
         auto* file = h->GetFile(i);
-        if (!file || ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
+        if (!file || ((file->type == Core::FileSys::FileType::Regular && !file->IsBackendOpen()) ||
                       (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
             LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
             *__Error() = POSIX_EBADF;
@@ -1298,7 +1296,9 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
         s32 native_fd = -1;
         switch (file->type) {
         case Core::FileSys::FileType::Regular:
-            native_fd = static_cast<s32>(file->f.GetFileMapping());
+            if (auto* host = file->GetHostFile()) {
+                native_fd = static_cast<s32>(host->GetFileMapping());
+            }
             break;
         case Core::FileSys::FileType::Socket: {
             auto sock = file->socket->Native();
@@ -1447,7 +1447,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
         if (read || write || except) {
             auto* file = h->GetFile(i);
             if (file == nullptr ||
-                ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
+                ((file->type == Core::FileSys::FileType::Regular && !file->IsBackendOpen()) ||
                  (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
                 LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
                 *__Error() = POSIX_EBADF;
@@ -1457,7 +1457,10 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
             s32 native_fd = [&] {
                 switch (file->type) {
                 case Core::FileSys::FileType::Regular:
-                    return static_cast<s32>(file->f.GetFileMapping());
+                    if (auto* host = file->GetHostFile()) {
+                        return static_cast<s32>(host->GetFileMapping());
+                    }
+                    return -1;
                 case Core::FileSys::FileType::Device:
                     return -1;
                 case Core::FileSys::FileType::Socket: {

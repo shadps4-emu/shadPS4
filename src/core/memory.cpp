@@ -704,8 +704,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     }
 
     // Detect a non-host backend (ZArchive, ...).
-    Common::FS::IOFile* host_file =
-        file->handle ? file->handle->GetHostFile() : (file->f.IsOpen() ? &file->f : nullptr);
+    Common::FS::IOFile* host_file = file->handle ? file->handle->GetHostFile() : nullptr;
     const bool non_host_backed = file->handle && host_file == nullptr;
 
     if (non_host_backed) {
