@@ -31,8 +31,8 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
     std::vector<std::shared_ptr<IBackend>> stack;
     const bool eligible_for_overlays =
         guest_folder_sanitized == "/app0" || guest_folder_sanitized == "/hostapp";
-    .const auto make_backend = [](const std::filesystem::path& p,
-                                  bool ro) -> std::shared_ptr<IBackend> {
+    const auto make_backend = [](const std::filesystem::path& p,
+                                 bool ro) -> std::shared_ptr<IBackend> {
         if (std::filesystem::is_directory(p)) {
             return std::make_shared<HostFsBackend>(p, ro);
         }
