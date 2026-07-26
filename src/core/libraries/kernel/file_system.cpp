@@ -702,8 +702,9 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto path_name = mnt->GetHostPath(path);
     std::memset(sb, 0, sizeof(OrbisKernelStat));
-    const bool is_dir = fs::is_directory(path_name);
-    const bool is_file = fs::is_regular_file(path_name);
+
+    const bool is_dir = mnt->IsDirectory(path);
+    const bool is_file = !is_dir && mnt->Exists(path);
     if (!is_dir && !is_file) {
         *__Error() = POSIX_ENOENT;
         return -1;
@@ -713,10 +714,12 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     const auto now_sys = std::chrono::system_clock::now();
     const auto now_file = fs::file_time_type::clock::now();
     // calculate the file modified time
-    const auto mtime = fs::last_write_time(path_name);
+    std::error_code ec;
+    const auto mtime =
+        fs::exists(path_name, ec) ? fs::last_write_time(path_name, ec) : fs::file_time_type{};
     const auto mtimestamp = now_sys + (mtime - now_file);
 
-    if (fs::is_directory(path_name)) {
+    if (is_dir) {
         sb->st_mode = 0000777u | 0040000u;
         sb->st_size = 65536;
         sb->st_blksize = 65536;
@@ -726,7 +729,12 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         // TODO incomplete
     } else {
         sb->st_mode = 0000777u | 0100000u;
-        sb->st_size = static_cast<s64>(fs::file_size(path_name));
+        if (auto handle = mnt->Open(path, /*writable=*/false)) {
+            sb->st_size = static_cast<s64>(handle->Size());
+        } else {
+            sb->st_size =
+                fs::exists(path_name, ec) ? static_cast<s64>(fs::file_size(path_name, ec)) : 0;
+        }
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
         sb->st_mtim.tv_sec =
@@ -759,7 +767,7 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
         }
     }
     const auto path_name = mnt->GetHostPath(guest_path);
-    if (!fs::exists(path_name)) {
+    if (!mnt->Exists(guest_path)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
