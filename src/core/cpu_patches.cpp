@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <bit>
+#include <limits>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -15,6 +17,8 @@
 #include "common/decoder.h"
 #include "common/signal_context.h"
 #include "common/types.h"
+#include "core/libraries/kernel/orbis_error.h"
+#include "core/memory.h"
 #include "core/signals.h"
 #include "core/tls.h"
 #include "core/windows_fault_tracker.h"
@@ -570,9 +574,25 @@ static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches =
 
 static std::once_flag init_flag;
 
+enum class PatchMode {
+    All,
+    Sse4aOnly,
+};
+
+constexpr u64 NearJumpSize = 5;
+constexpr u64 ShortTrampolinePoolSize = 64_KB;
+
+struct TrampolinePool {
+    u8* end;
+    std::unique_ptr<Xbyak::CodeGenerator> generator;
+
+    TrampolinePool(u8* start, u64 size)
+        : end{start + size}, generator{std::make_unique<Xbyak::CodeGenerator>(size, start)} {}
+};
+
 struct PatchModule {
     /// Mutex controlling access to module code regions.
-    std::mutex mutex{};
+    std::mutex mutex;
 
     /// Start of the module.
     u8* start;
@@ -583,16 +603,22 @@ struct PatchModule {
     /// Tracker for patched code locations.
     std::set<u8*> patched;
 
+    /// Address-space manager used to reserve constrained trampoline pools.
+    MemoryManager* memory;
+
     /// Code generator for patching the module.
     Xbyak::CodeGenerator patch_gen;
 
     /// Code generator for writing trampoline patches.
     Xbyak::CodeGenerator trampoline_gen;
 
-    PatchModule(u8* module_ptr, const u64 module_size, u8* trampoline_ptr,
+    /// Trampoline pools whose addresses preserve the next instruction's entry byte.
+    std::vector<TrampolinePool> short_trampoline_pools;
+
+    PatchModule(MemoryManager* memory_, u8* module_ptr, const u64 module_size, u8* trampoline_ptr,
                 const u64 trampoline_size)
-        : start(module_ptr), end(module_ptr + module_size), patch_gen(module_size, module_ptr),
-          trampoline_gen(trampoline_size, trampoline_ptr) {}
+        : start(module_ptr), end(module_ptr + module_size), memory(memory_),
+          patch_gen(module_size, module_ptr), trampoline_gen(trampoline_size, trampoline_ptr) {}
 };
 static std::map<u64, PatchModule> modules;
 
@@ -601,12 +627,66 @@ static PatchModule* GetModule(const void* ptr) {
     if (upper_bound == modules.begin()) {
         return nullptr;
     }
-    return &(std::prev(upper_bound)->second);
+    auto& module = std::prev(upper_bound)->second;
+    const auto address = reinterpret_cast<uintptr_t>(ptr);
+    return address >= reinterpret_cast<uintptr_t>(module.start) &&
+                   address < reinterpret_cast<uintptr_t>(module.end)
+               ? &module
+               : nullptr;
+}
+
+static Xbyak::CodeGenerator* GetShortTrampolineGenerator(PatchModule* module, const u8* code,
+                                                         u64 required_size) {
+    static constexpr u32 HighByteShift = (sizeof(s32) - 1) * std::numeric_limits<u8>::digits;
+    static constexpr s64 DisplacementBandSize = 1LL << HighByteShift;
+
+    // A near jump stores its signed displacement in little-endian order. Constrain the
+    // trampoline so the high displacement byte is identical to the first byte of the following
+    // instruction. The jump can then consume five bytes without changing that instruction's entry
+    // byte, so execution remains valid when another control-flow edge enters there.
+    const u32 encoded_band = static_cast<u32>(code[NearJumpSize - 1]) << HighByteShift;
+    const s64 minimum_displacement = std::bit_cast<s32>(encoded_band);
+    const s64 next_instruction = reinterpret_cast<intptr_t>(code + NearJumpSize);
+    const s64 signed_range_start = next_instruction + minimum_displacement;
+    const s64 signed_range_end = signed_range_start + DisplacementBandSize;
+    if (signed_range_start < 0 || signed_range_end <= signed_range_start) {
+        return nullptr;
+    }
+
+    const VAddr range_start = static_cast<VAddr>(signed_range_start);
+    const VAddr range_end = static_cast<VAddr>(signed_range_end);
+    for (auto& pool : module->short_trampoline_pools) {
+        const auto current = reinterpret_cast<VAddr>(pool.generator->getCurr());
+        if (current >= range_start && current < range_end &&
+            static_cast<u64>(pool.end - pool.generator->getCurr()) >= required_size) {
+            return pool.generator.get();
+        }
+    }
+
+    const u64 pool_size =
+        std::max(ShortTrampolinePoolSize, Common::AlignUp(required_size, size_t{16_KB}));
+    if (pool_size > static_cast<u64>(signed_range_end - signed_range_start)) {
+        return nullptr;
+    }
+
+    void* pool_address{};
+    const s32 result = module->memory->MapMemoryInRange(
+        &pool_address, range_start, range_end, pool_size,
+        MemoryProt::CpuReadWrite | MemoryProt::CpuExec, MemoryMapFlags::NoCoalesce, VMAType::Code,
+        "CPU patch trampoline", 16_KB);
+    if (result != ORBIS_OK) {
+        return nullptr;
+    }
+
+    auto* pool_start = static_cast<u8*>(pool_address);
+    module->short_trampoline_pools.emplace_back(pool_start, pool_size);
+    return module->short_trampoline_pools.back().generator.get();
 }
 
 /// Returns a boolean indicating whether the instruction was patched, and the offset to advance past
 /// whatever is at the current code pointer.
-static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
+static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module,
+                                     PatchMode mode = PatchMode::All) {
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
     const auto status = Common::Decoder::Instance()->decodeInstruction(instruction, operands, code,
@@ -615,18 +695,61 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
         return std::make_pair(false, 1);
     }
 
+    const bool is_sse4a = instruction.mnemonic == ZYDIS_MNEMONIC_EXTRQ ||
+                          instruction.mnemonic == ZYDIS_MNEMONIC_INSERTQ ||
+                          instruction.mnemonic == ZYDIS_MNEMONIC_MOVNTSS ||
+                          instruction.mnemonic == ZYDIS_MNEMONIC_MOVNTSD;
+    if (mode == PatchMode::Sse4aOnly && !is_sse4a) {
+        return std::make_pair(false, instruction.length);
+    }
+
     if (Patches.contains(instruction.mnemonic)) {
         const auto& patches = Patches.at(instruction.mnemonic);
         for (const auto& patch_info : patches) {
-            bool needs_trampoline = patch_info.trampoline;
+            const bool needs_trampoline = patch_info.trampoline;
             if (patch_info.filter(operands)) {
                 auto& patch_gen = module->patch_gen;
+                u64 patch_span = instruction.length;
+                u64 displaced_length = 0;
+                bool preserve_next_entry = false;
+                u8 next_entry_byte = 0;
 
-                if (needs_trampoline && instruction.length < 5) {
-                    // Trampoline is needed but instruction is too short to patch.
-                    // Return false and length to signal to AOT compilation that this instruction
-                    // should be skipped and handled at runtime.
-                    return std::make_pair(false, instruction.length);
+                if (needs_trampoline && instruction.length < NearJumpSize) {
+                    // Only a four-byte instruction can preserve every byte outside the instruction
+                    // while being replaced by a five-byte near jump.
+                    if (instruction.length != NearJumpSize - 1) {
+                        return std::make_pair(false, instruction.length);
+                    }
+
+                    auto* displaced_code = code + instruction.length;
+                    if (displaced_code >= module->end) {
+                        return std::make_pair(false, instruction.length);
+                    }
+
+                    ZydisDecodedInstruction displaced_instruction;
+                    ZydisDecodedOperand displaced_operands[ZYDIS_MAX_OPERAND_COUNT];
+                    const auto displaced_status = Common::Decoder::Instance()->decodeInstruction(
+                        displaced_instruction, displaced_operands, displaced_code,
+                        module->end - displaced_code);
+                    if (!ZYAN_SUCCESS(displaced_status) ||
+                        Patches.contains(displaced_instruction.mnemonic)) {
+                        return std::make_pair(false, instruction.length);
+                    }
+                    for (u8 index = 0; index < displaced_instruction.operand_count_visible;
+                         ++index) {
+                        const auto& operand = displaced_operands[index];
+                        if ((operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
+                             operand.imm.is_relative) ||
+                            (operand.type == ZYDIS_OPERAND_TYPE_MEMORY &&
+                             (operand.mem.base == ZYDIS_REGISTER_RIP ||
+                              operand.mem.base == ZYDIS_REGISTER_EIP))) {
+                            return std::make_pair(false, instruction.length);
+                        }
+                    }
+                    displaced_length = displaced_instruction.length;
+                    patch_span += displaced_length;
+                    preserve_next_entry = true;
+                    next_entry_byte = code[NearJumpSize - 1];
                 }
 
                 // Reset state and move to current code position.
@@ -634,13 +757,28 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
                 patch_gen.setSize(code - patch_gen.getCode());
 
                 if (needs_trampoline) {
-                    auto& trampoline_gen = module->trampoline_gen;
-                    const auto trampoline_ptr = trampoline_gen.getCurr();
+                    Xbyak::CodeGenerator* trampoline_gen = &module->trampoline_gen;
+                    if (preserve_next_entry) {
+                        Xbyak::CodeGenerator size_generator{Xbyak::DEFAULT_MAX_CODE_SIZE,
+                                                            Xbyak::AutoGrow};
+                        size_generator.setDefaultJmpNEAR(true);
+                        patch_info.generator(code, operands, size_generator);
+                        const u64 required_size =
+                            size_generator.getSize() + displaced_length + NearJumpSize;
+                        trampoline_gen = GetShortTrampolineGenerator(module, code, required_size);
+                        if (trampoline_gen == nullptr) {
+                            return std::make_pair(false, instruction.length);
+                        }
+                    }
+                    const auto trampoline_ptr = trampoline_gen->getCurr();
 
-                    patch_info.generator(code, operands, trampoline_gen);
+                    patch_info.generator(code, operands, *trampoline_gen);
+                    if (displaced_length != 0) {
+                        trampoline_gen->db(code + instruction.length, displaced_length);
+                    }
 
                     // Return to the following instruction at the end of the trampoline.
-                    trampoline_gen.jmp(code + instruction.length);
+                    trampoline_gen->jmp(code + patch_span);
 
                     // Replace instruction with near jump to the trampoline.
                     patch_gen.jmp(trampoline_ptr, Xbyak::CodeGenerator::LabelType::T_NEAR);
@@ -650,18 +788,23 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
 
                 const auto patch_size = patch_gen.getCurr() - code;
                 if (patch_size > 0) {
-                    ASSERT_MSG(instruction.length >= patch_size,
+                    ASSERT_MSG(patch_span >= patch_size,
                                "Instruction {} with length {} is too short to replace at: {}",
-                               ZydisMnemonicGetString(instruction.mnemonic), instruction.length,
+                               ZydisMnemonicGetString(instruction.mnemonic), patch_span,
                                fmt::ptr(code));
 
-                    // Fill remaining space with nops.
-                    patch_gen.nop(instruction.length - patch_size);
+                    if (preserve_next_entry) {
+                        ASSERT_MSG(code[NearJumpSize - 1] == next_entry_byte,
+                                   "Short trampoline did not preserve the following instruction");
+                    } else {
+                        // Fill remaining space with nops.
+                        patch_gen.nop(patch_span - patch_size);
+                    }
 
                     module->patched.insert(code);
                     LOG_DEBUG(Core, "Patched instruction '{}' at: {}",
                               ZydisMnemonicGetString(instruction.mnemonic), fmt::ptr(code));
-                    return std::make_pair(true, instruction.length);
+                    return std::make_pair(true, patch_span);
                 }
             }
         }
@@ -887,7 +1030,7 @@ static bool TryPatchJit(void* code_address) {
     return TryPatch(code, module).first;
 }
 
-static void TryPatchAot(void* code_address, u64 code_size) {
+static void TryPatchAot(void* code_address, u64 code_size, PatchMode mode = PatchMode::All) {
     auto* code = static_cast<u8*>(code_address);
     auto* module = GetModule(code);
     if (module == nullptr) {
@@ -898,7 +1041,7 @@ static void TryPatchAot(void* code_address, u64 code_size) {
 
     const auto* end = code + code_size;
     while (code < end) {
-        code += TryPatch(code, module).second;
+        code += TryPatch(code, module, mode).second;
     }
 }
 
@@ -946,23 +1089,31 @@ static void PatchesInit() {
     }
 }
 
-void RegisterPatchModule(void* module_ptr, u64 module_size, void* trampoline_area_ptr,
-                         u64 trampoline_area_size) {
+void RegisterPatchModule(MemoryManager* memory, void* module_ptr, u64 module_size,
+                         void* trampoline_area_ptr, u64 trampoline_area_size) {
     std::call_once(init_flag, PatchesInit);
 
     const auto module_addr = reinterpret_cast<u64>(module_ptr);
     modules.emplace(std::piecewise_construct, std::forward_as_tuple(module_addr),
-                    std::forward_as_tuple(static_cast<u8*>(module_ptr), module_size,
+                    std::forward_as_tuple(memory, static_cast<u8*>(module_ptr), module_size,
                                           static_cast<u8*>(trampoline_area_ptr),
                                           trampoline_area_size));
 }
 
-void PrePatchInstructions(u64 segment_addr, u64 segment_size) {
-#if !defined(_WIN32) && !defined(__APPLE__)
+void PrePatchInstructions(std::span<const CodeRange> ranges) {
+#if defined(_WIN32)
+    if (!Patches.empty()) {
+        for (const auto& range : ranges) {
+            TryPatchAot(reinterpret_cast<void*>(range.address), range.size, PatchMode::Sse4aOnly);
+        }
+    }
+#elif !defined(__APPLE__)
     // Linux and others have an FS segment pointing to valid memory, so continue to do full
     // ahead-of-time patching for now until a better solution is worked out.
     if (!Patches.empty()) {
-        TryPatchAot(reinterpret_cast<void*>(segment_addr), segment_size);
+        for (const auto& range : ranges) {
+            TryPatchAot(reinterpret_cast<void*>(range.address), range.size);
+        }
     }
 #endif
 }

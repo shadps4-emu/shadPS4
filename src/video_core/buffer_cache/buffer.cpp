@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "video_core/buffer_cache/buffer.h"
@@ -12,6 +13,13 @@
 #include <vk_mem_alloc.h>
 
 namespace VideoCore {
+namespace {
+
+constexpr u64 InvalidBufferTrackingId = 0;
+constexpr u64 FirstBufferTrackingId = InvalidBufferTrackingId + 1;
+std::atomic<u64> next_buffer_tracking_id{FirstBufferTrackingId};
+
+} // namespace
 
 std::string_view BufferTypeName(MemoryUsage type) {
     switch (type) {
@@ -102,8 +110,10 @@ void UniqueBuffer::Create(const vk::BufferCreateInfo& buffer_ci, MemoryUsage usa
 
 Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_, MemoryUsage usage_,
                VAddr cpu_addr_, vk::BufferUsageFlags flags, u64 size_bytes_)
-    : cpu_addr{cpu_addr_}, size_bytes{size_bytes_}, instance{&instance_}, scheduler{&scheduler_},
-      usage{usage_}, buffer{instance->GetDevice(), instance->GetAllocator()} {
+    : cpu_addr{cpu_addr_}, size_bytes{size_bytes_},
+      tracking_id{next_buffer_tracking_id.fetch_add(1, std::memory_order_relaxed)},
+      instance{&instance_}, scheduler{&scheduler_}, usage{usage_},
+      buffer{instance->GetDevice(), instance->GetAllocator()} {
     // Create buffer object.
     const vk::BufferCreateInfo buffer_ci = {
         .size = size_bytes,

@@ -924,8 +924,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/platform.h
          src/core/signals.cpp
          src/core/signals.h
-         src/core/veh_stack.cpp
-         src/core/veh_stack.h
          src/core/windows_fault_tracker.cpp
          src/core/windows_fault_tracker.h
          src/core/thread.cpp

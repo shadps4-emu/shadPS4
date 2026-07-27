@@ -86,7 +86,7 @@ struct PageManager::Impl {
     };
 
     static constexpr size_t ADDRESS_BITS = 40;
-    static constexpr size_t NUM_ADDRESS_PAGES = 1ULL << (40 - PM_PAGE_BITS);
+    static constexpr size_t NUM_ADDRESS_PAGES = 1ULL << (ADDRESS_BITS - PM_PAGE_BITS);
     static constexpr size_t NUM_ADDRESS_LOCKS = NUM_ADDRESS_PAGES / PAGES_PER_LOCK;
     inline static Vulkan::Rasterizer* rasterizer;
 #ifdef ENABLE_USERFAULTFD
@@ -197,10 +197,12 @@ struct PageManager::Impl {
 
     void OnUnmap(VAddr address, size_t size) {
 #ifdef _WIN64
-        Core::WindowsFaultTracker::WatchMemory(
-            address, size, Core::WindowsFaultTracker::MemoryAccess::Read, false);
-        Core::WindowsFaultTracker::WatchMemory(
-            address, size, Core::WindowsFaultTracker::MemoryAccess::Write, false);
+        Core::WindowsFaultTracker::WatchMemory(address, size,
+                                               Core::WindowsFaultTracker::MemoryAccess::Read,
+                                               Core::WindowsFaultTracker::WatchAction::Remove);
+        Core::WindowsFaultTracker::WatchMemory(address, size,
+                                               Core::WindowsFaultTracker::MemoryAccess::Write,
+                                               Core::WindowsFaultTracker::WatchAction::Remove);
 #endif
     }
 
@@ -216,20 +218,24 @@ struct PageManager::Impl {
             const bool allow_read = True(perms & Core::MemoryPermission::Read);
             if (!allow_write) {
                 Core::WindowsFaultTracker::WatchMemory(
-                    address, size, Core::WindowsFaultTracker::MemoryAccess::Write, true);
+                    address, size, Core::WindowsFaultTracker::MemoryAccess::Write,
+                    Core::WindowsFaultTracker::WatchAction::Add);
             }
             if (!allow_read) {
                 Core::WindowsFaultTracker::WatchMemory(
-                    address, size, Core::WindowsFaultTracker::MemoryAccess::Read, true);
+                    address, size, Core::WindowsFaultTracker::MemoryAccess::Read,
+                    Core::WindowsFaultTracker::WatchAction::Add);
             }
             impl.Protect(address, size, perms);
             if (allow_write) {
                 Core::WindowsFaultTracker::WatchMemory(
-                    address, size, Core::WindowsFaultTracker::MemoryAccess::Write, false);
+                    address, size, Core::WindowsFaultTracker::MemoryAccess::Write,
+                    Core::WindowsFaultTracker::WatchAction::Remove);
             }
             if (allow_read) {
                 Core::WindowsFaultTracker::WatchMemory(
-                    address, size, Core::WindowsFaultTracker::MemoryAccess::Read, false);
+                    address, size, Core::WindowsFaultTracker::MemoryAccess::Read,
+                    Core::WindowsFaultTracker::WatchAction::Remove);
             }
             return;
         }

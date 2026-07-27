@@ -127,7 +127,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
                                MemoryProt::CpuReadWrite | MemoryProt::CpuExec,
                                MemoryMapFlags::Fixed, VMAType::Code, name);
     ASSERT_MSG(result == ORBIS_OK, "Failed to map trampoline area for module {}", name);
-    RegisterPatchModule(*out_addr, aligned_base_size, trampoline_addr, TrampolineSize);
+    RegisterPatchModule(memory, *out_addr, aligned_base_size, trampoline_addr, TrampolineSize);
 #endif
 
     LOG_INFO(Core_Linker, "======== Load Module to Memory ========");
@@ -170,6 +170,9 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         }
     };
 
+#ifdef ARCH_X86_64
+    std::vector<CodeRange> executable_ranges;
+#endif
     for (u16 i = 0; i < elf_header.e_phnum; i++) {
         const auto header_type = elf.ElfPheaderTypeStr(elf_pheader[i].p_type);
         switch (elf_pheader[i].p_type) {
@@ -193,7 +196,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             add_segment(elf_pheader[i]);
 #ifdef ARCH_X86_64
             if (elf_pheader[i].p_flags & PF_EXEC) {
-                PrePatchInstructions(segment_addr, segment_file_size);
+                executable_ranges.emplace_back(segment_addr, segment_file_size);
             }
 #endif
             break;
@@ -249,6 +252,10 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             LOG_ERROR(Core_Linker, "Unimplemented type {}", header_type);
         }
     }
+
+#ifdef ARCH_X86_64
+    PrePatchInstructions(executable_ranges);
+#endif
 
     const VAddr entry_addr = base_virtual_addr + elf.GetElfEntry();
     LOG_INFO(Core_Linker, "program entry addr ..........: {:#018x}", entry_addr);

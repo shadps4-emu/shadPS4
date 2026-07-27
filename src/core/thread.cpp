@@ -8,7 +8,6 @@
 #ifdef _WIN64
 #include <windows.h>
 #include "common/ntapi.h"
-#include "core/veh_stack.h"
 #else
 #include <csignal>
 #include <pthread.h>
@@ -48,8 +47,6 @@ void NativeThread::Exit() {
     tid = 0;
 
 #ifdef _WIN64
-    CleanupVehStackForCurrentThread();
-
     native_handle = nullptr;
     ExitThread(0);
 #else
@@ -75,8 +72,6 @@ void NativeThread::Initialize() {
 #endif
 #if _WIN64
     tid = GetCurrentThreadId();
-    ASSERT_MSG(InitializeVehStackForCurrentThread(),
-               "Failed to initialize dedicated Windows VEH stack");
 #else
     tid = (u64)pthread_self();
 

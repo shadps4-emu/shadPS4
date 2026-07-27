@@ -66,6 +66,22 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 
 BufferCache::~BufferCache() = default;
 
+void BufferCache::EnableAdaptiveCpuTracking() {
+    memory_tracker->EnableAdaptiveCpuTracking();
+}
+
+void BufferCache::NotifyCpuWriteFault(VAddr fault_address) noexcept {
+    memory_tracker->NotifyCpuWriteFault(fault_address);
+}
+
+void BufferCache::BeginSynchronizationBatch() {
+    memory_tracker->BeginUploadBatch();
+}
+
+void BufferCache::EndSynchronizationBatch() {
+    memory_tracker->EndUploadBatch();
+}
+
 void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
     if (!IsRegionRegistered(device_addr, size)) {
         return;
@@ -116,12 +132,10 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyBuffer(buffer.buffer, download_buffer.Handle(), copies);
-    const VAddr buffer_addr = buffer.CpuAddr();
-    auto write_data = [this, copies = std::move(copies), download, offset, buffer_addr, device_addr,
-                       size, is_write] {
+    const auto write_data = [&]() {
         auto* memory = Core::Memory::Instance();
         for (const auto& copy : copies) {
-            const VAddr copy_device_addr = buffer_addr + copy.srcOffset;
+            const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
             const u64 dst_offset = copy.dstOffset - offset;
             memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
                                     copy.size);
@@ -132,7 +146,7 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
         }
     };
     if constexpr (async) {
-        scheduler.DeferOperation(std::move(write_data));
+        scheduler.DeferOperation(write_data);
     } else {
         scheduler.Finish();
         write_data();
@@ -650,10 +664,17 @@ bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size,
     memory_tracker->ForEachUploadRange(
         device_addr, size, is_written,
         [&](u64 device_addr_out, u64 range_size) {
-            copies.emplace_back(total_size_bytes, device_addr_out - buffer_start, range_size);
+            const u64 buffer_offset = device_addr_out - buffer_start;
+            if (!copies.empty() &&
+                copies.back().srcOffset + copies.back().size == total_size_bytes &&
+                copies.back().dstOffset + copies.back().size == buffer_offset) {
+                copies.back().size += range_size;
+            } else {
+                copies.emplace_back(total_size_bytes, buffer_offset, range_size);
+            }
             total_size_bytes += range_size;
         },
-        [&] { src_buffer = UploadCopies(buffer, copies, total_size_bytes); });
+        [&] { src_buffer = UploadCopies(buffer, copies, total_size_bytes); }, buffer.TrackingId());
 
     if (src_buffer) {
         scheduler.EndRendering();

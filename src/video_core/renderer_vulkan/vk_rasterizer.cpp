@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/debug.h"
+#include "common/scope_exit.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "core/windows_fault_tracker.h"
@@ -49,12 +50,21 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
                 constexpr u64 InvalidationGranularity = VideoCore::BufferCache::CACHING_PAGESIZE;
                 const VAddr aligned_address = address & ~(InvalidationGranularity - 1);
                 if (InvalidateMemory(aligned_address, InvalidationGranularity)) {
+                    buffer_cache.NotifyCpuWriteFault(address);
                     return true;
                 }
-                return InvalidateMemory(address, size);
+                const bool invalidated = InvalidateMemory(address, size);
+                if (invalidated) {
+                    buffer_cache.NotifyCpuWriteFault(address);
+                }
+                return invalidated;
             }
             return ReadMemory(address, size);
         });
+    adaptive_cpu_tracking = Core::WindowsFaultTracker::IsEnabled();
+    if (adaptive_cpu_tracking) {
+        buffer_cache.EnableAdaptiveCpuTracking();
+    }
 }
 
 Rasterizer::~Rasterizer() {
@@ -215,6 +225,15 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
+    if (adaptive_cpu_tracking) {
+        buffer_cache.BeginSynchronizationBatch();
+    }
+    SCOPE_EXIT {
+        if (adaptive_cpu_tracking) {
+            buffer_cache.EndSynchronizationBatch();
+        }
+    };
+
     PrepareRenderState(pipeline);
     if (!BindResources(pipeline)) {
         return;
@@ -262,6 +281,15 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     if (!pipeline) {
         return;
     }
+
+    if (adaptive_cpu_tracking) {
+        buffer_cache.BeginSynchronizationBatch();
+    }
+    SCOPE_EXIT {
+        if (adaptive_cpu_tracking) {
+            buffer_cache.EndSynchronizationBatch();
+        }
+    };
 
     PrepareRenderState(pipeline);
     if (!BindResources(pipeline)) {
@@ -343,6 +371,15 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
+    if (adaptive_cpu_tracking) {
+        buffer_cache.BeginSynchronizationBatch();
+    }
+    SCOPE_EXIT {
+        if (adaptive_cpu_tracking) {
+            buffer_cache.EndSynchronizationBatch();
+        }
+    };
+
     if (!BindResources(pipeline)) {
         return;
     }
@@ -367,6 +404,15 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     if (!pipeline) {
         return;
     }
+
+    if (adaptive_cpu_tracking) {
+        buffer_cache.BeginSynchronizationBatch();
+    }
+    SCOPE_EXIT {
+        if (adaptive_cpu_tracking) {
+            buffer_cache.EndSynchronizationBatch();
+        }
+    };
 
     if (!BindResources(pipeline)) {
         return;

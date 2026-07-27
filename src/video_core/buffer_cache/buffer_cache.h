@@ -155,6 +155,16 @@ public:
     /// Runs the garbage collector.
     void RunGarbageCollector();
 
+    /// Groups adaptive CPU-memory validation for one draw or dispatch.
+    void BeginSynchronizationBatch();
+    void EndSynchronizationBatch();
+
+    /// Enables adaptive CPU-write tracking after the Windows fault handler is installed.
+    void EnableAdaptiveCpuTracking();
+
+    /// Records the exact 4 KiB page responsible for a tracked CPU write fault.
+    void NotifyCpuWriteFault(VAddr fault_address) noexcept;
+
 private:
     template <typename Func>
     void ForEachBufferInRange(VAddr device_addr, u64 size, Func&& func) {

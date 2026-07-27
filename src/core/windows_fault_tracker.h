@@ -14,6 +14,11 @@ enum class MemoryAccess : u8 {
     Write,
 };
 
+enum class WatchAction : u8 {
+    Add,
+    Remove,
+};
+
 /**
  * On Windows, starts a small child monitor which attaches to the emulator before memory tracking
  * begins. First-chance debug events arrive before Windows builds a user-mode exception frame on
@@ -25,7 +30,7 @@ enum class MemoryAccess : u8 {
  */
 std::optional<int> Bootstrap(int argc, char* argv[]);
 
-/// Returns whether this process is using the external Windows fault monitor.
+/// Returns whether this process is using the child-process Windows fault monitor.
 bool IsEnabled() noexcept;
 
 /**
@@ -46,6 +51,6 @@ void RemoveFaultHandler();
 void InstallIllegalInstructionHandler();
 
 /// Adds or removes watches for every 4 KiB page touching the range.
-void WatchMemory(VAddr address, u64 size, MemoryAccess access, bool enable) noexcept;
+void WatchMemory(VAddr address, u64 size, MemoryAccess access, WatchAction action) noexcept;
 
 } // namespace Core::WindowsFaultTracker

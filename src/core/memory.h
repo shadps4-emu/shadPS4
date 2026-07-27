@@ -256,6 +256,10 @@ public:
                   MemoryMapFlags flags, VMAType type, std::string_view name = "anon",
                   bool validate_dmem = false, PAddr phys_addr = -1, u64 alignment = 0);
 
+    s32 MapMemoryInRange(void** out_addr, VAddr range_start, VAddr range_end, u64 size,
+                         MemoryProt prot, MemoryMapFlags flags, VMAType type,
+                         std::string_view name = "anon", u64 alignment = 0);
+
     s32 MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                 MemoryMapFlags flags, s32 fd, s64 phys_addr);
 

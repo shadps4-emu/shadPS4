@@ -681,6 +681,62 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     return ORBIS_OK;
 }
 
+s32 MemoryManager::MapMemoryInRange(void** out_addr, VAddr range_start, VAddr range_end, u64 size,
+                                    MemoryProt prot, MemoryMapFlags flags, VMAType type,
+                                    std::string_view name, u64 alignment) {
+    alignment = alignment > 0 ? alignment : 16_KB;
+    if (size == 0 || range_start >= range_end || size > range_end - range_start) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    for (;;) {
+        VAddr candidate = static_cast<VAddr>(-1);
+        {
+            std::shared_lock lk{mutex};
+            auto vma = vma_map.lower_bound(range_start);
+            if (vma != vma_map.begin() &&
+                (vma == vma_map.end() || vma->second.base > range_start)) {
+                --vma;
+            }
+
+            const VAddr last_candidate = range_end - size;
+            for (; vma != vma_map.end() && vma->second.base < range_end; ++vma) {
+                if (!vma->second.IsFree()) {
+                    continue;
+                }
+                const VAddr unaligned = std::max(range_start, vma->second.base);
+                const VAddr aligned = Common::AlignUp(unaligned, alignment);
+                if (aligned <= last_candidate && vma->second.Contains(aligned, size)) {
+                    candidate = aligned;
+                    break;
+                }
+            }
+        }
+
+        if (candidate == static_cast<VAddr>(-1)) {
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
+
+        void* mapped = std::bit_cast<void*>(candidate);
+        const s32 result =
+            MapMemory(&mapped, candidate, size, prot,
+                      flags | MemoryMapFlags::Fixed | MemoryMapFlags::NoOverwrite, type, name);
+        if (result == ORBIS_OK) {
+            *out_addr = mapped;
+            return result;
+        }
+        if (result != ORBIS_KERNEL_ERROR_ENOMEM) {
+            return result;
+        }
+
+        // A concurrent mapping claimed the selected VMA. Continue after it and search again.
+        range_start = candidate + alignment;
+        if (range_start >= range_end || size > range_end - range_start) {
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
+    }
+}
+
 s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                            MemoryMapFlags flags, s32 fd, s64 phys_addr) {
     uintptr_t handle = 0;
