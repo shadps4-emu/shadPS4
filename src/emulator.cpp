@@ -254,11 +254,36 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     std::filesystem::path game_folder;
 
-    // eboot name in the same way it does for directory inputs.
-    const bool from_archive = std::filesystem::is_regular_file(file) && file.extension() == ".zar";
+    // Archive detection.
+    std::filesystem::path archive_path;
+    std::filesystem::path archive_inner;
+    {
+        std::filesystem::path accum;
+        bool found = false;
+        for (const auto& comp : file) {
+            if (!found) {
+                accum /= comp;
+                if (comp.extension() == ".zar") {
+                    found = true;
+                    archive_path = accum;
+                }
+            } else {
+                archive_inner /= comp;
+            }
+        }
+        // Only treat it as an archive if the .zar element is a real file.
+        if (found && !std::filesystem::is_regular_file(archive_path)) {
+            found = false;
+        }
+        if (found && archive_inner.empty()) {
+            archive_inner = "eboot.bin";
+        }
+    }
+    const bool from_archive = !archive_path.empty();
+
     if (from_archive) {
-        game_folder = file;
-        file = file / "eboot.bin";
+        game_folder = archive_path;
+        file = archive_path / archive_inner;
     }
 
     if (!from_archive) {
@@ -281,7 +306,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
 
-    std::filesystem::path eboot_name = std::filesystem::relative(file, game_folder);
+    std::filesystem::path eboot_name =
+        from_archive ? archive_inner : std::filesystem::relative(file, game_folder);
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
@@ -617,8 +643,20 @@ void Emulator::Restart(std::filesystem::path eboot_path,
     if (from_archive) {
         // Archive-backed base game: relaunch by pointing --game at the
         // .zar itself. Run() re-detects the extension and re-mounts it.
+        std::filesystem::path relaunch = game_folder;
+        std::string guest = Common::FS::PathToUTF8String(eboot_path);
+        for (const std::string_view prefix : {"/app0/", "/hostapp/"}) {
+            if (guest.starts_with(prefix)) {
+                guest.erase(0, prefix.size());
+                break;
+            }
+        }
+        if (!guest.empty() && guest != "eboot.bin") {
+            relaunch /= guest;
+        }
+
         args.push_back("--game");
-        args.push_back(Common::FS::PathToUTF8String(game_folder));
+        args.push_back(Common::FS::PathToUTF8String(relaunch));
     } else {
         auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
         auto game_path = mnt->GetHostPath("/app0");
