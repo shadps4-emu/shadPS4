@@ -301,7 +301,7 @@ public:
 
     s32 GetConfiguration(libusb_device_handle* dev, s32* config) override {
     if (config != nullptr) {
-        *config = 0; // Indentasi diperbaiki
+        *config = 0;
     }
     return LIBUSB_SUCCESS;
 }
