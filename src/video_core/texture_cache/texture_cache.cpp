@@ -1,8 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <map>
+#include <memory>
+
 #include <xxhash.h>
 
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/div_ceil.h"
@@ -22,11 +27,165 @@ namespace VideoCore {
 static constexpr u64 PageShift = 12;
 static constexpr u64 NumFramesBeforeRemoval = 32;
 
+struct PendingImageDownload {
+    struct Page {
+        VAddr address;
+        u64 generation;
+    };
+
+    VAddr address;
+    u8* data;
+    Buffer* buffer;
+    u64 buffer_offset;
+    u64 size;
+    std::unique_ptr<Buffer> async_buffer;
+    boost::container::small_vector<Page, 4> pages;
+};
+
+class ReadbackTracker {
+public:
+    explicit ReadbackTracker(PageManager& page_manager_) : page_manager{&page_manager_} {}
+
+    void TrackAsync(PendingImageDownload& pending) {
+        std::scoped_lock lock{mutex};
+        if (canceled) {
+            return;
+        }
+        ForEachPage(pending.address, pending.size, [&](VAddr page) {
+            PageState& state = pages[page];
+            if (!state.watched) {
+                page_manager->UpdatePageWatchers<true>(page, PageSize(page));
+                state.watched = true;
+            }
+            ++state.readers;
+            pending.pages.push_back({page, state.generation});
+        });
+    }
+
+    void Invalidate(VAddr address, u64 size) {
+        std::scoped_lock lock{mutex};
+        if (canceled || size == 0) {
+            return;
+        }
+        const VAddr begin = PageManager::GetPageAddr(address);
+        const VAddr end = PageManager::GetNextPageAddr(address + size - 1);
+        for (auto it = pages.lower_bound(begin); it != pages.end() && it->first < end; ++it) {
+            const VAddr page = it->first;
+            PageState& state = it->second;
+            ++state.generation;
+            if (state.watched) {
+                page_manager->UpdatePageWatchers<false>(page, PageSize(page));
+                state.watched = false;
+            }
+        }
+    }
+
+    void CompleteSync(const PendingImageDownload& pending) {
+        Invalidate(pending.address, pending.size);
+        pending.buffer->Invalidate(pending.buffer_offset, pending.size);
+        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(pending.address), pending.data,
+                                                  pending.size);
+    }
+
+    void CompleteAsync(const PendingImageDownload& pending) {
+        std::scoped_lock lock{mutex};
+        if (canceled) {
+            return;
+        }
+        pending.buffer->Invalidate(pending.buffer_offset, pending.size);
+        for (const PendingImageDownload::Page& page : pending.pages) {
+            const auto it = pages.find(page.address);
+            if (it == pages.end() || it->second.generation != page.generation) {
+                continue;
+            }
+            const VAddr begin = std::max<VAddr>(pending.address, page.address);
+            const VAddr end = std::min<VAddr>(pending.address + pending.size,
+                                              page.address + PageSize(page.address));
+            Core::Memory::Instance()->TryWriteBacking(
+                std::bit_cast<u8*>(begin), pending.data + (begin - pending.address), end - begin);
+        }
+        Release(pending);
+    }
+
+    void Cancel() {
+        std::scoped_lock lock{mutex};
+        canceled = true;
+        for (const auto& [page, state] : pages) {
+            if (state.watched) {
+                page_manager->UpdatePageWatchers<false>(page, PageSize(page));
+            }
+        }
+        pages.clear();
+        page_manager = nullptr;
+    }
+
+private:
+    struct PageState {
+        u64 generation{};
+        u32 readers{};
+        bool watched{};
+    };
+
+    static VAddr PageSize(VAddr page) {
+        return PageManager::GetNextPageAddr(page) - page;
+    }
+
+    template <typename Func>
+    static void ForEachPage(VAddr address, u64 size, Func&& func) {
+        const VAddr end = PageManager::GetNextPageAddr(address + size - 1);
+        for (VAddr page = PageManager::GetPageAddr(address); page < end; page += PageSize(page)) {
+            func(page);
+        }
+    }
+
+    void Release(const PendingImageDownload& pending) {
+        for (const PendingImageDownload::Page& page : pending.pages) {
+            const auto it = pages.find(page.address);
+            if (it == pages.end()) {
+                continue;
+            }
+            PageState& state = it->second;
+            ASSERT(state.readers > 0);
+            if (--state.readers == 0) {
+                if (state.watched) {
+                    page_manager->UpdatePageWatchers<false>(page.address, PageSize(page.address));
+                }
+                pages.erase(it);
+            }
+        }
+    }
+
+    std::mutex mutex;
+    std::map<VAddr, PageState> pages;
+    PageManager* page_manager;
+    bool canceled{};
+};
+
+[[nodiscard]] static u64 GetDownloadSize(const ImageInfo& info) {
+    return static_cast<u64>(info.pitch) * info.size.height * info.size.depth *
+           info.resources.layers * (info.num_bits / 8);
+}
+
+[[nodiscard]] static bool IsAliasCopyCompatible(const Image& src, const Image& dst) {
+    return src.info.guest_address == dst.info.guest_address &&
+           src.info.pixel_format == dst.info.pixel_format &&
+           src.info.num_bits == dst.info.num_bits && src.info.num_samples == dst.info.num_samples &&
+           !src.info.props.is_depth && !dst.info.props.is_depth &&
+           src.info.props.is_block == dst.info.props.is_block &&
+           src.info.tile_mode == dst.info.tile_mode && src.info.array_mode == dst.info.array_mode &&
+           src.info.bank_swizzle == dst.info.bank_swizzle &&
+           src.info.alt_tile == dst.info.alt_tile && src.info.size.width >= dst.info.size.width &&
+           src.info.size.height >= dst.info.size.height &&
+           src.info.size.depth >= dst.info.size.depth;
+}
+
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                            AmdGpu::Liverpool* liverpool_, BufferCache& buffer_cache_,
                            PageManager& tracker_)
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
-      buffer_cache{buffer_cache_}, tracker{tracker_}, blit_helper{instance, scheduler},
+      buffer_cache{buffer_cache_}, tracker{tracker_},
+      readback_tracker{std::make_shared<ReadbackTracker>(tracker)},
+      blit_helper{instance, scheduler},
       tile_manager{instance, scheduler, buffer_cache.GetUtilityBuffer(MemoryUsage::Stream)},
       readback_linear_images{EmulatorSettings.IsReadbackLinearImagesEnabled()} {
 
@@ -58,29 +217,192 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     trigger_gc_memory = static_cast<u64>((device_local_memory - mem_threshold) / 2);
 }
 
-TextureCache::~TextureCache() = default;
-
-void TextureCache::ProcessDownloadImages() {
-    std::unique_lock lk{download_images_mutex};
-    for (const ImageId image_id : download_images) {
-        DownloadImageMemory(image_id, true);
-    }
-    download_images.clear();
+TextureCache::~TextureCache() {
+    readback_tracker->Cancel();
 }
 
-void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
+void TextureCache::UpdateImage(ImageId image_id) {
+    std::scoped_lock lock{mutex};
+    UpdateImageImpl(image_id);
+}
+
+void TextureCache::UpdateImageForTexture(ImageId image_id) {
+    std::scoped_lock lock{mutex};
+    UpdateImageImpl(image_id);
+    SynchronizeAlias(image_id);
+}
+
+void TextureCache::UpdateImageImpl(ImageId image_id) {
     Image& image = slot_images[image_id];
-    if (False(image.flags & ImageFlagBits::GpuModified)) {
+    TrackImage(image_id);
+    TouchImage(image);
+    RefreshImage(image);
+}
+
+void TextureCache::ProcessDownloadImages() {
+    std::scoped_lock lock{mutex};
+    boost::container::small_vector<ImageId, 16> images;
+    images.reserve(download_images.size() + pending_alias_downloads.size());
+    const auto append = [this, &images](ImageId image_id) {
+        if (!image_id || !slot_images.is_allocated(image_id) ||
+            False(slot_images[image_id].flags & ImageFlagBits::GpuModified) ||
+            std::ranges::find(images, image_id) != images.end()) {
+            return;
+        }
+        images.push_back(image_id);
+    };
+    for (const ImageId image_id : download_images) {
+        append(image_id);
+    }
+    for (const VAddr address : pending_alias_downloads) {
+        auto state_it = alias_states.find(address);
+        if (state_it == alias_states.end()) {
+            continue;
+        }
+        AliasState& state = state_it.value();
+        if (!state.download_pending) {
+            continue;
+        }
+        state.download_pending = false;
+        if (!state.writer || !slot_images.is_allocated(state.writer)) {
+            continue;
+        }
+        const Image& image = slot_images[state.writer];
+        if (image.image_uid == state.writer_uid && image.info.guest_address == address &&
+            True(image.flags & ImageFlagBits::GpuModified)) {
+            append(state.writer);
+        }
+    }
+    pending_alias_downloads.clear();
+    download_images.clear();
+
+    auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
+    const u64 buffer_size = download_buffer.SizeBytes();
+    size_t batch_begin = 0;
+    while (batch_begin < images.size()) {
+        u64 batch_size{};
+        size_t batch_end = batch_begin;
+        for (; batch_end < images.size(); ++batch_end) {
+            const u64 size = GetDownloadSize(slot_images[images[batch_end]].info);
+            ASSERT_MSG(size <= buffer_size, "Image download ({:#x}) exceeds stream buffer ({:#x})",
+                       size, buffer_size);
+            if (size > buffer_size ||
+                (batch_size != 0 && Common::AlignUp(batch_size, 16) + size > buffer_size)) {
+                break;
+            }
+            batch_size = Common::AlignUp(batch_size, 16) + size;
+        }
+        if (batch_end == batch_begin) {
+            ++batch_begin;
+            continue;
+        }
+
+        const auto [data, offset] = download_buffer.Map(batch_size, 16);
+        ASSERT(data != nullptr);
+        download_buffer.Commit();
+        boost::container::small_vector<PendingImageDownload, 16> pending;
+        pending.reserve(batch_end - batch_begin);
+        u64 subrange{};
+        for (size_t index = batch_begin; index < batch_end; ++index) {
+            subrange = Common::AlignUp(subrange, 16);
+            pending.push_back(ScheduleImageDownload(slot_images[images[index]], download_buffer,
+                                                    data + subrange, offset + subrange));
+            subrange += pending.back().size;
+        }
+        scheduler.Finish();
+        for (const PendingImageDownload& download : pending) {
+            readback_tracker->CompleteSync(download);
+        }
+        batch_begin = batch_end;
+    }
+}
+
+void TextureCache::SynchronizeAlias(ImageId image_id) {
+    Image& dst = slot_images[image_id];
+    auto state_it = alias_states.find(dst.info.guest_address);
+    if (state_it == alias_states.end()) {
         return;
     }
-    auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
-    const u32 download_size = image.info.pitch * image.info.size.height * image.info.size.depth *
-                              image.info.resources.layers * (image.info.num_bits / 8);
+    AliasState& state = state_it.value();
+    if (!state.writer || !slot_images.is_allocated(state.writer)) {
+        alias_states.erase(dst.info.guest_address);
+        return;
+    }
+    Image& src = slot_images[state.writer];
+    if (src.image_uid != state.writer_uid) {
+        alias_states.erase(dst.info.guest_address);
+        return;
+    }
+    if (state.writer == image_id || src.alias_generation <= dst.alias_generation ||
+        !IsAliasCopyCompatible(src, dst)) {
+        return;
+    }
+
+    scheduler.EndRendering();
+    src.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
+    dst.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
+
+    const vk::ImageCopy region = {
+        .srcSubresource =
+            {
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = std::min(src.info.resources.layers, dst.info.resources.layers),
+            },
+        .srcOffset = {0, 0, 0},
+        .dstSubresource =
+            {
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = std::min(src.info.resources.layers, dst.info.resources.layers),
+            },
+        .dstOffset = {0, 0, 0},
+        .extent = {dst.info.size.width, dst.info.size.height, dst.info.size.depth},
+    };
+    scheduler.CommandBuffer().copyImage(src.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
+                                        dst.GetImage(), vk::ImageLayout::eTransferDstOptimal,
+                                        region);
+    dst.alias_generation = src.alias_generation;
+    dst.flags |= ImageFlagBits::GpuModified;
+    dst.flags &= ~ImageFlagBits::Dirty;
+    state.has_alias = true;
+}
+
+void TextureCache::MarkGpuWrite(ImageId image_id) {
+    std::scoped_lock lock{mutex};
+    Image& image = slot_images[image_id];
+    readback_tracker->Invalidate(image.info.guest_address, image.info.guest_size);
+    image.alias_generation = ++alias_generation;
+
+    AliasState& state = alias_states[image.info.guest_address];
+    if (state.writer) {
+        if (slot_images.is_allocated(state.writer) &&
+            slot_images[state.writer].image_uid == state.writer_uid) {
+            state.has_alias |= state.writer != image_id;
+        } else {
+            state = {};
+        }
+    }
+    state.writer = image_id;
+    state.writer_uid = image.image_uid;
+
+    constexpr u64 SmallAliasReadbackLimit = 4_KB;
+    const u64 download_size = GetDownloadSize(image.info);
+    const bool needs_download = state.has_alias && download_size <= SmallAliasReadbackLimit;
+    if (needs_download && !state.download_pending) {
+        pending_alias_downloads.push_back(image.info.guest_address);
+    }
+    state.download_pending = needs_download;
+}
+
+PendingImageDownload TextureCache::ScheduleImageDownload(Image& image, Buffer& buffer, u8* data,
+                                                         u64 buffer_offset) {
+    const u64 download_size = GetDownloadSize(image.info);
     ASSERT(download_size <= image.info.guest_size);
-    const auto [download, offset] = download_buffer.Map(download_size);
-    download_buffer.Commit();
     const vk::BufferImageCopy image_download = {
-        .bufferOffset = offset,
+        .bufferOffset = buffer_offset,
         .bufferRowLength = image.info.pitch,
         .bufferImageHeight = image.info.size.height,
         .imageSubresource =
@@ -95,22 +417,33 @@ void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
         .imageExtent = {image.info.size.width, image.info.size.height, image.info.size.depth},
     };
     scheduler.EndRendering();
-    const auto cmdbuf = scheduler.CommandBuffer();
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-    cmdbuf.copyImageToBuffer(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
-                             download_buffer.Handle(), image_download);
+    scheduler.CommandBuffer().copyImageToBuffer(
+        image.GetImage(), vk::ImageLayout::eTransferSrcOptimal, buffer.Handle(), image_download);
+    return {
+        .address = image.info.guest_address,
+        .data = data,
+        .buffer = &buffer,
+        .buffer_offset = buffer_offset,
+        .size = download_size,
+    };
+}
 
-    if (sync) {
-        scheduler.Finish();
-        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(image.info.guest_address),
-                                                  download, download_size);
-    } else {
-        scheduler.DeferPriorityOperation(
-            [this, device_addr = image.info.guest_address, download, download_size] {
-                Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
-                                                          download_size);
-            });
+void TextureCache::DownloadImageMemory(ImageId image_id) {
+    Image& image = slot_images[image_id];
+    if (False(image.flags & ImageFlagBits::GpuModified)) {
+        return;
     }
+    const u64 download_size = GetDownloadSize(image.info);
+    auto buffer = std::make_unique<Buffer>(instance, scheduler, MemoryUsage::Download, 0, AllFlags,
+                                           download_size);
+    PendingImageDownload pending =
+        ScheduleImageDownload(image, *buffer, buffer->mapped_data.data(), 0);
+    pending.async_buffer = std::move(buffer);
+    readback_tracker->TrackAsync(pending);
+    scheduler.DeferPriorityOperation([tracker = readback_tracker, pending = std::move(pending)] {
+        tracker->CompleteAsync(pending);
+    });
 }
 
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
@@ -123,8 +456,14 @@ void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
     UntrackImage(image_id);
 }
 
+void TextureCache::InvalidateAlias(Image& image) {
+    alias_states.erase(image.info.guest_address);
+    image.alias_generation = 0;
+}
+
 void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
     std::scoped_lock lock{mutex};
+    readback_tracker->Invalidate(addr, size);
     const auto pages_start = PageManager::GetPageAddr(addr);
     const auto pages_end = PageManager::GetNextPageAddr(addr + size - 1);
     ForEachImageInRegion(pages_start, pages_end - pages_start, [&](ImageId image_id, Image& image) {
@@ -133,6 +472,7 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
         if (image.Overlaps(addr, size)) {
             // Modified region overlaps image, so the image was definitely accessed by this fault.
             // Untrack the image, so that the range is unprotected and the guest can write freely.
+            InvalidateAlias(image);
             image.flags |= ImageFlagBits::CpuDirty;
             UntrackImage(image_id);
         } else if (pages_end < image_end) {
@@ -156,6 +496,7 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
 
 void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
     std::scoped_lock lock{mutex};
+    readback_tracker->Invalidate(address, max_size);
     ForEachImageInRegion(address, max_size, [&](ImageId image_id, Image& image) {
         // Only consider images that match base address.
         // TODO: Maybe also consider subresources
@@ -163,12 +504,14 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
             return;
         }
         // Ensure image is reuploaded when accessed again.
+        InvalidateAlias(image);
         image.flags |= ImageFlagBits::GpuDirty;
     });
 }
 
 void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
     std::scoped_lock lk{mutex};
+    readback_tracker->Invalidate(cpu_addr, size);
 
     ImageIds deleted_images;
     ForEachImageInRegion(cpu_addr, size, [&](ImageId id, Image&) { deleted_images.push_back(id); });
@@ -620,15 +963,15 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
 
 ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
+    UpdateImageForTexture(image_id);
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
+        MarkGpuWrite(image_id);
         if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8) &&
             image.info.guest_address != 0) {
-            std::unique_lock lk{download_images_mutex};
             download_images.emplace(image_id);
         }
     }
-    UpdateImage(image_id);
     return image.FindView(desc.view_info);
 }
 
@@ -641,6 +984,7 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
     }
     image.usage.render_target = 1u;
     UpdateImage(image_id);
+    MarkGpuWrite(image_id);
 
     // Register meta data for this color buffer
     if (desc.info.meta_info.cmask_addr) {
@@ -660,9 +1004,10 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
 
 ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
-    image.flags |= ImageFlagBits::GpuModified;
     image.usage.depth_target = 1u;
     UpdateImage(image_id);
+    readback_tracker->Invalidate(image.info.guest_address, image.info.guest_size);
+    image.flags |= ImageFlagBits::GpuModified;
 
     // Register meta data for this depth buffer
     if (desc.info.meta_info.htile_addr) {
@@ -1071,6 +1416,14 @@ void TextureCache::DeleteImage(ImageId image_id) {
     Image& image = slot_images[image_id];
     ASSERT_MSG(!image.IsTracked(), "Image was not untracked");
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered), "Image was not unregistered");
+
+    const auto alias_it = alias_states.find(image.info.guest_address);
+    if (alias_it != alias_states.end()) {
+        const AliasState& state = alias_it->second;
+        if (state.writer == image_id && state.writer_uid == image.image_uid) {
+            alias_states.erase(image.info.guest_address);
+        }
+    }
 
     // Remove any registered meta areas.
     const auto& meta_info = image.info.meta_info;
