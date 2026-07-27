@@ -21,6 +21,7 @@ static constexpr size_t StagingBufferSize = 512_MB;
 static constexpr size_t DownloadBufferSize = 32_MB;
 static constexpr size_t UboStreamBufferSize = 64_MB;
 static constexpr size_t DeviceBufferSize = 128_MB;
+static constexpr size_t ReadbackCoalesceSize = 256_KB;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
@@ -99,6 +100,18 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write) {
 
 template <bool async>
 void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write) {
+    const VAddr requested_addr = device_addr;
+    const u64 requested_size = size;
+    if constexpr (!async) {
+        // Amortize the mandatory GPU wait while retaining page-precise dirty tracking.
+        const VAddr buffer_addr = buffer.CpuAddr();
+        const VAddr buffer_end = buffer_addr + buffer.SizeBytes();
+        device_addr = std::max(buffer_addr, Common::AlignDown(device_addr, ReadbackCoalesceSize));
+        const VAddr readback_end =
+            std::min(buffer_end, Common::AlignUp(requested_addr + size, ReadbackCoalesceSize));
+        size = readback_end - device_addr;
+    }
+
     boost::container::small_vector<vk::BufferCopy, 1> copies;
     u64 total_size_bytes = 0;
     memory_tracker->ForEachDownloadRange<false>(
@@ -132,21 +145,23 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyBuffer(buffer.buffer, download_buffer.Handle(), copies);
-    const auto write_data = [&]() {
+    const VAddr buffer_addr = buffer.CpuAddr();
+    auto write_data = [this, copies = std::move(copies), download, offset, buffer_addr, device_addr,
+                       size, requested_addr, requested_size, is_write] {
         auto* memory = Core::Memory::Instance();
         for (const auto& copy : copies) {
-            const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
+            const VAddr copy_device_addr = buffer_addr + copy.srcOffset;
             const u64 dst_offset = copy.dstOffset - offset;
             memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
                                     copy.size);
         }
         memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
         if (is_write) {
-            memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+            memory_tracker->MarkRegionAsCpuModified(requested_addr, requested_size);
         }
     };
     if constexpr (async) {
-        scheduler.DeferOperation(write_data);
+        scheduler.DeferOperation(std::move(write_data));
     } else {
         scheduler.Finish();
         write_data();
