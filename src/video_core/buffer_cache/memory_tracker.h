@@ -426,17 +426,18 @@ private:
                 if (!hot_pages.contains(page_addr)) {
                     continue;
                 }
+                const VAddr page_end = page_addr + static_cast<VAddr>(TRACKER_BYTES_PER_PAGE);
                 if (!has_range) {
                     has_range = true;
                     range_begin = page_addr;
-                    range_end = page_addr + TRACKER_BYTES_PER_PAGE;
+                    range_end = page_end;
                 } else if (page_addr <= range_end) {
-                    range_end = std::max(range_end, page_addr + TRACKER_BYTES_PER_PAGE);
+                    range_end = std::max(range_end, page_end);
                 } else {
                     manager->template ChangeRegionState<Type::CPU, true>(range_begin,
                                                                          range_end - range_begin);
                     range_begin = page_addr;
-                    range_end = page_addr + TRACKER_BYTES_PER_PAGE;
+                    range_end = page_end;
                 }
             }
             if (has_range) {

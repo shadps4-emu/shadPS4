@@ -107,8 +107,9 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
         const VAddr buffer_addr = buffer.CpuAddr();
         const VAddr buffer_end = buffer_addr + buffer.SizeBytes();
         device_addr = std::max(buffer_addr, Common::AlignDown(device_addr, ReadbackCoalesceSize));
+        const VAddr requested_end = requested_addr + static_cast<VAddr>(size);
         const VAddr readback_end =
-            std::min(buffer_end, Common::AlignUp(requested_addr + size, ReadbackCoalesceSize));
+            std::min(buffer_end, Common::AlignUp(requested_end, ReadbackCoalesceSize));
         size = readback_end - device_addr;
     }
 
