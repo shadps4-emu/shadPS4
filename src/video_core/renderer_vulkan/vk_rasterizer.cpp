@@ -64,7 +64,7 @@ Rasterizer::~Rasterizer() {
 }
 
 bool Rasterizer::InvalidateCpuWrite(VAddr address, u64 size) {
-    constexpr u64 InvalidationGranularity = VideoCore::BufferCache::CACHING_PAGESIZE;
+    constexpr VAddr InvalidationGranularity = VideoCore::BufferCache::CACHING_PAGESIZE;
     const VAddr aligned_address = address & ~(InvalidationGranularity - 1);
     if (InvalidateMemory(aligned_address, InvalidationGranularity)) {
         buffer_cache.NotifyCpuWriteFault(address);
@@ -78,7 +78,7 @@ bool Rasterizer::InvalidateCpuWrite(VAddr address, u64 size) {
 }
 
 void Rasterizer::InvalidateDeferredCpuWrites(std::span<const VAddr> addresses) {
-    constexpr u64 InvalidationGranularity = VideoCore::BufferCache::CACHING_PAGESIZE;
+    constexpr VAddr InvalidationGranularity = VideoCore::BufferCache::CACHING_PAGESIZE;
     for (size_t index = 0; index < addresses.size();) {
         const size_t range_begin_index = index;
         const VAddr range_address = addresses[index] & ~(InvalidationGranularity - 1);
