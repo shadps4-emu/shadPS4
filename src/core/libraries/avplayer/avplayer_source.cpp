@@ -7,6 +7,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
+#include "core/libraries/avplayer/avplayer_handle_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
 #include "core/libraries/videodec/video_utils.h"
 #include "core/memory.h"
@@ -58,21 +59,58 @@ bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view pa
         std::min(std::max(2, init_data.num_output_video_framebuffers), 16);
 
     AVFormatContext* context = avformat_alloc_context();
+    if (context == nullptr) {
+        LOG_ERROR(Lib_AvPlayer, "Could not allocate AVFormatContext for {}", path);
+        return false;
+    }
+
+    const auto attach_custom_io = [&]() {
+        context->pb = m_up_data_streamer->GetContext();
+        context->flags |= AVFMT_FLAG_CUSTOM_IO;
+    };
+
     if (init_data.file_replacement.open != nullptr) {
+        LOG_INFO(Lib_AvPlayer, "Opening {} through the game-provided file replacement", path);
         m_up_data_streamer = std::make_unique<AvPlayerFileStreamer>(init_data.file_replacement);
         if (!m_up_data_streamer->Init(path)) {
+            avformat_free_context(context);
             return false;
         }
-        context->pb = m_up_data_streamer->GetContext();
+        attach_custom_io();
         if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
             return false;
         }
     } else {
         const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-        const auto filepath = mnt->GetHostPath(path);
-        if (AVPLAYER_IS_ERROR(
-                avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
-            return false;
+        auto handle = mnt->Open(path, /*writable=*/false);
+        if (handle) {
+            if (auto host = handle->GetHostPath(); host.has_value()) {
+                LOG_INFO(Lib_AvPlayer, "Opening {} directly from host path {}", path,
+                         host->string());
+                if (AVPLAYER_IS_ERROR(
+                        avformat_open_input(&context, host->string().c_str(), nullptr, nullptr))) {
+                    return false;
+                }
+            } else {
+                LOG_INFO(Lib_AvPlayer, "Opening {} through a non-host backend handle", path);
+                m_up_data_streamer = std::make_unique<AvPlayerHandleStreamer>(std::move(handle));
+                if (!m_up_data_streamer->Init(path)) {
+                    avformat_free_context(context);
+                    return false;
+                }
+                attach_custom_io();
+                if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
+                    return false;
+                }
+            }
+        } else {
+            const auto filepath = mnt->GetHostPath(path);
+            LOG_INFO(Lib_AvPlayer, "Opening {} via GetHostPath fallback {}", path,
+                     filepath.string());
+            if (AVPLAYER_IS_ERROR(
+                    avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
+                return false;
+            }
         }
     }
     m_avformat_context = AVFormatContextPtr(context, &ReleaseAVFormatContext);

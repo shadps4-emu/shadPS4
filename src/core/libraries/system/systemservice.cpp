@@ -1876,10 +1876,20 @@ int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]) 
     LOG_DEBUG(Lib_SystemService, "called");
     auto emu = Common::Singleton<Core::Emulator>::Instance();
     auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    auto hostPath = mnt->GetHostPath(std::string_view(path));
-    if (hostPath.empty()) {
+    // Validate through the mount stack so archive-backed targets resolve.
+    if (!mnt->Exists(std::string_view(path))) {
         LOG_INFO(Lib_SystemService, "Restart called with invalid file '{}', exiting.", path);
         std::quick_exit(0);
+    }
+    std::filesystem::path exec_path;
+    if (auto handle = mnt->Open(std::string_view(path), /*writable=*/false)) {
+        if (auto host = handle->GetHostPath(); host.has_value()) {
+            exec_path = *host;
+        } else {
+            exec_path = std::filesystem::path(std::string_view(path));
+        }
+    } else {
+        exec_path = mnt->GetHostPath(std::string_view(path));
     }
     std::vector<std::string> args;
     if (argv != nullptr) {
@@ -1887,7 +1897,7 @@ int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]) 
             args.push_back(std::string(*ptr));
         }
     }
-    emu->Restart(hostPath, args);
+    emu->Restart(exec_path, args);
     return ORBIS_OK;
 }
 
