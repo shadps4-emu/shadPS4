@@ -5,7 +5,11 @@
 
 #include <filesystem>
 #include <memory>
+#include <mutex>
+#include <optional>
+#include <string>
 #include <string_view>
+#include <tsl/robin_map.h>
 #include "common/io_file.h"
 #include "core/file_sys/ifile.h"
 
@@ -90,9 +94,11 @@ public:
 
 private:
     std::filesystem::path Resolve(std::string_view rel_path) const;
-
+    std::optional<std::filesystem::path> ResolveCaseInsensitive(std::string_view rel_path) const;
     std::filesystem::path m_root;
     bool m_read_only;
+    mutable std::mutex m_case_cache_mutex;
+    mutable tsl::robin_map<std::string, std::filesystem::path> m_case_cache;
 };
 
 } // namespace Core::FileSys

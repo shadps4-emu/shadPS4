@@ -353,12 +353,15 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
     };
 
     std::unordered_set<std::string> emitted;
+    const auto emit_key = [](const std::string& name) {
+        return NeedsCaseInsensitiveSearch ? Common::ToLower(name) : name;
+    };
 
     if (auto dir = base_backend->OpenDir(rel)) {
         DirEntry entry;
         while (dir->Next(entry)) {
             if (auto hit = resolve(entry.name)) {
-                emitted.insert(entry.name);
+                emitted.insert(emit_key(entry.name));
                 callback(hit->first, /*is_file=*/!hit->second);
             }
         }
@@ -372,11 +375,11 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
         }
         DirEntry entry;
         while (dir->Next(entry)) {
-            if (emitted.contains(entry.name)) {
+            if (emitted.contains(emit_key(entry.name))) {
                 continue;
             }
             if (auto hit = resolve(entry.name)) {
-                emitted.insert(entry.name);
+                emitted.insert(emit_key(entry.name));
                 callback(hit->first, /*is_file=*/!hit->second);
             }
         }

@@ -8,7 +8,9 @@
 #include <sys/stat.h>
 #endif
 
+#include "common/string_util.h"
 #include "core/file_sys/backends/host_fs.h"
+#include "core/file_sys/fs.h"
 
 namespace Core::FileSys {
 
@@ -135,9 +137,66 @@ std::filesystem::path HostFsBackend::Resolve(std::string_view rel_path) const {
     if (rel_path.empty()) {
         return m_root;
     }
-    std::filesystem::path p = m_root;
-    p /= rel_path;
-    return p;
+    std::filesystem::path direct = m_root;
+    direct /= rel_path;
+    if constexpr (!NeedsCaseInsensitiveSearch) {
+        return direct;
+    } else {
+        std::error_code ec;
+        if (std::filesystem::exists(direct, ec)) {
+            return direct;
+        }
+        return ResolveCaseInsensitive(rel_path).value_or(std::move(direct));
+    }
+}
+
+std::optional<std::filesystem::path> HostFsBackend::ResolveCaseInsensitive(
+    std::string_view rel_path) const {
+    std::scoped_lock lk{m_case_cache_mutex};
+
+    std::filesystem::path current = m_root;
+    std::string prefix;
+    std::error_code ec;
+
+    for (const auto& part : std::filesystem::path(rel_path)) {
+        const std::string part_str = part.string();
+        if (part_str.empty() || part_str == ".") {
+            continue;
+        }
+        if (!prefix.empty()) {
+            prefix += '/';
+        }
+        prefix += Common::ToLower(part_str);
+
+        if (const auto it = m_case_cache.find(prefix); it != m_case_cache.end()) {
+            current = it->second;
+            continue;
+        }
+
+        if (std::filesystem::path candidate = current / part_str;
+            std::filesystem::exists(candidate, ec)) {
+            current = std::move(candidate);
+            m_case_cache.emplace(prefix, current);
+            continue;
+        }
+
+        const std::string part_low = Common::ToLower(part_str);
+        bool found = false;
+        for (const auto& entry : std::filesystem::directory_iterator(current, ec)) {
+            const auto name = entry.path().filename();
+            if (Common::ToLower(name.string()) != part_low) {
+                continue;
+            }
+            current /= name;
+            m_case_cache.emplace(prefix, current);
+            found = true;
+            break;
+        }
+        if (!found) {
+            return std::nullopt;
+        }
+    }
+    return current;
 }
 
 bool HostFsBackend::Exists(std::string_view rel_path) {
