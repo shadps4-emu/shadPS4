@@ -332,8 +332,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     if (eboot_name.empty()) {
         LOG_ERROR(Common_Filesystem, "Failed to derive executable path {} relative to {}",
-                  Common::FS::PathToUTF8String(file),
-                  Common::FS::PathToUTF8String(game_folder));
+                  Common::FS::PathToUTF8String(file), Common::FS::PathToUTF8String(game_folder));
         return;
     }
 
