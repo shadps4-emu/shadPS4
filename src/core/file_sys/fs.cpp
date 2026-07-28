@@ -24,6 +24,15 @@ std::string RemoveTrailingSlashes(const std::string& path) {
     return path_sanitized;
 }
 
+std::filesystem::path OverlayPath(const std::filesystem::path& base, std::string_view suffix) {
+    std::filesystem::path result = base;
+    if (result.extension() == ".zar") {
+        result.replace_extension();
+    }
+    result += std::string{suffix};
+    return result;
+}
+
 void MntPoints::Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
                       bool read_only) {
     std::scoped_lock lock{m_mutex};
@@ -57,9 +66,7 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
     const auto probe_overlay =
         [&make_backend](const std::filesystem::path& base,
                         std::string_view suffix) -> std::shared_ptr<IBackend> {
-        std::filesystem::path path = base;
-        path += std::string{suffix};
-        return make_backend(path, /*ro=*/true);
+        return make_backend(OverlayPath(base, suffix), /*ro=*/true);
     };
     // check for mods , updates,patch
     if (eligible_for_overlays) {
@@ -127,16 +134,13 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     std::filesystem::path host_path = mount->host_path;
 
     // Update folder is either mount + "-UPDATE" or mount + "-patch"
-    std::filesystem::path patch_path = mount->host_path;
-    patch_path += "-UPDATE";
+    std::filesystem::path patch_path = OverlayPath(mount->host_path, "-UPDATE");
     if (!std::filesystem::exists(patch_path)) {
-        patch_path = mount->host_path;
-        patch_path += "-patch";
+        patch_path = OverlayPath(mount->host_path, "-patch");
     }
 
     // Mods folder can only be at mount + "-mods"
-    std::filesystem::path mods_path = mount->host_path;
-    mods_path += "-mods";
+    std::filesystem::path mods_path = OverlayPath(mount->host_path, "-mods");
 
     // If we're just retrieving the mount, return the correct mount path.
     if (corrected_path_sanitized == mount->mount) {
