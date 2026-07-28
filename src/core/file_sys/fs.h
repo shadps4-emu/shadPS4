@@ -23,10 +23,15 @@ struct Resolver;
 } // namespace Libraries::Net
 
 namespace Core::FileSys {
-
-/// Builds the path of an overlay that sits next to a game
+// Builds the path of an overlay that sits next to a game
 [[nodiscard]] std::filesystem::path OverlayPath(const std::filesystem::path& base,
                                                 std::string_view suffix);
+
+[[nodiscard]] std::optional<std::filesystem::path> BaseGameFromOverlay(
+    const std::filesystem::path& path);
+
+[[nodiscard]] std::optional<std::filesystem::path> ResolveGameRoot(
+    const std::filesystem::path& root);
 
 class MntPoints {
 #ifdef _WIN64

@@ -281,33 +281,38 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
     const bool from_archive = !archive_path.empty();
 
+    const auto rebase_to_base_game = [](std::filesystem::path& folder) {
+        if (const auto base = FileSys::BaseGameFromOverlay(folder)) {
+            if (const auto resolved = FileSys::ResolveGameRoot(*base)) {
+                LOG_INFO(Loader, "Launched from overlay {}, using base game {} as /app0",
+                         folder.string(), resolved->string());
+                folder = *resolved;
+            } else {
+                LOG_WARNING(Loader, "Launched from overlay {} but no base game was found",
+                            folder.string());
+            }
+        }
+    };
+
+    std::filesystem::path eboot_name;
+
     if (from_archive) {
         game_folder = archive_path;
         file = archive_path / archive_inner;
+        eboot_name = archive_inner;
+        rebase_to_base_game(game_folder);
     }
 
     if (!from_archive) {
         if (p_game_folder.has_value()) {
             game_folder = p_game_folder.value();
+            eboot_name = std::filesystem::relative(file, game_folder);
         } else {
             game_folder = file.parent_path();
-            if (const auto game_folder_name = game_folder.filename().string();
-                game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch") ||
-                game_folder_name.ends_with("-mods")) {
-                // If an executable was launched from a separate update directory,
-                // use the base game directory as the game folder.
-                const std::string base_name =
-                    game_folder_name.substr(0, game_folder_name.rfind('-'));
-                const auto base_path = game_folder.parent_path() / base_name;
-                if (std::filesystem::is_directory(base_path)) {
-                    game_folder = base_path;
-                }
-            }
+            eboot_name = std::filesystem::relative(file, game_folder);
+            rebase_to_base_game(game_folder);
         }
     }
-
-    std::filesystem::path eboot_name =
-        from_archive ? archive_inner : std::filesystem::relative(file, game_folder);
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
@@ -388,10 +393,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     game_info.sdk_ver = ReadCompiledSdkVersion(guest_eboot_path);
     game_info.psf_attributes = psf_attributes;
 
-    if (auto splash_handle = mnt->Open("/app0/sce_sys/pic1.png", /*writable=*/false)) {
-        if (auto host = splash_handle->GetHostPath(); host.has_value()) {
-            game_info.splash_path = *host;
-        }
+    if (auto splash = mnt->ReadFile("/app0/sce_sys/pic1.png")) {
+        game_info.splash_data = std::move(*splash);
+    } else {
+        LOG_INFO(Loader, "No splash image found at /app0/sce_sys/pic1.png");
     }
 
     game_info.game_folder = game_folder;
@@ -523,11 +528,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     g_window = window.get();
 
-    // Window icon: same host-only guard as the splash above.
-    if (auto icon_handle = mnt->Open("/app0/sce_sys/icon0.png", /*writable=*/false)) {
-        if (auto host = icon_handle->GetHostPath(); host.has_value()) {
-            window->SetIcon(*host);
-        }
+    if (auto icon = mnt->ReadFile("/app0/sce_sys/icon0.png")) {
+        window->SetIcon(*icon);
+    } else {
+        window->SetIcon({});
     }
 
     const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir);

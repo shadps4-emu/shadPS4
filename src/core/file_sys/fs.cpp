@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <array>
 #include <unordered_set>
 #include "common/assert.h"
 #include "common/string_util.h"
@@ -31,6 +32,36 @@ std::filesystem::path OverlayPath(const std::filesystem::path& base, std::string
     }
     result += std::string{suffix};
     return result;
+}
+
+std::optional<std::filesystem::path> BaseGameFromOverlay(const std::filesystem::path& path) {
+    std::filesystem::path stem_path = path;
+    if (stem_path.extension() == ".zar") {
+        stem_path.replace_extension();
+    }
+    const std::string name = stem_path.filename().string();
+    static constexpr std::array<std::string_view, 3> suffixes{"-UPDATE", "-patch", "-mods"};
+    for (const auto suffix : suffixes) {
+        if (name.size() > suffix.size() && name.ends_with(suffix)) {
+            return stem_path.parent_path() / name.substr(0, name.size() - suffix.size());
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<std::filesystem::path> ResolveGameRoot(const std::filesystem::path& root) {
+    if (std::filesystem::is_directory(root)) {
+        return root;
+    }
+    if (root.extension() == ".zar" && std::filesystem::is_regular_file(root)) {
+        return root;
+    }
+    std::filesystem::path with_ext = root;
+    with_ext += ".zar";
+    if (std::filesystem::is_regular_file(with_ext)) {
+        return with_ext;
+    }
+    return std::nullopt;
 }
 
 void MntPoints::Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
