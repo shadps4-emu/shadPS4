@@ -969,6 +969,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/backend/spirv/emit_spirv_composite.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_convert.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_discard_frag.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_discard_frag.h
                       src/shader_recompiler/backend/spirv/emit_spirv_floating_point.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_image.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_instructions.h
