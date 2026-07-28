@@ -305,6 +305,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     const auto resolve_relative_path = [](const std::filesystem::path& path,
                                           const std::filesystem::path& base) {
+        // WinFSP-backed mounts can reject canonical path queries while normal reads still work.
         std::error_code relative_error;
         auto relative_path = std::filesystem::relative(path, base, relative_error);
         if (relative_error) {
