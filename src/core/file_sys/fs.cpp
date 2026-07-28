@@ -121,7 +121,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     }
 
     const bool host_backed =
-        +mount->backends.empty() || mount->backends.back()->RootHostPath().has_value();
+        mount->backends.empty() || mount->backends.back()->RootHostPath().has_value();
 
     const auto corrected_path_sanitized = RemoveTrailingSlashes(corrected_path);
     std::filesystem::path host_path = mount->host_path;

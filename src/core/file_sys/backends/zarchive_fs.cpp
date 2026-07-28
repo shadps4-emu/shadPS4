@@ -14,6 +14,7 @@
 #include <zarchive/zarchivereader.h>
 
 #include "common/logging/log.h"
+#include "common/thread.h"
 #include "core/file_sys/backends/zarchive_fs.h"
 
 namespace Core::FileSys {
@@ -26,8 +27,56 @@ std::string_view NormalizeRel(std::string_view rel) {
     return rel;
 }
 
+SharedReader::SharedReader(ZArchiveReader* r) : reader(r) {
+    if (reader == nullptr) {
+        return;
+    }
+    m_worker = std::thread([this] { WorkerLoop(); });
+    m_worker_id = m_worker.get_id();
+}
+
 SharedReader::~SharedReader() {
+    if (m_worker.joinable()) {
+        {
+            std::scoped_lock lk{m_job_mutex};
+            m_stop = true;
+        }
+        m_job_cv.notify_all();
+        m_worker.join();
+    }
     delete reader;
+}
+
+void SharedReader::WorkerLoop() {
+    Common::SetCurrentThreadName("shadPS4:ZArchiveIO");
+    std::unique_lock lk{m_job_mutex};
+    while (true) {
+        m_job_cv.wait(lk, [this] { return m_has_job || m_stop; });
+        if (!m_has_job) {
+            break;
+        }
+        const auto fn = m_job_fn;
+        auto* const ctx = m_job_ctx;
+        lk.unlock();
+        fn(ctx);
+        lk.lock();
+        m_has_job = false;
+        m_job_cv.notify_all();
+    }
+}
+
+void SharedReader::Dispatch(JobFn fn, void* ctx) {
+    if (!m_worker.joinable() || std::this_thread::get_id() == m_worker_id) {
+        fn(ctx);
+        return;
+    }
+    std::unique_lock lk{m_job_mutex};
+    m_job_cv.wait(lk, [this] { return !m_has_job; });
+    m_job_fn = fn;
+    m_job_ctx = ctx;
+    m_has_job = true;
+    m_job_cv.notify_all();
+    m_job_cv.wait(lk, [this] { return !m_has_job; });
 }
 
 ZArchiveFile::ZArchiveFile(std::shared_ptr<SharedReader> reader, uint32_t node, u64 size,
@@ -50,11 +99,25 @@ s64 ZArchiveFile::Read(void* dst, u64 size) {
         clamped = std::min(size, m_size - pos);
     }
 
-    u64 read;
+    struct ReadJob {
+        ZArchiveReader* reader;
+        uint32_t node;
+        u64 pos;
+        u64 size;
+        void* dst;
+        u64 out;
+    } job{m_reader->reader, m_node, pos, clamped, dst, 0};
+
     {
         std::scoped_lock lk{m_reader->mutex};
-        read = m_reader->reader->ReadFromFile(m_node, pos, clamped, dst);
+        m_reader->Dispatch(
+            [](void* p) {
+                auto* j = static_cast<ReadJob*>(p);
+                j->out = j->reader->ReadFromFile(j->node, j->pos, j->size, j->dst);
+            },
+            &job);
     }
+    const u64 read = job.out;
 
     {
         std::scoped_lock lk{m_position_mutex};
@@ -159,19 +222,31 @@ bool ZArchiveFile::Map(u8* addr, u64 size, u64 offset, u32 raw_prot, const FileM
     ctx.map_anonymous(addr, size);
 
     // Read straight into the mapped region.
-    u8* dst = addr;
-    u64 remaining = size;
-    u64 pos = offset;
-    while (remaining > 0) {
+    struct MapJob {
+        ZArchiveReader* reader;
+        uint32_t node;
+        u8* dst;
+        u64 remaining;
+        u64 pos;
+    } job{m_reader->reader, m_node, addr, size, offset};
+
+    {
         std::scoped_lock lk{m_reader->mutex};
-        const u64 got = m_reader->reader->ReadFromFile(m_node, pos, remaining, dst);
-        if (got == 0) {
-            std::memset(dst, 0, remaining);
-            break;
-        }
-        dst += got;
-        pos += got;
-        remaining -= got;
+        m_reader->Dispatch(
+            [](void* p) {
+                auto* j = static_cast<MapJob*>(p);
+                while (j->remaining > 0) {
+                    const u64 got = j->reader->ReadFromFile(j->node, j->pos, j->remaining, j->dst);
+                    if (got == 0) {
+                        std::memset(j->dst, 0, j->remaining);
+                        break;
+                    }
+                    j->dst += got;
+                    j->pos += got;
+                    j->remaining -= got;
+                }
+            },
+            &job);
     }
 
     ctx.protect(addr, size, raw_prot);

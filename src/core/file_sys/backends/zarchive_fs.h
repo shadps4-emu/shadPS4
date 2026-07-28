@@ -4,10 +4,12 @@
 #pragma once
 
 #include <atomic>
+#include <condition_variable>
 #include <filesystem>
 #include <memory>
 #include <mutex>
 #include <string_view>
+#include <thread>
 
 #include "core/file_sys/ifile.h"
 
@@ -16,14 +18,29 @@ class ZArchiveReader;
 namespace Core::FileSys {
 
 struct SharedReader {
-    explicit SharedReader(ZArchiveReader* r) : reader(r) {}
+    explicit SharedReader(ZArchiveReader* r);
     ~SharedReader();
 
     SharedReader(const SharedReader&) = delete;
     SharedReader& operator=(const SharedReader&) = delete;
 
+    using JobFn = void (*)(void*);
+    void Dispatch(JobFn fn, void* ctx);
+
     ZArchiveReader* reader{nullptr};
     std::mutex mutex;
+
+private:
+    void WorkerLoop();
+
+    std::mutex m_job_mutex;
+    std::condition_variable m_job_cv;
+    JobFn m_job_fn{nullptr};
+    void* m_job_ctx{nullptr};
+    bool m_has_job{false};
+    bool m_stop{false};
+    std::thread::id m_worker_id;
+    std::thread m_worker;
 };
 
 // IFile implementation backed by a node inside a ZArchive (.zar) file.

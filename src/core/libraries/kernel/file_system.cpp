@@ -582,7 +582,7 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     bool ro = false;
     const auto dir_name = mnt->GetHostPath(path, &ro);
 
-    if (fs::exists(dir_name)) {
+    if (mnt->Exists(path)) {
         *__Error() = POSIX_EEXIST;
         return -1;
     }
