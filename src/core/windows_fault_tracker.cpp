@@ -19,10 +19,12 @@
 #include <cstdlib>
 #include <functional>
 #include <limits>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 #include "common/alignment.h"
 #include "common/enum.h"
 #include "core/signals.h"
@@ -42,6 +44,7 @@ constexpr size_t NumGuestPages = 1ULL << (GuestAddressBits - PageBits);
 constexpr size_t BitmapWordBits = std::numeric_limits<u64>::digits;
 constexpr size_t NumBitmapWords = NumGuestPages / BitmapWordBits;
 constexpr size_t MaxFaultSlots = 256;
+constexpr size_t PendingWriteCapacity = 4096;
 constexpr size_t HandlerStackSize = 256_KB;
 constexpr size_t WindowsX64StackAlignment = 16;
 constexpr size_t WindowsX64HomeSpaceSize = 4 * sizeof(uintptr_t);
@@ -105,6 +108,10 @@ struct alignas(CacheLineSize) SharedHeader {
     u32 slot_count{};
     alignas(CacheLineSize) HandlerFlag enabled_handlers{};
     u32 active_handler_calls{};
+    u64 write_granularity{};
+    alignas(CacheLineSize) u64 pending_write_head{};
+    alignas(CacheLineSize) u64 pending_write_tail{};
+    std::array<VAddr, PendingWriteCapacity> pending_write_pages{};
     MonitorStatus monitor_status{};
     u32 context_buffer_size{};
     u32 context_buffer_stride{};
@@ -192,6 +199,9 @@ bool HasExpectedLayout(const SharedHeader* shared, const MappingLayout& layout) 
 
 std::byte* debuggee_view{};
 std::function<bool(VAddr, u64, MemoryAccess)> fault_callback;
+std::function<void(std::span<const VAddr>)> deferred_write_callback;
+std::mutex pending_write_drain_mutex;
+std::vector<VAddr> pending_write_buffer;
 
 SharedHeader* Header(std::byte* view) {
     return reinterpret_cast<SharedHeader*>(view);
@@ -592,6 +602,46 @@ bool RedirectToTrampoline(MonitorState& state, const DEBUG_EVENT& event, FaultKi
     return true;
 }
 
+bool QueueWriteOnlyFault(MonitorState& state, VAddr fault_address) {
+    auto* shared = Header(state.view);
+    if (!AcquireHandlerCall(shared, HandlerFlag::Memory)) {
+        return false;
+    }
+
+    const u64 head = Atomic(shared->pending_write_head).load(std::memory_order_relaxed);
+    const u64 tail = Atomic(shared->pending_write_tail).load(std::memory_order_acquire);
+    if (head - tail >= PendingWriteCapacity) {
+        ReleaseHandlerCall(shared);
+        return false;
+    }
+
+    const u64 write_granularity = shared->write_granularity;
+    if (write_granularity < PageSize || !std::has_single_bit(write_granularity)) {
+        ReleaseHandlerCall(shared);
+        return false;
+    }
+    const VAddr range_address = fault_address & ~(write_granularity - 1);
+    for (VAddr page_address = range_address; page_address < range_address + write_granularity;
+         page_address += PageSize) {
+        if (!IsTrackedAccess(state.view, page_address, MemoryAccess::Write) ||
+            IsTrackedAccess(state.view, page_address, MemoryAccess::Read)) {
+            ReleaseHandlerCall(shared);
+            return false;
+        }
+    }
+
+    DWORD old_protection{};
+    if (VirtualProtectEx(state.process, reinterpret_cast<void*>(range_address), write_granularity,
+                         PAGE_READWRITE, &old_protection) == FALSE) {
+        ReleaseHandlerCall(shared);
+        return false;
+    }
+
+    shared->pending_write_pages[head % PendingWriteCapacity] = fault_address;
+    Atomic(shared->pending_write_head).store(head + 1, std::memory_order_release);
+    return true;
+}
+
 bool RedirectTrackedAccess(MonitorState& state, const DEBUG_EVENT& event) {
     const auto& exception = event.u.Exception.ExceptionRecord;
     if (event.u.Exception.dwFirstChance == FALSE ||
@@ -613,6 +663,11 @@ bool RedirectTrackedAccess(MonitorState& state, const DEBUG_EVENT& event) {
     const bool tracked = IsTrackedAccess(state.view, fault_address, access);
     if (ShouldBypassRetry(state, event, fault_address, access, tracked)) {
         return false;
+    }
+    const bool write_only_watch = access == MemoryAccess::Write && tracked &&
+                                  !IsTrackedAccess(state.view, fault_address, MemoryAccess::Read);
+    if (write_only_watch && QueueWriteOnlyFault(state, fault_address)) {
+        return true;
     }
     // Protection and bitmap updates occur on another guest thread. An access violation can already
     // be in flight when that thread clears the watch, so accept one provisional callback for any
@@ -947,8 +1002,11 @@ bool IsEnabled() noexcept {
     return True(enabled & HandlerFlag::Memory);
 }
 
-void InstallFaultHandler(std::function<bool(VAddr, u64, MemoryAccess)> callback) {
-    if (!debuggee_view || !callback) {
+void InstallFaultHandler(std::function<bool(VAddr, u64, MemoryAccess)> callback,
+                         std::function<void(std::span<const VAddr>)> write_callback,
+                         u64 write_granularity) {
+    if (!debuggee_view || !callback || !write_callback || write_granularity < PageSize ||
+        !std::has_single_bit(write_granularity)) {
         return;
     }
 
@@ -958,6 +1016,9 @@ void InstallFaultHandler(std::function<bool(VAddr, u64, MemoryAccess)> callback)
         return;
     }
     fault_callback = std::move(callback);
+    deferred_write_callback = std::move(write_callback);
+    pending_write_buffer.reserve(PendingWriteCapacity);
+    header->write_granularity = write_granularity;
     header->debuggee_view_address = reinterpret_cast<uintptr_t>(debuggee_view);
     header->trampoline_address = reinterpret_cast<uintptr_t>(&FaultTrampoline);
     EnableHandler(header, HandlerFlag::Memory);
@@ -970,9 +1031,50 @@ void RemoveFaultHandler() {
     auto* header = Header(debuggee_view);
     DisableHandler(header, HandlerFlag::Memory);
     while (Atomic(header->active_handler_calls).load(std::memory_order_acquire) != 0) {
+        DrainPendingWrites();
         std::this_thread::yield();
     }
+    header->write_granularity = {};
+    deferred_write_callback = {};
     fault_callback = {};
+}
+
+void DrainPendingWrites() {
+    if (!debuggee_view || !deferred_write_callback) {
+        return;
+    }
+
+    auto* header = Header(debuggee_view);
+    if (Atomic(header->pending_write_tail).load(std::memory_order_relaxed) ==
+        Atomic(header->pending_write_head).load(std::memory_order_acquire)) {
+        return;
+    }
+
+    std::scoped_lock lock{pending_write_drain_mutex};
+    u64 tail = Atomic(header->pending_write_tail).load(std::memory_order_relaxed);
+    const u64 head = Atomic(header->pending_write_head).load(std::memory_order_acquire);
+    auto& writes = pending_write_buffer;
+    writes.clear();
+    writes.reserve(static_cast<size_t>(head - tail));
+    for (u64 cursor = tail; cursor != head; ++cursor) {
+        writes.push_back(header->pending_write_pages[cursor % PendingWriteCapacity]);
+    }
+    std::ranges::sort(writes);
+    deferred_write_callback(writes);
+    while (tail != head) {
+        ReleaseHandlerCall(header);
+        ++tail;
+    }
+    Atomic(header->pending_write_tail).store(tail, std::memory_order_release);
+}
+
+bool HasPendingWrites() noexcept {
+    if (!debuggee_view) {
+        return false;
+    }
+    auto* header = Header(debuggee_view);
+    return Atomic(header->pending_write_tail).load(std::memory_order_relaxed) !=
+           Atomic(header->pending_write_head).load(std::memory_order_acquire);
 }
 
 void InstallIllegalInstructionHandler() {
@@ -1038,13 +1140,20 @@ bool IsEnabled() noexcept {
     return false;
 }
 
-void InstallFaultHandler(std::function<bool(VAddr, u64, MemoryAccess)>) {}
+void InstallFaultHandler(std::function<bool(VAddr, u64, MemoryAccess)>,
+                         std::function<void(std::span<const VAddr>)>, u64) {}
 
 void RemoveFaultHandler() {}
 
 void InstallIllegalInstructionHandler() {}
 
 void WatchMemory(VAddr, u64, MemoryAccess, WatchAction) noexcept {}
+
+void DrainPendingWrites() {}
+
+bool HasPendingWrites() noexcept {
+    return false;
+}
 
 } // namespace Core::WindowsFaultTracker
 

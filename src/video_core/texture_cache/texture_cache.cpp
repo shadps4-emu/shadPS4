@@ -22,6 +22,78 @@ namespace VideoCore {
 static constexpr u64 PageShift = 12;
 static constexpr u64 NumFramesBeforeRemoval = 32;
 
+namespace {
+
+struct PendingImageDownload {
+    VAddr address;
+    u8* data;
+    StreamBuffer* buffer;
+    u64 offset;
+    u32 size;
+};
+
+enum class ImageDownloadResult {
+    Skipped,
+    Queued,
+    BufferBusy,
+};
+
+ImageDownloadResult QueueImageDownload(Image& image, StreamBuffer& download_buffer,
+                                       Vulkan::Scheduler& scheduler, bool allow_wait,
+                                       PendingImageDownload& pending) {
+    if (False(image.flags & ImageFlagBits::GpuModified)) {
+        return ImageDownloadResult::Skipped;
+    }
+
+    const u32 download_size = image.info.pitch * image.info.size.height * image.info.size.depth *
+                              image.info.resources.layers * (image.info.num_bits / 8);
+    ASSERT(download_size <= image.info.guest_size);
+    const auto [download, offset] = download_buffer.Map(download_size, 0, allow_wait);
+    if (download == nullptr) {
+        return ImageDownloadResult::BufferBusy;
+    }
+    download_buffer.Commit();
+
+    const vk::BufferImageCopy image_download = {
+        .bufferOffset = offset,
+        .bufferRowLength = image.info.pitch,
+        .bufferImageHeight = image.info.size.height,
+        .imageSubresource =
+            {
+                .aspectMask = image.info.props.is_depth ? vk::ImageAspectFlagBits::eDepth
+                                                        : vk::ImageAspectFlagBits::eColor,
+                .mipLevel = 0,
+                .baseArrayLayer = 0,
+                .layerCount = image.info.resources.layers,
+            },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {image.info.size.width, image.info.size.height, image.info.size.depth},
+    };
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
+    cmdbuf.copyImageToBuffer(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
+                             download_buffer.Handle(), image_download);
+    pending = {
+        .address = image.info.guest_address,
+        .data = download,
+        .buffer = &download_buffer,
+        .offset = offset,
+        .size = download_size,
+    };
+    return ImageDownloadResult::Queued;
+}
+
+void CompleteImageDownloads(std::span<const PendingImageDownload> downloads) {
+    auto* memory = Core::Memory::Instance();
+    for (const auto& download : downloads) {
+        download.buffer->InvalidateMappedRange(download.offset, download.size);
+        memory->TryWriteBacking(std::bit_cast<u8*>(download.address), download.data, download.size);
+    }
+}
+
+} // namespace
+
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                            AmdGpu::Liverpool* liverpool_, BufferCache& buffer_cache_,
                            PageManager& tracker_)
@@ -62,54 +134,54 @@ TextureCache::~TextureCache() = default;
 
 void TextureCache::ProcessDownloadImages() {
     std::unique_lock lk{download_images_mutex};
+    auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
+    std::vector<PendingImageDownload> pending_downloads;
+    const auto finish_pending = [&] {
+        if (pending_downloads.empty()) {
+            return;
+        }
+        scheduler.Finish();
+        CompleteImageDownloads(pending_downloads);
+        pending_downloads.clear();
+    };
+
     for (const ImageId image_id : download_images) {
-        DownloadImageMemory(image_id, true);
+        PendingImageDownload pending{};
+        auto result =
+            QueueImageDownload(slot_images[image_id], download_buffer, scheduler, false, pending);
+        if (result == ImageDownloadResult::BufferBusy) {
+            // Submit before a stream-buffer wrap can overlap downloads recorded in this batch.
+            finish_pending();
+            result = QueueImageDownload(slot_images[image_id], download_buffer, scheduler, true,
+                                        pending);
+            ASSERT_MSG(result != ImageDownloadResult::BufferBusy,
+                       "Image download exceeds the stream buffer capacity");
+        }
+        if (result == ImageDownloadResult::Queued) {
+            pending_downloads.push_back(pending);
+        }
     }
+    finish_pending();
     download_images.clear();
 }
 
 void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
     Image& image = slot_images[image_id];
-    if (False(image.flags & ImageFlagBits::GpuModified)) {
+    auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
+    PendingImageDownload pending{};
+    const auto result = QueueImageDownload(image, download_buffer, scheduler, true, pending);
+    if (result == ImageDownloadResult::Skipped) {
         return;
     }
-    auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
-    const u32 download_size = image.info.pitch * image.info.size.height * image.info.size.depth *
-                              image.info.resources.layers * (image.info.num_bits / 8);
-    ASSERT(download_size <= image.info.guest_size);
-    const auto [download, offset] = download_buffer.Map(download_size);
-    download_buffer.Commit();
-    const vk::BufferImageCopy image_download = {
-        .bufferOffset = offset,
-        .bufferRowLength = image.info.pitch,
-        .bufferImageHeight = image.info.size.height,
-        .imageSubresource =
-            {
-                .aspectMask = image.info.props.is_depth ? vk::ImageAspectFlagBits::eDepth
-                                                        : vk::ImageAspectFlagBits::eColor,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = image.info.resources.layers,
-            },
-        .imageOffset = {0, 0, 0},
-        .imageExtent = {image.info.size.width, image.info.size.height, image.info.size.depth},
-    };
-    scheduler.EndRendering();
-    const auto cmdbuf = scheduler.CommandBuffer();
-    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-    cmdbuf.copyImageToBuffer(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
-                             download_buffer.Handle(), image_download);
+    ASSERT_MSG(result == ImageDownloadResult::Queued,
+               "Image download exceeds the stream buffer capacity");
 
     if (sync) {
         scheduler.Finish();
-        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(image.info.guest_address),
-                                                  download, download_size);
+        CompleteImageDownloads(std::span{&pending, 1});
     } else {
         scheduler.DeferPriorityOperation(
-            [this, device_addr = image.info.guest_address, download, download_size] {
-                Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
-                                                          download_size);
-            });
+            [pending] { CompleteImageDownloads(std::span{&pending, 1}); });
     }
 }
 

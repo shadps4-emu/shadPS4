@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <span>
+
 #include "common/recursive_lock.h"
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -84,6 +86,9 @@ public:
     }
 
 private:
+    bool InvalidateCpuWrite(VAddr address, u64 size);
+    void InvalidateDeferredCpuWrites(std::span<const VAddr> addresses);
+
     void PrepareRenderState(const GraphicsPipeline* pipeline);
     RenderState BeginRendering(const GraphicsPipeline* pipeline);
     void Resolve();

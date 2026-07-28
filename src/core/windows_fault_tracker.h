@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <optional>
+#include <span>
 #include "common/types.h"
 
 namespace Core::WindowsFaultTracker {
@@ -34,14 +35,23 @@ std::optional<int> Bootstrap(int argc, char* argv[]);
 bool IsEnabled() noexcept;
 
 /**
- * Installs the debuggee-side fault callback. The monitor redirects a faulting thread to an
- * alternate-stack trampoline before Windows exception dispatch, so the callback runs on the
- * original thread without touching its guest stack.
+ * Installs the debuggee-side fault callbacks. Read and mixed-access faults are redirected to an
+ * alternate-stack trampoline before Windows exception dispatch. Write-only faults can instead be
+ * made writable by the monitor and deferred until the GPU thread consumes guest memory. Neither
+ * path writes to the guest stack.
  */
-void InstallFaultHandler(std::function<bool(VAddr, u64, MemoryAccess)> callback);
+void InstallFaultHandler(std::function<bool(VAddr, u64, MemoryAccess)> callback,
+                         std::function<void(std::span<const VAddr>)> deferred_write_callback,
+                         u64 write_granularity);
 
 /// Removes the callback before its target is destroyed.
 void RemoveFaultHandler();
+
+/// Applies write-only faults deferred by the monitor before GPU commands consume guest memory.
+void DrainPendingWrites();
+
+/// Returns whether the monitor has deferred writes awaiting GPU-thread invalidation.
+bool HasPendingWrites() noexcept;
 
 /**
  * Routes first-chance illegal-instruction exceptions through the alternate-stack trampoline before

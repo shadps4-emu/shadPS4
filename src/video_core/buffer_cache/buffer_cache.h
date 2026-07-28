@@ -166,6 +166,32 @@ public:
     void NotifyCpuWriteFault(VAddr fault_address) noexcept;
 
 private:
+    enum class BufferDownloadResult {
+        Skipped,
+        Queued,
+        BufferBusy,
+    };
+
+    struct PendingBufferDownload {
+        boost::container::small_vector<vk::BufferCopy, 1> copies;
+        Buffer* download_buffer{};
+        u64 download_offset{};
+        u64 download_size{};
+        VAddr buffer_address{};
+        VAddr downloaded_address{};
+        u64 downloaded_size{};
+        VAddr requested_address{};
+        u64 requested_size{};
+        bool is_write{};
+    };
+
+    struct ReadbackCandidate {
+        VAddr range_address{};
+        VAddr fault_address{};
+        u64 last_fault{};
+        u32 fault_count{};
+    };
+
     template <typename Func>
     void ForEachBufferInRange(VAddr device_addr, u64 size, Func&& func) {
         buffer_ranges.ForEachInRange(device_addr, size,
@@ -181,6 +207,16 @@ private:
 
     template <bool async>
     void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write);
+
+    BufferDownloadResult QueueBufferDownload(Buffer& buffer, VAddr device_addr, u64 size,
+                                             bool is_write, bool coalesce, bool allow_wait,
+                                             PendingBufferDownload& pending);
+
+    void CompleteBufferDownload(PendingBufferDownload& pending);
+
+    void DownloadBufferMemoryBatch(Buffer& buffer, VAddr device_addr, u64 size, bool is_write);
+
+    void RecordReadbackFault(VAddr fault_address);
 
     [[nodiscard]] OverlapResult ResolveOverlaps(VAddr device_addr, u32 wanted_size);
 
@@ -231,6 +267,8 @@ private:
     RangeSet gpu_modified_ranges;
     SplitRangeMap<BufferId> buffer_ranges;
     PageTable page_table;
+    std::vector<ReadbackCandidate> readback_candidates;
+    u64 readback_fault_sequence{};
 };
 
 } // namespace VideoCore

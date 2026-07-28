@@ -22,6 +22,10 @@ static constexpr size_t DownloadBufferSize = 32_MB;
 static constexpr size_t UboStreamBufferSize = 64_MB;
 static constexpr size_t DeviceBufferSize = 128_MB;
 static constexpr size_t ReadbackCoalesceSize = 256_KB;
+static constexpr size_t ReadbackCandidateCapacity = 32;
+static constexpr size_t ReadbackBatchCapacity = 8;
+static constexpr u64 ReadbackCandidateLifetime = 128;
+static constexpr u32 ReadbackPromotionThreshold = 2;
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
@@ -94,15 +98,18 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write) {
     liverpool->SendCommand<true>([this, device_addr, size, is_write] {
         Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
-        DownloadBufferMemory<false>(buffer, device_addr, size, is_write);
+        DownloadBufferMemoryBatch(buffer, device_addr, size, is_write);
     });
 }
 
-template <bool async>
-void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write) {
+BufferCache::BufferDownloadResult BufferCache::QueueBufferDownload(Buffer& buffer,
+                                                                   VAddr device_addr, u64 size,
+                                                                   bool is_write, bool coalesce,
+                                                                   bool allow_wait,
+                                                                   PendingBufferDownload& pending) {
     const VAddr requested_addr = device_addr;
     const u64 requested_size = size;
-    if constexpr (!async) {
+    if (coalesce) {
         // Amortize the mandatory GPU wait while retaining page-precise dirty tracking.
         const VAddr buffer_addr = buffer.CpuAddr();
         const VAddr buffer_end = buffer_addr + buffer.SizeBytes();
@@ -132,41 +139,174 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
                 total_size_bytes += (new_size + align - 1) & mask;
             };
             gpu_modified_ranges.ForEachInRange(device_addr_out, range_size, add_download);
-            gpu_modified_ranges.Subtract(device_addr_out, range_size);
         });
     if (total_size_bytes == 0) {
-        return;
+        return BufferDownloadResult::Skipped;
     }
-    const auto [download, offset] = download_buffer.Map(total_size_bytes);
+
+    const auto [download, offset] = download_buffer.Map(total_size_bytes, 0, allow_wait);
+    if (download == nullptr) {
+        return BufferDownloadResult::BufferBusy;
+    }
+    download_buffer.Commit();
+
     for (auto& copy : copies) {
         // Modify copies to have the staging offset in mind
         copy.dstOffset += offset;
+        gpu_modified_ranges.Subtract(buffer.CpuAddr() + copy.srcOffset, copy.size);
     }
-    download_buffer.Commit();
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyBuffer(buffer.buffer, download_buffer.Handle(), copies);
-    const VAddr buffer_addr = buffer.CpuAddr();
-    auto write_data = [this, copies = std::move(copies), download, offset, buffer_addr, device_addr,
-                       size, requested_addr, requested_size, is_write] {
-        auto* memory = Core::Memory::Instance();
-        for (const auto& copy : copies) {
-            const VAddr copy_device_addr = buffer_addr + copy.srcOffset;
-            const u64 dst_offset = copy.dstOffset - offset;
-            memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
-                                    copy.size);
-        }
-        memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
-        if (is_write) {
-            memory_tracker->MarkRegionAsCpuModified(requested_addr, requested_size);
-        }
+
+    pending = {
+        .copies = std::move(copies),
+        .download_buffer = &download_buffer,
+        .download_offset = offset,
+        .download_size = total_size_bytes,
+        .buffer_address = buffer.CpuAddr(),
+        .downloaded_address = device_addr,
+        .downloaded_size = size,
+        .requested_address = requested_addr,
+        .requested_size = requested_size,
+        .is_write = is_write,
     };
+    return BufferDownloadResult::Queued;
+}
+
+void BufferCache::CompleteBufferDownload(PendingBufferDownload& pending) {
+    pending.download_buffer->InvalidateMappedRange(pending.download_offset, pending.download_size);
+    for (const auto& copy : pending.copies) {
+        const VAddr copy_device_addr = pending.buffer_address + copy.srcOffset;
+        memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr),
+                                pending.download_buffer->mapped_data.data() + copy.dstOffset,
+                                copy.size);
+    }
+    memory_tracker->UnmarkRegionAsGpuModified(pending.downloaded_address, pending.downloaded_size);
+    if (pending.is_write) {
+        memory_tracker->MarkRegionAsCpuModified(pending.requested_address, pending.requested_size);
+    }
+}
+
+template <bool async>
+void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write) {
+    PendingBufferDownload pending;
+    const auto result =
+        QueueBufferDownload(buffer, device_addr, size, is_write, !async, true, pending);
+    if (result == BufferDownloadResult::Skipped) {
+        return;
+    }
+    ASSERT(result == BufferDownloadResult::Queued);
     if constexpr (async) {
-        scheduler.DeferOperation(std::move(write_data));
+        scheduler.DeferOperation(
+            [this, pending = std::move(pending)]() mutable { CompleteBufferDownload(pending); });
     } else {
         scheduler.Finish();
-        write_data();
+        CompleteBufferDownload(pending);
     }
+}
+
+void BufferCache::RecordReadbackFault(VAddr fault_address) {
+    ++readback_fault_sequence;
+    const VAddr range_address = Common::AlignDown(fault_address, ReadbackCoalesceSize);
+    const auto candidate =
+        std::ranges::find(readback_candidates, range_address, &ReadbackCandidate::range_address);
+    if (candidate != readback_candidates.end()) {
+        candidate->fault_address = fault_address;
+        candidate->last_fault = readback_fault_sequence;
+        candidate->fault_count =
+            std::min(candidate->fault_count + 1, std::numeric_limits<u32>::max());
+        return;
+    }
+
+    ReadbackCandidate new_candidate{
+        .range_address = range_address,
+        .fault_address = fault_address,
+        .last_fault = readback_fault_sequence,
+        .fault_count = 1,
+    };
+    if (readback_candidates.size() < ReadbackCandidateCapacity) {
+        readback_candidates.push_back(new_candidate);
+        return;
+    }
+
+    const auto oldest =
+        std::ranges::min_element(readback_candidates, {}, &ReadbackCandidate::last_fault);
+    *oldest = new_candidate;
+}
+
+void BufferCache::DownloadBufferMemoryBatch(Buffer& buffer, VAddr device_addr, u64 size,
+                                            bool is_write) {
+    if (!is_write) {
+        RecordReadbackFault(device_addr);
+    }
+
+    std::vector<PendingBufferDownload> pending_downloads;
+    pending_downloads.reserve(ReadbackBatchCapacity);
+    const auto finish_pending = [&](bool force) {
+        if (pending_downloads.empty() && !force) {
+            return;
+        }
+        scheduler.Finish();
+        for (auto& pending : pending_downloads) {
+            CompleteBufferDownload(pending);
+        }
+        pending_downloads.clear();
+        scheduler.PopPendingOperations();
+    };
+    const auto queue_download = [&](Buffer& target_buffer, VAddr address, u64 download_size,
+                                    bool write) {
+        PendingBufferDownload pending;
+        auto result =
+            QueueBufferDownload(target_buffer, address, download_size, write, true, false, pending);
+        if (result == BufferDownloadResult::BufferBusy) {
+            // Preserve mapped download data before the stream buffer wraps over it.
+            finish_pending(true);
+            result = QueueBufferDownload(target_buffer, address, download_size, write, true, true,
+                                         pending);
+            ASSERT(result != BufferDownloadResult::BufferBusy);
+        }
+        if (result == BufferDownloadResult::Queued) {
+            pending_downloads.push_back(std::move(pending));
+        }
+        return result;
+    };
+
+    queue_download(buffer, device_addr, size, is_write);
+
+    std::vector<const ReadbackCandidate*> candidates;
+    candidates.reserve(readback_candidates.size());
+    for (const auto& candidate : readback_candidates) {
+        if (candidate.fault_count < ReadbackPromotionThreshold ||
+            readback_fault_sequence - candidate.last_fault > ReadbackCandidateLifetime ||
+            candidate.range_address == Common::AlignDown(device_addr, ReadbackCoalesceSize)) {
+            continue;
+        }
+        candidates.push_back(&candidate);
+    }
+    std::ranges::sort(candidates,
+                      [](const ReadbackCandidate* left, const ReadbackCandidate* right) {
+                          if (left->fault_count != right->fault_count) {
+                              return left->fault_count > right->fault_count;
+                          }
+                          return left->last_fault > right->last_fault;
+                      });
+
+    for (const ReadbackCandidate* candidate : candidates) {
+        if (pending_downloads.size() == ReadbackBatchCapacity ||
+            !memory_tracker->IsRegionGpuModified(candidate->fault_address, sizeof(u64))) {
+            continue;
+        }
+        const BufferId buffer_id =
+            page_table[candidate->fault_address >> CACHING_PAGEBITS].buffer_id;
+        if (IsBufferInvalid(buffer_id)) {
+            continue;
+        }
+        Buffer& candidate_buffer = slot_buffers[buffer_id];
+        queue_download(candidate_buffer, candidate->fault_address, sizeof(u64), false);
+    }
+
+    finish_pending(false);
 }
 
 void BufferCache::BindVertexBuffers(

@@ -47,20 +47,12 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
     Core::WindowsFaultTracker::InstallFaultHandler(
         [this](VAddr address, u64 size, Core::WindowsFaultTracker::MemoryAccess access) {
             if (access == Core::WindowsFaultTracker::MemoryAccess::Write) {
-                constexpr u64 InvalidationGranularity = VideoCore::BufferCache::CACHING_PAGESIZE;
-                const VAddr aligned_address = address & ~(InvalidationGranularity - 1);
-                if (InvalidateMemory(aligned_address, InvalidationGranularity)) {
-                    buffer_cache.NotifyCpuWriteFault(address);
-                    return true;
-                }
-                const bool invalidated = InvalidateMemory(address, size);
-                if (invalidated) {
-                    buffer_cache.NotifyCpuWriteFault(address);
-                }
-                return invalidated;
+                return InvalidateCpuWrite(address, size);
             }
             return ReadMemory(address, size);
-        });
+        },
+        [this](std::span<const VAddr> addresses) { InvalidateDeferredCpuWrites(addresses); },
+        VideoCore::BufferCache::CACHING_PAGESIZE);
     adaptive_cpu_tracking = Core::WindowsFaultTracker::IsEnabled();
     if (adaptive_cpu_tracking) {
         buffer_cache.EnableAdaptiveCpuTracking();
@@ -69,6 +61,46 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
 
 Rasterizer::~Rasterizer() {
     Core::WindowsFaultTracker::RemoveFaultHandler();
+}
+
+bool Rasterizer::InvalidateCpuWrite(VAddr address, u64 size) {
+    constexpr u64 InvalidationGranularity = VideoCore::BufferCache::CACHING_PAGESIZE;
+    const VAddr aligned_address = address & ~(InvalidationGranularity - 1);
+    if (InvalidateMemory(aligned_address, InvalidationGranularity)) {
+        buffer_cache.NotifyCpuWriteFault(address);
+        return true;
+    }
+    const bool invalidated = InvalidateMemory(address, size);
+    if (invalidated) {
+        buffer_cache.NotifyCpuWriteFault(address);
+    }
+    return invalidated;
+}
+
+void Rasterizer::InvalidateDeferredCpuWrites(std::span<const VAddr> addresses) {
+    constexpr u64 InvalidationGranularity = VideoCore::BufferCache::CACHING_PAGESIZE;
+    for (size_t index = 0; index < addresses.size();) {
+        const size_t range_begin_index = index;
+        const VAddr range_address = addresses[index] & ~(InvalidationGranularity - 1);
+        VAddr range_end = range_address + InvalidationGranularity;
+        ++index;
+        while (index < addresses.size()) {
+            const VAddr next_address = addresses[index] & ~(InvalidationGranularity - 1);
+            if (next_address > range_end) {
+                break;
+            }
+            range_end = std::max(range_end, next_address + InvalidationGranularity);
+            ++index;
+        }
+
+        const bool invalidated = InvalidateMemory(range_address, range_end - range_address);
+        for (size_t fault_index = range_begin_index; fault_index < index; ++fault_index) {
+            const VAddr fault_address = addresses[fault_index];
+            if (invalidated || InvalidateMemory(fault_address, sizeof(u64))) {
+                buffer_cache.NotifyCpuWriteFault(fault_address);
+            }
+        }
+    }
 }
 
 void Rasterizer::CpSync() {
