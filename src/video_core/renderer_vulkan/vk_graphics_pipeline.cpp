@@ -305,7 +305,8 @@ GraphicsPipeline::GraphicsPipeline(
 
         const auto color_scaled_min_max =
             (color_blend == vk::BlendOp::eMin || color_blend == vk::BlendOp::eMax) &&
-            (src_color != vk::BlendFactor::eOne || dst_color != vk::BlendFactor::eOne);
+            (src_color != vk::BlendFactor::eOne || dst_color != vk::BlendFactor::eOne) &&
+            !key.color_buffers[i].blend_self_scale;
         const auto alpha_scaled_min_max =
             (alpha_blend == vk::BlendOp::eMin || alpha_blend == vk::BlendOp::eMax) &&
             (src_alpha != vk::BlendFactor::eOne || dst_alpha != vk::BlendFactor::eOne);
@@ -329,6 +330,13 @@ GraphicsPipeline::GraphicsPipeline(
                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
                     : key.write_masks[i],
         };
+
+        // The shader squares its color output for this attachment (see PsColorBuffer), so the
+        // factors must not scale the operands again.
+        if (key.color_buffers[i].blend_self_scale) {
+            attachments[i].srcColorBlendFactor = vk::BlendFactor::eOne;
+            attachments[i].dstColorBlendFactor = vk::BlendFactor::eOne;
+        }
 
         // On GCN GPU there is an additional mask which allows to control color components exported
         // from a pixel shader. A situation possible, when the game may mask out the alpha channel,
