@@ -106,11 +106,20 @@ struct OrbisNpCreateAsyncRequestParameter {
 
 void RegisterNpCallback(std::string key, std::function<void()> cb);
 void DeregisterNpCallback(std::string key);
+void NotifyNpStateFromUserServiceEvent(Libraries::UserService::OrbisUserServiceEventType event_type,
+                                       Libraries::UserService::OrbisUserServiceUserId user_id);
 
 s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId user_id,
                               OrbisNpId* np_id);
 s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId user_id,
                                   OrbisNpOnlineId* online_id);
-
+s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
+                                           Libraries::UserService::OrbisUserServiceUserId user_id);
+s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
+                                          Libraries::UserService::OrbisUserServiceUserId user_id,
+                                          OrbisNpLanguageCode* language);
+s32 PS4_SYSV_ABI
+sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServiceUserId user_id,
+                             s8* age, OrbisNpParentalControlInfo* info);
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpManager

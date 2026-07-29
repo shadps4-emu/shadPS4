@@ -76,7 +76,7 @@ s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset
     if (handle != g_internal_handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+    if (g_firmware_version >= Common::ElfInfo::FW_450) {
         // Due to some faulty in-library checks, a missing headset results in this error
         // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
@@ -128,7 +128,7 @@ s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle(s32 handle, OrbisHmdDeviceIn
     if (handle != g_internal_handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+    if (g_firmware_version >= Common::ElfInfo::FW_450) {
         // Due to some faulty in-library checks, a missing headset results in this error
         // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
@@ -154,7 +154,7 @@ s32 PS4_SYSV_ABI sceHmdGetFieldOfView(s32 handle, OrbisHmdFieldOfView* field_of_
     if (handle != g_internal_handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+    if (g_firmware_version >= Common::ElfInfo::FW_450) {
         // Due to some faulty in-library checks, a missing headset results in this error
         // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
@@ -182,7 +182,7 @@ s32 PS4_SYSV_ABI sceHmdGetInertialSensorData(s32 handle, void* data, s32 unk) {
     if (handle != g_internal_handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+    if (g_firmware_version >= Common::ElfInfo::FW_450) {
         // Due to some faulty in-library checks, a missing headset results in this error
         // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
@@ -799,7 +799,7 @@ s32 PS4_SYSV_ABI Func_69383B2B4E3AEABF(s32 handle, void* data, s32 unk) {
     if (handle != g_internal_handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+    if (g_firmware_version >= Common::ElfInfo::FW_450) {
         // Due to some faulty in-library checks, a missing headset results in this error
         // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;

@@ -6,14 +6,9 @@
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/avplayer/avplayer_state.h"
 
-#include <mutex>
-
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-}
-
 #include <memory>
+#include <mutex>
+#include <string_view>
 
 namespace Libraries::AvPlayer {
 

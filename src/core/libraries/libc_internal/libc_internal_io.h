@@ -94,5 +94,4 @@ u64 PS4_SYSV_ABI internal_fread(char* ptr, u64 size, u64 nmemb, OrbisFILE* file)
 s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* file);
 
 void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);
-void ForceRegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::LibcInternal

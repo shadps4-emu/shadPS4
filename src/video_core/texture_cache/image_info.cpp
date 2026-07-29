@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -6,6 +6,7 @@
 #include "core/libraries/videoout/buffer.h"
 #include "shader_recompiler/resource.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
+#include "video_core/texture_cache/host_compatibility.h"
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/tile.h"
 
@@ -146,8 +147,9 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
 }
 
 bool ImageInfo::IsCompatible(const ImageInfo& info) const {
-    return (pixel_format == info.pixel_format && num_samples == info.num_samples &&
-            num_bits == info.num_bits);
+    return (IsVulkanFormatCompatible(pixel_format, info.pixel_format) ||
+            IsVulkanFormatCompatible(info.pixel_format, pixel_format)) &&
+           num_samples == info.num_samples && num_bits == info.num_bits;
 }
 
 void ImageInfo::UpdateSize() {
@@ -219,10 +221,13 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
         return -1;
     }
 
-    // Currently we expect only on level to be copied.
+    // Currently we expect only one level to be copied.
     if (resources.levels != 1) {
         return -1;
     }
+
+    const auto info_dim = info.props.is_block ? 2 : 0;
+    const auto this_dim = props.is_block ? 2 : 0;
 
     // Find mip
     auto mip = -1;
@@ -232,7 +237,8 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
         const VAddr mip_end = mip_base + mip_size;
         const u32 slice_size = mip_size / info.resources.layers;
         if (guest_address >= mip_base && guest_address < mip_end &&
-            (guest_address - mip_base) % slice_size == 0) {
+            (guest_address - mip_base) % slice_size == 0 &&
+            (pitch >> this_dim) == (mip_pitch >> info_dim)) {
             mip = m;
             break;
         }
@@ -242,9 +248,12 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
         return -1;
     }
 
-    const auto mip_w = std::max(info.size.width >> mip, 1u);
-    const auto mip_h = std::max(info.size.height >> mip, 1u);
-    if ((size.width != mip_w) || (size.height != mip_h)) {
+    // 2D block dimensions of both images should be the same.
+    const auto mip_w = std::max(info.size.width >> (mip + info_dim), 1u);
+    const auto mip_h = std::max(info.size.height >> (mip + info_dim), 1u);
+    const auto this_w = std::max(size.width >> this_dim, 1u);
+    const auto this_h = std::max(size.height >> this_dim, 1u);
+    if ((this_w != mip_w) || (this_h != mip_h)) {
         return -1;
     }
 
@@ -273,10 +282,17 @@ s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
         return -1;
     }
 
-    // 2D dimensions of both images should be the same.
-    const auto mip_w = std::max(info.size.width >> mip, 1u);
-    const auto mip_h = std::max(info.size.height >> mip, 1u);
-    if ((size.width != mip_w) || (size.height != mip_h)) {
+    // 2D block dimensions of both images should be the same.
+    const auto info_dim = info.props.is_block ? 2 : 0;
+    const auto mip_w = std::max(info.size.width >> (mip + info_dim), 1u);
+    const auto mip_h = std::max(info.size.height >> (mip + info_dim), 1u);
+    const auto mip_p = std::max(info.mips_layout[mip].pitch >> info_dim, 1u);
+
+    const auto this_dim = props.is_block ? 2 : 0;
+    const auto this_w = std::max(size.width >> this_dim, 1u);
+    const auto this_h = std::max(size.height >> this_dim, 1u);
+    const auto this_p = std::max(pitch >> this_dim, 1u);
+    if ((this_w != mip_w) || (this_h != mip_h) || (this_p != mip_p)) {
         return -1;
     }
 

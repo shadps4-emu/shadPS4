@@ -22,7 +22,11 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
+#if defined(__FreeBSD__)
+#include <machine/npx.h>
+#endif
 #include <pthread.h>
+#include <sys/ucontext.h>
 #endif
 
 using namespace Xbyak::util;
@@ -89,11 +93,8 @@ static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
            dst_op.reg.value <= ZYDIS_REGISTER_R15;
 }
 
-static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* operands,
-                              Xbyak::CodeGenerator& c) {
-    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
-
 #if defined(_WIN32)
+static void RetrieveTcbPointer(Xbyak::Reg dst, Xbyak::CodeGenerator& c) {
     // The following logic is based on the Kernel32.dll asm of TlsGetValue
     static constexpr u32 TlsSlotsOffset = 0x1480;
     static constexpr u32 TlsExpansionSlotsOffset = 0x1780;
@@ -114,12 +115,85 @@ static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* op
         // Load the pointer to our buffer.
         c.mov(dst, qword[dst + tls_index * sizeof(LPVOID)]);
     }
+}
+#endif
+
+static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* operands,
+                              Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+
+#if defined(_WIN32)
+    RetrieveTcbPointer(dst, c);
 #else
     const auto src = ZydisToXbyakMemoryOperand(operands[1]);
 
     // Replace fs read with gs read.
     c.putSeg(gs);
     c.mov(dst, src);
+#endif
+}
+
+static void GenerateTcbCompare(void* /* address */, const ZydisDecodedOperand* operands,
+                               Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+
+#if defined(_WIN32)
+    // Prepare a scratch register. Use rax where possible, rbx if rax is in use.
+    const Xbyak::Reg64 scratch = operands[0].reg.value == ZYDIS_REGISTER_RAX ? rbx : rax;
+
+    // Set rsp to before red zone and save scratch register
+    c.lea(rsp, ptr[rsp - 128]);
+    c.pushfq();
+    c.push(scratch);
+
+    // Retrieve value from TCB and store it in the scratch register
+    RetrieveTcbPointer(scratch, c);
+
+    // Perform compare op
+    c.cmp(dst, scratch);
+
+    // Restore registers
+    c.pop(scratch);
+    c.popfq();
+    c.lea(rsp, ptr[rsp + 128]);
+#else
+    const auto src = ZydisToXbyakMemoryOperand(operands[1]);
+
+    // Replace fs compare with gs compare.
+    c.putSeg(gs);
+    c.cmp(dst, src);
+#endif
+}
+
+static void GenerateTcbExclusiveOr(void* /* address */, const ZydisDecodedOperand* operands,
+                                   Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+
+#if defined(_WIN32)
+    // Prepare a scratch register. Use rax where possible, rbx if rax is in use.
+    const Xbyak::Reg64 scratch = operands[0].reg.value == ZYDIS_REGISTER_RAX ? rbx : rax;
+
+    // Set rsp to before red zone and save scratch register
+    c.lea(rsp, ptr[rsp - 128]);
+    c.pushfq();
+    c.push(scratch);
+
+    // Retrieve value from TCB and store it in the scratch register
+    RetrieveTcbPointer(scratch, c);
+
+    // Perform xor
+    c.xor_(dst, scratch);
+
+    // Restore registers
+    c.pop(scratch);
+    c.popfq();
+    c.lea(rsp, ptr[rsp + 128]);
+#else
+    const auto src = ZydisToXbyakMemoryOperand(operands[1]);
+
+    // Replace fs xor with gs xor.
+    c.putSeg(gs);
+    c.xor_(dst, src);
 #endif
 }
 
@@ -465,6 +539,12 @@ struct PatchInfo {
     bool trampoline;
 };
 
+#if defined(_WIN32)
+static const bool need_tcb_trampoline = true;
+#else
+static const bool need_tcb_trampoline = false;
+#endif
+
 static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches = {
     // SSE4a
     {ZYDIS_MNEMONIC_EXTRQ, {{FilterNoSSE4a, GenerateEXTRQ, true}}},
@@ -474,17 +554,16 @@ static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches =
 
 #if !defined(__APPLE__)
     // FS segment patches
-    // These first two patches are for accesses to the stack canary, fs:[0x28]
-    {ZYDIS_MNEMONIC_XOR, {{FilterStackCheck, GenerateStackCheck, false}}},
+    // For most of these, Windows needs a trampoline while other platforms do not.
+    {ZYDIS_MNEMONIC_XOR,
+     // This is for stack checks emitted as xor reg, fs:[0x28]
+     {{FilterStackCheck, GenerateStackCheck, false},
+      {FilterTcbAccess, GenerateTcbExclusiveOr, need_tcb_trampoline}}},
     {ZYDIS_MNEMONIC_MOV,
+     // This is for getting the stack canary, emitted as mov reg, fs:[0x28]
      {{FilterStackCheck, GenerateStackCanary, false},
-#if defined(_WIN32)
-      // Windows needs a trampoline for Tcb accesses.
-      {FilterTcbAccess, GenerateTcbAccess, true}
-#else
-      {FilterTcbAccess, GenerateTcbAccess, false}
-#endif
-     }},
+      {FilterTcbAccess, GenerateTcbAccess, need_tcb_trampoline}}},
+    {ZYDIS_MNEMONIC_CMP, {{FilterTcbAccess, GenerateTcbCompare, need_tcb_trampoline}}}
 #endif
 };
 
@@ -590,8 +669,6 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
     return std::make_pair(false, instruction.length);
 }
 
-#if defined(ARCH_X86_64)
-
 static bool Is4ByteExtrqOrInsertq(void* code_address) {
     u8* bytes = (u8*)code_address;
     if (bytes[0] == 0x66 && bytes[1] == 0x0F && bytes[2] == 0x79) {
@@ -601,6 +678,67 @@ static bool Is4ByteExtrqOrInsertq(void* code_address) {
     } else {
         return false;
     }
+}
+
+static void* GetXmmPointer(void* ctx, u8 index) {
+#if defined(_WIN32)
+#define CASE(index)                                                                                \
+    case index:                                                                                    \
+        return (void*)(&((EXCEPTION_POINTERS*)ctx)->ContextRecord->Xmm##index.Low)
+#elif defined(__APPLE__)
+#define CASE(index)                                                                                \
+    case index:                                                                                    \
+        return (void*)(&((ucontext_t*)ctx)->uc_mcontext->__fs.__fpu_xmm##index);
+#elif defined(__FreeBSD__)
+    // In mc_fpstate
+    // See <machine/npx.h> for the internals of mc_fpstate[].
+#define CASE(index)                                                                                \
+    case index: {                                                                                  \
+        auto& mctx = ((ucontext_t*)ctx)->uc_mcontext;                                              \
+        ASSERT(mctx.mc_fpformat == _MC_FPFMT_XMM);                                                 \
+        auto* s_fpu = (struct savefpu*)(&mctx.mc_fpstate[0]);                                      \
+        return (void*)(&(s_fpu->sv_xmm[0]));                                                       \
+    }
+#else
+#define CASE(index)                                                                                \
+    case index:                                                                                    \
+        return (void*)(&((ucontext_t*)ctx)->uc_mcontext.fpregs->_xmm[index].element[0])
+#endif
+    switch (index) {
+        CASE(0);
+        CASE(1);
+        CASE(2);
+        CASE(3);
+        CASE(4);
+        CASE(5);
+        CASE(6);
+        CASE(7);
+        CASE(8);
+        CASE(9);
+        CASE(10);
+        CASE(11);
+        CASE(12);
+        CASE(13);
+        CASE(14);
+        CASE(15);
+    default: {
+        UNREACHABLE_MSG("Invalid XMM register index: {}", index);
+        return nullptr;
+    }
+    }
+#undef CASE
+}
+
+static void IncrementRip(void* ctx, u64 length) {
+#if defined(_WIN32)
+    ((EXCEPTION_POINTERS*)ctx)->ContextRecord->Rip += length;
+#elif defined(__APPLE__)
+    ((ucontext_t*)ctx)->uc_mcontext->__ss.__rip += length;
+#elif defined(__FreeBSD__)
+    ((ucontext_t*)ctx)->uc_mcontext.mc_rip += length;
+#else
+    ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RIP] += length;
+#endif
 }
 
 static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
@@ -644,8 +782,8 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
 
     switch (mnemonic) {
     case ZYDIS_MNEMONIC_EXTRQ: {
-        const auto dst = Common::GetXmmPointer(ctx, dstIndex);
-        const auto src = Common::GetXmmPointer(ctx, srcIndex);
+        const auto dst = GetXmmPointer(ctx, dstIndex);
+        const auto src = GetXmmPointer(ctx, srcIndex);
 
         u64 lowQWordSrc;
         memcpy(&lowQWordSrc, src, sizeof(lowQWordSrc));
@@ -678,13 +816,13 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
         memset((u8*)dst + sizeof(u64), 0, sizeof(u64));
         memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
 
-        Common::IncrementRip(ctx, 4);
+        IncrementRip(ctx, 4);
 
         return true;
     }
     case ZYDIS_MNEMONIC_INSERTQ: {
-        const auto dst = Common::GetXmmPointer(ctx, dstIndex);
-        const auto src = Common::GetXmmPointer(ctx, srcIndex);
+        const auto dst = GetXmmPointer(ctx, dstIndex);
+        const auto src = GetXmmPointer(ctx, srcIndex);
 
         u64 lowQWordSrc, highQWordSrc;
         memcpy(&lowQWordSrc, src, sizeof(lowQWordSrc));
@@ -719,7 +857,7 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
         memset((u8*)dst + sizeof(u64), 0, sizeof(u64));
         memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
 
-        Common::IncrementRip(ctx, 4);
+        IncrementRip(ctx, 4);
 
         return true;
     }
@@ -730,15 +868,6 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
 
     UNREACHABLE();
 }
-#elif defined(ARCH_ARM64)
-// These functions shouldn't be needed for ARM as it will use a JIT so there's no need to patch
-// instructions.
-static bool TryExecuteIllegalInstruction(void*, void*) {
-    return false;
-}
-#else
-#error "Unsupported architecture"
-#endif
 
 static bool TryPatchJit(void* code_address) {
     auto* code = static_cast<u8*>(code_address);
@@ -788,10 +917,16 @@ static bool PatchesIllegalInstructionHandler(void* context) {
             ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
             const auto status =
                 Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
-            LOG_ERROR(Core, "Failed to patch address {:x} -- mnemonic: {}",
-                      reinterpret_cast<u64>(code_address),
-                      ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
-                                           : "Failed to decode");
+            if (ZYAN_SUCCESS(status)) {
+                const auto disassembled = Common::Decoder::Instance()->disassembleInst(
+                    instruction, operands, std::bit_cast<u64>(code_address));
+                LOG_ERROR(Core, "Failed to patch address {:x} -- mnemonic: {}, instruction: {}",
+                          reinterpret_cast<u64>(code_address),
+                          ZydisMnemonicGetString(instruction.mnemonic), disassembled);
+            } else {
+                LOG_ERROR(Core, "Failed to patch address {:x} -- mnemonic: (failed to decode)",
+                          reinterpret_cast<u64>(code_address));
+            }
             return false;
         }
     }

@@ -269,7 +269,10 @@ void ShaderList::Draw() {
             snprintf(name, sizeof(name), "%s", shader.name.c_str());
         }
         if (ButtonEx(name, {width, 20.0f}, ImGuiButtonFlags_NoHoveredOnFocus)) {
-            open_shaders.emplace_back(i);
+            if (std::find_if(open_shaders.begin(), open_shaders.end(),
+                             [i](auto& v) { return v.index == i; }) == open_shaders.end()) {
+                open_shaders.emplace_back(i);
+            }
         }
         i++;
     }

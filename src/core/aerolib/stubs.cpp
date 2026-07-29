@@ -15,11 +15,7 @@ namespace Core::AeroLib {
 // If it runs out of stubs with name information, it will return
 // a default implementation without function name details
 
-// Up to 512, larger values lead to more resolve stub slots
-// and to longer compile / CI times
-//
-// Must match STUBS_LIST define
-constexpr u32 MAX_STUBS = 2048;
+constexpr u32 MAX_STUBS = 8192;
 
 u64 UnresolvedStub() {
     LOG_ERROR(Core, "Returning zero to {}", __builtin_return_address(0));
@@ -34,38 +30,30 @@ static u64 UnknownStub() {
 static const NidEntry* stub_nids[MAX_STUBS];
 static std::string stub_nids_unknown[MAX_STUBS];
 
-template <int stub_index>
-static u64 CommonStub() {
+static u64 CommonStub(int stub_index, void* addr) {
     auto entry = stub_nids[stub_index];
     if (entry) {
         LOG_ERROR(Core, "Stub: {} (nid: {}) called, returning zero to {}", entry->name, entry->nid,
-                  __builtin_return_address(0));
+                  addr);
     } else {
         LOG_ERROR(Core, "Stub: Unknown (nid: {}) called, returning zero to {}",
-                  stub_nids_unknown[stub_index], __builtin_return_address(0));
+                  stub_nids_unknown[stub_index], addr);
     }
     return 0;
 }
 
+template <int stub_index>
+static u64 CommonStubTemplate() {
+    return CommonStub(stub_index, __builtin_return_address(0));
+}
+
+template <size_t... Is>
+consteval auto MakeStubArray(std::index_sequence<Is...>) {
+    return std::array<u64 (*)(), sizeof...(Is)>{&CommonStubTemplate<Is>...};
+}
+
+constexpr auto stub_handlers = MakeStubArray(std::make_index_sequence<MAX_STUBS>{});
 static u32 UsedStubEntries;
-
-#define XREP_1(x) &CommonStub<x>,
-
-#define XREP_2(x) XREP_1(x) XREP_1(x + 1)
-#define XREP_4(x) XREP_2(x) XREP_2(x + 2)
-#define XREP_8(x) XREP_4(x) XREP_4(x + 4)
-#define XREP_16(x) XREP_8(x) XREP_8(x + 8)
-#define XREP_32(x) XREP_16(x) XREP_16(x + 16)
-#define XREP_64(x) XREP_32(x) XREP_32(x + 32)
-#define XREP_128(x) XREP_64(x) XREP_64(x + 64)
-#define XREP_256(x) XREP_128(x) XREP_128(x + 128)
-#define XREP_512(x) XREP_256(x) XREP_256(x + 256)
-#define XREP_1024(x) XREP_512(x) XREP_512(x + 512)
-#define XREP_2048(x) XREP_1024(x) XREP_1024(x + 1024)
-
-#define STUBS_LIST XREP_2048(0)
-
-static u64 (*stub_handlers[MAX_STUBS])() = {STUBS_LIST};
 
 u64 GetStub(const char* nid) {
     if (UsedStubEntries >= MAX_STUBS) {

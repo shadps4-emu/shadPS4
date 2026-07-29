@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdlib>
+#include "common/elf_info.h"
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/systemservice_error.h"
@@ -15,6 +17,7 @@ namespace Libraries::SystemService {
 bool g_splash_status{true};
 std::queue<OrbisSystemServiceEvent> g_event_queue;
 std::mutex g_event_queue_mutex;
+s32 g_sdk_version{};
 
 bool IsSplashVisible() {
     return EmulatorSettings.IsShowSplash() && g_splash_status;
@@ -1873,10 +1876,20 @@ int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]) 
     LOG_DEBUG(Lib_SystemService, "called");
     auto emu = Common::Singleton<Core::Emulator>::Instance();
     auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    auto hostPath = mnt->GetHostPath(std::string_view(path));
-    if (hostPath.empty()) {
+    // Validate through the mount stack so archive-backed targets resolve.
+    if (!mnt->Exists(std::string_view(path))) {
         LOG_INFO(Lib_SystemService, "Restart called with invalid file '{}', exiting.", path);
         std::quick_exit(0);
+    }
+    std::filesystem::path exec_path;
+    if (auto handle = mnt->Open(std::string_view(path), /*writable=*/false)) {
+        if (auto host = handle->GetHostPath(); host.has_value()) {
+            exec_path = *host;
+        } else {
+            exec_path = std::filesystem::path(std::string_view(path));
+        }
+    } else {
+        exec_path = mnt->GetHostPath(std::string_view(path));
     }
     std::vector<std::string> args;
     if (argv != nullptr) {
@@ -1884,7 +1897,7 @@ int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]) 
             args.push_back(std::string(*ptr));
         }
     }
-    emu->Restart(hostPath, args);
+    emu->Restart(exec_path, args);
     return ORBIS_OK;
 }
 
@@ -1916,9 +1929,26 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
         return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
     }
     switch (param_id) {
-    case OrbisSystemServiceParamId::Lang:
-        *value = EmulatorSettings.GetConsoleLanguage();
+    case OrbisSystemServiceParamId::Lang: {
+        s32 lang = EmulatorSettings.GetConsoleLanguage();
+        if (lang == 0x15 && g_sdk_version < Common::ElfInfo::FW_200) {
+            lang = 0x12;
+        }
+        if (lang == 0x16 && g_sdk_version < Common::ElfInfo::FW_250) {
+            lang = 2;
+        }
+        if ((lang >= 0x17 && lang <= 0x1a) && g_sdk_version < Common::ElfInfo::FW_500) {
+            lang = 0x12;
+        }
+        if ((lang >= 0x1b && lang <= 0x1d) && g_sdk_version < Common::ElfInfo::FW_500) {
+            lang = 1;
+        }
+        if (lang == 0x1e && g_sdk_version < Common::ElfInfo::FW_1000) {
+            lang = 0x12;
+        }
+        *value = lang;
         break;
+    }
     case OrbisSystemServiceParamId::DateFormat:
         *value = u32(OrbisSystemParamDateFormat::FmtDDMMYYYY);
         break;
@@ -1935,7 +1965,8 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
         *value = u32(OrbisSystemParamGameParentalLevel::Off);
         break;
     case OrbisSystemServiceParamId::EnterButtonAssign:
-        *value = u32(OrbisSystemParamEnterButtonAssign::Cross);
+        *value = u32(EmulatorSettings.IsCircleEnter() ? OrbisSystemParamEnterButtonAssign::Circle
+                                                      : OrbisSystemParamEnterButtonAssign::Cross);
         break;
     default:
         LOG_ERROR(Lib_SystemService, "param_id {} unsupported!", u32(param_id));
@@ -2447,6 +2478,9 @@ void PushSystemServiceEvent(const OrbisSystemServiceEvent& event) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    ASSERT_MSG(Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_sdk_version) == 0,
+               "Failed to retrieve SDK version");
+
     LIB_FUNCTION("alZfRdr2RP8", "libSceAppMessaging", 1, "libSceSystemService",
                  sceAppMessagingClearEventFlag);
     LIB_FUNCTION("jKgAUl6cLy0", "libSceAppMessaging", 1, "libSceSystemService",

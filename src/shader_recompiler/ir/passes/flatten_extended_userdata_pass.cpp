@@ -5,6 +5,8 @@
 #include <boost/container/flat_map.hpp>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
+#include "common/arch.h"
+#include "common/decoder.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -19,8 +21,8 @@
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/srt_gvn_table.h"
 #include "shader_recompiler/ir/value.h"
-#include "src/common/arch.h"
-#include "src/common/decoder.h"
+
+#ifdef ARCH_X86_64
 
 using namespace Xbyak::util;
 
@@ -41,7 +43,6 @@ PFN_SrtWalker RegisterWalkerCode(const u8* ptr, size_t size) {
 namespace {
 
 static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t codesize) {
-#ifdef ARCH_X86_64
     using namespace Common::FS;
 
     const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
@@ -64,7 +65,6 @@ static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t code
         file.WriteString(s);
         address += instruction.length;
     }
-#endif
 }
 
 static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
@@ -113,7 +113,8 @@ static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
     // Fill nops
     memset(code_patch + patch_size, 0x90, len - patch_size);
 
-    LOG_DEBUG(Render_Recompiler, "Patched SRT walker at {}", code);
+    LOG_WARNING(Render_Recompiler, "Patched SRT walker at {}, fault address {}", code,
+                fault_address);
 
     return true;
 }
@@ -305,3 +306,23 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
 }
 
 } // namespace Shader::Optimization
+
+#else
+
+namespace Shader {
+
+PFN_SrtWalker RegisterWalkerCode(const u8* ptr, size_t size) {
+    UNREACHABLE_MSG("RegisterWalkerCode unimplemented for target architecture.");
+}
+
+namespace Optimization {
+
+void FlattenExtendedUserdataPass(IR::Program& program) {
+    UNREACHABLE_MSG("FlattenExtendedUserdataPass unimplemented for target architecture.");
+}
+
+} // namespace Optimization
+
+} // namespace Shader
+
+#endif

@@ -8,8 +8,7 @@
 
 namespace Shader {
 struct Profile;
-void InjectClipDistanceAttributes(IR::Program& program, RuntimeInfo& runtime_info,
-                                  const Profile& profile);
+void InjectClipDistanceAttributes(IR::Program& program, RuntimeInfo& runtime_info);
 } // namespace Shader
 
 namespace Shader::Optimization {

@@ -13,6 +13,7 @@ static std::optional<SettingsLayer> settingsLayer = std::nullopt;
 
 SettingsLayer::SettingsLayer() {
     AddLayer(this);
+    settingsWindow.Prepare();
 }
 
 SettingsLayer::~SettingsLayer() {}
@@ -24,7 +25,7 @@ void SettingsLayer::Finish() {
 
 void SettingsLayer::Draw() {
     ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[IMGUI_FONT_SETTINGS_WINDOW]);
-    settingsWindow.DrawSettings(&running);
+    settingsWindow.DrawSettings(&running, nullptr);
     ImGui::PopFont();
 
     if (!running) {
