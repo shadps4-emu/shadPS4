@@ -99,10 +99,17 @@ public:
 
     void RemoveWaiter(Waiter& waiter) {
         m_waiters.remove(&waiter);
+        if (m_deleted && m_waiters.empty()) {
+            m_destroy_cv.notify_one();
+        }
     }
 
     int Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result, u32* ptr_micros) {
         std::unique_lock lock{m_mutex};
+
+        if (m_deleted) {
+            return ORBIS_KERNEL_ERROR_EACCES;
+        }
 
         if (m_thread_mode == ThreadMode::Single && !m_waiters.empty()) {
             return ORBIS_KERNEL_ERROR_EPERM;
@@ -182,11 +189,10 @@ public:
 
         m_bits |= bits;
 
-        for (auto it = m_waiters.begin(); it != m_waiters.end();) {
-            Waiter* waiter = *it;
+        for (auto it : m_waiters) {
+            Waiter* waiter = it;
 
             if (!ConditionMet(*waiter)) {
-                ++it;
                 continue;
             }
 
@@ -195,8 +201,6 @@ public:
 
             waiter->ready = true;
             waiter->cv.notify_one();
-
-            it = m_waiters.erase(it);
         }
     }
 
@@ -218,8 +222,6 @@ public:
             waiter->canceled = true;
             waiter->cv.notify_one();
         }
-
-        m_waiters.clear();
     }
 
 private:
@@ -232,9 +234,9 @@ private:
 
     ThreadMode m_thread_mode;
     QueueMode m_queue_mode;
-    bool m_deleted;
+    bool m_deleted = false;
 
-    u64 m_bits;
+    u64 m_bits = 0;
 };
 
 using OrbisKernelUseconds = u32;
