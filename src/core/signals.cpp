@@ -7,11 +7,9 @@
 #include "common/signal_context.h"
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/signals.h"
-#include "emulator.h"
 
 #ifdef _WIN32
 #include <windows.h>
-static constexpr DWORD MS_VC_EXCEPTION = 0x406D1388;
 #else
 #include <csignal>
 #include <pthread.h>
@@ -34,11 +32,9 @@ namespace Core {
 static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     const auto* signals = Signals::Instance();
     DWORD code = 0;
-    PVOID address = nullptr;
 
     if (pExp != nullptr && pExp->ExceptionRecord != nullptr) {
         code = pExp->ExceptionRecord->ExceptionCode;
-        address = pExp->ExceptionRecord->ExceptionAddress;
     }
 
     bool handled = false;
@@ -48,15 +44,13 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
             pExp, reinterpret_cast<void*>(pExp->ExceptionRecord->ExceptionInformation[1]));
         break;
     case EXCEPTION_ILLEGAL_INSTRUCTION:
+    case EXCEPTION_PRIV_INSTRUCTION:
         handled = signals->DispatchIllegalInstruction(pExp);
         break;
     case DBG_PRINTEXCEPTION_C:
     case DBG_PRINTEXCEPTION_WIDE_C:
         // Used by OutputDebugString functions.
         return EXCEPTION_CONTINUE_EXECUTION;
-    case MS_VC_EXCEPTION:
-        LOG_DEBUG(Debug, "Pass MS_VC_EXCEPTION at {} to handler", address);
-        return EXCEPTION_EXECUTE_HANDLER;
     default:
         break;
     }
@@ -65,12 +59,8 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
         return EXCEPTION_CONTINUE_EXECUTION;
     }
 
-    // Breakpoints almost certainly come from our asserts/unreachables, no need to log it again.
-    if (code != EXCEPTION_BREAKPOINT) {
-        LOG_CRITICAL(Debug, "Unhandled Exception code {:#x} at {}", code, address);
-        Common::Singleton<Core::Emulator>::Instance()->Shutdown();
-    }
-
+    // Vectored handlers run before frame-based SEH and language-runtime handlers. Exceptions that
+    // do not belong to the emulator must continue through normal Windows dispatch.
     return EXCEPTION_CONTINUE_SEARCH;
 }
 

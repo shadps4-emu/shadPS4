@@ -14,13 +14,31 @@ T get(uintptr_t addr) {
     return val;
 }
 
+static size_t GetEncodedSize(u8 encoding) {
+    switch (encoding & DW_EH_PE_format_mask) {
+    case DW_EH_PE_ptr:
+        return sizeof(uintptr_t);
+    case DW_EH_PE_udata2:
+    case DW_EH_PE_sdata2:
+        return sizeof(u16);
+    case DW_EH_PE_udata4:
+    case DW_EH_PE_sdata4:
+        return sizeof(u32);
+    case DW_EH_PE_udata8:
+    case DW_EH_PE_sdata8:
+        return sizeof(u64);
+    default:
+        return 0;
+    }
+}
+
 static uintptr_t getEncodedP(uintptr_t& addr, uintptr_t end, u8 encoding, uintptr_t datarelBase) {
     const uintptr_t startAddr = addr;
     const u8* p = (u8*)addr;
     uintptr_t result;
 
     // First get value
-    switch (encoding & 0x0F) {
+    switch (encoding & DW_EH_PE_format_mask) {
     case DW_EH_PE_ptr:
         result = get<uintptr_t>(addr);
         p += sizeof(uintptr_t);
@@ -63,7 +81,7 @@ static uintptr_t getEncodedP(uintptr_t& addr, uintptr_t end, u8 encoding, uintpt
     }
 
     // Then add relative offset
-    switch (encoding & 0x70) {
+    switch (encoding & DW_EH_PE_application_mask) {
     case DW_EH_PE_absptr:
         // do nothing
         break;
@@ -130,7 +148,36 @@ bool DecodeEHHdr(uintptr_t ehHdrStart, uintptr_t ehHdrEnd, EHHeaderInfo& ehHdrIn
     ehHdrInfo.fde_count =
         fde_count_enc == DW_EH_PE_omit ? 0 : getEncodedP(p, ehHdrEnd, fde_count_enc, ehHdrStart);
     ehHdrInfo.table = p;
+    ehHdrInfo.datarel_base = ehHdrStart;
 
+    return true;
+}
+
+bool DecodeEHHdrTable(const EHHeaderInfo& ehHdrInfo, uintptr_t ehHdrEnd,
+                      std::vector<uintptr_t>& functionStarts) {
+    functionStarts.clear();
+    if (ehHdrInfo.fde_count == 0 || ehHdrInfo.table_enc == DW_EH_PE_omit) {
+        return true;
+    }
+
+    const size_t encoded_size = GetEncodedSize(ehHdrInfo.table_enc);
+    if (encoded_size == 0 || ehHdrInfo.table > ehHdrEnd) {
+        return false;
+    }
+
+    const size_t entry_size = encoded_size * 2;
+    const size_t remaining_size = ehHdrEnd - ehHdrInfo.table;
+    if (ehHdrInfo.fde_count > remaining_size / entry_size) {
+        return false;
+    }
+
+    functionStarts.reserve(ehHdrInfo.fde_count);
+    uintptr_t cursor = ehHdrInfo.table;
+    for (size_t index = 0; index < ehHdrInfo.fde_count; ++index) {
+        functionStarts.push_back(
+            getEncodedP(cursor, ehHdrEnd, ehHdrInfo.table_enc, ehHdrInfo.datarel_base));
+        getEncodedP(cursor, ehHdrEnd, ehHdrInfo.table_enc, ehHdrInfo.datarel_base);
+    }
     return true;
 }
 
