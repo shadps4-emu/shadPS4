@@ -1,5 +1,22 @@
 {
   "nodes": {
+    "abseilCppSource": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1750171688,
+        "narHash": "sha256-eB7OqTO9Vwts9nYQ/Mdq0Ds4T1KgmmpYdzU09VPWOhk=",
+        "owner": "abseil",
+        "repo": "abseil-cpp",
+        "rev": "76bb24329e8bf5f39704eb10d21b9a80befa7c81",
+        "type": "github"
+      },
+      "original": {
+        "owner": "abseil",
+        "ref": "20250512.1",
+        "repo": "abseil-cpp",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1779560665,
@@ -18,6 +35,7 @@
     },
     "root": {
       "inputs": {
+        "abseilCppSource": "abseilCppSource",
         "nixpkgs": "nixpkgs"
       }
     }

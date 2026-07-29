@@ -206,9 +206,9 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     }
     const auto state = BeginRendering(pipeline);
 
-    buffer_cache.BindVertexBuffers(*pipeline);
+    buffer_cache.BindVertexBuffers(*pipeline, buffer_barriers);
     if (is_indexed) {
-        buffer_cache.BindIndexBuffer(index_offset);
+        buffer_cache.BindIndexBuffer(index_offset, buffer_barriers);
     }
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
@@ -254,9 +254,9 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     }
     const auto state = BeginRendering(pipeline);
 
-    buffer_cache.BindVertexBuffers(*pipeline);
+    buffer_cache.BindVertexBuffers(*pipeline, buffer_barriers);
     if (is_indexed) {
-        buffer_cache.BindIndexBuffer(0);
+        buffer_cache.BindIndexBuffer(0, buffer_barriers);
     }
 
     const auto& [buffer, base] =
@@ -266,6 +266,17 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     u32 count_base{};
     if (count_address != 0) {
         std::tie(count_buffer, count_base) = buffer_cache.ObtainBuffer(count_address, 4, false);
+    }
+
+    if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
+                                          vk::PipelineStageFlagBits2::eDrawIndirect)) {
+        buffer_barriers.emplace_back(*barrier);
+    }
+    if (count_buffer) {
+        if (auto barrier = count_buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
+                                                    vk::PipelineStageFlagBits2::eDrawIndirect)) {
+            buffer_barriers.emplace_back(*barrier);
+        }
     }
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
@@ -347,6 +358,11 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     }
 
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
+
+    if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
+                                          vk::PipelineStageFlagBits2::eDrawIndirect)) {
+        buffer_barriers.emplace_back(*barrier);
+    }
 
     scheduler.EndRendering();
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
@@ -625,11 +641,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 const auto [data, offset] = lds_buffer.Map(lds_size, alignment);
                 std::memset(data, 0, lds_size);
                 buffer_infos.emplace_back(lds_buffer.Handle(), offset, lds_size);
-            } else if (instance.IsNullDescriptorSupported()) {
-                buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
             } else {
-                auto& null_buffer = buffer_cache.GetBuffer(VideoCore::NULL_BUFFER_ID);
-                buffer_infos.emplace_back(null_buffer.Handle(), 0, VK_WHOLE_SIZE);
+                buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
             }
         } else {
             const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
@@ -678,7 +691,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a shader (texture)");
         }
 
-        if (tsharp.GetDataFmt() == AmdGpu::DataFormat::FormatInvalid) {
+        if (tsharp.Address() == 0 || tsharp.GetDataFmt() == AmdGpu::DataFormat::FormatInvalid) {
             image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
             image_descriptor_array_sizes.push_back(1);
             continue;
@@ -723,13 +736,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
     for (auto& [image_id, desc] : image_bindings) {
         bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
         if (!image_id) {
-            if (instance.IsNullDescriptorSupported()) {
-                image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
-            } else {
-                auto& null_image_view = texture_cache.FindTexture(VideoCore::NULL_IMAGE_ID, desc);
-                image_infos.emplace_back(VK_NULL_HANDLE, *null_image_view.image_view,
-                                         vk::ImageLayout::eGeneral);
-            }
+            image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         } else {
             if (auto& old_image = texture_cache.GetImage(image_id);
                 old_image.binding.needs_rebind) {
@@ -888,8 +895,10 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         auto& image = texture_cache.GetImage(image_id);
 
         const auto slice = image_view.info.range.base.layer;
-        const bool is_depth_clear = regs.depth_render_control.depth_clear_enable ||
-                                    texture_cache.IsMetaCleared(htile_address, slice);
+        const bool is_depth_clear =
+            (regs.depth_render_control.depth_clear_enable && regs.depth_control.depth_enable &&
+             regs.depth_control.depth_write_enable) ||
+            texture_cache.IsMetaCleared(htile_address, slice);
         const bool is_stencil_clear = regs.depth_render_control.stencil_clear_enable;
         texture_cache.TouchMeta(htile_address, slice, false);
         ASSERT(desc.view_info.range.extent.levels == 1 && !image.binding.needs_rebind);
@@ -1050,6 +1059,10 @@ bool Rasterizer::ReadMemory(VAddr addr, u64 size) {
     }
     buffer_cache.ReadMemory(addr, size);
     return true;
+}
+
+void Rasterizer::ProcessDownloadImages() {
+    texture_cache.ProcessDownloadImages();
 }
 
 bool Rasterizer::IsMapped(VAddr addr, u64 size) {
@@ -1295,13 +1308,18 @@ void Rasterizer::UpdatePrimitiveState(const bool is_indexed) const {
                topology == vk::PrimitiveTopology::eLineList ||
                topology == vk::PrimitiveTopology::eTriangleList ||
                topology == vk::PrimitiveTopology::eLineListWithAdjacency ||
-               topology == vk::PrimitiveTopology::eTriangleListWithAdjacency ||
-               topology == vk::PrimitiveTopology::ePatchList;
+               topology == vk::PrimitiveTopology::eTriangleListWithAdjacency;
+    };
+    const auto is_patch_list_topology = [](const AmdGpu::PrimitiveType type) {
+        // Quad and rect lists are emulated using tessellation.
+        return type == AmdGpu::PrimitiveType::PatchPrimitive ||
+               type == AmdGpu::PrimitiveType::QuadList || type == AmdGpu::PrimitiveType::RectList;
     };
 
     const auto prim_restart =
         (regs.enable_primitive_restart & 1) != 0 &&
-        (instance.IsListRestartSupported() || !is_list_topology(regs.primitive_type));
+        (instance.IsListRestartSupported() || !is_list_topology(regs.primitive_type)) &&
+        (instance.IsPatchListRestartSupported() || !is_patch_list_topology(regs.primitive_type));
     ASSERT_MSG(!is_indexed || !prim_restart || regs.primitive_restart_index == 0xFFFF ||
                    regs.primitive_restart_index == 0xFFFFFFFF,
                "Primitive restart index other than -1 is not supported yet");

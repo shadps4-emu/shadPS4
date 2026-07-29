@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
@@ -253,8 +253,11 @@ s32 PS4_SYSV_ABI scePlayGoInitialize(OrbisPlayGoInitParams* param) {
     playgo = std::make_unique<PlaygoFile>();
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto file_path = mnt->GetHostPath("/app0/sce_sys/playgo-chunk.dat");
-    if (!playgo->Open(file_path)) {
+    if (auto bytes = mnt->ReadFile("/app0/sce_sys/playgo-chunk.dat")) {
+        if (!playgo->Open(std::span<const u8>{*bytes})) {
+            LOG_WARNING(Lib_PlayGo, "Could not parse PlayGo file");
+        }
+    } else {
         LOG_WARNING(Lib_PlayGo, "Could not open PlayGo file");
     }
 

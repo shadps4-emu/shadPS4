@@ -41,11 +41,9 @@ struct patchInfo {
 std::string convertValueToHex(const std::string type, const std::string valueStr);
 
 void OnGameLoaded();
-void AddPatchToQueue(patchInfo patchToAdd);
+void AddPatchToQueue(const patchInfo& patchToAdd);
 
-void PatchMemory(std::string modNameStr, std::string offsetStr, std::string valueStr,
-                 std::string targetStr, std::string sizeStr, bool isOffset, bool littleEndian,
-                 PatchMask patchMask = PatchMask::None, int maskOffset = 0);
+void PatchMemory(const patchInfo& patch);
 
 static std::vector<int32_t> PatternToByte(const std::string& pattern);
 uintptr_t PatternScan(const std::string& signature);

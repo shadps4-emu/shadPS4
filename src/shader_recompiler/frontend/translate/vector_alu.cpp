@@ -166,6 +166,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_FLOOR_F32(inst);
     case Opcode::V_EXP_F32:
         return V_EXP_F32(inst);
+    case Opcode::V_LOG_CLAMP_F32:
+        return V_LOG_F32(inst);
     case Opcode::V_LOG_F32:
         return V_LOG_F32(inst);
     case Opcode::V_RCP_F32:
@@ -737,13 +739,14 @@ void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
 }
 
 void Translator::V_ADD_I32(const GcnInst& inst) {
-    // Signed or unsigned components
+    // The sum is identical for signed and unsigned components. VCC (or the VOP3 scalar
+    // destination) receives the unsigned carry-out, despite the legacy _I32 mnemonic.
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 result{ir.IAdd(src0, src1)};
     SetDst(inst.dst[0], result);
 
-    // TODO: Carry-out with signed or unsigned components
+    SetCarryOut(inst, ir.ILessThan(result, src0, false));
 }
 
 void Translator::V_SUB_I32(const GcnInst& inst) {
@@ -1184,7 +1187,12 @@ void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
         }
     }();
     if (set_exec) {
-        ir.SetExec(result);
+        // V_CMPX evaluates on active lanes only; hardware writes exec & result to both EXEC
+        // and the VCC/SDST destination, zeroing inactive lanes' bits.
+        const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
+        ir.SetExec(masked);
+        SetDst1(inst.dst[1], masked);
+        return;
     }
     SetDst1(inst.dst[1], result);
 }
@@ -1215,7 +1223,11 @@ void Translator::V_CMP_F64(ConditionOp op, bool set_exec, const GcnInst& inst) {
         }
     }();
     if (set_exec) {
-        ir.SetExec(result);
+        // See the V_CMPX note in V_CMP_F32.
+        const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
+        ir.SetExec(masked);
+        SetDst1(inst.dst[1], masked);
+        return;
     }
     SetDst1(inst.dst[1], result);
 }
@@ -1246,7 +1258,11 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
         }
     }();
     if (set_exec) {
-        ir.SetExec(result);
+        // See the V_CMPX note in V_CMP_F32.
+        const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
+        ir.SetExec(masked);
+        SetDst1(inst.dst[1], masked);
+        return;
     }
     SetDst1(inst.dst[1], result);
 }
@@ -1702,8 +1718,8 @@ void Translator::V_PK_MUL_LO_U16(const GcnInst& inst) {
     const auto src0 = GetSrcPk<IR::U32>(inst.src[0]);
     const auto src1 = GetSrcPk<IR::U32>(inst.src[1]);
 
-    const auto result_lo = ir.IAdd(src0.first, src1.first);
-    const auto result_hi = ir.IAdd(src0.second, src1.second);
+    const auto result_lo = ir.IMul(src0.first, src1.first);
+    const auto result_hi = ir.IMul(src0.second, src1.second);
 
     SetDstPk<IR::U32, false>(inst.dst[0], {result_lo, result_hi});
 }

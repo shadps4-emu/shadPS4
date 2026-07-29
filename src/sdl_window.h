@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <span>
 #include <string>
 
 #include "common/types.h"
@@ -71,6 +72,8 @@ public:
         return window_info;
     }
 
+    void SetIcon(std::span<const u8> png_data);
+
     void WaitEvent();
     void InitTimers();
 
@@ -91,5 +94,8 @@ private:
     bool is_shown{};
     bool is_open{true};
 };
+
+void SetWindowIcon(SDL_Window* window, const std::vector<u8>& png);
+void SetDefaultWindowIcon(SDL_Window* window);
 
 } // namespace Frontend

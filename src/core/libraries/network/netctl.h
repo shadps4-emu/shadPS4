@@ -47,6 +47,14 @@ union OrbisNetCtlInfo {
     u16 http_proxy_port;
 };
 
+struct OrbisNetCtlNatInfo {
+    u32 size;
+    s32 stun_status;
+    s32 nat_type;
+    u32 mapped_addr;
+};
+static_assert(sizeof(OrbisNetCtlNatInfo) == 0x10);
+
 // GetInfo codes
 constexpr int ORBIS_NET_CTL_INFO_DEVICE = 1;
 constexpr int ORBIS_NET_CTL_INFO_ETHER_ADDR = 2;
@@ -100,7 +108,7 @@ int PS4_SYSV_ABI sceNetCtlGetIfStat();
 int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info);
 int PS4_SYSV_ABI sceNetCtlGetInfoIpcInt();
 int PS4_SYSV_ABI sceNetCtlGetInfoV6IpcInt();
-int PS4_SYSV_ABI sceNetCtlGetNatInfo();
+int PS4_SYSV_ABI sceNetCtlGetNatInfo(OrbisNetCtlNatInfo* nat_info);
 int PS4_SYSV_ABI sceNetCtlGetNatInfoIpcInt();
 int PS4_SYSV_ABI sceNetCtlGetNetEvConfigInfoIpcInt();
 int PS4_SYSV_ABI sceNetCtlGetResult(int eventType, int* errorCode);

@@ -71,6 +71,8 @@ OPCODE(GetVectorRegister,                                   U32,            Vect
 OPCODE(SetVectorRegister,                                   Void,           VectorReg,      U32,                                                            )
 OPCODE(GetGotoVariable,                                     U1,             U32,                                                                            )
 OPCODE(SetGotoVariable,                                     Void,           U32,            U1,                                                             )
+OPCODE(GetMaskLaneVariable,                                 U1,             VectorReg,      U32,                                                            )
+OPCODE(SetMaskLaneVariable,                                 Void,           VectorReg,      U32,            U1,                                             )
 OPCODE(GetAttribute,                                        F32,            Attribute,      U32,            U32,                                            )
 OPCODE(GetAttributeU32,                                     U32,            Attribute,      U32,                                                            )
 OPCODE(SetAttribute,                                        Void,           Attribute,      F32,            U32,                                            )

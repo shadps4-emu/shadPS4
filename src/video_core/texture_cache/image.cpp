@@ -35,6 +35,11 @@ static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance* instance,
             // flag is also used.
             usage |= vk::ImageUsageFlagBits::eStorage;
         }
+    } else {
+        // Similarly to above, we specify storage usage. This is typically not supported by
+        // compressed formats, but may be used for uncompressed views. In order to satisfy this,
+        // we will also specify the extended usage bit.
+        usage |= vk::ImageUsageFlagBits::eStorage;
     }
 
     return usage;
@@ -324,7 +329,7 @@ Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 
 
 void Image::Transit(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
                     std::optional<SubresourceRange> range, vk::CommandBuffer cmdbuf /*= {}*/) {
-    // Adjust pipieline stage
+    // Adjust pipeline stage
     const vk::PipelineStageFlags2 dst_pl_stage =
         (dst_mask == vk::AccessFlagBits2::eTransferRead ||
          dst_mask == vk::AccessFlagBits2::eTransferWrite)
@@ -667,13 +672,17 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
 void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
     const auto& src_info = src_image.info;
 
-    const auto mip_w = std::max(info.size.width >> mip, 1u);
-    const auto mip_h = std::max(info.size.height >> mip, 1u);
-    const auto mip_d = std::max(info.size.depth >> mip, 1u);
-    const auto [src_layers, dst_layers] = SanitizeCopyLayers(src_info, info, mip_d);
+    const auto dst_dim = info.props.is_block ? 2 : 0;
+    const auto mip_block_w = std::max(info.size.width >> (mip + dst_dim), 1u);
+    const auto mip_block_h = std::max(info.size.height >> (mip + dst_dim), 1u);
+    const auto mip_block_p = std::max(info.mips_layout[mip].pitch >> dst_dim, 1u);
 
-    ASSERT(mip_w == src_info.size.width);
-    ASSERT(mip_h == src_info.size.height);
+    const auto src_dim = src_info.props.is_block ? 2 : 0;
+    ASSERT(mip_block_w == (src_info.size.width >> src_dim));
+    ASSERT(mip_block_h == (src_info.size.height >> src_dim));
+    ASSERT(mip_block_p == (src_info.pitch >> src_dim));
+
+    const auto [src_layers, dst_layers] = SanitizeCopyLayers(src_info, info, src_info.size.depth);
 
     const vk::ImageCopy image_copy{
         .srcSubresource{
@@ -688,7 +697,7 @@ void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
             .baseArrayLayer = slice,
             .layerCount = dst_layers,
         },
-        .extent = {mip_w, mip_h, mip_d},
+        .extent = {src_info.size.width, src_info.size.height, src_info.size.depth},
     };
 
     SetBackingSamples(info.num_samples);

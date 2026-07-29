@@ -161,9 +161,9 @@ struct OrbisNpScorePlayerRankDataForCrossSave {
 //***********************************
 // Title context management functions
 //***********************************
-s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel,
+int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel,
                                             const OrbisNpId* selfNpId);
-s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(OrbisNpServiceLabel npServiceLabel,
+int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(OrbisNpServiceLabel npServiceLabel,
                                              UserService::OrbisUserServiceUserId selfId);
 s32 PS4_SYSV_ABI sceNpScoreDeleteNpTitleCtx(s32 titleCtxId);
 //***********************************
