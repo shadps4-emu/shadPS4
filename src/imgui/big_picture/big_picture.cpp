@@ -8,6 +8,7 @@
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
+#include "core/file_sys/fs.h"
 #include "emulator.h"
 #include "imgui/big_picture/big_picture.h"
 #include "imgui/big_picture/imgui_impl_sdl3_big_picture.h"
@@ -34,11 +35,8 @@ namespace {
 
 std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder) {
     std::filesystem::path outputPath;
-    auto update_folder = game_folder;
-    update_folder += "-UPDATE";
-
-    auto patch_folder = game_folder;
-    patch_folder += "-patch";
+    const auto update_folder = Core::FileSys::OverlayPath(game_folder, "-UPDATE");
+    const auto patch_folder = Core::FileSys::OverlayPath(game_folder, "-patch");
 
     if (std::filesystem::exists(update_folder / "sce_sys" / sceItem)) {
         outputPath = update_folder / "sce_sys" / sceItem;

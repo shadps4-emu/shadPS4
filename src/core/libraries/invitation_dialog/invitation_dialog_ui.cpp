@@ -39,7 +39,8 @@ InvitationDialogUi::~InvitationDialogUi() {
 }
 
 InvitationDialogUi::InvitationDialogUi(InvitationDialogUi&& other) noexcept
-    : Layer(other), first_render(other.first_render), status(other.status), state(other.state) {
+    : Layer(other), first_render(other.first_render), status(other.status), state(other.state),
+      pending_accept(std::move(other.pending_accept)), pending_send(std::move(other.pending_send)) {
     other.status = nullptr;
     other.state = nullptr;
 }
@@ -48,6 +49,8 @@ InvitationDialogUi& InvitationDialogUi::operator=(InvitationDialogUi&& other) no
     first_render = other.first_render;
     status = other.status;
     state = other.state;
+    pending_accept = std::move(other.pending_accept);
+    pending_send = std::move(other.pending_send);
     other.status = nullptr;
     other.state = nullptr;
     if (status && *status == Status::RUNNING) {
@@ -70,6 +73,41 @@ void InvitationDialogUi::Finish(Result result) {
 
 void InvitationDialogUi::Draw() {
     using namespace ImGui;
+    if (pending_accept && pending_accept->done.load(std::memory_order_acquire)) {
+        const bool ok = pending_accept->success.load(std::memory_order_acquire);
+        const std::string finished_id = pending_accept->invitation_id;
+        pending_accept.reset();
+        if (status && *status == Status::RUNNING && state) {
+            if (ok) {
+                Finish(Result::OK);
+                return;
+            }
+            const auto it =
+                std::find_if(state->recv_invitations.begin(), state->recv_invitations.end(),
+                             [&](const auto& p) { return p.invitation_id == finished_id; });
+            if (it != state->recv_invitations.end()) {
+                state->recv_invitations.erase(it);
+            }
+            state->recv_selected = state->recv_invitations.empty() ? -1 : 0;
+            if (state->recv_invitations.empty()) {
+                Finish(Result::USER_CANCELED);
+                return;
+            }
+        }
+    }
+    if (pending_send && pending_send->done.load(std::memory_order_acquire)) {
+        const bool ok = pending_send->success.load(std::memory_order_acquire);
+        auto finished = std::move(pending_send);
+        if (status && *status == Status::RUNNING && state) {
+            if (ok) {
+                state->sent_online_ids = std::move(finished->sent_npids);
+                state->sent_account_ids = std::move(finished->sent_account_ids);
+            }
+            Finish(Result::OK);
+            return;
+        }
+    }
+
     if (status == nullptr || *status != Status::RUNNING || state == nullptr) {
         return;
     }
@@ -181,9 +219,10 @@ void InvitationDialogUi::Draw() {
 
         if (send_mode) {
             const bool no_recipients = state->user_editable && state->selected_npids.empty();
+            const bool busy = static_cast<bool>(pending_send);
             SetCursorPos({ws.x / 2.0f - BUTTON_SIZE.x - 10.0f, y});
-            BeginDisabled(no_recipients);
-            if (Button("Send", BUTTON_SIZE)) {
+            BeginDisabled(no_recipients || busy);
+            if (Button(busy ? "Sending..." : "Send", BUTTON_SIZE)) {
                 // USERENABLE: send the npids the user picked. USERDISABLE: send the app-fixed
                 // list resolved at Open -- online IDs (non-A) or account IDs (A); only one is set.
                 // Resolve recipients: online IDs (picker or non-A fixed list) and/or account IDs
@@ -204,15 +243,19 @@ void InvitationDialogUi::Draw() {
                 for (const auto id : state->account_ids) {
                     to.push_back(std::to_string(id));
                 }
-                auto& np = Libraries::Np::NpHandler::GetInstance();
-                const bool ok = np.SendSessionInvitation(static_cast<s32>(state->user_id),
-                                                         state->session_id, to, state->message);
-                // Record what was sent for GetResult/GetResultA (online IDs and/or account IDs).
-                if (ok) {
-                    state->sent_online_ids = sent_npids;
-                    state->sent_account_ids = state->account_ids;
-                }
-                Finish(Result::OK);
+                auto pending = std::make_shared<PendingSend>();
+                pending->sent_npids = sent_npids;
+                pending->sent_account_ids = state->account_ids;
+                pending_send = pending;
+                const s32 uid = static_cast<s32>(state->user_id);
+                const std::string session_id = state->session_id;
+                const std::string message = state->message;
+                std::thread([pending, uid, session_id, to, message]() {
+                    const bool ok = Libraries::Np::NpHandler::GetInstance().SendSessionInvitation(
+                        uid, session_id, to, message);
+                    pending->success.store(ok, std::memory_order_release);
+                    pending->done.store(true, std::memory_order_release);
+                }).detach();
             }
             EndDisabled();
             if (first_render) {
@@ -220,42 +263,42 @@ void InvitationDialogUi::Draw() {
             }
             SameLine();
             SetCursorPos({ws.x / 2.0f + 10.0f, y});
+            BeginDisabled(busy);
             if (Button("Cancel", BUTTON_SIZE)) {
                 Finish(Result::USER_CANCELED);
             }
+            EndDisabled();
         } else {
-            SetCursorPos({ws.x / 2.0f - BUTTON_SIZE.x - 10.0f, y});
             const bool no_selection =
                 state->recv_selected < 0 ||
                 state->recv_selected >= static_cast<int>(state->recv_invitations.size());
-            BeginDisabled(no_selection);
-            if (Button("Accept", BUTTON_SIZE)) {
-                // Raises the SESSION_INVITATION join event and consumes the invitation server-side.
+            const bool busy = static_cast<bool>(pending_accept);
+            const float total_w = BUTTON_SIZE.x * 3.0f + 20.0f;
+            float x = ws.x / 2.0f - total_w / 2.0f;
+            SetCursorPos({x, y});
+            BeginDisabled(no_selection || busy);
+            if (Button(busy ? "Accepting..." : "Accept", BUTTON_SIZE)) {
                 const auto& inv = state->recv_invitations[state->recv_selected];
-                const bool ok = Libraries::Np::NpHandler::GetInstance().AcceptSessionInvitation(
-                    static_cast<s32>(state->user_id), inv.invitation_id);
-                if (ok) {
-                    Finish(Result::OK);
-                } else {
-                    // Accept failed (expired/already used/network). Drop the dead entry; stay open
-                    // if others remain so the user can pick another, otherwise cancel.
-                    state->recv_invitations.erase(state->recv_invitations.begin() +
-                                                  state->recv_selected);
-                    state->recv_selected = state->recv_invitations.empty() ? -1 : 0;
-                    if (state->recv_invitations.empty()) {
-                        Finish(Result::USER_CANCELED);
-                    }
-                }
+                auto pending = std::make_shared<PendingAccept>();
+                pending->invitation_id = inv.invitation_id;
+                pending_accept = pending;
+                const s32 uid = static_cast<s32>(state->user_id);
+                std::thread([pending, uid]() {
+                    const bool ok = Libraries::Np::NpHandler::GetInstance().AcceptSessionInvitation(
+                        uid, pending->invitation_id);
+                    pending->success.store(ok, std::memory_order_release);
+                    pending->done.store(true, std::memory_order_release);
+                }).detach();
             }
             EndDisabled();
-            if (first_render) {
+            if (first_render && !no_selection) {
                 SetItemCurrentNavFocus();
             }
             SameLine();
-            SetCursorPos({ws.x / 2.0f + 10.0f, y});
-            BeginDisabled(no_selection);
+            x += BUTTON_SIZE.x + 10.0f;
+            SetCursorPos({x, y});
+            BeginDisabled(no_selection || busy);
             if (Button("Decline", BUTTON_SIZE)) {
-                // Dismiss the selected invite so it won't reappear; stay open for any others.
                 const auto& inv = state->recv_invitations[state->recv_selected];
                 Libraries::Np::NpHandler::GetInstance().DeclineSessionInvitation(
                     static_cast<s32>(state->user_id), inv.invitation_id);
@@ -267,6 +310,17 @@ void InvitationDialogUi::Draw() {
                 }
             }
             EndDisabled();
+            SameLine();
+            x += BUTTON_SIZE.x + 10.0f;
+            SetCursorPos({x, y});
+            BeginDisabled(busy);
+            if (Button("Cancel", BUTTON_SIZE)) {
+                Finish(Result::USER_CANCELED);
+            }
+            EndDisabled();
+            if (first_render && no_selection) {
+                SetItemCurrentNavFocus();
+            }
         }
     }
     End();
