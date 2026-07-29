@@ -164,6 +164,8 @@ private:
     bool pipelineCacheEnabledSetting;
     bool pipelineCacheArchiveSetting;
     int extraDmemSetting;
+    int app0ReadBandwidthSetting;
+    bool app0ReadDisableTimeStretchingSetting;
     int vblankFrequencySetting;
 };
 

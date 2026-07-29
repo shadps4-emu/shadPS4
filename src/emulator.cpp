@@ -33,6 +33,7 @@
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
+#include "core/file_sys/storage_scheduler.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_trophy.h"
@@ -421,6 +422,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     EmulatorSettings.Load(id);
+    const auto storage_config = Core::FileSys::GetApp0StorageScheduler().Configure({
+        .bandwidth_mibps = EmulatorSettings.GetApp0ReadBandwidthMiBps(),
+        .disable_time_stretching = EmulatorSettings.IsApp0ReadDisableTimeStretching(),
+    });
     // Switch to configured log
     Common::Log::Switch((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
                                                                           : "shad_log.txt");
@@ -463,6 +468,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings.IsDevKit());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", EmulatorSettings.IsConnectedToNetwork());
     LOG_INFO(Config, "General isShadNetEnabled: {}", EmulatorSettings.IsShadNetEnabled());
+    LOG_INFO(Config, "Storage app0ReadBandwidthMiBps: {}", storage_config.bandwidth_mibps);
+    LOG_INFO(Config, "Storage app0ReadDisableTimeStretching: {}",
+             storage_config.disable_time_stretching);
     LOG_INFO(Config, "Log sync: {}", EmulatorSettings.IsLogSync());
     LOG_INFO(Config, "Log skipDuplicate: {}", EmulatorSettings.IsLogSkipDuplicate());
 #ifdef _WIN32
