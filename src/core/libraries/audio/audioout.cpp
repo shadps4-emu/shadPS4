@@ -164,8 +164,9 @@ static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_tok
         Common::SetCurrentThreadName(thread_name.c_str());
     }
 
-    Common::AccurateTimer timer(
-        std::chrono::nanoseconds(1000000000ULL * port->buffer_frames / port->sample_rate));
+    Common::AccurateTimer timer{
+        std::chrono::nanoseconds(1000000000ULL * port->buffer_frames / port->sample_rate), 0,
+        Common::MissedTickPolicy::PreservePhase};
 
     while (true) {
         timer.Start();

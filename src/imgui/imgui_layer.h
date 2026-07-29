@@ -12,6 +12,12 @@ public:
     static void RemoveLayer(Layer* layer);
 
     virtual void Draw() = 0;
+
+    /// Whether this layer currently needs host-only redraws when no guest frame arrived.
+    /// Transient layers default to active; permanent layers should report their visibility.
+    virtual bool NeedsRender() const {
+        return true;
+    }
 };
 
 } // namespace ImGui
