@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
@@ -86,6 +86,17 @@ static std::string StringToNid(std::string_view symbol) {
 Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_, u32& max_tls_index)
     : memory{memory_}, file{file_}, name{file.filename().string()} {
     elf.Open(file);
+    if (elf.IsElfFile()) {
+        LoadModuleToMemory(max_tls_index);
+        LoadDynamicInfo();
+        LoadSymbols();
+    }
+}
+
+Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_,
+               std::unique_ptr<Core::FileSys::IFile> handle, u32& max_tls_index)
+    : memory{memory_}, file{file_}, name{file.filename().string()} {
+    elf.Open(std::move(handle));
     if (elf.IsElfFile()) {
         LoadModuleToMemory(max_tls_index);
         LoadDynamicInfo();
