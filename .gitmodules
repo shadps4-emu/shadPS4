@@ -155,3 +155,12 @@
 	path = externals/vulkan-loader
 	url = https://github.com/KhronosGroup/Vulkan-Loader
 	shallow = true
+[submodule "externals/protobuf"]
+	path = externals/protobuf
+	url = https://github.com/shadexternals/protobuf.git
+[submodule "externals/zstd"]
+	path = externals/zstd
+	url = https://github.com/shadexternals/zstd.git
+[submodule "externals/zarchive"]
+	path = externals/zarchive
+	url = https://github.com/shadexternals/ZArchive.git

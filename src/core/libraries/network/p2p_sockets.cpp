@@ -85,4 +85,44 @@ int P2PSocket::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
     return 0;
 }
 
+u16 GetP2PConfiguredPort() {
+    return 0;
+}
+
+u32 GetP2PAdvertisedAddr() {
+    return 0;
+}
+
+bool EnsureP2PTransport() {
+    return false;
+}
+
+bool P2PTransportIsReady() {
+    return false;
+}
+
+int P2PSignalingSendTo(const void* data, u32 len, u32 dest_addr, u16 dest_port) {
+    return -1;
+}
+
+int P2PSignalingRecvFrom(void* buf, u32 len, u32* from_addr, u16* from_port) {
+    return -1;
+}
+
+int P2PControlSendTo(const void* data, u32 len, u32 dest_addr, u16 dest_port) {
+    return -1;
+}
+
+int P2PControlRecvFrom(void* buf, u32 len, u32* from_addr, u16* from_port) {
+    return -1;
+}
+
+int P2PMatching2SendTo(const void* data, u32 len, u32 dest_addr, u16 dest_port) {
+    return -1;
+}
+
+int P2PMatching2RecvFrom(void* buf, u32 len, u32* from_addr, u16* from_port) {
+    return -1;
+}
+
 } // namespace Libraries::Net

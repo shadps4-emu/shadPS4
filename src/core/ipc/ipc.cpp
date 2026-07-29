@@ -124,17 +124,18 @@ void IPC::InputLoop() {
         } else if (cmd == "START") {
             start_semaphore.release();
         } else if (cmd == "PATCH_MEMORY") {
-            MemoryPatcher::patchInfo entry;
-            entry.gameSerial = "*";
-            entry.modNameStr = next_str();
-            entry.offsetStr = next_str();
-            entry.valueStr = next_str();
-            entry.targetStr = next_str();
-            entry.sizeStr = next_str();
-            entry.isOffset = next_u64() != 0;
-            entry.littleEndian = next_u64() != 0;
-            entry.patchMask = static_cast<MemoryPatcher::PatchMask>(next_u64());
-            entry.maskOffset = static_cast<int>(next_u64());
+            const MemoryPatcher::patchInfo entry = {
+                .gameSerial = "*",
+                .modNameStr = next_str(),
+                .offsetStr = next_str(),
+                .valueStr = next_str(),
+                .targetStr = next_str(),
+                .sizeStr = next_str(),
+                .isOffset = next_u64() != 0,
+                .littleEndian = next_u64() != 0,
+                .patchMask = static_cast<MemoryPatcher::PatchMask>(next_u64()),
+                .maskOffset = static_cast<int>(next_u64()),
+            };
             MemoryPatcher::AddPatchToQueue(entry);
         } else if (cmd == "PAUSE") {
             DebugState.PauseGuestThreads();

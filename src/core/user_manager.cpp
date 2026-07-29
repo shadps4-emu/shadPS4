@@ -178,8 +178,7 @@ static void CheckAndMigrateTrophies(TransferOption option) {
     auto const user_dir = EmulatorSettings.GetHomeDir() / "1000";
     auto const old_trophy_base_dir =
         Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "game_data";
-    auto const new_trophy_global_dir =
-        Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy";
+    auto const new_trophy_global_dir = Common::FS::GetUserPath(Common::FS::PathType::TrophyDir);
     try {
         for (auto const& entry : fs::directory_iterator(old_trophy_base_dir)) {
             if (!entry.is_directory()) {

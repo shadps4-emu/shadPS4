@@ -73,8 +73,9 @@ class ElfInfo {
     u32 sdk_ver = 0;
     PSFAttributes psf_attributes{};
 
-    std::filesystem::path splash_path{};
+    std::vector<u8> splash_data{};
     std::filesystem::path game_folder{};
+    std::vector<std::string> npCommIds{};
     std::map<s32, std::string> trophy_index_map{};
 
 public:
@@ -94,6 +95,7 @@ public:
     static constexpr u32 FW_700 = 0x7000000;
     static constexpr u32 FW_750 = 0x7500000;
     static constexpr u32 FW_800 = 0x8000000;
+    static constexpr u32 FW_900 = 0x9000000;
     static constexpr u32 FW_1000 = 0x10000000;
     static constexpr u32 FW_1150 = 0x11500000;
 
@@ -136,8 +138,8 @@ public:
         return psf_attributes;
     }
 
-    [[nodiscard]] const std::filesystem::path& GetSplashPath() const {
-        return splash_path;
+    [[nodiscard]] const std::vector<u8>& GetSplashData() const {
+        return splash_data;
     }
 
     [[nodiscard]] const std::filesystem::path& GetGameFolder() const {
@@ -146,6 +148,14 @@ public:
 
     [[nodiscard]] const std::map<s32, std::string>& GetTrophyIndexMap() const {
         return trophy_index_map;
+    }
+
+    [[nodiscard]] const std::vector<std::string>& GetNpCommIds() const {
+        return npCommIds;
+    }
+
+    void SetNpCommIds(std::vector<std::string> ids) {
+        npCommIds = std::move(ids);
     }
 };
 
