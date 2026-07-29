@@ -218,6 +218,7 @@ void Setup(std::string_view shadps4_filename) {
 void Switch(std::string_view game_filename) {
     UpdateSinks();
     UpdateLogLevels(EmulatorSettings.GetLogFilter());
+    UpdateLogFlushLevel(EmulatorSettings.GetLogFlushLevel());
 
     g_shad_file_sink->_size_limit = EmulatorSettings.GetLogSizeLimit();
     g_shad_file_sink->session_file_helper_.open(
@@ -314,6 +315,14 @@ void UpdateLogLevels(std::string_view log_filter) {
                                                                     : default_log_level);
         } else {
             logger->set_level(spdlog::level::off);
+        }
+    }
+}
+
+void UpdateLogFlushLevel(std::string_view log_flush_level) {
+    if (!log_flush_level.empty()) {
+        for (auto& [name, logger] : ALL_LOGGERS) {
+            logger->flush_on(spdlog::level_from_str(log_flush_level.data()));
         }
     }
 }
