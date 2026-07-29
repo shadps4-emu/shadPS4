@@ -61,6 +61,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
 TextureCache::~TextureCache() = default;
 
 void TextureCache::ProcessDownloadImages() {
+    std::unique_lock lk{download_images_mutex};
     for (const ImageId image_id : download_images) {
         DownloadImageMemory(image_id, true);
     }
@@ -621,7 +622,9 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
-        if (readback_linear_images && !image.info.props.is_tiled && image.info.guest_address != 0) {
+        if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8) &&
+            image.info.guest_address != 0) {
+            std::unique_lock lk{download_images_mutex};
             download_images.emplace(image_id);
         }
     }
@@ -632,7 +635,8 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    if (readback_linear_images && !image.info.props.is_tiled) {
+    if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8)) {
+        std::unique_lock lk{download_images_mutex};
         download_images.emplace(image_id);
     }
     image.usage.render_target = 1u;
@@ -1078,6 +1082,13 @@ void TextureCache::DeleteImage(ImageId image_id) {
     }
     if (meta_info.htile_addr) {
         surface_metas.erase(meta_info.htile_addr);
+    }
+
+    {
+        std::unique_lock lk{download_images_mutex};
+        if (download_images.contains(image_id)) {
+            download_images.erase(image_id);
+        }
     }
 
     // Reclaim image and any image views it references.

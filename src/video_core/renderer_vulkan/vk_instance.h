@@ -185,11 +185,6 @@ public:
         return list_restart && list_restart_features.primitiveTopologyPatchListRestart;
     }
 
-    /// Returns true when VK_EXT_legacy_vertex_attributes is supported.
-    bool IsLegacyVertexAttributesSupported() const {
-        return legacy_vertex_attributes;
-    }
-
     /// Returns true when VK_EXT_provoking_vertex is supported.
     bool IsProvokingVertexSupported() const {
         return provoking_vertex;
@@ -434,6 +429,11 @@ public:
                image_2d_view_of_3d_features.sampler2DViewOf3D;
     }
 
+    /// Returns whether VK_EXT_image_view_min_lod is supported.
+    bool IsImageViewMinLodSupported() const {
+        return image_view_min_lod;
+    }
+
     /// Returns whether the device can report memory usage.
     bool CanReportMemoryUsage() const {
         return supports_memory_budget;
@@ -505,7 +505,6 @@ private:
     bool depth_range_unrestricted{};
     bool vertex_input_dynamic_state{};
     bool list_restart{};
-    bool legacy_vertex_attributes{};
     bool provoking_vertex{};
     bool shader_stencil_export{};
     bool image_load_store_lod{};
@@ -519,6 +518,7 @@ private:
     bool maintenance_8{};
     bool attachment_feedback_loop{};
     bool image_2d_view_of_3d{};
+    bool image_view_min_lod{};
     bool supports_memory_budget{};
     bool supports_block_texel_view{};
     u64 total_memory_budget{};

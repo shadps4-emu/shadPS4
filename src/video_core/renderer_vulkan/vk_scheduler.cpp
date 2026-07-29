@@ -119,6 +119,7 @@ void Scheduler::Wait(u64 tick) {
 }
 
 void Scheduler::PopPendingOperations() {
+    std::unique_lock lk(priority_pending_ops_mutex);
     master_semaphore.Refresh();
     while (!pending_ops.empty() && master_semaphore.IsFree(pending_ops.front().gpu_tick)) {
         pending_ops.front().callback();

@@ -6,18 +6,12 @@
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
-#include "core/libraries/videodec/videodec_error.h"
+#include "video_utils.h"
+#include "videodec_error.h"
 
 #include "common/support/avdec.h"
 
 namespace Libraries::Videodec {
-
-static inline void CopyNV12Data(u8* dst, const AVFrame& src) {
-    u32 width = Common::AlignUp((u32)src.width, 16);
-    u32 height = Common::AlignUp((u32)src.height, 16);
-    std::memcpy(dst, src.data[0], src.width * src.height);
-    std::memcpy(dst + src.width * height, src.data[1], (src.width * src.height) / 2);
-}
 
 VdecDecoder::VdecDecoder(const OrbisVideodecConfigInfo& pCfgInfoIn,
                          const OrbisVideodecResourceInfo& pRsrcInfoIn) {
@@ -96,13 +90,22 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
 
     CopyNV12Data((u8*)pFrameBufferInOut.pFrameBuffer, *frame);
 
+    const auto width = Common::AlignUp<u32>(frame->width, 16);
+    const auto pitch = Common::AlignUp<u32>(frame->width, 64);
+    const auto height = Common::AlignUp<u32>(frame->height, 16);
+
     pPictureInfoOut.codecType = 0;
-    pPictureInfoOut.frameWidth = Common::AlignUp((u32)frame->width, 16);
-    pPictureInfoOut.frameHeight = Common::AlignUp((u32)frame->height, 16);
-    pPictureInfoOut.framePitch = frame->linesize[0];
+    pPictureInfoOut.frameWidth = width;
+    pPictureInfoOut.framePitch = pitch;
+    pPictureInfoOut.frameHeight = height;
 
     pPictureInfoOut.isValid = true;
     pPictureInfoOut.isErrorPic = false;
+
+    pPictureInfoOut.codec.avc.frameCropTopOffset = 0;
+    pPictureInfoOut.codec.avc.frameCropLeftOffset = 0;
+    pPictureInfoOut.codec.avc.frameCropRightOffset = pitch - frame->width;
+    pPictureInfoOut.codec.avc.frameCropBottomOffset = height - frame->height;
     pPictureInfoOut.attachedData = pInputDataIn.attachedData;
 
     av_packet_free(&packet);
@@ -146,22 +149,22 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
 
     CopyNV12Data((u8*)pFrameBufferInOut.pFrameBuffer, *frame);
 
+    const auto width = Common::AlignUp<u32>(frame->width, 16);
+    const auto pitch = Common::AlignUp<u32>(frame->width, 64);
+    const auto height = Common::AlignUp<u32>(frame->height, 16);
+
     pPictureInfoOut.codecType = 0;
-    pPictureInfoOut.frameWidth = Common::AlignUp((u32)frame->width, 16);
-    pPictureInfoOut.frameHeight = Common::AlignUp((u32)frame->height, 16);
-    pPictureInfoOut.framePitch = frame->linesize[0];
+    pPictureInfoOut.frameWidth = width;
+    pPictureInfoOut.framePitch = pitch;
+    pPictureInfoOut.frameHeight = height;
 
     pPictureInfoOut.isValid = true;
     pPictureInfoOut.isErrorPic = false;
 
-    u32 width = Common::AlignUp((u32)frame->width, 16);
-    u32 height = Common::AlignUp((u32)frame->height, 16);
-    pPictureInfoOut.codec.avc.frameCropLeftOffset = u32(frame->crop_left);
-    pPictureInfoOut.codec.avc.frameCropRightOffset =
-        u32(frame->crop_right + (width - frame->width));
-    pPictureInfoOut.codec.avc.frameCropTopOffset = u32(frame->crop_top);
-    pPictureInfoOut.codec.avc.frameCropBottomOffset =
-        u32(frame->crop_bottom + (height - frame->height));
+    pPictureInfoOut.codec.avc.frameCropTopOffset = 0;
+    pPictureInfoOut.codec.avc.frameCropLeftOffset = 0;
+    pPictureInfoOut.codec.avc.frameCropRightOffset = pitch - frame->width;
+    pPictureInfoOut.codec.avc.frameCropBottomOffset = height - frame->height;
 
     av_frame_free(&frame);
     return ORBIS_OK;
