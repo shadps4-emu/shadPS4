@@ -400,9 +400,29 @@ static void ConvertRGBA8888ToRAW8(const u8* src, u8* dst, int width, int height)
     }
 }
 
+static s32 SizeOfFormat(OrbisCameraBaseFormat const f) {
+    switch (f) {
+    case ORBIS_CAMERA_FORMAT_YUV422:
+        return 2;
+    case ORBIS_CAMERA_FORMAT_RAW16:
+        return 2;
+    case ORBIS_CAMERA_FORMAT_RAW8:
+        return 1;
+    case ORBIS_CAMERA_FORMAT_NO_USE:
+        return 0;
+    default:
+        UNREACHABLE();
+    }
+}
+
 s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_data) {
     LOG_DEBUG(Lib_Camera, "called");
-    if (handle < 1 || frame_data == nullptr || frame_data->sizeThis > 584) {
+    if (frame_data == nullptr) {
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+    frame_data->status[0] = -1;
+    frame_data->status[1] = -1;
+    if (handle < 1 || frame_data->sizeThis > 584) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
     if (!g_library_opened || !sdl_camera) {
@@ -418,6 +438,8 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     }
     frame = SDL_AcquireCameraFrame(sdl_camera, &timestampNS);
 
+    frame_data->status[0] = frame != nullptr ? 0 : -1;
+    frame_data->status[1] = frame != nullptr ? 0 : -1;
     if (!frame) {
         return ORBIS_CAMERA_ERROR_BUSY;
     }
@@ -454,6 +476,18 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     }
     frame_data->meta.format[0][0] = output_config0.format.formatLevel0;
     frame_data->meta.format[1][0] = output_config1.format.formatLevel0;
+    frame_data->frameSize[0][0] =
+        c_width * c_height * SizeOfFormat(output_config0.format.formatLevel0);
+    frame_data->frameSize[1][0] =
+        c_width * c_height * SizeOfFormat(output_config1.format.formatLevel0);
+
+    // on older firmwares, this wasn't present, and the original library also checks struct size
+    // instead of the SDK version, and without this check, we'd smash the stack in those games
+    if (frame_data->sizeThis == 584) {
+        // not fully correct, but good enough
+        frame_data->pFramePointerListGarlic[0][0] = frame_data->pFramePointerList[0][0];
+        frame_data->pFramePointerListGarlic[1][0] = frame_data->pFramePointerList[1][0];
+    }
     return ORBIS_OK;
 }
 
@@ -642,7 +676,7 @@ s32 PS4_SYSV_ABI sceCameraIsValidFrameData(s32 handle, OrbisCameraFrameData* fra
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
-    return 1; // valid
+    return frame_data->status[0] == 0 && frame_data->status[1] == 0;
 }
 
 s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,

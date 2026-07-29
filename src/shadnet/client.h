@@ -11,6 +11,7 @@
 #include <semaphore>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 #include "common/types.h"
 #ifdef _WIN32
@@ -65,19 +66,7 @@ enum class CommandType : u16 {
     RemoveFriend = 9,
     AddBlock = 10,
     RemoveBlock = 11,
-    // Matchmaking
-    ContextStart = 12,
-    CreateRoom = 13,
-    JoinRoom = 14,
-    LeaveRoom = 15,
-    SearchRoom = 16,
-    RequestSignalingInfos = 17,
-    ContextStop = 18,
-    SetRoomDataInternal = 20,
-    SetRoomDataExternal = 21,
-    KickoutRoomMember = 22,
-    GetWorldInfoList = 23,
-    // 24-29 reserved for future matchmaking commands
+    GetServerFeatures = 12,
     GetBoardInfos = 30,
     RecordScore = 31,
     RecordScoreData = 32,
@@ -88,6 +77,24 @@ enum class CommandType : u16 {
     GetScoreAccountId = 37,
     GetScoreGameDataByAccId = 38,
     GetToken = 39,
+    SetAppearOffline = 40,
+    // Matchmaking
+    ContextStart = 100,
+    CreateRoom = 101,
+    JoinRoom = 102,
+    LeaveRoom = 103,
+    SearchRoom = 104,
+    RequestSignalingInfos = 105,
+    ContextStop = 106,
+    SetUserInfo = 107,
+    SetRoomDataInternal = 108,
+    SetRoomDataExternal = 109,
+    KickoutRoomMember = 110,
+    GetWorldInfoList = 111,
+    GetRoomDataExternalList = 112,
+    GetUserInfoList = 113,
+    GetRoomMemberDataExternalList = 114,
+    SendRoomMessage = 115,
 };
 
 enum class NotificationType : u16 {
@@ -96,6 +103,7 @@ enum class NotificationType : u16 {
     FriendLost = 7,
     FriendStatus = 8,
     RoomEvent = 10,
+    RoomMessage = 11,
     WebApiPushEvent = 17, // Generic NP WebApi push event
 };
 
@@ -190,10 +198,15 @@ struct NotifyWebApiPushEvent {
     std::string data;     // raw event body (typically PSN-format JSON)
     std::string fromNpid; // may be empty
     std::string toNpid;   // may be empty
+    // Optional extended-data (key,value) pairs (e.g. friendlist trigger/additionalTrigger,
+    // presence gameStatus/gameData). Empty when the server sends none / is older.
+    std::vector<std::pair<std::string, std::string>> extdData;
 };
 
 struct MatchingBinAttr {
     u32 attr_id = 0;
+    u64 update_date = 0;
+    u32 update_member_id = 0;
     std::vector<u8> data;
 };
 
@@ -204,8 +217,12 @@ struct NotifyRoomEvent {
     u32 event_cause = 0;
     s32 error_code = 0;
     u32 flags = 0;
+    bool has_passwd_mask = false;
+    u64 passwd_slot_mask = 0;
 
     std::string member_npid;
+    u64 member_account_id = 0;
+    u32 member_platform = 0;
     u32 member_id = 0;
     u32 member_team_id = 0;
     bool member_is_owner = false;
@@ -218,6 +235,19 @@ struct NotifyRoomEvent {
     std::vector<MatchingBinAttr> member_bin_attrs;
 
     std::vector<MatchingBinAttr> bin_attrs;
+};
+
+struct NotifyRoomMessage {
+    u32 ctx_id = 0;
+    u64 room_id = 0;
+    u32 src_member_id = 0;
+    u32 event = 0;
+    u32 cast_type = 0;
+    std::vector<u32> dst_member_ids;
+    std::string src_npid;
+    u64 src_account_id = 0;
+    u32 src_platform = 0;
+    std::vector<u8> msg;
 };
 
 // ShadNetClient
@@ -242,8 +272,12 @@ public:
 
     const std::string& GetAvatarUrl() const;
     u64 GetUserId() const;
+    u32 GetServerProtocolVersion() const {
+        return m_server_protocol_version.load();
+    }
     u32 GetAddrLocal() const;
     u32 GetAddrServer() const;
+    bool IsMatching2Enabled() const;
     u32 GetNumFriends() const;
     std::optional<std::string> GetFriendNpid(u32 index) const;
 
@@ -256,6 +290,7 @@ public:
     std::function<void(const NotifyFriendLost&)> onFriendLost;
     std::function<void(const NotifyFriendStatus&)> onFriendStatus;
     std::function<void(const NotifyRoomEvent&)> onRoomEvent;
+    std::function<void(const NotifyRoomMessage&)> onRoomMessage;
     std::function<void(const NotifyWebApiPushEvent&)> onWebApiPushEvent;
     // Async reply callback.
     //   cmd    —command this reply is for (matches the request's cmd)
@@ -275,6 +310,8 @@ public:
     u64 RemoveFriend(const std::string& npid);
     u64 AddBlock(const std::string& npid);
     u64 RemoveBlock(const std::string& npid);
+    // Set the Appear-Offline preference mid-session (server handles us as offline while set).
+    u64 SetAppearOffline(bool enable);
 
 private:
     void ConnectThread();
@@ -288,7 +325,9 @@ private:
     void DispatchPacket(PacketType type, u16 cmd_raw, u64 pkt_id, const std::vector<u8>& payload);
     void HandleLoginReply(const std::vector<u8>& payload);
     void HandleGetTokenReply(const std::vector<u8>& payload);
+    void HandleServerFeaturesReply(const std::vector<u8>& payload);
     void HandleNotification(u16 cmd_raw, const std::vector<u8>& payload);
+    bool RequestServerFeatures();
 
     // Helper: read a u32-LE-prefixed proto blob from a byte vector at pos.
     static std::string ExtractBlob(const std::vector<u8>& p, int pos);
@@ -306,6 +345,7 @@ private:
     std::string m_npid;
     std::string m_password;
     std::string m_token;
+    bool m_appear_offline = false; // user's Appear-Offline preference (sent at login)
 
     std::atomic<bool> m_terminate{false};
     std::atomic<bool> m_connected{false};
@@ -332,6 +372,9 @@ private:
     std::string m_bearer_token;
     std::atomic<u32> m_addr_local{0};
     std::atomic<u32> m_addr_server{0};
+    std::atomic<u32> m_server_protocol_version{0};
+    std::atomic<bool> m_matching2_enabled{false};
+    std::atomic<bool> m_server_features_received{false};
 
     mutable std::mutex m_mutex_friends;
     std::vector<FriendEntry> m_friends;

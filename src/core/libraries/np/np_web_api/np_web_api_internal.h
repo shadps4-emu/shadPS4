@@ -70,6 +70,17 @@ struct OrbisNpWebApiRequest {
     // the libSceHttp request in the send path after the lib-managed CT/Authorization.
     std::vector<std::pair<std::string, std::string>> userHeaders;
     bool multipart;
+    // Multipart body assembly (sceNpWebApiSetMultipartContentType / AddMultipartPart /
+    // SendMultipartRequest). Parts accumulate across sends,the body is framed once all are in.
+    struct MultipartPart {
+        std::string rawHeaders; // "<name>: <value>\r\n...Content-Length: <n>\r\n\r\n"
+        u64 contentLength = 0;
+        std::string data;
+        u64 sentSize = 0;
+    };
+    std::string multipartContentType; // type name, e.g. "multipart/mixed"
+    std::string multipartBoundary;
+    std::vector<MultipartPart> multipartParts;
     bool aborted;
     bool sent;
     u32 requestTimeout;
@@ -203,6 +214,8 @@ void startRequestTimer(OrbisNpWebApiRequest* request);       // FUN_0100c0d0
 void checkRequestTimeout(OrbisNpWebApiRequest* request);     // FUN_0100c130
 s32 sendRequest(s64 requestId, s32 partIndex, const void* data, u64 dataSize, s8 flag,
                 OrbisNpWebApiResponseInformationOption* pResponseInformationOption); // FUN_01001c50
+s32 setMultipartContentType(s64 requestId, const char* pTypeName, const char* pBoundary);
+s32 addMultipartPart(s64 requestId, const OrbisNpWebApiMultipartPartParameter* pParam, s32* pIndex);
 s32 abortRequestInternal(OrbisNpWebApiContext* context, OrbisNpWebApiUserContext* userContext,
                          OrbisNpWebApiRequest* request); // FUN_01001b70
 s32 abortRequest(s64 requestId);                         // FUN_01002c70

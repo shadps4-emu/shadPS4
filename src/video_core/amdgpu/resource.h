@@ -13,8 +13,8 @@ namespace AmdGpu {
 
 // Table 8.5 Buffer Resource Descriptor [Sea Islands Series Instruction Set Architecture]
 struct Buffer {
-    u64 base_address : 44;
-    u64 _padding0 : 4;
+    u64 base_address : 40;
+    u64 _padding0 : 8;
     u64 stride : 14;
     u64 cache_swizzle : 1;
     u64 swizzle_enable : 1;

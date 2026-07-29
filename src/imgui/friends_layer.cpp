@@ -53,6 +53,13 @@ void DrawFriendsTab() {
     const s32 user_id = users[g_user_index];
     const Libraries::Np::NpHandler::FriendListSnapshot fl = np.GetFriendList(user_id);
 
+    bool appear_offline = np.IsAppearOffline();
+    if (ImGui::Checkbox("Appear offline", &appear_offline)) {
+        np.SetAppearOffline(appear_offline);
+    }
+    ImGui::SameLine();
+    ImGui::TextDisabled("(friends see you as offline)");
+
     ImGui::SeparatorText("Add friend");
     ImGui::InputTextWithHint("##addnpid", "Online ID", g_add_buf, sizeof(g_add_buf));
     ImGui::SameLine();
