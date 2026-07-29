@@ -364,8 +364,7 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
 )
 
 if (ARCHITECTURE STREQUAL "x86_64" OR ARCHITECTURE STREQUAL "arm64")
-    list(APPEND KERNEL_LIB src/core/libraries/kernel/threads/stack.S)
-    set_source_files_properties(src/core/libraries/kernel/threads/stack.S PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+    list(APPEND KERNEL_LIB src/core/libraries/kernel/threads/stack_asm.cpp)
 endif()
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
@@ -405,6 +404,8 @@ set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
                  src/core/libraries/avplayer/avplayer_common.h
                  src/core/libraries/avplayer/avplayer_file_streamer.cpp
                  src/core/libraries/avplayer/avplayer_file_streamer.h
+                 src/core/libraries/avplayer/avplayer_handle_streamer.cpp
+                 src/core/libraries/avplayer/avplayer_handle_streamer.h
                  src/core/libraries/avplayer/avplayer_impl.cpp
                  src/core/libraries/avplayer/avplayer_impl.h
                  src/core/libraries/avplayer/avplayer_source.cpp
@@ -421,8 +422,6 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/system/msgdialog.cpp
                 src/core/libraries/system/msgdialog.h
                 src/core/libraries/system/msgdialog_ui.cpp
-                src/core/libraries/system/posix.cpp
-                src/core/libraries/system/posix.h
                 src/core/libraries/save_data/save_backup.cpp
                 src/core/libraries/save_data/save_backup.h
                 src/core/libraries/save_data/save_instance.cpp
@@ -516,6 +515,10 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/video_recording/video_recording.cpp
                 src/core/libraries/video_recording/video_recording.h
                 src/core/libraries/video_recording/video_recording_error.h
+                src/core/libraries/invitation_dialog/invitation_dialog.cpp
+                src/core/libraries/invitation_dialog/invitation_dialog.h
+                src/core/libraries/invitation_dialog/invitation_dialog_ui.cpp
+                src/core/libraries/invitation_dialog/invitation_dialog_ui.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -605,15 +608,15 @@ set(USBD_LIB src/core/libraries/usbd/usbd.cpp
              src/core/libraries/usbd/emulated/skylander.h
 )
 
-set(FIBER_LIB src/core/libraries/fiber/fiber_context.s
+set(FIBER_LIB src/core/libraries/fiber/fiber_context.cpp
               src/core/libraries/fiber/fiber.cpp
               src/core/libraries/fiber/fiber.h
               src/core/libraries/fiber/fiber_error.h
 )
 
-set_source_files_properties(src/core/libraries/fiber/fiber_context.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
-
-set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
+set(VDEC_LIB src/core/libraries/videodec/video_utils.cpp
+             src/core/libraries/videodec/video_utils.h
+             src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h
              src/core/libraries/videodec/videodec2.cpp
              src/core/libraries/videodec/videodec2.h
@@ -638,15 +641,13 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_matching2/np_matching2_mm.h
             src/core/libraries/np/np_matching2/np_matching2_signaling.cpp
             src/core/libraries/np/np_matching2/np_matching2_signaling.h
-            src/core/libraries/np/np_matching2/np_matching2_types.h
+            src/core/libraries/np/np_types2.h
             src/core/libraries/np/np_trophy.cpp
             src/core/libraries/np/np_trophy.h
             src/core/libraries/np/np_tus.cpp
             src/core/libraries/np/np_tus.h
             src/core/libraries/np/trophy_ui.cpp
             src/core/libraries/np/trophy_ui.h
-            src/core/libraries/np/np_web_api2.cpp
-            src/core/libraries/np/np_web_api2.h
             src/core/libraries/np/np_party.cpp
             src/core/libraries/np/np_party.h
             src/core/libraries/np/np_auth.cpp
@@ -681,6 +682,14 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_web_api/np_web_api.h
             src/core/libraries/np/np_web_api/np_web_api_internal.cpp
             src/core/libraries/np/np_web_api/np_web_api_internal.h
+            src/core/libraries/np/np_web_api2/np_web_api2.cpp
+            src/core/libraries/np/np_web_api2/np_web_api2.h
+            src/core/libraries/np/np_web_api2/np_web_api2_internal.cpp
+            src/core/libraries/np/np_web_api2/np_web_api2_internal.h
+            src/core/libraries/np/np_web_api2/np_web_api2_context.cpp
+            src/core/libraries/np/np_web_api2/np_web_api2_context.h
+            src/core/libraries/np/np_web_api2/np_web_api2_push_event.cpp
+            src/core/libraries/np/np_web_api2/np_web_api2_push_event.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
@@ -869,6 +878,11 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/npbind.h
          src/core/file_sys/fs.cpp
          src/core/file_sys/fs.h
+         src/core/file_sys/ifile.h
+         src/core/file_sys/backends/host_fs.cpp
+         src/core/file_sys/backends/host_fs.h
+         src/core/file_sys/backends/zarchive_fs.cpp
+         src/core/file_sys/backends/zarchive_fs.h
          src/core/ipc/ipc.cpp
          src/core/ipc/ipc.h
          src/core/loader/dwarf.cpp
@@ -955,6 +969,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/backend/spirv/emit_spirv_composite.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_convert.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_discard_frag.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_discard_frag.h
                       src/shader_recompiler/backend/spirv/emit_spirv_floating_point.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_image.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_instructions.h
@@ -1140,6 +1156,8 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_translations.h
           src/imgui/friends_layer.cpp
           src/imgui/friends_layer.h
+          src/imgui/invitation_prompt_layer.cpp
+          src/imgui/invitation_prompt_layer.h
           src/imgui/shadnet_notifications_layer.cpp
           src/imgui/shadnet_notifications_layer.h
           src/imgui/notifications_layer.cpp
@@ -1170,6 +1188,7 @@ set(IMGUI src/imgui/imgui_config.h
 
 set(INPUT src/input/controller.cpp
           src/input/controller.h
+          src/input/controller_state.cpp
           src/input/input_handler.cpp
           src/input/input_handler.h
           src/input/input_mouse.cpp
@@ -1201,6 +1220,8 @@ add_custom_command(
 
 set(SHADNET src/shadnet/client.cpp
             src/shadnet/client.h
+            src/shadnet/server_probe.cpp
+            src/shadnet/server_probe.h
             "${SHADNET_PROTO_OUT}/shadnet.pb.cc"
 )
 if (APPLE)
@@ -1234,6 +1255,7 @@ target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAlloca
 target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib miniupnpc::miniupnpc)
 target_link_libraries(shadps4 PRIVATE Freetype::Freetype)
 target_link_libraries(shadps4 PRIVATE libprotobuf)
+target_link_libraries(shadps4 PRIVATE ZArchive::zarchive)
 target_include_directories(shadps4 PRIVATE "${SHADNET_PROTO_OUT}")
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")

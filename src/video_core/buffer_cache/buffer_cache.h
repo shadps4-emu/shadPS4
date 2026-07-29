@@ -28,8 +28,6 @@ namespace VideoCore {
 
 using BufferId = Common::SlotId;
 
-static constexpr BufferId NULL_BUFFER_ID{0};
-
 class TextureCache;
 class MemoryTracker;
 class PageManager;

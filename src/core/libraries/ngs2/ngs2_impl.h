@@ -7,6 +7,8 @@
 
 namespace Libraries::Ngs2 {
 
+struct OrbisNgs2RackOption;
+
 static const int ORBIS_NGS2_SYSTEM_NAME_LENGTH = 16;
 static const int ORBIS_NGS2_RACK_NAME_LENGTH = 16;
 
@@ -175,5 +177,7 @@ void* MemoryClear(void* buffer, size_t size);
 s32 SystemCleanup(OrbisNgs2Handle systemHandle, OrbisNgs2ContextBufferInfo* outInfo);
 s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo* hostBufferInfo,
                 OrbisNgs2BufferFreeHandler hostFree, OrbisNgs2Handle* outHandle);
+s32 RackQueryBufferSize(const OrbisNgs2RackOption* option,
+                        OrbisNgs2ContextBufferInfo* outBufferInfo);
 
 } // namespace Libraries::Ngs2

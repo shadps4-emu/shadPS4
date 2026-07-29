@@ -11,6 +11,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/system/systemservice.h"
 #include "imgui/friends_layer.h"
+#include "imgui/invitation_prompt_layer.h"
 #include "imgui/notifications_layer.h"
 #include "imgui/renderer/imgui_core.h"
 #include "imgui/renderer/imgui_impl_vulkan.h"
@@ -525,9 +526,11 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
     ImGui::Layer::AddLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
     ImGui::Friends::Register();
     ImGui::ShadNetNotify::Register();
+    ImGui::InvitationPrompt::Register();
 }
 
 Presenter::~Presenter() {
+    ImGui::InvitationPrompt::Unregister();
     ImGui::ShadNetNotify::Unregister();
     ImGui::Friends::Unregister();
     ImGui::Layer::RemoveLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
@@ -967,9 +970,9 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
                 if (Libraries::SystemService::IsSplashVisible()) { // draw splash
                     if (!splash_img.has_value()) {
                         splash_img.emplace();
-                        auto splash_path = Common::ElfInfo::Instance().GetSplashPath();
-                        if (!splash_path.empty()) {
-                            splash_img = ImGui::RefCountedTexture::DecodePngFile(splash_path);
+                        const auto& splash_data = Common::ElfInfo::Instance().GetSplashData();
+                        if (!splash_data.empty()) {
+                            splash_img = ImGui::RefCountedTexture::DecodePngTexture(splash_data);
                         }
                     }
                     if (auto& splash_image = this->splash_img.value()) {

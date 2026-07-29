@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <cstring>
+#include <memory>
 
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
@@ -15,7 +16,6 @@
 #include "core/libraries/np/np_matching2/np_matching2_internal.h"
 #include "core/libraries/np/np_matching2/np_matching2_mm.h"
 #include "core/libraries/np/np_matching2/np_matching2_signaling.h"
-#include "core/libraries/np/np_matching2/np_matching2_types.h"
 #include "core/libraries/np/np_types.h"
 #include "core/libraries/system/userservice.h"
 
@@ -55,7 +55,7 @@ int PS4_SYSV_ABI sceNpMatching2CreateContextA(const OrbisNpMatching2CreateContex
     const Libraries::Np::OrbisNpId np_id =
         Libraries::Np::NpHandler::GetInstance().GetNpId(param->userId);
 
-    return ContextManager::Instance().CreateContext(&np_id, param->serviceLabel, ctxId);
+    return ContextManager::Instance().CreateContext(&np_id, param->serviceLabel, ctxId, true);
 }
 
 int PS4_SYSV_ABI sceNpMatching2CreateJoinRoom(OrbisNpMatching2ContextId ctxId,
@@ -246,7 +246,11 @@ int PS4_SYSV_ABI sceNpMatching2ContextStop(OrbisNpMatching2ContextId ctxId) {
         return rc;
     }
 
-    MmContextStop(ctxId);
+    const s32 submit_rc = MmContextStop(ctxId);
+    if (submit_rc != ORBIS_OK) {
+        ContextManager::Instance().CompleteStop(ctxId);
+        return submit_rc;
+    }
     return ORBIS_OK;
 }
 
@@ -416,7 +420,7 @@ int PS4_SYSV_ABI sceNpMatching2SearchRoom(OrbisNpMatching2ContextId ctxId,
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
-    MmSearchRoom(ctxId, reqId, *request);
+    MmSearchRoom(ctxId, reqId, *request, ctx->a_variant);
     return ORBIS_OK;
 }
 
@@ -442,8 +446,9 @@ int PS4_SYSV_ABI sceNpMatching2SetUserInfo(OrbisNpMatching2ContextId ctxId,
     }
 
     StoreRequestCallback(ctx, requestOpt);
-    *requestId = AllocRequestId();
-    LOG_WARNING(Lib_NpMatching2, "not implemented");
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmSetUserInfo(ctxId, reqId, *request);
     return ORBIS_OK;
 }
 
@@ -468,9 +473,10 @@ int PS4_SYSV_ABI sceNpMatching2SendRoomMessage(OrbisNpMatching2ContextId ctxId, 
     }
 
     StoreRequestCallback(ctx, requestOpt);
-    *requestId = AllocRequestId();
-    LOG_WARNING(Lib_NpMatching2, "not implemented");
-    return ORBIS_OK;
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    return MmSendRoomMessage(ctxId, reqId,
+                             *static_cast<OrbisNpMatching2SendRoomMessageRequest*>(request));
 }
 
 int PS4_SYSV_ABI sceNpMatching2SetRoomDataExternal(
@@ -570,8 +576,7 @@ s32 PS4_SYSV_ABI sceNpMatching2SignalingGetConnectionStatus(OrbisNpMatching2Cont
         if (member_it != room_it->second.members.end()) {
             pi.addr = member_it->second.addr;
             pi.port = member_it->second.port;
-            std::strncpy(pi.online_id.data, member_it->second.np_id.handle.data,
-                         sizeof(pi.online_id.data) - 1);
+            pi.online_id = member_it->second.np_id.handle;
         }
         peer_it = ctx->peers.emplace(memberId, pi).first;
     }
@@ -690,8 +695,30 @@ int PS4_SYSV_ABI sceNpMatching2GetLobbyMemberDataInternalList() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpMatching2GetRoomDataExternalList() {
-    LOG_INFO(Lib_NpMatching2, "called");
+int PS4_SYSV_ABI sceNpMatching2GetRoomDataExternalList(
+    OrbisNpMatching2ContextId ctxId, OrbisNpMatching2GetRoomDataExternalListRequest* request,
+    OrbisNpMatching2RequestOptParam* requestOpt, OrbisNpMatching2RequestId* requestId) {
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+
+    if (!IsInitialized()) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
+
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmGetRoomDataExternalList(ctxId, reqId, *request, ctx->a_variant);
     return ORBIS_OK;
 }
 
@@ -728,15 +755,38 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomDataInternal(
     ev.req_id = reqId;
     ev.req_event = ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_DATA_INTERNAL;
     ev.error_code = 0;
-    ev.request_cb = ctx->default_request_callback;
-    ev.request_cb_arg = ctx->default_request_callback_arg;
+    const RequestCallbackInfo request_cb = ConsumeRequestCallback(ctx);
+    ev.request_cb = request_cb.callback;
+    ev.request_cb_arg = request_cb.arg;
     ev.request_data = request_data;
     ScheduleEvent(std::move(ev));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataExternalList() {
-    LOG_INFO(Lib_NpMatching2, "called");
+int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataExternalList(
+    OrbisNpMatching2ContextId ctxId, OrbisNpMatching2GetRoomMemberDataExternalListRequest* request,
+    OrbisNpMatching2RequestOptParam* requestOpt, OrbisNpMatching2RequestId* requestId) {
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+
+    if (!IsInitialized()) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
+
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmGetRoomMemberDataExternalList(ctxId, reqId, *request, ctx->a_variant);
     return ORBIS_OK;
 }
 
@@ -745,13 +795,59 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataInternal() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpMatching2GetUserInfoListA() {
-    LOG_INFO(Lib_NpMatching2, "called");
+int PS4_SYSV_ABI sceNpMatching2GetUserInfoListA(OrbisNpMatching2ContextId ctxId,
+                                                OrbisNpMatching2GetUserInfoListRequest* request,
+                                                OrbisNpMatching2RequestOptParam* requestOpt,
+                                                OrbisNpMatching2RequestId* requestId) {
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+
+    if (!IsInitialized()) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
+
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmGetUserInfoList(ctxId, reqId, *request, true);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpMatching2GetUserInfoList() {
-    LOG_INFO(Lib_NpMatching2, "called");
+int PS4_SYSV_ABI sceNpMatching2GetUserInfoList(OrbisNpMatching2ContextId ctxId,
+                                               OrbisNpMatching2GetUserInfoListRequest* request,
+                                               OrbisNpMatching2RequestOptParam* requestOpt,
+                                               OrbisNpMatching2RequestId* requestId) {
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+
+    if (!IsInitialized()) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    if (!request || !requestId) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+
+    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
+
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmGetUserInfoList(ctxId, reqId, *request, ctx->a_variant);
     return ORBIS_OK;
 }
 
@@ -881,9 +977,10 @@ int PS4_SYSV_ABI sceNpMatching2SignalingGetPingInfo(OrbisNpMatching2ContextId ct
     const OrbisNpMatching2RequestId request_id = AllocRequestId();
     *reqId = request_id;
 
-    const bool room_found = ctx->room_cache.find(request->roomId) != ctx->room_cache.end();
-    void* request_data =
-        room_found ? BuildSignalingGetPingInfoPayload(*ctx, request->roomId) : nullptr;
+    auto request_payload_owner = std::make_shared<CallbackPayload>();
+    ctx->request_payload_override = request_payload_owner.get();
+    void* request_data = BuildSignalingGetPingInfoPayload(*ctx, request->roomId);
+    ctx->request_payload_override = nullptr;
 
     PendingEvent ev{};
     ev.type = PendingEvent::REQUEST_CB;
@@ -891,10 +988,12 @@ int PS4_SYSV_ABI sceNpMatching2SignalingGetPingInfo(OrbisNpMatching2ContextId ct
     ev.fire_at = std::chrono::steady_clock::now();
     ev.req_id = request_id;
     ev.req_event = ORBIS_NP_MATCHING2_REQUEST_EVENT_SIGNALING_GET_PING_INFO;
-    ev.error_code = room_found ? ORBIS_OK : ORBIS_NP_MATCHING2_ERROR_ROOM_NOT_FOUND;
-    ev.request_cb = ctx->default_request_callback;
-    ev.request_cb_arg = ctx->default_request_callback_arg;
+    ev.error_code = ORBIS_OK;
+    const RequestCallbackInfo request_cb = ConsumeRequestCallback(ctx);
+    ev.request_cb = request_cb.callback;
+    ev.request_cb_arg = request_cb.arg;
     ev.request_data = request_data;
+    ev.request_payload_owner = std::move(request_payload_owner);
     ScheduleEvent(std::move(ev));
     return ORBIS_OK;
 }
