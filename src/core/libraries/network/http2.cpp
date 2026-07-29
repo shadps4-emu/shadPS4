@@ -4,293 +4,359 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/network/http.h"
 #include "core/libraries/network/http2.h"
+
+#include <map>
 
 namespace Libraries::Http2 {
 
-int PS4_SYSV_ABI _Z5dummyv() {
+std::map<s32, s32> requests_to_connections{};
+
+s32 PS4_SYSV_ABI sceHttp2AbortRequest(s32 req_id) {
+    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    s32 result = Libraries::Http::sceHttpAbortRequest(req_id);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to get abort HTTP request, error = {:#x}", result);
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI sceHttp2AddCookie() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2AbortRequest() {
+s32 PS4_SYSV_ABI sceHttp2AddRequestHeader(s32 template_or_req_id, const char* name,
+                                          const char* value, u32 mode) {
+    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    s32 result = Libraries::Http::sceHttpAddRequestHeader(template_or_req_id, name, value, mode);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to add HTTP response header, error = {:#x}", result);
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI sceHttp2AuthCacheFlush() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2AddCookie() {
+s32 PS4_SYSV_ABI sceHttp2CookieExport() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2AddRequestHeader() {
+s32 PS4_SYSV_ABI sceHttp2CookieFlush() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2AuthCacheFlush() {
+s32 PS4_SYSV_ABI sceHttp2CookieImport() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2CookieExport() {
+s32 PS4_SYSV_ABI sceHttp2CreateCookieBox() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2CookieFlush() {
+s32 PS4_SYSV_ABI sceHttp2CreateRequestWithURL(s32 tmpl_id, const char* method, const char* url,
+                                              u64 content_length) {
+    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    // Http1 has a connection thing to go through first
+    s32 conn_id = Libraries::Http::sceHttpCreateConnectionWithURL(tmpl_id, url, true);
+    if (conn_id < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to create HTTP connection, error = {:#x}", conn_id);
+        return conn_id;
+    }
+    s32 req_id =
+        Libraries::Http::sceHttpCreateRequestWithURL2(conn_id, method, url, content_length);
+    if (req_id < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to create HTTP request, error = {:#x}", req_id);
+        return req_id;
+    }
+    requests_to_connections[req_id] = conn_id;
+    return req_id;
+}
+
+s32 PS4_SYSV_ABI sceHttp2CreateTemplate(s32 ctx_id, const char* user_agent, s32 http_ver,
+                                        s32 auto_proxy_conf) {
+    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    s32 tmpl_id =
+        Libraries::Http::sceHttpCreateTemplate(ctx_id, user_agent, http_ver, auto_proxy_conf);
+    if (tmpl_id < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to create HTTP template, error = {:#x}", tmpl_id);
+    }
+    return tmpl_id;
+}
+
+s32 PS4_SYSV_ABI sceHttp2DeleteCookieBox() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2CookieImport() {
+s32 PS4_SYSV_ABI sceHttp2DeleteRequest(s32 req_id) {
+    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    s32 result = Libraries::Http::sceHttpDeleteRequest(req_id);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to delete HTTP request, error = {:#x}", result);
+        return result;
+    }
+    s32 conn_id = requests_to_connections[req_id];
+    result = Libraries::Http::sceHttpDeleteConnection(conn_id);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to delete HTTP connection, error = {:#x}", result);
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI sceHttp2DeleteTemplate(s32 tmpl_id) {
+    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    s32 result = Libraries::Http::sceHttpDeleteTemplate(tmpl_id);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to delete HTTP template, error = {:#x}", result);
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI sceHttp2GetAllResponseHeaders(s32 req_id, char** header, u64* header_size) {
+    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    s32 result = Libraries::Http::sceHttpGetAllResponseHeaders(req_id, header, header_size);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to get HTTP response headers, error = {:#x}", result);
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI sceHttp2GetAuthEnabled() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2CreateCookieBox() {
+s32 PS4_SYSV_ABI sceHttp2GetAutoRedirect() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2CreateRequestWithURL() {
+s32 PS4_SYSV_ABI sceHttp2GetCookie() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2CreateTemplate() {
+s32 PS4_SYSV_ABI sceHttp2GetCookieBox() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2DeleteCookieBox() {
+s32 PS4_SYSV_ABI sceHttp2GetCookieStats() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2DeleteRequest() {
+s32 PS4_SYSV_ABI sceHttp2GetMemoryPoolStats() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2DeleteTemplate() {
+s32 PS4_SYSV_ABI sceHttp2GetResponseContentLength() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2GetAllResponseHeaders() {
+s32 PS4_SYSV_ABI sceHttp2GetStatusCode(s32 req_id, s32* status_code) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+    s32 result = Libraries::Http::sceHttpGetStatusCode(req_id, status_code);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to get HTTP status code, error = {:#x}", result);
+    }
+    return result;
 }
 
-int PS4_SYSV_ABI sceHttp2GetAuthEnabled() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttp2GetAutoRedirect() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttp2GetCookie() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttp2GetCookieBox() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttp2GetCookieStats() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttp2GetMemoryPoolStats() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttp2GetResponseContentLength() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttp2GetStatusCode() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttp2Init(int net_id, int ssl_id, size_t pool_size, int max_requests) {
+s32 PS4_SYSV_ABI sceHttp2Init(s32 net_id, s32 ssl_id, u64 pool_size, s32 max_requests) {
     LOG_ERROR(Lib_Http2, "(DUMMY) called");
-    static int id = 0;
-    return ++id;
+    s32 ctx_id = Libraries::Http::sceHttpInit(net_id, ssl_id, pool_size);
+    if (ctx_id < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to init HTTP context, error = {:#x}", ctx_id);
+    }
+    return ctx_id;
 }
 
-int PS4_SYSV_ABI sceHttp2ReadData() {
+s32 PS4_SYSV_ABI sceHttp2ReadData(s32 req_id, void* data, u64 size) {
+    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    s32 result = Libraries::Http::sceHttpReadData(req_id, data, size);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to read HTTP data, error = {:#x}", result);
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI sceHttp2ReadDataAsync() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2ReadDataAsync() {
+s32 PS4_SYSV_ABI sceHttp2RedirectCacheFlush() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2RedirectCacheFlush() {
+s32 PS4_SYSV_ABI sceHttp2RemoveRequestHeader() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2RemoveRequestHeader() {
+s32 PS4_SYSV_ABI sceHttp2SendRequest(s32 req_id, const void* data, u64 size) {
+    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    s32 result = Libraries::Http::sceHttpSendRequest(req_id, data, size);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to send HTTP request, error = {:#x}", result);
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI sceHttp2SendRequestAsync() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SendRequest() {
+s32 PS4_SYSV_ABI sceHttp2SetAuthEnabled() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SendRequestAsync() {
+s32 PS4_SYSV_ABI sceHttp2SetAuthInfoCallback() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetAuthEnabled() {
+s32 PS4_SYSV_ABI sceHttp2SetAutoRedirect() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetAuthInfoCallback() {
+s32 PS4_SYSV_ABI sceHttp2SetConnectionWaitTimeOut() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetAutoRedirect() {
+s32 PS4_SYSV_ABI sceHttp2SetConnectTimeOut() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetConnectionWaitTimeOut() {
+s32 PS4_SYSV_ABI sceHttp2SetCookieBox() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetConnectTimeOut() {
+s32 PS4_SYSV_ABI sceHttp2SetCookieMaxNum() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetCookieBox() {
+s32 PS4_SYSV_ABI sceHttp2SetCookieMaxNumPerDomain() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetCookieMaxNum() {
+s32 PS4_SYSV_ABI sceHttp2SetCookieMaxSize() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetCookieMaxNumPerDomain() {
+s32 PS4_SYSV_ABI sceHttp2SetCookieRecvCallback() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetCookieMaxSize() {
+s32 PS4_SYSV_ABI sceHttp2SetCookieSendCallback() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetCookieRecvCallback() {
+s32 PS4_SYSV_ABI sceHttp2SetInflateGZIPEnabled() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetCookieSendCallback() {
+s32 PS4_SYSV_ABI sceHttp2SetMinSslVersion() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetInflateGZIPEnabled() {
+s32 PS4_SYSV_ABI sceHttp2SetPreSendCallback(s32 template_id, OrbisHttp2PreSendCallback cb_func,
+                                            void* user_arg) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetMinSslVersion() {
+s32 PS4_SYSV_ABI sceHttp2SetRecvTimeOut() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetPreSendCallback() {
+s32 PS4_SYSV_ABI sceHttp2SetRedirectCallback() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetRecvTimeOut() {
+s32 PS4_SYSV_ABI sceHttp2SetRequestContentLength(s32 req_id, u64 content_length) {
+    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    s32 result = Libraries::Http::sceHttpSetRequestContentLength(req_id, content_length);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to set HTTP request content length, error = {:#x}", result);
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI sceHttp2SetResolveRetry() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetRedirectCallback() {
+s32 PS4_SYSV_ABI sceHttp2SetResolveTimeOut() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetRequestContentLength() {
+s32 PS4_SYSV_ABI sceHttp2SetSendTimeOut() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetResolveRetry() {
+s32 PS4_SYSV_ABI sceHttp2SetSslCallback() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetResolveTimeOut() {
+s32 PS4_SYSV_ABI sceHttp2SetTimeOut() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetSendTimeOut() {
+s32 PS4_SYSV_ABI sceHttp2SslDisableOption() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetSslCallback() {
+s32 PS4_SYSV_ABI sceHttp2SslEnableOption() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SetTimeOut() {
+s32 PS4_SYSV_ABI sceHttp2Term() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttp2SslDisableOption() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttp2SslEnableOption() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttp2Term() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttp2WaitAsync() {
+s32 PS4_SYSV_ABI sceHttp2WaitAsync() {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("AS45QoYHjc4", "libSceHttp2", 1, "libSceHttp2", _Z5dummyv);
     LIB_FUNCTION("IZ-qjhRqvjk", "libSceHttp2", 1, "libSceHttp2", sceHttp2AbortRequest);
     LIB_FUNCTION("flPxnowtvWY", "libSceHttp2", 1, "libSceHttp2", sceHttp2AddCookie);
     LIB_FUNCTION("nrPfOE8TQu0", "libSceHttp2", 1, "libSceHttp2", sceHttp2AddRequestHeader);
