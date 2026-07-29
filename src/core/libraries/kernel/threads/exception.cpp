@@ -392,7 +392,7 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
         act ? act->__sigaction_handler.sigaction : nullptr);
 #else
     s32 native_sig = OrbisToNativeSignal(sig);
-    if (native_sig == SIGVTALRM) {
+    if (native_sig == SIGVTALRM || IsPthreadCancelSignal(native_sig)) {
         LOG_ERROR(Lib_Kernel, "Guest is attempting to use the HLE-reserved signal {}!", sig);
         *__Error() = POSIX_EINVAL;
         return ORBIS_FAIL;
