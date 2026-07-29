@@ -12,9 +12,9 @@
 
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
-static constexpr u32 ShaderBinaryVersion = 1u;
-static constexpr u32 ShaderMetaVersion = 1u;
-static constexpr u32 PipelineKeyVersion = 1u;
+static constexpr u32 ShaderBinaryVersion = 2u;
+static constexpr u32 ShaderMetaVersion = 2u;
+static constexpr u32 PipelineKeyVersion = 2u;
 } // namespace Serialization
 
 namespace Vulkan {
@@ -313,9 +313,20 @@ void PipelineCache::WarmUp() {
                                            std::move(profile_data));
         return;
     }
-    if (std::memcmp(profile_data.data(), &profile, sizeof(profile)) != 0) {
+    if (profile_data.size() != sizeof(Shader::Profile)) {
+        LOG_WARNING(Render,
+                    "Pipeline cache profile has unexpected size ({} != {}). Ignoring the cache",
+                    profile_data.size(), sizeof(Shader::Profile));
+        Storage::DataBase::Instance().Close();
+        return;
+    }
+
+    Shader::Profile cached_profile{};
+    std::memcpy(&cached_profile, profile_data.data(), sizeof(cached_profile));
+    if (cached_profile != profile) {
         LOG_WARNING(Render,
                     "Pipeline cache isn't compatible with current system. Ignoring the cache");
+        Storage::DataBase::Instance().Close();
         return;
     }
 

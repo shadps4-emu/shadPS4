@@ -39,6 +39,26 @@ int PS4_SYSV_ABI scePthreadMutexInit(PthreadMutexT* mutex, const PthreadMutexAtt
 int PS4_SYSV_ABI posix_pthread_mutex_lock(PthreadMutexT* mutex);
 int PS4_SYSV_ABI posix_pthread_mutex_unlock(PthreadMutexT* mutex);
 int PS4_SYSV_ABI posix_pthread_mutex_destroy(PthreadMutexT* mutex);
+s32 PS4_SYSV_ABI posix_pthread_mutex_trylock(PthreadMutexT* mutex);
+
+int PS4_SYSV_ABI posix_pthread_condattr_init(PthreadCondAttrT* attr);
+int PS4_SYSV_ABI posix_pthread_condattr_destroy(PthreadCondAttrT* attr);
+int PS4_SYSV_ABI scePthreadCondInit(PthreadCondT* cond, const PthreadCondAttrT* cond_attr,
+                                    const char* name);
+int PS4_SYSV_ABI posix_pthread_cond_destroy(PthreadCondT* cond);
+int PS4_SYSV_ABI posix_pthread_cond_signal(PthreadCondT* cond);
+int PS4_SYSV_ABI posix_pthread_cond_wait(PthreadCondT* cond, PthreadMutexT* mutex);
+int PS4_SYSV_ABI posix_pthread_cond_reltimedwait_np(PthreadCondT* cond, PthreadMutexT* mutex,
+                                                    u64 usec);
+
+int PS4_SYSV_ABI posix_pthread_attr_setstacksize(PthreadAttrT* attr, size_t stacksize);
+int PS4_SYSV_ABI posix_pthread_attr_setinheritsched(PthreadAttrT* attr, int sched_inherit);
+int PS4_SYSV_ABI posix_pthread_attr_setschedpolicy(PthreadAttrT* attr, SchedPolicy policy);
+int PS4_SYSV_ABI posix_pthread_attr_setschedparam(PthreadAttrT* attr, SchedParam* param);
+int PS4_SYSV_ABI scePthreadAttrSetaffinity(PthreadAttrT* attr, const u64 mask);
+int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAttrT* attr,
+                                              PthreadEntryFunc start_routine, void* arg,
+                                              const char* name);
 
 void RegisterThreads(Core::Loader::SymbolsResolver* sym);
 

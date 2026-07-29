@@ -52,6 +52,7 @@ enum class MemoryMapFlags : u32 {
     Stack = 0x400,
     NoSync = 0x800,
     Anon = 0x1000,
+    System = 0x2000,
     NoCore = 0x20000,
     NoCoalesce = 0x400000,
 };
@@ -100,6 +101,7 @@ enum class VMAType : u32 {
     Stack = 6,
     Code = 7,
     File = 8,
+    System = 9,
 };
 
 struct VirtualMemoryArea {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
+#include "common/arch.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "thread.h"
 #ifdef _WIN64
@@ -11,7 +12,9 @@
 #include <csignal>
 #include <pthread.h>
 #include <unistd.h>
+#ifdef ARCH_X86_64
 #include <xmmintrin.h>
+#endif
 #endif
 
 namespace Core {
@@ -62,9 +65,11 @@ void NativeThread::Exit() {
 }
 
 void NativeThread::Initialize() {
+#ifdef ARCH_X86_64
     // Set MXCSR and FPUCW registers to the values used by Orbis.
     _mm_setcsr(ORBIS_MXCSR);
     asm volatile("fldcw %0" : : "m"(ORBIS_FPUCW));
+#endif
 #if _WIN64
     tid = GetCurrentThreadId();
 #else

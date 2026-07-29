@@ -34,6 +34,7 @@ public:
     static void SetInstance(std::shared_ptr<KeyManager> instance);
 
     // ------------------- File operations -------------------
+    bool TransferTrophyKey();
     bool LoadFromFile();
     bool SaveToFile();
 

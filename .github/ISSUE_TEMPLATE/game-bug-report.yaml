@@ -22,6 +22,16 @@ body:
         Please make an effort to make sure your issue isn't already reported.
 
         Do not create issues involving software piracy, our rules specifically prohibit this. Otherwise your issue will be closed and you will be banned in this repository.
+        
+        ### Attention
+
+        Don't edit log.
+        
+        Don't force kill the application (or mention it in your issue if you had to).
+
+        When there are several "Critical" lines, the last one is the most important one.
+        
+        Don't run inside or attached to a debugger or external tool, such as: Renderdoc, Vulkan Validation Layers, Reshade
   - type: checkboxes
     id: checklist
     attributes:
@@ -90,6 +100,6 @@ body:
     id: logs
     attributes:
       label: "Log File"
-      description: Drag and drop the log file here. It can be found by right clicking on a game name -> Open Folder... -> Open Log Folder. Make sure that the log type is set to `sync`.
+      description: Drag and drop the log file here. It can be found by right clicking on a game name -> Open Folder... -> Open Log Folder. Make sure that the log `sync` option is ticked.
     validations:
       required: true

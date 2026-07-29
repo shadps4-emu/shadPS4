@@ -283,7 +283,7 @@ int PS4_SYSV_ABI sceAppContentGetRegion() {
 
 int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initParam,
                                          OrbisAppContentBootParam* bootParam) {
-    if (sdk_ver >= Common::ElfInfo::FW_15 && is_initialized) {
+    if (sdk_ver >= Common::ElfInfo::FW_150 && is_initialized) {
         LOG_ERROR(Lib_AppContent, "Already initialized");
         return ORBIS_APP_CONTENT_ERROR_BUSY;
     }

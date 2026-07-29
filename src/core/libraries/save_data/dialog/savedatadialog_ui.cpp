@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fmt/chrono.h>
@@ -138,9 +138,8 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             auto buf = (u8*)new_item->iconBuf;
             icon = RefCountedTexture::DecodePngTexture({buf, buf + new_item->iconSize});
         } else {
-            const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
-            if (std::filesystem::exists(src_icon)) {
-                icon = RefCountedTexture::DecodePngFile(src_icon);
+            if (auto bytes = g_mnt->ReadFile("/app0/sce_sys/save_data.png")) {
+                icon = RefCountedTexture::DecodePngTexture(std::move(*bytes));
             }
         }
         if (new_item->title != nullptr) {
@@ -698,7 +697,7 @@ void SaveDialogUi::DrawUser() {
             }
             SameLine();
             if (Button("No", BUTTON_SIZE)) {
-                if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+                if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
                     Finish(ButtonId::INVALID, Result::USER_CANCELED);
                 } else {
                     Finish(ButtonId::NO);
@@ -710,7 +709,7 @@ void SaveDialogUi::DrawUser() {
         } else {
             if (Button("OK", BUTTON_SIZE)) {
                 if (btn_type == ButtonType::OK &&
-                    ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+                    ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
                     Finish(ButtonId::INVALID, Result::USER_CANCELED);
                 } else {
                     Finish(ButtonId::OK);
@@ -763,7 +762,7 @@ void SaveDialogUi::DrawSystemMessage() {
     });
     BeginGroup();
     if (Button(sys_state.show_no ? "Yes" : "OK", BUTTON_SIZE)) {
-        if (sys_state.return_cancel && ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+        if (sys_state.return_cancel && ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
             Finish(ButtonId::INVALID, Result::USER_CANCELED);
         } else {
             Finish(ButtonId::YES);
@@ -772,7 +771,7 @@ void SaveDialogUi::DrawSystemMessage() {
     SameLine();
     if (sys_state.show_no) {
         if (Button("No", BUTTON_SIZE)) {
-            if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+            if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
                 Finish(ButtonId::INVALID, Result::USER_CANCELED);
             } else {
                 Finish(ButtonId::NO);
@@ -811,7 +810,7 @@ void SaveDialogUi::DrawErrorCode() {
         ws.y - FOOTER_HEIGHT + 5.0f,
     });
     if (Button("OK", BUTTON_SIZE)) {
-        if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+        if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
             Finish(ButtonId::INVALID, Result::USER_CANCELED);
         } else {
             Finish(ButtonId::OK);

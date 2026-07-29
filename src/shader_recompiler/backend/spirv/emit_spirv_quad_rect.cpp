@@ -12,9 +12,8 @@ using Sirit::Id;
 constexpr u32 SPIRV_VERSION_1_5 = 0x00010500;
 
 struct QuadRectListEmitter : public Sirit::Module {
-    explicit QuadRectListEmitter(const VertexRuntimeInfo& vs_info_,
-                                 const FragmentRuntimeInfo& fs_info_)
-        : Sirit::Module{SPIRV_VERSION_1_5}, vs_info{vs_info_}, fs_info{fs_info_} {
+    explicit QuadRectListEmitter(const FragmentRuntimeInfo& fs_info_)
+        : Sirit::Module{SPIRV_VERSION_1_5}, fs_info{fs_info_} {
         void_id = TypeVoid();
         bool_id = TypeBool();
         float_id = TypeFloat(32);
@@ -253,9 +252,8 @@ private:
         } else {
             gl_per_vertex = AddOutput(gl_per_vertex_type);
         }
-        const auto num_forwards = std::min(vs_info.num_exports, fs_info.num_inputs);
-        outputs.reserve(num_forwards);
-        for (int i = 0; i < num_forwards; i++) {
+        outputs.reserve(fs_info.num_inputs);
+        for (int i = 0; i < fs_info.num_inputs; i++) {
             const auto& input = fs_info.inputs[i];
             if (input.IsDefault()) {
                 continue;
@@ -278,10 +276,8 @@ private:
         const Id gl_per_vertex_array{TypeArray(gl_per_vertex_type, Constant(uint_id, 32U))};
         gl_in = AddInput(gl_per_vertex_array);
         const Id float_arr{TypeArray(vec4_id, Int(32))};
-
-        const auto num_forwards = std::min(vs_info.num_exports, fs_info.num_inputs);
-        inputs.reserve(num_forwards);
-        for (int i = 0; i < num_forwards; i++) {
+        inputs.reserve(fs_info.num_inputs);
+        for (int i = 0; i < fs_info.num_inputs; i++) {
             const auto& input = fs_info.inputs[i];
             if (input.IsDefault()) {
                 continue;
@@ -292,7 +288,6 @@ private:
     }
 
 private:
-    VertexRuntimeInfo vs_info;
     FragmentRuntimeInfo fs_info;
     Id main;
     Id void_id;
@@ -324,9 +319,8 @@ private:
     std::vector<Id> interfaces;
 };
 
-std::vector<u32> EmitAuxilaryTessShader(AuxShaderType type, const VertexRuntimeInfo& vs_info,
-                                        const FragmentRuntimeInfo& fs_info) {
-    QuadRectListEmitter ctx{vs_info, fs_info};
+std::vector<u32> EmitAuxilaryTessShader(AuxShaderType type, const FragmentRuntimeInfo& fs_info) {
+    QuadRectListEmitter ctx{fs_info};
     switch (type) {
     case AuxShaderType::RectListTCS:
         ctx.EmitRectListTCS();

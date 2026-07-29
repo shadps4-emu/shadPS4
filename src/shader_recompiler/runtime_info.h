@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <ranges>
 #include <span>
 #include "common/types.h"
 #include "shader_recompiler/frontend/tessellation.h"
@@ -95,7 +97,6 @@ using OutputMap = std::array<Output, 4>;
 
 struct VertexRuntimeInfo : protected CommonEsVsRuntimeInfo {
     u32 num_outputs;
-    u32 num_exports;
     std::array<OutputMap, 3> outputs;
     bool tess_emulated_primitive{};
     bool emulate_depth_negative_one_to_one{};

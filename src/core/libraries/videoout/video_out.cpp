@@ -61,7 +61,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::OrbisKernelEqueue eq, s32 handl
     event.data = port;
     equeue->AddEvent(event);
 
-    port->flip_events.push_back(equeue);
+    port->flip_events.push_back(eq);
     return ORBIS_OK;
 }
 
@@ -76,7 +76,7 @@ s32 PS4_SYSV_ABI sceVideoOutDeleteFlipEvent(Kernel::OrbisKernelEqueue eq, s32 ha
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
     }
     equeue->RemoveEvent(handle, Kernel::OrbisKernelEvent::Filter::VideoOut);
-    port->flip_events.erase(find(port->flip_events.begin(), port->flip_events.end(), equeue));
+    port->flip_events.erase(find(port->flip_events.begin(), port->flip_events.end(), eq));
     return ORBIS_OK;
 }
 
@@ -103,7 +103,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::OrbisKernelEqueue eq, s32 han
     event.data = port;
     equeue->AddEvent(event);
 
-    port->vblank_events.push_back(equeue);
+    port->vblank_events.push_back(eq);
     return ORBIS_OK;
 }
 
@@ -118,7 +118,7 @@ s32 PS4_SYSV_ABI sceVideoOutDeleteVblankEvent(Kernel::OrbisKernelEqueue eq, s32 
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
     }
     equeue->RemoveEvent(handle, Kernel::OrbisKernelEvent::Filter::VideoOut);
-    port->vblank_events.erase(find(port->vblank_events.begin(), port->vblank_events.end(), equeue));
+    port->vblank_events.erase(find(port->vblank_events.begin(), port->vblank_events.end(), eq));
     return ORBIS_OK;
 }
 
@@ -449,6 +449,16 @@ s32 PS4_SYSV_ABI sceVideoOutConfigureOutputMode_(s32 handle, u32 reserved, const
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceVideoOutSubmitChangeBufferAttribute(s32 handle, s32 attributeIndex,
+                                                        const BufferAttribute* attribute) {
+    auto* port = driver->GetPort(handle);
+    if (!port || !port->is_open) {
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
+
+    return driver->ChangeBufferAttribute(port, attributeIndex, attribute);
+}
+
 s32 PS4_SYSV_ABI sceVideoOutSetWindowModeMargins(s32 handle, s32 top, s32 bottom) {
     LOG_ERROR(Lib_VideoOut, "(STUBBED) called top = {}, bottom = {}", top, bottom);
     return ORBIS_OK;
@@ -493,6 +503,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideoOutConfigureOutputMode_);
     LIB_FUNCTION("MTxxrOCeSig", "libSceVideoOut", 1, "libSceVideoOut",
                  sceVideoOutSetWindowModeMargins);
+    LIB_FUNCTION("IOdgHlCGU-k", "libSceVideoOut", 1, "libSceVideoOut",
+                 sceVideoOutSubmitChangeBufferAttribute);
 }
 
 } // namespace Libraries::VideoOut
