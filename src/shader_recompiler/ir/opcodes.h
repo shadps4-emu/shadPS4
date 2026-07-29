@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <fmt/format.h>
+#include <magic_enum/magic_enum.hpp>
 #include "common/types.h"
 #include "shader_recompiler/ir/type.h"
 
@@ -106,4 +107,10 @@ struct fmt::formatter<Shader::IR::Opcode> {
     auto format(const Shader::IR::Opcode op, FormatContext& ctx) const {
         return fmt::format_to(ctx.out(), "{}", Shader::IR::NameOf(op));
     }
+};
+
+template <>
+struct magic_enum::customize::enum_range<Shader::IR::Opcode> {
+    static constexpr int min = static_cast<int>(Shader::IR::Opcode::Phi);
+    static constexpr int max = static_cast<int>(Shader::IR::Opcode::GroupAny);
 };

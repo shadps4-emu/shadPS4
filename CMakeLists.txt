@@ -1010,6 +1010,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/frontend/copy_shader.h
                       src/shader_recompiler/frontend/decode.cpp
                       src/shader_recompiler/frontend/decode.h
+                      src/shader_recompiler/frontend/dominance.cpp
+                      src/shader_recompiler/frontend/dominance.h
                       src/shader_recompiler/frontend/fetch_shader.cpp
                       src/shader_recompiler/frontend/fetch_shader.h
                       src/shader_recompiler/frontend/format.cpp
@@ -1027,8 +1029,11 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/passes/lower_buffer_format_to_raw.cpp
                       src/shader_recompiler/ir/passes/lower_fp64_to_fp32.cpp
                       src/shader_recompiler/ir/passes/lower_user_clip_planes.cpp
+                      src/shader_recompiler/ir/passes/readconst_address_add_transform.cpp
                       src/shader_recompiler/ir/passes/readlane_elimination_pass.cpp
-                      src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
+                      src/shader_recompiler/ir/passes/resource_discover_pass.cpp
+                      src/shader_recompiler/ir/passes/resource_pass.h
+                      src/shader_recompiler/ir/passes/resource_patching_pass.cpp
                       src/shader_recompiler/ir/passes/ring_access_elimination.cpp
                       src/shader_recompiler/ir/passes/shader_info_collection_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_barrier_pass.cpp
@@ -1049,6 +1054,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/dominance.h
                       src/shader_recompiler/ir/ir_emitter.cpp
                       src/shader_recompiler/ir/ir_emitter.h
+                      src/shader_recompiler/ir/dominance_search.h
                       src/shader_recompiler/ir/microinstruction.cpp
                       src/shader_recompiler/ir/microinstruction.h
                       src/shader_recompiler/ir/opcodes.cpp

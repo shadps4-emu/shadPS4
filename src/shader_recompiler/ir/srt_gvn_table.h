@@ -7,7 +7,7 @@
 #include "common/assert.h"
 #include "common/hash.h"
 #include "common/types.h"
-#include "shader_recompiler/ir/breadth_first_search.h"
+#include "shader_recompiler/ir/dominance_search.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
 
@@ -39,6 +39,30 @@ public:
     }
 
 private:
+    bool IsArgHashInst(IR::Inst* inst) {
+        switch (inst->GetOpcode()) {
+        case IR::Opcode::GetUserData:
+        case IR::Opcode::CompositeConstructU32x2:
+        case IR::Opcode::ReadConst:
+        case IR::Opcode::ReadConstBuffer:
+        case IR::Opcode::IAdd32:
+        case IR::Opcode::ISub32:
+        case IR::Opcode::IMul32:
+        case IR::Opcode::ShiftLeftLogical32:
+        case IR::Opcode::ShiftRightLogical32:
+        case IR::Opcode::BitwiseAnd32:
+        case IR::Opcode::BitwiseOr32:
+        case IR::Opcode::BitwiseXor32:
+        case IR::Opcode::BitwiseNot32:
+        case IR::Opcode::UMin32:
+        case IR::Opcode::UMax32:
+        case IR::Opcode::BitFieldUExtract:
+            return true;
+        default:
+            return false;
+        }
+    }
+
     u32 ComputeInstValueNumber(IR::Inst* inst) {
         ASSERT(!value_numbers.contains(
             IR::Value(inst))); // Should always be checking before calling this function
@@ -49,24 +73,41 @@ private:
 
         u32 vn;
 
-        switch (inst->GetOpcode()) {
-        case IR::Opcode::Phi: {
-            const auto pred = [](IR::Inst* inst) -> std::optional<IR::Inst*> {
-                if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                    inst->GetOpcode() == IR::Opcode::CompositeConstructU32x2 ||
-                    inst->GetOpcode() == IR::Opcode::ReadConst) {
+        if (inst->GetOpcode() == IR::Opcode::Phi) {
+            const auto pred = [this](IR::Inst* inst) -> std::optional<IR::Inst*> {
+                switch (inst->GetOpcode()) {
+                case IR::Opcode::GetUserData:
+                case IR::Opcode::ReadConst:
+                case IR::Opcode::ReadConstBuffer:
                     return inst;
+                default:
+                    return std::nullopt;
                 }
-                return std::nullopt;
             };
-            IR::Inst* source = IR::BreadthFirstSearch(inst, pred).value();
-            vn = GetValueNumber(source);
+            boost::container::small_vector<std::pair<IR::Inst*, IR::Inst*>, 2> src_inst_map;
+            boost::container::small_vector<IR::Inst*, 2> srcs;
+            for (size_t i = 0; i < inst->NumArgs(); ++i) {
+                auto arg = inst->Arg(i);
+                if (arg.IsImmediate()) {
+                    continue;
+                }
+                auto arg_inst = arg.Inst();
+                auto src = IR::DominanceSearch(arg_inst, *inst->GetParent(), true, pred);
+                if (!src) {
+                    continue;
+                }
+                auto src_val = src.value();
+                srcs.push_back(src_val);
+                src_inst_map.emplace_back(src_val, arg_inst);
+            }
+            Gcn::EliminateNonDominantInstructions(srcs, *inst->GetParent());
+            ASSERT(srcs.size() == 1);
+            auto src_it = std::ranges::find_if(
+                src_inst_map, [&srcs](const auto p) { return p.first == srcs[0]; });
+            ASSERT(src_it != src_inst_map.end());
+            vn = GetValueNumber(src_it->second);
             value_numbers[IR::Value(inst)] = vn;
-            break;
-        }
-        case IR::Opcode::GetUserData:
-        case IR::Opcode::CompositeConstructU32x2:
-        case IR::Opcode::ReadConst: {
+        } else if (IsArgHashInst(inst)) {
             InstVector iv = MakeInstVector(inst);
             if (auto it = iv_to_vn.find(iv); it != iv_to_vn.end()) {
                 vn = it->second;
@@ -75,11 +116,8 @@ private:
                 vn = NextValueNumber(IR::Value(inst));
                 iv_to_vn.emplace(std::move(iv), vn);
             }
-            break;
-        }
-        default:
+        } else {
             vn = NextValueNumber(IR::Value(inst));
-            break;
         }
 
         return vn;
