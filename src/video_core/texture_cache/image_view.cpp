@@ -64,6 +64,7 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     range.extent.levels = image.NumViewLevels(desc.is_array);
     range.extent.layers = image.NumViewLayers(desc.is_array);
     type = image.GetViewType(desc.is_array);
+    min_lod = static_cast<u32>(image.min_lod);
 
     if (!is_storage) {
         mapping = Vulkan::LiverpoolToVK::ComponentMapping(image.DstSelect());
@@ -94,6 +95,13 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     vk::ImageViewUsageCreateInfo usage_ci{.usage = image.usage_flags};
     if (!info.is_storage) {
         usage_ci.usage &= ~vk::ImageUsageFlagBits::eStorage;
+    }
+    vk::ImageViewMinLodCreateInfoEXT min_lod_ci{};
+    if (info.min_lod != 0 && instance.IsImageViewMinLodSupported()) {
+        const float last_level =
+            static_cast<float>(info.range.base.level + info.range.extent.levels - 1);
+        min_lod_ci.minLod = std::min(static_cast<float>(info.min_lod) / 256.f, last_level);
+        usage_ci.pNext = &min_lod_ci;
     }
     // When sampling D32/D16 texture from shader, the T# specifies R32/R16 format so adjust it.
     vk::Format format = info.format;

@@ -40,6 +40,7 @@ void Terminate();
 void UpdateSinks();
 
 void UpdateLogLevels(std::string_view log_filter);
+void UpdateLogFlushLevel(std::string_view log_flush_level);
 
 static constexpr std::array level_string_views{"Trace", "Debug",    "Info", "Warning",
                                                "Error", "Critical", "Off"};
@@ -61,11 +62,11 @@ static constexpr std::array level_string_views{"Trace", "Debug",    "Info", "War
         }                                                                                          \
     } while (false)
 
-#ifdef _DEBUG
+#ifdef NDEBUG
+#define LOG_TRACE(log_class, ...) (void(0))
+#else
 #define LOG_TRACE(log_class, ...)                                                                  \
     LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::trace, __VA_ARGS__)
-#else
-#define LOG_TRACE(log_class, ...) (void(0))
 #endif
 
 #define LOG_DEBUG(log_class, ...)                                                                  \

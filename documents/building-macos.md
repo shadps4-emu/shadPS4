@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 ### Install the necessary tools to build shadPS4:
 
-First, make sure you have **Xcode 16.0 or newer** installed.
+First, make sure you have **Xcode 26.0 or newer** installed.
 
 For installing other tools and library dependencies we will be using [Homebrew](https://brew.sh/).
 
@@ -23,6 +23,12 @@ eval $(/opt/homebrew/bin/brew shellenv)
 Then, use Homebrew to install the required build tools:
 ```
 brew install clang-format cmake
+```
+
+Finally, install the dependencies required for building the KosmicKrisp Vulkan driver. You can skip this by setting `-DENABLE_SYSTEM_VULKAN=ON` when configuring, but you are responsible for having a compatible Vulkan setup installed.
+```
+brew install meson ninja pkg-config llvm spirv-tools spirv-llvm-translator libclc
+pip3 install --break-system-packages mako packaging pyyaml
 ```
 
 ### Cloning and compiling:

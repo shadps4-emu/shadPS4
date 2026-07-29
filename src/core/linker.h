@@ -131,6 +131,14 @@ public:
         }
     }
 
+    void LoadLibcInternal() {
+        for (auto& module : m_modules) {
+            if (module->name.contains("libSceLibcInternal")) {
+                module->Start(0, nullptr, nullptr);
+            }
+        }
+    }
+
     void SetHeapAPI(void* func[]) {
         heap_api = reinterpret_cast<AppHeapAPI>(func);
     }

@@ -15,6 +15,8 @@ struct TransportHooks {
     int (*control_recv)(void* buf, u32 len, u32* from_addr, u16* from_port) = nullptr;
     bool (*transport_ready)() = nullptr;
     u16 (*configured_port)() = nullptr;
+    u32 (*advertised_addr)() = nullptr;
+    bool (*ensure_transport)() = nullptr;
 };
 void SetTransportHooks(const TransportHooks& hooks);
 
@@ -24,12 +26,16 @@ int ControlSendTo(const void* data, u32 len, u32 dest_addr, u16 dest_port);
 int ControlRecvFrom(void* buf, u32 len, u32* from_addr, u16* from_port);
 bool TransportIsReady();
 u16 ConfiguredPort();
+u32 AdvertisedAddr();
+bool EnsureTransport();
 
 using PeerResolver = bool (*)(std::string_view online_id, u32* out_addr, u16* out_port);
 void SetPeerResolver(PeerResolver fn);
+void SetMatching2Enabled(bool enabled);
 void SetMmServerEndpoint(u32 addr, u16 udp_port);
 
 bool ResolvePeer(std::string_view online_id, u32* out_addr, u16* out_port);
+bool Matching2Enabled();
 u32 MmServerAddr();
 u16 MmServerUdpPort();
 
