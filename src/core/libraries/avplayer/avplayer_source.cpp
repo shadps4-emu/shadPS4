@@ -7,6 +7,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
+#include "core/libraries/avplayer/avplayer_handle_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
 #include "core/libraries/videodec/video_utils.h"
 #include "core/memory.h"
@@ -58,25 +59,66 @@ bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view pa
         std::min(std::max(2, init_data.num_output_video_framebuffers), 16);
 
     AVFormatContext* context = avformat_alloc_context();
+    if (context == nullptr) {
+        LOG_ERROR(Lib_AvPlayer, "Could not allocate AVFormatContext for {}", path);
+        return false;
+    }
+
+    const auto attach_custom_io = [&]() {
+        context->pb = m_up_data_streamer->GetContext();
+        context->flags |= AVFMT_FLAG_CUSTOM_IO;
+    };
+
     if (init_data.file_replacement.open != nullptr) {
+        LOG_INFO(Lib_AvPlayer, "Opening {} through the game-provided file replacement", path);
         m_up_data_streamer = std::make_unique<AvPlayerFileStreamer>(init_data.file_replacement);
         if (!m_up_data_streamer->Init(path)) {
+            avformat_free_context(context);
             return false;
         }
-        context->pb = m_up_data_streamer->GetContext();
+        attach_custom_io();
         if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
             return false;
         }
     } else {
         const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-        const auto filepath = mnt->GetHostPath(path);
-        if (AVPLAYER_IS_ERROR(
-                avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
-            return false;
+        auto handle = mnt->Open(path, /*writable=*/false);
+        if (handle) {
+            if (auto host = handle->GetHostPath(); host.has_value()) {
+                LOG_INFO(Lib_AvPlayer, "Opening {} directly from host path {}", path,
+                         host->string());
+                if (AVPLAYER_IS_ERROR(
+                        avformat_open_input(&context, host->string().c_str(), nullptr, nullptr))) {
+                    return false;
+                }
+            } else {
+                LOG_INFO(Lib_AvPlayer, "Opening {} through a non-host backend handle", path);
+                m_up_data_streamer = std::make_unique<AvPlayerHandleStreamer>(std::move(handle));
+                if (!m_up_data_streamer->Init(path)) {
+                    avformat_free_context(context);
+                    return false;
+                }
+                attach_custom_io();
+                if (AVPLAYER_IS_ERROR(avformat_open_input(&context, nullptr, nullptr, nullptr))) {
+                    return false;
+                }
+            }
+        } else {
+            const auto filepath = mnt->GetHostPath(path);
+            LOG_INFO(Lib_AvPlayer, "Opening {} via GetHostPath fallback {}", path,
+                     filepath.string());
+            if (AVPLAYER_IS_ERROR(
+                    avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
+                return false;
+            }
         }
     }
     m_avformat_context = AVFormatContextPtr(context, &ReleaseAVFormatContext);
 
+    return true;
+}
+
+bool AvPlayerSource::FindStreams() {
     if (avformat_find_stream_info(m_avformat_context.get(), nullptr) >= 0) {
         m_streams.reserve(m_avformat_context->nb_streams);
         for (u32 idx = 0; idx < m_avformat_context->nb_streams; ++idx) {
@@ -86,10 +128,7 @@ bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view pa
             m_streams.push_back({idx, CreateStreamInfo(idx)});
         }
     }
-    return true;
-}
-
-bool AvPlayerSource::HasStreams() {
+    m_duration = DurationMillis();
     return m_streams.size() >= 0;
 }
 
@@ -309,6 +348,7 @@ bool AvPlayerSource::Stop() {
     m_video_frames.Clear();
 
     m_last_audio_ts.reset();
+    m_last_data_time.reset();
     m_start_time.reset();
     m_pause_time = {};
     m_pause_duration = {};
@@ -352,19 +392,11 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
         return false;
     }
 
+    const auto current_time = CurrentTime();
     const auto& new_frame = m_video_frames.Front();
     if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default) {
-        if (m_audio_stream_index && m_audio_decoder_thread.Joinable()) {
-            // Audio is available, sync video with it.
-            if (new_frame.info.timestamp > m_last_audio_ts.value_or(0)) {
-                return false;
-            }
-        } else {
-            // Sync with the internal timer since audio is not available
-            const auto current_time = CurrentTime();
-            if (0 < current_time && current_time < new_frame.info.timestamp) {
-                return false;
-            }
+        if (new_frame.info.timestamp > current_time) {
+            return false;
         }
     }
 
@@ -376,6 +408,7 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
 
     auto frame = m_video_frames.Pop();
     video_info = frame->info;
+
     m_current_video_frame = std::move(frame);
     return true;
 }
@@ -397,6 +430,8 @@ bool AvPlayerSource::GetAudioData(AvPlayerFrameInfo& audio_info) {
 
     auto frame = m_audio_frames.Pop();
     m_last_audio_ts = frame->info.timestamp;
+    m_last_data_time = std::chrono::high_resolution_clock::now();
+    m_pause_duration = std::chrono::high_resolution_clock::duration(0);
 
     audio_info = {};
     audio_info.timestamp = frame->info.timestamp;
@@ -418,8 +453,11 @@ u64 AvPlayerSource::DurationMillis() const {
         if (!stream_index.has_value()) {
             return;
         }
+        if (stream_index.value() < 0) {
+            return;
+        }
         const auto index = m_streams[stream_index.value()].ffmpeg_index;
-        if (index < 0 || u32(index) >= m_avformat_context->nb_streams) {
+        if (index >= m_streams.size()) {
             return;
         }
         const auto stream = m_avformat_context->streams[index];
@@ -449,9 +487,8 @@ u64 AvPlayerSource::CurrentTime() {
         return 0;
     }
 
-    const auto duration = DurationMillis();
     if (m_is_eof && !IsActive()) {
-        return duration;
+        return m_duration;
     }
     if (!IsActive()) {
         return 0;
@@ -459,13 +496,20 @@ u64 AvPlayerSource::CurrentTime() {
 
     using namespace std::chrono;
     const auto now = m_is_paused.load() ? m_pause_time : high_resolution_clock::now();
+    if (m_audio_stream_index) {
+        const auto last_audio = m_last_data_time.value_or(now);
+        const auto elapsed =
+            duration_cast<milliseconds>(now - last_audio - m_pause_duration).count();
+        return m_last_audio_ts.value_or(0) + elapsed;
+    }
+
     const auto elapsed =
         duration_cast<milliseconds>(now - m_start_time.value() - m_pause_duration).count();
     if (elapsed <= 0) {
         return 0;
     }
     const auto current_time = u64(elapsed);
-    return duration != 0 && current_time > duration ? duration : current_time;
+    return m_duration != 0 && current_time > m_duration ? m_duration : current_time;
 }
 
 bool AvPlayerSource::IsActive() {

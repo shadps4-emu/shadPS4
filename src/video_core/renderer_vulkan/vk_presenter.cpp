@@ -970,9 +970,9 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
                 if (Libraries::SystemService::IsSplashVisible()) { // draw splash
                     if (!splash_img.has_value()) {
                         splash_img.emplace();
-                        auto splash_path = Common::ElfInfo::Instance().GetSplashPath();
-                        if (!splash_path.empty()) {
-                            splash_img = ImGui::RefCountedTexture::DecodePngFile(splash_path);
+                        const auto& splash_data = Common::ElfInfo::Instance().GetSplashData();
+                        if (!splash_data.empty()) {
+                            splash_img = ImGui::RefCountedTexture::DecodePngTexture(splash_data);
                         }
                     }
                     if (auto& splash_image = this->splash_img.value()) {

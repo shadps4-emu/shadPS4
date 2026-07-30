@@ -209,7 +209,17 @@ int main(int argc, char* argv[]) {
 
     // ---- Resolve game path or ID ----
     std::filesystem::path ebootPath(*gamePath);
-    if (!std::filesystem::exists(ebootPath)) {
+    const auto archive_component_exists = [](const std::filesystem::path& p) -> bool {
+        std::filesystem::path accum;
+        for (const auto& comp : p) {
+            accum /= comp;
+            if (comp.extension() == ".zar") {
+                return std::filesystem::is_regular_file(accum);
+            }
+        }
+        return false;
+    };
+    if (!std::filesystem::exists(ebootPath) && !archive_component_exists(ebootPath)) {
         bool found = false;
         constexpr int maxDepth = 5;
         for (const auto& installDir : EmulatorSettings.GetGameInstallDirs()) {
