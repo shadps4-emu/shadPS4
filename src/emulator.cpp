@@ -303,15 +303,38 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         rebase_to_base_game(game_folder);
     }
 
+    const auto resolve_relative_path = [](const std::filesystem::path& path,
+                                          const std::filesystem::path& base) {
+        // WinFSP-backed mounts can reject canonical path queries while normal reads still work.
+        std::error_code relative_error;
+        auto relative_path = std::filesystem::relative(path, base, relative_error);
+        if (relative_error) {
+            LOG_WARNING(Common_Filesystem,
+                        "Failed to canonicalize executable path {} relative to {}: {}. Falling "
+                        "back to lexical path resolution.",
+                        Common::FS::PathToUTF8String(path), Common::FS::PathToUTF8String(base),
+                        relative_error.message());
+
+            relative_path = path.lexically_relative(base);
+        }
+        return relative_path;
+    };
+
     if (!from_archive) {
         if (p_game_folder.has_value()) {
             game_folder = p_game_folder.value();
-            eboot_name = std::filesystem::relative(file, game_folder);
+            eboot_name = resolve_relative_path(file, game_folder);
         } else {
             game_folder = file.parent_path();
-            eboot_name = std::filesystem::relative(file, game_folder);
+            eboot_name = resolve_relative_path(file, game_folder);
             rebase_to_base_game(game_folder);
         }
+    }
+
+    if (eboot_name.empty()) {
+        LOG_ERROR(Common_Filesystem, "Failed to derive executable path {} relative to {}",
+                  Common::FS::PathToUTF8String(file), Common::FS::PathToUTF8String(game_folder));
+        return;
     }
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
