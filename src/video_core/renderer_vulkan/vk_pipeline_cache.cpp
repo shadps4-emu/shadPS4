@@ -498,13 +498,8 @@ bool PipelineCache::RefreshGraphicsStages() {
 
     infos.fill(nullptr);
     modules.fill(nullptr);
-    const auto result = bind_stage(Stage::Fragment, LogicalStage::Fragment);
-    if (!result && regs.vs_output_control.clip_distance_enable &&
-        profile.needs_clip_distance_emulation) {
-        // TODO: need to implement a discard only fallback shader
-        LOG_WARNING(Render_Vulkan,
-                    "Clip distance emulation is ineffective due to absense of fragment shader");
-    }
+
+    bind_stage(Stage::Fragment, LogicalStage::Fragment);
 
     const auto* fs_info = infos[static_cast<u32>(LogicalStage::Fragment)];
     key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;

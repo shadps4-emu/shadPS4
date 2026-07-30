@@ -52,7 +52,7 @@ struct AvPlayerAudio {
     u8 reserved1[2];
     u32 sample_rate;
     u32 size;
-    u8 language_code[4];
+    char language_code[4];
 };
 
 struct AvPlayerVideo {
@@ -70,7 +70,7 @@ struct AvPlayerTextPosition {
 };
 
 struct AvPlayerTimedText {
-    u8 language_code[4];
+    char language_code[4];
     u16 text_size;
     u16 font_size;
     AvPlayerTextPosition position;
