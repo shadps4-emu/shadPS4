@@ -12,6 +12,7 @@
 
 #include "common/debug.h"
 #include "common/logging/log.h"
+#include "common/string_util.h"
 #include "common/thread.h"
 #include "core/emulator_settings.h"
 #include "core/ipc/ipc.h"
@@ -157,12 +158,13 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
         if (entry.is_directory) {
             continue;
         }
-        // Extension check: entry names carry the raw leaf, no path.
-        if (entry.name.size() < 4 || entry.name.compare(entry.name.size() - 4, 4, ".trp") != 0) {
+        // Extension check: match TROPHY00.TRP as well as trophy00.trp.
+        const std::string name_lower = Common::ToLower(entry.name);
+        if (!name_lower.ends_with(".trp")) {
             continue;
         }
-        const std::string stem = entry.name.substr(0, entry.name.size() - 4);
-        if (stem.find(pattern) != 0) {
+        const std::string stem = name_lower.substr(0, name_lower.size() - 4);
+        if (!stem.starts_with(pattern)) {
             continue;
         }
 
@@ -251,6 +253,10 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
                 }
             }
         }
+    }
+
+    if (trophy_index_map.empty()) {
+        LOG_WARNING(Common_Filesystem, "No usable trophy files found in {}", trophy_dir_guest);
     }
 
     return trophy_index_map;
