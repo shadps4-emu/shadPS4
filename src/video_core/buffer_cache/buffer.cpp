@@ -160,6 +160,13 @@ void Buffer::Fill(u64 offset, u32 num_bytes, u32 value) {
     });
 }
 
+void Buffer::Invalidate(u64 offset, u64 size) {
+    ASSERT(offset + size <= size_bytes);
+    if (!is_coherent && usage == MemoryUsage::Download) {
+        vmaInvalidateAllocation(instance->GetAllocator(), buffer.allocation, offset, size);
+    }
+}
+
 constexpr u64 WATCHES_INITIAL_RESERVE = 0x4000;
 constexpr u64 WATCHES_RESERVE_CHUNK = 0x1000;
 
