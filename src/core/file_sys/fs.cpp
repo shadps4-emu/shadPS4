@@ -14,6 +14,28 @@
 
 namespace Core::FileSys {
 
+// Iterates a pre-collected entry list produced by merging the backend stack.
+class MergedDirectory final : public IDirectory {
+public:
+    explicit MergedDirectory(std::vector<DirEntry> entries) : entries{std::move(entries)} {}
+
+    bool Next(DirEntry& out) override {
+        if (index >= entries.size()) {
+            return false;
+        }
+        out = entries[index++];
+        return true;
+    }
+
+    void Rewind() override {
+        index = 0;
+    }
+
+private:
+    std::vector<DirEntry> entries;
+    size_t index{0};
+};
+
 bool MntPoints::ignore_game_patches = false;
 
 std::string RemoveTrailingSlashes(const std::string& path) {
@@ -467,13 +489,31 @@ std::unique_ptr<IDirectory> MntPoints::OpenDir(std::string_view guest_path) {
     }
     const auto rel = RelativeToMount(*corrected, *mount);
     const std::string rel_copy{rel};
-
+    std::vector<DirEntry> entries;
+    std::unordered_set<std::string> seen;
+    bool found = false;
     for (const auto& backend : mount->backends) {
-        if (backend->Exists(rel) && backend->IsDirectory(rel)) {
-            return backend->OpenDir(rel_copy);
+        if (!backend->Exists(rel) || !backend->IsDirectory(rel)) {
+            continue;
+        }
+        found = true;
+        auto dir = backend->OpenDir(rel_copy);
+        if (!dir) {
+            continue;
+        }
+        DirEntry entry;
+        while (dir->Next(entry)) {
+            const auto key = NeedsCaseInsensitiveSearch ? Common::ToLower(entry.name) : entry.name;
+            if (!seen.insert(key).second) {
+                continue;
+            }
+            entries.push_back(entry);
         }
     }
-    return nullptr;
+    if (!found) {
+        return nullptr;
+    }
+    return std::make_unique<MergedDirectory>(std::move(entries));
 }
 
 std::optional<std::vector<u8>> MntPoints::ReadFile(std::string_view guest_path) {
