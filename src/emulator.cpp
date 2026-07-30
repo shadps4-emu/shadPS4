@@ -212,7 +212,18 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
                 continue;
             }
             TRP trp;
-            const bool ok = trp.Extract(trp_source, np_comm_id, trophy_output_dir);
+            bool ok = trp.Extract(trp_source, np_comm_id, trophy_output_dir);
+            if (!ok) {
+                // if it's an update and doesn't contain trophies fallback to base
+                const auto base_source = mnt->GetHostPath(
+                    entry_guest, nullptr, Core::FileSys::MntPoints::HostPathType::Base);
+                if (!base_source.empty() && base_source != trp_source &&
+                    std::filesystem::is_regular_file(base_source)) {
+                    LOG_WARNING(Loader, "Retrying trophy extraction with base game file {}",
+                                base_source.string());
+                    ok = trp.Extract(base_source, np_comm_id, trophy_output_dir);
+                }
+            }
             if (!temp_extract.empty()) {
                 std::error_code ec;
                 std::filesystem::remove(temp_extract, ec);
@@ -231,9 +242,13 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
             if (!std::filesystem::exists(user_trophy_file)) {
                 auto temp = user_trophy_file.parent_path();
                 std::filesystem::create_directories(temp);
-                std::error_code discard;
-                std::filesystem::copy_file(trophy_output_dir / "Xml" / "TROPCONF.XML",
-                                           user_trophy_file, discard);
+                std::error_code ec;
+                const auto tropconf = trophy_output_dir / "Xml" / "TROPCONF.XML";
+                std::filesystem::copy_file(tropconf, user_trophy_file, ec);
+                if (ec) {
+                    LOG_ERROR(Loader, "Failed to copy {} to {}: {}", tropconf.string(),
+                              user_trophy_file.string(), ec.message());
+                }
             }
         }
     }
