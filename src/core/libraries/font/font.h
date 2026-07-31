@@ -767,5 +767,5 @@ s32 PS4_SYSV_ABI Func_EAC96B2186B71E14();
 s32 PS4_SYSV_ABI Func_FE4788A96EF46256();
 s32 PS4_SYSV_ABI Func_FE7E5AE95D3058F5();
 
-void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Font

@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/thread.h"
 #include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_state.h"
+#include "core/libraries/kernel/process.h"
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -50,16 +52,16 @@ void PS4_SYSV_ABI AvPlayerState::AutoPlayEventCallback(void* opaque, AvPlayerEve
                     audio_stream_index = stream_index;
                 }
                 if (!default_language.empty() &&
-                    default_language == info.details.video.language_code) {
+                    default_language == info.details.audio.language_code) {
                     audio_stream_index = stream_index;
                 }
                 break;
             case AvPlayerStreamType::TimedText:
-                if (default_language.empty()) {
+                if (timedtext_stream_index == -1) {
                     timedtext_stream_index = stream_index;
-                    break;
                 }
-                if (default_language == info.details.video.language_code) {
+                if (!default_language.empty() &&
+                    default_language == info.details.subs.language_code) {
                     timedtext_stream_index = stream_index;
                 }
                 break;
@@ -138,9 +140,9 @@ bool AvPlayerState::AddSource(std::string_view path, AvPlayerSourceType source_t
             return false;
         }
 
-        m_up_source = std::make_unique<AvPlayerSource>(
-            *this, m_post_init_data.video_decoder_init.decoder_type.video_type ==
-                       AvPlayerVideoDecoderType::Software2);
+        s32 sdk_ver{};
+        Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
+        m_up_source = std::make_unique<AvPlayerSource>(*this);
         if (!m_up_source->Init(m_init_data, path)) {
             SetState(AvState::Error);
             m_up_source.reset();
@@ -173,7 +175,7 @@ bool AvPlayerState::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
 
 // Called inside GAME thread
 bool AvPlayerState::Start() {
-    std::shared_lock lock(m_source_mutex);
+    std::unique_lock lock(m_source_mutex);
     if (m_current_state == AvState::Ready || m_current_state == AvState::Stop || Stop()) {
         m_eof_stop_event_sent = false;
         SetState(AvState::Starting);
@@ -198,9 +200,8 @@ bool AvPlayerState::Pause() {
         return true;
     }
     if (m_up_source == nullptr || m_current_state == AvState::Pause ||
-        m_current_state == AvState::Stop || m_current_state == AvState::Ready ||
-        m_current_state == AvState::Initial || m_current_state == AvState::Unknown ||
-        m_current_state == AvState::AddingSource) {
+        m_current_state == AvState::Ready || m_current_state == AvState::Initial ||
+        m_current_state == AvState::Unknown || m_current_state == AvState::AddingSource) {
         LOG_ERROR(Lib_AvPlayer, "Could not pause playback.");
         return false;
     }
@@ -457,8 +458,12 @@ void AvPlayerState::ProcessEvent() {
         break;
     }
     case AvEventType::AddSource: {
-        std::shared_lock lock(m_source_mutex);
-        if (m_up_source->FindStreamInfo()) {
+        bool found = false;
+        {
+            std::unique_lock lock(m_source_mutex);
+            found = m_up_source != nullptr && m_up_source->FindStreams();
+        }
+        if (found) {
             SetState(AvState::Ready);
             OnPlaybackStateChanged(AvState::Ready);
         } else {

@@ -529,4 +529,12 @@ void EmitGetGotoVariable(EmitContext&) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
+void EmitSetMaskLaneVariable(EmitContext&) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitGetMaskLaneVariable(EmitContext&) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
 } // namespace Shader::Backend::SPIRV
