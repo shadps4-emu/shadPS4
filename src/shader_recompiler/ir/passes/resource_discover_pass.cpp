@@ -201,8 +201,10 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
 
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
         const IR::Inst* sampler = inst.Arg(1).InstRecursive();
-        sampler_sharp_source =
-            FindSharpSource(sampler->Arg(0).InstRecursive(), block, inst_info.pc);
+        if (!sampler->AreAllArgsImmediates()) {
+            sampler_sharp_source =
+                FindSharpSource(sampler->Arg(0).InstRecursive(), block, inst_info.pc);
+        }
     }
 
     sharp_usages.emplace_back(ResourceDiscovery{&inst, &block, sharp_source, sampler_sharp_source});
