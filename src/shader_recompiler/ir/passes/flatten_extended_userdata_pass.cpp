@@ -268,9 +268,11 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
          r_it++) {
         IR::Block* block = *r_it;
         for (IR::Inst& inst : *block) {
-            if (inst.GetOpcode() == IR::Opcode::ReadConst || inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
+            if (inst.GetOpcode() == IR::Opcode::ReadConst ||
+                inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
                 if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
-                    // Only flatten ReadConstBuffer if it was marked as a sharp source in the resource discovery pass
+                    // Only flatten ReadConstBuffer if it was marked as a sharp source in the
+                    // resource discovery pass
                     auto inst_info = inst.Flags<IR::BufferInstInfo>();
                     if (!inst_info.sharp_source) {
                         continue;

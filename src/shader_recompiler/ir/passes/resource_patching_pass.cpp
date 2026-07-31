@@ -172,7 +172,8 @@ SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
     }
 }
 
-void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors, const Profile& profile) {
+void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors,
+                      const Profile& profile) {
     IR::Block& block = *resource.user_block;
     IR::Inst& inst = *resource.user;
 
@@ -220,7 +221,8 @@ void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors
     inst.SetArg(0, ir.Imm32(buffer_binding));
 }
 
-void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors, const Profile& profile) {
+void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors,
+                     const Profile& profile) {
     IR::Block& block = *resource.user_block;
     IR::Inst& inst = *resource.user;
     const IR::Inst* sharp_source = resource.sharp_source;
@@ -872,7 +874,8 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 }
 
-void ResourcePatchingPass(Shader::Info& info, const ResourceDiscoveryList& resources, const Profile& profile) {
+void ResourcePatchingPass(Shader::Info& info, const ResourceDiscoveryList& resources,
+                          const Profile& profile) {
     // Iterate over discovered resources and patch them after finding the sharp.
     // Pass 1: Track resource sharps
     Descriptors descriptors{info};
