@@ -12,6 +12,7 @@
 
 #include "common/debug.h"
 #include "common/logging/log.h"
+#include "common/string_util.h"
 #include "common/thread.h"
 #include "core/emulator_settings.h"
 #include "core/ipc/ipc.h"
@@ -157,12 +158,13 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
         if (entry.is_directory) {
             continue;
         }
-        // Extension check: entry names carry the raw leaf, no path.
-        if (entry.name.size() < 4 || entry.name.compare(entry.name.size() - 4, 4, ".trp") != 0) {
+        // Extension check: match TROPHY00.TRP as well as trophy00.trp.
+        const std::string name_lower = Common::ToLower(entry.name);
+        if (!name_lower.ends_with(".trp")) {
             continue;
         }
-        const std::string stem = entry.name.substr(0, entry.name.size() - 4);
-        if (stem.find(pattern) != 0) {
+        const std::string stem = name_lower.substr(0, name_lower.size() - 4);
+        if (!stem.starts_with(pattern)) {
             continue;
         }
 
@@ -212,7 +214,18 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
                 continue;
             }
             TRP trp;
-            const bool ok = trp.Extract(trp_source, np_comm_id, trophy_output_dir);
+            bool ok = trp.Extract(trp_source, np_comm_id, trophy_output_dir);
+            if (!ok) {
+                // if it's an update and doesn't contain trophies fallback to base
+                const auto base_source = mnt->GetHostPath(
+                    entry_guest, nullptr, Core::FileSys::MntPoints::HostPathType::Base);
+                if (!base_source.empty() && base_source != trp_source &&
+                    std::filesystem::is_regular_file(base_source)) {
+                    LOG_WARNING(Loader, "Retrying trophy extraction with base game file {}",
+                                base_source.string());
+                    ok = trp.Extract(base_source, np_comm_id, trophy_output_dir);
+                }
+            }
             if (!temp_extract.empty()) {
                 std::error_code ec;
                 std::filesystem::remove(temp_extract, ec);
@@ -231,11 +244,19 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
             if (!std::filesystem::exists(user_trophy_file)) {
                 auto temp = user_trophy_file.parent_path();
                 std::filesystem::create_directories(temp);
-                std::error_code discard;
-                std::filesystem::copy_file(trophy_output_dir / "Xml" / "TROPCONF.XML",
-                                           user_trophy_file, discard);
+                std::error_code ec;
+                const auto tropconf = trophy_output_dir / "Xml" / "TROPCONF.XML";
+                std::filesystem::copy_file(tropconf, user_trophy_file, ec);
+                if (ec) {
+                    LOG_ERROR(Loader, "Failed to copy {} to {}: {}", tropconf.string(),
+                              user_trophy_file.string(), ec.message());
+                }
             }
         }
+    }
+
+    if (trophy_index_map.empty()) {
+        LOG_WARNING(Common_Filesystem, "No usable trophy files found in {}", trophy_dir_guest);
     }
 
     return trophy_index_map;
@@ -303,15 +324,38 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         rebase_to_base_game(game_folder);
     }
 
+    const auto resolve_relative_path = [](const std::filesystem::path& path,
+                                          const std::filesystem::path& base) {
+        // WinFSP-backed mounts can reject canonical path queries while normal reads still work.
+        std::error_code relative_error;
+        auto relative_path = std::filesystem::relative(path, base, relative_error);
+        if (relative_error) {
+            LOG_WARNING(Common_Filesystem,
+                        "Failed to canonicalize executable path {} relative to {}: {}. Falling "
+                        "back to lexical path resolution.",
+                        Common::FS::PathToUTF8String(path), Common::FS::PathToUTF8String(base),
+                        relative_error.message());
+
+            relative_path = path.lexically_relative(base);
+        }
+        return relative_path;
+    };
+
     if (!from_archive) {
         if (p_game_folder.has_value()) {
             game_folder = p_game_folder.value();
-            eboot_name = std::filesystem::relative(file, game_folder);
+            eboot_name = resolve_relative_path(file, game_folder);
         } else {
             game_folder = file.parent_path();
-            eboot_name = std::filesystem::relative(file, game_folder);
+            eboot_name = resolve_relative_path(file, game_folder);
             rebase_to_base_game(game_folder);
         }
+    }
+
+    if (eboot_name.empty()) {
+        LOG_ERROR(Common_Filesystem, "Failed to derive executable path {} relative to {}",
+                  Common::FS::PathToUTF8String(file), Common::FS::PathToUTF8String(game_folder));
+        return;
     }
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
