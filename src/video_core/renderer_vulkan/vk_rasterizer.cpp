@@ -652,10 +652,12 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             ASSERT(adjust % 4 == 0);
             push_data.AddOffset(binding.buffer, adjust);
             buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
+            const vk::AccessFlags2 access_mask =
+                desc.is_written
+                    ? vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite
+                    : vk::AccessFlagBits2::eShaderRead;
             if (auto barrier =
-                    vk_buffer->GetBarrier(desc.is_written ? vk::AccessFlagBits2::eShaderWrite
-                                                          : vk::AccessFlagBits2::eShaderRead,
-                                          vk::PipelineStageFlagBits2::eAllCommands)) {
+                    vk_buffer->GetBarrier(access_mask, vk::PipelineStageFlagBits2::eAllCommands)) {
                 buffer_barriers.emplace_back(*barrier);
             }
             if (desc.is_written && desc.is_formatted) {

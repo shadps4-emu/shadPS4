@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+
 #include "common/assert.h"
+#include "common/logging/log.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/operand_helper.h"
@@ -12,6 +15,43 @@
 #include "shader_recompiler/runtime_info.h"
 
 namespace Shader::Optimization {
+
+static CopyShaderData BuildFallbackGsCopyData(u32 output_vertices, u32 dwords_per_vertex) {
+    CopyShaderData data{};
+    if (output_vertices == 0 || dwords_per_vertex == 0) {
+        return data;
+    }
+
+    data.output_vertices = output_vertices;
+    data.num_comps = dwords_per_vertex;
+    for (u32 dword = 0; dword < dwords_per_vertex; ++dword) {
+        const u32 offset = dword * output_vertices * 64;
+        if (dword < 4) {
+            data.attr_map[offset] = {IR::Attribute::Position0, dword};
+            continue;
+        }
+        const u32 param_index = (dword - 4) / 4;
+        if (param_index >= IR::NumParams) {
+            break;
+        }
+        data.attr_map[offset] = {IR::Attribute::Param0 + param_index, (dword - 4) % 4};
+        data.num_attrs = std::max(data.num_attrs, param_index + 1);
+    }
+    return data;
+}
+
+static void FillMissingGsCopyData(CopyShaderData& data, const CopyShaderData& fallback) {
+    if (data.output_vertices == 0) {
+        data.output_vertices = fallback.output_vertices;
+    }
+    if (data.num_comps == 0) {
+        data.num_comps = fallback.num_comps;
+    }
+    data.num_attrs = std::max(data.num_attrs, fallback.num_attrs);
+    for (const auto& [offset, attr] : fallback.attr_map) {
+        data.attr_map.try_emplace(offset, attr);
+    }
+}
 
 void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info) {
     auto& info = program.info;
@@ -111,6 +151,15 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                         dwords_per_vertex, info.gs_copy_data.num_comps);
             dwords_per_vertex = info.gs_copy_data.num_comps;
         }
+        const auto fallback_copy_data = BuildFallbackGsCopyData(output_vertices, dwords_per_vertex);
+        if (info.gs_copy_data.attr_map.empty()) {
+            LOG_WARNING(Render_Recompiler,
+                        "Failed to parse GS copy shader {:#x}; using sequential output mapping",
+                        gs_info.vs_copy_hash);
+            info.gs_copy_data = fallback_copy_data;
+        } else {
+            FillMissingGsCopyData(info.gs_copy_data, fallback_copy_data);
+        }
 
         ForEachInstruction([&](IR::IREmitter& ir, IR::Inst& inst) {
             const auto opcode = inst.GetOpcode();
@@ -150,7 +199,12 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
 
                 const auto vc_read_ofs = (((offset / comp_ofs) * comp_ofs) % output_size) * 16u;
                 const auto& it = info.gs_copy_data.attr_map.find(vc_read_ofs);
-                ASSERT(it != info.gs_copy_data.attr_map.cend());
+                if (it == info.gs_copy_data.attr_map.cend()) {
+                    LOG_WARNING(Render_Recompiler,
+                                "Missing GS copy mapping for offset {:#x} in copy shader {:#x}",
+                                vc_read_ofs, runtime_info.gs_info.vs_copy_hash);
+                    break;
+                }
                 const auto& [attr, comp] = it->second;
 
                 inst.Invalidate();
