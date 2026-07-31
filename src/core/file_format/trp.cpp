@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <system_error>
+
 #include "common/aes.h"
 #include "common/key_manager.h"
 #include "common/logging/log.h"
@@ -35,13 +37,6 @@ static void removePadding(std::vector<u8>& vec) {
     }
 }
 
-static void hexToBytes(const char* hex, unsigned char* dst) {
-    for (size_t i = 0; hex[i] != 0; i++) {
-        const unsigned char value = (hex[i] < 0x3A) ? (hex[i] - 0x30) : (hex[i] - 0x37);
-        dst[i / 2] |= ((i % 2) == 0) ? (value << 4) : (value);
-    }
-}
-
 bool TRP::Extract(const std::filesystem::path& trophyPath, std::string npCommId,
                   const std::filesystem::path& outputPath) {
     // Retrieve trophy key
@@ -58,6 +53,10 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, std::string npCommId,
 
     s32 trpFileIndex = 0;
     bool success = true;
+    const auto cleanupOnFailure = [&outputPath] {
+        std::error_code ec;
+        std::filesystem::remove_all(outputPath, ec);
+    };
     try {
         if (trophyPath.extension() != ".trp") {
             return false;
@@ -75,15 +74,22 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, std::string npCommId,
         }
 
         if (header.magic != TRP_MAGIC) {
-            LOG_ERROR(Common_Filesystem, "Wrong trophy magic number in {}", trophyPath.string());
+            LOG_ERROR(Common_Filesystem,
+                      "Wrong trophy magic number in {}: got {:#010x}, expected {:#010x}",
+                      trophyPath.string(), static_cast<u32>(header.magic), TRP_MAGIC);
             return false;
         }
 
         s64 seekPos = sizeof(TrpHeader);
-        // Create output directories
-        if (!std::filesystem::create_directories(outputPath / "Icons") ||
-            !std::filesystem::create_directories(outputPath / "Xml")) {
-            LOG_ERROR(Common_Filesystem, "Failed to create output directories for {}", npCommId);
+        std::error_code dir_ec;
+        std::filesystem::create_directories(outputPath / "Icons", dir_ec);
+        if (!dir_ec) {
+            std::filesystem::create_directories(outputPath / "Xml", dir_ec);
+        }
+        if (dir_ec) {
+            LOG_ERROR(Common_Filesystem, "Failed to create output directories for {}: {}", npCommId,
+                      dir_ec.message());
+            cleanupOnFailure();
             return false;
         }
 
@@ -132,18 +138,22 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, std::string npCommId,
 
     } catch (const std::filesystem::filesystem_error& e) {
         LOG_CRITICAL(Common_Filesystem, "Filesystem error during trophy extraction: {}", e.what());
+        cleanupOnFailure();
         return false;
     } catch (const std::exception& e) {
         LOG_CRITICAL(Common_Filesystem, "Error during trophy extraction: {}", e.what());
+        cleanupOnFailure();
         return false;
     }
 
-    if (success) {
-        LOG_INFO(Common_Filesystem, "Successfully extracted {} trophy files for {}", trpFileIndex,
-                 npCommId);
+    if (!success) {
+        cleanupOnFailure();
+        return false;
     }
 
-    return success;
+    LOG_INFO(Common_Filesystem, "Successfully extracted {} trophy files for {}", trpFileIndex,
+             npCommId);
+    return true;
 }
 
 bool TRP::ProcessPngEntry(Common::FS::IOFile& file, const TrpEntry& entry,
