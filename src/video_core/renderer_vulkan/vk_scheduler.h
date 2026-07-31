@@ -58,12 +58,15 @@ struct SubmitInfo {
     std::array<vk::Semaphore, 3> signal_semas;
     std::array<u64, 3> signal_ticks;
     vk::Fence fence;
+    std::array<vk::PipelineStageFlags, 3> wait_stages;
     u32 num_wait_semas;
     u32 num_signal_semas;
 
-    void AddWait(vk::Semaphore semaphore, u64 tick = 1) {
+    void AddWait(vk::Semaphore semaphore, u64 tick = 1,
+                 vk::PipelineStageFlags stage = vk::PipelineStageFlagBits::eAllCommands) {
         wait_semas[num_wait_semas] = semaphore;
-        wait_ticks[num_wait_semas++] = tick;
+        wait_ticks[num_wait_semas] = tick;
+        wait_stages[num_wait_semas++] = stage;
     }
 
     void AddSignal(vk::Semaphore semaphore, u64 tick = 1) {
@@ -422,8 +425,6 @@ public:
         }
         priority_pending_ops_cv.notify_one();
     }
-
-    static std::mutex submit_mutex;
 
 private:
     void AllocateWorkerCommandBuffers();

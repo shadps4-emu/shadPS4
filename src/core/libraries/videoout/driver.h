@@ -1,15 +1,17 @@
-﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
-#include "common/debug.h"
-#include "common/polyfill_thread.h"
-#include "core/libraries/videoout/video_out.h"
-
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <queue>
+
+#include "common/debug.h"
+#include "common/polyfill_thread.h"
+#include "core/libraries/videoout/presentation_queue.h"
+#include "core/libraries/videoout/video_out.h"
 
 namespace Vulkan {
 struct Frame;
@@ -27,27 +29,25 @@ struct VideoOutPort {
     SceVideoOutVblankStatus vblank_status;
     std::vector<Kernel::OrbisKernelEqueue> flip_events;
     std::vector<Kernel::OrbisKernelEqueue> vblank_events;
+    std::mutex event_mutex;
     std::mutex vo_mutex;
     std::mutex port_mutex;
     std::condition_variable vo_cv;
     std::condition_variable vblank_cv;
-    int flip_rate = 0;
+    std::atomic<int> flip_rate{0};
     int prev_index = -1;
-    bool is_open = false;
-    bool is_hdr = false;
+    std::atomic_bool is_open{false};
+    std::atomic_bool is_hdr{false};
+    std::atomic<u64> generation{0};
 
     s32 FindFreeGroup() const {
-        s32 index = 0;
-        while (index < groups.size() && groups[index].is_occupied) {
-            index++;
-        }
-        return index;
+        const auto it = std::ranges::find_if(groups, [](const auto& g) { return !g.is_occupied; });
+        return static_cast<s32>(std::distance(groups.begin(), it));
     }
 
-    bool IsVoLabel(const u64* address) const {
-        const u64* start = &buffer_labels[0];
-        const u64* end = &buffer_labels[MaxDisplayBuffers - 1];
-        return address >= start && address <= end;
+    [[nodiscard]] bool IsVoLabel(const u64* address) const noexcept {
+        return address >= buffer_labels.data() &&
+               address < buffer_labels.data() + buffer_labels.size();
     }
 
     void WaitVoLabel(auto&& pred) {
@@ -62,7 +62,7 @@ struct VideoOutPort {
 
     [[nodiscard]] int NumRegisteredBuffers() const {
         return std::count_if(buffer_slots.cbegin(), buffer_slots.cend(),
-                             [](auto& buffer) { return buffer.group_index != -1; });
+                             [](const auto& buffer) { return buffer.group_index != -1; });
     }
 };
 
@@ -80,7 +80,7 @@ public:
     ~VideoOutDriver();
 
     int Open(const ServiceThreadParams* params);
-    void Close(s32 handle);
+    s32 Close(s32 handle);
 
     VideoOutPort* GetPort(s32 handle);
 
@@ -90,31 +90,50 @@ public:
     int ChangeBufferAttribute(VideoOutPort* port, s32 bufferIndex,
                               const BufferAttribute* attribute);
 
-    bool SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
+    s32 SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
 
 private:
     struct Request {
-        Vulkan::Frame* frame;
-        VideoOutPort* port;
-        s64 flip_arg;
-        s32 index;
-        bool eop;
+        Vulkan::Frame* frame{};
+        VideoOutPort* port{};
+        s64 flip_arg{};
+        u64 generation{};
+        s32 index{};
+        bool eop{};
 
         operator bool() const noexcept {
             return frame != nullptr;
         }
     };
 
-    void Flip(const Request& req);
+    struct PresentRequest {
+        Vulkan::Frame* frame{};
+        bool hdr{};
+        u64 generation{};
+
+        operator bool() const noexcept {
+            return frame != nullptr;
+        }
+    };
+
+    bool Flip(const Request& req);
     void DrawBlankFrame(); // Video port out not open
     void DrawLastFrame();  // Used when there is no flip request
-    void SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
+    void SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop,
+                            u64 generation);
+    void PublishFrame(PresentRequest request);
+    void VblankThread(std::stop_token token);
     void PresentThread(std::stop_token token);
 
     std::mutex mutex;
     VideoOutPort main_port{};
+    std::jthread vblank_thread;
     std::jthread present_thread;
     std::queue<Request> requests;
+    std::mutex present_mutex;
+    std::condition_variable_any present_cv;
+    PresentationQueue<PresentRequest> pending_presents;
+    bool blank_requested{true};
 };
 
 } // namespace Libraries::VideoOut
