@@ -172,7 +172,9 @@ const IR::Inst* FindSharpSource(IR::Inst* handle, const IR::Block& current_paren
     IR::Inst* sharp_source = sources[0];
     if (sharp_source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
         // Set flag so that the flattening pass knows to flatten this instruction.
-        sharp_source->SetFlags<u32>(1u);
+        auto flags = sharp_source->Flags<IR::BufferInstInfo>();
+        flags.sharp_source.Assign(1u);
+        sharp_source->SetFlags(flags);
     }
 
     return sharp_source;
@@ -199,7 +201,7 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
 
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
         const IR::Inst* sampler = inst.Arg(1).InstRecursive();
-        sharp_source = FindSharpSource(sampler->Arg(0).InstRecursive(), block, inst_info.pc);
+        sampler_sharp_source = FindSharpSource(sampler->Arg(0).InstRecursive(), block, inst_info.pc);
     }
 
     sharp_usages.emplace_back(ResourceDiscovery{&inst, &block, sharp_source, sampler_sharp_source}); 

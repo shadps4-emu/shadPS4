@@ -15,7 +15,7 @@
 namespace Shader::Optimization {
 namespace {
 
-using SharpLocation = u32;
+using SharpLocation = u16;
 
 IR::Type BufferDataType(const IR::Inst& inst, const Profile& profile,
                         AmdGpu::NumberFormat num_format) {
@@ -160,77 +160,15 @@ private:
 
 } // Anonymous namespace
 
-std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
-    std::pair not_found{inst, false};
-
-    // Assuming S# is in UD s[12:15] and T# is in s[4:11]
-    // The next pattern:
-    //  s_bfe_u32     s0, s7,  $0x0008000c
-    //  s_and_b32     s1, s12, $0xfffff1ff
-    //  s_cmp_eq_u32  s0, 0
-    //  s_cselect_b32 s0, s1, s12
-    // is used to disable anisotropy in the sampler if the sampled texture doesn't have mips
-
-    if (inst->GetOpcode() != IR::Opcode::SelectU32) {
-        return not_found;
-    }
-
-    // Select should be based on zero check
-    const auto* prod0 = inst->Arg(0).InstRecursive();
-    if (prod0->GetOpcode() != IR::Opcode::IEqual32 ||
-        !(prod0->Arg(1).IsImmediate() && prod0->Arg(1).U32() == 0u)) {
-        return not_found;
-    }
-
-    // The bitfield extract might be hidden by phi sometimes
-    auto* prod0_arg0 = prod0->Arg(0).InstRecursive();
-    if (prod0_arg0->GetOpcode() == IR::Opcode::Phi) {
-        auto arg0 = prod0_arg0->Arg(0);
-        auto arg1 = prod0_arg0->Arg(1);
-        if (!arg0.IsImmediate() &&
-            arg0.InstRecursive()->GetOpcode() == IR::Opcode::BitFieldUExtract) {
-            prod0_arg0 = arg0.InstRecursive();
-        } else if (!arg1.IsImmediate() &&
-                   arg1.InstRecursive()->GetOpcode() == IR::Opcode::BitFieldUExtract) {
-            prod0_arg0 = arg1.InstRecursive();
-        }
-    }
-
-    // The bits range is for lods (note that constants are changed after constant propagation pass)
-    if (prod0_arg0->GetOpcode() != IR::Opcode::BitFieldUExtract ||
-        !(prod0_arg0->Arg(1).IsImmediate() && prod0_arg0->Arg(1).U32() == 12) ||
-        !(prod0_arg0->Arg(2).IsImmediate() && prod0_arg0->Arg(2).U32() == 8)) {
-        return not_found;
-    }
-
-    // Make sure mask is masking out anisotropy
-    const auto* prod1 = inst->Arg(1).InstRecursive();
-    if (prod1->GetOpcode() != IR::Opcode::BitwiseAnd32 || prod1->Arg(1).U32() != 0xfffff1ff) {
-        return not_found;
-    }
-
-    // We're working on the first dword of s#
-    const auto* prod2 = inst->Arg(2).InstRecursive();
-    if (prod2->GetOpcode() != IR::Opcode::GetUserData &&
-        prod2->GetOpcode() != IR::Opcode::ReadConst && prod2->GetOpcode() != IR::Opcode::Phi) {
-        return not_found;
-    }
-
-    return {prod2, true};
-}
-
 using SharpSources = boost::container::small_vector<const IR::Inst*, 4>;
-
-bool IsSharpSource(const IR::Inst* inst) {
-    return inst->GetOpcode() == IR::Opcode::GetUserData ||
-           inst->GetOpcode() == IR::Opcode::ReadConst;
-}
 
 SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return static_cast<SharpLocation>(inst->Arg(0).ScalarReg());
+    } else if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        return inst->Flags<IR::BufferInstInfo>().flatbuf_off_dw;
     } else {
-        return inst->Flags<u32>();
+        return inst->Flags<SharpLocation>();
     }
 }
 
@@ -935,7 +873,7 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
 }
 
 void ResourcePatchingPass(Shader::Info& info, const ResourceDiscoveryList& resources, const Profile& profile) {
-    // Iterate resource instructions and patch them after finding the sharp.
+    // Iterate over discovered resources and patch them after finding the sharp.
     // Pass 1: Track resource sharps
     Descriptors descriptors{info};
     for (const auto& usage : resources) {

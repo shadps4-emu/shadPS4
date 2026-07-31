@@ -122,7 +122,7 @@ using namespace Shader;
 
 struct PassInfo {
     // map offset to inst
-    using PtrUserList = boost::container::flat_map<u32, Shader::IR::Inst*>;
+    using PtrUserList = boost::container::flat_map<u16, Shader::IR::Inst*>;
 
     Optimization::SrtGvnTable gvn_table;
     // keys are GetUserData or ReadConst instructions that are used as pointers
@@ -134,7 +134,7 @@ struct PassInfo {
     std::unordered_map<u32, IR::Inst*> vn_to_inst;
 
     // Bumped during codegen to assign offsets to readconsts
-    u32 dst_off_dw;
+    u16 dst_off_dw;
 
     PtrUserList* GetUsesAsPointer(IR::Inst* inst) {
         auto it = pointer_uses.find(inst);
@@ -157,6 +157,24 @@ struct PassInfo {
 namespace Shader::Optimization {
 
 namespace {
+
+static inline u16 GetFlatbufOffset(const IR::Inst* inst) {
+    if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        auto inst_info = inst->Flags<IR::BufferInstInfo>();
+        return inst_info.flatbuf_off_dw;
+    }
+    return inst->Flags<u16>();
+}
+
+static inline void SetFlatbufOffset(IR::Inst* inst, u16 offset) {
+    if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        auto inst_info = inst->Flags<IR::BufferInstInfo>();
+        inst_info.flatbuf_off_dw.Assign(offset);
+        inst->SetFlags(inst_info);
+    } else {
+        inst->SetFlags(offset);
+    }
+}
 
 static inline void PushPtr(Xbyak::CodeGenerator& c, u32 off_dw) {
     c.push(rdi);
@@ -184,7 +202,7 @@ static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
         c.mov(r10d, ptr[rdi + (src_off_dw << 2)]);
         c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
 
-        use->SetFlags<u32>(pass_info.dst_off_dw);
+        SetFlatbufOffset(use, pass_info.dst_off_dw);
         pass_info.dst_off_dw++;
     }
 
@@ -250,7 +268,15 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
          r_it++) {
         IR::Block* block = *r_it;
         for (IR::Inst& inst : *block) {
-            if (inst.GetOpcode() == IR::Opcode::ReadConst) {
+            if (inst.GetOpcode() == IR::Opcode::ReadConst || inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                    // Only flatten ReadConstBuffer if it was marked as a sharp source in the resource discovery pass
+                    auto inst_info = inst.Flags<IR::BufferInstInfo>();
+                    if (!inst_info.sharp_source) {
+                        continue;
+                    }
+                }
+
                 if (!inst.Arg(1).IsImmediate()) {
                     LOG_WARNING(Render_Recompiler, "ReadConst has non-immediate offset");
                     continue;
@@ -298,7 +324,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
     for (IR::Inst* readconst : all_readconsts) {
         ASSERT(pass_info.vn_to_inst.contains(pass_info.gvn_table.GetValueNumber(readconst)));
         IR::Inst* original = pass_info.DeduplicateInstruction(readconst);
-        readconst->SetFlags<u32>(original->Flags<u32>());
+        SetFlatbufOffset(readconst, GetFlatbufOffset(original));
     }
 
     info.RefreshFlatBuf();
