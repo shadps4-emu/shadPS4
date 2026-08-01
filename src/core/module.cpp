@@ -335,6 +335,8 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             MemoryPatcher::OnGameLoaded();
         }
     }
+    // The module is mapped but has not run anything yet: apply the patches that name it.
+    MemoryPatcher::OnModuleLoaded(name, base_virtual_addr, base_size);
 }
 
 void Module::LoadDynamicInfo() {
