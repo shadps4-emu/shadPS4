@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <SDL3/SDL_events.h>
@@ -284,7 +285,8 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
 }
 
 bool MustKeepDrawing() {
-    return layers.size() > 1 || change_layers.size() > 1 || DebugState.IsShowingDebugMenuBar();
+    return std::ranges::any_of(layers, [](Layer* layer) { return layer->ShouldKeepDrawing(); }) ||
+           change_layers.size() > 1;
 }
 
 } // namespace Core
