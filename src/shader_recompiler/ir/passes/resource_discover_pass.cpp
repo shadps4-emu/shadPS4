@@ -206,6 +206,7 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
             auto [sampler_handle, found] =
                 CheckDisableAnisoLod0Pattern(sampler->Arg(0).InstRecursive());
             sampler_sharp_source = FindSharpSource(sampler_handle, block);
+            disable_aniso = found;
         }
     }
 

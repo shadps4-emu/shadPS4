@@ -295,7 +295,8 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
 
                 const auto pred = [](IR::Inst* inst) -> std::optional<IR::Inst*> {
                     if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                        inst->GetOpcode() == IR::Opcode::ReadConst) {
+                        inst->GetOpcode() == IR::Opcode::ReadConst ||
+                        inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
                         return inst;
                     }
                     return std::nullopt;
