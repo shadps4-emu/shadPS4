@@ -656,13 +656,6 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         switch (file->type) {
         case Core::FileSys::FileType::Socket: {
             auto native_handle = file->socket->Native();
-            if (!native_handle) {
-                // P2P socket, cannot be added to epoll
-                LOG_ERROR(Lib_Net, "P2P socket cannot be added to epoll (unimplemented)");
-                *sceNetErrnoLoc() = ORBIS_NET_EBADF;
-                return ORBIS_NET_ERROR_EBADF;
-            }
-
 #ifndef __FreeBSD__
             epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
                                         .data = {.fd = id}};
@@ -706,13 +699,6 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         switch (file->type) {
         case Core::FileSys::FileType::Socket: {
             auto native_handle = file->socket->Native();
-            if (!native_handle) {
-                // P2P socket, cannot be modified in epoll
-                LOG_ERROR(Lib_Net, "P2P socket cannot be modified in epoll (unimplemented)");
-                *sceNetErrnoLoc() = ORBIS_NET_EBADF;
-                return ORBIS_NET_ERROR_EBADF;
-            }
-
 #ifndef __FreeBSD__
             epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
                                         .data = {.fd = id}};
@@ -750,12 +736,6 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         switch (file->type) {
         case Core::FileSys::FileType::Socket: {
             auto native_handle = file->socket->Native();
-            if (!native_handle) {
-                // P2P socket, cannot be removed from epoll
-                LOG_ERROR(Lib_Net, "P2P socket cannot be removed from epoll (unimplemented)");
-                *sceNetErrnoLoc() = ORBIS_NET_EBADF;
-                return ORBIS_NET_ERROR_EBADF;
-            }
 #ifndef __FreeBSD__
             ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_DEL, *native_handle, nullptr) == 0);
             epoll->events.erase(it);
@@ -827,7 +807,9 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
     LOG_DEBUG(Lib_Net, "called, epollid = {} ({}), maxevents = {}, timeout = {}", epollid,
               epoll->name, maxevents, timeout);
 
-    int sockets_waited_on = (epoll->events.size() - epoll->async_resolutions.size()) > 0;
+    const s64 native_entries =
+        static_cast<s64>(epoll->events.size()) - static_cast<s64>(epoll->async_resolutions.size());
+    int sockets_waited_on = native_entries > 0;
 
     std::vector<epoll_event> native_events{static_cast<size_t>(maxevents)};
     int result = ORBIS_OK;

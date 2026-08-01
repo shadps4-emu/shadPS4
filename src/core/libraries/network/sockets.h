@@ -3,6 +3,10 @@
 
 #pragma once
 
+// Kept ahead of the Windows networking headers below, which define ASSERT unless it already is:
+// reaching ours second makes it the redefinition.
+#include "common/assert.h"
+
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <Ws2tcpip.h>
@@ -42,9 +46,12 @@ static const GUID WSAID_WSARECVMSG = {
 #include <unistd.h>
 typedef int net_socket;
 #endif
+#include <condition_variable>
+#include <deque>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <vector>
 #include "net.h"
 
 namespace Libraries::Kernel {
@@ -129,11 +136,35 @@ struct PosixSocket : public Socket {
     }
 };
 
+class P2PPort;
+
 struct P2PSocket : public Socket {
-    explicit P2PSocket(int domain, int type, int protocol) : Socket(domain, type, protocol) {}
-    bool IsValid() const override {
-        return true;
-    }
+    explicit P2PSocket(int domain, int type, int protocol);
+    ~P2PSocket() override;
+    bool IsValid() const override;
+
+    // The host socket this vport is multiplexed on, shared with every other P2P socket bound to
+    // the same (address, port) pair. Null until the socket is bound.
+    std::shared_ptr<P2PPort> port;
+    // Datagrams for this vport are forwarded here by the port's receive thread, which is why the
+    // guest can poll the socket with epoll/select like any other: this is what Native() returns.
+    net_socket inbox;
+    sockaddr_in inbox_addr{};
+    u32 bound_addr{};  // network byte order
+    u16 bound_port{};  // network byte order
+    u16 bound_vport{}; // network byte order
+    bool bound{};
+    // Connect() on a datagram socket only records the default destination, so the socket keeps
+    // receiving from everyone; without it sceNetSend (which passes no address) has nowhere to go.
+    u32 peer_addr{};  // network byte order
+    u16 peer_port{};  // network byte order
+    u16 peer_vport{}; // network byte order
+    bool connected{};
+    // Cached socket options. SO_NBIO decides whether an empty recv blocks; the SO_REUSE* pair
+    // decides whether several sockets are allowed to share one vport.
+    int sockopt_so_nbio{};
+    int sockopt_so_reuseaddr{};
+    int sockopt_so_reuseport{};
     int Close() override;
     int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
     int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
@@ -150,8 +181,13 @@ struct P2PSocket : public Socket {
     int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
     int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
     std::optional<net_socket> Native() override {
-        return {};
+        return inbox;
     }
+
+private:
+    /// Binds to an OS-chosen port and an ephemeral vport, the way a send from an unbound socket
+    /// implicitly binds it. Returns 0, or -1 with the guest errno set.
+    int EnsureBound();
 };
 
 struct UnixSocket : public Socket {
