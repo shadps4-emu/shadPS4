@@ -70,9 +70,16 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
 
     int ret = avcodec_send_packet(mCodecContext, packet);
     if (ret < 0) {
-        LOG_ERROR(Lib_Vdec2, "Error sending packet to decoder: {}", ret);
-        av_packet_free(&packet);
-        return ORBIS_VIDEODEC2_ERROR_API_FAIL;
+        if (ret == AVERROR_EOF) {
+            // Attempt to flush buffers and try again.
+            avcodec_flush_buffers(mCodecContext);
+            ret = avcodec_send_packet(mCodecContext, packet);
+        }
+        if (ret < 0) {
+            LOG_ERROR(Lib_Vdec2, "Error sending packet to decoder: {}", ret);
+            av_packet_free(&packet);
+            return ORBIS_VIDEODEC2_ERROR_API_FAIL;
+        }
     }
 
     AVFrame* frame = av_frame_alloc();
