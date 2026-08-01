@@ -10,7 +10,7 @@
 
 namespace Shader::Optimization {
 
-const IR::Inst* TryDisableAnisoLod0(const IR::Inst* inst) {
+std::pair<IR::Inst*, bool> CheckDisableAnisoLod0Pattern(IR::Inst* inst) {
     // Find sample source trying to disable anisotropy for lod0.
     // Assuming S# is in UD s[12:15] and T# is in s[4:11]
     // The next pattern:
@@ -21,14 +21,14 @@ const IR::Inst* TryDisableAnisoLod0(const IR::Inst* inst) {
     // is used to disable anisotropy in the sampler if the sampled texture doesn't have mips
 
     if (inst->GetOpcode() != IR::Opcode::SelectU32) {
-        return inst;
+        return {inst, false};
     }
 
     // Select should be based on zero check
     const auto* prod0 = inst->Arg(0).InstRecursive();
     if (prod0->GetOpcode() != IR::Opcode::IEqual32 ||
         !(prod0->Arg(1).IsImmediate() && prod0->Arg(1).U32() == 0u)) {
-        return inst;
+        return {inst, false};
     }
 
     // The bitfield extract might be hidden by phi sometimes
@@ -49,23 +49,23 @@ const IR::Inst* TryDisableAnisoLod0(const IR::Inst* inst) {
     if (prod0_arg0->GetOpcode() != IR::Opcode::BitFieldUExtract ||
         !(prod0_arg0->Arg(1).IsImmediate() && prod0_arg0->Arg(1).U32() == 12) ||
         !(prod0_arg0->Arg(2).IsImmediate() && prod0_arg0->Arg(2).U32() == 8)) {
-        return inst;
+        return {inst, false};
     }
 
     // Make sure mask is masking out anisotropy
     const auto* prod1 = inst->Arg(1).InstRecursive();
     if (prod1->GetOpcode() != IR::Opcode::BitwiseAnd32 || prod1->Arg(1).U32() != 0xfffff1ff) {
-        return inst;
+        return {inst, false};
     }
 
     // We're working on the first dword of s#
-    const auto* prod2 = inst->Arg(2).InstRecursive();
+    auto* prod2 = inst->Arg(2).InstRecursive();
     if (prod2->GetOpcode() != IR::Opcode::GetUserData &&
         prod2->GetOpcode() != IR::Opcode::ReadConst && prod2->GetOpcode() != IR::Opcode::Phi) {
-        return inst;
+        return {inst, false};
     }
 
-    return prod2;
+    return {prod2, true};
 }
 
 bool IsSharpSource(const IR::Inst* inst) {
@@ -138,7 +138,8 @@ const IR::Inst* FindSharpSource(IR::Inst* handle, const IR::Block& current_paren
         }
     }
     if (sources.empty()) {
-        // We defer the assert to the resource patching pass, since sometimes the sharp is not required (e.g. for fmask)
+        // We defer the assert to the resource patching pass, since sometimes the sharp is not
+        // required (e.g. for fmask)
         return nullptr;
     }
 
@@ -197,16 +198,24 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
     IR::Inst* image_handle = inst.Arg(0).InstRecursive();
     const IR::Inst* sharp_source = FindSharpSource(image_handle, block);
     const IR::Inst* sampler_sharp_source = nullptr;
+    bool disable_aniso = false;
 
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
         const IR::Inst* sampler = inst.Arg(1).InstRecursive();
         if (!sampler->AreAllArgsImmediates()) {
-            sampler_sharp_source =
-                FindSharpSource(sampler->Arg(0).InstRecursive(), block);
+            auto [sampler_handle, found] =
+                CheckDisableAnisoLod0Pattern(sampler->Arg(0).InstRecursive());
+            sampler_sharp_source = FindSharpSource(sampler_handle, block);
         }
     }
 
-    sharp_usages.emplace_back(ResourceDiscovery{&inst, &block, sharp_source, sampler_sharp_source});
+    sharp_usages.emplace_back(ResourceDiscovery{
+        &inst,
+        &block,
+        sharp_source,
+        sampler_sharp_source,
+        disable_aniso,
+    });
 }
 
 ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& profile) {
