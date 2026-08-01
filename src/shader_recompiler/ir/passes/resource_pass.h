@@ -12,7 +12,10 @@ struct ResourceDiscovery {
     IR::Inst* user{};
     IR::Block* user_block{};
     const IR::Inst* sharp_source{};
+
+    // for samplers
     const IR::Inst* sampler_sharp_source{};
+    bool disable_aniso{false};
 };
 using ResourceDiscoveryList = boost::container::small_vector<ResourceDiscovery, 32>;
 

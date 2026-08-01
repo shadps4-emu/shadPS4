@@ -345,13 +345,12 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
             const IR::Inst* sampler_sharp_source = resource.sampler_sharp_source;
             ASSERT_MSG(sampler_sharp_source, "Unable to find sampler sharp sources pc={:#x}",
                        inst_info.pc.Value());
-            bool disable_aniso = sampler_sharp_source == sampler;
             const auto ssharp = SharpLocationFromSource(sampler_sharp_source);
             sampler_binding = descriptors.Add(SamplerResource{
                 .sharp_idx = ssharp,
                 .is_inline_sampler = false,
                 .associated_image = image_binding,
-                .disable_aniso = disable_aniso,
+                .disable_aniso = resource.disable_aniso,
             });
         }
         inst.SetArg(0, ir.Imm32(image_binding | sampler_binding << 16));
