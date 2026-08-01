@@ -205,7 +205,7 @@ void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors
         IR::Inst* buffer_handle = handle->Arg(0).InstRecursive();
         const auto inst_info = inst.Flags<IR::BufferInstInfo>();
         const IR::Inst* sharp_source = resource.sharp_source;
-        UNREACHABLE_MSG("Unable to find buffer sharp sources pc={:#x}", inst_info.pc.Value());
+        ASSERT_MSG(sharp_source, "Unable to find buffer sharp sources pc={:#x}", inst_info.pc.Value());
         const auto sharp_idx = SharpLocationFromSource(sharp_source);
         const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
         buffer_binding = descriptors.Add(BufferResource{
@@ -232,7 +232,7 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
 
     // Read image sharp.
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-    UNREACHABLE_MSG("Unable to find image sharp sources pc={:#x}", inst_info.pc.Value());
+    ASSERT_MSG(sharp_source, "Unable to find image sharp sources pc={:#x}", inst_info.pc.Value());
 
     const IR::Inst* image_handle = inst.Arg(0).InstRecursive();
     const auto tsharp = SharpLocationFromSource(sharp_source);
@@ -343,7 +343,8 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
         } else {
             // Normal sampler resource.
             const IR::Inst* sampler_sharp_source = resource.sampler_sharp_source;
-            UNREACHABLE_MSG("Unable to find sampler sharp sources pc={:#x}", inst_info.pc.Value());
+            ASSERT_MSG(sampler_sharp_source, "Unable to find sampler sharp sources pc={:#x}",
+                       inst_info.pc.Value());
             bool disable_aniso = sampler_sharp_source == sampler;
             const auto ssharp = SharpLocationFromSource(sampler_sharp_source);
             sampler_binding = descriptors.Add(SamplerResource{
