@@ -27,7 +27,7 @@ namespace Libraries::Net {
         return -1;
 #endif
 
-static int ConvertReturnErrorCode(int retval) {
+int ConvertReturnErrorCode(int retval) {
     if (retval < 0) {
 #ifdef _WIN32
         switch (WSAGetLastError()) {

@@ -57,6 +57,10 @@ struct Socket;
 
 typedef std::shared_ptr<Socket> SocketPtr;
 
+/// Translates the last host socket error into the guest errno and returns -1; a non-negative
+/// return value passes through unchanged.
+int ConvertReturnErrorCode(int retval);
+
 struct OrbisNetLinger {
     s32 l_onoff;
     s32 l_linger;
