@@ -7,6 +7,7 @@
 #include <coroutine>
 #include <exception>
 #include <mutex>
+#include <optional>
 #include <semaphore>
 #include <span>
 #include <thread>
@@ -93,6 +94,11 @@ public:
 
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
         rasterizer = rasterizer_;
+    }
+
+    /// Returns true when the PM4 packet currently being processed has the predicate bit set.
+    bool IsPacketPredicated() const {
+        return packet_predicated;
     }
 
     template <bool wait_done = false>
@@ -186,6 +192,9 @@ private:
     void ProcessCommands();
     void Process(std::stop_token stoken);
 
+    /// Restores the index base staged by a GPU-predicated DrawIndex2 (see the draw handler).
+    void RestorePredicatedIndexBase();
+
     struct GpuQueue {
         std::mutex m_access{};
         std::atomic<u32> dcb_buffer_offset;
@@ -200,7 +209,8 @@ private:
 
     VAddr indirect_args_addr{};
     u32 num_counter_pairs{};
-    u64 pixel_counter{};
+    bool packet_predicated{};
+    std::optional<std::pair<u32, u32>> saved_index_base{};
 
     struct ConstantEngine {
         void Reset() {

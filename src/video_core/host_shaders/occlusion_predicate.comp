@@ -1,0 +1,32 @@
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#version 450
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+// 64-bit occlusion query results (or boolean predicate values) split in dword pairs.
+layout(std430, binding = 0) readonly buffer CounterBuffer {
+    uvec2 counters[];
+};
+
+layout(std430, binding = 1) buffer PredicateBuffer {
+    uint predicates[];
+};
+
+layout(push_constant) uniform PushConstants {
+    uint src_index;
+    uint count;
+    uint dst_index;
+    uint combine;
+};
+
+void main() {
+    uint bits = 0u;
+    for (uint i = 0u; i < count; ++i) {
+        const uvec2 counter = counters[src_index + i];
+        bits |= counter.x | counter.y;
+    }
+    const uint visible = bits != 0u ? 1u : 0u;
+    predicates[dst_index] = combine != 0u ? (predicates[dst_index] | visible) : visible;
+}
