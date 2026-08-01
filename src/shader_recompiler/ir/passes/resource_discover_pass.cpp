@@ -106,7 +106,7 @@ bool IsCfgBlockDominatedBy(const Shader::Gcn::Block* maybe_dominator,
     return true;
 }
 
-const IR::Inst* FindSharpSource(IR::Inst* handle, const IR::Block& current_parent, u32 pc = 0) {
+const IR::Inst* FindSharpSource(IR::Inst* handle, const IR::Block& current_parent) {
     if (IsSharpSource(handle)) {
         return const_cast<IR::Inst*>(handle);
     }
@@ -138,7 +138,8 @@ const IR::Inst* FindSharpSource(IR::Inst* handle, const IR::Block& current_paren
         }
     }
     if (sources.empty()) {
-        UNREACHABLE_MSG("Unable to find sharp sources pc={:#x}", pc);
+        // We defer the assert to the resource patching pass, since sometimes the sharp is not required (e.g. for fmask)
+        return nullptr;
     }
 
     // Perform dominance analysis on found sources and eliminate ones that don't pass
@@ -187,23 +188,21 @@ void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList
         sharp_usages.emplace_back(ResourceDiscovery{&inst, &block, nullptr});
     } else {
         IR::Inst* buffer_handle = handle->Arg(0).InstRecursive();
-        const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-        const IR::Inst* sharp_source = FindSharpSource(buffer_handle, block, inst_info.pc);
+        const IR::Inst* sharp_source = FindSharpSource(buffer_handle, block);
         sharp_usages.emplace_back(ResourceDiscovery{&inst, &block, sharp_source});
     }
 }
 
 void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList& sharp_usages) {
     IR::Inst* image_handle = inst.Arg(0).InstRecursive();
-    const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-    const IR::Inst* sharp_source = FindSharpSource(image_handle, block, inst_info.pc);
+    const IR::Inst* sharp_source = FindSharpSource(image_handle, block);
     const IR::Inst* sampler_sharp_source = nullptr;
 
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
         const IR::Inst* sampler = inst.Arg(1).InstRecursive();
         if (!sampler->AreAllArgsImmediates()) {
             sampler_sharp_source =
-                FindSharpSource(sampler->Arg(0).InstRecursive(), block, inst_info.pc);
+                FindSharpSource(sampler->Arg(0).InstRecursive(), block);
         }
     }
 
