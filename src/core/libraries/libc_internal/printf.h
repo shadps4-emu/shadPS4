@@ -409,12 +409,8 @@ static inline size_t _ftoa(out_fct_type out, char* buffer, size_t idx, size_t ma
 #endif // PRINTF_SUPPORT_FLOAT
 
 // internal vsnprintf
-// `maxlen` is a real bound on `buffer` supplied by the caller (it used to be hardcoded to
-// SIZE_MAX here, which made every write path below unbounded). `out()` (_out_buffer) already
-// refuses to write at/after `maxlen`, and `idx` keeps counting every character regardless of
-// whether it was actually written, so the returned length below is always the true
-// "would-have-been-written" count even when output was truncated to fit `maxlen`.
-static inline int _vsnprintf(out_fct_type out, char* buffer, size_t maxlen, const char* format,
+static inline int _vsnprintf(out_fct_type out, char* buffer, const size_t maxlen,
+                             const char* format,
                              Common::VaList* va_list) {
     unsigned int flags, width, precision, n;
     size_t idx = 0U;
@@ -736,20 +732,11 @@ static inline int _vsnprintf(out_fct_type out, char* buffer, size_t maxlen, cons
 static int printf_ctx(Common::VaCtx* ctx) {
     const char* format = vaArgPtr<const char>(&ctx->va_list);
     char buffer[256];
-    // Bound the write to sizeof(buffer): _vsnprintf still returns the true, untruncated length.
     int result = _vsnprintf(_out_buffer, buffer, sizeof(buffer), format, &ctx->va_list);
-    // Safe: _vsnprintf's termination step always places a NUL at an index less than
-    // sizeof(buffer), so buffer is a valid, in-bounds C string here regardless of the true
-    // (possibly larger) formatted length.
     printf("%s", buffer);
     return result;
 }
 
-// NOTE: unreachable dead code (no LIB_FUNCTION/LIB_OBJ in this codebase calls fprintf_ctx).
-// `buf` has no size known to this function, so unlike the paths below, the destination side of
-// this strcpy cannot be bounded here; left as-is (only updated to satisfy the new _vsnprintf
-// signature) since it was out of scope for this fix and is not exercised by any guest-reachable
-// export.
 static int fprintf_ctx(Common::VaCtx* ctx, char* buf) {
     const char* format = vaArgPtr<const char>(&ctx->va_list);
     char buffer[256];
@@ -760,25 +747,18 @@ static int fprintf_ctx(Common::VaCtx* ctx, char* buf) {
 
 static int vsnprintf_ctx(char* s, size_t n, const char* format, Common::VaList* arg) {
     if (n == 0) {
-        // No room for even a terminating NUL: per the C contract, write nothing to s at all
-        // (not even a NUL), but still compute and return the would-be length. Passing a null
-        // buffer makes _vsnprintf switch to the null output function, so idx is only counted,
-        // never written anywhere.
+        // Nothing may be written to s, not even a NUL; only measure the output.
         return _vsnprintf(_out_buffer, nullptr, 0, format, arg);
     }
-    // _vsnprintf is bounded by maxlen and always terminates within it, so format straight into
-    // the caller's buffer: no temporary allocation sized by a guest-controlled n, and only the
-    // bytes the result actually needs are touched.
     return _vsnprintf(_out_buffer, s, n, format, arg);
 }
 
 static int snprintf_ctx(char* s, size_t n, Common::VaCtx* ctx) {
     const char* format = vaArgPtr<const char>(&ctx->va_list);
     if (n == 0) {
-        // See vsnprintf_ctx above: write nothing to s, only return the would-be length.
+        // Nothing may be written to s, not even a NUL; only measure the output.
         return _vsnprintf(_out_buffer, nullptr, 0, format, &ctx->va_list);
     }
-    // See vsnprintf_ctx above: format directly into the caller's buffer.
     return _vsnprintf(_out_buffer, s, n, format, &ctx->va_list);
 }
 

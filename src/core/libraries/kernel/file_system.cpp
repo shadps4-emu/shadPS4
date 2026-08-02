@@ -936,7 +936,7 @@ s32 PS4_SYSV_ABI posix_truncate(const char* path, s64 length) {
 
     Common::FS::IOFile new_file(host_path, Common::FS::FileAccessMode::ReadWrite);
     if (!new_file.IsOpen()) {
-        *__Error() = POSIX_EIO;
+        *__Error() = POSIX_ENOENT;
         return -1;
     }
     if (!new_file.SetSize(length)) {

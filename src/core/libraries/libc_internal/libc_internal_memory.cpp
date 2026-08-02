@@ -41,6 +41,7 @@ void* PS4_SYSV_ABI internal_malloc(u64 size) {
     if (heap_api && heap_api->heap_malloc) {
         return heap_api->heap_malloc(size);
     }
+    LOG_ERROR(Lib_LibcInternal, "(PARTIAL) called, no application heap installed");
     return std::malloc(size);
 }
 
@@ -53,6 +54,7 @@ void PS4_SYSV_ABI internal_free(void* ptr) {
         heap_api->heap_free(ptr);
         return;
     }
+    LOG_ERROR(Lib_LibcInternal, "(PARTIAL) called, no application heap installed");
     std::free(ptr);
 }
 

@@ -1178,8 +1178,6 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
 Liverpool::CmdBuffer Liverpool::CopyCmdBuffers(std::span<const u32> dcb, std::span<const u32> ccb) {
     auto& queue = mapped_queues[GfxQueueId];
 
-    // CmdCopyArena::Allocate() takes its own internal lock, so no GpuQueue::m_access
-    // is needed here to guard the arena itself.
     const std::span<u32> dcb_copy = queue.dcb_arena.Allocate(dcb.size());
     const std::span<u32> ccb_copy = queue.ccb_arena.Allocate(ccb.size());
 

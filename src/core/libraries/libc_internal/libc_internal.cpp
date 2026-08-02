@@ -12,7 +12,6 @@
 #include "libc_internal_memory.h"
 #include "libc_internal_str.h"
 #include "libc_internal_threads.h"
-#include "libc_internal_time.h"
 #include "printf.h"
 
 namespace Libraries::LibcInternal {
@@ -23,7 +22,6 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     RegisterlibSceLibcInternalMemory(sym);
     RegisterlibSceLibcInternalIo(sym);
     RegisterlibSceLibcInternalThreads(sym);
-    RegisterlibSceLibcInternalTime(sym);
 }
 
 } // namespace Libraries::LibcInternal

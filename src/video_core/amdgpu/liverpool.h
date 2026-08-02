@@ -186,19 +186,14 @@ private:
     void ProcessCommands();
     void Process(std::stop_token stoken);
 
-    // Chunked arena: a deque never relocates already-constructed elements, and each
-    // chunk's vector is reserved once before use, so spans handed out earlier stay valid.
+    // Command buffer storage handed to the GPU thread. Chunks are reserved up front and never
+    // reallocated or released, so spans stay valid while a submission is still in flight.
     struct CmdCopyArena {
-        // ChunkDwords (4 MiB) deliberately exceeds the 0x3ffffc-byte per-buffer Gnm cap
-        // enforced in sceGnmSubmitCommandBuffersForWorkload, so a single legal command
-        // buffer always fits within one chunk.
+        // Exceeds the 0x3ffffc-byte per-buffer cap sceGnmSubmitCommandBuffersForWorkload
+        // enforces, so one command buffer always fits in a single chunk.
         static constexpr size_t ChunkDwords = 4_MB >> 2;
 
-        // Own leaf lock: Allocate() and Reset() can be called from different threads
-        // (submitter threads and the SubmitDone() path) and must never run concurrently
-        // on the same deque/vector. Using a dedicated mutex here (rather than reusing
-        // GpuQueue::m_access or Liverpool::submit_mutex) avoids any lock-ordering hazard
-        // with those locks, since this one is never held while acquiring another.
+        // Leaf lock, held only for the container updates below.
         std::mutex mtx{};
         std::deque<std::vector<u32>> chunks{};
         size_t active_chunk{}; // index of the chunk currently being filled
@@ -218,20 +213,14 @@ private:
             return std::span<u32>{chunk.data() + off, num_dwords};
         }
 
-        // Pre-warms the arena with an initial chunk so the first real Allocate() call
-        // of a frame is unlikely to need to grow it.
+        // Allocates the initial chunk so the first submission of a frame finds space ready.
         void Reserve() {
             Allocate(0);
         }
 
-        // Rewinds the arena for the next frame. This must never free or shrink a chunk:
-        // a coroutine suspended from a previous submission may still hold a span pointing
-        // into any chunk, even one other than the first, since SubmitDone() can run while
-        // num_submits != 0. So every chunk is retained for the lifetime of the process at
-        // its frame high-water mark, and only the logical fill state is reset here.
-        // Because each chunk's capacity() is fixed once by the single reserve() at
-        // emplace_back() time, and resize() never grows a chunk past that capacity,
-        // no chunk ever reallocates, so previously-returned spans remain valid forever.
+        // Rewinds the arena for the next frame, retaining every chunk and its capacity.
+        // SubmitDone() can run while num_submits != 0, so a suspended coroutine may still be
+        // reading from a chunk allocated earlier.
         void Reset() {
             std::scoped_lock lk{mtx};
             for (auto& chunk : chunks) {

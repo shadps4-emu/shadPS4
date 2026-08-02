@@ -31,13 +31,16 @@ s32 PS4_SYSV_ABI internal_vsnprintf(char* s, u64 n, const char* format, Common::
 
 s32 PS4_SYSV_ABI internal_printf(VA_ARGS) {
     VA_CTX(ctx);
-    return printf_ctx(&ctx);
+    char buffer[256];
+    s32 result = snprintf_ctx(buffer, sizeof(buffer), &ctx);
+    LOG_TRACE(Lib_LibcInternal, "{}", buffer);
+    return result;
 }
 
 s32 PS4_SYSV_ABI internal_vprintf(const char* format, Common::VaList* arg) {
     char buffer[256];
     s32 result = vsnprintf_ctx(buffer, sizeof(buffer), format, arg);
-    std::printf("%s", buffer);
+    LOG_TRACE(Lib_LibcInternal, "{}", buffer);
     return result;
 }
 
@@ -479,16 +482,6 @@ s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* file) {
     }
     return 0;
 }
-
-// NID "2sWzhYqFH4E" (_Stdout) was previously registered here as a LIB_OBJ pointing at a
-// static OrbisFILE* (i.e. treating the guest symbol as `extern FILE *_Stdout;`). That is only
-// correct if Sony's Dinkumware header actually declares _Stdout that way; if it instead declares
-// `extern FILE _Stdout;` (with `#define stdout (&_Stdout)`), the guest would read our 8 pointer
-// bytes as the start of its own FILE struct fields (_Mode/_Idx/...) -- garbage or a crash, worse
-// than the previous unresolved-import NULL. There is also no HLE fwrite/fprintf/fputs/vfprintf
-// registered anywhere in libc_internal/ yet, so a correctly-typed object would not currently be
-// usable for anything anyway. Removed until the real declaration form of _Stdout is confirmed
-// from actual PS4 SDK headers or a decomp of a guest fprintf(stdout, ...) call site.
 
 void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("eLdDw6l0-bU", "libSceLibcInternal", 1, "libSceLibcInternal", internal_snprintf);
