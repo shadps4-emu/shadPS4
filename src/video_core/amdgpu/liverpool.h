@@ -3,8 +3,10 @@
 
 #pragma once
 
+#include <algorithm>
 #include <condition_variable>
 #include <coroutine>
+#include <deque>
 #include <exception>
 #include <mutex>
 #include <semaphore>
@@ -72,8 +74,8 @@ public:
 
     void SubmitDone() noexcept {
         std::scoped_lock lk{submit_mutex};
-        mapped_queues[GfxQueueId].ccb_buffer_offset = 0;
-        mapped_queues[GfxQueueId].dcb_buffer_offset = 0;
+        mapped_queues[GfxQueueId].ccb_arena.Reset();
+        mapped_queues[GfxQueueId].dcb_arena.Reset();
         submit_done = true;
         submit_cv.notify_one();
     }
@@ -122,10 +124,8 @@ public:
 
     void ReserveCopyBufferSpace() {
         GpuQueue& gfx_queue = mapped_queues[GfxQueueId];
-        std::scoped_lock lk(gfx_queue.m_access);
-        constexpr size_t GfxReservedSize = 2_MB >> 2;
-        gfx_queue.ccb_buffer.reserve(GfxReservedSize);
-        gfx_queue.dcb_buffer.reserve(GfxReservedSize);
+        gfx_queue.ccb_arena.Reserve();
+        gfx_queue.dcb_arena.Reserve();
     }
 
     inline ComputeProgram& GetCsRegs() {
@@ -186,12 +186,65 @@ private:
     void ProcessCommands();
     void Process(std::stop_token stoken);
 
+    // Chunked arena: a deque never relocates already-constructed elements, and each
+    // chunk's vector is reserved once before use, so spans handed out earlier stay valid.
+    struct CmdCopyArena {
+        // ChunkDwords (4 MiB) deliberately exceeds the 0x3ffffc-byte per-buffer Gnm cap
+        // enforced in sceGnmSubmitCommandBuffersForWorkload, so a single legal command
+        // buffer always fits within one chunk.
+        static constexpr size_t ChunkDwords = 4_MB >> 2;
+
+        // Own leaf lock: Allocate() and Reset() can be called from different threads
+        // (submitter threads and the SubmitDone() path) and must never run concurrently
+        // on the same deque/vector. Using a dedicated mutex here (rather than reusing
+        // GpuQueue::m_access or Liverpool::submit_mutex) avoids any lock-ordering hazard
+        // with those locks, since this one is never held while acquiring another.
+        std::mutex mtx{};
+        std::deque<std::vector<u32>> chunks{};
+        size_t active_chunk{}; // index of the chunk currently being filled
+
+        std::span<u32> Allocate(size_t num_dwords) {
+            std::scoped_lock lk{mtx};
+            while (active_chunk < chunks.size() &&
+                   chunks[active_chunk].size() + num_dwords > chunks[active_chunk].capacity()) {
+                ++active_chunk;
+            }
+            if (active_chunk >= chunks.size()) {
+                chunks.emplace_back().reserve(std::max(num_dwords, ChunkDwords));
+            }
+            auto& chunk = chunks[active_chunk];
+            const size_t off = chunk.size();
+            chunk.resize(off + num_dwords);
+            return std::span<u32>{chunk.data() + off, num_dwords};
+        }
+
+        // Pre-warms the arena with an initial chunk so the first real Allocate() call
+        // of a frame is unlikely to need to grow it.
+        void Reserve() {
+            Allocate(0);
+        }
+
+        // Rewinds the arena for the next frame. This must never free or shrink a chunk:
+        // a coroutine suspended from a previous submission may still hold a span pointing
+        // into any chunk, even one other than the first, since SubmitDone() can run while
+        // num_submits != 0. So every chunk is retained for the lifetime of the process at
+        // its frame high-water mark, and only the logical fill state is reset here.
+        // Because each chunk's capacity() is fixed once by the single reserve() at
+        // emplace_back() time, and resize() never grows a chunk past that capacity,
+        // no chunk ever reallocates, so previously-returned spans remain valid forever.
+        void Reset() {
+            std::scoped_lock lk{mtx};
+            for (auto& chunk : chunks) {
+                chunk.clear();
+            }
+            active_chunk = 0;
+        }
+    };
+
     struct GpuQueue {
         std::mutex m_access{};
-        std::atomic<u32> dcb_buffer_offset;
-        std::atomic<u32> ccb_buffer_offset;
-        std::vector<u32> dcb_buffer;
-        std::vector<u32> ccb_buffer;
+        CmdCopyArena dcb_arena{};
+        CmdCopyArena ccb_arena{};
         std::queue<Task::Handle> submits{};
         ComputeProgram cs_state{};
     };

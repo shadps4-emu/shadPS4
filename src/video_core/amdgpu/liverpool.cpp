@@ -1177,32 +1177,20 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
 
 Liverpool::CmdBuffer Liverpool::CopyCmdBuffers(std::span<const u32> dcb, std::span<const u32> ccb) {
     auto& queue = mapped_queues[GfxQueueId];
-    ASSERT_MSG(queue.dcb_buffer.capacity() >= queue.dcb_buffer_offset + dcb.size(),
-               "dcb copy buffer out of reserved space");
-    ASSERT_MSG(queue.ccb_buffer.capacity() >= queue.ccb_buffer_offset + ccb.size(),
-               "ccb copy buffer out of reserved space");
 
-    queue.dcb_buffer.resize(
-        std::max(queue.dcb_buffer.size(), queue.dcb_buffer_offset + dcb.size()));
-    queue.ccb_buffer.resize(
-        std::max(queue.ccb_buffer.size(), queue.ccb_buffer_offset + ccb.size()));
+    // CmdCopyArena::Allocate() takes its own internal lock, so no GpuQueue::m_access
+    // is needed here to guard the arena itself.
+    const std::span<u32> dcb_copy = queue.dcb_arena.Allocate(dcb.size());
+    const std::span<u32> ccb_copy = queue.ccb_arena.Allocate(ccb.size());
 
-    const u32 prev_dcb_buffer_offset = queue.dcb_buffer_offset;
-    const u32 prev_ccb_buffer_offset = queue.ccb_buffer_offset;
     if (!dcb.empty()) {
-        std::memcpy(queue.dcb_buffer.data() + queue.dcb_buffer_offset, dcb.data(),
-                    dcb.size_bytes());
-        queue.dcb_buffer_offset += dcb.size();
-        dcb = std::span<const u32>{queue.dcb_buffer.begin() + prev_dcb_buffer_offset,
-                                   queue.dcb_buffer.begin() + queue.dcb_buffer_offset};
+        std::memcpy(dcb_copy.data(), dcb.data(), dcb.size_bytes());
+        dcb = dcb_copy;
     }
 
     if (!ccb.empty()) {
-        std::memcpy(queue.ccb_buffer.data() + queue.ccb_buffer_offset, ccb.data(),
-                    ccb.size_bytes());
-        queue.ccb_buffer_offset += ccb.size();
-        ccb = std::span<const u32>{queue.ccb_buffer.begin() + prev_ccb_buffer_offset,
-                                   queue.ccb_buffer.begin() + queue.ccb_buffer_offset};
+        std::memcpy(ccb_copy.data(), ccb.data(), ccb.size_bytes());
+        ccb = ccb_copy;
     }
 
     return std::make_pair(dcb, ccb);
