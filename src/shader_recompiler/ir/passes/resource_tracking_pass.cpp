@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <queue>
 #include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
@@ -675,37 +676,39 @@ void PatchGlobalDataShareAccess(IR::Block& block, IR::Inst& inst, Info& info,
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
 
-    // For data append/consume operations attempt to deduce the GDS address.
+    // For data append/consume operations, convert to GDS buffer atomic.
     if (inst.GetOpcode() == IR::Opcode::DataAppend || inst.GetOpcode() == IR::Opcode::DataConsume) {
-        const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
-            if (inst->GetOpcode() == IR::Opcode::GetUserData) {
-                return inst;
-            }
-            return std::nullopt;
-        };
-
-        u32 gds_addr = 0;
+        // gds_offset = GetM0() + inst_offset, already resolved by SsaRewrite.
+        // Compute index dynamically per dispatch so that the same SPIR-V module works
+        // across all GDS base addresses (fixes cross-slot reuse bug).
         const IR::Value& gds_offset = inst.Arg(0);
+        IR::U32 index;
         if (gds_offset.IsImmediate()) {
-            // Nothing to do, offset is known.
-            gds_addr = gds_offset.U32() & 0xFFFF;
+            // Fully static offset: fold at compile time.
+            index = ir.Imm32((gds_offset.U32() & 0xFFFF) >> 2);
         } else {
+            // Find the user data register that feeds M0, then emit a runtime chain:
+            //   index = ((GetUserData(reg) >> 16) + inst_offset) >> 2
+            const auto pred = [](const IR::Inst* i) -> std::optional<const IR::Inst*> {
+                return i->GetOpcode() == IR::Opcode::GetUserData ? std::optional{i} : std::nullopt;
+            };
             const auto result = IR::BreadthFirstSearch(&inst, pred);
-            ASSERT_MSG(result, "Unable to track M0 source");
+            ASSERT_MSG(result, "Unable to track M0 source for GDS");
 
-            // M0 must be set by some user data register.
-            const IR::Inst* prod = gds_offset.InstRecursive();
-            const u32 ud_reg = u32(result.value()->Arg(0).ScalarReg());
-            u32 m0_val = info.user_data[ud_reg] >> 16;
-            if (prod->GetOpcode() == IR::Opcode::IAdd32) {
-                m0_val += prod->Arg(1).U32();
-            }
-            gds_addr = m0_val & 0xFFFF;
+            const IR::ScalarReg ud_reg = result.value()->Arg(0).ScalarReg();
+            const IR::Inst* add = gds_offset.InstRecursive();
+            const u32 inst_offset = add->Arg(1).U32();
+
+            // Observed: GDS base lives in upper 16 bits of the user data register.
+            IR::U32 ud_val = ir.GetUserData(ud_reg);
+            IR::U32 gds_base = ir.ShiftRightLogical(ud_val, ir.Imm32(16));
+            IR::U32 gds_byte = ir.IAdd(gds_base, ir.Imm32(inst_offset));
+            IR::U32 clamped = ir.BitwiseAnd(gds_byte, ir.Imm32(0xFFFF));
+            index = ir.ShiftRightLogical(clamped, ir.Imm32(2));
         }
 
         // Patch instruction to GDS buffer atomic increment/decrement.
         const IR::U32 handle = ir.Imm32(binding);
-        const IR::U32 index = ir.Imm32(gds_addr >> 2);
         const bool is_append = inst.GetOpcode() == IR::Opcode::DataAppend;
         const IR::Value prev = is_append ? ir.BufferAtomicInc(handle, index, {})
                                          : ir.BufferAtomicDec(handle, index, {});
