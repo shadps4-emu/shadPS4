@@ -256,6 +256,11 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             }
             break;
         }
+        case PT_INTERP:
+        case PT_SCE_COMMENT:
+        case PT_SCE_LIBVERSION:
+            LOG_DEBUG(Core_Linker, "Unimplemented type {}", header_type);
+            break;
         default:
             LOG_ERROR(Core_Linker, "Unimplemented type {}", header_type);
         }

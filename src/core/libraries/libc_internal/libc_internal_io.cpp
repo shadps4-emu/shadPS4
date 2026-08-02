@@ -25,6 +25,22 @@ s32 PS4_SYSV_ABI internal_snprintf(char* s, u64 n, VA_ARGS) {
     return snprintf_ctx(s, n, &ctx);
 }
 
+s32 PS4_SYSV_ABI internal_vsnprintf(char* s, u64 n, const char* format, Common::VaList* arg) {
+    return vsnprintf_ctx(s, n, format, arg);
+}
+
+s32 PS4_SYSV_ABI internal_printf(VA_ARGS) {
+    VA_CTX(ctx);
+    return printf_ctx(&ctx);
+}
+
+s32 PS4_SYSV_ABI internal_vprintf(const char* format, Common::VaList* arg) {
+    char buffer[256];
+    s32 result = vsnprintf_ctx(buffer, sizeof(buffer), format, arg);
+    std::printf("%s", buffer);
+    return result;
+}
+
 std::map<s32, OrbisFILE*> g_files{};
 // Constants for tracking accurate file indexes.
 // Since the file struct is exposed to the application, accuracy is important.
@@ -464,8 +480,21 @@ s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* file) {
     return 0;
 }
 
+// NID "2sWzhYqFH4E" (_Stdout) was previously registered here as a LIB_OBJ pointing at a
+// static OrbisFILE* (i.e. treating the guest symbol as `extern FILE *_Stdout;`). That is only
+// correct if Sony's Dinkumware header actually declares _Stdout that way; if it instead declares
+// `extern FILE _Stdout;` (with `#define stdout (&_Stdout)`), the guest would read our 8 pointer
+// bytes as the start of its own FILE struct fields (_Mode/_Idx/...) -- garbage or a crash, worse
+// than the previous unresolved-import NULL. There is also no HLE fwrite/fprintf/fputs/vfprintf
+// registered anywhere in libc_internal/ yet, so a correctly-typed object would not currently be
+// usable for anything anyway. Removed until the real declaration form of _Stdout is confirmed
+// from actual PS4 SDK headers or a decomp of a guest fprintf(stdout, ...) call site.
+
 void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("eLdDw6l0-bU", "libSceLibcInternal", 1, "libSceLibcInternal", internal_snprintf);
+    LIB_FUNCTION("Q2V+iqvjgC0", "libSceLibcInternal", 1, "libSceLibcInternal", internal_vsnprintf);
+    LIB_FUNCTION("hcuQgD53UxM", "libSceLibcInternal", 1, "libSceLibcInternal", internal_printf);
+    LIB_FUNCTION("GMpvxPFW924", "libSceLibcInternal", 1, "libSceLibcInternal", internal_vprintf);
     LIB_FUNCTION("xGT4Mc55ViQ", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fofind);
     LIB_FUNCTION("dREVnZkAKRE", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Foprep);
     LIB_FUNCTION("sQL8D-jio7U", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fopen);

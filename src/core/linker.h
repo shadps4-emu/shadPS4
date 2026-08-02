@@ -143,6 +143,10 @@ public:
         heap_api = reinterpret_cast<AppHeapAPI>(func);
     }
 
+    AppHeapAPI HeapAPI() const noexcept {
+        return heap_api;
+    }
+
     void AdvanceGenerationCounter() noexcept {
         dtv_generation_counter++;
     }

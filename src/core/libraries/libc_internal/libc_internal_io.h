@@ -78,6 +78,9 @@ struct OrbisFILE {
 };
 
 s32 PS4_SYSV_ABI internal_snprintf(char* s, u64 n, VA_ARGS);
+s32 PS4_SYSV_ABI internal_vsnprintf(char* s, u64 n, const char* format, Common::VaList* arg);
+s32 PS4_SYSV_ABI internal_printf(VA_ARGS);
+s32 PS4_SYSV_ABI internal_vprintf(const char* format, Common::VaList* arg);
 void PS4_SYSV_ABI internal__Lockfilelock(OrbisFILE* file);
 void PS4_SYSV_ABI internal__Unlockfilelock(OrbisFILE* file);
 OrbisFILE* PS4_SYSV_ABI internal__Fofind();

@@ -44,7 +44,9 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, std::string npCommId,
         KeyManager::GetInstance()->GetAllKeys().TrophyKeySet.ReleaseTrophyKey;
 
     if (user_key_vec.size() != 16) {
-        LOG_INFO(Common_Filesystem, "Trophy decryption key is not specified");
+        LOG_WARNING(Common_Filesystem, "Trophy decryption key is not specified or has an "
+                                        "invalid length; trophies will be unavailable. Set "
+                                        "TrophyKeySet.ReleaseTrophyKey in keys.json.");
         return false;
     }
 

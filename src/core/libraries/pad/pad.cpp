@@ -260,7 +260,7 @@ int PS4_SYSV_ABI scePadGetVersionInfo() {
 }
 
 int PS4_SYSV_ABI scePadInit() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_INFO(Lib_Pad, "called");
     g_initialized = true;
     return ORBIS_OK;
 }
