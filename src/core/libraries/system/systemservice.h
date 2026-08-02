@@ -508,7 +508,8 @@ int PS4_SYSV_ABI sceSystemServiceNavigateToGoBack();
 int PS4_SYSV_ABI sceSystemServiceNavigateToGoBackWithValue();
 int PS4_SYSV_ABI sceSystemServiceNavigateToGoHome();
 s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id, int* value);
-int PS4_SYSV_ABI sceSystemServiceParamGetString();
+s32 PS4_SYSV_ABI sceSystemServiceParamGetString(OrbisSystemServiceParamId param_id, char* buf,
+                                                std::size_t buf_size);
 int PS4_SYSV_ABI sceSystemServicePowerTick();
 int PS4_SYSV_ABI sceSystemServiceRaiseExceptionLocalProcess();
 s32 PS4_SYSV_ABI sceSystemServiceReceiveEvent(OrbisSystemServiceEvent* event);
