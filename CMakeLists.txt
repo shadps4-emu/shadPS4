@@ -542,6 +542,8 @@ set(HLE_LIBC_INTERNAL_LIB src/core/libraries/libc_internal/libc_internal.cpp
                  src/core/libraries/libc_internal/libc_internal_math.h
                  src/core/libraries/libc_internal/libc_internal_threads.cpp
                  src/core/libraries/libc_internal/libc_internal_threads.h
+                 src/core/libraries/libc_internal/libc_internal_time.cpp
+                 src/core/libraries/libc_internal/libc_internal_time.h
                  src/core/libraries/libc_internal/printf.h
 )
 
