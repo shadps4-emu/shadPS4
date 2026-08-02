@@ -144,6 +144,12 @@ class DebugStateImpl {
 
     std::atomic_int32_t flip_frame_count = 0;
     std::atomic_int32_t gnm_frame_count = 0;
+    // Counted during the frame, then folded into a running average when the frame flips. The raw
+    // per frame count changes too fast to read while playing, so only the average is shown.
+    std::atomic_int32_t draw_call_count = 0;
+    std::atomic<float> draw_call_count_avg = 0.0f;
+    std::atomic_int32_t dispatch_count = 0;
+    std::atomic<float> dispatch_count_avg = 0.0f;
 
     s32 gnm_frame_dump_request_count = -1;
     std::unordered_map<size_t, FrameDump*> waiting_reg_dumps;
@@ -188,7 +194,34 @@ public:
     }
 
     void IncFlipFrameNum() {
+        // Low weight on the newest frame, so the average settles instead of jumping around.
+        static constexpr float smoothing = 0.05f;
+        const auto draws = draw_call_count.exchange(0, std::memory_order_relaxed);
+        const auto draws_avg = draw_call_count_avg.load(std::memory_order_relaxed);
+        draw_call_count_avg.store(draws_avg + (float(draws) - draws_avg) * smoothing,
+                                  std::memory_order_relaxed);
+
+        const auto dispatches = dispatch_count.exchange(0, std::memory_order_relaxed);
+        const auto dispatches_avg = dispatch_count_avg.load(std::memory_order_relaxed);
+        dispatch_count_avg.store(dispatches_avg + (float(dispatches) - dispatches_avg) * smoothing,
+                                 std::memory_order_relaxed);
         ++flip_frame_count;
+    }
+
+    void IncDrawCall() noexcept {
+        draw_call_count.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    void IncDispatch() noexcept {
+        dispatch_count.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    [[nodiscard]] float GetDrawCallsAvg() const noexcept {
+        return draw_call_count_avg.load(std::memory_order_relaxed);
+    }
+
+    [[nodiscard]] float GetDispatchesAvg() const noexcept {
+        return dispatch_count_avg.load(std::memory_order_relaxed);
     }
 
     void IncGnmFrameNum() {
