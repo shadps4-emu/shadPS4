@@ -394,7 +394,7 @@ s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
     stack_t native_ss{};
     if (ss) {
         native_ss.ss_sp = ss->ss_sp;
-        native_ss.ss_size = ss->ss_size;
+        native_ss.ss_size = std::max(ss->ss_size, (u64)MINSIGSTKSZ);
         u32 guest_ss_flags = ss->ss_flags;
         if ((guest_ss_flags & POSIX_SS_ONSTACK)) {
             native_ss.ss_flags |= SS_ONSTACK;
@@ -405,13 +405,14 @@ s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
             guest_ss_flags &= ~POSIX_SS_DISABLE;
         }
         if (guest_ss_flags != 0) {
-            LOG_ERROR(Lib_Kernel, "Invalid flag(s): {:#x}", guest_ss_flags);
+            LOG_ERROR(Lib_Kernel, "Unrecognized guest flag(s): {:#x}", guest_ss_flags);
         }
     }
     stack_t native_old_ss{};
     ret = sigaltstack(&native_ss, &native_old_ss);
     if (ret < 0) {
         *__Error() = ErrnoToSceKernelError(errno);
+        LOG_ERROR(Lib_Kernel, "sigaltstack returned {} {}", errno, strerror(errno));
     }
     if (old_ss) {
         old_ss->ss_sp = native_old_ss.ss_sp;
@@ -426,7 +427,7 @@ s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
             host_ss_flags &= ~SS_DISABLE;
         }
         if (host_ss_flags != 0) {
-            LOG_ERROR(Lib_Kernel, "Invalid flag(s): {:#x}", host_ss_flags);
+            LOG_ERROR(Lib_Kernel, "Unrecognized host flag(s): {:#x}", host_ss_flags);
         }
     }
 #else
