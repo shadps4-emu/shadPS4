@@ -389,6 +389,7 @@ constexpr s32 POSIX_SS_DISABLE = 0x0004; /* disable taking signals on alternate 
 
 s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
                                    OrbisKernelExceptionHandlerStack* old_ss) {
+    s32 ret = 0;
 #ifdef __unix__
     stack_t native_ss{};
     if (ss) {
@@ -408,7 +409,7 @@ s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
         }
     }
     stack_t native_old_ss{};
-    s32 ret = sigaltstack(&native_ss, &native_old_ss);
+    ret = sigaltstack(&native_ss, &native_old_ss);
     if (ret < 0) {
         *__Error() = ErrnoToSceKernelError(errno);
     }
