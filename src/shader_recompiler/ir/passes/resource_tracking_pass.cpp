@@ -893,7 +893,9 @@ IR::Value FixCubeCoords(IR::IREmitter& ir, const AmdGpu::Image& image, const IR:
     // to convert this to the range [0.0, 1.0] to get correct results.
     const auto fixed_x = ir.FPSub(IR::F32{x}, ir.Imm32(1.f));
     const auto fixed_y = ir.FPSub(IR::F32{y}, ir.Imm32(1.f));
-    return ir.CompositeConstruct(fixed_x, fixed_y, face);
+    const auto fixed_face =
+        ir.FPFma(ir.FPFloor(ir.FPDiv(IR::F32{face}, ir.Imm32(8.f))), ir.Imm32(-2.f), IR::F32{face});
+    return ir.CompositeConstruct(fixed_x, fixed_y, fixed_face);
 }
 
 void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
