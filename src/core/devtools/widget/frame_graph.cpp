@@ -96,6 +96,8 @@ void FrameGraph::Draw() {
         Text("Presenter time: %.3f ms (%.1f FPS)", io.DeltaTime * 1000.0f, 1.0f / io.DeltaTime);
         Text("Flip frame: %d Gnm submit frame: %d", DebugState.flip_frame_count.load(),
              DebugState.gnm_frame_count.load());
+        Text("Draw calls: %.0f   Dispatches: %.0f", DebugState.GetDrawCallsAvg(),
+             DebugState.GetDispatchesAvg());
         Text("Game Res: %dx%d", DebugState.game_resolution.first,
              DebugState.game_resolution.second);
         Text("Output Res: %dx%d", DebugState.output_resolution.first,
