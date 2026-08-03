@@ -353,7 +353,7 @@ bool PS4_SYSV_ABI posix_sigisemptyset(Sigset* s) {
     return s->bits[0] == 0 && s->bits[1] == 0 && s->bits[2] == 0 && s->bits[3] == 0;
 }
 
-#ifdef __unix__
+#ifndef _WIN32
 static void GuestSigsetToNative(const Sigset& guest, sigset_t& native) {
     sigemptyset(&native);
 
@@ -390,7 +390,7 @@ constexpr s32 POSIX_SS_DISABLE = 0x0004; /* disable taking signals on alternate 
 s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
                                    OrbisKernelExceptionHandlerStack* old_ss) {
     s32 ret = 0;
-#ifdef __unix__
+#ifndef _WIN32
     stack_t native_ss{};
     if (ss) {
         native_ss.ss_sp = ss->ss_sp;
@@ -518,7 +518,7 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
 }
 
 s32 PS4_SYSV_ABI posix_pthread_sigmask(s32 how, const Sigset* set, Sigset* oset) {
-#ifdef __unix__
+#ifndef _WIN32
     sigset_t native_set{};
     sigset_t native_oset{};
 
@@ -561,7 +561,7 @@ s32 PS4_SYSV_ABI posix_pthread_sigmask(s32 how, const Sigset* set, Sigset* oset)
 }
 
 s32 PS4_SYSV_ABI posix_sigsuspend(const Sigset* sigmask) {
-#ifdef __unix__
+#ifndef _WIN32
     sigset_t native_mask;
     sigemptyset(&native_mask);
 
@@ -588,7 +588,7 @@ s32 PS4_SYSV_ABI posix_sigsuspend(const Sigset* sigmask) {
 }
 
 s32 PS4_SYSV_ABI posix_sigwait(const Sigset* set, s32* sig) {
-#ifdef __unix__
+#ifndef _WIN32
     if (set == nullptr || sig == nullptr) {
         return POSIX_EINVAL;
     }
