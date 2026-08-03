@@ -393,8 +393,10 @@ s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
 #ifndef _WIN32
     stack_t native_ss{};
     if (ss) {
+        LOG_INFO(Lib_Kernel, "called, ss.ss_size: {}, ss.ss_sp: {}, ss.ss_flags: {:#x}",
+                 ss->ss_size, ss->ss_sp, ss->ss_flags);
         native_ss.ss_sp = ss->ss_sp;
-        native_ss.ss_size = std::max(ss->ss_size, (u64)MINSIGSTKSZ);
+        native_ss.ss_size = ss->ss_size == 0 ? 0 : std::max(ss->ss_size, (u64)MINSIGSTKSZ + 0x1000);
         u32 guest_ss_flags = ss->ss_flags;
         if ((guest_ss_flags & POSIX_SS_ONSTACK)) {
             native_ss.ss_flags |= SS_ONSTACK;
@@ -409,9 +411,9 @@ s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
         }
     }
     stack_t native_old_ss{};
-    ret = sigaltstack(&native_ss, &native_old_ss);
+    ret = sigaltstack(ss ? &native_ss : nullptr, old_ss ? &native_old_ss : nullptr);
     if (ret < 0) {
-        *__Error() = ErrnoToSceKernelError(errno);
+        SetPosixErrno(errno);
         LOG_ERROR(Lib_Kernel, "sigaltstack returned {} {}", errno, strerror(errno));
     }
     if (old_ss) {
@@ -501,7 +503,7 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
 
     if (ret < 0) {
         LOG_ERROR(Lib_Kernel, "sigaction failed: {}", strerror(errno));
-        *__Error() = ErrnoToSceKernelError(errno);
+        SetPosixErrno(errno);
         return ORBIS_FAIL;
     }
 
@@ -539,7 +541,7 @@ s32 PS4_SYSV_ABI posix_pthread_sigmask(s32 how, const Sigset* set, Sigset* oset)
 
     const int ret = pthread_sigmask(how, native_set_ptr, oset ? &native_oset : nullptr);
     if (ret != 0) {
-        *__Error() = ErrnoToSceKernelError(ret);
+        SetPosixErrno(errno);
         return ORBIS_FAIL;
     }
 
@@ -580,7 +582,7 @@ s32 PS4_SYSV_ABI posix_sigsuspend(const Sigset* sigmask) {
     const int ret = sigsuspend(&native_mask);
     ASSERT(ret == -1);
 
-    *__Error() = ErrnoToSceKernelError(errno);
+    SetPosixErrno(errno);
     return ORBIS_FAIL;
 #else
     LOG_ERROR(Lib_Kernel, "(STUBBED) called");
@@ -600,7 +602,7 @@ s32 PS4_SYSV_ABI posix_sigwait(const Sigset* set, s32* sig) {
     int native_sig;
     const int ret = sigwait(&native_set, &native_sig);
     if (ret != 0) {
-        return ErrnoToSceKernelError(ret);
+        SetPosixErrno(errno);
     }
 
     s32 guest_sig = NativeToOrbisSignal(native_sig);
