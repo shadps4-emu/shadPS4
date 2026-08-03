@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
+#include "shader_recompiler/backend/spirv/emit_spirv_shared_memory_bounds.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 
 namespace Shader::Backend::SPIRV {
@@ -20,36 +21,56 @@ Id SharedAtomicU32(EmitContext& ctx, Id offset, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const Id shift_id{ctx.ConstU32(2U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
-    return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
+    return EmitCheckedSharedResult(
+        ctx, offset, ctx.runtime_info.cs_info.shared_memory_size, 4u, ctx.U32[1],
+        ctx.u32_zero_value, [&] {
+            const Id pointer{
+                ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
+            const auto [scope, semantics]{AtomicArgs(ctx)};
+            return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
+        });
 }
 
 Id SharedAtomicU32IncDec(EmitContext& ctx, Id offset,
                          Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id)) {
     const Id shift_id{ctx.ConstU32(2U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
-    return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics);
+    return EmitCheckedSharedResult(
+        ctx, offset, ctx.runtime_info.cs_info.shared_memory_size, 4u, ctx.U32[1],
+        ctx.u32_zero_value, [&] {
+            const Id pointer{
+                ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
+            const auto [scope, semantics]{AtomicArgs(ctx)};
+            return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics);
+        });
 }
 
 Id SharedAtomicU64(EmitContext& ctx, Id offset, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const Id shift_id{ctx.ConstU32(3U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
-    return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics, value);
+    return EmitCheckedSharedResult(
+        ctx, offset, ctx.runtime_info.cs_info.shared_memory_size, 8u, ctx.U64, ctx.u64_zero_value,
+        [&] {
+            const Id pointer{
+                ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
+            const auto [scope, semantics]{AtomicArgs(ctx)};
+            return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics, value);
+        });
 }
 
 Id SharedAtomicU64IncDec(EmitContext& ctx, Id offset,
                          Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id)) {
     const Id shift_id{ctx.ConstU32(3U)};
     const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
-    return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics);
+    return EmitCheckedSharedResult(
+        ctx, offset, ctx.runtime_info.cs_info.shared_memory_size, 8u, ctx.U64, ctx.u64_zero_value,
+        [&] {
+            const Id pointer{
+                ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
+            const auto [scope, semantics]{AtomicArgs(ctx)};
+            return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics);
+        });
 }
 
 template <bool is_float = false>
