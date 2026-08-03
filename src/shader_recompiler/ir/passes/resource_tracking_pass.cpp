@@ -808,6 +808,28 @@ IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const In
     const u32 mask = (1 << shift) - 1;
     const IR::U32 soffset = IR::GetBufferSOffsetArg(&inst);
 
+    // addr64: VGPR pair provides a 64-bit byte offset from buffer base.
+    // Stride is ignored in this mode — the VGPR values are already byte offsets.
+    if (inst_info.addr64) {
+        const IR::U32 addr_lo = IR::GetBufferIndexArg(&inst);     // comp 0 = addr_lo
+        const IR::U32 addr_hi = IR::GetBufferVOffsetArg(&inst);   // comp 1 = addr_hi
+
+        // Fold soffset + inst_offset into 64-bit address via IAddCarry → SPIR-V OpIAddCarry
+        IR::U32 offset = ir.Imm32(inst_offset);
+        if (!soffset.IsImmediate() || soffset.U32() != 0) {
+            offset = ir.IAdd(offset, soffset);
+        }
+        IR::Value sum_carry = ir.IAddCarry(addr_lo, offset);
+        IR::U32 byte_lo = IR::U32{ir.CompositeExtract(sum_carry, 0)};
+        IR::U32 carry = IR::U32{ir.CompositeExtract(sum_carry, 1)};
+        IR::U32 byte_hi = ir.IAdd(addr_hi, carry);
+
+        // Byte offset → dword index: (byte_hi << (32-shift)) | (byte_lo >> shift)
+        IR::U32 dword_lo = ir.ShiftRightLogical(byte_lo, ir.Imm32(shift));
+        IR::U32 dword_hi = ir.ShiftLeftLogical(byte_hi, ir.Imm32(32 - shift));
+        return ir.BitwiseOr(dword_lo, dword_hi);
+    }
+
     // If address calculation is of the form "index * const_stride + offset" with offset constant
     // and both const_stride and offset are divisible with the element size, apply shift directly.
     if (inst_info.index_enable && !inst_info.voffset_enable && soffset.IsImmediate() &&

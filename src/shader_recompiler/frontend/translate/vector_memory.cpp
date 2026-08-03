@@ -209,15 +209,26 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
 
-    const IR::U32 index = mubuf.idxen ? ir.GetVectorReg(vaddr) : ir.Imm32(0);
-    const IR::VectorReg voffset_vgpr = mubuf.idxen ? vaddr + 1 : vaddr;
-    const IR::U32 voffset = mubuf.offen ? ir.GetVectorReg(voffset_vgpr) : ir.Imm32(0);
-    const IR::U32 soffset{GetSrc(inst.src[3])};
-    const IR::Value address = ir.CompositeConstruct(index, voffset, soffset);
+    IR::Value address;
+    if (mubuf.addr64) {
+        // addr64: VGPR pair provides a 64-bit byte offset from buffer base.
+        // idxen/offen are ignored in this mode (GCN3 ISA §8.1.5).
+        const IR::U32 addr_lo = ir.GetVectorReg(vaddr);
+        const IR::U32 addr_hi = ir.GetVectorReg(vaddr + 1);
+        const IR::U32 soffset{GetSrc(inst.src[3])};
+        address = ir.CompositeConstruct(addr_lo, addr_hi, soffset);
+    } else {
+        const IR::U32 index = mubuf.idxen ? ir.GetVectorReg(vaddr) : ir.Imm32(0);
+        const IR::VectorReg voffset_vgpr = mubuf.idxen ? vaddr + 1 : vaddr;
+        const IR::U32 voffset = mubuf.offen ? ir.GetVectorReg(voffset_vgpr) : ir.Imm32(0);
+        const IR::U32 soffset{GetSrc(inst.src[3])};
+        address = ir.CompositeConstruct(index, voffset, soffset);
+    }
 
     IR::BufferInstInfo buffer_info{};
     buffer_info.index_enable.Assign(mubuf.idxen);
     buffer_info.voffset_enable.Assign(mubuf.offen);
+    buffer_info.addr64.Assign(mubuf.addr64);
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
@@ -277,15 +288,24 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::ScalarReg sharp{inst.src[2].code * 4};
 
-    const IR::U32 index = mubuf.idxen ? ir.GetVectorReg(vaddr) : ir.Imm32(0);
-    const IR::VectorReg voffset_vgpr = mubuf.idxen ? vaddr + 1 : vaddr;
-    const IR::U32 voffset = mubuf.offen ? ir.GetVectorReg(voffset_vgpr) : ir.Imm32(0);
-    const IR::U32 soffset{GetSrc(inst.src[3])};
-    const IR::Value address = ir.CompositeConstruct(index, voffset, soffset);
+    IR::Value address;
+    if (mubuf.addr64) {
+        const IR::U32 addr_lo = ir.GetVectorReg(vaddr);
+        const IR::U32 addr_hi = ir.GetVectorReg(vaddr + 1);
+        const IR::U32 soffset{GetSrc(inst.src[3])};
+        address = ir.CompositeConstruct(addr_lo, addr_hi, soffset);
+    } else {
+        const IR::U32 index = mubuf.idxen ? ir.GetVectorReg(vaddr) : ir.Imm32(0);
+        const IR::VectorReg voffset_vgpr = mubuf.idxen ? vaddr + 1 : vaddr;
+        const IR::U32 voffset = mubuf.offen ? ir.GetVectorReg(voffset_vgpr) : ir.Imm32(0);
+        const IR::U32 soffset{GetSrc(inst.src[3])};
+        address = ir.CompositeConstruct(index, voffset, soffset);
+    }
 
     IR::BufferInstInfo buffer_info{};
     buffer_info.index_enable.Assign(mubuf.idxen);
     buffer_info.voffset_enable.Assign(mubuf.offen);
+    buffer_info.addr64.Assign(mubuf.addr64);
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
@@ -345,15 +365,25 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     const IR::VectorReg vaddr{inst.src[0].code};
     const IR::VectorReg vdata{inst.src[1].code};
     const IR::ScalarReg srsrc{inst.src[2].code * 4};
-    const IR::U32 index = mubuf.idxen ? ir.GetVectorReg(vaddr) : ir.Imm32(0);
-    const IR::VectorReg voffset_vgpr = mubuf.idxen ? vaddr + 1 : vaddr;
-    const IR::U32 voffset = mubuf.offen ? ir.GetVectorReg(voffset_vgpr) : ir.Imm32(0);
-    const IR::U32 soffset{GetSrc(inst.src[3])};
-    const IR::Value address = ir.CompositeConstruct(index, voffset, soffset);
+
+    IR::Value address;
+    if (mubuf.addr64) {
+        const IR::U32 addr_lo = ir.GetVectorReg(vaddr);
+        const IR::U32 addr_hi = ir.GetVectorReg(vaddr + 1);
+        const IR::U32 soffset{GetSrc(inst.src[3])};
+        address = ir.CompositeConstruct(addr_lo, addr_hi, soffset);
+    } else {
+        const IR::U32 index = mubuf.idxen ? ir.GetVectorReg(vaddr) : ir.Imm32(0);
+        const IR::VectorReg voffset_vgpr = mubuf.idxen ? vaddr + 1 : vaddr;
+        const IR::U32 voffset = mubuf.offen ? ir.GetVectorReg(voffset_vgpr) : ir.Imm32(0);
+        const IR::U32 soffset{GetSrc(inst.src[3])};
+        address = ir.CompositeConstruct(index, voffset, soffset);
+    }
 
     IR::BufferInstInfo buffer_info{};
     buffer_info.index_enable.Assign(mubuf.idxen);
     buffer_info.voffset_enable.Assign(mubuf.offen);
+    buffer_info.addr64.Assign(mubuf.addr64);
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
