@@ -531,7 +531,7 @@ struct rusage;
 
 s32 PS4_SYSV_ABI getrusage(s32 who, rusage* usage) {
 #ifdef _WIN64
-    LOG_ERROR(Kernel_Time, "(STUBBED) called");
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
     return ORBIS_OK;
 #else
     if (usage == nullptr) {

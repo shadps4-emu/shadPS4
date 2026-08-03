@@ -410,8 +410,7 @@ static inline size_t _ftoa(out_fct_type out, char* buffer, size_t idx, size_t ma
 
 // internal vsnprintf
 static inline int _vsnprintf(out_fct_type out, char* buffer, const size_t maxlen,
-                             const char* format,
-                             Common::VaList* va_list) {
+                             const char* format, Common::VaList* va_list) {
     unsigned int flags, width, precision, n;
     size_t idx = 0U;
 
