@@ -480,7 +480,7 @@ s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
     LOG_WARNING(Lib_Kernel, "Raising signal {} on thread '{}'", sig, thread->name);
     int const native_signum = OrbisToNativeSignal(sig);
 #ifndef _WIN64
-    const auto pthr = reinterpret_cast<pthread_t>(thread->native_thr.GetHandle());
+    const auto pthr = reinterpret_cast<pthread_t>(thread->native_thr->GetHandle());
     const auto ret = pthread_kill(pthr, native_signum);
     if (ret != 0) {
         LOG_ERROR(Kernel, "Failed to send exception signal to thread '{}': {}", thread->name,
@@ -490,7 +490,7 @@ s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
     USER_APC_OPTION option;
     option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
 
-    u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr.GetHandle()), option,
+    u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr->GetHandle()), option,
                                  ExceptionHandler, (void*)thread->name.c_str(),
                                  (void*)(s64)native_signum, nullptr);
     ASSERT(res == 0);

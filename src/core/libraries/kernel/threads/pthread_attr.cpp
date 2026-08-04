@@ -259,7 +259,7 @@ int PS4_SYSV_ABI posix_pthread_attr_get_np(PthreadT pthread, PthreadAttrT* dstat
     if (True(pthread->flags & ThreadFlags::Detached)) {
         attr.flags |= PthreadAttrFlags::Detached;
     }
-    pthread->lock.unlock();
+    pthread->lock->unlock();
     memcpy(dst, &attr, sizeof(PthreadAttr));
     return ret;
 }
