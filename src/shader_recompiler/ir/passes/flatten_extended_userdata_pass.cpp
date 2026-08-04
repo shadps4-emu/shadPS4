@@ -342,8 +342,9 @@ static inline void PushPtr(Xbyak::CodeGenerator& c, const IR::Value& off_dw) {
     if (off_dw.IsImmediate()) {
         c.mov(rdi, ptr[rdi + (off_dw.U32() << 2)]);
     } else {
-        ComputeOffset(c, edi, off_dw);
-        c.shl(rdi, 2);
+        ComputeOffset(c, r10d, off_dw);
+        c.shl(r10d, 2);
+        c.mov(rdi, ptr[rdi + r10d]);
     }
     c.mov(r10, 0xFFFFFFFFFFFFULL);
     c.and_(rdi, r10);
