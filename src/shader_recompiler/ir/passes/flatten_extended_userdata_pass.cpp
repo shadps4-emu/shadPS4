@@ -340,7 +340,7 @@ static void ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::V
 static inline void PushPtr(Xbyak::CodeGenerator& c, const IR::Value& off_dw) {
     c.push(rdi);
     if (off_dw.IsImmediate()) {
-        c.mov(rdi, off_dw.U32() << 2);
+        c.mov(rdi, ptr[rdi + (off_dw.U32() << 2)]);
     } else {
         ComputeOffset(c, edi, off_dw);
         c.shl(rdi, 2);
