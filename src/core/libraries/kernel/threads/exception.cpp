@@ -599,6 +599,17 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("yH-uQW3LbX0", "libkernel", 1, "libkernel", posix_pthread_kill);
     LIB_FUNCTION("sHziAegVp74", "libkernel", 1, "libkernel", posix_sigalstack);
 
+    LIB_FUNCTION("KiJEPEWRyUY", "libkernel_psmkit", 1, "libkernel", posix_sigaction);
+    LIB_FUNCTION("VADc3MNQ3cM", "libkernel_psmkit", 1, "libkernel", posix_signal);
+    LIB_FUNCTION("+F7C-hdk7+E", "libkernel_psmkit", 1, "libkernel", posix_sigemptyset);
+    LIB_FUNCTION("VkTAsrZDcJ0", "libkernel_psmkit", 1, "libkernel", posix_sigfillset);
+    LIB_FUNCTION("JUimFtKe0Kc", "libkernel_psmkit", 1, "libkernel", posix_sigaddset);
+    LIB_FUNCTION("Nd-u09VFSCA", "libkernel_psmkit", 1, "libkernel", posix_sigdelset);
+    LIB_FUNCTION("JnNl8Xr-z4Y", "libkernel_psmkit", 1, "libkernel", posix_sigismember);
+    LIB_FUNCTION("aPcyptbOiZs", "libkernel_psmkit", 1, "libkernel", posix_sigprocmask);
+    LIB_FUNCTION("yH-uQW3LbX0", "libkernel_psmkit", 1, "libkernel", posix_pthread_kill);
+    LIB_FUNCTION("sHziAegVp74", "libkernel_psmkit", 1, "libkernel", posix_sigalstack);
+
     LIB_FUNCTION("KiJEPEWRyUY", "libScePosix", 1, "libkernel", posix_sigaction);
     LIB_FUNCTION("VADc3MNQ3cM", "libScePosix", 1, "libkernel", posix_signal);
     LIB_FUNCTION("+F7C-hdk7+E", "libScePosix", 1, "libkernel", posix_sigemptyset);
