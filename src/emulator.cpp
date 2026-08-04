@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <ctime>
 #include <set>
 #include <sstream>
 #include <fmt/core.h>
@@ -851,13 +851,13 @@ void Emulator::UpdatePlayTime(const std::string& serial) {
 
     std::string playTimeSaved = fmt::format("{:d}:{:02d}:{:02d}", hours, minutes, seconds);
 
-	const std::time_t last_time_played = std::time(nullptr);
+    const std::time_t last_time_played = std::time(nullptr);
 
     std::ofstream outfile(filePath, std::ios::trunc);
     bool lineUpdated = false;
     for (const auto& l : lines) {
         std::istringstream iss(l);
-		std::string s;
+        std::string s;
         if (iss >> s && s == serial) {
             outfile << fmt::format("{} {} {}\n", serial, playTimeSaved, last_time_played);
             lineUpdated = true;
