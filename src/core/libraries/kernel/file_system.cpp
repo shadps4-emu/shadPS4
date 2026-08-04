@@ -692,9 +692,18 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
 
     const bool is_dir = mnt->IsDirectory(path);
     const bool is_file = !is_dir && mnt->Exists(path);
-    if (!is_dir && !is_file) {
+    const bool is_root = strncmp(path, "/", 2) == 0;
+    if (!is_dir && !is_file && !is_root) {
         *__Error() = POSIX_ENOENT;
         return -1;
+    }
+    if (is_root) {
+        LOG_WARNING(Kernel_Fs, "Attempting to access filesystem root");
+        sb->st_mode = 0000777u | 0040000u;
+        sb->st_size = 65536;
+        sb->st_blksize = 65536;
+        sb->st_blocks = 128;
+        return ORBIS_OK;
     }
 
     // get the difference between file clock and system clock
