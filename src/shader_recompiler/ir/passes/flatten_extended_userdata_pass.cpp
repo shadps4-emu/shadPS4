@@ -122,11 +122,43 @@ static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
 using namespace Shader;
 
 struct PassInfo {
+    struct PointerListCompare {
+        bool operator()(const IR::Value& a, const IR::Value& b) const {
+            // Keep order with the following criteria:
+            // 1. If immediate, sort by immediate value
+            // 2. If not immediate, sort by instruction order
+            // 3. Immediates come first, then instructions
+            if (a.IsImmediate() && b.IsImmediate()) {
+                return a.U32() < b.U32();
+            } else if (!a.IsImmediate() && !b.IsImmediate()) {
+                auto a_inst = a.Inst();
+                auto b_inst = b.Inst();
+                auto a_block = a_inst->GetParent();
+                auto b_block = b_inst->GetParent();
+                if (a_block != b_block) {
+                    return a_block < b_block; // Sort by block address
+                }
+
+                auto it = a_block->Instructions().iterator_to(*a_inst);
+                auto end = a_block->Instructions().end();
+                for (; it != end; ++it) {
+                    if (&*it == b_inst) {
+                        return true;
+                    }
+                }
+                return false;
+            } else {
+                return a.IsImmediate(); // Immediates come first
+            }
+        }
+    };
+
     // map offset to inst
-    using PtrUserList = boost::container::flat_map<u16, Shader::IR::Inst*>;
+    using PtrUserList =
+        boost::container::flat_map<IR::Value, Shader::IR::Inst*, PointerListCompare>;
 
     Optimization::SrtGvnTable gvn_table;
-    // keys are GetUserData or ReadConst instructions that are used as pointers
+    // keys are GetUserData, ReadConst or ReadConstBuffer instructions that are used as pointers
     std::unordered_map<IR::Inst*, PtrUserList> pointer_uses;
     // GetUserData instructions corresponding to sgpr_base of SRT roots
     boost::container::small_flat_map<IR::ScalarReg, IR::Inst*, 1> srt_roots;
@@ -177,9 +209,142 @@ static inline void SetFlatbufOffset(IR::Inst* inst, u16 offset) {
     }
 }
 
-static inline void PushPtr(Xbyak::CodeGenerator& c, u32 off_dw) {
+static void ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::Value& off_dw);
+
+static void EmitComputeOffsetIAdd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+    if (inst->AreAllArgsImmediates()) {
+        c.mov(reg, inst->Arg(0).U32() + inst->Arg(1).U32());
+    } else if (inst->Arg(0).IsImmediate()) {
+        ComputeOffset(c, reg, inst->Arg(1));
+        c.add(reg, inst->Arg(0).U32());
+    } else if (inst->Arg(1).IsImmediate()) {
+        ComputeOffset(c, reg, inst->Arg(0));
+        c.add(reg, inst->Arg(1).U32());
+    } else {
+        ComputeOffset(c, reg, inst->Arg(0));
+        c.push(reg.cvt64());
+        ComputeOffset(c, reg, inst->Arg(1));
+        c.add(reg, ptr[rsp]);
+        c.add(rsp, 8);
+    }
+}
+
+static void EmitComputeOffsetISub32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+    if (inst->AreAllArgsImmediates()) {
+        c.mov(reg, inst->Arg(0).U32() - inst->Arg(1).U32());
+    } else if (inst->Arg(0).IsImmediate()) {
+        ComputeOffset(c, reg, inst->Arg(1));
+        c.neg(reg);
+        c.add(reg, inst->Arg(0).U32());
+    } else if (inst->Arg(1).IsImmediate()) {
+        ComputeOffset(c, reg, inst->Arg(0));
+        c.sub(reg, inst->Arg(1).U32());
+    } else {
+        ComputeOffset(c, reg, inst->Arg(0));
+        c.push(reg.cvt64());
+        ComputeOffset(c, reg, inst->Arg(1));
+        c.neg(reg);
+        c.add(reg, ptr[rsp]);
+        c.add(rsp, 8);
+    }
+}
+
+static void EmitComputeOffsetIMul32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+    if (inst->AreAllArgsImmediates()) {
+        c.mov(reg, inst->Arg(0).U32() * inst->Arg(1).U32());
+    } else if (inst->Arg(0).IsImmediate()) {
+        ComputeOffset(c, reg, inst->Arg(1));
+        c.imul(reg, reg, inst->Arg(0).U32());
+    } else if (inst->Arg(1).IsImmediate()) {
+        ComputeOffset(c, reg, inst->Arg(0));
+        c.imul(reg, reg, inst->Arg(1).U32());
+    } else {
+        ComputeOffset(c, reg, inst->Arg(0));
+        c.push(reg.cvt64());
+        ComputeOffset(c, reg, inst->Arg(1));
+        c.imul(reg, ptr[rsp]);
+        c.add(rsp, 8);
+    }
+}
+
+static void EmitComputeOffsetShiftLeftLogical32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
+                                                IR::Inst* inst) {
+    if (inst->AreAllArgsImmediates()) {
+        c.mov(reg, inst->Arg(0).U32() << inst->Arg(1).U32());
+    } else if (inst->Arg(0).IsImmediate()) {
+        ComputeOffset(c, reg, inst->Arg(1));
+        c.shl(reg, inst->Arg(0).U32());
+    } else if (inst->Arg(1).IsImmediate()) {
+        ComputeOffset(c, reg, inst->Arg(0));
+        c.shl(reg, inst->Arg(1).U32());
+    } else {
+        ComputeOffset(c, reg, inst->Arg(0));
+        c.push(reg.cvt64());
+        ComputeOffset(c, reg, inst->Arg(1));
+        c.mov(cl, ptr[rsp]);
+        c.shl(reg, cl);
+        c.add(rsp, 8);
+    }
+}
+
+static void EmitComputeOffsetShiftRightLogical32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
+                                                 IR::Inst* inst) {
+    if (inst->AreAllArgsImmediates()) {
+        c.mov(reg, inst->Arg(0).U32() >> inst->Arg(1).U32());
+    } else if (inst->Arg(0).IsImmediate()) {
+        ComputeOffset(c, reg, inst->Arg(1));
+        c.shr(reg, inst->Arg(0).U32());
+    } else if (inst->Arg(1).IsImmediate()) {
+        ComputeOffset(c, reg, inst->Arg(0));
+        c.shr(reg, inst->Arg(1).U32());
+    } else {
+        ComputeOffset(c, reg, inst->Arg(0));
+        c.push(reg.cvt64());
+        ComputeOffset(c, reg, inst->Arg(1));
+        c.mov(cl, ptr[rsp]);
+        c.shr(reg, cl);
+        c.add(rsp, 8);
+    }
+}
+
+static void ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::Value& off_dw) {
+    auto inst = off_dw.InstRecursive();
+    switch (inst->GetOpcode()) {
+    case IR::Opcode::GetUserData:
+        c.mov(reg, ptr[rsi + (static_cast<u32>(inst->Arg(0).ScalarReg()) << 2)]);
+        break;
+    case IR::Opcode::ReadConst:
+        c.mov(reg, ptr[rsi + (GetFlatbufOffset(inst) << 2)]);
+        break;
+    case IR::Opcode::IAdd32:
+        EmitComputeOffsetIAdd32(c, reg, inst);
+        break;
+    case IR::Opcode::ISub32:
+        EmitComputeOffsetISub32(c, reg, inst);
+        break;
+    case IR::Opcode::IMul32:
+        EmitComputeOffsetIMul32(c, reg, inst);
+        break;
+    case IR::Opcode::ShiftLeftLogical32:
+        EmitComputeOffsetShiftLeftLogical32(c, reg, inst);
+        break;
+    case IR::Opcode::ShiftRightLogical32:
+        EmitComputeOffsetShiftRightLogical32(c, reg, inst);
+        break;
+    default:
+        UNREACHABLE_MSG("Unexpected instruction for offset computation");
+        break;
+    }
+}
+
+static inline void PushPtr(Xbyak::CodeGenerator& c, const IR::Value& off_dw) {
     c.push(rdi);
-    c.mov(rdi, ptr[rdi + (off_dw << 2)]);
+    if (off_dw.IsImmediate()) {
+        c.mov(rdi, off_dw.U32() << 2);
+    } else {
+        ComputeOffset(c, edi, off_dw);
+        c.shl(rdi, 2);
+    }
     c.mov(r10, 0xFFFFFFFFFFFFULL);
     c.and_(rdi, r10);
 }
@@ -188,7 +353,7 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
 };
 
-static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
+static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
                          Xbyak::CodeGenerator& c) {
     PushPtr(c, off_dw);
     PassInfo::PtrUserList* use_list = pass_info.GetUsesAsPointer(subtree);
@@ -200,7 +365,13 @@ static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
     // TODO src and dst are contiguous. Optimize with wider loads/stores
     // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
     for (auto [src_off_dw, use] : *use_list) {
-        c.mov(r10d, ptr[rdi + (src_off_dw << 2)]);
+        if (src_off_dw.IsImmediate()) {
+            c.mov(r10d, ptr[rdi + (src_off_dw.U32() << 2)]);
+        } else {
+            ComputeOffset(c, r10d, src_off_dw);
+            c.shl(r10d, 2);
+            c.mov(r10d, ptr[rdi + r10d]);
+        }
         c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
 
         SetFlatbufOffset(use, pass_info.dst_off_dw);
@@ -238,7 +409,7 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
 
     for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
-        VisitPointer(static_cast<u32>(sgpr_base), root, pass_info, c);
+        VisitPointer(IR::Value(static_cast<u32>(sgpr_base)), root, pass_info, c);
     }
 
     c.ret();
@@ -280,11 +451,6 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                     }
                 }
 
-                if (!inst.Arg(1).IsImmediate()) {
-                    LOG_WARNING(Render_Recompiler, "ReadConst has non-immediate offset");
-                    continue;
-                }
-
                 all_readconsts.push_back(&inst);
                 if (pass_info.DeduplicateInstruction(&inst) != &inst) {
                     // This is a duplicate of a readconst we've already visited
@@ -295,8 +461,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
 
                 const auto pred = [](IR::Inst* inst) -> std::optional<IR::Inst*> {
                     if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                        inst->GetOpcode() == IR::Opcode::ReadConst ||
-                        inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                        inst->GetOpcode() == IR::Opcode::ReadConst) {
                         return inst;
                     }
                     return std::nullopt;
@@ -312,7 +477,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                     pass_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
                 PassInfo::PtrUserList& user_list = ptr_uses_kv.first->second;
 
-                user_list[inst.Arg(1).U32()] = &inst;
+                user_list[inst.Arg(1)] = &inst;
 
                 if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
                     IR::ScalarReg ud_reg = ptr_lo->Arg(0).ScalarReg();
