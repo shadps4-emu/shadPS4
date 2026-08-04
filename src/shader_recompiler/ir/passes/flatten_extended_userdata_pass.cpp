@@ -209,145 +209,157 @@ static inline void SetFlatbufOffset(IR::Inst* inst, u16 offset) {
     }
 }
 
-static void ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::Value& off_dw);
+static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::Value& off_dw);
 
-static void EmitComputeOffsetIAdd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+#define ABORT_ON_FAILURE(expr)                                                                     \
+    if (!(expr)) {                                                                                 \
+        return false;                                                                              \
+    }
+
+static bool EmitComputeOffsetIAdd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() + inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ComputeOffset(c, reg, inst->Arg(1));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.add(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
-        ComputeOffset(c, reg, inst->Arg(0));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.add(reg, inst->Arg(1).U32());
     } else {
-        ComputeOffset(c, reg, inst->Arg(0));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ComputeOffset(c, reg, inst->Arg(1));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.add(reg, ptr[rsp]);
         c.add(rsp, 8);
     }
+    return true;
 }
 
-static void EmitComputeOffsetISub32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+static bool EmitComputeOffsetISub32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() - inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ComputeOffset(c, reg, inst->Arg(1));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.neg(reg);
         c.add(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
-        ComputeOffset(c, reg, inst->Arg(0));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.sub(reg, inst->Arg(1).U32());
     } else {
-        ComputeOffset(c, reg, inst->Arg(0));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ComputeOffset(c, reg, inst->Arg(1));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.neg(reg);
         c.add(reg, ptr[rsp]);
         c.add(rsp, 8);
     }
+    return true;
 }
 
-static void EmitComputeOffsetIMul32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+static bool EmitComputeOffsetIMul32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() * inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ComputeOffset(c, reg, inst->Arg(1));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.imul(reg, reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
-        ComputeOffset(c, reg, inst->Arg(0));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.imul(reg, reg, inst->Arg(1).U32());
     } else {
-        ComputeOffset(c, reg, inst->Arg(0));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ComputeOffset(c, reg, inst->Arg(1));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.imul(reg, ptr[rsp]);
         c.add(rsp, 8);
     }
+    return true;
 }
 
-static void EmitComputeOffsetShiftLeftLogical32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
+static bool EmitComputeOffsetShiftLeftLogical32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
                                                 IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() << inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ComputeOffset(c, reg, inst->Arg(1));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.shl(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
-        ComputeOffset(c, reg, inst->Arg(0));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.shl(reg, inst->Arg(1).U32());
     } else {
-        ComputeOffset(c, reg, inst->Arg(0));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ComputeOffset(c, reg, inst->Arg(1));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.mov(cl, ptr[rsp]);
         c.shl(reg, cl);
         c.add(rsp, 8);
     }
+    return true;
 }
 
-static void EmitComputeOffsetShiftRightLogical32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
+static bool EmitComputeOffsetShiftRightLogical32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
                                                  IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() >> inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ComputeOffset(c, reg, inst->Arg(1));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.shr(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
-        ComputeOffset(c, reg, inst->Arg(0));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.shr(reg, inst->Arg(1).U32());
     } else {
-        ComputeOffset(c, reg, inst->Arg(0));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ComputeOffset(c, reg, inst->Arg(1));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.mov(cl, ptr[rsp]);
         c.shr(reg, cl);
         c.add(rsp, 8);
     }
+    return true;
 }
 
-static void ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::Value& off_dw) {
+static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::Value& off_dw) {
     auto inst = off_dw.InstRecursive();
     switch (inst->GetOpcode()) {
     case IR::Opcode::GetUserData:
         c.mov(reg, ptr[rsi + (static_cast<u32>(inst->Arg(0).ScalarReg()) << 2)]);
-        break;
+        return true;
     case IR::Opcode::ReadConst:
         c.mov(reg, ptr[rsi + (GetFlatbufOffset(inst) << 2)]);
-        break;
+        return true;
     case IR::Opcode::IAdd32:
-        EmitComputeOffsetIAdd32(c, reg, inst);
-        break;
+        ABORT_ON_FAILURE(EmitComputeOffsetIAdd32(c, reg, inst));
+        return true;
     case IR::Opcode::ISub32:
-        EmitComputeOffsetISub32(c, reg, inst);
-        break;
+        ABORT_ON_FAILURE(EmitComputeOffsetISub32(c, reg, inst));
+        return true;
     case IR::Opcode::IMul32:
-        EmitComputeOffsetIMul32(c, reg, inst);
-        break;
+        ABORT_ON_FAILURE(EmitComputeOffsetIMul32(c, reg, inst));
+        return true;
     case IR::Opcode::ShiftLeftLogical32:
-        EmitComputeOffsetShiftLeftLogical32(c, reg, inst);
-        break;
+        ABORT_ON_FAILURE(EmitComputeOffsetShiftLeftLogical32(c, reg, inst));
+        return true;
     case IR::Opcode::ShiftRightLogical32:
-        EmitComputeOffsetShiftRightLogical32(c, reg, inst);
-        break;
+        ABORT_ON_FAILURE(EmitComputeOffsetShiftRightLogical32(c, reg, inst));
+        return true;
     default:
-        UNREACHABLE_MSG("Unexpected instruction for offset computation");
-        break;
+        LOG_ERROR(Render_Recompiler, "Unexpected instruction for offset computation, {}",
+                  magic_enum::enum_name(inst->GetOpcode()));
+        return false;
     }
 }
 
-static inline void PushPtr(Xbyak::CodeGenerator& c, const IR::Value& off_dw) {
+static inline bool PushPtr(Xbyak::CodeGenerator& c, const IR::Value& off_dw) {
     c.push(rdi);
     if (off_dw.IsImmediate()) {
         c.mov(rdi, ptr[rdi + (off_dw.U32() << 2)]);
     } else {
-        ComputeOffset(c, r10d, off_dw);
+        ABORT_ON_FAILURE(ComputeOffset(c, r10d, off_dw));
         c.shl(r10d, 2);
         c.mov(rdi, ptr[rdi + r10d]);
     }
     c.mov(r10, 0xFFFFFFFFFFFFULL);
     c.and_(rdi, r10);
+    return true;
 }
 
 static inline void PopPtr(Xbyak::CodeGenerator& c) {
@@ -356,7 +368,10 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
 
 static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
                          Xbyak::CodeGenerator& c) {
-    PushPtr(c, off_dw);
+    if (!PushPtr(c, off_dw)) {
+        LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
+        return;
+    }
     PassInfo::PtrUserList* use_list = pass_info.GetUsesAsPointer(subtree);
     ASSERT(use_list);
 
@@ -369,7 +384,10 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
         if (src_off_dw.IsImmediate()) {
             c.mov(r10d, ptr[rdi + (src_off_dw.U32() << 2)]);
         } else {
-            ComputeOffset(c, r10d, src_off_dw);
+            if (!ComputeOffset(c, r10d, src_off_dw)) {
+                LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
+                continue;
+            }
             c.shl(r10d, 2);
             c.mov(r10d, ptr[rdi + r10d]);
         }
