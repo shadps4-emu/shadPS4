@@ -276,7 +276,6 @@ struct Pthread {
     static constexpr u32 MaxDeferWaiters = 50;
 
     std::atomic<s32> tid;
-    std::mutex lock;
     u32 cycle;
     std::atomic_int locklevel;
     std::atomic_int critical_count;
@@ -284,7 +283,6 @@ struct Pthread {
     int refcount;
     PthreadEntryFunc start_routine;
     void* arg;
-    Core::NativeThread native_thr;
     PthreadAttr attr;
     std::atomic_bool cancel_enable;
     std::atomic_bool cancel_pending;
@@ -302,6 +300,7 @@ struct Pthread {
     ThreadFlags flags;
     ThreadListFlags tlflags;
     void* ret;
+    u8 pad0[296];
     PthreadSpecificElem* specific;
     int specific_data_count;
     int rdlock_count;
@@ -324,6 +323,8 @@ struct Pthread {
     Pthread* join_target{};
     std::mutex join_wait_mutex;
     std::condition_variable join_wait_cv;
+    std::mutex lock;
+    Core::NativeThread native_thr;
 
     bool InCritical() const noexcept {
         return locklevel.load(std::memory_order_acquire) > 0 ||
@@ -402,6 +403,8 @@ struct Pthread {
 
     int SetAffinity(const Cpuset* cpuset);
 };
+static_assert(offsetof(Pthread, specific) == 0x1c8);
+
 using PthreadT = Pthread*;
 
 extern thread_local Pthread* g_curthread;
