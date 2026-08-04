@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <queue>
+#include "core/emulator_settings.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
@@ -796,6 +797,120 @@ void PatchGlobalDataShareAccess(IR::Block& block, IR::Inst& inst, Info& info,
     }
 }
 
+// Add {base_hi, base_lo} + addend (zero-extended from 32-bit) for 64-bit guest address.
+// Returns CompositeConstructU32x2(result_lo, result_hi).
+static IR::Value EmitAdd64(IR::IREmitter& ir, const IR::U32& base_lo, const IR::U32& base_hi,
+                           const IR::U32& addend) {
+    const IR::Value sum_carry = ir.IAddCarry(base_lo, addend);
+    const IR::U32 result_lo{ir.CompositeExtract(sum_carry, 0)};
+    const IR::U32 carry{ir.CompositeExtract(sum_carry, 1)};
+    const IR::U32 result_hi = ir.IAdd(base_hi, carry);
+    return ir.CompositeConstruct(result_lo, result_hi);
+}
+
+// Number of dwords loaded by a buffer load opcode; 0 = not a supported load.
+static u32 BufferLoadNumDwords(IR::Opcode op) {
+    switch (op) {
+    case IR::Opcode::LoadBufferU32:
+    case IR::Opcode::LoadBufferF32:
+        return 1;
+    case IR::Opcode::LoadBufferU32x2:
+    case IR::Opcode::LoadBufferF32x2:
+        return 2;
+    case IR::Opcode::LoadBufferU32x3:
+    case IR::Opcode::LoadBufferF32x3:
+        return 3;
+    case IR::Opcode::LoadBufferU32x4:
+    case IR::Opcode::LoadBufferF32x4:
+        return 4;
+    default:
+        return 0;
+    }
+}
+
+// Replace a buffer load that uses an inline V# (runtime s_mov_b32 constants) with
+// ReadConst instructions that resolve the guest address via BDA page table.
+// Returns true if the instruction was replaced, false if it fell through.
+static bool PatchInlineBuffer(IR::Block& block, IR::Inst& inst, Info& info,
+                              const BufferResource& buffer_res) {
+    const u32 num_dwords = BufferLoadNumDwords(inst.GetOpcode());
+    if (num_dwords == 0) {
+        return false;
+    }
+
+    if (!EmulatorSettings.IsDirectMemoryAccessEnabled()) {
+        LOG_ERROR(Render_Recompiler, "Inline V# buffer load at {:#x} requires DMA but DMA disabled",
+                  info.pgm_hash);
+        return false;
+    }
+
+    const auto buffer = buffer_res.GetSharp(info);
+    if (buffer.swizzle_enable || buffer.add_tid_enable) {
+        return false;
+    }
+
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    const auto inst_info = inst.Flags<IR::BufferInstInfo>();
+    const u32 inst_offset = inst_info.inst_offset.Value();
+
+    // Compute 64-bit guest address: U32x2{byte_lo, byte_hi}
+    IR::Value guest_addr;
+    if (inst_info.addr64) {
+        // addr64: address was CompositeConstruct(addr_lo, addr_hi, soffset).
+        // Guest address = {addr_hi, addr_lo} + soffset + inst_offset.
+        const IR::U32 addr_lo = IR::GetBufferIndexArg(&inst);
+        const IR::U32 addr_hi = IR::GetBufferVOffsetArg(&inst);
+        const IR::U32 soffset = IR::GetBufferSOffsetArg(&inst);
+
+        IR::U32 soffset_plus_offset = ir.Imm32(inst_offset);
+        if (!soffset.IsImmediate() || soffset.U32() != 0) {
+            soffset_plus_offset = ir.IAdd(soffset_plus_offset, soffset);
+        }
+        guest_addr = EmitAdd64(ir, addr_lo, addr_hi, soffset_plus_offset);
+    } else {
+        // Non-addr64: address was CompositeConstruct(index, voffset, soffset).
+        // Guest address = V#.base + index*stride + voffset + soffset + inst_offset.
+        const u64 vsharp_base = buffer.base_address;
+        const u32 base_lo = static_cast<u32>(vsharp_base);
+        const u32 base_hi = static_cast<u32>(vsharp_base >> 32);
+        const u32 stride = buffer.stride;
+
+        IR::U32 index = ir.Imm32(0);
+        if (inst_info.index_enable) {
+            index = IR::GetBufferIndexArg(&inst);
+        }
+        IR::U32 voffset = ir.Imm32(0);
+        if (inst_info.voffset_enable) {
+            voffset = IR::GetBufferVOffsetArg(&inst);
+        }
+        const IR::U32 soffset = IR::GetBufferSOffsetArg(&inst);
+
+        // buffer_offset32 = inst_offset + soffset + voffset + index * stride
+        IR::U32 offset32 = ir.Imm32(inst_offset);
+        offset32 = ir.IAdd(offset32, soffset);
+        offset32 = ir.IAdd(offset32, voffset);
+        if (stride != 0 && (!index.IsImmediate() || index.U32() != 0)) {
+            offset32 = ir.IAdd(offset32, ir.IMul(index, ir.Imm32(stride)));
+        }
+        guest_addr = EmitAdd64(ir, ir.Imm32(base_lo), ir.Imm32(base_hi), offset32);
+    }
+
+    // Replace buffer load with ReadConst (BDA path).
+    IR::Value result;
+    if (num_dwords == 1) {
+        result = ir.ReadConst(guest_addr, ir.Imm32(0));
+    } else {
+        boost::container::small_vector<IR::Value, 4> dwords;
+        for (u32 i = 0; i < num_dwords; ++i) {
+            dwords.push_back(ir.ReadConst(guest_addr, ir.Imm32(i)));
+        }
+        result = ir.CompositeConstruct(dwords);
+    }
+
+    inst.ReplaceUsesWith(result);
+    return true;
+}
+
 IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const Info& info,
                                const AmdGpu::Buffer& buffer, u32 stride) {
     const auto inst_info = inst.Flags<IR::BufferInstInfo>();
@@ -902,6 +1017,17 @@ void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     // Address of constant buffer reads can be calculated at IR emission time.
     if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
         return;
+    }
+
+    // Inline V# (runtime s_mov_b32 constants with no buffer-cache backing) must go through
+    // ReadConst / BDA page table rather than the normal buffer binding, because there is no
+    // buffer cache mapping for these guest addresses.
+    if (buffer_res.inline_cbuf) {
+        if (PatchInlineBuffer(block, inst, info, buffer_res)) {
+            return;
+        }
+        // Fall through to normal path if PatchInlineBuffer can't handle this instruction
+        // (store, atomic, swizzle, typed format, etc.).
     }
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
