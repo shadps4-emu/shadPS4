@@ -6,6 +6,7 @@
 #include "common/thread.h"
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
+#include "core/file_sys/storage_scheduler.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/libraries/videoout/videoout_error.h"
@@ -275,6 +276,16 @@ void VideoOutDriver::Flip(const Request& req) {
     }
     // save to prev buf index
     port->prev_index = req.index;
+
+    // Real guest flips (never DrawLastFrame re-presents) feed the app0 storage scheduler so
+    // modeled I/O stretches when the emulator runs below the game's target flip cadence.
+    auto& storage = Core::FileSys::GetApp0StorageScheduler();
+    const u32 vblank_frequency = EmulatorSettings.GetVblankFrequency();
+    if (storage.IsEnabled() && vblank_frequency != 0) {
+        const auto expected_period =
+            std::chrono::nanoseconds{1'000'000'000 / vblank_frequency} * (port->flip_rate + 1);
+        storage.ReportGuestFlip(expected_period);
+    }
 }
 
 void VideoOutDriver::DrawBlankFrame() {

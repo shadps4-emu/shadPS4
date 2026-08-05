@@ -182,6 +182,10 @@ struct File {
     Common::FS::IOFile* GetHostFile() const {
         return handle ? handle->GetHostFile() : nullptr;
     }
+
+    // Positional I/O preserving the current file offset; locks m_mutex internally.
+    s64 PRead(void* buffer, u64 nbytes, u64 offset);
+    s64 PWrite(const void* buffer, u64 nbytes, u64 offset);
 };
 
 class HandleTable {
@@ -190,7 +194,10 @@ public:
     virtual ~HandleTable() = default;
 
     int CreateHandle();
-    void DeleteHandle(int d);
+    std::shared_ptr<File> DeleteHandle(int d);
+    std::shared_ptr<File> GetFileShared(int d);
+    // Raw access does not extend the file's lifetime. New asynchronous callers must use
+    // GetFileShared instead.
     File* GetFile(int d);
     File* GetSocket(int d);
     File* GetEpoll(int d);
@@ -201,7 +208,7 @@ public:
     void CreateStdHandles();
 
 private:
-    std::vector<File*> m_files;
+    std::vector<std::shared_ptr<File>> m_files;
     std::mutex m_mutex;
 };
 

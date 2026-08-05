@@ -3,12 +3,6 @@
 
 #pragma once
 
-#include <condition_variable>
-#include <mutex>
-#include <string>
-#include <vector>
-#include <boost/asio/steady_timer.hpp>
-
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -29,7 +23,7 @@ struct OrbisKernelAioResult {
     u32 state;
 };
 
-typedef s32 OrbisKernelAioSubmitId;
+using OrbisKernelAioSubmitId = s32;
 
 struct OrbisKernelAioRWRequest {
     s64 offset;
