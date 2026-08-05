@@ -128,7 +128,18 @@ s32 PS4_SYSV_ABI sceNpWebApi2DeleteUserContext(s32 user_ctx_id) {
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2GetHttpResponseHeaderValue(s64 request_id, const char* field_name,
-                                                        u64* field_value_length) {
+                                                        char* value, u64 value_size) {
+    if (!field_name || !value || value_size == 0) {
+        LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
+        return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
+    }
+    LOG_INFO(Lib_NpWebApi2, "called, request_id = {:#x}, field_name = {}", request_id, field_name);
+    return getHttpResponseHeaderData(request_id, field_name, value, value_size, nullptr);
+}
+
+s32 PS4_SYSV_ABI sceNpWebApi2GetHttpResponseHeaderValueLength(s64 request_id,
+                                                              const char* field_name,
+                                                              u64* field_value_length) {
     if (!field_name || !field_value_length) {
         LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
@@ -140,17 +151,6 @@ s32 PS4_SYSV_ABI sceNpWebApi2GetHttpResponseHeaderValue(s64 request_id, const ch
                  request_id, field_name, *field_value_length);
     }
     return result;
-}
-
-s32 PS4_SYSV_ABI sceNpWebApi2GetHttpResponseHeaderValueLength(s64 request_id,
-                                                              const char* field_name, char* value,
-                                                              u64 value_size) {
-    if (!field_name || !value || value_size == 0) {
-        LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
-        return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
-    }
-    LOG_INFO(Lib_NpWebApi2, "called, request_id = {:#x}, field_name = {}", request_id, field_name);
-    return getHttpResponseHeaderData(request_id, field_name, value, value_size, nullptr);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2GetMemoryPoolStats(s32 lib_ctx_id,
