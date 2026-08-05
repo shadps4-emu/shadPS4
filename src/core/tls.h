@@ -29,7 +29,7 @@ struct Tcb {
     DtvEntry* tcb_dtv;
     void* tcb_thread;
     void* tcb_spare[2];
-    u64 tcb_cookie;
+    u64 tcb_canary;
     ::Libraries::Fiber::OrbisFiberContext* tcb_fiber;
 };
 
