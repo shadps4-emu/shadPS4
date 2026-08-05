@@ -387,8 +387,7 @@ void Launch(char* executableName) {
     if (runEbootPath != "") {
         auto* emulator = Common::Singleton<Core::Emulator>::Instance();
         emulator->executableName = executableName;
-        emulator->Relaunch(
-            {"--log-append", "--game", Common::FS::PathToUTF8String(runEbootPath)});
+        emulator->Relaunch({"--log-append", "--game", Common::FS::PathToUTF8String(runEbootPath)});
     }
 }
 

@@ -743,8 +743,7 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 
 [[noreturn]] void Emulator::Relaunch(std::vector<std::string> args) {
     const auto guest_args = std::find(args.begin(), args.end(), "--");
-    args.insert(guest_args,
-                {"--wait-for-pid", std::to_string(Debugger::GetCurrentPid())});
+    args.insert(guest_args, {"--wait-for-pid", std::to_string(Debugger::GetCurrentPid())});
 
     LOG_INFO(Common, "Relaunching the emulator with args: {}", fmt::join(args, " "));
     Common::Log::Shutdown();
