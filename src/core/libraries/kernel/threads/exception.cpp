@@ -774,7 +774,7 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("JnNl8Xr-z4Y", "libkernel_psmkit", 1, "libkernel", posix_sigismember);
     LIB_FUNCTION("aPcyptbOiZs", "libkernel_psmkit", 1, "libkernel", posix_sigprocmask);
     LIB_FUNCTION("yH-uQW3LbX0", "libkernel_psmkit", 1, "libkernel", posix_pthread_kill);
-    LIB_FUNCTION("sHziAegVp74", "libkernel_psmkit", 1, "libkernel", posix_sigalstack);
+    LIB_FUNCTION("sHziAegVp74", "libkernel_psmkit", 1, "libkernel", posix_sigaltstack);
 
     LIB_FUNCTION("KiJEPEWRyUY", "libScePosix", 1, "libkernel", posix_sigaction);
     LIB_FUNCTION("VADc3MNQ3cM", "libScePosix", 1, "libkernel", posix_signal);
