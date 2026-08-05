@@ -3,6 +3,7 @@
 
 #include <array>
 
+#include "common/logging/log.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/ir_emitter.h"
@@ -41,6 +42,22 @@ void LowerUserClipPlanes(IR::Program& program, const RuntimeInfo& runtime_info) 
     const u32 enabled_mask = runtime_info.vs_info.user_clip_plane_mask;
     if (enabled_mask == 0) {
         return;
+    }
+
+    // GCN clips against user planes and shader-exported distances independently, but both share
+    // the eight ClipDistance slots here, and the guest's exports own their indices. Lowering is
+    // skipped for such shaders, which restores the previous behavior of clipping by the exported
+    // distances alone.
+    for (u32 i = 0; i < runtime_info.vs_info.num_outputs; ++i) {
+        for (const auto output : runtime_info.vs_info.outputs[i]) {
+            if (output >= Output::ClipDist0 && output <= Output::ClipDist7) {
+                LOG_WARNING(Render_Vulkan,
+                            "Skipping user clip plane lowering: shader {:#x} exports its own clip "
+                            "distances",
+                            program.info.pgm_hash);
+                return;
+            }
+        }
     }
 
     // Clip distances are computed from the final exported position.
