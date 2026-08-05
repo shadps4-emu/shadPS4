@@ -660,7 +660,7 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
 }
 
 s32 PS4_SYSV_ABI posix_access(const char* path, s32 mode) {
-    LOG_DEBUG(Kernel_Fs, "(PARTIAL) path = {}", path);
+    LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}, mode = {}", path, mode);
     if (strlen(path) > 255) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
