@@ -37,6 +37,12 @@ public:
      */
     void Restart(std::filesystem::path eboot_path, const std::vector<std::string>& guest_args = {});
 
+    /**
+     * Launches a new emulator process with the supplied CLI arguments, then terminates this
+     * process. The new process waits for this one to exit before initializing.
+     */
+    [[noreturn]] void Relaunch(std::vector<std::string> args);
+
     const char* executableName;
     bool waitForDebuggerBeforeRun{false};
 
