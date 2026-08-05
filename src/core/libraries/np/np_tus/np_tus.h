@@ -238,7 +238,10 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariable(int reqId, OrbisNpId* npId, s32* s
                                               OrbisNpTusVariable* variableArray, u64 variablesSize,
                                               int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableA();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAAsync(int reqId, OrbisNpAccountId targetAccountId,
+                                                    s32* slotIds,
+                                                    OrbisNpTusVariableA* variableArray,
+                                                    u64 variablesSize, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s32* slotIds,
                                                    OrbisNpTusVariable* variableArray,
                                                    u64 variablesSize, int arrayLen, void* option);
@@ -290,7 +293,9 @@ s32 PS4_SYSV_ABI sceNpTusSetDataVUserAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariable(int reqId, OrbisNpId* npId, s32* slotIds,
                                               s64* variables, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableA();
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAAsync(int reqId, OrbisNpAccountId targetAccountId,
+                                                    s32* slotIds, const s64* variables,
+                                                    int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAsync(int reqId, OrbisNpId* npId, s32* slotIds,
                                                    s64* variables, int arrayLen, void* option);
 s32 PS4_SYSV_ABI

@@ -2034,7 +2034,8 @@ s32 NpHandler::TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std
                                        const std::vector<s32>& slotIds,
                                        NpTus::OrbisNpTusVariable* variablesOut, u64 arrayNum,
                                        std::shared_ptr<NpTus::TusRequestCtx> ctx,
-                                       NpTus::OrbisNpTusVariableA* variablesAOut) {
+                                       NpTus::OrbisNpTusVariableA* variablesAOut,
+                                       s64 ownerAccountId) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2048,6 +2049,8 @@ s32 NpHandler::TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std
     proto.set_ownernpid(ownerNpId);
     if (!virtualUser.empty()) {
         proto.set_virtualuser(virtualUser);
+    } else if (ownerAccountId != 0) {
+        proto.set_owneraccountid(ownerAccountId);
     } else if (ownerNpId.empty() ||
                Common::ToLower(ownerNpId) == Common::ToLower(client->GetNpid())) {
         proto.set_owneraccountid(static_cast<s64>(client->GetUserId()));
@@ -2077,7 +2080,8 @@ s32 NpHandler::TusSetMultiSlotVariable(s32 user_id, s32 service_label, const std
                                        const std::string& virtualUser,
                                        const std::vector<s32>& slotIds,
                                        const std::vector<s64>& values,
-                                       std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+                                       std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                                       s64 ownerAccountId) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2091,6 +2095,8 @@ s32 NpHandler::TusSetMultiSlotVariable(s32 user_id, s32 service_label, const std
     proto.set_ownernpid(ownerNpId);
     if (!virtualUser.empty()) {
         proto.set_virtualuser(virtualUser);
+    } else if (ownerAccountId != 0) {
+        proto.set_owneraccountid(ownerAccountId);
     } else if (ownerNpId.empty() ||
                Common::ToLower(ownerNpId) == Common::ToLower(client->GetNpid())) {
         proto.set_owneraccountid(static_cast<s64>(client->GetUserId()));
