@@ -485,8 +485,10 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                     }
                     return std::nullopt;
                 };
-                auto base0 = IR::BreadthFirstSearch(ptr_composite->Arg(0), pred);
-                auto base1 = IR::BreadthFirstSearch(ptr_composite->Arg(1), pred);
+                auto base0 =
+                    IR::DominatingBreadthFirstSearch(ptr_composite->Arg(0), *block, true, pred);
+                auto base1 =
+                    IR::DominatingBreadthFirstSearch(ptr_composite->Arg(1), *block, true, pred);
                 ASSERT_MSG(base0 && base1, "ReadConst not from constant memory");
 
                 IR::Inst* ptr_lo = base0.value();

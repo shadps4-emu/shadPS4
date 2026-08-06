@@ -3,6 +3,7 @@
 
 #include <queue>
 #include "shader_recompiler/frontend/control_flow_graph.h"
+#include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/program.h"
@@ -68,112 +69,27 @@ std::pair<IR::Inst*, bool> CheckDisableAnisoLod0Pattern(IR::Inst* inst) {
     return {prod2, true};
 }
 
-bool IsSharpSource(const IR::Inst* inst) {
-    return inst->GetOpcode() == IR::Opcode::GetUserData ||
-           inst->GetOpcode() == IR::Opcode::ReadConst ||
-           inst->GetOpcode() == IR::Opcode::ReadConstBuffer;
-}
-
-bool IsCfgBlockDominatedBy(const Shader::Gcn::Block* maybe_dominator,
-                           const Shader::Gcn::Block* block, const Shader::Gcn::Block* dest_block) {
-    if (block == maybe_dominator) {
-        return true;
-    }
-
-    boost::container::small_vector<const Shader::Gcn::Block*, 8> visited;
-    std::queue<const Shader::Gcn::Block*> queue;
-    queue.push(block);
-
-    while (!queue.empty()) {
-        const Shader::Gcn::Block* block{queue.front()};
-        queue.pop();
-        if (block == dest_block) {
-            return false;
-        }
-        if (block == maybe_dominator) {
-            continue;
-        }
-        if (block->branch_false && !std::ranges::contains(visited, block->branch_false)) {
-            visited.push_back(block->branch_false);
-            queue.push(block->branch_false);
-        }
-        if (block->branch_true && !std::ranges::contains(visited, block->branch_true)) {
-            visited.push_back(block->branch_true);
-            queue.push(block->branch_true);
-        }
-    }
-
-    return true;
-}
-
 const IR::Inst* FindSharpSource(IR::Inst* handle, const IR::Block& current_parent) {
-    if (IsSharpSource(handle)) {
-        return const_cast<IR::Inst*>(handle);
-    }
-
-    boost::container::small_vector<IR::Inst*, 8> visited, sources;
-    std::queue<IR::Inst*> queue;
-    queue.push(handle);
-
-    while (!queue.empty()) {
-        IR::Inst* inst{queue.front()};
-        queue.pop();
-        if (IsSharpSource(inst)) {
-            sources.push_back(inst);
-            continue;
-        }
-        if (inst->GetOpcode() != IR::Opcode::Phi) {
-            continue;
-        }
-        for (size_t arg = inst->NumArgs(); arg--;) {
-            const IR::Value arg_value = inst->Arg(arg);
-            if (arg_value.IsImmediate()) {
-                continue;
+    auto finding = IR::DominatingBreadthFirstSearch(
+        handle, current_parent, false, [](IR::Inst* inst) -> std::optional<IR::Inst*> {
+            if (inst->GetOpcode() == IR::Opcode::GetUserData ||
+                inst->GetOpcode() == IR::Opcode::ReadConst ||
+                inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                return inst;
             }
-            IR::Inst* arg_inst = arg_value.InstRecursive();
-            if (std::ranges::find(visited, arg_inst) == visited.end()) {
-                visited.push_back(arg_inst);
-                queue.push(arg_inst);
-            }
-        }
-    }
-    if (sources.empty()) {
+            return std::nullopt;
+        });
+
+    if (!finding) {
         // We defer the assert to the resource patching pass, since sometimes the sharp is not
         // required (e.g. for fmask)
         return nullptr;
     }
 
-    // Perform dominance analysis on found sources and eliminate ones that don't pass
-    // If a sharp source is dominated by another, the former can be eliminated.
-    size_t num_sources = sources.size();
-    for (s32 i = 0; i < num_sources;) {
-        const IR::Block* block = sources[i]->GetParent();
-        ASSERT(block->cfg_block);
-        bool was_removed = false;
-        for (s32 j = 0; j < num_sources;) {
-            const IR::Block* dominator = sources[j]->GetParent();
-            ASSERT(dominator->cfg_block);
-            if (i != j && IsCfgBlockDominatedBy(dominator->cfg_block, block->cfg_block,
-                                                current_parent.cfg_block)) {
-                std::swap(sources[i], sources[num_sources - 1]);
-                --num_sources;
-                sources.pop_back();
-                was_removed = true;
-                break;
-            } else {
-                ++j;
-            }
-        }
-        if (!was_removed) {
-            ++i;
-        }
-    }
-
-    ASSERT_MSG(sources.size() == 1, "Unable to deduce sharp source");
-
-    IR::Inst* sharp_source = sources[0];
+    auto sharp_source = finding.value();
     if (sharp_source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
         // Set flag so that the flattening pass knows to flatten this instruction.
+        // TODO: Do we need to set this flag for all components of a composite?
         auto flags = sharp_source->Flags<IR::BufferInstInfo>();
         flags.sharp_source.Assign(1u);
         sharp_source->SetFlags(flags);
