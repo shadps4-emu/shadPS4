@@ -86,18 +86,18 @@ struct OrbisNpTusDataStatus {
 };
 
 struct OrbisNpTusDataStatusA {
-    OrbisNpOnlineId onlineId;
-    u8 pad[16];
-    int set;
-    Libraries::Rtc::OrbisRtcTick lastChanged;
-    OrbisNpOnlineId lastChangedAuthor;
-    u8 pad2[20];
+    OrbisNpOnlineId ownerId;
+    u8 reserved1[16];
+    s32 hasData;
+    Libraries::Rtc::OrbisRtcTick lastChangedDate;
+    OrbisNpOnlineId lastChangedAuthorId;
+    u8 reserved2[20];
     void* data;
     u64 dataSize;
     OrbisNpTusDataInfo info;
-    OrbisNpAccountId owner;
-    OrbisNpAccountId lastChangedAuthorId;
-    u8 pad3[16];
+    OrbisNpAccountId ownerAccountId;
+    OrbisNpAccountId lastChangedAuthorAccountId;
+    u8 reserved[16];
 };
 
 #pragma pack(push, 4)
@@ -112,7 +112,6 @@ struct OrbisNpTusVariable {
     OrbisNpAccountId ownerAccountId;
     OrbisNpAccountId lastChangedAuthorAccountId;
 };
-#pragma pack(pop)
 
 struct OrbisNpTusVariableA {
     OrbisNpOnlineId ownerId;
@@ -127,6 +126,7 @@ struct OrbisNpTusVariableA {
     OrbisNpAccountId ownerAccountId;
     OrbisNpAccountId lastChangedAuthorAccountId;
 };
+#pragma pack(pop)
 
 struct OrbisNpTusVariableForCrossSave {
     OrbisNpId ownerId;
@@ -200,7 +200,9 @@ s32 PS4_SYSV_ABI sceNpTusDeleteNpTitleCtx(int ctxId);
 s32 PS4_SYSV_ABI sceNpTusDeleteRequest(int requestId);
 s32 PS4_SYSV_ABI sceNpTusGetData();
 s32 PS4_SYSV_ABI sceNpTusGetDataA();
-s32 PS4_SYSV_ABI sceNpTusGetDataAAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusGetDataAAsync(int reqId, OrbisNpAccountId targetAccountId, s32 slotId,
+                                       OrbisNpTusDataStatusA* dataStatus, u64 dataStatusSize,
+                                       void* data, u64 recvSize, void* option);
 s32 PS4_SYSV_ABI sceNpTusGetDataAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusGetDataAVUser();
 s32 PS4_SYSV_ABI sceNpTusGetDataAVUserAsync(int reqId);
@@ -284,7 +286,12 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableVUserAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusPollAsync(int reqId, int* result);
 s32 PS4_SYSV_ABI sceNpTusSetData();
 s32 PS4_SYSV_ABI sceNpTusSetDataA();
-s32 PS4_SYSV_ABI sceNpTusSetDataAAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusSetDataAAsync(int reqId, OrbisNpAccountId targetAccountId, s32 slotId,
+                                       u64 totalSize, u64 sendSize, const void* data,
+                                       const OrbisNpTusDataInfo* info, u64 infoStructSize,
+                                       const OrbisNpAccountId* isLastChangedAuthor,
+                                       const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+                                       void* option);
 s32 PS4_SYSV_ABI sceNpTusSetDataAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusSetDataAVUser();
 s32 PS4_SYSV_ABI sceNpTusSetDataAVUserAsync(int reqId);

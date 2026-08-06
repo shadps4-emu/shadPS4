@@ -2123,6 +2123,108 @@ s32 NpHandler::TusSetMultiSlotVariable(s32 user_id, s32 service_label, const std
     return ORBIS_OK;
 }
 
+s32 NpHandler::TusGetData(s32 user_id, s32 service_label, const std::string& ownerNpId,
+                          const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
+                          NpTus::OrbisNpTusDataStatusA* statusAOut, u64 statusCap, void* dataOut,
+                          u64 dataCap, u64 dataOffset, std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    shadnet::TusGetDataRequest proto;
+    proto.set_ownernpid(ownerNpId);
+    proto.set_slotid(slotId);
+    // Same targeting precedence as the variable paths.
+    if (!virtualUser.empty()) {
+        proto.set_virtualuser(virtualUser);
+    } else if (ownerAccountId != 0) {
+        proto.set_owneraccountid(ownerAccountId);
+    } else if (ownerNpId.empty() ||
+               Common::ToLower(ownerNpId) == Common::ToLower(client->GetNpid())) {
+        proto.set_owneraccountid(static_cast<s64>(client->GetUserId()));
+    }
+    const std::string com_id = GetNpCommId(service_label);
+    if (!IsValidNpCommId(com_id)) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::TusGetData,
+                                             BuildTusPayload(com_id, proto.SerializeAsString()));
+    std::lock_guard lock(m_mutex_pending_tus);
+    PendingTusRequest p;
+    p.req = std::move(ctx);
+    p.cmd = ShadNet::CommandType::TusGetData;
+    p.user_id = user_id;
+    p.statusArrayA = statusAOut;
+    p.statusCap = statusCap;
+    p.dataOut = dataOut;
+    p.dataCap = dataCap;
+    p.dataOffset = dataOffset;
+    p.arrayNum = 1;
+    m_pending_tus.emplace(pkt_id, std::move(p));
+    return ORBIS_OK;
+}
+
+s32 NpHandler::TusSetData(s32 user_id, s32 service_label, const std::string& ownerNpId,
+                          const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
+                          const std::vector<u8>& blob, const std::vector<u8>& info,
+                          bool hasAuthorCheck, s64 isLastChangedAuthor,
+                          const std::string& isLastChangedAuthorNpId, bool hasDateCheck,
+                          u64 isLastChangedDate, std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    shadnet::TusSetDataRequest proto;
+    proto.set_ownernpid(ownerNpId);
+    proto.set_slotid(slotId);
+    proto.set_data(blob.data(), blob.size());
+    if (!info.empty()) {
+        proto.set_info(info.data(), info.size());
+    }
+    if (!virtualUser.empty()) {
+        proto.set_virtualuser(virtualUser);
+    } else if (ownerAccountId != 0) {
+        proto.set_owneraccountid(ownerAccountId);
+    } else if (ownerNpId.empty() ||
+               Common::ToLower(ownerNpId) == Common::ToLower(client->GetNpid())) {
+        proto.set_owneraccountid(static_cast<s64>(client->GetUserId()));
+    }
+    if (hasAuthorCheck) {
+        proto.set_hasauthorcheck(true);
+        proto.set_islastchangedauthor(isLastChangedAuthor);
+        if (!isLastChangedAuthorNpId.empty()) {
+            proto.set_islastchangedauthornpid(isLastChangedAuthorNpId);
+        }
+    }
+    if (hasDateCheck) {
+        proto.set_hasdatecheck(true);
+        proto.set_islastchangeddate(isLastChangedDate);
+    }
+    const std::string com_id = GetNpCommId(service_label);
+    if (!IsValidNpCommId(com_id)) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::TusSetData,
+                                             BuildTusPayload(com_id, proto.SerializeAsString()));
+    std::lock_guard lock(m_mutex_pending_tus);
+    PendingTusRequest p;
+    p.req = std::move(ctx);
+    p.cmd = ShadNet::CommandType::TusSetData;
+    p.user_id = user_id;
+    m_pending_tus.emplace(pkt_id, std::move(p));
+    return ORBIS_OK;
+}
+
 void NpHandler::OnAsyncReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
                              ShadNet::ErrorType error, const std::vector<u8>& body) {
     const auto cmd_val = static_cast<u16>(cmd);
@@ -2450,6 +2552,9 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         case ShadNet::ErrorType::DbFail:
             orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_INTERNAL_SERVER_ERROR;
             break;
+        case ShadNet::ErrorType::CondFail:
+            orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_CONDITIONS_NOT_SATISFIED;
+            break;
         default:
             break;
         }
@@ -2532,18 +2637,19 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
     };
     auto fillStatusA = [](NpTus::OrbisNpTusDataStatusA& d, const shadnet::TusDataStatus& s) {
         d = NpTus::OrbisNpTusDataStatusA{};
-        std::memcpy(d.onlineId.data, s.ownernpid().data(),
-                    std::min(s.ownernpid().size(), sizeof(d.onlineId.data)));
-        d.set = s.set() ? 1 : 0;
-        d.lastChanged.tick = s.lastchangeddate();
-        std::memcpy(d.lastChangedAuthor.data, s.lastchangedauthornpid().data(),
-                    std::min(s.lastchangedauthornpid().size(), sizeof(d.lastChangedAuthor.data)));
+        std::memcpy(d.ownerId.data, s.ownernpid().data(),
+                    std::min(s.ownernpid().size(), sizeof(d.ownerId.data)));
+        d.hasData = s.set() ? 1 : 0;
+        d.lastChangedDate.tick = s.lastchangeddate();
+        std::memcpy(d.lastChangedAuthorId.data, s.lastchangedauthornpid().data(),
+                    std::min(s.lastchangedauthornpid().size(), sizeof(d.lastChangedAuthorId.data)));
         d.dataSize = s.datasize();
         d.info.size = s.info().size();
         const size_t cp = std::min(s.info().size(), sizeof(d.info.data));
         std::memcpy(d.info.data, s.info().data(), cp);
-        d.owner = static_cast<OrbisNpAccountId>(s.owneraccountid());
-        d.lastChangedAuthorId = static_cast<OrbisNpAccountId>(s.lastchangedauthoraccountid());
+        d.ownerAccountId = static_cast<OrbisNpAccountId>(s.owneraccountid());
+        d.lastChangedAuthorAccountId =
+            static_cast<OrbisNpAccountId>(s.lastchangedauthoraccountid());
     };
     auto fillStatusForCrossSave = [](NpTus::OrbisNpTusDataStatusForCrossSave& d,
                                      const shadnet::TusDataStatus& s) {
@@ -2605,18 +2711,22 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
             req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
             return;
         }
-        // dataSize in the status is the TOTAL size (set by the fill) the return
-        // value is the number of bytes actually received into dataOut this call.
         u64 recv = 0;
-        if (pending.dataOut && !resp.data().empty()) {
-            recv = std::min<u64>(pending.dataCap, resp.data().size());
-            std::memcpy(pending.dataOut, resp.data().data(), recv);
+        const u64 blob_size = resp.data().size();
+        if (pending.dataOut && pending.dataOffset < blob_size) {
+            const u64 avail = blob_size - pending.dataOffset;
+            recv = std::min<u64>(pending.dataCap, avail);
+            std::memcpy(pending.dataOut, resp.data().data() + pending.dataOffset, recv);
         }
         if (pending.statusArrayA) {
-            fillStatusA(pending.statusArrayA[0], resp.status());
+            NpTus::OrbisNpTusDataStatusA tmp{};
+            fillStatusA(tmp, resp.status());
             if (recv) {
-                pending.statusArrayA[0].data = pending.dataOut;
+                tmp.data = pending.dataOut;
             }
+            const u64 cap =
+                pending.statusCap ? std::min<u64>(pending.statusCap, sizeof(tmp)) : sizeof(tmp);
+            std::memcpy(pending.statusArrayA, &tmp, cap);
         } else if (pending.statusArrayCS) {
             fillStatusForCrossSave(pending.statusArrayCS[0], resp.status());
             if (recv) {
