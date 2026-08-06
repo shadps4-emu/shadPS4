@@ -511,9 +511,15 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
         raw[0] = handle->Arg(0).U32() | u64(handle->Arg(1).U32()) << 32;
         raw[1] = handle->Arg(2).U32() | u64(handle->Arg(3).U32()) << 32;
         const auto buffer = std::bit_cast<AmdGpu::Buffer>(raw);
+        auto used_types = BufferDataType(inst, profile, buffer.GetNumberFmt());
+        // When element_size==2, the buffer's guest address may only be 2-byte aligned,
+        // requiring U16 word-level access to apply non-dword-aligned offset correctly.
+        if (buffer.GetElementSize() == 2) {
+            used_types |= IR::Type::U16;
+        }
         buffer_binding = descriptors.Add(BufferResource{
             .sharp_idx = std::numeric_limits<u32>::max(),
-            .used_types = BufferDataType(inst, profile, buffer.GetNumberFmt()),
+            .used_types = used_types,
             .inline_cbuf = buffer,
             .buffer_type = BufferType::Guest,
         });
@@ -523,9 +529,15 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
         const auto inst_info = inst.Flags<IR::BufferInstInfo>();
         const auto sharp_idx = TrackSharp(buffer_handle, block, inst_info.pc);
         const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+        auto used_types = BufferDataType(inst, profile, buffer.GetNumberFmt());
+        // When element_size==2, the buffer's guest address may only be 2-byte aligned,
+        // requiring U16 word-level access to apply non-dword-aligned offset correctly.
+        if (buffer.GetElementSize() == 2) {
+            used_types |= IR::Type::U16;
+        }
         buffer_binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp_idx,
-            .used_types = BufferDataType(inst, profile, buffer.GetNumberFmt()),
+            .used_types = used_types,
             .buffer_type = BufferType::Guest,
             .is_written = IsBufferStore(inst),
             .is_formatted = inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32 ||
