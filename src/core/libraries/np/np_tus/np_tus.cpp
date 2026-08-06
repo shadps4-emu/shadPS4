@@ -754,6 +754,143 @@ s32 PS4_SYSV_ABI sceNpTusSetDataAAsync(int reqId, OrbisNpAccountId targetAccount
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpTusGetDataAVUserAsync(int reqId,
+                                            const OrbisNpTusVirtualUserId* targetVirtualUserId,
+                                            s32 slotId, OrbisNpTusDataStatusA* dataStatus,
+                                            u64 dataStatusSize, void* data, u64 recvSize,
+                                            void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetVirtualUserId = {}, slotId = {}, dataStatus = {}, "
+             "dataStatusSize = {}, data = {}, recvSize = {}, option = {}",
+             reqId, targetVirtualUserId ? targetVirtualUserId->data : "", slotId,
+             fmt::ptr(dataStatus), dataStatusSize, fmt::ptr(data), recvSize, fmt::ptr(option));
+    if (option) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (!targetVirtualUserId || !dataStatus || dataStatusSize == 0) {
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (slotId < 0) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    const std::string virtualUser(
+        targetVirtualUserId->data,
+        strnlen(targetVirtualUserId->data, sizeof(targetVirtualUserId->data)));
+    if (virtualUser.empty()) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+
+    u64 offset = 0;
+    {
+        std::lock_guard lock(g_mutex);
+        if (!req->xfer.SameTarget(slotId, 0, virtualUser)) {
+            req->xfer.Begin(slotId, 0, virtualUser);
+        }
+        offset = req->xfer.recvOffset;
+        if (data) {
+            req->xfer.recvOffset += recvSize;
+        }
+    }
+
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetData(
+        uid, static_cast<s32>(svc), /*ownerNpId=*/std::string(), virtualUser, /*ownerAccountId=*/0,
+        slotId, dataStatus, dataStatusSize, data, data ? recvSize : 0, offset, ctx);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusSetDataAVUserAsync(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32 slotId, u64 totalSize,
+    u64 sendSize, const void* data, const OrbisNpTusDataInfo* info, u64 infoStructSize,
+    const OrbisNpAccountId* isLastChangedAuthor,
+    const Libraries::Rtc::OrbisRtcTick* isLastChangedDate, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetVirtualUserId = {}, slotId = {}, totalSize = {}, sendSize = {}, "
+             "data = {}, info = {}, infoStructSize = {}, option = {}",
+             reqId, targetVirtualUserId ? targetVirtualUserId->data : "", slotId, totalSize,
+             sendSize, fmt::ptr(data), fmt::ptr(info), infoStructSize, fmt::ptr(option));
+    if (option) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (!targetVirtualUserId || !data || sendSize == 0) {
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (slotId < 0 || sendSize > totalSize) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    const std::string virtualUser(
+        targetVirtualUserId->data,
+        strnlen(targetVirtualUserId->data, sizeof(targetVirtualUserId->data)));
+    if (virtualUser.empty()) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+
+    std::vector<u8> blob;
+    std::vector<u8> infoBytes;
+    bool complete = false;
+    {
+        std::lock_guard lock(g_mutex);
+        auto& x = req->xfer;
+        if (!x.SameTarget(slotId, 0, virtualUser)) {
+            x.Begin(slotId, 0, virtualUser);
+            x.totalSize = totalSize;
+            x.sendBuf.reserve(totalSize);
+            if (info && infoStructSize >= sizeof(OrbisNpTusDataInfo)) {
+                const u64 n = std::min<u64>(info->size, sizeof(info->data));
+                x.info.assign(info->data, info->data + n);
+            }
+        }
+        const u8* src = static_cast<const u8*>(data);
+        x.sendBuf.insert(x.sendBuf.end(), src, src + sendSize);
+        if (x.sendBuf.size() >= x.totalSize) {
+            blob = x.sendBuf;
+            infoBytes = x.info;
+            complete = true;
+            x = NpTusDataXfer{};
+        }
+    }
+
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    if (!complete) {
+        ctx->SetResult(ORBIS_OK);
+        return ORBIS_OK;
+    }
+
+    const bool hasAuthorCheck = isLastChangedAuthor != nullptr;
+    const bool hasDateCheck = isLastChangedDate != nullptr;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusSetData(
+        uid, static_cast<s32>(svc), /*ownerNpId=*/std::string(), virtualUser, /*ownerAccountId=*/0,
+        slotId, blob, infoBytes, hasAuthorCheck,
+        hasAuthorCheck ? static_cast<s64>(*isLastChangedAuthor) : 0,
+        /*isLastChangedAuthorNpId=*/std::string(), hasDateCheck,
+        hasDateCheck ? isLastChangedDate->tick : 0, ctx);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
 //***********************************
 // TSS functions - WIP TODO
 //***********************************
@@ -962,11 +1099,6 @@ s32 PS4_SYSV_ABI sceNpTusGetDataAsync(int reqId) {
 s32 PS4_SYSV_ABI sceNpTusGetDataAVUser() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetDataAVUserAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSave() {
@@ -1292,11 +1424,6 @@ s32 PS4_SYSV_ABI sceNpTusSetDataAsync(int reqId) {
 s32 PS4_SYSV_ABI sceNpTusSetDataAVUser() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusSetDataAVUserAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusSetDataVUser() {
