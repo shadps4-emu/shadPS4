@@ -28,6 +28,7 @@
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"
 #include "common/singleton.h"
+#include "core/cpu_patches.h" // Windows static guest red-zone protection
 #include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
 #include "core/emulator_settings.h"
@@ -423,9 +424,20 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     EmulatorSettings.Load(id);
+    // Windows static guest red-zone protection
+    WindowsGuestRedZoneProtection::SetActiveMode(
+        EmulatorSettings.GetWindowsGuestRedZoneProtectionMode());
     // Switch to configured log
     Common::Log::Switch((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
                                                                           : "shad_log.txt");
+#ifdef _WIN32
+    // Windows static guest red-zone protection
+    if (WindowsGuestRedZoneProtection::IsStaticPatchingEnabled()) {
+        LOG_INFO(Core,
+                 "Windows guest red-zone static protection uses module EH metadata and cannot "
+                 "cover code without function entries");
+    }
+#endif
 
     auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
 

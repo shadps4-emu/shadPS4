@@ -181,6 +181,13 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         }
     };
 
+#if defined(ARCH_X86_64) && defined(_WIN32)
+    // Windows static guest red-zone protection
+    const bool use_static_windows_guest_red_zone_protection =
+        WindowsGuestRedZoneProtection::IsStaticPatchingEnabled();
+    std::vector<std::pair<VAddr, u64>> executable_segments;
+    std::vector<uintptr_t> function_starts;
+#endif
     for (u16 i = 0; i < elf_header.e_phnum; i++) {
         const auto header_type = elf.ElfPheaderTypeStr(elf_pheader[i].p_type);
         switch (elf_pheader[i].p_type) {
@@ -205,6 +212,12 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 #ifdef ARCH_X86_64
             if (elf_pheader[i].p_flags & PF_EXEC) {
                 PrePatchInstructions(segment_addr, segment_file_size);
+#ifdef _WIN32
+                // Windows static guest red-zone protection
+                if (use_static_windows_guest_red_zone_protection) {
+                    executable_segments.emplace_back(segment_addr, segment_file_size);
+                }
+#endif
             }
 #endif
             break;
@@ -247,6 +260,13 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             const VAddr eh_hdr_end = eh_hdr_start + eh_frame_hdr_size;
             Dwarf::EHHeaderInfo hdr_info;
             if (Dwarf::DecodeEHHdr(eh_hdr_start, eh_hdr_end, hdr_info)) {
+#if defined(ARCH_X86_64) && defined(_WIN32)
+                // Windows static guest red-zone protection
+                if (use_static_windows_guest_red_zone_protection &&
+                    !Dwarf::DecodeEHHdrTable(hdr_info, eh_hdr_end, function_starts)) {
+                    LOG_ERROR(Core_Linker, "Failed to decode EH frame search table for {}", name);
+                }
+#endif
                 eh_frame_addr = hdr_info.eh_frame_ptr - base_virtual_addr;
                 if (eh_frame_hdr_addr > eh_frame_addr) {
                     eh_frame_size = (eh_frame_hdr_addr - eh_frame_addr);
@@ -260,6 +280,60 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             LOG_ERROR(Core_Linker, "Unimplemented type {}", header_type);
         }
     }
+
+#if defined(ARCH_X86_64) && defined(_WIN32)
+    // Windows static guest red-zone protection
+    if (use_static_windows_guest_red_zone_protection) {
+        u64 analyzed_function_count{};
+        u64 stack_dependent_instruction_count{};
+        u64 control_flow_instruction_count{};
+        u64 unrelocatable_instruction_count{};
+        u64 unsupported_cpu_patch_instruction_count{};
+        for (const auto& [segment_addr, segment_size] : executable_segments) {
+            // Windows static guest red-zone protection
+            const auto result =
+                PatchRedZoneMemoryInstructions(segment_addr, segment_size, function_starts);
+            analyzed_function_count += result.function_count;
+            stack_dependent_instruction_count += result.stack_dependent_memory_instruction_count;
+            control_flow_instruction_count += result.control_flow_memory_instruction_count;
+            unrelocatable_instruction_count += result.unrelocatable_memory_instruction_count;
+            unsupported_cpu_patch_instruction_count +=
+                result.unsupported_cpu_patch_instruction_count;
+            LOG_DEBUG(
+                Core_Linker,
+                "Windows guest red-zone static patching for {}: {} functions, {} instructions, "
+                "{} red-zone functions, {}/{} memory instructions patched "
+                "({} short, {} stack-dependent, {} control-flow, {} unrelocatable), "
+                "{}/{} short CPU patches applied ({} unsupported), {} indirect red-zone "
+                "functions",
+                name, result.function_count, result.instruction_count,
+                result.red_zone_function_count, result.patched_memory_instruction_count,
+                result.memory_instruction_count, result.short_memory_instruction_count,
+                result.stack_dependent_memory_instruction_count,
+                result.control_flow_memory_instruction_count,
+                result.unrelocatable_memory_instruction_count,
+                result.patched_cpu_patch_instruction_count, result.cpu_patch_instruction_count,
+                result.unsupported_cpu_patch_instruction_count,
+                result.indirect_red_zone_function_count);
+        }
+        if (!executable_segments.empty() && analyzed_function_count == 0) {
+            LOG_WARNING(Core_Linker,
+                        "Windows guest red-zone static patching could not find function "
+                        "boundaries for {}; protection was not applied",
+                        name);
+        } else if (stack_dependent_instruction_count != 0 || control_flow_instruction_count != 0 ||
+                   unrelocatable_instruction_count != 0 ||
+                   unsupported_cpu_patch_instruction_count != 0) {
+            LOG_WARNING(
+                Core_Linker,
+                "Windows guest red-zone static patching for {} is partial: {} stack-dependent, "
+                "{} control-flow, and {} unrelocatable memory instructions were not protected; "
+                "{} CPU patch instructions were unsupported",
+                name, stack_dependent_instruction_count, control_flow_instruction_count,
+                unrelocatable_instruction_count, unsupported_cpu_patch_instruction_count);
+        }
+    }
+#endif
 
     const VAddr entry_addr = base_virtual_addr + elf.GetElfEntry();
     LOG_INFO(Core_Linker, "program entry addr ..........: {:#018x}", entry_addr);
