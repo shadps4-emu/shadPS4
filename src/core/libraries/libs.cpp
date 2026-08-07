@@ -26,6 +26,7 @@
 #include "core/libraries/ime/ime_dialog.h"
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/kernel/kernel.h"
+#include "core/libraries/keyboard/keyboard.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libpng/pngdec.h"
 #include "core/libraries/libs.h"
@@ -157,6 +158,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceRazorCpu.sprx", Libraries::RazorCpu::RegisterLib},
             {"libSceMove.sprx", Libraries::Move::RegisterLib},
             {"libSceMouse.sprx", Libraries::Mouse::RegisterLib},
+            {"libSceKeyboard.sprx", Libraries::Keyboard::RegisterLib},
             {"libSceWebBrowserDialog.sprx", Libraries::WebBrowserDialog::RegisterLib},
             {"libSceZlib.sprx", Libraries::Zlib::RegisterLib},
             {"libSceHmd.sprx", Libraries::Hmd::RegisterLib},
