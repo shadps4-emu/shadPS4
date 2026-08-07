@@ -62,6 +62,7 @@ int main(int argc, char* argv[]) {
     bool configClean = false;
     bool configGlobal = false;
     bool bigPicture = false;
+    bool sameProcess = false;
 
     std::optional<std::filesystem::path> addGameFolder;
     std::optional<std::filesystem::path> setAddonFolder;
@@ -74,6 +75,8 @@ int main(int argc, char* argv[]) {
                  "Disable automatic loading of game patches");
 
     app.add_flag("-b,--big-picture", bigPicture, "Start in Big Picture Mode");
+    app.add_flag("--same-process", sameProcess,
+                 "Launch the game in the same process when using Big Picture Mode");
 
     // FULLSCREEN: behavior-identical
     app.add_option("-f,--fullscreen", fullscreenStr, "Fullscreen mode (true|false)");
@@ -143,7 +146,7 @@ int main(int argc, char* argv[]) {
     Common::Log::g_should_append |= EmulatorSettings.IsLogAppend();
 
     if (bigPicture) {
-        BigPictureMode::Launch(argv[0]);
+        BigPictureMode::Launch(argv[0], sameProcess);
         return 0;
     }
 
