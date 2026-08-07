@@ -187,7 +187,7 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
     });
 }
 
-void Launch(char* executableName) {
+void Launch(char* executableName, bool sameProcess) {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         LOG_ERROR(ImGui, "SDL_INIT_VIDEO Error: {}", SDL_GetError());
         SDL_Quit();
@@ -387,7 +387,12 @@ void Launch(char* executableName) {
     if (runEbootPath != "") {
         auto* emulator = Common::Singleton<Core::Emulator>::Instance();
         emulator->executableName = executableName;
-        emulator->Relaunch({"--log-append", "--game", Common::FS::PathToUTF8String(runEbootPath)});
+        if (sameProcess) {
+            emulator->Run(runEbootPath);
+        } else {
+            emulator->Relaunch(
+                {"--log-append", "--game", Common::FS::PathToUTF8String(runEbootPath)});
+        }
     }
 }
 
