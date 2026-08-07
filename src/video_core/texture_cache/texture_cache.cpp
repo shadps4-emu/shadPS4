@@ -281,8 +281,13 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
     if (image_info.guest_address == cache_image.info.guest_address) {
         const u32 lhs_block_size = image_info.num_bits * image_info.num_samples;
         const u32 rhs_block_size = cache_image.info.num_bits * cache_image.info.num_samples;
-        if (image_info.BlockDim() != cache_image.info.BlockDim() ||
-            lhs_block_size != rhs_block_size) {
+        // Uncompressed views with the same pitch and texel size are layout-compatible partial
+        // views of the allocation even when their heights differ, and are resolved below.
+        const bool same_row_layout =
+            !image_info.props.is_block && !cache_image.info.props.is_block &&
+            image_info.pitch == cache_image.info.pitch && lhs_block_size == rhs_block_size;
+        if (!same_row_layout && (image_info.BlockDim() != cache_image.info.BlockDim() ||
+                                 lhs_block_size != rhs_block_size)) {
             // Very likely this kind of overlap is caused by allocation from a pool.
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
@@ -305,6 +310,14 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
+        // A strictly smaller same-format view is a reduction-style sub-view whose extent is
+        // semantically meaningful to the guest; keep it as its own image instead of aliasing
+        // the larger allocation.
+        if (same_row_layout && image_info.pixel_format == cache_image.info.pixel_format &&
+            image_info.guest_size < cache_image.info.guest_size) {
+            return {merged_image_id, -1, -1};
+        }
+
         // Size and resources are less than or equal, use image view.
         if (image_info.pixel_format != cache_image.info.pixel_format ||
             image_info.guest_size <= cache_image.info.guest_size) {
@@ -318,6 +331,11 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         // Size and resources are greater, expand the image.
         if (image_info.type == cache_image.info.type &&
             image_info.resources > cache_image.info.resources) {
+            return {ExpandImage(image_info, cache_image_id), -1, -1};
+        }
+
+        // A taller same-layout view of the allocation; grow the image, preserving content.
+        if (same_row_layout && image_info.guest_size > cache_image.info.guest_size) {
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
