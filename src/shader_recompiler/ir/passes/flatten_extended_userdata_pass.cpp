@@ -386,8 +386,98 @@ static bool EmitComputeOffsetBitwiseNot32(Xbyak::CodeGenerator& c, Xbyak::Reg32 
     return true;
 }
 
+static bool EmitComputeOffsetUMin32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+    if (inst->AreAllArgsImmediates()) {
+        c.mov(reg, std::min(inst->Arg(0).U32(), inst->Arg(1).U32()));
+    } else if (inst->Arg(0).IsImmediate()) {
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        c.mov(ecx, inst->Arg(0).U32());
+        c.cmp(reg, ecx);
+        c.cmova(reg, ecx);
+    } else if (inst->Arg(1).IsImmediate()) {
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        c.mov(ecx, inst->Arg(1).U32());
+        c.cmp(reg, ecx);
+        c.cmova(reg, ecx);
+    } else {
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        c.push(reg.cvt64());
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        c.cmp(reg, dword[rsp]);
+        c.cmova(reg, dword[rsp]);
+        c.add(rsp, 8);
+    }
+    return true;
+}
+
+static bool EmitComputeOffsetUMax32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+    if (inst->AreAllArgsImmediates()) {
+        c.mov(reg, std::max(inst->Arg(0).U32(), inst->Arg(1).U32()));
+    } else if (inst->Arg(0).IsImmediate()) {
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        c.mov(ecx, inst->Arg(0).U32());
+        c.cmp(reg, ecx);
+        c.cmovb(reg, ecx);
+    } else if (inst->Arg(1).IsImmediate()) {
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        c.mov(ecx, inst->Arg(1).U32());
+        c.cmp(reg, ecx);
+        c.cmovb(reg, ecx);
+    } else {
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        c.push(reg.cvt64());
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        c.cmp(reg, dword[rsp]);
+        c.cmovb(reg, dword[rsp]);
+        c.add(rsp, 8);
+    }
+    return true;
+}
+
+static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
+                                              IR::Inst* inst) {
+    // We asume that the count is always less than 32, Is this correct?
+    if (inst->AreAllArgsImmediates()) {
+        c.mov(reg, (inst->Arg(0).U32() >> inst->Arg(1).U32()) & ((1U << inst->Arg(2).U32()) - 1));
+        return true;
+    }
+    if (inst->Arg(0).IsImmediate()) {
+        c.mov(reg, inst->Arg(0).U32());
+    } else {
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+    }
+    bool in_stack = false;
+    if (inst->Arg(1).IsImmediate()) {
+        c.shr(reg, inst->Arg(1).U32());
+    } else {
+        c.push(reg.cvt64());
+        in_stack = true;
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        c.mov(ecx, reg);
+        c.shr(dword[rsp], cl);
+    }
+    if (inst->Arg(2).IsImmediate()) {
+        c.and_((in_stack ? dword[rsp] : reg), (1U << inst->Arg(2).U32()) - 1);
+    } else {
+        if (!in_stack) {
+            c.push(reg.cvt64());
+            in_stack = true;
+        }
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(2)));
+        c.mov(ecx, reg);
+        c.mov(edx, 1);
+        c.shl(edx, cl);
+        c.dec(edx);
+        c.and_(dword[rsp], edx);
+    }
+    if (in_stack) {
+        c.pop(reg.cvt64());
+    }
+    return true;
+}
+
 static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::Value& off_dw) {
-    ASSERT(reg != ecx); // ecx is used for shift instructions
+    ASSERT(reg != ecx && reg != edx);
     auto inst = off_dw.InstRecursive();
     switch (inst->GetOpcode()) {
     case IR::Opcode::GetUserData:
@@ -422,6 +512,12 @@ static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::V
         return true;
     case IR::Opcode::BitwiseNot32:
         ABORT_ON_FAILURE(EmitComputeOffsetBitwiseNot32(c, reg, inst));
+        return true;
+    case IR::Opcode::UMin32:
+        ABORT_ON_FAILURE(EmitComputeOffsetUMin32(c, reg, inst));
+        return true;
+    case IR::Opcode::UMax32:
+        ABORT_ON_FAILURE(EmitComputeOffsetUMax32(c, reg, inst));
         return true;
     default:
         LOG_ERROR(Render_Recompiler, "Unexpected instruction for offset computation, {}",
