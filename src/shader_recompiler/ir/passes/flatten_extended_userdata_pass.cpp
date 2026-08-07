@@ -282,6 +282,9 @@ static bool EmitComputeOffsetShiftLeftLogical32(Xbyak::CodeGenerator& c, Xbyak::
     } else if (inst->Arg(0).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.shl(reg, inst->Arg(0).U32());
+        c.mov(ecx, reg);
+        c.mov(reg, inst->Arg(0).U32());
+        c.shl(reg, cl);
     } else if (inst->Arg(1).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.shl(reg, inst->Arg(1).U32());
@@ -301,7 +304,9 @@ static bool EmitComputeOffsetShiftRightLogical32(Xbyak::CodeGenerator& c, Xbyak:
         c.mov(reg, inst->Arg(0).U32() >> inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
-        c.shr(reg, inst->Arg(0).U32());
+        c.mov(ecx, reg);
+        c.mov(reg, inst->Arg(0).U32());
+        c.shr(reg, cl);
     } else if (inst->Arg(1).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.shr(reg, inst->Arg(1).U32());
@@ -518,6 +523,9 @@ static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::V
         return true;
     case IR::Opcode::UMax32:
         ABORT_ON_FAILURE(EmitComputeOffsetUMax32(c, reg, inst));
+        return true;
+    case IR::Opcode::BitFieldUExtract:
+        ABORT_ON_FAILURE(EmitComputeOffsetBitFieldUExtract(c, reg, inst));
         return true;
     default:
         LOG_ERROR(Render_Recompiler, "Unexpected instruction for offset computation, {}",
