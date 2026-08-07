@@ -87,6 +87,7 @@ union ShaderStageEnable {
         Vs = 0u, // always enabled
         EsGs = 0xB0u,
         LsHs = 0x45u,
+        LsHsDynamic = 0x145u, // LsHs with dynamic_hs bit set; same stage binding, HS output CP count determined at runtime
         LsHsEsGs = 0xAD,
     };
 
