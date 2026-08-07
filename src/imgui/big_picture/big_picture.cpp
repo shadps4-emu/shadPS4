@@ -376,8 +376,9 @@ void Launch(char* executableName) {
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
-    SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
+    renderer = nullptr;
+    SDL_DestroyWindow(window);
     SDL_Quit();
 
     EmulatorSettings.SetBigPictureScale(static_cast<int>(uiScale * 1000));
@@ -386,7 +387,7 @@ void Launch(char* executableName) {
     if (runEbootPath != "") {
         auto* emulator = Common::Singleton<Core::Emulator>::Instance();
         emulator->executableName = executableName;
-        emulator->Run(runEbootPath);
+        emulator->Relaunch({"--log-append", "--game", Common::FS::PathToUTF8String(runEbootPath)});
     }
 }
 

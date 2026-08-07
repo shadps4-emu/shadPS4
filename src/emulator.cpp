@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -26,6 +28,7 @@
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"
 #include "common/singleton.h"
+#include "core/cpu_patches.h" // Windows static guest red-zone protection
 #include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
 #include "core/emulator_settings.h"
@@ -421,9 +424,20 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     EmulatorSettings.Load(id);
+    // Windows static guest red-zone protection
+    WindowsGuestRedZoneProtection::SetActiveMode(
+        EmulatorSettings.GetWindowsGuestRedZoneProtectionMode());
     // Switch to configured log
     Common::Log::Switch((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
                                                                           : "shad_log.txt");
+#ifdef _WIN32
+    // Windows static guest red-zone protection
+    if (WindowsGuestRedZoneProtection::IsStaticPatchingEnabled()) {
+        LOG_INFO(Core,
+                 "Windows guest red-zone static protection uses module EH metadata and cannot "
+                 "cover code without function entries");
+    }
+#endif
 
     auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
 
@@ -724,9 +738,6 @@ void Emulator::Restart(std::filesystem::path eboot_path,
         args.push_back(MemoryPatcher::patch_file);
     }
 
-    args.push_back("--wait-for-pid");
-    args.push_back(std::to_string(Debugger::GetCurrentPid()));
-
     if (waitForDebuggerBeforeRun) {
         args.push_back("--wait-for-debugger");
     }
@@ -738,8 +749,15 @@ void Emulator::Restart(std::filesystem::path eboot_path,
         }
     }
 
-    LOG_INFO(Common, "Restarting the emulator with args: {}", fmt::join(args, " "));
     Libraries::SaveData::Backup::StopThread();
+    Relaunch(std::move(args));
+}
+
+[[noreturn]] void Emulator::Relaunch(std::vector<std::string> args) {
+    const auto guest_args = std::find(args.begin(), args.end(), "--");
+    args.insert(guest_args, {"--wait-for-pid", std::to_string(Debugger::GetCurrentPid())});
+
+    LOG_INFO(Common, "Relaunching the emulator with args: {}", fmt::join(args, " "));
     Common::Log::Shutdown();
 
     auto& ipc = IPC::Instance();
@@ -751,23 +769,24 @@ void Emulator::Restart(std::filesystem::path eboot_path,
         }
     }
 #if defined(_WIN32)
-    std::string cmdline;
+    std::wstring cmdline;
     // Emulator executable
-    cmdline += "\"";
-    cmdline += executableName;
-    cmdline += "\"";
+    const auto executable = Common::UTF8ToUTF16W(executableName);
+    cmdline += L"\"";
+    cmdline += executable;
+    cmdline += L"\"";
     for (const auto& arg : args) {
-        cmdline += " \"";
-        cmdline += arg;
-        cmdline += "\"";
+        cmdline += L" \"";
+        cmdline += Common::UTF8ToUTF16W(arg);
+        cmdline += L"\"";
     }
-    cmdline += "\0";
+    cmdline += L'\0';
 
-    STARTUPINFOA si{};
+    STARTUPINFOW si{};
     si.cb = sizeof(si);
     PROCESS_INFORMATION pi{};
-    bool success = CreateProcessA(nullptr, cmdline.data(), nullptr, nullptr, TRUE, 0, nullptr,
-                                  nullptr, &si, &pi);
+    bool success = CreateProcessW(executable.c_str(), cmdline.data(), nullptr, nullptr, TRUE, 0,
+                                  nullptr, nullptr, &si, &pi);
 
     if (!success) {
         std::cerr << "Failed to restart game: {}" << GetLastError() << std::endl;
@@ -850,13 +869,15 @@ void Emulator::UpdatePlayTime(const std::string& serial) {
 
     std::string playTimeSaved = fmt::format("{:d}:{:02d}:{:02d}", hours, minutes, seconds);
 
+    const std::time_t last_time_played = std::time(nullptr);
+
     std::ofstream outfile(filePath, std::ios::trunc);
     bool lineUpdated = false;
     for (const auto& l : lines) {
         std::istringstream iss(l);
         std::string s;
         if (iss >> s && s == serial) {
-            outfile << fmt::format("{} {}\n", serial, playTimeSaved);
+            outfile << fmt::format("{} {} {}\n", serial, playTimeSaved, last_time_played);
             lineUpdated = true;
         } else {
             outfile << l << "\n";
@@ -864,10 +885,10 @@ void Emulator::UpdatePlayTime(const std::string& serial) {
     }
 
     if (!lineUpdated) {
-        outfile << fmt::format("{} {}\n", serial, playTimeSaved);
+        outfile << fmt::format("{} {} {}\n", serial, playTimeSaved, last_time_played);
     }
 
-    LOG_INFO(Loader, "Playing time for {}: {}", serial, playTimeSaved);
+    LOG_INFO(Loader, "Playing time for {}: {} {}", serial, playTimeSaved, last_time_played);
 }
 
 } // namespace Core

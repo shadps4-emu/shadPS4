@@ -14,8 +14,8 @@ namespace Libraries::Kernel {
 using OrbisKernelExceptionHandler = PS4_SYSV_ABI void (*)(int, void*);
 struct OrbisKernelExceptionHandlerStack {
     void* ss_sp;
-    int ss_flags;
-    size_t ss_size;
+    u64 ss_size;
+    u32 ss_flags;
 };
 
 constexpr s32 POSIX_SIGHUP = 1;

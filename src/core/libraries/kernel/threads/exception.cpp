@@ -353,31 +353,89 @@ bool PS4_SYSV_ABI posix_sigisemptyset(Sigset* s) {
     return s->bits[0] == 0 && s->bits[1] == 0 && s->bits[2] == 0 && s->bits[3] == 0;
 }
 
+#ifndef _WIN32
+static void GuestSigsetToNative(const Sigset& guest, sigset_t& native) {
+    sigemptyset(&native);
+
+    for (s32 sig = 1; sig <= 128; sig++) {
+        if (posix_sigismember(const_cast<Sigset*>(&guest), sig) != 0) {
+            const s32 native_sig = OrbisToNativeSignal(sig);
+            if (native_sig > 0 && native_sig <= 128) {
+                sigaddset(&native, native_sig);
+            }
+        }
+    }
+}
+
+static void NativeSigsetToGuest(const sigset_t& native, Sigset& guest) {
+    posix_sigemptyset(&guest);
+
+    for (s32 sig = 1; sig <= 128; sig++) {
+        const s32 native_sig = OrbisToNativeSignal(sig);
+        if (native_sig > 0 && native_sig <= 128 && sigismember(&native, native_sig) == 1) {
+            posix_sigaddset(&guest, sig);
+        }
+    }
+}
+#endif
+
 s32 PS4_SYSV_ABI posix_sigprocmask(s32 how, const Sigset* set, Sigset* oset) {
     LOG_ERROR(Lib_Kernel, "(STUBBED) called, how = {}", how);
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI posix_sigalstack(const OrbisKernelExceptionHandlerStack* ss,
-                                  OrbisKernelExceptionHandlerStack* old_ss) {
-#ifdef __unix__
+constexpr s32 POSIX_SS_ONSTACK = 0x0001; /* take signal on alternate stack */
+constexpr s32 POSIX_SS_DISABLE = 0x0004; /* disable taking signals on alternate stack */
+
+s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
+                                   OrbisKernelExceptionHandlerStack* old_ss) {
+    s32 ret = 0;
+#ifndef _WIN32
     stack_t native_ss{};
     if (ss) {
+        LOG_INFO(Lib_Kernel, "called, ss.ss_size: {}, ss.ss_sp: {}, ss.ss_flags: {:#x}",
+                 ss->ss_size, ss->ss_sp, ss->ss_flags);
         native_ss.ss_sp = ss->ss_sp;
-        native_ss.ss_flags = ss->ss_flags;
-        native_ss.ss_size = ss->ss_size;
+        native_ss.ss_size = ss->ss_size == 0 ? 0 : std::max(ss->ss_size, (u64)MINSIGSTKSZ + 0x1000);
+        u32 guest_ss_flags = ss->ss_flags;
+        if ((guest_ss_flags & POSIX_SS_ONSTACK)) {
+            native_ss.ss_flags |= SS_ONSTACK;
+            guest_ss_flags &= ~POSIX_SS_ONSTACK;
+        }
+        if ((guest_ss_flags & POSIX_SS_DISABLE)) {
+            native_ss.ss_flags |= SS_DISABLE;
+            guest_ss_flags &= ~POSIX_SS_DISABLE;
+        }
+        if (guest_ss_flags != 0) {
+            LOG_ERROR(Lib_Kernel, "Unrecognized guest flag(s): {:#x}", guest_ss_flags);
+        }
     }
     stack_t native_old_ss{};
-    sigaltstack(&native_ss, &native_old_ss);
+    ret = sigaltstack(ss ? &native_ss : nullptr, old_ss ? &native_old_ss : nullptr);
+    if (ret < 0) {
+        SetPosixErrno(errno);
+        LOG_ERROR(Lib_Kernel, "sigaltstack returned {} {}", errno, strerror(errno));
+    }
     if (old_ss) {
         old_ss->ss_sp = native_old_ss.ss_sp;
-        old_ss->ss_flags = native_old_ss.ss_flags;
         old_ss->ss_size = native_old_ss.ss_size;
+        u32 host_ss_flags = native_old_ss.ss_flags;
+        if ((host_ss_flags & SS_ONSTACK)) {
+            old_ss->ss_flags |= POSIX_SS_ONSTACK;
+            host_ss_flags &= ~SS_ONSTACK;
+        }
+        if ((host_ss_flags & SS_DISABLE)) {
+            old_ss->ss_flags |= POSIX_SS_DISABLE;
+            host_ss_flags &= ~SS_DISABLE;
+        }
+        if (host_ss_flags != 0) {
+            LOG_ERROR(Lib_Kernel, "Unrecognized host flag(s): {:#x}", host_ss_flags);
+        }
     }
 #else
     LOG_ERROR(Lib_Kernel, "(stubbed)");
 #endif
-    return ORBIS_OK;
+    return ret;
 }
 
 s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
@@ -414,41 +472,146 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     LOG_INFO(Lib_Kernel, "called, sig: {}, native sig: {}", sig, native_sig);
     struct sigaction native_act{};
     if (act) {
-        native_act.sa_flags = act->sa_flags; // todo check compatibility, on Linux it seems fine
+        native_act.sa_flags = act->sa_flags;
         native_act.sa_sigaction =
             reinterpret_cast<decltype(native_act.sa_sigaction)>(SigactionHandler);
-        if (!posix_sigisemptyset(&act->sa_mask)) {
-            LOG_ERROR(Lib_Kernel, "Unhandled sa_mask: {:x}", act->sa_mask.bits[0]);
-        }
+        GuestSigsetToNative(act->sa_mask, native_act.sa_mask);
     }
-    auto const prev_handler = Handlers[sig];
-    Handlers[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
-        act ? act->__sigaction_handler.sigaction : nullptr);
+
+    const auto prev_handler = Handlers[sig];
 
     if (native_sig == SIGSEGV || native_sig == SIGBUS || native_sig == SIGILL) {
-        return ORBIS_OK; // These are handled in Core::SignalHandler
+        Handlers[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
+            act ? act->__sigaction_handler.sigaction : nullptr);
+
+        if (oact) {
+            oact->sa_flags = 0;
+            oact->__sigaction_handler.sigaction =
+                reinterpret_cast<decltype(oact->__sigaction_handler.sigaction)>(prev_handler);
+            posix_sigemptyset(&oact->sa_mask);
+        }
+
+        return ORBIS_OK;
     }
     if (native_sig > 127) {
         LOG_WARNING(Lib_Kernel, "We can't install a handler for native signal {}!", native_sig);
         return ORBIS_OK;
     }
     struct sigaction native_oact{};
-    s32 ret = sigaction(native_sig, act ? &native_act : nullptr, oact ? &native_oact : nullptr);
+    const s32 ret =
+        sigaction(native_sig, act ? &native_act : nullptr, oact ? &native_oact : nullptr);
+
+    if (ret < 0) {
+        LOG_ERROR(Lib_Kernel, "sigaction failed: {}", strerror(errno));
+        SetPosixErrno(errno);
+        return ORBIS_FAIL;
+    }
+
+    Handlers[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
+        act ? act->__sigaction_handler.sigaction : nullptr);
+
     if (oact) {
         oact->sa_flags = native_oact.sa_flags;
         oact->__sigaction_handler.sigaction =
             reinterpret_cast<decltype(oact->__sigaction_handler.sigaction)>(prev_handler);
-        if (!sigisemptyset(&native_oact.sa_mask)) {
-            LOG_ERROR(Lib_Kernel, "Unhandled sa_mask");
-        }
-    }
-    if (ret < 0) {
-        LOG_ERROR(Lib_Kernel, "sigaction failed: {}", strerror(errno));
-        *__Error() = ErrnoToSceKernelError(errno);
-        return ORBIS_FAIL;
+        NativeSigsetToGuest(native_oact.sa_mask, oact->sa_mask);
     }
 #endif
     return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI posix_pthread_sigmask(s32 how, const Sigset* set, Sigset* oset) {
+#ifndef _WIN32
+    sigset_t native_set{};
+    sigset_t native_oset{};
+
+    sigset_t* native_set_ptr = nullptr;
+    if (set) {
+        sigemptyset(&native_set);
+        for (s32 sig = 1; sig <= 128; sig++) {
+            if (posix_sigismember(const_cast<Sigset*>(set), sig) != 0) {
+                const s32 native_sig = OrbisToNativeSignal(sig);
+                if (native_sig > 0 && native_sig <= 128) {
+                    sigaddset(&native_set, native_sig);
+                }
+            }
+        }
+        native_set_ptr = &native_set;
+    }
+
+    const int ret = pthread_sigmask(how, native_set_ptr, oset ? &native_oset : nullptr);
+    if (ret != 0) {
+        SetPosixErrno(errno);
+        return ORBIS_FAIL;
+    }
+
+    if (oset) {
+        posix_sigemptyset(oset);
+
+        for (s32 sig = 1; sig <= 128; sig++) {
+            const s32 native_sig = OrbisToNativeSignal(sig);
+            if (native_sig > 0 && native_sig <= 128 && sigismember(&native_oset, native_sig) == 1) {
+                posix_sigaddset(oset, sig);
+            }
+        }
+    }
+
+    return ORBIS_OK;
+#else
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
+    return ORBIS_OK;
+#endif
+}
+
+s32 PS4_SYSV_ABI posix_sigsuspend(const Sigset* sigmask) {
+#ifndef _WIN32
+    sigset_t native_mask;
+    sigemptyset(&native_mask);
+
+    if (sigmask) {
+        for (s32 sig = 1; sig <= 128; sig++) {
+            if (posix_sigismember(const_cast<Sigset*>(sigmask), sig) != 0) {
+                const s32 native_sig = OrbisToNativeSignal(sig);
+                if (native_sig > 0 && native_sig <= 128) {
+                    sigaddset(&native_mask, native_sig);
+                }
+            }
+        }
+    }
+
+    const int ret = sigsuspend(&native_mask);
+    ASSERT(ret == -1);
+
+    SetPosixErrno(errno);
+    return ORBIS_FAIL;
+#else
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
+    return ORBIS_OK;
+#endif
+}
+
+s32 PS4_SYSV_ABI posix_sigwait(const Sigset* set, s32* sig) {
+#ifndef _WIN32
+    if (set == nullptr || sig == nullptr) {
+        return POSIX_EINVAL;
+    }
+
+    sigset_t native_set;
+    GuestSigsetToNative(*set, native_set);
+
+    int native_sig;
+    const int ret = sigwait(&native_set, &native_sig);
+    if (ret != 0) {
+        SetPosixErrno(errno);
+    }
+
+    s32 guest_sig = NativeToOrbisSignal(native_sig);
+
+    return ORBIS_OK;
+#else
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
+    return ORBIS_OK;
+#endif
 }
 
 SigHandler PS4_SYSV_ABI posix_signal(s32 sig, SigHandler func) {
@@ -591,7 +754,10 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("JnNl8Xr-z4Y", "libkernel", 1, "libkernel", posix_sigismember);
     LIB_FUNCTION("aPcyptbOiZs", "libkernel", 1, "libkernel", posix_sigprocmask);
     LIB_FUNCTION("yH-uQW3LbX0", "libkernel", 1, "libkernel", posix_pthread_kill);
-    LIB_FUNCTION("sHziAegVp74", "libkernel", 1, "libkernel", posix_sigalstack);
+    LIB_FUNCTION("sHziAegVp74", "libkernel", 1, "libkernel", posix_sigaltstack);
+    LIB_FUNCTION("JZKw5+Wrnaw", "libkernel", 1, "libkernel", posix_pthread_sigmask);
+    LIB_FUNCTION("KZ-4qlqlpmo", "libkernel", 1, "libkernel", posix_sigsuspend);
+    LIB_FUNCTION("mrbHXqK8wkg", "libkernel", 1, "libkernel", posix_sigwait);
 
     LIB_FUNCTION("KiJEPEWRyUY", "libScePosix", 1, "libkernel", posix_sigaction);
     LIB_FUNCTION("VADc3MNQ3cM", "libScePosix", 1, "libkernel", posix_signal);
@@ -602,7 +768,8 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("JnNl8Xr-z4Y", "libScePosix", 1, "libkernel", posix_sigismember);
     LIB_FUNCTION("aPcyptbOiZs", "libScePosix", 1, "libkernel", posix_sigprocmask);
     LIB_FUNCTION("yH-uQW3LbX0", "libScePosix", 1, "libkernel", posix_pthread_kill);
-    LIB_FUNCTION("sHziAegVp74", "libScePosix", 1, "libkernel", posix_sigalstack);
+    LIB_FUNCTION("sHziAegVp74", "libScePosix", 1, "libkernel", posix_sigaltstack);
+    LIB_FUNCTION("JZKw5+Wrnaw", "libScePosix", 1, "libkernel", posix_pthread_sigmask);
 }
 
 } // namespace Libraries::Kernel
