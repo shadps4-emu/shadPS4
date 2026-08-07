@@ -462,7 +462,11 @@ static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Re
         c.shr(dword[rsp], cl);
     }
     if (inst->Arg(2).IsImmediate()) {
-        c.and_((in_stack ? dword[rsp] : reg), (1U << inst->Arg(2).U32()) - 1);
+        if (in_stack) {
+            c.pop(reg.cvt64());
+            in_stack = false;
+        }
+        c.and_(reg, (1U << inst->Arg(2).U32()) - 1);
     } else {
         if (!in_stack) {
             c.push(reg.cvt64());
