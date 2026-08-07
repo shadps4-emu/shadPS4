@@ -229,7 +229,7 @@ static bool EmitComputeOffsetIAdd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, I
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
-        c.add(reg, ptr[rsp]);
+        c.add(reg, dword[rsp]);
         c.add(rsp, 8);
     }
     return true;
@@ -250,7 +250,7 @@ static bool EmitComputeOffsetISub32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, I
         c.push(reg.cvt64());
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.neg(reg);
-        c.add(reg, ptr[rsp]);
+        c.add(reg, dword[rsp]);
         c.add(rsp, 8);
     }
     return true;
@@ -269,7 +269,7 @@ static bool EmitComputeOffsetIMul32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, I
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
-        c.imul(reg, ptr[rsp]);
+        c.imul(reg, dword[rsp]);
         c.add(rsp, 8);
     }
     return true;
@@ -286,12 +286,11 @@ static bool EmitComputeOffsetShiftLeftLogical32(Xbyak::CodeGenerator& c, Xbyak::
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.shl(reg, inst->Arg(1).U32());
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
-        c.push(reg.cvt64());
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
-        c.mov(cl, ptr[rsp]);
+        c.push(reg.cvt64());
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        c.pop(rcx);
         c.shl(reg, cl);
-        c.add(rsp, 8);
     }
     return true;
 }
@@ -307,17 +306,17 @@ static bool EmitComputeOffsetShiftRightLogical32(Xbyak::CodeGenerator& c, Xbyak:
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.shr(reg, inst->Arg(1).U32());
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
-        c.push(reg.cvt64());
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
-        c.mov(cl, ptr[rsp]);
+        c.push(reg.cvt64());
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        c.pop(rcx);
         c.shr(reg, cl);
-        c.add(rsp, 8);
     }
     return true;
 }
 
 static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::Value& off_dw) {
+    ASSERT(reg != ecx); // ecx is used for shift instructions
     auto inst = off_dw.InstRecursive();
     switch (inst->GetOpcode()) {
     case IR::Opcode::GetUserData:
