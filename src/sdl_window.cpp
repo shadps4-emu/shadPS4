@@ -1,14 +1,20 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "SDL3/SDL_events.h"
-#include "SDL3/SDL_hints.h"
-#include "SDL3/SDL_init.h"
-#include "SDL3/SDL_properties.h"
-#include "SDL3/SDL_timer.h"
-#include "SDL3/SDL_video.h"
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_hints.h>
+#include <SDL3/SDL_init.h>
+#include <SDL3/SDL_properties.h>
+#include <SDL3/SDL_timer.h>
+#include <SDL3/SDL_video.h>
+#include <cmrc/cmrc.hpp>
+#include <stb_image.h>
+
 #include "common/assert.h"
 #include "common/elf_info.h"
+#include "common/io_file.h"
+#include "common/logging/formatter.h"
+#include "common/scope_exit.h"
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
@@ -16,6 +22,7 @@
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
 #include "core/user_settings.h"
+#include "imgui/friends_layer.h"
 #include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
 #include "input/input_handler.h"
@@ -24,9 +31,12 @@
 #include "video_core/renderdoc.h"
 
 #ifdef __APPLE__
-#include "SDL3/SDL_metal.h"
+#include <SDL3/SDL_metal.h>
 #endif
 #include <core/emulator_settings.h>
+#include "core/libraries/mouse/sdl_mouse.h"
+
+CMRC_DECLARE(res);
 
 namespace Frontend {
 
@@ -73,9 +83,7 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
 
 static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
     auto* controller = reinterpret_cast<Input::GameController*>(userdata);
-    controller->UpdateAxisSmoothing();
-    controller->Gyro(0);
-    controller->Acceleration(0);
+    controller->PollState();
     return interval;
 }
 
@@ -95,9 +103,13 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         UNREACHABLE_MSG("Failed to initialize SDL video subsystem: {}", SDL_GetError());
     }
+    // On macOS, the future Intel compatibility environment does not include camera frameworks.
+    // Just skip initializing it entirely, no point in splitting old vs new OS versions here.
+#ifndef __APPLE__
     if (!SDL_Init(SDL_INIT_CAMERA)) {
         LOG_ERROR(Input, "Failed to initialize SDL camera subsystem: {}", SDL_GetError());
     }
+#endif
     SDL_InitSubSystem(SDL_INIT_AUDIO);
 
     SDL_PropertiesID props = SDL_CreateProperties();
@@ -109,6 +121,11 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
     SDL_SetNumberProperty(props, "flags", SDL_WINDOW_VULKAN);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, true);
+    // Creating the window directly in fullscreen avoids a visible windowed -> fullscreen
+    // transition on startup. SDL sizes the window to the display and keeps the requested
+    // width/height as the windowed size to restore when leaving fullscreen.
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_FULLSCREEN_BOOLEAN,
+                           EmulatorSettings.IsFullScreen());
     window = SDL_CreateWindowWithProperties(props);
     SDL_DestroyProperties(props);
     if (window == nullptr) {
@@ -119,7 +136,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
 
     bool error = false;
     const SDL_DisplayID displayIndex = SDL_GetDisplayForWindow(window);
-    if (displayIndex < 0) {
+    if (displayIndex == 0) {
         LOG_ERROR(Frontend, "Error getting display index: {}", SDL_GetError());
         error = true;
     }
@@ -134,6 +151,9 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     }
     SDL_SetWindowFullscreen(window, EmulatorSettings.IsFullScreen());
     SDL_SyncWindow(window);
+    // The window geometry is only final once the fullscreen transition has settled; refresh
+    // the cached size so the first swapchain and the splashscreen use the real drawable size.
+    SDL_GetWindowSizeInPixels(window, &width, &height);
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
 
@@ -163,7 +183,6 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     // input handler init-s
     Input::ControllerOutput::LinkJoystickAxes();
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
-    controllers.TryOpenSDLControllers();
 
     if (EmulatorSettings.IsBackgroundControllerInput()) {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
@@ -172,11 +191,24 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
 
 WindowSDL::~WindowSDL() = default;
 
+void WindowSDL::SetIcon(std::span<const u8> png_data) {
+    if (png_data.empty()) {
+        LOG_WARNING(Core, "No window icon data available, using default icon.");
+        SetDefaultWindowIcon(window);
+        return;
+    }
+    SetWindowIcon(window, std::vector<u8>(png_data.begin(), png_data.end()));
+}
+
 void WindowSDL::WaitEvent() {
     // Called on main thread
     SDL_Event event;
 
     if (!SDL_WaitEvent(&event)) {
+        return;
+    }
+
+    if (Libraries::Mouse::PushSDLEvent(event)) {
         return;
     }
 
@@ -188,6 +220,8 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_MAXIMIZED:
     case SDL_EVENT_WINDOW_RESTORED:
+    case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
+    case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
         OnResize();
         break;
     case SDL_EVENT_WINDOW_MINIMIZED:
@@ -245,6 +279,9 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_TOGGLE_SIMPLE_FPS:
         Overlay::ToggleSimpleFps();
         break;
+    case SDL_EVENT_TOGGLE_FRIENDS:
+        ImGui::Friends::Toggle();
+        break;
     case SDL_EVENT_RELOAD_INPUTS:
         Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
         break;
@@ -269,6 +306,7 @@ void WindowSDL::WaitEvent() {
                     break;
                 }
                 controllers[i]->user_id = u->user_id;
+                controllers[i]->ConnectController(controllers[i]->m_sdl_gamepad);
                 UserManagement.LoginUser(u, i + 1);
                 break;
             }
@@ -279,6 +317,7 @@ void WindowSDL::WaitEvent() {
         for (int i = 3; i >= 0; i--) {
             if (controllers[i]->user_id != -1) {
                 UserManagement.LogoutUser(UserManagement.GetUserByID(controllers[i]->user_id));
+                controllers[i]->DisconnectController();
                 controllers[i]->user_id = -1;
                 break;
             }
@@ -416,6 +455,40 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
         // update bindings
         Input::ActivateOutputsFromInputs();
     }
+}
+
+#ifndef __APPLE__
+void SetWindowIcon(SDL_Window* window, const std::vector<u8>& png) {
+    int imageWidth = 0;
+    int imageHeight = 0;
+    constexpr int numChannels = 4;
+    unsigned char* imageData = stbi_load_from_memory(png.data(), png.size(), &imageWidth,
+                                                     &imageHeight, nullptr, numChannels);
+    if (imageData == nullptr) {
+        LOG_ERROR(Core, "Failed to load window icon image: {}", stbi_failure_reason());
+        return;
+    }
+    SCOPE_EXIT {
+        stbi_image_free(imageData);
+    };
+
+    SDL_Surface* surface = SDL_CreateSurfaceFrom(imageWidth, imageHeight, SDL_PIXELFORMAT_RGBA32,
+                                                 imageData, imageWidth * numChannels);
+    if (surface == nullptr) {
+        LOG_ERROR(Core, "Failed to create SDL surface for window icon: {}", SDL_GetError());
+    }
+    if (!SDL_SetWindowIcon(window, surface)) {
+        LOG_ERROR(Core, "Failed to set SDL window icon: {}", SDL_GetError());
+    }
+    SDL_DestroySurface(surface);
+}
+#endif
+
+void SetDefaultWindowIcon(SDL_Window* window) {
+    const auto resource = cmrc::res::get_filesystem();
+    const auto file = resource.open("src/resources/shadps4.png");
+    const std::vector<u8> texData = std::vector<u8>(file.begin(), file.end());
+    SetWindowIcon(window, texData);
 }
 
 } // namespace Frontend

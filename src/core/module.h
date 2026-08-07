@@ -143,6 +143,8 @@ class Module {
 public:
     explicit Module(Core::MemoryManager* memory, const std::filesystem::path& file,
                     u32& max_tls_index);
+    explicit Module(Core::MemoryManager* memory, const std::filesystem::path& file,
+                    std::unique_ptr<Core::FileSys::IFile> handle, u32& max_tls_index);
     ~Module();
 
     VAddr GetBaseAddress() const noexcept {

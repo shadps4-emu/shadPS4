@@ -703,8 +703,12 @@ void Translator::IMAGE_GET_LOD(const GcnInst& inst) {
         ir.GetVectorReg<IR::F32>(addr_reg), ir.GetVectorReg<IR::F32>(addr_reg + 1),
         ir.GetVectorReg<IR::F32>(addr_reg + 2), ir.GetVectorReg<IR::F32>(addr_reg + 3));
     const IR::Value lod = ir.ImageQueryLod(handle, body, info);
-    ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(lod, 0)});
-    ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(lod, 1)});
+    if (mimg.dmask & 1) {
+        ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(lod, 0)});
+    }
+    if (mimg.dmask & 2) {
+        ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(lod, 1)});
+    }
 }
 
 } // namespace Shader::Gcn

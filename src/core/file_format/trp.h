@@ -36,7 +36,7 @@ class TRP {
 public:
     TRP();
     ~TRP();
-    bool Extract(const std::filesystem::path& trophyPath, int index, std::string npCommId,
+    bool Extract(const std::filesystem::path& trophyPath, std::string npCommId,
                  const std::filesystem::path& outputPath);
 
 private:
@@ -45,7 +45,4 @@ private:
     bool ProcessEncryptedXmlEntry(Common::FS::IOFile& file, const TrpEntry& entry,
                                   const std::filesystem::path& outputPath, std::string_view name,
                                   const std::array<u8, 16>& user_key, const std::string& npCommId);
-
-    std::array<u8, 16> esfmIv{};
-    static constexpr int iv_len = 16;
 };

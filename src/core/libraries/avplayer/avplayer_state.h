@@ -3,9 +3,12 @@
 
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <shared_mutex>
+#include <string_view>
 
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
@@ -65,6 +68,7 @@ private:
     void StartControllerThread();
     void ProcessEvent();
     void UpdateBufferingState();
+    void UpdateEndOfFileState();
     bool IsStateTransitionValid(AvState state);
 
     std::unique_ptr<AvPlayerSource> m_up_source;
@@ -78,6 +82,7 @@ private:
 
     std::atomic<AvState> m_current_state;
     std::atomic<AvState> m_previous_state;
+    std::atomic_bool m_eof_stop_event_sent{false};
     u32 m_thread_priority;
     u32 m_thread_affinity;
     std::atomic_uint32_t m_some_event_result{};

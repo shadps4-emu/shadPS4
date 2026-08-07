@@ -100,30 +100,9 @@ void Translator::V_INTERP_MOV_F32(const GcnInst& inst) {
     const IR::Attribute attrib = IR::Attribute::Param0 + attr_index;
     const auto& attr = runtime_info.fs_info.inputs[attr_index];
     auto& interp = info.fs_interpolation[attr_index];
-    const u32 src_select = inst.src[0].code & 0x3;
-    ASSERT_MSG(src_select != 3, "Invalid V_INTERP_MOV_F32 selector VSRC[1:0]=3");
-
-    if (attr.IsDefault()) {
-        SetDst(inst.dst[0],
-               ir.Imm32(DefaultValTable[attr.default_value][inst.control.vintrp.chan]));
-        return;
-    }
-
-    // Flat inputs are constant over the primitive: P0 is that constant and P10/P20 are zero.
-    if (attr.is_flat) {
-        interp.primary = Qualifier::Flat;
-        if (src_select == 2) {
-            SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
-        } else {
-            SetDst(inst.dst[0], ir.Imm32(0.0f));
-        }
-        return;
-    }
-
-    const bool supports_per_vertex_params = profile.supports_amd_shader_explicit_vertex_parameter ||
-                                            (profile.supports_fragment_shader_barycentric &&
-                                             !profile.has_incomplete_fragment_shader_barycentric);
-    if (supports_per_vertex_params) {
+    ASSERT(attr.is_flat || inst.src[0].code == 2);
+    if (profile.supports_amd_shader_explicit_vertex_parameter ||
+        profile.supports_fragment_shader_barycentric) {
         // VSRC 0=P10, 1=P20, 2=P0
         interp.primary = Qualifier::PerVertex;
         SetDst(inst.dst[0],

@@ -5,11 +5,14 @@
 #include "common/assert.h"
 #include "common/decoder.h"
 #include "common/signal_context.h"
+#include "core/cpu_patches.h" // Windows static guest red-zone protection
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/signals.h"
+#include "emulator.h"
 
 #ifdef _WIN32
 #include <windows.h>
+static constexpr DWORD MS_VC_EXCEPTION = 0x406D1388;
 #else
 #include <csignal>
 #include <pthread.h>
@@ -31,6 +34,9 @@ namespace Core {
 
 static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     const auto* signals = Signals::Instance();
+    // Windows static guest red-zone protection
+    const bool use_static_windows_guest_red_zone_protection =
+        WindowsGuestRedZoneProtection::IsStaticPatchingEnabled();
     DWORD code = 0;
     PVOID address = nullptr;
 
@@ -40,18 +46,30 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     }
 
     bool handled = false;
+    bool static_protection_exception = false; // Windows static guest red-zone protection
     switch (code) {
     case EXCEPTION_ACCESS_VIOLATION:
+        static_protection_exception = true; // Windows static guest red-zone protection
         handled = signals->DispatchAccessViolation(
             pExp, reinterpret_cast<void*>(pExp->ExceptionRecord->ExceptionInformation[1]));
         break;
     case EXCEPTION_ILLEGAL_INSTRUCTION:
+        static_protection_exception = true; // Windows static guest red-zone protection
         handled = signals->DispatchIllegalInstruction(pExp);
+        break;
+    case EXCEPTION_PRIV_INSTRUCTION: // Windows static guest red-zone protection
+        if (use_static_windows_guest_red_zone_protection) {
+            static_protection_exception = true;
+            handled = signals->DispatchIllegalInstruction(pExp);
+        }
         break;
     case DBG_PRINTEXCEPTION_C:
     case DBG_PRINTEXCEPTION_WIDE_C:
         // Used by OutputDebugString functions.
         return EXCEPTION_CONTINUE_EXECUTION;
+    case MS_VC_EXCEPTION:
+        LOG_DEBUG(Debug, "Pass MS_VC_EXCEPTION at {} to handler", address);
+        return EXCEPTION_EXECUTE_HANDLER;
     default:
         break;
     }
@@ -60,8 +78,14 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
         return EXCEPTION_CONTINUE_EXECUTION;
     }
 
-    LOG_CRITICAL(Debug, "Unhandled Exception code {:#x} at {}", code, address);
-    Common::Log::Flush();
+    // Windows static guest red-zone protection
+    const bool report_unhandled = use_static_windows_guest_red_zone_protection
+                                      ? static_protection_exception
+                                      : code != EXCEPTION_BREAKPOINT;
+    if (report_unhandled) { // Windows static guest red-zone protection
+        LOG_CRITICAL(Debug, "Unhandled Exception code {:#x} at {}", code, address);
+        Common::Singleton<Core::Emulator>::Instance()->Shutdown();
+    }
 
     return EXCEPTION_CONTINUE_SEARCH;
 }

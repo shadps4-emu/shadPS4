@@ -114,6 +114,9 @@ void SetPosixErrno(s32 e) {
     case ENOENT:
         g_posix_errno = POSIX_ENOENT;
         break;
+    case EINTR:
+        g_posix_errno = POSIX_EINTR;
+        break;
     case EDEADLK:
         g_posix_errno = POSIX_EDEADLK;
         break;
@@ -326,6 +329,11 @@ s32 PS4_SYSV_ABI sceKernelGetProcessType(s32 pid) {
     return 0;
 }
 
+s32 PS4_SYSV_ABI __sys_regmgr_call(u32 op, u32 key, void* result, void* value, u64 len) {
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called, op: {:#x}, key: {}, len: {}", op, key, len);
+    return ORBIS_OK;
+}
+
 // Nominally: long sysconf(int name);
 u64 PS4_SYSV_ABI posix_sysconf(s32 name) {
     switch (name) {
@@ -463,8 +471,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterCoredump(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", &g_stack_chk_guard);
-    LIB_OBJ("+2thxYZ4syk", "libkernel", 1, "libkernel", &g_environ)
-    LIB_OBJ("djxxOmW6-aw", "libkernel", 1, "libkernel", &g_progname)
+    LIB_OBJ("+2thxYZ4syk", "libkernel", 1, "libkernel", &g_environ);
+    LIB_OBJ("djxxOmW6-aw", "libkernel", 1, "libkernel", &g_progname);
     LIB_FUNCTION("D4yla3vx4tY", "libkernel", 1, "libkernel", sceKernelError);
     LIB_FUNCTION("YeU23Szo3BM", "libkernel", 1, "libkernel", sceKernelGetAllowedSdkVersionOnSystem);
     LIB_FUNCTION("Mv1zUObHvXI", "libkernel", 1, "libkernel", sceKernelGetSystemSwVersion);
@@ -481,6 +489,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("9BcDykPmo1I", "libkernel", 1, "libkernel", __Error);
     LIB_FUNCTION("k+AXqu2-eBc", "libkernel", 1, "libkernel", posix_getpagesize);
     LIB_FUNCTION("k+AXqu2-eBc", "libScePosix", 1, "libkernel", posix_getpagesize);
+    LIB_FUNCTION("7NwggrWJ5cA", "libkernel", 1, "libkernel", __sys_regmgr_call);
 
     LIB_FUNCTION("mkawd0NA9ts", "libkernel", 1, "libkernel", posix_sysconf);
     LIB_FUNCTION("mkawd0NA9ts", "libScePosix", 1, "libkernel", posix_sysconf);

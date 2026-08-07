@@ -120,8 +120,8 @@ axis_right_x = axis_right_x
 axis_right_y = axis_right_y
 
 # Range of deadzones: 1 (almost none) to 127 (max)
-analog_deadzone = leftjoystick, 2, 127
-analog_deadzone = rightjoystick, 2, 127
+analog_deadzone = leftjoystick, 5, 127
+analog_deadzone = rightjoystick, 5, 127
 
 override_controller_color = false, 0, 0, 255
 )";
@@ -182,6 +182,7 @@ std::filesystem::path GetInputConfigFile(const std::string& game_id) {
             {"hotkey_volume_up", "kpplus"},
             {"hotkey_volume_down", "kpminus"},
             {"hotkey_emulator_settings", "f3"},
+            {"hotkey_toggle_friends", "f2"},
         };
         std::string legacy_capture_binding;
         bool legacy_capture_binding_found = false;
@@ -804,6 +805,9 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             break;
         case HOTKEY_OPEN_EMULATOR_SETTINGS:
             ImGuiEmuSettings::OpenInGameSettingsDialog();
+            break;
+        case HOTKEY_TOGGLE_FRIENDS:
+            PushSDLEvent(SDL_EVENT_TOGGLE_FRIENDS);
             break;
         case KEY_TOGGLE:
             // noop

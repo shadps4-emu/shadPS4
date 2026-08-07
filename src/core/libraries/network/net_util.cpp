@@ -334,6 +334,18 @@ const std::string& NetUtilInternal::GetIp() const {
     return ip;
 }
 
+u32 NetUtilInternal::GetExternalIp() const {
+    return external_ip;
+}
+
+void NetUtilInternal::SetExternalIp(u32 addr) {
+    external_ip = addr;
+}
+
+u32 NetUtilInternal::GetNatType() const {
+    return nat_type;
+}
+
 bool NetUtilInternal::RetrieveIp() {
     std::scoped_lock lock{m_mutex};
 

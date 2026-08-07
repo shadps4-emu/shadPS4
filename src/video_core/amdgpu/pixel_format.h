@@ -221,7 +221,16 @@ constexpr NumberFormat RemapNumberFormat(const NumberFormat format, const DataFo
         }
     }
     case NumberFormat::Srgb:
-        return data_format == DataFormat::FormatBc6 ? NumberFormat::Unorm : format;
+        switch (data_format) {
+        case DataFormat::FormatBc4:
+        case DataFormat::FormatBc5:
+        case DataFormat::FormatBc6:
+            // BC4/BC5 store non-color data (single/two-channel, used for normal maps),
+            // and BC6 is HDR float — none have sRGB Vulkan equivalents.
+            return NumberFormat::Unorm;
+        default:
+            return format;
+        }
     case NumberFormat::Uscaled:
         return NumberFormat::Uint;
     case NumberFormat::Sscaled:
@@ -279,6 +288,24 @@ constexpr CompMapping RemapSwizzle(const DataFormat format, const CompMapping sw
         result.a = swizzle.a;
         return result;
     }
+    case DataFormat::Format8:
+    case DataFormat::Format16:
+    case DataFormat::Format32: {
+        // PS4 single-channel formats expose the texel as either R or A depending on dst_sel,
+        // but Vulkan single-channel formats expose it only via R. Redirect any selector
+        // that points at Alpha to Red so the texel is read correctly.
+        CompMapping result = swizzle;
+        const auto remap_alpha_to_red = [](CompSwizzle& c) {
+            if (c == CompSwizzle::Alpha) {
+                c = CompSwizzle::Red;
+            }
+        };
+        remap_alpha_to_red(result.r);
+        remap_alpha_to_red(result.g);
+        remap_alpha_to_red(result.b);
+        remap_alpha_to_red(result.a);
+        return result;
+    }
     default:
         return swizzle;
     }
@@ -299,8 +326,16 @@ constexpr NumberConversion MapNumberConversion(const NumberFormat num_fmt,
         }
     }
     case NumberFormat::Srgb:
-        return data_fmt == DataFormat::FormatBc6 ? NumberConversion::SrgbToNorm
-                                                 : NumberConversion::None;
+        switch (data_fmt) {
+        case DataFormat::FormatBc4:
+        case DataFormat::FormatBc5:
+            // BC4/BC5 have no sRGB variant; no conversion needed (treated as Unorm).
+            return NumberConversion::None;
+        case DataFormat::FormatBc6:
+            return NumberConversion::SrgbToNorm;
+        default:
+            return NumberConversion::None;
+        }
     case NumberFormat::Uscaled:
         return NumberConversion::UintToUscaled;
     case NumberFormat::Sscaled:

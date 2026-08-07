@@ -71,6 +71,7 @@ You can configure the emulator by editing the `config.json` file found in the `u
     - Examples:
       - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad:Critical` to only log critical-level messages.
       - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `*:Off Render.Vulkan:Info` (if you want critical at least `*:Critical Render.Vulkan:Info`)
+  - `flush_level`: Sets the log level for which logs at or above will be flushed.
   - `skip_duplicate`: Skip same lines with a `Skipped N duplicate messages..` message (`true`/`false`)
     - By default, the emulator will skip same lines for `maxSkipDuration` milliseconds.
   - `append`: Append log to the existing file (`true`/`false`)
@@ -105,7 +106,7 @@ This section will provide some preliminary steps to take and tips on what to do 
 <summary>When a game crashes and breaks in the debugger</summary>
 
 1. Analyze the log
-   - A console will open by default when you launch the emulator. It shows the same log messages that go into the log file found at `<emulator executable>/user/log/shad_log.txt`.
+   - A console will open by default when you launch the emulator. It shows the same log messages that go into the log files found at `<emulator executable>/user/log/{shadps4.log, shad_log.txt, {GAME ID}.log}`.
 
    - It is recommended that you start analyzing the log bottom-up first:
      - Are there any critical or error-level messages at the end of the log that would point to a reason for the game crashing?
@@ -113,6 +114,8 @@ This section will provide some preliminary steps to take and tips on what to do 
      - Did the game window draw anything on-screen?
     
    - Continue analyzing the log from the start to see other errors (such as with initialization, memory mapping, linker errors etc.)
+
+   - If `shadps4.log` contains error, it should be reported in your issue.
 
 2. Analyze the stack trace
    - When the emulator is launched through a debugger, it will **break** when an exception or violation is encountered.\
