@@ -707,35 +707,25 @@ void Translator::V_BCNT_U32_B32(const GcnInst& inst) {
 }
 
 void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
-    if (!is_low) {
-        // v_mbcnt_hi_u32_b32 vX, -1, 0
-        if (inst.src[0].field == OperandField::SignedConstIntNeg && inst.src[0].code == 193 &&
-            inst.src[1].field == OperandField::ConstZero) {
-            return;
-        }
-        // v_mbcnt_hi_u32_b32 vX, exec_hi, 0/vZ
-        if ((inst.src[0].field == OperandField::ExecHi ||
-             inst.src[0].field == OperandField::VccHi ||
-             inst.src[0].field == OperandField::ScalarGPR) &&
-            (inst.src[1].field == OperandField::ConstZero ||
-             inst.src[1].field == OperandField::VectorGPR)) {
-            return SetDst(inst.dst[0], GetSrc(inst.src[1]));
-        }
-        UNREACHABLE();
-    } else {
-        // v_mbcnt_lo_u32_b32 vY, -1, vX
-        // used combined with above to fetch lane id in non-compute stages
-        if (inst.src[0].field == OperandField::SignedConstIntNeg && inst.src[0].code == 193) {
-            return SetDst(inst.dst[0], ir.LaneId());
-        }
-        // v_mbcnt_lo_u32_b32 vY, exec_lo, vX
-        // used combined with above for append buffer indexing.
-        if (inst.src[0].field == OperandField::ExecLo || inst.src[0].field == OperandField::VccLo ||
-            inst.src[0].field == OperandField::ScalarGPR) {
-            return SetDst(inst.dst[0], GetSrc(inst.src[1]));
-        }
-        UNREACHABLE();
+    const IR::U32 src1 = GetSrc(inst.src[1]);
+    if (inst.src[0].field == OperandField::ExecLo || inst.src[0].field == OperandField::ExecHi) {
+        // The IR tracks EXEC per invocation rather than as a guest wave64 mask. Preserve the
+        // existing behavior until EXEC ballots can be reconstructed across host subgroups.
+        return SetDst(inst.dst[0], src1);
     }
+
+    const IR::U32 src0 = GetSrc(inst.src[0]);
+    const IR::U32 lane_id = info.l_stage == LogicalStage::Compute ? ir.GuestLaneId() : ir.LaneId();
+    const IR::U32 half_wave_size = ir.Imm32(32);
+    IR::U32 num_mask_bits;
+    if (is_low) {
+        num_mask_bits = ir.UMin(lane_id, half_wave_size);
+    } else {
+        num_mask_bits = ir.ISub(ir.UMax(lane_id, half_wave_size), half_wave_size);
+    }
+    const IR::U32 thread_mask = ir.BitFieldExtract(ir.Imm32(~0u), ir.Imm32(0), num_mask_bits);
+    const IR::U32 masked_value = ir.BitwiseAnd(src0, thread_mask);
+    SetDst(inst.dst[0], ir.IAdd(ir.BitCount(masked_value), src1));
 }
 
 void Translator::V_ADD_I32(const GcnInst& inst) {
