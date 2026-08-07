@@ -307,10 +307,14 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
         } else if (profile.supports_fragment_shader_barycentric) {
             ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
             ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
+            ctx.AddCapability(spv::Capability::InterpolationFunction);
         }
         if (info.loads.Get(IR::Attribute::SampleIndex) ||
             runtime_info.fs_info.addr_flags.linear_sample_ena ||
-            runtime_info.fs_info.addr_flags.persp_sample_ena) {
+            runtime_info.fs_info.addr_flags.persp_sample_ena ||
+            (!profile.supports_amd_shader_explicit_vertex_parameter &&
+             profile.supports_fragment_shader_barycentric &&
+             info.loads.Get(IR::Attribute::BaryCoordSmoothSample))) {
             ctx.AddCapability(spv::Capability::SampleRateShading);
         }
         if (info.loads.GetAny(IR::Attribute::RenderTargetIndex)) {
