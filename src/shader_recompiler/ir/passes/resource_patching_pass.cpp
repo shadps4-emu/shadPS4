@@ -205,7 +205,8 @@ void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors
         IR::Inst* buffer_handle = handle->Arg(0).InstRecursive();
         const auto inst_info = inst.Flags<IR::BufferInstInfo>();
         const IR::Inst* sharp_source = resource.sharp_source;
-        ASSERT_MSG(sharp_source, "Unable to find buffer sharp sources pc={:#x}", inst_info.pc.Value());
+        ASSERT_MSG(sharp_source, "Unable to find buffer sharp sources pc={:#x}",
+                   inst_info.pc.Value());
         const auto sharp_idx = SharpLocationFromSource(sharp_source);
         const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
         buffer_binding = descriptors.Add(BufferResource{
@@ -228,7 +229,6 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
     IR::Block& block = *resource.user_block;
     IR::Inst& inst = *resource.user;
     const IR::Inst* sharp_source = resource.sharp_source;
-
 
     // Read image sharp.
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();

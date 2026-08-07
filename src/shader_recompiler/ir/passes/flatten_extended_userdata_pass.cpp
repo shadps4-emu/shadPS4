@@ -464,13 +464,11 @@ static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Re
     if (inst->Arg(2).IsImmediate()) {
         if (in_stack) {
             c.pop(reg.cvt64());
-            in_stack = false;
         }
         c.and_(reg, (1U << inst->Arg(2).U32()) - 1);
     } else {
         if (!in_stack) {
             c.push(reg.cvt64());
-            in_stack = true;
         }
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(2)));
         c.mov(ecx, reg);
@@ -478,8 +476,6 @@ static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Re
         c.shl(edx, cl);
         c.dec(edx);
         c.and_(dword[rsp], edx);
-    }
-    if (in_stack) {
         c.pop(reg.cvt64());
     }
     return true;
@@ -579,7 +575,7 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
                 continue;
             }
             c.shl(r10d, 2);
-            c.mov(r10d, ptr[rdi + r10d]);
+            c.mov(r10d, dword[rdi + r10d]);
         }
         c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
 
