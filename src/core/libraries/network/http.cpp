@@ -282,6 +282,16 @@ static HostOverrideTarget ParseHostOverrideTarget(std::string_view value) {
     return out;
 }
 
+static std::string NormalizeHostOverrideKey(std::string_view key) {
+    if (const auto scheme_end = key.find("://"); scheme_end != std::string_view::npos) {
+        key = key.substr(scheme_end + 3);
+    }
+    std::string out(key);
+    std::transform(out.begin(), out.end(), out.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return out;
+}
+
 std::unordered_map<std::string, HostOverrideTarget> ParseHostOverridesJson(
     const std::string& json_text) {
     std::unordered_map<std::string, HostOverrideTarget> out;
@@ -313,7 +323,7 @@ std::unordered_map<std::string, HostOverrideTarget> ParseHostOverridesJson(
             LOG_ERROR(Lib_Http, "host overrides JSON: value for '{}' is empty; skipped", it.key());
             continue;
         }
-        out.emplace(it.key(), ParseHostOverrideTarget(value));
+        out.emplace(NormalizeHostOverrideKey(it.key()), ParseHostOverrideTarget(value));
     }
     return out;
 }
@@ -336,6 +346,24 @@ static HostOverrideState LoadHostOverrideState() {
     }
     std::ifstream f(path);
     if (!f.is_open()) {
+        static constexpr std::string_view default_contents =
+            "{\n"
+            "    \"*\": \"http://localhost:8080\"\n"
+            "}\n";
+        std::error_code ec;
+        std::filesystem::create_directories(path.parent_path(), ec);
+        std::ofstream out(path);
+        if (out.is_open()) {
+            out << default_contents;
+            out.close();
+            LOG_INFO(Lib_Http, "no host overrides file found.Created default at {}", path.string());
+        } else {
+            LOG_ERROR(Lib_Http, "no host overrides file found and failed to create default at {}",
+                      path.string());
+        }
+        s.entries = ParseHostOverridesJson(std::string(default_contents));
+        LOG_INFO(Lib_Http, "loaded {} host override entries from {}", s.entries.size(),
+                 path.string());
         return s;
     }
     std::stringstream buf;
@@ -350,25 +378,48 @@ static const HostOverrideState& GetHostOverrideState() {
     return s;
 }
 
+// Extract just the host from a URL/authority string, dropping any "scheme://"
+// prefix, ":port" suffix and "/path".
+static std::string ExtractHost(std::string_view value) {
+    if (const auto scheme_end = value.find("://"); scheme_end != std::string_view::npos) {
+        value = value.substr(scheme_end + 3);
+    }
+    if (const auto slash = value.find('/'); slash != std::string_view::npos) {
+        value = value.substr(0, slash);
+    }
+    if (const auto colon = value.find(':'); colon != std::string_view::npos) {
+        value = value.substr(0, colon);
+    }
+    return std::string(value);
+}
+
 bool ApplyHostOverride(std::string& scheme, std::string& host, u16& port, bool& is_secure) {
     const auto& state = GetHostOverrideState();
     if (state.entries.empty()) {
         return false;
     }
-    // Look up most-specific match first. Keys can be:
-    //   "scheme://host:port"  - matches that exact endpoint
-    //   "host:port"           - matches host+port on any scheme
-    //   "host"                - matches host on any scheme/port
-    //   "*"                   - catch-all fallback
-    const std::string full_key = scheme + "://" + host + ":" + std::to_string(port);
-    const std::string host_port_key = host + ":" + std::to_string(port);
 
-    auto it = state.entries.find(full_key);
-    if (it == state.entries.end()) {
-        it = state.entries.find(host_port_key);
+    // Never override the configured ShadNet WebAPI server
+    if (const std::string webapi = EmulatorSettings.GetShadNetWebApiServer(); !webapi.empty()) {
+        if (ExtractHost(webapi) == host) {
+            LOG_INFO(Lib_Http, "host override skipped for WebAPI server host '{}'", host);
+            return false;
+        }
     }
+    // Keys are stored scheme-insensitive and lowercased (see
+    // NormalizeHostOverrideKey), so match on host[:port] regardless of the
+    // request's scheme or host casing. Order: most specific first.
+    //   "host:port"  - matches host+port on any scheme
+    //   "host"       - matches host on any scheme/port
+    //   "*"          - catch-all fallback
+    std::string host_lc = host;
+    std::transform(host_lc.begin(), host_lc.end(), host_lc.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    const std::string host_port_key = host_lc + ":" + std::to_string(port);
+
+    auto it = state.entries.find(host_port_key);
     if (it == state.entries.end()) {
-        it = state.entries.find(host);
+        it = state.entries.find(host_lc);
     }
     if (it == state.entries.end()) {
         it = state.entries.find("*");

@@ -39,6 +39,7 @@ typedef int net_socket;
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/network/dns_hook.h"
 #include "net.h"
 #include "net_error.h"
 #include "net_util.h"
@@ -388,6 +389,16 @@ bool NetUtilInternal::RetrieveIp() {
 }
 
 int NetUtilInternal::ResolveHostname(const char* hostname, Libraries::Net::OrbisNetInAddr* addr) {
+    if (hostname != nullptr) {
+        if (const auto ip = Libraries::Net::DnsHook::Instance().Lookup(hostname)) {
+            addr->inaddr_addr = *ip;
+            const u8* o = reinterpret_cast<const u8*>(&*ip);
+            LOG_INFO(Lib_Net, "DNS swap (resolver): '{}' -> {}.{}.{}.{}", hostname, o[0], o[1],
+                     o[2], o[3]);
+            return ORBIS_OK;
+        }
+    }
+
     const addrinfo hints = {
         .ai_flags = AI_V4MAPPED | AI_ADDRCONFIG,
         .ai_family = AF_INET,
