@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <queue>
+#include "core/emulator_settings.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
@@ -509,9 +511,15 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
         raw[0] = handle->Arg(0).U32() | u64(handle->Arg(1).U32()) << 32;
         raw[1] = handle->Arg(2).U32() | u64(handle->Arg(3).U32()) << 32;
         const auto buffer = std::bit_cast<AmdGpu::Buffer>(raw);
+        auto used_types = BufferDataType(inst, profile, buffer.GetNumberFmt());
+        // When element_size==2, the buffer's guest address may only be 2-byte aligned,
+        // requiring U16 word-level access to apply non-dword-aligned offset correctly.
+        if (buffer.GetElementSize() == 2) {
+            used_types |= IR::Type::U16;
+        }
         buffer_binding = descriptors.Add(BufferResource{
             .sharp_idx = std::numeric_limits<u32>::max(),
-            .used_types = BufferDataType(inst, profile, buffer.GetNumberFmt()),
+            .used_types = used_types,
             .inline_cbuf = buffer,
             .buffer_type = BufferType::Guest,
         });
@@ -521,9 +529,15 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
         const auto inst_info = inst.Flags<IR::BufferInstInfo>();
         const auto sharp_idx = TrackSharp(buffer_handle, block, inst_info.pc);
         const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+        auto used_types = BufferDataType(inst, profile, buffer.GetNumberFmt());
+        // When element_size==2, the buffer's guest address may only be 2-byte aligned,
+        // requiring U16 word-level access to apply non-dword-aligned offset correctly.
+        if (buffer.GetElementSize() == 2) {
+            used_types |= IR::Type::U16;
+        }
         buffer_binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp_idx,
-            .used_types = BufferDataType(inst, profile, buffer.GetNumberFmt()),
+            .used_types = used_types,
             .buffer_type = BufferType::Guest,
             .is_written = IsBufferStore(inst),
             .is_formatted = inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32 ||
@@ -675,37 +689,39 @@ void PatchGlobalDataShareAccess(IR::Block& block, IR::Inst& inst, Info& info,
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
 
-    // For data append/consume operations attempt to deduce the GDS address.
+    // For data append/consume operations, convert to GDS buffer atomic.
     if (inst.GetOpcode() == IR::Opcode::DataAppend || inst.GetOpcode() == IR::Opcode::DataConsume) {
-        const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
-            if (inst->GetOpcode() == IR::Opcode::GetUserData) {
-                return inst;
-            }
-            return std::nullopt;
-        };
-
-        u32 gds_addr = 0;
+        // gds_offset = GetM0() + inst_offset, already resolved by SsaRewrite.
+        // Compute index dynamically per dispatch so that the same SPIR-V module works
+        // across all GDS base addresses (fixes cross-slot reuse bug).
         const IR::Value& gds_offset = inst.Arg(0);
+        IR::U32 index;
         if (gds_offset.IsImmediate()) {
-            // Nothing to do, offset is known.
-            gds_addr = gds_offset.U32() & 0xFFFF;
+            // Fully static offset: fold at compile time.
+            index = ir.Imm32((gds_offset.U32() & 0xFFFF) >> 2);
         } else {
+            // Find the user data register that feeds M0, then emit a runtime chain:
+            //   index = ((GetUserData(reg) >> 16) + inst_offset) >> 2
+            const auto pred = [](const IR::Inst* i) -> std::optional<const IR::Inst*> {
+                return i->GetOpcode() == IR::Opcode::GetUserData ? std::optional{i} : std::nullopt;
+            };
             const auto result = IR::BreadthFirstSearch(&inst, pred);
-            ASSERT_MSG(result, "Unable to track M0 source");
+            ASSERT_MSG(result, "Unable to track M0 source for GDS");
 
-            // M0 must be set by some user data register.
-            const IR::Inst* prod = gds_offset.InstRecursive();
-            const u32 ud_reg = u32(result.value()->Arg(0).ScalarReg());
-            u32 m0_val = info.user_data[ud_reg] >> 16;
-            if (prod->GetOpcode() == IR::Opcode::IAdd32) {
-                m0_val += prod->Arg(1).U32();
-            }
-            gds_addr = m0_val & 0xFFFF;
+            const IR::ScalarReg ud_reg = result.value()->Arg(0).ScalarReg();
+            const IR::Inst* add = gds_offset.InstRecursive();
+            const u32 inst_offset = add->Arg(1).U32();
+
+            // Observed: GDS base lives in upper 16 bits of the user data register.
+            IR::U32 ud_val = ir.GetUserData(ud_reg);
+            IR::U32 gds_base = ir.ShiftRightLogical(ud_val, ir.Imm32(16));
+            IR::U32 gds_byte = ir.IAdd(gds_base, ir.Imm32(inst_offset));
+            IR::U32 clamped = ir.BitwiseAnd(gds_byte, ir.Imm32(0xFFFF));
+            index = ir.ShiftRightLogical(clamped, ir.Imm32(2));
         }
 
         // Patch instruction to GDS buffer atomic increment/decrement.
         const IR::U32 handle = ir.Imm32(binding);
-        const IR::U32 index = ir.Imm32(gds_addr >> 2);
         const bool is_append = inst.GetOpcode() == IR::Opcode::DataAppend;
         const IR::Value prev = is_append ? ir.BufferAtomicInc(handle, index, {})
                                          : ir.BufferAtomicDec(handle, index, {});
@@ -793,6 +809,120 @@ void PatchGlobalDataShareAccess(IR::Block& block, IR::Inst& inst, Info& info,
     }
 }
 
+// Add {base_hi, base_lo} + addend (zero-extended from 32-bit) for 64-bit guest address.
+// Returns CompositeConstructU32x2(result_lo, result_hi).
+static IR::Value EmitAdd64(IR::IREmitter& ir, const IR::U32& base_lo, const IR::U32& base_hi,
+                           const IR::U32& addend) {
+    const IR::Value sum_carry = ir.IAddCarry(base_lo, addend);
+    const IR::U32 result_lo{ir.CompositeExtract(sum_carry, 0)};
+    const IR::U32 carry{ir.CompositeExtract(sum_carry, 1)};
+    const IR::U32 result_hi = ir.IAdd(base_hi, carry);
+    return ir.CompositeConstruct(result_lo, result_hi);
+}
+
+// Number of dwords loaded by a buffer load opcode; 0 = not a supported load.
+static u32 BufferLoadNumDwords(IR::Opcode op) {
+    switch (op) {
+    case IR::Opcode::LoadBufferU32:
+    case IR::Opcode::LoadBufferF32:
+        return 1;
+    case IR::Opcode::LoadBufferU32x2:
+    case IR::Opcode::LoadBufferF32x2:
+        return 2;
+    case IR::Opcode::LoadBufferU32x3:
+    case IR::Opcode::LoadBufferF32x3:
+        return 3;
+    case IR::Opcode::LoadBufferU32x4:
+    case IR::Opcode::LoadBufferF32x4:
+        return 4;
+    default:
+        return 0;
+    }
+}
+
+// Replace a buffer load that uses an inline V# (runtime s_mov_b32 constants) with
+// ReadConst instructions that resolve the guest address via BDA page table.
+// Returns true if the instruction was replaced, false if it fell through.
+static bool PatchInlineBuffer(IR::Block& block, IR::Inst& inst, Info& info,
+                              const BufferResource& buffer_res) {
+    const u32 num_dwords = BufferLoadNumDwords(inst.GetOpcode());
+    if (num_dwords == 0) {
+        return false;
+    }
+
+    if (!EmulatorSettings.IsDirectMemoryAccessEnabled()) {
+        LOG_ERROR(Render_Recompiler, "Inline V# buffer load at {:#x} requires DMA but DMA disabled",
+                  info.pgm_hash);
+        return false;
+    }
+
+    const auto buffer = buffer_res.GetSharp(info);
+    if (buffer.swizzle_enable || buffer.add_tid_enable) {
+        return false;
+    }
+
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    const auto inst_info = inst.Flags<IR::BufferInstInfo>();
+    const u32 inst_offset = inst_info.inst_offset.Value();
+
+    // Compute 64-bit guest address: U32x2{byte_lo, byte_hi}
+    IR::Value guest_addr;
+    if (inst_info.addr64) {
+        // addr64: address was CompositeConstruct(addr_lo, addr_hi, soffset).
+        // Guest address = {addr_hi, addr_lo} + soffset + inst_offset.
+        const IR::U32 addr_lo = IR::GetBufferIndexArg(&inst);
+        const IR::U32 addr_hi = IR::GetBufferVOffsetArg(&inst);
+        const IR::U32 soffset = IR::GetBufferSOffsetArg(&inst);
+
+        IR::U32 soffset_plus_offset = ir.Imm32(inst_offset);
+        if (!soffset.IsImmediate() || soffset.U32() != 0) {
+            soffset_plus_offset = ir.IAdd(soffset_plus_offset, soffset);
+        }
+        guest_addr = EmitAdd64(ir, addr_lo, addr_hi, soffset_plus_offset);
+    } else {
+        // Non-addr64: address was CompositeConstruct(index, voffset, soffset).
+        // Guest address = V#.base + index*stride + voffset + soffset + inst_offset.
+        const u64 vsharp_base = buffer.base_address;
+        const u32 base_lo = static_cast<u32>(vsharp_base);
+        const u32 base_hi = static_cast<u32>(vsharp_base >> 32);
+        const u32 stride = buffer.stride;
+
+        IR::U32 index = ir.Imm32(0);
+        if (inst_info.index_enable) {
+            index = IR::GetBufferIndexArg(&inst);
+        }
+        IR::U32 voffset = ir.Imm32(0);
+        if (inst_info.voffset_enable) {
+            voffset = IR::GetBufferVOffsetArg(&inst);
+        }
+        const IR::U32 soffset = IR::GetBufferSOffsetArg(&inst);
+
+        // buffer_offset32 = inst_offset + soffset + voffset + index * stride
+        IR::U32 offset32 = ir.Imm32(inst_offset);
+        offset32 = ir.IAdd(offset32, soffset);
+        offset32 = ir.IAdd(offset32, voffset);
+        if (stride != 0 && (!index.IsImmediate() || index.U32() != 0)) {
+            offset32 = ir.IAdd(offset32, ir.IMul(index, ir.Imm32(stride)));
+        }
+        guest_addr = EmitAdd64(ir, ir.Imm32(base_lo), ir.Imm32(base_hi), offset32);
+    }
+
+    // Replace buffer load with ReadConst (BDA path).
+    IR::Value result;
+    if (num_dwords == 1) {
+        result = ir.ReadConst(guest_addr, ir.Imm32(0));
+    } else {
+        boost::container::small_vector<IR::Value, 4> dwords;
+        for (u32 i = 0; i < num_dwords; ++i) {
+            dwords.push_back(ir.ReadConst(guest_addr, ir.Imm32(i)));
+        }
+        result = ir.CompositeConstruct(dwords);
+    }
+
+    inst.ReplaceUsesWith(result);
+    return true;
+}
+
 IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const Info& info,
                                const AmdGpu::Buffer& buffer, u32 stride) {
     const auto inst_info = inst.Flags<IR::BufferInstInfo>();
@@ -804,6 +934,28 @@ IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const In
     const u32 shift = BufferAddressShift(inst, data_format);
     const u32 mask = (1 << shift) - 1;
     const IR::U32 soffset = IR::GetBufferSOffsetArg(&inst);
+
+    // addr64: VGPR pair provides a 64-bit byte offset from buffer base.
+    // Stride is ignored in this mode — the VGPR values are already byte offsets.
+    if (inst_info.addr64) {
+        const IR::U32 addr_lo = IR::GetBufferIndexArg(&inst);     // comp 0 = addr_lo
+        const IR::U32 addr_hi = IR::GetBufferVOffsetArg(&inst);   // comp 1 = addr_hi
+
+        // Fold soffset + inst_offset into 64-bit address via IAddCarry → SPIR-V OpIAddCarry
+        IR::U32 offset = ir.Imm32(inst_offset);
+        if (!soffset.IsImmediate() || soffset.U32() != 0) {
+            offset = ir.IAdd(offset, soffset);
+        }
+        IR::Value sum_carry = ir.IAddCarry(addr_lo, offset);
+        IR::U32 byte_lo = IR::U32{ir.CompositeExtract(sum_carry, 0)};
+        IR::U32 carry = IR::U32{ir.CompositeExtract(sum_carry, 1)};
+        IR::U32 byte_hi = ir.IAdd(addr_hi, carry);
+
+        // Byte offset → dword index: (byte_hi << (32-shift)) | (byte_lo >> shift)
+        IR::U32 dword_lo = ir.ShiftRightLogical(byte_lo, ir.Imm32(shift));
+        IR::U32 dword_hi = ir.ShiftLeftLogical(byte_hi, ir.Imm32(32 - shift));
+        return ir.BitwiseOr(dword_lo, dword_hi);
+    }
 
     // If address calculation is of the form "index * const_stride + offset" with offset constant
     // and both const_stride and offset are divisible with the element size, apply shift directly.
@@ -877,6 +1029,17 @@ void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     // Address of constant buffer reads can be calculated at IR emission time.
     if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
         return;
+    }
+
+    // Inline V# (runtime s_mov_b32 constants with no buffer-cache backing) must go through
+    // ReadConst / BDA page table rather than the normal buffer binding, because there is no
+    // buffer cache mapping for these guest addresses.
+    if (buffer_res.inline_cbuf) {
+        if (PatchInlineBuffer(block, inst, info, buffer_res)) {
+            return;
+        }
+        // Fall through to normal path if PatchInlineBuffer can't handle this instruction
+        // (store, atomic, swizzle, typed format, etc.).
     }
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};

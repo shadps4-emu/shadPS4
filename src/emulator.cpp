@@ -22,6 +22,7 @@
 #include "common/discord_rpc_handler.h"
 #endif
 #include "common/elf_info.h"
+#include "common/hack_features.h"
 #include "common/memory_patcher.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
@@ -444,6 +445,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     auto& game_info = Common::ElfInfo::Instance();
     game_info.initialized = true;
     game_info.game_serial = id;
+    Common::HackFeatures::Init(id);
     game_info.title = title;
     game_info.app_ver = app_version;
     game_info.firmware_ver = fw_version & 0xFFF00000;
