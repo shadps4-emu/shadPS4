@@ -573,6 +573,60 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         RegisterImage(image_id);
     }
 
+    // Reduction chains sample never-rendered sub-views of a GPU-written container through
+    // the same base address and pitch. Their extent is semantically meaningful, so validate
+    // their texels from the container's top-left region before each use. This has to happen
+    // on the lookup path: once the sub-view exists, its binds resolve by exact match and no
+    // longer reach overlap resolution.
+    if (desc.type == BindingType::Texture) {
+        Image& view_image = slot_images[image_id];
+        if (False(view_image.flags & ImageFlagBits::GpuModified) &&
+            view_image.info.resources.levels == 1 && !view_image.info.props.is_block) {
+            ImageId container_id{};
+            ForEachImageInRegion(info.guest_address, 1, [&](ImageId cid, Image& cimg) {
+                if (cid == image_id || cimg.info.guest_address != info.guest_address ||
+                    False(cimg.flags & ImageFlagBits::GpuModified) ||
+                    cimg.info.pixel_format != view_image.info.pixel_format ||
+                    cimg.info.pitch != view_image.info.pitch ||
+                    cimg.info.num_samples != view_image.info.num_samples ||
+                    cimg.info.size.width < view_image.info.size.width ||
+                    cimg.info.size.height < view_image.info.size.height) {
+                    return;
+                }
+                container_id = cid;
+            });
+            if (container_id) {
+                Image& container = slot_images[container_id];
+                scheduler.EndRendering();
+                container.Transit(vk::ImageLayout::eTransferSrcOptimal,
+                                  vk::AccessFlagBits2::eTransferRead, {});
+                view_image.Transit(vk::ImageLayout::eTransferDstOptimal,
+                                   vk::AccessFlagBits2::eTransferWrite, {});
+                const vk::ImageCopy region = {
+                    .srcSubresource = {.aspectMask = vk::ImageAspectFlagBits::eColor,
+                                       .mipLevel = 0,
+                                       .baseArrayLayer = 0,
+                                       .layerCount = 1},
+                    .srcOffset = {0, 0, 0},
+                    .dstSubresource = {.aspectMask = vk::ImageAspectFlagBits::eColor,
+                                       .mipLevel = 0,
+                                       .baseArrayLayer = 0,
+                                       .layerCount = 1},
+                    .dstOffset = {0, 0, 0},
+                    .extent = {view_image.info.size.width, view_image.info.size.height, 1},
+                };
+                scheduler.CommandBuffer().copyImage(
+                    container.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
+                    view_image.GetImage(), vk::ImageLayout::eTransferDstOptimal, region);
+                view_image.flags &= ~ImageFlagBits::Dirty;
+                LOG_DEBUG(Render_Vulkan, "validated sub-view {}x{} from container {}x{} at {:#x}",
+                          view_image.info.size.width, view_image.info.size.height,
+                          container.info.size.width, container.info.size.height,
+                          info.guest_address);
+            }
+        }
+    }
+
     Image& image = slot_images[image_id];
     image.tick_accessed_last = scheduler.CurrentTick();
     TouchImage(image);
