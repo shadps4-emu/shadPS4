@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/operand_helper.h"
-#include "shader_recompiler/ir/program.h"
+#include "shader_recompiler/ir/passes/ir_passes.h"
+#include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/reinterpret.h"
 #include "shader_recompiler/profile.h"
 #include "video_core/amdgpu/resource.h"
@@ -15,116 +15,7 @@
 namespace Shader::Optimization {
 namespace {
 
-using SharpLocation = u32;
-
-bool IsBufferAtomic(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::BufferAtomicIAdd32:
-    case IR::Opcode::BufferAtomicIAdd64:
-    case IR::Opcode::BufferAtomicISub32:
-    case IR::Opcode::BufferAtomicSMin32:
-    case IR::Opcode::BufferAtomicSMin64:
-    case IR::Opcode::BufferAtomicUMin32:
-    case IR::Opcode::BufferAtomicUMin64:
-    case IR::Opcode::BufferAtomicFMin32:
-    case IR::Opcode::BufferAtomicSMax32:
-    case IR::Opcode::BufferAtomicSMax64:
-    case IR::Opcode::BufferAtomicUMax32:
-    case IR::Opcode::BufferAtomicUMax64:
-    case IR::Opcode::BufferAtomicFMax32:
-    case IR::Opcode::BufferAtomicInc32:
-    case IR::Opcode::BufferAtomicDec32:
-    case IR::Opcode::BufferAtomicAnd32:
-    case IR::Opcode::BufferAtomicOr32:
-    case IR::Opcode::BufferAtomicXor32:
-    case IR::Opcode::BufferAtomicSwap32:
-    case IR::Opcode::BufferAtomicCmpSwap32:
-    case IR::Opcode::BufferAtomicFCmpSwap32:
-        return true;
-    default:
-        return false;
-    }
-}
-
-bool IsBufferStore(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::StoreBufferU8:
-    case IR::Opcode::StoreBufferU16:
-    case IR::Opcode::StoreBufferU32:
-    case IR::Opcode::StoreBufferU32x2:
-    case IR::Opcode::StoreBufferU32x3:
-    case IR::Opcode::StoreBufferU32x4:
-    case IR::Opcode::StoreBufferU64:
-    case IR::Opcode::StoreBufferF32:
-    case IR::Opcode::StoreBufferF32x2:
-    case IR::Opcode::StoreBufferF32x3:
-    case IR::Opcode::StoreBufferF32x4:
-    case IR::Opcode::StoreBufferFormatF32:
-        return true;
-    default:
-        return IsBufferAtomic(inst);
-    }
-}
-
-bool IsBufferInstruction(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::LoadBufferU8:
-    case IR::Opcode::LoadBufferU16:
-    case IR::Opcode::LoadBufferU32:
-    case IR::Opcode::LoadBufferU32x2:
-    case IR::Opcode::LoadBufferU32x3:
-    case IR::Opcode::LoadBufferU32x4:
-    case IR::Opcode::LoadBufferU64:
-    case IR::Opcode::LoadBufferF32:
-    case IR::Opcode::LoadBufferF32x2:
-    case IR::Opcode::LoadBufferF32x3:
-    case IR::Opcode::LoadBufferF32x4:
-    case IR::Opcode::LoadBufferFormatF32:
-    case IR::Opcode::ReadConstBuffer:
-        return true;
-    default:
-        return IsBufferStore(inst);
-    }
-}
-
-bool IsDataRingInstruction(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::DataAppend:
-    case IR::Opcode::DataConsume:
-        return true;
-    case IR::Opcode::LoadSharedU16:
-    case IR::Opcode::LoadSharedU32:
-    case IR::Opcode::LoadSharedU64:
-    case IR::Opcode::WriteSharedU16:
-    case IR::Opcode::WriteSharedU32:
-    case IR::Opcode::WriteSharedU64:
-    case IR::Opcode::SharedAtomicIAdd32:
-    case IR::Opcode::SharedAtomicIAdd64:
-    case IR::Opcode::SharedAtomicUMin32:
-    case IR::Opcode::SharedAtomicUMin64:
-    case IR::Opcode::SharedAtomicSMin32:
-    case IR::Opcode::SharedAtomicSMin64:
-    case IR::Opcode::SharedAtomicUMax32:
-    case IR::Opcode::SharedAtomicUMax64:
-    case IR::Opcode::SharedAtomicSMax32:
-    case IR::Opcode::SharedAtomicSMax64:
-    case IR::Opcode::SharedAtomicAnd32:
-    case IR::Opcode::SharedAtomicAnd64:
-    case IR::Opcode::SharedAtomicOr32:
-    case IR::Opcode::SharedAtomicOr64:
-    case IR::Opcode::SharedAtomicXor32:
-    case IR::Opcode::SharedAtomicXor64:
-    case IR::Opcode::SharedAtomicISub32:
-    case IR::Opcode::SharedAtomicISub64:
-    case IR::Opcode::SharedAtomicInc32:
-    case IR::Opcode::SharedAtomicInc64:
-    case IR::Opcode::SharedAtomicDec32:
-    case IR::Opcode::SharedAtomicDec64:
-        return inst.Flags<bool>(); // is_gds
-    default:
-        return false;
-    }
-}
+using SharpLocation = u16;
 
 IR::Type BufferDataType(const IR::Inst& inst, const Profile& profile,
                         AmdGpu::NumberFormat num_format) {
@@ -202,41 +93,6 @@ u32 BufferAddressShift(const IR::Inst& inst, AmdGpu::DataFormat data_format) {
     }
 }
 
-bool IsImageAtomicInstruction(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::ImageAtomicIAdd32:
-    case IR::Opcode::ImageAtomicSMin32:
-    case IR::Opcode::ImageAtomicUMin32:
-    case IR::Opcode::ImageAtomicSMax32:
-    case IR::Opcode::ImageAtomicUMax32:
-    case IR::Opcode::ImageAtomicFMax32:
-    case IR::Opcode::ImageAtomicFMin32:
-    case IR::Opcode::ImageAtomicInc32:
-    case IR::Opcode::ImageAtomicDec32:
-    case IR::Opcode::ImageAtomicAnd32:
-    case IR::Opcode::ImageAtomicOr32:
-    case IR::Opcode::ImageAtomicXor32:
-    case IR::Opcode::ImageAtomicExchange32:
-    case IR::Opcode::ImageAtomicCmpSwap32:
-        return true;
-    default:
-        return false;
-    }
-}
-
-bool IsImageInstruction(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::ImageRead:
-    case IR::Opcode::ImageWrite:
-    case IR::Opcode::ImageQueryDimensions:
-    case IR::Opcode::ImageQueryLod:
-    case IR::Opcode::ImageSampleRaw:
-        return true;
-    default:
-        return IsImageAtomicInstruction(inst);
-    }
-}
-
 class Descriptors {
 public:
     explicit Descriptors(Info& info_)
@@ -304,194 +160,23 @@ private:
 
 } // Anonymous namespace
 
-std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
-    std::pair not_found{inst, false};
-
-    // Assuming S# is in UD s[12:15] and T# is in s[4:11]
-    // The next pattern:
-    //  s_bfe_u32     s0, s7,  $0x0008000c
-    //  s_and_b32     s1, s12, $0xfffff1ff
-    //  s_cmp_eq_u32  s0, 0
-    //  s_cselect_b32 s0, s1, s12
-    // is used to disable anisotropy in the sampler if the sampled texture doesn't have mips
-
-    if (inst->GetOpcode() != IR::Opcode::SelectU32) {
-        return not_found;
-    }
-
-    // Select should be based on zero check
-    const auto* prod0 = inst->Arg(0).InstRecursive();
-    if (prod0->GetOpcode() != IR::Opcode::IEqual32 ||
-        !(prod0->Arg(1).IsImmediate() && prod0->Arg(1).U32() == 0u)) {
-        return not_found;
-    }
-
-    // The bitfield extract might be hidden by phi sometimes
-    auto* prod0_arg0 = prod0->Arg(0).InstRecursive();
-    if (prod0_arg0->GetOpcode() == IR::Opcode::Phi) {
-        auto arg0 = prod0_arg0->Arg(0);
-        auto arg1 = prod0_arg0->Arg(1);
-        if (!arg0.IsImmediate() &&
-            arg0.InstRecursive()->GetOpcode() == IR::Opcode::BitFieldUExtract) {
-            prod0_arg0 = arg0.InstRecursive();
-        } else if (!arg1.IsImmediate() &&
-                   arg1.InstRecursive()->GetOpcode() == IR::Opcode::BitFieldUExtract) {
-            prod0_arg0 = arg1.InstRecursive();
-        }
-    }
-
-    // The bits range is for lods (note that constants are changed after constant propagation pass)
-    if (prod0_arg0->GetOpcode() != IR::Opcode::BitFieldUExtract ||
-        !(prod0_arg0->Arg(1).IsImmediate() && prod0_arg0->Arg(1).U32() == 12) ||
-        !(prod0_arg0->Arg(2).IsImmediate() && prod0_arg0->Arg(2).U32() == 8)) {
-        return not_found;
-    }
-
-    // Make sure mask is masking out anisotropy
-    const auto* prod1 = inst->Arg(1).InstRecursive();
-    if (prod1->GetOpcode() != IR::Opcode::BitwiseAnd32 || prod1->Arg(1).U32() != 0xfffff1ff) {
-        return not_found;
-    }
-
-    // We're working on the first dword of s#
-    const auto* prod2 = inst->Arg(2).InstRecursive();
-    if (prod2->GetOpcode() != IR::Opcode::GetUserData &&
-        prod2->GetOpcode() != IR::Opcode::ReadConst && prod2->GetOpcode() != IR::Opcode::Phi) {
-        return not_found;
-    }
-
-    return {prod2, true};
-}
-
 using SharpSources = boost::container::small_vector<const IR::Inst*, 4>;
-
-bool IsSharpSource(const IR::Inst* inst) {
-    return inst->GetOpcode() == IR::Opcode::GetUserData ||
-           inst->GetOpcode() == IR::Opcode::ReadConst;
-}
-
-SharpSources FindSharpSources(const IR::Inst* handle, u32 pc) {
-    SharpSources sources;
-    if (IsSharpSource(handle)) {
-        sources.push_back(handle);
-        return sources;
-    }
-
-    bool found_read_const_buffer = false;
-
-    boost::container::small_vector<const IR::Inst*, 8> visited;
-    std::queue<const IR::Inst*> queue;
-    queue.push(handle);
-
-    while (!queue.empty()) {
-        const IR::Inst* inst{queue.front()};
-        queue.pop();
-        if (IsSharpSource(inst)) {
-            sources.push_back(inst);
-            continue;
-        }
-        found_read_const_buffer |= inst->GetOpcode() == IR::Opcode::ReadConstBuffer;
-        if (inst->GetOpcode() != IR::Opcode::Phi) {
-            continue;
-        }
-        for (size_t arg = inst->NumArgs(); arg--;) {
-            const IR::Value arg_value = inst->Arg(arg);
-            if (arg_value.IsImmediate()) {
-                continue;
-            }
-            const IR::Inst* arg_inst = arg_value.InstRecursive();
-            if (std::ranges::find(visited, arg_inst) == visited.end()) {
-                visited.push_back(arg_inst);
-                queue.push(arg_inst);
-            }
-        }
-    }
-    if (sources.empty()) {
-        if (found_read_const_buffer) {
-            UNREACHABLE_MSG("Bindless sharp access detected pc={:#x}", pc);
-        } else {
-            UNREACHABLE_MSG("Unable to find sharp sources pc={:#x}", pc);
-        }
-    }
-    return sources;
-}
-
-bool IsCfgBlockDominatedBy(const Shader::Gcn::Block* maybe_dominator,
-                           const Shader::Gcn::Block* block, const Shader::Gcn::Block* dest_block) {
-    if (block == maybe_dominator) {
-        return true;
-    }
-
-    boost::container::small_vector<const Shader::Gcn::Block*, 8> visited;
-    std::queue<const Shader::Gcn::Block*> queue;
-    queue.push(block);
-
-    while (!queue.empty()) {
-        const Shader::Gcn::Block* block{queue.front()};
-        queue.pop();
-        if (block == dest_block) {
-            return false;
-        }
-        if (block == maybe_dominator) {
-            continue;
-        }
-        if (block->branch_false && !std::ranges::contains(visited, block->branch_false)) {
-            visited.push_back(block->branch_false);
-            queue.push(block->branch_false);
-        }
-        if (block->branch_true && !std::ranges::contains(visited, block->branch_true)) {
-            visited.push_back(block->branch_true);
-            queue.push(block->branch_true);
-        }
-    }
-
-    return true;
-}
 
 SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return static_cast<SharpLocation>(inst->Arg(0).ScalarReg());
+    } else if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        return inst->Flags<IR::BufferInstInfo>().flatbuf_off_dw;
     } else {
-        return inst->Flags<u32>();
+        return inst->Flags<SharpLocation>();
     }
 }
 
-SharpLocation TrackSharp(const IR::Inst* inst, const IR::Block& current_parent, u32 pc = 0) {
-    auto sources = FindSharpSources(inst, pc);
-    size_t num_sources = sources.size();
-    ASSERT(current_parent.cfg_block);
-
-    // Perform dominance analysis on found sources and eliminate ones that don't pass
-    // If a sharp source is dominated by another, the former can be eliminated.
-    for (s32 i = 0; i < num_sources;) {
-        const IR::Block* block = sources[i]->GetParent();
-        ASSERT(block->cfg_block);
-        bool was_removed = false;
-        for (s32 j = 0; j < num_sources;) {
-            const IR::Block* dominator = sources[j]->GetParent();
-            ASSERT(dominator->cfg_block);
-            if (i != j && IsCfgBlockDominatedBy(dominator->cfg_block, block->cfg_block,
-                                                current_parent.cfg_block)) {
-                std::swap(sources[i], sources[num_sources - 1]);
-                --num_sources;
-                sources.pop_back();
-                was_removed = true;
-                break;
-            } else {
-                ++j;
-            }
-        }
-        if (!was_removed) {
-            ++i;
-        }
-    }
-
-    ASSERT_MSG(sources.size() == 1, "Unable to deduce sharp source");
-    return SharpLocationFromSource(sources[0]);
-}
-
-void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors,
+void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors,
                       const Profile& profile) {
+    IR::Block& block = *resource.user_block;
+    IR::Inst& inst = *resource.user;
+
     IR::Inst* handle = inst.Arg(0).InstRecursive();
     u32 buffer_binding = 0;
     if (handle->AreAllArgsImmediates()) {
@@ -519,7 +204,10 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
         // Normal buffer resource.
         IR::Inst* buffer_handle = handle->Arg(0).InstRecursive();
         const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-        const auto sharp_idx = TrackSharp(buffer_handle, block, inst_info.pc);
+        const IR::Inst* sharp_source = resource.sharp_source;
+        ASSERT_MSG(sharp_source, "Unable to find buffer sharp sources pc={:#x}",
+                   inst_info.pc.Value());
+        const auto sharp_idx = SharpLocationFromSource(sharp_source);
         const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
         buffer_binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp_idx,
@@ -536,12 +224,18 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
     inst.SetArg(0, ir.Imm32(buffer_binding));
 }
 
-void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors,
+void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors,
                      const Profile& profile) {
+    IR::Block& block = *resource.user_block;
+    IR::Inst& inst = *resource.user;
+    const IR::Inst* sharp_source = resource.sharp_source;
+
     // Read image sharp.
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    ASSERT_MSG(sharp_source, "Unable to find image sharp sources pc={:#x}", inst_info.pc.Value());
+
     const IR::Inst* image_handle = inst.Arg(0).InstRecursive();
-    const auto tsharp = TrackSharp(image_handle, block, inst_info.pc);
+    const auto tsharp = SharpLocationFromSource(sharp_source);
     const bool is_atomic = IsImageAtomicInstruction(inst);
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite || is_atomic;
     const bool is_storage =
@@ -648,14 +342,15 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
             });
         } else {
             // Normal sampler resource.
-            const auto& [sampler_handle, disable_aniso] =
-                TryDisableAnisoLod0(sampler->Arg(0).InstRecursive());
-            const auto ssharp = TrackSharp(sampler_handle, block, inst_info.pc);
+            const IR::Inst* sampler_sharp_source = resource.sampler_sharp_source;
+            ASSERT_MSG(sampler_sharp_source, "Unable to find sampler sharp sources pc={:#x}",
+                       inst_info.pc.Value());
+            const auto ssharp = SharpLocationFromSource(sampler_sharp_source);
             sampler_binding = descriptors.Add(SamplerResource{
                 .sharp_idx = ssharp,
                 .is_inline_sampler = false,
                 .associated_image = image_binding,
-                .disable_aniso = disable_aniso,
+                .disable_aniso = resource.disable_aniso,
             });
         }
         inst.SetArg(0, ir.Imm32(image_binding | sampler_binding << 16));
@@ -1187,32 +882,29 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 }
 
-void ResourceTrackingPass(IR::Program& program, const Profile& profile) {
-    // Iterate resource instructions and patch them after finding the sharp.
-    auto& info = program.info;
-
+void ResourcePatchingPass(Shader::Info& info, const ResourceDiscoveryList& resources,
+                          const Profile& profile) {
+    // Iterate over discovered resources and patch them after finding the sharp.
     // Pass 1: Track resource sharps
     Descriptors descriptors{info};
-    for (IR::Block* const block : program.blocks) {
-        for (IR::Inst& inst : block->Instructions()) {
-            if (IsBufferInstruction(inst)) {
-                PatchBufferSharp(*block, inst, info, descriptors, profile);
-            } else if (IsImageInstruction(inst)) {
-                PatchImageSharp(*block, inst, info, descriptors, profile);
-            }
+    for (const auto& usage : resources) {
+        IR::Inst& inst = *usage.user;
+        if (IsBufferInstruction(inst)) {
+            PatchBufferSharp(usage, info, descriptors, profile);
+        } else if (IsImageInstruction(inst)) {
+            PatchImageSharp(usage, info, descriptors, profile);
         }
     }
 
     // Pass 2: Patch instruction args
-    for (IR::Block* const block : program.blocks) {
-        for (IR::Inst& inst : block->Instructions()) {
-            if (IsBufferInstruction(inst)) {
-                PatchBufferArgs(*block, inst, info);
-            } else if (IsImageInstruction(inst)) {
-                PatchImageArgs(*block, inst, info);
-            } else if (IsDataRingInstruction(inst)) {
-                PatchGlobalDataShareAccess(*block, inst, info, descriptors, profile);
-            }
+    for (const auto& usage : resources) {
+        IR::Inst& inst = *usage.user;
+        if (IsBufferInstruction(inst)) {
+            PatchBufferArgs(*usage.user_block, inst, info);
+        } else if (IsImageInstruction(inst)) {
+            PatchImageArgs(*usage.user_block, inst, info);
+        } else if (IsDataRingInstruction(inst)) {
+            PatchGlobalDataShareAccess(*usage.user_block, inst, info, descriptors, profile);
         }
     }
 }
