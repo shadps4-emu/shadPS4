@@ -22,6 +22,7 @@
 #include "common/discord_rpc_handler.h"
 #endif
 #include "common/elf_info.h"
+#include "common/key_manager.h"
 #include "common/memory_patcher.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
@@ -155,6 +156,13 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
         return trophy_index_map;
     }
 
+    const bool has_trophy_key = KeyManager::GetInstance()->HasKeys();
+    if (!has_trophy_key) {
+        LOG_WARNING(Common_Filesystem,
+                    "Trophy key not configured; trophies will be unavailable. Set "
+                    "TrophyKeySet.ReleaseTrophyKey in keys.json.");
+    }
+
     const std::string pattern = "trophy";
     Core::FileSys::DirEntry entry;
     while (dir->Next(entry)) {
@@ -193,7 +201,7 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
         // Extract the actual trophies if they're not extracted yet.
         const auto& trophy_output_dir =
             Common::FS::GetUserPath(Common::FS::PathType::TrophyDir) / np_comm_id;
-        if (!std::filesystem::exists(trophy_output_dir)) {
+        if (has_trophy_key && !std::filesystem::exists(trophy_output_dir)) {
             const std::string entry_guest = std::string(trophy_dir_guest) + "/" + entry.name;
             std::filesystem::path trp_source;
             std::filesystem::path temp_extract;

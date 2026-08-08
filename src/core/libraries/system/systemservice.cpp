@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdio>
 #include <cstdlib>
 #include "common/elf_info.h"
 #include "common/singleton.h"
@@ -1976,8 +1977,34 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSystemServiceParamGetString() {
-    LOG_ERROR(Lib_SystemService, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceSystemServiceParamGetString(OrbisSystemServiceParamId param_id, char* buf,
+                                                std::size_t buf_size) {
+    LOG_DEBUG(Lib_SystemService, "called param_id {}", u32(param_id));
+    if (buf == nullptr) {
+        LOG_ERROR(Lib_SystemService, "buf is null");
+        return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
+    }
+    if (buf_size == 0) {
+        LOG_ERROR(Lib_SystemService, "buf_size is 0");
+        return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
+    }
+    switch (param_id) {
+    case OrbisSystemServiceParamId::SystemName: {
+        static constexpr std::string_view SystemName = "shadPS4";
+        if (buf_size < SystemName.length() + 1) {
+            LOG_ERROR(Lib_SystemService, "buffer is too short");
+            buf[0] = '\0';
+            return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
+        }
+        snprintf(buf, buf_size, "%s", SystemName.data());
+        break;
+    }
+    default:
+        LOG_ERROR(Lib_SystemService, "(STUBBED) param_id {} unsupported", u32(param_id));
+        buf[0] = '\0';
+        break;
+    }
+
     return ORBIS_OK;
 }
 
