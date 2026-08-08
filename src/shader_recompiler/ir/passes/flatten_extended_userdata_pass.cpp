@@ -541,7 +541,8 @@ static inline bool PushPtr(Xbyak::CodeGenerator& c, const IR::Value& off_dw) {
     } else {
         ABORT_ON_FAILURE(ComputeOffset(c, r10d, off_dw));
         c.shl(r10d, 2);
-        c.mov(rdi, ptr[rdi + r10d]);
+        c.mov(r10d, r10d);
+        c.mov(rdi, ptr[rdi + r10]);
     }
     c.mov(r10, 0xFFFFFFFFFFFFULL);
     c.and_(rdi, r10);
@@ -575,7 +576,8 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
                 continue;
             }
             c.shl(r10d, 2);
-            c.mov(r10d, dword[rdi + r10d]);
+            c.mov(r10d, r10d);
+            c.mov(r10d, dword[rdi + r10]);
         }
         c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
 
