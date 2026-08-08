@@ -634,6 +634,25 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 const u64 offset =
                     vk_buffer.Copy(stage.flattened_ud_buf.data(), ubo_size, alignment);
                 buffer_infos.emplace_back(vk_buffer.Handle(), offset, ubo_size);
+            } else if (desc.buffer_type == Shader::BufferType::ClipPlanes) {
+                // Permutations compiled without enabled planes never read the buffer, so the
+                // declared binding is satisfied with a null descriptor instead of a copy.
+                if (liverpool->regs.clipper_control.user_clip_plane_enable == 0) {
+                    buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
+                } else {
+                    auto& vk_buffer = buffer_cache.GetUtilityBuffer(VideoCore::MemoryUsage::Stream);
+                    std::array<float, AmdGpu::NUM_CLIP_PLANES * 4> planes{};
+                    for (u32 i = 0; i < AmdGpu::NUM_CLIP_PLANES; ++i) {
+                        const auto& plane = liverpool->regs.clip_user_data[i];
+                        planes[i * 4 + 0] = std::bit_cast<float>(plane.data_x);
+                        planes[i * 4 + 1] = std::bit_cast<float>(plane.data_y);
+                        planes[i * 4 + 2] = std::bit_cast<float>(plane.data_z);
+                        planes[i * 4 + 3] = std::bit_cast<float>(plane.data_w);
+                    }
+                    const u32 ubo_size = static_cast<u32>(sizeof(planes));
+                    const u64 offset = vk_buffer.Copy(planes.data(), ubo_size, alignment);
+                    buffer_infos.emplace_back(vk_buffer.Handle(), offset, ubo_size);
+                }
             } else if (desc.buffer_type == Shader::BufferType::BdaPagetable) {
                 const auto* bda_buffer = buffer_cache.GetBdaPageTableBuffer();
                 buffer_infos.emplace_back(bda_buffer->Handle(), 0, bda_buffer->SizeBytes());
