@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <fmt/format.h>
+#include <magic_enum/magic_enum.hpp>
 #include "common/types.h"
 #include "shader_recompiler/ir/type.h"
 
@@ -15,6 +16,12 @@ enum class Opcode {
 #define OPCODE(name, ...) name,
 #include "opcodes.inc"
 #undef OPCODE
+};
+
+template <>
+struct magic_enum::customize::enum_range<Shader::IR::Opcode> {
+    static constexpr int min = static_cast<int>(Shader::IR::Opcode::Phi);
+    static constexpr int max = static_cast<int>(Shader::IR::Opcode::GroupAny);
 };
 
 namespace Detail {
