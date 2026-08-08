@@ -124,11 +124,18 @@ public:
         return std::nullopt;
     }
 
+    [[nodiscard]] std::filesystem::path RootPath() const override {
+        return m_archive_path;
+    }
+
+    std::optional<std::vector<u8>> ReadFile(std::string_view rel_path) const override;
+
 private:
     uint32_t LookUp(std::string_view rel_path, bool allow_file, bool allow_directory);
 
     std::filesystem::path m_archive_path;
     std::shared_ptr<SharedReader> m_reader;
+    ZArchiveReader* file_reader{nullptr};
 };
 
 } // namespace Core::FileSys

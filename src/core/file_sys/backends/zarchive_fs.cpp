@@ -352,4 +352,32 @@ std::unique_ptr<IDirectory> ZArchiveBackend::OpenDir(std::string_view rel_path) 
     return std::make_unique<ZArchiveDirectory>(m_reader, node);
 }
 
+std::optional<std::vector<u8>> ZArchiveBackend::ReadFile(std::string_view rel_path) const {
+    if (!IsOpen()) {
+        return std::nullopt;
+    }
+    const auto node =
+        file_reader->LookUp(NormalizeRel(rel_path), /*allow_file=*/true, /*allow_directory=*/false);
+    if (node == ZARCHIVE_INVALID_NODE || !file_reader->IsFile(node)) {
+        return std::nullopt;
+    }
+    const u64 size = file_reader->GetFileSize(node);
+    std::vector<u8> data(size);
+    u64 total_read = 0;
+    while (total_read < size) {
+        const u64 got = file_reader->ReadFromFile(node, total_read, size - total_read,
+                                                  data.data() + total_read);
+        if (got == 0) {
+            break;
+        }
+        total_read += got;
+    }
+    if (total_read != size) {
+        LOG_ERROR(Common_Filesystem, "Short read from ZArchive entry: {} ({}/{} bytes)", rel_path,
+                  total_read, size);
+        return std::nullopt;
+    }
+    return data;
+}
+
 } // namespace Core::FileSys
