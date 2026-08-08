@@ -3,12 +3,10 @@
 
 #pragma once
 
-#include <condition_variable>
+#include <memory>
 #include <mutex>
-#include <thread>
 #include <unordered_set>
 #include <boost/container/small_vector.hpp>
-#include <queue>
 #include <tsl/robin_map.h>
 
 #include "common/lru_cache.h"
@@ -28,7 +26,10 @@ struct Liverpool;
 namespace VideoCore {
 
 class BufferCache;
+class Buffer;
 class PageManager;
+class ReadbackTracker;
+struct PendingImageDownload;
 
 class TextureCache {
     // Default values for garbage collection
@@ -112,13 +113,7 @@ public:
     [[nodiscard]] ImageView& FindDepthTarget(ImageId image_id, const ImageDesc& desc);
 
     /// Updates image contents if it was modified by CPU.
-    void UpdateImage(ImageId image_id) {
-        std::scoped_lock lock{mutex};
-        Image& image = slot_images[image_id];
-        TrackImage(image_id);
-        TouchImage(image);
-        RefreshImage(image);
-    }
+    void UpdateImage(ImageId image_id);
 
     /// Resolves overlap between existing cache image and pending merged image
     [[nodiscard]] std::tuple<ImageId, int, int> ResolveOverlap(const ImageInfo& info,
@@ -252,6 +247,15 @@ public:
     }
 
 private:
+    struct AliasState;
+    enum class AliasAccess {
+        Read,
+        ReadWrite,
+    };
+
+    void PrepareImageAccess(ImageId image_id, AliasAccess access, bool queue_download = false);
+    void UpdateImageImpl(ImageId image_id);
+
     /// Iterate over all page indices in a range
     template <typename Func>
     static void ForEachPage(PAddr addr, size_t size, Func&& func) {
@@ -268,11 +272,9 @@ private:
         }
     }
 
-    /// Copies image memory back to CPU.
-    void DownloadImageMemory(ImageId image_id, bool sync = false);
-
-    /// Thread function for copying downloaded images out to CPU memory.
-    void DownloadedImagesThread(const std::stop_token& token);
+    [[nodiscard]] PendingImageDownload ScheduleImageDownload(Image& image, Buffer& buffer, u8* data,
+                                                             u64 buffer_offset);
+    void DownloadImageMemory(ImageId image_id);
 
     /// Create an image from the given parameters
     [[nodiscard]] ImageId InsertImage(const ImageInfo& info, VAddr cpu_addr);
@@ -295,6 +297,24 @@ private:
 
     void MarkAsMaybeDirty(ImageId image_id, Image& image);
 
+    void InvalidateAlias(Image& image);
+
+    void SynchronizeAlias(ImageId image_id);
+
+    [[nodiscard]] bool CommitAliasWriter(AliasState& state);
+
+    void CopyAlias(ImageId src_id, ImageId dst_id, const Extent3D& extent);
+
+    void PublishAliasWrite(ImageId image_id);
+
+    template <typename Func>
+    void ForEachAlias(const Image& image, Func&& func);
+
+    [[nodiscard]] bool IsLiveImage(ImageId image_id, u64 image_uid) const {
+        return image_id && slot_images.is_allocated(image_id) &&
+               slot_images[image_id].image_uid == image_uid;
+    }
+
     /// Removes the image and any views/surface metas that reference it.
     void DeleteImage(ImageId image_id);
 
@@ -316,12 +336,32 @@ private:
     AmdGpu::Liverpool* liverpool;
     BufferCache& buffer_cache;
     PageManager& tracker;
+    std::shared_ptr<ReadbackTracker> readback_tracker;
     BlitHelper blit_helper;
     TileManager tile_manager;
     Common::SlotVector<Image> slot_images;
     Common::SlotVector<ImageView> slot_image_views;
     tsl::robin_map<u64, Sampler> samplers;
     std::unordered_set<ImageId> download_images;
+    struct AliasState {
+        // Backing contains the complete shared-memory view; writer is an uncommitted write.
+        u64 backing_uid{};
+        u64 writer_uid{};
+        u64 download_uid{};
+        ImageId backing{};
+        ImageId writer{};
+        ImageId download{};
+        u32 members{};
+
+        void ResetAuthority() {
+            const u32 member_count = members;
+            *this = {};
+            members = member_count;
+        }
+    };
+    tsl::robin_map<VAddr, AliasState> alias_states;
+    boost::container::small_vector<VAddr, 4> pending_alias_downloads;
+    u64 alias_generation{};
     u64 total_used_memory = 0;
     u64 trigger_gc_memory = 0;
     u64 pressure_gc_memory = 0;
@@ -337,7 +377,6 @@ private:
     PageTable page_table;
     std::mutex mutex;
     std::mutex samplers_mutex;
-    std::mutex download_images_mutex;
     struct MetaDataInfo {
         enum class Type {
             CMask,
