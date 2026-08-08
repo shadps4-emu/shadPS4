@@ -58,6 +58,8 @@ public:
     struct ImageDesc {
         ImageInfo info;
         ImageViewInfo view_info;
+        // Saved before FindImage can overwrite base.level/base.layer; restored before rebind.
+        SubresourceRange initial_range{};
         BindingType type{BindingType::Texture};
 
         ImageDesc() = default;
