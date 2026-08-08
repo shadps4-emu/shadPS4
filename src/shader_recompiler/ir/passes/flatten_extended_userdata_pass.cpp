@@ -216,6 +216,12 @@ static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::V
         return false;                                                                              \
     }
 
+#define POP_ABORT_ON_FAILURE(expr)                                                                 \
+    if (!(expr)) {                                                                                 \
+        c.add(rsp, 8);                                                                             \
+        return false;                                                                              \
+    }
+
 static bool EmitComputeOffsetIAdd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() + inst->Arg(1).U32());
@@ -228,7 +234,7 @@ static bool EmitComputeOffsetIAdd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, I
     } else {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.add(reg, dword[rsp]);
         c.add(rsp, 8);
     }
@@ -248,7 +254,7 @@ static bool EmitComputeOffsetISub32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, I
     } else {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.neg(reg);
         c.add(reg, dword[rsp]);
         c.add(rsp, 8);
@@ -268,7 +274,7 @@ static bool EmitComputeOffsetIMul32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, I
     } else {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.imul(reg, dword[rsp]);
         c.add(rsp, 8);
     }
@@ -291,7 +297,7 @@ static bool EmitComputeOffsetShiftLeftLogical32(Xbyak::CodeGenerator& c, Xbyak::
     } else {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.push(reg.cvt64());
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.pop(rcx);
         c.shl(reg, cl);
     }
@@ -313,7 +319,7 @@ static bool EmitComputeOffsetShiftRightLogical32(Xbyak::CodeGenerator& c, Xbyak:
     } else {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.push(reg.cvt64());
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.pop(rcx);
         c.shr(reg, cl);
     }
@@ -333,7 +339,7 @@ static bool EmitComputeOffsetBitwiseAnd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 
     } else {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.and_(reg, dword[rsp]);
         c.add(rsp, 8);
     }
@@ -353,7 +359,7 @@ static bool EmitComputeOffsetBitwiseOr32(Xbyak::CodeGenerator& c, Xbyak::Reg32 r
     } else {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.or_(reg, dword[rsp]);
         c.add(rsp, 8);
     }
@@ -373,7 +379,7 @@ static bool EmitComputeOffsetBitwiseXor32(Xbyak::CodeGenerator& c, Xbyak::Reg32 
     } else {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.xor_(reg, dword[rsp]);
         c.add(rsp, 8);
     }
@@ -407,7 +413,7 @@ static bool EmitComputeOffsetUMin32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, I
     } else {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.cmp(reg, dword[rsp]);
         c.cmova(reg, dword[rsp]);
         c.add(rsp, 8);
@@ -431,7 +437,7 @@ static bool EmitComputeOffsetUMax32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, I
     } else {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
         c.push(reg.cvt64());
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.cmp(reg, dword[rsp]);
         c.cmovb(reg, dword[rsp]);
         c.add(rsp, 8);
@@ -457,7 +463,7 @@ static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Re
     } else {
         c.push(reg.cvt64());
         in_stack = true;
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
         c.mov(ecx, reg);
         c.shr(dword[rsp], cl);
     }
@@ -470,7 +476,7 @@ static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Re
         if (!in_stack) {
             c.push(reg.cvt64());
         }
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(2)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(2)));
         c.mov(ecx, reg);
         c.mov(edx, 1);
         c.shl(edx, cl);
