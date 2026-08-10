@@ -489,23 +489,33 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
         case ORBIS_NET_SO_SNDTIMEO:
-        case ORBIS_NET_SO_RCVTIMEO: {
-            if (optlen != sizeof(int)) {
+        case ORBIS_NET_SO_RCVTIMEO:
+        case ORBIS_NET_SO_POSIX_SNDTIMEO:
+        case ORBIS_NET_SO_POSIX_RCVTIMEO: {
+            // sceNet passes the timeout as a microsecond count in an int, while the POSIX
+            // entry points pass a FreeBSD timeval, so accept whichever shape arrived.
+            s64 timeout_us;
+            if (optlen == sizeof(s32)) {
+                timeout_us = *(const s32*)optval;
+            } else if (optlen == 2 * sizeof(s64)) {
+                const s64* tv = (const s64*)optval;
+                timeout_us = tv[0] * 1000000 + tv[1];
+            } else {
+                LOG_ERROR(Lib_Net, "unexpected timeout optlen = {}", optlen);
                 *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EFAULT;
                 return -1;
             }
-            std::vector<char> val;
-            const auto optname_nat = (optname == ORBIS_NET_SO_SNDTIMEO) ? SO_SNDTIMEO : SO_RCVTIMEO;
-            int timeout_us = *(const int*)optval;
+            const bool is_send =
+                optname == ORBIS_NET_SO_SNDTIMEO || optname == ORBIS_NET_SO_POSIX_SNDTIMEO;
+            const auto optname_nat = is_send ? SO_SNDTIMEO : SO_RCVTIMEO;
 #ifdef _WIN32
-            DWORD timeout = timeout_us / 1000;
+            DWORD timeout = static_cast<DWORD>(timeout_us / 1000);
 #else
-            timeval timeout{.tv_sec = timeout_us / 1000000, .tv_usec = timeout_us % 1000000};
+            timeval timeout{.tv_sec = static_cast<time_t>(timeout_us / 1000000),
+                            .tv_usec = static_cast<suseconds_t>(timeout_us % 1000000)};
 #endif
-            val.insert(val.end(), (char*)&timeout, (char*)&timeout + sizeof(timeout));
-            optlen = sizeof(timeout);
-            return ConvertReturnErrorCode(
-                setsockopt(sock, native_level, optname_nat, val.data(), optlen));
+            return ConvertReturnErrorCode(setsockopt(sock, native_level, optname_nat,
+                                                     (const char*)&timeout, sizeof(timeout)));
         }
         case ORBIS_NET_SO_ONESBCAST: {
 
@@ -593,8 +603,9 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
         }
     }
 
-    UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
-    return 0;
+    LOG_ERROR(Lib_Net, "unsupported level = {}, optname = {}", level, optname);
+    *Libraries::Kernel::__Error() = ORBIS_NET_ENOPROTOOPT;
+    return -1;
 }
 
 #define CASE_GETSOCKOPT(opt)                                                                       \
@@ -672,8 +683,9 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_TCP_MSS_TO_ADVERTISE, sockopt_tcp_mss_to_advertise);
         }
     }
-    UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
-    return 0;
+    LOG_ERROR(Lib_Net, "unsupported level = {}, optname = {}", level, optname);
+    *Libraries::Kernel::__Error() = ORBIS_NET_ENOPROTOOPT;
+    return -1;
 }
 
 int PosixSocket::GetPeerName(OrbisNetSockaddr* name, u32* namelen) {

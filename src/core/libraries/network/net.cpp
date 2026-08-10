@@ -1033,9 +1033,32 @@ int PS4_SYSV_ABI sceNetGetRouteInfo() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetGetSockInfo() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetGetSockInfo(OrbisNetId s, OrbisNetSockInfo* info, int n, int flags) {
+    if (info == nullptr || n <= 0) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
+        return -1;
+    }
+    auto file = FDTable::Instance()->GetSocket(s);
+    if (!file) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return -1;
+    }
+
+    std::memset(info, 0, sizeof(OrbisNetSockInfo));
+    info->socket_type = file->socket->socket_type;
+    if (auto native = file->socket->Native(); native.has_value()) {
+        unsigned long available = 0;
+#ifdef _WIN32
+        if (ioctlsocket(*native, FIONREAD, &available) == 0) {
+#else
+        if (ioctl(*native, FIONREAD, &available) == 0) {
+#endif
+            info->recv_queue_len = static_cast<s32>(available);
+        }
+    }
+    // The return value is the number of entries written; callers reject anything <= 0.
+    return 1;
 }
 
 int PS4_SYSV_ABI sceNetGetSockInfo6() {

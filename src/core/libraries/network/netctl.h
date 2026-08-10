@@ -152,7 +152,7 @@ int PS4_SYSV_ABI sceNetCtlApGetInfo();
 int PS4_SYSV_ABI sceNetCtlApGetResult();
 int PS4_SYSV_ABI sceNetCtlApGetState();
 int PS4_SYSV_ABI sceNetCtlApInit();
-int PS4_SYSV_ABI sceNetCtlApRegisterCallback();
+int PS4_SYSV_ABI sceNetCtlApRegisterCallback(OrbisNetCtlCallback func, void* arg, int* cid);
 int PS4_SYSV_ABI sceNetCtlApStop();
 int PS4_SYSV_ABI sceNetCtlApTerm();
 int PS4_SYSV_ABI sceNetCtlApUnregisterCallback();

@@ -44,6 +44,39 @@ s32 NetCtlInternal::RegisterNpToolkitCallback(OrbisNetCtlCallbackForNpToolkit fu
     return next_id;
 }
 
+s32 NetCtlInternal::RegisterApCallback(OrbisNetCtlCallback func, void* arg) {
+    std::scoped_lock lock{m_mutex};
+
+    // Find the next available slot
+    const auto it = std::ranges::find(ap_callbacks, nullptr, &NetCtlCallback::func);
+    if (it == ap_callbacks.end()) {
+        return ORBIS_NET_CTL_ERROR_CALLBACK_MAX;
+    }
+
+    const int next_id = std::distance(ap_callbacks.begin(), it);
+    ap_callbacks[next_id].func = func;
+    ap_callbacks[next_id].arg = arg;
+    return next_id;
+}
+
+void NetCtlInternal::CheckApCallback() {
+    std::scoped_lock lock{m_mutex};
+    const auto event = EmulatorSettings.IsConnectedToNetwork()
+                           ? ORBIS_NET_CTL_EVENT_TYPE_IPOBTAINED
+                           : ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED;
+    // Games poll this once per frame; delivering the same event every time would mean
+    // thousands of duplicate notifications per session, so only report real changes.
+    if (ap_last_event == event) {
+        return;
+    }
+    ap_last_event = event;
+    for (const auto [func, arg] : ap_callbacks) {
+        if (func != nullptr) {
+            func(event, arg);
+        }
+    }
+}
+
 void NetCtlInternal::CheckCallback() {
     std::scoped_lock lock{m_mutex};
     const auto event = EmulatorSettings.IsConnectedToNetwork()

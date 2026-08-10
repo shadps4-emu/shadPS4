@@ -63,7 +63,7 @@ constexpr std::string_view NameOf(OrbisNetProtocol p) {
     case ORBIS_NET_SOL_SOCKET:
         return "ORBIS_NET_SOL_SOCKET";
     default:
-        UNREACHABLE_MSG("{}", (u32)p);
+        return "unknown";
     }
 }
 
@@ -97,6 +97,12 @@ enum OrbisNetSocketSoOption : u32 {
     ORBIS_NET_SO_USESIGNATURE = 0x00040000,
     ORBIS_NET_SO_SNDBUF = 0x1001,
     ORBIS_NET_SO_RCVBUF = 0x1002,
+    // libScePosix passes the FreeBSD-numbered options straight through, so socket code
+    // coming in over the POSIX entry points uses these rather than the 0x11xx sceNet ones.
+    ORBIS_NET_SO_SNDLOWAT = 0x1003,
+    ORBIS_NET_SO_RCVLOWAT = 0x1004,
+    ORBIS_NET_SO_POSIX_SNDTIMEO = 0x1005,
+    ORBIS_NET_SO_POSIX_RCVTIMEO = 0x1006,
     ORBIS_NET_SO_ERROR = 0x1007,
     ORBIS_NET_SO_TYPE = 0x1008,
     ORBIS_NET_SO_SNDTIMEO = 0x1105,
@@ -163,8 +169,16 @@ constexpr std::string_view NameOf(OrbisNetSocketSoOption o) {
         return "ORBIS_NET_SO_NAME";
     case ORBIS_NET_SO_PRIORITY:
         return "ORBIS_NET_SO_PRIORITY";
+    case ORBIS_NET_SO_SNDLOWAT:
+        return "ORBIS_NET_SO_SNDLOWAT";
+    case ORBIS_NET_SO_RCVLOWAT:
+        return "ORBIS_NET_SO_RCVLOWAT";
+    case ORBIS_NET_SO_POSIX_SNDTIMEO:
+        return "ORBIS_NET_SO_POSIX_SNDTIMEO";
+    case ORBIS_NET_SO_POSIX_RCVTIMEO:
+        return "ORBIS_NET_SO_POSIX_RCVTIMEO";
     default:
-        UNREACHABLE_MSG("{}", (u32)o);
+        return "unknown";
     }
 }
 
@@ -262,6 +276,19 @@ struct OrbisNetResolverInfo {
     u32 recordsv4;
     u32 pad[14];
 };
+
+// Layout recovered from how callers use the buffer rather than from documentation:
+// they reserve 0xA0 bytes per entry, read a readable-byte count at +0x2C and the socket
+// type at +0x44, and treat a return value of zero or less as failure. Fields whose
+// meaning has not been established are left zeroed.
+struct OrbisNetSockInfo {
+    u8 unknown_00[0x2C];
+    s32 recv_queue_len;
+    u8 unknown_30[0x14];
+    s32 socket_type;
+    u8 unknown_48[0x58];
+};
+static_assert(sizeof(OrbisNetSockInfo) == 0xA0);
 
 int PS4_SYSV_ABI in6addr_any();
 int PS4_SYSV_ABI in6addr_loopback();
@@ -395,7 +422,7 @@ int PS4_SYSV_ABI sceNetGetNameToIndex();
 int PS4_SYSV_ABI sceNetGetpeername(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen);
 int PS4_SYSV_ABI sceNetGetRandom();
 int PS4_SYSV_ABI sceNetGetRouteInfo();
-int PS4_SYSV_ABI sceNetGetSockInfo();
+int PS4_SYSV_ABI sceNetGetSockInfo(OrbisNetId s, OrbisNetSockInfo* info, int n, int flags);
 int PS4_SYSV_ABI sceNetGetSockInfo6();
 int PS4_SYSV_ABI sceNetGetsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen);
 int PS4_SYSV_ABI sceNetGetsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen);

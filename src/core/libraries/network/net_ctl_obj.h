@@ -4,6 +4,7 @@
 #pragma once
 
 #include <mutex>
+#include <optional>
 #include "common/types.h"
 
 namespace Libraries::NetCtl {
@@ -28,12 +29,17 @@ public:
 
     s32 RegisterCallback(OrbisNetCtlCallback func, void* arg);
     s32 RegisterNpToolkitCallback(OrbisNetCtlCallbackForNpToolkit func, void* arg);
+    s32 RegisterApCallback(OrbisNetCtlCallback func, void* arg);
     void CheckCallback();
     void CheckNpToolkitCallback();
+    void CheckApCallback();
 
 public:
     std::array<NetCtlCallbackForNpToolkit, 8> nptool_callbacks{};
     std::array<NetCtlCallback, 8> callbacks{};
+    std::array<NetCtlCallback, 8> ap_callbacks{};
+    // Last event handed to the AP callbacks, so a poll that changes nothing stays silent.
+    std::optional<int> ap_last_event;
     std::mutex m_mutex;
 };
 } // namespace Libraries::NetCtl

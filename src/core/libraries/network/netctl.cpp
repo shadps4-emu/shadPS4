@@ -486,7 +486,7 @@ int PS4_SYSV_ABI sceNetCtlUnregisterCallbackForNpToolkit() {
 }
 
 int PS4_SYSV_ABI sceNetCtlApCheckCallback() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    netctl.CheckApCallback();
     return ORBIS_OK;
 }
 
@@ -520,8 +520,15 @@ int PS4_SYSV_ABI sceNetCtlApInit() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlApRegisterCallback() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlApRegisterCallback(OrbisNetCtlCallback func, void* arg, int* cid) {
+    if (!func || !cid) {
+        return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
+    }
+    s32 result = netctl.RegisterApCallback(func, arg);
+    if (result < 0) {
+        return result;
+    }
+    *cid = result;
     return ORBIS_OK;
 }
 
