@@ -156,7 +156,9 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
     }
 
     if (sharp_source && sharp_source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-        MarkReadConstBufferSharpSources(*sharp_source, *sharp_source->GetParent(), 8);
+        const auto texture_flags = inst.Flags<IR::TextureInstInfo>();
+        const auto is_r128 = texture_flags.is_r128.Value();
+        MarkReadConstBufferSharpSources(*sharp_source, *sharp_source->GetParent(), is_r128 ? 4 : 8);
     }
     if (sampler_sharp_source && sampler_sharp_source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
         MarkReadConstBufferSharpSources(*sampler_sharp_source, *sampler_sharp_source->GetParent(),
