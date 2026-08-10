@@ -2,13 +2,19 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
+#include <optional>
 
 #include <gtest/gtest.h>
 #include <half.hpp>
 
 #include "gcn_test_runner.hpp"
 #include "instructions.hpp"
+#include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/profile.h"
+#include "shader_recompiler/recompiler.h"
+#include "shader_recompiler/runtime_info.h"
 #include "translator.hpp"
+#include "video_core/amdgpu/resource.h"
 
 class GcnTest : public ::testing::Test {
 protected:
@@ -25,6 +31,107 @@ struct F32x2 {
     float a;
     float b;
 };
+
+namespace {
+
+struct InterpMovIr {
+    std::vector<u32> attribute_vertex_indices;
+    std::optional<std::pair<u32, u32>> subtraction_vertex_indices;
+    Shader::Qualifier qualifier;
+};
+
+struct Bcnt64Ir {
+    bool reads_thread_mask{};
+    bool builds_ballot{};
+    u32 bit_count_count{};
+};
+
+Bcnt64Ir TranslateBcnt64ToIr() {
+    Shader::Pools pools;
+    Shader::Info info{};
+    info.stage = Shader::Stage::Compute;
+    info.l_stage = Shader::LogicalStage::Compute;
+
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Compute);
+
+    Shader::Profile profile{};
+    Shader::IR::Block block{pools.inst_pool};
+    Shader::Gcn::Translator translator{info, runtime_info, profile};
+    translator.EmitPrologue(&block);
+    const auto prologue_size = block.size();
+
+    Shader::Gcn::GcnInst inst{};
+    inst.src[0].field = Shader::Gcn::OperandField::ScalarGPR;
+    inst.src[0].code = 22;
+    inst.dst[0].field = Shader::Gcn::OperandField::ScalarGPR;
+    inst.dst[0].code = 24;
+    translator.S_BCNT1_I32_B64(inst);
+
+    Bcnt64Ir result{};
+    auto it = block.begin();
+    std::advance(it, prologue_size);
+    for (; it != block.end(); ++it) {
+        result.reads_thread_mask |=
+            it->GetOpcode() == Shader::IR::Opcode::GetThreadBitScalarReg;
+        result.builds_ballot |= it->GetOpcode() == Shader::IR::Opcode::Ballot;
+        result.bit_count_count += it->GetOpcode() == Shader::IR::Opcode::BitCount32;
+    }
+    return result;
+}
+
+InterpMovIr TranslateInterpMovToIr(u32 selector) {
+    Shader::Pools pools;
+    Shader::Info info{};
+    info.stage = Shader::Stage::Fragment;
+    info.l_stage = Shader::LogicalStage::Fragment;
+
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.num_inputs = 1;
+    runtime_info.fs_info.inputs[0].param_index = 0;
+
+    Shader::Profile profile{};
+    profile.supports_fragment_shader_barycentric = true;
+
+    Shader::IR::Block block{pools.inst_pool};
+    Shader::Gcn::Translator translator{info, runtime_info, profile};
+    translator.EmitPrologue(&block);
+    const auto prologue_size = block.size();
+
+    Shader::Gcn::GcnInst inst{};
+    inst.src[0].code = selector;
+    inst.dst[0].field = Shader::Gcn::OperandField::VectorGPR;
+    inst.dst[0].code = 0;
+    inst.control.vintrp.attr = 0;
+    inst.control.vintrp.chan = 2;
+    translator.V_INTERP_MOV_F32(inst);
+
+    InterpMovIr result{.qualifier = info.fs_interpolation[0].primary};
+    auto it = block.begin();
+    std::advance(it, prologue_size);
+    for (; it != block.end(); ++it) {
+        if (it->GetOpcode() == Shader::IR::Opcode::GetAttribute) {
+            result.attribute_vertex_indices.push_back(it->Arg(2).U32());
+        } else if (it->GetOpcode() == Shader::IR::Opcode::FPSub32) {
+            result.subtraction_vertex_indices = {
+                it->Arg(0).Inst()->Arg(2).U32(),
+                it->Arg(1).Inst()->Arg(2).U32(),
+            };
+        }
+    }
+    return result;
+}
+
+} // namespace
+
+TEST_F(GcnTest, bcnt1_i32_b64_counts_saved_thread_mask) {
+    const auto result = TranslateBcnt64ToIr();
+
+    EXPECT_TRUE(result.reads_thread_mask);
+    EXPECT_TRUE(result.builds_ballot);
+    EXPECT_EQ(result.bit_count_count, 2U);
+}
 
 // Example
 // TEST_F(GcnTest, test_name) {
@@ -43,6 +150,52 @@ struct F32x2 {
 //     EXPECT_TRUE(result.has_value());
 //     EXPECT_EQ(*result, 7.5f);
 // }
+
+TEST_F(GcnTest, interp_mov_builds_p10_from_vertex_difference) {
+    const auto result = TranslateInterpMovToIr(0);
+
+    EXPECT_EQ(result.qualifier, Shader::Qualifier::PerVertex);
+    EXPECT_EQ(result.attribute_vertex_indices, (std::vector<u32>{0, 1}));
+    ASSERT_TRUE(result.subtraction_vertex_indices.has_value());
+    EXPECT_EQ(*result.subtraction_vertex_indices, std::pair(1U, 0U));
+}
+
+TEST_F(GcnTest, interp_mov_builds_p20_from_vertex_difference) {
+    const auto result = TranslateInterpMovToIr(1);
+
+    EXPECT_EQ(result.qualifier, Shader::Qualifier::PerVertex);
+    EXPECT_EQ(result.attribute_vertex_indices, (std::vector<u32>{0, 2}));
+    ASSERT_TRUE(result.subtraction_vertex_indices.has_value());
+    EXPECT_EQ(*result.subtraction_vertex_indices, std::pair(2U, 0U));
+}
+
+TEST_F(GcnTest, interp_mov_loads_p0_from_vertex_zero) {
+    const auto result = TranslateInterpMovToIr(2);
+
+    EXPECT_EQ(result.qualifier, Shader::Qualifier::PerVertex);
+    EXPECT_EQ(result.attribute_vertex_indices, (std::vector<u32>{0}));
+    EXPECT_FALSE(result.subtraction_vertex_indices.has_value());
+}
+
+TEST_F(GcnTest, sampler_descriptor_rejects_reserved_encodings) {
+    AmdGpu::Sampler sampler{};
+    EXPECT_TRUE(sampler.Valid());
+
+    sampler.mip_filter.Assign(static_cast<AmdGpu::MipFilter>(3));
+    EXPECT_FALSE(sampler.Valid());
+    sampler.mip_filter.Assign(AmdGpu::MipFilter::None);
+
+    sampler.z_filter.Assign(3);
+    EXPECT_FALSE(sampler.Valid());
+    sampler.z_filter.Assign(0);
+
+    sampler.filter_mode.Assign(static_cast<AmdGpu::FilterMode>(3));
+    EXPECT_FALSE(sampler.Valid());
+    sampler.filter_mode.Assign(AmdGpu::FilterMode::Blend);
+
+    sampler.max_aniso.Assign(static_cast<AmdGpu::AnisoRatio>(5));
+    EXPECT_FALSE(sampler.Valid());
+}
 
 TEST_F(GcnTest, add_f32) {
     auto runner = gcn_test::Runner::instance().value();

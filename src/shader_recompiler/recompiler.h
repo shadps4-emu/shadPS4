@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <functional>
 #include "common/object_pool.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
@@ -11,6 +12,8 @@ namespace Shader {
 
 struct Profile;
 struct RuntimeInfo;
+
+using FlatBufRefresh = std::function<void(Info&)>;
 
 struct Pools {
     static constexpr u32 InstPoolSize = 8192;
@@ -29,6 +32,7 @@ struct Pools {
 
 [[nodiscard]] IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools,
                                            Info& info, RuntimeInfo& runtime_info,
-                                           const Profile& profile);
+                                           const Profile& profile,
+                                           const FlatBufRefresh& refresh_flat_buf = {});
 
 } // namespace Shader

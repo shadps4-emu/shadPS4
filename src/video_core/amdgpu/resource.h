@@ -458,7 +458,12 @@ struct Sampler {
     }
 
     bool Valid() const {
-        return true;
+        // The remaining bit patterns are reserved by the hardware. Resource tracking can expose
+        // descriptors from untaken dynamic branches, so reject them before creating a host
+        // sampler.
+        return max_aniso.Value() <= AnisoRatio::Sixteen &&
+               filter_mode.Value() <= FilterMode::Max && z_filter.Value() <= 2 &&
+               mip_filter.Value() <= MipFilter::Linear;
     }
 
     bool operator==(const Sampler& other) const noexcept {
