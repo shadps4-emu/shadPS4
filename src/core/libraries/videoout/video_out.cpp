@@ -486,6 +486,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideoOutGetBufferLabelAddress);
     LIB_FUNCTION("uquVH4-Du78", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutClose);
     LIB_FUNCTION("1FZBKy8HeNU", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutGetVblankStatus);
+    LIB_FUNCTION("d1AjT2uZJn0", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutGetVblankStatus);
     LIB_FUNCTION("kGVLc3htQE8", "libSceVideoOut", 1, "libSceVideoOut",
                  sceVideoOutGetDeviceCapabilityInfo);
     LIB_FUNCTION("j6RaAUlaLv0", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutWaitVblank);
