@@ -209,7 +209,8 @@ static inline void SetFlatbufOffset(IR::Inst* inst, u16 offset) {
     }
 }
 
-static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::Value& off_dw);
+static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
+                          const IR::Value& off_dw);
 
 #define ABORT_ON_FAILURE(expr)                                                                     \
     if (!(expr)) {                                                                                 \
@@ -222,39 +223,41 @@ static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::V
         return false;                                                                              \
     }
 
-static bool EmitComputeOffsetIAdd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+static bool EmitComputeOffsetIAdd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
+                                    IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() + inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.add(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.add(reg, inst->Arg(1).U32());
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.push(reg.cvt64());
-        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.add(reg, dword[rsp]);
         c.add(rsp, 8);
     }
     return true;
 }
 
-static bool EmitComputeOffsetISub32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+static bool EmitComputeOffsetISub32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
+                                    IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() - inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.neg(reg);
         c.add(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.sub(reg, inst->Arg(1).U32());
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.push(reg.cvt64());
-        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.neg(reg);
         c.add(reg, dword[rsp]);
         c.add(rsp, 8);
@@ -262,19 +265,20 @@ static bool EmitComputeOffsetISub32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, I
     return true;
 }
 
-static bool EmitComputeOffsetIMul32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+static bool EmitComputeOffsetIMul32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
+                                    IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() * inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.imul(reg, reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.imul(reg, reg, inst->Arg(1).U32());
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.push(reg.cvt64());
-        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.imul(reg, dword[rsp]);
         c.add(rsp, 8);
     }
@@ -282,22 +286,22 @@ static bool EmitComputeOffsetIMul32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, I
 }
 
 static bool EmitComputeOffsetShiftLeftLogical32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
-                                                IR::Inst* inst) {
+                                                PassInfo& pass_info, IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() << inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.shl(reg, inst->Arg(0).U32());
         c.mov(ecx, reg);
         c.mov(reg, inst->Arg(0).U32());
         c.shl(reg, cl);
     } else if (inst->Arg(1).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.shl(reg, inst->Arg(1).U32());
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.push(reg.cvt64());
-        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.pop(rcx);
         c.shl(reg, cl);
     }
@@ -305,21 +309,21 @@ static bool EmitComputeOffsetShiftLeftLogical32(Xbyak::CodeGenerator& c, Xbyak::
 }
 
 static bool EmitComputeOffsetShiftRightLogical32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
-                                                 IR::Inst* inst) {
+                                                 PassInfo& pass_info, IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() >> inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.mov(ecx, reg);
         c.mov(reg, inst->Arg(0).U32());
         c.shr(reg, cl);
     } else if (inst->Arg(1).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.shr(reg, inst->Arg(1).U32());
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.push(reg.cvt64());
-        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.pop(rcx);
         c.shr(reg, cl);
     }
@@ -327,19 +331,19 @@ static bool EmitComputeOffsetShiftRightLogical32(Xbyak::CodeGenerator& c, Xbyak:
 }
 
 static bool EmitComputeOffsetBitwiseAnd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
-                                          IR::Inst* inst) {
+                                          PassInfo& pass_info, IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() & inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.and_(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.and_(reg, inst->Arg(1).U32());
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.push(reg.cvt64());
-        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.and_(reg, dword[rsp]);
         c.add(rsp, 8);
     }
@@ -347,19 +351,19 @@ static bool EmitComputeOffsetBitwiseAnd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 
 }
 
 static bool EmitComputeOffsetBitwiseOr32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
-                                         IR::Inst* inst) {
+                                         PassInfo& pass_info, IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() | inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.or_(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.or_(reg, inst->Arg(1).U32());
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.push(reg.cvt64());
-        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.or_(reg, dword[rsp]);
         c.add(rsp, 8);
     }
@@ -367,19 +371,19 @@ static bool EmitComputeOffsetBitwiseOr32(Xbyak::CodeGenerator& c, Xbyak::Reg32 r
 }
 
 static bool EmitComputeOffsetBitwiseXor32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
-                                          IR::Inst* inst) {
+                                          PassInfo& pass_info, IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, inst->Arg(0).U32() ^ inst->Arg(1).U32());
     } else if (inst->Arg(0).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.xor_(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.xor_(reg, inst->Arg(1).U32());
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.push(reg.cvt64());
-        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.xor_(reg, dword[rsp]);
         c.add(rsp, 8);
     }
@@ -387,33 +391,34 @@ static bool EmitComputeOffsetBitwiseXor32(Xbyak::CodeGenerator& c, Xbyak::Reg32 
 }
 
 static bool EmitComputeOffsetBitwiseNot32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
-                                          IR::Inst* inst) {
+                                          PassInfo& pass_info, IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, ~inst->Arg(0).U32());
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.not_(reg);
     }
     return true;
 }
 
-static bool EmitComputeOffsetUMin32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+static bool EmitComputeOffsetUMin32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
+                                    IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, std::min(inst->Arg(0).U32(), inst->Arg(1).U32()));
     } else if (inst->Arg(0).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.mov(ecx, inst->Arg(0).U32());
         c.cmp(reg, ecx);
         c.cmova(reg, ecx);
     } else if (inst->Arg(1).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.mov(ecx, inst->Arg(1).U32());
         c.cmp(reg, ecx);
         c.cmova(reg, ecx);
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.push(reg.cvt64());
-        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.cmp(reg, dword[rsp]);
         c.cmova(reg, dword[rsp]);
         c.add(rsp, 8);
@@ -421,23 +426,24 @@ static bool EmitComputeOffsetUMin32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, I
     return true;
 }
 
-static bool EmitComputeOffsetUMax32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, IR::Inst* inst) {
+static bool EmitComputeOffsetUMax32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
+                                    IR::Inst* inst) {
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, std::max(inst->Arg(0).U32(), inst->Arg(1).U32()));
     } else if (inst->Arg(0).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.mov(ecx, inst->Arg(0).U32());
         c.cmp(reg, ecx);
         c.cmovb(reg, ecx);
     } else if (inst->Arg(1).IsImmediate()) {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.mov(ecx, inst->Arg(1).U32());
         c.cmp(reg, ecx);
         c.cmovb(reg, ecx);
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
         c.push(reg.cvt64());
-        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.cmp(reg, dword[rsp]);
         c.cmovb(reg, dword[rsp]);
         c.add(rsp, 8);
@@ -446,7 +452,7 @@ static bool EmitComputeOffsetUMax32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, I
 }
 
 static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
-                                              IR::Inst* inst) {
+                                              PassInfo& pass_info, IR::Inst* inst) {
     // We asume that the count is always less than 32, Is this correct?
     if (inst->AreAllArgsImmediates()) {
         c.mov(reg, (inst->Arg(0).U32() >> inst->Arg(1).U32()) & ((1U << inst->Arg(2).U32()) - 1));
@@ -455,7 +461,7 @@ static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Re
     if (inst->Arg(0).IsImmediate()) {
         c.mov(reg, inst->Arg(0).U32());
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(0)));
+        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
     }
     bool in_stack = false;
     if (inst->Arg(1).IsImmediate()) {
@@ -463,7 +469,7 @@ static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Re
     } else {
         c.push(reg.cvt64());
         in_stack = true;
-        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(1)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.mov(ecx, reg);
         c.shr(dword[rsp], cl);
     }
@@ -476,7 +482,7 @@ static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Re
         if (!in_stack) {
             c.push(reg.cvt64());
         }
-        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, inst->Arg(2)));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(2)));
         c.mov(ecx, reg);
         c.mov(edx, 1);
         c.shl(edx, cl);
@@ -487,7 +493,8 @@ static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Re
     return true;
 }
 
-static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::Value& off_dw) {
+static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
+                          const IR::Value& off_dw) {
     ASSERT(reg != ecx && reg != edx);
     auto inst = off_dw.InstRecursive();
     switch (inst->GetOpcode()) {
@@ -496,43 +503,43 @@ static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::V
         return true;
     case IR::Opcode::ReadConst:
     case IR::Opcode::ReadConstBuffer:
-        c.mov(reg, ptr[rsi + (GetFlatbufOffset(inst) << 2)]);
+        c.mov(reg, ptr[rsi + (GetFlatbufOffset(pass_info.DeduplicateInstruction(inst)) << 2)]);
         return true;
     case IR::Opcode::IAdd32:
-        ABORT_ON_FAILURE(EmitComputeOffsetIAdd32(c, reg, inst));
+        ABORT_ON_FAILURE(EmitComputeOffsetIAdd32(c, reg, pass_info, inst));
         return true;
     case IR::Opcode::ISub32:
-        ABORT_ON_FAILURE(EmitComputeOffsetISub32(c, reg, inst));
+        ABORT_ON_FAILURE(EmitComputeOffsetISub32(c, reg, pass_info, inst));
         return true;
     case IR::Opcode::IMul32:
-        ABORT_ON_FAILURE(EmitComputeOffsetIMul32(c, reg, inst));
+        ABORT_ON_FAILURE(EmitComputeOffsetIMul32(c, reg, pass_info, inst));
         return true;
     case IR::Opcode::ShiftLeftLogical32:
-        ABORT_ON_FAILURE(EmitComputeOffsetShiftLeftLogical32(c, reg, inst));
+        ABORT_ON_FAILURE(EmitComputeOffsetShiftLeftLogical32(c, reg, pass_info, inst));
         return true;
     case IR::Opcode::ShiftRightLogical32:
-        ABORT_ON_FAILURE(EmitComputeOffsetShiftRightLogical32(c, reg, inst));
+        ABORT_ON_FAILURE(EmitComputeOffsetShiftRightLogical32(c, reg, pass_info, inst));
         return true;
     case IR::Opcode::BitwiseAnd32:
-        ABORT_ON_FAILURE(EmitComputeOffsetBitwiseAnd32(c, reg, inst));
+        ABORT_ON_FAILURE(EmitComputeOffsetBitwiseAnd32(c, reg, pass_info, inst));
         return true;
     case IR::Opcode::BitwiseOr32:
-        ABORT_ON_FAILURE(EmitComputeOffsetBitwiseOr32(c, reg, inst));
+        ABORT_ON_FAILURE(EmitComputeOffsetBitwiseOr32(c, reg, pass_info, inst));
         return true;
     case IR::Opcode::BitwiseXor32:
-        ABORT_ON_FAILURE(EmitComputeOffsetBitwiseXor32(c, reg, inst));
+        ABORT_ON_FAILURE(EmitComputeOffsetBitwiseXor32(c, reg, pass_info, inst));
         return true;
     case IR::Opcode::BitwiseNot32:
-        ABORT_ON_FAILURE(EmitComputeOffsetBitwiseNot32(c, reg, inst));
+        ABORT_ON_FAILURE(EmitComputeOffsetBitwiseNot32(c, reg, pass_info, inst));
         return true;
     case IR::Opcode::UMin32:
-        ABORT_ON_FAILURE(EmitComputeOffsetUMin32(c, reg, inst));
+        ABORT_ON_FAILURE(EmitComputeOffsetUMin32(c, reg, pass_info, inst));
         return true;
     case IR::Opcode::UMax32:
-        ABORT_ON_FAILURE(EmitComputeOffsetUMax32(c, reg, inst));
+        ABORT_ON_FAILURE(EmitComputeOffsetUMax32(c, reg, pass_info, inst));
         return true;
     case IR::Opcode::BitFieldUExtract:
-        ABORT_ON_FAILURE(EmitComputeOffsetBitFieldUExtract(c, reg, inst));
+        ABORT_ON_FAILURE(EmitComputeOffsetBitFieldUExtract(c, reg, pass_info, inst));
         return true;
     default:
         LOG_ERROR(Render_Recompiler, "Unexpected instruction for offset computation, {}",
@@ -541,12 +548,12 @@ static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::V
     }
 }
 
-static inline bool PushPtr(Xbyak::CodeGenerator& c, const IR::Value& off_dw) {
+static inline bool PushPtr(Xbyak::CodeGenerator& c, PassInfo& pass_info, const IR::Value& off_dw) {
     c.push(rdi);
     if (off_dw.IsImmediate()) {
         c.mov(rdi, ptr[rdi + (off_dw.U32() << 2)]);
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, r10d, off_dw));
+        ABORT_ON_FAILURE(ComputeOffset(c, r10d, pass_info, off_dw));
         c.shl(r10d, 2);
         c.mov(r10d, r10d);
         c.mov(rdi, ptr[rdi + r10]);
@@ -562,7 +569,7 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
 
 static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
                          Xbyak::CodeGenerator& c) {
-    if (!PushPtr(c, off_dw)) {
+    if (!PushPtr(c, pass_info, off_dw)) {
         LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
         return;
     }
@@ -578,7 +585,7 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
         if (src_off_dw.IsImmediate()) {
             c.mov(r10d, ptr[rdi + (src_off_dw.U32() << 2)]);
         } else {
-            if (!ComputeOffset(c, r10d, src_off_dw)) {
+            if (!ComputeOffset(c, r10d, pass_info, src_off_dw)) {
                 LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
                 continue;
             }
