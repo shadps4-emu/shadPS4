@@ -478,6 +478,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideoOutSetBufferAttribute);
     LIB_FUNCTION("6kPnj51T62Y", "libSceVideoOut", 1, "libSceVideoOut",
                  sceVideoOutGetResolutionStatus);
+    LIB_FUNCTION("8XGijEoThE0", "libSceVideoOut", 1, "libSceVideoOut",
+                 sceVideoOutGetResolutionStatus); // sceVideoOutSysGetResolutionStatus
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutOpen);
     LIB_FUNCTION("zgXifHT9ErY", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutIsFlipPending);
     LIB_FUNCTION("N5KDtkIjjJ4", "libSceVideoOut", 1, "libSceVideoOut",
