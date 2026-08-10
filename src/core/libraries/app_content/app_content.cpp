@@ -296,7 +296,11 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
     if (const auto value = param_sfo->GetString("TITLE_ID"); value.has_value()) {
         title_id = *value;
     } else {
-        UNREACHABLE_MSG("Failed to get TITLE_ID");
+        // A dump with a missing or unreadable param.sfo has no title id to key addons on.
+        // That only means there are no addons to mount, which the path below already
+        // treats as success - it is not a reason to bring the emulator down.
+        LOG_ERROR(Lib_AppContent, "Failed to get TITLE_ID, addons will be unavailable");
+        return ORBIS_OK;
     }
     const auto addon_path = addons_dir / title_id;
     if (!std::filesystem::exists(addon_path)) {
