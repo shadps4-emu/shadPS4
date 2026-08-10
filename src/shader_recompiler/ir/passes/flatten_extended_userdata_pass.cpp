@@ -495,6 +495,7 @@ static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, const IR::V
         c.mov(reg, ptr[rsi + (static_cast<u32>(inst->Arg(0).ScalarReg()) << 2)]);
         return true;
     case IR::Opcode::ReadConst:
+    case IR::Opcode::ReadConstBuffer:
         c.mov(reg, ptr[rsi + (GetFlatbufOffset(inst) << 2)]);
         return true;
     case IR::Opcode::IAdd32:
@@ -647,7 +648,8 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
 
     // traverse at end and assign offsets to duplicate readconsts, using
     // vn_to_inst as the source
-    boost::container::small_vector<IR::Inst*, 32> all_readconsts;
+    boost::container::small_vector<IR::Inst*, 32> all_readconsts, visited;
+    std::queue<IR::Inst*> queue;
 
     for (auto r_it = program.post_order_blocks.rbegin(); r_it != program.post_order_blocks.rend();
          r_it++) {
@@ -665,41 +667,85 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                 }
 
                 all_readconsts.push_back(&inst);
-                if (pass_info.DeduplicateInstruction(&inst) != &inst) {
-                    // This is a duplicate of a readconst we've already visited
+
+                auto offset = inst.Arg(1);
+                if (offset.IsImmediate()) {
                     continue;
                 }
 
-                IR::Inst* ptr_composite = inst.Arg(0).InstRecursive();
+                queue.push(offset.InstRecursive());
+                while (!queue.empty()) {
+                    IR::Inst* inst{queue.front()};
+                    queue.pop();
 
-                const auto pred = [](IR::Inst* inst) -> std::optional<IR::Inst*> {
-                    if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                        inst->GetOpcode() == IR::Opcode::ReadConst ||
-                        inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-                        return inst;
+                    if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                        auto buffer_inst_info = inst->Flags<IR::BufferInstInfo>();
+                        if (!buffer_inst_info.sharp_source.Value()) {
+                            all_readconsts.push_back(inst);
+                            auto offset = inst->Arg(1);
+                            if (!offset.IsImmediate()) {
+                                auto arg_inst = offset.InstRecursive();
+                                if (std::ranges::find(visited, arg_inst) == visited.end()) {
+                                    visited.push_back(arg_inst);
+                                    queue.push(arg_inst);
+                                }
+                            }
+                        }
+                        continue;
                     }
-                    return std::nullopt;
-                };
-                auto base0 =
-                    IR::DominatingBreadthFirstSearch(ptr_composite->Arg(0), *block, true, pred);
-                auto base1 =
-                    IR::DominatingBreadthFirstSearch(ptr_composite->Arg(1), *block, true, pred);
-                ASSERT_MSG(base0 && base1, "ReadConst not from constant memory");
-
-                IR::Inst* ptr_lo = base0.value();
-                ptr_lo = pass_info.DeduplicateInstruction(ptr_lo);
-
-                auto ptr_uses_kv =
-                    pass_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
-                PassInfo::PtrUserList& user_list = ptr_uses_kv.first->second;
-
-                user_list[inst.Arg(1)] = &inst;
-
-                if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
-                    IR::ScalarReg ud_reg = ptr_lo->Arg(0).ScalarReg();
-                    pass_info.srt_roots[ud_reg] = ptr_lo;
+                    if (inst->GetOpcode() == IR::Opcode::GetUserData ||
+                        inst->GetOpcode() == IR::Opcode::ReadConst) {
+                        continue;
+                    }
+                    for (size_t arg = inst->NumArgs(); arg--;) {
+                        const IR::Value arg_value = inst->Arg(arg);
+                        if (arg_value.IsImmediate()) {
+                            continue;
+                        }
+                        IR::Inst* arg_inst = arg_value.InstRecursive();
+                        if (std::ranges::find(visited, arg_inst) == visited.end()) {
+                            visited.push_back(arg_inst);
+                            queue.push(arg_inst);
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    for (auto inst : all_readconsts) {
+        if (pass_info.DeduplicateInstruction(inst) != inst) {
+            // This is a duplicate of a readconst we've already visited
+            continue;
+        }
+
+        IR::Inst* ptr_composite = inst->Arg(0).InstRecursive();
+
+        const auto pred = [](IR::Inst* inst) -> std::optional<IR::Inst*> {
+            if (inst->GetOpcode() == IR::Opcode::GetUserData ||
+                inst->GetOpcode() == IR::Opcode::ReadConst ||
+                inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                return inst;
+            }
+            return std::nullopt;
+        };
+        auto base0 =
+            IR::DominatingBreadthFirstSearch(ptr_composite->Arg(0), *inst->GetParent(), true, pred);
+        auto base1 =
+            IR::DominatingBreadthFirstSearch(ptr_composite->Arg(1), *inst->GetParent(), true, pred);
+        ASSERT_MSG(base0 && base1, "ReadConst not from constant memory");
+
+        IR::Inst* ptr_lo = base0.value();
+        ptr_lo = pass_info.DeduplicateInstruction(ptr_lo);
+
+        auto ptr_uses_kv = pass_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
+        PassInfo::PtrUserList& user_list = ptr_uses_kv.first->second;
+
+        user_list[inst->Arg(1)] = inst;
+
+        if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
+            IR::ScalarReg ud_reg = ptr_lo->Arg(0).ScalarReg();
+            pass_info.srt_roots[ud_reg] = ptr_lo;
         }
     }
 
