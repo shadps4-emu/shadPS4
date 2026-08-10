@@ -546,7 +546,13 @@ void Translator::S_BCNT1_I32_B32(const GcnInst& inst) {
 }
 
 void Translator::S_BCNT1_I32_B64(const GcnInst& inst) {
-    const IR::U32 result = ir.BitCount(GetSrc64(inst.src[0]));
+    // Saved EXEC/VCC masks are represented as one boolean per host invocation rather than as
+    // ordinary scalar-register bits. Reconstruct the wave64 mask before counting it, just as the
+    // other 64-bit mask instructions do.
+    const IR::Value ballot = ir.Ballot(GetSrc1(inst.src[0]));
+    const IR::U32 lo{ir.CompositeExtract(ballot, 0)};
+    const IR::U32 hi{ir.CompositeExtract(ballot, 1)};
+    const IR::U32 result = ir.IAdd(ir.BitCount(lo), ir.BitCount(hi));
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
 }

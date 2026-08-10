@@ -36,6 +36,19 @@ static constexpr std::array DefaultValTable = {
     std::array{1.0f, 1.0f, 1.0f, 1.0f},
 };
 
+static u32 InterpolationVertex(const RuntimeInfo& runtime_info, const Profile& profile,
+                               u32 relative_index) {
+    ASSERT_MSG(relative_index < 3, "Invalid interpolation vertex {}", relative_index);
+    // OpInterpolateAtVertexAMD already uses the native GCN interpolation basis. PerVertexKHR
+    // is ordered by primitive vertex, so rotate it when the last vertex is provoking:
+    // relative P0/P1/P2 -> primitive vertex 2/0/1.
+    if (profile.supports_amd_shader_explicit_vertex_parameter) {
+        return relative_index;
+    }
+    ASSERT(profile.supports_fragment_shader_barycentric);
+    return runtime_info.fs_info.provoking_vtx_last ? (relative_index + 2) % 3 : relative_index;
+}
+
 void Translator::EmitVectorInterpolation(const GcnInst& inst) {
     switch (inst.opcode) {
         // VINTRP
@@ -63,8 +76,10 @@ void Translator::V_INTERP_P1_F32(const GcnInst& inst) {
     }
     // VDST = P10 * VSRC + P0
     const IR::Attribute attrib = IR::Attribute::Param0 + attr_index;
-    const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 0);
-    const IR::F32 p1 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 1);
+    const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan,
+                                       InterpolationVertex(runtime_info, profile, 0));
+    const IR::F32 p1 = ir.GetAttribute(attrib, inst.control.vintrp.chan,
+                                       InterpolationVertex(runtime_info, profile, 1));
     const IR::F32 i = GetSrc<IR::F32>(inst.src[0]);
     const IR::F32 result = ir.FPFma(ir.FPSub(p1, p0), i, p0);
     SetDst(inst.dst[0], result);
@@ -87,8 +102,10 @@ void Translator::V_INTERP_P2_F32(const GcnInst& inst) {
         return;
     }
     // VDST = P20 * VSRC + VDST
-    const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 0);
-    const IR::F32 p2 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 2);
+    const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan,
+                                       InterpolationVertex(runtime_info, profile, 0));
+    const IR::F32 p2 = ir.GetAttribute(attrib, inst.control.vintrp.chan,
+                                       InterpolationVertex(runtime_info, profile, 2));
     const IR::F32 j = GetSrc<IR::F32>(inst.src[0]);
     const IR::F32 result = ir.FPFma(ir.FPSub(p2, p0), j, GetSrc<IR::F32>(inst.dst[0]));
     interp.primary = Qualifier::PerVertex;
@@ -101,24 +118,46 @@ void Translator::V_INTERP_MOV_F32(const GcnInst& inst) {
     const auto& attr = runtime_info.fs_info.inputs[attr_index];
     auto& interp = info.fs_interpolation[attr_index];
     const u32 src_select = inst.src[0].code;
-    ASSERT(attr.is_flat || inst.src[0].code == 2);
-    if (profile.supports_amd_shader_explicit_vertex_parameter ||
-        profile.supports_fragment_shader_barycentric) {
-        // VSRC 0=P10, 1=P20, 2=P0
-        interp.primary = Qualifier::PerVertex;
-        SetDst(inst.dst[0],
-               ir.GetAttribute(attrib, inst.control.vintrp.chan, (src_select + 1) % 3));
+    ASSERT_MSG(src_select < 3, "Invalid V_INTERP_MOV_F32 selector {}", src_select);
+
+    if (attr.IsDefault()) {
+        // A default input is constant over the primitive, so only P0 is non-zero.
+        const float value =
+            src_select == 2 ? DefaultValTable[attr.default_value][inst.control.vintrp.chan] : 0.0f;
+        SetDst(inst.dst[0], ir.Imm32(value));
         return;
     }
 
-    // Without explicit per-vertex parameter access we can still represent P0 via flat input.
-    // P10/P20 cannot be reconstructed exactly here; return a zero slope to keep execution stable.
-    interp.primary = Qualifier::Flat;
-    if (src_select == 2) {
-        SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
-    } else {
-        SetDst(inst.dst[0], ir.Imm32(0.0f));
+    if (attr.is_flat) {
+        // Flat shading produces one constant parameter over the primitive.
+        interp.primary = Qualifier::Flat;
+        if (src_select == 2) {
+            SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
+        } else {
+            SetDst(inst.dst[0], ir.Imm32(0.0f));
+        }
+        return;
     }
+
+    if (profile.supports_amd_shader_explicit_vertex_parameter ||
+        profile.supports_fragment_shader_barycentric) {
+        // Vertex indices are the interpolation basis points:
+        // v0=P0, v1=P0+P10, v2=P0+P20.
+        interp.primary = Qualifier::PerVertex;
+        const u32 p0_index = InterpolationVertex(runtime_info, profile, 0);
+        const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan, p0_index);
+        if (src_select == 2) {
+            SetDst(inst.dst[0], p0);
+            return;
+        }
+        const u32 vertex_index = InterpolationVertex(runtime_info, profile, src_select + 1);
+        const IR::F32 vertex = ir.GetAttribute(attrib, inst.control.vintrp.chan, vertex_index);
+        SetDst(inst.dst[0], ir.FPSub(vertex, p0));
+        return;
+    }
+
+    // No non-flat coefficient can be recovered exactly from an interpolated fragment input.
+    UNREACHABLE_MSG("V_INTERP_MOV_F32 requires explicit per-vertex parameter support");
 }
 
 } // namespace Shader::Gcn

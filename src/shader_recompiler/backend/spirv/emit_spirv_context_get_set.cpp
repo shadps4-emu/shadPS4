@@ -16,6 +16,13 @@ namespace Shader::Backend::SPIRV {
 using PointerType = EmitContext::PointerType;
 using PointerSize = EmitContext::PointerSize;
 
+static u32 KHRBarycentricComponent(const EmitContext& ctx, u32 comp) {
+    ASSERT_MSG(comp < 2, "Invalid guest barycentric component {}", comp);
+    // GCN I/J are relative to the provoking vertex. KHR components are ordered by primitive
+    // vertex, so first-vertex mode uses weights 1/2 while last-vertex mode uses weights 0/1.
+    return ctx.runtime_info.fs_info.provoking_vtx_last ? comp : comp + 1;
+}
+
 static std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
     if (IR::IsParam(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
@@ -110,7 +117,7 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         return param.is_integer ? ctx.OpBitcast(ctx.F32[1], value) : value;
     }
     if (IR::IsBarycentricCoord(attr) && ctx.profile.supports_fragment_shader_barycentric) {
-        ++comp;
+        comp = KHRBarycentricComponent(ctx, comp);
     }
     switch (attr) {
     case IR::Attribute::Position0:
@@ -144,6 +151,24 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         return ctx.OpLoad(
             ctx.F32[1],
             ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp_sample, ctx.ConstU32(comp)));
+    case IR::Attribute::BaryCoordPullModel: {
+        ASSERT_MSG(comp < 3, "Invalid BaryCoordPullModel component {}", comp);
+
+        // FragCoord.w is reciprocal clip W at the fragment center. Perspective barycentrics
+        // are (I/W)/(1/W) and (J/W)/(1/W), so multiplying by FragCoord.w recovers the
+        // pull-model values expected by the guest.
+        const Id inv_w = ctx.OpLoad(
+            ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.frag_coord, ctx.ConstU32(3U)));
+        if (comp == 2) {
+            return inv_w;
+        }
+        const u32 ij_comp = ctx.profile.supports_fragment_shader_barycentric
+                                ? KHRBarycentricComponent(ctx, comp)
+                                : comp;
+        const Id ij = ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth,
+                                                               ctx.ConstU32(ij_comp)));
+        return ctx.OpFMul(ctx.F32[1], ij, inv_w);
+    }
     default:
         UNREACHABLE_MSG("Read attribute {}", attr);
     }
