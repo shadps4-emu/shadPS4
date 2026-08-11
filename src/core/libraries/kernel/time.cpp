@@ -525,6 +525,28 @@ s32 PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
     return ORBIS_OK;
 }
 
+#ifdef _WIN64
+struct rusage;
+#endif
+
+s32 PS4_SYSV_ABI getrusage(s32 who, rusage* usage) {
+#ifdef _WIN64
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
+    return ORBIS_OK;
+#else
+    if (usage == nullptr) {
+        SetPosixErrno(EFAULT);
+        return -1;
+    }
+    const auto ret = ::getrusage(who, usage);
+    if (ret < 0) {
+        SetPosixErrno(errno);
+        return -1;
+    }
+    return ret;
+#endif
+}
+
 s32 PS4_SYSV_ABI posix_clock_settime(s32 clock_id, OrbisKernelTimespec* tp) {
     LOG_ERROR(Lib_Kernel, "(STUBBED) called, clock_id: {}", clock_id);
     return ORBIS_OK;
@@ -565,6 +587,7 @@ void RegisterTime(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ChCOChPU-YM", "libkernel", 1, "libkernel", sceKernelSettimeofday);
     LIB_FUNCTION("VdXIDAbJ3tQ", "libScePosix", 1, "libkernel", posix_settimeofday);
     LIB_FUNCTION("d7nUj1LOdDU", "libScePosix", 1, "libkernel", posix_clock_settime);
+    LIB_FUNCTION("hHlZQUnlxSM", "libkernel", 1, "libkernel", getrusage);
 
     // Orbis
     LIB_FUNCTION("4J2sUJmuHZQ", "libkernel", 1, "libkernel", sceKernelGetProcessTime);
