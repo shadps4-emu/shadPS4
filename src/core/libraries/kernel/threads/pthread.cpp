@@ -979,6 +979,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("+U1R4WtXvoc", "libkernel", 1, "libkernel", posix_pthread_detach);
     LIB_FUNCTION("7Xl257M4VNI", "libkernel", 1, "libkernel", posix_pthread_equal);
     LIB_FUNCTION("h9CcP3J0oVM", "libkernel", 1, "libkernel", posix_pthread_join);
+    LIB_FUNCTION("FJrT5LuUBAU", "libkernel", 1, "libkernel", posix_pthread_exit);
     LIB_FUNCTION("PkS44IGrDkM", "libkernel", 1, "libkernel", posix_pthread_timedjoin_np);
     LIB_FUNCTION("Jb2uGFMr688", "libkernel", 1, "libkernel", posix_pthread_getaffinity_np);
     LIB_FUNCTION("5KWrg7-ZqvE", "libkernel", 1, "libkernel", posix_pthread_setaffinity_np);
