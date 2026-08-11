@@ -39,6 +39,9 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
 s32 PS4_SYSV_ABI sceKernelStopUnloadModule(s32 handle, u64 args, const void* argp, u32 flags,
                                            const void* pOpt, s32* pRes);
 
+s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, const void* argp,
+                                          u32 flags, const void* pOpt, s32* pRes);
+
 void RegisterProcess(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel
