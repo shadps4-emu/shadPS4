@@ -101,19 +101,29 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
     const auto pitch = Common::AlignUp<u32>(frame->width, 64);
     const auto height = Common::AlignUp<u32>(frame->height, 16);
 
+    pPictureInfoOut.isValid = true; 
     pPictureInfoOut.codecType = 0;
     pPictureInfoOut.frameWidth = width;
     pPictureInfoOut.framePitch = pitch;
     pPictureInfoOut.frameHeight = height;
-
-    pPictureInfoOut.isValid = true;
     pPictureInfoOut.isErrorPic = false;
+    pPictureInfoOut.ptsData = pInputDataIn.ptsData;
+    pPictureInfoOut.attachedData = pInputDataIn.attachedData;
 
-    pPictureInfoOut.codec.avc.frameCropTopOffset = 0;
+    // pPictureInfoOut.codec.avc.numUnitsInTick;
+    // pPictureInfoOut.codec.avc.timeScale;
+    // pPictureInfoOut.codec.avc.fixedFrameRateFlag;
+    // pPictureInfoOut.codec.avc.aspectRatioIdc;
+    // pPictureInfoOut.codec.avc.sarWidth;
+    // pPictureInfoOut.codec.avc.sarHeight;
+    // pPictureInfoOut.codec.avc.colourPrimaries;
+    // pPictureInfoOut.codec.avc.transferCharacteristics;
+    // pPictureInfoOut.codec.avc.matrixCoefficients;
+    // pPictureInfoOut.codec.avc.videoFullRangeFlag;
     pPictureInfoOut.codec.avc.frameCropLeftOffset = 0;
     pPictureInfoOut.codec.avc.frameCropRightOffset = pitch - frame->width;
+    pPictureInfoOut.codec.avc.frameCropTopOffset = 0;
     pPictureInfoOut.codec.avc.frameCropBottomOffset = height - frame->height;
-    pPictureInfoOut.attachedData = pInputDataIn.attachedData;
 
     av_packet_free(&packet);
     av_frame_free(&frame);
@@ -160,17 +170,27 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
     const auto pitch = Common::AlignUp<u32>(frame->width, 64);
     const auto height = Common::AlignUp<u32>(frame->height, 16);
 
+    pPictureInfoOut.isValid = true;
     pPictureInfoOut.codecType = 0;
     pPictureInfoOut.frameWidth = width;
     pPictureInfoOut.framePitch = pitch;
     pPictureInfoOut.frameHeight = height;
-
-    pPictureInfoOut.isValid = true;
     pPictureInfoOut.isErrorPic = false;
+    pPictureInfoOut.ptsData = frame->pts;
 
-    pPictureInfoOut.codec.avc.frameCropTopOffset = 0;
+    // pPictureInfoOut.codec.avc.numUnitsInTick;
+    // pPictureInfoOut.codec.avc.timeScale;
+    // pPictureInfoOut.codec.avc.fixedFrameRateFlag;
+    // pPictureInfoOut.codec.avc.aspectRatioIdc;
+    // pPictureInfoOut.codec.avc.sarWidth;
+    // pPictureInfoOut.codec.avc.sarHeight;
+    // pPictureInfoOut.codec.avc.colourPrimaries;
+    // pPictureInfoOut.codec.avc.transferCharacteristics;
+    // pPictureInfoOut.codec.avc.matrixCoefficients;
+    // pPictureInfoOut.codec.avc.videoFullRangeFlag;
     pPictureInfoOut.codec.avc.frameCropLeftOffset = 0;
     pPictureInfoOut.codec.avc.frameCropRightOffset = pitch - frame->width;
+    pPictureInfoOut.codec.avc.frameCropTopOffset = 0;
     pPictureInfoOut.codec.avc.frameCropBottomOffset = height - frame->height;
 
     av_frame_free(&frame);
