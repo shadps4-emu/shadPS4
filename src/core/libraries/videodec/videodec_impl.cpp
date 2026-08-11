@@ -107,7 +107,7 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
     pPictureInfoOut.framePitch = pitch;
     pPictureInfoOut.frameHeight = height;
     pPictureInfoOut.isErrorPic = false;
-    pPictureInfoOut.ptsData = pInputDataIn.ptsData;
+    pPictureInfoOut.ptsData = frame->pts;
     pPictureInfoOut.attachedData = pInputDataIn.attachedData;
 
     // pPictureInfoOut.codec.avc.numUnitsInTick;
