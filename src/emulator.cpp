@@ -645,7 +645,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     for (auto const& mount_pair : mounts) {
         LOG_INFO(Loader, "Mounting {} to {}", mount_pair.first.string(),
-                 mount_pair.second.string());
+                 mount_pair.second);
         mnt->Mount(mount_pair.first, mount_pair.second);
     }
 
