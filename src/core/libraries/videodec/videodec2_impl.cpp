@@ -13,8 +13,6 @@
 
 namespace Libraries::Videodec2 {
 
-std::vector<OrbisVideodec2AvcPictureInfo> gPictureInfos;
-
 VdecDecoder::VdecDecoder(const OrbisVideodec2DecoderConfigInfo& configInfo,
                          const OrbisVideodec2DecoderMemoryInfo& memoryInfo) {
     ASSERT(configInfo.codecType == 1); /* AVC */
@@ -33,8 +31,6 @@ VdecDecoder::VdecDecoder(const OrbisVideodec2DecoderConfigInfo& configInfo,
 VdecDecoder::~VdecDecoder() {
     avcodec_free_context(&mCodecContext);
     sws_freeContext(mSwsContext);
-
-    gPictureInfos.clear();
 }
 
 s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
@@ -130,9 +126,10 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
         outputInfo.framePitchInBytes = pitch;
     }
 
-    OrbisVideodec2AvcPictureInfo pictureInfo = {};
+    auto& pictureInfo =
+        *(OrbisVideodec2AvcPictureInfo*)((u8*)outputInfo.frameBuffer + outputInfo.frameBufferSize);
 
-    pictureInfo.thisSize = sizeof(OrbisVideodec2AvcPictureInfo);
+    pictureInfo = {};
     pictureInfo.isValid = true;
 
     pictureInfo.ptsData = inputData.ptsData;
@@ -143,8 +140,6 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
     pictureInfo.frameCropLeftOffset = 0;
     pictureInfo.frameCropRightOffset = pitch - frame->width;
     pictureInfo.frameCropBottomOffset = height - frame->height;
-
-    gPictureInfos.push_back(pictureInfo);
 
     av_packet_free(&packet);
     av_frame_free(&frame);
@@ -210,9 +205,10 @@ s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frameBuffer,
         outputInfo.framePitchInBytes = pitch;
     }
 
-    OrbisVideodec2AvcPictureInfo pictureInfo = {};
+    auto& pictureInfo =
+        *(OrbisVideodec2AvcPictureInfo*)((u8*)outputInfo.frameBuffer + outputInfo.frameBufferSize);
 
-    pictureInfo.thisSize = sizeof(OrbisVideodec2AvcPictureInfo);
+    pictureInfo = {};
     pictureInfo.isValid = true;
 
     pictureInfo.ptsData = frame->pts;
@@ -224,15 +220,12 @@ s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frameBuffer,
     pictureInfo.frameCropRightOffset = pitch - frame->width;
     pictureInfo.frameCropBottomOffset = height - frame->height;
 
-    gPictureInfos.push_back(pictureInfo);
-
     av_frame_free(&frame);
     return ORBIS_OK;
 }
 
 s32 VdecDecoder::Reset() {
     avcodec_flush_buffers(mCodecContext);
-    gPictureInfos.clear();
     return ORBIS_OK;
 }
 
