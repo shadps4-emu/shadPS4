@@ -103,6 +103,8 @@ struct VertexRuntimeInfo : protected CommonEsVsRuntimeInfo {
     bool clip_disable{};
     u32 step_rate_0;
     u32 step_rate_1;
+    /// UCP_ENA bits from PA_CL_CLIP_CNTL, lowered to clip distances in the shader.
+    u32 user_clip_plane_mask{};
 
     bool operator<=>(const VertexRuntimeInfo& other) const noexcept = default;
 };
@@ -194,6 +196,7 @@ struct FragmentRuntimeInfo {
     std::array<PsInput, 32> inputs;
     std::array<PsColorBuffer, MaxColorBuffers> color_buffers;
     AmdGpu::ShaderExportFormat z_export_format;
+    AmdGpu::PrimitiveType primitive_type{AmdGpu::PrimitiveType::None};
     u8 mrtz_mask{};
     bool dual_source_blending{false};
     bool clip_distance_emulation{false};
@@ -203,7 +206,8 @@ struct FragmentRuntimeInfo {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
                en_flags == other.en_flags && addr_flags == other.addr_flags &&
                num_inputs == other.num_inputs && z_export_format == other.z_export_format &&
-               mrtz_mask == other.mrtz_mask && dual_source_blending == other.dual_source_blending &&
+               primitive_type == other.primitive_type && mrtz_mask == other.mrtz_mask &&
+               dual_source_blending == other.dual_source_blending &&
                clip_distance_emulation == other.clip_distance_emulation &&
                provoking_vtx_last == other.provoking_vtx_last &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),

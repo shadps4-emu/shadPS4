@@ -673,6 +673,19 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 const u64 offset =
                     vk_buffer.Copy(stage.flattened_ud_buf.data(), ubo_size, alignment);
                 buffer_infos.emplace_back(vk_buffer.Handle(), offset, ubo_size);
+            } else if (desc.buffer_type == Shader::BufferType::ClipPlanes) {
+                auto& vk_buffer = buffer_cache.GetUtilityBuffer(VideoCore::MemoryUsage::Stream);
+                std::array<float, AmdGpu::NUM_CLIP_PLANES * 4> planes{};
+                for (u32 i = 0; i < AmdGpu::NUM_CLIP_PLANES; ++i) {
+                    const auto& plane = liverpool->regs.clip_user_data[i];
+                    planes[i * 4 + 0] = std::bit_cast<float>(plane.data_x);
+                    planes[i * 4 + 1] = std::bit_cast<float>(plane.data_y);
+                    planes[i * 4 + 2] = std::bit_cast<float>(plane.data_z);
+                    planes[i * 4 + 3] = std::bit_cast<float>(plane.data_w);
+                }
+                const u32 ubo_size = static_cast<u32>(sizeof(planes));
+                const u64 offset = vk_buffer.Copy(planes.data(), ubo_size, alignment);
+                buffer_infos.emplace_back(vk_buffer.Handle(), offset, ubo_size);
             } else if (desc.buffer_type == Shader::BufferType::BdaPagetable) {
                 const auto* bda_buffer = buffer_cache.GetBdaPageTableBuffer();
                 buffer_infos.emplace_back(bda_buffer->Handle(), 0, bda_buffer->SizeBytes());
@@ -739,7 +752,11 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         }
 
         if (tsharp.Address() == 0 || tsharp.GetDataFmt() == AmdGpu::DataFormat::FormatInvalid) {
-            image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            auto& binding =
+                image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            binding.second.type = image_desc.is_written
+                                      ? VideoCore::TextureCache::BindingType::Storage
+                                      : VideoCore::TextureCache::BindingType::Texture;
             image_descriptor_array_sizes.push_back(1);
             continue;
         }

@@ -9,6 +9,7 @@
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
+#include "core/file_sys/ifile.h"
 #include "emulator.h"
 #include "imgui/big_picture/big_picture.h"
 #include "imgui/big_picture/imgui_impl_sdl3_big_picture.h"
@@ -34,6 +35,25 @@ SDL_Renderer* renderer;
 namespace {
 
 std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder) {
+    if (Core::FileSys::IsZArchiveFile(game_folder)) {
+        std::filesystem::path path = Core::FileSys::StripZArchiveExtension(game_folder);
+        std::string item_string = "sce_sys/" + sceItem;
+        const auto update_zar = path += "-UPDATE.zar";
+        const auto patch_zar = path += "-patch.zar";
+
+        if (std::filesystem::exists(update_zar)) {
+            if (const auto resolved = Core::FileSys::ResolveGameFilePath(update_zar, item_string)) {
+                return *resolved;
+            }
+        } else if (std::filesystem::exists(patch_zar)) {
+            if (const auto resolved = Core::FileSys::ResolveGameFilePath(patch_zar, item_string)) {
+                return *resolved;
+            }
+        } else {
+            return Core::FileSys::ResolveGameFilePath(game_folder, item_string).value();
+        }
+    }
+
     std::filesystem::path outputPath;
     const auto update_folder = Core::FileSys::OverlayPath(game_folder, "-UPDATE");
     const auto patch_folder = Core::FileSys::OverlayPath(game_folder, "-patch");
@@ -147,9 +167,23 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
     for (const auto& installLoc : EmulatorSettings.GetAllGameInstallDirs()) {
         if (installLoc.enabled && std::filesystem::exists(installLoc.path)) {
             for (const auto& entry : std::filesystem::directory_iterator(installLoc.path)) {
-                if (entry.path().filename().string().ends_with("-UPDATE") ||
-                    entry.path().filename().string().ends_with("-patch") || !entry.is_directory()) {
+
+                std::string pathstring = entry.path().filename().string();
+                if (pathstring.ends_with("-UPDATE") || pathstring.ends_with("-patch") ||
+                    (!entry.is_directory() && !Core::FileSys::IsZArchiveFile(entry))) {
                     continue;
+                }
+
+                if (Core::FileSys::IsZArchiveFile(entry)) {
+                    size_t start = pathstring.length() - 3;
+                    for (size_t i = start; i < pathstring.length(); ++i) {
+                        pathstring[i] = static_cast<char>(
+                            std::tolower(static_cast<unsigned char>(pathstring[i])));
+                    }
+
+                    if (pathstring.ends_with("-UPDATE.zar") || pathstring.ends_with("-patch.zar")) {
+                        continue;
+                    }
                 }
 
                 IconInfo icon;
@@ -176,6 +210,10 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
                 icon.textureId = ImTextureID(texture);
 
                 icon.ebootPath = entry.path() / "eboot.bin";
+                if (Core::FileSys::IsZArchiveFile(entry.path())) {
+                    icon.ebootPath = entry.path();
+                }
+
                 icon.focusState = false;
                 icons.push_back(icon);
             }

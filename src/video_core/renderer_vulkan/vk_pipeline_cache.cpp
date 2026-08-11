@@ -89,6 +89,41 @@ static u32 MapOutputs(std::span<Shader::OutputMap, 3> outputs, const AmdGpu::VsO
     return num_outputs;
 }
 
+static AmdGpu::PrimitiveType FragmentPrimitiveType(const AmdGpu::Regs& regs) {
+    if (regs.stage_enable.gs_en) {
+        switch (regs.vgt_gs_out_prim_type.GetPrimitiveType(0)) {
+        case AmdGpu::GsOutputPrimitiveType::PointList:
+            return AmdGpu::PrimitiveType::PointList;
+        case AmdGpu::GsOutputPrimitiveType::LineStrip:
+            return AmdGpu::PrimitiveType::LineStrip;
+        case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
+            return AmdGpu::PrimitiveType::TriangleStrip;
+        }
+        UNREACHABLE();
+    }
+    if (regs.stage_enable.hs_en) {
+        switch (regs.tess_config.topology) {
+        case AmdGpu::TessellationTopology::Point:
+            return AmdGpu::PrimitiveType::PointList;
+        case AmdGpu::TessellationTopology::Line:
+            return AmdGpu::PrimitiveType::LineList;
+        case AmdGpu::TessellationTopology::TriangleCw:
+        case AmdGpu::TessellationTopology::TriangleCcw:
+            return AmdGpu::PrimitiveType::TriangleList;
+        default:
+            UNREACHABLE();
+        }
+    }
+    if (regs.primitive_type == AmdGpu::PrimitiveType::RectList ||
+        regs.primitive_type == AmdGpu::PrimitiveType::QuadList) {
+        return AmdGpu::PrimitiveType::TriangleList;
+    }
+    if (regs.primitive_type == AmdGpu::PrimitiveType::Polygon) {
+        return AmdGpu::PrimitiveType::TriangleFan;
+    }
+    return regs.primitive_type;
+}
+
 const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_stage) {
     auto& info = runtime_infos[u32(l_stage)];
     const auto& regs = liverpool->regs;
@@ -133,6 +168,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
     }
     case Stage::Vertex: {
         BuildCommon(regs.vs_program);
+        info.vs_info.user_clip_plane_mask = regs.clipper_control.user_clip_plane_enable;
         info.vs_info.step_rate_0 = regs.vgt_instance_step_rate_0;
         info.vs_info.step_rate_1 = regs.vgt_instance_step_rate_1;
         info.vs_info.num_outputs = MapOutputs(info.vs_info.outputs, regs.vs_output_control);
@@ -193,6 +229,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.fs_info.addr_flags = regs.ps_input_addr;
         info.fs_info.num_inputs = regs.num_interp;
         info.fs_info.z_export_format = regs.z_export_format;
+        info.fs_info.primitive_type = FragmentPrimitiveType(regs);
         info.fs_info.provoking_vtx_last =
             regs.polygon_control.provoking_vtx_last == AmdGpu::ProvokingVtxLast::Last;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
@@ -226,9 +263,16 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
             info.fs_info.color_buffers[i] = graphics_key.color_buffers[i];
         }
+        // Lowered user clip planes ride the same emulation path as guest-exported distances, so
+        // the fragment side arms whenever the hardware vertex stage lowers them, keeping its input
+        // locations in sync with the shifted vertex outputs.
+        const bool lowers_user_clip_planes =
+            regs.clipper_control.user_clip_plane_enable &&
+            !regs.stage_enable.IsStageEnabled(static_cast<u32>(Stage::Geometry));
         info.fs_info.clip_distance_emulation =
-            regs.vs_output_control.clip_distance_enable &&
-            !regs.stage_enable.IsStageEnabled(static_cast<u32>(Stage::Local)) &&
+            ((regs.vs_output_control.clip_distance_enable &&
+              !regs.stage_enable.IsStageEnabled(static_cast<u32>(Stage::Local))) ||
+             lowers_user_clip_planes) &&
             profile.needs_clip_distance_emulation;
         break;
     }
@@ -302,8 +346,9 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .supports_amd_shader_explicit_vertex_parameter =
             instance_.IsAmdShaderExplicitVertexParameterSupported(),
         .supports_fragment_shader_barycentric = instance_.IsFragmentShaderBarycentricSupported(),
-        .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
-                                      instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
+        .supports_provoking_vertex = instance_.IsProvokingVertexSupported(),
+        .tri_strip_vertex_order_independent_of_provoking_vertex =
+            instance_.IsTriStripVertexOrderIndependentOfProvokingVertex(),
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
                               instance.GetDriverID() == vk::DriverId::eMesaKosmickrisp,
         .needs_buffer_offsets = instance.StorageMinAlignment() > 4,
@@ -610,13 +655,6 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
     const auto ir_program = Shader::TranslateProgram(
         code, pools, info, runtime_info, profile,
         [this](Shader::Info& shader_info) { RefreshFlatBuf(shader_info); });
-    if (info.stage == Shader::Stage::Fragment &&
-        info.loads.GetAny(Shader::IR::Attribute::BaryCoordPullModel)) {
-        LOG_INFO(Render_Vulkan,
-                 "Fragment shader {:#x} uses pull-model interpolation "
-                 "(provoking vertex: {})",
-                 info.pgm_hash, runtime_info.fs_info.provoking_vtx_last ? "last" : "first");
-    }
     auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
     DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
 
