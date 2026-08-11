@@ -123,9 +123,13 @@ int main(int argc, char* argv[]) {
                 double_dash_index = i;
             }
         }
-        // I kept finding edge cases CLI11 seems to not handle correctly, so manually cutting off
-        // everything after '--' seems to be the easiest way to make everything work
-        app.parse(double_dash_index, argv);
+
+        // If the -- arg is present, only parse args before it
+        if (double_dash_found) {
+            app.parse(double_dash_index, argv);
+        } else {
+            app.parse(argc, argv);
+        }
     } catch (const CLI::ParseError& e) {
         return app.exit(e);
     }
