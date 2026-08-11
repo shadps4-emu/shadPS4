@@ -642,6 +642,16 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
     mnt->Mount(host_font2_dir, guest_font_dir);
 
+    if (!id.empty() && std::filesystem::exists(EmulatorSettings.GetSysModulesDir() / id)) {
+        mnt->Mount(EmulatorSettings.GetSysModulesDir() / id,
+                   std::string("/") + sandbox_root + "/common/lib/");
+        mnt->Mount(EmulatorSettings.GetSysModulesDir() / id,
+                   std::string("/") + sandbox_root + "/priv/lib/");
+        // should be empty but whatever
+        mnt->Mount(EmulatorSettings.GetSysModulesDir() / id,
+                   std::string("/") + sandbox_root + "/common_ex/lib/");
+    }
+
     if (std::filesystem::is_empty(host_font_dir) || std::filesystem::is_empty(host_font2_dir)) {
         LOG_WARNING(Loader, "No dumped system fonts, expect missing text or instability");
     }
