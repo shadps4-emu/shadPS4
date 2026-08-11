@@ -35,38 +35,34 @@ SDL_Renderer* renderer;
 namespace {
 
 std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder) {
+    std::filesystem::path updatedPath = "";
+    std::filesystem::path basePath = game_folder.parent_path();
+    std::string fileName;
+    std::string item = "sce_sys/" + sceItem;
+
     if (Core::FileSys::IsZArchiveFile(game_folder)) {
-        std::filesystem::path path = Core::FileSys::StripZArchiveExtension(game_folder);
-        std::string item_string = "sce_sys/" + sceItem;
-        const auto update_zar = path += "-UPDATE.zar";
-        const auto patch_zar = path += "-patch.zar";
-
-        if (std::filesystem::exists(update_zar)) {
-            if (const auto resolved = Core::FileSys::ResolveGameFilePath(update_zar, item_string)) {
-                return *resolved;
-            }
-        } else if (std::filesystem::exists(patch_zar)) {
-            if (const auto resolved = Core::FileSys::ResolveGameFilePath(patch_zar, item_string)) {
-                return *resolved;
-            }
-        } else {
-            return Core::FileSys::ResolveGameFilePath(game_folder, item_string).value();
-        }
-    }
-
-    std::filesystem::path outputPath;
-    const auto update_folder = Core::FileSys::OverlayPath(game_folder, "-UPDATE");
-    const auto patch_folder = Core::FileSys::OverlayPath(game_folder, "-patch");
-
-    if (std::filesystem::exists(update_folder / "sce_sys" / sceItem)) {
-        outputPath = update_folder / "sce_sys" / sceItem;
-    } else if (std::filesystem::exists(patch_folder / "sce_sys" / sceItem)) {
-        outputPath = patch_folder / "sce_sys" / sceItem;
+        fileName = Core::FileSys::StripZArchiveExtension(game_folder).filename().string();
     } else {
-        outputPath = game_folder / "sce_sys" / sceItem;
+        fileName = game_folder.filename().string();
     }
 
-    return outputPath;
+    if (std::filesystem::exists(basePath / (fileName + "-UPDATE") / item)) {
+        updatedPath = basePath / (fileName + "-UPDATE") / item;
+    } else if (Core::FileSys::ResolveGameFilePath(basePath / (fileName + "-UPDATE.zar"), item)
+                   .has_value()) {
+        updatedPath =
+            Core::FileSys::ResolveGameFilePath(basePath / (fileName + "-UPDATE.zar"), item).value();
+    } else if (std::filesystem::exists(basePath / (fileName + "-patch") / item)) {
+        updatedPath = basePath / (fileName + "-patch") / item;
+    } else if (Core::FileSys::ResolveGameFilePath(basePath / (fileName + "-patch.zar"), item)
+                   .has_value()) {
+        updatedPath =
+            Core::FileSys::ResolveGameFilePath(basePath / (fileName + "-patch.zar"), item).value();
+    } else if (Core::FileSys::ResolveGameFilePath(game_folder, item).has_value()) {
+        updatedPath = Core::FileSys::ResolveGameFilePath(game_folder, item).value();
+    }
+
+    return updatedPath;
 }
 
 void SetGameIcons(std::vector<IconInfo>& gameIcons) {
