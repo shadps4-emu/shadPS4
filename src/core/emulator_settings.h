@@ -183,7 +183,6 @@ struct GeneralSettings {
     Setting<std::filesystem::path> home_dir;
     Setting<std::filesystem::path> sys_modules_dir;
     Setting<std::filesystem::path> font_dir;
-    Setting<std::filesystem::path> fw_root_dir;
 
     Setting<int> volume_slider{100};
     Setting<bool> neo_mode{false};
@@ -701,7 +700,6 @@ public:
     SETTING_FORWARD(m_general, BigPictureScale, big_picture_scale)
     SETTING_FORWARD(m_general, BigPictureFolderDepth, big_picture_folder_depth)
     SETTING_FORWARD_BOOL(m_general, RedZonePatchingEnabled, redzone_patches)
-    SETTING_FORWARD(m_general, FwRootDir, fw_root_dir)
 
     // Network settings
     SETTING_FORWARD_BOOL(m_network, ConnectedToNetwork, connected_to_network)
