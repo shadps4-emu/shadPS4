@@ -195,6 +195,7 @@ struct GeneralSettings {
     Setting<std::filesystem::path> home_dir;
     Setting<std::filesystem::path> sys_modules_dir;
     Setting<std::filesystem::path> font_dir;
+    Setting<std::filesystem::path> fw_root_dir;
 
     Setting<int> volume_slider{100};
     Setting<bool> neo_mode{false};
@@ -233,7 +234,6 @@ struct GeneralSettings {
                                            &GeneralSettings::trophy_notification_side),
             make_override<GeneralSettings>("connected_to_network",
                                            &GeneralSettings::connected_to_network),
-            make_override<GeneralSettings>("console_language", &GeneralSettings::console_language),
             make_override<GeneralSettings>("shadnet_server", &GeneralSettings::shadnet_server),
             make_override<GeneralSettings>("shadnet_webapi_server",
                                            &GeneralSettings::shadnet_webapi_server),
@@ -249,7 +249,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    trophy_notification_side, connected_to_network,
                                    discord_rpc_enabled, show_fps_counter, console_language,
                                    big_picture_scale, shadnet_server, shadnet_webapi_server,
-                                   signaling_info, enable_upnp)
+                                   signaling_info, enable_upnp, fw_root_dir)
 
 // -------------------------------
 // Log settings
@@ -685,6 +685,7 @@ public:
     SETTING_FORWARD(m_general, ShadNetWebApiServer, shadnet_webapi_server)
     SETTING_FORWARD(m_general, SignalingInfo, signaling_info)
     SETTING_FORWARD_BOOL(m_general, UPnPEnabled, enable_upnp)
+    SETTING_FORWARD(m_general, FwRootDir, fw_root_dir)
 
     // Log settings
     SETTING_FORWARD_BOOL(m_log, LogAppend, append)
