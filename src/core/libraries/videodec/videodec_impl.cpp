@@ -54,19 +54,18 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
     packet->size = pInputDataIn.auSize;
     packet->pts = pInputDataIn.ptsData;
     packet->dts = pInputDataIn.dtsData;
+    packet->opaque = reinterpret_cast<void*>(pInputDataIn.attachedData);
 
     int ret = avcodec_send_packet(mCodecContext, packet);
+    if (ret == AVERROR_EOF) {
+        // Attempt to flush buffers and try again.
+        avcodec_flush_buffers(mCodecContext);
+        ret = avcodec_send_packet(mCodecContext, packet);
+    }
     if (ret < 0) {
-        if (ret == AVERROR_EOF) {
-            // Attempt to flush buffers and try again.
-            avcodec_flush_buffers(mCodecContext);
-            ret = avcodec_send_packet(mCodecContext, packet);
-        }
-        if (ret < 0) {
-            LOG_ERROR(Lib_Videodec, "Error sending packet to decoder: {}", ret);
-            av_packet_free(&packet);
-            return ORBIS_VIDEODEC_ERROR_API_FAIL;
-        }
+        LOG_ERROR(Lib_Videodec, "Error sending packet to decoder: {}", ret);
+        av_packet_free(&packet);
+        return ORBIS_VIDEODEC_ERROR_API_FAIL;
     }
 
     AVFrame* frame = av_frame_alloc();
@@ -101,14 +100,14 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
     const auto pitch = Common::AlignUp<u32>(frame->width, 64);
     const auto height = Common::AlignUp<u32>(frame->height, 16);
 
-    pPictureInfoOut.isValid = true; 
+    pPictureInfoOut.isValid = true;
     pPictureInfoOut.codecType = 0;
     pPictureInfoOut.frameWidth = width;
     pPictureInfoOut.framePitch = pitch;
     pPictureInfoOut.frameHeight = height;
     pPictureInfoOut.isErrorPic = false;
     pPictureInfoOut.ptsData = frame->pts;
-    pPictureInfoOut.attachedData = pInputDataIn.attachedData;
+    pPictureInfoOut.attachedData = reinterpret_cast<u64>(frame->opaque);
 
     // pPictureInfoOut.codec.avc.numUnitsInTick;
     // pPictureInfoOut.codec.avc.timeScale;
@@ -177,6 +176,7 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
     pPictureInfoOut.frameHeight = height;
     pPictureInfoOut.isErrorPic = false;
     pPictureInfoOut.ptsData = frame->pts;
+    pPictureInfoOut.attachedData = reinterpret_cast<u64>(frame->opaque);
 
     // pPictureInfoOut.codec.avc.numUnitsInTick;
     // pPictureInfoOut.codec.avc.timeScale;
