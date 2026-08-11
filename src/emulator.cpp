@@ -266,7 +266,8 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
 }
 
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
-                   std::optional<std::filesystem::path> p_game_folder) {
+                   std::optional<std::filesystem::path> p_game_folder,
+                   std::vector<std::pair<std::filesystem::path, std::filesystem::path>> mounts) {
     Common::SetCurrentThreadName("shadPS4:Main");
     if (waitForDebuggerBeforeRun) {
         Debugger::WaitForDebuggerAttach();
@@ -641,6 +642,12 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         std::filesystem::create_directory(host_font2_dir);
     }
     mnt->Mount(host_font2_dir, guest_font_dir);
+
+    for (auto const& mount_pair : mounts) {
+        LOG_INFO(Loader, "Mounting {} to {}", mount_pair.first.string(),
+                 mount_pair.second.string());
+        mnt->Mount(mount_pair.first, mount_pair.second);
+    }
 
     if (std::filesystem::is_empty(host_font_dir) || std::filesystem::is_empty(host_font2_dir)) {
         LOG_WARNING(Loader, "No dumped system fonts, expect missing text or instability");
