@@ -659,6 +659,27 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
     return result;
 }
 
+s32 PS4_SYSV_ABI posix_access(const char* path, s32 mode) {
+    LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}, mode = {}", path, mode);
+    if (strlen(path) > 255) {
+        *__Error() = POSIX_ENAMETOOLONG;
+        return -1;
+    }
+
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    const bool is_dir = mnt->IsDirectory(path);
+    const bool is_file = !is_dir && mnt->Exists(path);
+    const bool is_root = strncmp(path, "/", 2) == 0;
+    if (!is_dir && !is_file && !is_root) {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
+    if (is_root) {
+        LOG_WARNING(Kernel_Fs, "Checking accessibility of filesystem root");
+    }
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     LOG_DEBUG(Kernel_Fs, "(PARTIAL) path = {}", path);
     if (strlen(path) > 255) {
