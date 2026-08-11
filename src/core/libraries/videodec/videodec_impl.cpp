@@ -23,6 +23,7 @@ VdecDecoder::VdecDecoder(const OrbisVideodecConfigInfo& pCfgInfoIn,
     ASSERT(mCodecContext);
     mCodecContext->width = pCfgInfoIn.maxFrameWidth;
     mCodecContext->height = pCfgInfoIn.maxFrameHeight;
+    mCodecContext->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
 
     avcodec_open2(mCodecContext, codec, nullptr);
 }
@@ -214,6 +215,7 @@ AVFrame* VdecDecoder::ConvertNV12Frame(AVFrame& frame) {
     nv12_frame->crop_bottom = frame.crop_bottom;
     nv12_frame->crop_left = frame.crop_left;
     nv12_frame->crop_right = frame.crop_right;
+    nv12_frame->opaque = frame.opaque;
 
     av_frame_get_buffer(nv12_frame, 0);
 
