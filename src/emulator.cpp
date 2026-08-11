@@ -644,8 +644,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     mnt->Mount(host_font2_dir, guest_font_dir);
 
     for (auto const& mount_pair : mounts) {
-        LOG_INFO(Loader, "Mounting {} to {}", mount_pair.first.string(),
-                 mount_pair.second);
+        LOG_INFO(Loader, "Mounting {} to {}", mount_pair.first.string(), mount_pair.second);
         mnt->Mount(mount_pair.first, mount_pair.second);
     }
 
