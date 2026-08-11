@@ -150,23 +150,6 @@ void SetPosixErrno(s32 e) {
     }
 }
 
-static u64 g_mspace_atomic_id_mask = 0;
-static u64 g_mstate_table[64] = {0};
-
-struct HeapInfoInfo {
-    u64 size = sizeof(HeapInfoInfo);
-    u32 flag;
-    u32 getSegmentInfo;
-    u64* mspace_atomic_id_mask;
-    u64* mstate_table;
-};
-
-void PS4_SYSV_ABI sceLibcHeapGetTraceInfo(HeapInfoInfo* info) {
-    info->mspace_atomic_id_mask = &g_mspace_atomic_id_mask;
-    info->mstate_table = g_mstate_table;
-    info->getSegmentInfo = 0;
-}
-
 struct OrbisKernelUuid {
     u32 timeLow;
     u16 timeMid;
@@ -493,9 +476,6 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("mkawd0NA9ts", "libkernel", 1, "libkernel", posix_sysconf);
     LIB_FUNCTION("mkawd0NA9ts", "libScePosix", 1, "libkernel", posix_sysconf);
-
-    LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal",
-                 sceLibcHeapGetTraceInfo);
 
     // network
     LIB_FUNCTION("XVL8So3QJUk", "libkernel", 1, "libkernel", Libraries::Net::sys_connect);
