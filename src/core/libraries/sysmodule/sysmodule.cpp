@@ -7,6 +7,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/file_system.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
@@ -104,14 +105,16 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal(char const* name, u64 args
     LOG_ERROR(Lib_SysModule, "(DUMMY) called, name: {}", name);
     std::string filename = std::string(name) + ".sprx";
     s32 exists;
-    exists = Libraries::Kernel::posix_access(("/sys/common/lib/" + filename).c_str(), 0);
+    using namespace Kernel;
+    std::string system_base = std::string("/") + sceKernelGetFsSandboxRandomWord();
+    exists = posix_access((system_base + "/common/lib/" + filename).c_str(), 0);
     if (exists == 0)
-        return Libraries::Kernel::sceKernelLoadStartModule(("/sys/common/lib/" + filename).c_str(),
-                                                           args, argp, 0, popt, res);
-    exists = Libraries::Kernel::posix_access(("/sys/priv/lib/" + filename).c_str(), 0);
+        return sceKernelLoadStartModule((system_base + "/common/lib/" + filename).c_str(), args,
+                                        argp, 0, popt, res);
+    exists = posix_access((system_base + "/priv/lib/" + filename).c_str(), 0);
     if (exists == 0)
-        return Libraries::Kernel::sceKernelLoadStartModule(("/sys/priv/lib/" + filename).c_str(),
-                                                           args, argp, 0, popt, res);
+        return sceKernelLoadStartModule((system_base + "/priv/lib/" + filename).c_str(), args, argp,
+                                        0, popt, res);
     return ORBIS_KERNEL_ERROR_EINVAL;
 }
 
