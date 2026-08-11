@@ -68,7 +68,10 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> setAddonFolder;
     std::optional<std::string> patchFile;
 
+    std::vector<std::pair<std::filesystem::path, std::string>> mounts;
+
     // ---- Options ----
+    app.add_option("guest_arg", gamePath, "Game path or ID"); // positional
     app.add_option("-g,--game", gamePath, "Game path or ID");
     app.add_option("-p,--patch", patchFile, "Patch file to apply");
     app.add_flag("-i,--ignore-game-patch", ignoreGamePatch,
@@ -78,7 +81,6 @@ int main(int argc, char* argv[]) {
     app.add_flag("--same-process", sameProcess,
                  "Launch the game in the same process when using Big Picture Mode");
 
-    // FULLSCREEN: behavior-identical
     app.add_option("-f,--fullscreen", fullscreenStr, "Fullscreen mode (true|false)");
 
     app.add_option("--override-root", overrideRoot)->check(CLI::ExistingDirectory);
@@ -93,20 +95,16 @@ int main(int argc, char* argv[]) {
 
     app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
     app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
+    app.add_option("--mount", mounts, "Mount source to destination");
 
     // ---- Capture args after `--` verbatim ----
     app.allow_extras();
-    app.parse_complete_callback([&]() {
-        const auto& extras = app.remaining();
-        if (!extras.empty()) {
-            gameArgs = extras;
-        }
-    });
 
     // ---- No-args behavior ----
     if (argc == 1) {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadPS4",
-                                 "This is a CLI application. Please use the QTLauncher for a GUI:\n"
+                                 "This is a CLI application. Please use the '-b' flag for Big "
+                                 "Picture mode, or QTLauncher for a standalone GUI:\n"
                                  "https://github.com/shadps4-emu/shadps4-qtlauncher/releases",
                                  nullptr);
         std::cout << app.help();
@@ -114,7 +112,20 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        app.parse(argc, argv);
+        bool double_dash_found = false;
+        int double_dash_index;
+        for (int i = 0; i < argc; i++) {
+            if (double_dash_found) {
+                gameArgs.emplace_back(argv[i]);
+            }
+            if (!double_dash_found && std::string(argv[i]) == "--") {
+                double_dash_found = true;
+                double_dash_index = i;
+            }
+        }
+        // I kept finding edge cases CLI11 seems to not handle correctly, so manually cutting off
+        // everything after '--' seems to be the easiest way to make everything work
+        app.parse(double_dash_index, argv);
     } catch (const CLI::ParseError& e) {
         return app.exit(e);
     }
@@ -171,14 +182,6 @@ int main(int argc, char* argv[]) {
             gameArgs.erase(gameArgs.begin());
         } else {
             LOG_ERROR(Debug, "Please provide a game path or ID.");
-            return 1;
-        }
-    }
-    if (!gameArgs.empty()) {
-        if (gameArgs.front() == "--") {
-            gameArgs.erase(gameArgs.begin());
-        } else {
-            LOG_ERROR(Debug, "unhandled flags");
             return 1;
         }
     }
@@ -241,7 +244,7 @@ int main(int argc, char* argv[]) {
     auto* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
     emulator->waitForDebuggerBeforeRun = waitForDebugger;
-    emulator->Run(ebootPath, gameArgs, overrideRoot);
+    emulator->Run(ebootPath, gameArgs, overrideRoot, mounts);
 
     return 0;
 }
