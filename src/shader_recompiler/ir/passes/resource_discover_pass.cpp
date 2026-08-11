@@ -114,10 +114,11 @@ void MarkReadConstBufferSharpSources(IR::Inst& first, IR::Block& block, u32 coun
         if (inst.GetOpcode() == IR::Opcode::SetScalarRegister) {
             continue;
         }
-        if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
-            auto flags = inst.Flags<IR::BufferInstInfo>();
+        auto source = FindSharpSource(&inst, block);
+        if (source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+            auto flags = source->Flags<IR::BufferInstInfo>();
             flags.sharp_source.Assign(1u);
-            inst.SetFlags(flags);
+            source->SetFlags(flags);
             continue;
         }
         UNREACHABLE_MSG("Unexpected instruction in ReadConstBuffer sharp source marking");
