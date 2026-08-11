@@ -46,7 +46,7 @@ s64 ZeroDevice::lseek(s64 offset, s32 whence) {
 s64 ZeroDevice::read(void* buf, u64 nbytes) {
     auto rbuf = static_cast<s8*>(buf);
     for (u64 i = 0; i < nbytes; i++) {
-        rbuf[i] = std::rand() & 0xFF;
+        rbuf[i] = 0;
     }
     return nbytes;
 }
