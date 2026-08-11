@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> setAddonFolder;
     std::optional<std::string> patchFile;
 
-    std::vector<std::pair<std::filesystem::path, std::filesystem::path>> mounts;
+    std::vector<std::pair<std::filesystem::path, std::string>> mounts;
 
     // ---- Options ----
     app.add_option("guest_arg", gamePath, "Game path or ID"); // positional
