@@ -12,6 +12,7 @@
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/fragment_barycentric.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
@@ -304,12 +305,26 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
         ctx.AddCapability(spv::Capability::Geometry);
     }
     if (info.stage == Stage::Fragment) {
+        const bool uses_per_vertex = std::ranges::any_of(
+            info.fs_interpolation, [](const Info::Interpolation& interpolation) {
+                return interpolation.primary == Qualifier::PerVertex;
+            });
+        const bool uses_explicit_evaluation =
+            info.loads.GetAny(IR::Attribute::BaryCoordSmoothCentroid) ||
+            info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample) ||
+            info.loads.GetAny(IR::Attribute::BaryCoordNoPerspCentroid) ||
+            info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample);
         if (profile.supports_amd_shader_explicit_vertex_parameter) {
             ctx.AddExtension("SPV_AMD_shader_explicit_vertex_parameter");
+            if (uses_per_vertex) {
+                ctx.AddCapability(spv::Capability::InterpolationFunction);
+            }
         } else if (profile.supports_fragment_shader_barycentric) {
             ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
             ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
-            ctx.AddCapability(spv::Capability::InterpolationFunction);
+            if (uses_explicit_evaluation) {
+                ctx.AddCapability(spv::Capability::InterpolationFunction);
+            }
         }
         if (info.loads.Get(IR::Attribute::SampleIndex) ||
             runtime_info.fs_info.addr_flags.linear_sample_ena ||
@@ -320,6 +335,13 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
             ctx.AddCapability(spv::Capability::SampleRateShading);
         }
         if (info.loads.GetAny(IR::Attribute::RenderTargetIndex)) {
+            ctx.AddCapability(spv::Capability::Geometry);
+        }
+        const bool needs_primitive_parity_remap =
+            !profile.supports_amd_shader_explicit_vertex_parameter &&
+            profile.supports_fragment_shader_barycentric &&
+            GetFragmentBarycentricMapping(runtime_info, profile).uses_primitive_parity;
+        if (info.loads.Get(IR::Attribute::PrimitiveId) || needs_primitive_parity_remap) {
             ctx.AddCapability(spv::Capability::Geometry);
         }
         if (info.stores.Get(IR::Attribute::StencilRef) && profile.supports_shader_stencil_export) {

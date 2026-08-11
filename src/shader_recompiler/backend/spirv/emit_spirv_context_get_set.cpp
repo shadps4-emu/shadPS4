@@ -5,6 +5,7 @@
 #include "core/emulator_settings.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/fragment_barycentric.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/ir/patch.h"
@@ -17,11 +18,45 @@ namespace Shader::Backend::SPIRV {
 using PointerType = EmitContext::PointerType;
 using PointerSize = EmitContext::PointerSize;
 
-static u32 KHRBarycentricComponent(const EmitContext& ctx, u32 comp) {
+static Id ExtractKHRBarycentricComponent(EmitContext& ctx, Id value, u32 comp) {
     ASSERT_MSG(comp < 2, "Invalid guest barycentric component {}", comp);
-    // GCN I/J are relative to the provoking vertex. KHR components are ordered by primitive
-    // vertex, so first-vertex mode uses weights 1/2 while last-vertex mode uses weights 0/1.
-    return ctx.runtime_info.fs_info.provoking_vtx_last ? comp : comp + 1;
+    const FragmentBarycentricMapping mapping =
+        GetFragmentBarycentricMapping(ctx.runtime_info, ctx.profile);
+    const Id even_value = ctx.OpCompositeExtract(ctx.F32[1], value, mapping.Vertex(comp + 1));
+    if (!mapping.uses_primitive_parity) {
+        return even_value;
+    }
+
+    const Id odd_value = ctx.OpCompositeExtract(ctx.F32[1], value, mapping.Vertex(comp + 1, true));
+    const Id primitive_id = ctx.OpLoad(ctx.U32[1], ctx.primitive_id);
+    const Id parity = ctx.OpBitwiseAnd(ctx.U32[1], primitive_id, ctx.u32_one_value);
+    const Id is_odd = ctx.OpIEqual(ctx.U1[1], parity, ctx.u32_one_value);
+    return ctx.OpSelect(ctx.F32[1], is_odd, odd_value, even_value);
+}
+
+static Id LoadBarycentric(EmitContext& ctx, IR::Attribute attr, Id variable, u32 comp) {
+    ASSERT_MSG(comp < 2, "Invalid guest barycentric component {}", comp);
+    const bool uses_khr_barycentrics = !ctx.profile.supports_amd_shader_explicit_vertex_parameter &&
+                                       ctx.profile.supports_fragment_shader_barycentric;
+    if (!uses_khr_barycentrics) {
+        return ctx.OpLoad(ctx.F32[1],
+                          ctx.OpAccessChain(ctx.input_f32, variable, ctx.ConstU32(comp)));
+    }
+
+    const Id value = [&] {
+        switch (attr) {
+        case IR::Attribute::BaryCoordSmoothCentroid:
+        case IR::Attribute::BaryCoordNoPerspCentroid:
+            return ctx.OpInterpolateAtCentroid(ctx.F32[3], variable);
+        case IR::Attribute::BaryCoordSmoothSample:
+        case IR::Attribute::BaryCoordNoPerspSample:
+            return ctx.OpInterpolateAtSample(ctx.F32[3], variable,
+                                             ctx.OpLoad(ctx.U32[1], ctx.sample_index));
+        default:
+            return ctx.OpLoad(ctx.F32[3], variable);
+        }
+    }();
+    return ExtractKHRBarycentricComponent(ctx, value, comp);
 }
 
 static std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
@@ -95,15 +130,18 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         const auto& param{ctx.input_params.at(param_index)};
         const Id value = [&] {
             if (param.is_array) {
-                ASSERT(param.num_components > 1);
                 if (param.is_loaded) {
-                    return ctx.OpCompositeExtract(param.component_type, param.id_array[index],
-                                                  comp);
-                } else {
-                    return ctx.OpLoad(param.component_type,
-                                      ctx.OpAccessChain(param.pointer_type, param.id,
-                                                        ctx.ConstU32(index), ctx.ConstU32(comp)));
+                    return param.num_components > 1
+                               ? ctx.OpCompositeExtract(param.component_type, param.id_array[index],
+                                                        comp)
+                               : param.id_array[index];
                 }
+                const Id pointer =
+                    param.num_components > 1
+                        ? ctx.OpAccessChain(param.pointer_type, param.id, ctx.ConstU32(index),
+                                            ctx.ConstU32(comp))
+                        : ctx.OpAccessChain(param.pointer_type, param.id, ctx.ConstU32(index));
+                return ctx.OpLoad(param.component_type, pointer);
             } else {
                 ASSERT(!param.is_loaded);
                 if (param.num_components > 1) {
@@ -116,9 +154,6 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
             }
         }();
         return param.is_integer ? ctx.OpBitcast(ctx.F32[1], value) : value;
-    }
-    if (IR::IsBarycentricCoord(attr) && ctx.profile.supports_fragment_shader_barycentric) {
-        comp = KHRBarycentricComponent(ctx, comp);
     }
     switch (attr) {
     case IR::Attribute::Position0:
@@ -136,42 +171,24 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(ctx.input_f32, ctx.tess_coord, ctx.ConstU32(1U)));
     case IR::Attribute::BaryCoordSmooth:
-        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
-            return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth,
-                                                            ctx.ConstU32(comp)));
-        } else {
-            return ctx.OpCompositeExtract(ctx.F32[1], ctx.OpLoad(ctx.F32[3], ctx.bary_coord), comp);
-        }
+        return LoadBarycentric(ctx, attr, ctx.bary_coord_smooth, comp);
     case IR::Attribute::BaryCoordSmoothCentroid:
-        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
-            return ctx.OpLoad(ctx.F32[1],
-                              ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth_centroid,
-                                                ctx.ConstU32(comp)));
-        } else {
-            return ctx.OpCompositeExtract(
-                ctx.F32[1], ctx.OpInterpolateAtCentroid(ctx.F32[3], ctx.bary_coord), comp);
-        }
+        return LoadBarycentric(ctx, attr, ctx.bary_coord_smooth_centroid, comp);
     case IR::Attribute::BaryCoordSmoothSample:
+        return LoadBarycentric(ctx, attr, ctx.bary_coord_smooth_sample, comp);
+    case IR::Attribute::BaryCoordNoPersp:
+        return LoadBarycentric(ctx, attr, ctx.bary_coord_nopersp, comp);
+    case IR::Attribute::BaryCoordNoPerspCentroid:
+        return LoadBarycentric(ctx, attr, ctx.bary_coord_nopersp_centroid, comp);
+    case IR::Attribute::BaryCoordNoPerspSample:
+        return LoadBarycentric(ctx, attr, ctx.bary_coord_nopersp_sample, comp);
+    case IR::Attribute::BaryCoordPullModel: {
+        ASSERT_MSG(comp < 3, "Invalid BaryCoordPullModel component {}", comp);
         if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
             return ctx.OpLoad(
                 ctx.F32[1],
-                ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth_sample, ctx.ConstU32(comp)));
-        } else {
-            return ctx.OpCompositeExtract(
-                ctx.F32[1],
-                ctx.OpInterpolateAtSample(ctx.F32[3], ctx.bary_coord,
-                                          ctx.OpLoad(ctx.U32[1], ctx.sample_index)),
-                comp);
+                ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_pull_model, ctx.ConstU32(comp)));
         }
-    case IR::Attribute::BaryCoordNoPersp:
-        return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp,
-                                                        ctx.ConstU32(comp)));
-    case IR::Attribute::BaryCoordNoPerspSample:
-        return ctx.OpLoad(
-            ctx.F32[1],
-            ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp_sample, ctx.ConstU32(comp)));
-    case IR::Attribute::BaryCoordPullModel: {
-        ASSERT_MSG(comp < 3, "Invalid BaryCoordPullModel component {}", comp);
         // FragCoord.w is reciprocal clip W at the fragment center. Perspective barycentrics
         // are (I/W)/(1/W) and (J/W)/(1/W), so multiplying by FragCoord.w recovers the
         // pull-model values expected by the guest.
@@ -180,11 +197,8 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         if (comp == 2) {
             return inv_w;
         }
-        const u32 ij_comp = ctx.profile.supports_fragment_shader_barycentric
-                                ? KHRBarycentricComponent(ctx, comp)
-                                : comp;
-        const Id ij = ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_smooth,
-                                                               ctx.ConstU32(ij_comp)));
+        const Id ij =
+            LoadBarycentric(ctx, IR::Attribute::BaryCoordSmooth, ctx.bary_coord_smooth, comp);
         return ctx.OpFMul(ctx.F32[1], ij, inv_w);
     }
     default:

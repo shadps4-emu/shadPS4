@@ -760,7 +760,11 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         const auto data_fmt = tsharp.GetDataFmt();
         const auto num_fmt = tsharp.GetNumberFmt();
         if (tsharp.Address() == 0 || data_fmt == AmdGpu::DataFormat::FormatInvalid) {
-            image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            auto& binding =
+                image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            binding.second.type = image_desc.is_written
+                                      ? VideoCore::TextureCache::BindingType::Storage
+                                      : VideoCore::TextureCache::BindingType::Texture;
             image_descriptor_array_sizes.push_back(1);
             continue;
         }
@@ -772,7 +776,11 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                         "data_format={}, num_format={}",
                         tsharp.Address(), tsharp.pitch, tsharp.width, static_cast<u32>(data_fmt),
                         static_cast<u32>(num_fmt));
-            image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            auto& binding =
+                image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            binding.second.type = image_desc.is_written
+                                      ? VideoCore::TextureCache::BindingType::Storage
+                                      : VideoCore::TextureCache::BindingType::Texture;
             image_descriptor_array_sizes.push_back(1);
             continue;
         }

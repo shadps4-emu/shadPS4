@@ -95,8 +95,8 @@ Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                    bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
-    : instance{CreateInstance(window.GetWindowInfo().type, enable_validation,
-                              enable_crash_diagnostic)},
+    : instance{
+          CreateInstance(window.GetWindowInfo().type, enable_validation, enable_crash_diagnostic)},
       physical_devices{EnumeratePhysicalDevices(instance)} {
     if (enable_validation) {
         debug_callback = CreateDebugCallback(*instance);
@@ -211,7 +211,9 @@ bool Instance::CreateDevice() {
                           vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
                           vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
                           vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
-                          vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
+                          vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT,
+                          vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR,
+                          vk::PhysicalDeviceProvokingVertexFeaturesEXT>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -299,10 +301,28 @@ bool Instance::CreateDevice() {
     amd_shader_explicit_vertex_parameter =
         add_extension(VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_EXTENSION_NAME);
     if (!amd_shader_explicit_vertex_parameter) {
-        fragment_shader_barycentric =
+        const bool has_fragment_shader_barycentric =
             add_extension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
+        const auto barycentric_features =
+            feature_chain.get<vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR>();
+        fragment_shader_barycentric =
+            has_fragment_shader_barycentric && barycentric_features.fragmentShaderBarycentric;
     }
-    provoking_vertex = add_extension(VK_EXT_PROVOKING_VERTEX_EXTENSION_NAME);
+    const bool has_provoking_vertex = add_extension(VK_EXT_PROVOKING_VERTEX_EXTENSION_NAME);
+    const auto provoking_vertex_features =
+        feature_chain.get<vk::PhysicalDeviceProvokingVertexFeaturesEXT>();
+    provoking_vertex = has_provoking_vertex && provoking_vertex_features.provokingVertexLast;
+    if (fragment_shader_barycentric && provoking_vertex) {
+        const auto barycentric_properties =
+            physical_device
+                .getProperties2<vk::PhysicalDeviceProperties2,
+                                vk::PhysicalDeviceFragmentShaderBarycentricPropertiesKHR>()
+                .get<vk::PhysicalDeviceFragmentShaderBarycentricPropertiesKHR>();
+        tri_strip_vertex_order_independent_of_provoking_vertex =
+            barycentric_properties.triStripVertexOrderIndependentOfProvokingVertex;
+        LOG_INFO(Render_Vulkan, "- triStripVertexOrderIndependentOfProvokingVertex: {}",
+                 tri_strip_vertex_order_independent_of_provoking_vertex);
+    }
     shader_stencil_export = add_extension(VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME);
     image_load_store_lod = add_extension(VK_AMD_SHADER_IMAGE_LOAD_STORE_LOD_EXTENSION_NAME);
     amd_gcn_shader = add_extension(VK_AMD_GCN_SHADER_EXTENSION_NAME);
