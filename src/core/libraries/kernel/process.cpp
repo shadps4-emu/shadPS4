@@ -74,7 +74,9 @@ void* PS4_SYSV_ABI sceKernelGetProcParam() {
 s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, const void* argp,
                                           u32 flags, const void* pOpt, s32* pRes) {
     LOG_INFO(Lib_Kernel, "called filename = {}, args = {}", moduleFileName, args);
-    ASSERT(flags == 0);
+    if (flags != 0) {
+        LOG_ERROR(Lib_Kernel, "unhandled flags: {:#x}", flags);
+    }
 
     auto* linker = Common::Singleton<Core::Linker>::Instance();
 
