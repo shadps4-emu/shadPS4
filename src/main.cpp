@@ -69,6 +69,7 @@ int main(int argc, char* argv[]) {
     std::optional<std::string> patchFile;
 
     std::vector<std::pair<std::filesystem::path, std::string>> mounts;
+    static std::vector<std::string> env_vars;
 
     // ---- Options ----
     app.add_option("guest_arg", gamePath, "Game path or ID"); // positional
@@ -96,6 +97,7 @@ int main(int argc, char* argv[]) {
     app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
     app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
     app.add_option("--mount", mounts, "Mount source to destination");
+    app.add_option("-e,--env", env_vars, "Environment variables to pass to the guest");
 
     // ---- Capture args after `--` verbatim ----
     app.allow_extras();
@@ -248,7 +250,7 @@ int main(int argc, char* argv[]) {
     auto* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
     emulator->waitForDebuggerBeforeRun = waitForDebugger;
-    emulator->Run(ebootPath, gameArgs, overrideRoot, mounts);
+    emulator->Run(ebootPath, gameArgs, overrideRoot, mounts, env_vars);
 
     return 0;
 }
