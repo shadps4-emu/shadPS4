@@ -3,9 +3,10 @@
 
 #pragma once
 
+#include <array>
 #include <mutex>
+#include <optional>
 #include <utility>
-#include <vector>
 
 #include <SDL3/SDL_gamepad.h>
 #include "SDL3/SDL_joystick.h"
@@ -14,13 +15,7 @@
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
 
-struct SDL_Gamepad;
-
 namespace Input {
-
-enum class ControllerType {
-    Standard,
-};
 
 enum class Axis {
     LeftX = 0,
@@ -63,19 +58,22 @@ private:
 
 public:
     void OnButton(Libraries::Pad::OrbisPadButtonDataOffset, bool);
-    void OnAxis(Axis, int, bool smooth = true);
+    void OnAxis(Axis, int, u64 timestamp, bool smooth = true);
     void OnTouchpad(int touchIndex, bool isDown, float x, float y);
     void OnGyro(const float[3]);
     void OnAccel(const float[3]);
-    void UpdateAxisSmoothing();
+    void UpdateAxisSmoothing(u64 timestamp);
 
     Libraries::Pad::OrbisPadButtonDataOffset buttonsState{};
     u64 time = 0;
     AxisArray<s32> axes{axis_defaults};
-    TouchpadEntry touchpad[2] = {{false, 0, 0}, {false, 0, 0}};
+    TouchpadEntry touchpad[2]{};
     Libraries::Pad::OrbisFVector3 acceleration = {0.0f, -9.81f, 0.0f};
     Libraries::Pad::OrbisFVector3 angularVelocity = {0.0f, 0.0f, 0.0f};
     Libraries::Pad::OrbisFQuaternion orientation = {0.0f, 0.0f, 0.0f, 1.0f};
+    u64 touch_time_since_held_down{};
+    bool connected{};
+    u8 connected_count{};
 };
 
 inline int GetAxis(int min, int max, int value) {
@@ -92,16 +90,15 @@ public:
     void ConnectController(SDL_Gamepad* pad);
     void DisconnectController();
 
-    void ReadState(State* state, bool* isConnected, int* connectedCount);
-    int ReadStates(State* states, int states_num, bool* isConnected, int* connectedCount);
+    State ReadState();
+    int ReadStates(State* states, int states_num);
 
     void Button(Libraries::Pad::OrbisPadButtonDataOffset button, bool isPressed);
     void Axis(Input::Axis axis, int value, bool smooth = true);
-    void Gyro(int id);
-    void Acceleration(int id);
     void UpdateGyro(const float gyro[3]);
     void UpdateAcceleration(const float acceleration[3]);
-    void UpdateAxisSmoothing();
+    void PollState();
+    void ResetOrientation();
     void SetLightBarRGB(u8 const r, u8 const g, u8 const b);
     void SetLightBarRGB(Colour const c);
     Colour GetLightBarRGB();
@@ -109,44 +106,24 @@ public:
     bool SetVibration(u8 smallMotor, u8 largeMotor);
     void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
 
-    u8 GetTouchCount();
-    void SetTouchCount(u8 touchCount);
-    u8 GetSecondaryTouchCount();
-    void SetSecondaryTouchCount(u8 touchCount);
-    u8 GetPreviousTouchNum();
-    void SetPreviousTouchNum(u8 touchNum);
-    bool WasSecondaryTouchReset();
-    void UnsetSecondaryTouchResetBool();
-
-    void SetLastOrientation(Libraries::Pad::OrbisFQuaternion& orientation);
-    Libraries::Pad::OrbisFQuaternion GetLastOrientation();
-    std::chrono::steady_clock::time_point GetLastUpdate();
-    void SetLastUpdate(std::chrono::steady_clock::time_point lastUpdate);
-
-    float gyro_poll_rate;
-    float accel_poll_rate;
     float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, 9.81f, 0.0f};
     s32 user_id = Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID;
     SDL_Gamepad* m_sdl_gamepad = nullptr;
-    u64 last_touch_down_timestamp = 0;
 
 private:
-    void PushState();
+    // m_state_mutex must be held by the caller.
+    void PushStateLocked(u64 timestamp = 0);
+    void UpdateOrientationLocked(u64 timestamp);
 
-    bool m_connected = false;
-    int m_connected_count = 0;
-    u8 m_touch_count = 0;
-    u8 m_secondary_touch_count = 0;
-    u8 m_previous_touchnum = 0;
-    bool m_was_secondary_reset = false;
-    std::chrono::steady_clock::time_point m_last_update = {};
-    Libraries::Pad::OrbisFQuaternion m_orientation = {0.0f, 0.0f, 0.0f, 1.0f};
+    u8 m_next_touch_id{1};
+    u64 m_touch_down_timestamp{};
+    u64 m_last_orientation_update{};
     Colour colour;
     std::optional<Colour> override_colour{};
 
     State m_state;
 
-    std::mutex m_states_queue_mutex;
+    std::mutex m_state_mutex;
     RingBufferQueue<State> m_states_queue;
 };
 
@@ -169,11 +146,6 @@ public:
     static std::optional<u8> GetControllerIndexFromUserID(s32 user_id);
     static std::optional<u8> GetControllerIndexFromControllerID(s32 controller_id);
 
-    static void CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
-                                     Libraries::Pad::OrbisFVector3& angularVelocity,
-                                     float deltaTime,
-                                     Libraries::Pad::OrbisFQuaternion& lastOrientation,
-                                     Libraries::Pad::OrbisFQuaternion& orientation);
     void SetControllerCustomColor(s32 i, u8 r, u8 g, u8 b) {
         // reset to ensure the next function always runs, even if there already was a preexisting
         // override colour before

@@ -20,7 +20,7 @@ struct IconInfo {
     bool focusState;
 };
 
-void Launch(char* executableName);
+void Launch(char* executableName, bool sameProcess);
 void GetGameIconInfo(std::vector<IconInfo>& icons);
 SDL_Texture* LoadSdlTextureData(std::vector<u8> data);
 SDL_Texture* LoadSdlTextureDataFromFile(std::filesystem::path filePath);
