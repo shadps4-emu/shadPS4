@@ -334,6 +334,9 @@ GraphicsPipeline::GraphicsPipeline(
         // The shader squares its color output for this attachment (see PsColorBuffer), so the
         // factors must not scale the operands again.
         if (key.color_buffers[i].blend_self_scale) {
+            LOG_WARNING(
+                Render_Vulkan,
+                "Emulating scaled min/max blend with squared shader output on attachment {}", i);
             attachments[i].srcColorBlendFactor = vk::BlendFactor::eOne;
             attachments[i].dstColorBlendFactor = vk::BlendFactor::eOne;
         }
