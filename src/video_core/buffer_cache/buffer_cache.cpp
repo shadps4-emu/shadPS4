@@ -79,7 +79,7 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write) {
         Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
         // GPU-modified ranges come as many small scattered islands, so the download
         // is widened to a window around the request
-        constexpr u64 WindowSize = 256_KB;
+        constexpr u64 WindowSize = 512_KB;
         const VAddr buf_start = buffer.CpuAddr();
         const VAddr buf_end = buf_start + buffer.SizeBytes();
         const VAddr window_start =
