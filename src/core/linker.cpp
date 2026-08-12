@@ -239,7 +239,9 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
         handle = std::move(host);
     }
 
-    auto module = std::make_unique<Module>(memory, elf_name, std::move(handle), max_tls_index);
+    s32 mod_id = m_modules.size();
+    auto module =
+        std::make_unique<Module>(memory, elf_name, std::move(handle), max_tls_index, mod_id);
     if (!module->IsValid()) {
         LOG_ERROR(Core_Linker, "Provided file {} is not valid ELF file", elf_name.string());
         return -1;
@@ -250,7 +252,7 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
 
     Core::Devtools::Widget::ModuleList::AddModule(elf_name.filename().string(), elf_name);
 
-    return m_modules.size() - 1;
+    return mod_id;
 }
 
 s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, const void* argp,
