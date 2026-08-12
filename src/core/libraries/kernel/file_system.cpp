@@ -11,7 +11,7 @@
 #include "common/scope_exit.h"
 #include "common/singleton.h"
 #include "core/file_sys/devices/console_device.h"
-#include "core/file_sys/devices/deci_tty6_device.h"
+#include "core/file_sys/devices/deci_tty_device.h"
 #include "core/file_sys/devices/logger.h"
 #include "core/file_sys/devices/nop_device.h"
 #include "core/file_sys/devices/random_device.h"
@@ -68,7 +68,8 @@ static std::map<std::string, FactoryDevice> available_device = {
     {"/dev/random",   &D::RandomDevice::Create },
     {"/dev/srandom",  &D::SRandomDevice::Create },
     {"/dev/console",  &D::ConsoleDevice::Create },
-    {"/dev/deci_tty6",&D::DeciTty6Device::Create },
+    {"/dev/deci_tty6",&D::DeciTtyDevice::Create },
+    {"/dev/deci_tty7",&D::DeciTtyDevice::Create },
     {"/dev/rng",      &D::RngDevice::Create },
     {"/dev/zero",  &D::ZeroDevice::Create },
     // clang-format on
@@ -661,6 +662,27 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
     return result;
 }
 
+s32 PS4_SYSV_ABI posix_access(const char* path, s32 mode) {
+    LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}, mode = {}", path, mode);
+    if (strlen(path) > 255) {
+        *__Error() = POSIX_ENAMETOOLONG;
+        return -1;
+    }
+
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    const bool is_dir = mnt->IsDirectory(path);
+    const bool is_file = !is_dir && mnt->Exists(path);
+    const bool is_root = strncmp(path, "/", 2) == 0;
+    if (!is_dir && !is_file && !is_root) {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
+    if (is_root) {
+        LOG_WARNING(Kernel_Fs, "Checking accessibility of filesystem root");
+    }
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     LOG_DEBUG(Kernel_Fs, "(PARTIAL) path = {}", path);
     if (strlen(path) > 255) {
@@ -673,9 +695,18 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
 
     const bool is_dir = mnt->IsDirectory(path);
     const bool is_file = !is_dir && mnt->Exists(path);
-    if (!is_dir && !is_file) {
+    const bool is_root = strncmp(path, "/", 2) == 0;
+    if (!is_dir && !is_file && !is_root) {
         *__Error() = POSIX_ENOENT;
         return -1;
+    }
+    if (is_root) {
+        LOG_WARNING(Kernel_Fs, "Attempting to access filesystem root");
+        sb->st_mode = 0000777u | 0040000u;
+        sb->st_size = 65536;
+        sb->st_blksize = 65536;
+        sb->st_blocks = 128;
+        return ORBIS_OK;
     }
 
     // get the difference between file clock and system clock
@@ -1564,6 +1595,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("c7ZnT7V1B98", "libScePosix", 1, "libkernel", posix_rmdir);
     LIB_FUNCTION("c7ZnT7V1B98", "libkernel", 1, "libkernel", posix_rmdir);
     LIB_FUNCTION("naInUjYt3so", "libkernel", 1, "libkernel", sceKernelRmdir);
+    LIB_FUNCTION("8vE6Z6VEYyk", "libkernel_psmkit", 1, "libkernel", posix_access);
     LIB_FUNCTION("E6ao34wPw+U", "libScePosix", 1, "libkernel", posix_stat);
     LIB_FUNCTION("E6ao34wPw+U", "libkernel", 1, "libkernel", posix_stat);
     LIB_FUNCTION("eV9wAD2riIA", "libkernel", 1, "libkernel", sceKernelStat);
