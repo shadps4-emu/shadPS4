@@ -43,7 +43,7 @@
 namespace Libraries::Kernel {
 
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
-static std::vector<char*> g_environ{};
+char const* g_environment[64];
 static const char* g_progname = "eboot.bin";
 
 boost::asio::io_context io_context;
@@ -148,23 +148,6 @@ void SetPosixErrno(s32 e) {
         LOG_WARNING(Kernel, "Unhandled errno {}", e);
         g_posix_errno = e;
     }
-}
-
-static u64 g_mspace_atomic_id_mask = 0;
-static u64 g_mstate_table[64] = {0};
-
-struct HeapInfoInfo {
-    u64 size = sizeof(HeapInfoInfo);
-    u32 flag;
-    u32 getSegmentInfo;
-    u64* mspace_atomic_id_mask;
-    u64* mstate_table;
-};
-
-void PS4_SYSV_ABI sceLibcHeapGetTraceInfo(HeapInfoInfo* info) {
-    info->mspace_atomic_id_mask = &g_mspace_atomic_id_mask;
-    info->mstate_table = g_mstate_table;
-    info->getSegmentInfo = 0;
 }
 
 struct OrbisKernelUuid {
@@ -456,7 +439,8 @@ u64 PS4_SYSV_ABI posix_sysconf(s32 name) {
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
-    g_environ.emplace_back(nullptr);
+
+    static char const** kernel_environ = g_environment;
 
     Libraries::Kernel::RegisterFileSystem(sym);
     Libraries::Kernel::RegisterTime(sym);
@@ -471,7 +455,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterCoredump(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", &g_stack_chk_guard);
-    LIB_OBJ("+2thxYZ4syk", "libkernel", 1, "libkernel", &g_environ);
+    LIB_OBJ("+2thxYZ4syk", "libkernel", 1, "libkernel", &kernel_environ);
     LIB_OBJ("djxxOmW6-aw", "libkernel", 1, "libkernel", &g_progname);
     LIB_FUNCTION("D4yla3vx4tY", "libkernel", 1, "libkernel", sceKernelError);
     LIB_FUNCTION("YeU23Szo3BM", "libkernel", 1, "libkernel", sceKernelGetAllowedSdkVersionOnSystem);
@@ -493,9 +477,6 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("mkawd0NA9ts", "libkernel", 1, "libkernel", posix_sysconf);
     LIB_FUNCTION("mkawd0NA9ts", "libScePosix", 1, "libkernel", posix_sysconf);
-
-    LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal",
-                 sceLibcHeapGetTraceInfo);
 
     // network
     LIB_FUNCTION("XVL8So3QJUk", "libkernel", 1, "libkernel", Libraries::Net::sys_connect);

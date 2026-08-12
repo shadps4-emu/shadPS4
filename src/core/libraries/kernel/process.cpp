@@ -29,6 +29,15 @@ s32 PS4_SYSV_ABI sceKernelHasNeoMode() {
     return EmulatorSettings.IsNeo();
 }
 
+s32 PS4_SYSV_ABI sceKernelIsDevkit() {
+    LOG_INFO(Lib_Kernel, "called, isDevkit: {}", EmulatorSettings.IsDevKit());
+    return EmulatorSettings.IsDevKit();
+}
+
+s32 PS4_SYSV_ABI sceKernelIsCEX() {
+    return !sceKernelIsDevkit();
+}
+
 s32 PS4_SYSV_ABI sceKernelGetMainSocId() {
     // These hardcoded values are based on hardware observations.
     // Different models of PS4/PS4 Pro likely return slightly different values.
@@ -288,6 +297,8 @@ void RegisterProcess(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", sceKernelIsNeoMode);
     LIB_FUNCTION("rNRtm1uioyY", "libkernel", 1, "libkernel", sceKernelHasNeoMode);
+    LIB_FUNCTION("QNjGUdj1HPM", "libkernel", 1, "libkernel", sceKernelIsDevkit);
+    LIB_FUNCTION("8aCOCGoRkUI", "libkernel", 1, "libkernel", sceKernelIsCEX);
     LIB_FUNCTION("0vTn5IDMU9A", "libkernel", 1, "libkernel", sceKernelGetMainSocId);
     LIB_FUNCTION("VOx8NGmHXTs", "libkernel", 1, "libkernel", sceKernelGetCpumode);
     LIB_FUNCTION("g0VTBxfJyu0", "libkernel", 1, "libkernel", sceKernelGetCurrentCpu);

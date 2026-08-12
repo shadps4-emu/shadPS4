@@ -18,6 +18,7 @@
 #include "core/file_sys/devices/rng_device.h"
 #include "core/file_sys/devices/srandom_device.h"
 #include "core/file_sys/devices/urandom_device.h"
+#include "core/file_sys/devices/zero_device.h"
 #include "core/file_sys/directories/normal_directory.h"
 #include "core/file_sys/directories/pfs_directory.h"
 #include "core/file_sys/fs.h"
@@ -69,6 +70,7 @@ static std::map<std::string, FactoryDevice> available_device = {
     {"/dev/console",  &D::ConsoleDevice::Create },
     {"/dev/deci_tty6",&D::DeciTty6Device::Create },
     {"/dev/rng",      &D::RngDevice::Create },
+    {"/dev/zero",  &D::ZeroDevice::Create },
     // clang-format on
 };
 
