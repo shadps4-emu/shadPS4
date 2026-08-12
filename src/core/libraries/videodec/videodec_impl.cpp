@@ -116,7 +116,7 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
     // pPictureInfoOut.codec.avc.aspectRatioIdc;
     // pPictureInfoOut.codec.avc.sarWidth;
     // pPictureInfoOut.codec.avc.sarHeight;
-    // pPictureInfoOut.codec.avc.colourPrimaries;
+    pPictureInfoOut.codec.avc.colourPrimaries = static_cast<u8>(frame->color_primaries);
     // pPictureInfoOut.codec.avc.transferCharacteristics;
     // pPictureInfoOut.codec.avc.matrixCoefficients;
     // pPictureInfoOut.codec.avc.videoFullRangeFlag;
@@ -216,6 +216,7 @@ AVFrame* VdecDecoder::ConvertNV12Frame(AVFrame& frame) {
     nv12_frame->crop_left = frame.crop_left;
     nv12_frame->crop_right = frame.crop_right;
     nv12_frame->opaque = frame.opaque;
+    nv12_frame->color_primaries = frame.color_primaries;
 
     av_frame_get_buffer(nv12_frame, 0);
 
