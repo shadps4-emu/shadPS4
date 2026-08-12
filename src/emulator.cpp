@@ -28,6 +28,7 @@
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"
 #include "common/singleton.h"
+#include "core/cpu_patches.h" // Windows static guest red-zone protection
 #include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
 #include "core/emulator_settings.h"
@@ -57,6 +58,10 @@
 #include <core/file_format/npbind.h>
 
 Frontend::WindowSDL* g_window = nullptr;
+
+namespace Libraries::Kernel {
+extern char const* g_environment[64];
+}
 
 namespace Core {
 
@@ -265,7 +270,9 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
 }
 
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
-                   std::optional<std::filesystem::path> p_game_folder) {
+                   std::optional<std::filesystem::path> p_game_folder,
+                   std::vector<std::pair<std::filesystem::path, std::string>> mounts,
+                   std::vector<std::string> const& env_vars) {
     Common::SetCurrentThreadName("shadPS4:Main");
     if (waitForDebuggerBeforeRun) {
         Debugger::WaitForDebuggerAttach();
@@ -423,9 +430,20 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     EmulatorSettings.Load(id);
+    // Windows static guest red-zone protection
+    WindowsGuestRedZoneProtection::SetActiveMode(
+        EmulatorSettings.GetWindowsGuestRedZoneProtectionMode());
     // Switch to configured log
     Common::Log::Switch((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
                                                                           : "shad_log.txt");
+#ifdef _WIN32
+    // Windows static guest red-zone protection
+    if (WindowsGuestRedZoneProtection::IsStaticPatchingEnabled()) {
+        LOG_INFO(Core,
+                 "Windows guest red-zone static protection uses module EH metadata and cannot "
+                 "cover code without function entries");
+    }
+#endif
 
     auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
 
@@ -630,9 +648,21 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
     mnt->Mount(host_font2_dir, guest_font_dir);
 
+    for (auto const& mount_pair : mounts) {
+        LOG_INFO(Loader, "Mounting {} to {}", mount_pair.first.string(), mount_pair.second);
+        mnt->Mount(mount_pair.first, mount_pair.second);
+    }
+
     if (std::filesystem::is_empty(host_font_dir) || std::filesystem::is_empty(host_font2_dir)) {
         LOG_WARNING(Loader, "No dumped system fonts, expect missing text or instability");
     }
+
+    auto env_max = std::min<u64>(env_vars.size(), 63);
+    for (int i = 0; i < env_max; i++) {
+        LOG_INFO(Loader, "Env {:02}: {}", i, env_vars[i]);
+        Libraries::Kernel::g_environment[i] = env_vars[i].c_str();
+    }
+    Libraries::Kernel::g_environment[env_max] = nullptr;
 
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());

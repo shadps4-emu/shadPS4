@@ -131,6 +131,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
     }
     case Stage::Vertex: {
         BuildCommon(regs.vs_program);
+        info.vs_info.user_clip_plane_mask = regs.clipper_control.user_clip_plane_enable;
         info.vs_info.step_rate_0 = regs.vgt_instance_step_rate_0;
         info.vs_info.step_rate_1 = regs.vgt_instance_step_rate_1;
         info.vs_info.num_outputs = MapOutputs(info.vs_info.outputs, regs.vs_output_control);
@@ -222,9 +223,16 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
             info.fs_info.color_buffers[i] = graphics_key.color_buffers[i];
         }
+        // Lowered user clip planes ride the same emulation path as guest-exported distances, so
+        // the fragment side arms whenever the hardware vertex stage lowers them, keeping its input
+        // locations in sync with the shifted vertex outputs.
+        const bool lowers_user_clip_planes =
+            regs.clipper_control.user_clip_plane_enable &&
+            !regs.stage_enable.IsStageEnabled(static_cast<u32>(Stage::Geometry));
         info.fs_info.clip_distance_emulation =
-            regs.vs_output_control.clip_distance_enable &&
-            !regs.stage_enable.IsStageEnabled(static_cast<u32>(Stage::Local)) &&
+            ((regs.vs_output_control.clip_distance_enable &&
+              !regs.stage_enable.IsStageEnabled(static_cast<u32>(Stage::Local))) ||
+             lowers_user_clip_planes) &&
             profile.needs_clip_distance_emulation;
         break;
     }

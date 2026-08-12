@@ -92,23 +92,20 @@ void Linker::Execute(const std::vector<std::string>& args) {
     // Relocate all modules
     RelocateAllImports();
 
-    // If we're running LLE libSceLibcInternal,
-    // we need to find the _malloc_init function and run it manually.
-    // This is something libkernel runs during initialization.
+    // libkernel entry is responsible for initializing malloc-related elements of libSceLibcInternal
+    // this is done through calling _malloc_init, and sceLibcInternalMemoryMutexEnable.
     static PS4_SYSV_ABI s32 (*malloc_init)() = nullptr;
+    static PS4_SYSV_ABI void (*sceLibcInternalMemoryMutexEnable)() = nullptr;
 
     if (has_libcinternal) {
         for (const auto& m : m_modules) {
             const auto& mod = m.get();
             if (mod->name.contains("libSceLibcInternal.sprx")) {
-                // Found libSceLibcInternal, now search through function exports.
-                // Looking for _malloc_init to init libSceLibcInternal properly
-                // and for all the memory allocating functions, so we can initialize our heap API
-                for (const auto& sym : mod->export_sym.GetSymbols()) {
-                    if (sym.nid_name.compare("_malloc_init") == 0) {
-                        malloc_init = reinterpret_cast<PS4_SYSV_ABI s32 (*)()>(sym.virtual_address);
-                    }
-                }
+                malloc_init =
+                    reinterpret_cast<PS4_SYSV_ABI s32 (*)()>(mod->FindByName("_malloc_init"));
+                sceLibcInternalMemoryMutexEnable = reinterpret_cast<PS4_SYSV_ABI void (*)()>(
+                    mod->FindByName("sceLibcInternalMemoryMutexEnable"));
+                break;
             }
         }
     }
@@ -165,10 +162,11 @@ void Linker::Execute(const std::vector<std::string>& args) {
         if (has_libcinternal) {
             LoadLibcInternal();
 
-            if (malloc_init != nullptr) {
+            if (malloc_init && sceLibcInternalMemoryMutexEnable) {
                 // Call _malloc_init
                 s32 ret = malloc_init();
                 ASSERT_MSG(ret == 0, "malloc_init failed");
+                sceLibcInternalMemoryMutexEnable();
             }
         }
 
