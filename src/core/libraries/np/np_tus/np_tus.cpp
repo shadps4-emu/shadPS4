@@ -1233,25 +1233,25 @@ s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusAsync(int reqId, s32 slotId, s32 in
              reqId, slotId, includeSelf, sortType, fmt::ptr(statusArray), statusArraySize, arrayLen,
              fmt::ptr(option));
     if (!statusArray) {
-        LOG_ERROR(Lib_NpTus, "insufficient argument")
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
         return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
     }
     if (option || arrayLen < 1 || slotId < 0) {
-        LOG_ERROR(Lib_NpTus, "invalid argument")
+        LOG_ERROR(Lib_NpTus, "invalid argument");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
     if (arrayLen > TusMaxSelectedFriends) {
-        LOG_ERROR(Lib_NpTus, "too many friends")
+        LOG_ERROR(Lib_NpTus, "too many friends");
         return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_NPID;
     }
     // Data statuses only sort by date (no value ordering).
     if (sortType < ORBIS_NP_TUS_DATASTATUS_SORTTYPE_DESCENDING_DATE ||
         sortType > ORBIS_NP_TUS_DATASTATUS_SORTTYPE_ASCENDING_DATE) {
-        LOG_ERROR(Lib_NpTus, "invalid argument")
+        LOG_ERROR(Lib_NpTus, "invalid argument");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
     if (statusArraySize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusDataStatus)) {
-        LOG_ERROR(Lib_NpTus, "invalid alignment")
+        LOG_ERROR(Lib_NpTus, "invalid alignment");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
     }
 
@@ -1298,24 +1298,24 @@ s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableAsync(int reqId, s32 slotId, s32 incl
              reqId, slotId, includeSelf, sortType, fmt::ptr(variableArray), variableArraySize,
              arrayLen, fmt::ptr(option));
     if (!variableArray) {
-        LOG_ERROR(Lib_NpTus, "insufficient argument")
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
         return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
     }
     if (option || arrayLen < 1 || slotId < 0) {
-        LOG_ERROR(Lib_NpTus, "invalid argument")
+        LOG_ERROR(Lib_NpTus, "invalid argument");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
     if (arrayLen > TusMaxSelectedFriends) {
-        LOG_ERROR(Lib_NpTus, "too many friends")
+        LOG_ERROR(Lib_NpTus, "too many friends");
         return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_NPID;
     }
     if (sortType < ORBIS_NP_TUS_VARIABLE_SORTTYPE_DESCENDING_DATE ||
         sortType > ORBIS_NP_TUS_VARIABLE_SORTTYPE_ASCENDING_VALUE) {
-        LOG_ERROR(Lib_NpTus, "invalid argument")
+        LOG_ERROR(Lib_NpTus, "invalid argument");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
     if (variableArraySize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariable)) {
-        LOG_ERROR(Lib_NpTus, "invalid alignment")
+        LOG_ERROR(Lib_NpTus, "invalid alignment");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
     }
 
