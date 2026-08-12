@@ -83,7 +83,7 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
 
     ret = avcodec_receive_frame(mCodecContext, frame);
     if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-        LOG_INFO(Lib_Vdec2, "AVERROR_EOF or AVERROR(EAGAIN)");
+        LOG_TRACE(Lib_Vdec2, "AVERROR_EOF or AVERROR(EAGAIN)");
         av_packet_free(&packet);
         av_frame_free(&frame);
         return ORBIS_OK;
@@ -94,7 +94,9 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
         return ORBIS_VIDEODEC2_ERROR_API_FAIL;
     }
 
-    ASSERT((frame->flags & AV_FRAME_FLAG_INTERLACED) == 0);
+    if (frame->flags & AV_FRAME_FLAG_INTERLACED) {
+        LOG_ERROR(Lib_Vdec2, "Interlaced video output is not suported.");
+    }
 
     if (frame->format != AV_PIX_FMT_NV12) {
         AVFrame* nv12_frame = ConvertNV12Frame(*frame);

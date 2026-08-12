@@ -185,7 +185,7 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
     // pPictureInfoOut.codec.avc.aspectRatioIdc;
     // pPictureInfoOut.codec.avc.sarWidth;
     // pPictureInfoOut.codec.avc.sarHeight;
-    // pPictureInfoOut.codec.avc.colourPrimaries;
+    pPictureInfoOut.codec.avc.colourPrimaries = static_cast<u8>(frame->color_primaries);
     // pPictureInfoOut.codec.avc.transferCharacteristics;
     // pPictureInfoOut.codec.avc.matrixCoefficients;
     // pPictureInfoOut.codec.avc.videoFullRangeFlag;
