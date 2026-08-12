@@ -75,14 +75,14 @@ struct OrbisNpTusDataInfo {
 };
 
 struct OrbisNpTusDataStatus {
-    OrbisNpId npId;
-    int set;
-    Libraries::Rtc::OrbisRtcTick lastChanged;
-    OrbisNpId lastChangedAuthor;
-    u8 pad2[4];
+    OrbisNpId ownerId;
+    s32 hasData;
+    Libraries::Rtc::OrbisRtcTick lastChangedDate;
+    OrbisNpId lastChangedAuthorId;
+    u8 pad[4];
     void* data;
     u64 dataSize;
-    OrbisNpTusDataInfo info; // recheck
+    OrbisNpTusDataInfo info;
 };
 
 struct OrbisNpTusDataStatusA {
@@ -166,18 +166,31 @@ s32 PS4_SYSV_ABI sceNpTssGetSmallStorageAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTssGetStorage();
 s32 PS4_SYSV_ABI sceNpTssGetStorageAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusAbortRequest(int reqId);
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariable();
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariable(int reqId, const OrbisNpId* targetNpId, s32 slotId,
+                                           s64 inVariable, const OrbisNpId* isLastChangedAuthor,
+                                           const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+                                           OrbisNpTusVariable* outVariable, u64 outVariableSize,
+                                           void* option);
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableA();
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAAsync(int reqId);
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAsync(
+    int reqId, const OrbisNpId* targetNpId, s32 slotId, s64 inVariable,
+    const OrbisNpId* isLastChangedAuthor, const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+    OrbisNpTusVariable* outVariable, u64 outVariableSize, void* option);
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAVUser();
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAVUserAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSave();
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUser();
 s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUserAsync(int reqId);
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUser();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUserAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUser(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32 slotId, s64 inVariable,
+    const OrbisNpId* isLastChangedAuthor, const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+    OrbisNpTusVariable* outVariable, u64 outVariableSize, void* option);
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUserAsync(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32 slotId, s64 inVariable,
+    const OrbisNpId* isLastChangedAuthor, const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+    OrbisNpTusVariable* outVariable, u64 outVariableSize, void* option);
 s32 PS4_SYSV_ABI sceNpTusChangeModeForOtherSaveDataOwners();
 s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId);
 s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtxA(OrbisNpServiceLabel serviceLabel,
@@ -203,7 +216,9 @@ s32 PS4_SYSV_ABI sceNpTusGetDataA();
 s32 PS4_SYSV_ABI sceNpTusGetDataAAsync(int reqId, OrbisNpAccountId targetAccountId, s32 slotId,
                                        OrbisNpTusDataStatusA* dataStatus, u64 dataStatusSize,
                                        void* data, u64 recvSize, void* option);
-s32 PS4_SYSV_ABI sceNpTusGetDataAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusGetDataAsync(int reqId, const OrbisNpId* targetNpId, s32 slotId,
+                                      OrbisNpTusDataStatus* dataStatus, u64 dataStatusSize,
+                                      void* data, u64 recvSize, void* option);
 s32 PS4_SYSV_ABI sceNpTusGetDataAVUser();
 s32 PS4_SYSV_ABI sceNpTusGetDataAVUserAsync(int reqId,
                                             const OrbisNpTusVirtualUserId* targetVirtualUserId,
@@ -215,31 +230,53 @@ s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveVUser();
 s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveVUserAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusGetDataVUser();
-s32 PS4_SYSV_ABI sceNpTusGetDataVUserAsync(int reqId);
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatus();
+s32 PS4_SYSV_ABI sceNpTusGetDataVUserAsync(int reqId,
+                                           const OrbisNpTusVirtualUserId* targetVirtualUserId,
+                                           s32 slotId, OrbisNpTusDataStatus* dataStatus,
+                                           u64 dataStatusSize, void* data, u64 recvSize,
+                                           void* option);
+s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatus(int reqId, s32 slotId, s32 includeSelf, s32 sortType,
+                                              OrbisNpTusDataStatus* statusArray,
+                                              u64 statusArraySize, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusA();
 s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusAAsync(int reqId);
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusAsync(int reqId, s32 slotId, s32 includeSelf,
+                                                   s32 sortType, OrbisNpTusDataStatus* statusArray,
+                                                   u64 statusArraySize, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSave();
 s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSaveAsync(int reqId);
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariable();
+s32 PS4_SYSV_ABI sceNpTusGetFriendsVariable(int reqId, s32 slotId, s32 includeSelf, s32 sortType,
+                                            OrbisNpTusVariable* variableArray,
+                                            u64 variableArraySize, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableA();
 s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableAAsync(int reqId);
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableAsync(int reqId, s32 slotId, s32 includeSelf,
+                                                 s32 sortType, OrbisNpTusVariable* variableArray,
+                                                 u64 variableArraySize, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSave();
 s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSaveAsync(int reqId);
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatus();
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatus(int reqId, const OrbisNpId* targetNpId,
+                                                s32* slotIds, OrbisNpTusDataStatus* statusArray,
+                                                u64 statusArraySize, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusA();
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAAsync(int reqId);
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAsync(int reqId, const OrbisNpId* targetNpId,
+                                                     s32* slotIds,
+                                                     OrbisNpTusDataStatus* statusArray,
+                                                     u64 statusArraySize, int arrayLen,
+                                                     void* option);
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAVUser();
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAVUserAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSave();
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUser();
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUserAsync(int reqId);
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUserAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUser(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32* slotIds,
+    OrbisNpTusDataStatus* statusArray, u64 statusArraySize, int arrayLen, void* option);
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUserAsync(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32* slotIds,
+    OrbisNpTusDataStatus* statusArray, u64 statusArraySize, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariable(int reqId, OrbisNpId* npId, s32* slotIds,
                                               OrbisNpTusVariable* variableArray, u64 variablesSize,
                                               int arrayLen, void* option);
@@ -296,7 +333,12 @@ s32 PS4_SYSV_ABI sceNpTusSetDataAAsync(int reqId, OrbisNpAccountId targetAccount
                                        const OrbisNpAccountId* isLastChangedAuthor,
                                        const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
                                        void* option);
-s32 PS4_SYSV_ABI sceNpTusSetDataAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusSetDataAsync(int reqId, const OrbisNpId* targetNpId, s32 slotId,
+                                      u64 totalSize, u64 sendSize, const void* data,
+                                      const OrbisNpTusDataInfo* info, u64 infoStructSize,
+                                      const OrbisNpId* isLastChangedAuthor,
+                                      const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+                                      void* option);
 s32 PS4_SYSV_ABI sceNpTusSetDataAVUser();
 s32 PS4_SYSV_ABI sceNpTusSetDataAVUserAsync(
     int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32 slotId, u64 totalSize,
@@ -304,7 +346,13 @@ s32 PS4_SYSV_ABI sceNpTusSetDataAVUserAsync(
     const OrbisNpAccountId* isLastChangedAuthor,
     const Libraries::Rtc::OrbisRtcTick* isLastChangedDate, void* option);
 s32 PS4_SYSV_ABI sceNpTusSetDataVUser();
-s32 PS4_SYSV_ABI sceNpTusSetDataVUserAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusSetDataVUserAsync(int reqId,
+                                           const OrbisNpTusVirtualUserId* targetVirtualUserId,
+                                           s32 slotId, u64 totalSize, u64 sendSize,
+                                           const void* data, const OrbisNpTusDataInfo* info,
+                                           u64 infoStructSize, const OrbisNpId* isLastChangedAuthor,
+                                           const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+                                           void* option);
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariable(int reqId, OrbisNpId* npId, s32* slotIds,
                                               s64* variables, int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableA();
@@ -321,18 +369,35 @@ s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableVUserAsync(
     int arrayLen, void* option);
 s32 PS4_SYSV_ABI sceNpTusSetThreadParam();
 s32 PS4_SYSV_ABI sceNpTusSetTimeout();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariable();
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariable(int reqId, const OrbisNpId* targetNpId, s32 slotId,
+                                           s32 opeType, s64 variable, const s64* compareValue,
+                                           const OrbisNpId* isLastChangedAuthor,
+                                           const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+                                           OrbisNpTusVariable* resultVariable,
+                                           u64 resultVariableSize, void* option);
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableA();
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAAsync(int reqId);
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAsync(
+    int reqId, const OrbisNpId* targetNpId, s32 slotId, s32 opeType, s64 variable,
+    const s64* compareValue, const OrbisNpId* isLastChangedAuthor,
+    const Libraries::Rtc::OrbisRtcTick* isLastChangedDate, OrbisNpTusVariable* resultVariable,
+    u64 resultVariableSize, void* option);
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAVUser();
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAVUserAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSave();
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUser();
 s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUserAsync(int reqId);
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUser();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUserAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUser(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32 slotId, s32 opeType,
+    s64 variable, const s64* compareValue, const OrbisNpId* isLastChangedAuthor,
+    const Libraries::Rtc::OrbisRtcTick* isLastChangedDate, OrbisNpTusVariable* resultVariable,
+    u64 resultVariableSize, void* option);
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUserAsync(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32 slotId, s32 opeType,
+    s64 variable, const s64* compareValue, const OrbisNpId* isLastChangedAuthor,
+    const Libraries::Rtc::OrbisRtcTick* isLastChangedDate, OrbisNpTusVariable* resultVariable,
+    u64 resultVariableSize, void* option);
 s32 PS4_SYSV_ABI sceNpTusWaitAsync(int reqId, int* result);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);

@@ -663,14 +663,14 @@ message TusGetFriendsDataStatusRequest {
     int32  slotId      = 1;
     bool   includeSelf = 2;
     uint32 max         = 3;
-    int32  sortType    = 4;   // 0 = descending date, 1 = ascending date (see OrbisNpTusDataStatusSortType)
+    int32  sortType    = 4;   // 1=DESC date, 2=ASC date
 }
 
 message TusGetFriendsVariableRequest {
     int32  slotId      = 1;
     bool   includeSelf = 2;
     uint32 max         = 3;
-    int32  sortType    = 4;   // 0=DESC value,1=ASC value,2=DESC date,3=ASC date
+    int32  sortType    = 4;   // 1=DESC date,2=ASC date,3=DESC value,4=ASC value
 }
 
 message TusDataStatusResponse {

@@ -227,7 +227,37 @@ public:
     s32 TusGetData(s32 user_id, s32 service_label, const std::string& ownerNpId,
                    const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
                    NpTus::OrbisNpTusDataStatusA* statusAOut, u64 statusCap, void* dataOut,
-                   u64 dataCap, u64 dataOffset, std::shared_ptr<NpTus::TusRequestCtx> ctx);
+                   u64 dataCap, u64 dataOffset, std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                   NpTus::OrbisNpTusDataStatus* statusOut = nullptr);
+    s32 TusTryAndSetVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
+                             const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
+                             s32 opeType, s64 value, bool hasCompare, s64 compareValue,
+                             bool hasAuthorCheck, s64 isLastChangedAuthor,
+                             const std::string& isLastChangedAuthorNpId, bool hasDateCheck,
+                             u64 isLastChangedDate, NpTus::OrbisNpTusVariable* variableOut,
+                             NpTus::OrbisNpTusVariableA* variableAOut,
+                             std::shared_ptr<NpTus::TusRequestCtx> ctx);
+    s32 TusAddAndGetVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
+                             const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
+                             s64 inVariable, bool hasAuthorCheck, s64 isLastChangedAuthor,
+                             const std::string& isLastChangedAuthorNpId, bool hasDateCheck,
+                             u64 isLastChangedDate, NpTus::OrbisNpTusVariable* variableOut,
+                             NpTus::OrbisNpTusVariableA* variableAOut,
+                             std::shared_ptr<NpTus::TusRequestCtx> ctx);
+    s32 TusGetFriendsDataStatus(s32 user_id, s32 service_label, s32 slotId, bool includeSelf,
+                                s32 sortType, u32 max, NpTus::OrbisNpTusDataStatus* statusOut,
+                                NpTus::OrbisNpTusDataStatusA* statusAOut, u64 arrayNum,
+                                std::shared_ptr<NpTus::TusRequestCtx> ctx);
+    s32 TusGetFriendsVariable(s32 user_id, s32 service_label, s32 slotId, bool includeSelf,
+                              s32 sortType, u32 max, NpTus::OrbisNpTusVariable* variablesOut,
+                              NpTus::OrbisNpTusVariableA* variablesAOut, u64 arrayNum,
+                              std::shared_ptr<NpTus::TusRequestCtx> ctx);
+    s32 TusGetMultiSlotDataStatus(s32 user_id, s32 service_label, const std::string& ownerNpId,
+                                  const std::string& virtualUser, s64 ownerAccountId,
+                                  const std::vector<s32>& slotIds,
+                                  NpTus::OrbisNpTusDataStatus* statusOut,
+                                  NpTus::OrbisNpTusDataStatusA* statusAOut, u64 arrayNum,
+                                  std::shared_ptr<NpTus::TusRequestCtx> ctx);
     s32 TusSetData(s32 user_id, s32 service_label, const std::string& ownerNpId,
                    const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
                    const std::vector<u8>& blob, const std::vector<u8>& info, bool hasAuthorCheck,

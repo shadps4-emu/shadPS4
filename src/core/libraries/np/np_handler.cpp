@@ -2126,7 +2126,8 @@ s32 NpHandler::TusSetMultiSlotVariable(s32 user_id, s32 service_label, const std
 s32 NpHandler::TusGetData(s32 user_id, s32 service_label, const std::string& ownerNpId,
                           const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
                           NpTus::OrbisNpTusDataStatusA* statusAOut, u64 statusCap, void* dataOut,
-                          u64 dataCap, u64 dataOffset, std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+                          u64 dataCap, u64 dataOffset, std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                          NpTus::OrbisNpTusDataStatus* statusOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2160,11 +2161,255 @@ s32 NpHandler::TusGetData(s32 user_id, s32 service_label, const std::string& own
     p.cmd = ShadNet::CommandType::TusGetData;
     p.user_id = user_id;
     p.statusArrayA = statusAOut;
+    p.statusArray = statusOut;
     p.statusCap = statusCap;
     p.dataOut = dataOut;
     p.dataCap = dataCap;
     p.dataOffset = dataOffset;
     p.arrayNum = 1;
+    m_pending_tus.emplace(pkt_id, std::move(p));
+    return ORBIS_OK;
+}
+
+s32 NpHandler::TusTryAndSetVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
+                                    const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
+                                    s32 opeType, s64 value, bool hasCompare, s64 compareValue,
+                                    bool hasAuthorCheck, s64 isLastChangedAuthor,
+                                    const std::string& isLastChangedAuthorNpId, bool hasDateCheck,
+                                    u64 isLastChangedDate, NpTus::OrbisNpTusVariable* variableOut,
+                                    NpTus::OrbisNpTusVariableA* variableAOut,
+                                    std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    shadnet::TusTryAndSetVariableRequest proto;
+    proto.set_ownernpid(ownerNpId);
+    proto.set_slotid(slotId);
+    proto.set_opetype(opeType);
+    proto.set_value(value);
+    // compareValue is optional: when absent the server compares against value
+    if (hasCompare) {
+        proto.set_hascompare(true);
+        proto.set_comparevalue(compareValue);
+    }
+    if (!virtualUser.empty()) {
+        proto.set_virtualuser(virtualUser);
+    } else if (ownerAccountId != 0) {
+        proto.set_owneraccountid(ownerAccountId);
+    } else if (ownerNpId.empty() ||
+               Common::ToLower(ownerNpId) == Common::ToLower(client->GetNpid())) {
+        proto.set_owneraccountid(static_cast<s64>(client->GetUserId()));
+    }
+    if (hasAuthorCheck) {
+        proto.set_hasauthorcheck(true);
+        proto.set_islastchangedauthor(isLastChangedAuthor);
+        if (!isLastChangedAuthorNpId.empty()) {
+            proto.set_islastchangedauthornpid(isLastChangedAuthorNpId);
+        }
+    }
+    if (hasDateCheck) {
+        proto.set_hasdatecheck(true);
+        proto.set_islastchangeddate(isLastChangedDate);
+    }
+    const std::string com_id = GetNpCommId(service_label);
+    if (!IsValidNpCommId(com_id)) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::TusTryAndSetVariable,
+                                             BuildTusPayload(com_id, proto.SerializeAsString()));
+    std::lock_guard lock(m_mutex_pending_tus);
+    PendingTusRequest p;
+    p.req = std::move(ctx);
+    p.cmd = ShadNet::CommandType::TusTryAndSetVariable;
+    p.user_id = user_id;
+    p.variableArray = variableOut;
+    p.variableArrayA = variableAOut;
+    p.arrayNum = 1;
+    m_pending_tus.emplace(pkt_id, std::move(p));
+    return ORBIS_OK;
+}
+
+s32 NpHandler::TusAddAndGetVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
+                                    const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
+                                    s64 inVariable, bool hasAuthorCheck, s64 isLastChangedAuthor,
+                                    const std::string& isLastChangedAuthorNpId, bool hasDateCheck,
+                                    u64 isLastChangedDate, NpTus::OrbisNpTusVariable* variableOut,
+                                    NpTus::OrbisNpTusVariableA* variableAOut,
+                                    std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    shadnet::TusAddAndGetVariableRequest proto;
+    proto.set_ownernpid(ownerNpId);
+    proto.set_slotid(slotId);
+    proto.set_invalue(inVariable);
+    if (!virtualUser.empty()) {
+        proto.set_virtualuser(virtualUser);
+    } else if (ownerAccountId != 0) {
+        proto.set_owneraccountid(ownerAccountId);
+    } else if (ownerNpId.empty() ||
+               Common::ToLower(ownerNpId) == Common::ToLower(client->GetNpid())) {
+        proto.set_owneraccountid(static_cast<s64>(client->GetUserId()));
+    }
+    if (hasAuthorCheck) {
+        proto.set_hasauthorcheck(true);
+        proto.set_islastchangedauthor(isLastChangedAuthor);
+        if (!isLastChangedAuthorNpId.empty()) {
+            proto.set_islastchangedauthornpid(isLastChangedAuthorNpId);
+        }
+    }
+    if (hasDateCheck) {
+        proto.set_hasdatecheck(true);
+        proto.set_islastchangeddate(isLastChangedDate);
+    }
+    const std::string com_id = GetNpCommId(service_label);
+    if (!IsValidNpCommId(com_id)) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::TusAddAndGetVariable,
+                                             BuildTusPayload(com_id, proto.SerializeAsString()));
+    std::lock_guard lock(m_mutex_pending_tus);
+    PendingTusRequest p;
+    p.req = std::move(ctx);
+    p.cmd = ShadNet::CommandType::TusAddAndGetVariable;
+    p.user_id = user_id;
+    p.variableArray = variableOut;
+    p.variableArrayA = variableAOut;
+    p.arrayNum = 1;
+    m_pending_tus.emplace(pkt_id, std::move(p));
+    return ORBIS_OK;
+}
+
+s32 NpHandler::TusGetFriendsDataStatus(s32 user_id, s32 service_label, s32 slotId, bool includeSelf,
+                                       s32 sortType, u32 max,
+                                       NpTus::OrbisNpTusDataStatus* statusOut,
+                                       NpTus::OrbisNpTusDataStatusA* statusAOut, u64 arrayNum,
+                                       std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    // Always targets the caller's own friend list, so there is no owner field.
+    shadnet::TusGetFriendsDataStatusRequest proto;
+    proto.set_slotid(slotId);
+    proto.set_includeself(includeSelf);
+    proto.set_sorttype(sortType);
+    proto.set_max(max);
+    const std::string com_id = GetNpCommId(service_label);
+    if (!IsValidNpCommId(com_id)) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::TusGetFriendsDataStatus,
+                                             BuildTusPayload(com_id, proto.SerializeAsString()));
+    std::lock_guard lock(m_mutex_pending_tus);
+    PendingTusRequest p;
+    p.req = std::move(ctx);
+    p.cmd = ShadNet::CommandType::TusGetFriendsDataStatus;
+    p.user_id = user_id;
+    p.statusArray = statusOut;
+    p.statusArrayA = statusAOut;
+    p.arrayNum = arrayNum;
+    m_pending_tus.emplace(pkt_id, std::move(p));
+    return ORBIS_OK;
+}
+
+s32 NpHandler::TusGetFriendsVariable(s32 user_id, s32 service_label, s32 slotId, bool includeSelf,
+                                     s32 sortType, u32 max, NpTus::OrbisNpTusVariable* variablesOut,
+                                     NpTus::OrbisNpTusVariableA* variablesAOut, u64 arrayNum,
+                                     std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    // Always targets the caller's own friend list, so there is no owner field.
+    shadnet::TusGetFriendsVariableRequest proto;
+    proto.set_slotid(slotId);
+    proto.set_includeself(includeSelf);
+    proto.set_sorttype(sortType);
+    proto.set_max(max);
+    const std::string com_id = GetNpCommId(service_label);
+    if (!IsValidNpCommId(com_id)) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::TusGetFriendsVariable,
+                                             BuildTusPayload(com_id, proto.SerializeAsString()));
+    std::lock_guard lock(m_mutex_pending_tus);
+    PendingTusRequest p;
+    p.req = std::move(ctx);
+    p.cmd = ShadNet::CommandType::TusGetFriendsVariable;
+    p.user_id = user_id;
+    p.variableArray = variablesOut;
+    p.variableArrayA = variablesAOut;
+    p.arrayNum = arrayNum;
+    m_pending_tus.emplace(pkt_id, std::move(p));
+    return ORBIS_OK;
+}
+
+s32 NpHandler::TusGetMultiSlotDataStatus(s32 user_id, s32 service_label,
+                                         const std::string& ownerNpId,
+                                         const std::string& virtualUser, s64 ownerAccountId,
+                                         const std::vector<s32>& slotIds,
+                                         NpTus::OrbisNpTusDataStatus* statusOut,
+                                         NpTus::OrbisNpTusDataStatusA* statusAOut, u64 arrayNum,
+                                         std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    shadnet::TusGetMultiSlotDataStatusRequest proto;
+    proto.set_ownernpid(ownerNpId);
+    if (!virtualUser.empty()) {
+        proto.set_virtualuser(virtualUser);
+    } else if (ownerAccountId != 0) {
+        proto.set_owneraccountid(ownerAccountId);
+    } else if (ownerNpId.empty() ||
+               Common::ToLower(ownerNpId) == Common::ToLower(client->GetNpid())) {
+        proto.set_owneraccountid(static_cast<s64>(client->GetUserId()));
+    }
+    for (s32 s : slotIds) {
+        proto.add_slotids(s);
+    }
+    const std::string com_id = GetNpCommId(service_label);
+    if (!IsValidNpCommId(com_id)) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::TusGetMultiSlotDataStatus,
+                                             BuildTusPayload(com_id, proto.SerializeAsString()));
+    std::lock_guard lock(m_mutex_pending_tus);
+    PendingTusRequest p;
+    p.req = std::move(ctx);
+    p.cmd = ShadNet::CommandType::TusGetMultiSlotDataStatus;
+    p.user_id = user_id;
+    p.statusArray = statusOut;
+    p.statusArrayA = statusAOut;
+    p.arrayNum = arrayNum;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
 }
@@ -2626,10 +2871,10 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
     };
     auto fillStatus = [](NpTus::OrbisNpTusDataStatus& d, const shadnet::TusDataStatus& s) {
         d = NpTus::OrbisNpTusDataStatus{};
-        CopyNpHandle(d.npId, s.ownernpid());
-        d.set = s.set() ? 1 : 0;
-        d.lastChanged.tick = s.lastchangeddate();
-        CopyNpHandle(d.lastChangedAuthor, s.lastchangedauthornpid());
+        CopyNpHandle(d.ownerId, s.ownernpid());
+        d.hasData = s.set() ? 1 : 0;
+        d.lastChangedDate.tick = s.lastchangeddate();
+        CopyNpHandle(d.lastChangedAuthorId, s.lastchangedauthornpid());
         d.dataSize = s.datasize();
         d.info.size = s.info().size();
         const size_t cp = std::min(s.info().size(), sizeof(d.info.data));
@@ -2733,10 +2978,14 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
                 pending.statusArrayCS[0].data = pending.dataOut;
             }
         } else if (pending.statusArray) {
-            fillStatus(pending.statusArray[0], resp.status());
+            NpTus::OrbisNpTusDataStatus tmp{};
+            fillStatus(tmp, resp.status());
             if (recv) {
-                pending.statusArray[0].data = pending.dataOut;
+                tmp.data = pending.dataOut;
             }
+            const u64 cap =
+                pending.statusCap ? std::min<u64>(pending.statusCap, sizeof(tmp)) : sizeof(tmp);
+            std::memcpy(pending.statusArray, &tmp, cap);
         }
         req->SetResult(static_cast<s32>(recv));
         return;
