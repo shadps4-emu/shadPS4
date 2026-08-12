@@ -77,7 +77,19 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write) {
     liverpool->SendCommand<true>([this, device_addr, size, is_write] {
         Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
-        DownloadBufferMemory<false>(buffer, device_addr, size, is_write);
+        // GPU-modified ranges come as many small scattered islands, so the download
+        // is widened to a window around the request
+        constexpr u64 WindowSize = 256_KB;
+        const VAddr buf_start = buffer.CpuAddr();
+        const VAddr buf_end = buf_start + buffer.SizeBytes();
+        const VAddr window_start =
+            std::max<VAddr>(Common::AlignDown(device_addr, WindowSize), buf_start);
+        const VAddr window_end = std::min<VAddr>(
+            std::max<VAddr>(window_start + WindowSize, device_addr + size), buf_end);
+        DownloadBufferMemory<false>(buffer, window_start, window_end - window_start, false);
+        if (is_write) {
+            memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+        }
     });
 }
 
