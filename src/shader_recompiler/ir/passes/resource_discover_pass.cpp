@@ -90,39 +90,28 @@ IR::Inst* FindSharpSource(IR::Inst* handle, const IR::Block& current_parent) {
 }
 
 void MarkReadConstBufferSharpSources(IR::Inst& first, IR::Block& block, u32 count) {
-    // We need to mark all the read const buffer instructions that are part of the same sharp.
-    // Pattern is as follows: For example images have 8 dwords. %83    = ReadConst (flags=0x0)  %82,
-    // #0 (uses: 2)
-    //         SetScalarRegister SGPR16, %83
-    // %84    = ReadConst (flags=0x0)  %82, #1 (uses: 1)
-    //         SetScalarRegister SGPR17, %84
-    // %85    = ReadConst (flags=0x0)  %82, #2 (uses: 1)
-    //         SetScalarRegister SGPR18, %85
-    // %86    = ReadConst (flags=0x0)  %82, #3 (uses: 1)
-    //         SetScalarRegister SGPR19, %86
-    // %87    = ReadConst (flags=0x0)  %82, #4 (uses: 1)
-    //         SetScalarRegister SGPR20, %87
-    // %88    = ReadConst (flags=0x0)  %82, #5 (uses: 1)
-    //         SetScalarRegister SGPR21, %88
-    // %89    = ReadConst (flags=0x0)  %82, #6 (uses: 1)
-    //         SetScalarRegister SGPR22, %89
-    // %90    = ReadConst (flags=0x0)  %82, #7 (uses: 1)
-    //         SetScalarRegister SGPR23, %90
+    auto first_handle = FindSharpSource(&first, block)->Arg(0);
     auto it = block.Instructions().iterator_to(first);
-    for (u32 i = 0; i < count * 2; ++i, ++it) {
+    auto end = block.Instructions().end();
+    u32 marked_count = 0;
+    for (; it != end && marked_count < count; ++it) {
         IR::Inst& inst = *it;
-        if (inst.GetOpcode() == IR::Opcode::SetScalarRegister) {
+        if (inst.GetOpcode() == IR::Opcode::SetScalarRegister ||
+            inst.GetOpcode() == IR::Opcode::IAdd32) {
             continue;
         }
         auto source = FindSharpSource(&inst, block);
-        if (source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        if (source && source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+            ASSERT(source->Arg(0) == first_handle);
+            marked_count++;
             auto flags = source->Flags<IR::BufferInstInfo>();
             flags.sharp_source.Assign(1u);
             source->SetFlags(flags);
             continue;
         }
-        UNREACHABLE_MSG("Unexpected instruction in ReadConstBuffer sharp source marking");
+        break;
     }
+    ASSERT(marked_count == count);
 }
 
 void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList& sharp_usages) {
