@@ -157,6 +157,25 @@ public:
     /// Leave batch command processing mode.
     void LeaveBatchMode();
 
+    /// Returns true if DMA buffer scan hasn't run yet this batch and marks it as done.
+    /// Guarantees at most one SynchronizeBuffersInRange per batch, avoiding the 32M
+    /// interval_map lookups on every intra-batch draw while never skipping when needed.
+    bool NeedDmaSyncThisBatch() {
+        if (dma_synced_this_batch) {
+            return false;
+        }
+        dma_synced_this_batch = true;
+        return true;
+    }
+
+    void ResetDmaSyncThisBatch() {
+        dma_synced_this_batch = false;
+    }
+
+    bool IsInBatch() {
+        return in_batch;
+    }
+
     /// Runs the garbage collector.
     void RunGarbageCollector();
 
@@ -228,6 +247,7 @@ private:
     PageTable page_table;
     u64 batch_gen = 0;   // Monotonic generation; incremented per batch
     bool in_batch = false; // True while processing a command batch
+    bool dma_synced_this_batch = false; // True after first DMA sync this batch
 };
 
 } // namespace VideoCore

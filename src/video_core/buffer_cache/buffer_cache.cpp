@@ -792,6 +792,7 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
 void BufferCache::EnterBatchMode() {
     ++batch_gen;
     in_batch = true;
+    ResetDmaSyncThisBatch();
 }
 
 void BufferCache::LeaveBatchMode() {
