@@ -2469,7 +2469,8 @@ s32 NpHandler::TusGetFriendsDataStatus(s32 user_id, s32 service_label, s32 slotI
                                        s32 sortType, u32 max,
                                        NpTus::OrbisNpTusDataStatus* statusOut,
                                        NpTus::OrbisNpTusDataStatusA* statusAOut, u64 arrayNum,
-                                       std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+                                       std::shared_ptr<NpTus::TusRequestCtx> ctx, u32 startOffset,
+                                       u32* hitsOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2485,6 +2486,7 @@ s32 NpHandler::TusGetFriendsDataStatus(s32 user_id, s32 service_label, s32 slotI
     proto.set_includeself(includeSelf);
     proto.set_sorttype(sortType);
     proto.set_max(max);
+    proto.set_startoffset(startOffset);
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
@@ -2499,6 +2501,7 @@ s32 NpHandler::TusGetFriendsDataStatus(s32 user_id, s32 service_label, s32 slotI
     p.statusArray = statusOut;
     p.statusArrayA = statusAOut;
     p.arrayNum = arrayNum;
+    p.totalOut = hitsOut;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
 }
@@ -2506,7 +2509,8 @@ s32 NpHandler::TusGetFriendsDataStatus(s32 user_id, s32 service_label, s32 slotI
 s32 NpHandler::TusGetFriendsVariable(s32 user_id, s32 service_label, s32 slotId, bool includeSelf,
                                      s32 sortType, u32 max, NpTus::OrbisNpTusVariable* variablesOut,
                                      NpTus::OrbisNpTusVariableA* variablesAOut, u64 arrayNum,
-                                     std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+                                     std::shared_ptr<NpTus::TusRequestCtx> ctx, u32 startOffset,
+                                     u32* hitsOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2522,6 +2526,7 @@ s32 NpHandler::TusGetFriendsVariable(s32 user_id, s32 service_label, s32 slotId,
     proto.set_includeself(includeSelf);
     proto.set_sorttype(sortType);
     proto.set_max(max);
+    proto.set_startoffset(startOffset);
     const std::string com_id = GetNpCommId(service_label);
     if (!IsValidNpCommId(com_id)) {
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
@@ -2536,6 +2541,7 @@ s32 NpHandler::TusGetFriendsVariable(s32 user_id, s32 service_label, s32 slotId,
     p.variableArray = variablesOut;
     p.variableArrayA = variablesAOut;
     p.arrayNum = arrayNum;
+    p.totalOut = hitsOut;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
 }
@@ -3118,6 +3124,12 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         }
         // GetMultiSlotVariable / GetMultiUserVariable return the count of variables read;
         // AddAndGet / TryAndSet return 0 on normal termination (value is in the struct).
+        if (pending.totalOut) {
+            // OrbisNpTusGetFriendsVariableOptParam::hits - total registered
+            // friends before startSerialRank/arrayNum are applied.
+            *pending.totalOut =
+                resp.total() ? resp.total() : static_cast<u32>(resp.variables_size());
+        }
         if (cmd == ShadNet::CommandType::TusGetMultiSlotVariable ||
             cmd == ShadNet::CommandType::TusGetMultiUserVariable ||
             cmd == ShadNet::CommandType::TusGetFriendsVariable) {
@@ -3191,7 +3203,9 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
             }
         }
         if (pending.totalOut) {
-            *pending.totalOut = static_cast<u32>(resp.statuses_size());
+            // hits = total registered friends before offset/cap
+            *pending.totalOut =
+                resp.total() ? resp.total() : static_cast<u32>(resp.statuses_size());
         }
         if (cmd == ShadNet::CommandType::TusGetFriendsDataStatus ||
             cmd == ShadNet::CommandType::TusGetMultiSlotDataStatus ||

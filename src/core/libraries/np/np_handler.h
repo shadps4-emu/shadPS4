@@ -269,11 +269,13 @@ public:
     s32 TusGetFriendsDataStatus(s32 user_id, s32 service_label, s32 slotId, bool includeSelf,
                                 s32 sortType, u32 max, NpTus::OrbisNpTusDataStatus* statusOut,
                                 NpTus::OrbisNpTusDataStatusA* statusAOut, u64 arrayNum,
-                                std::shared_ptr<NpTus::TusRequestCtx> ctx);
+                                std::shared_ptr<NpTus::TusRequestCtx> ctx, u32 startOffset = 0,
+                                u32* hitsOut = nullptr);
     s32 TusGetFriendsVariable(s32 user_id, s32 service_label, s32 slotId, bool includeSelf,
                               s32 sortType, u32 max, NpTus::OrbisNpTusVariable* variablesOut,
                               NpTus::OrbisNpTusVariableA* variablesAOut, u64 arrayNum,
-                              std::shared_ptr<NpTus::TusRequestCtx> ctx);
+                              std::shared_ptr<NpTus::TusRequestCtx> ctx, u32 startOffset = 0,
+                              u32* hitsOut = nullptr);
     s32 TusGetMultiSlotDataStatus(s32 user_id, s32 service_label, const std::string& ownerNpId,
                                   const std::string& virtualUser, s64 ownerAccountId,
                                   const std::vector<s32>& slotIds,

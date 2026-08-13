@@ -617,6 +617,9 @@ message TusAddAndGetVariableRequest {
 
 message TusVariableResponse {
     repeated TusVariable variables = 1;
+    // Friends queries: total matching friends before startOffset/max are
+    // applied (OrbisNpTusGetFriendsVariableOptParam::hits). 0 elsewhere.
+    uint32 total = 2;
 }
 
 message TusSetDataRequest {
@@ -663,18 +666,22 @@ message TusGetFriendsDataStatusRequest {
     int32  slotId      = 1;
     bool   includeSelf = 2;
     uint32 max         = 3;
-    int32  sortType    = 4;   // 1=DESC date, 2=ASC date
+    int32  sortType    = 4;   //1=DESC date, 2=ASC date
+    uint32 startOffset = 5;
 }
 
 message TusGetFriendsVariableRequest {
     int32  slotId      = 1;
     bool   includeSelf = 2;
     uint32 max         = 3;
-    int32  sortType    = 4;   // 1=DESC date,2=ASC date,3=DESC value,4=ASC value
+    int32  sortType    = 4;   //1=DESC date,2=ASC date,3=DESC value,4=ASC value
+    // Zero-based start position in the friend ranking
+    uint32 startOffset = 5;
 }
 
 message TusDataStatusResponse {
     repeated TusDataStatus statuses = 1;
+    uint32 total = 2;
 }
 
 message TusTryAndSetVariableRequest {
