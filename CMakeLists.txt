@@ -853,8 +853,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_sys/devices/nop_device.h
          src/core/file_sys/devices/console_device.cpp
          src/core/file_sys/devices/console_device.h
-         src/core/file_sys/devices/deci_tty6_device.cpp
-         src/core/file_sys/devices/deci_tty6_device.h
+         src/core/file_sys/devices/deci_tty_device.cpp
+         src/core/file_sys/devices/deci_tty_device.h
          src/core/file_sys/devices/random_device.cpp
          src/core/file_sys/devices/random_device.h
          src/core/file_sys/devices/rng_device.cpp

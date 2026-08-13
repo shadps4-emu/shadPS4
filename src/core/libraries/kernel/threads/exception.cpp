@@ -448,6 +448,14 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     LOG_ERROR(Lib_Kernel, "(STUBBED) called, sig: {}", sig);
     Handlers[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
         act ? act->__sigaction_handler.sigaction : nullptr);
+    if (oact) {
+        memset(oact, 0, sizeof(*oact));
+    }
+    if (act && oact) {
+        oact->__sigaction_handler = act->__sigaction_handler;
+        oact->sa_mask = act->sa_mask;
+        oact->sa_flags = act->sa_flags;
+    }
 #else
     s32 native_sig = OrbisToNativeSignal(sig);
     if (native_sig == SIGVTALRM || IsPthreadCancelSignal(native_sig)) {
@@ -637,7 +645,7 @@ s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
     LOG_WARNING(Lib_Kernel, "Raising signal {} on thread '{}'", sig, thread->name);
     int const native_signum = OrbisToNativeSignal(sig);
 #ifndef _WIN64
-    const auto pthr = reinterpret_cast<pthread_t>(thread->native_thr.GetHandle());
+    const auto pthr = reinterpret_cast<pthread_t>(thread->native_thr->GetHandle());
     const auto ret = pthread_kill(pthr, native_signum);
     if (ret != 0) {
         LOG_ERROR(Kernel, "Failed to send exception signal to thread '{}': {}", thread->name,
@@ -647,7 +655,7 @@ s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
     USER_APC_OPTION option;
     option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
 
-    u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr.GetHandle()), option,
+    u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr->GetHandle()), option,
                                  ExceptionHandler, (void*)thread->name.c_str(),
                                  (void*)(s64)native_signum, nullptr);
     ASSERT(res == 0);
@@ -758,6 +766,17 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("JZKw5+Wrnaw", "libkernel", 1, "libkernel", posix_pthread_sigmask);
     LIB_FUNCTION("KZ-4qlqlpmo", "libkernel", 1, "libkernel", posix_sigsuspend);
     LIB_FUNCTION("mrbHXqK8wkg", "libkernel", 1, "libkernel", posix_sigwait);
+
+    LIB_FUNCTION("KiJEPEWRyUY", "libkernel_psmkit", 1, "libkernel", posix_sigaction);
+    LIB_FUNCTION("VADc3MNQ3cM", "libkernel_psmkit", 1, "libkernel", posix_signal);
+    LIB_FUNCTION("+F7C-hdk7+E", "libkernel_psmkit", 1, "libkernel", posix_sigemptyset);
+    LIB_FUNCTION("VkTAsrZDcJ0", "libkernel_psmkit", 1, "libkernel", posix_sigfillset);
+    LIB_FUNCTION("JUimFtKe0Kc", "libkernel_psmkit", 1, "libkernel", posix_sigaddset);
+    LIB_FUNCTION("Nd-u09VFSCA", "libkernel_psmkit", 1, "libkernel", posix_sigdelset);
+    LIB_FUNCTION("JnNl8Xr-z4Y", "libkernel_psmkit", 1, "libkernel", posix_sigismember);
+    LIB_FUNCTION("aPcyptbOiZs", "libkernel_psmkit", 1, "libkernel", posix_sigprocmask);
+    LIB_FUNCTION("yH-uQW3LbX0", "libkernel_psmkit", 1, "libkernel", posix_pthread_kill);
+    LIB_FUNCTION("sHziAegVp74", "libkernel_psmkit", 1, "libkernel", posix_sigaltstack);
 
     LIB_FUNCTION("KiJEPEWRyUY", "libScePosix", 1, "libkernel", posix_sigaction);
     LIB_FUNCTION("VADc3MNQ3cM", "libScePosix", 1, "libkernel", posix_signal);

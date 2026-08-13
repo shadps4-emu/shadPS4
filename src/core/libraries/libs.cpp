@@ -147,7 +147,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceAjm.sprx", Libraries::Ajm::RegisterLib},
             {"libSceErrorDialog.sprx", Libraries::ErrorDialog::RegisterLib},
             {"libSceImeDialog.sprx", Libraries::ImeDialog::RegisterLib},
-            {"libSceAvPlayer.sprx", Libraries::AvPlayer::RegisterLib},
             {"libSceVideodec.sprx", Libraries::Videodec::RegisterLib},
             {"libSceVideodec2.sprx", Libraries::Videodec2::RegisterLib},
             {"libSceIme.sprx", Libraries::Ime::RegisterLib},

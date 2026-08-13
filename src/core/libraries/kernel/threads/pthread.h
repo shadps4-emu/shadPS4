@@ -276,7 +276,7 @@ struct Pthread {
     static constexpr u32 MaxDeferWaiters = 50;
 
     std::atomic<s32> tid;
-    std::mutex lock;
+    std::unique_ptr<std::mutex> lock = std::make_unique<std::mutex>();
     u32 cycle;
     std::atomic_int locklevel;
     std::atomic_int critical_count;
@@ -284,7 +284,7 @@ struct Pthread {
     int refcount;
     PthreadEntryFunc start_routine;
     void* arg;
-    Core::NativeThread native_thr;
+    std::unique_ptr<Core::NativeThread> native_thr;
     PthreadAttr attr;
     std::atomic_bool cancel_enable;
     std::atomic_bool cancel_pending;
@@ -302,6 +302,7 @@ struct Pthread {
     ThreadFlags flags;
     ThreadListFlags tlflags;
     void* ret;
+    u8 pad0[272];
     PthreadSpecificElem* specific;
     int specific_data_count;
     int rdlock_count;
@@ -402,6 +403,8 @@ struct Pthread {
 
     int SetAffinity(const Cpuset* cpuset);
 };
+static_assert(offsetof(Pthread, specific) == 0x1c8);
+
 using PthreadT = Pthread*;
 
 extern thread_local Pthread* g_curthread;
