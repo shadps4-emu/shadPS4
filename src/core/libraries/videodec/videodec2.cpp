@@ -129,33 +129,20 @@ sceVideodec2QueryDecoderMemoryInfo(const OrbisVideodec2DecoderConfigInfo* decode
     ComputeWorstCaseDimensions(*decoderCfgInfo, width, height);
 
     const u64 frame_size = ComputeFrameSizeBytes(width, height);
-    const s32 dpb_count = ComputeDpbCount(*decoderCfgInfo);
-
-    u64 cpu_gpu_size = 0;
-    u64 cpu_size = 0;
     u64 max_frame_buffer = 0;
-
     if (frame_size == 0) {
-        cpu_gpu_size = kMinimumMemorySize;
-        cpu_size = kMinimumMemorySize;
         max_frame_buffer = kMinimumMemorySize;
     } else {
-        const u64 padded_frame = Common::AlignUp<u64>(frame_size, 256) + 0x4000;
-        const u64 surfaces = (u64)dpb_count + 2;
-
-        max_frame_buffer = padded_frame;
-
-        cpu_gpu_size = (padded_frame * surfaces) + 8_MB;
-        cpu_size = 16_MB;
+        max_frame_buffer = Common::AlignUp<u64>(frame_size, 256) + 0x4000;
     }
 
     decoderMemInfo->cpuMemory = nullptr;
     decoderMemInfo->gpuMemory = nullptr;
     decoderMemInfo->cpuGpuMemory = nullptr;
 
-    decoderMemInfo->cpuGpuMemorySize = cpu_size + cpu_gpu_size;
-    decoderMemInfo->cpuMemorySize = cpu_size;
-    decoderMemInfo->gpuMemorySize = cpu_gpu_size;
+    decoderMemInfo->cpuGpuMemorySize = kMinimumMemorySize;
+    decoderMemInfo->cpuMemorySize = kMinimumMemorySize;
+    decoderMemInfo->gpuMemorySize = kMinimumMemorySize;
 
     decoderMemInfo->maxFrameBufferSize = max_frame_buffer;
     decoderMemInfo->frameBufferAlignment = 0x100;
