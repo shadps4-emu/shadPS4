@@ -15,8 +15,6 @@ extern "C" {
 
 namespace Libraries::Videodec2 {
 
-extern std::vector<OrbisVideodec2AvcPictureInfo> gPictureInfos;
-
 class VdecDecoder {
 public:
     VdecDecoder(const OrbisVideodec2DecoderConfigInfo& configInfo,
