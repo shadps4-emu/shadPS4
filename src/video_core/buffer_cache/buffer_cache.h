@@ -152,6 +152,11 @@ public:
     /// Synchronizes all buffers neede for DMA.
     void SynchronizeDmaBuffers();
 
+    /// Enter batch command processing mode: buffers synced once per batch are skipped on re-bind.
+    void EnterBatchMode();
+    /// Leave batch command processing mode.
+    void LeaveBatchMode();
+
     /// Runs the garbage collector.
     void RunGarbageCollector();
 
@@ -221,6 +226,8 @@ private:
     RangeSet gpu_modified_ranges;
     SplitRangeMap<BufferId> buffer_ranges;
     PageTable page_table;
+    u64 batch_gen = 0;   // Monotonic generation; incremented per batch
+    bool in_batch = false; // True while processing a command batch
 };
 
 } // namespace VideoCore

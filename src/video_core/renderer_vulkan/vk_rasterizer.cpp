@@ -410,6 +410,8 @@ void Rasterizer::OnSubmit() {
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
+    RENDERER_TRACE;
+
     if (IsComputeImageCopy(pipeline) || IsComputeMetaClear(pipeline) ||
         IsComputeImageClear(pipeline)) {
         return false;

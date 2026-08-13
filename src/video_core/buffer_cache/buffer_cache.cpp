@@ -641,6 +641,13 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
 
 bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_written,
                                     bool is_texel_buffer) {
+    // In batch mode, skip re-sync for read-only buffers already synced this batch.
+    // GPU-writable or texel buffers must sync every time (GPU may modify between draws).
+    if (!is_written && !is_texel_buffer && in_batch && buffer.sync_gen == batch_gen) {
+        return false;
+    }
+    buffer.sync_gen = batch_gen;
+
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     size_t total_size_bytes = 0;
     VAddr buffer_start = buffer.CpuAddr();
@@ -780,6 +787,15 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
         u32 size = static_cast<u32>(end - start);
         SynchronizeBuffer(buffer, start, size, false, false);
     });
+}
+
+void BufferCache::EnterBatchMode() {
+    ++batch_gen;
+    in_batch = true;
+}
+
+void BufferCache::LeaveBatchMode() {
+    in_batch = false;
 }
 
 void BufferCache::WriteDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes) {
