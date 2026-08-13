@@ -20,7 +20,9 @@ namespace Core {
 
 using EntryFunc = PS4_SYSV_ABI int (*)(size_t args, const void* argp, void* param);
 
-static constexpr u64 ModuleLoadBase = 0x800000000;
+// In the system managed area, and low enough that guest code truncating an address to 32 bits
+// still lands on the right module.
+static constexpr u64 ModuleLoadBase = 0x80000000;
 
 static u64 GetAlignedSize(const elf_program_header& phdr) {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1)
