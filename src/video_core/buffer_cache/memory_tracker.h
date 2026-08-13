@@ -93,6 +93,13 @@ public:
                             auto&& on_upload) {
         IteratePages<true>(query_cpu_range, query_size,
                            [&func, is_written](RegionManager* manager, u64 offset, size_t size) {
+                               // Fast O(1) pre-check: skip the lock entirely if no dirty bits.
+                               // Safe because CPU only sets bits (never clears), and batches
+                               // are assumed to be CPU-write-free. A false negative (missed
+                               // dirty page) is at worst a one-frame glitch.
+                               if (manager->GetRegionBits<Type::CPU>().None()) {
+                                   return;
+                               }
                                manager->lock.lock();
                                manager->template ForEachModifiedRange<Type::CPU, true>(
                                    manager->GetCpuAddr() + offset, size, func);

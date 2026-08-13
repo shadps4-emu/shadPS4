@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cstddef>
+#include <type_traits>
 #include "common/types.h"
 
 #ifdef __AVX2__
@@ -22,6 +23,12 @@ class BitArray {
     static constexpr size_t WORD_COUNT = N / BITS_PER_WORD;
     static constexpr size_t WORDS_PER_AVX = 4;
     static constexpr size_t AVX_WORD_COUNT = WORD_COUNT / WORDS_PER_AVX;
+
+    // summary: one bit per data word. Type picks the smallest that fits.
+    static_assert(WORD_COUNT <= 64, "BitArray summary requires WORD_COUNT <= 64 (N <= 4096)");
+    using SummaryType = std::conditional_t<(WORD_COUNT <= 8), u8,
+                        std::conditional_t<(WORD_COUNT <= 16), u16,
+                        std::conditional_t<(WORD_COUNT <= 32), u32, u64>>>;
 
 public:
     using Range = std::pair<size_t, size_t>;
@@ -66,6 +73,36 @@ public:
     using reference = const Range&;
 
     BitArray() = default;
+
+    /// O(1) check if any bit is set. Relies on summary word for fast path.
+    inline constexpr bool None() const {
+        return summary == 0;
+    }
+
+    inline constexpr bool Any() const {
+        return summary != 0;
+    }
+
+private:
+    static constexpr SummaryType SummaryBit(size_t word_idx) {
+        return static_cast<SummaryType>(1ULL << word_idx);
+    }
+
+    /// Call after modifying data[word_idx] to keep summary in sync.
+    void UpdateSummary(size_t word_idx) {
+        if (data[word_idx] == 0) {
+            summary &= ~SummaryBit(word_idx);
+        } else {
+            summary |= SummaryBit(word_idx);
+        }
+    }
+
+    /// Call after setting a bit — the word is guaranteed non-zero.
+    void SetSummaryBit(size_t word_idx) {
+        summary |= SummaryBit(word_idx);
+    }
+
+public:
     BitArray(const BitArray& other) = default;
     BitArray& operator=(const BitArray& other) = default;
     BitArray(BitArray&& other) noexcept = default;
@@ -84,8 +121,10 @@ public:
         const u64 end_mask = end_bit == BITS_PER_WORD - 1 ? ~0ULL : (1ULL << (end_bit + 1)) - 1;
         if (first_word == last_word) {
             data[first_word] = other.data[first_word] & (start_mask & end_mask);
+            UpdateSummary(first_word);
         } else {
             data[first_word] = other.data[first_word] & start_mask;
+            UpdateSummary(first_word);
             size_t i = first_word + 1;
 #ifdef BIT_ARRAY_USE_AVX
             for (; i + WORDS_PER_AVX <= last_word; i += WORDS_PER_AVX) {
@@ -97,7 +136,11 @@ public:
             for (; i < last_word; ++i) {
                 data[i] = other.data[i];
             }
+            for (size_t w = first_word + 1; w < last_word; ++w) {
+                UpdateSummary(w);
+            }
             data[last_word] = other.data[last_word] & end_mask;
+            UpdateSummary(last_word);
         }
     }
 
@@ -112,11 +155,15 @@ public:
     }
 
     inline constexpr void Set(size_t idx) {
-        data[idx / BITS_PER_WORD] |= (1ULL << (idx % BITS_PER_WORD));
+        const size_t w = idx / BITS_PER_WORD;
+        data[w] |= (1ULL << (idx % BITS_PER_WORD));
+        SetSummaryBit(w);
     }
 
     inline constexpr void Unset(size_t idx) {
-        data[idx / BITS_PER_WORD] &= ~(1ULL << (idx % BITS_PER_WORD));
+        const size_t w = idx / BITS_PER_WORD;
+        data[w] &= ~(1ULL << (idx % BITS_PER_WORD));
+        UpdateSummary(w);
     }
 
     inline constexpr bool Get(size_t idx) const {
@@ -135,8 +182,10 @@ public:
         const u64 end_mask = end_bit == BITS_PER_WORD - 1 ? ~0ULL : (1ULL << (end_bit + 1)) - 1;
         if (first_word == last_word) {
             data[first_word] |= start_mask & end_mask;
+            UpdateSummary(first_word);
         } else {
             data[first_word] |= start_mask;
+            UpdateSummary(first_word);
             size_t i = first_word + 1;
 #ifdef BIT_ARRAY_USE_AVX
             const __m256i value = _mm256_set1_epi64x(-1);
@@ -147,7 +196,12 @@ public:
             for (; i < last_word; ++i) {
                 data[i] = ~0ULL;
             }
+            // Full words between first and last become all-ones
+            for (size_t w = first_word + 1; w < last_word; ++w) {
+                SetSummaryBit(w);
+            }
             data[last_word] |= end_mask;
+            UpdateSummary(last_word);
         }
     }
 
@@ -163,8 +217,10 @@ public:
         const u64 end_mask = end_bit == BITS_PER_WORD - 1 ? 0ULL : ~((1ULL << (end_bit + 1)) - 1);
         if (first_word == last_word) {
             data[first_word] &= start_mask | end_mask;
+            UpdateSummary(first_word);
         } else {
             data[first_word] &= start_mask;
+            UpdateSummary(first_word);
             size_t i = first_word + 1;
 #ifdef BIT_ARRAY_USE_AVX
             const __m256i value = _mm256_setzero_si256();
@@ -175,7 +231,11 @@ public:
             for (; i < last_word; ++i) {
                 data[i] = 0ULL;
             }
+            // Full words between first and last become zero
+            summary &= static_cast<SummaryType>(
+                ~(((1ULL << last_word) - 1) ^ ((1ULL << (first_word + 1)) - 1)));
             data[last_word] &= end_mask;
+            UpdateSummary(last_word);
         }
     }
 
@@ -189,22 +249,13 @@ public:
 
     inline constexpr void Clear() {
         data.fill(0);
+        summary = 0;
     }
 
     inline constexpr void Fill() {
         data.fill(~0ULL);
-    }
-
-    inline constexpr bool None() const {
-        u64 result = 0;
-        for (const auto& word : data) {
-            result |= word;
-        }
-        return result == 0;
-    }
-
-    inline constexpr bool Any() const {
-        return !None();
+        summary = (WORD_COUNT == 64) ? static_cast<SummaryType>(~SummaryType{0})
+                                     : static_cast<SummaryType>((1ULL << WORD_COUNT) - 1);
     }
 
     Range FirstRangeFrom(size_t start) const {
@@ -343,6 +394,7 @@ public:
     inline constexpr BitArray& operator|=(const BitArray& other) {
         for (size_t i = 0; i < WORD_COUNT; ++i) {
             data[i] |= other.data[i];
+            if (data[i]) SetSummaryBit(i);
         }
         return *this;
     }
@@ -350,6 +402,7 @@ public:
     inline constexpr BitArray& operator&=(const BitArray& other) {
         for (size_t i = 0; i < WORD_COUNT; ++i) {
             data[i] &= other.data[i];
+            UpdateSummary(i);
         }
         return *this;
     }
@@ -357,6 +410,7 @@ public:
     inline constexpr BitArray& operator^=(const BitArray& other) {
         for (size_t i = 0; i < WORD_COUNT; ++i) {
             data[i] ^= other.data[i];
+            UpdateSummary(i);
         }
         return *this;
     }
@@ -383,6 +437,7 @@ public:
         BitArray result = *this;
         for (size_t i = 0; i < WORD_COUNT; ++i) {
             result.data[i] = ~result.data[i];
+            result.UpdateSummary(i);
         }
         return result;
     }
@@ -401,6 +456,7 @@ public:
 
 private:
     std::array<u64, WORD_COUNT> data{};
+    SummaryType summary{0}; // bit i = (data[i] != 0), enables O(1) None()/Any()
 };
 
 } // namespace Common
