@@ -225,9 +225,8 @@ static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& p
 
 static bool EmitComputeOffsetIAdd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
                                     IR::Inst* inst) {
-    if (inst->AreAllArgsImmediates()) {
-        c.mov(reg, inst->Arg(0).U32() + inst->Arg(1).U32());
-    } else if (inst->Arg(0).IsImmediate()) {
+    ASSERT(!inst->AreAllArgsImmediates());
+    if (inst->Arg(0).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.add(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
@@ -245,9 +244,8 @@ static bool EmitComputeOffsetIAdd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, P
 
 static bool EmitComputeOffsetISub32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
                                     IR::Inst* inst) {
-    if (inst->AreAllArgsImmediates()) {
-        c.mov(reg, inst->Arg(0).U32() - inst->Arg(1).U32());
-    } else if (inst->Arg(0).IsImmediate()) {
+    ASSERT(!inst->AreAllArgsImmediates());
+    if (inst->Arg(0).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.neg(reg);
         c.add(reg, inst->Arg(0).U32());
@@ -267,9 +265,8 @@ static bool EmitComputeOffsetISub32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, P
 
 static bool EmitComputeOffsetIMul32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
                                     IR::Inst* inst) {
-    if (inst->AreAllArgsImmediates()) {
-        c.mov(reg, inst->Arg(0).U32() * inst->Arg(1).U32());
-    } else if (inst->Arg(0).IsImmediate()) {
+    ASSERT(!inst->AreAllArgsImmediates());
+    if (inst->Arg(0).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.imul(reg, reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
@@ -287,9 +284,8 @@ static bool EmitComputeOffsetIMul32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, P
 
 static bool EmitComputeOffsetShiftLeftLogical32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
                                                 PassInfo& pass_info, IR::Inst* inst) {
-    if (inst->AreAllArgsImmediates()) {
-        c.mov(reg, inst->Arg(0).U32() << inst->Arg(1).U32());
-    } else if (inst->Arg(0).IsImmediate()) {
+    ASSERT(!inst->AreAllArgsImmediates());
+    if (inst->Arg(0).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.shl(reg, inst->Arg(0).U32());
         c.mov(ecx, reg);
@@ -310,9 +306,8 @@ static bool EmitComputeOffsetShiftLeftLogical32(Xbyak::CodeGenerator& c, Xbyak::
 
 static bool EmitComputeOffsetShiftRightLogical32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
                                                  PassInfo& pass_info, IR::Inst* inst) {
-    if (inst->AreAllArgsImmediates()) {
-        c.mov(reg, inst->Arg(0).U32() >> inst->Arg(1).U32());
-    } else if (inst->Arg(0).IsImmediate()) {
+    ASSERT(!inst->AreAllArgsImmediates());
+    if (inst->Arg(0).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.mov(ecx, reg);
         c.mov(reg, inst->Arg(0).U32());
@@ -332,9 +327,8 @@ static bool EmitComputeOffsetShiftRightLogical32(Xbyak::CodeGenerator& c, Xbyak:
 
 static bool EmitComputeOffsetBitwiseAnd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
                                           PassInfo& pass_info, IR::Inst* inst) {
-    if (inst->AreAllArgsImmediates()) {
-        c.mov(reg, inst->Arg(0).U32() & inst->Arg(1).U32());
-    } else if (inst->Arg(0).IsImmediate()) {
+    ASSERT(!inst->AreAllArgsImmediates());
+    if (inst->Arg(0).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.and_(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
@@ -352,9 +346,8 @@ static bool EmitComputeOffsetBitwiseAnd32(Xbyak::CodeGenerator& c, Xbyak::Reg32 
 
 static bool EmitComputeOffsetBitwiseOr32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
                                          PassInfo& pass_info, IR::Inst* inst) {
-    if (inst->AreAllArgsImmediates()) {
-        c.mov(reg, inst->Arg(0).U32() | inst->Arg(1).U32());
-    } else if (inst->Arg(0).IsImmediate()) {
+    ASSERT(!inst->AreAllArgsImmediates());
+    if (inst->Arg(0).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.or_(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
@@ -372,9 +365,8 @@ static bool EmitComputeOffsetBitwiseOr32(Xbyak::CodeGenerator& c, Xbyak::Reg32 r
 
 static bool EmitComputeOffsetBitwiseXor32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
                                           PassInfo& pass_info, IR::Inst* inst) {
-    if (inst->AreAllArgsImmediates()) {
-        c.mov(reg, inst->Arg(0).U32() ^ inst->Arg(1).U32());
-    } else if (inst->Arg(0).IsImmediate()) {
+    ASSERT(!inst->AreAllArgsImmediates());
+    if (inst->Arg(0).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.xor_(reg, inst->Arg(0).U32());
     } else if (inst->Arg(1).IsImmediate()) {
@@ -392,12 +384,9 @@ static bool EmitComputeOffsetBitwiseXor32(Xbyak::CodeGenerator& c, Xbyak::Reg32 
 
 static bool EmitComputeOffsetBitwiseNot32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
                                           PassInfo& pass_info, IR::Inst* inst) {
-    if (inst->AreAllArgsImmediates()) {
-        c.mov(reg, ~inst->Arg(0).U32());
-    } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
-        c.not_(reg);
-    }
+    ASSERT(!inst->AreAllArgsImmediates());
+    ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(0)));
+    c.not_(reg);
     return true;
 }
 
@@ -454,10 +443,7 @@ static bool EmitComputeOffsetUMax32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, P
 static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg,
                                               PassInfo& pass_info, IR::Inst* inst) {
     // We asume that the count is always less than 32, Is this correct?
-    if (inst->AreAllArgsImmediates()) {
-        c.mov(reg, (inst->Arg(0).U32() >> inst->Arg(1).U32()) & ((1U << inst->Arg(2).U32()) - 1));
-        return true;
-    }
+    ASSERT(!inst->AreAllArgsImmediates());
     if (inst->Arg(0).IsImmediate()) {
         c.mov(reg, inst->Arg(0).U32());
     } else {
