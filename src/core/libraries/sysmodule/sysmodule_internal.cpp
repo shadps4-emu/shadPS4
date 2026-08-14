@@ -6,6 +6,7 @@
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
@@ -212,6 +213,8 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
         constexpr auto ModulesToLoad = std::to_array<Core::SysModules>(
             {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterLib},
              {"libSceUlt.sprx", nullptr},
+             {"libSceAvPlayer.sprx", &Libraries::AvPlayer::RegisterLib},
+             {"libSceAvPlayerStreaming.sprx", nullptr},
              {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
              {"libSceJpegDec.sprx", nullptr},
              {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
@@ -231,8 +234,11 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceFreeTypeOt.sprx", nullptr},
              {"libSceFreeTypeOl.sprx", nullptr},
              {"libSceFreeTypeOptOl.sprx", nullptr},
+             {"libSceBeisobmf.sprx", nullptr},
+             {"libSceBemp2sys.sprx", nullptr},
              {"libSceRudp.sprx", &Libraries::Rudp::RegisterLib},
              {"libSceWkFontConfig.sprx", nullptr},
+             {"libScePsmKitSystem.sprx", nullptr},
              {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib},
              {"libSceXml.sprx", nullptr}});
 

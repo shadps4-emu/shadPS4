@@ -329,8 +329,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         }
 
         // Start output thread - pass shared_ptr by value to keep port alive
-        port->output_thread.Run(
-            [port](const std::stop_token& stop) { AudioOutputThread(port, stop); });
+        port->output_thread.Run([port](std::stop_token stop) { AudioOutputThread(port, stop); });
 
         // Set initial volume
         port->impl->SetVolume(port->volume);
