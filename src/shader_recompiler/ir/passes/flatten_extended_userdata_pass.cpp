@@ -207,7 +207,7 @@ static inline void SetFlatbufOffset(IR::Inst* inst, u16 offset) {
         auto inst_info = inst->Flags<IR::BufferInstInfo>();
         inst_info.flatbuf_off_dw.Assign(offset);
         inst->SetFlags(inst_info);
-    }  else if (inst->GetOpcode() == IR::Opcode::ReadConst) {
+    } else if (inst->GetOpcode() == IR::Opcode::ReadConst) {
         inst->SetFlags(offset);
     }
     UNREACHABLE_MSG("Instruction not supported");
