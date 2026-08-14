@@ -20,7 +20,9 @@ namespace Core {
 
 using EntryFunc = PS4_SYSV_ABI int (*)(size_t args, const void* argp, void* param);
 
-static constexpr u64 ModuleLoadBase = 0x800000000;
+static constexpr u64 ExecutableLoadBase = 0x400000;
+static constexpr u64 GameModuleLoadBase = 0x80000000;
+static constexpr u64 SystemModuleLoadBase = 0x800000000;
 
 static u64 GetAlignedSize(const elf_program_header& phdr) {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1)
@@ -83,19 +85,9 @@ static std::string StringToNid(std::string_view symbol) {
     return dst;
 }
 
-Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_, u32& max_tls_index)
-    : memory{memory_}, file{file_}, name{file.filename().string()} {
-    elf.Open(file);
-    if (elf.IsElfFile()) {
-        LoadModuleToMemory(max_tls_index);
-        LoadDynamicInfo();
-        LoadSymbols();
-    }
-}
-
 Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_,
-               std::unique_ptr<Core::FileSys::IFile> handle, u32& max_tls_index)
-    : memory{memory_}, file{file_}, name{file.filename().string()} {
+               std::unique_ptr<Core::FileSys::IFile> handle, u32& max_tls_index, s32 id_)
+    : id{id_}, memory{memory_}, file{file_}, name{file.filename().string()} {
     elf.Open(std::move(handle));
     if (elf.IsElfFile()) {
         LoadModuleToMemory(max_tls_index);
@@ -123,9 +115,14 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     aligned_base_size = Common::AlignUp(base_size, BlockAlign);
 
     // Reserve memory area for module
+    const bool is_executable =
+        elf_header.e_type == ET_SCE_EXEC || elf_header.e_type == ET_SCE_DYNEXEC;
+    const u64 load_base = is_executable   ? ExecutableLoadBase
+                          : IsSystemLib() ? SystemModuleLoadBase
+                                          : GameModuleLoadBase;
     void** out_addr = reinterpret_cast<void**>(&base_virtual_addr);
     s32 result =
-        memory->MapMemory(out_addr, ModuleLoadBase, aligned_base_size + TrampolineSize,
+        memory->MapMemory(out_addr, load_base, aligned_base_size + TrampolineSize,
                           MemoryProt::NoAccess, MemoryMapFlags::NoFlags, VMAType::Reserved, name);
     ASSERT_MSG(result == ORBIS_OK, "Failed to reserve memory for module {}", name);
     LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
@@ -575,6 +572,7 @@ void Module::LoadSymbols() {
 OrbisKernelModuleInfoEx Module::GetModuleInfoEx() const {
     return OrbisKernelModuleInfoEx{
         .name = info.name,
+        .id = id,
         .tls_index = tls.modid,
         .tls_init_addr = tls.image_virtual_addr,
         .tls_init_size = tls.init_image_size,

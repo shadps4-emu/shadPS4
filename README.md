@@ -153,13 +153,14 @@ The following firmware modules are supported and must be placed in shadPS4's `sy
 
 | Modules                        | Modules                        | Modules                        | Modules                        |
 |--------------------------------|--------------------------------|--------------------------------|--------------------------------|
-| libSceAudiodec.sprx            | libSceAudiodecCpu.sprx         | libSceAudiodecCpuDdp.sprx      | libSceAudiodecCpuDtsHdLbr.sprx |
-| libSceAudiodecCpuHevag.sprx    | libSceAudiodecCpuM4aac.sprx    | libSceCesCs.sprx               | libSceFont.sprx                |
-| libSceFontFt.sprx              | libSceFreeTypeOl.sprx          | libSceFreeTypeOptOl.sprx       | libSceFreeTypeOt.sprx          |
-| libSceJpegDec.sprx             | libSceJpegEnc.sprx             | libSceJson.sprx                | libSceJson2.sprx               |
-| libSceLibcInternal.sprx        | libSceNgs2.sprx                | libScePngEnc.sprx              | libSceRtc.sprx                 |
-| libSceRudp.sprx                | libSceSystemGesture.sprx       | libSceUlt.sprx                 | libSceWkFontConfig.sprx        |
-| libSceXml.sprx                 | libSceAt9Enc.sprx              |
+| libSceAt9Enc.sprx              | libSceAudiodec.sprx            | libSceAudiodecCpu.sprx         | libSceAudiodecCpuDdp.sprx      |
+| libSceAudiodecCpuDtsHdLbr.sprx | libSceAudiodecCpuHevag.sprx    | libSceAudiodecCpuM4aac.sprx    | libSceAvPlayer.sprx            |
+| libSceAvPlayerStreaming.sprx   | libSceBeisobmf.sprx            | libSceBemp2sys.sprx            | libSceCesCs.sprx               |
+| libSceFont.sprx                | libSceFontFt.sprx              | libSceFreeTypeOl.sprx          | libSceFreeTypeOptOl.sprx       |
+| libSceFreeTypeOt.sprx          | libSceJpegDec.sprx             | libSceJpegEnc.sprx             | libSceJson.sprx                |
+| libSceJson2.sprx               | libSceLibcInternal.sprx        | libSceNgs2.sprx                | libScePngEnc.sprx              |
+| libScePsmKitSystem.sprx        | libSceRtc.sprx                 | libSceRudp.sprx                | libSceSystemGesture.sprx       |
+| libSceUlt.sprx                 | libSceWkFontConfig.sprx        | libSceXml.sprx                 |
 </div>
 
 > [!Caution]

@@ -19,9 +19,9 @@ message LoginRequest {
     string npid        = 1;
     string password    = 2;
     string token       = 3;
-    string title_id    = 4;  
-    string title_name  = 5;
-    bool appear_offline = 6; // user's Appear-Offline preference
+    string title_id    = 4;  // running title serial (param.sfo TITLE_ID), for presence gameTitleInfo
+    string title_name  = 5;  // running title name (param.sfo TITLE)
+    bool appear_offline = 6; // user's Appear-Offline preference (handled as offline by others)
 }
 
 // Mid-session Appear-Offline toggle.
@@ -46,12 +46,6 @@ message LoginReply {
     repeated string      friend_requests_sent     = 4;
     repeated string      friend_requests_received = 5;
     repeated string      blocked                  = 6;
-}
-
-message GetTokenReply {
-    string token   = 1;
-    uint64 user_id = 2;
-    string npid    = 3;
 }
 
 message RegistrationRequest {
@@ -274,26 +268,26 @@ message MatchingRoomMemberDataExternal {
 }
 
 message MatchingRoomDataExternal {
-    uint32                       max_slot                  = 1;
-    uint32                       cur_members               = 2;
-    uint32                       flags                     = 3;
-    uint32                       server_id                 = 4;
-    uint32                       world_id                  = 5;
-    uint64                       lobby_id                  = 6;
-    uint64                       room_id                   = 7;
-    uint64                       passwd_slot_mask          = 8;
-    uint64                       joined_slot_mask          = 9;
-    uint32                       public_slots              = 10;
-    uint32                       private_slots             = 11;
-    uint32                       open_public_slots         = 12;
-    uint32                       open_private_slots        = 13;
-    repeated MatchingRoomGroup   groups                    = 14;
+    uint32                   max_slot                    = 1;
+    uint32                   cur_members                 = 2;
+    uint32                   flags                       = 3;
+    uint32                   server_id                   = 4;
+    uint32                   world_id                    = 5;
+    uint64                   lobby_id                    = 6;
+    uint64                   room_id                     = 7;
+    uint64                   passwd_slot_mask            = 8;
+    uint64                   joined_slot_mask            = 9;
+    uint32                   public_slots                = 10;
+    uint32                   private_slots               = 11;
+    uint32                   open_public_slots           = 12;
+    uint32                   open_private_slots          = 13;
+    repeated MatchingRoomGroup   groups                  = 14;
     repeated MatchingIntAttr     external_search_int_attrs = 15;
     repeated MatchingBinAttr     external_search_bin_attrs = 16;
     repeated MatchingBinAttr     external_bin_attrs        = 17;
-    string                       owner_npid                = 18;
-    uint64                       owner_account_id          = 19;
-    uint32                       owner_platform            = 20;
+    string                       owner_npid               = 18;
+    uint64                       owner_account_id         = 19;
+    uint32                       owner_platform           = 20;
 }
 
 message CreateJoinRoomResponse {
@@ -397,22 +391,22 @@ message KickoutRoomMemberRequest {
 // Command replies
 
 message CreateRoomReply {
-    uint64 room_id     = 1;
-    uint32 server_id   = 2;
-    uint32 world_id    = 3;
-    uint32 lobby_id    = 4;
-    uint32 member_id   = 5;
-    uint32 max_slots   = 6;
-    uint32 flags       = 7;
+    uint64 room_id    = 1;
+    uint32 server_id  = 2;
+    uint32 world_id   = 3;
+    uint32 lobby_id   = 4;
+    uint32 member_id  = 5;
+    uint32 max_slots  = 6;
+    uint32 flags      = 7;
     uint32 cur_members = 8;
     CreateJoinRoomResponse details = 9;
 }
 
 message JoinRoomReply {
-    uint64 room_id     = 1;
-    uint32 member_id   = 2;
-    uint32 max_slots   = 3;
-    uint32 flags       = 4;
+    uint64 room_id    = 1;
+    uint32 member_id  = 2;
+    uint32 max_slots  = 3;
+    uint32 flags      = 4;
     uint32 cur_members = 5;
     CreateJoinRoomResponse details = 6;
 }
@@ -432,13 +426,13 @@ message MatchingBinSearchFilter {
 message SearchRoomRequest {
     uint32 world_id            = 1;
     uint64 lobby_id            = 2;
-    uint32 range_filter_start  = 3;
+    uint32 range_filter_start  = 3;  // 1-indexed
     uint32 range_filter_max    = 4;
     uint32 flag_filter         = 5;
     uint32 flag_attr           = 6;
     repeated MatchingIntSearchFilter int_filters = 7;
     repeated MatchingBinSearchFilter bin_filters = 8;
-    repeated uint32 attr_ids    = 9;
+    repeated uint32 attr_ids    = 9;  // attribute ids to include in results
 }
 
 message SearchRoomReply {
@@ -513,10 +507,10 @@ message RequestSignalingInfosReply {
     uint32 target_member_id = 4;
 }
 
-message LeaveRoomReply           { uint64 room_id = 1; }
-message SetRoomDataInternalReply { uint64 room_id = 1; }
-message SetRoomDataExternalReply { uint64 room_id = 1; }
-message KickoutRoomMemberReply   { uint64 room_id = 1; }
+message LeaveRoomReply            { uint64 room_id = 1; }
+message SetRoomDataInternalReply  { uint64 room_id = 1; }
+message SetRoomDataExternalReply  { uint64 room_id = 1; }
+message KickoutRoomMemberReply    { uint64 room_id = 1; }
 
 message SendRoomMessageRequest {
     uint64 room_id = 1;
@@ -528,9 +522,14 @@ message SendRoomMessageRequest {
 
 message SendRoomMessageReply { uint64 room_id = 1; }
 
+
+message GetTokenReply {
+    string token = 1;
+    uint64 user_id = 2;
+    string npid = 3;
+}
+
 // Notification payloads
-// Every notification carries ctx_id so the client can route it to the owning
-// context (the server tracks ctx_id per connection from ContextStartRequest).
 
 // NotificationType::RoomEvent (10) — every room event maps onto
 // OrbisNpMatching2RoomEventCallback(ctxId, roomId, event, data). The Orbis
@@ -562,4 +561,162 @@ message NotifyRoomMessage {
     uint64 src_account_id = 8;
     uint32 src_platform = 9;
     bytes msg = 10;
+}
+
+// Title User Storage (TUS) 
+
+message TusVariable {
+    string ownerNpId                  = 1;
+    bool   set                        = 2;
+    int64  variable                   = 3;
+    int64  oldVariable                = 4;
+    uint64 lastChangedDate            = 5;
+    string lastChangedAuthorNpId      = 6;
+    int64  ownerAccountId             = 7;
+    int64  lastChangedAuthorAccountId = 8;
+}
+
+message TusDataStatus {
+    string ownerNpId                  = 1;
+    bool   set                        = 2;
+    uint64 lastChangedDate            = 3;
+    string lastChangedAuthorNpId      = 4;
+    uint64 dataSize                   = 5;
+    bytes  info                       = 6;
+    int64  ownerAccountId             = 7;
+    int64  lastChangedAuthorAccountId = 8;
+}
+
+message TusSetMultiSlotVariableRequest {
+    string         ownerNpId = 1;   // empty == self
+    repeated int32 slotIds   = 2;
+    repeated int64 values    = 3;   // parallel to slotIds
+    int64          ownerAccountId = 4;   // A variant target (0 = use ownerNpId / self)
+    string         virtualUser    = 5;   // VUser variant (non-empty -> tus_vuser_variable)
+}
+
+message TusGetMultiSlotVariableRequest {
+    string         ownerNpId      = 1;
+    repeated int32 slotIds        = 2;
+    int64          ownerAccountId = 3;   // != 0 takes precedence over ownerNpId (== owner user_id)
+    string         virtualUser    = 4;   // non-empty -> target a virtual user (overrides owner)
+}
+
+message TusAddAndGetVariableRequest {
+    string ownerNpId            = 1;
+    int32  slotId               = 2;
+    int64  inValue              = 3;   // delta added atomically
+    int64  ownerAccountId       = 4;   // != 0 -> target this account (must be self)
+    string virtualUser          = 5;   // non-empty -> target a virtual user
+    bool   hasAuthorCheck       = 6;   // compare-and-set: only proceed if author matches
+    int64  isLastChangedAuthor  = 7;
+    bool   hasDateCheck         = 8;   // compare-and-set: only proceed if server date <= this
+    uint64 isLastChangedDate    = 9;
+    string isLastChangedAuthorNpId = 10;  // base variant author check (npId); resolved server-side
+}
+
+message TusVariableResponse {
+    repeated TusVariable variables = 1;
+    // Friends queries: total matching friends before startOffset/max are
+    // applied (OrbisNpTusGetFriendsVariableOptParam::hits). 0 elsewhere.
+    uint32 total = 2;
+}
+
+message TusSetDataRequest {
+    string ownerNpId           = 1;
+    int32  slotId              = 2;
+    bytes  data                = 3;
+    bytes  info                = 4;
+    int64  ownerAccountId      = 5;   // A variant target (0 = use ownerNpId / self)
+    string virtualUser         = 6;   // VUser variant (non-empty -> tus_vuser_data)
+    bool   hasAuthorCheck      = 7;   // conflict guard: proceed only if author matches
+    int64  isLastChangedAuthor = 8;
+    bool   hasDateCheck        = 9;   // conflict guard: proceed only if server date <= this
+    uint64 isLastChangedDate   = 10;
+    string isLastChangedAuthorNpId = 11;   // base npid-author path (server resolves to userId)
+}
+
+message TusGetDataRequest {
+    string ownerNpId      = 1;
+    int32  slotId         = 2;
+    int64  ownerAccountId = 3;   // A variant target (0 = use ownerNpId / self)
+    string virtualUser    = 4;   // VUser variant (non-empty -> tus_vuser_data)
+}
+
+message TusGetDataResponse {
+    TusDataStatus status = 1;
+    bytes         data   = 2;
+}
+
+message TusGetMultiSlotDataStatusRequest {
+    string         ownerNpId      = 1;
+    repeated int32 slotIds        = 2;
+    int64          ownerAccountId = 3;   // account-variant target (0 = use ownerNpId / self)
+    string         virtualUser    = 4;   // virtual-user target (non-empty -> tus_vuser_data)
+}
+
+message TusGetMultiUserDataStatusRequest {
+    int32           slotId       = 1;
+    repeated string ownerNpIds   = 2;
+    repeated string virtualUsers = 3;   // VUser variant (non-empty -> tus_vuser_data)
+    repeated int64  ownerAccountIds = 4;   // A/CS account-array target (resolved to user_id)
+}
+
+message TusGetFriendsDataStatusRequest {
+    int32  slotId      = 1;
+    bool   includeSelf = 2;
+    uint32 max         = 3;
+    int32  sortType    = 4;   //1=DESC date, 2=ASC date
+    uint32 startOffset = 5;
+}
+
+message TusGetFriendsVariableRequest {
+    int32  slotId      = 1;
+    bool   includeSelf = 2;
+    uint32 max         = 3;
+    int32  sortType    = 4;   //1=DESC date,2=ASC date,3=DESC value,4=ASC value
+    // Zero-based start position in the friend ranking
+    uint32 startOffset = 5;
+}
+
+message TusDataStatusResponse {
+    repeated TusDataStatus statuses = 1;
+    uint32 total = 2;
+}
+
+message TusTryAndSetVariableRequest {
+    string ownerNpId            = 1;
+    int64  ownerAccountId       = 2;   // != 0 -> target this account (must be self)
+    string virtualUser          = 3;   // non-empty -> target a virtual user
+    int32  slotId               = 4;
+    int32  opeType              = 5;   // 1..6 (EQUAL,NOT_EQUAL,GT,GE,LT,LE)
+    int64  value                = 6;   // value written when condition holds
+    bool   hasCompare           = 7;
+    int64  compareValue         = 8;   // comparand; if !hasCompare, `value` is used
+    bool   hasAuthorCheck       = 9;
+    int64  isLastChangedAuthor  = 10;
+    bool   hasDateCheck         = 11;
+    uint64 isLastChangedDate    = 12;
+    string isLastChangedAuthorNpId = 13;   // base npid-author path (server resolves to userId)
+}
+
+message TusDeleteMultiSlotDataRequest {
+    string         ownerNpId      = 1;
+    repeated int32 slotIds        = 2;
+    int64          ownerAccountId = 3;   // A variant target (0 = use ownerNpId / self)
+    string         virtualUser    = 4;   // VUser variant (non-empty -> vuser tables)
+}
+
+message TusDeleteMultiSlotVariableRequest {
+    string         ownerNpId   = 1;   // empty == self (npid target)
+    string         virtualUser = 2;   // non-empty -> tus_vuser_variable
+    repeated int32 slotIds     = 3;
+    int64          ownerAccountId = 4;   // A variant target (must be self)
+}
+
+message TusGetMultiUserVariableRequest {
+    int32           slotId          = 1;
+    repeated int64  ownerAccountIds = 2;   // one variable per account, in order
+    repeated string virtualUsers    = 3;   // alternative to ownerAccountIds (virtual users)
+    repeated string ownerNpIds      = 4;   // base npid-array path (server resolves each)
 }

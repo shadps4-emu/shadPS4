@@ -645,8 +645,6 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_types2.h
             src/core/libraries/np/np_trophy.cpp
             src/core/libraries/np/np_trophy.h
-            src/core/libraries/np/np_tus.cpp
-            src/core/libraries/np/np_tus.h
             src/core/libraries/np/trophy_ui.cpp
             src/core/libraries/np/trophy_ui.h
             src/core/libraries/np/np_party.cpp
@@ -691,6 +689,9 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_web_api2/np_web_api2_context.h
             src/core/libraries/np/np_web_api2/np_web_api2_push_event.cpp
             src/core/libraries/np/np_web_api2/np_web_api2_push_event.h
+            src/core/libraries/np/np_tus/np_tus.cpp
+            src/core/libraries/np/np_tus/np_tus.h
+            src/core/libraries/np/np_tus/np_tus_ctx.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
@@ -852,8 +853,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_sys/devices/nop_device.h
          src/core/file_sys/devices/console_device.cpp
          src/core/file_sys/devices/console_device.h
-         src/core/file_sys/devices/deci_tty6_device.cpp
-         src/core/file_sys/devices/deci_tty6_device.h
+         src/core/file_sys/devices/deci_tty_device.cpp
+         src/core/file_sys/devices/deci_tty_device.h
          src/core/file_sys/devices/random_device.cpp
          src/core/file_sys/devices/random_device.h
          src/core/file_sys/devices/rng_device.cpp
@@ -862,6 +863,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_sys/devices/urandom_device.h
          src/core/file_sys/devices/srandom_device.cpp
          src/core/file_sys/devices/srandom_device.h
+         src/core/file_sys/devices/zero_device.cpp
+         src/core/file_sys/devices/zero_device.h
          src/core/file_sys/directories/base_directory.cpp
          src/core/file_sys/directories/base_directory.h
          src/core/file_sys/directories/normal_directory.cpp

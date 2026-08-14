@@ -131,6 +131,9 @@ const std::string& ShadNetClient::GetAvatarUrl() const {
 u64 ShadNetClient::GetUserId() const {
     return m_user_id;
 }
+const std::string& ShadNetClient::GetNpid() const {
+    return m_npid;
+}
 u32 ShadNetClient::GetAddrLocal() const {
     return m_addr_local.load();
 }

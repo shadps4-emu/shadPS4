@@ -33,12 +33,16 @@ MemoryManager::MemoryManager() {
     if (extra_dmem != 0) {
         total_size += extra_dmem * 1_MB;
     }
+    s32 extra_fmem = EmulatorSettings.GetExtraFmemInMBytes();
+    if (extra_fmem != 0) {
+        total_size += extra_fmem * 1_MB;
+    }
     total_direct_size = total_size;
     dmem_map.clear();
     dmem_map.emplace(0, PhysicalMemoryArea{0, total_direct_size});
 
     // Pre-initialize flexible backing
-    total_flexible_size = ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE;
+    total_flexible_size = ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE + extra_fmem;
     fmem_map.clear();
     fmem_map.emplace(total_size, PhysicalMemoryArea{total_size, total_flexible_size});
 
@@ -62,6 +66,14 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
                     "extraDmemInMbytes is {} MB! Old Direct Size: {:#x} -> New Direct Size: {:#x}",
                     extra_dmem, total_size, total_size + extra_dmem * 1_MB);
         total_size += extra_dmem * 1_MB;
+    }
+    s32 extra_fmem = EmulatorSettings.GetExtraFmemInMBytes();
+    if (extra_fmem != 0) {
+        LOG_WARNING(Kernel_Vmm, "extraFmemInMbytes is {} MB! Old Size: {:#x} -> New Size: {:#x}",
+                    extra_dmem, ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE,
+                    ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE + extra_fmem * 1_MB);
+        total_size += extra_fmem * 1_MB;
+        flexible_size += extra_fmem * 1_MB;
     }
     if (!use_extended_mem1 && is_neo) {
         total_size -= 256_MB;
