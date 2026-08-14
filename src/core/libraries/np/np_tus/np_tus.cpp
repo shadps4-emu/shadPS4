@@ -3626,6 +3626,1228 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAVUserAsync(
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSave(
+    int reqId, OrbisNpAccountId targetAccountId, s32 slotId, s64 inVariable,
+    const OrbisNpAccountId* isLastChangedAuthor,
+    const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+    OrbisNpTusVariableForCrossSave* outVariable, u64 outVariableSize, void* option) {
+    auto ret = sceNpTusAddAndGetVariableForCrossSaveAsync(
+        reqId, targetAccountId, slotId, inVariable, isLastChangedAuthor, isLastChangedDate,
+        outVariable, outVariableSize, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveAsync(
+    int reqId, OrbisNpAccountId targetAccountId, s32 slotId, s64 inVariable,
+    const OrbisNpAccountId* isLastChangedAuthor,
+    const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+    OrbisNpTusVariableForCrossSave* outVariable, u64 outVariableSize, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetAccountId = {}, slotId = {}, inVariable = {}, outVariable = {}, "
+             "outVariableSize = {}, option = {}",
+             reqId, targetAccountId, slotId, inVariable, fmt::ptr(outVariable), outVariableSize,
+             fmt::ptr(option));
+    if (option || slotId < 0) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (!outVariable) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (outVariableSize != sizeof(OrbisNpTusVariableForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: outVariableSize={} but sizeof(OrbisNpTusVariableForCrossSave)={}",
+                  outVariableSize, sizeof(OrbisNpTusVariableForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    const bool hasAuthorCheck = isLastChangedAuthor != nullptr;
+    const bool hasDateCheck = isLastChangedDate != nullptr;
+
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusAddAndGetVariable(
+        uid, static_cast<s32>(svc), /*ownerNpId=*/std::string(), /*virtualUser=*/std::string(),
+        static_cast<s64>(targetAccountId), slotId, inVariable, hasAuthorCheck,
+        hasAuthorCheck ? static_cast<s64>(*isLastChangedAuthor) : 0,
+        /*isLastChangedAuthorNpId=*/std::string(), hasDateCheck,
+        hasDateCheck ? isLastChangedDate->tick : 0, /*variableOut=*/nullptr,
+        /*variableAOut=*/nullptr, ctx, /*variableCSOut=*/outVariable);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUser(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32 slotId, s64 inVariable,
+    const OrbisNpAccountId* isLastChangedAuthor,
+    const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+    OrbisNpTusVariableForCrossSave* outVariable, u64 outVariableSize, void* option) {
+    auto ret = sceNpTusAddAndGetVariableForCrossSaveVUserAsync(
+        reqId, targetVirtualUserId, slotId, inVariable, isLastChangedAuthor, isLastChangedDate,
+        outVariable, outVariableSize, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUserAsync(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32 slotId, s64 inVariable,
+    const OrbisNpAccountId* isLastChangedAuthor,
+    const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+    OrbisNpTusVariableForCrossSave* outVariable, u64 outVariableSize, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetVirtualUserId = {}, slotId = {}, inVariable = {}, "
+             "outVariable = {}, outVariableSize = {}, option = {}",
+             reqId, targetVirtualUserId ? targetVirtualUserId->data : "", slotId, inVariable,
+             fmt::ptr(outVariable), outVariableSize, fmt::ptr(option));
+    if (!targetVirtualUserId || !outVariable) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (option || slotId < 0) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (outVariableSize != sizeof(OrbisNpTusVariableForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: outVariableSize={} but sizeof(OrbisNpTusVariableForCrossSave)={}",
+                  outVariableSize, sizeof(OrbisNpTusVariableForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+    const std::string virtualUser(
+        targetVirtualUserId->data,
+        strnlen(targetVirtualUserId->data, sizeof(targetVirtualUserId->data)));
+    if (virtualUser.empty()) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    const bool hasAuthorCheck = isLastChangedAuthor != nullptr;
+    const bool hasDateCheck = isLastChangedDate != nullptr;
+
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusAddAndGetVariable(
+        uid, static_cast<s32>(svc), /*ownerNpId=*/std::string(), virtualUser,
+        /*ownerAccountId=*/0, slotId, inVariable, hasAuthorCheck,
+        hasAuthorCheck ? static_cast<s64>(*isLastChangedAuthor) : 0,
+        /*isLastChangedAuthorNpId=*/std::string(), hasDateCheck,
+        hasDateCheck ? isLastChangedDate->tick : 0, /*variableOut=*/nullptr,
+        /*variableAOut=*/nullptr, ctx, /*variableCSOut=*/outVariable);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSave(int reqId, OrbisNpAccountId targetAccountId,
+                                             s32 slotId,
+                                             OrbisNpTusDataStatusForCrossSave* dataStatus,
+                                             u64 dataStatusSize, void* data, u64 recvSize,
+                                             void* option) {
+    auto ret = sceNpTusGetDataForCrossSaveAsync(reqId, targetAccountId, slotId, dataStatus,
+                                                dataStatusSize, data, recvSize, option);
+    if (ret < 0) {
+        return ret;
+    }
+    // Returns the size of the received data (>= 0).
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveAsync(int reqId, OrbisNpAccountId targetAccountId,
+                                                  s32 slotId,
+                                                  OrbisNpTusDataStatusForCrossSave* dataStatus,
+                                                  u64 dataStatusSize, void* data, u64 recvSize,
+                                                  void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetAccountId = {}, slotId = {}, dataStatus = {}, "
+             "dataStatusSize = {}, data = {}, recvSize = {}, option = {}",
+             reqId, targetAccountId, slotId, fmt::ptr(dataStatus), dataStatusSize, fmt::ptr(data),
+             recvSize, fmt::ptr(option));
+    if (option || slotId < 0) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (!dataStatus || dataStatusSize == 0) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (dataStatusSize != sizeof(OrbisNpTusDataStatusForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: dataStatusSize={} but "
+                  "sizeof(OrbisNpTusDataStatusForCrossSave)={}",
+                  dataStatusSize, sizeof(OrbisNpTusDataStatusForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+
+    const s64 account = static_cast<s64>(targetAccountId);
+    u64 offset = 0;
+    {
+        std::lock_guard lock(g_mutex);
+        if (!req->xfer.SameTarget(slotId, account, std::string())) {
+            req->xfer.Begin(slotId, account, std::string());
+        }
+        offset = req->xfer.recvOffset;
+        if (data) {
+            req->xfer.recvOffset += recvSize;
+        }
+    }
+
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetData(
+        uid, static_cast<s32>(svc), /*ownerNpId=*/std::string(), /*virtualUser=*/std::string(),
+        account, slotId, /*statusAOut=*/nullptr, dataStatusSize, data, data ? recvSize : 0, offset,
+        ctx, /*statusOut=*/nullptr, /*statusCSOut=*/dataStatus);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI
+sceNpTusGetDataForCrossSaveVUser(int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId,
+                                 s32 slotId, OrbisNpTusDataStatusForCrossSave* dataStatus,
+                                 u64 dataStatusSize, void* data, u64 recvSize, void* option) {
+    auto ret = sceNpTusGetDataForCrossSaveVUserAsync(reqId, targetVirtualUserId, slotId, dataStatus,
+                                                     dataStatusSize, data, recvSize, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI
+sceNpTusGetDataForCrossSaveVUserAsync(int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId,
+                                      s32 slotId, OrbisNpTusDataStatusForCrossSave* dataStatus,
+                                      u64 dataStatusSize, void* data, u64 recvSize, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetVirtualUserId = {}, slotId = {}, dataStatus = {}, "
+             "dataStatusSize = {}, data = {}, recvSize = {}, option = {}",
+             reqId, targetVirtualUserId ? targetVirtualUserId->data : "", slotId,
+             fmt::ptr(dataStatus), dataStatusSize, fmt::ptr(data), recvSize, fmt::ptr(option));
+    if (option || slotId < 0) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    // NULL targetVirtualUserId is explicitly INSUFFICIENT_ARGUMENT.
+    if (!targetVirtualUserId || !dataStatus || dataStatusSize == 0) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (dataStatusSize != sizeof(OrbisNpTusDataStatusForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: dataStatusSize={} but "
+                  "sizeof(OrbisNpTusDataStatusForCrossSave)={}",
+                  dataStatusSize, sizeof(OrbisNpTusDataStatusForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+    const std::string virtualUser(
+        targetVirtualUserId->data,
+        strnlen(targetVirtualUserId->data, sizeof(targetVirtualUserId->data)));
+    if (virtualUser.empty()) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+
+    u64 offset = 0;
+    {
+        std::lock_guard lock(g_mutex);
+        if (!req->xfer.SameTarget(slotId, 0, virtualUser)) {
+            req->xfer.Begin(slotId, 0, virtualUser);
+        }
+        offset = req->xfer.recvOffset;
+        if (data) {
+            req->xfer.recvOffset += recvSize;
+        }
+    }
+
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetData(
+        uid, static_cast<s32>(svc), /*ownerNpId=*/std::string(), virtualUser, /*ownerAccountId=*/0,
+        slotId, /*statusAOut=*/nullptr, dataStatusSize, data, data ? recvSize : 0, offset, ctx,
+        /*statusOut=*/nullptr, /*statusCSOut=*/dataStatus);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSave(
+    int reqId, s32 slotId, s32 includeSelf, s32 sortType,
+    OrbisNpTusDataStatusForCrossSave* statusArray, u64 statusArraySize, int arrayLen,
+    OrbisNpTusGetFriendsDataStatusOptParam* option) {
+    auto ret = sceNpTusGetFriendsDataStatusForCrossSaveAsync(
+        reqId, slotId, includeSelf, sortType, statusArray, statusArraySize, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSaveAsync(
+    int reqId, s32 slotId, s32 includeSelf, s32 sortType,
+    OrbisNpTusDataStatusForCrossSave* statusArray, u64 statusArraySize, int arrayLen,
+    OrbisNpTusGetFriendsDataStatusOptParam* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, slotId = {}, includeSelf = {}, sortType = {}, statusArray = {}, "
+             "statusArraySize = {}, arrayLen = {}, option = {}",
+             reqId, slotId, includeSelf, sortType, fmt::ptr(statusArray), statusArraySize, arrayLen,
+             fmt::ptr(option));
+    if (!statusArray) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (arrayLen < 1 || slotId < 0) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen > TusMaxSelectedFriends) {
+        LOG_ERROR(Lib_NpTus, "too many entries: arrayLen={} (max {})", arrayLen,
+                  TusMaxSelectedFriends);
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_NPID;
+    }
+    // Data statuses only sort by date (no value ordering).
+    if (sortType < ORBIS_NP_TUS_DATASTATUS_SORTTYPE_DESCENDING_DATE ||
+        sortType > ORBIS_NP_TUS_DATASTATUS_SORTTYPE_ASCENDING_DATE) {
+        LOG_ERROR(Lib_NpTus, "invalid sortType {}", sortType);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (statusArraySize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusDataStatusForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: statusArraySize={} but arrayLen {} * "
+                  "sizeof(OrbisNpTusDataStatusForCrossSave)={}",
+                  statusArraySize, arrayLen,
+                  static_cast<u64>(arrayLen) * sizeof(OrbisNpTusDataStatusForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+
+    u32 startOffset = 0;
+    u32* hitsOut = nullptr;
+    if (option) {
+        if (option->size != sizeof(OrbisNpTusGetFriendsDataStatusOptParam)) {
+            LOG_ERROR(Lib_NpTus,
+                      "size mismatch: option->size={} but "
+                      "sizeof(OrbisNpTusGetFriendsDataStatusOptParam)={}",
+                      option->size, sizeof(OrbisNpTusGetFriendsDataStatusOptParam));
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+        }
+        // startSerialRank is a 1-based rank
+        if (option->startSerialRank) {
+            const u32 rank = *option->startSerialRank;
+            if (rank == 0) {
+                LOG_ERROR(Lib_NpTus, "startSerialRank must be 1-based");
+                return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+            }
+            startOffset = rank - 1;
+        }
+        hitsOut = option->hits;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetFriendsDataStatus(
+        uid, static_cast<s32>(svc), slotId, includeSelf != 0, sortType, static_cast<u32>(arrayLen),
+        /*statusOut=*/nullptr, /*statusAOut=*/nullptr, static_cast<u64>(arrayLen), ctx, startOffset,
+        hitsOut, /*statusCSOut=*/statusArray);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSave(
+    int reqId, s32 slotId, s32 includeSelf, s32 sortType,
+    OrbisNpTusVariableForCrossSave* variableArray, u64 variableArraySize, int arrayLen,
+    OrbisNpTusGetFriendsVariableOptParam* option) {
+    auto ret = sceNpTusGetFriendsVariableForCrossSaveAsync(
+        reqId, slotId, includeSelf, sortType, variableArray, variableArraySize, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSaveAsync(
+    int reqId, s32 slotId, s32 includeSelf, s32 sortType,
+    OrbisNpTusVariableForCrossSave* variableArray, u64 variableArraySize, int arrayLen,
+    OrbisNpTusGetFriendsVariableOptParam* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, slotId = {}, includeSelf = {}, sortType = {}, variableArray = {}, "
+             "variableArraySize = {}, arrayLen = {}, option = {}",
+             reqId, slotId, includeSelf, sortType, fmt::ptr(variableArray), variableArraySize,
+             arrayLen, fmt::ptr(option));
+    if (!variableArray) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (arrayLen < 1 || slotId < 0) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen > TusMaxSelectedFriends) {
+        LOG_ERROR(Lib_NpTus, "too many entries: arrayLen={} (max {})", arrayLen,
+                  TusMaxSelectedFriends);
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_NPID;
+    }
+    if (sortType < ORBIS_NP_TUS_VARIABLE_SORTTYPE_DESCENDING_DATE ||
+        sortType > ORBIS_NP_TUS_VARIABLE_SORTTYPE_ASCENDING_VALUE) {
+        LOG_ERROR(Lib_NpTus, "invalid sortType {}", sortType);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (variableArraySize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariableForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: variableArraySize={} but arrayLen {} * "
+                  "sizeof(OrbisNpTusVariableForCrossSave)={}",
+                  variableArraySize, arrayLen,
+                  static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariableForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+
+    u32 startOffset = 0;
+    u32* hitsOut = nullptr;
+    if (option) {
+        if (option->size != sizeof(OrbisNpTusGetFriendsVariableOptParam)) {
+            LOG_ERROR(Lib_NpTus,
+                      "size mismatch: option->size={} but "
+                      "sizeof(OrbisNpTusGetFriendsVariableOptParam)={}",
+                      option->size, sizeof(OrbisNpTusGetFriendsVariableOptParam));
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+        }
+        // startSerialRank is a 1-based rank
+        if (option->startSerialRank) {
+            const u32 rank = *option->startSerialRank;
+            if (rank == 0) {
+                LOG_ERROR(Lib_NpTus, "startSerialRank must be 1-based");
+                return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+            }
+            startOffset = rank - 1;
+        }
+        hitsOut = option->hits;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetFriendsVariable(
+        uid, static_cast<s32>(svc), slotId, includeSelf != 0, sortType, static_cast<u32>(arrayLen),
+        /*variablesOut=*/nullptr, /*variablesAOut=*/nullptr, static_cast<u64>(arrayLen), ctx,
+        startOffset, hitsOut, /*variablesCSOut=*/variableArray);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSave(
+    int reqId, OrbisNpAccountId targetAccountId, s32* slotIds,
+    OrbisNpTusDataStatusForCrossSave* statusArray, u64 statusArraySize, int arrayLen,
+    void* option) {
+    auto ret = sceNpTusGetMultiSlotDataStatusForCrossSaveAsync(
+        reqId, targetAccountId, slotIds, statusArray, statusArraySize, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveAsync(
+    int reqId, OrbisNpAccountId targetAccountId, s32* slotIds,
+    OrbisNpTusDataStatusForCrossSave* statusArray, u64 statusArraySize, int arrayLen,
+    void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetAccountId = {}, slotIds = {}, statusArray = {}, "
+             "statusArraySize = {}, arrayLen = {}, option = {}",
+             reqId, targetAccountId, fmt::ptr(slotIds), fmt::ptr(statusArray), statusArraySize,
+             arrayLen, fmt::ptr(option));
+    if (!slotIds || !statusArray) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (option || arrayLen < 1) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen > TusMaxSlotsPerRequest) {
+        LOG_ERROR(Lib_NpTus, "too many slots: arrayLen={} (max {})", arrayLen,
+                  TusMaxSlotsPerRequest);
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_SLOTID;
+    }
+    if (std::any_of(slotIds, slotIds + arrayLen, [](s32 id) { return id < 0; })) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (statusArraySize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusDataStatusForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: statusArraySize={} but arrayLen {} * "
+                  "sizeof(OrbisNpTusDataStatusForCrossSave)={}",
+                  statusArraySize, arrayLen,
+                  static_cast<u64>(arrayLen) * sizeof(OrbisNpTusDataStatusForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    std::vector<s32> slots(slotIds, slotIds + arrayLen);
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetMultiSlotDataStatus(
+        uid, static_cast<s32>(svc), /*ownerNpId=*/std::string(), /*virtualUser=*/std::string(),
+        static_cast<s64>(targetAccountId), slots, /*statusOut=*/nullptr,
+        /*statusAOut=*/nullptr, static_cast<u64>(arrayLen), ctx, /*statusCSOut=*/statusArray);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUser(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32* slotIds,
+    OrbisNpTusDataStatusForCrossSave* statusArray, u64 statusArraySize, int arrayLen,
+    void* option) {
+    auto ret = sceNpTusGetMultiSlotDataStatusForCrossSaveVUserAsync(
+        reqId, targetVirtualUserId, slotIds, statusArray, statusArraySize, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUserAsync(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32* slotIds,
+    OrbisNpTusDataStatusForCrossSave* statusArray, u64 statusArraySize, int arrayLen,
+    void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetVirtualUserId = {}, slotIds = {}, statusArray = {}, "
+             "statusArraySize = {}, arrayLen = {}, option = {}",
+             reqId, targetVirtualUserId ? targetVirtualUserId->data : "", fmt::ptr(slotIds),
+             fmt::ptr(statusArray), statusArraySize, arrayLen, fmt::ptr(option));
+    if (!targetVirtualUserId || !slotIds || !statusArray) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (option || arrayLen < 1) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen > TusMaxSlotsPerRequest) {
+        LOG_ERROR(Lib_NpTus, "too many slots: arrayLen={} (max {})", arrayLen,
+                  TusMaxSlotsPerRequest);
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_SLOTID;
+    }
+    if (std::any_of(slotIds, slotIds + arrayLen, [](s32 id) { return id < 0; })) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (statusArraySize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusDataStatusForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: statusArraySize={} but arrayLen {} * "
+                  "sizeof(OrbisNpTusDataStatusForCrossSave)={}",
+                  statusArraySize, arrayLen,
+                  static_cast<u64>(arrayLen) * sizeof(OrbisNpTusDataStatusForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+    const std::string virtualUser(
+        targetVirtualUserId->data,
+        strnlen(targetVirtualUserId->data, sizeof(targetVirtualUserId->data)));
+    if (virtualUser.empty()) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    std::vector<s32> slots(slotIds, slotIds + arrayLen);
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetMultiSlotDataStatus(
+        uid, static_cast<s32>(svc), /*ownerNpId=*/std::string(), virtualUser,
+        /*ownerAccountId=*/0, slots, /*statusOut=*/nullptr, /*statusAOut=*/nullptr,
+        static_cast<u64>(arrayLen), ctx, /*statusCSOut=*/statusArray);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSave(
+    int reqId, OrbisNpAccountId targetAccountId, s32* slotIds,
+    OrbisNpTusVariableForCrossSave* variableArray, u64 variablesSize, int arrayLen, void* option) {
+    auto ret = sceNpTusGetMultiSlotVariableForCrossSaveAsync(
+        reqId, targetAccountId, slotIds, variableArray, variablesSize, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveAsync(
+    int reqId, OrbisNpAccountId targetAccountId, s32* slotIds,
+    OrbisNpTusVariableForCrossSave* variableArray, u64 variablesSize, int arrayLen, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetAccountId = {}, slotIds = {}, variableArray = {}, "
+             "variablesSize = {}, arrayLen = {}, option = {}",
+             reqId, targetAccountId, fmt::ptr(slotIds), fmt::ptr(variableArray), variablesSize,
+             arrayLen, fmt::ptr(option));
+    if (!slotIds || !variableArray) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (arrayLen < 1 || option) {
+        LOG_ERROR(Lib_NpTus, "Invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen > TusMaxSlotsPerRequest) {
+        LOG_ERROR(Lib_NpTus, "Too many slots requested: {}", arrayLen);
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_SLOTID;
+    }
+    if (std::any_of(slotIds, slotIds + arrayLen, [](s32 id) { return id < 0; })) {
+        LOG_ERROR(Lib_NpTus, "Invalid slot ID found");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (variablesSize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariableForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: variablesSize={} but arrayLen {} * "
+                  "sizeof(OrbisNpTusVariableForCrossSave)={}",
+                  variablesSize, arrayLen,
+                  static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariableForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    std::vector<s32> slots(slotIds, slotIds + arrayLen);
+    const int n = arrayLen;
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetMultiSlotVariable(
+        uid, static_cast<s32>(svc), /*ownerNpId=*/std::string(), /*virtualUser=*/std::string(),
+        slots, /*variablesOut=*/nullptr, static_cast<u64>(n), ctx, /*variablesAOut=*/nullptr,
+        static_cast<s64>(targetAccountId), /*variablesCSOut=*/variableArray);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUser(
+    int reqId, const OrbisNpTusVirtualUserId* virtualUserId, s32* slotIds,
+    OrbisNpTusVariableForCrossSave* variableArray, u64 variablesSize, int arrayLen, void* option) {
+    auto ret = sceNpTusGetMultiSlotVariableForCrossSaveVUserAsync(
+        reqId, virtualUserId, slotIds, variableArray, variablesSize, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUserAsync(
+    int reqId, const OrbisNpTusVirtualUserId* virtualUserId, s32* slotIds,
+    OrbisNpTusVariableForCrossSave* variableArray, u64 variablesSize, int arrayLen, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, virtualUserId = {}, slotIds = {}, variableArray = {}, "
+             "variablesSize = {}, arrayLen = {}, option = {}",
+             reqId, virtualUserId ? virtualUserId->data : "", fmt::ptr(slotIds),
+             fmt::ptr(variableArray), variablesSize, arrayLen, fmt::ptr(option));
+    if (!virtualUserId || !slotIds || !variableArray) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (arrayLen < 1 || option) {
+        LOG_ERROR(Lib_NpTus, "Invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen > TusMaxSlotsPerRequest) {
+        LOG_ERROR(Lib_NpTus, "Too many slots requested: {}", arrayLen);
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_SLOTID;
+    }
+    if (std::any_of(slotIds, slotIds + arrayLen, [](s32 id) { return id < 0; })) {
+        LOG_ERROR(Lib_NpTus, "Invalid slot ID found");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (variablesSize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariableForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: variablesSize={} but arrayLen {} * "
+                  "sizeof(OrbisNpTusVariableForCrossSave)={}",
+                  variablesSize, arrayLen,
+                  static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariableForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+    const std::string virtualUser(virtualUserId->data,
+                                  strnlen(virtualUserId->data, sizeof(virtualUserId->data)));
+    if (virtualUser.empty()) {
+        LOG_ERROR(Lib_NpTus, "Invalid virtual user ID");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    std::vector<s32> slots(slotIds, slotIds + arrayLen);
+    const int n = arrayLen;
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetMultiSlotVariable(
+        uid, static_cast<s32>(svc), /*ownerNpId=*/std::string(), virtualUser, slots,
+        /*variablesOut=*/nullptr, static_cast<u64>(n), ctx, /*variablesAOut=*/nullptr,
+        /*ownerAccountId=*/0, /*variablesCSOut=*/variableArray);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSave(
+    int reqId, const OrbisNpAccountId* targetAccountIdArray, s32 slotId,
+    OrbisNpTusDataStatusForCrossSave* statusArray, u64 statusArraySize, int arrayLen,
+    void* option) {
+    auto ret = sceNpTusGetMultiUserDataStatusForCrossSaveAsync(
+        reqId, targetAccountIdArray, slotId, statusArray, statusArraySize, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveAsync(
+    int reqId, const OrbisNpAccountId* targetAccountIdArray, s32 slotId,
+    OrbisNpTusDataStatusForCrossSave* statusArray, u64 statusArraySize, int arrayLen,
+    void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetAccountIdArray = {}, slotId = {}, statusArray = {}, "
+             "statusArraySize = {}, arrayLen = {}, option = {}",
+             reqId, fmt::ptr(targetAccountIdArray), slotId, fmt::ptr(statusArray), statusArraySize,
+             arrayLen, fmt::ptr(option));
+    if (!targetAccountIdArray || !statusArray) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (option || arrayLen < 1 || slotId < 0) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen > TusMaxUsersPerRequest) {
+        LOG_ERROR(Lib_NpTus, "too many users: arrayLen={} (max {})", arrayLen,
+                  TusMaxUsersPerRequest);
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_NPID;
+    }
+    if (statusArraySize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusDataStatusForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: statusArraySize={} but arrayLen {} * "
+                  "sizeof(OrbisNpTusDataStatusForCrossSave)={}",
+                  statusArraySize, arrayLen,
+                  static_cast<u64>(arrayLen) * sizeof(OrbisNpTusDataStatusForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    // Account ids map straight to the server's owner key, no npid resolution.
+    std::vector<s64> accounts;
+    accounts.reserve(arrayLen);
+    for (int i = 0; i < arrayLen; ++i) {
+        accounts.push_back(static_cast<s64>(targetAccountIdArray[i]));
+    }
+
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetMultiUserDataStatus(
+        uid, static_cast<s32>(svc), slotId, /*ownerNpIds=*/{}, /*virtualUsers=*/{}, accounts,
+        /*statusOut=*/nullptr, /*statusAOut=*/nullptr, static_cast<u64>(arrayLen), ctx,
+        /*statusCSOut=*/statusArray);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUser(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserIdArray, s32 slotId,
+    OrbisNpTusDataStatusForCrossSave* statusArray, u64 statusArraySize, int arrayLen,
+    void* option) {
+    auto ret = sceNpTusGetMultiUserDataStatusForCrossSaveVUserAsync(
+        reqId, targetVirtualUserIdArray, slotId, statusArray, statusArraySize, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUserAsync(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserIdArray, s32 slotId,
+    OrbisNpTusDataStatusForCrossSave* statusArray, u64 statusArraySize, int arrayLen,
+    void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetVirtualUserIdArray = {}, slotId = {}, statusArray = {}, "
+             "statusArraySize = {}, arrayLen = {}, option = {}",
+             reqId, fmt::ptr(targetVirtualUserIdArray), slotId, fmt::ptr(statusArray),
+             statusArraySize, arrayLen, fmt::ptr(option));
+    if (!targetVirtualUserIdArray || !statusArray) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (option || arrayLen < 1 || slotId < 0) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen > TusMaxUsersPerRequest) {
+        LOG_ERROR(Lib_NpTus, "too many users: arrayLen={} (max {})", arrayLen,
+                  TusMaxUsersPerRequest);
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_NPID;
+    }
+    if (statusArraySize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusDataStatusForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: statusArraySize={} but arrayLen {} * "
+                  "sizeof(OrbisNpTusDataStatusForCrossSave)={}",
+                  statusArraySize, arrayLen,
+                  static_cast<u64>(arrayLen) * sizeof(OrbisNpTusDataStatusForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+    std::vector<std::string> vusers;
+    vusers.reserve(arrayLen);
+    for (int i = 0; i < arrayLen; ++i) {
+        const char* d = targetVirtualUserIdArray[i].data;
+        std::string name(d, strnlen(d, sizeof(targetVirtualUserIdArray[i].data)));
+        if (name.empty()) {
+            // An empty entry would silently fall through to account targeting.
+            LOG_ERROR(Lib_NpTus, "empty virtual user at index {}", i);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+        }
+        vusers.emplace_back(std::move(name));
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetMultiUserDataStatus(
+        uid, static_cast<s32>(svc), slotId, /*ownerNpIds=*/{}, vusers, /*ownerAccountIds=*/{},
+        /*statusOut=*/nullptr, /*statusAOut=*/nullptr, static_cast<u64>(arrayLen), ctx,
+        /*statusCSOut=*/statusArray);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI
+sceNpTusGetMultiUserVariableForCrossSave(int reqId, const OrbisNpAccountId* targetAccountIdArray,
+                                         s32 slotId, OrbisNpTusVariableForCrossSave* variableArray,
+                                         u64 variableArraySize, int arrayLen, void* option) {
+    auto ret = sceNpTusGetMultiUserVariableForCrossSaveAsync(
+        reqId, targetAccountIdArray, slotId, variableArray, variableArraySize, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveAsync(
+    int reqId, const OrbisNpAccountId* targetAccountIdArray, s32 slotId,
+    OrbisNpTusVariableForCrossSave* variableArray, u64 variableArraySize, int arrayLen,
+    void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetAccountIdArray = {}, slotId = {}, variableArray = {}, "
+             "variableArraySize = {}, arrayLen = {}, option = {}",
+             reqId, fmt::ptr(targetAccountIdArray), slotId, fmt::ptr(variableArray),
+             variableArraySize, arrayLen, fmt::ptr(option));
+    if (!targetAccountIdArray || !variableArray) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (option || arrayLen < 1 || slotId < 0) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen > TusMaxUsersPerRequest) {
+        LOG_ERROR(Lib_NpTus, "too many users: arrayLen={} (max {})", arrayLen,
+                  TusMaxUsersPerRequest);
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_NPID;
+    }
+    if (variableArraySize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariableForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: variableArraySize={} but arrayLen {} * "
+                  "sizeof(OrbisNpTusVariableForCrossSave)={}",
+                  variableArraySize, arrayLen,
+                  static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariableForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    std::vector<s64> accounts;
+    accounts.reserve(arrayLen);
+    for (int i = 0; i < arrayLen; ++i) {
+        accounts.push_back(static_cast<s64>(targetAccountIdArray[i]));
+    }
+
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetMultiUserVariable(
+        uid, static_cast<s32>(svc), slotId, /*ownerNpIds=*/{}, /*virtualUsers=*/{}, accounts,
+        /*variablesOut=*/nullptr, /*variablesAOut=*/nullptr, static_cast<u64>(arrayLen), ctx,
+        /*variablesCSOut=*/variableArray);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUser(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserIdArray, s32 slotId,
+    OrbisNpTusVariableForCrossSave* variableArray, u64 variableArraySize, int arrayLen,
+    void* option) {
+    auto ret = sceNpTusGetMultiUserVariableForCrossSaveVUserAsync(
+        reqId, targetVirtualUserIdArray, slotId, variableArray, variableArraySize, arrayLen,
+        option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUserAsync(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserIdArray, s32 slotId,
+    OrbisNpTusVariableForCrossSave* variableArray, u64 variableArraySize, int arrayLen,
+    void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetVirtualUserIdArray = {}, slotId = {}, variableArray = {}, "
+             "variableArraySize = {}, arrayLen = {}, option = {}",
+             reqId, fmt::ptr(targetVirtualUserIdArray), slotId, fmt::ptr(variableArray),
+             variableArraySize, arrayLen, fmt::ptr(option));
+    if (!targetVirtualUserIdArray || !variableArray) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (option || arrayLen < 1 || slotId < 0) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen > TusMaxUsersPerRequest) {
+        LOG_ERROR(Lib_NpTus, "too many users: arrayLen={} (max {})", arrayLen,
+                  TusMaxUsersPerRequest);
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_NPID;
+    }
+    if (variableArraySize != static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariableForCrossSave)) {
+        LOG_ERROR(Lib_NpTus,
+                  "size mismatch: variableArraySize={} but arrayLen {} * "
+                  "sizeof(OrbisNpTusVariableForCrossSave)={}",
+                  variableArraySize, arrayLen,
+                  static_cast<u64>(arrayLen) * sizeof(OrbisNpTusVariableForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+    std::vector<std::string> vusers;
+    vusers.reserve(arrayLen);
+    for (int i = 0; i < arrayLen; ++i) {
+        const char* d = targetVirtualUserIdArray[i].data;
+        std::string name(d, strnlen(d, sizeof(targetVirtualUserIdArray[i].data)));
+        if (name.empty()) {
+            LOG_ERROR(Lib_NpTus, "empty virtual user at index {}", i);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+        }
+        vusers.emplace_back(std::move(name));
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusGetMultiUserVariable(
+        uid, static_cast<s32>(svc), slotId, /*ownerNpIds=*/{}, vusers, /*ownerAccountIds=*/{},
+        /*variablesOut=*/nullptr, /*variablesAOut=*/nullptr, static_cast<u64>(arrayLen), ctx,
+        /*variablesCSOut=*/variableArray);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSave(
+    int reqId, OrbisNpAccountId targetAccountId, s32 slotId, s32 opeType, s64 variable,
+    const s64* compareValue, const OrbisNpAccountId* isLastChangedAuthor,
+    const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+    OrbisNpTusVariableForCrossSave* resultVariable, u64 resultVariableSize, void* option) {
+    auto ret = sceNpTusTryAndSetVariableForCrossSaveAsync(
+        reqId, targetAccountId, slotId, opeType, variable, compareValue, isLastChangedAuthor,
+        isLastChangedDate, resultVariable, resultVariableSize, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveAsync(
+    int reqId, OrbisNpAccountId targetAccountId, s32 slotId, s32 opeType, s64 variable,
+    const s64* compareValue, const OrbisNpAccountId* isLastChangedAuthor,
+    const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+    OrbisNpTusVariableForCrossSave* resultVariable, u64 resultVariableSize, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetAccountId = {}, slotId = {}, opeType = {}, variable = {}, "
+             "compareValue = {}, resultVariable = {}, resultVariableSize = {}, option = {}",
+             reqId, targetAccountId, slotId, opeType, variable, fmt::ptr(compareValue),
+             fmt::ptr(resultVariable), resultVariableSize, fmt::ptr(option));
+    if (!resultVariable) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (option || slotId < 0) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (opeType < ORBIS_NP_TUS_OPETYPE_EQUAL || opeType > ORBIS_NP_TUS_OPETYPE_LESS_OR_EQUAL) {
+        LOG_ERROR(Lib_NpTus, "undefined opeType {}", opeType);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_TYPE;
+    }
+    if (resultVariableSize != sizeof(OrbisNpTusVariableForCrossSave)) {
+        LOG_ERROR(
+            Lib_NpTus,
+            "size mismatch: resultVariableSize={} but sizeof(OrbisNpTusVariableForCrossSave)={}",
+            resultVariableSize, sizeof(OrbisNpTusVariableForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    const bool hasAuthorCheck = isLastChangedAuthor != nullptr;
+    const bool hasDateCheck = isLastChangedDate != nullptr;
+
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusTryAndSetVariable(
+        uid, static_cast<s32>(svc), /*ownerNpId=*/std::string(), /*virtualUser=*/std::string(),
+        static_cast<s64>(targetAccountId), slotId, opeType, variable, compareValue != nullptr,
+        compareValue ? *compareValue : variable, hasAuthorCheck,
+        hasAuthorCheck ? static_cast<s64>(*isLastChangedAuthor) : 0,
+        /*isLastChangedAuthorNpId=*/std::string(), hasDateCheck,
+        hasDateCheck ? isLastChangedDate->tick : 0, /*variableOut=*/nullptr,
+        /*variableAOut=*/nullptr, ctx, /*variableCSOut=*/resultVariable);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUser(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32 slotId, s32 opeType,
+    s64 variable, const s64* compareValue, const OrbisNpAccountId* isLastChangedAuthor,
+    const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+    OrbisNpTusVariableForCrossSave* resultVariable, u64 resultVariableSize, void* option) {
+    auto ret = sceNpTusTryAndSetVariableForCrossSaveVUserAsync(
+        reqId, targetVirtualUserId, slotId, opeType, variable, compareValue, isLastChangedAuthor,
+        isLastChangedDate, resultVariable, resultVariableSize, option);
+    if (ret < 0) {
+        return ret;
+    }
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUserAsync(
+    int reqId, const OrbisNpTusVirtualUserId* targetVirtualUserId, s32 slotId, s32 opeType,
+    s64 variable, const s64* compareValue, const OrbisNpAccountId* isLastChangedAuthor,
+    const Libraries::Rtc::OrbisRtcTick* isLastChangedDate,
+    OrbisNpTusVariableForCrossSave* resultVariable, u64 resultVariableSize, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, targetVirtualUserId = {}, slotId = {}, opeType = {}, variable = {}, "
+             "compareValue = {}, resultVariable = {}, resultVariableSize = {}, option = {}",
+             reqId, targetVirtualUserId ? targetVirtualUserId->data : "", slotId, opeType, variable,
+             fmt::ptr(compareValue), fmt::ptr(resultVariable), resultVariableSize,
+             fmt::ptr(option));
+    if (!targetVirtualUserId || !resultVariable) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (option || slotId < 0) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (opeType < ORBIS_NP_TUS_OPETYPE_EQUAL || opeType > ORBIS_NP_TUS_OPETYPE_LESS_OR_EQUAL) {
+        LOG_ERROR(Lib_NpTus, "undefined opeType {}", opeType);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_TYPE;
+    }
+    if (resultVariableSize != sizeof(OrbisNpTusVariableForCrossSave)) {
+        LOG_ERROR(
+            Lib_NpTus,
+            "size mismatch: resultVariableSize={} but sizeof(OrbisNpTusVariableForCrossSave)={}",
+            resultVariableSize, sizeof(OrbisNpTusVariableForCrossSave));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+    const std::string virtualUser(
+        targetVirtualUserId->data,
+        strnlen(targetVirtualUserId->data, sizeof(targetVirtualUserId->data)));
+    if (virtualUser.empty()) {
+        LOG_ERROR(Lib_NpTus, "invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
+    }
+    const bool hasAuthorCheck = isLastChangedAuthor != nullptr;
+    const bool hasDateCheck = isLastChangedDate != nullptr;
+
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TusTryAndSetVariable(
+        uid, static_cast<s32>(svc), /*ownerNpId=*/std::string(), virtualUser,
+        /*ownerAccountId=*/0, slotId, opeType, variable, compareValue != nullptr,
+        compareValue ? *compareValue : variable, hasAuthorCheck,
+        hasAuthorCheck ? static_cast<s64>(*isLastChangedAuthor) : 0,
+        /*isLastChangedAuthorNpId=*/std::string(), hasDateCheck,
+        hasDateCheck ? isLastChangedDate->tick : 0, /*variableOut=*/nullptr,
+        /*variableAOut=*/nullptr, ctx, /*variableCSOut=*/resultVariable);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
 //***********************************
 // TSS functions - WIP TODO
 //***********************************
@@ -3664,6 +4886,11 @@ s32 PS4_SYSV_ABI sceNpTssGetDataAsync(int reqId, s32 slotId, OrbisNpTssDataStatu
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpTssGetStorageAsync(int reqId) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
+    return FakeAsyncComplete(reqId);
+}
+
 s32 PS4_SYSV_ABI sceNpTssGetData() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
@@ -3684,31 +4911,6 @@ s32 PS4_SYSV_ABI sceNpTssGetStorage() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTssGetStorageAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSave() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUser() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUserAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
 s32 PS4_SYSV_ABI sceNpTusChangeModeForOtherSaveDataOwners() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
@@ -3719,126 +4921,6 @@ s32 PS4_SYSV_ABI sceNpTusCreateTitleCtx() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSave() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveVUser() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveVUserAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSave() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSaveAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSave() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSaveAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSave() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUser() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUserAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSave() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUser() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUserAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSave() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUser() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUserAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSave() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUser() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUserAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
 s32 PS4_SYSV_ABI sceNpTusSetThreadParam() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
@@ -3847,26 +4929,6 @@ s32 PS4_SYSV_ABI sceNpTusSetThreadParam() {
 s32 PS4_SYSV_ABI sceNpTusSetTimeout() {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called");
     return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSave() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUser() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUserAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {

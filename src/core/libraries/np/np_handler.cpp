@@ -2029,13 +2029,11 @@ void CopyNpHandle(OrbisNpId& dst, const std::string& src) {
     std::memcpy(dst.handle.data, src.data(), cp);
 }
 
-s32 NpHandler::TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
-                                       const std::string& virtualUser,
-                                       const std::vector<s32>& slotIds,
-                                       NpTus::OrbisNpTusVariable* variablesOut, u64 arrayNum,
-                                       std::shared_ptr<NpTus::TusRequestCtx> ctx,
-                                       NpTus::OrbisNpTusVariableA* variablesAOut,
-                                       s64 ownerAccountId) {
+s32 NpHandler::TusGetMultiSlotVariable(
+    s32 user_id, s32 service_label, const std::string& ownerNpId, const std::string& virtualUser,
+    const std::vector<s32>& slotIds, NpTus::OrbisNpTusVariable* variablesOut, u64 arrayNum,
+    std::shared_ptr<NpTus::TusRequestCtx> ctx, NpTus::OrbisNpTusVariableA* variablesAOut,
+    s64 ownerAccountId, NpTus::OrbisNpTusVariableForCrossSave* variablesCSOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2070,6 +2068,7 @@ s32 NpHandler::TusGetMultiSlotVariable(s32 user_id, s32 service_label, const std
     p.cmd = ShadNet::CommandType::TusGetMultiSlotVariable;
     p.variableArray = variablesOut;
     p.variableArrayA = variablesAOut;
+    p.variableArrayCS = variablesCSOut;
     p.arrayNum = arrayNum;
     p.user_id = user_id;
     m_pending_tus.emplace(pkt_id, std::move(p));
@@ -2127,7 +2126,8 @@ s32 NpHandler::TusGetData(s32 user_id, s32 service_label, const std::string& own
                           const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
                           NpTus::OrbisNpTusDataStatusA* statusAOut, u64 statusCap, void* dataOut,
                           u64 dataCap, u64 dataOffset, std::shared_ptr<NpTus::TusRequestCtx> ctx,
-                          NpTus::OrbisNpTusDataStatus* statusOut) {
+                          NpTus::OrbisNpTusDataStatus* statusOut,
+                          NpTus::OrbisNpTusDataStatusForCrossSave* statusCSOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2162,6 +2162,7 @@ s32 NpHandler::TusGetData(s32 user_id, s32 service_label, const std::string& own
     p.user_id = user_id;
     p.statusArrayA = statusAOut;
     p.statusArray = statusOut;
+    p.statusArrayCS = statusCSOut;
     p.statusCap = statusCap;
     p.dataOut = dataOut;
     p.dataCap = dataCap;
@@ -2260,7 +2261,8 @@ s32 NpHandler::TusGetMultiUserDataStatus(s32 user_id, s32 service_label, s32 slo
                                          const std::vector<s64>& ownerAccountIds,
                                          NpTus::OrbisNpTusDataStatus* statusOut,
                                          NpTus::OrbisNpTusDataStatusA* statusAOut, u64 arrayNum,
-                                         std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+                                         std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                                         NpTus::OrbisNpTusDataStatusForCrossSave* statusCSOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2294,6 +2296,7 @@ s32 NpHandler::TusGetMultiUserDataStatus(s32 user_id, s32 service_label, s32 slo
     p.user_id = user_id;
     p.statusArray = statusOut;
     p.statusArrayA = statusAOut;
+    p.statusArrayCS = statusCSOut;
     p.arrayNum = arrayNum;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
@@ -2305,7 +2308,8 @@ s32 NpHandler::TusGetMultiUserVariable(s32 user_id, s32 service_label, s32 slotI
                                        const std::vector<s64>& ownerAccountIds,
                                        NpTus::OrbisNpTusVariable* variablesOut,
                                        NpTus::OrbisNpTusVariableA* variablesAOut, u64 arrayNum,
-                                       std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+                                       std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                                       NpTus::OrbisNpTusVariableForCrossSave* variablesCSOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2339,6 +2343,7 @@ s32 NpHandler::TusGetMultiUserVariable(s32 user_id, s32 service_label, s32 slotI
     p.user_id = user_id;
     p.variableArray = variablesOut;
     p.variableArrayA = variablesAOut;
+    p.variableArrayCS = variablesCSOut;
     p.arrayNum = arrayNum;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
@@ -2351,7 +2356,8 @@ s32 NpHandler::TusTryAndSetVariable(s32 user_id, s32 service_label, const std::s
                                     const std::string& isLastChangedAuthorNpId, bool hasDateCheck,
                                     u64 isLastChangedDate, NpTus::OrbisNpTusVariable* variableOut,
                                     NpTus::OrbisNpTusVariableA* variableAOut,
-                                    std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+                                    std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                                    NpTus::OrbisNpTusVariableForCrossSave* variableCSOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2403,6 +2409,7 @@ s32 NpHandler::TusTryAndSetVariable(s32 user_id, s32 service_label, const std::s
     p.user_id = user_id;
     p.variableArray = variableOut;
     p.variableArrayA = variableAOut;
+    p.variableArrayCS = variableCSOut;
     p.arrayNum = 1;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
@@ -2414,7 +2421,8 @@ s32 NpHandler::TusAddAndGetVariable(s32 user_id, s32 service_label, const std::s
                                     const std::string& isLastChangedAuthorNpId, bool hasDateCheck,
                                     u64 isLastChangedDate, NpTus::OrbisNpTusVariable* variableOut,
                                     NpTus::OrbisNpTusVariableA* variableAOut,
-                                    std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+                                    std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                                    NpTus::OrbisNpTusVariableForCrossSave* variableCSOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2460,6 +2468,7 @@ s32 NpHandler::TusAddAndGetVariable(s32 user_id, s32 service_label, const std::s
     p.user_id = user_id;
     p.variableArray = variableOut;
     p.variableArrayA = variableAOut;
+    p.variableArrayCS = variableCSOut;
     p.arrayNum = 1;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
@@ -2470,7 +2479,8 @@ s32 NpHandler::TusGetFriendsDataStatus(s32 user_id, s32 service_label, s32 slotI
                                        NpTus::OrbisNpTusDataStatus* statusOut,
                                        NpTus::OrbisNpTusDataStatusA* statusAOut, u64 arrayNum,
                                        std::shared_ptr<NpTus::TusRequestCtx> ctx, u32 startOffset,
-                                       u32* hitsOut) {
+                                       u32* hitsOut,
+                                       NpTus::OrbisNpTusDataStatusForCrossSave* statusCSOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2500,6 +2510,7 @@ s32 NpHandler::TusGetFriendsDataStatus(s32 user_id, s32 service_label, s32 slotI
     p.user_id = user_id;
     p.statusArray = statusOut;
     p.statusArrayA = statusAOut;
+    p.statusArrayCS = statusCSOut;
     p.arrayNum = arrayNum;
     p.totalOut = hitsOut;
     m_pending_tus.emplace(pkt_id, std::move(p));
@@ -2510,7 +2521,8 @@ s32 NpHandler::TusGetFriendsVariable(s32 user_id, s32 service_label, s32 slotId,
                                      s32 sortType, u32 max, NpTus::OrbisNpTusVariable* variablesOut,
                                      NpTus::OrbisNpTusVariableA* variablesAOut, u64 arrayNum,
                                      std::shared_ptr<NpTus::TusRequestCtx> ctx, u32 startOffset,
-                                     u32* hitsOut) {
+                                     u32* hitsOut,
+                                     NpTus::OrbisNpTusVariableForCrossSave* variablesCSOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2540,6 +2552,7 @@ s32 NpHandler::TusGetFriendsVariable(s32 user_id, s32 service_label, s32 slotId,
     p.user_id = user_id;
     p.variableArray = variablesOut;
     p.variableArrayA = variablesAOut;
+    p.variableArrayCS = variablesCSOut;
     p.arrayNum = arrayNum;
     p.totalOut = hitsOut;
     m_pending_tus.emplace(pkt_id, std::move(p));
@@ -2552,7 +2565,8 @@ s32 NpHandler::TusGetMultiSlotDataStatus(s32 user_id, s32 service_label,
                                          const std::vector<s32>& slotIds,
                                          NpTus::OrbisNpTusDataStatus* statusOut,
                                          NpTus::OrbisNpTusDataStatusA* statusAOut, u64 arrayNum,
-                                         std::shared_ptr<NpTus::TusRequestCtx> ctx) {
+                                         std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                                         NpTus::OrbisNpTusDataStatusForCrossSave* statusCSOut) {
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
         std::lock_guard lock(m_mutex_clients);
@@ -2588,6 +2602,7 @@ s32 NpHandler::TusGetMultiSlotDataStatus(s32 user_id, s32 service_label,
     p.user_id = user_id;
     p.statusArray = statusOut;
     p.statusArrayA = statusAOut;
+    p.statusArrayCS = statusCSOut;
     p.arrayNum = arrayNum;
     m_pending_tus.emplace(pkt_id, std::move(p));
     return ORBIS_OK;
@@ -3160,10 +3175,14 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
                 pending.statusCap ? std::min<u64>(pending.statusCap, sizeof(tmp)) : sizeof(tmp);
             std::memcpy(pending.statusArrayA, &tmp, cap);
         } else if (pending.statusArrayCS) {
-            fillStatusForCrossSave(pending.statusArrayCS[0], resp.status());
+            NpTus::OrbisNpTusDataStatusForCrossSave tmp{};
+            fillStatusForCrossSave(tmp, resp.status());
             if (recv) {
-                pending.statusArrayCS[0].data = pending.dataOut;
+                tmp.data = pending.dataOut;
             }
+            const u64 cap =
+                pending.statusCap ? std::min<u64>(pending.statusCap, sizeof(tmp)) : sizeof(tmp);
+            std::memcpy(pending.statusArrayCS, &tmp, cap);
         } else if (pending.statusArray) {
             NpTus::OrbisNpTusDataStatus tmp{};
             fillStatus(tmp, resp.status());

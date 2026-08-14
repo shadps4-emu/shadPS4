@@ -217,7 +217,8 @@ public:
                                 NpTus::OrbisNpTusVariable* variablesOut, u64 arrayNum,
                                 std::shared_ptr<NpTus::TusRequestCtx> ctx,
                                 NpTus::OrbisNpTusVariableA* variablesAOut = nullptr,
-                                s64 ownerAccountId = 0);
+                                s64 ownerAccountId = 0,
+                                NpTus::OrbisNpTusVariableForCrossSave* variablesCSOut = nullptr);
     s32 TusSetMultiSlotVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
                                 const std::string& virtualUser, const std::vector<s32>& slotIds,
                                 const std::vector<s64>& values,
@@ -228,7 +229,8 @@ public:
                    const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
                    NpTus::OrbisNpTusDataStatusA* statusAOut, u64 statusCap, void* dataOut,
                    u64 dataCap, u64 dataOffset, std::shared_ptr<NpTus::TusRequestCtx> ctx,
-                   NpTus::OrbisNpTusDataStatus* statusOut = nullptr);
+                   NpTus::OrbisNpTusDataStatus* statusOut = nullptr,
+                   NpTus::OrbisNpTusDataStatusForCrossSave* statusCSOut = nullptr);
     s32 TusDeleteMultiSlotData(s32 user_id, s32 service_label, const std::string& ownerNpId,
                                const std::string& virtualUser, s64 ownerAccountId,
                                const std::vector<s32>& slotIds,
@@ -243,14 +245,16 @@ public:
                                   const std::vector<s64>& ownerAccountIds,
                                   NpTus::OrbisNpTusDataStatus* statusOut,
                                   NpTus::OrbisNpTusDataStatusA* statusAOut, u64 arrayNum,
-                                  std::shared_ptr<NpTus::TusRequestCtx> ctx);
+                                  std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                                  NpTus::OrbisNpTusDataStatusForCrossSave* statusCSOut = nullptr);
     s32 TusGetMultiUserVariable(s32 user_id, s32 service_label, s32 slotId,
                                 const std::vector<std::string>& ownerNpIds,
                                 const std::vector<std::string>& virtualUsers,
                                 const std::vector<s64>& ownerAccountIds,
                                 NpTus::OrbisNpTusVariable* variablesOut,
                                 NpTus::OrbisNpTusVariableA* variablesAOut, u64 arrayNum,
-                                std::shared_ptr<NpTus::TusRequestCtx> ctx);
+                                std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                                NpTus::OrbisNpTusVariableForCrossSave* variablesCSOut = nullptr);
     s32 TusTryAndSetVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
                              const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
                              s32 opeType, s64 value, bool hasCompare, s64 compareValue,
@@ -258,30 +262,35 @@ public:
                              const std::string& isLastChangedAuthorNpId, bool hasDateCheck,
                              u64 isLastChangedDate, NpTus::OrbisNpTusVariable* variableOut,
                              NpTus::OrbisNpTusVariableA* variableAOut,
-                             std::shared_ptr<NpTus::TusRequestCtx> ctx);
+                             std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                             NpTus::OrbisNpTusVariableForCrossSave* variableCSOut = nullptr);
     s32 TusAddAndGetVariable(s32 user_id, s32 service_label, const std::string& ownerNpId,
                              const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
                              s64 inVariable, bool hasAuthorCheck, s64 isLastChangedAuthor,
                              const std::string& isLastChangedAuthorNpId, bool hasDateCheck,
                              u64 isLastChangedDate, NpTus::OrbisNpTusVariable* variableOut,
                              NpTus::OrbisNpTusVariableA* variableAOut,
-                             std::shared_ptr<NpTus::TusRequestCtx> ctx);
+                             std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                             NpTus::OrbisNpTusVariableForCrossSave* variableCSOut = nullptr);
     s32 TusGetFriendsDataStatus(s32 user_id, s32 service_label, s32 slotId, bool includeSelf,
                                 s32 sortType, u32 max, NpTus::OrbisNpTusDataStatus* statusOut,
                                 NpTus::OrbisNpTusDataStatusA* statusAOut, u64 arrayNum,
                                 std::shared_ptr<NpTus::TusRequestCtx> ctx, u32 startOffset = 0,
-                                u32* hitsOut = nullptr);
+                                u32* hitsOut = nullptr,
+                                NpTus::OrbisNpTusDataStatusForCrossSave* statusCSOut = nullptr);
     s32 TusGetFriendsVariable(s32 user_id, s32 service_label, s32 slotId, bool includeSelf,
                               s32 sortType, u32 max, NpTus::OrbisNpTusVariable* variablesOut,
                               NpTus::OrbisNpTusVariableA* variablesAOut, u64 arrayNum,
                               std::shared_ptr<NpTus::TusRequestCtx> ctx, u32 startOffset = 0,
-                              u32* hitsOut = nullptr);
+                              u32* hitsOut = nullptr,
+                              NpTus::OrbisNpTusVariableForCrossSave* variablesCSOut = nullptr);
     s32 TusGetMultiSlotDataStatus(s32 user_id, s32 service_label, const std::string& ownerNpId,
                                   const std::string& virtualUser, s64 ownerAccountId,
                                   const std::vector<s32>& slotIds,
                                   NpTus::OrbisNpTusDataStatus* statusOut,
                                   NpTus::OrbisNpTusDataStatusA* statusAOut, u64 arrayNum,
-                                  std::shared_ptr<NpTus::TusRequestCtx> ctx);
+                                  std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                                  NpTus::OrbisNpTusDataStatusForCrossSave* statusCSOut = nullptr);
     s32 TusSetData(s32 user_id, s32 service_label, const std::string& ownerNpId,
                    const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
                    const std::vector<u8>& blob, const std::vector<u8>& info, bool hasAuthorCheck,
