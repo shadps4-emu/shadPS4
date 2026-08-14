@@ -448,7 +448,9 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     LOG_ERROR(Lib_Kernel, "(STUBBED) called, sig: {}", sig);
     Handlers[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
         act ? act->__sigaction_handler.sigaction : nullptr);
-    memset(oact, 0, sizeof(*oact));
+    if (oact) {
+        memset(oact, 0, sizeof(*oact));
+    }
     if (act && oact) {
         oact->__sigaction_handler = act->__sigaction_handler;
         oact->sa_mask = act->sa_mask;
