@@ -196,7 +196,10 @@ static inline u16 GetFlatbufOffset(const IR::Inst* inst) {
         auto inst_info = inst->Flags<IR::BufferInstInfo>();
         return inst_info.flatbuf_off_dw;
     }
-    return inst->Flags<u16>();
+    if (inst->GetOpcode() == IR::Opcode::ReadConst) {
+        return inst->Flags<u16>();
+    }
+    UNREACHABLE_MSG("Instruction not supported");
 }
 
 static inline void SetFlatbufOffset(IR::Inst* inst, u16 offset) {
@@ -204,9 +207,10 @@ static inline void SetFlatbufOffset(IR::Inst* inst, u16 offset) {
         auto inst_info = inst->Flags<IR::BufferInstInfo>();
         inst_info.flatbuf_off_dw.Assign(offset);
         inst->SetFlags(inst_info);
-    } else {
+    }  else if (inst->GetOpcode() == IR::Opcode::ReadConst) {
         inst->SetFlags(offset);
     }
+    UNREACHABLE_MSG("Instruction not supported");
 }
 
 static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
