@@ -1377,6 +1377,10 @@ if (WIN32)
     target_sources(shadps4 PRIVATE src/dist/shadps4.rc)
 endif()
 
+if (NOT MSVC)
+    target_compile_options(shadps4 PRIVATE -Wno-invalid-offsetof)
+endif()
+
 add_compile_definitions(BOOST_ASIO_STANDALONE)
 
 target_include_directories(shadps4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
