@@ -131,7 +131,7 @@ void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
         ctx.uc_mcontext.mc_rsp = context->Rsp;
         ctx.uc_mcontext.mc_fs = context->SegFs;
         ctx.uc_mcontext.mc_gs = context->SegGs;
-        handler(NativeToOrbisSignal(native_signum), &ctx);
+        handler(sig, &ctx);
     } else {
         UNREACHABLE_MSG("Unhandled exception");
     }
@@ -289,7 +289,9 @@ s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
         return -1;
     }
 
-    if (!(ss->ss_flags & POSIX_SS_DISABLE) && ss->ss_size < MINSIGSTKSZ) {
+    constexpr s32 POSIX_MINSIGSTKSZ = (512 * 4); // from the freebsd source tree, todo validate
+
+    if (!(ss->ss_flags & POSIX_SS_DISABLE) && ss->ss_size < POSIX_MINSIGSTKSZ) {
         SetPosixErrno(POSIX_ENOMEM);
         return -1;
     }
@@ -506,9 +508,9 @@ s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
     USER_APC_OPTION option;
     option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
 
-    u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr->GetHandle()), option,
-                                 ExceptionHandler, (void*)thread->name.c_str(),
-                                 (void*)(s64)sig, nullptr);
+    u64 res =
+        NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr->GetHandle()), option,
+                           ExceptionHandler, (void*)thread->name.c_str(), (void*)(s64)sig, nullptr);
     ASSERT(res == 0);
 #endif
     return ORBIS_OK;
