@@ -185,7 +185,9 @@ struct Ucontext {
     int __spare[4];
     int field7_0x4f4[3];
 
+#ifndef _WIN32
     explicit Ucontext(siginfo_t const* inf, ucontext_t const* raw_context);
+#endif
 };
 
 using SigHandler = void PS4_SYSV_ABI (*)(int);
