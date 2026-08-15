@@ -110,9 +110,9 @@ auto DominatingBreadthFirstSearch(Instruction* inst, const IR::Block& current_pa
         return std::nullopt;
     }
 
-    auto finding = Gcn::FindDominantInstruction(findings, current_parent);
-    ASSERT_MSG(finding, "Unable to deduce correct finding");
-    return finding;
+    Gcn::FindDominantInstruction(findings, current_parent);
+    ASSERT_MSG(findings.size() == 1, "Unable to deduce correct finding");
+    return findings[0];
 }
 
 template <typename Pred>
