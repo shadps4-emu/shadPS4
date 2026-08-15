@@ -655,7 +655,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
          r_it++) {
         IR::Block* block = *r_it;
         for (IR::Inst& inst : *block) {
-            if (inst.GetOpcode() != IR::Opcode::ReadConst ||
+            if (inst.GetOpcode() != IR::Opcode::ReadConst &&
                 inst.GetOpcode() != IR::Opcode::ReadConstBuffer) {
                 continue;
             }
