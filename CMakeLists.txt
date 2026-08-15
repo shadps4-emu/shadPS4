@@ -1377,7 +1377,7 @@ if (WIN32)
     target_sources(shadps4 PRIVATE src/dist/shadps4.rc)
 endif()
 
-if (NOT WIN32)
+if (NOT MSVC)
     target_compile_options(shadps4 PRIVATE -Wno-invalid-offsetof)
 endif()
 
