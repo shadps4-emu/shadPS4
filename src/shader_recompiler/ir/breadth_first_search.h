@@ -110,34 +110,9 @@ auto DominatingBreadthFirstSearch(Instruction* inst, const IR::Block& current_pa
         return std::nullopt;
     }
 
-    // Perform dominance analysis on findings and eliminate ones that don't pass
-    // If a finding is dominated by another, the former can be eliminated.
-    size_t num_findings = findings.size();
-    for (s32 i = 0; i < num_findings;) {
-        const IR::Block* block = findings[i]->GetParent();
-        ASSERT(block->cfg_block);
-        bool was_removed = false;
-        for (s32 j = 0; j < num_findings;) {
-            const IR::Block* dominator = findings[j]->GetParent();
-            ASSERT(dominator->cfg_block);
-            if (i != j && Gcn::IsCfgBlockDominatedBy(dominator->cfg_block, block->cfg_block,
-                                                     current_parent.cfg_block)) {
-                std::swap(findings[i], findings[num_findings - 1]);
-                --num_findings;
-                findings.pop_back();
-                was_removed = true;
-                break;
-            } else {
-                ++j;
-            }
-        }
-        if (!was_removed) {
-            ++i;
-        }
-    }
-
-    ASSERT_MSG(findings.size() == 1, "Unable to deduce correct finding");
-    return findings[0];
+    auto finding = Gcn::FindDominantInstruction(findings, current_parent);
+    ASSERT_MSG(finding, "Unable to deduce correct finding");
+    return finding;
 }
 
 template <typename Pred>

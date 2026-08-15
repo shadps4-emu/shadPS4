@@ -37,4 +37,5 @@ bool IsCfgBlockDominatedBy(const Shader::Gcn::Block* maybe_dominator,
 
     return true;
 }
+
 } // namespace Shader::Gcn
