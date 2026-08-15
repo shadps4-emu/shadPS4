@@ -22,6 +22,7 @@
 
 namespace Libraries::Kernel {
 
+#ifndef _WIN32
 Ucontext::Ucontext(siginfo_t const* inf, ucontext_t const* raw_context) {
     if (!inf || !raw_context) {
         return;
@@ -95,9 +96,10 @@ Ucontext::Ucontext(siginfo_t const* inf, ucontext_t const* raw_context) {
     uc_mcontext.mc_addr = reinterpret_cast<uint64_t>(inf->si_addr);
 #endif
 #else
-    UNREACHABLE_MSG("SigactionHandler not implemented for current architecture.");
+#error "ucontext_t conversion not implemented for current architecture."
 #endif
 }
+#endif
 
 std::array<Sigaction, 128> PosixActions{};
 Sigset g_sigintr{};
