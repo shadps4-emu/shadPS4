@@ -102,11 +102,10 @@ Ucontext::Ucontext(siginfo_t const* inf, ucontext_t const* raw_context) {
 #endif
 
 std::array<Sigaction, 128> PosixActions{};
+std::array<OrbisKernelExceptionHandler, 128> sceSigactionCallbacks{};
 Sigset g_sigintr{};
 
-constexpr s32 HostSoftwareSignal = SIGUSR1;
-
-#ifdef _WIN64
+#ifndef _WIN64
 void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
     const char* thrName = (char*)arg1;
     s32 const native_signum = reinterpret_cast<uintptr_t>(arg2);
@@ -137,7 +136,6 @@ void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
         UNREACHABLE_MSG("Unhandled exception");
     }
 }
-#endif
 
 s32 NativeToOrbisSignal(s32 s) {
     switch (s) {
@@ -209,6 +207,7 @@ s32 NativeToOrbisSignal(s32 s) {
         UNREACHABLE_MSG("Signal {} has no job being here", s);
     }
 }
+#endif
 
 s32 PS4_SYSV_ABI posix_sigemptyset(Sigset* s) {
     s->bits[0] = 0;
@@ -516,7 +515,6 @@ s32 PS4_SYSV_ABI posix_raise(s32 sig) {
     return posix_pthread_kill(g_curthread, sig);
 }
 
-std::array<OrbisKernelExceptionHandler, 128> sceSigactionCallbacks{};
 void PS4_SYSV_ABI sceCallbackHandler(int sig, Siginfo* info, Ucontext* context) {
     auto const cb = sceSigactionCallbacks[sig - 1];
     if (!cb) {
