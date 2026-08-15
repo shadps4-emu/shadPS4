@@ -5,6 +5,10 @@
 
 #include "common/types.h"
 
+#ifndef _WIN32
+#include <sys/signal.h>
+#endif
+
 namespace Core::Loader {
 class SymbolsResolver;
 }
@@ -17,6 +21,9 @@ struct OrbisKernelExceptionHandlerStack {
     u64 ss_size;
     u32 ss_flags;
 };
+
+constexpr s32 POSIX_SS_ONSTACK = 0x0001; /* take signal on alternate stack */
+constexpr s32 POSIX_SS_DISABLE = 0x0004; /* disable taking signals on alternate stack */
 
 constexpr s32 POSIX_SIGHUP = 1;
 constexpr s32 POSIX_SIGINT = 2;
@@ -168,17 +175,6 @@ struct Siginfo {
     } _reason;
 };
 
-using SigHandler = void PS4_SYSV_ABI (*)(int);
-
-struct Sigaction {
-    union {
-        void PS4_SYSV_ABI (*handler)(int);
-        void PS4_SYSV_ABI (*sigaction)(int, struct Siginfo*, void*);
-    } __sigaction_handler;
-    int sa_flags;
-    Sigset sa_mask;
-};
-
 struct Ucontext {
     struct Sigset uc_sigmask;
     int field1_0x10[12];
@@ -188,10 +184,32 @@ struct Ucontext {
     int uc_flags;
     int __spare[4];
     int field7_0x4f4[3];
+
+    explicit Ucontext(siginfo_t const* inf, ucontext_t const* raw_context);
 };
 
+using SigHandler = void PS4_SYSV_ABI (*)(int);
+
+struct Sigaction {
+    union {
+        void PS4_SYSV_ABI (*handler)(int);
+        void PS4_SYSV_ABI (*sigaction)(int, struct Siginfo*, Ucontext*);
+    } __sigaction_handler;
+    int sa_flags;
+    Sigset sa_mask;
+};
+
+constexpr uintptr_t POSIX_SIG_DFL = 0;
+constexpr uintptr_t POSIX_SIG_IGN = 1;
+
 s32 NativeToOrbisSignal(s32 s);
-s32 OrbisToNativeSignal(s32 s);
+
+s32 PS4_SYSV_ABI posix_sigemptyset(Sigset* s);
+s32 PS4_SYSV_ABI posix_sigfillset(Sigset* s);
+s32 PS4_SYSV_ABI posix_sigaddset(Sigset* s, s32 sig);
+s32 PS4_SYSV_ABI posix_sigdelset(Sigset* s, s32 sig);
+s32 PS4_SYSV_ABI posix_sigismember(Sigset const* s, s32 sig);
+bool PS4_SYSV_ABI posix_sigisemptyset(Sigset* s);
 
 void RegisterException(Core::Loader::SymbolsResolver* sym);
 

@@ -6,6 +6,7 @@
 #include "common/decoder.h"
 #include "common/signal_context.h"
 #include "core/cpu_patches.h" // Windows static guest red-zone protection
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/signals.h"
 #include "emulator.h"
@@ -19,13 +20,6 @@ static constexpr DWORD MS_VC_EXCEPTION = 0x406D1388;
 #ifdef ARCH_X86_64
 #include <Zydis/Formatter.h>
 #endif
-#endif
-
-#ifndef _WIN32
-namespace Libraries::Kernel {
-void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context);
-extern std::array<OrbisKernelExceptionHandler, 32> Handlers;
-} // namespace Libraries::Kernel
 #endif
 
 namespace Core {
@@ -113,20 +107,28 @@ static std::string DisassembleInstruction(void* code_address) {
 }
 
 void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
+    using namespace Libraries::Kernel;
+    auto* thread = g_curthread;
     const auto* signals = Signals::Instance();
 
     auto* code_address = Common::GetRip(raw_context);
+
+    Ucontext context{info, reinterpret_cast<ucontext_t*>(raw_context)};
+    Siginfo guest_info{};
+    if (info) {
+        guest_info = *reinterpret_cast<Siginfo*>(info);
+        guest_info._si_signo = NativeToOrbisSignal(info->si_signo);
+        guest_info._si_errno = NativeToPosixErrno(info->si_errno);
+    }
+    Siginfo* info_p = info ? &guest_info : nullptr;
+    Ucontext* context_p = raw_context ? &context : nullptr;
 
     switch (sig) {
     case SIGSEGV:
     case SIGBUS: {
         const bool is_write = Common::IsWriteError(raw_context);
         if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
-            // If the guest has installed a custom signal handler, and the access violation didn't
-            // come from HLE memory tracking, pass the signal on
-            if (Libraries::Kernel::Handlers[Libraries::Kernel::NativeToOrbisSignal(sig)]) {
-                Libraries::Kernel::SigactionHandler(sig, info,
-                                                    reinterpret_cast<ucontext_t*>(raw_context));
+            if (thread->DispatchSignal(NativeToOrbisSignal(sig), info_p, context_p)) {
                 return;
             }
             UNREACHABLE_MSG("Unhandled access violation at code address {}: {} address {}",
@@ -136,25 +138,31 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         break;
     }
     case SIGILL:
-        if (!signals->DispatchIllegalInstruction(raw_context)) {
-            if (Libraries::Kernel::Handlers[Libraries::Kernel::NativeToOrbisSignal(sig)]) {
-                Libraries::Kernel::SigactionHandler(sig, info,
-                                                    reinterpret_cast<ucontext_t*>(raw_context));
-                return;
-            }
-            UNREACHABLE_MSG("Unhandled illegal instruction at code address {}: {}",
-                            fmt::ptr(code_address), DisassembleInstruction(code_address));
+        if (signals->DispatchIllegalInstruction(raw_context)) {
+            return;
         }
+    case SIGFPE:
+    case SIGTRAP:
+    case SIGSYS: {
+        if (thread->DispatchSignal(NativeToOrbisSignal(sig), info_p, context_p)) {
+            return;
+        }
+
+        UNREACHABLE_MSG("Unhandled signal {} at code address {}", sig, fmt::ptr(code_address));
+    }
+    case SIGSLEEP: {
+        // Sleep thread until signal is received again
+        sigset_t sigset;
+        sigemptyset(&sigset);
+        sigaddset(&sigset, SIGSLEEP);
+        sigwait(&sigset, &sig);
+        break;
+    }
+    case SIGUSR1:
+        thread->DispatchPendingSignals();
         break;
     default:
-        if (sig == SIGSLEEP) {
-            // Sleep thread until signal is received again
-            sigset_t sigset;
-            sigemptyset(&sigset);
-            sigaddset(&sigset, SIGSLEEP);
-            sigwait(&sigset, &sig);
-        }
-        break;
+        UNREACHABLE_MSG("Unhandled signal {} at code address {}", sig, fmt::ptr(code_address));
     }
 }
 
@@ -170,13 +178,12 @@ SignalDispatch::SignalDispatch() {
     action.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&action.sa_mask);
 
-    ASSERT_MSG(sigaction(SIGSEGV, &action, nullptr) == 0 &&
-                   sigaction(SIGBUS, &action, nullptr) == 0,
-               "Failed to register access violation signal handler.");
-    ASSERT_MSG(sigaction(SIGILL, &action, nullptr) == 0,
-               "Failed to register illegal instruction signal handler.");
-    ASSERT_MSG(sigaction(SIGSLEEP, &action, nullptr) == 0,
-               "Failed to register sleep signal handler.");
+    ASSERT_MSG(
+        sigaction(SIGSEGV, &action, nullptr) == 0 && sigaction(SIGBUS, &action, nullptr) == 0 &&
+            sigaction(SIGILL, &action, nullptr) == 0 && sigaction(SIGFPE, &action, nullptr) == 0 &&
+            sigaction(SIGTRAP, &action, nullptr) == 0 && sigaction(SIGSYS, &action, nullptr) == 0 &&
+            sigaction(SIGUSR1, &action, nullptr) == 0 && sigaction(SIGSLEEP, &action, nullptr) == 0,
+        "Failed to register signal handlers.");
 #endif
 }
 
@@ -189,11 +196,12 @@ SignalDispatch::~SignalDispatch() {
     action.sa_flags = 0;
     sigemptyset(&action.sa_mask);
 
-    ASSERT_MSG(sigaction(SIGSEGV, &action, nullptr) == 0 &&
-                   sigaction(SIGBUS, &action, nullptr) == 0,
-               "Failed to remove access violation signal handler.");
-    ASSERT_MSG(sigaction(SIGILL, &action, nullptr) == 0,
-               "Failed to remove illegal instruction signal handler.");
+    ASSERT_MSG(
+        sigaction(SIGSEGV, &action, nullptr) == 0 && sigaction(SIGBUS, &action, nullptr) == 0 &&
+            sigaction(SIGILL, &action, nullptr) == 0 && sigaction(SIGFPE, &action, nullptr) == 0 &&
+            sigaction(SIGTRAP, &action, nullptr) == 0 && sigaction(SIGSYS, &action, nullptr) == 0 &&
+            sigaction(SIGUSR1, &action, nullptr) == 0 && sigaction(SIGSLEEP, &action, nullptr) == 0,
+        "Failed to remove signal handlers.");
 #endif
 }
 
