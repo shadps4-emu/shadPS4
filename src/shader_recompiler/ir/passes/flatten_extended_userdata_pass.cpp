@@ -655,58 +655,60 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
          r_it++) {
         IR::Block* block = *r_it;
         for (IR::Inst& inst : *block) {
-            if (inst.GetOpcode() == IR::Opcode::ReadConst ||
-                inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
-                if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
-                    // Only flatten ReadConstBuffer if it was marked as a sharp source in the
-                    // resource discovery pass
-                    auto inst_info = inst.Flags<IR::BufferInstInfo>();
-                    if (!inst_info.sharp_source) {
-                        continue;
-                    }
-                }
+            if (inst.GetOpcode() != IR::Opcode::ReadConst ||
+                inst.GetOpcode() != IR::Opcode::ReadConstBuffer) {
+                continue;
+            }
 
-                all_readconsts.push_back(&inst);
-
-                auto offset = inst.Arg(1);
-                if (offset.IsImmediate()) {
+            if (inst.GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                // Only flatten ReadConstBuffer if it was marked as a sharp source in the
+                // resource discovery pass
+                auto inst_info = inst.Flags<IR::BufferInstInfo>();
+                if (!inst_info.sharp_source) {
                     continue;
                 }
+            }
 
-                queue.push(offset.InstRecursive());
-                while (!queue.empty()) {
-                    IR::Inst* inst{queue.front()};
-                    queue.pop();
+            all_readconsts.push_back(&inst);
 
-                    if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-                        auto buffer_inst_info = inst->Flags<IR::BufferInstInfo>();
-                        if (!buffer_inst_info.sharp_source.Value()) {
-                            all_readconsts.push_back(inst);
-                            auto offset = inst->Arg(1);
-                            if (!offset.IsImmediate()) {
-                                auto arg_inst = offset.InstRecursive();
-                                if (std::ranges::find(visited, arg_inst) == visited.end()) {
-                                    visited.push_back(arg_inst);
-                                    queue.push(arg_inst);
-                                }
+            auto offset = inst.Arg(1);
+            if (offset.IsImmediate()) {
+                continue;
+            }
+
+            queue.push(offset.InstRecursive());
+            while (!queue.empty()) {
+                IR::Inst* inst{queue.front()};
+                queue.pop();
+
+                if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                    auto buffer_inst_info = inst->Flags<IR::BufferInstInfo>();
+                    if (!buffer_inst_info.sharp_source.Value()) {
+                        all_readconsts.push_back(inst);
+                        auto offset = inst->Arg(1);
+                        if (!offset.IsImmediate()) {
+                            auto arg_inst = offset.InstRecursive();
+                            if (std::ranges::find(visited, arg_inst) == visited.end()) {
+                                visited.push_back(arg_inst);
+                                queue.push(arg_inst);
                             }
                         }
+                    }
+                    continue;
+                }
+                if (inst->GetOpcode() == IR::Opcode::GetUserData ||
+                    inst->GetOpcode() == IR::Opcode::ReadConst) {
+                    continue;
+                }
+                for (size_t arg = inst->NumArgs(); arg--;) {
+                    const IR::Value arg_value = inst->Arg(arg);
+                    if (arg_value.IsImmediate()) {
                         continue;
                     }
-                    if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                        inst->GetOpcode() == IR::Opcode::ReadConst) {
-                        continue;
-                    }
-                    for (size_t arg = inst->NumArgs(); arg--;) {
-                        const IR::Value arg_value = inst->Arg(arg);
-                        if (arg_value.IsImmediate()) {
-                            continue;
-                        }
-                        IR::Inst* arg_inst = arg_value.InstRecursive();
-                        if (std::ranges::find(visited, arg_inst) == visited.end()) {
-                            visited.push_back(arg_inst);
-                            queue.push(arg_inst);
-                        }
+                    IR::Inst* arg_inst = arg_value.InstRecursive();
+                    if (std::ranges::find(visited, arg_inst) == visited.end()) {
+                        visited.push_back(arg_inst);
+                        queue.push(arg_inst);
                     }
                 }
             }
