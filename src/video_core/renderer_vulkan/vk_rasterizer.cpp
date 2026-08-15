@@ -1331,6 +1331,16 @@ void Rasterizer::UpdateDepthStencilState() const {
             regs.depth_control.backface_enable
                 ? uses_op_val(sc.stencil_fail_back, sc.stencil_zpass_back, sc.stencil_zfail_back)
                 : front_op;
+        const auto ref_conflict = [](AmdGpu::CompareFunc func, const AmdGpu::StencilRefMask& ref) {
+            return func != AmdGpu::CompareFunc::Always && func != AmdGpu::CompareFunc::Never &&
+                   ref.stencil_test_val != ref.stencil_op_val;
+        };
+        if ((front_op && ref_conflict(regs.depth_control.stencil_ref_func, front)) ||
+            (back_op && regs.depth_control.backface_enable &&
+             ref_conflict(regs.depth_control.stencil_bf_func, back))) {
+            LOG_WARNING(Render_Vulkan, "Stencil test requires test_val while ReplaceOp requires "
+                                       "op_val; the stencil test will use op_val");
+        }
         dynamic_state.SetStencilReferences(front_op ? front.stencil_op_val : front.stencil_test_val,
                                            back_op ? back.stencil_op_val : back.stencil_test_val);
         dynamic_state.SetStencilWriteMasks(!stencil_clear ? front.stencil_write_mask : 0U,
