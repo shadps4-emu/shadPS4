@@ -952,12 +952,11 @@ void Pthread::WakeForSignal() {
     USER_APC_OPTION option;
     option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
 
-    u64 res =
-        NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr->GetHandle()), option,
-                           ExceptionHandler, nullptr, nullptr, nullptr);
+    u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(native_thr->GetHandle()), option,
+                                 ExceptionHandler, nullptr, nullptr, nullptr);
     ASSERT(res == 0);
 #else
-    pthread_kill(reinterpret_cast<pthread_t>(this->native_thr->GetHandle()), SIGUSR1);
+    pthread_kill(reinterpret_cast<pthread_t>(native_thr->GetHandle()), SIGUSR1);
 #endif
 }
 
