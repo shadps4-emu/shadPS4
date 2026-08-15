@@ -942,7 +942,7 @@ bool Pthread::HasDeliverableSignal() const {
 }
 
 void Pthread::WakeForSignal() {
-    pthread_kill(this->native_thr->GetHandle(), SIGUSR1);
+    pthread_kill(reinterpret_cast<pthread_t>(this->native_thr->GetHandle()), SIGUSR1);
 }
 
 void Pthread::SetGuestSigmask(Sigset const& mask) {
