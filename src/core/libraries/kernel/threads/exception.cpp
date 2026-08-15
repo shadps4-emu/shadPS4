@@ -105,12 +105,12 @@ std::array<Sigaction, 128> PosixActions{};
 std::array<OrbisKernelExceptionHandler, 128> sceSigactionCallbacks{};
 Sigset g_sigintr{};
 
-#ifndef _WIN64
+#ifdef _WIN64
 void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
     const char* thrName = (char*)arg1;
-    s32 const native_signum = reinterpret_cast<uintptr_t>(arg2);
+    s32 const sig = reinterpret_cast<uintptr_t>(arg2);
     LOG_INFO(Lib_Kernel, "Exception raised successfully on thread '{}'", thrName);
-    const auto handler = sceSigactionCallbacks[NativeToOrbisSignal(native_signum)];
+    const auto handler = sceSigactionCallbacks[sig];
     if (handler) {
         auto ctx = Ucontext{};
         ctx.uc_mcontext.mc_r8 = context->R8;
@@ -137,6 +137,9 @@ void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
     }
 }
 
+#endif
+
+#ifndef _WIN32
 s32 NativeToOrbisSignal(s32 s) {
     switch (s) {
     case SIGHUP:
@@ -505,7 +508,7 @@ s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
 
     u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr->GetHandle()), option,
                                  ExceptionHandler, (void*)thread->name.c_str(),
-                                 (void*)(s64)native_signum, nullptr);
+                                 (void*)(s64)sig, nullptr);
     ASSERT(res == 0);
 #endif
     return ORBIS_OK;
