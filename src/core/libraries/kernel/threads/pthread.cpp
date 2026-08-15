@@ -941,8 +941,24 @@ bool Pthread::HasDeliverableSignal() const {
     return FindPendingUnblockedSignal() != 0;
 }
 
+#ifdef _WIN32
+static void ExceptionHandler(void*, void*, void*, PCONTEXT) {
+    g_curthread->DispatchPendingSignals();
+}
+#endif
+
 void Pthread::WakeForSignal() {
+#ifdef _WIN32
+    USER_APC_OPTION option;
+    option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
+
+    u64 res =
+        NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr->GetHandle()), option,
+                           ExceptionHandler, nullptr, nullptr, nullptr);
+    ASSERT(res == 0);
+#else
     pthread_kill(reinterpret_cast<pthread_t>(this->native_thr->GetHandle()), SIGUSR1);
+#endif
 }
 
 void Pthread::SetGuestSigmask(Sigset const& mask) {

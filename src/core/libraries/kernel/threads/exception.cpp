@@ -99,45 +99,35 @@ Ucontext::Ucontext(siginfo_t const* inf, ucontext_t const* raw_context) {
 #error "ucontext_t conversion not implemented for current architecture."
 #endif
 }
+#else
+Ucontext::Ucontext(PCONTEXT context) {
+    if (!context) {
+        return;
+    }
+    uc_mcontext.mc_r8 = context->R8;
+    uc_mcontext.mc_r9 = context->R9;
+    uc_mcontext.mc_r10 = context->R10;
+    uc_mcontext.mc_r11 = context->R11;
+    uc_mcontext.mc_r12 = context->R12;
+    uc_mcontext.mc_r13 = context->R13;
+    uc_mcontext.mc_r14 = context->R14;
+    uc_mcontext.mc_r15 = context->R15;
+    uc_mcontext.mc_rdi = context->Rdi;
+    uc_mcontext.mc_rsi = context->Rsi;
+    uc_mcontext.mc_rbp = context->Rbp;
+    uc_mcontext.mc_rbx = context->Rbx;
+    uc_mcontext.mc_rdx = context->Rdx;
+    uc_mcontext.mc_rax = context->Rax;
+    uc_mcontext.mc_rcx = context->Rcx;
+    uc_mcontext.mc_rsp = context->Rsp;
+    uc_mcontext.mc_fs = context->SegFs;
+    uc_mcontext.mc_gs = context->SegGs;
+}
 #endif
 
 std::array<Sigaction, 128> PosixActions{};
 std::array<OrbisKernelExceptionHandler, 128> sceSigactionCallbacks{};
 Sigset g_sigintr{};
-
-#ifdef _WIN64
-void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
-    const char* thrName = (char*)arg1;
-    s32 const sig = reinterpret_cast<uintptr_t>(arg2);
-    LOG_INFO(Lib_Kernel, "Exception raised successfully on thread '{}'", thrName);
-    const auto handler = sceSigactionCallbacks[sig];
-    if (handler) {
-        auto ctx = Ucontext{};
-        ctx.uc_mcontext.mc_r8 = context->R8;
-        ctx.uc_mcontext.mc_r9 = context->R9;
-        ctx.uc_mcontext.mc_r10 = context->R10;
-        ctx.uc_mcontext.mc_r11 = context->R11;
-        ctx.uc_mcontext.mc_r12 = context->R12;
-        ctx.uc_mcontext.mc_r13 = context->R13;
-        ctx.uc_mcontext.mc_r14 = context->R14;
-        ctx.uc_mcontext.mc_r15 = context->R15;
-        ctx.uc_mcontext.mc_rdi = context->Rdi;
-        ctx.uc_mcontext.mc_rsi = context->Rsi;
-        ctx.uc_mcontext.mc_rbp = context->Rbp;
-        ctx.uc_mcontext.mc_rbx = context->Rbx;
-        ctx.uc_mcontext.mc_rdx = context->Rdx;
-        ctx.uc_mcontext.mc_rax = context->Rax;
-        ctx.uc_mcontext.mc_rcx = context->Rcx;
-        ctx.uc_mcontext.mc_rsp = context->Rsp;
-        ctx.uc_mcontext.mc_fs = context->SegFs;
-        ctx.uc_mcontext.mc_gs = context->SegGs;
-        handler(sig, &ctx);
-    } else {
-        UNREACHABLE_MSG("Unhandled exception");
-    }
-}
-
-#endif
 
 #ifndef _WIN32
 s32 NativeToOrbisSignal(s32 s) {
@@ -311,19 +301,6 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
         *__Error() = POSIX_EINVAL;
         return ORBIS_FAIL;
     }
-#ifdef _WIN32
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called, sig: {}", sig);
-    sceSigactionCallbacks[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
-        act ? act->__sigaction_handler.sigaction : nullptr);
-    if (oact) {
-        memset(oact, 0, sizeof(*oact));
-    }
-    if (act && oact) {
-        oact->__sigaction_handler = act->__sigaction_handler;
-        oact->sa_mask = act->sa_mask;
-        oact->sa_flags = act->sa_flags;
-    }
-#else
     if (oact != nullptr) {
         *oact = PosixActions[sig - 1];
     }
@@ -331,12 +308,10 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     if (act != nullptr) {
         PosixActions[sig - 1] = *act;
     }
-#endif
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI posix_pthread_sigmask(s32 how, const Sigset* set, Sigset* oset) {
-#ifndef _WIN32
     auto* thread = g_curthread;
 
     if (thread == nullptr) {
@@ -385,9 +360,6 @@ s32 PS4_SYSV_ABI posix_pthread_sigmask(s32 how, const Sigset* set, Sigset* oset)
     if (thread->HasDeliverableSignal()) {
         thread->WakeForSignal();
     }
-#else
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
-#endif
     return ORBIS_OK;
 }
 
@@ -396,7 +368,6 @@ s32 PS4_SYSV_ABI posix_sigprocmask(s32 how, const Sigset* set, Sigset* oset) {
 }
 
 s32 PS4_SYSV_ABI posix_sigpending(Sigset* set) {
-#ifndef _WIN32
     posix_sigemptyset(set);
 
     for (s32 sig = 1; sig <= 128; sig++) {
@@ -406,14 +377,9 @@ s32 PS4_SYSV_ABI posix_sigpending(Sigset* set) {
     }
 
     return ORBIS_OK;
-#else
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
-    return ORBIS_OK;
-#endif
 }
 
 s32 PS4_SYSV_ABI posix_sigsuspend(const Sigset* sigmask) {
-#ifndef _WIN32
     Sigset old_mask{};
     auto& thr = g_curthread;
     thr->GetGuestSigmask(old_mask);
@@ -433,15 +399,9 @@ s32 PS4_SYSV_ABI posix_sigsuspend(const Sigset* sigmask) {
 
     *__Error() = POSIX_EINTR;
     return ORBIS_FAIL;
-#else
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
-    *__Error() = POSIX_EINTR;
-    return ORBIS_FAIL;
-#endif
 }
 
 s32 PS4_SYSV_ABI posix_sigwait(const Sigset* set, s32* sig) {
-#ifndef _WIN32
     if (set == nullptr || sig == nullptr) {
         return POSIX_EINVAL;
     }
@@ -470,11 +430,6 @@ s32 PS4_SYSV_ABI posix_sigwait(const Sigset* set, s32* sig) {
 
         thread->signal_sema.acquire();
     }
-#else
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
-    return ORBIS_OK;
-
-#endif
 }
 
 SigHandler PS4_SYSV_ABI posix_signal(s32 sig, SigHandler func) {
@@ -498,21 +453,11 @@ s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
         return POSIX_EINVAL;
     }
     LOG_INFO(Lib_Kernel, "Raising signal {} on thread '{}'", sig, thread->name);
-#ifndef _WIN64
     thread->QueueSignal(sig);
 
     if (!thread->IsSignalBlocked(sig)) {
         thread->WakeForSignal();
     }
-#else
-    USER_APC_OPTION option;
-    option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
-
-    u64 res =
-        NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr->GetHandle()), option,
-                           ExceptionHandler, (void*)thread->name.c_str(), (void*)(s64)sig, nullptr);
-    ASSERT(res == 0);
-#endif
     return ORBIS_OK;
 }
 

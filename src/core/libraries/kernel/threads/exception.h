@@ -187,6 +187,8 @@ struct Ucontext {
 
 #ifndef _WIN32
     explicit Ucontext(siginfo_t const* inf, ucontext_t const* raw_context);
+#else
+    explicit Ucontext(PCONTEXT context);
 #endif
 };
 
