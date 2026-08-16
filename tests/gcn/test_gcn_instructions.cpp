@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <cmath>
 #include <optional>
 #include <unordered_map>
 
 #include <gtest/gtest.h>
 #include <half.hpp>
-#include <spirv/unified1/GLSL.std.450.h>
 #include <spirv/unified1/spirv.hpp11>
 
 #include "gcn_test_runner.hpp"
@@ -56,9 +56,10 @@ struct InterpStageIr {
 struct SpirvFacts {
     std::unordered_map<u32, u32> capabilities;
     std::unordered_map<u32, u32> builtins;
-    std::unordered_map<u32, u32> glsl_ext_instructions;
+    std::unordered_map<u32, u32> decorations;
     std::unordered_map<u32, u32> opcodes;
     std::unordered_map<u32, u32> composite_extract_indices;
+    std::unordered_map<u32, u32> constant_words;
 
     u32 CountCapability(spv::Capability capability) const {
         const auto it = capabilities.find(static_cast<u32>(capability));
@@ -70,9 +71,9 @@ struct SpirvFacts {
         return it == builtins.end() ? 0U : it->second;
     }
 
-    u32 CountGlslInstruction(u32 instruction) const {
-        const auto it = glsl_ext_instructions.find(instruction);
-        return it == glsl_ext_instructions.end() ? 0U : it->second;
+    u32 CountDecoration(spv::Decoration decoration) const {
+        const auto it = decorations.find(static_cast<u32>(decoration));
+        return it == decorations.end() ? 0U : it->second;
     }
 
     u32 CountOpcode(spv::Op opcode) const {
@@ -83,6 +84,11 @@ struct SpirvFacts {
     u32 CountCompositeExtractIndex(u32 index) const {
         const auto it = composite_extract_indices.find(index);
         return it == composite_extract_indices.end() ? 0U : it->second;
+    }
+
+    u32 CountConstantWord(u32 value) const {
+        const auto it = constant_words.find(value);
+        return it == constant_words.end() ? 0U : it->second;
     }
 };
 
@@ -106,18 +112,21 @@ SpirvFacts InspectSpirv(std::span<const u32> spirv) {
             break;
         case spv::Op::OpDecorate:
             EXPECT_GE(word_count, 3U);
+            ++facts.decorations[spirv[offset + 2]];
             if (spirv[offset + 2] == static_cast<u32>(spv::Decoration::BuiltIn)) {
                 EXPECT_GE(word_count, 4U);
                 ++facts.builtins[spirv[offset + 3]];
             }
             break;
-        case spv::Op::OpExtInst:
-            EXPECT_GE(word_count, 5U);
-            ++facts.glsl_ext_instructions[spirv[offset + 4]];
-            break;
         case spv::Op::OpCompositeExtract:
             EXPECT_GE(word_count, 5U);
             ++facts.composite_extract_indices[spirv[offset + 4]];
+            break;
+        case spv::Op::OpConstant:
+            EXPECT_GE(word_count, 4U);
+            if (word_count == 4U) {
+                ++facts.constant_words[spirv[offset + 3]];
+            }
             break;
         default:
             break;
@@ -127,43 +136,26 @@ SpirvFacts InspectSpirv(std::span<const u32> spirv) {
     return facts;
 }
 
-struct Bcnt64Ir {
-    bool reads_thread_mask{};
-    bool builds_ballot{};
-    u32 bit_count_count{};
-};
-
-Bcnt64Ir TranslateBcnt64ToIr() {
+bool FragmentPrologueLoadsSampleCoverage(bool enabled) {
     Shader::Pools pools;
     Shader::Info info{};
-    info.stage = Shader::Stage::Compute;
-    info.l_stage = Shader::LogicalStage::Compute;
+    info.stage = Shader::Stage::Fragment;
+    info.l_stage = Shader::LogicalStage::Fragment;
 
     Shader::RuntimeInfo runtime_info{};
-    runtime_info.Initialize(Shader::Stage::Compute);
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.addr_flags.sample_coverage_ena = 1;
+    runtime_info.fs_info.en_flags.sample_coverage_ena = enabled;
 
     Shader::Profile profile{};
     Shader::IR::Block block{pools.inst_pool};
     Shader::Gcn::Translator translator{info, runtime_info, profile};
     translator.EmitPrologue(&block);
-    const auto prologue_size = block.size();
 
-    Shader::Gcn::GcnInst inst{};
-    inst.src[0].field = Shader::Gcn::OperandField::ScalarGPR;
-    inst.src[0].code = 22;
-    inst.dst[0].field = Shader::Gcn::OperandField::ScalarGPR;
-    inst.dst[0].code = 24;
-    translator.S_BCNT1_I32_B64(inst);
-
-    Bcnt64Ir result{};
-    auto it = block.begin();
-    std::advance(it, prologue_size);
-    for (; it != block.end(); ++it) {
-        result.reads_thread_mask |= it->GetOpcode() == Shader::IR::Opcode::GetThreadBitScalarReg;
-        result.builds_ballot |= it->GetOpcode() == Shader::IR::Opcode::Ballot;
-        result.bit_count_count += it->GetOpcode() == Shader::IR::Opcode::BitCount32;
-    }
-    return result;
+    return std::ranges::any_of(block, [](const Shader::IR::Inst& inst) {
+        return inst.GetOpcode() == Shader::IR::Opcode::GetAttributeU32 &&
+               inst.Arg(0).Attribute() == Shader::IR::Attribute::SampleCoverage;
+    });
 }
 
 InterpMovIr TranslateInterpMovToIr(
@@ -305,14 +297,6 @@ Shader::RuntimeInfo BarycentricRuntimeInfo() {
 }
 
 } // namespace
-
-TEST_F(GcnTest, bcnt1_i32_b64_counts_saved_thread_mask) {
-    const auto result = TranslateBcnt64ToIr();
-
-    EXPECT_TRUE(result.reads_thread_mask);
-    EXPECT_TRUE(result.builds_ballot);
-    EXPECT_EQ(result.bit_count_count, 2U);
-}
 
 // Example
 // TEST_F(GcnTest, test_name) {
@@ -529,7 +513,7 @@ TEST_F(GcnTest, interp_mov_selects_khr_odd_adjacency_strip_host_last_order) {
     EXPECT_EQ(*result.subtraction_vertex_indices, std::pair(0U, 2U));
 }
 
-TEST_F(GcnTest, khr_barycentrics_emit_one_builtin_per_mode_family) {
+TEST_F(GcnTest, khr_barycentrics_use_qualified_builtins_per_evaluation_mode) {
     Shader::Profile profile{};
     profile.supported_spirv = 0x00010600;
     profile.supports_fragment_shader_barycentric = true;
@@ -537,14 +521,14 @@ TEST_F(GcnTest, khr_barycentrics_emit_one_builtin_per_mode_family) {
     const auto spirv = TranslateFragmentBarycentricsToSpirv(profile, BarycentricRuntimeInfo());
     const auto facts = InspectSpirv(spirv);
 
-    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::BaryCoordKHR), 1U);
-    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::BaryCoordNoPerspKHR), 1U);
-    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::SampleId), 1U);
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::BaryCoordKHR), 3U);
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::BaryCoordNoPerspKHR), 3U);
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::SampleId), 0U);
     EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::FragCoord), 1U);
-    EXPECT_EQ(facts.CountGlslInstruction(GLSLstd450InterpolateAtCentroid), 4U);
-    EXPECT_EQ(facts.CountGlslInstruction(GLSLstd450InterpolateAtSample), 4U);
+    EXPECT_EQ(facts.CountDecoration(spv::Decoration::Centroid), 2U);
+    EXPECT_EQ(facts.CountDecoration(spv::Decoration::Sample), 2U);
     EXPECT_EQ(facts.CountCapability(spv::Capability::FragmentBarycentricKHR), 1U);
-    EXPECT_EQ(facts.CountCapability(spv::Capability::InterpolationFunction), 1U);
+    EXPECT_EQ(facts.CountCapability(spv::Capability::InterpolationFunction), 0U);
     EXPECT_EQ(facts.CountCapability(spv::Capability::SampleRateShading), 1U);
     EXPECT_EQ(facts.CountOpcode(spv::Op::OpFMul), 2U);
 }
@@ -565,8 +549,6 @@ TEST_F(GcnTest, amd_barycentrics_use_all_native_builtins) {
     EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::BaryCoordPullModelAMD), 1U);
     EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::FragCoord), 0U);
     EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::SampleId), 0U);
-    EXPECT_EQ(facts.CountGlslInstruction(GLSLstd450InterpolateAtCentroid), 0U);
-    EXPECT_EQ(facts.CountGlslInstruction(GLSLstd450InterpolateAtSample), 0U);
     EXPECT_EQ(facts.CountCapability(spv::Capability::SampleRateShading), 1U);
     EXPECT_EQ(facts.CountOpcode(spv::Op::OpFMul), 0U);
 }
@@ -662,6 +644,80 @@ TEST_F(GcnTest, khr_adjacency_strip_host_last_provoking_has_stable_native_basis)
     const auto facts = InspectSpirv(TranslateFragmentBarycentricsToSpirv(profile, runtime_info));
     EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::PrimitiveId), 0U);
     EXPECT_EQ(facts.CountOpcode(spv::Op::OpSelect), 0U);
+}
+
+TEST_F(GcnTest, fragment_front_face_uses_float_sign_bits) {
+    Shader::Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.addr_flags.front_face_ena = 1;
+    runtime_info.fs_info.en_flags.front_face_ena = 1;
+    runtime_info.fs_info.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
+
+    const auto facts = InspectSpirv(TranslateFragmentFrontFaceToSpirv(profile, runtime_info));
+
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::FrontFacing), 1U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpSelect), 1U);
+    EXPECT_GE(facts.CountConstantWord(0x3f800000U), 1U);
+    EXPECT_GE(facts.CountConstantWord(0xbf800000U), 1U);
+}
+
+TEST_F(GcnTest, fragment_front_face_uses_all_bits) {
+    Shader::Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.addr_flags.front_face_ena = 1;
+    runtime_info.fs_info.en_flags.front_face_ena = 1;
+    runtime_info.fs_info.front_face_all_bits = true;
+    runtime_info.fs_info.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
+
+    const auto facts = InspectSpirv(TranslateFragmentFrontFaceToSpirv(profile, runtime_info));
+
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::FrontFacing), 1U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpSelect), 1U);
+    EXPECT_GE(facts.CountConstantWord(1U), 1U);
+    EXPECT_EQ(facts.CountConstantWord(0x3f800000U), 0U);
+    EXPECT_EQ(facts.CountConstantWord(0xbf800000U), 0U);
+}
+
+TEST_F(GcnTest, fragment_sample_coverage_uses_fast_single_sample_path) {
+    Shader::Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.color_buffers[0].num_format = AmdGpu::NumberFormat::Uint;
+
+    const auto facts = InspectSpirv(TranslateFragmentSampleCoverageToSpirv(profile, runtime_info));
+
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::SampleMask), 0U);
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::HelperInvocation), 1U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpBitwiseAnd), 0U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpSelect), 1U);
+    EXPECT_GE(facts.CountConstantWord(1U), 1U);
+}
+
+TEST_F(GcnTest, fragment_prologue_loads_enabled_sample_coverage) {
+    EXPECT_TRUE(FragmentPrologueLoadsSampleCoverage(true));
+    EXPECT_FALSE(FragmentPrologueLoadsSampleCoverage(false));
+}
+
+TEST_F(GcnTest, fragment_sample_coverage_masks_multisample_input) {
+    Shader::Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.num_samples = 4;
+    runtime_info.fs_info.color_buffers[0].num_format = AmdGpu::NumberFormat::Uint;
+
+    const auto facts = InspectSpirv(TranslateFragmentSampleCoverageToSpirv(profile, runtime_info));
+
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::SampleMask), 1U);
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::HelperInvocation), 1U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpBitwiseAnd), 1U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpSelect), 1U);
+    EXPECT_GE(facts.CountConstantWord(0xfU), 1U);
 }
 
 TEST_F(GcnTest, sampler_descriptor_rejects_reserved_encodings) {

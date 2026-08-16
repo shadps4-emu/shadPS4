@@ -3,6 +3,8 @@
 
 #include <ranges>
 
+#include <boost/container/small_vector.hpp>
+
 #include "common/hash.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
@@ -228,8 +230,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.fs_info.en_flags = regs.ps_input_ena;
         info.fs_info.addr_flags = regs.ps_input_addr;
         info.fs_info.num_inputs = regs.num_interp;
+        info.fs_info.front_face_all_bits = regs.barycentric_control.front_face_all_bits;
         info.fs_info.z_export_format = regs.z_export_format;
         info.fs_info.primitive_type = FragmentPrimitiveType(regs);
+        info.fs_info.num_samples = regs.aa_config.NumSamples();
         info.fs_info.provoking_vtx_last =
             regs.polygon_control.provoking_vtx_last == AmdGpu::ProvokingVtxLast::Last;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
@@ -684,7 +688,7 @@ void PipelineCache::RefreshFlatBuf(Shader::Info& info) {
     static constexpr VAddr GuestAddressMask = 0xFFFFFFFFFFFFULL;
     auto* memory = Core::Memory::Instance();
     const auto& reservations = info.srt_info.memory_reservations;
-    std::vector<VAddr> pointer_bases;
+    boost::container::small_vector<VAddr, 8> pointer_bases;
     pointer_bases.reserve(reservations.size());
 
     for (u32 index = 0; index < reservations.size(); ++index) {
@@ -716,8 +720,6 @@ void PipelineCache::RefreshFlatBuf(Shader::Info& info) {
         const u64 data_size = static_cast<u64>(reservation.num_dwords) * sizeof(u32);
         if (pointer_base != 0 && memory->IsValidMapping(data_address, data_size) &&
             buffer_cache.IsRegionGpuModified(data_address, data_size)) {
-            LOG_TRACE(Render_Vulkan, "Synchronizing SRT range {:#x} + {:#x} bytes", data_address,
-                      data_size);
             buffer_cache.ReadMemory(data_address, data_size);
         }
     }

@@ -123,6 +123,12 @@ struct PsInput {
     bool operator==(const PsInput&) const = default;
 };
 
+struct BarycentricControl {
+    u32 : 24;
+    u32 front_face_all_bits : 1;
+};
+static_assert(sizeof(BarycentricControl) == sizeof(u32));
+
 enum class ShaderExportComp : u32 {
     None = 0,
     OneComp = 1,

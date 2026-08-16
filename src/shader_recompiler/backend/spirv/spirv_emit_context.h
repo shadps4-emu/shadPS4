@@ -258,6 +258,8 @@ public:
     Id frag_depth{};
     Id stencil_ref{};
     Id sample_mask{};
+    Id sample_mask_in{};
+    Id helper_invocation{};
     Id sample_index{};
     Id clip_distances{};
     Id cull_distances{};
