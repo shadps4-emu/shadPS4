@@ -68,6 +68,24 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
             handled = signals->DispatchIllegalInstruction(pExp);
         }
         break;
+    case EXCEPTION_IN_PAGE_ERROR:
+        guest_info._si_signo = POSIX_SIGBUS;
+        break;
+    case EXCEPTION_INT_DIVIDE_BY_ZERO:
+    case EXCEPTION_INT_OVERFLOW:
+    case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+    case EXCEPTION_FLT_INVALID_OPERATION:
+    case EXCEPTION_FLT_OVERFLOW:
+    case EXCEPTION_FLT_UNDERFLOW:
+    case EXCEPTION_FLT_DENORMAL_OPERAND:
+    case EXCEPTION_FLT_INEXACT_RESULT:
+    case EXCEPTION_FLT_STACK_CHECK:
+        guest_info._si_signo = POSIX_SIGFPE;
+        break;
+    case EXCEPTION_BREAKPOINT:
+    case EXCEPTION_SINGLE_STEP:
+        guest_info._si_signo = POSIX_SIGTRAP;
+        break;
     case DBG_PRINTEXCEPTION_C:
     case DBG_PRINTEXCEPTION_WIDE_C:
         // Used by OutputDebugString functions.
