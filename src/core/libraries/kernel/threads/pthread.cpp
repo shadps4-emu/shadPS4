@@ -944,12 +944,13 @@ bool Pthread::HasDeliverableSignal() const {
 
 #ifdef _WIN32
 static void ExceptionHandler(void*, void*, void*, PCONTEXT ctx) {
+    Ucontext u{ctx};
     Siginfo i{
         ._si_signo = 0,
         ._si_errno = 0,
         ._si_code = POSIX_SI_LWP,
+        ._si_addr = u.uc_mcontext.mc_rip,
     };
-    Ucontext u{ctx};
     g_curthread->DispatchPendingSignals(&i, &u);
 }
 #endif

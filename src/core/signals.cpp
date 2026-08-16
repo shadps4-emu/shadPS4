@@ -39,15 +39,25 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
         address = pExp->ExceptionRecord->ExceptionAddress;
     }
 
+    Ucontext guest_context{pExp->ContextRecord};
+    Siginfo guest_info{
+        ._si_signo = 0,
+        ._si_errno = 0,
+        ._si_code = POSIX_SI_NOINFO,
+        ._si_addr = (void*)context.uc_mcontext.mc_rip,
+    };
+
     bool handled = false;
     bool static_protection_exception = false; // Windows static guest red-zone protection
     switch (code) {
     case EXCEPTION_ACCESS_VIOLATION:
+        guest_info._si_signo = POSIX_SIGSEGV;
         static_protection_exception = true; // Windows static guest red-zone protection
         handled = signals->DispatchAccessViolation(
             pExp, reinterpret_cast<void*>(pExp->ExceptionRecord->ExceptionInformation[1]));
         break;
     case EXCEPTION_ILLEGAL_INSTRUCTION:
+        guest_info._si_signo = POSIX_SIGILL;
         static_protection_exception = true; // Windows static guest red-zone protection
         handled = signals->DispatchIllegalInstruction(pExp);
         break;
@@ -70,6 +80,13 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
 
     if (handled) {
         return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+    if (guest_info._si_signo != 0) {
+        if (g_curthread &&
+            g_curthread->DispatchSignal(guest_info._si_signo, &guest_info, &guest_context)) {
+            return EXCEPTION_CONTINUE_EXECUTION;
+        }
     }
 
     // Windows static guest red-zone protection
@@ -120,6 +137,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         guest_info._si_signo = sig == SIGUSR1 ? 0 : NativeToOrbisSignal(info->si_signo);
         guest_info._si_errno = NativeToPosixErrno(info->si_errno);
         guest_info._si_code = sig == SIGUSR1 ? POSIX_SI_LWP : POSIX_SI_NOINFO;
+        guest_info._si_addr = (void*)context.uc_mcontext.mc_rip;
     }
     Siginfo* info_p = info ? &guest_info : nullptr;
     Ucontext* context_p = raw_context ? &context : nullptr;
@@ -129,7 +147,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGBUS: {
         const bool is_write = Common::IsWriteError(raw_context);
         if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
-            if (thread->DispatchSignal(NativeToOrbisSignal(sig), info_p, context_p)) {
+            if (thread && thread->DispatchSignal(NativeToOrbisSignal(sig), info_p, context_p)) {
                 return;
             }
             UNREACHABLE_MSG("Unhandled access violation at code address {}: {} address {}",
@@ -145,7 +163,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGFPE:
     case SIGTRAP:
     case SIGSYS: {
-        if (thread->DispatchSignal(NativeToOrbisSignal(sig), info_p, context_p)) {
+        if (thread && thread->DispatchSignal(NativeToOrbisSignal(sig), info_p, context_p)) {
             return;
         }
 
@@ -160,7 +178,9 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         break;
     }
     case SIGUSR1:
-        thread->DispatchPendingSignals(info_p, context_p);
+        if (thread) {
+            thread->DispatchPendingSignals(info_p, context_p);
+        }
         break;
     default:
         UNREACHABLE_MSG("Unhandled signal {} at code address {}", sig, fmt::ptr(code_address));
