@@ -837,10 +837,11 @@ static void SigIgnHandler(int sig) {
     LOG_DEBUG(Lib_Kernel, "called, sig: {}", sig);
 }
 
-static void SigDflHandler(int sig) {
+static bool SigDflHandler(int sig) {
     switch (sig) {
-    case POSIX_SIGTRAP:
-        return;
+    case POSIX_SIGBUS:
+    case POSIX_SIGSEGV:
+        return false;
     case POSIX_SIGHUP:
     case POSIX_SIGINT:
     case POSIX_SIGQUIT:
@@ -849,8 +850,6 @@ static void SigDflHandler(int sig) {
     case POSIX_SIGEMT:
     case POSIX_SIGFPE:
     case POSIX_SIGKILL:
-    case POSIX_SIGBUS:
-    case POSIX_SIGSEGV:
     case POSIX_SIGSYS:
     case POSIX_SIGPIPE:
     case POSIX_SIGALRM:
@@ -865,9 +864,11 @@ static void SigDflHandler(int sig) {
     case POSIX_SIGPROF:
     case POSIX_SIGUSR1:
     case POSIX_SIGUSR2:
-        UNREACHABLE_MSG("Encountered unhandled signal {}", sig);
+        return false;
+    case POSIX_SIGTRAP:
     default:
         LOG_DEBUG(Lib_Kernel, "called, sig: {}", sig);
+        return true;
     }
 }
 
@@ -1018,8 +1019,7 @@ bool Pthread::DispatchSignal(s32 sig, Siginfo* info, Ucontext* context) {
     }
 
     if (reinterpret_cast<uintptr_t>(handler) == POSIX_SIG_DFL) {
-        SigDflHandler(sig);
-        return true;
+        return SigDflHandler(sig);
     }
 
     Sigset old_mask{};
