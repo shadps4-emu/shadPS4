@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+
 #include "common/assert.h"
 #include "core/emulator_settings.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
@@ -34,7 +36,7 @@ static Id ExtractKHRBarycentricComponent(EmitContext& ctx, Id value, u32 comp) {
     return ctx.OpSelect(ctx.F32[1], is_odd, odd_value, even_value);
 }
 
-static Id LoadBarycentric(EmitContext& ctx, IR::Attribute attr, Id variable, u32 comp) {
+static Id LoadBarycentric(EmitContext& ctx, Id variable, u32 comp) {
     ASSERT_MSG(comp < 2, "Invalid guest barycentric component {}", comp);
     const bool uses_khr_barycentrics = !ctx.profile.supports_amd_shader_explicit_vertex_parameter &&
                                        ctx.profile.supports_fragment_shader_barycentric;
@@ -42,21 +44,7 @@ static Id LoadBarycentric(EmitContext& ctx, IR::Attribute attr, Id variable, u32
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(ctx.input_f32, variable, ctx.ConstU32(comp)));
     }
-
-    const Id value = [&] {
-        switch (attr) {
-        case IR::Attribute::BaryCoordSmoothCentroid:
-        case IR::Attribute::BaryCoordNoPerspCentroid:
-            return ctx.OpInterpolateAtCentroid(ctx.F32[3], variable);
-        case IR::Attribute::BaryCoordSmoothSample:
-        case IR::Attribute::BaryCoordNoPerspSample:
-            return ctx.OpInterpolateAtSample(ctx.F32[3], variable,
-                                             ctx.OpLoad(ctx.U32[1], ctx.sample_index));
-        default:
-            return ctx.OpLoad(ctx.F32[3], variable);
-        }
-    }();
-    return ExtractKHRBarycentricComponent(ctx, value, comp);
+    return ExtractKHRBarycentricComponent(ctx, ctx.OpLoad(ctx.F32[3], variable), comp);
 }
 
 static std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
@@ -171,17 +159,17 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(ctx.input_f32, ctx.tess_coord, ctx.ConstU32(1U)));
     case IR::Attribute::BaryCoordSmooth:
-        return LoadBarycentric(ctx, attr, ctx.bary_coord_smooth, comp);
+        return LoadBarycentric(ctx, ctx.bary_coord_smooth, comp);
     case IR::Attribute::BaryCoordSmoothCentroid:
-        return LoadBarycentric(ctx, attr, ctx.bary_coord_smooth_centroid, comp);
+        return LoadBarycentric(ctx, ctx.bary_coord_smooth_centroid, comp);
     case IR::Attribute::BaryCoordSmoothSample:
-        return LoadBarycentric(ctx, attr, ctx.bary_coord_smooth_sample, comp);
+        return LoadBarycentric(ctx, ctx.bary_coord_smooth_sample, comp);
     case IR::Attribute::BaryCoordNoPersp:
-        return LoadBarycentric(ctx, attr, ctx.bary_coord_nopersp, comp);
+        return LoadBarycentric(ctx, ctx.bary_coord_nopersp, comp);
     case IR::Attribute::BaryCoordNoPerspCentroid:
-        return LoadBarycentric(ctx, attr, ctx.bary_coord_nopersp_centroid, comp);
+        return LoadBarycentric(ctx, ctx.bary_coord_nopersp_centroid, comp);
     case IR::Attribute::BaryCoordNoPerspSample:
-        return LoadBarycentric(ctx, attr, ctx.bary_coord_nopersp_sample, comp);
+        return LoadBarycentric(ctx, ctx.bary_coord_nopersp_sample, comp);
     case IR::Attribute::BaryCoordPullModel: {
         ASSERT_MSG(comp < 3, "Invalid BaryCoordPullModel component {}", comp);
         if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
@@ -197,12 +185,21 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         if (comp == 2) {
             return inv_w;
         }
-        const Id ij =
-            LoadBarycentric(ctx, IR::Attribute::BaryCoordSmooth, ctx.bary_coord_smooth, comp);
+        const Id ij = LoadBarycentric(ctx, ctx.bary_coord_smooth, comp);
         return ctx.OpFMul(ctx.F32[1], ij, inv_w);
     }
     default:
         UNREACHABLE_MSG("Read attribute {}", attr);
+    }
+}
+
+Id EmitGetAttributeU1(EmitContext& ctx, IR::Attribute attr, u32 comp) {
+    ASSERT(comp == 0);
+    switch (attr) {
+    case IR::Attribute::IsFrontFace:
+        return ctx.OpLoad(ctx.U1[1], ctx.front_facing);
+    default:
+        UNREACHABLE_MSG("Unsupported U1 attribute {}", attr);
     }
 }
 
@@ -224,6 +221,18 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
                             ctx.u32_zero_value);
     case IR::Attribute::SampleIndex:
         return ctx.OpLoad(ctx.U32[1], ctx.sample_index);
+    case IR::Attribute::SampleCoverage: {
+        const u32 num_samples = std::clamp<u32>(ctx.runtime_info.fs_info.num_samples, 1U, 16U);
+        Id coverage = ctx.u32_one_value;
+        if (num_samples > 1) {
+            coverage = ctx.OpLoad(ctx.U32[1], ctx.OpAccessChain(ctx.input_u32, ctx.sample_mask_in,
+                                                                ctx.u32_zero_value));
+            const u32 valid_samples = (1U << num_samples) - 1U;
+            coverage = ctx.OpBitwiseAnd(ctx.U32[1], coverage, ctx.ConstU32(valid_samples));
+        }
+        const Id is_helper = ctx.OpLoad(ctx.U1[1], ctx.helper_invocation);
+        return ctx.OpSelect(ctx.U32[1], is_helper, ctx.u32_zero_value, coverage);
+    }
     case IR::Attribute::RenderTargetIndex:
         return ctx.OpLoad(ctx.U32[1], ctx.output_layer);
     case IR::Attribute::PrimitiveId:

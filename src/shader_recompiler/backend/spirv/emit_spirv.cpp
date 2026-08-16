@@ -309,11 +309,6 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
             info.fs_interpolation, [](const Info::Interpolation& interpolation) {
                 return interpolation.primary == Qualifier::PerVertex;
             });
-        const bool uses_explicit_evaluation =
-            info.loads.GetAny(IR::Attribute::BaryCoordSmoothCentroid) ||
-            info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample) ||
-            info.loads.GetAny(IR::Attribute::BaryCoordNoPerspCentroid) ||
-            info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample);
         if (profile.supports_amd_shader_explicit_vertex_parameter) {
             ctx.AddExtension("SPV_AMD_shader_explicit_vertex_parameter");
             if (uses_per_vertex) {
@@ -322,9 +317,6 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
         } else if (profile.supports_fragment_shader_barycentric) {
             ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
             ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
-            if (uses_explicit_evaluation) {
-                ctx.AddCapability(spv::Capability::InterpolationFunction);
-            }
         }
         if (info.loads.Get(IR::Attribute::SampleIndex) ||
             runtime_info.fs_info.addr_flags.linear_sample_ena ||

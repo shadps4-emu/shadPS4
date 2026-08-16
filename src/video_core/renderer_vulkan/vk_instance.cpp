@@ -302,6 +302,7 @@ bool Instance::CreateDevice() {
         add_extension(VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_EXTENSION_NAME);
     if (!amd_shader_explicit_vertex_parameter) {
         const bool has_fragment_shader_barycentric =
+            properties.apiVersion >= VK_API_VERSION_1_4 ||
             add_extension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
         const auto barycentric_features =
             feature_chain.get<vk::PhysicalDeviceFragmentShaderBarycentricFeaturesKHR>();

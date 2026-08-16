@@ -1176,14 +1176,12 @@ u64 Rasterizer::ClampToMappedRange(VAddr addr, u64 size) {
         return 0;
     }
 
-    const auto requested = decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
     Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-    const auto mapped = mapped_ranges & requested;
-    const auto first = mapped.begin();
-    if (first == mapped.end() || boost::icl::lower(*first) != addr) {
+    const auto mapped = mapped_ranges.find(addr);
+    if (mapped == mapped_ranges.end()) {
         return 0;
     }
-    return boost::icl::upper(*first) - addr;
+    return std::min(size, boost::icl::upper(*mapped) - addr);
 }
 
 void Rasterizer::MapMemory(VAddr addr, u64 size) {

@@ -147,6 +147,68 @@ std::vector<u32> TranslateFragmentBarycentricsToSpirv(const Shader::Profile& pro
     return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
 }
 
+std::vector<u32> TranslateFragmentFrontFaceToSpirv(const Shader::Profile& profile,
+                                                   const Shader::RuntimeInfo& runtime_info) {
+    Shader::Info info{};
+    info.stage = Stage::Fragment;
+    info.l_stage = LogicalStage::Fragment;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Block;
+    program.syntax_list.back().data.block = block;
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Return;
+    program.post_order_blocks = IR::PostOrder(program.syntax_list.front());
+
+    Gcn::Translator translator(program.info, runtime_info, profile);
+    translator.EmitPrologue(block);
+
+    IR::IREmitter ir{*block};
+    const IR::U32 front_face = ir.GetVectorReg<IR::U32>(IR::VectorReg::V0);
+    ir.SetAttribute(IR::Attribute::RenderTarget0, ir.BitCast<IR::F32>(front_face));
+    ir.Epilogue();
+
+    Optimization::SsaRewritePass(program.post_order_blocks);
+    Optimization::IdentityRemovalPass(program.blocks);
+    Optimization::ConstantPropagationPass(program.blocks);
+    Optimization::DeadCodeEliminationPass(program);
+    Optimization::CollectShaderInfoPass(program, profile);
+    Backend::Bindings bindings{};
+    return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
+}
+
+std::vector<u32> TranslateFragmentSampleCoverageToSpirv(const Shader::Profile& profile,
+                                                        const Shader::RuntimeInfo& runtime_info) {
+    Shader::Info info{};
+    info.stage = Stage::Fragment;
+    info.l_stage = LogicalStage::Fragment;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Block;
+    program.syntax_list.back().data.block = block;
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Return;
+    program.post_order_blocks = IR::PostOrder(program.syntax_list.front());
+
+    IR::IREmitter ir{*block};
+    ir.Prologue();
+    const IR::U32 coverage = ir.GetAttributeU32(IR::Attribute::SampleCoverage);
+    ir.SetAttribute(IR::Attribute::RenderTarget0, ir.BitCast<IR::F32>(coverage));
+    ir.Epilogue();
+
+    Optimization::CollectShaderInfoPass(program, profile);
+    Backend::Bindings bindings{};
+    return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
+}
+
 std::vector<u32> TranslateFragmentScalarPerVertexToSpirv(const Shader::Profile& profile,
                                                          const Shader::RuntimeInfo& runtime_info) {
     Shader::Info info{};
