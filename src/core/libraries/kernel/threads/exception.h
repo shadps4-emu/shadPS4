@@ -67,14 +67,12 @@ constexpr s32 _SIGEMT = SIGEMT;
 constexpr s32 _SIGINFO = SIGINFO;
 #endif
 
-constexpr s32 POSIX_SA_NOCLDSTOP = 1;
-constexpr s32 POSIX_SA_NOCLDWAIT = 2;
-constexpr s32 POSIX_SA_SIGINFO = 4;
-constexpr s32 POSIX_SA_ONSTACK = 0x08000000;
-constexpr s32 POSIX_SA_RESTART = 0x10000000;
-constexpr s32 POSIX_SA_NODEFER = 0x40000000;
-constexpr s32 POSIX_SA_RESETHAND = 0x80000000;
-constexpr s32 POSIX_SA_RESTORER = 0x04000000;
+constexpr s32 POSIX_SA_ONSTACK = 0x0001;   /* take signal on signal stack */
+constexpr s32 POSIX_SA_RESTART = 0x0002;   /* restart system call on signal return */
+constexpr s32 POSIX_SA_RESETHAND = 0x0004; /* reset to SIG_DFL when taking signal */
+constexpr s32 POSIX_SA_NODEFER = 0x0010;   /* don't mask the signal we're delivering */
+constexpr s32 POSIX_SA_NOCLDWAIT = 0x0020; /* don't keep zombies around */
+constexpr s32 POSIX_SA_SIGINFO = 0x0040;   /* signal handler with SA_SIGINFO args */
 
 struct Mcontext {
     u64 mc_onstack;
