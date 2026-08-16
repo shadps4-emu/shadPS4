@@ -988,7 +988,7 @@ struct WrapperArgs {
     Ucontext* context;
 };
 
-static void CallbackWrapper(void* arg) {
+static void PS4_SYSV_ABI CallbackWrapper(void* arg) {
     WrapperArgs& a = *reinterpret_cast<WrapperArgs*>(arg);
 
     if (a.action->sa_flags & POSIX_SA_SIGINFO) {
