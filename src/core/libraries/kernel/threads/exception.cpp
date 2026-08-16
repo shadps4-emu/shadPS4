@@ -105,6 +105,7 @@ Ucontext::Ucontext(PCONTEXT context) {
     if (!context) {
         return;
     }
+    host_context = context;
     uc_mcontext.mc_r8 = context->R8;
     uc_mcontext.mc_r9 = context->R9;
     uc_mcontext.mc_r10 = context->R10;
@@ -127,13 +128,32 @@ Ucontext::Ucontext(PCONTEXT context) {
 #endif
 
 void Ucontext::SyncHostFromGuest() {
-#ifndef _WIN32
     if (!host_context) {
         return;
     }
 
 #ifdef ARCH_X86_64
-#ifdef __APPLE__
+#ifdef _WIN32
+    host_context->R8 = uc_mcontext.mc_r8;
+    host_context->R9 = uc_mcontext.mc_r9;
+    host_context->R10 = uc_mcontext.mc_r10;
+    host_context->R11 = uc_mcontext.mc_r11;
+    host_context->R12 = uc_mcontext.mc_r12;
+    host_context->R13 = uc_mcontext.mc_r13;
+    host_context->R14 = uc_mcontext.mc_r14;
+    host_context->R15 = uc_mcontext.mc_r15;
+    host_context->Rdi = uc_mcontext.mc_rdi;
+    host_context->Rsi = uc_mcontext.mc_rsi;
+    host_context->Rbp = uc_mcontext.mc_rbp;
+    host_context->Rbx = uc_mcontext.mc_rbx;
+    host_context->Rdx = uc_mcontext.mc_rdx;
+    host_context->Rax = uc_mcontext.mc_rax;
+    host_context->Rcx = uc_mcontext.mc_rcx;
+    host_context->Rsp = uc_mcontext.mc_rsp;
+    host_context->Rip = uc_mcontext.mc_rip;
+    // host_context->SegFs = static_cast<DWORD>(uc_mcontext.mc_fs);
+    // host_context->SegGs = static_cast<DWORD>(uc_mcontext.mc_gs);
+#elif __APPLE__
     auto& regs = host_context->uc_mcontext->__ss;
     regs.__r8 = uc_mcontext.mc_r8;
     regs.__r9 = uc_mcontext.mc_r9;
@@ -200,8 +220,6 @@ void Ucontext::SyncHostFromGuest() {
 #endif
 #else
 #error "ucontext_t conversion not implemented for current architecture."
-#endif
-
 #endif
 }
 

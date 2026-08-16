@@ -193,6 +193,7 @@ struct Ucontext {
     ucontext_t* host_context;
 #else
     explicit Ucontext(PCONTEXT context);
+    PCONTEXT host_context;
 #endif
     void SyncHostFromGuest();
 };
