@@ -117,9 +117,9 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     Siginfo guest_info{};
     if (info) {
         guest_info = *reinterpret_cast<Siginfo*>(info);
-        guest_info._si_signo = NativeToOrbisSignal(info->si_signo);
+        guest_info._si_signo = sig == SIGUSR1 ? 0 : NativeToOrbisSignal(info->si_signo);
         guest_info._si_errno = NativeToPosixErrno(info->si_errno);
-        guest_info._si_code = POSIX_SI_NOINFO;
+        guest_info._si_code = sig == SIGUSR1 ? POSIX_SI_LWP : POSIX_SI_NOINFO;
     }
     Siginfo* info_p = info ? &guest_info : nullptr;
     Ucontext* context_p = raw_context ? &context : nullptr;
@@ -160,8 +160,6 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         break;
     }
     case SIGUSR1:
-        info_p->_si_signo = 0;
-        info_p->_si_code = POSIX_SI_LWP;
         thread->DispatchPendingSignals(info_p, context_p);
         break;
     default:

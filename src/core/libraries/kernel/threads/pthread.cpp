@@ -1071,7 +1071,10 @@ bool Pthread::DispatchPendingSignals(Siginfo* info, Ucontext* context) {
     if (sig == 0) {
         return false;
     }
-    info->_si_signo = sig;
+
+    if (info) {
+        info->_si_signo = sig;
+    }
 
     if (in_sigwait.load(std::memory_order_acquire) && posix_sigismember(&sigwait_set, sig) != 0) {
         signal_sema.release();
