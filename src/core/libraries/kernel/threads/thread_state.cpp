@@ -126,7 +126,6 @@ void ThreadState::Free(Pthread* curthread, Pthread* thread) {
     }
     thread->tcb = nullptr;
     auto* sleepqueue = thread->sleepqueue;
-    std::destroy_at(thread);
     bool should_free;
     {
         std::scoped_lock lk{free_thread_lock};
