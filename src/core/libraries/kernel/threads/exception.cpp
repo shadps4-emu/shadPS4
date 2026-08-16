@@ -27,6 +27,7 @@ Ucontext::Ucontext(siginfo_t const* inf, ucontext_t const* raw_context) {
     if (!inf || !raw_context) {
         return;
     }
+    host_context = raw_context;
 #ifdef ARCH_X86_64
 #ifdef __APPLE__
     const auto& regs = raw_context->uc_mcontext->__ss;
@@ -124,6 +125,85 @@ Ucontext::Ucontext(PCONTEXT context) {
     uc_mcontext.mc_gs = context->SegGs;
 }
 #endif
+
+void Ucontext::SyncHostFromGuest() {
+#ifndef _WIN32
+    if (!host_context) {
+        return;
+    }
+
+#ifdef ARCH_X86_64
+#ifdef __APPLE__
+    auto& regs = host_context->uc_mcontext->__ss;
+    regs.__r8 = uc_mcontext.mc_r8;
+    regs.__r9 = uc_mcontext.mc_r9;
+    regs.__r10 = uc_mcontext.mc_r10;
+    regs.__r11 = uc_mcontext.mc_r11;
+    regs.__r12 = uc_mcontext.mc_r12;
+    regs.__r13 = uc_mcontext.mc_r13;
+    regs.__r14 = uc_mcontext.mc_r14;
+    regs.__r15 = uc_mcontext.mc_r15;
+    regs.__rdi = uc_mcontext.mc_rdi;
+    regs.__rsi = uc_mcontext.mc_rsi;
+    regs.__rbp = uc_mcontext.mc_rbp;
+    regs.__rbx = uc_mcontext.mc_rbx;
+    regs.__rdx = uc_mcontext.mc_rdx;
+    regs.__rax = uc_mcontext.mc_rax;
+    regs.__rcx = uc_mcontext.mc_rcx;
+    regs.__rsp = uc_mcontext.mc_rsp;
+    regs.__fs = uc_mcontext.mc_fs;
+    regs.__gs = uc_mcontext.mc_gs;
+    regs.__rip = uc_mcontext.mc_rip;
+#elif defined(__FreeBSD__)
+    auto& regs = host_context->uc_mcontext;
+    regs.mc_r8 = uc_mcontext.mc_r8;
+    regs.mc_r9 = uc_mcontext.mc_r9;
+    regs.mc_r10 = uc_mcontext.mc_r10;
+    regs.mc_r11 = uc_mcontext.mc_r11;
+    regs.mc_r12 = uc_mcontext.mc_r12;
+    regs.mc_r13 = uc_mcontext.mc_r13;
+    regs.mc_r14 = uc_mcontext.mc_r14;
+    regs.mc_r15 = uc_mcontext.mc_r15;
+    regs.mc_rdi = uc_mcontext.mc_rdi;
+    regs.mc_rsi = uc_mcontext.mc_rsi;
+    regs.mc_rbp = uc_mcontext.mc_rbp;
+    regs.mc_rbx = uc_mcontext.mc_rbx;
+    regs.mc_rdx = uc_mcontext.mc_rdx;
+    regs.mc_rax = uc_mcontext.mc_rax;
+    regs.mc_rcx = uc_mcontext.mc_rcx;
+    regs.mc_rsp = uc_mcontext.mc_rsp;
+    regs.mc_fs = uc_mcontext.mc_fs;
+    regs.mc_gs = uc_mcontext.mc_gs;
+    regs.mc_rip = uc_mcontext.mc_rip;
+#else
+    auto& regs = host_context->uc_mcontext.gregs;
+    regs[REG_R8] = uc_mcontext.mc_r8;
+    regs[REG_R9] = uc_mcontext.mc_r9;
+    regs[REG_R10] = uc_mcontext.mc_r10;
+    regs[REG_R11] = uc_mcontext.mc_r11;
+    regs[REG_R12] = uc_mcontext.mc_r12;
+    regs[REG_R13] = uc_mcontext.mc_r13;
+    regs[REG_R14] = uc_mcontext.mc_r14;
+    regs[REG_R15] = uc_mcontext.mc_r15;
+    regs[REG_RDI] = uc_mcontext.mc_rdi;
+    regs[REG_RSI] = uc_mcontext.mc_rsi;
+    regs[REG_RBP] = uc_mcontext.mc_rbp;
+    regs[REG_RBX] = uc_mcontext.mc_rbx;
+    regs[REG_RDX] = uc_mcontext.mc_rdx;
+    regs[REG_RAX] = uc_mcontext.mc_rax;
+    regs[REG_RCX] = uc_mcontext.mc_rcx;
+    regs[REG_RSP] = uc_mcontext.mc_rsp;
+    // regs[REG_CSGSFS] &= ~((greg_t{0xFFFF} << 32) | (greg_t{0xFFFF} << 16));
+    // regs[REG_CSGSFS] |= (greg_t{uc_mcontext.mc_fs} << 32);
+    // regs[REG_CSGSFS] |= (greg_t{uc_mcontext.mc_gs} << 16);
+    regs[REG_RIP] = uc_mcontext.mc_rip;
+#endif
+#else
+#error "ucontext_t conversion not implemented for current architecture."
+#endif
+
+#endif
+}
 
 std::array<Sigaction, 128> PosixActions{};
 std::array<OrbisKernelExceptionHandler, 128> sceSigactionCallbacks{};

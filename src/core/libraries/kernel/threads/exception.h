@@ -190,9 +190,11 @@ struct Ucontext {
 
 #ifndef _WIN32
     explicit Ucontext(siginfo_t const* inf, ucontext_t const* raw_context);
+    ucontext_t* host_context;
 #else
     explicit Ucontext(PCONTEXT context);
 #endif
+    void SyncHostFromGuest();
 };
 
 using SigHandler = void PS4_SYSV_ABI (*)(int);

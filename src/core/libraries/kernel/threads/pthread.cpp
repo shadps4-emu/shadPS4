@@ -1057,6 +1057,10 @@ bool Pthread::DispatchSignal(s32 sig, Siginfo* info, Ucontext* context) {
         CallbackWrapper(&arg);
     }
 
+    if (context) {
+        context->SyncHostFromGuest();
+    }
+
     SetGuestSigmask(old_mask);
 
     if (in_sigsuspend.load(std::memory_order_acquire)) {
