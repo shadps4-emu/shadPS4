@@ -949,7 +949,7 @@ static void ExceptionHandler(void*, void*, void*, PCONTEXT ctx) {
         ._si_signo = 0,
         ._si_errno = 0,
         ._si_code = POSIX_SI_LWP,
-        ._si_addr = u.uc_mcontext.mc_rip,
+        ._si_addr = (void*)u.uc_mcontext.mc_rip,
     };
     g_curthread->DispatchPendingSignals(&i, &u);
 }
