@@ -189,7 +189,7 @@ struct Ucontext {
     int field7_0x4f4[3];
 
 #ifndef _WIN32
-    explicit Ucontext(siginfo_t const* inf, ucontext_t const* raw_context);
+    explicit Ucontext(siginfo_t const* inf, ucontext_t* raw_context);
     ucontext_t* host_context;
 #else
     explicit Ucontext(PCONTEXT context);

@@ -23,7 +23,7 @@
 namespace Libraries::Kernel {
 
 #ifndef _WIN32
-Ucontext::Ucontext(siginfo_t const* inf, ucontext_t const* raw_context) {
+Ucontext::Ucontext(siginfo_t const* inf, ucontext_t* raw_context) {
     if (!inf || !raw_context) {
         return;
     }
