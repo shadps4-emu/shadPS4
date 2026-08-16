@@ -175,6 +175,9 @@ struct Siginfo {
     } _reason;
 };
 
+constexpr s32 POSIX_SI_NOINFO = 0;
+constexpr s32 POSIX_SI_LWP = 0x10007;
+
 struct Ucontext {
     struct Sigset uc_sigmask;
     int field1_0x10[12];

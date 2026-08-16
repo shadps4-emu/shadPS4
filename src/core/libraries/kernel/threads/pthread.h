@@ -346,7 +346,7 @@ struct Pthread {
     bool HasDeliverableSignal() const;
     void WakeForSignal();
     bool DispatchSignal(s32 sig, Siginfo* info, Ucontext* context);
-    bool DispatchPendingSignals();
+    bool DispatchPendingSignals(Siginfo* info, Ucontext* context);
     void GetGuestSigmask(Sigset& mask);
     void SetGuestSigmask(Sigset const& mask);
 

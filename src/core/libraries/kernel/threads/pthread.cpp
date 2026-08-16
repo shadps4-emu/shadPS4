@@ -942,8 +942,14 @@ bool Pthread::HasDeliverableSignal() const {
 }
 
 #ifdef _WIN32
-static void ExceptionHandler(void*, void*, void*, PCONTEXT) {
-    g_curthread->DispatchPendingSignals();
+static void ExceptionHandler(void*, void*, void*, PCONTEXT ctx) {
+    Siginfo i{
+        ._si_signo = 0,
+        ._si_errno = 0,
+        ._si_code = POSIX_SI_LWP,
+    };
+    Ucontext u{ctx};
+    g_curthread->DispatchPendingSignals(&i, &u);
 }
 #endif
 
@@ -1060,11 +1066,12 @@ bool Pthread::DispatchSignal(s32 sig, Siginfo* info, Ucontext* context) {
     return true;
 }
 
-bool Pthread::DispatchPendingSignals() {
+bool Pthread::DispatchPendingSignals(Siginfo* info, Ucontext* context) {
     const s32 sig = FindPendingUnblockedSignal();
     if (sig == 0) {
         return false;
     }
+    info->_si_signo = sig;
 
     if (in_sigwait.load(std::memory_order_acquire) && posix_sigismember(&sigwait_set, sig) != 0) {
         signal_sema.release();
@@ -1075,7 +1082,7 @@ bool Pthread::DispatchPendingSignals() {
         return false;
     }
 
-    return DispatchSignal(sig, nullptr, nullptr);
+    return DispatchSignal(sig, info, context);
 }
 
 int Pthread::SetAffinity(const Cpuset* cpuset) {
