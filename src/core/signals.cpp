@@ -27,6 +27,7 @@ namespace Core {
 #if defined(_WIN32)
 
 static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
+    using namespace Libraries::Kernel;
     const auto* signals = Signals::Instance();
     // Windows static guest red-zone protection
     const bool use_static_windows_guest_red_zone_protection =
