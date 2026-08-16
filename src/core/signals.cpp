@@ -45,7 +45,7 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
         ._si_signo = 0,
         ._si_errno = 0,
         ._si_code = POSIX_SI_NOINFO,
-        ._si_addr = (void*)context.uc_mcontext.mc_rip,
+        ._si_addr = (void*)guest_context.uc_mcontext.mc_rip,
     };
 
     bool handled = false;
