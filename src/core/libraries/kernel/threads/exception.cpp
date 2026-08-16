@@ -122,6 +122,7 @@ Ucontext::Ucontext(PCONTEXT context) {
     uc_mcontext.mc_rax = context->Rax;
     uc_mcontext.mc_rcx = context->Rcx;
     uc_mcontext.mc_rsp = context->Rsp;
+    uc_mcontext.mc_rip = context->Rip;
     uc_mcontext.mc_fs = context->SegFs;
     uc_mcontext.mc_gs = context->SegGs;
 }
