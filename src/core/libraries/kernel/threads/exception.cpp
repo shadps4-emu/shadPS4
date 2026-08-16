@@ -289,10 +289,6 @@ s32 NativeToOrbisSignal(s32 s) {
         return POSIX_SIGUSR1;
     case SIGUSR2:
         return POSIX_SIGUSR2;
-    case _SIGEMT:
-        return POSIX_SIGEMT;
-    case _SIGINFO:
-        return POSIX_SIGINFO;
     default:
         // This is only needed for a few hardware signals now, so it needn't worry about about RT
         // ones anymore.
@@ -429,10 +425,6 @@ s32 PS4_SYSV_ABI posix_pthread_sigmask(s32 how, const Sigset* set, Sigset* oset)
     }
 
     Sigset new_mask = old_mask;
-
-    constexpr s32 POSIX_SIG_BLOCK = 0;
-    constexpr s32 POSIX_SIG_UNBLOCK = 1;
-    constexpr s32 POSIX_SIG_SETMASK = 2;
 
     switch (how) {
     case POSIX_SIG_BLOCK:

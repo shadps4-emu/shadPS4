@@ -59,20 +59,16 @@ constexpr s32 POSIX_SIGUSR2 = 31;
 constexpr s32 POSIX_SIGTHR = 32;
 constexpr s32 POSIX_SIGLIBRT = 33;
 
-#if defined(__linux__) || defined(__FreeBSD__)
-constexpr s32 _SIGEMT = 128;
-constexpr s32 _SIGINFO = 129;
-#elif !defined(_WIN32)
-constexpr s32 _SIGEMT = SIGEMT;
-constexpr s32 _SIGINFO = SIGINFO;
-#endif
-
 constexpr s32 POSIX_SA_ONSTACK = 0x0001;   /* take signal on signal stack */
 constexpr s32 POSIX_SA_RESTART = 0x0002;   /* restart system call on signal return */
 constexpr s32 POSIX_SA_RESETHAND = 0x0004; /* reset to SIG_DFL when taking signal */
 constexpr s32 POSIX_SA_NODEFER = 0x0010;   /* don't mask the signal we're delivering */
 constexpr s32 POSIX_SA_NOCLDWAIT = 0x0020; /* don't keep zombies around */
 constexpr s32 POSIX_SA_SIGINFO = 0x0040;   /* signal handler with SA_SIGINFO args */
+
+constexpr s32 POSIX_SIG_BLOCK = 1;   /* block specified signal set */
+constexpr s32 POSIX_SIG_UNBLOCK = 2; /* unblock specified signal set */
+constexpr s32 POSIX_SIG_SETMASK = 3; /* set specified signal set */
 
 struct Mcontext {
     u64 mc_onstack;
