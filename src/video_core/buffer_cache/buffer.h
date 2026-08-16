@@ -155,7 +155,6 @@ public:
     bool is_picked{};
     bool is_coherent{};
     bool is_deleted{};
-    u64 sync_gen = 0; // Last batch gen when this buffer was synced
     int stream_score = 0;
     size_t size_bytes = 0;
     u64 lru_id = 0;

@@ -658,12 +658,15 @@ void BufferCache::ChangeRegister(BufferId buffer_id) {
 
 bool BufferCache::SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_written,
                                     bool is_texel_buffer) {
-    // In batch mode, skip re-sync for read-only buffers already synced this batch.
+    // In batch mode, skip re-sync for read-only bindings already synced this batch.
     // GPU-writable or texel buffers must sync every time (GPU may modify between draws).
-    if (!is_written && !is_texel_buffer && in_batch && buffer.sync_gen == batch_gen) {
-        return false;
+    if (!is_written && !is_texel_buffer && batch_depth > 0) {
+        const auto key = std::pair<VAddr, u32>{device_addr, size};
+        if (synced_bindings.contains(key)) {
+            return false;
+        }
+        synced_bindings.insert(key);
     }
-    buffer.sync_gen = batch_gen;
 
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     size_t total_size_bytes = 0;
@@ -806,14 +809,24 @@ void BufferCache::SynchronizeBuffersInRange(VAddr device_addr, u64 size) {
     });
 }
 
-void BufferCache::EnterBatchMode() {
-    ++batch_gen;
-    in_batch = true;
+void BufferCache::EnterBatchMode(BatchType /*type*/) {
+    // Each command-batch entry (a single ProcessGraphics/ProcessCompute invocation) is its
+    // own batch: indirect buffers and cross-queue yields interleave separate dcb/acb tasks,
+    // between which the CPU may modify buffers. So every entry resets the DMA flag and clears
+    // the sync set. batch_depth only keeps IsInBatch() true across nested entries.
+    synced_bindings.clear();
     ResetDmaSyncThisBatch();
+    ++batch_depth;
+    // LOG_INFO(Render_Vulkan, "EnterBatchMode: type={} depth={}", BatchTypeName(type), batch_depth);
 }
 
-void BufferCache::LeaveBatchMode() {
-    in_batch = false;
+void BufferCache::LeaveBatchMode(BatchType /*type*/) {
+    ASSERT(batch_depth > 0);
+    --batch_depth;
+    if (batch_depth == 0) {
+        synced_bindings.clear();
+    }
+    // LOG_INFO(Render_Vulkan, "LeaveBatchMode: type={} depth={}", BatchTypeName(type), batch_depth);
 }
 
 void BufferCache::WriteDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes) {

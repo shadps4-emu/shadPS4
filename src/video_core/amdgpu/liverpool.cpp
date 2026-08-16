@@ -219,7 +219,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     FIBER_ENTER(dcb_task_name);
 
     if (rasterizer) {
-        rasterizer->GetBufferCache().EnterBatchMode();
+        rasterizer->GetBufferCache().EnterBatchMode(VideoCore::BatchType::Graphics);
     }
 
     cblock.Reset();
@@ -903,7 +903,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     }
 
     if (rasterizer) {
-        rasterizer->GetBufferCache().LeaveBatchMode();
+        rasterizer->GetBufferCache().LeaveBatchMode(VideoCore::BatchType::Graphics);
     }
 
     FIBER_EXIT;
@@ -914,7 +914,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     FIBER_ENTER(acb_task_name[vqid]);
 
     if (rasterizer) {
-        rasterizer->GetBufferCache().EnterBatchMode();
+        rasterizer->GetBufferCache().EnterBatchMode(VideoCore::BatchType::Compute);
     }
 
     auto& queue = asc_queues[{vqid}];
@@ -1186,7 +1186,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     }
 
     if (rasterizer) {
-        rasterizer->GetBufferCache().LeaveBatchMode();
+        rasterizer->GetBufferCache().LeaveBatchMode(VideoCore::BatchType::Compute);
     }
 
     FIBER_EXIT;
