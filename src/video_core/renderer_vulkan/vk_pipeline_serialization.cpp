@@ -13,7 +13,7 @@
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
 static constexpr u32 ShaderBinaryVersion = 9u;
-static constexpr u32 ShaderMetaVersion = 10u;
+static constexpr u32 ShaderMetaVersion = 11u;
 static constexpr u32 PipelineKeyVersion = 3u;
 } // namespace Serialization
 
@@ -426,9 +426,7 @@ bool Gcn::FetchShaderData::Deserialize(Serialization::Archive& ar) {
 void PersistentSrtInfo::Serialize(Serialization::Archive& ar) const {
     Serialization::Writer srt{ar};
 
-    srt.Write(walker_func_size);
-    srt.Write(flattened_bufsize_dw);
-    srt.Write(memory_reservations);
+    srt.Write(this, sizeof(*this));
     if (walker_func_size) {
         srt.Write(reinterpret_cast<void*>(walker_func), walker_func_size);
     }
@@ -437,9 +435,7 @@ void PersistentSrtInfo::Serialize(Serialization::Archive& ar) const {
 bool PersistentSrtInfo::Deserialize(Serialization::Archive& ar) {
     Serialization::Reader srt{ar};
 
-    srt.Read(walker_func_size);
-    srt.Read(flattened_bufsize_dw);
-    srt.Read(memory_reservations);
+    srt.Read(this, sizeof(*this));
 
     if (walker_func_size) {
         walker_func = RegisterWalkerCode(ar.CurrPtr(), walker_func_size);
