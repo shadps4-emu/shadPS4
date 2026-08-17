@@ -53,12 +53,14 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     switch (code) {
     case EXCEPTION_ACCESS_VIOLATION:
         guest_info._si_signo = POSIX_SIGSEGV;
+        guest_info._si_code = POSIX_SEGV_MAPERR;
         static_protection_exception = true; // Windows static guest red-zone protection
         handled = signals->DispatchAccessViolation(
             pExp, reinterpret_cast<void*>(pExp->ExceptionRecord->ExceptionInformation[1]));
         break;
     case EXCEPTION_ILLEGAL_INSTRUCTION:
         guest_info._si_signo = POSIX_SIGILL;
+        guest_info._si_code = POSIX_ILL_ILLOPC;
         static_protection_exception = true; // Windows static guest red-zone protection
         handled = signals->DispatchIllegalInstruction(pExp);
         break;
@@ -70,21 +72,48 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
         break;
     case EXCEPTION_IN_PAGE_ERROR:
         guest_info._si_signo = POSIX_SIGBUS;
+        guest_info._si_code = POSIX_BUS_ADRALN;
         break;
     case EXCEPTION_INT_DIVIDE_BY_ZERO:
-    case EXCEPTION_INT_OVERFLOW:
-    case EXCEPTION_FLT_DIVIDE_BY_ZERO:
-    case EXCEPTION_FLT_INVALID_OPERATION:
-    case EXCEPTION_FLT_OVERFLOW:
-    case EXCEPTION_FLT_UNDERFLOW:
-    case EXCEPTION_FLT_DENORMAL_OPERAND:
-    case EXCEPTION_FLT_INEXACT_RESULT:
-    case EXCEPTION_FLT_STACK_CHECK:
         guest_info._si_signo = POSIX_SIGFPE;
+        guest_info._si_code = POSIX_FPE_INTDIV;
+        break;
+    case EXCEPTION_INT_OVERFLOW:
+        guest_info._si_signo = POSIX_SIGFPE;
+        guest_info._si_code = POSIX_FPE_INTOVF;
+        break;
+    case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+        guest_info._si_signo = POSIX_SIGFPE;
+        guest_info._si_code = POSIX_FPE_FLTDIV;
+        break;
+    case EXCEPTION_FLT_INVALID_OPERATION:
+        guest_info._si_signo = POSIX_SIGFPE;
+        guest_info._si_code = POSIX_FPE_FLTINV;
+        break;
+    case EXCEPTION_FLT_OVERFLOW:
+        guest_info._si_signo = POSIX_SIGFPE;
+        guest_info._si_code = POSIX_FPE_FLTOVF;
+        break;
+    case EXCEPTION_FLT_UNDERFLOW:
+        guest_info._si_signo = POSIX_SIGFPE;
+        guest_info._si_code = POSIX_FPE_FLTUND;
+        break;
+    case EXCEPTION_FLT_DENORMAL_OPERAND:
+        guest_info._si_signo = POSIX_SIGFPE;
+        guest_info._si_code = POSIX_FPE_FLTSUB; // i am not sure about this one
+        break;
+    case EXCEPTION_FLT_INEXACT_RESULT:
+        guest_info._si_signo = POSIX_SIGFPE;
+        guest_info._si_code = POSIX_FPE_FLTRES;
+        break;
+    case EXCEPTION_FLT_STACK_CHECK:
+        guest_info._si_signo = POSIX_SIGILL;
+        guest_info._si_code = POSIX_ILL_BADSTK; // i am not sure about this one either
         break;
     case EXCEPTION_BREAKPOINT:
     case EXCEPTION_SINGLE_STEP:
         guest_info._si_signo = POSIX_SIGTRAP;
+        guest_info._si_code = POSIX_TRAP_BRKPT;
         break;
     case DBG_PRINTEXCEPTION_C:
     case DBG_PRINTEXCEPTION_WIDE_C:
