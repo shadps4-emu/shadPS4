@@ -89,7 +89,9 @@ IR::Inst* FindSharpSource(IR::Inst* handle, const IR::Block& current_parent) {
     return sharp_source;
 }
 
-void MarkReadConstBufferSharpSources(IR::Inst& first, IR::Block& block, u32 count) {
+void MarkReadConstBufferSharpSources(IR::Inst& first, IR::Block& block, u32 count, bool check_use) {
+    // TODO: check_use is temporal here until a refactor is made to reference all components of the
+    // tsharp in image insts
     auto first_handle = FindSharpSource(&first, block)->Arg(0);
     auto it = block.Instructions().iterator_to(first);
     auto end = block.Instructions().end();
@@ -103,6 +105,7 @@ void MarkReadConstBufferSharpSources(IR::Inst& first, IR::Block& block, u32 coun
         auto source = FindSharpSource(&inst, block);
         if (source && source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
             ASSERT(source->Arg(0) == first_handle);
+            ASSERT(!check_use || source->HasUses());
             marked_count++;
             auto flags = source->Flags<IR::BufferInstInfo>();
             flags.sharp_source.Assign(1u);
@@ -123,7 +126,7 @@ void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList
         IR::Inst* buffer_handle = handle->Arg(0).InstRecursive();
         IR::Inst* sharp_source = FindSharpSource(buffer_handle, block);
         if (sharp_source && sharp_source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-            MarkReadConstBufferSharpSources(*sharp_source, *sharp_source->GetParent(), 4);
+            MarkReadConstBufferSharpSources(*sharp_source, *sharp_source->GetParent(), 4, true);
         }
         sharp_usages.emplace_back(ResourceDiscovery{&inst, &block, sharp_source});
     }
@@ -148,11 +151,12 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
     if (sharp_source && sharp_source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
         const auto texture_flags = inst.Flags<IR::TextureInstInfo>();
         const auto is_r128 = texture_flags.is_r128.Value();
-        MarkReadConstBufferSharpSources(*sharp_source, *sharp_source->GetParent(), is_r128 ? 4 : 8);
+        MarkReadConstBufferSharpSources(*sharp_source, *sharp_source->GetParent(), is_r128 ? 4 : 8,
+                                        false);
     }
     if (sampler_sharp_source && sampler_sharp_source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
         MarkReadConstBufferSharpSources(*sampler_sharp_source, *sampler_sharp_source->GetParent(),
-                                        4);
+                                        4, false);
     }
 
     sharp_usages.emplace_back(ResourceDiscovery{
