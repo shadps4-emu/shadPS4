@@ -925,8 +925,8 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
 
     *platinumId = ORBIS_NP_TROPHY_INVALID_TROPHY_ID;
 
-    int num_trophies = 0;
-    int num_trophies_unlocked = 0;
+    int num_base_trophies = 0;
+    int num_base_trophies_unlocked = 0;
     pugi::xml_node platinum_node;
 
     // Outputs filled during the scan.
@@ -952,10 +952,11 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
             }
         }
 
-        if (node.attribute("pid").as_int(-1) != ORBIS_NP_TROPHY_INVALID_TROPHY_ID) {
-            num_trophies++;
+        if (node.attribute("pid").as_int(-1) != ORBIS_NP_TROPHY_INVALID_TROPHY_ID &&
+            node.attribute("gid").as_int(0) > 0) {
+            num_base_trophies++;
             if (current_trophy_unlockstate) {
-                num_trophies_unlocked++;
+                num_base_trophies_unlocked++;
             }
         }
 
@@ -986,7 +987,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
     std::filesystem::path platinum_icon_path;
 
     if (!platinum_node.attribute("unlockstate").as_bool()) {
-        if ((num_trophies - 1) == num_trophies_unlocked) {
+        if ((num_base_trophies - 1) == num_base_trophies_unlocked) {
             unlock_platinum = true;
             platinum_id = platinum_node.attribute("id").as_int(ORBIS_NP_TROPHY_INVALID_TROPHY_ID);
             platinum_timestamp = trophy_timestamp; // same second is fine
