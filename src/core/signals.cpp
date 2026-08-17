@@ -236,7 +236,7 @@ static s32 NativeSiCodeToGuest(s32 sig, s32 code) {
             return POSIX_TRAP_BRKPT;
         case TRAP_TRACE:
             return POSIX_TRAP_TRACE;
-#ifndef __linux__
+#ifdef __FreeBSD__
         case TRAP_DTRACE:
             return POSIX_TRAP_DTRACE;
 #endif
