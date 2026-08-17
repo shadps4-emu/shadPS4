@@ -4,7 +4,6 @@
 #include "common/assert.h"
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
-#include "shader_recompiler/fragment_barycentric.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/runtime_info.h"
@@ -342,10 +341,6 @@ void EmitContext::DefineInputs() {
         const bool uses_amd_barycentrics = profile.supports_amd_shader_explicit_vertex_parameter;
         const bool uses_khr_barycentrics =
             !uses_amd_barycentrics && profile.supports_fragment_shader_barycentric;
-        const bool needs_primitive_parity_remap =
-            uses_khr_barycentrics &&
-            GetFragmentBarycentricMapping(runtime_info, profile).uses_primitive_parity;
-
         if (info.loads.GetAny(IR::Attribute::FragCoord) ||
             (info.loads.GetAny(IR::Attribute::BaryCoordPullModel) && !uses_amd_barycentrics)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
@@ -370,12 +365,6 @@ void EmitContext::DefineInputs() {
                                                 spv::BuiltIn::SampleMask, spv::StorageClass::Input);
             }
         }
-        if (info.loads.Get(IR::Attribute::PrimitiveId) || needs_primitive_parity_remap) {
-            primitive_id =
-                DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
-            Decorate(primitive_id, spv::Decoration::Flat);
-        }
-
         if (uses_amd_barycentrics) {
             if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth)) {
                 bary_coord_smooth = DefineVariable(F32[2], spv::BuiltIn::BaryCoordSmoothAMD,

@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "shader_recompiler/fragment_barycentric.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/profile.h"
 
@@ -36,23 +35,6 @@ static constexpr std::array DefaultValTable = {
     std::array{1.0f, 1.0f, 1.0f, 0.0f},
     std::array{1.0f, 1.0f, 1.0f, 1.0f},
 };
-
-static IR::F32 LoadInterpolationVertex(IR::IREmitter& ir, const RuntimeInfo& runtime_info,
-                                       const Profile& profile, IR::Attribute attrib, u32 comp,
-                                       u32 relative_index) {
-    const FragmentBarycentricMapping mapping = GetFragmentBarycentricMapping(runtime_info, profile);
-    const u32 even_index = mapping.Vertex(relative_index);
-    const IR::F32 even_value = ir.GetAttribute(attrib, comp, even_index);
-    if (!mapping.uses_primitive_parity) {
-        return even_value;
-    }
-
-    const u32 odd_index = mapping.Vertex(relative_index, true);
-    const IR::F32 odd_value = ir.GetAttribute(attrib, comp, odd_index);
-    const IR::U32 primitive_id = ir.GetAttributeU32(IR::Attribute::PrimitiveId);
-    const IR::U1 is_odd = ir.IEqual(ir.BitwiseAnd(primitive_id, ir.Imm32(1U)), ir.Imm32(1U));
-    return IR::F32{ir.Select(is_odd, odd_value, even_value)};
-}
 
 void Translator::EmitVectorInterpolation(const GcnInst& inst) {
     switch (inst.opcode) {
@@ -90,10 +72,8 @@ void Translator::V_INTERP_P1_F32(const GcnInst& inst) {
         return;
     }
     interp.primary = Qualifier::PerVertex;
-    const IR::F32 p0 =
-        LoadInterpolationVertex(ir, runtime_info, profile, attrib, inst.control.vintrp.chan, 0);
-    const IR::F32 p1 =
-        LoadInterpolationVertex(ir, runtime_info, profile, attrib, inst.control.vintrp.chan, 1);
+    const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 0);
+    const IR::F32 p1 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 1);
     const IR::F32 i = GetSrc<IR::F32>(inst.src[0]);
     const IR::F32 result = ir.FPFma(ir.FPSub(p1, p0), i, p0);
     SetDst(inst.dst[0], result);
@@ -120,10 +100,8 @@ void Translator::V_INTERP_P2_F32(const GcnInst& inst) {
         return;
     }
     // VDST = P20 * VSRC + VDST
-    const IR::F32 p0 =
-        LoadInterpolationVertex(ir, runtime_info, profile, attrib, inst.control.vintrp.chan, 0);
-    const IR::F32 p2 =
-        LoadInterpolationVertex(ir, runtime_info, profile, attrib, inst.control.vintrp.chan, 2);
+    const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 0);
+    const IR::F32 p2 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 2);
     const IR::F32 j = GetSrc<IR::F32>(inst.src[0]);
     const IR::F32 result = ir.FPFma(ir.FPSub(p2, p0), j, GetSrc<IR::F32>(inst.dst[0]));
     interp.primary = Qualifier::PerVertex;
@@ -162,14 +140,12 @@ void Translator::V_INTERP_MOV_F32(const GcnInst& inst) {
         // Vertex indices are the interpolation basis points:
         // v0=P0, v1=P0+P10, v2=P0+P20.
         interp.primary = Qualifier::PerVertex;
-        const IR::F32 p0 =
-            LoadInterpolationVertex(ir, runtime_info, profile, attrib, inst.control.vintrp.chan, 0);
+        const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 0);
         if (src_select == 2) {
             SetDst(inst.dst[0], p0);
             return;
         }
-        const IR::F32 vertex = LoadInterpolationVertex(ir, runtime_info, profile, attrib,
-                                                       inst.control.vintrp.chan, src_select + 1);
+        const IR::F32 vertex = ir.GetAttribute(attrib, inst.control.vintrp.chan, src_select + 1);
         SetDst(inst.dst[0], ir.FPSub(vertex, p0));
         return;
     }

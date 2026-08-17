@@ -190,10 +190,6 @@ public:
         return provoking_vertex;
     }
 
-    bool IsTriStripVertexOrderIndependentOfProvokingVertex() const {
-        return tri_strip_vertex_order_independent_of_provoking_vertex;
-    }
-
     /// Returns true when VK_AMD_shader_image_load_store_lod is supported.
     bool IsImageLoadStoreLodSupported() const {
         return image_load_store_lod;
@@ -505,7 +501,6 @@ private:
     bool vertex_input_dynamic_state{};
     bool list_restart{};
     bool provoking_vertex{};
-    bool tri_strip_vertex_order_independent_of_provoking_vertex{};
     bool shader_stencil_export{};
     bool image_load_store_lod{};
     bool amd_gcn_shader{};
