@@ -1181,7 +1181,8 @@ u64 Rasterizer::ClampToMappedRange(VAddr addr, u64 size) {
     if (mapped == mapped_ranges.end()) {
         return 0;
     }
-    return std::min(size, boost::icl::upper(*mapped) - addr);
+    const u64 mapped_size = static_cast<u64>(boost::icl::upper(*mapped) - addr);
+    return std::min(size, mapped_size);
 }
 
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
