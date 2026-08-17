@@ -142,6 +142,82 @@ static std::string DisassembleInstruction(void* code_address) {
     return buffer;
 }
 
+static s32 NativeSiCodeToGuest(s32 sig, s32 code) {
+    using namespace Libraries::Kernel;
+    switch (sig) {
+    case SIGUSR1:
+        return POSIX_SI_LWP;
+    case SIGSEGV:
+        switch (code) {
+        case SEGV_MAPERR:
+            return POSIX_SEGV_MAPERR;
+        case SEGV_ACCERR:
+            return POSIX_SEGV_ACCERR;
+        }
+    case SIGBUS:
+        switch (code) {
+        case BUS_ADRALN:
+            return POSIX_BUS_ADRALN;
+        case BUS_ADRERR:
+            return POSIX_BUS_ADRERR;
+        case BUS_OBJERR:
+            return POSIX_BUS_OBJERR;
+        }
+    case SIGILL:
+        switch (code) {
+        case ILL_ILLOPC:
+            return POSIX_ILL_ILLOPC;
+        case ILL_ILLOPN:
+            return POSIX_ILL_ILLOPN;
+        case ILL_ILLADR:
+            return POSIX_ILL_ILLADR;
+        case ILL_ILLTRP:
+            return POSIX_ILL_ILLTRP;
+        case ILL_PRVOPC:
+            return POSIX_ILL_PRVOPC;
+        case ILL_PRVREG:
+            return POSIX_ILL_PRVREG;
+        case ILL_COPROC:
+            return POSIX_ILL_COPROC;
+        case ILL_BADSTK:
+            return POSIX_ILL_BADSTK;
+        }
+    case SIGFPE:
+        switch (code) {
+        case FPE_INTOVF:
+            return POSIX_FPE_INTOVF;
+        case FPE_INTDIV:
+            return POSIX_FPE_INTDIV;
+        case FPE_FLTDIV:
+            return POSIX_FPE_FLTDIV;
+        case FPE_FLTOVF:
+            return POSIX_FPE_FLTOVF;
+        case FPE_FLTUND:
+            return POSIX_FPE_FLTUND;
+        case FPE_FLTRES:
+            return POSIX_FPE_FLTRES;
+        case FPE_FLTINV:
+            return POSIX_FPE_FLTINV;
+        case FPE_FLTSUB:
+            return POSIX_FPE_FLTSUB;
+        }
+    case SIGTRAP:
+        switch (code) {
+        case TRAP_BRKPT:
+            return POSIX_TRAP_BRKPT;
+        case TRAP_TRACE:
+            return POSIX_TRAP_TRACE;
+#ifndef __linux__
+        case TRAP_DTRACE:
+            return POSIX_TRAP_DTRACE;
+#endif
+        }
+
+    default:
+        return POSIX_SI_NOINFO;
+    }
+}
+
 void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     using namespace Libraries::Kernel;
     auto* thread = g_curthread;
@@ -155,7 +231,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         guest_info = *reinterpret_cast<Siginfo*>(info);
         guest_info._si_signo = sig == SIGUSR1 ? 0 : NativeToOrbisSignal(info->si_signo);
         guest_info._si_errno = NativeToPosixErrno(info->si_errno);
-        guest_info._si_code = sig == SIGUSR1 ? POSIX_SI_LWP : POSIX_SI_NOINFO;
+        guest_info._si_code = NativeSiCodeToGuest(sig, info->si_code);
         guest_info._si_addr = (void*)context.uc_mcontext.mc_rip;
     }
     Siginfo* info_p = info ? &guest_info : nullptr;
