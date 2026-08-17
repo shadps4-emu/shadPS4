@@ -916,7 +916,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
     }
 
     pugi::xml_document doc;
-    pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
+    pugi::xml_parse_result result = doc.load_file(ctx.xml_save_file.native().c_str());
 
     if (!result) {
         LOG_ERROR(Lib_NpTrophy, "Failed to parse trophy xml : {}", result.description());
