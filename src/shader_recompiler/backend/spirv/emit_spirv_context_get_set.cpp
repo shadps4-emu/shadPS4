@@ -7,7 +7,6 @@
 #include "core/emulator_settings.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
-#include "shader_recompiler/fragment_barycentric.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/patch.h"
 #include "shader_recompiler/runtime_info.h"
@@ -19,31 +18,12 @@ namespace Shader::Backend::SPIRV {
 using PointerType = EmitContext::PointerType;
 using PointerSize = EmitContext::PointerSize;
 
-static Id ExtractKHRBarycentricComponent(EmitContext& ctx, Id value, u32 comp) {
-    ASSERT_MSG(comp < 2, "Invalid guest barycentric component {}", comp);
-    const FragmentBarycentricMapping mapping =
-        GetFragmentBarycentricMapping(ctx.runtime_info, ctx.profile);
-    const Id even_value = ctx.OpCompositeExtract(ctx.F32[1], value, mapping.Vertex(comp + 1));
-    if (!mapping.uses_primitive_parity) {
-        return even_value;
-    }
-
-    const Id odd_value = ctx.OpCompositeExtract(ctx.F32[1], value, mapping.Vertex(comp + 1, true));
-    const Id primitive_id = ctx.OpLoad(ctx.U32[1], ctx.primitive_id);
-    const Id parity = ctx.OpBitwiseAnd(ctx.U32[1], primitive_id, ctx.u32_one_value);
-    const Id is_odd = ctx.OpIEqual(ctx.U1[1], parity, ctx.u32_one_value);
-    return ctx.OpSelect(ctx.F32[1], is_odd, odd_value, even_value);
-}
-
 static Id LoadBarycentric(EmitContext& ctx, Id variable, u32 comp) {
     ASSERT_MSG(comp < 2, "Invalid guest barycentric component {}", comp);
     const bool uses_khr_barycentrics = !ctx.profile.supports_amd_shader_explicit_vertex_parameter &&
                                        ctx.profile.supports_fragment_shader_barycentric;
-    if (!uses_khr_barycentrics) {
-        return ctx.OpLoad(ctx.F32[1],
-                          ctx.OpAccessChain(ctx.input_f32, variable, ctx.ConstU32(comp)));
-    }
-    return ExtractKHRBarycentricComponent(ctx, ctx.OpLoad(ctx.F32[3], variable), comp);
+    const u32 index = comp + static_cast<u32>(uses_khr_barycentrics);
+    return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, variable, ctx.ConstU32(index)));
 }
 
 static std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
