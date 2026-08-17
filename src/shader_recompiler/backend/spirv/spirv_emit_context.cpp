@@ -402,12 +402,10 @@ void EmitContext::DefineInputs() {
             if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothCentroid)) {
                 bary_coord_smooth_centroid =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
-                Decorate(bary_coord_smooth_centroid, spv::Decoration::Centroid);
             }
             if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample)) {
                 bary_coord_smooth_sample =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
-                Decorate(bary_coord_smooth_sample, spv::Decoration::Sample);
             }
             if (info.loads.GetAny(IR::Attribute::BaryCoordNoPersp)) {
                 bary_coord_nopersp = DefineVariable(F32[3], spv::BuiltIn::BaryCoordNoPerspKHR,
@@ -416,12 +414,10 @@ void EmitContext::DefineInputs() {
             if (info.loads.GetAny(IR::Attribute::BaryCoordNoPerspCentroid)) {
                 bary_coord_nopersp_centroid = DefineVariable(
                     F32[3], spv::BuiltIn::BaryCoordNoPerspKHR, spv::StorageClass::Input);
-                Decorate(bary_coord_nopersp_centroid, spv::Decoration::Centroid);
             }
             if (info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample)) {
                 bary_coord_nopersp_sample = DefineVariable(
                     F32[3], spv::BuiltIn::BaryCoordNoPerspKHR, spv::StorageClass::Input);
-                Decorate(bary_coord_nopersp_sample, spv::Decoration::Sample);
             }
         }
 
