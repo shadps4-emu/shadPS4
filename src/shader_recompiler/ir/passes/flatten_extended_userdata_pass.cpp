@@ -399,9 +399,8 @@ static bool EmitComputeOffsetBitwiseNot32(Xbyak::CodeGenerator& c, Xbyak::Reg32 
 
 static bool EmitComputeOffsetUMin32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
                                     IR::Inst* inst) {
-    if (inst->AreAllArgsImmediates()) {
-        c.mov(reg, std::min(inst->Arg(0).U32(), inst->Arg(1).U32()));
-    } else if (inst->Arg(0).IsImmediate()) {
+    ASSERT(!inst->AreAllArgsImmediates());
+    if (inst->Arg(0).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.mov(ecx, inst->Arg(0).U32());
         c.cmp(reg, ecx);
@@ -424,9 +423,8 @@ static bool EmitComputeOffsetUMin32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, P
 
 static bool EmitComputeOffsetUMax32(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
                                     IR::Inst* inst) {
-    if (inst->AreAllArgsImmediates()) {
-        c.mov(reg, std::max(inst->Arg(0).U32(), inst->Arg(1).U32()));
-    } else if (inst->Arg(0).IsImmediate()) {
+    ASSERT(!inst->AreAllArgsImmediates());
+    if (inst->Arg(0).IsImmediate()) {
         ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(1)));
         c.mov(ecx, inst->Arg(0).U32());
         c.cmp(reg, ecx);
