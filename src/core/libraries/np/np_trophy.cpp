@@ -1003,7 +1003,12 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
     // Queue UI notifications (only once, using the primary XML's strings).
     AddTrophyToQueue(trophy_icon_path, trophy_name, trophy_type);
     if (unlock_platinum) {
-        AddTrophyToQueue(platinum_icon_path, platinum_name, "P");
+        std::thread plat_popup_thread{[=]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(
+                (s32)EmulatorSettings.GetTrophyNotificationDuration() * 1000 + 250));
+            AddTrophyToQueue(platinum_icon_path, platinum_name, "P");
+        }};
+        plat_popup_thread.detach();
     }
 
     ApplyUnlockToXmlFile(ctx.xml_save_file, trophyId, trophy_timestamp, unlock_platinum,
