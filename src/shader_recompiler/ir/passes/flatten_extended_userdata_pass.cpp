@@ -170,21 +170,11 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
 };
 
-static void VisitPointer(u32 off_dw, u32 parent_index, IR::Inst* subtree, PassInfo& pass_info,
-                         PersistentSrtInfo& srt_info, Xbyak::CodeGenerator& c) {
+static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
+                         Xbyak::CodeGenerator& c) {
     PushPtr(c, off_dw);
     PassInfo::PtrUserList* use_list = pass_info.GetUsesAsPointer(subtree);
-    ASSERT(use_list && !use_list->empty());
-
-    const u32 first_dword = use_list->begin()->first;
-    const u32 last_dword = use_list->rbegin()->first;
-    const u32 reservation_index = static_cast<u32>(srt_info.memory_reservations.size());
-    srt_info.memory_reservations.push_back({
-        .parent_index = parent_index,
-        .pointer_dword_offset = off_dw,
-        .data_dword_offset = first_dword,
-        .num_dwords = last_dword - first_dword + 1,
-    });
+    ASSERT(use_list);
 
     // First copy all the src data from this tree level
     // That way, all data that was contiguous in the guest SRT is also contiguous in the
@@ -202,7 +192,7 @@ static void VisitPointer(u32 off_dw, u32 parent_index, IR::Inst* subtree, PassIn
     // Then visit any children used as pointers
     for (const auto [src_off_dw, use] : *use_list) {
         if (pass_info.GetUsesAsPointer(use)) {
-            VisitPointer(src_off_dw, reservation_index, use, pass_info, srt_info, c);
+            VisitPointer(src_off_dw, use, pass_info, c);
         }
     }
 
@@ -230,8 +220,7 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
 
     for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
-        VisitPointer(static_cast<u32>(sgpr_base), PersistentSrtInfo::UserDataPointer, root,
-                     pass_info, info.srt_info, c);
+        VisitPointer(static_cast<u32>(sgpr_base), root, pass_info, c);
     }
 
     c.ret();
@@ -312,6 +301,8 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         IR::Inst* original = pass_info.DeduplicateInstruction(readconst);
         readconst->SetFlags<u32>(original->Flags<u32>());
     }
+
+    info.RefreshFlatBuf();
 }
 
 } // namespace Shader::Optimization

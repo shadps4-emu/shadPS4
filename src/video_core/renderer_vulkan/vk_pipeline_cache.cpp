@@ -3,20 +3,16 @@
 
 #include <ranges>
 
-#include <boost/container/small_vector.hpp>
-
 #include "common/hash.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
-#include "core/memory.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
-#include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/cache_storage.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -265,9 +261,8 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
 }
 
 PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
-                             AmdGpu::Liverpool* liverpool_, VideoCore::BufferCache& buffer_cache_)
+                             AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
-      buffer_cache{buffer_cache_},
       desc_heap{instance, scheduler.GetMasterSemaphore(), DescriptorHeapSizes} {
     const auto& vk12_props = instance.GetVk12Properties();
     profile = Shader::Profile{
@@ -620,9 +615,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
              perm_idx != 0 ? "(permutation)" : "");
     DumpShader(code, info.pgm_hash, info.stage, perm_idx, "bin");
 
-    const auto ir_program = Shader::TranslateProgram(
-        code, pools, info, runtime_info, profile,
-        [this](Shader::Info& shader_info) { RefreshFlatBuf(shader_info); });
+    const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
     DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
 
@@ -648,48 +641,6 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
     return module;
 }
 
-void PipelineCache::RefreshFlatBuf(Shader::Info& info) {
-    static constexpr VAddr GuestAddressMask = 0xFFFFFFFFFFFFULL;
-    auto* memory = Core::Memory::Instance();
-    const auto& reservations = info.srt_info.memory_reservations;
-    boost::container::small_vector<VAddr, 8> pointer_bases;
-    pointer_bases.reserve(reservations.size());
-
-    for (u32 index = 0; index < reservations.size(); ++index) {
-        const auto& reservation = reservations[index];
-        VAddr pointer_base{};
-        if (reservation.parent_index == Shader::PersistentSrtInfo::UserDataPointer) {
-            ASSERT(reservation.pointer_dword_offset + 1 < info.user_data.size());
-            std::memcpy(&pointer_base, info.user_data.data() + reservation.pointer_dword_offset,
-                        sizeof(pointer_base));
-        } else {
-            ASSERT(reservation.parent_index < index);
-            const auto& parent = reservations[reservation.parent_index];
-            ASSERT(reservation.pointer_dword_offset >= parent.data_dword_offset &&
-                   reservation.pointer_dword_offset + 1 <
-                       parent.data_dword_offset + parent.num_dwords);
-            const VAddr parent_base = pointer_bases[reservation.parent_index];
-            const VAddr pointer_address =
-                parent_base + static_cast<VAddr>(reservation.pointer_dword_offset) * sizeof(u32);
-            if (parent_base != 0 && memory->IsValidMapping(pointer_address, sizeof(pointer_base))) {
-                memory->CopySparseMemory(pointer_address, reinterpret_cast<u8*>(&pointer_base),
-                                         sizeof(pointer_base));
-            }
-        }
-
-        pointer_base &= GuestAddressMask;
-        pointer_bases.push_back(pointer_base);
-        const VAddr data_address =
-            pointer_base + static_cast<VAddr>(reservation.data_dword_offset) * sizeof(u32);
-        const u64 data_size = static_cast<u64>(reservation.num_dwords) * sizeof(u32);
-        if (pointer_base != 0 && memory->IsValidMapping(data_address, data_size) &&
-            buffer_cache.IsRegionGpuModified(data_address, data_size)) {
-            buffer_cache.ReadMemory(data_address, data_size);
-        }
-    }
-    info.RefreshFlatBuf();
-}
-
 PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stage,
                                                 const Shader::ShaderParams& params,
                                                 Shader::Backend::Bindings& binding) {
@@ -713,7 +664,7 @@ PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stag
     auto& info = program->info;
     info.pgm_base = params.Base(); // Needs to be actualized for inline cbuffer address fixup
     info.user_data = params.user_data;
-    RefreshFlatBuf(info);
+    info.RefreshFlatBuf();
     auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
 
     size_t perm_idx = program->modules.size();
