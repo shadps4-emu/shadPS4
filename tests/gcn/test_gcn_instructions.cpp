@@ -145,7 +145,8 @@ bool FragmentPrologueLoadsSampleCoverage(bool enabled) {
     });
 }
 
-InterpMovIr TranslateInterpMovToIr(u32 selector, bool supports_fragment_shader_barycentric = true) {
+InterpMovIr TranslateInterpMovToIr(u32 selector, bool supports_fragment_shader_barycentric = true,
+                                   bool is_flat = false) {
     Shader::Pools pools;
     Shader::Info info{};
     info.stage = Shader::Stage::Fragment;
@@ -155,6 +156,7 @@ InterpMovIr TranslateInterpMovToIr(u32 selector, bool supports_fragment_shader_b
     runtime_info.Initialize(Shader::Stage::Fragment);
     runtime_info.fs_info.num_inputs = 1;
     runtime_info.fs_info.inputs[0].param_index = 0;
+    runtime_info.fs_info.inputs[0].is_flat = is_flat;
 
     Shader::Profile profile{};
     profile.supports_fragment_shader_barycentric = supports_fragment_shader_barycentric;
@@ -281,22 +283,20 @@ Shader::RuntimeInfo BarycentricRuntimeInfo() {
 //     EXPECT_EQ(*result, 7.5f);
 // }
 
-TEST_F(GcnTest, interp_mov_builds_p10_from_vertex_difference) {
+TEST_F(GcnTest, interp_mov_loads_p10_from_vertex_one) {
     const auto result = TranslateInterpMovToIr(0);
 
     EXPECT_EQ(result.qualifier, Shader::Qualifier::PerVertex);
-    EXPECT_EQ(result.attribute_vertex_indices, (std::vector<u32>{0, 1}));
-    ASSERT_TRUE(result.subtraction_vertex_indices.has_value());
-    EXPECT_EQ(*result.subtraction_vertex_indices, std::pair(1U, 0U));
+    EXPECT_EQ(result.attribute_vertex_indices, (std::vector<u32>{1}));
+    EXPECT_FALSE(result.subtraction_vertex_indices.has_value());
 }
 
-TEST_F(GcnTest, interp_mov_builds_p20_from_vertex_difference) {
+TEST_F(GcnTest, interp_mov_loads_p20_from_vertex_two) {
     const auto result = TranslateInterpMovToIr(1);
 
     EXPECT_EQ(result.qualifier, Shader::Qualifier::PerVertex);
-    EXPECT_EQ(result.attribute_vertex_indices, (std::vector<u32>{0, 2}));
-    ASSERT_TRUE(result.subtraction_vertex_indices.has_value());
-    EXPECT_EQ(*result.subtraction_vertex_indices, std::pair(2U, 0U));
+    EXPECT_EQ(result.attribute_vertex_indices, (std::vector<u32>{2}));
+    EXPECT_FALSE(result.subtraction_vertex_indices.has_value());
 }
 
 TEST_F(GcnTest, interp_mov_loads_p0_from_vertex_zero) {
@@ -312,6 +312,14 @@ TEST_F(GcnTest, interp_mov_loads_p0_flat_without_explicit_pervertex_support) {
 
     EXPECT_EQ(result.qualifier, Shader::Qualifier::Flat);
     EXPECT_EQ(result.attribute_vertex_indices, (std::vector<u32>{0}));
+    EXPECT_FALSE(result.subtraction_vertex_indices.has_value());
+}
+
+TEST_F(GcnTest, interp_mov_uses_explicit_coefficients_for_flat_input) {
+    const auto result = TranslateInterpMovToIr(0, true, true);
+
+    EXPECT_EQ(result.qualifier, Shader::Qualifier::PerVertex);
+    EXPECT_EQ(result.attribute_vertex_indices, (std::vector<u32>{1}));
     EXPECT_FALSE(result.subtraction_vertex_indices.has_value());
 }
 
@@ -347,7 +355,7 @@ TEST_F(GcnTest, interp_constant_and_flat_coefficients_follow_p1_p2_isa_semantics
     EXPECT_TRUE(flat_p2.attribute_vertex_indices.empty());
 }
 
-TEST_F(GcnTest, khr_barycentrics_use_qualified_builtins_per_evaluation_mode) {
+TEST_F(GcnTest, khr_barycentrics_use_unqualified_builtins_per_evaluation_mode) {
     Shader::Profile profile{};
     profile.supported_spirv = 0x00010600;
     profile.supports_fragment_shader_barycentric = true;
@@ -358,8 +366,8 @@ TEST_F(GcnTest, khr_barycentrics_use_qualified_builtins_per_evaluation_mode) {
     EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::BaryCoordNoPerspKHR), 3U);
     EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::SampleId), 0U);
     EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::FragCoord), 1U);
-    EXPECT_EQ(facts.CountDecoration(spv::Decoration::Centroid), 2U);
-    EXPECT_EQ(facts.CountDecoration(spv::Decoration::Sample), 2U);
+    EXPECT_EQ(facts.CountDecoration(spv::Decoration::Centroid), 0U);
+    EXPECT_EQ(facts.CountDecoration(spv::Decoration::Sample), 0U);
     EXPECT_EQ(facts.CountCapability(spv::Capability::FragmentBarycentricKHR), 1U);
     EXPECT_EQ(facts.CountCapability(spv::Capability::InterpolationFunction), 0U);
     EXPECT_EQ(facts.CountCapability(spv::Capability::SampleRateShading), 1U);
