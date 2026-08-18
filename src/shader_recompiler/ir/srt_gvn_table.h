@@ -40,6 +40,30 @@ public:
     }
 
 private:
+    bool IsArgHashInst(IR::Inst* inst) {
+        switch (inst->GetOpcode()) {
+        case IR::Opcode::GetUserData:
+        case IR::Opcode::CompositeConstructU32x2:
+        case IR::Opcode::ReadConst:
+        case IR::Opcode::ReadConstBuffer:
+        case IR::Opcode::IAdd32:
+        case IR::Opcode::ISub32:
+        case IR::Opcode::IMul32:
+        case IR::Opcode::ShiftLeftLogical32:
+        case IR::Opcode::ShiftRightLogical32:
+        case IR::Opcode::BitwiseAnd32:
+        case IR::Opcode::BitwiseOr32:
+        case IR::Opcode::BitwiseXor32:
+        case IR::Opcode::BitwiseNot32:
+        case IR::Opcode::UMin32:
+        case IR::Opcode::UMax32:
+        case IR::Opcode::BitFieldUExtract:
+            return true;
+        default:
+            return false;
+        }
+    }
+
     u32 ComputeInstValueNumber(IR::Inst* inst) {
         ASSERT(!value_numbers.contains(
             IR::Value(inst))); // Should always be checking before calling this function
@@ -50,24 +74,18 @@ private:
 
         u32 vn;
 
-        switch (inst->GetOpcode()) {
-        case IR::Opcode::Phi: {
-            const auto pred = [](IR::Inst* inst) -> std::optional<IR::Inst*> {
-                if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                    inst->GetOpcode() == IR::Opcode::CompositeConstructU32x2 ||
-                    inst->GetOpcode() == IR::Opcode::ReadConst) {
+        if (inst->GetOpcode() == IR::Opcode::Phi) {
+            const auto pred = [this](IR::Inst* inst) -> std::optional<IR::Inst*> {
+                if (IsArgHashInst(inst)) {
                     return inst;
                 }
                 return std::nullopt;
             };
-            IR::Inst* source = IR::BreadthFirstSearch(inst, pred).value();
+            IR::Inst* source =
+                IR::DominatingBreadthFirstSearch(inst, *inst->GetParent(), true, pred).value();
             vn = GetValueNumber(source);
             value_numbers[IR::Value(inst)] = vn;
-            break;
-        }
-        case IR::Opcode::GetUserData:
-        case IR::Opcode::CompositeConstructU32x2:
-        case IR::Opcode::ReadConst: {
+        } else if (IsArgHashInst(inst)) {
             InstVector iv = MakeInstVector(inst);
             if (auto it = iv_to_vn.find(iv); it != iv_to_vn.end()) {
                 vn = it->second;
@@ -76,11 +94,8 @@ private:
                 vn = NextValueNumber(IR::Value(inst));
                 iv_to_vn.emplace(std::move(iv), vn);
             }
-            break;
-        }
-        default:
+        } else {
             vn = NextValueNumber(IR::Value(inst));
-            break;
         }
 
         return vn;
