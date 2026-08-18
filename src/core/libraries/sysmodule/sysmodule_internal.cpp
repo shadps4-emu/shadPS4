@@ -28,6 +28,8 @@
 
 namespace Libraries::SysModule {
 
+bool g_need_scelibc = false, g_need_fios2 = false;
+
 s32 getModuleHandle(s32 id, s32* handle) {
     if (id == 0) {
         return ORBIS_SYSMODULE_INVALID_ID;
@@ -458,8 +460,18 @@ s32 preloadModulesForLibkernel() {
         if (result != ORBIS_OK) {
             // On real hardware, module preloading must succeed or the game will abort.
             // To enable users to test homebrew easier, we'll log a critical error instead.
-            LOG_CRITICAL(Lib_SysModule, "Failed to preload {}, expect crashes",
-                         g_modules_array[module_index].name);
+            if (g_modules_array[module_index].name == std::string("libc")) {
+                ASSERT_MSG(!g_need_scelibc,
+                           "libc.prx cannot be loaded, but the guest attempted to use it. "
+                           "This usually indicates a corrupted dump.");
+            } else if (g_modules_array[module_index].name == std::string("libSceFios2")) {
+                ASSERT_MSG(!g_need_fios2,
+                           "libSceFios2.prx cannot be loaded, but the guest attempted to use it. "
+                           "This usually indicates a corrupted dump.");
+            } else {
+                LOG_CRITICAL(Lib_SysModule, "Failed to preload {}, expect crashes",
+                             g_modules_array[module_index].name);
+            }
         }
     }
     return ORBIS_OK;

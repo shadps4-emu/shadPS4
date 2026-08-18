@@ -15,24 +15,220 @@
 #include "common/ntapi.h"
 #else
 #include <csignal>
+#include <sys/ucontext.h>
 #endif
 #include <unordered_set>
+#include "exception.h"
 
 namespace Libraries::Kernel {
 
-#ifdef _WIN32
-
-// Windows doesn't have native versions of these, and we don't need to use them either.
-s32 NativeToOrbisSignal(s32 s) {
-    return s;
-}
-
-s32 OrbisToNativeSignal(s32 s) {
-    return s;
-}
-
+#ifndef _WIN32
+Ucontext::Ucontext(siginfo_t const* inf, ucontext_t* raw_context) {
+    if (!inf || !raw_context) {
+        return;
+    }
+    host_context = raw_context;
+#ifdef ARCH_X86_64
+#ifdef __APPLE__
+    const auto& regs = raw_context->uc_mcontext->__ss;
+    uc_mcontext.mc_r8 = regs.__r8;
+    uc_mcontext.mc_r9 = regs.__r9;
+    uc_mcontext.mc_r10 = regs.__r10;
+    uc_mcontext.mc_r11 = regs.__r11;
+    uc_mcontext.mc_r12 = regs.__r12;
+    uc_mcontext.mc_r13 = regs.__r13;
+    uc_mcontext.mc_r14 = regs.__r14;
+    uc_mcontext.mc_r15 = regs.__r15;
+    uc_mcontext.mc_rdi = regs.__rdi;
+    uc_mcontext.mc_rsi = regs.__rsi;
+    uc_mcontext.mc_rbp = regs.__rbp;
+    uc_mcontext.mc_rbx = regs.__rbx;
+    uc_mcontext.mc_rdx = regs.__rdx;
+    uc_mcontext.mc_rax = regs.__rax;
+    uc_mcontext.mc_rcx = regs.__rcx;
+    uc_mcontext.mc_rsp = regs.__rsp;
+    uc_mcontext.mc_fs = regs.__fs;
+    uc_mcontext.mc_gs = regs.__gs;
+    uc_mcontext.mc_rip = regs.__rip;
+    uc_mcontext.mc_addr = reinterpret_cast<uint64_t>(inf->si_addr);
+#elif defined(__FreeBSD__)
+    const auto& regs = raw_context->uc_mcontext;
+    uc_mcontext.mc_r8 = regs.mc_r8;
+    uc_mcontext.mc_r9 = regs.mc_r9;
+    uc_mcontext.mc_r10 = regs.mc_r10;
+    uc_mcontext.mc_r11 = regs.mc_r11;
+    uc_mcontext.mc_r12 = regs.mc_r12;
+    uc_mcontext.mc_r13 = regs.mc_r13;
+    uc_mcontext.mc_r14 = regs.mc_r14;
+    uc_mcontext.mc_r15 = regs.mc_r15;
+    uc_mcontext.mc_rdi = regs.mc_rdi;
+    uc_mcontext.mc_rsi = regs.mc_rsi;
+    uc_mcontext.mc_rbp = regs.mc_rbp;
+    uc_mcontext.mc_rbx = regs.mc_rbx;
+    uc_mcontext.mc_rdx = regs.mc_rdx;
+    uc_mcontext.mc_rax = regs.mc_rax;
+    uc_mcontext.mc_rcx = regs.mc_rcx;
+    uc_mcontext.mc_rsp = regs.mc_rsp;
+    uc_mcontext.mc_fs = regs.mc_fs;
+    uc_mcontext.mc_gs = regs.mc_gs;
+    uc_mcontext.mc_rip = regs.mc_rip;
+    uc_mcontext.mc_addr = uint64_t(regs.mc_addr);
 #else
+    const auto& regs = raw_context->uc_mcontext.gregs;
+    uc_mcontext.mc_r8 = regs[REG_R8];
+    uc_mcontext.mc_r9 = regs[REG_R9];
+    uc_mcontext.mc_r10 = regs[REG_R10];
+    uc_mcontext.mc_r11 = regs[REG_R11];
+    uc_mcontext.mc_r12 = regs[REG_R12];
+    uc_mcontext.mc_r13 = regs[REG_R13];
+    uc_mcontext.mc_r14 = regs[REG_R14];
+    uc_mcontext.mc_r15 = regs[REG_R15];
+    uc_mcontext.mc_rdi = regs[REG_RDI];
+    uc_mcontext.mc_rsi = regs[REG_RSI];
+    uc_mcontext.mc_rbp = regs[REG_RBP];
+    uc_mcontext.mc_rbx = regs[REG_RBX];
+    uc_mcontext.mc_rdx = regs[REG_RDX];
+    uc_mcontext.mc_rax = regs[REG_RAX];
+    uc_mcontext.mc_rcx = regs[REG_RCX];
+    uc_mcontext.mc_rsp = regs[REG_RSP];
+    uc_mcontext.mc_fs = (regs[REG_CSGSFS] >> 32) & 0xFFFF;
+    uc_mcontext.mc_gs = (regs[REG_CSGSFS] >> 16) & 0xFFFF;
+    uc_mcontext.mc_rip = regs[REG_RIP];
+    uc_mcontext.mc_addr = reinterpret_cast<uint64_t>(inf->si_addr);
+#endif
+#else
+#error "ucontext_t conversion not implemented for current architecture."
+#endif
+}
+#else
+Ucontext::Ucontext(PCONTEXT context) {
+    if (!context) {
+        return;
+    }
+    host_context = context;
+    uc_mcontext.mc_r8 = context->R8;
+    uc_mcontext.mc_r9 = context->R9;
+    uc_mcontext.mc_r10 = context->R10;
+    uc_mcontext.mc_r11 = context->R11;
+    uc_mcontext.mc_r12 = context->R12;
+    uc_mcontext.mc_r13 = context->R13;
+    uc_mcontext.mc_r14 = context->R14;
+    uc_mcontext.mc_r15 = context->R15;
+    uc_mcontext.mc_rdi = context->Rdi;
+    uc_mcontext.mc_rsi = context->Rsi;
+    uc_mcontext.mc_rbp = context->Rbp;
+    uc_mcontext.mc_rbx = context->Rbx;
+    uc_mcontext.mc_rdx = context->Rdx;
+    uc_mcontext.mc_rax = context->Rax;
+    uc_mcontext.mc_rcx = context->Rcx;
+    uc_mcontext.mc_rsp = context->Rsp;
+    uc_mcontext.mc_rip = context->Rip;
+    uc_mcontext.mc_fs = context->SegFs;
+    uc_mcontext.mc_gs = context->SegGs;
+}
+#endif
 
+void Ucontext::SyncHostFromGuest() {
+    if (!host_context) {
+        return;
+    }
+
+#ifdef ARCH_X86_64
+#ifdef _WIN32
+    host_context->R8 = uc_mcontext.mc_r8;
+    host_context->R9 = uc_mcontext.mc_r9;
+    host_context->R10 = uc_mcontext.mc_r10;
+    host_context->R11 = uc_mcontext.mc_r11;
+    host_context->R12 = uc_mcontext.mc_r12;
+    host_context->R13 = uc_mcontext.mc_r13;
+    host_context->R14 = uc_mcontext.mc_r14;
+    host_context->R15 = uc_mcontext.mc_r15;
+    host_context->Rdi = uc_mcontext.mc_rdi;
+    host_context->Rsi = uc_mcontext.mc_rsi;
+    host_context->Rbp = uc_mcontext.mc_rbp;
+    host_context->Rbx = uc_mcontext.mc_rbx;
+    host_context->Rdx = uc_mcontext.mc_rdx;
+    host_context->Rax = uc_mcontext.mc_rax;
+    host_context->Rcx = uc_mcontext.mc_rcx;
+    host_context->Rsp = uc_mcontext.mc_rsp;
+    host_context->Rip = uc_mcontext.mc_rip;
+    // host_context->SegFs = static_cast<DWORD>(uc_mcontext.mc_fs);
+    // host_context->SegGs = static_cast<DWORD>(uc_mcontext.mc_gs);
+#elif __APPLE__
+    auto& regs = host_context->uc_mcontext->__ss;
+    regs.__r8 = uc_mcontext.mc_r8;
+    regs.__r9 = uc_mcontext.mc_r9;
+    regs.__r10 = uc_mcontext.mc_r10;
+    regs.__r11 = uc_mcontext.mc_r11;
+    regs.__r12 = uc_mcontext.mc_r12;
+    regs.__r13 = uc_mcontext.mc_r13;
+    regs.__r14 = uc_mcontext.mc_r14;
+    regs.__r15 = uc_mcontext.mc_r15;
+    regs.__rdi = uc_mcontext.mc_rdi;
+    regs.__rsi = uc_mcontext.mc_rsi;
+    regs.__rbp = uc_mcontext.mc_rbp;
+    regs.__rbx = uc_mcontext.mc_rbx;
+    regs.__rdx = uc_mcontext.mc_rdx;
+    regs.__rax = uc_mcontext.mc_rax;
+    regs.__rcx = uc_mcontext.mc_rcx;
+    regs.__rsp = uc_mcontext.mc_rsp;
+    regs.__fs = uc_mcontext.mc_fs;
+    regs.__gs = uc_mcontext.mc_gs;
+    regs.__rip = uc_mcontext.mc_rip;
+#elif defined(__FreeBSD__)
+    auto& regs = host_context->uc_mcontext;
+    regs.mc_r8 = uc_mcontext.mc_r8;
+    regs.mc_r9 = uc_mcontext.mc_r9;
+    regs.mc_r10 = uc_mcontext.mc_r10;
+    regs.mc_r11 = uc_mcontext.mc_r11;
+    regs.mc_r12 = uc_mcontext.mc_r12;
+    regs.mc_r13 = uc_mcontext.mc_r13;
+    regs.mc_r14 = uc_mcontext.mc_r14;
+    regs.mc_r15 = uc_mcontext.mc_r15;
+    regs.mc_rdi = uc_mcontext.mc_rdi;
+    regs.mc_rsi = uc_mcontext.mc_rsi;
+    regs.mc_rbp = uc_mcontext.mc_rbp;
+    regs.mc_rbx = uc_mcontext.mc_rbx;
+    regs.mc_rdx = uc_mcontext.mc_rdx;
+    regs.mc_rax = uc_mcontext.mc_rax;
+    regs.mc_rcx = uc_mcontext.mc_rcx;
+    regs.mc_rsp = uc_mcontext.mc_rsp;
+    regs.mc_fs = uc_mcontext.mc_fs;
+    regs.mc_gs = uc_mcontext.mc_gs;
+    regs.mc_rip = uc_mcontext.mc_rip;
+#else
+    auto& regs = host_context->uc_mcontext.gregs;
+    regs[REG_R8] = uc_mcontext.mc_r8;
+    regs[REG_R9] = uc_mcontext.mc_r9;
+    regs[REG_R10] = uc_mcontext.mc_r10;
+    regs[REG_R11] = uc_mcontext.mc_r11;
+    regs[REG_R12] = uc_mcontext.mc_r12;
+    regs[REG_R13] = uc_mcontext.mc_r13;
+    regs[REG_R14] = uc_mcontext.mc_r14;
+    regs[REG_R15] = uc_mcontext.mc_r15;
+    regs[REG_RDI] = uc_mcontext.mc_rdi;
+    regs[REG_RSI] = uc_mcontext.mc_rsi;
+    regs[REG_RBP] = uc_mcontext.mc_rbp;
+    regs[REG_RBX] = uc_mcontext.mc_rbx;
+    regs[REG_RDX] = uc_mcontext.mc_rdx;
+    regs[REG_RAX] = uc_mcontext.mc_rax;
+    regs[REG_RCX] = uc_mcontext.mc_rcx;
+    regs[REG_RSP] = uc_mcontext.mc_rsp;
+    // regs[REG_CSGSFS] &= ~((greg_t{0xFFFF} << 32) | (greg_t{0xFFFF} << 16));
+    // regs[REG_CSGSFS] |= (greg_t{uc_mcontext.mc_fs} << 32);
+    // regs[REG_CSGSFS] |= (greg_t{uc_mcontext.mc_gs} << 16);
+    regs[REG_RIP] = uc_mcontext.mc_rip;
+#endif
+#else
+#error "ucontext_t conversion not implemented for current architecture."
+#endif
+}
+
+std::array<Sigaction, 128> PosixActions{};
+std::array<OrbisKernelExceptionHandler, 128> sceSigactionCallbacks{};
+Sigset g_sigintr{};
+
+#ifndef _WIN32
 s32 NativeToOrbisSignal(s32 s) {
     switch (s) {
     case SIGHUP:
@@ -93,213 +289,10 @@ s32 NativeToOrbisSignal(s32 s) {
         return POSIX_SIGUSR1;
     case SIGUSR2:
         return POSIX_SIGUSR2;
-    case _SIGEMT:
-        return POSIX_SIGEMT;
-    case _SIGINFO:
-        return POSIX_SIGINFO;
-    case 0:
-        return 128;
     default:
-        if (s > 0 && s < 128) {
-            return s;
-        }
-        UNREACHABLE_MSG("Unknown signal {}", s);
-    }
-}
-
-s32 OrbisToNativeSignal(s32 s) {
-    switch (s) {
-    case POSIX_SIGHUP:
-        return SIGHUP;
-    case POSIX_SIGINT:
-        return SIGINT;
-    case POSIX_SIGQUIT:
-        return SIGQUIT;
-    case POSIX_SIGILL:
-        return SIGILL;
-    case POSIX_SIGTRAP:
-        return SIGTRAP;
-    case POSIX_SIGABRT:
-        return SIGABRT;
-    case POSIX_SIGEMT:
-        return _SIGEMT;
-    case POSIX_SIGFPE:
-        return SIGFPE;
-    case POSIX_SIGKILL:
-        return SIGKILL;
-    case POSIX_SIGBUS:
-        return SIGBUS;
-    case POSIX_SIGSEGV:
-        return SIGSEGV;
-    case POSIX_SIGSYS:
-        return SIGSYS;
-    case POSIX_SIGPIPE:
-        return SIGPIPE;
-    case POSIX_SIGALRM:
-        return SIGALRM;
-    case POSIX_SIGTERM:
-        return SIGTERM;
-    case POSIX_SIGURG:
-        return SIGURG;
-    case POSIX_SIGSTOP:
-        return SIGSTOP;
-    case POSIX_SIGTSTP:
-        return SIGTSTP;
-    case POSIX_SIGCONT:
-        return SIGCONT;
-    case POSIX_SIGCHLD:
-        return SIGCHLD;
-    case POSIX_SIGTTIN:
-        return SIGTTIN;
-    case POSIX_SIGTTOU:
-        return SIGTTOU;
-    case POSIX_SIGIO:
-        return SIGIO;
-    case POSIX_SIGXCPU:
-        return SIGXCPU;
-    case POSIX_SIGXFSZ:
-        return SIGXFSZ;
-    case POSIX_SIGVTALRM:
-        return SIGVTALRM;
-    case POSIX_SIGPROF:
-        return SIGPROF;
-    case POSIX_SIGWINCH:
-        return SIGWINCH;
-    case POSIX_SIGINFO:
-        return _SIGINFO;
-    case POSIX_SIGUSR1:
-        return SIGUSR1;
-    case POSIX_SIGUSR2:
-        return SIGUSR2;
-    case 128:
-        return 0;
-    default:
-        if (s > 0 && s < 128) {
-            return s;
-        }
-        UNREACHABLE_MSG("Unknown signal {}", s);
-    }
-}
-
-#endif
-
-#ifdef __APPLE__
-#define sigisemptyset(x) (*(x) == 0)
-#endif
-
-std::array<OrbisKernelExceptionHandler, 130> Handlers{};
-Sigset g_sigintr{};
-
-#ifndef _WIN64
-void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context) {
-    const auto handler = Handlers[NativeToOrbisSignal(native_signum)];
-    if (handler) {
-        auto ctx = Ucontext{};
-#ifdef ARCH_X86_64
-#ifdef __APPLE__
-        const auto& regs = raw_context->uc_mcontext->__ss;
-        ctx.uc_mcontext.mc_r8 = regs.__r8;
-        ctx.uc_mcontext.mc_r9 = regs.__r9;
-        ctx.uc_mcontext.mc_r10 = regs.__r10;
-        ctx.uc_mcontext.mc_r11 = regs.__r11;
-        ctx.uc_mcontext.mc_r12 = regs.__r12;
-        ctx.uc_mcontext.mc_r13 = regs.__r13;
-        ctx.uc_mcontext.mc_r14 = regs.__r14;
-        ctx.uc_mcontext.mc_r15 = regs.__r15;
-        ctx.uc_mcontext.mc_rdi = regs.__rdi;
-        ctx.uc_mcontext.mc_rsi = regs.__rsi;
-        ctx.uc_mcontext.mc_rbp = regs.__rbp;
-        ctx.uc_mcontext.mc_rbx = regs.__rbx;
-        ctx.uc_mcontext.mc_rdx = regs.__rdx;
-        ctx.uc_mcontext.mc_rax = regs.__rax;
-        ctx.uc_mcontext.mc_rcx = regs.__rcx;
-        ctx.uc_mcontext.mc_rsp = regs.__rsp;
-        ctx.uc_mcontext.mc_fs = regs.__fs;
-        ctx.uc_mcontext.mc_gs = regs.__gs;
-        ctx.uc_mcontext.mc_rip = regs.__rip;
-        ctx.uc_mcontext.mc_addr = reinterpret_cast<uint64_t>(inf->si_addr);
-#elif defined(__FreeBSD__)
-        const auto& regs = raw_context->uc_mcontext;
-        ctx.uc_mcontext.mc_r8 = regs.mc_r8;
-        ctx.uc_mcontext.mc_r9 = regs.mc_r9;
-        ctx.uc_mcontext.mc_r10 = regs.mc_r10;
-        ctx.uc_mcontext.mc_r11 = regs.mc_r11;
-        ctx.uc_mcontext.mc_r12 = regs.mc_r12;
-        ctx.uc_mcontext.mc_r13 = regs.mc_r13;
-        ctx.uc_mcontext.mc_r14 = regs.mc_r14;
-        ctx.uc_mcontext.mc_r15 = regs.mc_r15;
-        ctx.uc_mcontext.mc_rdi = regs.mc_rdi;
-        ctx.uc_mcontext.mc_rsi = regs.mc_rsi;
-        ctx.uc_mcontext.mc_rbp = regs.mc_rbp;
-        ctx.uc_mcontext.mc_rbx = regs.mc_rbx;
-        ctx.uc_mcontext.mc_rdx = regs.mc_rdx;
-        ctx.uc_mcontext.mc_rax = regs.mc_rax;
-        ctx.uc_mcontext.mc_rcx = regs.mc_rcx;
-        ctx.uc_mcontext.mc_rsp = regs.mc_rsp;
-        ctx.uc_mcontext.mc_fs = regs.mc_fs;
-        ctx.uc_mcontext.mc_gs = regs.mc_gs;
-        ctx.uc_mcontext.mc_rip = regs.mc_rip;
-        ctx.uc_mcontext.mc_addr = uint64_t(regs.mc_addr);
-#else
-        const auto& regs = raw_context->uc_mcontext.gregs;
-        ctx.uc_mcontext.mc_r8 = regs[REG_R8];
-        ctx.uc_mcontext.mc_r9 = regs[REG_R9];
-        ctx.uc_mcontext.mc_r10 = regs[REG_R10];
-        ctx.uc_mcontext.mc_r11 = regs[REG_R11];
-        ctx.uc_mcontext.mc_r12 = regs[REG_R12];
-        ctx.uc_mcontext.mc_r13 = regs[REG_R13];
-        ctx.uc_mcontext.mc_r14 = regs[REG_R14];
-        ctx.uc_mcontext.mc_r15 = regs[REG_R15];
-        ctx.uc_mcontext.mc_rdi = regs[REG_RDI];
-        ctx.uc_mcontext.mc_rsi = regs[REG_RSI];
-        ctx.uc_mcontext.mc_rbp = regs[REG_RBP];
-        ctx.uc_mcontext.mc_rbx = regs[REG_RBX];
-        ctx.uc_mcontext.mc_rdx = regs[REG_RDX];
-        ctx.uc_mcontext.mc_rax = regs[REG_RAX];
-        ctx.uc_mcontext.mc_rcx = regs[REG_RCX];
-        ctx.uc_mcontext.mc_rsp = regs[REG_RSP];
-        ctx.uc_mcontext.mc_fs = (regs[REG_CSGSFS] >> 32) & 0xFFFF;
-        ctx.uc_mcontext.mc_gs = (regs[REG_CSGSFS] >> 16) & 0xFFFF;
-        ctx.uc_mcontext.mc_rip = (regs[REG_RIP]);
-        ctx.uc_mcontext.mc_addr = reinterpret_cast<uint64_t>(inf->si_addr);
-#endif
-#else
-        UNREACHABLE_MSG("SigactionHandler not implemented for current architecture.");
-#endif
-        handler(NativeToOrbisSignal(native_signum), &ctx);
-    } else {
-        UNREACHABLE_MSG("Unhandled exception");
-    }
-}
-#else
-void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
-    const char* thrName = (char*)arg1;
-    int native_signum = reinterpret_cast<uintptr_t>(arg2);
-    LOG_INFO(Lib_Kernel, "Exception raised successfully on thread '{}'", thrName);
-    const auto handler = Handlers[NativeToOrbisSignal(native_signum)];
-    if (handler) {
-        auto ctx = Ucontext{};
-        ctx.uc_mcontext.mc_r8 = context->R8;
-        ctx.uc_mcontext.mc_r9 = context->R9;
-        ctx.uc_mcontext.mc_r10 = context->R10;
-        ctx.uc_mcontext.mc_r11 = context->R11;
-        ctx.uc_mcontext.mc_r12 = context->R12;
-        ctx.uc_mcontext.mc_r13 = context->R13;
-        ctx.uc_mcontext.mc_r14 = context->R14;
-        ctx.uc_mcontext.mc_r15 = context->R15;
-        ctx.uc_mcontext.mc_rdi = context->Rdi;
-        ctx.uc_mcontext.mc_rsi = context->Rsi;
-        ctx.uc_mcontext.mc_rbp = context->Rbp;
-        ctx.uc_mcontext.mc_rbx = context->Rbx;
-        ctx.uc_mcontext.mc_rdx = context->Rdx;
-        ctx.uc_mcontext.mc_rax = context->Rax;
-        ctx.uc_mcontext.mc_rcx = context->Rcx;
-        ctx.uc_mcontext.mc_rsp = context->Rsp;
-        ctx.uc_mcontext.mc_fs = context->SegFs;
-        ctx.uc_mcontext.mc_gs = context->SegGs;
-        handler(NativeToOrbisSignal(native_signum), &ctx);
-    } else {
-        UNREACHABLE_MSG("Unhandled exception");
+        // This is only needed for a few hardware signals now, so it needn't worry about about RT
+        // ones anymore.
+        UNREACHABLE_MSG("Signal {} has no job being here", s);
     }
 }
 #endif
@@ -321,8 +314,8 @@ s32 PS4_SYSV_ABI posix_sigfillset(Sigset* s) {
 }
 
 s32 PS4_SYSV_ABI posix_sigaddset(Sigset* s, s32 sig) {
-    s32 val = sig - 1;
-    if (val >= 0x80) {
+    s32 const val = sig - 1;
+    if (val < 0 || val >= 0x80) {
         *Libraries::Kernel::__Error() = POSIX_EINVAL;
         return ORBIS_FAIL;
     }
@@ -331,8 +324,8 @@ s32 PS4_SYSV_ABI posix_sigaddset(Sigset* s, s32 sig) {
 }
 
 s32 PS4_SYSV_ABI posix_sigdelset(Sigset* s, s32 sig) {
-    s32 val = sig - 1;
-    if (val >= 0x80) {
+    s32 const val = sig - 1;
+    if (val < 0 || val >= 0x80) {
         *Libraries::Kernel::__Error() = POSIX_EINVAL;
         return ORBIS_FAIL;
     }
@@ -340,9 +333,9 @@ s32 PS4_SYSV_ABI posix_sigdelset(Sigset* s, s32 sig) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI posix_sigismember(Sigset* s, s32 sig) {
-    s32 val = sig - 1;
-    if (val >= 0x80) {
+s32 PS4_SYSV_ABI posix_sigismember(Sigset const* s, s32 sig) {
+    s32 const val = sig - 1;
+    if (val < 0 || val >= 0x80) {
         *Libraries::Kernel::__Error() = POSIX_EINVAL;
         return ORBIS_FAIL;
     }
@@ -353,89 +346,48 @@ bool PS4_SYSV_ABI posix_sigisemptyset(Sigset* s) {
     return s->bits[0] == 0 && s->bits[1] == 0 && s->bits[2] == 0 && s->bits[3] == 0;
 }
 
-#ifndef _WIN32
-static void GuestSigsetToNative(const Sigset& guest, sigset_t& native) {
-    sigemptyset(&native);
-
-    for (s32 sig = 1; sig <= 128; sig++) {
-        if (posix_sigismember(const_cast<Sigset*>(&guest), sig) != 0) {
-            const s32 native_sig = OrbisToNativeSignal(sig);
-            if (native_sig > 0 && native_sig <= 128) {
-                sigaddset(&native, native_sig);
-            }
-        }
-    }
-}
-
-static void NativeSigsetToGuest(const sigset_t& native, Sigset& guest) {
-    posix_sigemptyset(&guest);
-
-    for (s32 sig = 1; sig <= 128; sig++) {
-        const s32 native_sig = OrbisToNativeSignal(sig);
-        if (native_sig > 0 && native_sig <= 128 && sigismember(&native, native_sig) == 1) {
-            posix_sigaddset(&guest, sig);
-        }
-    }
-}
-#endif
-
-s32 PS4_SYSV_ABI posix_sigprocmask(s32 how, const Sigset* set, Sigset* oset) {
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called, how = {}", how);
-    return ORBIS_OK;
-}
-
-constexpr s32 POSIX_SS_ONSTACK = 0x0001; /* take signal on alternate stack */
-constexpr s32 POSIX_SS_DISABLE = 0x0004; /* disable taking signals on alternate stack */
-
 s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
                                    OrbisKernelExceptionHandlerStack* old_ss) {
-    s32 ret = 0;
-#ifndef _WIN32
-    stack_t native_ss{};
-    if (ss) {
-        LOG_INFO(Lib_Kernel, "called, ss.ss_size: {}, ss.ss_sp: {}, ss.ss_flags: {:#x}",
-                 ss->ss_size, ss->ss_sp, ss->ss_flags);
-        native_ss.ss_sp = ss->ss_sp;
-        native_ss.ss_size = ss->ss_size == 0 ? 0 : std::max(ss->ss_size, (u64)MINSIGSTKSZ + 0x1000);
-        u32 guest_ss_flags = ss->ss_flags;
-        if ((guest_ss_flags & POSIX_SS_ONSTACK)) {
-            native_ss.ss_flags |= SS_ONSTACK;
-            guest_ss_flags &= ~POSIX_SS_ONSTACK;
-        }
-        if ((guest_ss_flags & POSIX_SS_DISABLE)) {
-            native_ss.ss_flags |= SS_DISABLE;
-            guest_ss_flags &= ~POSIX_SS_DISABLE;
-        }
-        if (guest_ss_flags != 0) {
-            LOG_ERROR(Lib_Kernel, "Unrecognized guest flag(s): {:#x}", guest_ss_flags);
-        }
+    auto* thread = g_curthread;
+    if (thread == nullptr) {
+        SetPosixErrno(POSIX_EINVAL);
+        return -1;
     }
-    stack_t native_old_ss{};
-    ret = sigaltstack(ss ? &native_ss : nullptr, old_ss ? &native_old_ss : nullptr);
-    if (ret < 0) {
-        SetPosixErrno(errno);
-        LOG_ERROR(Lib_Kernel, "sigaltstack returned {} {}", errno, strerror(errno));
-    }
+
     if (old_ss) {
-        old_ss->ss_sp = native_old_ss.ss_sp;
-        old_ss->ss_size = native_old_ss.ss_size;
-        u32 host_ss_flags = native_old_ss.ss_flags;
-        if ((host_ss_flags & SS_ONSTACK)) {
-            old_ss->ss_flags |= POSIX_SS_ONSTACK;
-            host_ss_flags &= ~SS_ONSTACK;
-        }
-        if ((host_ss_flags & SS_DISABLE)) {
-            old_ss->ss_flags |= POSIX_SS_DISABLE;
-            host_ss_flags &= ~SS_DISABLE;
-        }
-        if (host_ss_flags != 0) {
-            LOG_ERROR(Lib_Kernel, "Unrecognized host flag(s): {:#x}", host_ss_flags);
-        }
+        *old_ss = thread->sigaltstack;
     }
-#else
-    LOG_ERROR(Lib_Kernel, "(stubbed)");
-#endif
-    return ret;
+
+    if (ss == nullptr) {
+        return 0;
+    }
+
+    if ((ss->ss_flags & ~(POSIX_SS_ONSTACK | POSIX_SS_DISABLE)) != 0) {
+        SetPosixErrno(POSIX_EINVAL);
+        return -1;
+    }
+
+    if ((ss->ss_flags & POSIX_SS_ONSTACK) && !(thread->sigaltstack.ss_flags & POSIX_SS_ONSTACK)) {
+        // SS_ONSTACK is normally reported by the kernel rather than something
+        // userspace explicitly sets when installing a stack.
+        SetPosixErrno(POSIX_EINVAL);
+        return -1;
+    }
+
+    constexpr s32 POSIX_MINSIGSTKSZ = (512 * 4); // from the freebsd source tree, todo validate
+
+    if (!(ss->ss_flags & POSIX_SS_DISABLE) && ss->ss_size < POSIX_MINSIGSTKSZ) {
+        SetPosixErrno(POSIX_ENOMEM);
+        return -1;
+    }
+
+    thread->sigaltstack = *ss;
+
+    if (!(ss->ss_flags & POSIX_SS_DISABLE)) {
+        thread->sigaltstack.ss_flags &= ~POSIX_SS_ONSTACK;
+    }
+
+    return 0;
 }
 
 s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
@@ -444,182 +396,131 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
         *__Error() = POSIX_EINVAL;
         return ORBIS_FAIL;
     }
-#ifdef _WIN32
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called, sig: {}", sig);
-    Handlers[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
-        act ? act->__sigaction_handler.sigaction : nullptr);
-    if (oact) {
-        memset(oact, 0, sizeof(*oact));
-    }
-    if (act && oact) {
-        oact->__sigaction_handler = act->__sigaction_handler;
-        oact->sa_mask = act->sa_mask;
-        oact->sa_flags = act->sa_flags;
-    }
-#else
-    s32 native_sig = OrbisToNativeSignal(sig);
-    if (native_sig == SIGVTALRM || IsPthreadCancelSignal(native_sig)) {
-        LOG_ERROR(Lib_Kernel, "Guest is attempting to use the HLE-reserved signal {}!", sig);
-        *__Error() = POSIX_EINVAL;
-        return ORBIS_FAIL;
-    }
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
-    if (native_sig >= __SIGRTMIN && native_sig < SIGRTMIN) {
-        LOG_ERROR(Lib_Kernel, "Guest is attempting to use the HLE libc-reserved signal {}!", sig);
-        *__Error() = POSIX_EINVAL;
-        return ORBIS_FAIL;
-    }
-#else
-    if (native_sig > SIGUSR2) {
-        LOG_ERROR(Lib_Kernel,
-                  "Guest is attempting to use SIGRT signals, which aren't available on this "
-                  "platform (signal: {})!",
-                  sig);
-    }
-#endif
-    LOG_INFO(Lib_Kernel, "called, sig: {}, native sig: {}", sig, native_sig);
-    struct sigaction native_act{};
-    if (act) {
-        native_act.sa_flags = act->sa_flags;
-        native_act.sa_sigaction =
-            reinterpret_cast<decltype(native_act.sa_sigaction)>(SigactionHandler);
-        GuestSigsetToNative(act->sa_mask, native_act.sa_mask);
+    if (oact != nullptr) {
+        *oact = PosixActions[sig - 1];
     }
 
-    const auto prev_handler = Handlers[sig];
-
-    if (native_sig == SIGSEGV || native_sig == SIGBUS || native_sig == SIGILL) {
-        Handlers[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
-            act ? act->__sigaction_handler.sigaction : nullptr);
-
-        if (oact) {
-            oact->sa_flags = 0;
-            oact->__sigaction_handler.sigaction =
-                reinterpret_cast<decltype(oact->__sigaction_handler.sigaction)>(prev_handler);
-            posix_sigemptyset(&oact->sa_mask);
-        }
-
-        return ORBIS_OK;
+    if (act != nullptr) {
+        PosixActions[sig - 1] = *act;
     }
-    if (native_sig > 127) {
-        LOG_WARNING(Lib_Kernel, "We can't install a handler for native signal {}!", native_sig);
-        return ORBIS_OK;
-    }
-    struct sigaction native_oact{};
-    const s32 ret =
-        sigaction(native_sig, act ? &native_act : nullptr, oact ? &native_oact : nullptr);
-
-    if (ret < 0) {
-        LOG_ERROR(Lib_Kernel, "sigaction failed: {}", strerror(errno));
-        SetPosixErrno(errno);
-        return ORBIS_FAIL;
-    }
-
-    Handlers[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
-        act ? act->__sigaction_handler.sigaction : nullptr);
-
-    if (oact) {
-        oact->sa_flags = native_oact.sa_flags;
-        oact->__sigaction_handler.sigaction =
-            reinterpret_cast<decltype(oact->__sigaction_handler.sigaction)>(prev_handler);
-        NativeSigsetToGuest(native_oact.sa_mask, oact->sa_mask);
-    }
-#endif
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI posix_pthread_sigmask(s32 how, const Sigset* set, Sigset* oset) {
-#ifndef _WIN32
-    sigset_t native_set{};
-    sigset_t native_oset{};
+    auto* thread = g_curthread;
 
-    sigset_t* native_set_ptr = nullptr;
-    if (set) {
-        sigemptyset(&native_set);
-        for (s32 sig = 1; sig <= 128; sig++) {
-            if (posix_sigismember(const_cast<Sigset*>(set), sig) != 0) {
-                const s32 native_sig = OrbisToNativeSignal(sig);
-                if (native_sig > 0 && native_sig <= 128) {
-                    sigaddset(&native_set, native_sig);
-                }
-            }
-        }
-        native_set_ptr = &native_set;
+    if (thread == nullptr) {
+        return POSIX_EINVAL;
     }
 
-    const int ret = pthread_sigmask(how, native_set_ptr, oset ? &native_oset : nullptr);
-    if (ret != 0) {
-        SetPosixErrno(errno);
-        return ORBIS_FAIL;
-    }
+    Sigset old_mask{};
+    thread->GetGuestSigmask(old_mask);
 
     if (oset) {
-        posix_sigemptyset(oset);
+        *oset = old_mask;
+    }
 
-        for (s32 sig = 1; sig <= 128; sig++) {
-            const s32 native_sig = OrbisToNativeSignal(sig);
-            if (native_sig > 0 && native_sig <= 128 && sigismember(&native_oset, native_sig) == 1) {
-                posix_sigaddset(oset, sig);
-            }
+    if (!set) {
+        return ORBIS_OK;
+    }
+
+    Sigset new_mask = old_mask;
+
+    switch (how) {
+    case POSIX_SIG_BLOCK:
+        for (size_t i = 0; i < 4; i++) {
+            new_mask.bits[i] |= set->bits[i];
+        }
+        break;
+
+    case POSIX_SIG_UNBLOCK:
+        for (size_t i = 0; i < 4; i++) {
+            new_mask.bits[i] &= ~set->bits[i];
+        }
+        break;
+
+    case POSIX_SIG_SETMASK:
+        new_mask = *set;
+        break;
+
+    default:
+        return POSIX_EINVAL;
+    }
+
+    thread->SetGuestSigmask(new_mask);
+    if (thread->HasDeliverableSignal()) {
+        thread->WakeForSignal();
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI posix_sigprocmask(s32 how, const Sigset* set, Sigset* oset) {
+    return posix_pthread_sigmask(how, set, oset);
+}
+
+s32 PS4_SYSV_ABI posix_sigpending(Sigset* set) {
+    posix_sigemptyset(set);
+
+    for (s32 sig = 1; sig <= 128; sig++) {
+        if (g_curthread->pending_signal_counts[sig - 1].load(std::memory_order_acquire) != 0) {
+            posix_sigaddset(set, sig);
         }
     }
 
     return ORBIS_OK;
-#else
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
-    return ORBIS_OK;
-#endif
 }
 
 s32 PS4_SYSV_ABI posix_sigsuspend(const Sigset* sigmask) {
-#ifndef _WIN32
-    sigset_t native_mask;
-    sigemptyset(&native_mask);
+    Sigset old_mask{};
+    auto& thr = g_curthread;
+    thr->GetGuestSigmask(old_mask);
 
-    if (sigmask) {
-        for (s32 sig = 1; sig <= 128; sig++) {
-            if (posix_sigismember(const_cast<Sigset*>(sigmask), sig) != 0) {
-                const s32 native_sig = OrbisToNativeSignal(sig);
-                if (native_sig > 0 && native_sig <= 128) {
-                    sigaddset(&native_mask, native_sig);
-                }
-            }
-        }
+    thr->sigsuspend_interrupted.store(false, std::memory_order_release);
+    thr->in_sigsuspend.store(true, std::memory_order_release);
+
+    thr->SetGuestSigmask(*sigmask);
+
+    while (!thr->sigsuspend_interrupted.load(std::memory_order_acquire)) {
+        thr->signal_sema.acquire();
     }
 
-    const int ret = sigsuspend(&native_mask);
-    ASSERT(ret == -1);
+    thr->in_sigsuspend.store(false, std::memory_order_release);
 
-    SetPosixErrno(errno);
+    thr->SetGuestSigmask(old_mask);
+
+    *__Error() = POSIX_EINTR;
     return ORBIS_FAIL;
-#else
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
-    return ORBIS_OK;
-#endif
 }
 
 s32 PS4_SYSV_ABI posix_sigwait(const Sigset* set, s32* sig) {
-#ifndef _WIN32
     if (set == nullptr || sig == nullptr) {
         return POSIX_EINVAL;
     }
 
-    sigset_t native_set;
-    GuestSigsetToNative(*set, native_set);
-
-    int native_sig;
-    const int ret = sigwait(&native_set, &native_sig);
-    if (ret != 0) {
-        SetPosixErrno(errno);
+    auto* thread = g_curthread;
+    if (thread == nullptr) {
+        return POSIX_EINVAL;
     }
 
-    s32 guest_sig = NativeToOrbisSignal(native_sig);
+    thread->sigwait_set = *set;
+    thread->in_sigwait.store(true, std::memory_order_release);
 
-    return ORBIS_OK;
-#else
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called");
-    return ORBIS_OK;
-#endif
+    auto finish = [&] {
+        thread->in_sigwait.store(false, std::memory_order_release);
+        posix_sigemptyset(&thread->sigwait_set);
+    };
+
+    while (true) {
+        const s32 pending = thread->FindPendingSignal(*set);
+
+        if (pending != 0 && thread->ConsumeSignal(pending)) {
+            *sig = pending;
+            finish();
+            return ORBIS_OK;
+        }
+
+        thread->signal_sema.acquire();
+    }
 }
 
 SigHandler PS4_SYSV_ABI posix_signal(s32 sig, SigHandler func) {
@@ -631,7 +532,7 @@ SigHandler PS4_SYSV_ABI posix_signal(s32 sig, SigHandler func) {
         act.sa_flags |= POSIX_SA_RESTART;
     }
     Sigaction oact{};
-    s32 result = posix_sigaction(sig, &act, &oact);
+    s32 const result = posix_sigaction(sig, &act, &oact);
     if (result >= ORBIS_OK) {
         return oact.__sigaction_handler.handler;
     }
@@ -639,28 +540,28 @@ SigHandler PS4_SYSV_ABI posix_signal(s32 sig, SigHandler func) {
 }
 
 s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
-    if (sig < 1 || sig > 128) { // off-by-one error?
+    if (sig < 1 || sig > 128) {
         return POSIX_EINVAL;
     }
-    LOG_WARNING(Lib_Kernel, "Raising signal {} on thread '{}'", sig, thread->name);
-    int const native_signum = OrbisToNativeSignal(sig);
-#ifndef _WIN64
-    const auto pthr = reinterpret_cast<pthread_t>(thread->native_thr->GetHandle());
-    const auto ret = pthread_kill(pthr, native_signum);
-    if (ret != 0) {
-        LOG_ERROR(Kernel, "Failed to send exception signal to thread '{}': {}", thread->name,
-                  strerror(errno));
-    }
-#else
-    USER_APC_OPTION option;
-    option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
+    LOG_INFO(Lib_Kernel, "Raising signal {} on thread '{}'", sig, thread->name);
+    thread->QueueSignal(sig);
 
-    u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr->GetHandle()), option,
-                                 ExceptionHandler, (void*)thread->name.c_str(),
-                                 (void*)(s64)native_signum, nullptr);
-    ASSERT(res == 0);
-#endif
+    if (!thread->IsSignalBlocked(sig)) {
+        thread->WakeForSignal();
+    }
     return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI posix_raise(s32 sig) {
+    return posix_pthread_kill(g_curthread, sig);
+}
+
+void PS4_SYSV_ABI sceCallbackHandler(int sig, Siginfo* info, Ucontext* context) {
+    auto const cb = sceSigactionCallbacks[sig - 1];
+    if (!cb) {
+        UNREACHABLE(); // should be impossible unless race conditions perhaps
+    }
+    cb(sig, context);
 }
 
 // libkernel has a check in sceKernelInstallExceptionHandler and sceKernelRemoveExceptionHandler for
@@ -672,20 +573,20 @@ static std::unordered_set<s32> orbis_allowed_signals{
     POSIX_SIGHUP, POSIX_SIGILL, POSIX_SIGFPE, POSIX_SIGBUS, POSIX_SIGSEGV, POSIX_SIGUSR1,
 };
 
-int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, OrbisKernelExceptionHandler handler) {
+s32 PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, OrbisKernelExceptionHandler handler) {
     if (!orbis_allowed_signals.contains(signum)) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    if (Handlers[signum] != nullptr) {
+    if (sceSigactionCallbacks[signum - 1] != nullptr) {
         return ORBIS_KERNEL_ERROR_EAGAIN;
     }
+    sceSigactionCallbacks[signum - 1] = handler;
     LOG_INFO(Lib_Kernel, "Installing signal handler for {}", signum);
     Sigaction act = {};
     act.sa_flags = POSIX_SA_SIGINFO | POSIX_SA_RESTART;
-    act.__sigaction_handler.sigaction =
-        reinterpret_cast<decltype(act.__sigaction_handler.sigaction)>(handler);
+    act.__sigaction_handler.sigaction = &sceCallbackHandler;
     posix_sigemptyset(&act.sa_mask);
-    s32 ret = posix_sigaction(signum, &act, nullptr);
+    s32 const ret = posix_sigaction(signum, &act, nullptr);
     if (ret < 0) {
         LOG_ERROR(Lib_Kernel, "Failed to add handler for signal {}: {}", signum,
                   strerror(*__Error()));
@@ -694,17 +595,15 @@ int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, OrbisKernelExcepti
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
+s32 PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
     if (!orbis_allowed_signals.contains(signum)) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    int const native_signum = OrbisToNativeSignal(signum);
-    Handlers[signum] = nullptr;
+    sceSigactionCallbacks[signum - 1] = nullptr;
     Sigaction act = {};
-    act.sa_flags = POSIX_SA_SIGINFO;
-    act.__sigaction_handler.sigaction = nullptr;
+    act.__sigaction_handler.handler = reinterpret_cast<SigHandler>(POSIX_SIG_DFL);
     posix_sigemptyset(&act.sa_mask);
-    s32 ret = posix_sigaction(signum, &act, nullptr);
+    s32 const ret = posix_sigaction(signum, &act, nullptr);
     if (ret < 0) {
         LOG_ERROR(Lib_Kernel, "Failed to remove handler for signal {}: {}", signum,
                   strerror(*__Error()));
@@ -713,11 +612,11 @@ int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
+s32 PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, s32 signum) {
     if (signum != POSIX_SIGUSR1) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    s32 ret = posix_pthread_kill(thread, signum);
+    s32 const ret = posix_pthread_kill(thread, signum);
     if (ret < 0) {
         return ErrnoToSceKernelError(ret);
     }
@@ -766,6 +665,8 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("JZKw5+Wrnaw", "libkernel", 1, "libkernel", posix_pthread_sigmask);
     LIB_FUNCTION("KZ-4qlqlpmo", "libkernel", 1, "libkernel", posix_sigsuspend);
     LIB_FUNCTION("mrbHXqK8wkg", "libkernel", 1, "libkernel", posix_sigwait);
+    LIB_FUNCTION("hpoDTzy9Yy0", "libkernel", 1, "libkernel", posix_sigpending);
+    LIB_FUNCTION("0t0-MxQNwK4", "libkernel", 1, "libkernel", posix_raise);
 
     LIB_FUNCTION("KiJEPEWRyUY", "libkernel_psmkit", 1, "libkernel", posix_sigaction);
     LIB_FUNCTION("VADc3MNQ3cM", "libkernel_psmkit", 1, "libkernel", posix_signal);
@@ -789,6 +690,8 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("yH-uQW3LbX0", "libScePosix", 1, "libkernel", posix_pthread_kill);
     LIB_FUNCTION("sHziAegVp74", "libScePosix", 1, "libkernel", posix_sigaltstack);
     LIB_FUNCTION("JZKw5+Wrnaw", "libScePosix", 1, "libkernel", posix_pthread_sigmask);
+    LIB_FUNCTION("hpoDTzy9Yy0", "libScePosix", 1, "libkernel", posix_sigpending);
+    LIB_FUNCTION("0t0-MxQNwK4", "libScePosix", 1, "libkernel", posix_raise);
 }
 
 } // namespace Libraries::Kernel

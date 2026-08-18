@@ -31,6 +31,7 @@ void* PS4_SYSV_ABI _runOnAnotherStack(void* arg, void* func, void* stackb) {
 namespace Libraries::Kernel {
 
 extern PthreadAttr PthreadAttrDefault;
+extern std::array<Sigaction, 128> PosixActions;
 
 void _thread_cleanupspecific();
 
@@ -748,6 +749,7 @@ int PS4_SYSV_ABI posix_pthread_cancel(PthreadT thread) {
     // per-thread wake predicate is the host equivalent and is drained before each wait.
     if (newly_pending) {
         thread->wake_sema.release();
+        thread->signal_sema.release();
         if (join_target != nullptr) {
             join_target->join_wait_cv.notify_all();
         }
@@ -829,6 +831,266 @@ int PS4_SYSV_ABI scePthreadSetcanceltype(PthreadCancelType type, PthreadCancelTy
 
 void PS4_SYSV_ABI scePthreadTestcancel() {
     PthreadTestCancel();
+}
+
+static void SigIgnHandler(int sig) {
+    LOG_DEBUG(Lib_Kernel, "called, sig: {}", sig);
+}
+
+static bool SigDflHandler(int sig) {
+    switch (sig) {
+    case POSIX_SIGBUS:
+    case POSIX_SIGSEGV:
+        return false;
+    case POSIX_SIGHUP:
+    case POSIX_SIGINT:
+    case POSIX_SIGQUIT:
+    case POSIX_SIGILL:
+    case POSIX_SIGABRT:
+    case POSIX_SIGEMT:
+    case POSIX_SIGFPE:
+    case POSIX_SIGKILL:
+    case POSIX_SIGSYS:
+    case POSIX_SIGPIPE:
+    case POSIX_SIGALRM:
+    case POSIX_SIGTERM:
+    case POSIX_SIGSTOP:
+    case POSIX_SIGTSTP:
+    case POSIX_SIGTTIN:
+    case POSIX_SIGTTOU:
+    case POSIX_SIGXCPU:
+    case POSIX_SIGXFSZ:
+    case POSIX_SIGVTALRM:
+    case POSIX_SIGPROF:
+    case POSIX_SIGUSR1:
+    case POSIX_SIGUSR2:
+        return false;
+    case POSIX_SIGTRAP:
+    default:
+        LOG_DEBUG(Lib_Kernel, "called, sig: {}", sig);
+        return true;
+    }
+}
+
+bool Pthread::IsSignalBlocked(s32 sig) const {
+    const s32 index = sig - 1;
+    return (guest_sigmask[index >> 5].load(std::memory_order_acquire) >> (index & 31)) & 1;
+}
+
+void Pthread::QueueSignal(s32 sig) {
+    pending_signal_counts[sig - 1].fetch_add(1, std::memory_order_release);
+
+    if (in_sigwait.load(std::memory_order_acquire)) {
+        signal_sema.release();
+    }
+}
+
+bool Pthread::ConsumeSignal(s32 sig) {
+    auto& pending = pending_signal_counts[sig - 1];
+
+    u32 count = pending.load(std::memory_order_acquire);
+    while (count != 0) {
+        if (pending.compare_exchange_weak(count, count - 1, std::memory_order_acq_rel,
+                                          std::memory_order_acquire)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+s32 Pthread::FindPendingSignal(const Sigset& set) const {
+    for (s32 sig = 1; sig <= 128; sig++) {
+        if (posix_sigismember(const_cast<Sigset*>(&set), sig) == 0) {
+            continue;
+        }
+
+        if (pending_signal_counts[sig - 1].load(std::memory_order_acquire) != 0) {
+            return sig;
+        }
+    }
+
+    return 0;
+}
+
+s32 Pthread::FindPendingUnblockedSignal() const {
+    for (s32 sig = 1; sig <= 128; sig++) {
+        if (IsSignalBlocked(sig)) {
+            continue;
+        }
+        if (in_sigwait.load(std::memory_order_acquire) &&
+            posix_sigismember(&sigwait_set, sig) != 0) {
+            continue;
+        }
+        if (pending_signal_counts[sig - 1].load(std::memory_order_acquire) != 0) {
+            return sig;
+        }
+    }
+    return 0;
+}
+
+bool Pthread::HasPendingSignal() const {
+    for (s32 sig = 1; sig <= 128; sig++) {
+        if (pending_signal_counts[sig - 1].load(std::memory_order_acquire) != 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool Pthread::HasDeliverableSignal() const {
+    return FindPendingUnblockedSignal() != 0;
+}
+
+#ifdef _WIN32
+static void ExceptionHandler(void*, void*, void*, PCONTEXT ctx) {
+    Ucontext u{ctx};
+    Siginfo i{
+        ._si_signo = 0,
+        ._si_errno = 0,
+        ._si_code = POSIX_SI_LWP,
+        ._si_addr = (void*)u.uc_mcontext.mc_rip,
+    };
+    g_curthread->DispatchPendingSignals(&i, &u);
+}
+#endif
+
+void Pthread::WakeForSignal() {
+#ifdef _WIN32
+    USER_APC_OPTION option;
+    option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
+
+    u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(native_thr->GetHandle()), option,
+                                 ExceptionHandler, nullptr, nullptr, nullptr);
+    ASSERT(res == 0);
+#else
+    pthread_kill(reinterpret_cast<pthread_t>(native_thr->GetHandle()), SIGUSR1);
+#endif
+}
+
+void Pthread::SetGuestSigmask(Sigset const& mask) {
+    for (size_t i = 0; i < 4; i++) {
+        guest_sigmask[i].store(mask.bits[i], std::memory_order_release);
+    }
+}
+
+void Pthread::GetGuestSigmask(Sigset& mask) {
+    for (size_t i = 0; i < 4; i++) {
+        mask.bits[i] = guest_sigmask[i].load(std::memory_order_acquire);
+    }
+}
+
+struct WrapperArgs {
+    Pthread* thr;
+    Sigaction const* action;
+    s32 sig;
+    Siginfo* info;
+    Ucontext* context;
+};
+
+static void PS4_SYSV_ABI CallbackWrapper(void* arg) {
+    WrapperArgs& a = *reinterpret_cast<WrapperArgs*>(arg);
+
+    if (a.action->sa_flags & POSIX_SA_SIGINFO) {
+        auto sigaction_handler = a.action->__sigaction_handler.sigaction;
+        if (sigaction_handler != nullptr) {
+            sigaction_handler(a.sig, a.info, a.context);
+        }
+    } else {
+        auto signal_handler = a.action->__sigaction_handler.handler;
+        if (signal_handler != nullptr) {
+            signal_handler(a.sig);
+        }
+    }
+}
+
+bool Pthread::DispatchSignal(s32 sig, Siginfo* info, Ucontext* context) {
+    if (sig < 1 || sig > 128 || IsSignalBlocked(sig)) {
+        return false;
+    }
+
+    // the handler is allowed to change the installed action so a copy is needed
+    const auto action = PosixActions[sig - 1];
+
+    auto handler = action.__sigaction_handler.handler;
+
+    if (reinterpret_cast<uintptr_t>(handler) == POSIX_SIG_IGN) {
+        SigIgnHandler(sig);
+        return true;
+    }
+
+    if (reinterpret_cast<uintptr_t>(handler) == POSIX_SIG_DFL) {
+        return SigDflHandler(sig);
+    }
+
+    Sigset old_mask{};
+    GetGuestSigmask(old_mask);
+
+    Sigset new_mask = old_mask;
+
+    for (size_t i = 0; i < 4; i++) {
+        new_mask.bits[i] |= action.sa_mask.bits[i];
+    }
+
+    if ((action.sa_flags & POSIX_SA_NODEFER) == 0) {
+        posix_sigaddset(&new_mask, sig);
+    }
+
+    SetGuestSigmask(new_mask);
+
+    if (action.sa_flags & POSIX_SA_RESETHAND) {
+        PosixActions[sig - 1] = {};
+    }
+
+    WrapperArgs arg{this, &action, sig, info, context};
+
+    if ((action.sa_flags & POSIX_SA_ONSTACK) && !(sigaltstack.ss_flags & POSIX_SS_DISABLE) &&
+        !(sigaltstack.ss_flags & POSIX_SS_ONSTACK)) {
+        sigaltstack.ss_flags |= POSIX_SS_ONSTACK;
+
+        auto* stack = reinterpret_cast<void*>(
+            (reinterpret_cast<uintptr_t>(sigaltstack.ss_sp) + sigaltstack.ss_size) & (~15ull));
+        _runOnAnotherStack(&arg, reinterpret_cast<void*>(CallbackWrapper), stack);
+
+        sigaltstack.ss_flags &= ~POSIX_SS_ONSTACK;
+    } else {
+        CallbackWrapper(&arg);
+    }
+
+    if (context) {
+        context->SyncHostFromGuest();
+    }
+
+    SetGuestSigmask(old_mask);
+
+    if (in_sigsuspend.load(std::memory_order_acquire)) {
+        sigsuspend_interrupted.store(true, std::memory_order_release);
+        signal_sema.release();
+    }
+
+    return true;
+}
+
+bool Pthread::DispatchPendingSignals(Siginfo* info, Ucontext* context) {
+    const s32 sig = FindPendingUnblockedSignal();
+    if (sig == 0) {
+        return false;
+    }
+
+    if (info) {
+        info->_si_signo = sig;
+    }
+
+    if (in_sigwait.load(std::memory_order_acquire) && posix_sigismember(&sigwait_set, sig) != 0) {
+        signal_sema.release();
+        return false;
+    }
+
+    if (!ConsumeSignal(sig)) {
+        return false;
+    }
+
+    return DispatchSignal(sig, info, context);
 }
 
 int Pthread::SetAffinity(const Cpuset* cpuset) {
