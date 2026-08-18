@@ -124,29 +124,23 @@ void Translator::V_INTERP_MOV_F32(const GcnInst& inst) {
         return;
     }
 
+    if (profile.supports_amd_shader_explicit_vertex_parameter ||
+        profile.supports_fragment_shader_barycentric) {
+        // Explicit per-vertex access exposes the basis value selected by P10, P20, or P0.
+        interp.primary = Qualifier::PerVertex;
+        const u32 vertex_index = (src_select + 1) % 3;
+        SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan, vertex_index));
+        return;
+    }
+
     if (attr.is_flat) {
-        // Flat shading produces one constant parameter over the primitive.
+        // Without explicit coefficient support, a flat input only exposes its P0 value.
         interp.primary = Qualifier::Flat;
         if (src_select == 2) {
             SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
         } else {
             SetDst(inst.dst[0], ir.Imm32(0.0f));
         }
-        return;
-    }
-
-    if (profile.supports_amd_shader_explicit_vertex_parameter ||
-        profile.supports_fragment_shader_barycentric) {
-        // Vertex indices are the interpolation basis points:
-        // v0=P0, v1=P0+P10, v2=P0+P20.
-        interp.primary = Qualifier::PerVertex;
-        const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 0);
-        if (src_select == 2) {
-            SetDst(inst.dst[0], p0);
-            return;
-        }
-        const IR::F32 vertex = ir.GetAttribute(attrib, inst.control.vintrp.chan, src_select + 1);
-        SetDst(inst.dst[0], ir.FPSub(vertex, p0));
         return;
     }
 
