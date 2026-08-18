@@ -81,9 +81,18 @@ void SettingsWindow::LoadSettings(std::string profile) {
         readbacksModeSetting = EmulatorSettings.GetReadbacksMode();
         readbackLinearImagesSetting = EmulatorSettings.IsReadbackLinearImagesEnabled();
         directMemoryAccessSetting = EmulatorSettings.IsDirectMemoryAccessEnabled();
+        // Windows static guest red-zone protection
+        windowsGuestRedZoneProtectionModeSetting =
+            static_cast<int>(EmulatorSettings.GetWindowsGuestRedZoneProtectionMode());
+        if (windowsGuestRedZoneProtectionModeSetting < 0 ||
+            windowsGuestRedZoneProtectionModeSetting >=
+                static_cast<int>(windowsGuestRedZoneProtectionModeOptions.size())) {
+            windowsGuestRedZoneProtectionModeSetting =
+                static_cast<int>(WindowsGuestRedZoneProtectionMode::Disabled);
+        }
         devkitConsoleSetting = EmulatorSettings.IsDevKit();
         neoModeSetting = EmulatorSettings.IsNeo();
-        shadnetEnabledSetting = EmulatorSettings.IsShadNetEnabled();
+        shadnetEnabledSetting = EmulatorSettings.IsShadNetEnabledSetting();
         connectedNetworkSetting = EmulatorSettings.IsConnectedToNetwork();
         pipelineCacheEnabledSetting = EmulatorSettings.IsPipelineCacheEnabled();
         pipelineCacheArchiveSetting = EmulatorSettings.IsPipelineCacheArchived();
@@ -136,6 +145,11 @@ void SettingsWindow::SaveSettings(std::string profile) {
         EmulatorSettings.SetReadbacksMode(readbacksModeSetting, true);
         EmulatorSettings.SetReadbackLinearImagesEnabled(readbackLinearImagesSetting, true);
         EmulatorSettings.SetDirectMemoryAccessEnabled(directMemoryAccessSetting, true);
+        // Windows static guest red-zone protection
+        EmulatorSettings.SetWindowsGuestRedZoneProtectionMode(
+            static_cast<WindowsGuestRedZoneProtectionMode>(
+                windowsGuestRedZoneProtectionModeSetting),
+            true);
         EmulatorSettings.SetDevKit(devkitConsoleSetting, true);
         EmulatorSettings.SetNeo(neoModeSetting, true);
         EmulatorSettings.SetShadNetEnabled(shadnetEnabledSetting, true);
@@ -187,14 +201,14 @@ SettingsWindow::SettingsWindow(bool gameRunning) : isGameRunning(gameRunning) {
                     : texture = BigPictureMode::LoadSdlTextureData(texData);
     };
 
-    loadTexture("src/images/big_picture/settings.png", generalTexture);
-    loadTexture("src/images/big_picture/experimental.png", experimentalTexture);
-    loadTexture("src/images/big_picture/graphics.png", graphicsTexture);
-    loadTexture("src/images/big_picture/controller.png", inputTexture);
-    loadTexture("src/images/big_picture/trophy.png", trophyTexture);
-    loadTexture("src/images/big_picture/log.png", logTexture);
-    loadTexture("src/images/big_picture/folder.png", foldersTexture);
-    loadTexture("src/images/big_picture/profiles.png", profilesTexture);
+    loadTexture("src/resources/big_picture/settings.png", generalTexture);
+    loadTexture("src/resources/big_picture/experimental.png", experimentalTexture);
+    loadTexture("src/resources/big_picture/graphics.png", graphicsTexture);
+    loadTexture("src/resources/big_picture/controller.png", inputTexture);
+    loadTexture("src/resources/big_picture/trophy.png", trophyTexture);
+    loadTexture("src/resources/big_picture/log.png", logTexture);
+    loadTexture("src/resources/big_picture/folder.png", foldersTexture);
+    loadTexture("src/resources/big_picture/profiles.png", profilesTexture);
 
     auto languageKeys = std::views::keys(languageMap);
     languageOptions.assign(languageKeys.begin(), languageKeys.end());
@@ -744,6 +758,12 @@ void SettingsWindow::DrawSettingsTable(SettingsCategory category) {
             AddSettingCombo("Readbacks Mode", readbacksModeSetting, readbacksModeOptions);
             AddSettingCheckbox("Enable Readback Linear Images", readbackLinearImagesSetting);
             AddSettingCheckbox("Enable Direct Memory Access", directMemoryAccessSetting);
+#ifdef _WIN32
+            // Windows static guest red-zone protection
+            AddSettingCombo("Windows Guest Red Zone Protection (Requires Restart)",
+                            windowsGuestRedZoneProtectionModeSetting,
+                            windowsGuestRedZoneProtectionModeOptions);
+#endif
             AddSettingCheckbox("Enable Devkit Console Mode", devkitConsoleSetting);
             AddSettingCheckbox("Enable PS4 Neo Mode", neoModeSetting);
             AddSettingCheckbox("Enable ShadNet", shadnetEnabledSetting);

@@ -6,6 +6,7 @@
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
@@ -17,6 +18,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
 #include "core/libraries/rtc/rtc.h"
+#include "core/libraries/rudp/rudp.h"
 #include "core/libraries/sysmodule/sysmodule_error.h"
 #include "core/libraries/sysmodule/sysmodule_internal.h"
 #include "core/libraries/sysmodule/sysmodule_table.h"
@@ -25,6 +27,8 @@
 #include "emulator.h"
 
 namespace Libraries::SysModule {
+
+bool g_need_scelibc = false, g_need_fios2 = false;
 
 s32 getModuleHandle(s32 id, s32* handle) {
     if (id == 0) {
@@ -117,7 +121,6 @@ bool validateModuleId(s32 id) {
 }
 
 s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* game_info = Common::Singleton<Common::ElfInfo>::Instance();
 
@@ -134,10 +137,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
     if ((mod.flags & OrbisSysmoduleModuleInternalFlags::IsGame) != 0) {
         std::string guest_path = std::string("/app0/sce_module/").append(mod.name);
         guest_path.append(".prx");
-        const auto& host_path = mnt->GetHostPath(guest_path);
-
-        // For convenience, load through linker directly instead of loading through libkernel calls.
-        s32 result = linker->LoadAndStartModule(host_path, argc, argv, &start_result);
+        s32 result = linker->LoadAndStartModule(guest_path, argc, argv, &start_result);
         // If the module is missing, the library prints a very helpful message for developers.
         // We'll just log an error.
         if (result < 0) {
@@ -190,21 +190,23 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
         // Now we need to check if the requested library is allowed to LLE.
         // First, we allow all modules from game-specific sys_modules
         const auto& sys_module_path = EmulatorSettings.GetSysModulesDir();
-        const auto& game_specific_module_path =
-            sys_module_path / game_info->GameSerial() / mod_name;
-        if (std::filesystem::exists(game_specific_module_path)) {
-            // The requested module is present in the game-specific sys_modules, load it.
-            LOG_INFO(Loader, "Loading {} from game serial file {}", mod_name,
-                     game_info->GameSerial());
-            s32 handle =
-                linker->LoadAndStartModule(game_specific_module_path, argc, argv, &start_result);
-            ASSERT_MSG(handle >= 0, "Failed to load module {}", mod_name);
-            mod.handle = handle;
-            mod.is_loaded++;
-            if (res_out != nullptr) {
-                *res_out = start_result;
+        if (!game_info->GameSerial().empty()) {
+            const auto& game_specific_module_path =
+                sys_module_path / game_info->GameSerial() / mod_name;
+            if (std::filesystem::exists(game_specific_module_path)) {
+                // The requested module is present in the game-specific sys_modules, load it.
+                LOG_INFO(Loader, "Loading {} from game serial file {}", mod_name,
+                         game_info->GameSerial());
+                s32 handle = linker->LoadAndStartModule(game_specific_module_path, argc, argv,
+                                                        &start_result);
+                ASSERT_MSG(handle >= 0, "Failed to load module {}", mod_name);
+                mod.handle = handle;
+                mod.is_loaded++;
+                if (res_out != nullptr) {
+                    *res_out = start_result;
+                }
+                return ORBIS_OK;
             }
-            return ORBIS_OK;
         }
 
         // We need to check a few things here.
@@ -213,19 +215,34 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
         constexpr auto ModulesToLoad = std::to_array<Core::SysModules>(
             {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterLib},
              {"libSceUlt.sprx", nullptr},
+             {"libSceAvPlayer.sprx", &Libraries::AvPlayer::RegisterLib},
+             {"libSceAvPlayerStreaming.sprx", nullptr},
              {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
              {"libSceJpegDec.sprx", nullptr},
              {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
              {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
              {"libSceJson.sprx", nullptr},
              {"libSceJson2.sprx", nullptr},
-             {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
              {"libSceCesCs.sprx", nullptr},
+             {"libSceAt9Enc.sprx", nullptr},
              {"libSceAudiodec.sprx", nullptr},
-             {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
-             {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
+             {"libSceAudiodecCpu.sprx", nullptr},
+             {"libSceAudiodecCpuDdp.sprx", nullptr},
+             {"libSceAudiodecCpuM4aac.sprx", nullptr},
+             {"libSceAudiodecCpuDtsHdLbr.sprx", nullptr},
+             {"libSceAudiodecCpuHevag.sprx", nullptr},
+             {"libSceFont.sprx", &Libraries::Font::RegisterLib},
+             {"libSceFontFt.sprx", &Libraries::FontFt::RegisterLib},
              {"libSceFreeTypeOt.sprx", nullptr},
-             {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib}});
+             {"libSceFreeTypeOl.sprx", nullptr},
+             {"libSceFreeTypeOptOl.sprx", nullptr},
+             {"libSceBeisobmf.sprx", nullptr},
+             {"libSceBemp2sys.sprx", nullptr},
+             {"libSceRudp.sprx", &Libraries::Rudp::RegisterLib},
+             {"libSceWkFontConfig.sprx", nullptr},
+             {"libScePsmKitSystem.sprx", nullptr},
+             {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib},
+             {"libSceXml.sprx", nullptr}});
 
         // Iterate through the allowed array
         const auto it = std::ranges::find_if(
@@ -431,13 +448,30 @@ s32 preloadModulesForLibkernel() {
             continue;
         }
 
+        if (module_index == 1 || module_index == 2) {
+            // libkernel and libSceLibcInternal aren't directly loaded here.
+            // All we do for those is increment is_loaded
+            g_modules_array[module_index].is_loaded++;
+            continue;
+        }
+
         // Load the actual module
         s32 result = loadModuleInternal(module_index, 0, nullptr, nullptr);
         if (result != ORBIS_OK) {
             // On real hardware, module preloading must succeed or the game will abort.
             // To enable users to test homebrew easier, we'll log a critical error instead.
-            LOG_CRITICAL(Lib_SysModule, "Failed to preload {}, expect crashes",
-                         g_modules_array[module_index].name);
+            if (g_modules_array[module_index].name == std::string("libc")) {
+                ASSERT_MSG(!g_need_scelibc,
+                           "libc.prx cannot be loaded, but the guest attempted to use it. "
+                           "This usually indicates a corrupted dump.");
+            } else if (g_modules_array[module_index].name == std::string("libSceFios2")) {
+                ASSERT_MSG(!g_need_fios2,
+                           "libSceFios2.prx cannot be loaded, but the guest attempted to use it. "
+                           "This usually indicates a corrupted dump.");
+            } else {
+                LOG_CRITICAL(Lib_SysModule, "Failed to preload {}, expect crashes",
+                             g_modules_array[module_index].name);
+            }
         }
     }
     return ORBIS_OK;

@@ -8,16 +8,21 @@
 #include "common/logging/formatter.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "common/singleton.h"
 #include "common/string_util.h"
 #include "common/thread.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
 #include "core/devtools/widget/module_list.h"
 #include "core/emulator_settings.h"
+#include "core/file_sys/backends/host_fs.h"
+#include "core/file_sys/fs.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
+#include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/sysmodule/sysmodule.h"
+#include "core/libraries/sysmodule/sysmodule_internal.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
@@ -33,8 +38,8 @@ static PS4_SYSV_ABI void ProgramExitFunc() {
     LOG_ERROR(Core_Linker, "Exit function called");
 }
 
-#ifdef ARCH_X86_64
 static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
+#ifdef ARCH_X86_64
     // Start shared library modules
     asm volatile("andq $-16, %%rsp\n" // Align to 16 bytes
                  "subq $8, %%rsp\n"   // videoout_basic expects the stack to be misaligned
@@ -54,8 +59,10 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
                  : "r"(params->entry_addr), "r"(params), "r"(ProgramExitFunc)
                  : "rax", "rsi", "rdi");
     UNREACHABLE();
-}
+#else
+    UNREACHABLE_MSG("RunMainEntry unimplemented for current architecture.");
 #endif
+}
 
 Linker::Linker() : memory{Memory::Instance()} {}
 
@@ -70,9 +77,38 @@ void Linker::Execute(const std::vector<std::string>& args) {
     Module* module = m_modules[0].get();
     static_tls_size = module->tls.offset = module->tls.image_size;
 
+    // Map libSceLibcInternal
+    const auto& libc_internal_path =
+        EmulatorSettings.GetSysModulesDir() / "libSceLibcInternal.sprx";
+    bool has_libcinternal = false;
+    if (std::filesystem::exists(libc_internal_path)) {
+        LoadModule(libc_internal_path);
+        has_libcinternal = true;
+    } else {
+        // Need to load HLE, LLE isn't present
+        LOG_INFO(Core_Linker, "Can't Load libSceLibcInternal.sprx switching to HLE");
+        Libraries::LibcInternal::RegisterLib(&GetHLESymbols());
+    }
+
     // Relocate all modules
-    for (const auto& m : m_modules) {
-        Relocate(m.get());
+    RelocateAllImports();
+
+    // libkernel entry is responsible for initializing malloc-related elements of libSceLibcInternal
+    // this is done through calling _malloc_init, and sceLibcInternalMemoryMutexEnable.
+    static PS4_SYSV_ABI s32 (*malloc_init)() = nullptr;
+    static PS4_SYSV_ABI void (*sceLibcInternalMemoryMutexEnable)() = nullptr;
+
+    if (has_libcinternal) {
+        for (const auto& m : m_modules) {
+            const auto& mod = m.get();
+            if (mod->name.contains("libSceLibcInternal.sprx")) {
+                malloc_init =
+                    reinterpret_cast<PS4_SYSV_ABI s32 (*)()>(mod->FindByName("_malloc_init"));
+                sceLibcInternalMemoryMutexEnable = reinterpret_cast<PS4_SYSV_ABI void (*)()>(
+                    mod->FindByName("sceLibcInternalMemoryMutexEnable"));
+                break;
+            }
+        }
     }
 
     // Configure the direct and flexible memory regions.
@@ -110,7 +146,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
     memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
-    main_thread.Run([this, module, &args](std::stop_token) {
+    main_thread.Run([this, module, &args, has_libcinternal](std::stop_token) {
         Common::SetCurrentThreadName("Game:Main");
         std::set_terminate(Common::Log::Terminate);
 
@@ -121,6 +157,18 @@ void Linker::Execute(const std::vector<std::string>& args) {
 #endif
         if (auto& ipc = IPC::Instance()) {
             ipc.WaitForStart();
+        }
+
+        // Load libSceLibcInternal, run malloc_init.
+        if (has_libcinternal) {
+            LoadLibcInternal();
+
+            if (malloc_init && sceLibcInternalMemoryMutexEnable) {
+                // Call _malloc_init
+                s32 ret = malloc_init();
+                ASSERT_MSG(ret == 0, "malloc_init failed");
+                sceLibcInternalMemoryMutexEnable();
+            }
         }
 
         // Have libSceSysmodule preload our libraries.
@@ -172,24 +220,39 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
     std::scoped_lock lk{mutex};
-
-    if (!std::filesystem::exists(elf_name)) {
-        LOG_ERROR(Core_Linker, "Provided file {} does not exist", elf_name.string());
-        return -1;
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    const std::string as_guest = elf_name.generic_string();
+    std::unique_ptr<Core::FileSys::IFile> handle;
+    if (!as_guest.empty() && as_guest.front() == '/') {
+        handle = mnt->Open(as_guest, /*writable=*/false);
+    }
+    if (!handle) {
+        if (!std::filesystem::exists(elf_name)) {
+            LOG_ERROR(Core_Linker, "Provided file {} does not exist", elf_name.string());
+            return -1;
+        }
+        auto host = std::make_unique<Core::FileSys::HostFile>(
+            elf_name, Common::FS::FileAccessMode::Read, /*read_only=*/true);
+        if (!host->IsOpen()) {
+            LOG_ERROR(Core_Linker, "Provided file {} could not be opened", elf_name.string());
+            return -1;
+        }
+        handle = std::move(host);
     }
 
-    auto module = std::make_unique<Module>(memory, elf_name, max_tls_index);
-    if (!module->IsValid()) {
-        LOG_ERROR(Core_Linker, "Provided file {} is not valid ELF file", elf_name.string());
-        return -1;
-    }
+    s32 mod_id = m_modules.size();
+    auto module =
+        std::make_unique<Module>(memory, elf_name, std::move(handle), max_tls_index, mod_id);
+    ASSERT_MSG(module->IsValid(),
+               "Provided file {} is not valid ELF file. This usually indicated a corrupted dump.",
+               elf_name.string());
 
     num_static_modules += !is_dynamic;
     m_modules.emplace_back(std::move(module));
 
     Core::Devtools::Widget::ModuleList::AddModule(elf_name.filename().string(), elf_name);
 
-    return m_modules.size() - 1;
+    return mod_id;
 }
 
 s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, const void* argp,
@@ -320,7 +383,7 @@ void Linker::Relocate(Module* module) {
 
         if (rel_is_resolved) {
             std::memcpy(reinterpret_cast<void*>(rel_virtual_addr), &rel_value, sizeof(rel_value));
-        } else {
+        } else if (rel_sym_type == Loader::SymbolType::Function) {
             LOG_INFO(Core_Linker, "Function not patched! {}", rel_name);
         }
     });
@@ -371,7 +434,10 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     }
 
     const auto aeronid = AeroLib::FindByNid(sr.name.c_str());
-    if (aeronid) {
+    if (sym_type == Loader::SymbolType::Object) {
+        return_info->name = aeronid ? aeronid->name : "Unknown object";
+        return_info->virtual_address = 0;
+    } else if (aeronid) {
         return_info->name = aeronid->name;
         return_info->virtual_address = AeroLib::GetStub(aeronid->nid);
     } else {
@@ -381,6 +447,13 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     if (library->name != "libc" && library->name != "libSceFios2") {
         LOG_WARNING(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
                     return_info->name, library->name, module->name);
+    } else {
+        if (library->name == "libc" && return_info->name == "Need_sceLibc") {
+            Libraries::SysModule::g_need_scelibc = true;
+        }
+        if (library->name == "libSceFios2" && return_info->name == "sceFiosInitialize") {
+            Libraries::SysModule::g_need_scelibc = true;
+        }
     }
     return false;
 }
@@ -410,7 +483,12 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     if (!addr) {
         // Module was just loaded by above code. Allocate TLS block for it.
         const u32 init_image_size = module->tls.init_image_size;
-        u8* dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
+        u8* dest{};
+        if (heap_api && heap_api->heap_malloc) {
+            dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
+        } else {
+            dest = reinterpret_cast<u8*>(std::malloc(module->tls.image_size));
+        }
         const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
         std::memcpy(dest, src, init_image_size);
         std::memset(dest + init_image_size, 0, module->tls.image_size - init_image_size);
@@ -441,7 +519,7 @@ void* Linker::AllocateTlsForThread(bool is_primary) {
             &addr_out, tls_aligned, 3, 0, "SceKernelPrimaryTcbTls");
         ASSERT_MSG(ret == 0, "Unable to allocate TLS+TCB for the primary thread");
     } else {
-        if (heap_api) {
+        if (heap_api && heap_api->heap_malloc) {
             addr_out = heap_api->heap_malloc(total_tls_size);
         } else {
             addr_out = std::malloc(total_tls_size);
@@ -451,7 +529,7 @@ void* Linker::AllocateTlsForThread(bool is_primary) {
 }
 
 void Linker::FreeTlsForNonPrimaryThread(void* pointer) {
-    if (heap_api) {
+    if (heap_api && heap_api->heap_free) {
         heap_api->heap_free(pointer);
     } else {
         std::free(pointer);

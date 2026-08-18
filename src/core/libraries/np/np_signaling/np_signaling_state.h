@@ -253,6 +253,7 @@ extern std::unordered_map<s32, PeerNetInfoResult> g_peer_netinfo_results;
 struct PendingActivation {
     OrbisNpSignalingConnectionId conn_id = 0;
     std::string peer_online_id;
+    bool start_handshake = true;
 };
 extern std::vector<PendingActivation> g_pending_activations;
 extern u32 g_peer_netinfo_next_id;
@@ -331,7 +332,8 @@ void TerminateConnectionFaithful(OrbisNpSignalingConnectionId conn_id);
 
 void StartHandshakeInitiator(OrbisNpSignalingConnectionId conn_id);
 
-void QueueActivationLocked(OrbisNpSignalingConnectionId conn_id, std::string_view peer_online_id);
+void QueueActivationLocked(OrbisNpSignalingConnectionId conn_id, std::string_view peer_online_id,
+                           bool start_handshake = true);
 void ProcessPendingActivations();
 
 void HandleHandshakePacket(u32 from_addr, u16 from_port, const SignalingHandshake& pkt);

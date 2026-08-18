@@ -44,16 +44,19 @@ enum class DataFormat : u32 {
     FormatBc5 = 39,
     FormatBc6 = 40,
     FormatBc7 = 41,
-    FormatFmask8_1 = 47,
-    FormatFmask8_2 = 48,
-    FormatFmask8_4 = 49,
-    FormatFmask16_1 = 50,
-    FormatFmask16_2 = 51,
-    FormatFmask32_2 = 52,
-    FormatFmask32_4 = 53,
-    FormatFmask32_8 = 54,
-    FormatFmask64_4 = 55,
-    FormatFmask64_8 = 56,
+    FormatFmask8_S2_F1 = 44,
+    FormatFmask8_S4_F1 = 45,
+    FormatFmask8_S8_F1 = 46,
+    FormatFmask8_S2_F2 = 47,
+    FormatFmask8_S4_F2 = 48,
+    FormatFmask8_S4_F4 = 49,
+    FormatFmask16_S16_F1 = 50,
+    FormatFmask16_S8_F2 = 51,
+    FormatFmask32_S16_F2 = 52,
+    FormatFmask32_S8_F4 = 53,
+    FormatFmask32_S8_F8 = 54,
+    FormatFmask64_S16_F4 = 55,
+    FormatFmask64_S16_F8 = 56,
     Format4_4 = 57,
     Format6_5_5 = 58,
     Format1 = 59,
@@ -386,7 +389,7 @@ constexpr bool IsBlockCoded(DataFormat format) {
 }
 
 constexpr bool IsFmask(DataFormat format) {
-    return format >= DataFormat::FormatFmask8_1 && format <= DataFormat::FormatFmask64_8;
+    return format >= DataFormat::FormatFmask8_S2_F1 && format <= DataFormat::FormatFmask64_S16_F8;
 }
 
 std::string_view NameOf(DataFormat fmt);

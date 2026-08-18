@@ -373,6 +373,10 @@ void L::SetupSettings() {
     DockBuilderFinish(dock_id);
 }
 
+bool L::ShouldKeepDrawing() {
+    return DebugState.IsShowingDebugMenuBar();
+}
+
 void L::Draw() {
     const auto io = GetIO();
     PushID("DevtoolsLayer");

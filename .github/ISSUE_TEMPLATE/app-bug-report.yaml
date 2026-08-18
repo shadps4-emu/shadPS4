@@ -74,3 +74,10 @@ body:
       placeholder: "Example: 16 GB"
     validations:
       required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Log File"
+      description: Drag and drop the log file here. It can be found by right clicking on a game name -> Open Folder... -> Open Log Folder. Make sure that the log `sync` option is ticked.
+    validations:
+      required: false

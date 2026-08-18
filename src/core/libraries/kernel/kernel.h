@@ -16,6 +16,7 @@ namespace Libraries::Kernel {
 void ErrSceToPosix(s32 result);
 s32 ErrnoToSceKernelError(s32 e);
 void SetPosixErrno(s32 e);
+s32 NativeToPosixErrno(s32 const e);
 s32* PS4_SYSV_ABI __Error();
 const char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord();
 
@@ -37,7 +38,7 @@ struct OrbisWrapperImpl<f> {
 
 #define ORBIS(func) (Libraries::Kernel::OrbisWrapperImpl<func>::wrap)
 
-#define CURRENT_FIRMWARE_VERSION 0x13500011
+#define CURRENT_FIRMWARE_VERSION 0x13520001
 
 s32* PS4_SYSV_ABI __Error();
 

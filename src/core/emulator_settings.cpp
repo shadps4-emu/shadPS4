@@ -229,6 +229,8 @@ void EmulatorSettingsImpl::ClearGameSpecificOverrides() {
     ClearGroupOverrides(m_debug);
     ClearGroupOverrides(m_input);
     ClearGroupOverrides(m_audio);
+    // Windows static guest red-zone protection
+    ClearGroupOverrides(m_windows_guest_red_zone_protection);
     ClearGroupOverrides(m_gpu);
     ClearGroupOverrides(m_vulkan);
 }
@@ -254,11 +256,14 @@ void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
         return;
     if (tryGroup(m_audio))
         return;
+    // Windows static guest red-zone protection
+    if (tryGroup(m_windows_guest_red_zone_protection))
+        return;
     if (tryGroup(m_gpu))
         return;
     if (tryGroup(m_vulkan))
         return;
-    LOG_DEBUG(Config, "ResetGameSpecificValue: key '{}' not found", key);
+    LOG_WARNING(Config, "ResetGameSpecificValue: key '{}' not found", key);
 }
 
 bool EmulatorSettingsImpl::Save(const std::string& serial) {
@@ -290,6 +295,12 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
             SaveGroupGameSpecific(m_audio, audioObj);
             j["Audio"] = audioObj;
 
+            // Windows static guest red-zone protection
+            json windowsGuestRedZoneProtectionObj = json::object();
+            SaveGroupGameSpecific(m_windows_guest_red_zone_protection,
+                                  windowsGuestRedZoneProtectionObj);
+            j["WindowsGuestRedZoneProtection"] = windowsGuestRedZoneProtectionObj;
+
             json gpuObj = json::object();
             SaveGroupGameSpecific(m_gpu, gpuObj);
             j["GPU"] = gpuObj;
@@ -300,7 +311,7 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
 
             std::ofstream out(path);
             if (!out) {
-                LOG_DEBUG(Config, "Failed to open game config for writing: {}", path.string());
+                LOG_ERROR(Config, "Failed to open game config for writing: {}", path.string());
                 return false;
             }
             out << std::setw(2) << j;
@@ -342,14 +353,14 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
 
             std::ofstream out(path);
             if (!out) {
-                LOG_DEBUG(Config, "Failed to open config for writing: {}", path.string());
+                LOG_ERROR(Config, "Failed to open config for writing: {}", path.string());
                 return false;
             }
             out << std::setw(2) << existing;
             return !out.fail();
         }
     } catch (const std::exception& e) {
-        LOG_DEBUG(Config, "Error saving settings: {}", e.what());
+        LOG_ERROR(Config, "Error saving settings: {}", e.what());
         return false;
     }
 }
@@ -357,6 +368,9 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
 // ── Load ──────────────────────────────────────────────────────────────
 
 bool EmulatorSettingsImpl::Load(const std::string& serial) {
+    // A newly loaded profile replaces, rather than extends, the previous profile.
+    ClearGameSpecificOverrides(); // Windows static guest red-zone protection
+
     try {
         if (serial.empty()) {
             // ── Global config ──────────────────────────────────────────
@@ -459,6 +473,10 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 ApplyGroupOverrides(m_input, gj.at("Input"), changed);
             if (gj.contains("Audio"))
                 ApplyGroupOverrides(m_audio, gj.at("Audio"), changed);
+            // Windows static guest red-zone protection
+            if (gj.contains("WindowsGuestRedZoneProtection"))
+                ApplyGroupOverrides(m_windows_guest_red_zone_protection,
+                                    gj.at("WindowsGuestRedZoneProtection"), changed);
             if (gj.contains("GPU"))
                 ApplyGroupOverrides(m_gpu, gj.at("GPU"), changed);
             if (gj.contains("Vulkan"))
@@ -469,7 +487,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             return true;
         }
     } catch (const std::exception& e) {
-        LOG_DEBUG(Config, "Error loading settings: {}", e.what());
+        LOG_ERROR(Config, "Error loading settings: {}", e.what());
         return false;
     }
 }
@@ -480,6 +498,8 @@ void EmulatorSettingsImpl::SetDefaultValues() {
     m_debug = DebugSettings{};
     m_input = InputSettings{};
     m_audio = AudioSettings{};
+    // Windows static guest red-zone protection
+    m_windows_guest_red_zone_protection = WindowsGuestRedZoneProtectionSettings{};
     m_gpu = GPUSettings{};
     m_vulkan = VulkanSettings{};
 }
@@ -669,7 +689,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
             }
             s.install_dirs.value = settings_install_dirs;
         } catch (const std::exception& e) {
-            LOG_DEBUG(Config, "Failed to transfer install directories: {}", e.what());
+            LOG_WARNING(Config, "Failed to transfer install directories: {}", e.what());
         }
 
         // Transfer addon install directory
@@ -685,7 +705,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
                 }
             }
         } catch (const std::exception& e) {
-            LOG_DEBUG(Config, "Failed to transfer addon install directory: {}", e.what());
+            LOG_WARNING(Config, "Failed to transfer addon install directory: {}", e.what());
         }
     }
     if (og_data.contains("General")) {
@@ -704,7 +724,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
                 }
             }
         } catch (const std::exception& e) {
-            LOG_DEBUG(Config, "Failed to transfer sysmodules install directory: {}", e.what());
+            LOG_WARNING(Config, "Failed to transfer sysmodules install directory: {}", e.what());
         }
 
         // Transfer font install directory
@@ -720,7 +740,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
                 }
             }
         } catch (const std::exception& e) {
-            LOG_DEBUG(Config, "Failed to transfer font install directory: {}", e.what());
+            LOG_WARNING(Config, "Failed to transfer font install directory: {}", e.what());
         }
     }
 
@@ -738,6 +758,8 @@ std::vector<std::string> EmulatorSettingsImpl::GetAllOverrideableKeys() const {
     addGroup(m_debug.GetOverrideableFields());
     addGroup(m_input.GetOverrideableFields());
     addGroup(m_audio.GetOverrideableFields());
+    // Windows static guest red-zone protection
+    addGroup(m_windows_guest_red_zone_protection.GetOverrideableFields());
     addGroup(m_gpu.GetOverrideableFields());
     addGroup(m_vulkan.GetOverrideableFields());
     return keys;

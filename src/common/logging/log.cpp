@@ -76,6 +76,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_Http2, nullptr},
     {Class::Lib_Ime, nullptr},
     {Class::Lib_ImeDialog, nullptr},
+    {Class::Lib_InvitationDialog, nullptr},
     {Class::Lib_Jpeg, nullptr},
     {Class::Lib_Kernel, nullptr},
     {Class::Lib_LibcInternal, nullptr},
@@ -131,9 +132,11 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_Zlib, nullptr},
     {Class::Loader, nullptr},
     {Class::Log, nullptr},
+    {Class::NpHandler, nullptr},
     {Class::Render, nullptr},
     {Class::Render_Recompiler, nullptr},
     {Class::Render_Vulkan, nullptr},
+    {Class::ShadNet, nullptr},
     {Class::Tty, nullptr},
 };
 
@@ -184,6 +187,7 @@ void Setup(std::string_view shadps4_filename) {
 
     for (auto& [name, logger] : ALL_LOGGERS) {
         logger = std::make_shared<spdlog::logger>(std::string(name));
+        logger->set_level(spdlog::level::trace);
     }
 
     // Setup console
@@ -209,12 +213,12 @@ void Setup(std::string_view shadps4_filename) {
     g_shad_file_sink->set_pattern("%^%v%$");
 
     UpdateSinks();
-    UpdateLogLevels(EmulatorSettings.GetLogFilter());
 }
 
 void Switch(std::string_view game_filename) {
     UpdateSinks();
     UpdateLogLevels(EmulatorSettings.GetLogFilter());
+    UpdateLogFlushLevel(EmulatorSettings.GetLogFlushLevel());
 
     g_shad_file_sink->_size_limit = EmulatorSettings.GetLogSizeLimit();
     g_shad_file_sink->session_file_helper_.open(
@@ -311,6 +315,14 @@ void UpdateLogLevels(std::string_view log_filter) {
                                                                     : default_log_level);
         } else {
             logger->set_level(spdlog::level::off);
+        }
+    }
+}
+
+void UpdateLogFlushLevel(std::string_view log_flush_level) {
+    if (!log_flush_level.empty()) {
+        for (auto& [name, logger] : ALL_LOGGERS) {
+            logger->flush_on(spdlog::level_from_str(log_flush_level.data()));
         }
     }
 }

@@ -30,12 +30,32 @@ s32 PS4_SYSV_ABI internal_memcmp(const void* s1, const void* s2, size_t n) {
     return std::memcmp(s1, s2, n);
 }
 
+static u64 g_mspace_atomic_id_mask = 0;
+static u64 g_mstate_table[64] = {0};
+
+struct HeapInfoInfo {
+    u64 size = sizeof(HeapInfoInfo);
+    u32 flag;
+    u32 getSegmentInfo;
+    u64* mspace_atomic_id_mask;
+    u64* mstate_table;
+};
+
+void PS4_SYSV_ABI sceLibcHeapGetTraceInfo(HeapInfoInfo* info) {
+    info->mspace_atomic_id_mask = &g_mspace_atomic_id_mask;
+    info->mstate_table = g_mstate_table;
+    info->getSegmentInfo = 0;
+}
+
 void RegisterlibSceLibcInternalMemory(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("NFLs+dRJGNg", "libSceLibcInternal", 1, "libSceLibcInternal", internal_memcpy_s);
     LIB_FUNCTION("Q3VBxCXhUHs", "libSceLibcInternal", 1, "libSceLibcInternal", internal_memcpy);
     LIB_FUNCTION("8zTFvBIAIN8", "libSceLibcInternal", 1, "libSceLibcInternal", internal_memset);
     LIB_FUNCTION("DfivPArhucg", "libSceLibcInternal", 1, "libSceLibcInternal", internal_memcmp);
+
+    LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal",
+                 sceLibcHeapGetTraceInfo);
 }
 
 } // namespace Libraries::LibcInternal

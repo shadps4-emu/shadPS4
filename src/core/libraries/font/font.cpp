@@ -580,6 +580,7 @@ using Internal::GetNativeFont;
 using Internal::kPointsPerInch;
 using Internal::kStyleFrameMagic;
 using Internal::LoadGuestFileBytes;
+using Internal::LoadGuestPathBytes;
 using Internal::LogCachedStyleOnce;
 using Internal::LogFontOpenError;
 using Internal::LogRenderResultSample;
@@ -3193,7 +3194,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontFile(OrbisFontLib library, const char* guest_pat
     ReleaseLibraryLock(lib, prev_lib_lock);
 
     std::vector<unsigned char> file_bytes;
-    if (LoadGuestFileBytes(path_to_open, file_bytes) &&
+    if (LoadGuestPathBytes(guest_path, file_bytes) &&
         file_bytes.size() <= std::numeric_limits<u32>::max()) {
         auto& st = Internal::GetState(handle);
         Internal::DestroyFreeTypeFace(st.ext_ft_face);
@@ -7360,7 +7361,7 @@ s32 PS4_SYSV_ABI Func_FE7E5AE95D3058F5() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym) {
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("CUKn5pX-NVY", "libSceFont", 1, "libSceFont", sceFontAttachDeviceCacheBuffer);
     LIB_FUNCTION("3OdRkSjOcog", "libSceFont", 1, "libSceFont", sceFontBindRenderer);
     LIB_FUNCTION("6DFUkCwQLa8", "libSceFont", 1, "libSceFont", sceFontCharacterGetBidiLevel);

@@ -3,8 +3,15 @@
 
 #include "common/assert.h"
 #include "common/thread.h"
+#ifdef _WIN32
+#include "common/ntapi.h"
+#else
+#include <csignal>
+#include <pthread.h>
+#endif
 #include "core/debug_state.h"
 #include "core/libraries/kernel/kernel.h"
+#include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/kernel/threads/pthread.h"
@@ -12,12 +19,19 @@
 #include "core/libraries/libs.h"
 #include "core/memory.h"
 
+#if defined(ARCH_X86_64) || defined(__arm64__) || defined(__aarch64__)
 extern "C" void* PS4_SYSV_ABI _runOnAnotherStack(void* arg, void* func,
                                                  void* stackb) asm("_runOnAnotherStack");
+#else
+void* PS4_SYSV_ABI _runOnAnotherStack(void* arg, void* func, void* stackb) {
+    UNREACHABLE_MSG("_runOnAnotherStack not implemented on target architecture.");
+}
+#endif
 
 namespace Libraries::Kernel {
 
 extern PthreadAttr PthreadAttrDefault;
+extern std::array<Sigaction, 128> PosixActions;
 
 void _thread_cleanupspecific();
 
@@ -40,7 +54,7 @@ static void ExitThread() {
     auto* thread_state = ThrState::Instance();
     ASSERT(thread_state->active_threads.fetch_sub(1) != 1);
 
-    curthread->lock.lock();
+    curthread->lock->lock();
     curthread->state = PthreadState::Dead;
     ASSERT(False(curthread->flags & ThreadFlags::NeedSuspend));
 
@@ -55,10 +69,14 @@ static void ExitThread() {
      * Kernel will do wakeup at the address, so joiner thread
      * will be resumed if it is sleeping at the address.
      */
-    curthread->tid.store(TidTerminated);
+    {
+        std::scoped_lock wait_lock{curthread->join_wait_mutex};
+        curthread->tid.store(TidTerminated, std::memory_order_release);
+    }
     curthread->tid.notify_all();
+    curthread->join_wait_cv.notify_all();
 
-    curthread->native_thr.Exit();
+    curthread->native_thr->Exit();
     UNREACHABLE();
     /* Never reach! */
 }
@@ -116,32 +134,59 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
         ret = POSIX_ENOTSUP;
     }
     if (ret) {
-        pthread->lock.unlock();
+        pthread->lock->unlock();
         return ret;
     }
     /* Set the running thread to be the joiner: */
     pthread->joiner = curthread;
-    pthread->lock.unlock();
+    {
+        std::scoped_lock lock{*curthread->lock};
+        curthread->join_target = pthread;
+    }
+    pthread->lock->unlock();
 
     const auto backout_join = [](void* arg) PS4_SYSV_ABI {
         auto* pthread2 = static_cast<Pthread*>(arg);
-        std::scoped_lock lk{pthread2->lock};
+        Pthread* current = g_curthread;
+        {
+            std::scoped_lock lk{*current->lock};
+            current->join_target = nullptr;
+        }
+        std::scoped_lock lk{*pthread2->lock};
         pthread2->joiner = nullptr;
     };
 
     PthreadCleanup cup{backout_join, pthread, 0};
     curthread->cleanup.push_front(&cup);
 
-    //_thr_cancel_enter(curthread);
+    curthread->cancel_point = true;
+    PthreadTestCancel();
 
-    const s32 tid = pthread->tid;
-    while (pthread->tid.load() != TidTerminated) {
-        //_thr_testcancel(curthread);
-        ASSERT(abstime == nullptr);
-        pthread->tid.wait(tid);
+    std::unique_lock wait_lock{pthread->join_wait_mutex};
+    const auto finished_or_cancelled = [&] {
+        return pthread->tid.load(std::memory_order_acquire) == TidTerminated ||
+               curthread->ShouldCancel();
+    };
+    while (pthread->tid.load(std::memory_order_acquire) != TidTerminated) {
+        if (curthread->ShouldCancel()) {
+            wait_lock.unlock();
+            PthreadTestCancel();
+        }
+        if (abstime == nullptr) {
+            pthread->join_wait_cv.wait(wait_lock, finished_or_cancelled);
+        } else if (!pthread->join_wait_cv.wait_until(wait_lock, abstime->TimePoint(),
+                                                     finished_or_cancelled)) {
+            ret = POSIX_ETIMEDOUT;
+            break;
+        }
     }
+    wait_lock.unlock();
 
-    //_thr_cancel_leave(curthread, 0);
+    curthread->cancel_point = false;
+    {
+        std::scoped_lock lock{*curthread->lock};
+        curthread->join_target = nullptr;
+    }
     curthread->cleanup.pop_front();
 
     if (ret == POSIX_ETIMEDOUT) {
@@ -150,7 +195,7 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
     }
 
     void* tmp = pthread->ret;
-    pthread->lock.lock();
+    pthread->lock->lock();
     pthread->flags |= ThreadFlags::Detached;
     pthread->joiner = nullptr;
     thread_state->TryCollect(pthread); /* thread lock released */
@@ -187,7 +232,7 @@ int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread) {
 
     /* Check if the thread is already detached or has a joiner. */
     if (True(pthread->flags & ThreadFlags::Detached) || pthread->joiner != nullptr) {
-        pthread->lock.unlock();
+        pthread->lock->unlock();
         return POSIX_EINVAL;
     }
 
@@ -196,6 +241,13 @@ int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread) {
     thread_state->TryCollect(pthread); /* thread lock released */
     return 0;
 }
+
+#ifndef _WIN32
+namespace {
+int HostPthreadCancelSignal() noexcept;
+void UnblockPthreadCancelSignal();
+} // namespace
+#endif
 
 #ifdef WIN32
 static DWORD RunThread(void* arg) {
@@ -208,7 +260,11 @@ static void* RunThread(void* arg) {
     DebugState.AddCurrentThreadToGuestList();
     Core::InitializeTLS();
 
-    curthread->native_thr.Initialize();
+    curthread->native_thr->Initialize();
+
+#ifndef _WIN32
+    UnblockPthreadCancelSignal();
+#endif
 
 #ifdef WIN32
     std::set_terminate(Common::Log::Terminate);
@@ -302,8 +358,8 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     (*thread) = new_thread;
 
     /* Create thread */
-    new_thread->native_thr = Core::NativeThread();
-    int ret = new_thread->native_thr.Create(RunThread, new_thread);
+    new_thread->native_thr = std::make_unique<Core::NativeThread>(Core::NativeThread());
+    int ret = new_thread->native_thr->Create(RunThread, new_thread);
 
     ASSERT_MSG(ret == 0, "Failed to create thread with error {}", ret);
 
@@ -339,7 +395,7 @@ int PS4_SYSV_ABI posix_pthread_getname_np(PthreadT thread, char* name) {
     }
 
     // Lock the thread.
-    thread->lock.lock();
+    thread->lock->lock();
 
     // Get the thread name
     if (thread->state != PthreadState::Dead) {
@@ -347,7 +403,7 @@ int PS4_SYSV_ABI posix_pthread_getname_np(PthreadT thread, char* name) {
     }
 
     // Unlock and remove reference.
-    thread->lock.unlock();
+    thread->lock->unlock();
     thread_state->RefDelete(thread);
     return ORBIS_OK;
 }
@@ -445,7 +501,7 @@ int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
     if (thread == g_curthread) {
         // If the requested thread is curthread, skip locking and reference logic.
         thread->name = name ? name : std::string{""};
-        Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()),
+        Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr->GetHandle()),
                               thread->name.data());
         if (name && False(thread->attr.flags & PthreadAttrFlags::StackUser)) {
             VAddr stack_addr = std::bit_cast<VAddr>(thread->attr.stackaddr_attr);
@@ -460,12 +516,12 @@ int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
     }
 
     // Lock the thread.
-    thread->lock.lock();
+    thread->lock->lock();
 
     // Set the thread and thread stack names.
     if (thread->state != PthreadState::Dead) {
         thread->name = name ? name : std::string{""};
-        Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr.GetHandle()),
+        Common::SetThreadName(reinterpret_cast<void*>(thread->native_thr->GetHandle()),
                               thread->name.data());
         if (name && False(thread->attr.flags & PthreadAttrFlags::StackUser)) {
             VAddr stack_addr = std::bit_cast<VAddr>(thread->attr.stackaddr_attr);
@@ -474,7 +530,7 @@ int PS4_SYSV_ABI posix_pthread_rename_np(PthreadT thread, const char* name) {
     }
 
     // Unlock and remove reference.
-    thread->lock.unlock();
+    thread->lock->unlock();
     thread_state->RefDelete(thread);
     return ORBIS_OK;
 }
@@ -494,7 +550,7 @@ int PS4_SYSV_ABI posix_pthread_getschedparam(PthreadT pthread, SchedPolicy* poli
          * Avoid searching the thread list when it is the current
          * thread.
          */
-        std::scoped_lock lk{g_curthread->lock};
+        std::scoped_lock lk{*g_curthread->lock};
         *policy = g_curthread->attr.sched_policy;
         param->sched_priority = g_curthread->attr.prio;
         return 0;
@@ -504,10 +560,10 @@ int PS4_SYSV_ABI posix_pthread_getschedparam(PthreadT pthread, SchedPolicy* poli
     if (int ret = thread_state->RefAdd(pthread, /*include dead*/ false); ret != 0) {
         return ret;
     }
-    pthread->lock.lock();
+    pthread->lock->lock();
     *policy = pthread->attr.sched_policy;
     param->sched_priority = pthread->attr.prio;
-    pthread->lock.unlock();
+    pthread->lock->unlock();
     thread_state->RefDelete(pthread);
     return 0;
 }
@@ -520,7 +576,7 @@ int PS4_SYSV_ABI posix_pthread_setschedparam(PthreadT pthread, SchedPolicy polic
 
     auto* thread_state = ThrState::Instance();
     if (pthread == g_curthread) {
-        g_curthread->lock.lock();
+        g_curthread->lock->lock();
     } else if (int ret = thread_state->FindThread(pthread, /*include dead*/ false); ret != 0) {
         return ret;
     }
@@ -528,14 +584,14 @@ int PS4_SYSV_ABI posix_pthread_setschedparam(PthreadT pthread, SchedPolicy polic
     if (pthread->attr.sched_policy == policy &&
         (policy == SchedPolicy::Other || pthread->attr.prio == param->sched_priority)) {
         pthread->attr.prio = param->sched_priority;
-        pthread->lock.unlock();
+        pthread->lock->unlock();
         return 0;
     }
 
     // TODO: _thr_setscheduler
     pthread->attr.sched_policy = policy;
     pthread->attr.prio = param->sched_priority;
-    pthread->lock.unlock();
+    pthread->lock->unlock();
     return 0;
 }
 
@@ -563,7 +619,7 @@ int PS4_SYSV_ABI posix_pthread_setprio(PthreadT thread, int prio) {
         }
     }
 
-    thread->lock.lock();
+    thread->lock->lock();
     if (thread->attr.sched_policy == SchedPolicy::Other || thread->attr.prio == prio) {
         thread->attr.prio = prio;
     } else {
@@ -571,7 +627,7 @@ int PS4_SYSV_ABI posix_pthread_setprio(PthreadT thread, int prio) {
         thread->attr.prio = prio;
     }
 
-    thread->lock.unlock();
+    thread->lock->unlock();
     if (thread != g_curthread) {
         thread_state->RefDelete(thread);
     }
@@ -583,12 +639,132 @@ enum class PthreadCancelState : u32 {
     Disable = 1,
 };
 
+enum class PthreadCancelType : u32 {
+    Deferred = 0,
+    Asynchronous = 2,
+};
+
 #define POSIX_PTHREAD_CANCELED ((void*)1)
 
-static inline void TestCancel(const Pthread* curthread) {
+namespace {
+
+#ifdef _WIN32
+void PthreadCancelApc(void*, void*, void*, PCONTEXT) {
+    PthreadCancelInterrupt();
+}
+#else
+int HostPthreadCancelSignal() noexcept {
+#if defined(__APPLE__) || defined(__FreeBSD__)
+    return SIGUSR2;
+#else
+    return SIGRTMAX;
+#endif
+}
+
+void UnblockPthreadCancelSignal() {
+    sigset_t signal_set{};
+    sigemptyset(&signal_set);
+    sigaddset(&signal_set, HostPthreadCancelSignal());
+    ASSERT_MSG(::pthread_sigmask(SIG_UNBLOCK, &signal_set, nullptr) == 0,
+               "Failed to unblock pthread cancellation signal");
+}
+
+void HostPthreadCancelSignalHandler(int, siginfo_t*, void*) {
+    PthreadCancelInterrupt();
+}
+
+void InstallPthreadCancelSignalHandler() {
+    struct sigaction action{};
+    action.sa_sigaction = HostPthreadCancelSignalHandler;
+    // Async cancellation may terminate from this handler. Keep it on the normal guest stack
+    // because NativeThread::Exit tears down the alternate fault stack.
+    action.sa_flags = SA_SIGINFO;
+    sigfillset(&action.sa_mask);
+    ASSERT_MSG(sigaction(HostPthreadCancelSignal(), &action, nullptr) == 0,
+               "Failed to register pthread cancellation signal handler");
+    UnblockPthreadCancelSignal();
+}
+#endif
+
+void InterruptPthreadForCancellation(Pthread* thread) noexcept {
+#ifdef _WIN32
+    USER_APC_OPTION option{};
+    option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
+    const u64 result = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr->GetHandle()),
+                                          option, PthreadCancelApc, nullptr, nullptr, nullptr);
+    if (result != 0) {
+        LOG_ERROR(Lib_Kernel, "Failed to deliver pthread cancellation APC: {:#x}", result);
+    }
+#else
+    const auto native_thread = reinterpret_cast<pthread_t>(thread->native_thr->GetHandle());
+    const int result = pthread_kill(native_thread, HostPthreadCancelSignal());
+    if (result != 0) {
+        LOG_ERROR(Lib_Kernel, "Failed to deliver pthread cancellation signal: {}", result);
+    }
+#endif
+}
+
+} // namespace
+
+void PthreadTestCancel() {
+    const Pthread* curthread = g_curthread;
     if (curthread->ShouldCancel() && !curthread->InCritical()) [[unlikely]] {
         posix_pthread_exit(POSIX_PTHREAD_CANCELED);
     }
+}
+
+void PthreadCancelInterrupt() noexcept {
+    Pthread* curthread = g_curthread;
+    // posix_pthread_cancel has already released the thread's host wake semaphore. Matching
+    // libkernel's SIGTHR handler, a cancellation point must finish its normal wake/relock path;
+    // only asynchronous cancellation outside a cancellation point exits immediately.
+    if (curthread != nullptr && !curthread->cancel_point.load(std::memory_order_acquire) &&
+        curthread->cancel_async.load(std::memory_order_acquire)) {
+        PthreadTestCancel();
+    }
+}
+
+#ifndef _WIN32
+bool IsPthreadCancelSignal(int native_signal) noexcept {
+    return native_signal == HostPthreadCancelSignal();
+}
+#endif
+
+int PS4_SYSV_ABI posix_pthread_cancel(PthreadT thread) {
+    auto* thread_state = ThrState::Instance();
+    const int ret = thread_state->FindThread(thread, /*include dead*/ false);
+    if (ret != 0) {
+        return ret;
+    }
+
+    Pthread* join_target = thread->join_target;
+    bool newly_pending;
+    if (join_target != nullptr) {
+        std::scoped_lock wait_lock{join_target->join_wait_mutex};
+        newly_pending = !thread->cancel_pending.exchange(true);
+    } else {
+        newly_pending = !thread->cancel_pending.exchange(true);
+    }
+    // libkernel interrupts the target only when cancellation first becomes pending. The
+    // per-thread wake predicate is the host equivalent and is drained before each wait.
+    if (newly_pending) {
+        thread->wake_sema.release();
+        thread->signal_sema.release();
+        if (join_target != nullptr) {
+            join_target->join_wait_cv.notify_all();
+        }
+        if (thread != g_curthread) {
+            InterruptPthreadForCancellation(thread);
+        }
+    }
+    const bool cancel_self =
+        thread == g_curthread && thread->cancel_async.load() && !thread->cancel_point.load();
+    thread->lock->unlock();
+
+    if (cancel_self) {
+        PthreadTestCancel();
+    }
+    return 0;
 }
 
 int PS4_SYSV_ABI posix_pthread_setcancelstate(PthreadCancelState state,
@@ -601,7 +777,7 @@ int PS4_SYSV_ABI posix_pthread_setcancelstate(PthreadCancelState state,
         break;
     case PthreadCancelState::Enable:
         curthread->cancel_enable = true;
-        TestCancel(curthread);
+        PthreadTestCancel();
         break;
     default:
         return POSIX_EINVAL;
@@ -613,6 +789,310 @@ int PS4_SYSV_ABI posix_pthread_setcancelstate(PthreadCancelState state,
     return 0;
 }
 
+int PS4_SYSV_ABI posix_pthread_setcanceltype(PthreadCancelType type, PthreadCancelType* oldtype) {
+    Pthread* curthread = g_curthread;
+    const bool old_async = curthread->cancel_async.load();
+    switch (type) {
+    case PthreadCancelType::Deferred:
+        curthread->cancel_async = false;
+        break;
+    case PthreadCancelType::Asynchronous:
+        curthread->cancel_async = true;
+        PthreadTestCancel();
+        break;
+    default:
+        return POSIX_EINVAL;
+    }
+
+    if (oldtype != nullptr) {
+        *oldtype = old_async ? PthreadCancelType::Asynchronous : PthreadCancelType::Deferred;
+    }
+    return 0;
+}
+
+void PS4_SYSV_ABI posix_pthread_testcancel() {
+    PthreadTestCancel();
+}
+
+int PS4_SYSV_ABI scePthreadCancel(PthreadT thread) {
+    const int ret = posix_pthread_cancel(thread);
+    return ret == 0 ? ORBIS_OK : ErrnoToSceKernelError(ret);
+}
+
+int PS4_SYSV_ABI scePthreadSetcancelstate(PthreadCancelState state, PthreadCancelState* oldstate) {
+    const int ret = posix_pthread_setcancelstate(state, oldstate);
+    return ret == 0 ? ORBIS_OK : ErrnoToSceKernelError(ret);
+}
+
+int PS4_SYSV_ABI scePthreadSetcanceltype(PthreadCancelType type, PthreadCancelType* oldtype) {
+    const int ret = posix_pthread_setcanceltype(type, oldtype);
+    return ret == 0 ? ORBIS_OK : ErrnoToSceKernelError(ret);
+}
+
+void PS4_SYSV_ABI scePthreadTestcancel() {
+    PthreadTestCancel();
+}
+
+static void SigIgnHandler(int sig) {
+    LOG_DEBUG(Lib_Kernel, "called, sig: {}", sig);
+}
+
+static bool SigDflHandler(int sig) {
+    switch (sig) {
+    case POSIX_SIGBUS:
+    case POSIX_SIGSEGV:
+        return false;
+    case POSIX_SIGHUP:
+    case POSIX_SIGINT:
+    case POSIX_SIGQUIT:
+    case POSIX_SIGILL:
+    case POSIX_SIGABRT:
+    case POSIX_SIGEMT:
+    case POSIX_SIGFPE:
+    case POSIX_SIGKILL:
+    case POSIX_SIGSYS:
+    case POSIX_SIGPIPE:
+    case POSIX_SIGALRM:
+    case POSIX_SIGTERM:
+    case POSIX_SIGSTOP:
+    case POSIX_SIGTSTP:
+    case POSIX_SIGTTIN:
+    case POSIX_SIGTTOU:
+    case POSIX_SIGXCPU:
+    case POSIX_SIGXFSZ:
+    case POSIX_SIGVTALRM:
+    case POSIX_SIGPROF:
+    case POSIX_SIGUSR1:
+    case POSIX_SIGUSR2:
+        return false;
+    case POSIX_SIGTRAP:
+    default:
+        LOG_DEBUG(Lib_Kernel, "called, sig: {}", sig);
+        return true;
+    }
+}
+
+bool Pthread::IsSignalBlocked(s32 sig) const {
+    const s32 index = sig - 1;
+    return (guest_sigmask[index >> 5].load(std::memory_order_acquire) >> (index & 31)) & 1;
+}
+
+void Pthread::QueueSignal(s32 sig) {
+    pending_signal_counts[sig - 1].fetch_add(1, std::memory_order_release);
+
+    if (in_sigwait.load(std::memory_order_acquire)) {
+        signal_sema.release();
+    }
+}
+
+bool Pthread::ConsumeSignal(s32 sig) {
+    auto& pending = pending_signal_counts[sig - 1];
+
+    u32 count = pending.load(std::memory_order_acquire);
+    while (count != 0) {
+        if (pending.compare_exchange_weak(count, count - 1, std::memory_order_acq_rel,
+                                          std::memory_order_acquire)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+s32 Pthread::FindPendingSignal(const Sigset& set) const {
+    for (s32 sig = 1; sig <= 128; sig++) {
+        if (posix_sigismember(const_cast<Sigset*>(&set), sig) == 0) {
+            continue;
+        }
+
+        if (pending_signal_counts[sig - 1].load(std::memory_order_acquire) != 0) {
+            return sig;
+        }
+    }
+
+    return 0;
+}
+
+s32 Pthread::FindPendingUnblockedSignal() const {
+    for (s32 sig = 1; sig <= 128; sig++) {
+        if (IsSignalBlocked(sig)) {
+            continue;
+        }
+        if (in_sigwait.load(std::memory_order_acquire) &&
+            posix_sigismember(&sigwait_set, sig) != 0) {
+            continue;
+        }
+        if (pending_signal_counts[sig - 1].load(std::memory_order_acquire) != 0) {
+            return sig;
+        }
+    }
+    return 0;
+}
+
+bool Pthread::HasPendingSignal() const {
+    for (s32 sig = 1; sig <= 128; sig++) {
+        if (pending_signal_counts[sig - 1].load(std::memory_order_acquire) != 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool Pthread::HasDeliverableSignal() const {
+    return FindPendingUnblockedSignal() != 0;
+}
+
+#ifdef _WIN32
+static void ExceptionHandler(void*, void*, void*, PCONTEXT ctx) {
+    Ucontext u{ctx};
+    Siginfo i{
+        ._si_signo = 0,
+        ._si_errno = 0,
+        ._si_code = POSIX_SI_LWP,
+        ._si_addr = (void*)u.uc_mcontext.mc_rip,
+    };
+    g_curthread->DispatchPendingSignals(&i, &u);
+}
+#endif
+
+void Pthread::WakeForSignal() {
+#ifdef _WIN32
+    USER_APC_OPTION option;
+    option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
+
+    u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(native_thr->GetHandle()), option,
+                                 ExceptionHandler, nullptr, nullptr, nullptr);
+    ASSERT(res == 0);
+#else
+    pthread_kill(reinterpret_cast<pthread_t>(native_thr->GetHandle()), SIGUSR1);
+#endif
+}
+
+void Pthread::SetGuestSigmask(Sigset const& mask) {
+    for (size_t i = 0; i < 4; i++) {
+        guest_sigmask[i].store(mask.bits[i], std::memory_order_release);
+    }
+}
+
+void Pthread::GetGuestSigmask(Sigset& mask) {
+    for (size_t i = 0; i < 4; i++) {
+        mask.bits[i] = guest_sigmask[i].load(std::memory_order_acquire);
+    }
+}
+
+struct WrapperArgs {
+    Pthread* thr;
+    Sigaction const* action;
+    s32 sig;
+    Siginfo* info;
+    Ucontext* context;
+};
+
+static void PS4_SYSV_ABI CallbackWrapper(void* arg) {
+    WrapperArgs& a = *reinterpret_cast<WrapperArgs*>(arg);
+
+    if (a.action->sa_flags & POSIX_SA_SIGINFO) {
+        auto sigaction_handler = a.action->__sigaction_handler.sigaction;
+        if (sigaction_handler != nullptr) {
+            sigaction_handler(a.sig, a.info, a.context);
+        }
+    } else {
+        auto signal_handler = a.action->__sigaction_handler.handler;
+        if (signal_handler != nullptr) {
+            signal_handler(a.sig);
+        }
+    }
+}
+
+bool Pthread::DispatchSignal(s32 sig, Siginfo* info, Ucontext* context) {
+    if (sig < 1 || sig > 128 || IsSignalBlocked(sig)) {
+        return false;
+    }
+
+    // the handler is allowed to change the installed action so a copy is needed
+    const auto action = PosixActions[sig - 1];
+
+    auto handler = action.__sigaction_handler.handler;
+
+    if (reinterpret_cast<uintptr_t>(handler) == POSIX_SIG_IGN) {
+        SigIgnHandler(sig);
+        return true;
+    }
+
+    if (reinterpret_cast<uintptr_t>(handler) == POSIX_SIG_DFL) {
+        return SigDflHandler(sig);
+    }
+
+    Sigset old_mask{};
+    GetGuestSigmask(old_mask);
+
+    Sigset new_mask = old_mask;
+
+    for (size_t i = 0; i < 4; i++) {
+        new_mask.bits[i] |= action.sa_mask.bits[i];
+    }
+
+    if ((action.sa_flags & POSIX_SA_NODEFER) == 0) {
+        posix_sigaddset(&new_mask, sig);
+    }
+
+    SetGuestSigmask(new_mask);
+
+    if (action.sa_flags & POSIX_SA_RESETHAND) {
+        PosixActions[sig - 1] = {};
+    }
+
+    WrapperArgs arg{this, &action, sig, info, context};
+
+    if ((action.sa_flags & POSIX_SA_ONSTACK) && !(sigaltstack.ss_flags & POSIX_SS_DISABLE) &&
+        !(sigaltstack.ss_flags & POSIX_SS_ONSTACK)) {
+        sigaltstack.ss_flags |= POSIX_SS_ONSTACK;
+
+        auto* stack = reinterpret_cast<void*>(
+            (reinterpret_cast<uintptr_t>(sigaltstack.ss_sp) + sigaltstack.ss_size) & (~15ull));
+        _runOnAnotherStack(&arg, reinterpret_cast<void*>(CallbackWrapper), stack);
+
+        sigaltstack.ss_flags &= ~POSIX_SS_ONSTACK;
+    } else {
+        CallbackWrapper(&arg);
+    }
+
+    if (context) {
+        context->SyncHostFromGuest();
+    }
+
+    SetGuestSigmask(old_mask);
+
+    if (in_sigsuspend.load(std::memory_order_acquire)) {
+        sigsuspend_interrupted.store(true, std::memory_order_release);
+        signal_sema.release();
+    }
+
+    return true;
+}
+
+bool Pthread::DispatchPendingSignals(Siginfo* info, Ucontext* context) {
+    const s32 sig = FindPendingUnblockedSignal();
+    if (sig == 0) {
+        return false;
+    }
+
+    if (info) {
+        info->_si_signo = sig;
+    }
+
+    if (in_sigwait.load(std::memory_order_acquire) && posix_sigismember(&sigwait_set, sig) != 0) {
+        signal_sema.release();
+        return false;
+    }
+
+    if (!ConsumeSignal(sig)) {
+        return false;
+    }
+
+    return DispatchSignal(sig, info, context);
+}
+
 int Pthread::SetAffinity(const Cpuset* cpuset) {
     const auto processor_count = std::thread::hardware_concurrency();
     if (processor_count < 8) {
@@ -622,7 +1102,7 @@ int Pthread::SetAffinity(const Cpuset* cpuset) {
         return POSIX_EINVAL;
     }
 
-    uintptr_t handle = native_thr.GetHandle();
+    uintptr_t handle = native_thr->GetHandle();
     if (handle == 0) {
         return POSIX_ESRCH;
     }
@@ -665,7 +1145,7 @@ int PS4_SYSV_ABI posix_pthread_getaffinity_np(PthreadT thread, size_t cpusetsize
 
     auto* thread_state = ThrState::Instance();
     if (thread == g_curthread) {
-        g_curthread->lock.lock();
+        g_curthread->lock->lock();
     } else if (const auto ret = thread_state->FindThread(thread, /*include dead*/ false);
                ret != 0) {
         return ret;
@@ -674,7 +1154,7 @@ int PS4_SYSV_ABI posix_pthread_getaffinity_np(PthreadT thread, size_t cpusetsize
     auto* attr_ptr = &thread->attr;
     auto ret = posix_pthread_attr_getaffinity_np(&attr_ptr, cpusetsize, cpusetp);
 
-    thread->lock.unlock();
+    thread->lock->unlock();
     return ret;
 }
 
@@ -686,7 +1166,7 @@ int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize
 
     auto* thread_state = ThrState::Instance();
     if (thread == g_curthread) {
-        g_curthread->lock.lock();
+        g_curthread->lock->lock();
     } else if (const auto ret = thread_state->FindThread(thread, /*include dead*/ false);
                ret != 0) {
         return ret;
@@ -699,7 +1179,7 @@ int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize
         ret = thread->SetAffinity(thread->attr.cpuset);
     }
 
-    thread->lock.unlock();
+    thread->lock->unlock();
     return ret;
 }
 
@@ -718,6 +1198,10 @@ int PS4_SYSV_ABI scePthreadSetaffinity(PthreadT thread, const u64 mask) {
 }
 
 void RegisterThread(Core::Loader::SymbolsResolver* sym) {
+#ifndef _WIN32
+    InstallPthreadCancelSignalHandler();
+#endif
+
     // Posix
     LIB_FUNCTION("Z4QosVuAsA0", "libScePosix", 1, "libkernel", posix_pthread_once);
     LIB_FUNCTION("7Xl257M4VNI", "libScePosix", 1, "libkernel", posix_pthread_equal);
@@ -728,9 +1212,13 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("+U1R4WtXvoc", "libScePosix", 1, "libkernel", posix_pthread_detach);
     LIB_FUNCTION("FJrT5LuUBAU", "libScePosix", 1, "libkernel", posix_pthread_exit);
     LIB_FUNCTION("h9CcP3J0oVM", "libScePosix", 1, "libkernel", posix_pthread_join);
+    LIB_FUNCTION("PkS44IGrDkM", "libScePosix", 1, "libkernel", posix_pthread_timedjoin_np);
     LIB_FUNCTION("OxhIB8LB-PQ", "libScePosix", 1, "libkernel", posix_pthread_create);
     LIB_FUNCTION("Jmi+9w9u0E4", "libScePosix", 1, "libkernel", posix_pthread_create_name_np);
+    LIB_FUNCTION("0D4-FVvEikw", "libScePosix", 1, "libkernel", posix_pthread_cancel);
     LIB_FUNCTION("lZzFeSxPl08", "libScePosix", 1, "libkernel", posix_pthread_setcancelstate);
+    LIB_FUNCTION("2dEhvvjlq30", "libScePosix", 1, "libkernel", posix_pthread_setcanceltype);
+    LIB_FUNCTION("nYBrkGDqxh8", "libScePosix", 1, "libkernel", posix_pthread_testcancel);
     LIB_FUNCTION("a2P9wYGeZvc", "libScePosix", 1, "libkernel", posix_pthread_setprio);
     LIB_FUNCTION("9vyP6Z7bqzc", "libScePosix", 1, "libkernel", posix_pthread_rename_np);
     LIB_FUNCTION("FIs3-UQT9sg", "libScePosix", 1, "libkernel", posix_pthread_getschedparam);
@@ -743,16 +1231,23 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", posix_pthread_self);
     LIB_FUNCTION("OxhIB8LB-PQ", "libkernel", 1, "libkernel", posix_pthread_create);
     LIB_FUNCTION("Jmi+9w9u0E4", "libkernel", 1, "libkernel", posix_pthread_create_name_np);
+    LIB_FUNCTION("0D4-FVvEikw", "libkernel", 1, "libkernel", posix_pthread_cancel);
     LIB_FUNCTION("lZzFeSxPl08", "libkernel", 1, "libkernel", posix_pthread_setcancelstate);
+    LIB_FUNCTION("2dEhvvjlq30", "libkernel", 1, "libkernel", posix_pthread_setcanceltype);
+    LIB_FUNCTION("nYBrkGDqxh8", "libkernel", 1, "libkernel", posix_pthread_testcancel);
     LIB_FUNCTION("CBNtXOoef-E", "libkernel", 1, "libkernel", posix_sched_get_priority_max);
     LIB_FUNCTION("m0iS6jNsXds", "libkernel", 1, "libkernel", posix_sched_get_priority_min);
     LIB_FUNCTION("Xs9hdiD7sAA", "libkernel", 1, "libkernel", posix_pthread_setschedparam);
     LIB_FUNCTION("+U1R4WtXvoc", "libkernel", 1, "libkernel", posix_pthread_detach);
     LIB_FUNCTION("7Xl257M4VNI", "libkernel", 1, "libkernel", posix_pthread_equal);
     LIB_FUNCTION("h9CcP3J0oVM", "libkernel", 1, "libkernel", posix_pthread_join);
+    LIB_FUNCTION("FJrT5LuUBAU", "libkernel", 1, "libkernel", posix_pthread_exit);
+    LIB_FUNCTION("PkS44IGrDkM", "libkernel", 1, "libkernel", posix_pthread_timedjoin_np);
     LIB_FUNCTION("Jb2uGFMr688", "libkernel", 1, "libkernel", posix_pthread_getaffinity_np);
     LIB_FUNCTION("5KWrg7-ZqvE", "libkernel", 1, "libkernel", posix_pthread_setaffinity_np);
     LIB_FUNCTION("3eqs37G74-s", "libkernel", 1, "libkernel", posix_pthread_getthreadid_np);
+    LIB_FUNCTION("9vyP6Z7bqzc", "libkernel", 1, "libkernel", posix_pthread_rename_np);
+    LIB_FUNCTION("FIs3-UQT9sg", "libkernel", 1, "libkernel", posix_pthread_getschedparam);
 
     // Orbis
     LIB_FUNCTION("14bOACANTBo", "libkernel", 1, "libkernel", ORBIS(posix_pthread_once));
@@ -765,6 +1260,10 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("How7B8Oet6k", "libkernel", 1, "libkernel", ORBIS(posix_pthread_getname_np));
     LIB_FUNCTION("3kg7rT0NQIs", "libkernel", 1, "libkernel", posix_pthread_exit);
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", posix_pthread_self);
+    LIB_FUNCTION("qBDmpCyGssE", "libkernel", 1, "libkernel", scePthreadCancel);
+    LIB_FUNCTION("OAmWq+OHSjw", "libkernel", 1, "libkernel", scePthreadSetcancelstate);
+    LIB_FUNCTION("sCJd99Phct0", "libkernel", 1, "libkernel", scePthreadSetcanceltype);
+    LIB_FUNCTION("LapIb799SSE", "libkernel", 1, "libkernel", scePthreadTestcancel);
     LIB_FUNCTION("oxMp8uPqa+U", "libkernel", 1, "libkernel", posix_pthread_set_name_np);
     LIB_FUNCTION("3PtV6p3QNX4", "libkernel", 1, "libkernel", posix_pthread_equal);
     LIB_FUNCTION("T72hz6ffq08", "libkernel", 1, "libkernel", posix_pthread_yield);
