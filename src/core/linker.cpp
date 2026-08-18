@@ -22,6 +22,7 @@
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/sysmodule/sysmodule.h"
+#include "core/libraries/sysmodule/sysmodule_internal.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
@@ -447,12 +448,12 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
         LOG_WARNING(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
                     return_info->name, library->name, module->name);
     } else {
-        ASSERT_MSG(library->name != "libc" || return_info->name != "Need_sceLibc",
-                   "libc.prx is missing, but the guest attempted to use it. "
-                   "This usually indicates a corrupted dump.");
-        ASSERT_MSG(library->name != "libSceFios2" || return_info->name != "sceFiosInitialize",
-                   "libSceFios2.prx is missing, but the guest attempted to use it. "
-                   "This usually indicates a corrupted dump.");
+        if (library->name == "libc" && return_info->name == "Need_sceLibc") {
+            Libraries::SysModule::g_need_scelibc = true;
+        }
+        if (library->name == "libSceFios2" && return_info->name == "sceFiosInitialize") {
+            Libraries::SysModule::g_need_scelibc = true;
+        }
     }
     return false;
 }
