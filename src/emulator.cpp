@@ -42,6 +42,7 @@
 #include "core/libraries/save_data/save_backup.h"
 #include "core/linker.h"
 #include "core/memory.h"
+#include "core/signals.h"
 #include "core/user_settings.h"
 #include "emulator.h"
 #include "video_core/cache_storage.h"
@@ -90,6 +91,7 @@ void Emulator::Shutdown() {
         return;
     }
     Common::Log::Flush();
+    Signals::Instance()->RemoveHandlers();
     if (controllers) {
         controllers->ResetLightbarColors();
         // need to give SDL time to do this before the runtime exits
