@@ -12,8 +12,8 @@
 
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
-static constexpr u32 ShaderBinaryVersion = 9u;
-static constexpr u32 ShaderMetaVersion = 11u;
+static constexpr u32 ShaderBinaryVersion = 10u;
+static constexpr u32 ShaderMetaVersion = 12u;
 static constexpr u32 PipelineKeyVersion = 3u;
 } // namespace Serialization
 

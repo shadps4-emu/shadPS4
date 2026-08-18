@@ -12,6 +12,7 @@
 
 #include "gcn_test_runner.hpp"
 #include "instructions.hpp"
+#include "shader_recompiler/fragment_barycentric.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/recompiler.h"
@@ -355,6 +356,71 @@ TEST_F(GcnTest, interp_constant_and_flat_coefficients_follow_p1_p2_isa_semantics
     EXPECT_TRUE(flat_p2.attribute_vertex_indices.empty());
 }
 
+TEST_F(GcnTest, triangle_barycentrics_invert_radv_provoking_vertex_rotation) {
+    EXPECT_EQ(Shader::BarycentricsForProvokingVertex(0), (std::array<u32, 2>{1, 2}));
+    EXPECT_EQ(Shader::BarycentricsForProvokingVertex(1), (std::array<u32, 2>{0, 1}));
+    EXPECT_EQ(Shader::BarycentricsForProvokingVertex(2), (std::array<u32, 2>{2, 0}));
+
+    Shader::Profile profile{};
+    profile.supports_fragment_shader_barycentric = true;
+    profile.supports_provoking_vertex = true;
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.primitive_type = AmdGpu::PrimitiveType::TriangleList;
+    runtime_info.fs_info.provoking_vtx_last = true;
+
+    const auto mapping = Shader::GetFragmentBarycentricMapping(runtime_info, profile);
+    EXPECT_EQ(mapping.even, (std::array<u32, 2>{2, 0}));
+    EXPECT_EQ(mapping.odd, mapping.even);
+    EXPECT_FALSE(mapping.uses_primitive_parity);
+}
+
+TEST_F(GcnTest, triangle_strip_barycentrics_follow_host_vertex_order_property) {
+    Shader::Profile profile{};
+    profile.supports_fragment_shader_barycentric = true;
+    profile.supports_provoking_vertex = true;
+    profile.tri_strip_vertex_order_independent_of_provoking_vertex = true;
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.primitive_type = AmdGpu::PrimitiveType::TriangleStrip;
+    runtime_info.fs_info.provoking_vtx_last = true;
+
+    const auto mapping = Shader::GetFragmentBarycentricMapping(runtime_info, profile);
+    EXPECT_EQ(mapping.even, (std::array<u32, 2>{2, 0}));
+    EXPECT_EQ(mapping.odd, (std::array<u32, 2>{0, 1}));
+    EXPECT_TRUE(mapping.uses_primitive_parity);
+
+    profile.tri_strip_vertex_order_independent_of_provoking_vertex = false;
+    const auto reordered = Shader::GetFragmentBarycentricMapping(runtime_info, profile);
+    EXPECT_EQ(reordered.even, (std::array<u32, 2>{2, 0}));
+    EXPECT_EQ(reordered.odd, reordered.even);
+    EXPECT_FALSE(reordered.uses_primitive_parity);
+}
+
+TEST_F(GcnTest, barycentric_mapping_handles_missing_host_last_provoking_support) {
+    Shader::Profile profile{};
+    profile.supports_fragment_shader_barycentric = true;
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.provoking_vtx_last = true;
+
+    runtime_info.fs_info.primitive_type = AmdGpu::PrimitiveType::TriangleFan;
+    const auto fan = Shader::GetFragmentBarycentricMapping(runtime_info, profile);
+    EXPECT_EQ(fan.even, (std::array<u32, 2>{0, 1}));
+    EXPECT_FALSE(fan.uses_primitive_parity);
+
+    runtime_info.fs_info.primitive_type = AmdGpu::PrimitiveType::TriangleStrip;
+    const auto strip = Shader::GetFragmentBarycentricMapping(runtime_info, profile);
+    EXPECT_EQ(strip.even, (std::array<u32, 2>{2, 0}));
+    EXPECT_EQ(strip.odd, (std::array<u32, 2>{0, 1}));
+    EXPECT_TRUE(strip.uses_primitive_parity);
+
+    runtime_info.fs_info.primitive_type = AmdGpu::PrimitiveType::LineList;
+    const auto line = Shader::GetFragmentBarycentricMapping(runtime_info, profile);
+    EXPECT_EQ(line.even, (std::array<u32, 2>{1, 2}));
+    EXPECT_FALSE(line.uses_primitive_parity);
+}
+
 TEST_F(GcnTest, khr_barycentrics_use_unqualified_builtins_per_evaluation_mode) {
     Shader::Profile profile{};
     profile.supported_spirv = 0x00010600;
@@ -424,6 +490,22 @@ TEST_F(GcnTest, khr_barycentrics_need_no_primitive_order_remap) {
     EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::PrimitiveId), 0U);
     EXPECT_EQ(facts.CountCapability(spv::Capability::Geometry), 0U);
     EXPECT_EQ(facts.CountOpcode(spv::Op::OpSelect), 0U);
+}
+
+TEST_F(GcnTest, khr_odd_strip_barycentrics_select_by_primitive_parity) {
+    Shader::Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    profile.supports_fragment_shader_barycentric = true;
+    profile.supports_provoking_vertex = true;
+    profile.tri_strip_vertex_order_independent_of_provoking_vertex = true;
+    auto runtime_info = BarycentricRuntimeInfo();
+    runtime_info.fs_info.primitive_type = AmdGpu::PrimitiveType::TriangleStrip;
+    runtime_info.fs_info.provoking_vtx_last = true;
+
+    const auto facts = InspectSpirv(TranslateFragmentBarycentricsToSpirv(profile, runtime_info));
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::PrimitiveId), 1U);
+    EXPECT_EQ(facts.CountCapability(spv::Capability::Geometry), 1U);
+    EXPECT_GT(facts.CountOpcode(spv::Op::OpSelect), 0U);
 }
 
 TEST_F(GcnTest, fragment_front_face_uses_float_sign_bits) {

@@ -43,6 +43,8 @@ struct Profile {
     bool supports_workgroup_explicit_memory_layout{};
     bool supports_amd_shader_explicit_vertex_parameter{};
     bool supports_fragment_shader_barycentric{};
+    bool supports_provoking_vertex{};
+    bool tri_strip_vertex_order_independent_of_provoking_vertex{};
     bool has_broken_spirv_clamp{};
     bool lower_left_origin_mode{};
     bool needs_lds_barriers{};
