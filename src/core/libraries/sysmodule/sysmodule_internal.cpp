@@ -14,6 +14,7 @@
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libc_internal/libc_internal.h"
+#include "core/libraries/libpng/pngdec.h"
 #include "core/libraries/libpng/pngenc.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
@@ -220,6 +221,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
              {"libSceJpegDec.sprx", nullptr},
              {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
+             {"libScePngDec.sprx", &Libraries::PngDec::RegisterLib},
              {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
              {"libSceJson.sprx", nullptr},
              {"libSceJson2.sprx", nullptr},
