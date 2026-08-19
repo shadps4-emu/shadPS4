@@ -72,6 +72,26 @@ Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
 
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
     const auto& buffer = ctx.buffers[handle];
+    const auto& desc = ctx.info.buffers[handle];
+    const auto vsharp = desc.GetSharp(ctx.info);
+    if (vsharp.GetElementSize() == 2) {
+        // Buffer has 2-byte elements. Guest address may be only 2-byte aligned,
+        // causing adjust % 4 == 2. Dword indexing (>>2) would lose the sub-4 precision.
+        // Use word indexing instead: dword_index*2 + word_offset, then assemble U32.
+        const Id word_index = ctx.OpIAdd(ctx.U32[1],
+            ctx.OpShiftLeftLogical(ctx.U32[1], index, ctx.ConstU32(1U)),
+            buffer.Offset(PointerSize::B16));
+        const auto [id, ptr_type] = buffer.Alias(PointerType::U16);
+        const Id lo = ctx.OpLoad(ctx.U16, ctx.OpAccessChain(ptr_type, id,
+                               ctx.u32_zero_value, word_index));
+        const Id hi = ctx.OpLoad(ctx.U16, ctx.OpAccessChain(ptr_type, id,
+                               ctx.u32_zero_value,
+                               ctx.OpIAdd(ctx.U32[1], word_index, ctx.ConstU32(1U))));
+        const Id hi32 = ctx.OpShiftLeftLogical(ctx.U32[1],
+                         ctx.OpUConvert(ctx.U32[1], hi), ctx.ConstU32(16U));
+        return ctx.OpBitwiseOr(ctx.U32[1], ctx.OpUConvert(ctx.U32[1], lo), hi32);
+    }
+    // Existing U32 path (element_size != 2)
     if (const Id offset = buffer.Offset(PointerSize::B32); Sirit::ValidId(offset)) {
         index = ctx.OpIAdd(ctx.U32[1], index, offset);
     }

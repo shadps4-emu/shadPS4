@@ -58,6 +58,7 @@ union BufferInstInfo {
     BitField<16, 1, u64> typed;
     BitField<17, 4, AmdGpu::DataFormat> inst_data_fmt;
     BitField<21, 3, AmdGpu::NumberFormat> inst_num_fmt;
+    BitField<24, 1, u64> addr64;
     BitField<32, 16, u64> pc;
 };
 

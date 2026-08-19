@@ -231,14 +231,16 @@ Id EmitContext::GetBufferSize(const u32 sharp_idx) {
 }
 
 void EmitContext::DefineBufferProperties() {
-    if (!profile.needs_buffer_offsets) {
-        return;
-    }
     for (u32 i = 0; i < buffers.size(); i++) {
         auto& buffer = buffers[i];
         const auto& desc = info.buffers[i];
         const u32 binding = buffer.binding;
         if (buffer.buffer_type != BufferType::Guest) {
+            continue;
+        }
+        // Bypass needs_buffer_offsets gate for element_size==2 buffers:
+        // they need B16 word offset even when the platform's StorageMinAlignment <= 4.
+        if (!profile.needs_buffer_offsets && !True(desc.used_types & IR::Type::U16)) {
             continue;
         }
 

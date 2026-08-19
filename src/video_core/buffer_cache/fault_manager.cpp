@@ -162,11 +162,14 @@ void FaultManager::ProcessFaultBuffer() {
             fault_ranges.Add(fault_buf[i], caching_pagesize);
             LOG_INFO(Render_Vulkan, "Accessed non-GPU cached memory at {:#x}", fault_buf[i]);
         }
-        fault_ranges.ForEach([&](VAddr start, VAddr end) {
-            ASSERT_MSG((end - start) <= std::numeric_limits<u32>::max(),
-                       "Buffer size is too large");
-            buffer_cache.FindBuffer(start, static_cast<u32>(end - start));
-        });
+        if (!fault_ranges.m_ranges_set.empty()) {
+            buffer_cache.ResetDmaSyncThisBatch();
+            fault_ranges.ForEach([&](VAddr start, VAddr end) {
+                ASSERT_MSG((end - start) <= std::numeric_limits<u32>::max(),
+                           "Buffer size is too large");
+                buffer_cache.FindBuffer(start, static_cast<u32>(end - start));
+            });
+        }
         fault_areas[area] = 0;
     });
 

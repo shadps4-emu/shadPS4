@@ -218,6 +218,10 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
 Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb) {
     FIBER_ENTER(dcb_task_name);
 
+    if (rasterizer) {
+        rasterizer->GetBufferCache().EnterBatchMode(VideoCore::BatchType::Graphics);
+    }
+
     cblock.Reset();
 
     // TODO: potentially, ASCs also can depend on CE and in this case the
@@ -898,12 +902,21 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         ce_task.handle.destroy();
     }
 
+    if (rasterizer) {
+        rasterizer->GetBufferCache().LeaveBatchMode(VideoCore::BatchType::Graphics);
+    }
+
     FIBER_EXIT;
 }
 
 template <bool is_indirect>
 Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     FIBER_ENTER(acb_task_name[vqid]);
+
+    if (rasterizer) {
+        rasterizer->GetBufferCache().EnterBatchMode(VideoCore::BatchType::Compute);
+    }
+
     auto& queue = asc_queues[{vqid}];
     const bool host_markers_enabled = rasterizer && EmulatorSettings.IsVkHostMarkersEnabled();
 
@@ -1170,6 +1183,10 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             *queue.read_addr += next_dw_off;
             *queue.read_addr %= queue.ring_size_dw;
         }
+    }
+
+    if (rasterizer) {
+        rasterizer->GetBufferCache().LeaveBatchMode(VideoCore::BatchType::Compute);
     }
 
     FIBER_EXIT;

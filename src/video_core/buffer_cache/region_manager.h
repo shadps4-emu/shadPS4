@@ -120,6 +120,14 @@ public:
         }
 
         RegionBits& bits = GetRegionBits<type>();
+
+        // Fast path: no bits set in the entire region (O(1) via summary word).
+        // Avoids 128-byte mask copy, UnsetRange, and UpdateProtection overhead
+        // when the region has already been synced and hasn't been touched since.
+        if (bits.None()) {
+            return;
+        }
+
         RegionBits mask(bits, start_page, end_page);
 
         if constexpr (clear) {

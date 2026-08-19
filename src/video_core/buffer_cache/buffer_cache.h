@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <set>
+
 #include <boost/container/small_vector.hpp>
 #include "common/lru_cache.h"
 #include "common/slot_vector.h"
@@ -27,6 +29,12 @@ class GraphicsPipeline;
 namespace VideoCore {
 
 using BufferId = Common::SlotId;
+
+/// Identifies which command processor entered the batch.
+enum class BatchType : u8 {
+    Graphics,
+    Compute,
+};
 
 class TextureCache;
 class MemoryTracker;
@@ -152,6 +160,30 @@ public:
     /// Synchronizes all buffers neede for DMA.
     void SynchronizeDmaBuffers();
 
+    /// Enter batch command processing mode: buffers synced once per batch are skipped on re-bind.
+    void EnterBatchMode(BatchType type);
+    /// Leave batch command processing mode.
+    void LeaveBatchMode(BatchType type);
+
+    /// Returns true if DMA buffer scan hasn't run yet this batch and marks it as done.
+    /// Guarantees at most one SynchronizeBuffersInRange per batch, avoiding the 32M
+    /// interval_map lookups on every intra-batch draw while never skipping when needed.
+    bool NeedDmaSyncThisBatch() {
+        if (dma_synced_this_batch) {
+            return false;
+        }
+        dma_synced_this_batch = true;
+        return true;
+    }
+
+    void ResetDmaSyncThisBatch() {
+        dma_synced_this_batch = false;
+    }
+
+    bool IsInBatch() {
+        return batch_depth > 0;
+    }
+
     /// Runs the garbage collector.
     void RunGarbageCollector();
 
@@ -221,6 +253,9 @@ private:
     RangeSet gpu_modified_ranges;
     SplitRangeMap<BufferId> buffer_ranges;
     PageTable page_table;
+    u32 batch_depth = 0; // Nesting depth of command batches (indirect buffers nest)
+    std::set<std::pair<VAddr, u32>> synced_bindings; // Read-only bindings synced this batch
+    bool dma_synced_this_batch = false; // True after first DMA sync this batch
 };
 
 } // namespace VideoCore

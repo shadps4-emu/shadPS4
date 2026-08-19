@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <boost/container/flat_map.hpp>
+#include <boost/container/small_vector.hpp>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
 #include "common/arch.h"
@@ -123,7 +124,8 @@ using namespace Shader;
 
 struct PassInfo {
     // map offset to inst
-    using PtrUserList = boost::container::flat_map<u32, Shader::IR::Inst*>;
+    using PtrUserList = boost::container::flat_map<u32,
+        boost::container::small_vector<Shader::IR::Inst*, 2>>;
 
     Optimization::SrtGvnTable gvn_table;
     // keys are GetUserData or ReadConst instructions that are used as pointers
@@ -181,18 +183,22 @@ static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
     // flattened buffer.
     // TODO src and dst are contiguous. Optimize with wider loads/stores
     // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
-    for (auto [src_off_dw, use] : *use_list) {
+    for (auto& [src_off_dw, uses] : *use_list) {
         c.mov(r10d, ptr[rdi + (src_off_dw << 2)]);
         c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
 
-        use->SetFlags<u32>(pass_info.dst_off_dw);
+        for (auto* use : uses) {
+            use->SetFlags<u32>(pass_info.dst_off_dw);
+        }
         pass_info.dst_off_dw++;
     }
 
     // Then visit any children used as pointers
-    for (const auto [src_off_dw, use] : *use_list) {
-        if (pass_info.GetUsesAsPointer(use)) {
-            VisitPointer(src_off_dw, use, pass_info, c);
+    for (const auto& [src_off_dw, uses] : *use_list) {
+        for (auto* use : uses) {
+            if (pass_info.GetUsesAsPointer(use)) {
+                VisitPointer(src_off_dw, use, pass_info, c);
+            }
         }
     }
 
@@ -283,7 +289,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                     pass_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
                 PassInfo::PtrUserList& user_list = ptr_uses_kv.first->second;
 
-                user_list[inst.Arg(1).U32()] = &inst;
+                user_list[inst.Arg(1).U32()].push_back(&inst);
 
                 if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
                     IR::ScalarReg ud_reg = ptr_lo->Arg(0).ScalarReg();
