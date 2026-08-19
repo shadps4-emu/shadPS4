@@ -356,8 +356,8 @@ void EmitContext::DefineInputs() {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_smooth = DefineVariable(F32[2], spv::BuiltIn::BaryCoordSmoothAMD,
                                                    spv::StorageClass::Input);
-            } else if (profile.supports_fragment_shader_barycentric) {
-                bary_coord_smooth =
+            } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
+                bary_coord =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
             }
         }
@@ -365,20 +365,24 @@ void EmitContext::DefineInputs() {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_smooth_centroid = DefineVariable(
                     F32[2], spv::BuiltIn::BaryCoordSmoothCentroidAMD, spv::StorageClass::Input);
-            } else if (profile.supports_fragment_shader_barycentric) {
-                bary_coord_smooth_centroid =
+            } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
+                bary_coord =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
-                // Decorate(bary_coord_smooth_centroid, spv::Decoration::Centroid);
             }
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample)) {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_smooth_sample = DefineVariable(
                     F32[2], spv::BuiltIn::BaryCoordSmoothSampleAMD, spv::StorageClass::Input);
-            } else if (profile.supports_fragment_shader_barycentric) {
-                bary_coord_smooth_sample =
+            } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
+                bary_coord =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
-                // Decorate(bary_coord_smooth_sample, spv::Decoration::Sample);
+                // we would need sample_index to interpolate the bary_coord later
+                if (!ValidId(sample_index)) {
+                    sample_index =
+                        DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
+                    Decorate(sample_index, spv::Decoration::Flat);
+                }
             }
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordNoPersp)) {
@@ -755,12 +759,10 @@ void EmitContext::DefinePushDataBlock() {
     interfaces.push_back(push_data_block);
 }
 
-EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_written, u32 elem_shift,
+EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, u32 elem_shift,
                                                  BufferType buffer_type, Id data_type) {
     // Define array type.
-    const Id max_num_items = ConstU32(u32(profile.max_ubo_size) >> elem_shift);
-    const Id record_array_type{is_storage ? TypeRuntimeArray(data_type)
-                                          : TypeArray(data_type, max_num_items)};
+    const Id record_array_type{TypeRuntimeArray(data_type)};
     // Define block struct type. Don't perform decorations twice on the same Id.
     const Id struct_type{TypeStruct(record_array_type)};
     if (std::ranges::find(buf_type_ids, record_array_type.value, &Id::value) ==
@@ -772,14 +774,13 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
         buf_type_ids.push_back(record_array_type);
     }
     // Define buffer binding interface.
-    const auto storage_class =
-        is_storage ? spv::StorageClass::StorageBuffer : spv::StorageClass::Uniform;
+    constexpr auto storage_class = spv::StorageClass::StorageBuffer;
     const Id struct_pointer_type{TypePointer(storage_class, struct_type)};
     const Id pointer_type = TypePointer(storage_class, data_type);
     const Id id{AddGlobalVariable(struct_pointer_type, storage_class)};
     Decorate(id, spv::Decoration::Binding, binding.unified);
     Decorate(id, spv::Decoration::DescriptorSet, 0U);
-    if (is_storage && !is_written) {
+    if (!is_written) {
         Decorate(id, spv::Decoration::NonWritable);
     }
     switch (buffer_type) {
@@ -802,7 +803,7 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
         Name(id, "ssbo_shmem");
         break;
     default:
-        Name(id, fmt::format("{}_{}", is_storage ? "ssbo" : "ubo", binding.buffer));
+        Name(id, fmt::format("ssbo_{}", binding.buffer));
         break;
     }
     interfaces.push_back(id);
@@ -812,7 +813,6 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
 void EmitContext::DefineBuffers() {
     for (const auto& desc : info.buffers) {
         const auto buf_sharp = desc.GetSharp(info);
-        const bool is_storage = desc.IsStorage(buf_sharp);
 
         // Set indexes for special buffers.
         if (desc.buffer_type == BufferType::Flatbuf) {
@@ -827,23 +827,23 @@ void EmitContext::DefineBuffers() {
         auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
         if (True(desc.used_types & IR::Type::U64)) {
             spv_buffer.Alias(PointerType::U64) =
-                DefineBuffer(is_storage, desc.is_written, 3, desc.buffer_type, U64);
+                DefineBuffer(desc.is_written, 3, desc.buffer_type, U64);
         }
         if (True(desc.used_types & IR::Type::U32)) {
             spv_buffer.Alias(PointerType::U32) =
-                DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, U32[1]);
+                DefineBuffer(desc.is_written, 2, desc.buffer_type, U32[1]);
         }
         if (True(desc.used_types & IR::Type::F32)) {
             spv_buffer.Alias(PointerType::F32) =
-                DefineBuffer(is_storage, desc.is_written, 2, desc.buffer_type, F32[1]);
+                DefineBuffer(desc.is_written, 2, desc.buffer_type, F32[1]);
         }
         if (True(desc.used_types & IR::Type::U16)) {
             spv_buffer.Alias(PointerType::U16) =
-                DefineBuffer(is_storage, desc.is_written, 1, desc.buffer_type, U16);
+                DefineBuffer(desc.is_written, 1, desc.buffer_type, U16);
         }
         if (True(desc.used_types & IR::Type::U8)) {
             spv_buffer.Alias(PointerType::U8) =
-                DefineBuffer(is_storage, desc.is_written, 0, desc.buffer_type, U8);
+                DefineBuffer(desc.is_written, 0, desc.buffer_type, U8);
         }
         ++binding.unified;
     }
