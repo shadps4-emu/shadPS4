@@ -98,6 +98,7 @@ void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
 
     auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
     const auto [download, offset] = download_buffer.Map(download_size);
+    ASSERT_MSG(download, "Failed to map download buffer for image of size {}", download_size);
     download_buffer.Commit();
     tile_manager.TileImage(image, buffer_copies, download_buffer.Handle(), offset, download_size);
 
