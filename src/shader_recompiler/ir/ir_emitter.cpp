@@ -218,6 +218,14 @@ U1 IREmitter::GetExec() {
     return Inst<U1>(Opcode::GetExec);
 }
 
+U32 IREmitter::GetExecLo() {
+    return Inst<U32>(Opcode::GetExecLo);
+}
+
+U32 IREmitter::GetExecHi() {
+    return Inst<U32>(Opcode::GetExecHi);
+}
+
 U1 IREmitter::GetVcc() {
     return Inst<U1>(Opcode::GetVcc);
 }

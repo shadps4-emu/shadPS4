@@ -30,6 +30,8 @@ void EmitPhiMove(EmitContext&);
 void EmitJoin(EmitContext& ctx);
 void EmitGetScc(EmitContext& ctx);
 void EmitGetExec(EmitContext& ctx);
+Id EmitGetExecLo(EmitContext& ctx);
+Id EmitGetExecHi(EmitContext& ctx);
 void EmitGetVcc(EmitContext& ctx);
 void EmitGetSccLo(EmitContext& ctx);
 void EmitGetVccLo(EmitContext& ctx);
