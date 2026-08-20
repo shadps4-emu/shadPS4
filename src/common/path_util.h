@@ -106,14 +106,15 @@ constexpr auto LOG_FILE = "shad_log.txt";
 void SetUserPath(PathType user_path, const std::filesystem::path& new_path);
 
 /**
- * Recursively searches for a game directory by its ID.
+ * Recursively searches for an installed game by its ID.
  * Limits search depth to prevent excessive filesystem traversal.
  *
  * @param dir Base directory to start the search from
  * @param game_id The game ID to search for
  * @param max_depth Maximum directory depth to search
  *
- * @returns Path to eboot.bin if found, std::nullopt otherwise
+ * @returns A path to eboot.bin for an unpacked game, or the ".zar" archive itself for a
+ *          packed one. std::nullopt if the game isn't found.
  */
 [[nodiscard]] std::optional<std::filesystem::path> FindGameByID(const std::filesystem::path& dir,
                                                                 const std::string& game_id,
