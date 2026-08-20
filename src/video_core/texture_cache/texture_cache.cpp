@@ -73,32 +73,33 @@ void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
     if (False(image.flags & ImageFlagBits::GpuModified)) {
         return;
     }
-    auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
-    const u32 download_size = image.info.pitch * image.info.size.height * image.info.size.depth *
-                              image.info.resources.layers * (image.info.num_bits / 8);
-    ASSERT(download_size <= image.info.guest_size);
-    const auto [download, offset] = download_buffer.Map(download_size);
-    download_buffer.Commit();
-    const vk::BufferImageCopy image_download = {
-        .bufferOffset = offset,
-        .bufferRowLength = image.info.pitch,
-        .bufferImageHeight = image.info.size.height,
-        .imageSubresource =
-            {
-                .aspectMask = image.info.props.is_depth ? vk::ImageAspectFlagBits::eDepth
-                                                        : vk::ImageAspectFlagBits::eColor,
-                .mipLevel = 0,
+    boost::container::small_vector<vk::BufferImageCopy, 8> buffer_copies;
+    u32 download_size = 0;
+    for (u32 mip = 0; mip < image.info.resources.levels; mip++) {
+        const auto& mip_info = image.info.mips_layout[mip];
+        const u32 width = std::max(image.info.size.width >> mip, 1u);
+        const u32 height = std::max(image.info.size.height >> mip, 1u);
+        const u32 depth = std::max(image.info.size.depth >> mip, 1u);
+        buffer_copies.push_back(vk::BufferImageCopy{
+            .bufferOffset = mip_info.offset,
+            .bufferRowLength = mip_info.pitch,
+            .bufferImageHeight = mip_info.height,
+            .imageSubresource{
+                .aspectMask = image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+                .mipLevel = mip,
                 .baseArrayLayer = 0,
                 .layerCount = image.info.resources.layers,
             },
-        .imageOffset = {0, 0, 0},
-        .imageExtent = {image.info.size.width, image.info.size.height, image.info.size.depth},
-    };
-    scheduler.EndRendering();
-    const auto cmdbuf = scheduler.CommandBuffer();
-    image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-    cmdbuf.copyImageToBuffer(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
-                             download_buffer.Handle(), image_download);
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {width, height, depth},
+        });
+        download_size += mip_info.size;
+    }
+
+    auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
+    const auto [download, offset] = download_buffer.Map(download_size);
+    download_buffer.Commit();
+    tile_manager.TileImage(image, buffer_copies, download_buffer.Handle(), 0, download_size);
 
     if (sync) {
         scheduler.Finish();
@@ -635,7 +636,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8)) {
+    if (readback_linear_images) {
         std::unique_lock lk{download_images_mutex};
         download_images.emplace(image_id);
     }
