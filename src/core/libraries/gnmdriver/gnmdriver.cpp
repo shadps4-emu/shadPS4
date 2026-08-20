@@ -2313,11 +2313,17 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
 int PS4_SYSV_ABI sceGnmSubmitDone() {
     HLE_TRACE;
     LOG_DEBUG(Lib_GnmDriver, "called");
-    WaitGpuIdle();
-    if (!liverpool->IsGpuIdle()) {
-        submission_lock = true;
-    }
     liverpool->SubmitDone();
+    // Pace the guest by (bounded) draining of the gfx ring instead of the
+    // submission lock: the lock forces every submission after submitDone to
+    // wait until the WHOLE queue is idle, including async compute rings that
+    // engines like Naughty Dog's keep busy at all times - which serializes
+    // rendering to the interrupt cadence (~50-90 ms per frame observed in
+    // Uncharted TNDC). Draining just the gfx ring before returning keeps the
+    // engine's own frame pacing intact: all EOP fences of this frame are
+    // written before the guest's next FrameBegin. The wait is bounded because
+    // ring progress may depend on labels the guest writes after submitDone.
+    liverpool->WaitForGfxRingDrain();
     send_init_packet = true;
     ++frames_submitted;
     DebugState.IncGnmFrameNum();

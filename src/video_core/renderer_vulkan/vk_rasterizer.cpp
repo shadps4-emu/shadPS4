@@ -670,8 +670,19 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
             }
         } else {
+            // V# with num_records=0xffffffff is a legal "pointer to all of
+            // memory" pattern (Naughty Dog). ClampRangeSize turns it into a
+            // multi-GiB range; treating that as a regular SSBO poisons the
+            // cache: marking gigabytes GPU-modified kills the stream-buffer
+            // fast path for every other buffer, and re-synchronizing the
+            // whole range on every draw costs tens of ms (12 s worst case
+            // observed). Keep reads coherent with a small window near the
+            // base address, synced at most once per flip.
+            const bool unbounded =
+                vsharp.num_records == 0xffffffffu && size >= 1_GB;
             const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
-                vsharp.base_address, size, desc.is_written, desc.is_formatted, buffer_id);
+                vsharp.base_address, size, desc.is_written && !unbounded,
+                desc.is_formatted, buffer_id, unbounded ? 16_MB : 0);
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
             ASSERT(adjust % 4 == 0);
@@ -683,7 +694,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                                           vk::PipelineStageFlagBits2::eAllCommands)) {
                 buffer_barriers.emplace_back(*barrier);
             }
-            if (desc.is_written && desc.is_formatted) {
+            if (desc.is_written && desc.is_formatted && !unbounded) {
                 texture_cache.InvalidateMemoryFromGPU(vsharp.base_address, size);
             }
         }

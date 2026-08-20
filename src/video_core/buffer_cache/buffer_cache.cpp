@@ -389,7 +389,8 @@ void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, 
 }
 
 std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written,
-                                                  bool is_texel_buffer, BufferId buffer_id) {
+                                                  bool is_texel_buffer, BufferId buffer_id,
+                                                  u32 sync_limit) {
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
     if (!is_written && size <= CACHING_PAGESIZE && !IsRegionGpuModified(device_addr, size)) {
         const u64 offset = stream_buffer.Copy(device_addr, size, instance.UniformMinAlignment());
@@ -399,7 +400,21 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
         buffer_id = FindBuffer(device_addr, size);
     }
     Buffer& buffer = slot_buffers[buffer_id];
-    SynchronizeBuffer(buffer, device_addr, size, is_written, is_texel_buffer);
+    if (sync_limit != 0) {
+        // Unbounded descriptor: synchronize only a window near the base
+        // address, at most once per guest flip. Re-uploading everything the
+        // guest wrote anywhere into a multi-GiB range on every draw is
+        // prohibitively slow, and hundreds of draws per frame bind the same
+        // descriptor.
+        const u64 stamp = flip_stamp.load(std::memory_order_relaxed);
+        if (unbounded_sync_stamp != stamp) {
+            unbounded_sync_stamp = stamp;
+            SynchronizeBuffer(buffer, device_addr, std::min(size, sync_limit), is_written,
+                              is_texel_buffer);
+        }
+    } else {
+        SynchronizeBuffer(buffer, device_addr, size, is_written, is_texel_buffer);
+    }
     if (is_written) {
         gpu_modified_ranges.Add(device_addr, size);
     }

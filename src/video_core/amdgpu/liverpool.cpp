@@ -127,12 +127,27 @@ void Liverpool::Process(std::stop_token stoken) {
             if (task.done()) {
                 task.destroy();
 
-                std::scoped_lock lock{queue.m_access};
-                queue.submits.pop();
-
+                {
+                    std::scoped_lock lock{queue.m_access};
+                    queue.submits.pop();
+                }
                 --num_submits;
-                std::scoped_lock lock2{submit_mutex};
-                submit_cv.notify_all();
+                {
+                    std::scoped_lock lock2{submit_mutex};
+                    if (curr_qid == GfxQueueId) {
+                        --num_gfx_submits;
+                    }
+                    submit_cv.notify_all();
+                }
+                if (curr_qid == GfxQueueId) {
+                    while (pending_flip_signals) {
+                        --pending_flip_signals;
+                        if (rasterizer) {
+                            rasterizer->NotifyGuestFlip();
+                        }
+                        Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
+                    }
+                }
             }
         }
 
@@ -263,9 +278,15 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
 
                 switch (nop->data_block[0]) {
                 case PM4CmdNop::PayloadType::PatchedFlip: {
-                    // There is no evidence that GPU CP drives flip events by parsing
-                    // special NOP packets. For convenience lets assume that it does.
-                    Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
+                    // Defer the flip signal until the containing submit retires.
+                    // PatchFlipRequest appends the frame EOP fence AFTER this NOP,
+                    // so signaling here would let the present thread deliver the
+                    // flip event to the guest before the fence value is written
+                    // (observed as a guest-side assert of a zero EOP tick in
+                    // Naughty Dog titles once submission is pipelined). On real
+                    // hardware an eop-flip cannot precede the EOP of its own
+                    // submit either.
+                    ++pending_flip_signals;
                     break;
                 }
                 case PM4CmdNop::PayloadType::DebugMarkerPush: {
@@ -1223,6 +1244,7 @@ void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
 
     std::scoped_lock lk{submit_mutex};
     ++num_submits;
+    ++num_gfx_submits;
     submit_cv.notify_one();
 }
 

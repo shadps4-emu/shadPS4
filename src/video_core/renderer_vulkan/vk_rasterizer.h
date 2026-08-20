@@ -38,6 +38,10 @@ public:
         return buffer_cache;
     }
 
+    void NotifyGuestFlip() {
+        buffer_cache.NotifyGuestFlip();
+    }
+
     [[nodiscard]] VideoCore::TextureCache& GetTextureCache() noexcept {
         return texture_cache;
     }

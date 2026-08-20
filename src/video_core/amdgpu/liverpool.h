@@ -87,6 +87,17 @@ public:
         return num_submits == 0;
     }
 
+    // Waits (bounded) until the gfx ring has fully drained. Unlike the
+    // submission-lock approach this does not wait for async compute rings,
+    // which some engines (e.g. Naughty Dog titles) legitimately keep parked
+    // in WaitRegMem indefinitely. The timeout prevents deadlocks when ring
+    // progress depends on labels the guest writes only after submitDone.
+    void WaitForGfxRingDrain() {
+        using namespace std::chrono_literals;
+        std::unique_lock lk{submit_mutex};
+        submit_cv.wait_for(lk, 2000ms, [this] { return num_gfx_submits.load() == 0; });
+    }
+
     void SetVoPort(Libraries::VideoOut::VideoOutPort* port) {
         vo_port = port;
     }
@@ -224,6 +235,9 @@ private:
     Libraries::VideoOut::VideoOutPort* vo_port{};
     std::jthread process_thread{};
     std::atomic<u32> num_submits{};
+    std::atomic<u32> num_gfx_submits{};
+    // Flip signals deferred until the containing gfx submit retires (GPU thread only).
+    u32 pending_flip_signals{};
     std::atomic<u32> num_commands{};
     std::atomic<bool> submit_done{};
     std::mutex submit_mutex;

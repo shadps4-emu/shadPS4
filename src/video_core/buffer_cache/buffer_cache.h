@@ -126,7 +126,13 @@ public:
     /// Obtains a buffer for the specified region.
     [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,
                                                        bool is_texel_buffer = false,
-                                                       BufferId buffer_id = {});
+                                                       BufferId buffer_id = {},
+                                                       u32 sync_limit = 0);
+
+    /// Called by the GPU thread when a guest flip submit retires.
+    void NotifyGuestFlip() {
+        flip_stamp.fetch_add(1, std::memory_order_relaxed);
+    }
 
     /// Attempts to obtain a buffer without modifying the cache contents.
     [[nodiscard]] std::pair<Buffer*, u32> ObtainBufferForImage(VAddr gpu_addr, u32 size);
@@ -208,6 +214,8 @@ private:
     std::unique_ptr<MemoryTracker> memory_tracker;
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
+    std::atomic<u64> flip_stamp{};
+    u64 unbounded_sync_stamp = ~0ull;
     StreamBuffer download_buffer;
     StreamBuffer device_buffer;
     Buffer gds_buffer;
