@@ -1284,6 +1284,8 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
             return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
         case OperandField::VccLo:
             return ir.GetVcc();
+        case OperandField::ConstZero:
+            return ir.Imm1(false);
         default:
             UNREACHABLE_MSG("src0 = {}", u32(inst.src[0].field));
         }
@@ -1296,6 +1298,9 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
             return is_zero ? src0 : ir.LogicalNot(src0);
         case ConditionOp::GT:
             ASSERT(is_zero);
+            if (inst.src[0].field == OperandField::ConstZero) {
+                return ir.Imm1(false);
+            }
             return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
         default:
             UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));

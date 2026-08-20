@@ -26,6 +26,15 @@ struct F32x2 {
     float b;
 };
 
+TEST_F(GcnTest, cmp_u64_const_zero) {
+    const auto vcc = static_cast<VOperand8>(SOperand9::VccLo);
+    for (const auto op : {OpcodeVOP3::V_CMP_EQ_U64, OpcodeVOP3::V_CMP_NE_U64,
+                          OpcodeVOP3::V_CMP_GT_U64}) {
+        const auto spirv = TranslateToSpirv(VOP3A(op, vcc, SOperand9::Const0, SOperand9::Const0).Get());
+        EXPECT_FALSE(spirv.empty());
+    }
+}
+
 // Example
 // TEST_F(GcnTest, test_name) {
 //     // Runner sets the vulkan context
