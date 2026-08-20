@@ -87,6 +87,41 @@ static u32 MapOutputs(std::span<Shader::OutputMap, 3> outputs, const AmdGpu::VsO
     return num_outputs;
 }
 
+static AmdGpu::PrimitiveType FragmentPrimitiveType(const AmdGpu::Regs& regs) {
+    if (regs.stage_enable.gs_en) {
+        switch (regs.vgt_gs_out_prim_type.GetPrimitiveType(0)) {
+        case AmdGpu::GsOutputPrimitiveType::PointList:
+            return AmdGpu::PrimitiveType::PointList;
+        case AmdGpu::GsOutputPrimitiveType::LineStrip:
+            return AmdGpu::PrimitiveType::LineStrip;
+        case AmdGpu::GsOutputPrimitiveType::TriangleStrip:
+            return AmdGpu::PrimitiveType::TriangleStrip;
+        }
+        UNREACHABLE();
+    }
+    if (regs.stage_enable.hs_en) {
+        switch (regs.tess_config.topology) {
+        case AmdGpu::TessellationTopology::Point:
+            return AmdGpu::PrimitiveType::PointList;
+        case AmdGpu::TessellationTopology::Line:
+            return AmdGpu::PrimitiveType::LineList;
+        case AmdGpu::TessellationTopology::TriangleCw:
+        case AmdGpu::TessellationTopology::TriangleCcw:
+            return AmdGpu::PrimitiveType::TriangleList;
+        default:
+            UNREACHABLE();
+        }
+    }
+    if (regs.primitive_type == AmdGpu::PrimitiveType::RectList ||
+        regs.primitive_type == AmdGpu::PrimitiveType::QuadList) {
+        return AmdGpu::PrimitiveType::TriangleList;
+    }
+    if (regs.primitive_type == AmdGpu::PrimitiveType::Polygon) {
+        return AmdGpu::PrimitiveType::TriangleFan;
+    }
+    return regs.primitive_type;
+}
+
 const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_stage) {
     auto& info = runtime_infos[u32(l_stage)];
     const auto& regs = liverpool->regs;
@@ -191,7 +226,17 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.fs_info.en_flags = regs.ps_input_ena;
         info.fs_info.addr_flags = regs.ps_input_addr;
         info.fs_info.num_inputs = regs.num_interp;
+        info.fs_info.front_face_all_bits = regs.ps_input_addr.front_face_ena &&
+                                           regs.ps_input_ena.front_face_ena &&
+                                           regs.barycentric_control.front_face_all_bits;
+        info.fs_info.num_samples =
+            regs.ps_input_addr.sample_coverage_ena && regs.ps_input_ena.sample_coverage_ena
+                ? regs.aa_config.NumSamples()
+                : 1;
         info.fs_info.z_export_format = regs.z_export_format;
+        info.fs_info.primitive_type = FragmentPrimitiveType(regs);
+        info.fs_info.provoking_vtx_last =
+            regs.polygon_control.provoking_vtx_last == AmdGpu::ProvokingVtxLast::Last;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
                                        regs.depth_shader_control.stencil_test_val_export_enable;
         info.fs_info.mrtz_mask = regs.depth_shader_control.z_export_enable |
@@ -301,8 +346,9 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .supports_amd_shader_explicit_vertex_parameter =
             instance_.IsAmdShaderExplicitVertexParameterSupported(),
         .supports_fragment_shader_barycentric = instance_.IsFragmentShaderBarycentricSupported(),
-        .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
-                                      instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
+        .supports_provoking_vertex = instance_.IsProvokingVertexSupported(),
+        .tri_strip_vertex_order_independent_of_provoking_vertex =
+            instance_.IsTriStripVertexOrderIndependentOfProvokingVertex(),
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
                               instance.GetDriverID() == vk::DriverId::eMesaKosmickrisp,
         .needs_buffer_offsets = instance.StorageMinAlignment() > 4,
