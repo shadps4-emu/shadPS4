@@ -272,6 +272,7 @@ public:
     Id num_workgroups_id{};
     Id workgroup_index_id{};
     Id local_invocation_id{};
+    Id local_invocation_index{};
     Id invocation_id{};
     Id subgroup_local_invocation_id{};
     Id image_u32{};

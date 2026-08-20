@@ -463,6 +463,7 @@ Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id co
 Id EmitImageAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                             Id cmp_value);
 Id EmitCubeFaceIndex(EmitContext& ctx, IR::Inst* inst, Id cube_coords);
+Id EmitGuestLaneId(EmitContext& ctx);
 Id EmitLaneId(EmitContext& ctx);
 Id EmitWarpId(EmitContext& ctx);
 Id EmitQuadShuffle(EmitContext& ctx, Id value, Id index);
