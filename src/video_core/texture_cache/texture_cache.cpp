@@ -28,7 +28,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
       buffer_cache{buffer_cache_}, tracker{tracker_}, blit_helper{instance, scheduler},
       tile_manager{instance, scheduler, buffer_cache.GetUtilityBuffer(MemoryUsage::Stream)},
-      readback_linear_images{EmulatorSettings.IsReadbackLinearImagesEnabled()} {
+      image_readbacks_mode{EmulatorSettings.GetImageReadbacksMode()} {
 
     u32 max_samplers = instance.GetMaxSamplerAllocationCount();
     trigger_gc_samplers = max_samplers * 3 / 4;
@@ -620,11 +620,35 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
     return {};
 }
 
+bool TextureCache::ShouldDownloadImage(const Image& image) {
+    switch (image_readbacks_mode) {
+    case GpuImageReadbacksMode::Disabled: {
+        return false;
+    }
+    case GpuImageReadbacksMode::Linear: {
+        // Download all linear images
+        return image.info.guest_address != 0 && !image.info.props.is_tiled;
+    }
+    case GpuImageReadbacksMode::SmallTiled: {
+        // Download all linear images + tiled images of a small width
+        return image.info.guest_address != 0 &&
+               (!image.info.props.is_tiled || image.info.size.width <= 8);
+    }
+    case GpuImageReadbacksMode::Full: {
+        // Download all valid images
+        return image.info.guest_address != 0;
+    }
+    default: {
+        UNREACHABLE();
+    }
+    }
+}
+
 ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
-        if (readback_linear_images && image.info.guest_address != 0) {
+        if (ShouldDownloadImage(image)) {
             std::unique_lock lk{download_images_mutex};
             download_images.emplace(image_id);
         }
@@ -636,7 +660,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    if (readback_linear_images) {
+    if (ShouldDownloadImage(image)) {
         std::unique_lock lk{download_images_mutex};
         download_images.emplace(image_id);
     }
