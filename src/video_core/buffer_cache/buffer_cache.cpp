@@ -753,6 +753,12 @@ vk::Buffer BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> c
 }
 
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
+    if (auto type = texture_cache.IsMeta(device_addr)) {
+        ASSERT(*type == TextureCache::MetaType::HTile);
+        static constexpr u32 ZmaskUncompressed = 0xf;
+        buffer.Fill(buffer.Offset(device_addr), size, ZmaskUncompressed);
+        return true;
+    }
     const ImageId image_id = texture_cache.FindImageFromRange(device_addr, size);
     if (!image_id) {
         return false;
