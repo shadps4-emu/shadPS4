@@ -99,7 +99,7 @@ void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
     auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
     const auto [download, offset] = download_buffer.Map(download_size);
     download_buffer.Commit();
-    tile_manager.TileImage(image, buffer_copies, download_buffer.Handle(), 0, download_size);
+    tile_manager.TileImage(image, buffer_copies, download_buffer.Handle(), offset, download_size);
 
     if (sync) {
         scheduler.Finish();
