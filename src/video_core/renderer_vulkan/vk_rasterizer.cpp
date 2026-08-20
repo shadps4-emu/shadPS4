@@ -715,11 +715,18 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a shader (texture)");
         }
 
+        if (tsharp.Address() == 0 || data_fmt == AmdGpu::DataFormat::FormatInvalid) {
+            image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            image_descriptor_array_sizes.push_back(1);
+            continue;
+        }
+
         const auto data_fmt = tsharp.GetDataFmt();
         const auto num_fmt = tsharp.GetNumberFmt();
-        if (tsharp.Address() == 0 || !memory->IsValidGpuMapping(tsharp.Address(), 0) ||
-            data_fmt == AmdGpu::DataFormat::FormatInvalid || !magic_enum::enum_contains(data_fmt) ||
-            !magic_enum::enum_contains(num_fmt)) {
+        if (!memory->IsValidGpuMapping(tsharp.Address(), 0) ||
+            !magic_enum::enum_contains(data_fmt) || !magic_enum::enum_contains(num_fmt)) {
+            LOG_WARNING(Render_Vulkan, "Rejecting invalid T# address={:#x}, data_format={}, num_format={}",
+                        tsharp.Address(), static_cast<u32>(data_fmt), static_cast<u32>(num_fmt));
             image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
             image_descriptor_array_sizes.push_back(1);
             continue;
