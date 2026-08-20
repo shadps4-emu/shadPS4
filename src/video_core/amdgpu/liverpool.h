@@ -236,8 +236,9 @@ private:
     std::jthread process_thread{};
     std::atomic<u32> num_submits{};
     std::atomic<u32> num_gfx_submits{};
-    // Flip signals deferred until the containing gfx submit retires (GPU thread only).
-    u32 pending_flip_signals{};
+    // Deferred flip signal: armed by the PatchedFlip NOP, delivered once the
+    // containing DCB has fully executed (GPU thread only).
+    bool flip_signal_armed{};
     std::atomic<u32> num_commands{};
     std::atomic<bool> submit_done{};
     std::mutex submit_mutex;

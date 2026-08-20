@@ -139,14 +139,14 @@ void Liverpool::Process(std::stop_token stoken) {
                     }
                     submit_cv.notify_all();
                 }
-                if (curr_qid == GfxQueueId) {
-                    while (pending_flip_signals) {
-                        --pending_flip_signals;
-                        if (rasterizer) {
-                            rasterizer->NotifyGuestFlip();
-                        }
-                        Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
+                if (curr_qid == GfxQueueId && flip_signal_armed) {
+                    // Fallback for a flip NOP not followed by an executed tail
+                    // (should not happen in practice).
+                    flip_signal_armed = false;
+                    if (rasterizer) {
+                        rasterizer->NotifyGuestFlip();
                     }
+                    Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
                 }
             }
         }
@@ -278,15 +278,19 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
 
                 switch (nop->data_block[0]) {
                 case PM4CmdNop::PayloadType::PatchedFlip: {
-                    // Defer the flip signal until the containing submit retires.
-                    // PatchFlipRequest appends the frame EOP fence AFTER this NOP,
-                    // so signaling here would let the present thread deliver the
-                    // flip event to the guest before the fence value is written
-                    // (observed as a guest-side assert of a zero EOP tick in
-                    // Naughty Dog titles once submission is pipelined). On real
-                    // hardware an eop-flip cannot precede the EOP of its own
-                    // submit either.
-                    ++pending_flip_signals;
+                    // Defer the flip signal until this DCB has fully executed.
+                    // PatchFlipRequest appends the frame fence (EventWriteEop or
+                    // label WriteData, depending on the PrepareFlip variant)
+                    // AFTER this NOP, so signaling here would let the present
+                    // thread deliver the flip event to the guest before the
+                    // fence value is visible - observed as a guest-side assert
+                    // of a zero EOP tick in Naughty Dog titles once submission
+                    // is pipelined. On real hardware an eop-flip cannot precede
+                    // the EOP of its own submit either. Waiting for the whole
+                    // submit to retire would be too coarse the other way: the
+                    // ring may legally stall on guest-written labels for many
+                    // seconds, serializing presentation.
+                    flip_signal_armed = true;
                     break;
                 }
                 case PM4CmdNop::PayloadType::DebugMarkerPush: {
@@ -910,6 +914,15 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             dcb = NextPacket(dcb, header->type3.NumWords() + 1);
             break;
         }
+    }
+
+    if (flip_signal_armed) {
+        // Every packet after the flip NOP (fence writes included) has executed.
+        flip_signal_armed = false;
+        if (rasterizer) {
+            rasterizer->NotifyGuestFlip();
+        }
+        Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
     }
 
     if (ce_task.handle) {
