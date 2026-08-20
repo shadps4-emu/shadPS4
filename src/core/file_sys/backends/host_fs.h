@@ -79,6 +79,11 @@ public:
 
     bool Exists(std::string_view rel_path) override;
     bool IsDirectory(std::string_view rel_path) override;
+    NodeInfo Query(std::string_view rel_path) override;
+
+    std::optional<std::filesystem::path> ResolveHostPath(std::string_view rel_path) override {
+        return Resolve(rel_path);
+    }
 
     std::unique_ptr<IFile> Open(std::string_view rel_path,
                                 Common::FS::FileAccessMode mode) override;
@@ -101,6 +106,10 @@ public:
 private:
     std::filesystem::path Resolve(std::string_view rel_path) const;
     std::optional<std::filesystem::path> ResolveCaseInsensitive(std::string_view rel_path) const;
+    static std::string CacheKey(std::string_view rel_path);
+    /// Drops a cached resolution. Returns true if an entry was removed.
+    bool ForgetCached(std::string_view rel_path) const;
+
     std::filesystem::path m_root;
     bool m_read_only;
     mutable std::mutex m_case_cache_mutex;

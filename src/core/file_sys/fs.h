@@ -58,6 +58,22 @@ public:
         Mod
     };
 
+    struct Resolution {
+        const MntPair* mount{nullptr};
+        /// Backend holding the node,null when the path does not exist.
+        IBackend* backend{nullptr};
+        std::string guest_path; // Sanitized guest path.
+        std::string rel;        // Path relative to the mount point.
+        std::filesystem::path host_path;
+        bool exists{false};
+        bool is_directory{false};
+        bool read_only{false};
+
+        bool IsMounted() const {
+            return mount != nullptr;
+        }
+    };
+
     explicit MntPoints() = default;
     ~MntPoints() = default;
 
@@ -65,6 +81,10 @@ public:
                bool read_only = false);
     void Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder);
     void UnmountAll();
+
+    /// Resolves a guest path against the mount's backend stack exactly once.
+    Resolution ResolvePath(std::string_view guest_path,
+                           HostPathType host_path = HostPathType::Default);
 
     std::filesystem::path GetHostPath(std::string_view guest_directory,
                                       bool* is_read_only = nullptr,
@@ -88,6 +108,9 @@ public:
     std::unique_ptr<IFile> Open(std::string_view guest_path, bool writable = false);
     // Open with an explicit host access mode.
     std::unique_ptr<IFile> Open(std::string_view guest_path, Common::FS::FileAccessMode mode);
+    /// Opens a path already resolved by ResolvePath, without resolving again.
+    std::unique_ptr<IFile> OpenResolved(const Resolution& resolution,
+                                        Common::FS::FileAccessMode mode);
 
     /// Opens a directory through the mount's backend stack.
     std::unique_ptr<IDirectory> OpenDir(std::string_view guest_path);
@@ -119,8 +142,6 @@ public:
 
 private:
     std::vector<MntPair> m_mnt_pairs;
-    std::vector<std::filesystem::path> path_parts;
-    tsl::robin_map<std::filesystem::path, std::filesystem::path> path_cache;
     std::mutex m_mutex;
 };
 

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <chrono>
 #include <system_error>
 
@@ -133,6 +134,21 @@ void HostDirectory::Rewind() {
 HostFsBackend::HostFsBackend(std::filesystem::path root, bool read_only)
     : m_root(std::move(root)), m_read_only(read_only) {}
 
+std::string HostFsBackend::CacheKey(std::string_view rel_path) {
+    std::string key = Common::ToLower(std::string{rel_path});
+    std::replace(key.begin(), key.end(), '\\', '/');
+    return key;
+}
+
+bool HostFsBackend::ForgetCached(std::string_view rel_path) const {
+    if constexpr (!NeedsCaseInsensitiveSearch) {
+        return false;
+    } else {
+        std::scoped_lock lk{m_case_cache_mutex};
+        return m_case_cache.erase(CacheKey(rel_path)) != 0;
+    }
+}
+
 std::filesystem::path HostFsBackend::Resolve(std::string_view rel_path) const {
     if (rel_path.empty()) {
         return m_root;
@@ -142,10 +158,20 @@ std::filesystem::path HostFsBackend::Resolve(std::string_view rel_path) const {
     if constexpr (!NeedsCaseInsensitiveSearch) {
         return direct;
     } else {
+        const auto key = CacheKey(rel_path);
+        {
+            std::scoped_lock lk{m_case_cache_mutex};
+            if (const auto it = m_case_cache.find(key); it != m_case_cache.end()) {
+                return it->second;
+            }
+        }
         std::error_code ec;
         if (std::filesystem::exists(direct, ec)) {
+            std::scoped_lock lk{m_case_cache_mutex};
+            m_case_cache.emplace(key, direct);
             return direct;
         }
+        // Populates the cache itself when it finds a match.
         return ResolveCaseInsensitive(rel_path).value_or(std::move(direct));
     }
 }
@@ -199,14 +225,30 @@ std::optional<std::filesystem::path> HostFsBackend::ResolveCaseInsensitive(
     return current;
 }
 
-bool HostFsBackend::Exists(std::string_view rel_path) {
+IBackend::NodeInfo HostFsBackend::Query(std::string_view rel_path) {
     std::error_code ec;
-    return std::filesystem::exists(Resolve(rel_path), ec);
+    auto path = Resolve(rel_path);
+    auto status = std::filesystem::status(path, ec);
+
+    if constexpr (NeedsCaseInsensitiveSearch) {
+        if (!std::filesystem::exists(status) && ForgetCached(rel_path)) {
+            path = Resolve(rel_path);
+            status = std::filesystem::status(path, ec);
+        }
+    }
+
+    NodeInfo info;
+    info.exists = std::filesystem::exists(status);
+    info.is_directory = std::filesystem::is_directory(status);
+    return info;
+}
+
+bool HostFsBackend::Exists(std::string_view rel_path) {
+    return Query(rel_path).exists;
 }
 
 bool HostFsBackend::IsDirectory(std::string_view rel_path) {
-    std::error_code ec;
-    return std::filesystem::is_directory(Resolve(rel_path), ec);
+    return Query(rel_path).is_directory;
 }
 
 std::unique_ptr<IFile> HostFsBackend::Open(std::string_view rel_path,
