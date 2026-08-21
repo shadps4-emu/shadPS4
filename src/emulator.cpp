@@ -465,10 +465,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     game_info.game_folder = game_folder;
 
-    if (!mnt->Exists(guest_eboot_path)) {
-        LOG_CRITICAL(Loader, "eboot.bin does not exist: {}", guest_eboot_path);
-        std::quick_exit(0);
-    }
+    ASSERT_MSG(mnt->Exists(guest_eboot_path), "Guest app's main executable {} does not exist",
+               guest_eboot_path);
 
     LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::g_version);
     LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);

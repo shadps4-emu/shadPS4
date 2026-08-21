@@ -14,6 +14,7 @@
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libc_internal/libc_internal.h"
+#include "core/libraries/libpng/pngdec.h"
 #include "core/libraries/libpng/pngenc.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
@@ -27,6 +28,8 @@
 #include "emulator.h"
 
 namespace Libraries::SysModule {
+
+bool g_need_scelibc = false, g_need_fios2 = false;
 
 s32 getModuleHandle(s32 id, s32* handle) {
     if (id == 0) {
@@ -218,6 +221,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
              {"libSceJpegDec.sprx", nullptr},
              {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
+             {"libScePngDec.sprx", &Libraries::PngDec::RegisterLib},
              {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
              {"libSceJson.sprx", nullptr},
              {"libSceJson2.sprx", nullptr},
@@ -458,8 +462,18 @@ s32 preloadModulesForLibkernel() {
         if (result != ORBIS_OK) {
             // On real hardware, module preloading must succeed or the game will abort.
             // To enable users to test homebrew easier, we'll log a critical error instead.
-            LOG_CRITICAL(Lib_SysModule, "Failed to preload {}, expect crashes",
-                         g_modules_array[module_index].name);
+            if (g_modules_array[module_index].name == std::string("libc")) {
+                ASSERT_MSG(!g_need_scelibc,
+                           "libc.prx cannot be loaded, but the guest attempted to use it. "
+                           "This usually indicates a corrupted dump.");
+            } else if (g_modules_array[module_index].name == std::string("libSceFios2")) {
+                ASSERT_MSG(!g_need_fios2,
+                           "libSceFios2.prx cannot be loaded, but the guest attempted to use it. "
+                           "This usually indicates a corrupted dump.");
+            } else {
+                LOG_CRITICAL(Lib_SysModule, "Failed to preload {}, expect crashes",
+                             g_modules_array[module_index].name);
+            }
         }
     }
     return ORBIS_OK;

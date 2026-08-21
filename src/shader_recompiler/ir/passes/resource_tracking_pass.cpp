@@ -677,35 +677,9 @@ void PatchGlobalDataShareAccess(IR::Block& block, IR::Inst& inst, Info& info,
 
     // For data append/consume operations attempt to deduce the GDS address.
     if (inst.GetOpcode() == IR::Opcode::DataAppend || inst.GetOpcode() == IR::Opcode::DataConsume) {
-        const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
-            if (inst->GetOpcode() == IR::Opcode::GetUserData) {
-                return inst;
-            }
-            return std::nullopt;
-        };
-
-        u32 gds_addr = 0;
-        const IR::Value& gds_offset = inst.Arg(0);
-        if (gds_offset.IsImmediate()) {
-            // Nothing to do, offset is known.
-            gds_addr = gds_offset.U32() & 0xFFFF;
-        } else {
-            const auto result = IR::BreadthFirstSearch(&inst, pred);
-            ASSERT_MSG(result, "Unable to track M0 source");
-
-            // M0 must be set by some user data register.
-            const IR::Inst* prod = gds_offset.InstRecursive();
-            const u32 ud_reg = u32(result.value()->Arg(0).ScalarReg());
-            u32 m0_val = info.user_data[ud_reg] >> 16;
-            if (prod->GetOpcode() == IR::Opcode::IAdd32) {
-                m0_val += prod->Arg(1).U32();
-            }
-            gds_addr = m0_val & 0xFFFF;
-        }
-
         // Patch instruction to GDS buffer atomic increment/decrement.
         const IR::U32 handle = ir.Imm32(binding);
-        const IR::U32 index = ir.Imm32(gds_addr >> 2);
+        const IR::U32 index = ir.ShiftRightLogical(IR::U32{inst.Arg(0)}, ir.Imm32(2));
         const bool is_append = inst.GetOpcode() == IR::Opcode::DataAppend;
         const IR::Value prev = is_append ? ir.BufferAtomicInc(handle, index, {})
                                          : ir.BufferAtomicDec(handle, index, {});
