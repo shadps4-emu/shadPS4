@@ -54,6 +54,136 @@ static std::array<MountedAddcont, ORBIS_APP_CONTENT_ADDCONT_MOUNT_MAXNUM> mounte
 static std::string title_id;
 static bool is_initialized = false;
 
+s32 CheckEntitlementLabel(const OrbisNpUnifiedEntitlementLabel* label, const char* caller) {
+    if (label == nullptr) {
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+    if (sdk_ver >= Common::ElfInfo::FW_150 &&
+        (label->padding[0] != 0 || label->padding[1] != 0 || label->padding[2] != 0)) {
+        LOG_ERROR(Lib_AppContent, "{}: CheckEntitlementLabel() parameter error", caller);
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+    return ORBIS_OK;
+}
+
+s32 ScanAddcontDir(const std::filesystem::path& addon_path, u32 service_label) {
+    if (addon_path.empty()) {
+        return 0;
+    }
+    if (!std::filesystem::exists(addon_path)) {
+        LOG_INFO(Lib_AppContent, "No additional content directory at '{}' (service label {})",
+                 addon_path.string(), service_label);
+        return 0;
+    }
+
+    LOG_INFO(Lib_AppContent, "Scanning '{}' for service label {}", addon_path.string(),
+             service_label);
+
+    s32 found = 0;
+    s32 examined = 0;
+    for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
+        if (!entry.is_directory()) {
+            continue;
+        }
+        examined++;
+
+        // Look for a param.sfo in the additional content directory.
+        const auto param_sfo_path = entry.path() / "sce_sys/param.sfo";
+        if (!std::filesystem::exists(param_sfo_path)) {
+            const bool has_nested =
+                std::filesystem::exists(entry.path() / "sce_sys") == false &&
+                std::any_of(std::filesystem::directory_iterator(entry.path()),
+                            std::filesystem::directory_iterator{}, [](const auto& sub) {
+                                return sub.is_directory() &&
+                                       std::filesystem::exists(sub.path() / "sce_sys/param.sfo");
+                            });
+            if (has_nested) {
+                LOG_WARNING(Lib_AppContent,
+                            "'{}' has no param.sfo but its subfolders do the entitlement "
+                            "folders are nested one level too deep. Move them up into '{}'.",
+                            entry.path().string(), addon_path.string());
+            } else {
+                LOG_WARNING(Lib_AppContent,
+                            "Additional content folder '{}' has no sce_sys/param.sfo",
+                            entry.path().string());
+            }
+            continue;
+        }
+        PSF dlc_params;
+        if (!dlc_params.Open(param_sfo_path)) {
+            LOG_WARNING(Lib_AppContent, "Additional content folder {} has an unreadable param.sfo",
+                        entry.path().filename().string());
+            continue;
+        }
+
+        const auto category = dlc_params.GetString("CATEGORY");
+        if (!category.has_value() || strncmp(category.value().data(), "ac", 2) != 0) {
+            LOG_WARNING(Lib_AppContent, "Additional content folder {} is not additional content",
+                        entry.path().filename().string());
+            continue;
+        }
+
+        // We've located additional content. Find the entitlement id from the content id.
+        const auto content_id = dlc_params.GetString("CONTENT_ID");
+        if (!content_id.has_value()) {
+            LOG_WARNING(Lib_AppContent, "Additional content {} param.sfo is missing CONTENT_ID",
+                        entry.path().filename().string());
+            continue;
+        }
+
+        // content id's have consistent formatting, so this will always work.
+        // They follow the format UPXXXX-CUSAXXXXX_XX-entitlement
+        if (content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
+            LOG_WARNING(Lib_AppContent, "Additional content {} param.sfo has malformed CONTENT_ID",
+                        entry.path().filename().string());
+            continue;
+        }
+
+        if (addcont_count >= ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE) {
+            LOG_ERROR(Lib_AppContent, "More than {} additional content entries, ignoring the rest",
+                      ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE);
+            break;
+        }
+
+        const auto entitlement_id =
+            content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
+        LOG_INFO(Lib_AppContent, "Entitlement {} found", entitlement_id);
+        auto& info = addcont_info[addcont_count++];
+        std::memset(info.entitlement_label, 0, sizeof(info.entitlement_label));
+        entitlement_id.copy(info.entitlement_label, sizeof(info.entitlement_label) - 1);
+        const bool has_content =
+            std::any_of(std::filesystem::directory_iterator(entry.path()),
+                        std::filesystem::directory_iterator{},
+                        [](const auto& sub) { return sub.path().filename() != "sce_sys"; });
+        if (!has_content) {
+            LOG_WARNING(Lib_AppContent,
+                        "'{}' holds no content besides sce_sys reporting NoExtraData. If this "
+                        "DLC is meant to have data, the folder was not extracted correctly.",
+                        entry.path().string());
+        }
+        info.status = has_content ? OrbisAppContentAddcontDownloadStatus::Installed
+                                  : OrbisAppContentAddcontDownloadStatus::NoExtraData;
+        info.path = entry.path();
+        info.service_label = service_label;
+        found++;
+    }
+
+    LOG_INFO(Lib_AppContent, "'{}': {} of {} subfolders were valid additional content",
+             addon_path.string(), found, examined);
+    return found;
+}
+
+/// Pull the title id out of a Service ID of the form "UP4108-CUSA01665_00".
+std::string TitleIdFromServiceId(std::string_view service_id) {
+    const auto dash = service_id.find('-');
+    const auto underscore = service_id.rfind('_');
+    if (dash == std::string_view::npos || underscore == std::string_view::npos ||
+        underscore <= dash + 1) {
+        return {};
+    }
+    return std::string{service_id.substr(dash + 1, underscore - dash - 1)};
+}
+
 int PS4_SYSV_ABI _Z5dummyv() {
     LOG_ERROR(Lib_AppContent, "(STUBBED) called");
     return ORBIS_OK;
@@ -352,136 +482,6 @@ int PS4_SYSV_ABI sceAppContentGetEntitlementKey(
 int PS4_SYSV_ABI sceAppContentGetRegion() {
     LOG_ERROR(Lib_AppContent, "(STUBBED) called");
     return ORBIS_OK;
-}
-
-s32 CheckEntitlementLabel(const OrbisNpUnifiedEntitlementLabel* label, const char* caller) {
-    if (label == nullptr) {
-        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
-    }
-    if (sdk_ver >= Common::ElfInfo::FW_150 &&
-        (label->padding[0] != 0 || label->padding[1] != 0 || label->padding[2] != 0)) {
-        LOG_ERROR(Lib_AppContent, "{}: CheckEntitlementLabel() parameter error", caller);
-        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
-    }
-    return ORBIS_OK;
-}
-
-s32 ScanAddcontDir(const std::filesystem::path& addon_path, u32 service_label) {
-    if (addon_path.empty()) {
-        return 0;
-    }
-    if (!std::filesystem::exists(addon_path)) {
-        LOG_INFO(Lib_AppContent, "No additional content directory at '{}' (service label {})",
-                 addon_path.string(), service_label);
-        return 0;
-    }
-
-    LOG_INFO(Lib_AppContent, "Scanning '{}' for service label {}", addon_path.string(),
-             service_label);
-
-    s32 found = 0;
-    s32 examined = 0;
-    for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
-        if (!entry.is_directory()) {
-            continue;
-        }
-        examined++;
-
-        // Look for a param.sfo in the additional content directory.
-        const auto param_sfo_path = entry.path() / "sce_sys/param.sfo";
-        if (!std::filesystem::exists(param_sfo_path)) {
-            const bool has_nested =
-                std::filesystem::exists(entry.path() / "sce_sys") == false &&
-                std::any_of(std::filesystem::directory_iterator(entry.path()),
-                            std::filesystem::directory_iterator{}, [](const auto& sub) {
-                                return sub.is_directory() &&
-                                       std::filesystem::exists(sub.path() / "sce_sys/param.sfo");
-                            });
-            if (has_nested) {
-                LOG_WARNING(Lib_AppContent,
-                            "'{}' has no param.sfo but its subfolders do the entitlement "
-                            "folders are nested one level too deep. Move them up into '{}'.",
-                            entry.path().string(), addon_path.string());
-            } else {
-                LOG_WARNING(Lib_AppContent,
-                            "Additional content folder '{}' has no sce_sys/param.sfo",
-                            entry.path().string());
-            }
-            continue;
-        }
-        PSF dlc_params;
-        if (!dlc_params.Open(param_sfo_path)) {
-            LOG_WARNING(Lib_AppContent, "Additional content folder {} has an unreadable param.sfo",
-                        entry.path().filename().string());
-            continue;
-        }
-
-        const auto category = dlc_params.GetString("CATEGORY");
-        if (!category.has_value() || strncmp(category.value().data(), "ac", 2) != 0) {
-            LOG_WARNING(Lib_AppContent, "Additional content folder {} is not additional content",
-                        entry.path().filename().string());
-            continue;
-        }
-
-        // We've located additional content. Find the entitlement id from the content id.
-        const auto content_id = dlc_params.GetString("CONTENT_ID");
-        if (!content_id.has_value()) {
-            LOG_WARNING(Lib_AppContent, "Additional content {} param.sfo is missing CONTENT_ID",
-                        entry.path().filename().string());
-            continue;
-        }
-
-        // content id's have consistent formatting, so this will always work.
-        // They follow the format UPXXXX-CUSAXXXXX_XX-entitlement
-        if (content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
-            LOG_WARNING(Lib_AppContent, "Additional content {} param.sfo has malformed CONTENT_ID",
-                        entry.path().filename().string());
-            continue;
-        }
-
-        if (addcont_count >= ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE) {
-            LOG_ERROR(Lib_AppContent, "More than {} additional content entries, ignoring the rest",
-                      ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE);
-            break;
-        }
-
-        const auto entitlement_id =
-            content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
-        LOG_INFO(Lib_AppContent, "Entitlement {} found", entitlement_id);
-        auto& info = addcont_info[addcont_count++];
-        std::memset(info.entitlement_label, 0, sizeof(info.entitlement_label));
-        entitlement_id.copy(info.entitlement_label, sizeof(info.entitlement_label) - 1);
-        const bool has_content =
-            std::any_of(std::filesystem::directory_iterator(entry.path()),
-                        std::filesystem::directory_iterator{},
-                        [](const auto& sub) { return sub.path().filename() != "sce_sys"; });
-        if (!has_content) {
-            LOG_WARNING(Lib_AppContent,
-                        "'{}' holds no content besides sce_sys reporting NoExtraData. If this "
-                        "DLC is meant to have data, the folder was not extracted correctly.",
-                        entry.path().string());
-        }
-        info.status = has_content ? OrbisAppContentAddcontDownloadStatus::Installed
-                                  : OrbisAppContentAddcontDownloadStatus::NoExtraData;
-        info.path = entry.path();
-        info.service_label = service_label;
-        found++;
-    }
-
-    LOG_INFO(Lib_AppContent, "'{}': {} of {} subfolders were valid additional content",
-             addon_path.string(), found, examined);
-    return found;
-}
-
-/// Pull the title id out of a Service ID of the form "UP4108-CUSA01665_00".
-std::string TitleIdFromServiceId(std::string_view service_id) {
-    const auto dash = service_id.find('-');
-    const auto underscore = service_id.rfind('_');
-    if (dash == std::string_view::npos || underscore == std::string_view::npos ||
-        underscore <= dash + 1) {
-        return {};
-    }
-    return std::string{service_id.substr(dash + 1, underscore - dash - 1)};
 }
 
 int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initParam,
