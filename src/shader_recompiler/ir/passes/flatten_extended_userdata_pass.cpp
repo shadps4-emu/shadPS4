@@ -14,7 +14,7 @@
 #include "core/emulator_settings.h"
 #include "core/signals.h"
 #include "shader_recompiler/info.h"
-#include "shader_recompiler/ir/breadth_first_search.h"
+#include "shader_recompiler/ir/dominance_search.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/ir/program.h"
@@ -729,10 +729,8 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
             }
             return std::nullopt;
         };
-        auto base0 =
-            IR::DominatingBreadthFirstSearch(ptr_composite->Arg(0), *inst->GetParent(), true, pred);
-        auto base1 =
-            IR::DominatingBreadthFirstSearch(ptr_composite->Arg(1), *inst->GetParent(), true, pred);
+        auto base0 = IR::DominanceSearch(ptr_composite->Arg(0), *inst->GetParent(), true, pred);
+        auto base1 = IR::DominanceSearch(ptr_composite->Arg(1), *inst->GetParent(), true, pred);
         ASSERT_MSG(base0 && base1, "ReadConst not from constant memory");
 
         IR::Inst* ptr_lo = base0.value();

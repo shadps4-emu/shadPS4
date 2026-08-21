@@ -81,8 +81,7 @@ private:
                 }
                 return std::nullopt;
             };
-            IR::Inst* source =
-                IR::DominatingBreadthFirstSearch(inst, *inst->GetParent(), true, pred).value();
+            IR::Inst* source = IR::DominanceSearch(inst, *inst->GetParent(), true, pred).value();
             vn = GetValueNumber(source);
             value_numbers[IR::Value(inst)] = vn;
         } else if (IsArgHashInst(inst)) {

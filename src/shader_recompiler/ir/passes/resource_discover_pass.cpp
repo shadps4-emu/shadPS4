@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
-#include "shader_recompiler/ir/breadth_first_search.h"
+#include "shader_recompiler/ir/dominance_search.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/program.h"
@@ -69,15 +69,15 @@ std::pair<IR::Inst*, bool> CheckDisableAnisoLod0Pattern(IR::Inst* inst) {
 }
 
 IR::Inst* FindSharpSource(IR::Inst* handle, const IR::Block& current_parent) {
-    auto finding = IR::DominatingBreadthFirstSearch(
-        handle, current_parent, false, [](IR::Inst* inst) -> std::optional<IR::Inst*> {
-            if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                inst->GetOpcode() == IR::Opcode::ReadConst ||
-                inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-                return inst;
-            }
-            return std::nullopt;
-        });
+    auto finding = IR::DominanceSearch(handle, current_parent, false,
+                                       [](IR::Inst* inst) -> std::optional<IR::Inst*> {
+                                           if (inst->GetOpcode() == IR::Opcode::GetUserData ||
+                                               inst->GetOpcode() == IR::Opcode::ReadConst ||
+                                               inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                                               return inst;
+                                           }
+                                           return std::nullopt;
+                                       });
 
     if (!finding) {
         // We defer the assert to the resource patching pass, since sometimes the sharp is not
