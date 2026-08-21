@@ -300,20 +300,22 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
     callback(base_host / "..", false);
 
     const auto resolve =
-        [&](const std::string& leaf) -> std::optional<std::pair<std::filesystem::path, bool>> {
+        [&](const std::string& leaf,
+            size_t limit) -> std::optional<std::pair<std::filesystem::path, bool>> {
         const std::string entry_rel = rel.empty() ? leaf : rel + "/" + leaf;
-        for (const auto& b : mount->backends) {
-            if (!b->Exists(entry_rel)) {
+        for (size_t i = 0; i < limit; ++i) {
+            const auto& b = mount->backends[i];
+            const auto info = b->Query(entry_rel);
+            if (!info.exists) {
                 continue;
             }
-            const bool is_dir = b->IsDirectory(entry_rel);
             std::filesystem::path host;
             if (auto root = b->RootHostPath(); root.has_value()) {
                 host = rel.empty() ? (*root / leaf) : (*root / rel / leaf);
             } else {
                 host = base_host / leaf;
             }
-            return std::make_pair(host, is_dir);
+            return std::make_pair(host, info.is_directory);
         }
         return std::nullopt;
     };
@@ -323,12 +325,20 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
         return NeedsCaseInsensitiveSearch ? Common::ToLower(name) : name;
     };
 
+    const bool has_overlays = mount->backends.size() > 1;
+
     if (auto dir = base_backend->OpenDir(rel)) {
         DirEntry entry;
         while (dir->Next(entry)) {
-            if (auto hit = resolve(entry.name)) {
-                emitted.insert(emit_key(entry.name));
+            emitted.insert(emit_key(entry.name));
+            if (!has_overlays) {
+                callback(base_host / entry.name, /*is_file=*/!entry.is_directory);
+                continue;
+            }
+            if (auto hit = resolve(entry.name, mount->backends.size() - 1)) {
                 callback(hit->first, /*is_file=*/!hit->second);
+            } else {
+                callback(base_host / entry.name, /*is_file=*/!entry.is_directory);
             }
         }
     }
@@ -344,7 +354,7 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
             if (emitted.contains(emit_key(entry.name))) {
                 continue;
             }
-            if (auto hit = resolve(entry.name)) {
+            if (auto hit = resolve(entry.name, mount->backends.size())) {
                 emitted.insert(emit_key(entry.name));
                 callback(hit->first, /*is_file=*/!hit->second);
             }

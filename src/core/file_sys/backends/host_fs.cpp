@@ -119,7 +119,7 @@ bool HostDirectory::Next(DirEntry& out) {
     std::error_code ec;
     out.name = entry.path().filename().string();
     out.is_directory = entry.is_directory(ec);
-    out.size = out.is_directory ? 0 : entry.file_size(ec);
+    out.size = 0;
 
     ++m_it;
     return true;
