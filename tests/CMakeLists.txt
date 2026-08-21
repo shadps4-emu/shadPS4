@@ -364,6 +364,8 @@ set(P2P_TEST_SOURCES
     stubs/sdl_stub.cpp
     stubs/loader_stub.cpp
     stubs/core_stub.cpp
+    stubs/signals_stub.cpp
+    stubs/file_sys_stub.cpp
 
     # Tests
     network/test_p2p_port.cpp
