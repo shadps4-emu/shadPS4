@@ -389,6 +389,7 @@ private:
     std::unordered_map<u32, IR::VectorReg> vgpr_map;
     std::array<IR::Attribute, MaxInterpVgpr> vgpr_to_interp{};
     bool opcode_missing = false;
+    bool per_vertex_fallback_warned = false;
     u32 pc{};
 };
 

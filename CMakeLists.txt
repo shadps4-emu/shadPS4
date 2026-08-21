@@ -978,6 +978,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/backend/spirv/emit_spirv_instructions.h
                       src/shader_recompiler/backend/spirv/emit_spirv_integer.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_logical.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_per_vertex.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_per_vertex.h
                       src/shader_recompiler/backend/spirv/emit_spirv_quad_rect.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_quad_rect.h
                       src/shader_recompiler/backend/spirv/emit_spirv_select.cpp

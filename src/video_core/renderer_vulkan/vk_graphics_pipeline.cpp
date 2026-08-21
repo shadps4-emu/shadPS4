@@ -183,6 +183,13 @@ GraphicsPipeline::GraphicsPipeline(
             .module = modules[stage],
             .pName = "main",
         });
+    } else if (modules[stage]) {
+        // Auxiliary geometry shader for the per-vertex interpolation expansion.
+        shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
+            .stage = vk::ShaderStageFlagBits::eGeometry,
+            .module = modules[stage],
+            .pName = "main",
+        });
     }
     stage = u32(Shader::LogicalStage::TessellationControl);
     if (infos[stage]) {

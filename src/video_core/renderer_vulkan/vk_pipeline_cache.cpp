@@ -9,6 +9,7 @@
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
+#include "shader_recompiler/backend/spirv/emit_spirv_per_vertex.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
@@ -190,6 +191,9 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.fs_info.en_flags = regs.ps_input_ena;
         info.fs_info.addr_flags = regs.ps_input_addr;
         info.fs_info.num_inputs = regs.num_interp;
+        info.fs_info.is_vs_direct =
+            regs.stage_enable.raw == AmdGpu::ShaderStageEnable::VgtStages::Vs;
+        info.fs_info.prim_type = graphics_key.prim_type;
         info.fs_info.z_export_format = regs.z_export_format;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
                                        regs.depth_shader_control.stencil_test_val_export_enable;
@@ -316,10 +320,25 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
 
 PipelineCache::~PipelineCache() = default;
 
+void PipelineCache::FillAuxGSModule() {
+    // Fill the Geometry slot with the FS's companion auxiliary GS (per-vertex expansion)
+    // when there is no game geometry shader. The module is compiled once (at FS compile time or
+    // preload) and cached, so this is just a lookup on the per-draw path.
+    if (infos[u32(Shader::LogicalStage::Geometry)]) {
+        return;
+    }
+    const u64 fs_perm_hash = graphics_key.stage_hashes[u32(Shader::LogicalStage::Fragment)];
+    const auto gs_it = aux_gs_cache.find(fs_perm_hash);
+    if (gs_it != aux_gs_cache.end()) {
+        modules[u32(Shader::LogicalStage::Geometry)] = gs_it->second;
+    }
+}
+
 const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     if (!RefreshGraphicsKey()) {
         return nullptr;
     }
+    FillAuxGSModule();
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
         const auto pipeline_hash = std::hash<GraphicsPipelineKey>{}(graphics_key);
@@ -605,6 +624,24 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
     DumpShader(spv, info.pgm_hash, info.stage, perm_idx, "spv");
+
+    // Generate and compile the auxiliary geometry shader for the per-vertex interpolation
+    // fallback. Done at FS compile time where fs_interpolation is still fresh. The compiled module
+    // is cached for reuse across draws; the SPIR-V is saved to disk for the next preload.
+    if (info.stage == Stage::Fragment &&
+        Shader::Backend::SPIRV::NeedsPerVertexAuxGS(profile, info, runtime_info)) {
+        const u64 perm_hash = HashCombine(info.pgm_hash, perm_idx);
+        auto aux_gs_spv =
+            Shader::Backend::SPIRV::EmitPerVertexAuxGS(profile, info, runtime_info);
+        DumpShader(aux_gs_spv, info.pgm_hash, Stage::Geometry, perm_idx, "spv");
+        aux_gs_cache[perm_hash] = CompileSPV(aux_gs_spv, instance.GetDevice());
+        if (Storage::DataBase::Instance().IsOpened()) {
+            Storage::DataBase::Instance().Save(Storage::BlobType::AuxiliaryShader,
+                                               fmt::format("{:#018x}", perm_hash),
+                                               std::move(aux_gs_spv));
+        }
+        LOG_INFO(Render_Vulkan, "Generated per-vertex aux GS for FS {:#x}", info.pgm_hash);
+    }
 
     vk::ShaderModule module;
 

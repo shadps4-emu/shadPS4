@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/hash.h"
 #include "common/serdes.h"
 #include "core/emulator_settings.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
@@ -13,7 +14,7 @@
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
 static constexpr u32 ShaderBinaryVersion = 2u;
-static constexpr u32 ShaderMetaVersion = 2u;
+static constexpr u32 ShaderMetaVersion = 3u;
 static constexpr u32 PipelineKeyVersion = 2u;
 } // namespace Serialization
 
@@ -237,6 +238,8 @@ bool PipelineCache::LoadGraphicsPipeline(Serialization::Archive& ar) {
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     ASSERT(is_new);
 
+    FillAuxGSModule();
+
     it.value() = std::make_unique<GraphicsPipeline>(
         instance, scheduler, desc_heap, profile, graphics_key, *pipeline_cache, infos,
         runtime_infos, fetch_shader, modules, sdata, true);
@@ -263,6 +266,23 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
                                        spv);
     if (spv.empty()) {
         return false;
+    }
+
+    // Load and compile the companion auxiliary geometry shader for fragment shaders that need it.
+    // Multiple pipelines can share the same fragment permutation; guard against recompiling (and
+    // leaking the prior VkShaderModule) when that permutation's aux GS was already loaded.
+    if (stage == u32(Shader::LogicalStage::Fragment)) {
+        const u64 perm_hash = HashCombine(program->info.pgm_hash, perm_idx);
+        if (!aux_gs_cache.contains(perm_hash)) {
+            std::vector<u32> aux_gs_spv{};
+            Storage::DataBase::Instance().Load(Storage::BlobType::AuxiliaryShader,
+                                               fmt::format("{:#018x}", perm_hash), aux_gs_spv);
+            if (!aux_gs_spv.empty()) {
+                aux_gs_cache[perm_hash] = CompileSPV(aux_gs_spv, instance.GetDevice());
+                LOG_INFO(Render_Vulkan, "Loaded per-vertex aux GS for FS {:#x} from cache",
+                         program->info.pgm_hash);
+            }
+        }
     }
 
     // Permutation hash depends on shader variation index. To prevent collisions, we need insert it

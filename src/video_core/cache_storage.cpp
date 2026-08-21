@@ -82,6 +82,9 @@ constexpr std::string GetBlobFileExtension(BlobType type) {
     case BlobType::ShaderProfile: {
         return "bin";
     }
+    case BlobType::AuxiliaryShader: {
+        return "spv";
+    }
     default:
         UNREACHABLE();
     }

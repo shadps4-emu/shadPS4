@@ -3,6 +3,7 @@
 
 #include "common/assert.h"
 #include "common/div_ceil.h"
+#include "shader_recompiler/backend/spirv/emit_spirv_per_vertex.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/runtime_info.h"
@@ -339,6 +340,8 @@ void EmitContext::DefineInputs() {
         break;
     }
     case LogicalStage::Fragment: {
+        const bool can_expand = CanPerVertexInterp(profile, runtime_info);
+        const auto per_vertex_locs = ComputePerVertexLocations(profile, info, runtime_info);
         if (info.loads.GetAny(IR::Attribute::FragCoord)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         }
@@ -361,6 +364,9 @@ void EmitContext::DefineInputs() {
             } else if (profile.supports_fragment_shader_barycentric) {
                 bary_coord_smooth =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+            } else {
+                // No-barycentric: injected smooth vec2 (I/J) from the auxiliary geometry shader.
+                bary_coord_smooth = DefineInput(F32[2], per_vertex_locs.bary_coord_loc);
             }
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothCentroid)) {
@@ -418,18 +424,27 @@ void EmitContext::DefineInputs() {
             const auto [primary, auxiliary] = info.fs_interpolation[i];
             const Id type = F32[num_components];
             const Id attr_id = [&] {
-                const auto bind_location = input.param_index + (has_clip_distance_inputs ? 1 : 0);
+                const u32 loc = can_expand
+                                    ? per_vertex_locs.slot_loc[i]
+                                    : input.param_index + (has_clip_distance_inputs ? 1 : 0);
                 if (primary == Qualifier::PerVertex &&
-                    profile.supports_fragment_shader_barycentric) {
-                    return Name(DefineInput(TypeArray(type, ConstU32(3U)), bind_location),
+                    !profile.supports_amd_shader_explicit_vertex_parameter) {
+                    // Barycentric (PerVertexKHR) and no-barycentric (flat array from the aux GS) both use a
+                    // 3-element array; AMD reads per-vertex values directly via ExplicitInterpAMD.
+                    return Name(DefineInput(TypeArray(type, ConstU32(3U)), loc),
                                 fmt::format("fs_in_attr{}_p", i));
                 }
-                return Name(DefineInput(type, bind_location), fmt::format("fs_in_attr{}", i));
+                return Name(DefineInput(type, loc), fmt::format("fs_in_attr{}", i));
             }();
             if (primary == Qualifier::PerVertex) {
-                Decorate(attr_id, profile.supports_amd_shader_explicit_vertex_parameter
-                                      ? spv::Decoration::ExplicitInterpAMD
-                                      : spv::Decoration::PerVertexKHR);
+                if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                    Decorate(attr_id, spv::Decoration::ExplicitInterpAMD);
+                } else if (profile.supports_fragment_shader_barycentric) {
+                    Decorate(attr_id, spv::Decoration::PerVertexKHR);
+                } else {
+                    // No-barycentric: plain flat 3-element array supplied by the auxiliary geometry shader.
+                    Decorate(attr_id, spv::Decoration::Flat);
+                }
             } else if (primary != Qualifier::Smooth) {
                 Decorate(attr_id, primary == Qualifier::Flat ? spv::Decoration::Flat
                                                              : spv::Decoration::NoPerspective);

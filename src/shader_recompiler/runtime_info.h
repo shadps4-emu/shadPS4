@@ -197,6 +197,10 @@ struct FragmentRuntimeInfo {
     u8 mrtz_mask{};
     bool dual_source_blending{false};
     bool clip_distance_emulation{false};
+    // Whether the fragment shader is fed directly by the vertex shader (no tessellation or game
+    // geometry shader in between). Used to gate the per-vertex interpolation fallback.
+    bool is_vs_direct{false};
+    AmdGpu::PrimitiveType prim_type{AmdGpu::PrimitiveType::None};
 
     bool operator==(const FragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
@@ -204,6 +208,7 @@ struct FragmentRuntimeInfo {
                num_inputs == other.num_inputs && z_export_format == other.z_export_format &&
                mrtz_mask == other.mrtz_mask && dual_source_blending == other.dual_source_blending &&
                clip_distance_emulation == other.clip_distance_emulation &&
+               is_vs_direct == other.is_vs_direct && prim_type == other.prim_type &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
     }

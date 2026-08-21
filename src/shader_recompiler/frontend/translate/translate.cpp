@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/io_file.h"
+#include "common/logging/log.h"
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/kernel/process.h"
+#include "shader_recompiler/backend/spirv/emit_spirv_per_vertex.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -131,8 +133,18 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         dst_vreg =
             IterateBarycentrics(runtime_info, [this](u32 vreg, IR::Attribute attrib, u32 comp) {
                 if (profile.supports_amd_shader_explicit_vertex_parameter ||
-                    profile.supports_fragment_shader_barycentric) {
+                    profile.supports_fragment_shader_barycentric ||
+                    Shader::Backend::SPIRV::CanPerVertexInterp(profile, runtime_info)) {
                     ir.SetVectorReg(IR::VectorReg(vreg), ir.GetAttribute(attrib, comp));
+                } else if (runtime_info.fs_info.is_vs_direct && !per_vertex_fallback_warned) {
+                    LOG_WARNING(Render_Recompiler,
+                                "[FSInterp] barycentric fallback for FS {:#x}: per-vertex "
+                                "expansion unavailable (prim_type={}, unsupported_barycentric={:#x}, "
+                                "clip_distance_emulation={})",
+                                info.pgm_hash, u32(runtime_info.fs_info.prim_type),
+                                Shader::Backend::SPIRV::UnsupportedBarycentricMask(runtime_info),
+                                runtime_info.fs_info.clip_distance_emulation);
+                    per_vertex_fallback_warned = true;
                 }
             });
         if (runtime_info.fs_info.addr_flags.pos_x_float_ena) {

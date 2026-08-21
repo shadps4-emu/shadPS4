@@ -18,6 +18,7 @@ enum class BlobType : u32 {
     ShaderBinary,
     PipelineKey,
     ShaderProfile,
+    AuxiliaryShader,
 };
 
 class DataBase {

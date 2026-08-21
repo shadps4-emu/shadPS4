@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/logging/log.h"
+#include "shader_recompiler/backend/spirv/emit_spirv_per_vertex.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/profile.h"
 
@@ -100,12 +102,27 @@ void Translator::V_INTERP_MOV_F32(const GcnInst& inst) {
     auto& interp = info.fs_interpolation[attr_index];
     ASSERT(attr.is_flat || inst.src[0].code == 2);
     if (profile.supports_amd_shader_explicit_vertex_parameter ||
-        profile.supports_fragment_shader_barycentric) {
+        profile.supports_fragment_shader_barycentric ||
+        Shader::Backend::SPIRV::CanPerVertexInterp(profile, runtime_info)) {
         // VSRC 0=P10, 1=P20, 2=P0
         interp.primary = Qualifier::PerVertex;
         SetDst(inst.dst[0],
                ir.GetAttribute(attrib, inst.control.vintrp.chan, (inst.src[0].code + 1) % 3));
     } else {
+        // No-barycentric fallback boundary: a direct VS->FS pipeline that hit an unsupported barycentric
+        // variant, a non-triangle primitive, or clip-distance emulation degrades to flat (only the
+        // provoking vertex value is readable) and must be exposed; non-VS pipelines keep the legacy
+        // degradation silently.
+        if (runtime_info.fs_info.is_vs_direct && !per_vertex_fallback_warned) {
+            LOG_WARNING(Render_Recompiler,
+                        "[FSInterp] MOV fallback for FS {:#x}: per-vertex expansion unavailable "
+                        "(prim_type={}, unsupported_barycentric={:#x}, "
+                        "clip_distance_emulation={})",
+                        info.pgm_hash, u32(runtime_info.fs_info.prim_type),
+                        Shader::Backend::SPIRV::UnsupportedBarycentricMask(runtime_info),
+                        runtime_info.fs_info.clip_distance_emulation);
+            per_vertex_fallback_warned = true;
+        }
         interp.primary = Qualifier::Flat;
         SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
     }
