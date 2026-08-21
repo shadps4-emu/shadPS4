@@ -58,6 +58,14 @@ struct PerVertexLocations {
                                                            const Shader::Info& info,
                                                            const Shader::RuntimeInfo& runtime_info);
 
+// Interface-format signature of the auxiliary geometry shader: identifies the exact set of
+// FS inputs the aux GS binds to, independent of the FS body. Two fragment shaders whose input
+// interface format matches produce byte-identical aux GS SPIR-V and share one cached module.
+// Signature is non-zero (non-zero seed) so 0 can serve as the "no aux GS" sentinel. It is
+// computed at FS compile time (where fs_interpolation is still fresh) and stored per-variant.
+[[nodiscard]] u64 ComputePerVertexAuxGSSignature(const Shader::Info& info,
+                                                 const Shader::RuntimeInfo& runtime_info);
+
 // Emits an auxiliary geometry shader that expands per-vertex attributes into three flat
 // attributes (one per vertex, P0/P10/P20) and injects a smooth barycentric-coordinate
 // attribute assigned (0,0)/(1,0)/(0,1) across the triangle, for GPUs that

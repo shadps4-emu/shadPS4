@@ -81,7 +81,7 @@ public:
     const ComputePipeline* GetComputePipeline();
 
     using Result = std::tuple<const Shader::Info*, vk::ShaderModule,
-                              std::optional<Shader::Gcn::FetchShaderData>, u64>;
+                              std::optional<Shader::Gcn::FetchShaderData>, u64, u64>;
     Result GetProgram(Shader::Stage stage, Shader::LogicalStage l_stage,
                       const Shader::ShaderParams& params, Shader::Backend::Bindings& binding);
 
@@ -106,7 +106,7 @@ private:
                                                    std::string_view ext);
     vk::ShaderModule CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                    const std::span<const u32>& code, size_t perm_idx,
-                                   Shader::Backend::Bindings& binding);
+                                   Shader::Backend::Bindings& binding, u64& aux_gs_signature);
     const Shader::RuntimeInfo& BuildRuntimeInfo(Shader::Stage stage, Shader::LogicalStage l_stage);
     void FillAuxGSModule();
 
@@ -130,8 +130,8 @@ private:
     std::array<const Shader::Info*, MaxShaderStages> infos{};
     std::array<vk::ShaderModule, MaxShaderStages> modules{};
     // Compiled companion auxiliary geometry shader modules (per-vertex expansion), keyed by
-    // the fragment shader's permutation hash. Populated once at FS compile time and on preload;
-    // like the main stage modules, they live for the session and are reclaimed at process exit.
+    // the FS input interface-format signature (aux_gs_signature). Populated once at FS compile
+    // time and on preload; shared across fragment shaders with the same input interface.
     tsl::robin_map<u64, vk::ShaderModule> aux_gs_cache;
     std::optional<Shader::Gcn::FetchShaderData> fetch_shader{};
     GraphicsPipelineKey graphics_key{};

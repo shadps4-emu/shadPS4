@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <sirit/sirit.h>
+#include "common/hash.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_per_vertex.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/profile.h"
@@ -93,6 +94,30 @@ PerVertexLocations ComputePerVertexLocations(const Profile& profile, const Info&
     }
     locs.bary_coord_loc = loc;
     return locs;
+}
+
+u64 ComputePerVertexAuxGSSignature(const Info& info, const RuntimeInfo& runtime_info) {
+    const auto& fs_info = runtime_info.fs_info;
+    const bool has_clip = fs_info.clip_distance_emulation;
+    const u32 num_inputs = fs_info.num_inputs - (has_clip ? 1 : 0);
+    // Non-zero seed so 0 can be the "no aux GS" sentinel (HashCombine's constant already keeps
+    // the result non-zero, but seed explicitly). Covers the FS input interface the aux GS binds
+    // to: clip offset (defensive, always 0 here), the persp-center barycentric flag, and the
+    // ordered (param_index, is-per-vertex) list of non-default inputs — which jointly determine
+    // the GS input locations (param_index) and the output counter layout (order + per-vertex).
+    u64 signature = 0x9e3779b97f4a7c15ULL;
+    signature = HashCombine(signature, u64(has_clip));
+    signature = HashCombine(signature, u64(fs_info.addr_flags.persp_center_ena));
+    for (u32 i = 0; i < num_inputs; i++) {
+        const auto& input = fs_info.inputs[i];
+        if (input.IsDefault()) {
+            continue;
+        }
+        signature = HashCombine(signature, u64(input.param_index));
+        signature = HashCombine(signature,
+                                u64(info.fs_interpolation[i].primary == Qualifier::PerVertex));
+    }
+    return signature;
 }
 
 namespace {

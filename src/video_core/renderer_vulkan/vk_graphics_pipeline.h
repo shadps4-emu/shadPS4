@@ -55,6 +55,11 @@ struct GraphicsPipelineKey {
         AmdGpu::ProvokingVtxLast provoking_vtx_last : 1;
         u32 depth_clip_enable : 1;
     };
+    // Interface-format signature of the fragment shader's companion auxiliary geometry shader
+    // (per-vertex interpolation fallback). 0 means no aux GS; otherwise this pipeline inserts an
+    // aux GS looked up by this signature. Kept as a dedicated field (not overloaded onto
+    // stage_hashes[Geometry]) so that slot stays pure game-GS semantics.
+    size_t aux_gs_signature{};
 
     GraphicsPipelineKey() {
         std::memset(this, 0, sizeof(*this));

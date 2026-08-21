@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/hash.h"
 #include "common/serdes.h"
 #include "core/emulator_settings.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
@@ -215,6 +214,30 @@ bool PipelineCache::LoadGraphicsPipeline(Serialization::Archive& ar) {
     GraphicsPipeline::SerializationSupport sdata{};
     sdata.Deserialize(ar);
 
+    // Load the companion auxiliary geometry shader by its interface-format signature BEFORE the
+    // game stages. It is a dedicated AuxiliaryShader blob keyed by graphics_key.aux_gs_signature.
+    // A missing blob invalidates the whole pipeline (an FS restored to per-vertex would otherwise
+    // have no GS to supply its inputs). Doing this before the stage loop matters: on failure it
+    // returns false while no stage has entered program_cache yet, so the runtime draw re-translates
+    // the FS from the original code and re-generates the aux GS (self-heal). Loading it after the
+    // loop would leave the FS in program_cache, so the draw path would reuse the cached FS without
+    // ever re-generating the missing aux GS and FillAuxGSModule would assert.
+    if (graphics_key.aux_gs_signature != 0) {
+        if (!aux_gs_cache.contains(graphics_key.aux_gs_signature)) {
+            std::vector<u32> aux_gs_spv{};
+            Storage::DataBase::Instance().Load(
+                Storage::BlobType::AuxiliaryShader,
+                fmt::format("{:#018x}_ag", graphics_key.aux_gs_signature), aux_gs_spv);
+            if (aux_gs_spv.empty()) {
+                return false;
+            }
+            aux_gs_cache[graphics_key.aux_gs_signature] =
+                CompileSPV(aux_gs_spv, instance.GetDevice());
+            LOG_INFO(Render_Vulkan, "Loaded per-vertex aux GS (signature {:#x}) from cache",
+                     graphics_key.aux_gs_signature);
+        }
+    }
+
     for (int stage_idx = 0; stage_idx < MaxShaderStages; ++stage_idx) {
         const auto& hash = graphics_key.stage_hashes[stage_idx];
         if (!hash) {
@@ -266,23 +289,6 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
                                        spv);
     if (spv.empty()) {
         return false;
-    }
-
-    // Load and compile the companion auxiliary geometry shader for fragment shaders that need it.
-    // Multiple pipelines can share the same fragment permutation; guard against recompiling (and
-    // leaking the prior VkShaderModule) when that permutation's aux GS was already loaded.
-    if (stage == u32(Shader::LogicalStage::Fragment)) {
-        const u64 perm_hash = HashCombine(program->info.pgm_hash, perm_idx);
-        if (!aux_gs_cache.contains(perm_hash)) {
-            std::vector<u32> aux_gs_spv{};
-            Storage::DataBase::Instance().Load(Storage::BlobType::AuxiliaryShader,
-                                               fmt::format("{:#018x}", perm_hash), aux_gs_spv);
-            if (!aux_gs_spv.empty()) {
-                aux_gs_cache[perm_hash] = CompileSPV(aux_gs_spv, instance.GetDevice());
-                LOG_INFO(Render_Vulkan, "Loaded per-vertex aux GS for FS {:#x} from cache",
-                         program->info.pgm_hash);
-            }
-        }
     }
 
     // Permutation hash depends on shader variation index. To prevent collisions, we need insert it
@@ -478,6 +484,7 @@ void StageSpecialization::Serialize(Serialization::Archive& ar) const {
     spec.Write(images);
     spec.Write(fmasks);
     spec.Write(samplers);
+    spec.Write(aux_gs_signature);
 }
 
 bool StageSpecialization::Deserialize(Serialization::Archive& ar) {
@@ -504,6 +511,7 @@ bool StageSpecialization::Deserialize(Serialization::Archive& ar) {
     spec.Read(images);
     spec.Read(fmasks);
     spec.Read(samplers);
+    spec.Read(aux_gs_signature);
 
     return true;
 }
