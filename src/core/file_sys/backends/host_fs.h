@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include <atomic>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string>
@@ -16,7 +18,8 @@ namespace Core::FileSys {
 /// IFile implementation backed by a real host file.
 class HostFile final : public IFile {
 public:
-    HostFile(std::filesystem::path host_path, Common::FS::FileAccessMode mode, bool read_only);
+    HostFile(std::filesystem::path host_path, Common::FS::FileAccessMode mode, bool read_only,
+             bool immutable = false);
     ~HostFile() override = default;
 
     s64 Read(void* dst, u64 size) override;
@@ -32,6 +35,7 @@ public:
     }
 
     Common::FS::IOFile* GetHostFile() override {
+        ForgetSize();
         return &m_file;
     }
 
@@ -50,9 +54,17 @@ public:
     void Stat(FileStat& out) override;
 
 private:
+    static constexpr u64 UnknownSize = std::numeric_limits<u64>::max();
+
+    void ForgetSize() const {
+        m_cached_size.store(UnknownSize, std::memory_order_relaxed);
+    }
+
     std::filesystem::path m_path;
     Common::FS::IOFile m_file;
     bool m_read_only;
+    bool m_immutable;
+    mutable std::atomic<u64> m_cached_size{UnknownSize};
 };
 
 /// Streaming iterator over a host directory.

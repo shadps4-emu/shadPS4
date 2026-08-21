@@ -14,8 +14,10 @@
 
 namespace Core::FileSys {
 
-HostFile::HostFile(std::filesystem::path host_path, Common::FS::FileAccessMode mode, bool read_only)
-    : m_path(std::move(host_path)), m_file(m_path, mode), m_read_only(read_only) {}
+HostFile::HostFile(std::filesystem::path host_path, Common::FS::FileAccessMode mode, bool read_only,
+                   bool immutable)
+    : m_path(std::move(host_path)), m_file(m_path, mode), m_read_only(read_only),
+      m_immutable(immutable) {}
 
 s64 HostFile::Read(void* dst, u64 size) {
     if (!m_file.IsOpen()) {
@@ -28,6 +30,7 @@ s64 HostFile::Write(const void* src, u64 size) {
     if (!m_file.IsOpen() || m_read_only) {
         return -1;
     }
+    ForgetSize();
     return static_cast<s64>(m_file.WriteRaw<u8>(src, size));
 }
 
@@ -49,7 +52,15 @@ u64 HostFile::Size() const {
     if (!m_file.IsOpen()) {
         return 0;
     }
-    return m_file.GetSize();
+    if (!m_immutable) {
+        return m_file.GetSize();
+    }
+    u64 cached = m_cached_size.load(std::memory_order_relaxed);
+    if (cached == UnknownSize) {
+        cached = m_file.GetSize();
+        m_cached_size.store(cached, std::memory_order_relaxed);
+    }
+    return cached;
 }
 
 bool HostFile::Flush() {
@@ -214,7 +225,8 @@ std::unique_ptr<IFile> HostFsBackend::Open(std::string_view rel_path,
     if (mode != Common::FS::FileAccessMode::Create && !std::filesystem::is_regular_file(path, ec)) {
         return nullptr;
     }
-    auto handle = std::make_unique<HostFile>(path, mode, m_read_only || !writable);
+    auto handle =
+        std::make_unique<HostFile>(path, mode, m_read_only || !writable, /*immutable=*/m_read_only);
     if (!handle->IsOpen()) {
         return nullptr;
     }
