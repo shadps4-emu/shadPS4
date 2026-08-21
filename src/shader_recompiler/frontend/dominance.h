@@ -14,7 +14,7 @@ bool IsCfgBlockDominatedBy(const Shader::Gcn::Block* maybe_dominator,
 
 template <typename Container>
     requires std::same_as<typename Container::value_type, IR::Inst*>
-void FindDominantInstruction(Container& insts, const IR::Block& current_parent) {
+void EliminateNonDominantInstructions(Container& insts, const IR::Block& current_parent) {
     size_t num_insts = insts.size();
     for (s32 i = 0; i < num_insts;) {
         const IR::Block* block = insts[i]->GetParent();

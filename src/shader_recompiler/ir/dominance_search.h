@@ -46,7 +46,7 @@ auto DominanceSearch(Instruction* inst, const IR::Block& current_parent, bool de
         return std::nullopt;
     }
 
-    Gcn::FindDominantInstruction(findings, current_parent);
+    Gcn::EliminateNonDominantInstructions(findings, current_parent);
     ASSERT_MSG(findings.size() == 1, "Unable to deduce correct finding");
     return findings[0];
 }

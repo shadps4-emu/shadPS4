@@ -7,7 +7,7 @@
 #include "common/assert.h"
 #include "common/hash.h"
 #include "common/types.h"
-#include "shader_recompiler/ir/breadth_first_search.h"
+#include "shader_recompiler/ir/dominance_search.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
 
@@ -76,13 +76,37 @@ private:
 
         if (inst->GetOpcode() == IR::Opcode::Phi) {
             const auto pred = [this](IR::Inst* inst) -> std::optional<IR::Inst*> {
-                if (IsArgHashInst(inst)) {
+                switch (inst->GetOpcode()) {
+                case IR::Opcode::GetUserData:
+                case IR::Opcode::ReadConst:
+                case IR::Opcode::ReadConstBuffer:
                     return inst;
+                default:
+                    return std::nullopt;
                 }
-                return std::nullopt;
             };
-            IR::Inst* source = IR::DominanceSearch(inst, *inst->GetParent(), true, pred).value();
-            vn = GetValueNumber(source);
+            boost::container::small_vector<std::pair<IR::Inst*, IR::Inst*>, 2> src_inst_map;
+            boost::container::small_vector<IR::Inst*, 2> srcs;
+            for (size_t i = 0; i < inst->NumArgs(); ++i) {
+                auto arg = inst->Arg(i);
+                if (arg.IsImmediate()) {
+                    continue;
+                }
+                auto arg_inst = arg.InstRecursive();
+                auto src = IR::DominanceSearch(arg_inst, *inst->GetParent(), true, pred);
+                if (!src) {
+                    continue;
+                }
+                auto src_val = src.value();
+                srcs.push_back(src_val);
+                src_inst_map.emplace_back(src_val, arg_inst);
+            }
+            Gcn::EliminateNonDominantInstructions(srcs, *inst->GetParent());
+            ASSERT(srcs.size() == 1);
+            auto src_it = std::ranges::find_if(
+                src_inst_map, [&srcs](const auto p) { return p.first == srcs[0]; });
+            ASSERT(src_it != src_inst_map.end());
+            vn = GetValueNumber(src_it->second);
             value_numbers[IR::Value(inst)] = vn;
         } else if (IsArgHashInst(inst)) {
             InstVector iv = MakeInstVector(inst);
