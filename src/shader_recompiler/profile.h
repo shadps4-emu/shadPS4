@@ -50,6 +50,7 @@ struct Profile {
     bool needs_buffer_offsets{};
     bool needs_unorm_fixup{};
     bool needs_clip_distance_emulation{};
+    bool needs_ssbo_store_load_barrier{};
     bool supports_shader_stencil_export{};
 
     bool operator==(const Profile&) const = default;
