@@ -39,6 +39,8 @@ static IR::VectorReg IterateBarycentrics(const RuntimeInfo& runtime_info, auto&&
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmoothCentroid, 1); // J
     }
     if (runtime_info.fs_info.addr_flags.persp_pull_model_ena) {
+        // Radeon Sea Islands 3D/Compute Register Reference Guide calls
+        // these "I, J, 1/W", but I and J here are really I/W and J/W
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordPullModel, 0); // I/W
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordPullModel, 1); // J/W
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordPullModel, 2); // 1/W
