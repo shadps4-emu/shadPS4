@@ -26,6 +26,8 @@
             , clang-tools
             , cmake
             , pkg-config
+            , vulkan-loader
+            , mesa
             , renderdoc
             , gef
             , strace
@@ -50,47 +52,53 @@
             , libxrandr
             , libxrender
             , libxtst
+            , libX11
+            , libxcb
             , libxscrnsaver
             , enableDebugTooling ? true
             ,
             }:
+            let
+              runtimeDeps = [
+                libGL
+                libxext
+                libdrm
+                libgbm
+                libpulseaudio
+              ];
+
+              # SDL3 requres extra libraries inside the devshell in order to pass CMake's configure.
+              sdlConfigureDeps = [
+                jack1
+                fribidi
+                libthai
+                sndio
+                libusb1
+                libxkbcommon
+                libxcursor
+                libxfixes
+                libxi
+                libxinerama
+                libxrandr
+                libxrender
+                libxtst
+                libxscrnsaver
+              ] ++ runtimeDeps;
+            in
 
             mkShell.override { stdenv = clangStdenv; } {
               inputsFrom = [ self.packages.x86_64-linux.default ];
 
-              packages =
-                let
-                  # SDL3 requres extra libraries inside the devshell in order to pass CMake's configure.
-                  sdlConfigureDeps = [
-                    libGL
-                    jack1
-                    fribidi
-                    libthai
-                    libpulseaudio
-                    sndio
-                    libdrm
-                    libgbm
-                    libusb1
-                    libxkbcommon
-                    libxcursor
-                    libxext
-                    libxfixes
-                    libxi
-                    libxinerama
-                    libxrandr
-                    libxrender
-                    libxtst
-                    libxscrnsaver
-                  ];
-                in
-                [
-                  clang-tools
-                  cmake
-                  pkg-config
-                ] ++ sdlConfigureDeps ++ lib.optionals enableDebugTooling [ renderdoc gef strace perf vulkan-tools ];
+              packages = [
+                clang-tools
+                cmake
+                pkg-config
+                libxcb.dev
+              ] ++ sdlConfigureDeps ++ lib.optionals enableDebugTooling [ renderdoc gef strace perf vulkan-tools ];
 
               shellHook = ''
                 echo "Entering shadPS4 development shell!"
+                export LD_LIBRARY_PATH="${lib.makeLibraryPath (lib.flatten runtimeDeps ++ [ vulkan-loader libX11 ])}:$LD_LIBRARY_PATH"
               '';
 
               CMAKE_C_COMPILER = "clang";
