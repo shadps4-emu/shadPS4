@@ -21,6 +21,13 @@ enum class MemoryPermission : u32 {
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryPermission)
 
+// Offset added to a guest virtual address to form its read-only mirror view (see
+// mirror-mapping-design.md). The mirror maps the same physical pages without page protection, so
+// reading it never triggers readback. Windows-only for now.
+#ifdef _WIN32
+constexpr VAddr MIRROR_OFFSET = 0x1000000000ULL;
+#endif
+
 /**
  * Represents the user virtual address space backed by a dmem memory block
  */

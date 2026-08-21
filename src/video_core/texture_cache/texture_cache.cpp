@@ -115,8 +115,13 @@ void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
 
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
     if (image.hash == 0) {
-        // Initialize hash
+        // Initialize hash. Read via the read-only mirror to avoid triggering a readback, which
+        // would deadlock on the texture mutex held by the caller (see mirror-mapping-design.md).
+#ifdef _WIN32
+        const u8* addr = std::bit_cast<u8*>(image.info.guest_address + Core::MIRROR_OFFSET);
+#else
         const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
+#endif
         image.hash = XXH3_64bits(addr, image.info.guest_size);
     }
     image.flags |= ImageFlagBits::MaybeCpuDirty;

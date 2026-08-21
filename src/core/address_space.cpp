@@ -99,8 +99,11 @@ struct MemoryRegion {
     PAddr phys_base;
     u64 size;
     u32 prot;
-    s32 fd;
+    u32 real_prot; // Actual protection used when mapping (guest == prot, mirror == PAGE_READONLY)
+    uintptr_t fd; // File/section HANDLE; uintptr_t avoids truncating a 64-bit handle
     bool is_mapped;
+    bool is_mirror;
+    bool is_anon_section; // File read-only converted to an anonymous section (fd is the section)
 };
 
 struct AddressSpace::Impl {
@@ -165,8 +168,9 @@ struct AddressSpace::Impl {
             // Restrict region size to avoid overly fragmenting the virtual memory space.
             if (info.State == MEM_FREE && info.RegionSize > 0x1000000) {
                 VAddr addr = Common::AlignUp(reinterpret_cast<VAddr>(info.BaseAddress), alignment);
-                regions.emplace(addr,
-                                MemoryRegion{addr, PAddr(-1), size, PAGE_NOACCESS, -1, false});
+                regions.emplace(addr, MemoryRegion{addr, PAddr(-1), size, PAGE_NOACCESS,
+                                                   PAGE_NOACCESS, uintptr_t(-1), false, false,
+                                                   false});
             }
         }
 
@@ -235,20 +239,31 @@ struct AddressSpace::Impl {
         PAddr phys_addr = region->phys_base;
         u64 size = region->size;
         ULONG prot = region->prot;
-        s32 fd = region->fd;
+        ULONG real_prot = region->real_prot;
+        uintptr_t fd = region->fd;
 
         void* ptr = nullptr;
-        if (phys_addr != -1) {
+        if (region->is_mirror) {
+            // Mirror: second view of the same section (zero-copy), always read-only.
             HANDLE backing = fd != -1 ? reinterpret_cast<HANDLE>(fd) : backing_handle;
-            if (fd != -1 && prot == PAGE_READONLY) {
-                // Allocate the memory for the mapping
+            ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr), phys_addr,
+                                 size, MEM_REPLACE_PLACEHOLDER, real_prot, nullptr, 0);
+            ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
+        } else if (phys_addr != -1) {
+            HANDLE backing = fd != -1 ? reinterpret_cast<HANDLE>(fd) : backing_handle;
+            if (fd != -1 && prot == PAGE_READONLY && !region->is_anon_section) {
+                // File read-only: create an anonymous section so the mapping can have a second
+                // (mirror) view, read the file into it, then drop to the requested protection.
                 DWORD resultvar;
-                ptr = VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
-                                    MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER,
-                                    PAGE_READWRITE, nullptr, 0);
+                HANDLE section = CreateFileMapping2(INVALID_HANDLE_VALUE, nullptr,
+                                                    FILE_MAP_ALL_ACCESS, PAGE_READWRITE,
+                                                    SEC_COMMIT, size, nullptr, nullptr, 0);
+                ASSERT_MSG(section, "CreateFileMapping2 failed. {}", Common::GetLastErrorMsg());
+                ptr = MapViewOfFile3(section, process, reinterpret_cast<PVOID>(virtual_addr), 0,
+                                     size, MEM_REPLACE_PLACEHOLDER, PAGE_READWRITE, nullptr, 0);
+                ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
 
-                // Use ReadFile to read file contents into the memory area.
-                // Create an OVERLAPPED with the file offset, then supply that to ReadFile
+                // Read the file contents into the mapped section.
                 OVERLAPPED param{};
                 // Offset is the least-significant 32 bits, OffsetHigh is the most-significant.
                 param.Offset = phys_addr & 0xffffffffull;
@@ -263,8 +278,14 @@ struct AddressSpace::Impl {
                 ret = SetFilePointer(backing, size_low, &size_high, FILE_CURRENT);
 
                 // Protect the memory area appropriately
-                ret = VirtualProtect(ptr, size, prot, &resultvar);
+                ret = VirtualProtect(ptr, size, real_prot, &resultvar);
                 ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
+
+                // Store the anonymous section so the mirror can map a second view of it. phys_base
+                // now holds the in-section offset (0) rather than the file offset.
+                region->fd = reinterpret_cast<uintptr_t>(section);
+                region->phys_base = 0;
+                region->is_anon_section = true;
             } else {
                 if (prot == PAGE_NOACCESS) {
                     DWORD resultvar;
@@ -272,19 +293,21 @@ struct AddressSpace::Impl {
                                          phys_addr, size, MEM_REPLACE_PLACEHOLDER, PAGE_READWRITE,
                                          nullptr, 0);
                     ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
-                    bool ret = VirtualProtect(ptr, size, prot, &resultvar);
+                    bool ret = VirtualProtect(ptr, size, real_prot, &resultvar);
                     ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
                 } else {
                     ptr =
                         MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
-                                       phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
+                                       phys_addr, size, MEM_REPLACE_PLACEHOLDER, real_prot,
+                                       nullptr, 0);
                     ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
                 }
             }
         } else {
             ptr =
                 VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
-                              MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
+                              MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER, real_prot,
+                              nullptr, 0);
         }
         ASSERT_MSG(ptr, "{}", Common::GetLastErrorMsg());
         return ptr;
@@ -294,11 +317,9 @@ struct AddressSpace::Impl {
         VAddr virtual_addr = region->base;
         PAddr phys_base = region->phys_base;
         u64 size = region->size;
-        ULONG prot = region->prot;
-        s32 fd = region->fd;
 
         bool ret = false;
-        if ((fd != -1 && prot != PAGE_READONLY) || (fd == -1 && phys_base != -1)) {
+        if (phys_base != -1) {
             ret = UnmapViewOfFile2(process, reinterpret_cast<PVOID>(virtual_addr),
                                    MEM_PRESERVE_PLACEHOLDER);
         } else {
@@ -352,8 +373,9 @@ struct AddressSpace::Impl {
             // Store a new region matching the removed area.
             it = regions.emplace_hint(std::next(it), virtual_addr,
                                       MemoryRegion(virtual_addr, next_region_phys_base,
-                                                   next_region_size, region.prot, region.fd,
-                                                   region.is_mapped));
+                                                   next_region_size, region.prot, region.real_prot,
+                                                   region.fd, region.is_mapped, region.is_mirror,
+                                                   region.is_anon_section));
         }
 
         // At this point, the region's base will match virtual_addr.
@@ -374,8 +396,9 @@ struct AddressSpace::Impl {
             // Store the new region matching the remaining space
             regions.emplace_hint(std::next(it), next_region_addr,
                                  MemoryRegion(next_region_addr, next_region_phys_base,
-                                              next_region_size, region.prot, region.fd,
-                                              region.is_mapped));
+                                              next_region_size, region.prot, region.real_prot,
+                                              region.fd, region.is_mapped, region.is_mirror,
+                                              region.is_anon_section));
 
             // Use VirtualFreeEx to create the split.
             if (!VirtualFreeEx(process, LPVOID(region.base), region.size,
@@ -395,8 +418,8 @@ struct AddressSpace::Impl {
         }
     }
 
-    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, ULONG prot, s32 fd = -1) {
-        std::scoped_lock lk{mutex};
+    void* MapInternal(VAddr virtual_addr, PAddr phys_addr, u64 size, ULONG prot, ULONG real_prot,
+                      uintptr_t fd, bool is_mirror) {
         // Get a pointer to the region containing virtual_addr
         auto it = std::prev(regions.upper_bound(virtual_addr));
 
@@ -414,8 +437,24 @@ struct AddressSpace::Impl {
         region.is_mapped = true;
         region.phys_base = phys_addr;
         region.prot = prot;
+        region.real_prot = real_prot;
         region.fd = fd;
+        region.is_mirror = is_mirror;
         return MapRegion(&region);
+    }
+
+    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, ULONG prot, uintptr_t fd = -1) {
+        std::scoped_lock lk{mutex};
+        void* ptr = MapInternal(virtual_addr, phys_addr, size, prot, prot, fd, false);
+        if (phys_addr != -1) {
+            // Map the read-only mirror view. A File read-only mapping was converted to an
+            // anonymous section above, so re-read the guest region's (possibly updated) fd and
+            // in-section offset and map the mirror from those.
+            auto it = std::prev(regions.upper_bound(virtual_addr));
+            MapInternal(virtual_addr + MIRROR_OFFSET, it->second.phys_base, size, prot,
+                        PAGE_READONLY, it->second.fd, true);
+        }
+        return ptr;
     }
 
     void CoalesceFreeRegions(VAddr virtual_addr) {
@@ -464,8 +503,7 @@ struct AddressSpace::Impl {
         }
     }
 
-    void Unmap(VAddr virtual_addr, u64 size) {
-        std::scoped_lock lk{mutex};
+    void UnmapInternal(VAddr virtual_addr, u64 size) {
         // Loop through all regions in the requested range
         u64 remaining_size = size;
         VAddr current_addr = virtual_addr;
@@ -488,6 +526,11 @@ struct AddressSpace::Impl {
             // Unmap the region if it was previously mapped
             if (region.is_mapped) {
                 UnmapRegion(&region);
+                // File read-only mappings own their anonymous section handle. Release it on the
+                // guest unmap; the mirror shares the same handle and must not close it again.
+                if (!region.is_mirror && region.fd != -1 && region.prot == PAGE_READONLY) {
+                    CloseHandle(reinterpret_cast<HANDLE>(region.fd));
+                }
             }
 
             // Update region data
@@ -495,6 +538,9 @@ struct AddressSpace::Impl {
             region.fd = -1;
             region.phys_base = -1;
             region.prot = PAGE_NOACCESS;
+            region.real_prot = PAGE_NOACCESS;
+            region.is_mirror = false;
+            region.is_anon_section = false;
 
             // Update loop variables
             remaining_size -= size_to_unmap;
@@ -503,6 +549,14 @@ struct AddressSpace::Impl {
 
         // Coalesce any free space produced from these unmaps.
         CoalesceFreeRegions(virtual_addr);
+    }
+
+    void Unmap(VAddr virtual_addr, u64 size) {
+        std::scoped_lock lk{mutex};
+        UnmapInternal(virtual_addr, size);
+        // Unmap the mirror view too. Every phys-backed mapping has one; anonymous mappings do not,
+        // and for them the mirror address is free space so UnmapInternal is a no-op there.
+        UnmapInternal(virtual_addr + MIRROR_OFFSET, size);
     }
 
     void Protect(VAddr virtual_addr, u64 size, bool read, bool write, bool execute) {
