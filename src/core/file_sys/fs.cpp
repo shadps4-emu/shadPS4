@@ -158,161 +158,12 @@ void MntPoints::UnmountAll() {
     m_mnt_pairs.clear();
 }
 
-std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_read_only,
-                                             HostPathType path_type) {
-    // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
-    std::string corrected_path(path);
-    size_t pos = corrected_path.find("//");
-    while (pos != std::string::npos) {
-        corrected_path.replace(pos, 2, "/");
-        pos = corrected_path.find("//", pos + 1);
-    }
-
-    if (path.length() > 255)
-        return "";
-
-    const auto* mount = GetMount(corrected_path);
-    if (!mount) {
-        return "";
-    }
-
-    if (is_read_only) {
-        *is_read_only = mount->read_only;
-    }
-
-    const bool host_backed =
-        mount->backends.empty() || mount->backends.back()->RootHostPath().has_value();
-
-    const auto corrected_path_sanitized = RemoveTrailingSlashes(corrected_path);
-    std::filesystem::path host_path = mount->host_path;
-
-    // Update folder is either mount + "-UPDATE" or mount + "-patch"
-    std::filesystem::path patch_path = OverlayPath(mount->host_path, "-UPDATE");
-    if (!std::filesystem::exists(patch_path)) {
-        patch_path = OverlayPath(mount->host_path, "-patch");
-    }
-
-    // Mods folder can only be at mount + "-mods"
-    std::filesystem::path mods_path = OverlayPath(mount->host_path, "-mods");
-
-    // If we're just retrieving the mount, return the correct mount path.
-    if (corrected_path_sanitized == mount->mount) {
-        if (path_type == HostPathType::Mod) {
-            return mods_path;
-        } else if (path_type == HostPathType::Patch) {
-            return patch_path;
-        } else {
-            return host_path;
-        }
-    }
-
-    // Remove device (e.g /app0) from path to retrieve relative path.
-    const auto rel_path = std::string_view{corrected_path}.substr(mount->mount.size() + 1);
-    host_path /= rel_path;
-    patch_path /= rel_path;
-    mods_path /= rel_path;
-
-    if (path_type == HostPathType::Mod) {
-        return mods_path;
-    } else if (path_type == HostPathType::Patch) {
-        return patch_path;
-    }
-
-    if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
-        path_type != HostPathType::Base && std::filesystem::exists(mods_path)) {
-        return mods_path;
-    }
-
-    if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
-        path_type != HostPathType::Base && !ignore_game_patches &&
-        std::filesystem::exists(patch_path)) {
-        return patch_path;
-    }
-
-    if (!NeedsCaseInsensitiveSearch || !host_backed) {
-        return host_path;
-    }
-
-    const auto search = [&](const auto host_path) {
-        // If the path does not exist attempt to verify this.
-        // Retrieve parent path until we find one that exists.
-        std::scoped_lock lk{m_mutex};
-        path_parts.clear();
-        auto current_path = host_path;
-        while (!current_path.empty() && !std::filesystem::exists(current_path)) {
-            // We have probably cached this if it's a folder.
-            if (auto it = path_cache.find(current_path); it != path_cache.end()) {
-                current_path = it->second;
-                break;
-            }
-            path_parts.emplace_back(current_path.filename());
-            current_path = current_path.parent_path();
-        }
-        if (!current_path.empty()) {
-            // We have found an anchor. Traverse parts we recoded and see if they
-            // exist in filesystem but in different case.
-            auto guest_path = current_path;
-            while (!path_parts.empty()) {
-                const auto part = path_parts.back();
-                const auto add_match = [&](const auto& host_part) {
-                    current_path /= host_part;
-                    guest_path /= part;
-                    path_cache[guest_path] = current_path;
-                    path_parts.pop_back();
-                };
-                // Can happen when the mismatch is in upper folder.
-                if (std::filesystem::exists(current_path / part)) {
-                    add_match(part);
-                    continue;
-                }
-                const auto part_low = Common::ToLower(part.string());
-                bool found_match = false;
-                for (const auto& path : std::filesystem::directory_iterator(current_path)) {
-                    const auto candidate = path.path().filename();
-                    const auto filename = Common::ToLower(candidate.string());
-                    // Check if a filename matches in case insensitive manner.
-                    if (filename != part_low) {
-                        continue;
-                    }
-                    // We found a match, record the actual path in the cache.
-                    add_match(candidate);
-                    found_match = true;
-                    break;
-                }
-                if (!found_match) {
-                    return std::optional<std::filesystem::path>({});
-                }
-            }
-        }
-        return std::optional<std::filesystem::path>(current_path);
-    };
-
-    if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
-        path_type != HostPathType::Base) {
-        if (const auto path = search(mods_path)) {
-            return *path;
-        }
-    }
-
-    if (path_type != HostPathType::Base && !ignore_game_patches) {
-        if (const auto path = search(patch_path)) {
-            return *path;
-        }
-    }
-    if (const auto path = search(host_path)) {
-        return *path;
-    }
-
-    // Opening the guest path will surely fail but at least gives
-    // a better error message than the empty path.
-    return host_path;
-}
-
 // Normalize a guest path
 std::optional<std::string> SanitizeGuestPath(std::string_view path) {
     if (path.length() > 255) {
         return std::nullopt;
     }
+    // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
     std::string corrected(path);
     size_t pos = corrected.find("//");
     while (pos != std::string::npos) {
@@ -328,6 +179,99 @@ std::string_view RelativeToMount(const std::string& corrected, const MntPoints::
         return {};
     }
     return std::string_view{corrected}.substr(mount.mount.size() + 1);
+}
+
+// Host path of an explicitly requested overlay layer, whether or not it exists.
+static std::filesystem::path OverlayLayerPath(const std::filesystem::path& mount_host_path,
+                                              MntPoints::HostPathType path_type) {
+    if (path_type == MntPoints::HostPathType::Mod) {
+        // Mods folder can only be at mount + "-mods".
+        return OverlayPath(mount_host_path, "-mods");
+    }
+    // Update folder is either mount + "-UPDATE" or mount + "-patch".
+    std::filesystem::path patch_path = OverlayPath(mount_host_path, "-UPDATE");
+    if (!std::filesystem::exists(patch_path)) {
+        patch_path = OverlayPath(mount_host_path, "-patch");
+    }
+    return patch_path;
+}
+
+MntPoints::Resolution MntPoints::ResolvePath(std::string_view guest_path, HostPathType path_type) {
+    Resolution res;
+
+    const auto corrected = SanitizeGuestPath(guest_path);
+    if (!corrected) {
+        return res;
+    }
+    res.guest_path = *corrected;
+
+    const auto* mount = GetMount(res.guest_path);
+    if (!mount) {
+        return res;
+    }
+    res.mount = mount;
+    res.read_only = mount->read_only;
+    res.rel = std::string{RelativeToMount(RemoveTrailingSlashes(res.guest_path), *mount)};
+
+    const auto host_path_under = [&](const std::filesystem::path& root) {
+        return res.rel.empty() ? root : root / res.rel;
+    };
+
+    // An explicit Mod/Patch lookup names one specific layer and is used to
+    // build target paths, so it answers from the layout rather than the stack.
+    if (path_type == HostPathType::Mod || path_type == HostPathType::Patch) {
+        res.host_path = host_path_under(OverlayLayerPath(mount->host_path, path_type));
+        std::error_code ec;
+        const auto status = std::filesystem::status(res.host_path, ec);
+        res.exists = std::filesystem::exists(status);
+        res.is_directory = std::filesystem::is_directory(status);
+        return res;
+    }
+
+    const auto& stack = mount->backends;
+    if (stack.empty()) {
+        res.host_path = host_path_under(mount->host_path);
+        return res;
+    }
+    const auto& base_backend = stack.back();
+    const size_t first = path_type == HostPathType::Base ? stack.size() - 1 : 0;
+    for (size_t i = first; i < stack.size(); ++i) {
+        const auto& backend = stack[i];
+        const auto info = backend->Query(res.rel);
+        if (!info.exists) {
+            continue;
+        }
+        const auto& owner = res.rel.empty() ? base_backend : backend;
+        res.backend = owner.get();
+        res.exists = true;
+        res.is_directory = info.is_directory;
+        res.read_only = mount->read_only || owner->IsReadOnly();
+        if (auto host = owner->ResolveHostPath(res.rel)) {
+            res.host_path = std::move(*host);
+        }
+        break;
+    }
+
+    if (res.host_path.empty()) {
+        if (auto host = base_backend->ResolveHostPath(res.rel)) {
+            res.host_path = std::move(*host);
+        } else {
+            res.host_path = host_path_under(mount->host_path);
+        }
+    }
+    return res;
+}
+
+std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_read_only,
+                                             HostPathType path_type) {
+    const auto res = ResolvePath(path, path_type);
+    if (!res.IsMounted()) {
+        return "";
+    }
+    if (is_read_only) {
+        *is_read_only = res.read_only;
+    }
+    return res.host_path;
 }
 
 void MntPoints::IterateDirectory(std::string_view guest_directory,
@@ -351,25 +295,27 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
         base_host = std::filesystem::path(corrected);
     }
 
-    // Prepend "." and ".." (PS4 exposes these as file entries via getdents).
+    // Prepend "." and ".."
     callback(base_host / ".", false);
     callback(base_host / "..", false);
 
     const auto resolve =
-        [&](const std::string& leaf) -> std::optional<std::pair<std::filesystem::path, bool>> {
+        [&](const std::string& leaf,
+            size_t limit) -> std::optional<std::pair<std::filesystem::path, bool>> {
         const std::string entry_rel = rel.empty() ? leaf : rel + "/" + leaf;
-        for (const auto& b : mount->backends) {
-            if (!b->Exists(entry_rel)) {
+        for (size_t i = 0; i < limit; ++i) {
+            const auto& b = mount->backends[i];
+            const auto info = b->Query(entry_rel);
+            if (!info.exists) {
                 continue;
             }
-            const bool is_dir = b->IsDirectory(entry_rel);
             std::filesystem::path host;
             if (auto root = b->RootHostPath(); root.has_value()) {
                 host = rel.empty() ? (*root / leaf) : (*root / rel / leaf);
             } else {
                 host = base_host / leaf;
             }
-            return std::make_pair(host, is_dir);
+            return std::make_pair(host, info.is_directory);
         }
         return std::nullopt;
     };
@@ -379,12 +325,20 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
         return NeedsCaseInsensitiveSearch ? Common::ToLower(name) : name;
     };
 
+    const bool has_overlays = mount->backends.size() > 1;
+
     if (auto dir = base_backend->OpenDir(rel)) {
         DirEntry entry;
         while (dir->Next(entry)) {
-            if (auto hit = resolve(entry.name)) {
-                emitted.insert(emit_key(entry.name));
+            emitted.insert(emit_key(entry.name));
+            if (!has_overlays) {
+                callback(base_host / entry.name, /*is_file=*/!entry.is_directory);
+                continue;
+            }
+            if (auto hit = resolve(entry.name, mount->backends.size() - 1)) {
                 callback(hit->first, /*is_file=*/!hit->second);
+            } else {
+                callback(base_host / entry.name, /*is_file=*/!entry.is_directory);
             }
         }
     }
@@ -400,7 +354,7 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
             if (emitted.contains(emit_key(entry.name))) {
                 continue;
             }
-            if (auto hit = resolve(entry.name)) {
+            if (auto hit = resolve(entry.name, mount->backends.size())) {
                 emitted.insert(emit_key(entry.name));
                 callback(hit->first, /*is_file=*/!hit->second);
             }
@@ -409,39 +363,11 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
 }
 
 bool MntPoints::Exists(std::string_view guest_path) {
-    const auto corrected = SanitizeGuestPath(guest_path);
-    if (!corrected) {
-        return false;
-    }
-    const auto mount = GetMount(*corrected);
-    if (!mount || mount->backends.empty()) {
-        return false;
-    }
-    const auto rel = RelativeToMount(*corrected, *mount);
-    for (const auto& backend : mount->backends) {
-        if (backend->Exists(rel)) {
-            return true;
-        }
-    }
-    return false;
+    return ResolvePath(guest_path).exists;
 }
 
 bool MntPoints::IsDirectory(std::string_view guest_path) {
-    const auto corrected = SanitizeGuestPath(guest_path);
-    if (!corrected) {
-        return false;
-    }
-    const auto mount = GetMount(*corrected);
-    if (!mount || mount->backends.empty()) {
-        return false;
-    }
-    const auto rel = RelativeToMount(*corrected, *mount);
-    for (const auto& backend : mount->backends) {
-        if (backend->Exists(rel)) {
-            return backend->IsDirectory(rel);
-        }
-    }
-    return false;
+    return ResolvePath(guest_path).is_directory;
 }
 
 std::unique_ptr<IFile> MntPoints::Open(std::string_view guest_path, bool writable) {
@@ -451,31 +377,26 @@ std::unique_ptr<IFile> MntPoints::Open(std::string_view guest_path, bool writabl
 
 std::unique_ptr<IFile> MntPoints::Open(std::string_view guest_path,
                                        Common::FS::FileAccessMode mode) {
-    const auto corrected = SanitizeGuestPath(guest_path);
-    if (!corrected) {
-        return nullptr;
-    }
-    const auto mount = GetMount(*corrected);
-    if (!mount || mount->backends.empty()) {
+    return OpenResolved(ResolvePath(guest_path), mode);
+}
+
+std::unique_ptr<IFile> MntPoints::OpenResolved(const Resolution& resolution,
+                                               Common::FS::FileAccessMode mode) {
+    if (!resolution.IsMounted() || resolution.mount->backends.empty()) {
         return nullptr;
     }
     const bool writable = mode != Common::FS::FileAccessMode::Read;
-    if (writable && mount->read_only) {
+    if (writable && resolution.mount->read_only) {
         return nullptr;
     }
-    const auto rel = RelativeToMount(*corrected, *mount);
-    const std::string rel_copy{rel};
-
     if (mode == Common::FS::FileAccessMode::Create) {
-        return mount->backends.back()->Open(rel_copy, mode);
+        // Creation always lands on the writable base layer.
+        return resolution.mount->backends.back()->Open(resolution.rel, mode);
     }
-
-    for (const auto& backend : mount->backends) {
-        if (backend->Exists(rel) && !backend->IsDirectory(rel)) {
-            return backend->Open(rel_copy, mode);
-        }
+    if (resolution.backend == nullptr || resolution.is_directory) {
+        return nullptr;
     }
-    return nullptr;
+    return resolution.backend->Open(resolution.rel, mode);
 }
 
 std::unique_ptr<IDirectory> MntPoints::OpenDir(std::string_view guest_path) {

@@ -131,10 +131,11 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
     }
 
-    bool read_only = false;
     file->m_guest_name = path;
-    file->m_host_name = mnt->GetHostPath(file->m_guest_name, &read_only);
-    bool exists = mnt->Exists(file->m_guest_name);
+    auto resolved = mnt->ResolvePath(file->m_guest_name);
+    const bool read_only = resolved.read_only;
+    file->m_host_name = resolved.host_path;
+    bool exists = resolved.exists;
 
     if (create) {
         if (excl && exists) {
@@ -153,8 +154,13 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
                 LOG_ERROR(Kernel_Fs, "Creating {} failed, path is read-only", raw_path);
                 return -1;
             }
-            // Create a file if it doesn't exist
-            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Create);
+            // Create a file if it doesn't exist, on the mount's writable layer.
+            if (mnt->OpenResolved(resolved, Common::FS::FileAccessMode::Create)) {
+                resolved.backend = resolved.mount->backends.back().get();
+                resolved.exists = true;
+                resolved.is_directory = false;
+                exists = true;
+            }
         }
     } else if (!exists) {
         // If we're not creating a file, and it doesn't exist, return ENOENT
@@ -164,14 +170,14 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         return -1;
     }
 
-    if (mnt->IsDirectory(file->m_guest_name) || directory) {
+    if (resolved.is_directory || directory) {
         // Directories can be opened even if the directory flag isn't set.
         // In these cases, error behavior is identical to the directory code path.
         directory = true;
     }
 
     if (directory) {
-        if (!mnt->IsDirectory(file->m_guest_name)) {
+        if (!resolved.is_directory) {
             // If the opened file is not a directory, return ENOTDIR.
             // This will trigger when create & directory is specified, this is expected.
             h->DeleteHandle(handle);
@@ -234,7 +240,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             access_mode = Common::FS::FileAccessMode::Read;
         }
 
-        file->handle = mnt->Open(file->m_guest_name, access_mode);
+        file->handle = mnt->OpenResolved(resolved, access_mode);
         if (!file->handle || !file->handle->IsOpen()) {
             h->DeleteHandle(handle);
             *__Error() = (write || rdwr || truncate) ? POSIX_EROFS : POSIX_EIO;
@@ -341,22 +347,12 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
     return result;
 }
 
-static thread_local std::vector<u8> file_buf{};
-
 s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = file->GetSize() - file->Tell();
     memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
-    if (file_buf.capacity() < nbytes) {
-        file_buf.reserve(nbytes);
-    }
-    s64 bytes = file->Read(file_buf.data(), nbytes);
-    if (bytes < 0) {
-        return bytes;
-    }
-    std::memcpy(buf, file_buf.data(), bytes);
-    return bytes;
+    return file->Read(buf, nbytes);
 }
 
 s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
@@ -582,15 +578,15 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
-    bool ro = false;
-    const auto dir_name = mnt->GetHostPath(path, &ro);
+    const auto resolved = mnt->ResolvePath(path);
+    const auto& dir_name = resolved.host_path;
 
-    if (mnt->Exists(path)) {
+    if (resolved.exists) {
         *__Error() = POSIX_EEXIST;
         return -1;
     }
 
-    if (ro) {
+    if (resolved.read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
@@ -624,21 +620,21 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
         return -1;
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    bool ro = false;
 
-    const fs::path dir_name = mnt->GetHostPath(path, &ro);
+    const auto resolved = mnt->ResolvePath(path);
+    const fs::path& dir_name = resolved.host_path;
 
-    if (ro) {
+    if (resolved.read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
 
-    if (dir_name.empty() || !fs::is_directory(dir_name)) {
+    if (dir_name.empty() || !resolved.is_directory) {
         *__Error() = POSIX_ENOTDIR;
         return -1;
     }
 
-    if (!fs::exists(dir_name)) {
+    if (!resolved.exists) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
@@ -670,8 +666,9 @@ s32 PS4_SYSV_ABI posix_access(const char* path, s32 mode) {
     }
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const bool is_dir = mnt->IsDirectory(path);
-    const bool is_file = !is_dir && mnt->Exists(path);
+    const auto resolved = mnt->ResolvePath(path);
+    const bool is_dir = resolved.is_directory;
+    const bool is_file = !is_dir && resolved.exists;
     const bool is_root = strncmp(path, "/", 2) == 0;
     if (!is_dir && !is_file && !is_root) {
         *__Error() = POSIX_ENOENT;
@@ -690,11 +687,12 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         return -1;
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto path_name = mnt->GetHostPath(path);
+    const auto resolved = mnt->ResolvePath(path);
+    const auto& path_name = resolved.host_path;
     std::memset(sb, 0, sizeof(OrbisKernelStat));
 
-    const bool is_dir = mnt->IsDirectory(path);
-    const bool is_file = !is_dir && mnt->Exists(path);
+    const bool is_dir = resolved.is_directory;
+    const bool is_file = !is_dir && resolved.exists;
     const bool is_root = strncmp(path, "/", 2) == 0;
     if (!is_dir && !is_file && !is_root) {
         *__Error() = POSIX_ENOENT;
@@ -728,7 +726,7 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         // TODO incomplete
     } else {
         sb->st_mode = 0000777u | 0100000u;
-        if (auto handle = mnt->Open(path, /*writable=*/false)) {
+        if (auto handle = mnt->OpenResolved(resolved, Common::FS::FileAccessMode::Read)) {
             Core::FileSys::FileStat fst{};
             handle->Stat(fst);
             sb->st_size = static_cast<s64>(fst.size);
@@ -780,7 +778,6 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
             return ORBIS_OK;
         }
     }
-    const auto path_name = mnt->GetHostPath(guest_path);
     if (!mnt->Exists(guest_path)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
@@ -907,8 +904,6 @@ s32 PS4_SYSV_ABI sceKernelFtruncate(s32 fd, s64 length) {
 
 s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    bool ro = false;
-    const auto src_path = mnt->GetHostPath(from, &ro);
     if (strlen(from) > 255) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
@@ -917,23 +912,26 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
-    if (!fs::exists(src_path)) {
+    const auto src = mnt->ResolvePath(from);
+    const auto& src_path = src.host_path;
+    if (!src.exists) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
-    if (ro) {
+    if (src.read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
-    const auto dst_path = mnt->GetHostPath(to, &ro);
-    if (ro) {
+    const auto dst = mnt->ResolvePath(to);
+    const auto& dst_path = dst.host_path;
+    if (dst.read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
-    const bool src_is_dir = fs::is_directory(src_path);
-    const bool dst_is_dir = fs::is_directory(dst_path);
+    const bool src_is_dir = src.is_directory;
+    const bool dst_is_dir = dst.is_directory;
 
-    if (fs::exists(dst_path)) {
+    if (dst.exists) {
         if (src_is_dir && !dst_is_dir) {
             *__Error() = POSIX_ENOTDIR;
             return -1;
@@ -1229,19 +1227,19 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
-    bool ro = false;
-    const auto host_path = mnt->GetHostPath(path, &ro);
+    const auto resolved = mnt->ResolvePath(path);
+    const auto& host_path = resolved.host_path;
     if (host_path.empty()) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
 
-    if (ro) {
+    if (resolved.read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
 
-    if (fs::is_directory(host_path)) {
+    if (resolved.is_directory) {
         *__Error() = POSIX_EPERM;
         return -1;
     }

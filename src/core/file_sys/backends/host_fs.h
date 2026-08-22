@@ -3,13 +3,13 @@
 
 #pragma once
 
+#include <atomic>
 #include <filesystem>
+#include <limits>
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <string>
 #include <string_view>
-#include <tsl/robin_map.h>
 #include "common/io_file.h"
 #include "core/file_sys/ifile.h"
 
@@ -18,7 +18,8 @@ namespace Core::FileSys {
 /// IFile implementation backed by a real host file.
 class HostFile final : public IFile {
 public:
-    HostFile(std::filesystem::path host_path, Common::FS::FileAccessMode mode, bool read_only);
+    HostFile(std::filesystem::path host_path, Common::FS::FileAccessMode mode, bool read_only,
+             bool immutable = false);
     ~HostFile() override = default;
 
     s64 Read(void* dst, u64 size) override;
@@ -34,6 +35,7 @@ public:
     }
 
     Common::FS::IOFile* GetHostFile() override {
+        ForgetSize();
         return &m_file;
     }
 
@@ -52,9 +54,17 @@ public:
     void Stat(FileStat& out) override;
 
 private:
+    static constexpr u64 UnknownSize = std::numeric_limits<u64>::max();
+
+    void ForgetSize() const {
+        m_cached_size.store(UnknownSize, std::memory_order_relaxed);
+    }
+
     std::filesystem::path m_path;
     Common::FS::IOFile m_file;
     bool m_read_only;
+    bool m_immutable;
+    mutable std::atomic<u64> m_cached_size{UnknownSize};
 };
 
 /// Streaming iterator over a host directory.
@@ -79,6 +89,11 @@ public:
 
     bool Exists(std::string_view rel_path) override;
     bool IsDirectory(std::string_view rel_path) override;
+    NodeInfo Query(std::string_view rel_path) override;
+
+    std::optional<std::filesystem::path> ResolveHostPath(std::string_view rel_path) override {
+        return Resolve(rel_path);
+    }
 
     std::unique_ptr<IFile> Open(std::string_view rel_path,
                                 Common::FS::FileAccessMode mode) override;
@@ -101,10 +116,9 @@ public:
 private:
     std::filesystem::path Resolve(std::string_view rel_path) const;
     std::optional<std::filesystem::path> ResolveCaseInsensitive(std::string_view rel_path) const;
+
     std::filesystem::path m_root;
     bool m_read_only;
-    mutable std::mutex m_case_cache_mutex;
-    mutable tsl::robin_map<std::string, std::filesystem::path> m_case_cache;
 };
 
 } // namespace Core::FileSys

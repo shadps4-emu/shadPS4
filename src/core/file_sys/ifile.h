@@ -190,6 +190,23 @@ class IBackend {
 public:
     virtual ~IBackend() = default;
 
+    /// Result of a single path lookup.
+    struct NodeInfo {
+        bool exists{false};
+        bool is_directory{false};
+    };
+
+    virtual NodeInfo Query(std::string_view rel_path) {
+        NodeInfo info;
+        info.exists = Exists(rel_path);
+        info.is_directory = info.exists && IsDirectory(rel_path);
+        return info;
+    }
+
+    virtual std::optional<std::filesystem::path> ResolveHostPath(std::string_view rel_path) {
+        return std::nullopt;
+    }
+
     virtual bool Exists(std::string_view rel_path) = 0;
     virtual bool IsDirectory(std::string_view rel_path) = 0;
     virtual std::unique_ptr<IFile> Open(std::string_view rel_path,

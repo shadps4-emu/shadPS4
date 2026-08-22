@@ -309,12 +309,19 @@ bool ZArchiveBackend::Exists(std::string_view rel_path) {
 }
 
 bool ZArchiveBackend::IsDirectory(std::string_view rel_path) {
+    return Query(rel_path).is_directory;
+}
+
+IBackend::NodeInfo ZArchiveBackend::Query(std::string_view rel_path) {
+    NodeInfo info;
     const auto node = LookUp(rel_path, /*allow_file=*/true, /*allow_directory=*/true);
     if (node == ZARCHIVE_INVALID_NODE) {
-        return false;
+        return info;
     }
+    info.exists = true;
     std::scoped_lock lk{m_reader->mutex};
-    return m_reader->reader->IsDirectory(node);
+    info.is_directory = m_reader->reader->IsDirectory(node);
+    return info;
 }
 
 std::unique_ptr<IFile> ZArchiveBackend::Open(std::string_view rel_path,
