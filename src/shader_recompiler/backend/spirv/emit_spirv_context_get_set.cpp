@@ -167,6 +167,16 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     }
 }
 
+Id EmitGetAttributeU1(EmitContext& ctx, IR::Attribute attr, u32 comp) {
+    ASSERT(comp == 0);
+    switch (attr) {
+    case IR::Attribute::IsFrontFace:
+        return ctx.OpLoad(ctx.U1[1], ctx.front_facing);
+    default:
+        UNREACHABLE_MSG("Unsupported U1 attribute {}", attr);
+    }
+}
+
 Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     switch (attr) {
     case IR::Attribute::VertexId:
