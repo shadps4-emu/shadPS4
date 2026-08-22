@@ -458,4 +458,30 @@ void SsaRewritePass(IR::Program& program) {
     pass.FinalizePhiCandidates();
 }
 
+void SsaDestroyPass(IR::Program& program) {
+    // This implements the following mesa function with place_writes_in_imm_preds = true
+    // https://gitlab.freedesktop.org/mesa/mesa/-/blob/55f62fa8/src/compiler/nir/nir_from_ssa.c#L1075
+    u32 reg_index{};
+    const auto end = program.post_order_blocks.rend();
+    for (auto it1 = program.post_order_blocks.rbegin(); it1 != end; ++it1) {
+        IR::Block* block = *it1;
+        for (auto it = block->begin(); it != block->end(); ++it) {
+            IR::Inst& inst = *it;
+            if (inst.GetOpcode() != IR::Opcode::Phi) {
+                continue;
+            }
+            const IR::VirtualReg reg{reg_index++, inst.Flags<IR::Type>()};
+            for (size_t arg_index = 0; arg_index < inst.NumArgs(); arg_index++) {
+                IR::Value arg = inst.Arg(arg_index);
+                IR::Block* arg_block = inst.PhiBlock(arg_index);
+                arg_block->PrependNewInst(arg_block->end(), IR::Opcode::SetVirtualRegister,
+                                          {IR::Value{reg}, arg});
+            }
+            IR::Inst* const new_inst{
+                &*block->PrependNewInst(it, IR::Opcode::GetVirtualRegister, {IR::Value{reg}})};
+            inst.ReplaceUsesWith(IR::Value{new_inst});
+        }
+    }
+}
+
 } // namespace Shader::Optimization
