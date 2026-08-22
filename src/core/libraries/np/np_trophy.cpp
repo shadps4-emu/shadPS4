@@ -924,6 +924,28 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
         return ORBIS_NP_TROPHY_ERROR_TITLE_NOT_FOUND;
     }
 
+    pugi::xml_document lang_doc;
+    const bool has_lang_doc = lang_doc.load_file(trophy_file.native().c_str());
+    if (!has_lang_doc) {
+        LOG_ERROR(Lib_NpTrophy, "Failed to parse localized trophy xml : {}", trophy_file.string());
+    }
+
+    const auto get_localized_name = [&](int id, const pugi::xml_node& fallback) -> std::string {
+        if (has_lang_doc) {
+            for (const pugi::xml_node& n : lang_doc.child("trophyconf").children("trophy")) {
+                if (n.attribute("id").as_int(ORBIS_NP_TROPHY_INVALID_TROPHY_ID) != id) {
+                    continue;
+                }
+                std::string name = n.child("name").text().as_string();
+                if (!name.empty()) {
+                    return name;
+                }
+                break;
+            }
+        }
+        return fallback.child("name").text().as_string();
+    };
+
     *platinumId = ORBIS_NP_TROPHY_INVALID_TROPHY_ID;
 
     int num_base_trophies = 0;
@@ -932,7 +954,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
 
     // Outputs filled during the scan.
     bool trophy_found = false;
-    const char* trophy_name = "";
+    std::string trophy_name;
     std::string_view trophy_type;
     std::filesystem::path trophy_icon_path;
 
@@ -963,7 +985,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
 
         if (current_trophy_id == trophyId) {
             trophy_found = true;
-            trophy_name = node.child("name").text().as_string();
+            trophy_name = get_localized_name(current_trophy_id, node);
             trophy_type = current_trophy_type;
 
             const std::string icon_file = fmt::format("TROP{:03d}.PNG", current_trophy_id);
@@ -984,7 +1006,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
     bool unlock_platinum = false;
     OrbisNpTrophyId platinum_id = ORBIS_NP_TROPHY_INVALID_TROPHY_ID;
     u64 platinum_timestamp = 0;
-    const char* platinum_name = "";
+    std::string platinum_name;
     std::filesystem::path platinum_icon_path;
 
     if (!platinum_node.attribute("unlockstate").as_bool()) {
@@ -992,7 +1014,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
             unlock_platinum = true;
             platinum_id = platinum_node.attribute("id").as_int(ORBIS_NP_TROPHY_INVALID_TROPHY_ID);
             platinum_timestamp = trophy_timestamp; // same second is fine
-            platinum_name = platinum_node.child("name").text().as_string();
+            platinum_name = get_localized_name(platinum_id, platinum_node);
 
             const std::string plat_icon_file = fmt::format("TROP{:03d}.PNG", platinum_id);
             platinum_icon_path = ctx.icons_dir / plat_icon_file;
