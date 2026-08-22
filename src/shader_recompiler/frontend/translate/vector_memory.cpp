@@ -180,38 +180,6 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::IMAGE_SAMPLE_C_O:
     case Opcode::IMAGE_SAMPLE_C_LZ_O:
     case Opcode::IMAGE_SAMPLE_CD:
-    case Opcode::IMAGE_SAMPLE_G16:
-    case Opcode::IMAGE_SAMPLE_CL_G16:
-    case Opcode::IMAGE_SAMPLE_D_G16:
-    case Opcode::IMAGE_SAMPLE_D_CL_G16:
-    case Opcode::IMAGE_SAMPLE_L_G16:
-    case Opcode::IMAGE_SAMPLE_B_G16:
-    case Opcode::IMAGE_SAMPLE_B_CL_G16:
-    case Opcode::IMAGE_SAMPLE_LZ_G16:
-    case Opcode::IMAGE_SAMPLE_C_G16:
-    case Opcode::IMAGE_SAMPLE_C_CL_G16:
-    case Opcode::IMAGE_SAMPLE_C_D_G16:
-    case Opcode::IMAGE_SAMPLE_C_D_CL_G16:
-    case Opcode::IMAGE_SAMPLE_C_L_G16:
-    case Opcode::IMAGE_SAMPLE_C_B_G16:
-    case Opcode::IMAGE_SAMPLE_C_B_CL_G16:
-    case Opcode::IMAGE_SAMPLE_C_LZ_G16:
-    case Opcode::IMAGE_SAMPLE_O_G16:
-    case Opcode::IMAGE_SAMPLE_CL_O_G16:
-    case Opcode::IMAGE_SAMPLE_D_O_G16:
-    case Opcode::IMAGE_SAMPLE_D_CL_O_G16:
-    case Opcode::IMAGE_SAMPLE_L_O_G16:
-    case Opcode::IMAGE_SAMPLE_B_O_G16:
-    case Opcode::IMAGE_SAMPLE_B_CL_O_G16:
-    case Opcode::IMAGE_SAMPLE_LZ_O_G16:
-    case Opcode::IMAGE_SAMPLE_C_O_G16:
-    case Opcode::IMAGE_SAMPLE_C_CL_O_G16:
-    case Opcode::IMAGE_SAMPLE_C_D_O_G16:
-    case Opcode::IMAGE_SAMPLE_C_D_CL_O_G16:
-    case Opcode::IMAGE_SAMPLE_C_L_O_G16:
-    case Opcode::IMAGE_SAMPLE_C_B_O_G16:
-    case Opcode::IMAGE_SAMPLE_C_B_CL_O_G16:
-    case Opcode::IMAGE_SAMPLE_C_LZ_O_G16:
         return IMAGE_SAMPLE(inst);
 
         // Image gather operations
@@ -683,10 +651,6 @@ void Translator::IMAGE_SAMPLE(const GcnInst& inst) {
     const IR::ScalarReg tsharp_reg{inst.src[2].code * 4};
     const IR::ScalarReg sampler_reg{inst.src[3].code * 4};
     const auto flags = MimgModifierFlags(mimg.mod);
-
-    if (flags.test(MimgModifier::Gradients)) {
-        LOG_WARNING(Render_Recompiler, "_G16 modifier ignored");
-    }
 
     const IR::Value texel = EmitImageSample(ir, inst, tsharp_reg, sampler_reg, addr_reg, false, pc);
     for (u32 i = 0; i < 4; i++) {
