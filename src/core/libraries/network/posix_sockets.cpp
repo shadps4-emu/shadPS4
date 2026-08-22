@@ -6,6 +6,7 @@
 #include "common/error.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/kernel.h"
+#include "core/libraries/kernel/time.h"
 #include "net.h"
 #ifndef _WIN32
 #include <sys/stat.h>
@@ -459,92 +460,131 @@ int PosixSocket::GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) {
     return ConvertReturnErrorCode(res);
 }
 
-#define CASE_SETSOCKOPT(opt)                                                                       \
-    case ORBIS_NET_##opt:                                                                          \
-        return ConvertReturnErrorCode(                                                             \
-            setsockopt(sock, native_level, opt, (const char*)optval, optlen))
-
-#define CASE_SETSOCKOPT_VALUE(opt, value)                                                          \
-    case opt:                                                                                      \
-        if (optlen != sizeof(*value)) {                                                            \
-            *Libraries::Kernel::__Error() = ORBIS_NET_EFAULT;                                      \
+#define CASE_SETSOCKOPT_INT(guest, host)                                                           \
+    case guest: {                                                                                  \
+        if (optlen < sizeof(u32)) {                                                                \
+            *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;                                      \
             return -1;                                                                             \
         }                                                                                          \
-        memcpy(value, optval, optlen);                                                             \
-        return 0
+        return ConvertReturnErrorCode(                                                             \
+            setsockopt(sock, native_level, host, static_cast<const char*>(optval), optlen));       \
+    }
+
+#define CASE_SETSOCKOPT_VALUE(opt, value)                                                          \
+    case opt: {                                                                                    \
+        if (optlen < sizeof(*value)) {                                                             \
+            *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;                                      \
+        }                                                                                          \
+        std::memcpy(value, optval, optlen);                                                        \
+        return 0;                                                                                  \
+    }
 
 int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u32 optlen) {
     std::scoped_lock lock{m_mutex};
     s32 native_level = ConvertLevels(level);
-    ::linger native_linger;
     if (native_level == SOL_SOCKET) {
         switch (optname) {
-            CASE_SETSOCKOPT(SO_REUSEADDR);
-            CASE_SETSOCKOPT(SO_KEEPALIVE);
-            CASE_SETSOCKOPT(SO_BROADCAST);
-            CASE_SETSOCKOPT(SO_SNDBUF);
-            CASE_SETSOCKOPT(SO_RCVBUF);
+            CASE_SETSOCKOPT_INT(ORBIS_SO_REUSEADDR, SO_REUSEADDR);
+            CASE_SETSOCKOPT_INT(ORBIS_SO_KEEPALIVE, SO_KEEPALIVE);
+            CASE_SETSOCKOPT_INT(ORBIS_SO_BROADCAST, SO_BROADCAST);
+            CASE_SETSOCKOPT_INT(ORBIS_SO_SNDBUF, SO_SNDBUF);
+            CASE_SETSOCKOPT_INT(ORBIS_SO_RCVBUF, SO_RCVBUF);
+            CASE_SETSOCKOPT_VALUE(ORBIS_SO_REUSEPORT, &sockopt_so_reuseport);
+            CASE_SETSOCKOPT_VALUE(ORBIS_SO_ONESBCAST, &sockopt_so_onesbcast);
+            CASE_SETSOCKOPT_VALUE(ORBIS_SO_USECRYPTO, &sockopt_so_usecrypto);
+            CASE_SETSOCKOPT_VALUE(ORBIS_SO_USESIGNATURE, &sockopt_so_usesignature);
+            CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_ACCEPTTIMEO, &sockopt_so_accepttimeo);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_CONNECTTIMEO, &sockopt_so_connecttimeo);
-            CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_REUSEPORT, &sockopt_so_reuseport);
-            CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
-            CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
-        case ORBIS_NET_SO_SNDTIMEO:
-        case ORBIS_NET_SO_RCVTIMEO: {
-            if (optlen != sizeof(int)) {
-                *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EFAULT;
-                return -1;
-            }
-            std::vector<char> val;
-            const auto optname_nat = (optname == ORBIS_NET_SO_SNDTIMEO) ? SO_SNDTIMEO : SO_RCVTIMEO;
-            int timeout_us = *(const int*)optval;
-#ifdef _WIN32
-            DWORD timeout = timeout_us / 1000;
-#else
-            timeval timeout{.tv_sec = timeout_us / 1000000, .tv_usec = timeout_us % 1000000};
-#endif
-            val.insert(val.end(), (char*)&timeout, (char*)&timeout + sizeof(timeout));
-            optlen = sizeof(timeout);
-            return ConvertReturnErrorCode(
-                setsockopt(sock, native_level, optname_nat, val.data(), optlen));
-        }
-        case ORBIS_NET_SO_ONESBCAST: {
-
-            if (optlen != sizeof(sockopt_so_onesbcast)) {
-                *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EFAULT;
-                return -1;
-            }
-            memcpy(&sockopt_so_onesbcast, optval, optlen);
-            return ConvertReturnErrorCode(
-                setsockopt(sock, native_level, SO_BROADCAST, (const char*)optval, optlen));
-        }
-        case ORBIS_NET_SO_TYPE:
-        case ORBIS_NET_SO_ERROR: {
-            *Libraries::Kernel::__Error() = ORBIS_NET_ENOPROTOOPT;
-            return -1;
-        }
-        case ORBIS_NET_SO_LINGER: {
-            if (socket_type != ORBIS_NET_SOCK_STREAM) {
-                *Libraries::Kernel::__Error() = ORBIS_NET_EPROCUNAVAIL;
-                return -1;
-            }
+        case ORBIS_SO_LINGER: {
             if (optlen < sizeof(OrbisNetLinger)) {
-                LOG_ERROR(Lib_Net, "size missmatched! optlen = {} OrbisNetLinger={}", optlen,
-                          sizeof(OrbisNetLinger));
                 *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
                 return -1;
             }
 
-            const void* native_val = &native_linger;
+            ::linger native_linger;
             u32 native_len = sizeof(native_linger);
             native_linger.l_onoff = reinterpret_cast<const OrbisNetLinger*>(optval)->l_onoff;
             native_linger.l_linger = reinterpret_cast<const OrbisNetLinger*>(optval)->l_linger;
-            return ConvertReturnErrorCode(
-                setsockopt(sock, native_level, SO_LINGER, (const char*)native_val, native_len));
+            return ConvertReturnErrorCode(setsockopt(sock, native_level, SO_LINGER,
+                                                     reinterpret_cast<char*>(&native_linger),
+                                                     native_len));
         }
+        case ORBIS_SO_SNDTIMEO:
+        case ORBIS_SO_RCVTIMEO: {
+            // Set timeout using a timeval
+            if (optlen != sizeof(Kernel::OrbisKernelTimeval)) {
+                *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
+                return -1;
+            }
 
-        case ORBIS_NET_SO_NAME:
-            *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
-            return -1; // don't support set for name
+            // Windows setsockopt uses milliseconds, we need to convert
+            Kernel::OrbisKernelTimeval set_time =
+                *static_cast<const Kernel::OrbisKernelTimeval*>(optval);
+            s32 millis = set_time.tv_sec * 1000 + set_time.tv_usec / 1000;
+
+            // Store time in ms
+            if (optname == ORBIS_SO_SNDTIMEO) {
+                sockopt_so_sndtimeo = millis;
+            } else {
+                sockopt_so_rcvtimeo = millis;
+            }
+            const auto native_opt = (optname == ORBIS_SO_SNDTIMEO) ? SO_SNDTIMEO : SO_RCVTIMEO;
+#ifdef _WIN32
+            return ConvertReturnErrorCode(setsockopt(
+                sock, native_level, native_opt, reinterpret_cast<char*>(&millis), sizeof(millis)));
+#else
+            // POSIX platforms use timeval, it's safe to just pass along the optval
+            return ConvertReturnErrorCode(setsockopt(
+                sock, native_level, native_opt, reinterpret_cast<const char*>(optval), optlen));
+#endif
+        }
+        case ORBIS_NET_SO_SNDTIMEO:
+        case ORBIS_NET_SO_RCVTIMEO: {
+            // Set timeout with inputted milliseconds count
+            if (optlen != sizeof(u32)) {
+                *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
+                return -1;
+            }
+
+            // Store inputted timeout
+            s32 millis = *reinterpret_cast<const s32*>(optval);
+            if (optname == ORBIS_SO_SNDTIMEO) {
+                sockopt_so_sndtimeo = millis;
+            } else {
+                sockopt_so_rcvtimeo = millis;
+            }
+            const auto native_opt = (optname == ORBIS_NET_SO_SNDTIMEO) ? SO_SNDTIMEO : SO_RCVTIMEO;
+#ifdef _WIN32
+            // Windows setsockopt uses milliseconds, it's safe to just pass along the optval
+            return ConvertReturnErrorCode(setsockopt(sock, native_level, native_opt,
+                                                     static_cast<const char*>(optval), optlen));
+#else
+            // POSIX platforms use a timeval, we need to convert
+            timeval timeout{.tv_sec = millis / 1000, .tv_usec = (millis % 1000) * 1000};
+            return ConvertReturnErrorCode(setsockopt(sock, native_level, native_opt,
+                                                     reinterpret_cast<char*>(&timeout),
+                                                     sizeof(timeout)));
+#endif
+        }
+        case ORBIS_SO_TYPE:
+        case ORBIS_SO_ERROR: {
+            // type and error cannot be set through setsockopt
+            *Libraries::Kernel::__Error() = ORBIS_NET_ENOPROTOOPT;
+            return -1;
+        }
+        case ORBIS_NET_SO_NAME: {
+            // This sets the name of the socket
+            if (optlen == 0) {
+                *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
+                return -1;
+            }
+            u64 namelen = std::min<u64>(optlen, 31);
+            // Inserts up to 31 characters, then throws a null terminator at index 30
+            // Dunno why Sony does that, but this matches decomp.
+            name.insert(0, static_cast<const char*>(optval), namelen);
+            name.data()[30] = 0;
+            return 0;
+        }
         case ORBIS_NET_SO_NBIO: {
             if (optlen < sizeof(sockopt_so_nbio)) {
                 *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
@@ -553,42 +593,38 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
                 memcpy(&sockopt_so_nbio, optval, sizeof(sockopt_so_nbio));
             }
 #ifdef _WIN32
-            static_assert(sizeof(u_long) == sizeof(sockopt_so_nbio),
-                          "type used for ioctlsocket value does not have the expected size");
-            return ConvertReturnErrorCode(ioctlsocket(sock, FIONBIO, (u_long*)&sockopt_so_nbio));
+            return ConvertReturnErrorCode(
+                ioctlsocket(sock, FIONBIO, reinterpret_cast<u_long*>(&sockopt_so_nbio)));
 #else
             return ConvertReturnErrorCode(ioctl(sock, FIONBIO, &sockopt_so_nbio));
 #endif
         }
-        case ORBIS_NET_SO_ACCEPTTIMEO:
-            LOG_ERROR(Lib_Net, "Unhandled option ORBIS_NET_SO_ACCEPTTIMEO");
-            return ORBIS_OK;
         }
     } else if (native_level == IPPROTO_IP) {
         switch (optname) {
-            // CASE_SETSOCKOPT(IP_HDRINCL);
-            CASE_SETSOCKOPT(IP_TOS);
-            CASE_SETSOCKOPT(IP_TTL);
-            CASE_SETSOCKOPT(IP_MULTICAST_IF);
-            CASE_SETSOCKOPT(IP_MULTICAST_TTL);
-            CASE_SETSOCKOPT(IP_MULTICAST_LOOP);
-            CASE_SETSOCKOPT(IP_ADD_MEMBERSHIP);
-            CASE_SETSOCKOPT(IP_DROP_MEMBERSHIP);
+            CASE_SETSOCKOPT_INT(ORBIS_NET_IP_TOS, IP_TOS);
+            CASE_SETSOCKOPT_INT(ORBIS_NET_IP_TTL, IP_TTL);
+            CASE_SETSOCKOPT_INT(ORBIS_NET_IP_MULTICAST_IF, IP_MULTICAST_IF);
+            CASE_SETSOCKOPT_INT(ORBIS_NET_IP_MULTICAST_TTL, IP_MULTICAST_TTL);
+            CASE_SETSOCKOPT_INT(ORBIS_NET_IP_HDRINCL, IP_HDRINCL);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_IP_TTLCHK, &sockopt_ip_ttlchk);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_IP_MAXTTL, &sockopt_ip_maxttl);
-        case ORBIS_NET_IP_HDRINCL: {
-            if (socket_type != ORBIS_NET_SOCK_RAW) {
-                *Libraries::Kernel::__Error() = ORBIS_NET_EPROCUNAVAIL;
+        case ORBIS_NET_IP_ADD_MEMBERSHIP:
+        case ORBIS_NET_IP_DROP_MEMBERSHIP: {
+            if (optlen < sizeof(ip_mreq)) {
+                *Libraries::Kernel::__Error() = ORBIS_NET_EINVAL;
                 return -1;
             }
-            return ConvertReturnErrorCode(
-                setsockopt(sock, native_level, optname, (const char*)optval, optlen));
+            const auto native_opt =
+                optname == ORBIS_NET_IP_ADD_MEMBERSHIP ? IP_ADD_MEMBERSHIP : IP_DROP_MEMBERSHIP;
+            return ConvertReturnErrorCode(setsockopt(sock, native_level, native_opt,
+                                                     static_cast<const char*>(optval), optlen));
         }
         }
     } else if (native_level == IPPROTO_TCP) {
         switch (optname) {
-            CASE_SETSOCKOPT(TCP_NODELAY);
-            CASE_SETSOCKOPT(TCP_MAXSEG);
+            CASE_SETSOCKOPT_INT(ORBIS_NET_TCP_NODELAY, TCP_NODELAY);
+            CASE_SETSOCKOPT_INT(ORBIS_NET_TCP_MAXSEG, TCP_MAXSEG);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_TCP_MSS_TO_ADVERTISE, &sockopt_tcp_mss_to_advertise);
         }
     }
@@ -597,23 +633,18 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
     return 0;
 }
 
-#define CASE_GETSOCKOPT(opt)                                                                       \
-    case ORBIS_NET_##opt: {                                                                        \
+#define CASE_GETSOCKOPT(guest, host)                                                               \
+    case guest: {                                                                                  \
         socklen_t optlen_temp = *optlen;                                                           \
         auto retval = ConvertReturnErrorCode(                                                      \
-            getsockopt(sock, native_level, opt, (char*)optval, &optlen_temp));                     \
+            getsockopt(sock, native_level, host, static_cast<char*>(optval), &optlen_temp));       \
         *optlen = optlen_temp;                                                                     \
         return retval;                                                                             \
     }
 #define CASE_GETSOCKOPT_VALUE(opt, value)                                                          \
     case opt:                                                                                      \
-        if (*optlen < sizeof(value)) {                                                             \
-            *optlen = sizeof(value);                                                               \
-            *Libraries::Kernel::__Error() = ORBIS_NET_EFAULT;                                      \
-            return -1;                                                                             \
-        }                                                                                          \
-        *optlen = sizeof(value);                                                                   \
-        *(decltype(value)*)optval = value;                                                         \
+        *optlen = std::min<u32>(sizeof(value), *optlen);                                           \
+        std::memcpy(optval, &value, *optlen);                                                      \
         return 0;
 
 int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* optlen) {
@@ -621,54 +652,78 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
     s32 native_level = ConvertLevels(level);
     if (native_level == SOL_SOCKET) {
         switch (optname) {
-            CASE_GETSOCKOPT(SO_REUSEADDR);
-            CASE_GETSOCKOPT(SO_KEEPALIVE);
-            CASE_GETSOCKOPT(SO_BROADCAST);
-            CASE_GETSOCKOPT(SO_LINGER);
-            CASE_GETSOCKOPT(SO_SNDBUF);
-            CASE_GETSOCKOPT(SO_RCVBUF);
-            CASE_GETSOCKOPT(SO_SNDTIMEO);
-            CASE_GETSOCKOPT(SO_RCVTIMEO);
-            CASE_GETSOCKOPT(SO_ERROR);
-            CASE_GETSOCKOPT(SO_TYPE);
+            CASE_GETSOCKOPT(ORBIS_SO_REUSEADDR, SO_REUSEADDR);
+            CASE_GETSOCKOPT(ORBIS_SO_KEEPALIVE, SO_KEEPALIVE);
+            CASE_GETSOCKOPT(ORBIS_SO_BROADCAST, SO_BROADCAST);
+            CASE_GETSOCKOPT(ORBIS_SO_SNDBUF, SO_SNDBUF);
+            CASE_GETSOCKOPT(ORBIS_SO_RCVBUF, SO_RCVBUF);
+            CASE_GETSOCKOPT(ORBIS_SO_TYPE, SO_TYPE);
+            CASE_GETSOCKOPT(ORBIS_SO_ERROR, SO_ERROR);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_NBIO, sockopt_so_nbio);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_CONNECTTIMEO, sockopt_so_connecttimeo);
-            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_REUSEPORT, sockopt_so_reuseport);
-            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_ONESBCAST, sockopt_so_onesbcast);
-            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, sockopt_so_usecrypto);
-            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, sockopt_so_usesignature);
-            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_NAME,
-                                  (char)0); // writes an empty string to the output buffer
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_ACCEPTTIMEO, sockopt_so_accepttimeo);
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_SNDTIMEO, sockopt_so_sndtimeo);
+            CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_RCVTIMEO, sockopt_so_rcvtimeo);
+            CASE_GETSOCKOPT_VALUE(ORBIS_SO_REUSEPORT, sockopt_so_reuseport);
+            CASE_GETSOCKOPT_VALUE(ORBIS_SO_ONESBCAST, sockopt_so_onesbcast);
+            CASE_GETSOCKOPT_VALUE(ORBIS_SO_USECRYPTO, sockopt_so_usecrypto);
+            CASE_GETSOCKOPT_VALUE(ORBIS_SO_USESIGNATURE, sockopt_so_usesignature);
+        case ORBIS_NET_SO_NAME: {
+            *optlen = std::min<u32>(0x1f, *optlen);
+            name.copy(static_cast<char*>(optval), *optlen);
+            return 0;
+        }
+        case ORBIS_SO_LINGER: {
+            ::linger native_linger;
+            socklen_t native_len = sizeof(native_linger);
+            auto retval = ConvertReturnErrorCode(getsockopt(sock, native_level, SO_LINGER,
+                                                            reinterpret_cast<char*>(&native_linger),
+                                                            &native_len));
+            if (retval == 0) {
+                OrbisNetLinger guest_linger{native_linger.l_linger, native_linger.l_onoff};
+                *optlen = std::min<u32>(sizeof(OrbisNetLinger), *optlen);
+                std::memcpy(optval, &guest_linger, *optlen);
+            }
+            return retval;
+        }
+        case ORBIS_SO_SNDTIMEO:
+        case ORBIS_SO_RCVTIMEO: {
+            // Returns timeout as a timeval
+            s32 millis = optname == ORBIS_SO_SNDTIMEO ? sockopt_so_sndtimeo : sockopt_so_rcvtimeo;
+            Kernel::OrbisKernelTimeval out_time{.tv_sec = millis / 1000,
+                                                .tv_usec = (millis % 1000) * 1000};
+            *optlen = std::min<u32>(sizeof(out_time), *optlen);
+            std::memcpy(optval, &out_time, *optlen);
+            return 0;
+        }
         case ORBIS_NET_SO_ERROR_EX: {
-            socklen_t optlen_temp = *optlen;
-            auto retval = ConvertReturnErrorCode(
-                getsockopt(sock, level, SO_ERROR, (char*)optval, &optlen_temp));
-            *optlen = optlen_temp;
-            if (retval < 0) {
-                s32 r = *Libraries::Kernel::__Error();
-                *Libraries::Kernel::__Error() = 0;
-                return r;
+            u32 optval_temp = 0;
+            auto retval = ConvertReturnErrorCode(getsockopt(sock, native_level, SO_ERROR,
+                                                            reinterpret_cast<char*>(&optval_temp),
+                                                            reinterpret_cast<socklen_t*>(optlen)));
+            if (retval == 0 && optval_temp != 0) {
+                optval_temp |= ORBIS_NET_ERROR_BASE;
+                *static_cast<u32*>(optval) = optval_temp;
             }
             return retval;
         }
         }
     } else if (native_level == IPPROTO_IP) {
         switch (optname) {
-            CASE_GETSOCKOPT(IP_HDRINCL);
-            CASE_GETSOCKOPT(IP_TOS);
-            CASE_GETSOCKOPT(IP_TTL);
-            CASE_GETSOCKOPT(IP_MULTICAST_IF);
-            CASE_GETSOCKOPT(IP_MULTICAST_TTL);
-            CASE_GETSOCKOPT(IP_MULTICAST_LOOP);
-            CASE_GETSOCKOPT(IP_ADD_MEMBERSHIP);
-            CASE_GETSOCKOPT(IP_DROP_MEMBERSHIP);
+            CASE_GETSOCKOPT(ORBIS_NET_IP_HDRINCL, IP_HDRINCL);
+            CASE_GETSOCKOPT(ORBIS_NET_IP_TOS, IP_TOS);
+            CASE_GETSOCKOPT(ORBIS_NET_IP_TTL, IP_TTL);
+            CASE_GETSOCKOPT(ORBIS_NET_IP_MULTICAST_IF, IP_MULTICAST_IF);
+            CASE_GETSOCKOPT(ORBIS_NET_IP_MULTICAST_TTL, IP_MULTICAST_TTL);
+            CASE_GETSOCKOPT(ORBIS_NET_IP_ADD_MEMBERSHIP, IP_ADD_MEMBERSHIP);
+            CASE_GETSOCKOPT(ORBIS_NET_IP_DROP_MEMBERSHIP, IP_DROP_MEMBERSHIP);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_IP_TTLCHK, sockopt_ip_ttlchk);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_IP_MAXTTL, sockopt_ip_maxttl);
         }
     } else if (native_level == IPPROTO_TCP) {
         switch (optname) {
-            CASE_GETSOCKOPT(TCP_NODELAY);
-            CASE_GETSOCKOPT(TCP_MAXSEG);
+            CASE_GETSOCKOPT(ORBIS_NET_TCP_NODELAY, TCP_NODELAY);
+            CASE_GETSOCKOPT(ORBIS_NET_TCP_MAXSEG, TCP_MAXSEG);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_TCP_MSS_TO_ADVERTISE, sockopt_tcp_mss_to_advertise);
         }
     }
