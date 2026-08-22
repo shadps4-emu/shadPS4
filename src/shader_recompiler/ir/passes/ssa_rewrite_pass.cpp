@@ -66,8 +66,8 @@ struct ThreadBitScalar : FlagTag {
 };
 
 using Variant =
-    std::variant<IR::ScalarReg, IR::VectorReg, GotoVariable, MaskLaneVariable, ThreadBitScalar,
-                 SccFlagTag, ExecFlagTag, VccFlagTag, VccLoTag, VccHiTag, M0Tag>;
+    std::variant<IR::ScalarReg, IR::VectorReg, IR::VirtualReg, GotoVariable, MaskLaneVariable,
+                 ThreadBitScalar, SccFlagTag, ExecFlagTag, VccFlagTag, VccLoTag, VccHiTag, M0Tag>;
 using ValueMap = std::unordered_map<IR::Block*, IR::Value>;
 
 struct DefTable {
@@ -83,6 +83,13 @@ struct DefTable {
     }
     void SetDef(IR::Block* block, IR::VectorReg variable, const IR::Value& value) {
         block->ssa_vreg_values[RegIndex(variable)] = value;
+    }
+
+    const IR::Value& Def(IR::Block* block, IR::VirtualReg variable) {
+        return reg_vars[variable.Key()][block];
+    }
+    void SetDef(IR::Block* block, IR::VirtualReg variable, const IR::Value& value) {
+        reg_vars[variable.Key()].insert_or_assign(block, value);
     }
 
     const IR::Value& Def(IR::Block* block, GotoVariable variable) {
@@ -153,6 +160,7 @@ struct DefTable {
 
     std::unordered_map<u32, ValueMap> goto_vars;
     std::unordered_map<u32, ValueMap> mask_lane_vars;
+    std::unordered_map<u64, ValueMap> reg_vars;
     ValueMap scc_flag;
     ValueMap exec_flag;
     ValueMap vcc_flag;
@@ -184,6 +192,17 @@ constexpr IR::Opcode UndefOpcode(const M0Tag) noexcept {
 
 constexpr IR::Opcode UndefOpcode(const FlagTag) noexcept {
     return IR::Opcode::UndefU1;
+}
+
+constexpr IR::Opcode UndefOpcode(const IR::VirtualReg reg) noexcept {
+    switch (reg.type) {
+    case IR::Type::U32:
+        return IR::Opcode::UndefU32;
+    case IR::Type::U1:
+        return IR::Opcode::UndefU1;
+    default:
+        UNREACHABLE();
+    }
 }
 
 class Pass {
@@ -342,6 +361,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         pass.WriteVariable(reg, block, inst.Arg(1));
         break;
     }
+    case IR::Opcode::SetVirtualRegister:
+        pass.WriteVariable(inst.Arg(0).VirtualReg(), block, inst.Arg(1));
+        break;
     case IR::Opcode::SetGotoVariable:
         pass.WriteVariable(GotoVariable{inst.Arg(0).U32()}, block, inst.Arg(1));
         break;
@@ -385,6 +407,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         inst.ReplaceUsesWith(value);
         break;
     }
+    case IR::Opcode::GetVirtualRegister:
+        inst.ReplaceUsesWith(pass.ReadVariable(inst.Arg(0).VirtualReg(), block));
+        break;
     case IR::Opcode::GetGotoVariable:
         inst.ReplaceUsesWith(pass.ReadVariable(GotoVariable{inst.Arg(0).U32()}, block));
         break;
