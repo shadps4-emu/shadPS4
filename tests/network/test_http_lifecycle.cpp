@@ -1830,6 +1830,23 @@ TEST(HostOverride, ParseEmptyObjectYieldsEmptyMap) {
     EXPECT_TRUE(m.empty());
 }
 
+TEST(HostOverride, ParseKeyStripsSchemeAndLowercases) {
+    auto m = ParseHostOverridesJson(R"({"http://CA87.Test.com:443": "http://localhost:443"})");
+    ASSERT_EQ(m.size(), 1u);
+    EXPECT_TRUE(m.contains("ca87.test.com:443"));
+    EXPECT_FALSE(m.contains("http://CA87.Test.com:443"));
+    const auto& e = m.at("ca87.test.com:443");
+    EXPECT_EQ(e.scheme, "http");
+    EXPECT_EQ(e.host, "localhost");
+    EXPECT_EQ(e.port, 443);
+}
+
+TEST(HostOverride, ParseKeyCatchAllUnaffectedByNormalization) {
+    auto m = ParseHostOverridesJson(R"({"*": "http://localhost:8080"})");
+    ASSERT_EQ(m.size(), 1u);
+    EXPECT_TRUE(m.contains("*"));
+}
+
 TEST(HostOverride, ParseSingleHostNoPortNoScheme) {
     auto m = ParseHostOverridesJson(R"({"api.example.com": "localhost"})");
     ASSERT_EQ(m.size(), 1u);
@@ -1990,7 +2007,7 @@ TEST(HostOverride, ParseZeroPortKeepsHostDropsPort) {
     EXPECT_EQ(m.at("api.example.com").port, 0);
 }
 
-// --- ApplyHostOverride: behavior with no JSON file present ---
+// ApplyHostOverride: behavior with no JSON file explicitly configured
 static bool HostOverrideJsonConfigured() {
     if (const char* p = std::getenv("SHADPS4_HTTP_HOST_OVERRIDES_JSON"); p && p[0]) {
         return true;
@@ -1999,48 +2016,50 @@ static bool HostOverrideJsonConfigured() {
     return f.is_open();
 }
 
-TEST(HostOverride, InactiveByDefaultLeavesValuesUnchanged) {
+TEST(HostOverride, DefaultCatchAllRedirectsToLocalhost) {
     if (HostOverrideJsonConfigured()) {
-        GTEST_SKIP() << "host overrides JSON configured; off-path test inapplicable";
+        GTEST_SKIP() << "host overrides JSON explicitly configured; default-path test inapplicable";
     }
     std::string scheme = "https";
     std::string host = "api.example.com";
     u16 port = 443;
     bool is_secure = true;
     const bool changed = ApplyHostOverride(scheme, host, port, is_secure);
-    EXPECT_FALSE(changed);
-    EXPECT_EQ(scheme, "https");
-    EXPECT_EQ(host, "api.example.com");
-    EXPECT_EQ(port, 443);
-    EXPECT_TRUE(is_secure);
+    EXPECT_TRUE(changed);
+    EXPECT_EQ(scheme, "http");
+    EXPECT_EQ(host, "localhost");
+    EXPECT_EQ(port, 8080);
+    EXPECT_FALSE(is_secure);
 }
 
-TEST(HostOverride, InactivePreservesHttpScheme) {
+TEST(HostOverride, DefaultCatchAllRewritesHttpRequest) {
     if (HostOverrideJsonConfigured()) {
-        GTEST_SKIP() << "host overrides JSON configured; off-path test inapplicable";
+        GTEST_SKIP() << "host overrides JSON explicitly configured; default-path test inapplicable";
     }
     std::string scheme = "http";
     std::string host = "plain.example.com";
     u16 port = 80;
     bool is_secure = false;
     const bool changed = ApplyHostOverride(scheme, host, port, is_secure);
-    EXPECT_FALSE(changed);
+    EXPECT_TRUE(changed);
     EXPECT_EQ(scheme, "http");
-    EXPECT_EQ(host, "plain.example.com");
-    EXPECT_EQ(port, 80);
+    EXPECT_EQ(host, "localhost");
+    EXPECT_EQ(port, 8080);
     EXPECT_FALSE(is_secure);
 }
 
-TEST(HostOverride, InactivePreservesUnusualPort) {
+TEST(HostOverride, DefaultCatchAllOverridesUnusualPort) {
     if (HostOverrideJsonConfigured()) {
-        GTEST_SKIP() << "host overrides JSON configured; off-path test inapplicable";
+        GTEST_SKIP() << "host overrides JSON explicitly configured; default-path test inapplicable";
     }
     std::string scheme = "https";
     std::string host = "custom-port.example.com";
     u16 port = 5300; // Pinball FX uses this for kensho-discovery
     bool is_secure = true;
-    ApplyHostOverride(scheme, host, port, is_secure);
-    EXPECT_EQ(port, 5300);
+    const bool changed = ApplyHostOverride(scheme, host, port, is_secure);
+    EXPECT_TRUE(changed);
+    EXPECT_EQ(host, "localhost");
+    EXPECT_EQ(port, 8080);
 }
 
 // --- ApplyHostOverride: behavior WITH the test JSON file pre-staged ---
