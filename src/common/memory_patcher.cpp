@@ -4,8 +4,10 @@
 #include <algorithm>
 #include <codecvt>
 #include <fstream>
+#include <mutex>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <nlohmann/json.hpp>
 #include <pugixml.hpp>
 #include "common/elf_info.h"
@@ -23,6 +25,17 @@ std::string g_game_serial;
 std::string patch_file;
 bool patches_applied = false;
 std::vector<patchInfo> pending_patches;
+
+// A patch that names a module has to wait for it to be mapped. Modules load on guest threads
+// while patches can come in from the IPC thread, hence the mutex.
+struct LoadedModule {
+    uintptr_t base{};
+    uint64_t size{};
+};
+
+static std::mutex g_module_mutex;
+static std::unordered_map<std::string, LoadedModule> g_loaded_modules;
+static std::vector<patchInfo> g_pending_module_patches;
 
 std::string toHex(u64 value, size_t byteSize) {
     std::stringstream ss;
@@ -157,6 +170,7 @@ void ApplyPatchesFromXML(std::filesystem::path path) {
                         std::string address = patchLineIt->attribute("Address").value();
                         std::string patchValue = patchLineIt->attribute("Value").value();
                         std::string maskOffsetStr = patchLineIt->attribute("Offset").value();
+                        std::string moduleName = patchLineIt->attribute("Module").value();
                         std::string targetStr = "";
                         std::string sizeStr = "";
                         if (type == "mask_jump32") {
@@ -204,6 +218,7 @@ void ApplyPatchesFromXML(std::filesystem::path path) {
                             .littleEndian = littleEndian,
                             .patchMask = patchMask,
                             .maskOffset = maskOffsetValue,
+                            .moduleStr = moduleName,
                         };
                         MemoryPatcher::PatchMemory(patch);
                     }
@@ -247,6 +262,25 @@ void OnGameLoaded() {
     ApplyPendingPatches();
 }
 
+void OnModuleLoaded(const std::string& module_name, uintptr_t base_address, uint64_t image_size) {
+    std::vector<patchInfo> ready;
+    {
+        std::scoped_lock lock{g_module_mutex};
+        g_loaded_modules[module_name] = {base_address, image_size};
+        const auto it =
+            std::partition(g_pending_module_patches.begin(), g_pending_module_patches.end(),
+                           [&](const patchInfo& patch) { return patch.moduleStr != module_name; });
+        ready.assign(it, g_pending_module_patches.end());
+        g_pending_module_patches.erase(it, g_pending_module_patches.end());
+    }
+    for (const auto& patch : ready) {
+        if (patch.gameSerial != "*" && patch.gameSerial != g_game_serial) {
+            continue;
+        }
+        PatchMemory(patch);
+    }
+}
+
 void AddPatchToQueue(const patchInfo& patchToAdd) {
     if (patches_applied) {
         PatchMemory(patchToAdd);
@@ -273,18 +307,34 @@ void PatchMemory(const patchInfo& patch) {
     // Send a request to modify the process memory.
     void* cheatAddress = nullptr;
 
+    uintptr_t patch_base = g_eboot_address;
+    uint64_t patch_range = g_eboot_image_size;
+    if (!patch.moduleStr.empty()) {
+        // One lock for both, or a module loading in between would strand the patch.
+        std::scoped_lock lock{g_module_mutex};
+        const auto it = g_loaded_modules.find(patch.moduleStr);
+        if (it == g_loaded_modules.end()) {
+            // Not mapped yet, hold the patch until it is.
+            g_pending_module_patches.push_back(patch);
+            return;
+        }
+        patch_base = it->second.base;
+        patch_range = it->second.size;
+    }
+
     if (patch.patchMask == PatchMask::None) {
-        if (patch.isOffset) {
-            cheatAddress =
-                reinterpret_cast<void*>(g_eboot_address + std::stoi(patch.offsetStr, 0, 16));
+        if (!patch.moduleStr.empty() || patch.isOffset) {
+            // A PRX links at base 0, so its addresses are already module offsets.
+            cheatAddress = reinterpret_cast<void*>(patch_base + std::stoi(patch.offsetStr, 0, 16));
         } else {
-            cheatAddress = reinterpret_cast<void*>(g_eboot_address +
+            cheatAddress = reinterpret_cast<void*>(patch_base +
                                                    (std::stoi(patch.offsetStr, 0, 16) - 0x400000));
         }
     }
 
     if (patch.patchMask == PatchMask::Mask) {
-        cheatAddress = reinterpret_cast<void*>(PatternScan(patch.offsetStr) + patch.maskOffset);
+        cheatAddress = reinterpret_cast<void*>(
+            PatternScan(patch.offsetStr, patch_base, patch_range) + patch.maskOffset);
     }
 
     if (patch.patchMask == PatchMask::Mask_Jump32) {
@@ -301,7 +351,7 @@ void PatchMemory(const patchInfo& patch) {
         }
 
         // Find the base address using "Address"
-        uintptr_t baseAddress = PatternScan(patch.offsetStr);
+        uintptr_t baseAddress = PatternScan(patch.offsetStr, patch_base, patch_range);
         if (baseAddress == 0) {
             LOG_ERROR(Loader, "PatternScan failed for mask_jump32 with pattern: {}",
                       patch.offsetStr);
@@ -314,7 +364,7 @@ void PatchMemory(const patchInfo& patch) {
         std::memcpy(reinterpret_cast<void*>(patchAddress), nopBytes.data(), nopBytes.size());
 
         // Use "Target" to locate the start of the code cave
-        uintptr_t jump_target = PatternScan(patch.targetStr);
+        uintptr_t jump_target = PatternScan(patch.targetStr, patch_base, patch_range);
         if (jump_target == 0) {
             LOG_ERROR(Loader, "PatternScan failed to Target with pattern: {}", patch.targetStr);
             return;
@@ -408,15 +458,24 @@ static std::vector<int32_t> PatternToByte(const std::string& pattern) {
     return bytes;
 }
 
-uintptr_t PatternScan(const std::string& signature) {
+uintptr_t PatternScan(const std::string& signature, uintptr_t scan_base, uint64_t scan_size) {
+    if (scan_base == 0) {
+        scan_base = g_eboot_address;
+        scan_size = g_eboot_image_size;
+    }
     std::vector<int32_t> patternBytes = PatternToByte(signature);
-    const auto scanBytes = static_cast<uint8_t*>((void*)g_eboot_address);
+    const auto scanBytes = reinterpret_cast<uint8_t*>(scan_base);
 
     const int32_t* sigPtr = patternBytes.data();
     const size_t sigSize = patternBytes.size();
 
+    // A module can be smaller than the pattern, which would wrap the loop bound below.
+    if (sigSize > scan_size) {
+        return 0;
+    }
+
     uint32_t foundResults = 0;
-    for (uint32_t i = 0; i < g_eboot_image_size - sigSize; ++i) {
+    for (uint32_t i = 0; i < scan_size - sigSize; ++i) {
         bool found = true;
         for (uint32_t j = 0; j < sigSize; ++j) {
             if (scanBytes[i + j] != sigPtr[j] && sigPtr[j] != -1) {

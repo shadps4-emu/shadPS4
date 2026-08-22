@@ -48,6 +48,7 @@ extern std::unique_ptr<Vulkan::Presenter> presenter;
  * Command list:
  * - CAPABILITIES:
  *   - ENABLE_MEMORY_PATCH: enables PATCH_MEMORY command
+ *   - ENABLE_MEMORY_PATCH_MODULE: enables PATCH_MEMORY_MODULE command
  *   - ENABLE_EMU_CONTROL: enables PAUSE, RESUME, STOP, TOGGLE_FULLSCREEN commands
  * - INPUT CMD:
  *   - RUN: start the emulator execution
@@ -56,7 +57,11 @@ extern std::unique_ptr<Vulkan::Presenter> presenter;
  *       modName: str, offset: str, value: str,
  *       target: str, size: str, isOffset: number, littleEndian: number,
  *       patchMask: number, maskOffset: number
- *     ): add a memory patch, check @ref MemoryPatcher::PatchMemory for details
+ *     ): add a memory patch, check @ref MemoryPatcher::PatchMemory for details.
+ *        The address is always an eboot one.
+ *   - PATCH_MEMORY_MODULE(
+ *       ...same fields as PATCH_MEMORY..., module: str
+ *     ): same, but the address is an offset into that module ("" for the eboot)
  *   - PAUSE: pause the game execution
  *   - RESUME: resume the game execution
  *   - STOP: stop and quit the emulator
@@ -81,6 +86,7 @@ void IPC::Init() {
 
     std::cerr << ";#IPC_ENABLED\n";
     std::cerr << ";ENABLE_MEMORY_PATCH\n";
+    std::cerr << ";ENABLE_MEMORY_PATCH_MODULE\n";
     std::cerr << ";ENABLE_EMU_CONTROL\n";
     std::cerr << ";#IPC_END\n";
     std::cerr.flush();
@@ -123,7 +129,10 @@ void IPC::InputLoop() {
             run_semaphore.release();
         } else if (cmd == "START") {
             start_semaphore.release();
-        } else if (cmd == "PATCH_MEMORY") {
+        } else if (cmd == "PATCH_MEMORY" || cmd == "PATCH_MEMORY_MODULE") {
+            // PATCH_MEMORY_MODULE is the same message with the module appended. The fields are
+            // positional, so it has to be its own command rather than an extra field.
+            const bool has_module = cmd == "PATCH_MEMORY_MODULE";
             const MemoryPatcher::patchInfo entry = {
                 .gameSerial = "*",
                 .modNameStr = next_str(),
@@ -135,6 +144,7 @@ void IPC::InputLoop() {
                 .littleEndian = next_u64() != 0,
                 .patchMask = static_cast<MemoryPatcher::PatchMask>(next_u64()),
                 .maskOffset = static_cast<int>(next_u64()),
+                .moduleStr = has_module ? next_str() : std::string{},
             };
             MemoryPatcher::AddPatchToQueue(entry);
         } else if (cmd == "PAUSE") {
