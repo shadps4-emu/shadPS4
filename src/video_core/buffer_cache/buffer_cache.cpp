@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <magic_enum/magic_enum.hpp>
 #include "common/alignment.h"
 #include "common/debug.h"
 #include "common/scope_exit.h"
@@ -754,10 +755,13 @@ vk::Buffer BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> c
 
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
     if (auto type = texture_cache.IsMeta(device_addr)) {
-        ASSERT(*type == TextureCache::MetaType::HTile);
-        static constexpr u32 ZmaskUncompressed = 0xf;
-        buffer.Fill(buffer.Offset(device_addr), size, ZmaskUncompressed);
-        return true;
+        if (*type == TextureCache::MetaType::HTile) {
+            static constexpr u32 ZmaskUncompressed = 0xf;
+            buffer.Fill(buffer.Offset(device_addr), size, ZmaskUncompressed);
+            return true;
+        } else {
+            LOG_WARNING(Render_Vulkan, "Unhandled metadata type {}", magic_enum::enum_name(*type));
+        }
     }
     const ImageId image_id = texture_cache.FindImageFromRange(device_addr, size);
     if (!image_id) {
