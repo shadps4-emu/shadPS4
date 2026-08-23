@@ -8,10 +8,14 @@
 #include "core/libraries/network/http2.h"
 
 #include <map>
+#include <mutex>
+#include <set>
 
 namespace Libraries::Http2 {
 
+std::mutex g_http2_mutex;
 std::map<s32, s32> requests_to_connections{};
+std::set<s32> g_active_contexts{};
 
 s32 PS4_SYSV_ABI sceHttp2AbortRequest(s32 req_id) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
@@ -75,9 +79,18 @@ s32 PS4_SYSV_ABI sceHttp2CreateRequestWithURL(s32 tmpl_id, const char* method, c
         Libraries::Http::sceHttpCreateRequestWithURL2(conn_id, method, url, content_length);
     if (req_id < 0) {
         LOG_ERROR(Lib_Http2, "Failed to create HTTP request, error = {:#x}", req_id);
+        const s32 del_result = Libraries::Http::sceHttpDeleteConnection(conn_id);
+        if (del_result < 0) {
+            LOG_ERROR(Lib_Http2, "Failed to clean up HTTP connection {}, error = {:#x}", conn_id,
+                      del_result);
+        }
         return req_id;
     }
-    requests_to_connections[req_id] = conn_id;
+
+    {
+        std::lock_guard<std::mutex> lock(g_http2_mutex);
+        requests_to_connections[req_id] = conn_id;
+    }
     return req_id;
 }
 
@@ -99,17 +112,34 @@ s32 PS4_SYSV_ABI sceHttp2DeleteCookieBox() {
 
 s32 PS4_SYSV_ABI sceHttp2DeleteRequest(s32 req_id) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    s32 result = Libraries::Http::sceHttpDeleteRequest(req_id);
+    const s32 result = Libraries::Http::sceHttpDeleteRequest(req_id);
     if (result < 0) {
         LOG_ERROR(Lib_Http2, "Failed to delete HTTP request, error = {:#x}", result);
         return result;
     }
-    s32 conn_id = requests_to_connections[req_id];
-    result = Libraries::Http::sceHttpDeleteConnection(conn_id);
-    if (result < 0) {
-        LOG_ERROR(Lib_Http2, "Failed to delete HTTP connection, error = {:#x}", result);
+    s32 conn_id = -1;
+    {
+        std::lock_guard<std::mutex> lock(g_http2_mutex);
+        const auto it = requests_to_connections.find(req_id);
+        if (it != requests_to_connections.end()) {
+            conn_id = it->second;
+            requests_to_connections.erase(it);
+        }
     }
-    return result;
+
+    if (conn_id < 0) {
+        // No connection tracked for this request
+        LOG_DEBUG(Lib_Http2, "No connection tracked for request {}", req_id);
+        return ORBIS_OK;
+    }
+
+    const s32 conn_result = Libraries::Http::sceHttpDeleteConnection(conn_id);
+    if (conn_result < 0) {
+        // Report the connection error, but the request is gone either way.
+        LOG_ERROR(Lib_Http2, "Failed to delete HTTP connection, error = {:#x}", conn_result);
+        return conn_result;
+    }
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceHttp2DeleteTemplate(s32 tmpl_id) {
@@ -160,9 +190,14 @@ s32 PS4_SYSV_ABI sceHttp2GetMemoryPoolStats() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2GetResponseContentLength() {
+s32 PS4_SYSV_ABI sceHttp2GetResponseContentLength(s32 req_id, s32* result, u64* content_length) {
     LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+    s32 res = Libraries::Http::sceHttpGetResponseContentLength(
+        req_id, reinterpret_cast<int*>(result), content_length);
+    if (res < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to get HTTP response content length, error = {:#x}", res);
+    }
+    return res;
 }
 
 s32 PS4_SYSV_ABI sceHttp2GetStatusCode(s32 req_id, s32* status_code) {
@@ -179,6 +214,12 @@ s32 PS4_SYSV_ABI sceHttp2Init(s32 net_id, s32 ssl_id, u64 pool_size, s32 max_req
     s32 ctx_id = Libraries::Http::sceHttpInit(net_id, ssl_id, pool_size);
     if (ctx_id < 0) {
         LOG_ERROR(Lib_Http2, "Failed to init HTTP context, error = {:#x}", ctx_id);
+        return ctx_id;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(g_http2_mutex);
+        g_active_contexts.insert(ctx_id);
     }
     return ctx_id;
 }
@@ -346,9 +387,35 @@ s32 PS4_SYSV_ABI sceHttp2SslEnableOption() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2Term() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceHttp2Term(s32 ctx_id) {
+    LOG_ERROR(Lib_Http2, "(STUBBED) called ctx_id={}", ctx_id);
+
+    s32 target = -1;
+    {
+        std::lock_guard<std::mutex> lock(g_http2_mutex);
+        if (g_active_contexts.empty()) {
+            LOG_ERROR(Lib_Http2, "No active HTTP2 context to terminate");
+            return ORBIS_OK;
+        }
+        if (g_active_contexts.erase(ctx_id) > 0) {
+            target = ctx_id;
+        } else if (g_active_contexts.size() == 1) {
+            target = *g_active_contexts.begin();
+            g_active_contexts.erase(g_active_contexts.begin());
+            LOG_WARNING(Lib_Http2, "Unknown ctx_id={}, terminating the only active context {}",
+                        ctx_id, target);
+        } else {
+            LOG_ERROR(Lib_Http2, "Unknown ctx_id={} with {} contexts active; not terminating",
+                      ctx_id, g_active_contexts.size());
+            return ORBIS_OK;
+        }
+    }
+
+    const s32 result = Libraries::Http::sceHttpTerm(target);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to terminate HTTP context {}, error = {:#x}", target, result);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceHttp2WaitAsync() {
