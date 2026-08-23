@@ -20,6 +20,7 @@
 
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
 
@@ -65,8 +66,8 @@ struct ThreadBitScalar : FlagTag {
 };
 
 using Variant =
-    std::variant<IR::ScalarReg, IR::VectorReg, GotoVariable, MaskLaneVariable, ThreadBitScalar,
-                 SccFlagTag, ExecFlagTag, VccFlagTag, VccLoTag, VccHiTag, M0Tag>;
+    std::variant<IR::ScalarReg, IR::VectorReg, IR::VirtualReg, GotoVariable, MaskLaneVariable,
+                 ThreadBitScalar, SccFlagTag, ExecFlagTag, VccFlagTag, VccLoTag, VccHiTag, M0Tag>;
 using ValueMap = std::unordered_map<IR::Block*, IR::Value>;
 
 struct DefTable {
@@ -82,6 +83,13 @@ struct DefTable {
     }
     void SetDef(IR::Block* block, IR::VectorReg variable, const IR::Value& value) {
         block->ssa_vreg_values[RegIndex(variable)] = value;
+    }
+
+    const IR::Value& Def(IR::Block* block, IR::VirtualReg variable) {
+        return reg_vars[variable.Key()][block];
+    }
+    void SetDef(IR::Block* block, IR::VirtualReg variable, const IR::Value& value) {
+        reg_vars[variable.Key()].insert_or_assign(block, value);
     }
 
     const IR::Value& Def(IR::Block* block, GotoVariable variable) {
@@ -152,6 +160,7 @@ struct DefTable {
 
     std::unordered_map<u32, ValueMap> goto_vars;
     std::unordered_map<u32, ValueMap> mask_lane_vars;
+    std::unordered_map<u64, ValueMap> reg_vars;
     ValueMap scc_flag;
     ValueMap exec_flag;
     ValueMap vcc_flag;
@@ -161,144 +170,136 @@ struct DefTable {
     ValueMap m0_flag;
 };
 
-IR::Opcode UndefOpcode(IR::ScalarReg) noexcept {
+constexpr IR::Opcode UndefOpcode(IR::ScalarReg) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(IR::VectorReg) noexcept {
+constexpr IR::Opcode UndefOpcode(IR::VectorReg) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(const VccLoTag) noexcept {
+constexpr IR::Opcode UndefOpcode(const VccLoTag) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(const VccHiTag) noexcept {
+constexpr IR::Opcode UndefOpcode(const VccHiTag) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(const M0Tag) noexcept {
+constexpr IR::Opcode UndefOpcode(const M0Tag) noexcept {
     return IR::Opcode::UndefU32;
 }
 
-IR::Opcode UndefOpcode(const FlagTag) noexcept {
+constexpr IR::Opcode UndefOpcode(const FlagTag) noexcept {
     return IR::Opcode::UndefU1;
 }
 
-enum class Status {
-    Start,
-    SetValue,
-    PushPhiArgument,
-};
-
-template <typename Type>
-struct ReadState {
-    ReadState(IR::Block* block_) : block{block_} {}
-    ReadState() = default;
-
-    IR::Block* block{};
-    IR::Value result{};
-    IR::Inst* phi{};
-    IR::Block* const* pred_it{};
-    IR::Block* const* pred_end{};
-    Status pc{Status::Start};
-};
+constexpr IR::Opcode UndefOpcode(const IR::VirtualReg reg) noexcept {
+    switch (reg.type) {
+    case IR::Type::U32:
+        return IR::Opcode::UndefU32;
+    case IR::Type::U1:
+        return IR::Opcode::UndefU1;
+    default:
+        UNREACHABLE();
+    }
+}
 
 class Pass {
 public:
+    explicit Pass(IR::Block* first_block_) : first_block{first_block_} {}
+
     template <typename Type>
     void WriteVariable(Type variable, IR::Block* block, const IR::Value& value) {
         current_def.SetDef(block, variable, value);
     }
 
     template <typename Type>
-    IR::Value ReadVariable(Type variable, IR::Block* root_block) {
-        boost::container::small_vector<ReadState<Type>, 64> stack{
-            ReadState<Type>(nullptr),
-            ReadState<Type>(root_block),
-        };
-        const auto prepare_phi_operand = [&] {
-            if (stack.back().pred_it == stack.back().pred_end) {
-                IR::Inst* const phi{stack.back().phi};
-                IR::Block* const block{stack.back().block};
-                const IR::Value result{TryRemoveTrivialPhi(*phi, block, UndefOpcode(variable))};
-                stack.pop_back();
-                stack.back().result = result;
-                WriteVariable(variable, block, result);
-            } else {
-                IR::Block* const imm_pred{*stack.back().pred_it};
-                stack.back().pc = Status::PushPhiArgument;
-                stack.emplace_back(imm_pred);
-            }
-        };
-        do {
-            IR::Block* const block{stack.back().block};
-            switch (stack.back().pc) {
-            case Status::Start: {
-                if (const IR::Value& def = current_def.Def(block, variable); !def.IsEmpty()) {
-                    stack.back().result = def;
-                } else if (!block->IsSsaSealed()) {
-                    // Incomplete CFG
-                    IR::Inst* phi{&*block->PrependNewInst(block->begin(), IR::Opcode::Phi)};
-                    phi->SetFlags(IR::TypeOf(UndefOpcode(variable)));
+    IR::Value ReadVariable(Type variable, IR::Block* block) {
+        // If variable has a definition in block, return it.
+        IR::Value def = current_def.Def(block, variable);
+        if (!def.IsEmpty()) {
+            return def;
+        }
 
-                    incomplete_phis[block].insert_or_assign(variable, phi);
-                    stack.back().result = IR::Value{&*phi};
-                } else if (const std::span imm_preds = block->ImmPredecessors();
-                           imm_preds.size() == 1) {
-                    // Optimize the common case of one predecessor: no phi needed
-                    stack.back().pc = Status::SetValue;
-                    stack.emplace_back(imm_preds.front());
-                    break;
-                } else {
-                    // Break potential cycles with operandless phi
-                    IR::Inst* const phi{&*block->PrependNewInst(block->begin(), IR::Opcode::Phi)};
-                    phi->SetFlags(IR::TypeOf(UndefOpcode(variable)));
+        // Otherwise, look up the value in block predecessors.
+        const std::span imm_preds = block->ImmPredecessors();
+        if (imm_preds.size() == 1) {
+            // Optimize the common case of one predecessor: no phi needed
+            def = ReadVariable(variable, imm_preds.front());
+        } else if (imm_preds.size() > 1) {
+            // This is a join block which may require a phi.
+            // That will act as the variables current definition to break potential cycles.
+            IR::Inst* const phi{&*block->PrependNewInst(block->begin(), IR::Opcode::Phi)};
+            phi->SetFlags(IR::TypeOf(UndefOpcode(variable)));
 
-                    WriteVariable(variable, block, IR::Value{phi});
+            // Set the value for this block to avoid an infinite recursion.
+            WriteVariable(variable, block, IR::Value{phi});
+            def = AddPhiOperands(variable, phi, block);
+        }
 
-                    stack.back().phi = phi;
-                    stack.back().pred_it = imm_preds.data();
-                    stack.back().pred_end = imm_preds.data() + imm_preds.size();
-                    prepare_phi_operand();
-                    break;
-                }
-            }
-                [[fallthrough]];
-            case Status::SetValue: {
-                const IR::Value result{stack.back().result};
-                WriteVariable(variable, block, result);
-                stack.pop_back();
-                stack.back().result = result;
-                break;
-            }
-            case Status::PushPhiArgument: {
-                IR::Inst* const phi{stack.back().phi};
-                phi->AddPhiOperand(*stack.back().pred_it, stack.back().result);
-                ++stack.back().pred_it;
-                prepare_phi_operand();
-                break;
-            }
-            }
-        } while (stack.size() > 1);
-        return stack.back().result;
+        // If we could not find a store for this variable, use undef.
+        if (def.IsEmpty()) {
+            def = IR::Value{GetUndefInst(UndefOpcode(variable))};
+        }
+
+        WriteVariable(variable, block, def);
+        return def;
     }
 
-    void SealBlock(IR::Block* block) {
-        const auto it{incomplete_phis.find(block)};
-        if (it != incomplete_phis.end()) {
+    template <typename Type>
+    IR::Value AddPhiOperands(Type variable, IR::Inst* phi, IR::Block* block) {
+        ASSERT_MSG(phi->NumArgs() == 0, "Phi candidate already has arguments");
+
+        bool found_empty_arg = false;
+        for (IR::Block* const pred : block->ImmPredecessors()) {
+            // If pred is not sealed, use empty value to indicate that phi
+            // needs to be completed after the whole CFG has been processed.
+            auto arg = pred->IsSsaSealed() ? ReadVariable(variable, pred) : IR::Value{};
+            phi->AddPhiOperand(pred, arg);
+            found_empty_arg |= arg.IsEmpty();
+        }
+        if (found_empty_arg) {
+            incomplete_phis[block].insert_or_assign(variable, phi);
+            return IR::Value{phi};
+        }
+        return TryRemoveTrivialPhi(*phi, block, UndefOpcode(variable));
+    }
+
+    void FinalizePhiCandidates() {
+        for (auto it = incomplete_phis.begin(); it != incomplete_phis.end(); ++it) {
             for (auto& [variant, phi] : it->second) {
-                std::visit([&](auto& variable) { AddPhiOperands(variable, *phi, block); }, variant);
+                std::visit([&](auto& variable) { FinalizePhiCandidate(variable, *phi, it->first); },
+                           variant);
             }
         }
-        block->SsaSeal();
     }
 
 private:
+    IR::Inst* GetUndefInst(IR::Opcode undef_opcode) {
+        auto [it, is_new] = undef_map.try_emplace(undef_opcode, nullptr);
+        if (is_new) {
+            IR::Inst* const undef{
+                &*first_block->PrependNewInst(first_block->begin(), undef_opcode)};
+            it->second = undef;
+        }
+        return it->second;
+    }
+
     template <typename Type>
-    IR::Value AddPhiOperands(Type variable, IR::Inst& phi, IR::Block* block) {
-        for (IR::Block* const imm_pred : block->ImmPredecessors()) {
-            phi.AddPhiOperand(imm_pred, ReadVariable(variable, imm_pred));
+    IR::Value FinalizePhiCandidate(Type variable, IR::Inst& phi, IR::Block* block) {
+        size_t arg_index{};
+        for (IR::Block* const pred : block->ImmPredecessors()) {
+            ASSERT(phi.PhiBlock(arg_index) == pred);
+            if (!phi.Arg(arg_index).IsEmpty()) {
+                arg_index++;
+                continue;
+            }
+            if (pred->IsSsaSealed()) {
+                phi.SetArg(arg_index++, ReadVariable(variable, pred));
+            } else {
+                phi.SetArg(arg_index++, IR::Value{GetUndefInst(UndefOpcode(variable))});
+            }
         }
         return TryRemoveTrivialPhi(phi, block, UndefOpcode(variable));
     }
@@ -318,24 +319,15 @@ private:
             }
             same = op;
         }
-        // Remove the phi node from the block, it will be reinserted
-        IR::Block::InstructionList& list{block->Instructions()};
-        list.erase(IR::Block::InstructionList::s_iterator_to(phi));
-
-        // Find the first non-phi instruction and use it as an insertion point
-        IR::Block::iterator reinsert_point{std::ranges::find_if_not(list, IR::IsPhi)};
         if (same.IsEmpty()) {
             // The phi is unreachable or in the start block
             // Insert an undefined instruction and make it the phi node replacement
-            // The "phi" node reinsertion point is specified after this instruction
-            reinsert_point = block->PrependNewInst(reinsert_point, undef_opcode);
-            same = IR::Value{&*reinsert_point};
-            ++reinsert_point;
+            same = IR::Value{GetUndefInst(undef_opcode)};
         }
-        // Reinsert the phi node and reroute all its uses to the "same" value
+        // Reroute all uses of the phi to the "same" value
         const auto users = phi.Uses();
-        list.insert(reinsert_point, phi);
         phi.ReplaceUsesWith(same);
+
         // Try to recursively remove all phi users, which might have become trivial
         for (const auto& [user, arg_index] : users) {
             if (user->GetOpcode() == IR::Opcode::Phi) {
@@ -345,6 +337,8 @@ private:
         return same;
     }
 
+    IR::Block* first_block;
+    std::unordered_map<IR::Opcode, IR::Inst*> undef_map;
     std::unordered_map<IR::Block*, std::map<Variant, IR::Inst*>> incomplete_phis;
     DefTable current_def;
 };
@@ -367,6 +361,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         pass.WriteVariable(reg, block, inst.Arg(1));
         break;
     }
+    case IR::Opcode::SetVirtualRegister:
+        pass.WriteVariable(inst.Arg(0).VirtualReg(), block, inst.Arg(1));
+        break;
     case IR::Opcode::SetGotoVariable:
         pass.WriteVariable(GotoVariable{inst.Arg(0).U32()}, block, inst.Arg(1));
         break;
@@ -410,6 +407,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         inst.ReplaceUsesWith(value);
         break;
     }
+    case IR::Opcode::GetVirtualRegister:
+        inst.ReplaceUsesWith(pass.ReadVariable(inst.Arg(0).VirtualReg(), block));
+        break;
     case IR::Opcode::GetGotoVariable:
         inst.ReplaceUsesWith(pass.ReadVariable(GotoVariable{inst.Arg(0).U32()}, block));
         break;
@@ -444,16 +444,43 @@ void VisitBlock(Pass& pass, IR::Block* block) {
     for (IR::Inst& inst : block->Instructions()) {
         VisitInst(pass, block, inst);
     }
-    pass.SealBlock(block);
+    block->SsaSeal();
 }
 
 } // Anonymous namespace
 
-void SsaRewritePass(IR::BlockList& program) {
-    Pass pass;
-    const auto end{program.rend()};
-    for (auto block = program.rbegin(); block != end; ++block) {
-        VisitBlock(pass, *block);
+void SsaRewritePass(IR::Program& program) {
+    Pass pass{program.blocks.front()};
+    const auto end = program.post_order_blocks.rend();
+    for (auto it = program.post_order_blocks.rbegin(); it != end; ++it) {
+        VisitBlock(pass, *it);
+    }
+    pass.FinalizePhiCandidates();
+}
+
+void SsaDestroyPass(IR::Program& program) {
+    // This implements the following mesa function with place_writes_in_imm_preds = true
+    // https://gitlab.freedesktop.org/mesa/mesa/-/blob/55f62fa8/src/compiler/nir/nir_from_ssa.c#L1075
+    u32 reg_index{};
+    const auto end = program.post_order_blocks.rend();
+    for (auto it1 = program.post_order_blocks.rbegin(); it1 != end; ++it1) {
+        IR::Block* block = *it1;
+        for (auto it = block->begin(); it != block->end(); ++it) {
+            IR::Inst& inst = *it;
+            if (inst.GetOpcode() != IR::Opcode::Phi) {
+                continue;
+            }
+            const IR::VirtualReg reg{reg_index++, inst.Flags<IR::Type>()};
+            for (size_t arg_index = 0; arg_index < inst.NumArgs(); arg_index++) {
+                IR::Value arg = inst.Arg(arg_index);
+                IR::Block* arg_block = inst.PhiBlock(arg_index);
+                arg_block->PrependNewInst(arg_block->end(), IR::Opcode::SetVirtualRegister,
+                                          {IR::Value{reg}, arg});
+            }
+            IR::Inst* const new_inst{
+                &*block->PrependNewInst(it, IR::Opcode::GetVirtualRegister, {IR::Value{reg}})};
+            inst.ReplaceUsesWith(IR::Value{new_inst});
+        }
     }
 }
 
