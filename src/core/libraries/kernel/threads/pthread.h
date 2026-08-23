@@ -14,6 +14,7 @@
 #include "common/shared_first_mutex.h"
 #include "core/libraries/kernel/sync/mutex.h"
 #include "core/libraries/kernel/sync/semaphore.h"
+#include "core/libraries/kernel/threads/exception.h"
 #include "core/libraries/kernel/time.h"
 #include "core/thread.h"
 #include "core/tls.h"
@@ -276,7 +277,7 @@ struct Pthread {
     static constexpr u32 MaxDeferWaiters = 50;
 
     std::atomic<s32> tid;
-    std::mutex lock;
+    std::unique_ptr<std::mutex> lock = std::make_unique<std::mutex>();
     u32 cycle;
     std::atomic_int locklevel;
     std::atomic_int critical_count;
@@ -284,7 +285,7 @@ struct Pthread {
     int refcount;
     PthreadEntryFunc start_routine;
     void* arg;
-    Core::NativeThread native_thr;
+    std::unique_ptr<Core::NativeThread> native_thr;
     PthreadAttr attr;
     std::atomic_bool cancel_enable;
     std::atomic_bool cancel_pending;
@@ -294,7 +295,7 @@ struct Pthread {
     std::atomic_bool cancelling;
     u64 sigmask;
     bool unblock_sigcancel;
-    bool in_sigsuspend;
+    std::atomic_bool in_sigsuspend{};
     bool force_exit;
     PthreadState state;
     int error;
@@ -302,6 +303,7 @@ struct Pthread {
     ThreadFlags flags;
     ThreadListFlags tlflags;
     void* ret;
+    u8 pad0[272];
     PthreadSpecificElem* specific;
     int specific_data_count;
     int rdlock_count;
@@ -324,6 +326,29 @@ struct Pthread {
     Pthread* join_target{};
     std::mutex join_wait_mutex;
     std::condition_variable join_wait_cv;
+
+    std::array<std::atomic<u32>, 128> pending_signal_counts{};
+    std::array<std::atomic<u32>, 4> guest_sigmask{};
+
+    WakeSemaphore signal_sema{0};
+    std::atomic_bool in_sigwait{};
+    // std::atomic_bool in_sigsuspend{};
+    std::atomic_bool sigsuspend_interrupted{};
+    Sigset sigwait_set{};
+    OrbisKernelExceptionHandlerStack sigaltstack{};
+
+    bool IsSignalBlocked(s32 sig) const;
+    void QueueSignal(s32 sig);
+    bool ConsumeSignal(s32 sig);
+    s32 FindPendingSignal(const Sigset& set) const;
+    s32 FindPendingUnblockedSignal() const;
+    bool HasPendingSignal() const;
+    bool HasDeliverableSignal() const;
+    void WakeForSignal();
+    bool DispatchSignal(s32 sig, Siginfo* info, Ucontext* context);
+    bool DispatchPendingSignals(Siginfo* info, Ucontext* context);
+    void GetGuestSigmask(Sigset& mask);
+    void SetGuestSigmask(Sigset const& mask);
 
     bool InCritical() const noexcept {
         return locklevel.load(std::memory_order_acquire) > 0 ||
@@ -402,6 +427,9 @@ struct Pthread {
 
     int SetAffinity(const Cpuset* cpuset);
 };
+// fym static assertion expression is not an integral constant expression
+// static_assert(offsetof(Pthread, specific) == 0x1c8);
+
 using PthreadT = Pthread*;
 
 extern thread_local Pthread* g_curthread;

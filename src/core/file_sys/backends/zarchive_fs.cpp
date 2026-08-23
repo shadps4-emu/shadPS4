@@ -352,4 +352,49 @@ std::unique_ptr<IDirectory> ZArchiveBackend::OpenDir(std::string_view rel_path) 
     return std::make_unique<ZArchiveDirectory>(m_reader, node);
 }
 
+std::optional<std::vector<u8>> ZArchiveBackend::ReadFile(std::string_view rel_path) const {
+    if (!IsOpen()) {
+        return std::nullopt;
+    }
+    std::scoped_lock lk{m_reader->mutex};
+    ZArchiveReader* reader = m_reader->reader;
+
+    const auto node =
+        reader->LookUp(NormalizeRel(rel_path), /*allow_file=*/true, /*allow_directory=*/false);
+    if (node == ZARCHIVE_INVALID_NODE || !reader->IsFile(node)) {
+        return std::nullopt;
+    }
+    const u64 size = reader->GetFileSize(node);
+    std::vector<u8> data(size);
+    struct ReadJob {
+        ZArchiveReader* reader;
+        uint32_t node;
+        u64 pos;
+        u64 size;
+        void* dst;
+        u64 out;
+    };
+
+    u64 total_read = 0;
+    while (total_read < size) {
+        ReadJob job{reader, node, total_read, size - total_read, data.data() + total_read, 0};
+        m_reader->Dispatch(
+            [](void* p) {
+                auto* j = static_cast<ReadJob*>(p);
+                j->out = j->reader->ReadFromFile(j->node, j->pos, j->size, j->dst);
+            },
+            &job);
+        if (job.out == 0) {
+            break;
+        }
+        total_read += job.out;
+    }
+    if (total_read != size) {
+        LOG_ERROR(Common_Filesystem, "Short read from ZArchive entry: {} ({}/{} bytes)", rel_path,
+                  total_read, size);
+        return std::nullopt;
+    }
+    return data;
+}
+
 } // namespace Core::FileSys

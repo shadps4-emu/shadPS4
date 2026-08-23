@@ -949,9 +949,9 @@ Error PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result) {
 }
 
 OrbisImeDialogStatus PS4_SYSV_ABI sceImeDialogGetStatus() {
-    LOG_INFO(Lib_ImeDialog, "GetStatus called (status={}, client_state={})",
-             static_cast<u32>(g_ime_dlg_status),
-             g_ime_dlg_client ? g_ime_dlg_client->dialog_state : -1);
+    LOG_TRACE(Lib_ImeDialog, "GetStatus called (status={}, client_state={})",
+              static_cast<u32>(g_ime_dlg_status),
+              g_ime_dlg_client ? g_ime_dlg_client->dialog_state : -1);
     if (!g_ime_dlg_client) {
         LOG_DEBUG(Lib_ImeDialog, "GetStatus -> None (no client)");
         return OrbisImeDialogStatus::None;

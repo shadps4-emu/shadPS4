@@ -22,6 +22,7 @@
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/sysmodule/sysmodule.h"
+#include "core/libraries/sysmodule/sysmodule_internal.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
@@ -92,23 +93,20 @@ void Linker::Execute(const std::vector<std::string>& args) {
     // Relocate all modules
     RelocateAllImports();
 
-    // If we're running LLE libSceLibcInternal,
-    // we need to find the _malloc_init function and run it manually.
-    // This is something libkernel runs during initialization.
+    // libkernel entry is responsible for initializing malloc-related elements of libSceLibcInternal
+    // this is done through calling _malloc_init, and sceLibcInternalMemoryMutexEnable.
     static PS4_SYSV_ABI s32 (*malloc_init)() = nullptr;
+    static PS4_SYSV_ABI void (*sceLibcInternalMemoryMutexEnable)() = nullptr;
 
     if (has_libcinternal) {
         for (const auto& m : m_modules) {
             const auto& mod = m.get();
             if (mod->name.contains("libSceLibcInternal.sprx")) {
-                // Found libSceLibcInternal, now search through function exports.
-                // Looking for _malloc_init to init libSceLibcInternal properly
-                // and for all the memory allocating functions, so we can initialize our heap API
-                for (const auto& sym : mod->export_sym.GetSymbols()) {
-                    if (sym.nid_name.compare("_malloc_init") == 0) {
-                        malloc_init = reinterpret_cast<PS4_SYSV_ABI s32 (*)()>(sym.virtual_address);
-                    }
-                }
+                malloc_init =
+                    reinterpret_cast<PS4_SYSV_ABI s32 (*)()>(mod->FindByName("_malloc_init"));
+                sceLibcInternalMemoryMutexEnable = reinterpret_cast<PS4_SYSV_ABI void (*)()>(
+                    mod->FindByName("sceLibcInternalMemoryMutexEnable"));
+                break;
             }
         }
     }
@@ -165,10 +163,11 @@ void Linker::Execute(const std::vector<std::string>& args) {
         if (has_libcinternal) {
             LoadLibcInternal();
 
-            if (malloc_init != nullptr) {
+            if (malloc_init && sceLibcInternalMemoryMutexEnable) {
                 // Call _malloc_init
                 s32 ret = malloc_init();
                 ASSERT_MSG(ret == 0, "malloc_init failed");
+                sceLibcInternalMemoryMutexEnable();
             }
         }
 
@@ -241,18 +240,19 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
         handle = std::move(host);
     }
 
-    auto module = std::make_unique<Module>(memory, elf_name, std::move(handle), max_tls_index);
-    if (!module->IsValid()) {
-        LOG_ERROR(Core_Linker, "Provided file {} is not valid ELF file", elf_name.string());
-        return -1;
-    }
+    s32 mod_id = m_modules.size();
+    auto module =
+        std::make_unique<Module>(memory, elf_name, std::move(handle), max_tls_index, mod_id);
+    ASSERT_MSG(module->IsValid(),
+               "Provided file {} is not valid ELF file. This usually indicated a corrupted dump.",
+               elf_name.string());
 
     num_static_modules += !is_dynamic;
     m_modules.emplace_back(std::move(module));
 
     Core::Devtools::Widget::ModuleList::AddModule(elf_name.filename().string(), elf_name);
 
-    return m_modules.size() - 1;
+    return mod_id;
 }
 
 s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, const void* argp,
@@ -447,6 +447,13 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     if (library->name != "libc" && library->name != "libSceFios2") {
         LOG_WARNING(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
                     return_info->name, library->name, module->name);
+    } else {
+        if (library->name == "libc" && return_info->name == "Need_sceLibc") {
+            Libraries::SysModule::g_need_scelibc = true;
+        }
+        if (library->name == "libSceFios2" && return_info->name == "sceFiosInitialize") {
+            Libraries::SysModule::g_need_scelibc = true;
+        }
     }
     return false;
 }

@@ -47,6 +47,10 @@ float g_back_held_secs = 0.0f;
 class InvitationPromptUI final : public ImGui::Layer {
 public:
     void Draw() override;
+    bool ShouldKeepDrawing() override {
+        std::lock_guard lock(g_mutex);
+        return !g_prompts.empty();
+    }
 };
 
 InvitationPromptUI g_layer;

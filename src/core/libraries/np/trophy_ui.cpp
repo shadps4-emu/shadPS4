@@ -263,7 +263,7 @@ void TrophyUI::Draw() {
         }
 
         // Displays the name of the trophy
-        const std::string combinedString = "Trophy earned!\n%s" + trophy_name;
+        const std::string combinedString = "Trophy earned!\n" + trophy_name;
         const float wrap_width =
             CalcWrapWidthForPos(GetCursorScreenPos(), (window_size.x - (60 * AdjustWidth)));
         SetWindowFontScale(1.2 * AdjustHeight);
