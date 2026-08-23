@@ -394,7 +394,7 @@ public:
                 keys[2] = k2;
             } else {
                 keys[1] = k2;
-                keys[3] = k1;
+                keys[2] = k1;
             }
         }
     }
