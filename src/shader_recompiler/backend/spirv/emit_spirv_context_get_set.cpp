@@ -539,6 +539,14 @@ void EmitSetVectorRegister(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
+void EmitSetVirtualRegister(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitGetVirtualRegister(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
 void EmitSetGotoVariable(EmitContext&) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
