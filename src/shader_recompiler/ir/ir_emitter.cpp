@@ -171,6 +171,14 @@ void IREmitter::SetVectorReg(IR::VectorReg reg, const U32F32& value) {
     Inst(Opcode::SetVectorRegister, reg, value_typed);
 }
 
+Value IREmitter::GetVirtualReg(IR::VirtualReg reg) {
+    return Inst(Opcode::GetVirtualRegister, reg);
+}
+
+void IREmitter::SetVirtualReg(IR::VirtualReg reg, const Value& value) {
+    Inst(Opcode::SetVirtualRegister, reg, value);
+}
+
 U1 IREmitter::GetGotoVariable(u32 id) {
     return Inst<U1>(Opcode::GetGotoVariable, id);
 }

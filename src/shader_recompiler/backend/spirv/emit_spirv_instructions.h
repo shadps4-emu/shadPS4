@@ -58,6 +58,8 @@ void EmitGetScalarRegister(EmitContext& ctx);
 void EmitSetScalarRegister(EmitContext& ctx);
 void EmitGetVectorRegister(EmitContext& ctx);
 void EmitSetVectorRegister(EmitContext& ctx);
+void EmitSetVirtualRegister(EmitContext& ctx);
+void EmitGetVirtualRegister(EmitContext& ctx);
 void EmitSetGotoVariable(EmitContext& ctx);
 void EmitGetGotoVariable(EmitContext& ctx);
 void EmitSetMaskLaneVariable(EmitContext& ctx);
