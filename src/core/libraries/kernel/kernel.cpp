@@ -318,6 +318,10 @@ s32 PS4_SYSV_ABI sceKernelGetProcessType(s32 pid) {
     return 0;
 }
 
+s32 PS4_SYSV_ABI sceKernelIsProspero() {
+    return 0;
+}
+
 s32 PS4_SYSV_ABI __sys_regmgr_call(u32 op, u32 key, void* result, void* value, u64 len) {
     LOG_ERROR(Lib_Kernel, "(STUBBED) called, op: {:#x}, key: {}, len: {}", op, key, len);
     return ORBIS_OK;
@@ -470,6 +474,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("G-MYv5erXaU", "libkernel", 1, "libkernel", sceKernelGetAppInfo);
     LIB_FUNCTION("1yca4VvfcNA", "libkernel", 1, "libkernel", sceKernelTitleWorkaroundIsEnabled);
     LIB_FUNCTION("+g+UP8Pyfmo", "libkernel", 1, "libkernel", sceKernelGetProcessType);
+    LIB_FUNCTION("mpxAdqW7dKY", "libkernel_cpumode_platform", 1, "libkernel",
+                 sceKernelIsProspero);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("wW+k21cmbwQ", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", sceKernelGetFsSandboxRandomWord);
