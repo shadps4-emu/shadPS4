@@ -11,6 +11,7 @@
 #include <queue>
 
 #include "common/io_file.h"
+#include "core/libraries/usbd/emulated/dimensions_listener.h"
 #include "core/libraries/usbd/usb_backend.h"
 
 namespace Libraries::Usbd {
@@ -50,6 +51,26 @@ public:
     void TempRemoveFigure(u8 index) override;
     void CancelRemoveFigure(u8 index) override;
 
+    // Per-region LED state the game is driving, so a companion app can render
+    // the pads glowing like the real toypad. mode: 0 off, 1 solid, 2 flash,
+    // 3 fade; pad: 1 = center, 2 = left, 3 = right. Durations are toypad ticks.
+    struct led_state {
+        u8 pad = 0;
+        u8 mode = 0;
+        u8 r = 0, g = 0, b = 0;
+        u8 on_ms = 0, off_ms = 0, count = 0, speed_ms = 0;
+    };
+
+    // Capture and mirror the game's LED commands (0xC0..0xC8). Called from the
+    // interrupt path for every command the toypad acknowledges.
+    void HandleLedCommand(const u8* buf, u32 buf_size);
+
+    // The current snapshot, plus a serial that only advances when a command
+    // actually changed a region - a poller can skip anything it already applied
+    // and so never restarts a flash mid-cycle.
+    std::array<led_state, 3> GetLedStates();
+    u8 GetLedSerial();
+
     u32 LoadDimensionsFigure(const std::array<u8, 0x2D * 0x04>& buf, Common::FS::IOFile file,
                              u8 pad, u8 index);
 
@@ -58,6 +79,14 @@ protected:
     std::array<DimensionsFigure, MAX_DIMENSIONS_FIGURES> m_figures{};
 
 private:
+    void SetLedState(u8 pad, u8 mode, u8 r, u8 g, u8 b, u8 on_ms, u8 off_ms, u8 count,
+                     u8 speed_ms);
+    led_state GetLedState(u8 pad);
+
+    std::mutex m_led_mutex;
+    std::array<led_state, 3> m_led_state{};
+    u8 m_led_serial = 0;
+
     static void RandomUID(u8* uid_buffer);
     static u8 GenerateChecksum(const std::array<u8, 32>& data, u32 num_of_bytes);
     static std::array<u8, 8> Decrypt(const u8* buf, std::optional<std::array<u8, 16>> key);
@@ -80,6 +109,10 @@ private:
 };
 
 class DimensionsBackend final : public UsbEmulatedBackend {
+public:
+    DimensionsBackend();
+    ~DimensionsBackend() override;
+
 protected:
     libusb_endpoint_descriptor* FillEndpointDescriptorPair() override;
     libusb_interface_descriptor* FillInterfaceDescriptor(
@@ -106,6 +139,7 @@ private:
     static void* PS4_SYSV_ABI WriteThread(void* arg);
 
     std::shared_ptr<DimensionsToypad> m_dimensions_toypad = std::make_shared<DimensionsToypad>();
+    std::unique_ptr<DimensionsListener> m_listener;
 
     std::array<u8, 9> m_endpoint_out_extra = {0x09, 0x21, 0x11, 0x01, 0x00, 0x01, 0x22, 0x1d, 0x00};
     std::vector<libusb_endpoint_descriptor> m_endpoint_descriptors = {

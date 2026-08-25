@@ -3,10 +3,12 @@
 
 #include "dimensions.h"
 
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/tls.h"
 
 #include <mutex>
+#include <string>
 #include <thread>
 
 namespace Libraries::Usbd {
@@ -492,6 +494,144 @@ std::optional<std::array<u8, 32>> DimensionsToypad::PopAddedRemovedResponse() {
     return response;
 }
 
+namespace {
+// Region index (center/left/right) for a wire pad value: 1=center, 2=left, 3=right.
+u8 LedPadIndex(u8 pad) {
+    switch (pad) {
+    case 1: return 0; // center
+    case 2: return 1; // left
+    case 3: return 2; // right
+    }
+    return 0;
+}
+// Wire pad value for a region index (the "All" commands enumerate center, left, right).
+u8 LedRegionPad(u8 region) {
+    static constexpr std::array<u8, 3> pads = {1, 2, 3};
+    return pads[region];
+}
+} // namespace
+
+std::array<DimensionsToypad::led_state, 3> DimensionsToypad::GetLedStates() {
+    std::lock_guard lock(m_led_mutex);
+    return m_led_state;
+}
+
+u8 DimensionsToypad::GetLedSerial() {
+    std::lock_guard lock(m_led_mutex);
+    return m_led_serial;
+}
+
+DimensionsToypad::led_state DimensionsToypad::GetLedState(u8 pad) {
+    std::lock_guard lock(m_led_mutex);
+    return m_led_state[LedPadIndex(pad)];
+}
+
+void DimensionsToypad::SetLedState(u8 pad, u8 mode, u8 r, u8 g, u8 b, u8 on_ms, u8 off_ms,
+                                   u8 count, u8 speed_ms) {
+    std::lock_guard lock(m_led_mutex);
+    auto apply = [&](u8 target_pad) {
+            led_state& state = m_led_state[LedPadIndex(target_pad)];
+        if (state.mode == mode && state.r == r && state.g == g && state.b == b &&
+            state.on_ms == on_ms && state.off_ms == off_ms && state.count == count &&
+            state.speed_ms == speed_ms) {
+            return; // unchanged - leave the serial alone so pollers can skip it
+        }
+        state.pad = target_pad;
+        state.mode = mode;
+        state.r = r;
+        state.g = g;
+        state.b = b;
+        state.on_ms = on_ms;
+        state.off_ms = off_ms;
+        state.count = count;
+        state.speed_ms = speed_ms;
+        ++m_led_serial;
+    };
+    if (pad == 0) { // all pads
+        apply(1);
+        apply(2);
+        apply(3);
+    } else {
+        apply(pad);
+    }
+}
+
+// Parses the game's HID LED commands (0xC0..0xC8) and mirrors the per-region
+// state. Same byte layout as the Cemu/RPCS3 forks (shared reverse-engineering):
+// header {0x55, len, command, messageId, ...}, args from buf[4]; "All" commands
+// enumerate center, left, right, each with a leading on/off byte.
+void DimensionsToypad::HandleLedCommand(const u8* buf, u32 buf_size) {
+    if (buf_size < 25) {
+        return;
+    }
+    const u8 command = buf[2];
+    switch (command) {
+    case 0xC0: // Color: pad, r, g, b
+        SetLedState(buf[4], 1, buf[5], buf[6], buf[7], 0, 0, 0, 0);
+        break;
+    case 0xC1: // Get Pad Color - query only, no state change
+        break;
+    case 0xC2: // Fade: pad, tickTime, tickCount, r, g, b
+        SetLedState(buf[4], 3, buf[7], buf[8], buf[9], 0, 0, buf[6], buf[5]);
+        break;
+    case 0xC3: // Flash: pad, on, off, count(0xFF=forever), r, g, b
+    {
+        const u8 count = (buf[7] == 0xFF) ? 0 : buf[7];
+        SetLedState(buf[4], 2, buf[8], buf[9], buf[10], buf[5], buf[6], count, 0);
+        break;
+    }
+    case 0xC4: // Fade Random: pad, tickTime, tickCount (colour left as-is)
+    {
+        const led_state existing = GetLedState(buf[4]);
+        SetLedState(buf[4], 3, existing.r, existing.g, existing.b, 0, 0, buf[6], buf[5]);
+        break;
+    }
+    case 0xC6: // Fade All: per-region on/off, tickTime, tickCount, r, g, b
+        for (u8 region = 0; region < 3; ++region) {
+            const u32 off = 4 + region * 6;
+            if (buf[off] == 0) {
+                SetLedState(LedRegionPad(region), 0, 0, 0, 0, 0, 0, 0, 0);
+                continue;
+            }
+            SetLedState(LedRegionPad(region), 3, buf[off + 3], buf[off + 4], buf[off + 5], 0, 0,
+                        buf[off + 2], buf[off + 1]);
+        }
+        break;
+    case 0xC7: // Flash All: per-region on/off, on, off, count, r, g, b
+        for (u8 region = 0; region < 3; ++region) {
+            const u32 off = 4 + region * 7;
+            if (buf[off] == 0) {
+                SetLedState(LedRegionPad(region), 0, 0, 0, 0, 0, 0, 0, 0);
+                continue;
+            }
+            const u8 count = (buf[off + 3] == 0xFF) ? 0 : buf[off + 3];
+            SetLedState(LedRegionPad(region), 2, buf[off + 4], buf[off + 5], buf[off + 6],
+                        buf[off + 1], buf[off + 2], count, 0);
+        }
+        break;
+    case 0xC8: // Color All: per-region on/off, r, g, b
+        for (u8 region = 0; region < 3; ++region) {
+            const u32 off = 4 + region * 4;
+            if (buf[off] == 0) {
+                SetLedState(LedRegionPad(region), 0, 0, 0, 0, 0, 0, 0, 0);
+                continue;
+            }
+            SetLedState(LedRegionPad(region), 1, buf[off + 1], buf[off + 2], buf[off + 3], 0, 0, 0,
+                        0);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+DimensionsBackend::DimensionsBackend() {
+    m_listener = std::make_unique<DimensionsListener>(m_dimensions_toypad);
+    m_listener->Start(static_cast<u16>(EmulatorSettings.GetDimensionsListenerPort()));
+}
+
+DimensionsBackend::~DimensionsBackend() = default;
+
 libusb_endpoint_descriptor* DimensionsBackend::FillEndpointDescriptorPair() {
     return m_endpoint_descriptors.data();
 }
@@ -574,6 +714,9 @@ libusb_transfer_status DimensionsBackend::HandleAsyncTransfer(libusb_transfer* t
         case 0xC7: // Flash All
         case 0xC8: // Color All
         {
+            // Mirror the pad-region LED state out over the IPC channel so a
+            // companion app can render the pads glowing like a real toypad.
+            m_dimensions_toypad->HandleLedCommand(transfer->buffer, static_cast<u32>(transfer->length));
             // Send a blank response to acknowledge color has been sent to toypad
             m_dimensions_toypad->GetBlankResponse(0x01, sequence, q_result);
             break;

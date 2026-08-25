@@ -593,6 +593,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
         setFromToml(s.ime_accessibility_enabled, input, "imeAccessibilityEnabled");
         setFromToml(s.ime_url_mail_short_panel, input, "imeUrlMailShortPanel");
         setFromToml(s.usb_device_backend, input, "usbDeviceBackend");
+        setFromToml(s.dimensions_listener_port, input, "dimensionsListenerPort");
     }
 
     if (og_data.contains("Audio")) {

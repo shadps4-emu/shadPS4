@@ -605,6 +605,8 @@ set(USBD_LIB src/core/libraries/usbd/usbd.cpp
              src/core/libraries/usbd/usb_backend.h
              src/core/libraries/usbd/emulated/dimensions.cpp
              src/core/libraries/usbd/emulated/dimensions.h
+             src/core/libraries/usbd/emulated/dimensions_listener.cpp
+             src/core/libraries/usbd/emulated/dimensions_listener.h
              src/core/libraries/usbd/emulated/infinity.cpp
              src/core/libraries/usbd/emulated/infinity.h
              src/core/libraries/usbd/emulated/skylander.cpp
