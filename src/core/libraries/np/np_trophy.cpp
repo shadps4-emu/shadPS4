@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <thread>
 #include <unordered_map>
 #include <pugixml.hpp>
@@ -12,6 +13,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_handler.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/trophy_ui.h"
 #include "core/libraries/system/userservice.h"
@@ -112,6 +114,77 @@ static void ApplyUnlockToXmlFile(const std::filesystem::path& xml_path, OrbisNpT
     }
 
     doc.save_file(xml_path.native().c_str());
+}
+
+// Reads every unlocked trophy out of a user's save XML as (id, timestamp) pairs.
+static std::vector<std::pair<s32, u64>> ReadUnlockedTrophies(
+    const std::filesystem::path& xml_save_file) {
+    std::vector<std::pair<s32, u64>> out;
+    pugi::xml_document doc;
+    if (!doc.load_file(xml_save_file.native().c_str())) {
+        return out;
+    }
+    for (const pugi::xml_node& node : doc.child("trophyconf").children()) {
+        if (std::string_view(node.name()) != "trophy") {
+            continue;
+        }
+        if (!node.attribute("unlockstate").as_bool()) {
+            continue;
+        }
+        const int id = node.attribute("id").as_int(ORBIS_NP_TROPHY_INVALID_TROPHY_ID);
+        if (id == ORBIS_NP_TROPHY_INVALID_TROPHY_ID) {
+            continue;
+        }
+        out.emplace_back(id, node.attribute("timestamp").as_ullong());
+    }
+    return out;
+}
+
+// Marks trophies the server knows about as unlocked locally.
+static u32 ApplyServerTrophies(const std::filesystem::path& xml_save_file,
+                               const std::vector<std::pair<s32, u64>>& server_trophies) {
+    if (server_trophies.empty()) {
+        return 0;
+    }
+    pugi::xml_document doc;
+    if (!doc.load_file(xml_save_file.native().c_str())) {
+        LOG_WARNING(Lib_NpTrophy, "ApplyServerTrophies: failed to load {}", xml_save_file.string());
+        return 0;
+    }
+
+    u32 applied = 0;
+    for (pugi::xml_node& node : doc.child("trophyconf").children()) {
+        if (std::string_view(node.name()) != "trophy") {
+            continue;
+        }
+        const int id = node.attribute("id").as_int(ORBIS_NP_TROPHY_INVALID_TROPHY_ID);
+        if (node.attribute("unlockstate").as_bool()) {
+            continue; // already ours, leave its timestamp alone
+        }
+        const auto match = std::find_if(server_trophies.begin(), server_trophies.end(),
+                                        [id](const auto& t) { return t.first == id; });
+        if (match == server_trophies.end()) {
+            continue;
+        }
+
+        if (node.attribute("unlockstate").empty()) {
+            node.append_attribute("unlockstate") = "true";
+        } else {
+            node.attribute("unlockstate").set_value("true");
+        }
+        const auto ts_str = std::to_string(match->second);
+        if (node.attribute("timestamp").empty()) {
+            node.append_attribute("timestamp") = ts_str.c_str();
+        } else {
+            node.attribute("timestamp").set_value(ts_str.c_str());
+        }
+        ++applied;
+    }
+
+    if (applied > 0) {
+        doc.save_file(xml_save_file.native().c_str());
+    }
+    return applied;
 }
 
 static constexpr auto MaxTrophyHandles = 4u;
@@ -854,6 +927,19 @@ int PS4_SYSV_ABI sceNpTrophyRegisterContext(OrbisNpTrophyContext context,
     ctx.registered = true;
     LOG_INFO(Lib_NpTrophy, "Context {} registered", context);
 
+    // Sync with shadNet
+    {
+        const auto save_file = ctx.xml_save_file;
+        NpHandler::GetInstance().SyncTrophies(
+            ctx.user_id, ctx.service_label, ReadUnlockedTrophies(save_file),
+            [save_file](const std::vector<std::pair<s32, u64>>& merged) {
+                const u32 applied = ApplyServerTrophies(save_file, merged);
+                if (applied > 0) {
+                    LOG_INFO(Lib_NpTrophy, "Applied {} trophies from shadNet", applied);
+                }
+            });
+    }
+
     return ORBIS_OK;
 }
 
@@ -1037,6 +1123,11 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
     ApplyUnlockToXmlFile(ctx.xml_save_file, trophyId, trophy_timestamp, unlock_platinum,
                          platinum_id, platinum_timestamp);
     LOG_INFO(Lib_NpTrophy, "Trophy {} successfully saved.", trophyId);
+    auto& np = NpHandler::GetInstance();
+    np.ReportTrophyUnlock(ctx.user_id, ctx.service_label, trophyId, trophy_timestamp);
+    if (unlock_platinum) {
+        np.ReportTrophyUnlock(ctx.user_id, ctx.service_label, platinum_id, platinum_timestamp);
+    }
 
     return ORBIS_OK;
 }
