@@ -67,6 +67,7 @@ enum class CommandType : u16 {
     AddBlock = 10,
     RemoveBlock = 11,
     GetServerFeatures = 12,
+    SetClientVersion = 13,
     GetBoardInfos = 30,
     RecordScore = 31,
     RecordScoreData = 32,
@@ -109,7 +110,7 @@ enum class CommandType : u16 {
     TusTryAndSetVariable = 211,
     TusGetFriendsVariable = 212,
     TusDeleteMultiSlotVariable = 213,
-    // Trophies.
+    // Trophies
     UnlockTrophy = 301,
     SyncTrophies = 302,
 };
@@ -298,10 +299,10 @@ public:
     u32 GetAddrServer() const;
     bool IsMatching2Enabled() const;
     bool IsTrophiesEnabled() const;
+    u64 ReportClientVersion();
+    static std::string BuildVersionString();
 
-    // Reports one unlock.
     u64 UnlockTrophy(const std::string& com_id, s32 trophy_id, u64 timestamp);
-    // Uploads the local set for one game
     u64 SyncTrophies(const std::string& com_id,
                      const std::vector<std::pair<s32, u64>>& local_trophies);
     u32 GetNumFriends() const;

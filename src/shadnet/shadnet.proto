@@ -743,3 +743,7 @@ message SyncTrophiesRequest {
 message SyncTrophiesReply {
     repeated TrophyEntry trophies = 1;
 }
+
+message SetClientVersionRequest {
+    string version = 1;
+}
