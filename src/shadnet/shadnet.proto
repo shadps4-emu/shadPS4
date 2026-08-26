@@ -31,6 +31,7 @@ message SetAppearOfflineRequest {
 
 message ServerFeaturesReply {
     bool matching2_enabled = 1;
+    bool trophies_enabled = 2;
 }
 
 message FriendEntry {
@@ -719,4 +720,30 @@ message TusGetMultiUserVariableRequest {
     repeated int64  ownerAccountIds = 2;   // one variable per account, in order
     repeated string virtualUsers    = 3;   // alternative to ownerAccountIds (virtual users)
     repeated string ownerNpIds      = 4;   // base npid-array path (server resolves each)
+}
+
+// Trophies
+
+message TrophyEntry {
+    int32  trophyId  = 1;
+    uint64 timestamp = 2; // seconds since epoch, when the player earned it
+}
+
+// Reports a single unlock as it happens.
+message UnlockTrophyRequest {
+    int32  trophyId  = 1;
+    uint64 timestamp = 2;
+}
+
+// Uploads everything the client holds locally for one game.
+message SyncTrophiesRequest {
+    repeated TrophyEntry trophies = 1;
+}
+
+message SyncTrophiesReply {
+    repeated TrophyEntry trophies = 1;
+}
+
+message SetClientVersionRequest {
+    string version = 1;
 }

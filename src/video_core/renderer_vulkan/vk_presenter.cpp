@@ -43,7 +43,7 @@
 #include <system_error>
 #include <vector>
 #include <imgui.h>
-#include <png.h>
+#include <stb_image_write.h>
 #include <vk_mem_alloc.h>
 
 namespace Vulkan {
@@ -407,36 +407,11 @@ static bool WritePng(const std::filesystem::path& path, const std::span<const u8
         return false;
     }
 
-    png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-    if (png_ptr == nullptr) {
-        return false;
-    }
-    png_infop info_ptr = png_create_info_struct(png_ptr);
-    if (info_ptr == nullptr) {
-        png_destroy_write_struct(&png_ptr, nullptr);
-        return false;
-    }
-
-    if (setjmp(png_jmpbuf(png_ptr)) != 0) {
-        png_destroy_write_struct(&png_ptr, &info_ptr);
-        return false;
-    }
-
-    png_init_io(png_ptr, file.file);
-    png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
-                 PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-    png_write_info(png_ptr, info_ptr);
-
-    thread_local std::vector<png_bytep> rows;
-    rows.resize(height);
-    for (u32 y = 0; y < height; ++y) {
-        rows[y] = const_cast<png_bytep>(rgba.data() + static_cast<size_t>(y) * width * 4);
-    }
-
-    png_write_image(png_ptr, rows.data());
-    png_write_end(png_ptr, info_ptr);
-    png_destroy_write_struct(&png_ptr, &info_ptr);
-    return true;
+    auto callback = [](void* context, void* data, int size) {
+        const auto* f = static_cast<Common::FS::IOFile*>(context);
+        f->WriteRaw<u8>(data, size);
+    };
+    return stbi_write_png_to_func(callback, &file, width, height, 4, rgba.data(), 0);
 }
 
 static void SavePendingScreenshots(const std::vector<ScreenshotReadback>& readbacks) {

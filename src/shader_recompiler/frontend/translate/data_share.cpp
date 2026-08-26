@@ -322,14 +322,16 @@ void Translator::DS_SWIZZLE_B32(const GcnInst& inst) {
 
 void Translator::DS_APPEND(const GcnInst& inst) {
     const u32 inst_offset = (u32(inst.control.ds.offset1) << 8u) + inst.control.ds.offset0;
-    const IR::U32 gds_offset = ir.IAdd(ir.GetM0(), ir.Imm32(inst_offset));
+    const IR::U32 base = ir.BitFieldExtract(ir.GetM0(), ir.Imm32(16), ir.Imm32(16));
+    const IR::U32 gds_offset = ir.IAdd(base, ir.Imm32(inst_offset));
     const IR::U32 prev = ir.DataAppend(gds_offset);
     SetDst(inst.dst[0], prev);
 }
 
 void Translator::DS_CONSUME(const GcnInst& inst) {
     const u32 inst_offset = (u32(inst.control.ds.offset1) << 8u) + inst.control.ds.offset0;
-    const IR::U32 gds_offset = ir.IAdd(ir.GetM0(), ir.Imm32(inst_offset));
+    const IR::U32 base = ir.BitFieldExtract(ir.GetM0(), ir.Imm32(16), ir.Imm32(16));
+    const IR::U32 gds_offset = ir.IAdd(base, ir.Imm32(inst_offset));
     const IR::U32 prev = ir.DataConsume(gds_offset);
     SetDst(inst.dst[0], prev);
 }

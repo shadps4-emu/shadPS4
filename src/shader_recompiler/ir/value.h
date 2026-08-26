@@ -33,6 +33,7 @@ public:
     explicit Value(const IR::Inst* value) noexcept;
     explicit Value(IR::ScalarReg reg) noexcept;
     explicit Value(IR::VectorReg reg) noexcept;
+    explicit Value(IR::VirtualReg reg) noexcept;
     explicit Value(IR::Attribute value) noexcept;
     explicit Value(IR::Patch patch) noexcept;
     explicit Value(bool value) noexcept;
@@ -56,6 +57,7 @@ public:
     [[nodiscard]] IR::Value Resolve() const;
     [[nodiscard]] IR::ScalarReg ScalarReg() const;
     [[nodiscard]] IR::VectorReg VectorReg() const;
+    [[nodiscard]] IR::VirtualReg VirtualReg() const;
     [[nodiscard]] IR::Attribute Attribute() const;
     [[nodiscard]] IR::Patch Patch() const;
     [[nodiscard]] bool U1() const;
@@ -76,6 +78,7 @@ private:
         IR::Inst* inst{};
         IR::ScalarReg sreg;
         IR::VectorReg vreg;
+        IR::VirtualReg reg;
         IR::Attribute attribute;
         IR::Patch patch;
         bool imm_u1;
@@ -327,6 +330,11 @@ inline IR::ScalarReg Value::ScalarReg() const {
 inline IR::VectorReg Value::VectorReg() const {
     DEBUG_ASSERT(type == Type::VectorReg);
     return vreg;
+}
+
+inline IR::VirtualReg Value::VirtualReg() const {
+    DEBUG_ASSERT(type == Type::VirtualReg);
+    return reg;
 }
 
 inline IR::Attribute Value::Attribute() const {
