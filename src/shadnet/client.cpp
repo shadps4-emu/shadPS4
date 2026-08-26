@@ -9,6 +9,7 @@
 #include "client.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "common/scm_rev.h"
 #include "common/thread.h"
 #include "shadnet.pb.h"
 
