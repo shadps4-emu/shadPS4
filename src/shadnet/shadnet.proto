@@ -31,6 +31,7 @@ message SetAppearOfflineRequest {
 
 message ServerFeaturesReply {
     bool matching2_enabled = 1;
+    bool trophies_enabled = 2;
 }
 
 message FriendEntry {
@@ -719,4 +720,51 @@ message TusGetMultiUserVariableRequest {
     repeated int64  ownerAccountIds = 2;   // one variable per account, in order
     repeated string virtualUsers    = 3;   // alternative to ownerAccountIds (virtual users)
     repeated string ownerNpIds      = 4;   // base npid-array path (server resolves each)
+}
+
+// Title Small Storage (TSS)
+
+message TssGetDataRequest {
+    int32  slotId              = 1;
+    bool   hasOffset           = 2;
+    uint64 offset              = 3;
+    bool   hasLastByte         = 4;
+    uint64 lastByte            = 5;
+    bool   hasIfParam          = 6;
+    int32  ifType              = 7;  // 0 = IF_MODIFIED_SINCE, 1 = IF_RANGE
+    uint64 ifLastModified      = 8;  // seconds since epoch
+}
+
+message TssGetDataResponse {
+    
+    int32  statusCodeType = 1; // OrbisNpTssStatusCodeType: 0 = OK, 1 = PARTIAL, 2 = NOT_MODIFIED.
+    uint64 lastModified   = 2; // seconds since epoch, 0 when the file is absent
+    uint64 contentLength  = 3; // size the client should expect for this status
+    bytes  data           = 4; // the (possibly ranged) payload
+}
+
+// Trophies
+
+message TrophyEntry {
+    int32  trophyId  = 1;
+    uint64 timestamp = 2; // seconds since epoch, when the player earned it
+}
+
+// Reports a single unlock as it happens.
+message UnlockTrophyRequest {
+    int32  trophyId  = 1;
+    uint64 timestamp = 2;
+}
+
+// Uploads everything the client holds locally for one game.
+message SyncTrophiesRequest {
+    repeated TrophyEntry trophies = 1;
+}
+
+message SyncTrophiesReply {
+    repeated TrophyEntry trophies = 1;
+}
+
+message SetClientVersionRequest {
+    string version = 1; 
 }

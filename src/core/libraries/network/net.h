@@ -76,8 +76,8 @@ enum OrbisNetSocketIpOption : u32 {
     ORBIS_NET_IP_MULTICAST_LOOP = 11,
     ORBIS_NET_IP_ADD_MEMBERSHIP = 12,
     ORBIS_NET_IP_DROP_MEMBERSHIP = 13,
-    ORBIS_NET_IP_TTLCHK = 23,
-    ORBIS_NET_IP_MAXTTL = 24,
+    ORBIS_NET_IP_TTLCHK = 30,
+    ORBIS_NET_IP_MAXTTL = 31,
 };
 
 enum OrbisNetSocketTcpOption : u32 {
@@ -263,6 +263,71 @@ struct OrbisNetResolverInfo {
     u32 pad[14];
 };
 
+constexpr int ORBIS_NET_DEBUG_NAME_LEN_MAX = 31;
+
+enum OrbisNetSockInfoState : s32 {
+    ORBIS_NET_SOCKINFO_STATE_UNKNOWN = 0,
+    ORBIS_NET_SOCKINFO_STATE_CLOSED = 1,
+    ORBIS_NET_SOCKINFO_STATE_OPENED = 2,
+    ORBIS_NET_SOCKINFO_STATE_LISTEN = 3,
+    ORBIS_NET_SOCKINFO_STATE_SYN_SENT = 4,
+    ORBIS_NET_SOCKINFO_STATE_SYN_RECEIVED = 5,
+    ORBIS_NET_SOCKINFO_STATE_ESTABLISHED = 6,
+    ORBIS_NET_SOCKINFO_STATE_FIN_WAIT_1 = 7,
+    ORBIS_NET_SOCKINFO_STATE_FIN_WAIT_2 = 8,
+    ORBIS_NET_SOCKINFO_STATE_CLOSE_WAIT = 9,
+    ORBIS_NET_SOCKINFO_STATE_CLOSING = 10,
+    ORBIS_NET_SOCKINFO_STATE_LAST_ACK = 11,
+    ORBIS_NET_SOCKINFO_STATE_TIME_WAIT = 12,
+};
+
+enum OrbisNetSockInfoFlags : s32 {
+    ORBIS_NET_SOCKINFO_F_SELF = 0x00000001,
+    ORBIS_NET_SOCKINFO_F_KERNEL = 0x00000002,
+    ORBIS_NET_SOCKINFO_F_OTHERS = 0x00000004,
+    ORBIS_NET_SOCKINFO_F_RECV_WAIT = 0x00010000,
+    ORBIS_NET_SOCKINFO_F_SEND_WAIT = 0x00020000,
+    ORBIS_NET_SOCKINFO_F_RECV_EWAIT = 0x00040000,
+    ORBIS_NET_SOCKINFO_F_SEND_EWAIT = 0x00080000,
+    ORBIS_NET_SOCKINFO_F_NONBLOCK = 0x00200000,
+    ORBIS_NET_SOCKINFO_F_ALL = 0x006F0007,
+};
+
+constexpr int ORBIS_NET_SOCKINFO_TIME_WAIT = 0x00000040;
+
+struct OrbisNetSockInfo {
+    char name[ORBIS_NET_DEBUG_NAME_LEN_MAX + 1];
+    s32 pid;
+    OrbisNetId s;
+    s8 socket_type;
+    s8 policy;
+    s8 priority;
+    s8 reserved8;
+    s32 recv_queue_length;
+    s32 send_queue_length;
+    OrbisNetInAddr local_adr;
+    OrbisNetInAddr remote_adr;
+    u16 local_port;
+    u16 remote_port;
+    u16 local_vport;
+    u16 remote_vport;
+    s32 state;
+    s32 flags;
+    s32 tx_bps;
+    s32 rx_bps;
+    s32 max_tx_bps;
+    s32 max_rx_bps;
+    s32 tx_vbps;
+    s32 rx_vbps;
+    s32 recv_buffer_size;
+    s32 send_buffer_size;
+    s32 reserved6[8];
+    s32 tx_drops;
+    s32 rx_drops;
+    s32 tx_wait;
+    s32 reserved[2];
+};
+
 int PS4_SYSV_ABI in6addr_any();
 int PS4_SYSV_ABI in6addr_loopback();
 int PS4_SYSV_ABI sce_net_dummy();
@@ -395,7 +460,7 @@ int PS4_SYSV_ABI sceNetGetNameToIndex();
 int PS4_SYSV_ABI sceNetGetpeername(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen);
 int PS4_SYSV_ABI sceNetGetRandom();
 int PS4_SYSV_ABI sceNetGetRouteInfo();
-int PS4_SYSV_ABI sceNetGetSockInfo();
+int PS4_SYSV_ABI sceNetGetSockInfo(OrbisNetId s, OrbisNetSockInfo* info, int n, int flags);
 int PS4_SYSV_ABI sceNetGetSockInfo6();
 int PS4_SYSV_ABI sceNetGetsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen);
 int PS4_SYSV_ABI sceNetGetsockopt(OrbisNetId s, int level, int optname, void* optval, u32* optlen);
