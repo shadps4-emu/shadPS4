@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -51,7 +51,10 @@ constexpr int ORBIS_NET_EHOSTDOWN = 64;
 constexpr int ORBIS_NET_EHOSTUNREACH = 65;
 constexpr int ORBIS_NET_ENOTEMPTY = 66;
 constexpr int ORBIS_NET_EPROCUNAVAIL = 76;
-constexpr int ORBIS_NET_ECANCELED = 87;
+constexpr int ORBIS_NET_EIDRM = 82;
+constexpr int ORBIS_NET_ENOMSG = 83;
+constexpr int ORBIS_NET_EOVERFLOW = 84;
+constexpr int ORBIS_NET_ECANCELED = 85;
 constexpr int ORBIS_NET_EPROTO = 92;
 constexpr int ORBIS_NET_EADHOC = 160;
 constexpr int ORBIS_NET_EINACTIVEDISABLED = 163;
@@ -132,7 +135,10 @@ constexpr int ORBIS_NET_ERROR_EHOSTDOWN = 0x80410140;
 constexpr int ORBIS_NET_ERROR_EHOSTUNREACH = 0x80410141;
 constexpr int ORBIS_NET_ERROR_ENOTEMPTY = 0x80410142;
 constexpr int ORBIS_NET_ERROR_EPROCUNAVAIL = 0x8041014C;
-constexpr int ORBIS_NET_ERROR_ECANCELED = 0x80410157;
+constexpr int ORBIS_NET_ERROR_EIDRM = 0x80410152;
+constexpr int ORBIS_NET_ERROR_ENOMSG = 0x80410153;
+constexpr int ORBIS_NET_ERROR_EOVERFLOW = 0x80410154;
+constexpr int ORBIS_NET_ERROR_ECANCELED = 0x80410155;
 constexpr int ORBIS_NET_ERROR_EPROTO = 0x8041015C;
 constexpr int ORBIS_NET_ERROR_EADHOC = 0x804101a0;
 constexpr int ORBIS_NET_ERROR_ERESERVED161 = 0x804101a1;

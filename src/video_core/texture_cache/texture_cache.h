@@ -169,9 +169,19 @@ public:
         return {};
     }
 
-    /// Returns true if the specified address is a metadata surface.
-    bool IsMeta(VAddr address) const {
-        return surface_metas.contains(address);
+    enum class MetaType {
+        CMask,
+        FMask,
+        HTile,
+    };
+
+    /// Returns meta type if the specified address is a metadata surface.
+    std::optional<MetaType> IsMeta(VAddr address) const {
+        auto it = surface_metas.find(address);
+        if (it != surface_metas.end()) {
+            return it->second.type;
+        }
+        return std::nullopt;
     }
 
     /// Returns true if a slice of the specified metadata surface has been cleared.
@@ -339,12 +349,7 @@ private:
     std::mutex samplers_mutex;
     std::mutex download_images_mutex;
     struct MetaDataInfo {
-        enum class Type {
-            CMask,
-            FMask,
-            HTile,
-        };
-        Type type;
+        MetaType type;
         s32 clear_mask = -1;
     };
     tsl::robin_map<VAddr, MetaDataInfo> surface_metas;

@@ -29,6 +29,7 @@ constexpr Type Void{Type::Void};
 constexpr Type Opaque{Type::Opaque};
 constexpr Type ScalarReg{Type::ScalarReg};
 constexpr Type VectorReg{Type::VectorReg};
+constexpr Type VirtualReg{Type::VirtualReg};
 constexpr Type Attribute{Type::Attribute};
 constexpr Type Patch{Type::Patch};
 constexpr Type U1{Type::U1};
