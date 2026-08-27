@@ -25,6 +25,12 @@ struct TusRequestCtx {
         cv.notify_all();
     }
 
+    // True once the operation has completed (or been aborted).
+    bool HasResult() {
+        std::lock_guard lock(mutex);
+        return result.has_value();
+    }
+
     // Block until the handler (or an abort/delete) sets the result.
     s32 Wait() {
         std::unique_lock lock(mutex);

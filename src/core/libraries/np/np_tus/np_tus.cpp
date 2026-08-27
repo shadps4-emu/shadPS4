@@ -224,7 +224,9 @@ s32 PS4_SYSV_ABI sceNpTusDeleteRequest(int requestId) {
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
     }
     if (it->second.ctx) {
-        LOG_ERROR(Lib_NpTus, "Cannot delete request {}: request is still active", requestId);
+        if (!it->second.ctx->HasResult()) {
+            LOG_INFO(Lib_NpTus, "request {} still in flight, aborting it", requestId);
+        }
         it->second.ctx->SetResult(ORBIS_NP_COMMUNITY_ERROR_ABORTED);
     }
     g_requests.erase(it);
@@ -4907,6 +4909,7 @@ s32 PS4_SYSV_ABI sceNpTssGetDataAsync(int reqId, s32 slotId, OrbisNpTssDataStatu
     if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
         return ret;
     }
+
     u64 startOffset = offset;
     {
         std::lock_guard lock(g_mutex);
@@ -4931,6 +4934,7 @@ s32 PS4_SYSV_ABI sceNpTssGetDataAsync(int reqId, s32 slotId, OrbisNpTssDataStatu
     }
     return ORBIS_OK;
 }
+
 s32 PS4_SYSV_ABI sceNpTssGetData(int reqId, s32 slotId, OrbisNpTssDataStatus* dataStatus,
                                  u64 dataStatusSize, void* data, u64 recvSize,
                                  OrbisNpTssGetDataOptParam* option) {
@@ -4966,6 +4970,7 @@ s32 PS4_SYSV_ABI sceNpTssGetSmallStorageAsync(int reqId, void* data, u64 maxSize
     if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
         return ret;
     }
+
     auto ctx = std::make_shared<TusRequestCtx>();
     req->ctx = ctx;
     s32 submit = Libraries::Np::NpHandler::GetInstance().TssGetData(
