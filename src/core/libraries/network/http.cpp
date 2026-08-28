@@ -1529,6 +1529,7 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         }
         plan.path = ExtractPathFromUrl(req.url);
         plan.settings = req.settings;
+        std::string tmpl_user_agent;
         if (auto conn_it = g_state.connections.find(req.conn_id);
             conn_it != g_state.connections.end()) {
             plan.scheme = conn_it->second.scheme;
@@ -1538,6 +1539,7 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
             if (auto tmpl_it = g_state.templates.find(conn_it->second.tmpl_id);
                 tmpl_it != g_state.templates.end()) {
                 plan.headers = tmpl_it->second.headers;
+                tmpl_user_agent = tmpl_it->second.user_agent;
                 // Check if the owning context loaded custom CAs - if so the
                 // worker will bypass TLS verification.
                 plan.ctx_has_loaded_certs =
@@ -1549,6 +1551,16 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         }
         for (const auto& h : req.headers) {
             plan.headers.push_back(h);
+        }
+        // The User-Agent the game gave sceHttpCreateTemplate is a template property, not a
+        // header,
+        // so nothing above carries it. Without this the request goes out with httplib's own UA
+        // and any server that identifies clients by it sees the wrong one. An explicit
+        // User-Agent added to the template/connection/request still wins.
+        if (!tmpl_user_agent.empty() &&
+            std::none_of(plan.headers.begin(), plan.headers.end(),
+                         [](const auto& h) { return HeaderNameMatches(h.first, "User-Agent"); })) {
+            plan.headers.emplace_back("User-Agent", tmpl_user_agent);
         }
         // Pull Content-Type out of headers
         for (const auto& [k, v] : plan.headers) {
