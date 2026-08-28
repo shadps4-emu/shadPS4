@@ -670,13 +670,13 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
     // Register meta data for this color buffer
     if (desc.info.meta_info.cmask_addr) {
         surface_metas.emplace(desc.info.meta_info.cmask_addr,
-                              MetaDataInfo{.type = MetaDataInfo::Type::CMask});
+                              MetaDataInfo{.type = MetaType::CMask});
         image.info.meta_info.cmask_addr = desc.info.meta_info.cmask_addr;
     }
 
     if (desc.info.meta_info.fmask_addr) {
         surface_metas.emplace(desc.info.meta_info.fmask_addr,
-                              MetaDataInfo{.type = MetaDataInfo::Type::FMask});
+                              MetaDataInfo{.type = MetaType::FMask});
         image.info.meta_info.fmask_addr = desc.info.meta_info.fmask_addr;
     }
 
@@ -692,7 +692,7 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
     // Register meta data for this depth buffer
     if (desc.info.meta_info.htile_addr) {
         surface_metas.emplace(desc.info.meta_info.htile_addr,
-                              MetaDataInfo{.type = MetaDataInfo::Type::HTile,
+                              MetaDataInfo{.type = MetaType::HTile,
                                            .clear_mask = image.info.meta_info.htile_clear_mask});
         image.info.meta_info.htile_addr = desc.info.meta_info.htile_addr;
     }

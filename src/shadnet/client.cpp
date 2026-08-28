@@ -9,6 +9,7 @@
 #include "client.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "common/scm_rev.h"
 #include "common/thread.h"
 #include "shadnet.pb.h"
 
@@ -527,6 +528,75 @@ u64 ShadNetClient::SetAppearOffline(bool enable) {
     return SubmitRequest(CommandType::SetAppearOffline, MakeProtoPayload(req));
 }
 
+static std::vector<u8> MakeComIdPayload(const std::string& com_id, const std::string& proto_bytes) {
+    std::vector<u8> payload;
+    payload.reserve(12 + 4 + proto_bytes.size());
+    payload.insert(payload.end(), com_id.begin(), com_id.end());
+    const u32 sz = static_cast<u32>(proto_bytes.size());
+    payload.push_back(static_cast<u8>(sz));
+    payload.push_back(static_cast<u8>(sz >> 8));
+    payload.push_back(static_cast<u8>(sz >> 16));
+    payload.push_back(static_cast<u8>(sz >> 24));
+    payload.insert(payload.end(), proto_bytes.begin(), proto_bytes.end());
+    return payload;
+}
+
+std::string ShadNetClient::BuildVersionString() {
+    const std::string remote_url(Common::g_scm_remote_url);
+    const std::string remote_host = Common::GetRemoteNameFromLink();
+    const bool official = (remote_host == "shadps4-emu" || remote_url.empty());
+
+    if (Common::g_is_release) {
+        return official ? fmt::format("shadPS4 v{}", Common::g_version)
+                        : fmt::format("shadPS4 {}/v{}", remote_host, Common::g_version);
+    }
+    return official ? fmt::format("shadPS4 v{} {} {}", Common::g_version, Common::g_scm_branch,
+                                  Common::g_scm_desc)
+                    : fmt::format("shadPS4 v{} {}/{} {}", Common::g_version, remote_host,
+                                  Common::g_scm_branch, Common::g_scm_desc);
+}
+
+u64 ShadNetClient::ReportClientVersion() {
+    shadnet::SetClientVersionRequest req;
+    req.set_version(BuildVersionString());
+    const std::string blob = req.SerializeAsString();
+
+    std::vector<u8> payload;
+    payload.reserve(4 + blob.size());
+    const u32 sz = static_cast<u32>(blob.size());
+    payload.push_back(static_cast<u8>(sz));
+    payload.push_back(static_cast<u8>(sz >> 8));
+    payload.push_back(static_cast<u8>(sz >> 16));
+    payload.push_back(static_cast<u8>(sz >> 24));
+    payload.insert(payload.end(), blob.begin(), blob.end());
+
+    return SubmitRequest(CommandType::SetClientVersion, payload);
+}
+
+u64 ShadNetClient::UnlockTrophy(const std::string& com_id, s32 trophy_id, u64 timestamp) {
+    shadnet::UnlockTrophyRequest req;
+    req.set_trophyid(trophy_id);
+    req.set_timestamp(timestamp);
+    return SubmitRequest(CommandType::UnlockTrophy,
+                         MakeComIdPayload(com_id, req.SerializeAsString()));
+}
+
+u64 ShadNetClient::SyncTrophies(const std::string& com_id,
+                                const std::vector<std::pair<s32, u64>>& local_trophies) {
+    shadnet::SyncTrophiesRequest req;
+    for (const auto& [id, ts] : local_trophies) {
+        auto* entry = req.add_trophies();
+        entry->set_trophyid(id);
+        entry->set_timestamp(ts);
+    }
+    return SubmitRequest(CommandType::SyncTrophies,
+                         MakeComIdPayload(com_id, req.SerializeAsString()));
+}
+
+bool ShadNetClient::IsTrophiesEnabled() const {
+    return m_trophies_enabled.load();
+}
+
 bool ShadNetClient::RequestServerFeatures() {
     const u64 pkt_id = m_pkt_counter.fetch_add(1);
     std::vector<u8> empty_payload;
@@ -701,6 +771,7 @@ void ShadNetClient::HandleGetTokenReply(const std::vector<u8>& payload) {
 
 void ShadNetClient::HandleServerFeaturesReply(const std::vector<u8>& payload) {
     bool matching2_enabled = false;
+    bool trophies_enabled = false;
     bool parsed = false;
 
     if (!payload.empty()) {
@@ -710,6 +781,7 @@ void ShadNetClient::HandleServerFeaturesReply(const std::vector<u8>& payload) {
             const std::string blob = ExtractBlob(payload, 1);
             if (!blob.empty() && pb.ParseFromString(blob)) {
                 matching2_enabled = pb.matching2_enabled();
+                trophies_enabled = pb.trophies_enabled();
                 parsed = true;
             }
         } else {
@@ -720,9 +792,12 @@ void ShadNetClient::HandleServerFeaturesReply(const std::vector<u8>& payload) {
     }
 
     m_matching2_enabled.store(matching2_enabled);
+    m_trophies_enabled.store(trophies_enabled);
     m_server_features_received.store(parsed);
-    LOG_INFO(ShadNet, "Server features: matching2_enabled={}{}",
-             matching2_enabled ? "true" : "false", parsed ? "" : " (defaulted)");
+    ReportClientVersion();
+    LOG_INFO(ShadNet, "Server features: matching2_enabled={} trophies_enabled={}{}",
+             matching2_enabled ? "true" : "false", trophies_enabled ? "true" : "false",
+             parsed ? "" : " (defaulted)");
     m_sem_authenticated.release();
 }
 

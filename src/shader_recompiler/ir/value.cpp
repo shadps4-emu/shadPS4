@@ -14,6 +14,8 @@ Value::Value(IR::ScalarReg reg) noexcept : type{Type::ScalarReg}, sreg{reg} {}
 
 Value::Value(IR::VectorReg reg) noexcept : type{Type::VectorReg}, vreg{reg} {}
 
+Value::Value(IR::VirtualReg reg_) noexcept : type{Type::VirtualReg}, reg{reg_} {}
+
 Value::Value(IR::Attribute value) noexcept : type{Type::Attribute}, attribute{value} {}
 
 Value::Value(IR::Patch patch) noexcept : type{Type::Patch}, patch{patch} {}

@@ -230,8 +230,31 @@ void OnGameLoaded() {
             if (!repo.is_directory()) {
                 continue;
             }
-            std::ifstream json_file{repo.path() / "files.json"};
-            nlohmann::json available_patches = nlohmann::json::parse(json_file);
+
+            const auto files_json_path = repo.path() / "files.json";
+
+            if (!std::filesystem::is_regular_file(files_json_path)) {
+                LOG_ERROR(Loader, "The folder '{}' does not contain the files.json file.",
+                          repo.path().filename().string());
+                continue;
+            }
+
+            std::ifstream json_file{files_json_path};
+            nlohmann::json available_patches;
+
+            if (!json_file.is_open()) {
+                LOG_ERROR(Loader, "Could not open patch index: {}", files_json_path.string());
+                continue;
+            }
+
+            try {
+                available_patches = nlohmann::json::parse(json_file);
+            } catch (const nlohmann::json::parse_error& e) {
+                LOG_ERROR(Loader, "Could not parse patch index {}: {}", files_json_path.string(),
+                          e.what());
+                continue;
+            }
+
             std::filesystem::path game_patch_file;
             for (auto const& [filename, serials] : available_patches.items()) {
                 if (std::find(serials.begin(), serials.end(), g_game_serial) != serials.end()) {
