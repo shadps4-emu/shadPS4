@@ -24,6 +24,7 @@
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
@@ -955,6 +956,19 @@ static bool HeaderNameMatches(std::string_view a, std::string_view b) {
     return true;
 }
 
+// Builds the User-Agent string
+static std::string BuildDefaultUserAgent() {
+    u32 sw_hex = CURRENT_FIRMWARE_VERSION;
+    Libraries::Kernel::SwVersionStruct sw{};
+    sw.struct_size = sizeof(sw);
+    if (Libraries::Kernel::sceKernelGetSystemSwVersion(&sw) == ORBIS_OK) {
+        sw_hex = sw.hex_representation;
+    }
+    const u32 major = ((sw_hex >> 0x18) & 0xf) + ((sw_hex >> 0x1c) * 10);
+    const u32 minor = ((sw_hex >> 0x10) & 0xf) + (((sw_hex >> 0x14) & 0xf) * 10);
+    return fmt::format("OrbisHttpClient/1.0 libhttp/{}.{:02} (PlayStation 4)", major, minor);
+}
+
 // Resolve the headers vector for a template/connection/request id. Returns
 // nullptr if id is invalid
 static std::vector<std::pair<std::string, std::string>>* ResolveHeaders(int id,
@@ -1557,6 +1571,12 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
             std::none_of(plan.headers.begin(), plan.headers.end(),
                          [](const auto& h) { return HeaderNameMatches(h.first, "User-Agent"); })) {
             plan.headers.emplace_back("User-Agent", tmpl_user_agent);
+        }
+        // Nothing set an explicit User-Agent,fall back to the one libhttp
+        // itself sends by default, with the current system version baked in.
+        if (std::none_of(plan.headers.begin(), plan.headers.end(),
+                         [](const auto& h) { return HeaderNameMatches(h.first, "User-Agent"); })) {
+            plan.headers.emplace_back("User-Agent", BuildDefaultUserAgent());
         }
         // Pull Content-Type out of headers
         for (const auto& [k, v] : plan.headers) {
