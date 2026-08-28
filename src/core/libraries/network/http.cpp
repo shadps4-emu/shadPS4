@@ -1552,11 +1552,7 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         for (const auto& h : req.headers) {
             plan.headers.push_back(h);
         }
-        // The User-Agent the game gave sceHttpCreateTemplate is a template property, not a
-        // header,
-        // so nothing above carries it. Without this the request goes out with httplib's own UA
-        // and any server that identifies clients by it sees the wrong one. An explicit
-        // User-Agent added to the template/connection/request still wins.
+        // Explicit User-Agent added to the template/connection/request
         if (!tmpl_user_agent.empty() &&
             std::none_of(plan.headers.begin(), plan.headers.end(),
                          [](const auto& h) { return HeaderNameMatches(h.first, "User-Agent"); })) {
