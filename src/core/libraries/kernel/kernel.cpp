@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
@@ -105,49 +105,55 @@ s32 PS4_SYSV_ABI sceKernelError(s32 posix_error) {
     return posix_error + ORBIS_KERNEL_ERROR_UNKNOWN;
 }
 
-void SetPosixErrno(s32 e) {
+s32 NativeToPosixErrno(s32 const e) {
     // Some error numbers are different between supported OSes
     switch (e) {
+    case 0:
+        return 0;
     case EPERM:
-        g_posix_errno = POSIX_EPERM;
+        return POSIX_EPERM;
         break;
     case ENOENT:
-        g_posix_errno = POSIX_ENOENT;
+        return POSIX_ENOENT;
         break;
     case EINTR:
-        g_posix_errno = POSIX_EINTR;
+        return POSIX_EINTR;
         break;
     case EDEADLK:
-        g_posix_errno = POSIX_EDEADLK;
+        return POSIX_EDEADLK;
         break;
     case ENOMEM:
-        g_posix_errno = POSIX_ENOMEM;
+        return POSIX_ENOMEM;
         break;
     case EACCES:
-        g_posix_errno = POSIX_EACCES;
+        return POSIX_EACCES;
         break;
     case EFAULT:
-        g_posix_errno = POSIX_EFAULT;
+        return POSIX_EFAULT;
         break;
     case EINVAL:
-        g_posix_errno = POSIX_EINVAL;
+        return POSIX_EINVAL;
         break;
     case ENOSPC:
-        g_posix_errno = POSIX_ENOSPC;
+        return POSIX_ENOSPC;
         break;
     case ERANGE:
-        g_posix_errno = POSIX_ERANGE;
+        return POSIX_ERANGE;
         break;
     case EAGAIN:
-        g_posix_errno = POSIX_EAGAIN;
+        return POSIX_EAGAIN;
         break;
     case ETIMEDOUT:
-        g_posix_errno = POSIX_ETIMEDOUT;
+        return POSIX_ETIMEDOUT;
         break;
     default:
         LOG_WARNING(Kernel, "Unhandled errno {}", e);
-        g_posix_errno = e;
+        return e;
     }
+}
+
+void SetPosixErrno(s32 e) {
+    g_posix_errno = NativeToPosixErrno(e);
 }
 
 struct OrbisKernelUuid {
@@ -467,6 +473,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("wW+k21cmbwQ", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", sceKernelGetFsSandboxRandomWord);
+    LIB_FUNCTION("JGfTMBOdUJo", "libkernel_psmkit", 1, "libkernel",
+                 sceKernelGetFsSandboxRandomWord);
     LIB_FUNCTION("6xVpy0Fdq+I", "libkernel", 1, "libkernel", _sigprocmask);
     LIB_FUNCTION("Xjoosiw+XPI", "libkernel", 1, "libkernel", sceKernelUuidCreate);
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", stack_chk_fail);

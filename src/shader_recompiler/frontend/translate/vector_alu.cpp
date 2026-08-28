@@ -689,15 +689,17 @@ void Translator::V_BFM_B32(const GcnInst& inst) {
 }
 
 void Translator::V_MAC_F32(const GcnInst& inst) {
-    SetDst(inst.dst[0], ir.FPFma(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]),
-                                 GetSrc<IR::F32>(inst.dst[0])));
+    const auto src0 = GetSrc<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::F32>(inst.src[1]);
+    const auto dst0 = GetSrc<IR::F32>(inst.dst[0]);
+    SetDst(inst.dst[0], ir.FPAdd(ir.FPMul(src0, src1), dst0));
 }
 
 void Translator::V_MADMK_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
     const IR::F32 k{GetSrc<IR::F32>(inst.src[2])};
-    SetDst(inst.dst[0], ir.FPFma(src0, k, src1));
+    SetDst(inst.dst[0], ir.FPAdd(ir.FPMul(src0, k), src1));
 }
 
 void Translator::V_BCNT_U32_B32(const GcnInst& inst) {
@@ -1337,7 +1339,7 @@ void Translator::V_MAD_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
     const IR::F32 src2{GetSrc<IR::F32>(inst.src[2])};
-    SetDst(inst.dst[0], ir.FPFma(src0, src1, src2));
+    SetDst(inst.dst[0], ir.FPAdd(ir.FPMul(src0, src1), src2));
 }
 
 void Translator::V_MAD_I32_I24(const GcnInst& inst, bool is_signed) {
@@ -1903,7 +1905,7 @@ void Translator::V_MAD_MIX_F32(const GcnInst& inst) {
     const auto src1 = GetSrcMix(inst.src[1]);
     const auto src2 = GetSrcMix(inst.src[2]);
 
-    const IR::F32 result = ir.FPFma(src0, src1, src2);
+    const IR::F32 result = ir.FPAdd(ir.FPMul(src0, src1), src2);
 
     SetDst(inst.dst[0], result);
 }
@@ -1913,7 +1915,7 @@ void Translator::V_MAD_MIXLO_F16(const GcnInst& inst) {
     const auto src1 = GetSrcMix(inst.src[1]);
     const auto src2 = GetSrcMix(inst.src[2]);
 
-    const IR::F32 result = ir.FPFma(src0, src1, src2);
+    const IR::F32 result = ir.FPAdd(ir.FPMul(src0, src1), src2);
     const IR::F16 result_f16 = ir.FPConvert(16, result);
     const IR::U16 result_f16_u16 = ir.BitCast<IR::U16, IR::F16>(result_f16);
 
@@ -1928,7 +1930,7 @@ void Translator::V_MAD_MIXHI_F16(const GcnInst& inst) {
     const auto src1 = GetSrcMix(inst.src[1]);
     const auto src2 = GetSrcMix(inst.src[2]);
 
-    const IR::F32 result = ir.FPFma(src0, src1, src2);
+    const IR::F32 result = ir.FPAdd(ir.FPMul(src0, src1), src2);
     const IR::F16 result_f16 = ir.FPConvert(16, result);
     const IR::U16 result_f16_u16 = ir.BitCast<IR::U16, IR::F16>(result_f16);
 

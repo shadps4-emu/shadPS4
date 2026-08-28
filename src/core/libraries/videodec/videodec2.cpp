@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/libs.h"
@@ -11,6 +12,43 @@
 namespace Libraries::Videodec2 {
 
 static constexpr u64 kMinimumMemorySize = 16_MB; ///> Fake minimum memory size for querying
+
+static u64 ComputeFrameSizeBytes(s32 width, s32 height) {
+    if (width <= 0 || height <= 0) {
+        return 0;
+    }
+
+    const u32 aligned_width = Common::AlignUp<u32>((u32)width, 64);
+    const u32 aligned_height = Common::AlignUp<u32>((u32)height, 16);
+
+    const u64 pixels = (u64)aligned_width * (u64)aligned_height;
+    return (pixels * 3) / 2;
+}
+
+static s32 ComputeDpbCount(const OrbisVideodec2DecoderConfigInfo& cfg) {
+    if (cfg.maxDpbFrameCount > 0) {
+        return cfg.maxDpbFrameCount;
+    }
+
+    return 8;
+}
+
+static void ComputeWorstCaseDimensions(const OrbisVideodec2DecoderConfigInfo& cfg, s32& out_width,
+                                       s32& out_height) {
+    if (cfg.maxFrameWidth > 0 && cfg.maxFrameHeight > 0) {
+        out_width = cfg.maxFrameWidth;
+        out_height = cfg.maxFrameHeight;
+        return;
+    }
+
+    out_width = 1920;
+    out_height = 1080;
+
+    if (cfg.maxLevel >= 150) {
+        out_width = 3840;
+        out_height = 2160;
+    }
+}
 
 s32 PS4_SYSV_ABI
 sceVideodec2QueryComputeMemoryInfo(OrbisVideodec2ComputeMemoryInfo* computeMemInfo) {
@@ -86,6 +124,18 @@ sceVideodec2QueryDecoderMemoryInfo(const OrbisVideodec2DecoderConfigInfo* decode
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
 
+    s32 width = 0;
+    s32 height = 0;
+    ComputeWorstCaseDimensions(*decoderCfgInfo, width, height);
+
+    const u64 frame_size = ComputeFrameSizeBytes(width, height);
+    u64 max_frame_buffer = 0;
+    if (frame_size == 0) {
+        max_frame_buffer = kMinimumMemorySize;
+    } else {
+        max_frame_buffer = Common::AlignUp<u64>(frame_size, 256) + 0x4000;
+    }
+
     decoderMemInfo->cpuMemory = nullptr;
     decoderMemInfo->gpuMemory = nullptr;
     decoderMemInfo->cpuGpuMemory = nullptr;
@@ -94,7 +144,7 @@ sceVideodec2QueryDecoderMemoryInfo(const OrbisVideodec2DecoderConfigInfo* decode
     decoderMemInfo->cpuMemorySize = kMinimumMemorySize;
     decoderMemInfo->gpuMemorySize = kMinimumMemorySize;
 
-    decoderMemInfo->maxFrameBufferSize = kMinimumMemorySize;
+    decoderMemInfo->maxFrameBufferSize = max_frame_buffer;
     decoderMemInfo->frameBufferAlignment = 0x100;
 
     return ORBIS_OK;
@@ -203,23 +253,23 @@ s32 PS4_SYSV_ABI sceVideodec2GetPictureInfo(const OrbisVideodec2OutputInfo* outp
         LOG_ERROR(Lib_Vdec2, "No picture info available");
         return ORBIS_OK;
     }
-    if (gPictureInfos.empty()) {
-        LOG_ERROR(Lib_Vdec2, "No picture info available");
-        return ORBIS_OK;
-    }
 
     if (p1stPictureInfoOut) {
+        auto* info = reinterpret_cast<OrbisVideodec2AvcPictureInfo*>(p1stPictureInfoOut);
         // Copy enough data to check thisSize.
-        u64 picture_size = 0;
-        memcpy(&picture_size, p1stPictureInfoOut, sizeof(u64));
+        u64 picture_size = info->thisSize;
         if ((picture_size | 0x10) != sizeof(OrbisVideodec2AvcPictureInfo)) {
             LOG_ERROR(Lib_Vdec2, "Invalid struct size");
             return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
         }
+        auto& pictureInfo = *(OrbisVideodec2AvcPictureInfo*)((u8*)outputInfo->frameBuffer +
+                                                             outputInfo->frameBufferSize);
+
         // Copy the requested picture data to the output.
-        memcpy(p1stPictureInfoOut, &gPictureInfos.back(), picture_size);
+        memcpy(p1stPictureInfoOut, &pictureInfo, picture_size);
+
         // Correct the outputted picture struct size.
-        memcpy(p1stPictureInfoOut, &picture_size, sizeof(u64));
+        info->thisSize = picture_size;
     }
 
     if (outputInfo->pictureCount > 1) {
