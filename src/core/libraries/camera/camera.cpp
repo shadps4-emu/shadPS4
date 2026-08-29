@@ -700,7 +700,7 @@ s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId us
     }
 
     constexpr s32 camera_system_mem_size = 0xfd0000;
-    void* camera_garlic_pool = nullptr;
+    void* camera_garlic_pool = (void*)0xfd0000000;
 
     s32 ret = Libraries::Kernel::sceKernelMapNamedSystemFlexibleMemory(
         &camera_garlic_pool, camera_system_mem_size,
