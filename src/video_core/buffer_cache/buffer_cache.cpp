@@ -22,6 +22,20 @@ static constexpr size_t StagingBufferSize = 512_MB;
 static constexpr size_t DownloadBufferSize = 32_MB;
 static constexpr size_t UboStreamBufferSize = 64_MB;
 static constexpr size_t DeviceBufferSize = 128_MB;
+constexpr std::optional<u32> CmaskColorExpandedValue(u32 num_samples) {
+    switch (num_samples) {
+        case 1:
+            return 0xFFFFFFFF;
+        case 2:
+            return 0xDDDDDDDD;
+        case 4:
+            return 0xEEEEEEEE;
+        case 8:
+            return 0xFFFFFFFF;
+        default:
+            return 0;
+    }
+}
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
@@ -759,7 +773,12 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
             static constexpr u32 ZmaskUncompressed = 0xf;
             buffer.Fill(buffer.Offset(device_addr), size, ZmaskUncompressed);
             return true;
-        } else {
+        } else if (*type == TextureCache::MetaType::CMask) {
+            const auto expanded_value = CmaskColorExpandedValue(*type->num_samples);
+            buffer.Fill(buffer.Offset(device_addr), size, *expanded_value);
+            return true;
+        }
+        else {
             LOG_WARNING(Render_Vulkan,
                         "Unhandled metadata buffer synchronization: metadata={}, address={:#x}, "
                         "size={:#x}, host_buffer={:#x}:{:#x}, offset={:#x}",
