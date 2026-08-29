@@ -421,21 +421,21 @@ TEST_F(GcnTest, barycentric_mapping_handles_missing_host_last_provoking_support)
     EXPECT_FALSE(line.uses_primitive_parity);
 }
 
-TEST_F(GcnTest, khr_barycentrics_use_unqualified_builtins_per_evaluation_mode) {
+TEST_F(GcnTest, khr_barycentrics_use_interpolation_functions_per_evaluation_mode) {
     Shader::Profile profile{};
     profile.supported_spirv = 0x00010600;
     profile.supports_fragment_shader_barycentric = true;
     const auto spirv = TranslateFragmentBarycentricsToSpirv(profile, BarycentricRuntimeInfo());
     const auto facts = InspectSpirv(spirv);
 
-    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::BaryCoordKHR), 3U);
-    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::BaryCoordNoPerspKHR), 3U);
-    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::SampleId), 0U);
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::BaryCoordKHR), 1U);
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::BaryCoordNoPerspKHR), 1U);
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::SampleId), 1U);
     EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::FragCoord), 1U);
     EXPECT_EQ(facts.CountDecoration(spv::Decoration::Centroid), 0U);
     EXPECT_EQ(facts.CountDecoration(spv::Decoration::Sample), 0U);
     EXPECT_EQ(facts.CountCapability(spv::Capability::FragmentBarycentricKHR), 1U);
-    EXPECT_EQ(facts.CountCapability(spv::Capability::InterpolationFunction), 0U);
+    EXPECT_EQ(facts.CountCapability(spv::Capability::InterpolationFunction), 1U);
     EXPECT_EQ(facts.CountCapability(spv::Capability::SampleRateShading), 1U);
     EXPECT_EQ(facts.CountOpcode(spv::Op::OpFMul), 2U);
 }
