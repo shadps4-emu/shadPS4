@@ -72,7 +72,7 @@ static std::string ArgToIndex(std::map<const Inst*, size_t>& inst_to_index, size
     if (arg.IsEmpty()) {
         return "<null>";
     }
-    if (!arg.IsImmediate() || arg.IsIdentity()) {
+    if (!arg.IsImmediate()) {
         return fmt::format("%{}", InstIndex(inst_to_index, inst_index, arg.Inst()));
     }
     switch (arg.Type()) {
@@ -100,6 +100,37 @@ static std::string ArgToIndex(std::map<const Inst*, size_t>& inst_to_index, size
         return fmt::format("{}", arg.Patch());
     default:
         return "<unknown immediate type>";
+    }
+}
+
+static std::string RegTagInfo(const RegTag tag) {
+    switch (tag.type) {
+    case RegType::ScalarReg:
+        return fmt::format("{}", tag.sreg);
+    case RegType::VectorReg:
+        return fmt::format("{}", tag.vreg);
+    case RegType::ThreadBitReg:
+        return fmt::format("{}_U1", tag.sreg);
+    case RegType::VirtualReg:
+        return fmt::format("{}", tag.reg);
+    case RegType::GotoVariable:
+        return fmt::format("GOTO{}", tag.index);
+    case RegType::MaskLaneVariable:
+        return fmt::format("{}_L{}", tag.lane_reg.vreg, tag.lane_reg.lane);
+    case RegType::VccLo:
+        return "VCC_LO";
+    case RegType::VccHi:
+        return "VCC_HI";
+    case RegType::Vcc:
+        return "VCC";
+    case RegType::Exec:
+        return "EXEC";
+    case RegType::Scc:
+        return "SCC";
+    case RegType::M0:
+        return "M0";
+    default:
+        UNREACHABLE();
     }
 }
 
@@ -158,7 +189,11 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
             }
         }
         if (TypeOf(op) != Type::Void) {
-            ret += fmt::format(" (uses: {})\n", inst.UseCount());
+            ret += fmt::format(" (uses: {})", inst.UseCount());
+            if (auto tag = inst.GetRegTag()) {
+                ret += fmt::format(" (tag: {})", RegTagInfo(tag));
+            }
+            ret += '\n';
         } else {
             ret += '\n';
         }

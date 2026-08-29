@@ -5,6 +5,7 @@
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
+#include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 
@@ -90,7 +91,7 @@ EmitContext::~EmitContext() = default;
 
 Id EmitContext::Def(const IR::Value& value) {
     if (!value.IsImmediate()) {
-        return value.InstRecursive()->Definition<Id>();
+        return value.Inst()->Definition<Id>();
     }
     switch (value.Type()) {
     case IR::Type::Void:

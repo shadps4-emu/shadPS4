@@ -3,7 +3,6 @@
 
 //     opcode name,                                         return type,    arg1 type,      arg2 type,      arg3 type,      arg4 type,      arg4 type,      ...
 OPCODE(Phi,                                                 Opaque,                                                                                         )
-OPCODE(Identity,                                            Opaque,         Opaque,                                                                         )
 OPCODE(Void,                                                Void,                                                                                           )
 OPCODE(ConditionRef,                                        U1,             U1,                                                                             )
 OPCODE(Reference,                                           Void,           Opaque,                                                                         )
@@ -95,7 +94,6 @@ OPCODE(GetM0,                                               U32,            Void
 OPCODE(SetScc,                                              Void,           U1,                                                                             )
 OPCODE(SetExec,                                             Void,           U1,                                                                             )
 OPCODE(SetVcc,                                              Void,           U1,                                                                             )
-OPCODE(SetSccLo,                                            Void,           U32,                                                                            )
 OPCODE(SetVccLo,                                            Void,           U32,                                                                            )
 OPCODE(SetVccHi,                                            Void,           U32,                                                                            )
 OPCODE(SetM0,                                               Void,           U32,                                                                            )
@@ -105,6 +103,7 @@ OPCODE(UndefU1,                                             U1,                 
 OPCODE(UndefU8,                                             U8,                                                                                             )
 OPCODE(UndefU16,                                            U16,                                                                                            )
 OPCODE(UndefU32,                                            U32,                                                                                            )
+OPCODE(UndefF32,                                            F32,                                                                                            )
 OPCODE(UndefU64,                                            U64,                                                                                            )
 
 // Buffer operations
