@@ -956,8 +956,7 @@ static bool HeaderNameMatches(std::string_view a, std::string_view b) {
     return true;
 }
 
-// Builds the User-Agent string
-static std::string BuildDefaultUserAgent() {
+static std::string GetLibhttpSystemVersionString() {
     u32 sw_hex = CURRENT_FIRMWARE_VERSION;
     Libraries::Kernel::SwVersionStruct sw{};
     sw.struct_size = sizeof(sw);
@@ -966,7 +965,15 @@ static std::string BuildDefaultUserAgent() {
     }
     const u32 major = ((sw_hex >> 0x18) & 0xf) + ((sw_hex >> 0x1c) * 10);
     const u32 minor = ((sw_hex >> 0x10) & 0xf) + (((sw_hex >> 0x14) & 0xf) * 10);
-    return fmt::format("OrbisHttpClient/1.0 libhttp/{}.{:02} (PlayStation 4)", major, minor);
+    return fmt::format("{}.{:02}", major, minor);
+}
+
+static std::string BuildLibhttpUserAgent(std::string_view app_user_agent) {
+    const std::string libhttp_tag = fmt::format("libhttp/{}", GetLibhttpSystemVersionString());
+    if (app_user_agent.empty()) {
+        return fmt::format("{} (PlayStation 4)", libhttp_tag);
+    }
+    return fmt::format("{} {} (PlayStation 4)", app_user_agent, libhttp_tag);
 }
 
 // Resolve the headers vector for a template/connection/request id. Returns
@@ -1381,7 +1388,7 @@ int PS4_SYSV_ABI sceHttpCreateTemplate(int libhttpCtxId, const char* userAgent, 
     const int tmpl_id = ++g_state.next_obj_id;
     HttpTemplate tmpl;
     tmpl.ctx_id = libhttpCtxId;
-    tmpl.user_agent = userAgent ? userAgent : "";
+    tmpl.user_agent = BuildLibhttpUserAgent(userAgent ? userAgent : "");
     tmpl.http_version = httpVer;
     tmpl.auto_proxy_conf = isAutoProxyConf;
     tmpl.settings.accept_encoding_gzip = g_state.default_accept_encoding_gzip;
@@ -1566,17 +1573,12 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         for (const auto& h : req.headers) {
             plan.headers.push_back(h);
         }
-        // Explicit User-Agent added to the template/connection/request
-        if (!tmpl_user_agent.empty() &&
-            std::none_of(plan.headers.begin(), plan.headers.end(),
-                         [](const auto& h) { return HeaderNameMatches(h.first, "User-Agent"); })) {
-            plan.headers.emplace_back("User-Agent", tmpl_user_agent);
-        }
-        // Nothing set an explicit User-Agent,fall back to the one libhttp
-        // itself sends by default, with the current system version baked in.
+        // The template's User-Agent is used unless a header explicitly overrides it
         if (std::none_of(plan.headers.begin(), plan.headers.end(),
                          [](const auto& h) { return HeaderNameMatches(h.first, "User-Agent"); })) {
-            plan.headers.emplace_back("User-Agent", BuildDefaultUserAgent());
+            plan.headers.emplace_back("User-Agent", !tmpl_user_agent.empty()
+                                                        ? tmpl_user_agent
+                                                        : BuildLibhttpUserAgent(""));
         }
         // Pull Content-Type out of headers
         for (const auto& [k, v] : plan.headers) {
