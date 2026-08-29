@@ -760,7 +760,11 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
             buffer.Fill(buffer.Offset(device_addr), size, ZmaskUncompressed);
             return true;
         } else {
-            LOG_WARNING(Render_Vulkan, "Unhandled metadata type {}", magic_enum::enum_name(*type));
+            LOG_WARNING(Render_Vulkan,
+                        "Unhandled metadata buffer synchronization: metadata={}, address={:#x}, "
+                        "size={:#x}, host_buffer={:#x}:{:#x}, offset={:#x}",
+                        magic_enum::enum_name(*type), device_addr, size, buffer.CpuAddr(),
+                        buffer.SizeBytes(), buffer.Offset(device_addr));
         }
     }
     const ImageId image_id = texture_cache.FindImageFromRange(device_addr, size);

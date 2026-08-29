@@ -621,6 +621,18 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
         const auto& [buffer_id, vsharp, size] = buffer_bindings[i];
         const auto& desc = stage.buffers[i];
         const u32 alignment = instance.StorageMinAlignment();
+        if (const auto meta_type = texture_cache.IsMeta(vsharp.base_address)) {
+            LOG_WARNING(Render_Vulkan,
+                        "Shader metadata buffer: shader={:#x}, stage={}, resource={}, "
+                        "metadata={}, address={:#x}, size={:#x}, descriptor_size={:#x}, access={}, "
+                        "formatted={}, stride={}, records={}, data_format={}, num_format={}",
+                        stage.pgm_hash, magic_enum::enum_name(stage.l_stage), i,
+                        magic_enum::enum_name(*meta_type), vsharp.base_address, size,
+                        vsharp.GetSize(), desc.is_written ? "write" : "read", desc.is_formatted,
+                        vsharp.GetStride(), vsharp.num_records,
+                        static_cast<u32>(vsharp.GetDataFmt()),
+                        static_cast<u32>(vsharp.GetNumberFmt()));
+        }
         // Buffer is not from the cache, either a special buffer or unbound.
         if (!buffer_id) {
             if (desc.buffer_type == Shader::BufferType::GdsBuffer) {
