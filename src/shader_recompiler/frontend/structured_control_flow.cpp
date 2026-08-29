@@ -13,6 +13,7 @@
 #include "shader_recompiler/frontend/structured_control_flow.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/recompiler.h"
 
 namespace Shader::Gcn {
 
@@ -560,10 +561,7 @@ private:
     Statement root_stmt{FunctionTag{}};
 };
 
-[[nodiscard]] Statement* TryFindForwardBlock(Statement& stmt) {
-    Tree& tree{stmt.up->children};
-    const Node end{tree.end()};
-    Node forward_node{std::next(Tree::s_iterator_to(stmt))};
+[[nodiscard]] Statement* TryFindForwardBlock(Node forward_node, Node end) {
     while (forward_node != end && !HasChildren(forward_node->type)) {
         if (forward_node->type == StatementType::Code) {
             return &*forward_node;
@@ -593,30 +591,29 @@ public:
     TranslatePass(Common::ObjectPool<IR::Inst>& inst_pool_,
                   Common::ObjectPool<IR::Block>& block_pool_,
                   Common::ObjectPool<Statement>& stmt_pool_, Statement& root_stmt,
-                  IR::AbstractSyntaxList& syntax_list_, std::span<const GcnInst> inst_list_,
-                  Info& info_, const RuntimeInfo& runtime_info_, const Profile& profile_)
+                  IR::AbstractSyntaxList& syntax_list_)
         : stmt_pool{stmt_pool_}, inst_pool{inst_pool_}, block_pool{block_pool_},
-          syntax_list{syntax_list_}, inst_list{inst_list_}, runtime_info{runtime_info_},
-          profile{profile_}, translator{info_, runtime_info_, profile_} {
+          syntax_list{syntax_list_} {
         Visit(root_stmt, nullptr, nullptr);
-
-        IR::Block* first_block = syntax_list.front().data.block;
-        translator.EmitPrologue(first_block);
     }
 
 private:
     void Visit(Statement& parent, IR::Block* break_block, IR::Block* fallthrough_block) {
         IR::Block* current_block{};
-        const auto ensure_block{[&] {
-            if (current_block) {
-                return;
-            }
+        IR::Block::iterator insert_point{};
+        Tree& tree{parent.children};
+        // Try to find the first code block for insertion
+        Statement* code_stmt{TryFindForwardBlock(tree.begin(), tree.end())};
+        if (!code_stmt) {
             current_block = block_pool.Create(inst_pool);
+            insert_point = current_block->end();
             auto& node{syntax_list.emplace_back()};
             node.type = IR::AbstractSyntaxNode::Type::Block;
             node.data.block = current_block;
-        }};
-        Tree& tree{parent.children};
+        } else {
+            current_block = code_stmt->block->ir_block;
+            insert_point = current_block->begin();
+        }
         for (auto& child : tree) {
             Statement& stmt{child};
             switch (stmt.type) {
@@ -624,28 +621,28 @@ private:
                 // Labels can be ignored
                 break;
             case StatementType::Code: {
-                ensure_block();
-                if (!stmt.block->is_dummy) {
-                    const u32 start = stmt.block->begin_index;
-                    const u32 size = stmt.block->end_index - start + 1;
-                    current_block->cfg_block = stmt.block;
-                    translator.Translate(current_block, stmt.block->begin,
-                                         inst_list.subspan(start, size));
+                current_block = stmt.block->ir_block;
+                insert_point = current_block->end();
+                for (auto& node : syntax_list) {
+                    if (node.type == IR::AbstractSyntaxNode::Type::Block) {
+                        ASSERT(node.data.block != current_block);
+                    }
                 }
+                auto& node{syntax_list.emplace_back()};
+                node.type = IR::AbstractSyntaxNode::Type::Block;
+                node.data.block = current_block;
                 break;
             }
             case StatementType::SetVariable: {
-                ensure_block();
-                IR::IREmitter ir{*current_block};
+                IR::IREmitter ir{*current_block, insert_point};
                 ir.SetGotoVariable(stmt.id, VisitExpr(ir, *stmt.op));
                 break;
             }
             case StatementType::If: {
-                ensure_block();
                 IR::Block* const merge_block{MergeBlock(parent, stmt)};
 
                 // Implement if header block
-                IR::IREmitter ir{*current_block};
+                IR::IREmitter ir{*current_block, insert_point};
                 const IR::U1 cond{ir.ConditionRef(VisitExpr(ir, *stmt.cond))};
 
                 const size_t if_node_index{syntax_list.size()};
@@ -659,6 +656,7 @@ private:
                 current_block->AddBranch(then_block);
                 current_block->AddBranch(merge_block);
                 current_block = merge_block;
+                insert_point = current_block->begin();
 
                 auto& if_node{syntax_list[if_node_index]};
                 if_node.type = IR::AbstractSyntaxNode::Type::If;
@@ -669,10 +667,6 @@ private:
                 auto& endif_node{syntax_list.emplace_back()};
                 endif_node.type = IR::AbstractSyntaxNode::Type::EndIf;
                 endif_node.data.end_if.merge = merge_block;
-
-                auto& merge{syntax_list.emplace_back()};
-                merge.type = IR::AbstractSyntaxNode::Type::Block;
-                merge.data.block = merge_block;
                 break;
             }
             case StatementType::Loop: {
@@ -705,6 +699,7 @@ private:
                 continue_block->AddBranch(merge_block);
 
                 current_block = merge_block;
+                insert_point = current_block->begin();
 
                 auto& loop{syntax_list[loop_node_index]};
                 loop.type = IR::AbstractSyntaxNode::Type::Loop;
@@ -721,35 +716,26 @@ private:
                 repeat.data.repeat.cond = cond;
                 repeat.data.repeat.loop_header = loop_header_block;
                 repeat.data.repeat.merge = merge_block;
-
-                auto& merge{syntax_list.emplace_back()};
-                merge.type = IR::AbstractSyntaxNode::Type::Block;
-                merge.data.block = merge_block;
                 break;
             }
             case StatementType::Break: {
-                ensure_block();
                 IR::Block* const skip_block{MergeBlock(parent, stmt)};
 
-                IR::IREmitter ir{*current_block};
+                IR::IREmitter ir{*current_block, insert_point};
                 const IR::U1 cond{ir.ConditionRef(VisitExpr(ir, *stmt.cond))};
                 current_block->AddBranch(break_block);
                 current_block->AddBranch(skip_block);
                 current_block = skip_block;
+                insert_point = current_block->end();
 
                 auto& break_node{syntax_list.emplace_back()};
                 break_node.type = IR::AbstractSyntaxNode::Type::Break;
                 break_node.data.break_node.cond = cond;
                 break_node.data.break_node.merge = break_block;
                 break_node.data.break_node.skip = skip_block;
-
-                auto& merge{syntax_list.emplace_back()};
-                merge.type = IR::AbstractSyntaxNode::Type::Block;
-                merge.data.block = skip_block;
                 break;
             }
             case StatementType::Return: {
-                ensure_block();
                 IR::Block* return_block{block_pool.Create(inst_pool)};
                 IR::IREmitter{*return_block}.Epilogue();
                 current_block->AddBranch(return_block);
@@ -759,12 +745,13 @@ private:
                 merge.data.block = return_block;
 
                 current_block = nullptr;
+                insert_point = {};
                 syntax_list.emplace_back().type = IR::AbstractSyntaxNode::Type::Return;
                 break;
             }
             case StatementType::Unreachable: {
-                ensure_block();
                 current_block = nullptr;
+                insert_point = {};
                 syntax_list.emplace_back().type = IR::AbstractSyntaxNode::Type::Unreachable;
                 break;
             }
@@ -782,36 +769,36 @@ private:
     }
 
     IR::Block* MergeBlock(Statement& parent, Statement& stmt) const {
-        Statement* merge_stmt{TryFindForwardBlock(stmt)};
+        Tree& tree{stmt.up->children};
+        const Node end{tree.end()};
+        Node forward_node{std::next(Tree::s_iterator_to(stmt))};
+        Statement* merge_stmt{TryFindForwardBlock(forward_node, end)};
         if (!merge_stmt) {
             // Create a merge block we can visit later
-            merge_stmt = stmt_pool.Create(&dummy_flow_block, &parent);
+            Block* dummy_flow_block = new Block{.is_dummy = true};
+            auto* ir_block = block_pool.Create(inst_pool);
+            dummy_flow_block->ir_block = ir_block;
+            ir_block->cfg_block = dummy_flow_block;
+            merge_stmt = stmt_pool.Create(dummy_flow_block, &parent);
             parent.children.insert(std::next(Tree::s_iterator_to(stmt)), *merge_stmt);
         }
-        return block_pool.Create(inst_pool);
+        return merge_stmt->block->ir_block;
     }
 
     Common::ObjectPool<Statement>& stmt_pool;
     Common::ObjectPool<IR::Inst>& inst_pool;
     Common::ObjectPool<IR::Block>& block_pool;
     IR::AbstractSyntaxList& syntax_list;
-    const Block dummy_flow_block{.is_dummy = true};
-    std::span<const GcnInst> inst_list;
-    const RuntimeInfo& runtime_info;
-    const Profile& profile;
-    Translator translator;
 };
+
 } // Anonymous namespace
 
-IR::AbstractSyntaxList BuildASL(Common::ObjectPool<IR::Inst>& inst_pool,
-                                Common::ObjectPool<IR::Block>& block_pool, CFG& cfg, Info& info,
-                                const RuntimeInfo& runtime_info, const Profile& profile) {
+IR::AbstractSyntaxList BuildASL(Pools& pools, CFG& cfg, Info& info) {
     Common::ObjectPool<Statement> stmt_pool{64};
     GotoPass goto_pass{cfg, stmt_pool};
     Statement& root{goto_pass.RootStatement()};
     IR::AbstractSyntaxList syntax_list;
-    TranslatePass{inst_pool,     block_pool, stmt_pool,    root,   syntax_list,
-                  cfg.inst_list, info,       runtime_info, profile};
+    TranslatePass{pools.inst_pool, pools.block_pool, stmt_pool, root, syntax_list};
     ASSERT_MSG(!info.translation_failed, "Shader translation has failed");
     return syntax_list;
 }

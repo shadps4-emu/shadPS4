@@ -319,11 +319,6 @@ public:
         return properties.limits.minUniformBufferOffsetAlignment;
     }
 
-    ///  Returns the maximum size of uniform buffers.
-    vk::DeviceSize UniformMaxSize() const {
-        return properties.limits.maxUniformBufferRange;
-    }
-
     /// Returns the minimum required alignment for storage buffers
     vk::DeviceSize StorageMinAlignment() const {
         return properties.limits.minStorageBufferOffsetAlignment;

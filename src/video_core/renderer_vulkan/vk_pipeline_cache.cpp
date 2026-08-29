@@ -304,10 +304,6 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
       desc_heap{instance, scheduler.GetMasterSemaphore(), DescriptorHeapSizes} {
     const auto& vk12_props = instance.GetVk12Properties();
     profile = Shader::Profile{
-        // When binding a UBO, we calculate its size considering the offset in the larger buffer
-        // cache underlying resource. In some cases, it may produce sizes exceeding the system
-        // maximum allowed UBO range, so we need to reduce the threshold to prevent issues.
-        .max_ubo_size = instance.UniformMaxSize() - instance.UniformMinAlignment(),
         .max_viewport_width = instance.GetMaxViewportWidth(),
         .max_viewport_height = instance.GetMaxViewportHeight(),
         .max_shared_memory_size = instance.MaxComputeSharedMemorySize(),
@@ -467,6 +463,14 @@ bool PipelineCache::RefreshGraphicsKey() {
         color_buffer.num_conversion = col_buf.GetNumberConversion();
         color_buffer.export_format = regs.color_export_format.GetFormat(cb);
         color_buffer.swizzle = col_buf.Swizzle();
+
+        const auto& bc = regs.blend_control[cb];
+        color_buffer.blend_self_scale =
+            bc.enable && !col_buf.info.blend_bypass &&
+            (bc.color_func == AmdGpu::BlendControl::BlendFunc::Min ||
+             bc.color_func == AmdGpu::BlendControl::BlendFunc::Max) &&
+            bc.color_src_factor == AmdGpu::BlendControl::BlendFactor::SrcColor &&
+            bc.color_dst_factor == AmdGpu::BlendControl::BlendFactor::DstColor;
     }
 
     // Compile and bind shader stages

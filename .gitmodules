@@ -164,3 +164,6 @@
 [submodule "externals/zarchive"]
 	path = externals/zarchive
 	url = https://github.com/shadexternals/ZArchive.git
+[submodule "externals/abseil-cpp"]
+	path = externals/abseil-cpp
+	url = https://github.com/abseil/abseil-cpp.git

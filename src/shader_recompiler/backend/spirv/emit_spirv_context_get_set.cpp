@@ -9,6 +9,7 @@
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/fragment_barycentric.h"
 #include "shader_recompiler/ir/attribute.h"
+#include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/ir/patch.h"
 #include "shader_recompiler/runtime_info.h"
 
@@ -19,6 +20,24 @@ namespace Shader::Backend::SPIRV {
 using PointerType = EmitContext::PointerType;
 using PointerSize = EmitContext::PointerSize;
 
+static Id ExtractBarycentric(EmitContext& ctx, Id value, u32 comp) {
+    ASSERT_MSG(comp < 2, "Invalid guest barycentric component {}", comp);
+    const FragmentBarycentricMapping mapping =
+        GetFragmentBarycentricMapping(ctx.runtime_info, ctx.profile);
+    const Id even_value =
+        ctx.OpCompositeExtract(ctx.F32[1], value, mapping.Component(comp));
+    if (!mapping.uses_primitive_parity) {
+        return even_value;
+    }
+
+    const Id odd_value =
+        ctx.OpCompositeExtract(ctx.F32[1], value, mapping.Component(comp, true));
+    const Id primitive_id = ctx.OpLoad(ctx.U32[1], ctx.primitive_id);
+    const Id parity = ctx.OpBitwiseAnd(ctx.U32[1], primitive_id, ctx.u32_one_value);
+    const Id is_odd = ctx.OpIEqual(ctx.U1[1], parity, ctx.u32_one_value);
+    return ctx.OpSelect(ctx.F32[1], is_odd, odd_value, even_value);
+}
+
 static Id LoadBarycentric(EmitContext& ctx, Id variable, u32 comp) {
     ASSERT_MSG(comp < 2, "Invalid guest barycentric component {}", comp);
     const bool uses_khr_barycentrics = !ctx.profile.supports_amd_shader_explicit_vertex_parameter &&
@@ -27,23 +46,7 @@ static Id LoadBarycentric(EmitContext& ctx, Id variable, u32 comp) {
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(ctx.input_f32, variable, ctx.ConstU32(comp)));
     }
-
-    const FragmentBarycentricMapping mapping =
-        GetFragmentBarycentricMapping(ctx.runtime_info, ctx.profile);
-    const Id even_value =
-        ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, variable,
-                                                 ctx.ConstU32(mapping.Component(comp))));
-    if (!mapping.uses_primitive_parity) {
-        return even_value;
-    }
-
-    const Id odd_value =
-        ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, variable,
-                                                 ctx.ConstU32(mapping.Component(comp, true))));
-    const Id primitive_id = ctx.OpLoad(ctx.U32[1], ctx.primitive_id);
-    const Id parity = ctx.OpBitwiseAnd(ctx.U32[1], primitive_id, ctx.u32_one_value);
-    const Id is_odd = ctx.OpIEqual(ctx.U1[1], parity, ctx.u32_one_value);
-    return ctx.OpSelect(ctx.F32[1], is_odd, odd_value, even_value);
+    return ExtractBarycentric(ctx, ctx.OpLoad(ctx.F32[3], variable), comp);
 }
 
 static std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
@@ -158,17 +161,40 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(ctx.input_f32, ctx.tess_coord, ctx.ConstU32(1U)));
     case IR::Attribute::BaryCoordSmooth:
-        return LoadBarycentric(ctx, ctx.bary_coord_smooth, comp);
+        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
+            return LoadBarycentric(ctx, ctx.bary_coord_smooth, comp);
+        }
+        return ExtractBarycentric(ctx, ctx.OpLoad(ctx.F32[3], ctx.bary_coord), comp);
     case IR::Attribute::BaryCoordSmoothCentroid:
-        return LoadBarycentric(ctx, ctx.bary_coord_smooth_centroid, comp);
+        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
+            return LoadBarycentric(ctx, ctx.bary_coord_smooth_centroid, comp);
+        }
+        return ExtractBarycentric(
+            ctx, ctx.OpInterpolateAtCentroid(ctx.F32[3], ctx.bary_coord), comp);
     case IR::Attribute::BaryCoordSmoothSample:
-        return LoadBarycentric(ctx, ctx.bary_coord_smooth_sample, comp);
+        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
+            return LoadBarycentric(ctx, ctx.bary_coord_smooth_sample, comp);
+        }
+        return ExtractBarycentric(
+            ctx, ctx.OpInterpolateAtSample(ctx.F32[3], ctx.bary_coord,
+                                           ctx.OpLoad(ctx.U32[1], ctx.sample_index)),
+            comp);
     case IR::Attribute::BaryCoordNoPersp:
         return LoadBarycentric(ctx, ctx.bary_coord_nopersp, comp);
     case IR::Attribute::BaryCoordNoPerspCentroid:
-        return LoadBarycentric(ctx, ctx.bary_coord_nopersp_centroid, comp);
+        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
+            return LoadBarycentric(ctx, ctx.bary_coord_nopersp_centroid, comp);
+        }
+        return ExtractBarycentric(
+            ctx, ctx.OpInterpolateAtCentroid(ctx.F32[3], ctx.bary_coord_nopersp), comp);
     case IR::Attribute::BaryCoordNoPerspSample:
-        return LoadBarycentric(ctx, ctx.bary_coord_nopersp_sample, comp);
+        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
+            return LoadBarycentric(ctx, ctx.bary_coord_nopersp_sample, comp);
+        }
+        return ExtractBarycentric(
+            ctx, ctx.OpInterpolateAtSample(ctx.F32[3], ctx.bary_coord_nopersp,
+                                           ctx.OpLoad(ctx.U32[1], ctx.sample_index)),
+            comp);
     case IR::Attribute::BaryCoordPullModel: {
         ASSERT_MSG(comp < 3, "Invalid BaryCoordPullModel component {}", comp);
 
@@ -186,7 +212,8 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         if (comp == 2) {
             return inv_w;
         }
-        const Id ij = LoadBarycentric(ctx, ctx.bary_coord_smooth, comp);
+        const Id ij =
+            ExtractBarycentric(ctx, ctx.OpLoad(ctx.F32[3], ctx.bary_coord), comp);
         return ctx.OpFMul(ctx.F32[1], ij, inv_w);
     }
     default:
@@ -295,6 +322,10 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
     if (IR::IsMrt(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
         const auto& info{ctx.frag_outputs.at(index)};
+        if (element < 3 && ctx.runtime_info.fs_info.color_buffers[index].blend_self_scale) {
+            // Emulates GCN's factor-scaled min/max blend: min/max(src*src, dst*dst).
+            value = ctx.OpFMul(ctx.F32[1], value, value);
+        }
         if (info.num_components == 1) {
             return op_store(info.id);
         } else {
@@ -585,6 +616,14 @@ void EmitGetVectorRegister(EmitContext& ctx) {
 }
 
 void EmitSetVectorRegister(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitSetVirtualRegister(EmitContext& ctx) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitGetVirtualRegister(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 

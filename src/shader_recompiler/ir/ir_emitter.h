@@ -21,8 +21,6 @@ public:
     explicit IREmitter(Block& block_, Block::iterator insertion_point_)
         : block{&block_}, insertion_point{insertion_point_} {}
 
-    Block* block;
-
     [[nodiscard]] U1 Imm1(bool value) const;
     [[nodiscard]] U8 Imm8(u8 value) const;
     [[nodiscard]] U16 Imm16(u16 value) const;
@@ -62,6 +60,9 @@ public:
     void SetScalarReg(IR::ScalarReg reg, const U32F32& value);
     void SetVectorReg(IR::VectorReg reg, const U32F32& value);
 
+    [[nodiscard]] Value GetVirtualReg(IR::VirtualReg reg);
+    void SetVirtualReg(IR::VirtualReg reg, const Value& value);
+
     [[nodiscard]] U1 GetGotoVariable(u32 id);
     void SetGotoVariable(u32 id, const U1& value);
 
@@ -77,7 +78,6 @@ public:
     void SetScc(const U1& value);
     void SetExec(const U1& value);
     void SetVcc(const U1& value);
-    void SetSccLo(const U32& value);
     void SetVccLo(const U32& value);
     void SetVccHi(const U32& value);
     void SetM0(const U32& value);
@@ -416,12 +416,12 @@ public:
     void EmitPrimitive();
 
 private:
+    Block* block;
     IR::Block::iterator insertion_point;
 
     template <typename T = Value, typename... Args>
     T Inst(Opcode op, Args... args) {
         auto it{block->PrependNewInst(insertion_point, op, {Value{args}...})};
-        it->SetParent(block);
         return T{Value{&*it}};
     }
 
@@ -439,7 +439,6 @@ private:
         u64 raw_flags{};
         std::memcpy(&raw_flags, &flags.proxy, sizeof(flags.proxy));
         auto it{block->PrependNewInst(insertion_point, op, {Value{args}...}, raw_flags)};
-        it->SetParent(block);
         return T{Value{&*it}};
     }
 };
