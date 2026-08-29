@@ -513,13 +513,6 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     frame_data->frameSize[1][0] =
         c_width * c_height * SizeOfFormat(output_config1.format.formatLevel0);
 
-    for (int j = 0; j < 2; j++) {
-        for (int i = 1; i < 4; i++) {
-            frame_data->pFramePointerList[j][i] = frame_data->pFramePointerList[j][0];
-            frame_data->frameSize[j][i] = frame_data->frameSize[j][0];
-        }
-    }
-
     // on older firmwares, this wasn't present, and the original library also checks struct size
     // instead of the SDK version, and without this check, we'd smash the stack in those games
     if (frame_data->sizeThis == 584) {
