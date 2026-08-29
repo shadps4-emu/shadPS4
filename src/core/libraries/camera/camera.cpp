@@ -185,12 +185,15 @@ s32 PS4_SYSV_ABI sceCameraGetAutoWhiteBalance(s32 handle, OrbisCameraChannel cha
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraGetCalibData(s32 handle, void* calib_data, void* maybe_reserved) {
-    LOG_WARNING(Lib_Camera, "(DUMMY) called");
+s32 PS4_SYSV_ABI sceCameraGetCalibData(s32 id, void* calib_data, void* maybe_reserved) {
+    LOG_WARNING(Lib_Camera, "(DUMMY) called, id: {}", id);
     if (calib_data == nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    static constexpr u64 dumped_calib_data[32]{
+    if (id != 1 && id != 2) {
+        return ORBIS_OK;
+    }
+    static constexpr u64 dumped_calib_data1[32]{
         0x000000000b0b0200, 0x00000000bc128639, 0x000000003de79766, 0x00000000be6e2869,
         0x3ca0ce1f3e30521c, 0x4452d55e3d0160b6, 0x3cf7fdaa4453abf1, 0x000000003ce3f40f,
         0x000000003cdbcaa6, 0x000000003d635f4e, 0x00000000be299439, 0xbb98ddc23e1159b4,
@@ -200,7 +203,18 @@ s32 PS4_SYSV_ABI sceCameraGetCalibData(s32 handle, void* calib_data, void* maybe
         0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
         0x0000000000000000, 0x0000000000000000, 0xbab5330000000000, 0x000001013b07a47f,
     };
-    std::memcpy(calib_data, dumped_calib_data, sizeof(dumped_calib_data));
+    static constexpr u64 dumped_calib_data2[32]{
+        0x002d000000ff0009, 0x002d0ff70ffd0f14, 0x002d0efe00010008, 0x002f0ffe0f020008,
+        0x002f000800060105, 0x002e00fc0001000a, 0x0000000000000000, 0x0000000000000000,
+        0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
+        0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
+        0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
+        0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
+        0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
+        0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
+    };
+    std::memcpy(calib_data, id == 1 ? dumped_calib_data1 : dumped_calib_data2,
+                sizeof(dumped_calib_data1));
     return ORBIS_OK;
 }
 
