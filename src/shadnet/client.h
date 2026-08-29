@@ -79,6 +79,7 @@ enum class CommandType : u16 {
     GetScoreGameDataByAccId = 38,
     GetToken = 39,
     SetAppearOffline = 40,
+    LookupOnlineId = 41,
     // Matchmaking
     ContextStart = 100,
     CreateRoom = 101,
@@ -341,6 +342,8 @@ public:
     u64 RemoveBlock(const std::string& npid);
     // Set the Appear-Offline preference mid-session (server handles us as offline while set).
     u64 SetAppearOffline(bool enable);
+    // Global online ID to account ID resolution
+    u64 LookupOnlineId(const std::string& npid);
 
 private:
     void ConnectThread();
