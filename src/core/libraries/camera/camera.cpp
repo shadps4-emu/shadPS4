@@ -7,8 +7,10 @@
 #include "core/libraries/camera/camera.h"
 #include "core/libraries/camera/camera_error.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
+#include "core/memory.h"
 
 #include <utility>
 
@@ -21,6 +23,9 @@ static bool g_library_opened = false;
 static s32 g_firmware_version = 0;
 static s32 g_handles = 0;
 static constexpr s32 c_width = 1280, c_height = 800;
+
+static u16 *raw16_buffer1{}, *raw16_buffer2{};
+static u8 *raw8_buffer1{}, *raw8_buffer2{};
 
 SDL_Camera* sdl_camera = nullptr;
 OrbisCameraConfigExtention output_config0, output_config1;
@@ -335,9 +340,6 @@ s32 PS4_SYSV_ABI sceCameraGetExposureGain(s32 handle, OrbisCameraChannel channel
     return ORBIS_OK;
 }
 
-static std::vector<u16> raw16_buffer1, raw16_buffer2;
-static std::vector<u8> raw8_buffer1, raw8_buffer2;
-
 static void ConvertRGBA8888ToRAW16(const u8* src, u16* dst, int width, int height) {
     for (int y = 0; y < height; ++y) {
         const u8* row = src + y * width * 4;
@@ -446,30 +448,32 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
 
     switch (output_config0.format.formatLevel0) {
     case ORBIS_CAMERA_FORMAT_YUV422:
-        frame_data->pFramePointerList[0][0] = frame->pixels;
+        std::memcpy(raw16_buffer1, frame->pixels, c_width * c_height * sizeof(u16));
+        frame_data->pFramePointerList[0][0] = raw16_buffer1;
         break;
     case ORBIS_CAMERA_FORMAT_RAW16:
-        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer1.data(), c_width, c_height);
-        frame_data->pFramePointerList[0][0] = raw16_buffer1.data();
+        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer1, c_width, c_height);
+        frame_data->pFramePointerList[0][0] = raw16_buffer1;
         break;
     case ORBIS_CAMERA_FORMAT_RAW8:
-        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer1.data(), c_width, c_height);
-        frame_data->pFramePointerList[0][0] = raw8_buffer1.data();
+        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer1, c_width, c_height);
+        frame_data->pFramePointerList[0][0] = raw8_buffer1;
         break;
     default:
         UNREACHABLE();
     }
     switch (output_config1.format.formatLevel0) {
     case ORBIS_CAMERA_FORMAT_YUV422:
-        frame_data->pFramePointerList[1][0] = frame->pixels;
+        std::memcpy(raw16_buffer2, frame->pixels, c_width * c_height * sizeof(u16));
+        frame_data->pFramePointerList[1][0] = raw16_buffer2;
         break;
     case ORBIS_CAMERA_FORMAT_RAW16:
-        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer2.data(), c_width, c_height);
-        frame_data->pFramePointerList[1][0] = raw16_buffer2.data();
+        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer2, c_width, c_height);
+        frame_data->pFramePointerList[1][0] = raw16_buffer2;
         break;
     case ORBIS_CAMERA_FORMAT_RAW8:
-        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer2.data(), c_width, c_height);
-        frame_data->pFramePointerList[1][0] = raw8_buffer2.data();
+        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer2, c_width, c_height);
+        frame_data->pFramePointerList[1][0] = raw8_buffer2;
         break;
     default:
         UNREACHABLE();
@@ -480,6 +484,13 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
         c_width * c_height * SizeOfFormat(output_config0.format.formatLevel0);
     frame_data->frameSize[1][0] =
         c_width * c_height * SizeOfFormat(output_config1.format.formatLevel0);
+
+    for (int j = 0; j < 2; j++) {
+        for (int i = 1; i < 4; i++) {
+            frame_data->pFramePointerList[j][i] = frame_data->pFramePointerList[j][0];
+            frame_data->frameSize[j][i] = frame_data->frameSize[j][0];
+        }
+    }
 
     // on older firmwares, this wasn't present, and the original library also checks struct size
     // instead of the SDK version, and without this check, we'd smash the stack in those games
@@ -687,6 +698,30 @@ s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId us
         LOG_ERROR(Lib_Camera, "ORBIS_CAMERA_ERROR_PARAM");
         return ORBIS_CAMERA_ERROR_PARAM;
     }
+
+    constexpr s32 camera_system_mem_size = 0xfd0000;
+    void* camera_garlic_pool = nullptr;
+
+    s32 ret = Libraries::Kernel::sceKernelMapNamedSystemFlexibleMemory(
+        &camera_garlic_pool, camera_system_mem_size,
+        (s32)(Core::MemoryProt::CpuReadWrite | Core::MemoryProt::GpuRead), 0,
+        "SceCameraGpuGarlicPool");
+    ASSERT(ret == ORBIS_OK);
+
+    constexpr s32 raw8_buffer_size = c_width * c_height * sizeof(u8);
+    constexpr s32 raw16_buffer_size = c_width * c_height * sizeof(u16);
+
+    u8* remaining_camera_buf = (u8*)camera_garlic_pool;
+
+    raw8_buffer1 = remaining_camera_buf += raw8_buffer_size;
+    raw8_buffer2 = remaining_camera_buf += raw8_buffer_size;
+    raw16_buffer1 = (u16*)(remaining_camera_buf += raw16_buffer_size);
+    raw16_buffer2 = (u16*)(remaining_camera_buf += raw16_buffer_size);
+
+    ASSERT(remaining_camera_buf <= (u8*)camera_garlic_pool + camera_system_mem_size);
+
+    ASSERT(Core::Memory::Instance()->IsValidGpuMapping((VAddr)camera_garlic_pool,
+                                                       camera_system_mem_size));
 
     g_library_opened = true;
     return ++g_handles;
@@ -1075,10 +1110,6 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
         LOG_INFO(Lib_Camera, "No camera devices connected");
         return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
     }
-    raw8_buffer1.resize(c_width * c_height);
-    raw16_buffer1.resize(c_width * c_height);
-    raw8_buffer2.resize(c_width * c_height);
-    raw16_buffer2.resize(c_width * c_height);
     SDL_CameraSpec cam_spec{};
     switch (output_config0.format.formatLevel0) {
     case ORBIS_CAMERA_FORMAT_YUV422:
