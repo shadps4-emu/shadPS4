@@ -1,12 +1,330 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <condition_variable>
+#include <cstring>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <string>
+#include <string_view>
+
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_handler.h"
 #include "core/libraries/np/np_utility/np_utility.h"
+#include "core/libraries/np/np_utility/np_utility_ctx.h"
 
 namespace Libraries::Np::NpUtility {
+
+struct LookupTitleCtx {
+    s32 userId = -1;
+    OrbisNpId selfNpId{};
+    std::optional<LookupTimeouts> timeouts;
+};
+
+std::mutex g_lookup_mutex;
+std::map<OrbisNpLookupTitleCtxId, LookupTitleCtx> g_lookup_title_ctxs;
+std::map<OrbisNpLookupRequestId, std::shared_ptr<LookupRequestCtx>> g_lookup_requests;
+OrbisNpLookupTitleCtxId g_lookup_next_ctx_id = 1;
+OrbisNpLookupRequestId g_lookup_next_req_id = 1;
+
+std::string_view OnlineIdView(const OrbisNpOnlineId& id) {
+    return std::string_view(id.data, strnlen(id.data, ORBIS_NP_ONLINEID_MAX_LENGTH));
+}
+
+//***********************************
+// NpLookup: title context management
+//***********************************
+s32 PS4_SYSV_ABI sceNpLookupCreateTitleCtx(const OrbisNpId* selfNpId) {
+    if (selfNpId == nullptr) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup CreateTitleCtx: selfNpId is null");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    std::lock_guard lock(g_lookup_mutex);
+    if (static_cast<s32>(g_lookup_title_ctxs.size()) >= ORBIS_NP_LOOKUP_MAX_CTX_NUM) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup CreateTitleCtx: too many title contexts ({})",
+                  g_lookup_title_ctxs.size());
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
+    }
+    const s32 userId =
+        Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(selfNpId->handle);
+    const OrbisNpLookupTitleCtxId id = g_lookup_next_ctx_id++;
+    g_lookup_title_ctxs[id] = LookupTitleCtx{.userId = userId, .selfNpId = *selfNpId};
+    LOG_INFO(Lib_NpUtility, "NpLookup CreateTitleCtx id={} userId={} onlineId='{}'", id, userId,
+             OnlineIdView(selfNpId->handle));
+    return id;
+}
+
+s32 PS4_SYSV_ABI sceNpLookupCreateTitleCtxA(UserService::OrbisUserServiceUserId userId) {
+    std::lock_guard lock(g_lookup_mutex);
+    if (static_cast<s32>(g_lookup_title_ctxs.size()) >= ORBIS_NP_LOOKUP_MAX_CTX_NUM) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup CreateTitleCtxA: too many title contexts ({})",
+                  g_lookup_title_ctxs.size());
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
+    }
+    const OrbisNpId selfNpId = Libraries::Np::NpHandler::GetInstance().GetNpId(userId);
+    const OrbisNpLookupTitleCtxId id = g_lookup_next_ctx_id++;
+    g_lookup_title_ctxs[id] = LookupTitleCtx{.userId = userId, .selfNpId = selfNpId};
+    LOG_INFO(Lib_NpUtility, "NpLookup CreateTitleCtxA id={} userId={}", id, userId);
+    return id;
+}
+
+s32 PS4_SYSV_ABI sceNpLookupDeleteTitleCtx(OrbisNpLookupTitleCtxId titleCtxId) {
+    std::lock_guard lock(g_lookup_mutex);
+    if (!g_lookup_title_ctxs.contains(titleCtxId)) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup DeleteTitleCtx: invalid titleCtxId {}", titleCtxId);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+    }
+    for (auto it = g_lookup_requests.begin(); it != g_lookup_requests.end();) {
+        if (it->second->titleCtxId == titleCtxId) {
+            it->second->SetResult(ORBIS_NP_COMMUNITY_ERROR_ABORTED);
+            it = g_lookup_requests.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    g_lookup_title_ctxs.erase(titleCtxId);
+    LOG_INFO(Lib_NpUtility, "NpLookup DeleteTitleCtx id={}", titleCtxId);
+    return ORBIS_OK;
+}
+
+//***********************************
+// NpLookup: request management
+//***********************************
+static s32 CreateLookupRequest(OrbisNpLookupTitleCtxId titleCtxId, bool isAsync) {
+    std::lock_guard lock(g_lookup_mutex);
+    auto ctx_it = g_lookup_title_ctxs.find(titleCtxId);
+    if (ctx_it == g_lookup_title_ctxs.end()) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup CreateRequest: invalid titleCtxId {}", titleCtxId);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+    }
+    if (static_cast<s32>(g_lookup_requests.size()) >= ORBIS_NP_LOOKUP_MAX_REQUEST_NUM) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup CreateRequest: too many requests ({})",
+                  g_lookup_requests.size());
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
+    }
+    const OrbisNpLookupRequestId id = g_lookup_next_req_id++;
+    auto req = std::make_shared<LookupRequestCtx>();
+    req->titleCtxId = titleCtxId;
+    req->isAsync = isAsync;
+    req->timeouts = ctx_it->second.timeouts;
+    g_lookup_requests[id] = std::move(req);
+    LOG_INFO(Lib_NpUtility, "NpLookup CreateRequest id={} titleCtxId={} async={}", id, titleCtxId,
+             isAsync);
+    return id;
+}
+
+s32 PS4_SYSV_ABI sceNpLookupCreateRequest(OrbisNpLookupTitleCtxId titleCtxId) {
+    return CreateLookupRequest(titleCtxId, /*isAsync=*/false);
+}
+
+s32 PS4_SYSV_ABI sceNpLookupCreateAsyncRequest(
+    OrbisNpLookupTitleCtxId titleCtxId, const OrbisNpLookupCreateAsyncRequestParameter* param) {
+    return CreateLookupRequest(titleCtxId, /*isAsync=*/true);
+}
+
+s32 PS4_SYSV_ABI sceNpLookupDeleteRequest(OrbisNpLookupRequestId reqId) {
+    std::lock_guard lock(g_lookup_mutex);
+    auto it = g_lookup_requests.find(reqId);
+    if (it == g_lookup_requests.end()) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup DeleteRequest: invalid reqId {}", reqId);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+    }
+    {
+        std::lock_guard rlock(it->second->mutex);
+        it->second->aborted = true;
+    }
+    it->second->SetResult(ORBIS_NP_COMMUNITY_ERROR_ABORTED);
+    g_lookup_requests.erase(it);
+    LOG_INFO(Lib_NpUtility, "NpLookup DeleteRequest reqId={}", reqId);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpLookupAbortRequest(OrbisNpLookupRequestId reqId) {
+    std::shared_ptr<LookupRequestCtx> req;
+    {
+        std::lock_guard lock(g_lookup_mutex);
+        auto it = g_lookup_requests.find(reqId);
+        if (it == g_lookup_requests.end()) {
+            LOG_ERROR(Lib_NpUtility, "NpLookup AbortRequest: invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        req = it->second;
+    }
+    {
+        std::lock_guard rlock(req->mutex);
+        req->aborted = true;
+    }
+    req->SetResult(ORBIS_NP_COMMUNITY_ERROR_ABORTED);
+    LOG_INFO(Lib_NpUtility, "NpLookup AbortRequest reqId={}", reqId);
+    return ORBIS_OK;
+}
+
+//***********************************
+// NpLookup: search + async completion
+//***********************************
+s32 PS4_SYSV_ABI sceNpLookupNpId(OrbisNpLookupRequestId reqId, const OrbisNpOnlineId* onlineId,
+                                 OrbisNpId* npId, void* option) {
+    LOG_INFO(Lib_NpUtility, "NpLookup NpId reqId={} onlineId='{}' npId={} option={}", reqId,
+             onlineId != nullptr ? OnlineIdView(*onlineId) : std::string_view("(null)"),
+             static_cast<const void*>(npId), static_cast<const void*>(option));
+    if (option != nullptr) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup NpId: option is not supported (option={})", option);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (onlineId == nullptr || npId == nullptr) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup NpId: onlineId or npId is null");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+
+    std::shared_ptr<LookupRequestCtx> req;
+    s32 searching_user_id = -1;
+    {
+        std::lock_guard lock(g_lookup_mutex);
+        auto it = g_lookup_requests.find(reqId);
+        if (it == g_lookup_requests.end()) {
+            LOG_ERROR(Lib_NpUtility, "NpLookup NpId: invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        req = it->second;
+        if (auto ctx_it = g_lookup_title_ctxs.find(req->titleCtxId);
+            ctx_it != g_lookup_title_ctxs.end()) {
+            searching_user_id = ctx_it->second.userId;
+        }
+    }
+    {
+        std::lock_guard rlock(req->mutex);
+        if (req->aborted) {
+            LOG_ERROR(Lib_NpUtility, "NpLookup NpId: reqId {} was aborted", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_ABORTED;
+        }
+        if (req->used) {
+            LOG_ERROR(Lib_NpUtility, "NpLookup NpId: reqId {} was already used", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_TYPE;
+        }
+        req->used = true;
+    }
+
+    // Global online ID to account ID resolution
+    const std::string targetOnlineId(OnlineIdView(*onlineId));
+    Libraries::Np::NpHandler::GetInstance().ResolveOnlineId(
+        searching_user_id, targetOnlineId,
+        [req, npId](s32 result, u64 /*accountId*/, const std::string& canonicalOnlineId) {
+            if (result == ORBIS_OK && npId != nullptr) {
+                SetNpId(*npId, canonicalOnlineId);
+            }
+            req->SetResult(result);
+        });
+
+    if (!req->isAsync) {
+        return req->Wait();
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpLookupPollAsync(OrbisNpLookupRequestId reqId, s32* result) {
+    std::shared_ptr<LookupRequestCtx> req;
+    {
+        std::lock_guard lock(g_lookup_mutex);
+        auto it = g_lookup_requests.find(reqId);
+        if (it == g_lookup_requests.end()) {
+            LOG_ERROR(Lib_NpUtility, "NpLookup PollAsync: invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        req = it->second;
+    }
+    std::lock_guard rlock(req->mutex);
+    if (!req->result.has_value()) {
+        return ORBIS_NP_LOOKUP_POLL_ASYNC_RET_RUNNING;
+    }
+    if (result != nullptr) {
+        *result = *req->result;
+    }
+    LOG_INFO(Lib_NpUtility, "NpLookup PollAsync reqId={} completed (result={:#x})", reqId,
+             static_cast<u32>(*req->result));
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpLookupSetTimeout(s32 id, s32 resolveRetry, u32 resolveTimeout,
+                                       u32 connTimeout, u32 sendTimeout, u32 recvTimeout) {
+    LOG_INFO(Lib_NpUtility,
+             "NpLookup SetTimeout id={} resolveRetry={} resolveTimeout={} connTimeout={} "
+             "sendTimeout={} recvTimeout={}",
+             id, resolveRetry, resolveTimeout, connTimeout, sendTimeout, recvTimeout);
+
+    if (resolveRetry < 0) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup SetTimeout: resolveRetry < 0");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (resolveTimeout != ORBIS_NP_LOOKUP_TIMEOUT_NO_EFFECT && resolveTimeout < 1'000'000) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup SetTimeout: resolveTimeout < 1'000'000");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (connTimeout != ORBIS_NP_LOOKUP_TIMEOUT_NO_EFFECT && connTimeout < 10'000'000) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup SetTimeout: connTimeout < 10'000'000");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (sendTimeout != ORBIS_NP_LOOKUP_TIMEOUT_NO_EFFECT && sendTimeout < 10'000'000) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup SetTimeout: sendTimeout < 10'000'000");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (recvTimeout != ORBIS_NP_LOOKUP_TIMEOUT_NO_EFFECT && recvTimeout < 10'000'000) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup SetTimeout: recvTimeout < 10'000'000");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (resolveRetry == 0 && resolveTimeout == ORBIS_NP_LOOKUP_TIMEOUT_NO_EFFECT &&
+        connTimeout == ORBIS_NP_LOOKUP_TIMEOUT_NO_EFFECT &&
+        sendTimeout == ORBIS_NP_LOOKUP_TIMEOUT_NO_EFFECT &&
+        recvTimeout == ORBIS_NP_LOOKUP_TIMEOUT_NO_EFFECT) {
+        LOG_ERROR(Lib_NpUtility, "NpLookup SetTimeout: all timeouts are no effect");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    const LookupTimeouts timeouts{
+        .resolveRetry = resolveRetry,
+        .resolveTimeout = resolveTimeout,
+        .connTimeout = connTimeout,
+        .sendTimeout = sendTimeout,
+        .recvTimeout = recvTimeout,
+    };
+
+    std::lock_guard lock(g_lookup_mutex);
+    if (auto ctx_it = g_lookup_title_ctxs.find(id); ctx_it != g_lookup_title_ctxs.end()) {
+        ctx_it->second.timeouts = timeouts;
+        return ORBIS_OK;
+    }
+    if (auto req_it = g_lookup_requests.find(id); req_it != g_lookup_requests.end()) {
+        std::lock_guard rlock(req_it->second->mutex);
+        req_it->second->timeouts = timeouts;
+        return ORBIS_OK;
+    }
+    LOG_ERROR(Lib_NpUtility, "NpLookup SetTimeout: invalid id {}", id);
+    return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+}
+
+s32 PS4_SYSV_ABI sceNpLookupWaitAsync(OrbisNpLookupRequestId reqId, s32* result) {
+    std::shared_ptr<LookupRequestCtx> req;
+    {
+        std::lock_guard lock(g_lookup_mutex);
+        auto it = g_lookup_requests.find(reqId);
+        if (it == g_lookup_requests.end()) {
+            LOG_ERROR(Lib_NpUtility, "NpLookup WaitAsync: invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        req = it->second;
+    }
+    const s32 r = req->Wait();
+    if (result != nullptr) {
+        *result = r;
+    }
+    LOG_INFO(Lib_NpUtility, "NpLookup WaitAsync reqId={} completed (result={:#x})", reqId,
+             static_cast<u32>(r));
+    return ORBIS_OK;
+}
 
 s32 PS4_SYSV_ABI sceNpAppInfoIntAbortRequest() {
     LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
@@ -188,41 +506,6 @@ s32 PS4_SYSV_ABI sceNpBandwidthTestUploadOnlyInitStart() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpLookupAbortRequest() {
-    LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpLookupCreateAsyncRequest() {
-    LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpLookupCreateRequest() {
-    LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpLookupCreateTitleCtx() {
-    LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpLookupCreateTitleCtxA() {
-    LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpLookupDeleteRequest() {
-    LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpLookupDeleteTitleCtx() {
-    LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI sceNpLookupNetAbortRequest() {
     LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
     return ORBIS_OK;
@@ -299,26 +582,6 @@ s32 PS4_SYSV_ABI sceNpLookupNetSetTimeout() {
 }
 
 s32 PS4_SYSV_ABI sceNpLookupNetTerm() {
-    LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpLookupNpId() {
-    LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpLookupPollAsync() {
-    LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpLookupSetTimeout() {
-    LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpLookupWaitAsync() {
     LOG_ERROR(Lib_NpUtility, "(STUBBED) called");
     return ORBIS_OK;
 }

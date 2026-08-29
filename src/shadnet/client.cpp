@@ -528,6 +528,12 @@ u64 ShadNetClient::SetAppearOffline(bool enable) {
     return SubmitRequest(CommandType::SetAppearOffline, MakeProtoPayload(req));
 }
 
+u64 ShadNetClient::LookupOnlineId(const std::string& npid) {
+    shadnet::LookupOnlineIdRequest req;
+    req.set_npid(npid);
+    return SubmitRequest(CommandType::LookupOnlineId, MakeProtoPayload(req));
+}
+
 static std::vector<u8> MakeComIdPayload(const std::string& com_id, const std::string& proto_bytes) {
     std::vector<u8> payload;
     payload.reserve(12 + 4 + proto_bytes.size());
