@@ -24,14 +24,12 @@ static Id ExtractBarycentric(EmitContext& ctx, Id value, u32 comp) {
     ASSERT_MSG(comp < 2, "Invalid guest barycentric component {}", comp);
     const FragmentBarycentricMapping mapping =
         GetFragmentBarycentricMapping(ctx.runtime_info, ctx.profile);
-    const Id even_value =
-        ctx.OpCompositeExtract(ctx.F32[1], value, mapping.Component(comp));
+    const Id even_value = ctx.OpCompositeExtract(ctx.F32[1], value, mapping.Component(comp));
     if (!mapping.uses_primitive_parity) {
         return even_value;
     }
 
-    const Id odd_value =
-        ctx.OpCompositeExtract(ctx.F32[1], value, mapping.Component(comp, true));
+    const Id odd_value = ctx.OpCompositeExtract(ctx.F32[1], value, mapping.Component(comp, true));
     const Id primitive_id = ctx.OpLoad(ctx.U32[1], ctx.primitive_id);
     const Id parity = ctx.OpBitwiseAnd(ctx.U32[1], primitive_id, ctx.u32_one_value);
     const Id is_odd = ctx.OpIEqual(ctx.U1[1], parity, ctx.u32_one_value);
@@ -169,15 +167,16 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
             return LoadBarycentric(ctx, ctx.bary_coord_smooth_centroid, comp);
         }
-        return ExtractBarycentric(
-            ctx, ctx.OpInterpolateAtCentroid(ctx.F32[3], ctx.bary_coord), comp);
+        return ExtractBarycentric(ctx, ctx.OpInterpolateAtCentroid(ctx.F32[3], ctx.bary_coord),
+                                  comp);
     case IR::Attribute::BaryCoordSmoothSample:
         if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
             return LoadBarycentric(ctx, ctx.bary_coord_smooth_sample, comp);
         }
         return ExtractBarycentric(
-            ctx, ctx.OpInterpolateAtSample(ctx.F32[3], ctx.bary_coord,
-                                           ctx.OpLoad(ctx.U32[1], ctx.sample_index)),
+            ctx,
+            ctx.OpInterpolateAtSample(ctx.F32[3], ctx.bary_coord,
+                                      ctx.OpLoad(ctx.U32[1], ctx.sample_index)),
             comp);
     case IR::Attribute::BaryCoordNoPersp:
         return LoadBarycentric(ctx, ctx.bary_coord_nopersp, comp);
@@ -192,8 +191,9 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
             return LoadBarycentric(ctx, ctx.bary_coord_nopersp_sample, comp);
         }
         return ExtractBarycentric(
-            ctx, ctx.OpInterpolateAtSample(ctx.F32[3], ctx.bary_coord_nopersp,
-                                           ctx.OpLoad(ctx.U32[1], ctx.sample_index)),
+            ctx,
+            ctx.OpInterpolateAtSample(ctx.F32[3], ctx.bary_coord_nopersp,
+                                      ctx.OpLoad(ctx.U32[1], ctx.sample_index)),
             comp);
     case IR::Attribute::BaryCoordPullModel: {
         ASSERT_MSG(comp < 3, "Invalid BaryCoordPullModel component {}", comp);
@@ -212,8 +212,7 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         if (comp == 2) {
             return inv_w;
         }
-        const Id ij =
-            ExtractBarycentric(ctx, ctx.OpLoad(ctx.F32[3], ctx.bary_coord), comp);
+        const Id ij = ExtractBarycentric(ctx, ctx.OpLoad(ctx.F32[3], ctx.bary_coord), comp);
         return ctx.OpFMul(ctx.F32[1], ij, inv_w);
     }
     default:
