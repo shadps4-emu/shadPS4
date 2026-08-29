@@ -67,7 +67,7 @@
                 libpulseaudio
               ];
 
-              # SDL3 requres extra libraries inside the devshell in order to pass CMake's configure.
+              # SDL3 requires extra libraries inside the devshell in order to pass CMake's configure.
               sdlConfigureDeps = [
                 jack1
                 fribidi
