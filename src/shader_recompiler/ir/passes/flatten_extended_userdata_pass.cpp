@@ -82,7 +82,9 @@ static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
     ZyanStatus status = Common::Decoder::Instance()->decodeInstruction(instruction, operands,
                                                                        const_cast<void*>(code), 15);
 
-    ASSERT(ZYAN_SUCCESS(status) && instruction.mnemonic == ZYDIS_MNEMONIC_MOV &&
+    ASSERT(ZYAN_SUCCESS(status) &&
+           (instruction.mnemonic == ZYDIS_MNEMONIC_MOV ||
+            instruction.mnemonic == ZYDIS_MNEMONIC_MOVUPS) &&
            operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
            operands[1].type == ZYDIS_OPERAND_TYPE_MEMORY);
 
@@ -90,7 +92,12 @@ static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
     const size_t patch_size = 3;
     u8* code_patch = const_cast<u8*>(reinterpret_cast<const u8*>(code));
 
-    // We can only encounter rdi or r10d as the first operand in a
+    // We can encounter:
+    // - rdi
+    // - r10d
+    // - r10
+    // - xmm0
+    // as the first operand in a
     // fault memory access for SRT walker.
     switch (operands[0].reg.value) {
     case ZYDIS_REGISTER_RDI:
@@ -104,6 +111,18 @@ static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
         code_patch[0] = 0x45;
         code_patch[1] = 0x31;
         code_patch[2] = 0xD2;
+        break;
+    case ZYDIS_REGISTER_R10:
+        // mov r10, [rdi + off_dw << 2] -> xor r10, r10
+        code_patch[0] = 0x4D;
+        code_patch[1] = 0x31;
+        code_patch[2] = 0xD2;
+        break;
+    case ZYDIS_REGISTER_XMM0:
+        // movups xmm0, [rdi + off_dw << 2] -> xorps xmm0, xmm0
+        code_patch[0] = 0x0F;
+        code_patch[1] = 0x57;
+        code_patch[2] = 0xC0;
         break;
     default:
         UNREACHABLE_MSG("Unsupported register for SRT walker patch");
@@ -179,14 +198,37 @@ static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
     // First copy all the src data from this tree level
     // That way, all data that was contiguous in the guest SRT is also contiguous in the
     // flattened buffer.
-    // TODO src and dst are contiguous. Optimize with wider loads/stores
     // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
-    for (auto [src_off_dw, use] : *use_list) {
-        c.mov(r10d, ptr[rdi + (src_off_dw << 2)]);
-        c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
+    for (auto it = use_list->begin(); it != use_list->end();) {
+        // Keys are sorted and unique, so it[1].first + 2 == it[3].first
+        // implies it[2].first.
+        const auto contiguous = [&](std::ptrdiff_t idx) {
+            return use_list->end() - it > idx && it[idx].first == it->first + idx;
+        };
+        const u32 dwords = contiguous(1) ? (contiguous(3) ? 4 : 2) : 1;
 
-        use->SetFlags<u32>(pass_info.dst_off_dw);
-        pass_info.dst_off_dw++;
+        const u32 src = it->first << 2;
+        const u32 dst = pass_info.dst_off_dw << 2;
+
+        // Note: do not switch to rep movsd (measured expensive, messy fault case)
+        switch (dwords) {
+        case 4:
+            c.movups(xmm0, ptr[rdi + src]);
+            c.movups(ptr[rsi + dst], xmm0);
+            break;
+        case 2:
+            c.mov(r10, ptr[rdi + src]);
+            c.mov(ptr[rsi + dst], r10);
+            break;
+        case 1:
+            c.mov(r10d, ptr[rdi + src]);
+            c.mov(ptr[rsi + dst], r10d);
+            break;
+        }
+
+        for (u32 k = 0; k < dwords; ++k, ++it) {
+            it->second->SetFlags<u32>(pass_info.dst_off_dw++);
+        }
     }
 
     // Then visit any children used as pointers
