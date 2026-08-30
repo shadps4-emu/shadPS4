@@ -28,7 +28,8 @@ struct Buffer {
     u32 element_size : 2;
     u32 index_stride : 2;
     u32 add_tid_enable : 1;
-    u32 _padding1 : 6;
+    u32 _padding1 : 3;
+    u32 mtype : 3;
     u32 type : 2; // overlaps with T# type, so should be 0 for buffer
 
     static constexpr Buffer Null() {

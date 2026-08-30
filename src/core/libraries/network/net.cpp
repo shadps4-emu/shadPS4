@@ -8,6 +8,7 @@
 #include <winsock2.h>
 #else
 #include <arpa/inet.h>
+#include <fcntl.h>
 #endif
 
 #include <core/libraries/kernel/kernel.h>
@@ -84,6 +85,183 @@ auto NetErrorHandler(auto f) -> decltype(f()) {
     *sceNetErrnoLoc() = -result;
 
     return (-result) | ORBIS_NET_ERROR_BASE; // Convert to official ORBIS_NET_ERROR code
+}
+
+// Returns the number of bytes currently sitting in the socket's send or receive queue.
+static s32 GetQueueLength(net_socket sock, bool send_queue) {
+#ifdef _WIN32
+    if (!send_queue) {
+        u_long available = 0;
+        if (::ioctlsocket(sock, FIONREAD, &available) == 0) {
+            return static_cast<s32>(available);
+        }
+    }
+    // Windows has no way to query the send queue depth.
+    return 0;
+#elif defined(__APPLE__)
+    if (send_queue) {
+        int pending = 0;
+        socklen_t len = sizeof(pending);
+        if (::getsockopt(sock, SOL_SOCKET, SO_NWRITE, &pending, &len) == 0) {
+            return pending;
+        }
+        return 0;
+    }
+    int available = 0;
+    return ::ioctl(sock, FIONREAD, &available) == 0 ? available : 0;
+#else
+    int pending = 0;
+    return ::ioctl(sock, send_queue ? TIOCOUTQ : FIONREAD, &pending) == 0 ? pending : 0;
+#endif
+}
+
+// Datagram sockets have no state machine, so they are always reported as opened.
+static s32 GetSocketState(net_socket sock, int socket_type) {
+    if (socket_type != ORBIS_NET_SOCK_STREAM && socket_type != ORBIS_NET_SOCK_STREAM_P2P) {
+        return ORBIS_NET_SOCKINFO_STATE_OPENED;
+    }
+
+#if defined(__linux__)
+    tcp_info tcp{};
+    socklen_t tcp_len = sizeof(tcp);
+    if (::getsockopt(sock, IPPROTO_TCP, TCP_INFO, &tcp, &tcp_len) == 0) {
+        switch (tcp.tcpi_state) {
+        case TCP_ESTABLISHED:
+            return ORBIS_NET_SOCKINFO_STATE_ESTABLISHED;
+        case TCP_SYN_SENT:
+            return ORBIS_NET_SOCKINFO_STATE_SYN_SENT;
+        case TCP_SYN_RECV:
+            return ORBIS_NET_SOCKINFO_STATE_SYN_RECEIVED;
+        case TCP_FIN_WAIT1:
+            return ORBIS_NET_SOCKINFO_STATE_FIN_WAIT_1;
+        case TCP_FIN_WAIT2:
+            return ORBIS_NET_SOCKINFO_STATE_FIN_WAIT_2;
+        case TCP_TIME_WAIT:
+            return ORBIS_NET_SOCKINFO_STATE_TIME_WAIT;
+        case TCP_CLOSE:
+            return ORBIS_NET_SOCKINFO_STATE_CLOSED;
+        case TCP_CLOSE_WAIT:
+            return ORBIS_NET_SOCKINFO_STATE_CLOSE_WAIT;
+        case TCP_LAST_ACK:
+            return ORBIS_NET_SOCKINFO_STATE_LAST_ACK;
+        case TCP_LISTEN:
+            return ORBIS_NET_SOCKINFO_STATE_LISTEN;
+        case TCP_CLOSING:
+            return ORBIS_NET_SOCKINFO_STATE_CLOSING;
+        default:
+            break;
+        }
+    }
+#elif defined(_WIN32)
+    TCP_INFO_v0 tcp{};
+    DWORD version = 0;
+    DWORD returned = 0;
+    if (::WSAIoctl(sock, SIO_TCP_INFO, &version, static_cast<DWORD>(sizeof(version)), &tcp,
+                   static_cast<DWORD>(sizeof(tcp)), &returned, nullptr, nullptr) == 0) {
+        switch (tcp.State) {
+        case TCPSTATE_CLOSED:
+            return ORBIS_NET_SOCKINFO_STATE_CLOSED;
+        case TCPSTATE_LISTEN:
+            return ORBIS_NET_SOCKINFO_STATE_LISTEN;
+        case TCPSTATE_SYN_SENT:
+            return ORBIS_NET_SOCKINFO_STATE_SYN_SENT;
+        case TCPSTATE_SYN_RCVD:
+            return ORBIS_NET_SOCKINFO_STATE_SYN_RECEIVED;
+        case TCPSTATE_ESTABLISHED:
+            return ORBIS_NET_SOCKINFO_STATE_ESTABLISHED;
+        case TCPSTATE_FIN_WAIT_1:
+            return ORBIS_NET_SOCKINFO_STATE_FIN_WAIT_1;
+        case TCPSTATE_FIN_WAIT_2:
+            return ORBIS_NET_SOCKINFO_STATE_FIN_WAIT_2;
+        case TCPSTATE_CLOSE_WAIT:
+            return ORBIS_NET_SOCKINFO_STATE_CLOSE_WAIT;
+        case TCPSTATE_CLOSING:
+            return ORBIS_NET_SOCKINFO_STATE_CLOSING;
+        case TCPSTATE_LAST_ACK:
+            return ORBIS_NET_SOCKINFO_STATE_LAST_ACK;
+        case TCPSTATE_TIME_WAIT:
+            return ORBIS_NET_SOCKINFO_STATE_TIME_WAIT;
+        default:
+            break;
+        }
+    }
+#endif
+
+    // No way to read the real state (or the query failed), so infer a plausible one.
+    int accepting = 0;
+    socklen_t accepting_len = sizeof(accepting);
+    if (::getsockopt(sock, SOL_SOCKET, SO_ACCEPTCONN, reinterpret_cast<char*>(&accepting),
+                     &accepting_len) == 0 &&
+        accepting != 0) {
+        return ORBIS_NET_SOCKINFO_STATE_LISTEN;
+    }
+
+    sockaddr_in peer{};
+    socklen_t peer_len = sizeof(peer);
+    if (::getpeername(sock, reinterpret_cast<sockaddr*>(&peer), &peer_len) == 0) {
+        return ORBIS_NET_SOCKINFO_STATE_ESTABLISHED;
+    }
+    return ORBIS_NET_SOCKINFO_STATE_CLOSED;
+}
+
+static void FillSockInfo(OrbisNetId id, Core::FileSys::File* file, OrbisNetSockInfo* info) {
+    memset(info, 0, sizeof(OrbisNetSockInfo));
+
+    file->m_guest_name.copy(info->name, ORBIS_NET_DEBUG_NAME_LEN_MAX);
+    info->s = id;
+    if (!file->socket) {
+        return;
+    }
+    info->socket_type = static_cast<s8>(file->socket->socket_type);
+    info->flags = ORBIS_NET_SOCKINFO_F_SELF;
+    info->state = ORBIS_NET_SOCKINFO_STATE_UNKNOWN;
+
+    const auto native = file->socket->Native();
+    if (!native.has_value()) {
+        info->state = ORBIS_NET_SOCKINFO_STATE_OPENED;
+        return;
+    }
+    const net_socket sock = *native;
+#ifndef _WIN32
+    const int socket_flags = ::fcntl(sock, F_GETFL, 0);
+    if (socket_flags != -1 && (socket_flags & O_NONBLOCK) != 0) {
+        info->flags |= ORBIS_NET_SOCKINFO_F_NONBLOCK;
+    }
+#endif
+    sockaddr_in local{};
+    socklen_t local_len = sizeof(local);
+    if (::getsockname(sock, reinterpret_cast<sockaddr*>(&local), &local_len) == 0 &&
+        local.sin_family == AF_INET) {
+        info->local_adr.inaddr_addr = local.sin_addr.s_addr;
+        info->local_port = local.sin_port;
+    }
+
+    sockaddr_in remote{};
+    socklen_t remote_len = sizeof(remote);
+    if (::getpeername(sock, reinterpret_cast<sockaddr*>(&remote), &remote_len) == 0 &&
+        remote.sin_family == AF_INET) {
+        info->remote_adr.inaddr_addr = remote.sin_addr.s_addr;
+        info->remote_port = remote.sin_port;
+    }
+
+    info->recv_queue_length = GetQueueLength(sock, false);
+    info->send_queue_length = GetQueueLength(sock, true);
+    info->state = GetSocketState(sock, file->socket->socket_type);
+
+    int buffer_size = 0;
+    socklen_t buffer_size_len = sizeof(buffer_size);
+    if (::getsockopt(sock, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<char*>(&buffer_size),
+                     &buffer_size_len) == 0) {
+        info->recv_buffer_size = buffer_size;
+    }
+    buffer_size_len = sizeof(buffer_size);
+    if (::getsockopt(sock, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<char*>(&buffer_size),
+                     &buffer_size_len) == 0) {
+        info->send_buffer_size = buffer_size;
+    }
+
+    // The remaining fields (v ports, bandwidth counters and network emulation drop counters) have
+    // no equivalent on the host and are left zeroed.
 }
 
 int PS4_SYSV_ABI in6addr_any() {
@@ -1033,9 +1211,53 @@ int PS4_SYSV_ABI sceNetGetRouteInfo() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetGetSockInfo() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetGetSockInfo(OrbisNetId s, OrbisNetSockInfo* info, int n, int flags) {
+    if (!g_isNetInitialized) {
+        return ORBIS_NET_ERROR_ENOTINIT;
+    }
+
+    if (info == nullptr) {
+        if (s >= 0) {
+            *sceNetErrnoLoc() = ORBIS_NET_EINVAL;
+            return ORBIS_NET_ERROR_EINVAL;
+        }
+        const int count = static_cast<int>(FDTable::Instance()->GetSocketHandles().size());
+        LOG_DEBUG(Lib_Net, "queried socket count = {}", count);
+        return count;
+    }
+
+    if (n <= 0) {
+        *sceNetErrnoLoc() = ORBIS_NET_EINVAL;
+        return ORBIS_NET_ERROR_EINVAL;
+    }
+
+    if (s >= 0) {
+        auto* file = FDTable::Instance()->GetSocket(s);
+        if (!file) {
+            LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+            *sceNetErrnoLoc() = ORBIS_NET_EBADF;
+            return ORBIS_NET_ERROR_EBADF;
+        }
+        FillSockInfo(s, file, info);
+        LOG_DEBUG(Lib_Net, "s = {} ({}), state = {}, flags = {:#x}", s, file->m_guest_name,
+                  info->state, info->flags);
+        return 1;
+    }
+
+    int written = 0;
+    for (const auto id : FDTable::Instance()->GetSocketHandles()) {
+        if (written >= n) {
+            break;
+        }
+        auto* file = FDTable::Instance()->GetSocket(id);
+        if (!file) {
+            continue;
+        }
+        FillSockInfo(id, file, &info[written]);
+        written++;
+    }
+    LOG_DEBUG(Lib_Net, "enumerated {} of at most {} sockets (flags = {:#x})", written, n, flags);
+    return written;
 }
 
 int PS4_SYSV_ABI sceNetGetSockInfo6() {

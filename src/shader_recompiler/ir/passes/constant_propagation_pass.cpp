@@ -47,7 +47,7 @@ bool FoldCommutative(IR::Inst& inst, ImmFn&& imm_fn) {
         return false;
     }
     if (is_lhs_immediate && !is_rhs_immediate) {
-        IR::Inst* const rhs_inst{rhs.InstRecursive()};
+        IR::Inst* const rhs_inst{rhs.Inst()};
         if (rhs_inst->GetOpcode() == inst.GetOpcode() && rhs_inst->Arg(1).IsImmediate()) {
             const auto combined{imm_fn(Arg<T>(lhs), Arg<T>(rhs_inst->Arg(1)))};
             inst.SetArg(0, rhs_inst->Arg(0));
@@ -59,7 +59,7 @@ bool FoldCommutative(IR::Inst& inst, ImmFn&& imm_fn) {
         }
     }
     if (!is_lhs_immediate && is_rhs_immediate) {
-        const IR::Inst* const lhs_inst{lhs.InstRecursive()};
+        const IR::Inst* const lhs_inst{lhs.Inst()};
         if (lhs_inst->GetOpcode() == inst.GetOpcode() && lhs_inst->Arg(1).IsImmediate()) {
             const auto combined{imm_fn(Arg<T>(rhs), Arg<T>(lhs_inst->Arg(1)))};
             inst.SetArg(0, lhs_inst->Arg(0));
@@ -86,7 +86,7 @@ void FoldBitCast(IR::Inst& inst, IR::Opcode reverse) {
         inst.ReplaceUsesWithAndRemove(IR::Value{std::bit_cast<Dest>(Arg<Source>(value))});
         return;
     }
-    IR::Inst* const arg_inst{value.InstRecursive()};
+    IR::Inst* const arg_inst{value.Inst()};
     if (arg_inst->GetOpcode() == reverse) {
         inst.ReplaceUsesWithAndRemove(arg_inst->Arg(0));
         return;
@@ -95,7 +95,7 @@ void FoldBitCast(IR::Inst& inst, IR::Opcode reverse) {
 
 std::optional<IR::Value> FoldCompositeExtractImpl(IR::Value inst_value, IR::Opcode insert,
                                                   IR::Opcode construct, u32 first_index) {
-    IR::Inst* const inst{inst_value.InstRecursive()};
+    IR::Inst* const inst{inst_value.Inst()};
     if (inst->GetOpcode() == construct) {
         return inst->Arg(first_index);
     }
@@ -139,7 +139,7 @@ void FoldConvert(IR::Inst& inst, IR::Opcode opposite) {
     if (value.IsImmediate()) {
         return;
     }
-    IR::Inst* const producer{value.InstRecursive()};
+    IR::Inst* const producer{value.Inst()};
     if (producer->GetOpcode() == opposite) {
         inst.ReplaceUsesWithAndRemove(producer->Arg(0));
     }
@@ -186,7 +186,7 @@ void FoldLogicalNot(IR::Inst& inst) {
         inst.ReplaceUsesWithAndRemove(IR::Value{!value.U1()});
         return;
     }
-    IR::Inst* const arg{value.InstRecursive()};
+    IR::Inst* const arg{value.Inst()};
     if (arg->GetOpcode() == IR::Opcode::LogicalNot) {
         inst.ReplaceUsesWithAndRemove(arg->Arg(0));
     }
@@ -201,7 +201,7 @@ void FoldUnpack32x2(IR::Block& block, IR::Inst& inst, IR::Opcode reverse) {
         inst.ReplaceUsesWithAndRemove(ir.CompositeConstruct(value_lo, value_hi));
         return;
     }
-    IR::Inst* const arg_inst{value.InstRecursive()};
+    IR::Inst* const arg_inst{value.Inst()};
     if (arg_inst->GetOpcode() == reverse) {
         inst.ReplaceUsesWithAndRemove(arg_inst->Arg(0));
         return;
@@ -213,7 +213,7 @@ void FoldInverseFunc(IR::Inst& inst, IR::Opcode reverse) {
     if (value.IsImmediate()) {
         return;
     }
-    IR::Inst* const arg_inst{value.InstRecursive()};
+    IR::Inst* const arg_inst{value.Inst()};
     if (arg_inst->GetOpcode() == reverse) {
         inst.ReplaceUsesWithAndRemove(arg_inst->Arg(0));
         return;
@@ -283,7 +283,7 @@ bool FoldPackedAncillary(IR::Block& block, IR::Inst& inst) {
     if (inst.Arg(0).IsImmediate() || !inst.Arg(1).IsImmediate() || !inst.Arg(2).IsImmediate()) {
         return false;
     }
-    IR::Inst* value = inst.Arg(0).InstRecursive();
+    IR::Inst* value = inst.Arg(0).Inst();
     if (value->GetOpcode() != IR::Opcode::GetAttributeU32 ||
         value->Arg(0).Attribute() != IR::Attribute::PackedAncillary) {
         return false;

@@ -9,6 +9,7 @@
 #include "client.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "common/scm_rev.h"
 #include "common/thread.h"
 #include "shadnet.pb.h"
 
@@ -540,6 +541,38 @@ static std::vector<u8> MakeComIdPayload(const std::string& com_id, const std::st
     return payload;
 }
 
+std::string ShadNetClient::BuildVersionString() {
+    const std::string remote_url(Common::g_scm_remote_url);
+    const std::string remote_host = Common::GetRemoteNameFromLink();
+    const bool official = (remote_host == "shadps4-emu" || remote_url.empty());
+
+    if (Common::g_is_release) {
+        return official ? fmt::format("shadPS4 v{}", Common::g_version)
+                        : fmt::format("shadPS4 {}/v{}", remote_host, Common::g_version);
+    }
+    return official ? fmt::format("shadPS4 v{} {} {}", Common::g_version, Common::g_scm_branch,
+                                  Common::g_scm_desc)
+                    : fmt::format("shadPS4 v{} {}/{} {}", Common::g_version, remote_host,
+                                  Common::g_scm_branch, Common::g_scm_desc);
+}
+
+u64 ShadNetClient::ReportClientVersion() {
+    shadnet::SetClientVersionRequest req;
+    req.set_version(BuildVersionString());
+    const std::string blob = req.SerializeAsString();
+
+    std::vector<u8> payload;
+    payload.reserve(4 + blob.size());
+    const u32 sz = static_cast<u32>(blob.size());
+    payload.push_back(static_cast<u8>(sz));
+    payload.push_back(static_cast<u8>(sz >> 8));
+    payload.push_back(static_cast<u8>(sz >> 16));
+    payload.push_back(static_cast<u8>(sz >> 24));
+    payload.insert(payload.end(), blob.begin(), blob.end());
+
+    return SubmitRequest(CommandType::SetClientVersion, payload);
+}
+
 u64 ShadNetClient::UnlockTrophy(const std::string& com_id, s32 trophy_id, u64 timestamp) {
     shadnet::UnlockTrophyRequest req;
     req.set_trophyid(trophy_id);
@@ -761,6 +794,7 @@ void ShadNetClient::HandleServerFeaturesReply(const std::vector<u8>& payload) {
     m_matching2_enabled.store(matching2_enabled);
     m_trophies_enabled.store(trophies_enabled);
     m_server_features_received.store(parsed);
+    ReportClientVersion();
     LOG_INFO(ShadNet, "Server features: matching2_enabled={} trophies_enabled={}{}",
              matching2_enabled ? "true" : "false", trophies_enabled ? "true" : "false",
              parsed ? "" : " (defaulted)");

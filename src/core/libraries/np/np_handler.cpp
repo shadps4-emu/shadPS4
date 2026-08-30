@@ -2122,6 +2122,54 @@ s32 NpHandler::TusSetMultiSlotVariable(s32 user_id, s32 service_label, const std
     return ORBIS_OK;
 }
 
+s32 NpHandler::TssGetData(s32 user_id, s32 service_label, s32 slotId, bool hasOffset, u64 offset,
+                          bool hasLastByte, u64 lastByte, bool hasIfParam, s32 ifType,
+                          u64 ifLastModified, NpTus::OrbisNpTssDataStatus* statusOut, void* dataOut,
+                          u64 dataCap, std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                          u64* contentLengthOut) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    shadnet::TssGetDataRequest proto;
+    proto.set_slotid(slotId);
+    if (hasOffset) {
+        proto.set_hasoffset(true);
+        proto.set_offset(offset);
+    }
+    if (hasLastByte) {
+        proto.set_haslastbyte(true);
+        proto.set_lastbyte(lastByte);
+    }
+    if (hasIfParam) {
+        proto.set_hasifparam(true);
+        proto.set_iftype(ifType);
+        proto.set_iflastmodified(ifLastModified);
+    }
+    const std::string com_id = GetNpCommId(service_label);
+    if (!IsValidNpCommId(com_id)) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::TssGetData,
+                                             BuildTusPayload(com_id, proto.SerializeAsString()));
+    std::lock_guard lock(m_mutex_pending_tus);
+    PendingTusRequest p;
+    p.req = std::move(ctx);
+    p.cmd = ShadNet::CommandType::TssGetData;
+    p.user_id = user_id;
+    p.tssStatusOut = statusOut;
+    p.tssContentLengthOut = contentLengthOut;
+    p.dataOut = dataOut;
+    p.dataCap = dataCap;
+    m_pending_tus.emplace(pkt_id, std::move(p));
+    return ORBIS_OK;
+}
+
 s32 NpHandler::TusGetData(s32 user_id, s32 service_label, const std::string& ownerNpId,
                           const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
                           NpTus::OrbisNpTusDataStatusA* statusAOut, u64 statusCap, void* dataOut,
@@ -3296,6 +3344,30 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
             req->SetResult(static_cast<s32>(filled));
         }
         break;
+    }
+    case ShadNet::CommandType::TssGetData: {
+        shadnet::TssGetDataResponse resp;
+        if (!parseTusBody(resp)) {
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            return;
+        }
+        u64 recv = 0;
+        if (pending.dataOut && !resp.data().empty()) {
+            recv = std::min<u64>(pending.dataCap, resp.data().size());
+            std::memcpy(pending.dataOut, resp.data().data(), recv);
+        }
+        if (pending.tssContentLengthOut) {
+            *pending.tssContentLengthOut = resp.contentlength();
+        }
+        if (pending.tssStatusOut) {
+            *pending.tssStatusOut = NpTus::OrbisNpTssDataStatus{};
+            pending.tssStatusOut->modified.tick = resp.lastmodified();
+            pending.tssStatusOut->status =
+                static_cast<NpTus::OrbisNpTssStatus>(resp.statuscodetype());
+            pending.tssStatusOut->contentLength = resp.contentlength();
+        }
+        req->SetResult(ORBIS_OK);
+        return;
     }
     case ShadNet::CommandType::TusGetData: {
         shadnet::TusGetDataResponse resp;
