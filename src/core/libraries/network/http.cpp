@@ -131,7 +131,7 @@ struct HttpState {
     bool inited = false;
     int next_ctx_id = 0;
     int next_obj_id = 0;
-    bool default_accept_encoding_gzip = true; // Library-wide default for new templates
+    bool default_accept_encoding_gzip = false;
     std::unordered_set<int> active_contexts;
     // Contexts where sceHttpsLoadCert was called. We can't actually parse the
     // PS4 cert blobs, but we use this as a signal that
@@ -750,10 +750,16 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_
 
         // We always handle redirects manually per PS4 rules
         cli.set_follow_location(false);
-
 #ifdef CPPHTTPLIB_ZLIB_SUPPORT
         cli.set_decompress(plan.settings.inflate_gzip);
 #endif
+        bool game_set_accept_encoding = false;
+        for (const auto& [k, v] : plan.headers) {
+            if (HeaderNameMatches(k, "Accept-Encoding")) {
+                game_set_accept_encoding = true;
+                break;
+            }
+        }
 
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
         if (plan.scheme == "https") {
@@ -779,17 +785,8 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_
         for (const auto& [k, v] : plan.headers) {
             headers.emplace(k, v);
         }
-        if (plan.settings.accept_encoding_gzip) {
-            bool already_set = false;
-            for (const auto& [k, v] : plan.headers) {
-                if (HeaderNameMatches(k, "Accept-Encoding")) {
-                    already_set = true;
-                    break;
-                }
-            }
-            if (!already_set) {
-                headers.emplace("Accept-Encoding", "gzip");
-            }
+        if (plan.settings.accept_encoding_gzip && !game_set_accept_encoding) {
+            headers.emplace("Accept-Encoding", "gzip");
         }
 
         const char* body_ptr =
