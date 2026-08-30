@@ -2871,7 +2871,7 @@ void NpHandler::OnTrophyReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
 
     shadnet::SyncTrophiesReply pb;
     if (!pb.ParseFromArray(body.data() + 4, static_cast<int>(blob_sz))) {
-        LOG_WARNING(NpHandler, "SyncTrophies: could not parse reply");
+        LOG_WARNING(NpHandler, "could not parse reply");
         return;
     }
 
@@ -2880,8 +2880,7 @@ void NpHandler::OnTrophyReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
     for (const auto& t : pb.trophies())
         merged.emplace_back(t.trophyid(), t.timestamp());
 
-    LOG_INFO(NpHandler, "SyncTrophies: server holds {} trophies for user_id={}", merged.size(),
-             user_id);
+    LOG_INFO(NpHandler, "server holds {} trophies for user_id={}", merged.size(), user_id);
     on_merged(merged);
 }
 
@@ -2894,7 +2893,7 @@ void NpHandler::ResolveOnlineId(
         std::lock_guard lock(m_mutex_clients);
         auto it = m_clients.find(user_id);
         if (it == m_clients.end()) {
-            LOG_WARNING(NpHandler, "ResolveOnlineId: no shadNet session for user_id={}", user_id);
+            LOG_WARNING(NpHandler, "No shadNet session for user_id={}", user_id);
             if (on_result) {
                 on_result(ORBIS_NP_ERROR_SIGNED_OUT, 0, {});
             }
@@ -2903,7 +2902,7 @@ void NpHandler::ResolveOnlineId(
         client = it->second;
     }
     if (!client || !client->IsAuthenticated()) {
-        LOG_WARNING(NpHandler, "ResolveOnlineId: user_id={} not authenticated", user_id);
+        LOG_WARNING(NpHandler, "user_id={} not authenticated", user_id);
         if (on_result) {
             on_result(ORBIS_NP_COMMUNITY_ERROR_NO_LOGIN, 0, {});
         }
@@ -2924,8 +2923,7 @@ void NpHandler::ResolveOnlineId(
         pending.on_result = std::move(on_result);
         m_pending_lookup.emplace(pkt_id, std::move(pending));
     }
-    LOG_INFO(NpHandler, "ResolveOnlineId: user_id={} onlineId='{}' pkt_id={}", user_id, online_id,
-             pkt_id);
+    LOG_INFO(NpHandler, "user_id={} onlineId='{}' pkt_id={}", user_id, online_id, pkt_id);
 }
 
 void NpHandler::OnLookupReply(s32 user_id, ShadNet::CommandType /*cmd*/, u64 pkt_id,
