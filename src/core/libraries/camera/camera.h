@@ -367,7 +367,7 @@ s32 PS4_SYSV_ABI sceCameraGetAutoExposureGain(s32 handle, OrbisCameraChannel cha
                                               OrbisCameraAutoExposureGainTarget* option);
 s32 PS4_SYSV_ABI sceCameraGetAutoWhiteBalance(s32 handle, OrbisCameraChannel channel, u32* enable,
                                               void* option);
-s32 PS4_SYSV_ABI sceCameraGetCalibData();
+s32 PS4_SYSV_ABI sceCameraGetCalibData(s32 handle, void* calib_data, void* maybe_reserved);
 s32 PS4_SYSV_ABI sceCameraGetCalibDataFromDevice();
 s32 PS4_SYSV_ABI sceCameraGetCalibrationData(const OrbisCameraGetCalibrationDataParameter* param,
                                              OrbisCameraCalibrationData* calibration_data);
