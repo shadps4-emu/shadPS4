@@ -8,6 +8,8 @@
 
 namespace Libraries::SysModule {
 
+extern bool g_need_scelibc, g_need_fios2;
+
 s32 getModuleHandle(s32 id, s32* handle);
 bool shouldHideName(const char* module_name);
 bool isDebugModule(s32 id);

@@ -382,6 +382,11 @@ if (APPLE AND NOT ENABLE_SYSTEM_VULKAN AND NOT ENABLE_TESTS)
     set(VULKAN_ICD_PATH "${CMAKE_CURRENT_BINARY_DIR}/mesa-kosmickrisp/outputs/kosmickrisp_mesa_icd.json" PARENT_SCOPE)
 endif()
 
+# abseil (for protobuf)
+if (NOT TARGET absl::strings)
+    add_subdirectory(abseil-cpp EXCLUDE_FROM_ALL)
+endif()
+
 # protobuf
 set(protobuf_BUILD_TESTS              OFF CACHE INTERNAL "")
 set(protobuf_BUILD_EXAMPLES           OFF CACHE INTERNAL "")
@@ -389,8 +394,32 @@ set(protobuf_BUILD_PROTOC_BINARIES    ON  CACHE INTERNAL "")
 set(protobuf_INSTALL                  OFF CACHE INTERNAL "")
 set(protobuf_WITH_ZLIB                OFF CACHE INTERNAL "")
 set(protobuf_BUILD_SHARED_LIBS        OFF CACHE INTERNAL "")
-set(protobuf_FORCE_FETCH_DEPENDENCIES ON  CACHE INTERNAL "")
+set(protobuf_LOCAL_DEPENDENCIES_ONLY  ON  CACHE INTERNAL "")
+set(protobuf_FORCE_FETCH_DEPENDENCIES OFF CACHE INTERNAL "")
 if(MSVC)
 set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
 endif()
 add_subdirectory(protobuf EXCLUDE_FROM_ALL)
+
+# ZArchive (.zar archive support)
+if (NOT TARGET ZArchive::zarchive)
+    # zstd (dependency of ZArchive)
+    set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
+    set(ZSTD_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+    set(ZSTD_BUILD_STATIC ON CACHE BOOL "" FORCE)
+    set(ZSTD_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(ZSTD_LEGACY_SUPPORT OFF CACHE BOOL "" FORCE)
+    set(ZSTD_MULTITHREAD_SUPPORT OFF CACHE BOOL "" FORCE)
+    add_subdirectory(zstd/build/cmake)
+
+    add_library(zarchive STATIC
+        zarchive/src/zarchivereader.cpp
+        zarchive/src/zarchivewriter.cpp
+        zarchive/src/sha_256.c
+    )
+    target_include_directories(zarchive PUBLIC zarchive/include)
+    target_include_directories(zarchive PRIVATE zstd/lib)
+    target_link_libraries(zarchive PRIVATE libzstd_static)
+    target_compile_features(zarchive PRIVATE cxx_std_20)
+    add_library(ZArchive::zarchive ALIAS zarchive)
+endif()

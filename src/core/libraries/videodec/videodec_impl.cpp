@@ -23,6 +23,7 @@ VdecDecoder::VdecDecoder(const OrbisVideodecConfigInfo& pCfgInfoIn,
     ASSERT(mCodecContext);
     mCodecContext->width = pCfgInfoIn.maxFrameWidth;
     mCodecContext->height = pCfgInfoIn.maxFrameHeight;
+    mCodecContext->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
 
     avcodec_open2(mCodecContext, codec, nullptr);
 }
@@ -54,8 +55,14 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
     packet->size = pInputDataIn.auSize;
     packet->pts = pInputDataIn.ptsData;
     packet->dts = pInputDataIn.dtsData;
+    packet->opaque = reinterpret_cast<void*>(pInputDataIn.attachedData);
 
     int ret = avcodec_send_packet(mCodecContext, packet);
+    if (ret == AVERROR_EOF) {
+        // Attempt to flush buffers and try again.
+        avcodec_flush_buffers(mCodecContext);
+        ret = avcodec_send_packet(mCodecContext, packet);
+    }
     if (ret < 0) {
         LOG_ERROR(Lib_Videodec, "Error sending packet to decoder: {}", ret);
         av_packet_free(&packet);
@@ -94,19 +101,29 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
     const auto pitch = Common::AlignUp<u32>(frame->width, 64);
     const auto height = Common::AlignUp<u32>(frame->height, 16);
 
+    pPictureInfoOut.isValid = true;
     pPictureInfoOut.codecType = 0;
     pPictureInfoOut.frameWidth = width;
     pPictureInfoOut.framePitch = pitch;
     pPictureInfoOut.frameHeight = height;
-
-    pPictureInfoOut.isValid = true;
     pPictureInfoOut.isErrorPic = false;
+    pPictureInfoOut.ptsData = frame->pts;
+    pPictureInfoOut.attachedData = reinterpret_cast<u64>(frame->opaque);
 
-    pPictureInfoOut.codec.avc.frameCropTopOffset = 0;
+    // pPictureInfoOut.codec.avc.numUnitsInTick;
+    // pPictureInfoOut.codec.avc.timeScale;
+    // pPictureInfoOut.codec.avc.fixedFrameRateFlag;
+    // pPictureInfoOut.codec.avc.aspectRatioIdc;
+    // pPictureInfoOut.codec.avc.sarWidth;
+    // pPictureInfoOut.codec.avc.sarHeight;
+    pPictureInfoOut.codec.avc.colourPrimaries = static_cast<u8>(frame->color_primaries);
+    // pPictureInfoOut.codec.avc.transferCharacteristics;
+    // pPictureInfoOut.codec.avc.matrixCoefficients;
+    // pPictureInfoOut.codec.avc.videoFullRangeFlag;
     pPictureInfoOut.codec.avc.frameCropLeftOffset = 0;
     pPictureInfoOut.codec.avc.frameCropRightOffset = pitch - frame->width;
+    pPictureInfoOut.codec.avc.frameCropTopOffset = 0;
     pPictureInfoOut.codec.avc.frameCropBottomOffset = height - frame->height;
-    pPictureInfoOut.attachedData = pInputDataIn.attachedData;
 
     av_packet_free(&packet);
     av_frame_free(&frame);
@@ -153,17 +170,28 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
     const auto pitch = Common::AlignUp<u32>(frame->width, 64);
     const auto height = Common::AlignUp<u32>(frame->height, 16);
 
+    pPictureInfoOut.isValid = true;
     pPictureInfoOut.codecType = 0;
     pPictureInfoOut.frameWidth = width;
     pPictureInfoOut.framePitch = pitch;
     pPictureInfoOut.frameHeight = height;
-
-    pPictureInfoOut.isValid = true;
     pPictureInfoOut.isErrorPic = false;
+    pPictureInfoOut.ptsData = frame->pts;
+    pPictureInfoOut.attachedData = reinterpret_cast<u64>(frame->opaque);
 
-    pPictureInfoOut.codec.avc.frameCropTopOffset = 0;
+    // pPictureInfoOut.codec.avc.numUnitsInTick;
+    // pPictureInfoOut.codec.avc.timeScale;
+    // pPictureInfoOut.codec.avc.fixedFrameRateFlag;
+    // pPictureInfoOut.codec.avc.aspectRatioIdc;
+    // pPictureInfoOut.codec.avc.sarWidth;
+    // pPictureInfoOut.codec.avc.sarHeight;
+    pPictureInfoOut.codec.avc.colourPrimaries = static_cast<u8>(frame->color_primaries);
+    // pPictureInfoOut.codec.avc.transferCharacteristics;
+    // pPictureInfoOut.codec.avc.matrixCoefficients;
+    // pPictureInfoOut.codec.avc.videoFullRangeFlag;
     pPictureInfoOut.codec.avc.frameCropLeftOffset = 0;
     pPictureInfoOut.codec.avc.frameCropRightOffset = pitch - frame->width;
+    pPictureInfoOut.codec.avc.frameCropTopOffset = 0;
     pPictureInfoOut.codec.avc.frameCropBottomOffset = height - frame->height;
 
     av_frame_free(&frame);
@@ -187,6 +215,8 @@ AVFrame* VdecDecoder::ConvertNV12Frame(AVFrame& frame) {
     nv12_frame->crop_bottom = frame.crop_bottom;
     nv12_frame->crop_left = frame.crop_left;
     nv12_frame->crop_right = frame.crop_right;
+    nv12_frame->opaque = frame.opaque;
+    nv12_frame->color_primaries = frame.color_primaries;
 
     av_frame_get_buffer(nv12_frame, 0);
 

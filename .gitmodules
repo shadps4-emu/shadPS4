@@ -158,3 +158,12 @@
 [submodule "externals/protobuf"]
 	path = externals/protobuf
 	url = https://github.com/shadexternals/protobuf.git
+[submodule "externals/zstd"]
+	path = externals/zstd
+	url = https://github.com/shadexternals/zstd.git
+[submodule "externals/zarchive"]
+	path = externals/zarchive
+	url = https://github.com/shadexternals/ZArchive.git
+[submodule "externals/abseil-cpp"]
+	path = externals/abseil-cpp
+	url = https://github.com/abseil/abseil-cpp.git

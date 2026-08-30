@@ -6,6 +6,7 @@
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
@@ -13,6 +14,7 @@
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libc_internal/libc_internal.h"
+#include "core/libraries/libpng/pngdec.h"
 #include "core/libraries/libpng/pngenc.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
@@ -26,6 +28,8 @@
 #include "emulator.h"
 
 namespace Libraries::SysModule {
+
+bool g_need_scelibc = false, g_need_fios2 = false;
 
 s32 getModuleHandle(s32 id, s32* handle) {
     if (id == 0) {
@@ -118,7 +122,6 @@ bool validateModuleId(s32 id) {
 }
 
 s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* game_info = Common::Singleton<Common::ElfInfo>::Instance();
 
@@ -135,10 +138,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
     if ((mod.flags & OrbisSysmoduleModuleInternalFlags::IsGame) != 0) {
         std::string guest_path = std::string("/app0/sce_module/").append(mod.name);
         guest_path.append(".prx");
-        const auto& host_path = mnt->GetHostPath(guest_path);
-
-        // For convenience, load through linker directly instead of loading through libkernel calls.
-        s32 result = linker->LoadAndStartModule(host_path, argc, argv, &start_result);
+        s32 result = linker->LoadAndStartModule(guest_path, argc, argv, &start_result);
         // If the module is missing, the library prints a very helpful message for developers.
         // We'll just log an error.
         if (result < 0) {
@@ -216,9 +216,12 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
         constexpr auto ModulesToLoad = std::to_array<Core::SysModules>(
             {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterLib},
              {"libSceUlt.sprx", nullptr},
+             {"libSceAvPlayer.sprx", &Libraries::AvPlayer::RegisterLib},
+             {"libSceAvPlayerStreaming.sprx", nullptr},
              {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
              {"libSceJpegDec.sprx", nullptr},
              {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
+             {"libScePngDec.sprx", &Libraries::PngDec::RegisterLib},
              {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
              {"libSceJson.sprx", nullptr},
              {"libSceJson2.sprx", nullptr},
@@ -235,8 +238,14 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceFreeTypeOt.sprx", nullptr},
              {"libSceFreeTypeOl.sprx", nullptr},
              {"libSceFreeTypeOptOl.sprx", nullptr},
+             {"libSceBeisobmf.sprx", nullptr},
+             {"libSceBemp2sys.sprx", nullptr},
              {"libSceRudp.sprx", &Libraries::Rudp::RegisterLib},
              {"libSceWkFontConfig.sprx", nullptr},
+             {"libScePsmKitSystem.sprx", nullptr},
+             {"libSceDepth.sprx", nullptr},
+             {"libScePadTracker.sprx", nullptr},
+             {"libSceMoveTracker.sprx", nullptr},
              {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib},
              {"libSceXml.sprx", nullptr}});
 
@@ -456,8 +465,18 @@ s32 preloadModulesForLibkernel() {
         if (result != ORBIS_OK) {
             // On real hardware, module preloading must succeed or the game will abort.
             // To enable users to test homebrew easier, we'll log a critical error instead.
-            LOG_CRITICAL(Lib_SysModule, "Failed to preload {}, expect crashes",
-                         g_modules_array[module_index].name);
+            if (g_modules_array[module_index].name == std::string("libc")) {
+                ASSERT_MSG(!g_need_scelibc,
+                           "libc.prx cannot be loaded, but the guest attempted to use it. "
+                           "This usually indicates a corrupted dump.");
+            } else if (g_modules_array[module_index].name == std::string("libSceFios2")) {
+                ASSERT_MSG(!g_need_fios2,
+                           "libSceFios2.prx cannot be loaded, but the guest attempted to use it. "
+                           "This usually indicates a corrupted dump.");
+            } else {
+                LOG_CRITICAL(Lib_SysModule, "Failed to preload {}, expect crashes",
+                             g_modules_array[module_index].name);
+            }
         }
     }
     return ORBIS_OK;

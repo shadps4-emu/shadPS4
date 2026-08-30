@@ -1,5 +1,5 @@
-// SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: Copyright 2025 Philip Rebohle
+// SPDX-License-Identifier: MIT
 
 // This file implements the SSA rewriting algorithm proposed in
 //
@@ -13,448 +13,324 @@
 //      https://link.springer.com/chapter/10.1007/978-3-642-37051-9_6
 //
 
-#include <map>
-#include <span>
-#include <unordered_map>
 #include <variant>
+#include <vector>
 
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::Optimization {
 namespace {
-struct FlagTag {
-    auto operator<=>(const FlagTag&) const noexcept = default;
-};
-struct SccFlagTag : FlagTag {};
-struct ExecFlagTag : FlagTag {};
-struct VccFlagTag : FlagTag {};
-struct VccLoTag : FlagTag {};
-struct VccHiTag : FlagTag {};
-struct M0Tag : FlagTag {};
 
-struct GotoVariable : FlagTag {
-    GotoVariable() = default;
-    explicit GotoVariable(u32 index_) : index{index_} {}
-
-    auto operator<=>(const GotoVariable&) const noexcept = default;
-
-    u32 index;
-};
-
-// Thread-mask bool spilled to a VGPR lane by V_WRITELANE_B32 and restored by V_READLANE_B32.
-struct MaskLaneVariable : FlagTag {
-    MaskLaneVariable() = default;
-    explicit MaskLaneVariable(IR::VectorReg vgpr_, u32 lane_) : vgpr{vgpr_}, lane{lane_} {}
-
-    auto operator<=>(const MaskLaneVariable&) const noexcept = default;
-
-    IR::VectorReg vgpr{};
-    u32 lane{};
-};
-
-struct ThreadBitScalar : FlagTag {
-    ThreadBitScalar() = default;
-    explicit ThreadBitScalar(IR::ScalarReg sgpr_) : sgpr{sgpr_} {}
-
-    auto operator<=>(const ThreadBitScalar&) const noexcept = default;
-
-    IR::ScalarReg sgpr;
-};
-
-using Variant =
-    std::variant<IR::ScalarReg, IR::VectorReg, GotoVariable, MaskLaneVariable, ThreadBitScalar,
-                 SccFlagTag, ExecFlagTag, VccFlagTag, VccLoTag, VccHiTag, M0Tag>;
+using RegType = IR::RegType;
 using ValueMap = std::unordered_map<IR::Block*, IR::Value>;
 
 struct DefTable {
-    const IR::Value& Def(IR::Block* block, IR::ScalarReg variable) {
-        return block->ssa_sreg_values[RegIndex(variable)];
+    const IR::Value& Def(IR::Block* block, IR::RegTag tag) {
+        if (tag.IsIntrusive()) {
+            return block->ssa_state.values[tag.Index()];
+        }
+        switch (tag.type) {
+        case RegType::GotoVariable:
+            return goto_vars[tag.index][block];
+        case RegType::MaskLaneVariable:
+            return mask_lane_vars[tag.lane_reg.Key()][block];
+        case RegType::VirtualReg:
+            return reg_vars[tag.reg.Key()][block];
+        default:
+            UNREACHABLE();
+        }
     }
-    void SetDef(IR::Block* block, IR::ScalarReg variable, const IR::Value& value) {
-        block->ssa_sreg_values[RegIndex(variable)] = value;
-    }
-
-    const IR::Value& Def(IR::Block* block, IR::VectorReg variable) {
-        return block->ssa_vreg_values[RegIndex(variable)];
-    }
-    void SetDef(IR::Block* block, IR::VectorReg variable, const IR::Value& value) {
-        block->ssa_vreg_values[RegIndex(variable)] = value;
-    }
-
-    const IR::Value& Def(IR::Block* block, GotoVariable variable) {
-        return goto_vars[variable.index][block];
-    }
-    void SetDef(IR::Block* block, GotoVariable variable, const IR::Value& value) {
-        goto_vars[variable.index].insert_or_assign(block, value);
-    }
-
-    const IR::Value& Def(IR::Block* block, MaskLaneVariable variable) {
-        return mask_lane_vars[MaskLaneKey(variable)][block];
-    }
-    void SetDef(IR::Block* block, MaskLaneVariable variable, const IR::Value& value) {
-        mask_lane_vars[MaskLaneKey(variable)].insert_or_assign(block, value);
-    }
-
-    static u32 MaskLaneKey(MaskLaneVariable variable) {
-        return (u32(RegIndex(variable.vgpr)) << 6) | variable.lane;
-    }
-
-    const IR::Value& Def(IR::Block* block, ThreadBitScalar variable) {
-        return block->ssa_sbit_values[RegIndex(variable.sgpr)];
-    }
-    void SetDef(IR::Block* block, ThreadBitScalar variable, const IR::Value& value) {
-        block->ssa_sbit_values[RegIndex(variable.sgpr)] = value;
-    }
-
-    const IR::Value& Def(IR::Block* block, SccFlagTag) {
-        return scc_flag[block];
-    }
-    void SetDef(IR::Block* block, SccFlagTag, const IR::Value& value) {
-        scc_flag.insert_or_assign(block, value);
-    }
-
-    const IR::Value& Def(IR::Block* block, ExecFlagTag) {
-        return exec_flag[block];
-    }
-    void SetDef(IR::Block* block, ExecFlagTag, const IR::Value& value) {
-        exec_flag.insert_or_assign(block, value);
-    }
-
-    const IR::Value& Def(IR::Block* block, VccLoTag) {
-        return vcc_lo_flag[block];
-    }
-    void SetDef(IR::Block* block, VccLoTag, const IR::Value& value) {
-        vcc_lo_flag.insert_or_assign(block, value);
-    }
-
-    const IR::Value& Def(IR::Block* block, VccHiTag) {
-        return vcc_hi_flag[block];
-    }
-    void SetDef(IR::Block* block, VccHiTag, const IR::Value& value) {
-        vcc_hi_flag.insert_or_assign(block, value);
-    }
-
-    const IR::Value& Def(IR::Block* block, VccFlagTag) {
-        return vcc_flag[block];
-    }
-    void SetDef(IR::Block* block, VccFlagTag, const IR::Value& value) {
-        vcc_flag.insert_or_assign(block, value);
-    }
-    const IR::Value& Def(IR::Block* block, M0Tag) {
-        return m0_flag[block];
-    }
-    void SetDef(IR::Block* block, M0Tag, const IR::Value& value) {
-        m0_flag.insert_or_assign(block, value);
+    void SetDef(IR::Block* block, IR::RegTag tag, const IR::Value& value) {
+        if (tag.IsIntrusive()) {
+            block->ssa_state.values[tag.Index()] = value;
+            return;
+        }
+        switch (tag.type) {
+        case RegType::GotoVariable:
+            goto_vars[tag.index].insert_or_assign(block, value);
+            return;
+        case RegType::MaskLaneVariable:
+            mask_lane_vars[tag.lane_reg.Key()].insert_or_assign(block, value);
+            return;
+        case RegType::VirtualReg:
+            reg_vars[tag.reg.Key()].insert_or_assign(block, value);
+            return;
+        default:
+            UNREACHABLE();
+        }
     }
 
     std::unordered_map<u32, ValueMap> goto_vars;
     std::unordered_map<u32, ValueMap> mask_lane_vars;
-    ValueMap scc_flag;
-    ValueMap exec_flag;
-    ValueMap vcc_flag;
-    ValueMap scc_lo_flag;
-    ValueMap vcc_lo_flag;
-    ValueMap vcc_hi_flag;
-    ValueMap m0_flag;
+    std::unordered_map<u64, ValueMap> reg_vars;
 };
 
-IR::Opcode UndefOpcode(IR::ScalarReg) noexcept {
-    return IR::Opcode::UndefU32;
+constexpr IR::Type TypeOf(IR::RegTag tag) noexcept {
+    switch (tag.type) {
+    case RegType::ScalarReg:
+    case RegType::VectorReg:
+    case RegType::VccLo:
+    case RegType::VccHi:
+    case RegType::M0:
+        return IR::Type::U32;
+    case RegType::ThreadBitReg:
+    case RegType::Scc:
+    case RegType::Vcc:
+    case RegType::Exec:
+    case RegType::GotoVariable:
+    case RegType::MaskLaneVariable:
+        return IR::Type::U1;
+    case RegType::VirtualReg:
+        return tag.reg.type;
+    default:
+        UNREACHABLE();
+    }
 }
 
-IR::Opcode UndefOpcode(IR::VectorReg) noexcept {
-    return IR::Opcode::UndefU32;
+constexpr IR::Opcode UndefOpcode(IR::RegTag tag) noexcept {
+    switch (tag.type) {
+    case RegType::ScalarReg:
+    case RegType::VectorReg:
+    case RegType::VccLo:
+    case RegType::VccHi:
+    case RegType::M0:
+        return IR::Opcode::UndefU32;
+    case RegType::ThreadBitReg:
+    case RegType::Scc:
+    case RegType::Vcc:
+    case RegType::Exec:
+    case RegType::GotoVariable:
+    case RegType::MaskLaneVariable:
+        return IR::Opcode::UndefU1;
+    case RegType::VirtualReg:
+        switch (tag.reg.type) {
+        case IR::Type::U32:
+            return IR::Opcode::UndefU32;
+        case IR::Type::F32:
+            return IR::Opcode::UndefF32;
+        case IR::Type::U1:
+            return IR::Opcode::UndefU1;
+        default:
+            UNREACHABLE();
+        }
+    default:
+        UNREACHABLE();
+    }
 }
-
-IR::Opcode UndefOpcode(const VccLoTag) noexcept {
-    return IR::Opcode::UndefU32;
-}
-
-IR::Opcode UndefOpcode(const VccHiTag) noexcept {
-    return IR::Opcode::UndefU32;
-}
-
-IR::Opcode UndefOpcode(const M0Tag) noexcept {
-    return IR::Opcode::UndefU32;
-}
-
-IR::Opcode UndefOpcode(const FlagTag) noexcept {
-    return IR::Opcode::UndefU1;
-}
-
-enum class Status {
-    Start,
-    SetValue,
-    PushPhiArgument,
-};
-
-template <typename Type>
-struct ReadState {
-    ReadState(IR::Block* block_) : block{block_} {}
-    ReadState() = default;
-
-    IR::Block* block{};
-    IR::Value result{};
-    IR::Inst* phi{};
-    IR::Block* const* pred_it{};
-    IR::Block* const* pred_end{};
-    Status pc{Status::Start};
-};
 
 class Pass {
 public:
-    template <typename Type>
-    void WriteVariable(Type variable, IR::Block* block, const IR::Value& value) {
-        current_def.SetDef(block, variable, value);
+    void WriteVariable(IR::RegTag tag, IR::Block* block, const IR::Value& value) {
+        current_def.SetDef(block, tag, value);
     }
 
-    template <typename Type>
-    IR::Value ReadVariable(Type variable, IR::Block* root_block) {
-        boost::container::small_vector<ReadState<Type>, 64> stack{
-            ReadState<Type>(nullptr),
-            ReadState<Type>(root_block),
-        };
-        const auto prepare_phi_operand = [&] {
-            if (stack.back().pred_it == stack.back().pred_end) {
-                IR::Inst* const phi{stack.back().phi};
-                IR::Block* const block{stack.back().block};
-                const IR::Value result{TryRemoveTrivialPhi(*phi, block, UndefOpcode(variable))};
-                stack.pop_back();
-                stack.back().result = result;
-                WriteVariable(variable, block, result);
-            } else {
-                IR::Block* const imm_pred{*stack.back().pred_it};
-                stack.back().pc = Status::PushPhiArgument;
-                stack.emplace_back(imm_pred);
-            }
-        };
-        do {
-            IR::Block* const block{stack.back().block};
-            switch (stack.back().pc) {
-            case Status::Start: {
-                if (const IR::Value& def = current_def.Def(block, variable); !def.IsEmpty()) {
-                    stack.back().result = def;
-                } else if (!block->IsSsaSealed()) {
-                    // Incomplete CFG
-                    IR::Inst* phi{&*block->PrependNewInst(block->begin(), IR::Opcode::Phi)};
-                    phi->SetFlags(IR::TypeOf(UndefOpcode(variable)));
+    IR::Value ReadVariable(IR::RegTag tag, IR::Block* block) {
+        boost::container::small_vector<IR::Block*, 16> chain;
+        IR::Value result{};
 
-                    incomplete_phis[block].insert_or_assign(variable, phi);
-                    stack.back().result = IR::Value{&*phi};
-                } else if (const std::span imm_preds = block->ImmPredecessors();
-                           imm_preds.size() == 1) {
-                    // Optimize the common case of one predecessor: no phi needed
-                    stack.back().pc = Status::SetValue;
-                    stack.emplace_back(imm_preds.front());
-                    break;
-                } else {
-                    // Break potential cycles with operandless phi
-                    IR::Inst* const phi{&*block->PrependNewInst(block->begin(), IR::Opcode::Phi)};
-                    phi->SetFlags(IR::TypeOf(UndefOpcode(variable)));
-
-                    WriteVariable(variable, block, IR::Value{phi});
-
-                    stack.back().phi = phi;
-                    stack.back().pred_it = imm_preds.data();
-                    stack.back().pred_end = imm_preds.data() + imm_preds.size();
-                    prepare_phi_operand();
-                    break;
-                }
-            }
-                [[fallthrough]];
-            case Status::SetValue: {
-                const IR::Value result{stack.back().result};
-                WriteVariable(variable, block, result);
-                stack.pop_back();
-                stack.back().result = result;
+        while (block) {
+            if (const IR::Value& def = current_def.Def(block, tag); !def.IsEmpty()) {
+                result = def;
                 break;
             }
-            case Status::PushPhiArgument: {
-                IR::Inst* const phi{stack.back().phi};
-                phi->AddPhiOperand(*stack.back().pred_it, stack.back().result);
-                ++stack.back().pred_it;
-                prepare_phi_operand();
+
+            const auto preds = block->ImmPredecessors();
+            if (preds.size() == 1) {
+                // Optimize the common case of one predecessor: no phi needed
+                chain.push_back(std::exchange(block, preds.front()));
+                continue;
+            } else if (preds.empty()) {
+                result = IR::Value{&*block->PrependNewInst(block->begin(), UndefOpcode(tag))};
+                WriteVariable(tag, block, result);
                 break;
             }
-            }
-        } while (stack.size() > 1);
-        return stack.back().result;
+
+            // This is a join block which may require a phi.
+            // That will act as the variables current definition to break potential cycles.
+            IR::Inst* const phi{&*block->PrependNewInst(block->begin(), IR::Opcode::Phi)};
+            phi->SetFlags(TypeOf(tag));
+            phi->SetRegTag(tag);
+
+            result = IR::Value{phi};
+            WriteVariable(tag, block, result);
+            m_pending_phis.push_back(phi);
+            break;
+        }
+
+        for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
+            WriteVariable(tag, *it, result);
+        }
+
+        return result;
     }
 
-    void SealBlock(IR::Block* block) {
-        const auto it{incomplete_phis.find(block)};
-        if (it != incomplete_phis.end()) {
-            for (auto& [variant, phi] : it->second) {
-                std::visit([&](auto& variable) { AddPhiOperands(variable, *phi, block); }, variant);
+    void EvaluatePendingPhis() {
+        for (size_t i = 0; i < m_pending_phis.size(); i++) {
+            IR::Inst* phi = m_pending_phis[i];
+            for (IR::Block* pred : phi->GetParent()->ImmPredecessors()) {
+                phi->AddPhiOperand(pred, ReadVariable(phi->GetRegTag(), pred));
             }
         }
-        block->SsaSeal();
+    }
+
+    void ResolveTrivialPhis() {
+        auto worklist = std::move(m_pending_phis);
+        while (!worklist.empty()) {
+            IR::Inst* phi = worklist.back();
+            worklist.pop_back();
+
+            if (phi->GetOpcode() == IR::Opcode::Void) {
+                continue;
+            }
+
+            IR::Value same;
+            bool non_trivial = false;
+            for (size_t i = 0; i < phi->NumArgs(); ++i) {
+                const IR::Value op{phi->Arg(i)};
+                if (op == same || op == IR::Value{phi}) {
+                    // Unique value or self-reference
+                    continue;
+                }
+                if (!same.IsEmpty()) {
+                    // The phi merges at least two values: not trivial
+                    non_trivial = true;
+                    break;
+                }
+                same = op;
+            }
+            if (non_trivial) {
+                continue;
+            }
+
+            IR::Block* block = phi->GetParent();
+            if (same.IsEmpty()) {
+                // All operands are self-references or phi has no operands
+                auto& list = block->Instructions();
+                auto reinsert_point = std::ranges::find_if_not(list, IR::IsPhi);
+                same = IR::Value{
+                    &*block->PrependNewInst(reinsert_point, UndefOpcode(phi->GetRegTag()))};
+            }
+
+            // Add phi users to worklist since they may have become trivial
+            for (const auto& [user, operand] : phi->Uses()) {
+                if (user->GetOpcode() == IR::Opcode::Phi && user != phi) {
+                    worklist.push_back(user);
+                }
+            }
+            phi->ReplaceUsesWithAndRemove(same);
+        }
     }
 
 private:
-    template <typename Type>
-    IR::Value AddPhiOperands(Type variable, IR::Inst& phi, IR::Block* block) {
-        for (IR::Block* const imm_pred : block->ImmPredecessors()) {
-            phi.AddPhiOperand(imm_pred, ReadVariable(variable, imm_pred));
-        }
-        return TryRemoveTrivialPhi(phi, block, UndefOpcode(variable));
-    }
-
-    IR::Value TryRemoveTrivialPhi(IR::Inst& phi, IR::Block* block, IR::Opcode undef_opcode) {
-        IR::Value same;
-        const size_t num_args{phi.NumArgs()};
-        for (size_t arg_index = 0; arg_index < num_args; ++arg_index) {
-            const IR::Value& op{phi.Arg(arg_index)};
-            if (op.Resolve() == same.Resolve() || op.Resolve() == IR::Value{&phi}) {
-                // Unique value or self-reference
-                continue;
-            }
-            if (!same.IsEmpty()) {
-                // The phi merges at least two values: not trivial
-                return IR::Value{&phi};
-            }
-            same = op;
-        }
-        // Remove the phi node from the block, it will be reinserted
-        IR::Block::InstructionList& list{block->Instructions()};
-        list.erase(IR::Block::InstructionList::s_iterator_to(phi));
-
-        // Find the first non-phi instruction and use it as an insertion point
-        IR::Block::iterator reinsert_point{std::ranges::find_if_not(list, IR::IsPhi)};
-        if (same.IsEmpty()) {
-            // The phi is unreachable or in the start block
-            // Insert an undefined instruction and make it the phi node replacement
-            // The "phi" node reinsertion point is specified after this instruction
-            reinsert_point = block->PrependNewInst(reinsert_point, undef_opcode);
-            same = IR::Value{&*reinsert_point};
-            ++reinsert_point;
-        }
-        // Reinsert the phi node and reroute all its uses to the "same" value
-        const auto users = phi.Uses();
-        list.insert(reinsert_point, phi);
-        phi.ReplaceUsesWith(same);
-        // Try to recursively remove all phi users, which might have become trivial
-        for (const auto& [user, arg_index] : users) {
-            if (user->GetOpcode() == IR::Opcode::Phi) {
-                TryRemoveTrivialPhi(*user, user->GetParent(), undef_opcode);
-            }
-        }
-        return same;
-    }
-
-    std::unordered_map<IR::Block*, std::map<Variant, IR::Inst*>> incomplete_phis;
     DefTable current_def;
+    std::vector<IR::Inst*> m_pending_phis;
 };
 
 void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     const IR::Opcode opcode{inst.GetOpcode()};
     switch (opcode) {
-    case IR::Opcode::SetThreadBitScalarReg: {
-        const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
-        pass.WriteVariable(ThreadBitScalar{reg}, block, inst.Arg(1));
+    case IR::Opcode::SetThreadBitScalarReg:
+        pass.WriteVariable(IR::RegTag{inst.Arg(0).ScalarReg(), true}, block, inst.Arg(1));
         break;
-    }
-    case IR::Opcode::SetScalarRegister: {
-        const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
-        pass.WriteVariable(reg, block, inst.Arg(1));
+    case IR::Opcode::SetScalarRegister:
+        pass.WriteVariable(IR::RegTag{inst.Arg(0).ScalarReg()}, block, inst.Arg(1));
         break;
-    }
-    case IR::Opcode::SetVectorRegister: {
-        const IR::VectorReg reg{inst.Arg(0).VectorReg()};
-        pass.WriteVariable(reg, block, inst.Arg(1));
+    case IR::Opcode::SetVectorRegister:
+        pass.WriteVariable(IR::RegTag{inst.Arg(0).VectorReg()}, block, inst.Arg(1));
         break;
-    }
+    case IR::Opcode::SetVirtualRegister:
+        pass.WriteVariable(IR::RegTag{inst.Arg(0).VirtualReg()}, block, inst.Arg(1));
+        break;
     case IR::Opcode::SetGotoVariable:
-        pass.WriteVariable(GotoVariable{inst.Arg(0).U32()}, block, inst.Arg(1));
+        pass.WriteVariable(IR::RegTag{RegType::GotoVariable, inst.Arg(0).U32()}, block,
+                           inst.Arg(1));
         break;
     case IR::Opcode::SetMaskLaneVariable:
-        pass.WriteVariable(MaskLaneVariable{inst.Arg(0).VectorReg(), inst.Arg(1).U32()}, block,
+        pass.WriteVariable(IR::RegTag{inst.Arg(0).VectorReg(), inst.Arg(1).U32()}, block,
                            inst.Arg(2));
         break;
     case IR::Opcode::SetExec:
-        pass.WriteVariable(ExecFlagTag{}, block, inst.Arg(0));
+        pass.WriteVariable(IR::RegTag{RegType::Exec}, block, inst.Arg(0));
         break;
     case IR::Opcode::SetScc:
-        pass.WriteVariable(SccFlagTag{}, block, inst.Arg(0));
+        pass.WriteVariable(IR::RegTag{RegType::Scc}, block, inst.Arg(0));
         break;
     case IR::Opcode::SetVcc:
-        pass.WriteVariable(VccFlagTag{}, block, inst.Arg(0));
+        pass.WriteVariable(IR::RegTag{RegType::Vcc}, block, inst.Arg(0));
         break;
     case IR::Opcode::SetVccLo:
-        pass.WriteVariable(VccLoTag{}, block, inst.Arg(0));
+        pass.WriteVariable(IR::RegTag{RegType::VccLo}, block, inst.Arg(0));
         break;
     case IR::Opcode::SetVccHi:
-        pass.WriteVariable(VccHiTag{}, block, inst.Arg(0));
+        pass.WriteVariable(IR::RegTag{RegType::VccHi}, block, inst.Arg(0));
         break;
     case IR::Opcode::SetM0:
-        pass.WriteVariable(M0Tag{}, block, inst.Arg(0));
+        pass.WriteVariable(IR::RegTag{RegType::M0}, block, inst.Arg(0));
         break;
-    case IR::Opcode::GetThreadBitScalarReg: {
-        const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
-        const IR::Value value = pass.ReadVariable(ThreadBitScalar{reg}, block);
-        inst.ReplaceUsesWith(value);
+    case IR::Opcode::GetThreadBitScalarReg:
+        inst.ReplaceUsesWithAndRemove(
+            pass.ReadVariable(IR::RegTag{inst.Arg(0).ScalarReg(), true}, block));
         break;
-    }
-    case IR::Opcode::GetScalarRegister: {
-        const IR::ScalarReg reg{inst.Arg(0).ScalarReg()};
-        const IR::Value value = pass.ReadVariable(reg, block);
-        inst.ReplaceUsesWith(value);
+    case IR::Opcode::GetScalarRegister:
+        inst.ReplaceUsesWithAndRemove(
+            pass.ReadVariable(IR::RegTag{inst.Arg(0).ScalarReg()}, block));
         break;
-    }
-    case IR::Opcode::GetVectorRegister: {
-        const IR::VectorReg reg{inst.Arg(0).VectorReg()};
-        const IR::Value value = pass.ReadVariable(reg, block);
-        inst.ReplaceUsesWith(value);
+    case IR::Opcode::GetVectorRegister:
+        inst.ReplaceUsesWithAndRemove(
+            pass.ReadVariable(IR::RegTag{inst.Arg(0).VectorReg()}, block));
         break;
-    }
+    case IR::Opcode::GetVirtualRegister:
+        inst.ReplaceUsesWithAndRemove(
+            pass.ReadVariable(IR::RegTag{inst.Arg(0).VirtualReg()}, block));
+        break;
     case IR::Opcode::GetGotoVariable:
-        inst.ReplaceUsesWith(pass.ReadVariable(GotoVariable{inst.Arg(0).U32()}, block));
+        inst.ReplaceUsesWithAndRemove(
+            pass.ReadVariable(IR::RegTag{RegType::GotoVariable, inst.Arg(0).U32()}, block));
         break;
     case IR::Opcode::GetMaskLaneVariable:
-        inst.ReplaceUsesWith(
-            pass.ReadVariable(MaskLaneVariable{inst.Arg(0).VectorReg(), inst.Arg(1).U32()}, block));
+        inst.ReplaceUsesWithAndRemove(
+            pass.ReadVariable(IR::RegTag{inst.Arg(0).VectorReg(), inst.Arg(1).U32()}, block));
         break;
     case IR::Opcode::GetExec:
-        inst.ReplaceUsesWith(pass.ReadVariable(ExecFlagTag{}, block));
+        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::Exec}, block));
         break;
     case IR::Opcode::GetScc:
-        inst.ReplaceUsesWith(pass.ReadVariable(SccFlagTag{}, block));
+        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::Scc}, block));
         break;
     case IR::Opcode::GetVcc:
-        inst.ReplaceUsesWith(pass.ReadVariable(VccFlagTag{}, block));
+        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::Vcc}, block));
         break;
     case IR::Opcode::GetVccLo:
-        inst.ReplaceUsesWith(pass.ReadVariable(VccLoTag{}, block));
+        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::VccLo}, block));
         break;
     case IR::Opcode::GetVccHi:
-        inst.ReplaceUsesWith(pass.ReadVariable(VccHiTag{}, block));
+        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::VccHi}, block));
         break;
     case IR::Opcode::GetM0:
-        inst.ReplaceUsesWith(pass.ReadVariable(M0Tag{}, block));
+        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::M0}, block));
         break;
     default:
         break;
     }
 }
 
-void VisitBlock(Pass& pass, IR::Block* block) {
-    for (IR::Inst& inst : block->Instructions()) {
-        VisitInst(pass, block, inst);
-    }
-    pass.SealBlock(block);
-}
-
 } // Anonymous namespace
 
-void SsaRewritePass(IR::BlockList& program) {
+void SsaRewritePass(IR::Program& program) {
     Pass pass;
-    const auto end{program.rend()};
-    for (auto block = program.rbegin(); block != end; ++block) {
-        VisitBlock(pass, *block);
+    const auto end = program.post_order_blocks.rend();
+    for (auto it = program.post_order_blocks.rbegin(); it != end; ++it) {
+        IR::Block* block{*it};
+        for (IR::Inst& inst : block->Instructions()) {
+            VisitInst(pass, block, inst);
+        }
     }
+    pass.EvaluatePendingPhis();
+    pass.ResolveTrivialPhis();
 }
 
 } // namespace Shader::Optimization

@@ -8,6 +8,8 @@
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
+#include "core/file_sys/fs.h"
+#include "core/file_sys/ifile.h"
 #include "emulator.h"
 #include "imgui/big_picture/big_picture.h"
 #include "imgui/big_picture/imgui_impl_sdl3_big_picture.h"
@@ -33,22 +35,34 @@ SDL_Renderer* renderer;
 namespace {
 
 std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder) {
-    std::filesystem::path outputPath;
-    auto update_folder = game_folder;
-    update_folder += "-UPDATE";
+    std::filesystem::path updatedPath = "";
+    std::filesystem::path basePath = game_folder.parent_path();
+    std::string fileName;
+    std::string item = "sce_sys/" + sceItem;
 
-    auto patch_folder = game_folder;
-    patch_folder += "-patch";
-
-    if (std::filesystem::exists(update_folder / "sce_sys" / sceItem)) {
-        outputPath = update_folder / "sce_sys" / sceItem;
-    } else if (std::filesystem::exists(patch_folder / "sce_sys" / sceItem)) {
-        outputPath = patch_folder / "sce_sys" / sceItem;
+    if (Core::FileSys::IsZArchiveFile(game_folder)) {
+        fileName = Core::FileSys::StripZArchiveExtension(game_folder).filename().string();
     } else {
-        outputPath = game_folder / "sce_sys" / sceItem;
+        fileName = game_folder.filename().string();
     }
 
-    return outputPath;
+    if (std::filesystem::exists(basePath / (fileName + "-UPDATE") / item)) {
+        updatedPath = basePath / (fileName + "-UPDATE") / item;
+    } else if (Core::FileSys::ResolveGameFilePath(basePath / (fileName + "-UPDATE.zar"), item)
+                   .has_value()) {
+        updatedPath =
+            Core::FileSys::ResolveGameFilePath(basePath / (fileName + "-UPDATE.zar"), item).value();
+    } else if (std::filesystem::exists(basePath / (fileName + "-patch") / item)) {
+        updatedPath = basePath / (fileName + "-patch") / item;
+    } else if (Core::FileSys::ResolveGameFilePath(basePath / (fileName + "-patch.zar"), item)
+                   .has_value()) {
+        updatedPath =
+            Core::FileSys::ResolveGameFilePath(basePath / (fileName + "-patch.zar"), item).value();
+    } else if (Core::FileSys::ResolveGameFilePath(game_folder, item).has_value()) {
+        updatedPath = Core::FileSys::ResolveGameFilePath(game_folder, item).value();
+    }
+
+    return updatedPath;
 }
 
 void SetGameIcons(std::vector<IconInfo>& gameIcons) {
@@ -149,9 +163,23 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
     for (const auto& installLoc : EmulatorSettings.GetAllGameInstallDirs()) {
         if (installLoc.enabled && std::filesystem::exists(installLoc.path)) {
             for (const auto& entry : std::filesystem::directory_iterator(installLoc.path)) {
-                if (entry.path().filename().string().ends_with("-UPDATE") ||
-                    entry.path().filename().string().ends_with("-patch") || !entry.is_directory()) {
+
+                std::string pathstring = entry.path().filename().string();
+                if (pathstring.ends_with("-UPDATE") || pathstring.ends_with("-patch") ||
+                    (!entry.is_directory() && !Core::FileSys::IsZArchiveFile(entry))) {
                     continue;
+                }
+
+                if (Core::FileSys::IsZArchiveFile(entry)) {
+                    size_t start = pathstring.length() - 3;
+                    for (size_t i = start; i < pathstring.length(); ++i) {
+                        pathstring[i] = static_cast<char>(
+                            std::tolower(static_cast<unsigned char>(pathstring[i])));
+                    }
+
+                    if (pathstring.ends_with("-UPDATE.zar") || pathstring.ends_with("-patch.zar")) {
+                        continue;
+                    }
                 }
 
                 IconInfo icon;
@@ -178,6 +206,10 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
                 icon.textureId = ImTextureID(texture);
 
                 icon.ebootPath = entry.path() / "eboot.bin";
+                if (Core::FileSys::IsZArchiveFile(entry.path())) {
+                    icon.ebootPath = entry.path();
+                }
+
                 icon.focusState = false;
                 icons.push_back(icon);
             }
@@ -189,7 +221,7 @@ void GetGameIconInfo(std::vector<IconInfo>& icons) {
     });
 }
 
-void Launch(char* executableName) {
+void Launch(char* executableName, bool sameProcess) {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         LOG_ERROR(ImGui, "SDL_INIT_VIDEO Error: {}", SDL_GetError());
         SDL_Quit();
@@ -378,8 +410,9 @@ void Launch(char* executableName) {
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
-    SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
+    renderer = nullptr;
+    SDL_DestroyWindow(window);
     SDL_Quit();
 
     EmulatorSettings.SetBigPictureScale(static_cast<int>(uiScale * 1000));
@@ -388,7 +421,12 @@ void Launch(char* executableName) {
     if (runEbootPath != "") {
         auto* emulator = Common::Singleton<Core::Emulator>::Instance();
         emulator->executableName = executableName;
-        emulator->Run(runEbootPath);
+        if (sameProcess) {
+            emulator->Run(runEbootPath);
+        } else {
+            emulator->Relaunch(
+                {"--log-append", "--game", Common::FS::PathToUTF8String(runEbootPath)});
+        }
     }
 }
 

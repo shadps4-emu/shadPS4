@@ -8,12 +8,14 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <ostream> // Windows static guest red-zone protection
 #include <sstream>
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
 #include "common/logging/log.h"
 #include "common/types.h"
+#include "core/cpu_patches.h" // Windows static guest red-zone protection
 
 #define EmulatorSettings (*EmulatorSettingsImpl::GetInstance())
 
@@ -35,6 +37,16 @@ enum GpuReadbacksMode : int {
     Relaxed,
     Precise,
 };
+
+// Windows static guest red-zone protection
+NLOHMANN_JSON_SERIALIZE_ENUM(WindowsGuestRedZoneProtectionMode,
+                             {{WindowsGuestRedZoneProtectionMode::Disabled, "Disabled"},
+                              {WindowsGuestRedZoneProtectionMode::StaticPatching,
+                               "StaticPatching"}})
+
+inline std::ostream& operator<<(std::ostream& output, WindowsGuestRedZoneProtectionMode mode) {
+    return output << nlohmann::json(mode).get<std::string>();
+}
 
 enum class ConfigMode {
     Default,
@@ -188,6 +200,7 @@ struct GeneralSettings {
     Setting<bool> neo_mode{false};
     Setting<bool> dev_kit_mode{false};
     Setting<int> extra_dmem_in_mbytes{0};
+    Setting<int> extra_fmem_in_mbytes{0};
     Setting<bool> shad_net_enabled{false};
     Setting<bool> trophy_popup_disabled{false};
     Setting<double> trophy_notification_duration{6.0};
@@ -211,6 +224,8 @@ struct GeneralSettings {
             make_override<GeneralSettings>("dev_kit_mode", &GeneralSettings::dev_kit_mode),
             make_override<GeneralSettings>("extra_dmem_in_mbytes",
                                            &GeneralSettings::extra_dmem_in_mbytes),
+            make_override<GeneralSettings>("extra_fmem_in_mbytes",
+                                           &GeneralSettings::extra_fmem_in_mbytes),
             make_override<GeneralSettings>("shad_net_enabled", &GeneralSettings::shad_net_enabled),
             make_override<GeneralSettings>("trophy_popup_disabled",
                                            &GeneralSettings::trophy_popup_disabled),
@@ -221,6 +236,7 @@ struct GeneralSettings {
                                            &GeneralSettings::trophy_notification_side),
             make_override<GeneralSettings>("connected_to_network",
                                            &GeneralSettings::connected_to_network),
+            make_override<GeneralSettings>("console_language", &GeneralSettings::console_language),
             make_override<GeneralSettings>("shadnet_server", &GeneralSettings::shadnet_server),
             make_override<GeneralSettings>("shadnet_webapi_server",
                                            &GeneralSettings::shadnet_webapi_server),
@@ -231,8 +247,8 @@ struct GeneralSettings {
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_dir, home_dir,
                                    sys_modules_dir, font_dir, volume_slider, neo_mode, dev_kit_mode,
-                                   extra_dmem_in_mbytes, shad_net_enabled, trophy_popup_disabled,
-                                   trophy_notification_duration, show_splash,
+                                   extra_dmem_in_mbytes, extra_fmem_in_mbytes, shad_net_enabled,
+                                   trophy_popup_disabled, trophy_notification_duration, show_splash,
                                    trophy_notification_side, connected_to_network,
                                    discord_rpc_enabled, show_fps_counter, console_language,
                                    big_picture_scale, shadnet_server, shadnet_webapi_server,
@@ -379,6 +395,21 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioSettings, audio_backend, sdl_mic_device,
                                    sdl_main_output_device, sdl_padSpk_output_device,
                                    openal_mic_device, openal_main_output_device,
                                    openal_padSpk_output_device, openal_hrtf, openal_output_mode)
+
+// Windows static guest red-zone protection
+struct WindowsGuestRedZoneProtectionSettings {
+    Setting<WindowsGuestRedZoneProtectionMode> windows_guest_red_zone_protection_mode{
+        WindowsGuestRedZoneProtectionMode::Disabled};
+
+    std::vector<OverrideItem> GetOverrideableFields() const {
+        return std::vector<OverrideItem>{make_override<WindowsGuestRedZoneProtectionSettings>(
+            "windows_guest_red_zone_protection_mode",
+            &WindowsGuestRedZoneProtectionSettings::windows_guest_red_zone_protection_mode)};
+    }
+};
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WindowsGuestRedZoneProtectionSettings,
+                                   windows_guest_red_zone_protection_mode)
 
 // -------------------------------
 // GPU settings
@@ -536,6 +567,8 @@ private:
     DebugSettings m_debug{};
     InputSettings m_input{};
     AudioSettings m_audio{};
+    // Windows static guest red-zone protection
+    WindowsGuestRedZoneProtectionSettings m_windows_guest_red_zone_protection{};
     GPUSettings m_gpu{};
     VulkanSettings m_vulkan{};
     ConfigMode m_configMode{ConfigMode::Default};
@@ -590,6 +623,10 @@ public:
     std::vector<OverrideItem> GetAudioOverrideableFields() const {
         return m_audio.GetOverrideableFields();
     }
+    // Windows static guest red-zone protection
+    std::vector<OverrideItem> GetWindowsGuestRedZoneProtectionOverrideableFields() const {
+        return m_windows_guest_red_zone_protection.GetOverrideableFields();
+    }
     std::vector<OverrideItem> GetGPUOverrideableFields() const {
         return m_gpu.GetOverrideableFields();
     }
@@ -622,6 +659,7 @@ public:
     SETTING_FORWARD_BOOL(m_general, Neo, neo_mode)
     SETTING_FORWARD_BOOL(m_general, DevKit, dev_kit_mode)
     SETTING_FORWARD(m_general, ExtraDmemInMBytes, extra_dmem_in_mbytes)
+    SETTING_FORWARD(m_general, ExtraFmemInMBytes, extra_fmem_in_mbytes)
     bool IsShadNetEnabled() const {
         return m_general.shad_net_enabled.get(m_configMode) &&
                !m_shadnet_session_disabled.load(std::memory_order_relaxed);
@@ -676,6 +714,10 @@ public:
     SETTING_FORWARD(m_audio, OpenALPadSpkOutputDevice, openal_padSpk_output_device)
     SETTING_FORWARD(m_audio, OpenALHrtf, openal_hrtf)
     SETTING_FORWARD(m_audio, OpenALOutputMode, openal_output_mode)
+
+    // Windows static guest red-zone protection
+    SETTING_FORWARD(m_windows_guest_red_zone_protection, WindowsGuestRedZoneProtectionMode,
+                    windows_guest_red_zone_protection_mode)
 
     // Debug settings
     SETTING_FORWARD_BOOL(m_debug, DebugDump, debug_dump)
