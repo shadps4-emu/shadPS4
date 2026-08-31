@@ -99,6 +99,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_NpSnsFacebookDialog, nullptr},
     {Class::Lib_NpTrophy, nullptr},
     {Class::Lib_NpTus, nullptr},
+    {Class::Lib_NpUtility, nullptr},
     {Class::Lib_NpWebApi, nullptr},
     {Class::Lib_NpWebApi2, nullptr},
     {Class::Lib_Pad, nullptr},
