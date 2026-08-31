@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
+#include <unordered_map>
 
 #include <gtest/gtest.h>
 #include <half.hpp>
+#include <spirv/unified1/spirv.hpp11>
 
 #include "gcn_test_runner.hpp"
 #include "instructions.hpp"
@@ -25,6 +27,72 @@ struct F32x2 {
     float a;
     float b;
 };
+
+struct FrontFaceSpirvInfo {
+    bool has_front_facing{};
+    u32 select_count{};
+    u32 true_value{};
+    u32 false_value{};
+};
+
+FrontFaceSpirvInfo InspectFrontFaceSpirv(const std::vector<u32>& spirv) {
+    FrontFaceSpirvInfo info{};
+    if (spirv.size() < 5U) {
+        ADD_FAILURE() << "SPIR-V header is truncated";
+        return info;
+    }
+
+    std::unordered_map<u32, u32> constants;
+    u32 true_value_id{};
+    u32 false_value_id{};
+    for (size_t offset = 5; offset < spirv.size();) {
+        const u32 instruction = spirv[offset];
+        const u32 word_count = instruction >> 16;
+        const auto opcode = static_cast<spv::Op>(instruction & 0xffffU);
+        if (word_count == 0U || offset + word_count > spirv.size()) {
+            ADD_FAILURE() << "Malformed SPIR-V instruction at word " << offset;
+            return info;
+        }
+
+        if (opcode == spv::Op::OpDecorate && word_count >= 4U &&
+            spirv[offset + 2] == static_cast<u32>(spv::Decoration::BuiltIn) &&
+            spirv[offset + 3] == static_cast<u32>(spv::BuiltIn::FrontFacing)) {
+            info.has_front_facing = true;
+        } else if (opcode == spv::Op::OpConstant && word_count == 4U) {
+            constants.emplace(spirv[offset + 2], spirv[offset + 3]);
+        } else if (opcode == spv::Op::OpSelect && word_count == 6U) {
+            ++info.select_count;
+            true_value_id = spirv[offset + 4];
+            false_value_id = spirv[offset + 5];
+        }
+        offset += word_count;
+    }
+
+    if (info.select_count == 1U && constants.contains(true_value_id) &&
+        constants.contains(false_value_id)) {
+        info.true_value = constants.at(true_value_id);
+        info.false_value = constants.at(false_value_id);
+    }
+    return info;
+}
+
+TEST_F(GcnTest, fragment_front_face_uses_float_sign_bits) {
+    const auto info = InspectFrontFaceSpirv(TranslateFragmentFrontFaceToSpirv(false));
+
+    EXPECT_TRUE(info.has_front_facing);
+    EXPECT_EQ(info.select_count, 1U);
+    EXPECT_EQ(info.true_value, 0x3f800000U);
+    EXPECT_EQ(info.false_value, 0xbf800000U);
+}
+
+TEST_F(GcnTest, fragment_front_face_uses_all_bits) {
+    const auto info = InspectFrontFaceSpirv(TranslateFragmentFrontFaceToSpirv(true));
+
+    EXPECT_TRUE(info.has_front_facing);
+    EXPECT_EQ(info.select_count, 1U);
+    EXPECT_EQ(info.true_value, 1U);
+    EXPECT_EQ(info.false_value, 0U);
+}
 
 // Example
 // TEST_F(GcnTest, test_name) {
