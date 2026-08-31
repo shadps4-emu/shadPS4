@@ -340,6 +340,20 @@ void NpHandler::FailPendingRequests(s32 user_id, s32 error_code) {
             }
         }
     }
+    {
+        std::lock_guard lock(m_mutex_pending_lookup);
+        for (auto it = m_pending_lookup.begin(); it != m_pending_lookup.end();) {
+            if (it->second.user_id == user_id) {
+                if (it->second.on_result) {
+                    it->second.on_result(error_code, 0, {});
+                }
+                it = m_pending_lookup.erase(it);
+                ++failed;
+            } else {
+                ++it;
+            }
+        }
+    }
     if (failed > 0) {
         LOG_WARNING(NpHandler, "user_id={} failed {} pending request(s) with {:#x}", user_id,
                     failed, static_cast<u32>(error_code));
@@ -2122,6 +2136,54 @@ s32 NpHandler::TusSetMultiSlotVariable(s32 user_id, s32 service_label, const std
     return ORBIS_OK;
 }
 
+s32 NpHandler::TssGetData(s32 user_id, s32 service_label, s32 slotId, bool hasOffset, u64 offset,
+                          bool hasLastByte, u64 lastByte, bool hasIfParam, s32 ifType,
+                          u64 ifLastModified, NpTus::OrbisNpTssDataStatus* statusOut, void* dataOut,
+                          u64 dataCap, std::shared_ptr<NpTus::TusRequestCtx> ctx,
+                          u64* contentLengthOut) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    shadnet::TssGetDataRequest proto;
+    proto.set_slotid(slotId);
+    if (hasOffset) {
+        proto.set_hasoffset(true);
+        proto.set_offset(offset);
+    }
+    if (hasLastByte) {
+        proto.set_haslastbyte(true);
+        proto.set_lastbyte(lastByte);
+    }
+    if (hasIfParam) {
+        proto.set_hasifparam(true);
+        proto.set_iftype(ifType);
+        proto.set_iflastmodified(ifLastModified);
+    }
+    const std::string com_id = GetNpCommId(service_label);
+    if (!IsValidNpCommId(com_id)) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::TssGetData,
+                                             BuildTusPayload(com_id, proto.SerializeAsString()));
+    std::lock_guard lock(m_mutex_pending_tus);
+    PendingTusRequest p;
+    p.req = std::move(ctx);
+    p.cmd = ShadNet::CommandType::TssGetData;
+    p.user_id = user_id;
+    p.tssStatusOut = statusOut;
+    p.tssContentLengthOut = contentLengthOut;
+    p.dataOut = dataOut;
+    p.dataCap = dataCap;
+    m_pending_tus.emplace(pkt_id, std::move(p));
+    return ORBIS_OK;
+}
+
 s32 NpHandler::TusGetData(s32 user_id, s32 service_label, const std::string& ownerNpId,
                           const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
                           NpTus::OrbisNpTusDataStatusA* statusAOut, u64 statusCap, void* dataOut,
@@ -2673,6 +2735,8 @@ void NpHandler::OnAsyncReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         OnTusReply(user_id, cmd, pkt_id, error, body);
     } else if (cmd_val >= 301 && cmd_val <= 400) {
         OnTrophyReply(user_id, cmd, pkt_id, error, body);
+    } else if (cmd == ShadNet::CommandType::LookupOnlineId) {
+        OnLookupReply(user_id, cmd, pkt_id, error, body);
     } else {
         OnScoreReply(user_id, cmd, pkt_id, error, body);
     }
@@ -2807,7 +2871,7 @@ void NpHandler::OnTrophyReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
 
     shadnet::SyncTrophiesReply pb;
     if (!pb.ParseFromArray(body.data() + 4, static_cast<int>(blob_sz))) {
-        LOG_WARNING(NpHandler, "SyncTrophies: could not parse reply");
+        LOG_WARNING(NpHandler, "could not parse reply");
         return;
     }
 
@@ -2816,9 +2880,107 @@ void NpHandler::OnTrophyReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
     for (const auto& t : pb.trophies())
         merged.emplace_back(t.trophyid(), t.timestamp());
 
-    LOG_INFO(NpHandler, "SyncTrophies: server holds {} trophies for user_id={}", merged.size(),
-             user_id);
+    LOG_INFO(NpHandler, "server holds {} trophies for user_id={}", merged.size(), user_id);
     on_merged(merged);
+}
+
+void NpHandler::ResolveOnlineId(
+    s32 user_id, const std::string& online_id,
+    std::function<void(s32 result, u64 account_id, const std::string& canonical_online_id)>
+        on_result) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            LOG_WARNING(NpHandler, "No shadNet session for user_id={}", user_id);
+            if (on_result) {
+                on_result(ORBIS_NP_ERROR_SIGNED_OUT, 0, {});
+            }
+            return;
+        }
+        client = it->second;
+    }
+    if (!client || !client->IsAuthenticated()) {
+        LOG_WARNING(NpHandler, "user_id={} not authenticated", user_id);
+        if (on_result) {
+            on_result(ORBIS_NP_COMMUNITY_ERROR_NO_LOGIN, 0, {});
+        }
+        return;
+    }
+    if (online_id.empty()) {
+        if (on_result) {
+            on_result(ORBIS_NP_COMMUNITY_SERVER_ERROR_NO_SUCH_USER_NPID, 0, {});
+        }
+        return;
+    }
+
+    const u64 pkt_id = client->LookupOnlineId(online_id);
+    if (on_result) {
+        std::lock_guard lock(m_mutex_pending_lookup);
+        PendingLookupRequest pending;
+        pending.user_id = user_id;
+        pending.on_result = std::move(on_result);
+        m_pending_lookup.emplace(pkt_id, std::move(pending));
+    }
+    LOG_INFO(NpHandler, "user_id={} onlineId='{}' pkt_id={}", user_id, online_id, pkt_id);
+}
+
+void NpHandler::OnLookupReply(s32 user_id, ShadNet::CommandType /*cmd*/, u64 pkt_id,
+                              ShadNet::ErrorType error, const std::vector<u8>& body) {
+    std::function<void(s32, u64, const std::string&)> on_result;
+    {
+        std::lock_guard lock(m_mutex_pending_lookup);
+        auto it = m_pending_lookup.find(pkt_id);
+        if (it == m_pending_lookup.end()) {
+            return; // no waiter (already flushed by a disconnect, or a stray reply)
+        }
+        on_result = std::move(it->second.on_result);
+        m_pending_lookup.erase(it);
+    }
+    if (!on_result) {
+        return;
+    }
+
+    if (error == ShadNet::ErrorType::NotFound) {
+        LOG_INFO(NpHandler, "LookupOnlineId: user_id={} pkt_id={} -> not found", user_id, pkt_id);
+        on_result(ORBIS_NP_COMMUNITY_SERVER_ERROR_NO_SUCH_USER_NPID, 0, {});
+        return;
+    }
+    if (error == ShadNet::ErrorType::InvalidInput) {
+        on_result(ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT, 0, {});
+        return;
+    }
+    if (error != ShadNet::ErrorType::NoError) {
+        LOG_WARNING(NpHandler, "LookupOnlineId failed: error={}", static_cast<int>(error));
+        on_result(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE, 0, {});
+        return;
+    }
+
+    // Reply body is u32 LE blob size followed by the proto.
+    if (body.size() < 4) {
+        LOG_WARNING(NpHandler, "LookupOnlineId: truncated reply");
+        on_result(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE, 0, {});
+        return;
+    }
+    const u32 blob_sz = static_cast<u32>(body[0]) | (static_cast<u32>(body[1]) << 8) |
+                        (static_cast<u32>(body[2]) << 16) | (static_cast<u32>(body[3]) << 24);
+    if (body.size() < 4 + blob_sz) {
+        LOG_WARNING(NpHandler, "LookupOnlineId: reply shorter than declared blob");
+        on_result(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE, 0, {});
+        return;
+    }
+
+    shadnet::LookupOnlineIdReply pb;
+    if (!pb.ParseFromArray(body.data() + 4, static_cast<int>(blob_sz))) {
+        LOG_WARNING(NpHandler, "LookupOnlineId: could not parse reply");
+        on_result(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE, 0, {});
+        return;
+    }
+
+    LOG_INFO(NpHandler, "LookupOnlineId: user_id={} pkt_id={} -> accountId={} npid='{}'", user_id,
+             pkt_id, pb.account_id(), pb.npid());
+    on_result(ORBIS_OK, pb.account_id(), pb.npid());
 }
 
 void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
@@ -3296,6 +3458,30 @@ void NpHandler::OnTusReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
             req->SetResult(static_cast<s32>(filled));
         }
         break;
+    }
+    case ShadNet::CommandType::TssGetData: {
+        shadnet::TssGetDataResponse resp;
+        if (!parseTusBody(resp)) {
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            return;
+        }
+        u64 recv = 0;
+        if (pending.dataOut && !resp.data().empty()) {
+            recv = std::min<u64>(pending.dataCap, resp.data().size());
+            std::memcpy(pending.dataOut, resp.data().data(), recv);
+        }
+        if (pending.tssContentLengthOut) {
+            *pending.tssContentLengthOut = resp.contentlength();
+        }
+        if (pending.tssStatusOut) {
+            *pending.tssStatusOut = NpTus::OrbisNpTssDataStatus{};
+            pending.tssStatusOut->modified.tick = resp.lastmodified();
+            pending.tssStatusOut->status =
+                static_cast<NpTus::OrbisNpTssStatus>(resp.statuscodetype());
+            pending.tssStatusOut->contentLength = resp.contentlength();
+        }
+        req->SetResult(ORBIS_OK);
+        return;
     }
     case ShadNet::CommandType::TusGetData: {
         shadnet::TusGetDataResponse resp;

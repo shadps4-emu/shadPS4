@@ -79,6 +79,7 @@ enum class CommandType : u16 {
     GetScoreGameDataByAccId = 38,
     GetToken = 39,
     SetAppearOffline = 40,
+    LookupOnlineId = 41,
     // Matchmaking
     ContextStart = 100,
     CreateRoom = 101,
@@ -110,6 +111,7 @@ enum class CommandType : u16 {
     TusTryAndSetVariable = 211,
     TusGetFriendsVariable = 212,
     TusDeleteMultiSlotVariable = 213,
+    TssGetData = 214,
     // Trophies
     UnlockTrophy = 301,
     SyncTrophies = 302,
@@ -160,6 +162,7 @@ enum class ErrorType : uint8_t {
     ScoreHasData = 31,
     CondFail = 32,
     Unsupported = 33,
+    TooLarge = 34, // TSS file on the server exceeds the slot's documented maximum
 };
 
 enum class ShadNetState {
@@ -339,6 +342,8 @@ public:
     u64 RemoveBlock(const std::string& npid);
     // Set the Appear-Offline preference mid-session (server handles us as offline while set).
     u64 SetAppearOffline(bool enable);
+    // Global online ID to account ID resolution
+    u64 LookupOnlineId(const std::string& npid);
 
 private:
     void ConnectThread();

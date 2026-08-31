@@ -694,6 +694,9 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_tus/np_tus.cpp
             src/core/libraries/np/np_tus/np_tus.h
             src/core/libraries/np/np_tus/np_tus_ctx.h
+            src/core/libraries/np/np_utility/np_utility.cpp
+            src/core/libraries/np/np_utility/np_utility.h
+            src/core/libraries/np/np_utility/np_utility_ctx.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
@@ -1020,7 +1023,6 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/passes/dead_code_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/flatten_extended_userdata_pass.cpp
                       src/shader_recompiler/ir/passes/hull_shader_transform.cpp
-                      src/shader_recompiler/ir/passes/identity_removal_pass.cpp
                       src/shader_recompiler/ir/passes/inject_clip_distance_attributes.cpp
                       src/shader_recompiler/ir/passes/ir_passes.h
                       src/shader_recompiler/ir/passes/lower_buffer_format_to_raw.cpp
@@ -1033,6 +1035,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/passes/shared_memory_barrier_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_simplify_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_to_storage_pass.cpp
+                      src/shader_recompiler/ir/passes/lower_phis_to_regs_pass.cpp
+                      src/shader_recompiler/ir/passes/ssa_repair_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.h
@@ -1042,9 +1046,12 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/basic_block.h
                       src/shader_recompiler/ir/breadth_first_search.h
                       src/shader_recompiler/ir/condition.h
+                      src/shader_recompiler/ir/dominance.cpp
+                      src/shader_recompiler/ir/dominance.h
                       src/shader_recompiler/ir/ir_emitter.cpp
                       src/shader_recompiler/ir/ir_emitter.h
                       src/shader_recompiler/ir/microinstruction.cpp
+                      src/shader_recompiler/ir/microinstruction.h
                       src/shader_recompiler/ir/opcodes.cpp
                       src/shader_recompiler/ir/opcodes.h
                       src/shader_recompiler/ir/opcodes.inc
@@ -1057,6 +1064,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/program.cpp
                       src/shader_recompiler/ir/program.h
                       src/shader_recompiler/ir/reinterpret.h
+                      src/shader_recompiler/ir/srt_gvn_table.h
+                      src/shader_recompiler/ir/ssa.h
                       src/shader_recompiler/ir/reg.h
                       src/shader_recompiler/ir/type.cpp
                       src/shader_recompiler/ir/type.h

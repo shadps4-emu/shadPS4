@@ -160,13 +160,13 @@ F32 IREmitter::GetVectorReg(IR::VectorReg reg) {
 }
 
 void IREmitter::SetScalarReg(IR::ScalarReg reg, const U32F32& value) {
-    ASSERT(static_cast<u32>(reg) < IR::NumScalarRegs);
+    ASSERT(reg < IR::ScalarReg::Max);
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
     Inst(Opcode::SetScalarRegister, reg, value_typed);
 }
 
 void IREmitter::SetVectorReg(IR::VectorReg reg, const U32F32& value) {
-    ASSERT(static_cast<u32>(reg) < IR::NumVectorRegs);
+    ASSERT(reg < IR::VectorReg::Max);
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
     Inst(Opcode::SetVectorRegister, reg, value_typed);
 }
@@ -252,10 +252,6 @@ void IREmitter::SetExec(const U1& value) {
 
 void IREmitter::SetVcc(const U1& value) {
     Inst(Opcode::SetVcc, value);
-}
-
-void IREmitter::SetSccLo(const U32& value) {
-    Inst(Opcode::SetSccLo, value);
 }
 
 void IREmitter::SetVccLo(const U32& value) {

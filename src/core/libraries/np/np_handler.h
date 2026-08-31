@@ -114,6 +114,12 @@ public:
     // Returns -1 if no connected user has that Online ID.
     s32 GetUserIdByOnlineId(const OrbisNpOnlineId& online_id) const;
 
+    // Global online ID to account ID resolution
+    void ResolveOnlineId(
+        s32 user_id, const std::string& online_id,
+        std::function<void(s32 result, u64 account_id, const std::string& canonical_online_id)>
+            on_result);
+
     // Friend list
     u32 GetNumFriends(s32 user_id) const;
     std::optional<std::string> GetFriendNpid(s32 user_id, u32 index) const;
@@ -229,8 +235,10 @@ public:
                                 const std::string& virtualUser, const std::vector<s32>& slotIds,
                                 const std::vector<s64>& values,
                                 std::shared_ptr<NpTus::TusRequestCtx> ctx, s64 ownerAccountId = 0);
-
-    // TUS blob data.
+    s32 TssGetData(s32 user_id, s32 service_label, s32 slotId, bool hasOffset, u64 offset,
+                   bool hasLastByte, u64 lastByte, bool hasIfParam, s32 ifType, u64 ifLastModified,
+                   NpTus::OrbisNpTssDataStatus* statusOut, void* dataOut, u64 dataCap,
+                   std::shared_ptr<NpTus::TusRequestCtx> ctx, u64* contentLengthOut = nullptr);
     s32 TusGetData(s32 user_id, s32 service_label, const std::string& ownerNpId,
                    const std::string& virtualUser, s64 ownerAccountId, s32 slotId,
                    NpTus::OrbisNpTusDataStatusA* statusAOut, u64 statusCap, void* dataOut,
@@ -401,6 +409,17 @@ private:
     void OnTrophyReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
                        const std::vector<u8>& body);
 
+    // Callbacks awaiting a LookupOnlineId reply, keyed by packet id.
+    struct PendingLookupRequest {
+        s32 user_id = -1; // submitting user, for flushing on disconnect
+        std::function<void(s32 result, u64 account_id, const std::string& canonical_online_id)>
+            on_result;
+    };
+    mutable std::mutex m_mutex_pending_lookup;
+    std::map<u64, PendingLookupRequest> m_pending_lookup;
+    void OnLookupReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
+                       const std::vector<u8>& body);
+
     // TUS requests awaiting a reply, keyed by the submit packet id.
     struct PendingTusRequest {
         std::shared_ptr<NpTus::TusRequestCtx> req;
@@ -415,10 +434,12 @@ private:
         NpTus::OrbisNpTusDataStatusForCrossSave* statusArrayCS = nullptr; // cross-save data status
         void* dataOut = nullptr;                                          // GetData payload
         u64 dataCap = 0;                                                  // GetData buffer capacity
-        u64 dataOffset = 0;      // GetData installment offset into the blob
-        u64 statusCap = 0;       // GetData dataStatus buffer size (0 = struct size)
-        u32* totalOut = nullptr; // friends total
-        u64 arrayNum = 0;        // expected entry count
+        u64 dataOffset = 0; // GetData installment offset into the blob
+        u64 statusCap = 0;  // GetData dataStatus buffer size (0 = struct size)
+        NpTus::OrbisNpTssDataStatus* tssStatusOut = nullptr; // TSS GetData status
+        u64* tssContentLengthOut = nullptr;                  // legacy GetSmallStorage byte count
+        u32* totalOut = nullptr;                             // friends total
+        u64 arrayNum = 0;                                    // expected entry count
     };
     mutable std::mutex m_mutex_pending_tus;
     std::map<u64, PendingTusRequest> m_pending_tus;

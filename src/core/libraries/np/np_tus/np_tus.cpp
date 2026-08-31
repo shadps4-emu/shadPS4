@@ -55,6 +55,8 @@ constexpr size_t TusMaxTitleCtx = 32;
 constexpr size_t TusMaxRequests = 256;
 constexpr int TusMaxSlotsPerRequest = 64;
 constexpr int TusMaxSelectedFriends = 100;
+constexpr u64 TssMaxSize = 64 * 1024U;
+constexpr s32 TssMaxSlotId = 15;
 constexpr int TusMaxUsersPerRequest = 101;
 
 static std::mutex g_mutex;
@@ -222,7 +224,9 @@ s32 PS4_SYSV_ABI sceNpTusDeleteRequest(int requestId) {
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
     }
     if (it->second.ctx) {
-        LOG_ERROR(Lib_NpTus, "Cannot delete request {}: request is still active", requestId);
+        if (!it->second.ctx->HasResult()) {
+            LOG_INFO(Lib_NpTus, "request {} still in flight, aborting it", requestId);
+        }
         it->second.ctx->SetResult(ORBIS_NP_COMMUNITY_ERROR_ABORTED);
     }
     g_requests.erase(it);
@@ -4849,59 +4853,150 @@ s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUserAsync(
 }
 
 //***********************************
-// TSS functions - WIP TODO
+// TSS functions
 //***********************************
 s32 PS4_SYSV_ABI sceNpTssGetDataAsync(int reqId, s32 slotId, OrbisNpTssDataStatus* dataStatus,
-                                      u64 dataStatusSize, void* data, u64 dataSize,
-                                      OrbisNpTssGetDataOptParam* option) { // dummy atm TODO
-    LOG_INFO(Lib_NpTus, "reqId = {:#x}, slotId = {}, dataStatusSize = {}, dataSize = {}", reqId,
-             slotId, dataStatusSize, dataSize);
+                                      u64 dataStatusSize, void* data, u64 recvSize,
+                                      OrbisNpTssGetDataOptParam* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {:#x}, slotId = {}, dataStatus = {}, dataStatusSize = {}, data = {}, "
+             "recvSize = {}, option = {}",
+             reqId, slotId, fmt::ptr(dataStatus), dataStatusSize, fmt::ptr(data), recvSize,
+             fmt::ptr(option));
+    if (!dataStatus) {
+        LOG_ERROR(Lib_NpTus, "insufficient argument: dataStatus is NULL");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (dataStatusSize != sizeof(OrbisNpTssDataStatus)) {
+        LOG_ERROR(Lib_NpTus, "size mismatch: dataStatusSize={} but sizeof(OrbisNpTssDataStatus)={}",
+                  dataStatusSize, sizeof(OrbisNpTssDataStatus));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+    if (slotId < 0 || slotId > TssMaxSlotId) {
+        LOG_ERROR(Lib_NpTus, "invalid slot id {} (valid 0-{})", slotId, TssMaxSlotId);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
 
-    if (option && option->size != 0x20) {
-        LOG_ERROR(Lib_NpTus, "Invalid option provided");
-        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    bool hasOffset = false, hasLastByte = false, hasIfParam = false;
+    u64 offset = 0, lastByte = 0, ifLastModified = 0;
+    s32 ifType = 0;
+    if (option) {
+        if (option->size != sizeof(OrbisNpTssGetDataOptParam)) {
+            LOG_ERROR(Lib_NpTus,
+                      "size mismatch: option->size={} but sizeof(OrbisNpTssGetDataOptParam)={}",
+                      option->size, sizeof(OrbisNpTssGetDataOptParam));
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+        }
+        if (option->offset) {
+            hasOffset = true;
+            offset = *option->offset;
+        }
+        if (option->lastByte) {
+            hasLastByte = true;
+            lastByte = *option->lastByte;
+        }
+        if (option->ifParam) {
+            hasIfParam = true;
+            ifType = static_cast<s32>(option->ifParam->ifType);
+            ifLastModified = option->ifParam->lastModified.tick;
+        }
     }
-    if (dataStatus && dataStatusSize != 0x18) {
-        LOG_ERROR(Lib_NpTus, "Invalid data status size");
-        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+
+    NpTusRequest* req = nullptr;
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
+        return ret;
     }
-    if (slotId < 0 || slotId > 15) {
-        LOG_ERROR(Lib_NpTus, "Invalid slot ID");
+
+    u64 startOffset = offset;
+    {
+        std::lock_guard lock(g_mutex);
+        if (!req->xfer.SameTarget(slotId, 0, std::string())) {
+            req->xfer.Begin(slotId, 0, std::string());
+        } else if (!hasOffset) {
+            hasOffset = true;
+            startOffset = req->xfer.recvOffset;
+        }
+        if (data) {
+            req->xfer.recvOffset += recvSize;
+        }
+    }
+
+    auto ctx = std::make_shared<TusRequestCtx>();
+    req->ctx = ctx;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TssGetData(
+        uid, static_cast<s32>(svc), slotId, hasOffset, startOffset, hasLastByte, lastByte,
+        hasIfParam, ifType, ifLastModified, dataStatus, data, data ? recvSize : 0, ctx);
+    if (submit < 0) {
+        return submit;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTssGetData(int reqId, s32 slotId, OrbisNpTssDataStatus* dataStatus,
+                                 u64 dataStatusSize, void* data, u64 recvSize,
+                                 OrbisNpTssGetDataOptParam* option) {
+    auto ret =
+        sceNpTssGetDataAsync(reqId, slotId, dataStatus, dataStatusSize, data, recvSize, option);
+    if (ret < 0) {
+        return ret;
+    }
+    // Returns 0 on normal termination.
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
+}
+
+s32 PS4_SYSV_ABI sceNpTssGetSmallStorageAsync(int reqId, void* data, u64 maxSize,
+                                              u64* contentLength, void* option) {
+    LOG_INFO(Lib_NpTus, "reqId = {:#x}, data = {}, maxSize = {}, contentLength = {}, option = {}",
+             reqId, fmt::ptr(data), maxSize, fmt::ptr(contentLength), fmt::ptr(option));
+    if (option) {
+        LOG_ERROR(Lib_NpTus, "invalid argument: option must be NULL");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (maxSize > TssMaxSize) {
+        LOG_ERROR(Lib_NpTus, "maxSize {} exceeds SCE_NP_TSS_MAX_SIZE {}", maxSize, TssMaxSize);
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
 
     NpTusRequest* req = nullptr;
-    if (auto ret = GetRequest(reqId, &req); ret < 0) {
+    u32 svc = 0;
+    s32 uid = -1;
+    std::string self;
+    if (auto ret = ResolveTus(reqId, &req, &svc, &uid, &self); ret < 0) {
         return ret;
     }
 
     auto ctx = std::make_shared<TusRequestCtx>();
     req->ctx = ctx;
-    if (dataStatus) {
-        dataStatus->status = OrbisNpTssStatus::Ok;
-        dataStatus->contentLength = 0;
+    s32 submit = Libraries::Np::NpHandler::GetInstance().TssGetData(
+        uid, static_cast<s32>(svc), /*slotId=*/0, /*hasOffset=*/false, 0, /*hasLastByte=*/false, 0,
+        /*hasIfParam=*/false, 0, 0, /*statusOut=*/nullptr, data, data ? maxSize : 0, ctx,
+        /*contentLengthOut=*/contentLength);
+    if (submit < 0) {
+        return submit;
     }
-    ctx->SetResult(0);
-
     return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpTssGetSmallStorage(int reqId, void* data, u64 maxSize, u64* contentLength,
+                                         void* option) {
+    auto ret = sceNpTssGetSmallStorageAsync(reqId, data, maxSize, contentLength, option);
+    if (ret < 0) {
+        return ret;
+    }
+    // Returns 0 on normal termination.
+    if (auto wait = sceNpTusWaitAsync(reqId, &ret); wait < 0) {
+        return wait;
+    }
+    return ret;
 }
 
 s32 PS4_SYSV_ABI sceNpTssGetStorageAsync(int reqId) {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
-    return FakeAsyncComplete(reqId);
-}
-
-s32 PS4_SYSV_ABI sceNpTssGetData() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTssGetSmallStorage() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpTssGetSmallStorageAsync(int reqId) {
     LOG_ERROR(Lib_NpTus, "(STUBBED) called, faking async completion");
     return FakeAsyncComplete(reqId);
 }

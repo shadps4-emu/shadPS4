@@ -7,12 +7,27 @@
 #include <optional>
 #include "common/types.h"
 
-namespace Libraries::Np::NpTus {
+namespace Libraries::Np::NpUtility {
 
-struct TusRequestCtx {
+// sceNpLookupSetTimeout() values
+struct LookupTimeouts {
+    s32 resolveRetry = 0;
+    u32 resolveTimeout = 0;
+    u32 connTimeout = 0;
+    u32 sendTimeout = 0;
+    u32 recvTimeout = 0;
+};
+
+struct LookupRequestCtx {
     std::mutex mutex;
     std::condition_variable cv;
     std::optional<s32> result;
+
+    s32 titleCtxId = 0;
+    bool isAsync = false;
+    bool used = false;
+    bool aborted = false;
+    std::optional<LookupTimeouts> timeouts;
 
     void SetResult(s32 r) {
         {
@@ -25,13 +40,11 @@ struct TusRequestCtx {
         cv.notify_all();
     }
 
-    // True once the operation has completed (or been aborted).
     bool HasResult() {
         std::lock_guard lock(mutex);
         return result.has_value();
     }
 
-    // Block until the handler (or an abort/delete) sets the result.
     s32 Wait() {
         std::unique_lock lock(mutex);
         cv.wait(lock, [this] { return result.has_value(); });
@@ -39,4 +52,4 @@ struct TusRequestCtx {
     }
 };
 
-} // namespace Libraries::Np::NpTus
+} // namespace Libraries::Np::NpUtility
