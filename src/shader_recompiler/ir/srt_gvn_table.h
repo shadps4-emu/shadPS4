@@ -2,12 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_map>
-#include <boost/container/set.hpp>
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
 #include "common/hash.h"
-#include "common/types.h"
-#include "shader_recompiler/ir/dominance_search.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
 
@@ -57,6 +54,7 @@ private:
         case IR::Opcode::UMin32:
         case IR::Opcode::UMax32:
         case IR::Opcode::BitFieldUExtract:
+            ASSERT(!inst->MayHaveSideEffects());
             return true;
         default:
             return false;
@@ -64,50 +62,10 @@ private:
     }
 
     u32 ComputeInstValueNumber(IR::Inst* inst) {
-        ASSERT(!value_numbers.contains(
-            IR::Value(inst))); // Should always be checking before calling this function
-
-        if (inst->MayHaveSideEffects()) {
-            return NextValueNumber(IR::Value(inst));
-        }
-
+        // Should always be checking before calling this functio
+        ASSERT(!value_numbers.contains(IR::Value(inst)));
         u32 vn;
-
-        if (inst->GetOpcode() == IR::Opcode::Phi) {
-            const auto pred = [this](IR::Inst* inst) -> std::optional<IR::Inst*> {
-                switch (inst->GetOpcode()) {
-                case IR::Opcode::GetUserData:
-                case IR::Opcode::ReadConst:
-                case IR::Opcode::ReadConstBuffer:
-                    return inst;
-                default:
-                    return std::nullopt;
-                }
-            };
-            boost::container::small_vector<std::pair<IR::Inst*, IR::Inst*>, 2> src_inst_map;
-            boost::container::small_vector<IR::Inst*, 2> srcs;
-            for (size_t i = 0; i < inst->NumArgs(); ++i) {
-                auto arg = inst->Arg(i);
-                if (arg.IsImmediate()) {
-                    continue;
-                }
-                auto arg_inst = arg.Inst();
-                auto src = IR::DominanceSearch(arg_inst, *inst->GetParent(), true, pred);
-                if (!src) {
-                    continue;
-                }
-                auto src_val = src.value();
-                srcs.push_back(src_val);
-                src_inst_map.emplace_back(src_val, arg_inst);
-            }
-            Gcn::EliminateNonDominantInstructions(srcs, *inst->GetParent());
-            ASSERT(srcs.size() == 1);
-            auto src_it = std::ranges::find_if(
-                src_inst_map, [&srcs](const auto p) { return p.first == srcs[0]; });
-            ASSERT(src_it != src_inst_map.end());
-            vn = GetValueNumber(src_it->second);
-            value_numbers[IR::Value(inst)] = vn;
-        } else if (IsArgHashInst(inst)) {
+        if (IsArgHashInst(inst)) {
             InstVector iv = MakeInstVector(inst);
             if (auto it = iv_to_vn.find(iv); it != iv_to_vn.end()) {
                 vn = it->second;
@@ -119,7 +77,6 @@ private:
         } else {
             vn = NextValueNumber(IR::Value(inst));
         }
-
         return vn;
     }
 

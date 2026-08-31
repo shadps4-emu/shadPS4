@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <queue>
 #include <unordered_map>
 #include <boost/container/flat_map.hpp>
 #include <xbyak/xbyak.h>
@@ -14,7 +15,6 @@
 #include "core/emulator_settings.h"
 #include "core/signals.h"
 #include "shader_recompiler/info.h"
-#include "shader_recompiler/ir/dominance_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/passes/srt.h"
@@ -557,7 +557,7 @@ static inline bool PushPtr(Xbyak::CodeGenerator& c, PassInfo& pass_info, const I
 
 static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
-};
+}
 
 static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
                          Xbyak::CodeGenerator& c) {
@@ -693,6 +693,16 @@ void SimplifyReadConstAddressAdd(IR::Inst& inst) {
     }
 }
 
+static bool IsReadConstSource(const IR::Value base) {
+    auto* inst = base.TryInst();
+    if (!inst) {
+        return false;
+    }
+    return inst->GetOpcode() == IR::Opcode::GetUserData ||
+           inst->GetOpcode() == IR::Opcode::ReadConst ||
+           inst->GetOpcode() == IR::Opcode::ReadConstBuffer;
+}
+
 } // Anonymous namespace
 
 void FlattenExtendedUserdataPass(IR::Program& program) {
@@ -775,21 +785,11 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
             continue;
         }
 
-        IR::Inst* ptr_composite = inst->Arg(0).Inst();
+        IR::Inst* base = inst->Arg(0).Inst();
+        ASSERT_MSG(IsReadConstSource(base->Arg(0)), "ReadConst base low not from constant memory");
+        ASSERT_MSG(IsReadConstSource(base->Arg(1)), "ReadConst base high not from constant memory");
 
-        const auto pred = [](IR::Inst* inst) -> std::optional<IR::Inst*> {
-            if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                inst->GetOpcode() == IR::Opcode::ReadConst ||
-                inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-                return inst;
-            }
-            return std::nullopt;
-        };
-        auto base0 = IR::DominanceSearch(ptr_composite->Arg(0), *inst->GetParent(), true, pred);
-        auto base1 = IR::DominanceSearch(ptr_composite->Arg(1), *inst->GetParent(), true, pred);
-        ASSERT_MSG(base0 && base1, "ReadConst not from constant memory");
-
-        IR::Inst* ptr_lo = base0.value();
+        IR::Inst* ptr_lo = base->Arg(0).Inst();
         ptr_lo = pass_info.DeduplicateInstruction(ptr_lo);
 
         auto ptr_uses_kv = pass_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});

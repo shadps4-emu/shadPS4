@@ -10,6 +10,12 @@
 
 namespace Shader::Optimization {
 
+static bool IsSharpSource(const IR::Inst* inst) {
+    return inst->GetOpcode() == IR::Opcode::GetUserData ||
+           inst->GetOpcode() == IR::Opcode::ReadConst ||
+           inst->GetOpcode() == IR::Opcode::ReadConstBuffer;
+}
+
 std::pair<IR::Inst*, bool> CheckDisableAnisoLod0Pattern(IR::Inst* inst) {
     // Find sample source trying to disable anisotropy for lod0.
     // Assuming S# is in UD s[12:15] and T# is in s[4:11]
@@ -31,19 +37,8 @@ std::pair<IR::Inst*, bool> CheckDisableAnisoLod0Pattern(IR::Inst* inst) {
         return {inst, false};
     }
 
-    // The bitfield extract might be hidden by phi sometimes
     auto* prod0_arg0 = prod0->Arg(0).Inst();
-    if (prod0_arg0->GetOpcode() == IR::Opcode::Phi) {
-        auto arg0 = prod0_arg0->Arg(0);
-        auto arg1 = prod0_arg0->Arg(1);
-        if (!arg0.IsImmediate() &&
-            arg0.Inst()->GetOpcode() == IR::Opcode::BitFieldUExtract) {
-            prod0_arg0 = arg0.Inst();
-        } else if (!arg1.IsImmediate() &&
-                   arg1.Inst()->GetOpcode() == IR::Opcode::BitFieldUExtract) {
-            prod0_arg0 = arg1.Inst();
-        }
-    }
+    ASSERT(prod0_arg0->GetOpcode() != IR::Opcode::Phi);
 
     // The bits range is for lods (note that constants are changed after constant propagation pass)
     if (prod0_arg0->GetOpcode() != IR::Opcode::BitFieldUExtract ||
@@ -60,39 +55,19 @@ std::pair<IR::Inst*, bool> CheckDisableAnisoLod0Pattern(IR::Inst* inst) {
 
     // We're working on the first dword of s#
     auto* prod2 = inst->Arg(2).Inst();
-    if (prod2->GetOpcode() != IR::Opcode::GetUserData &&
-        prod2->GetOpcode() != IR::Opcode::ReadConst && prod2->GetOpcode() != IR::Opcode::Phi) {
-        return {inst, false};
-    }
-
+    ASSERT(prod2->GetOpcode() != IR::Opcode::Phi);
     return {prod2, true};
 }
 
-IR::Inst* FindSharpSource(IR::Inst* handle, const IR::Block& current_parent) {
-    auto finding = IR::DominanceSearch(handle, current_parent, false,
-                                       [](IR::Inst* inst) -> std::optional<IR::Inst*> {
-                                           if (inst->GetOpcode() == IR::Opcode::GetUserData ||
-                                               inst->GetOpcode() == IR::Opcode::ReadConst ||
-                                               inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-                                               return inst;
-                                           }
-                                           return std::nullopt;
-                                       });
-
-    if (!finding) {
-        // We defer the assert to the resource patching pass, since sometimes the sharp is not
-        // required (e.g. for fmask)
-        return nullptr;
-    }
-
-    auto sharp_source = finding.value();
-    return sharp_source;
+IR::Inst* FindSharpSource(IR::Inst* handle) {
+    ASSERT(IsSharpSource(handle));
+    return handle;
 }
 
 void MarkReadConstBufferSharpSources(IR::Inst& first, IR::Block& block, u32 count, bool check_use) {
     // TODO: check_use is temporal here until a refactor is made to reference all components of the
     // tsharp in image insts
-    auto first_handle = FindSharpSource(&first, block)->Arg(0);
+    auto first_handle = FindSharpSource(&first)->Arg(0);
     auto it = block.Instructions().iterator_to(first);
     auto end = block.Instructions().end();
     u32 marked_count = 0;
@@ -102,7 +77,7 @@ void MarkReadConstBufferSharpSources(IR::Inst& first, IR::Block& block, u32 coun
             inst.GetOpcode() == IR::Opcode::IAdd32) {
             continue;
         }
-        auto source = FindSharpSource(&inst, block);
+        auto source = FindSharpSource(&inst);
         if (source && source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
             ASSERT(source->Arg(0) == first_handle);
             ASSERT(!check_use || source->HasUses());
@@ -124,7 +99,7 @@ void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList
         sharp_usages.emplace_back(ResourceDiscovery{&inst, &block, nullptr});
     } else {
         IR::Inst* buffer_handle = handle->Arg(0).Inst();
-        IR::Inst* sharp_source = FindSharpSource(buffer_handle, block);
+        IR::Inst* sharp_source = FindSharpSource(buffer_handle);
         if (sharp_source && sharp_source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
             MarkReadConstBufferSharpSources(*sharp_source, *sharp_source->GetParent(), 4, true);
         }
@@ -134,7 +109,7 @@ void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList
 
 void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList& sharp_usages) {
     IR::Inst* image_handle = inst.Arg(0).Inst();
-    IR::Inst* sharp_source = FindSharpSource(image_handle, block);
+    IR::Inst* sharp_source = FindSharpSource(image_handle);
     IR::Inst* sampler_sharp_source = nullptr;
     bool disable_aniso = false;
 
@@ -143,7 +118,7 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
         if (!sampler->AreAllArgsImmediates()) {
             auto [sampler_handle, found] =
                 CheckDisableAnisoLod0Pattern(sampler->Arg(0).Inst());
-            sampler_sharp_source = FindSharpSource(sampler_handle, block);
+            sampler_sharp_source = FindSharpSource(sampler_handle);
             disable_aniso = found;
         }
     }
