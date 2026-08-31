@@ -127,7 +127,7 @@ void Visit(Info& info, const IR::Inst& inst) {
         info.uses_lane_id = true;
         break;
     case IR::Opcode::ReadConst:
-        if (!info.uses_dma) {
+        if (!info.has_readconst) {
             info.buffers.push_back({
                 .used_types = IR::Type::U32,
                 // We can't guarantee that flatbuf will not grow past UBO
@@ -135,13 +135,13 @@ void Visit(Info& info, const IR::Inst& inst) {
                 .inline_cbuf = AmdGpu::Buffer::Placeholder(std::numeric_limits<u32>::max()),
                 .buffer_type = BufferType::Flatbuf,
             });
+            info.has_readconst = true;
         }
-        if (inst.Flags<u32>() != 0) {
+        if (inst.Flags<u32>() == 0) {
             info.readconst_types |= Info::ReadConstType::Immediate;
-        } else {
             info.readconst_types |= Info::ReadConstType::Dynamic;
+            info.uses_dma = true;
         }
-        info.uses_dma = true;
         break;
     case IR::Opcode::PackUfloat10_11_11:
         info.uses_pack_10_11_11 = true;
