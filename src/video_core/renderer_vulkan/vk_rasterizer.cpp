@@ -750,6 +750,13 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
     // This array holds the size of each consecutive array with the number of bindings consumed.
     // This is currently always 1 for anything other than mip fallback arrays.
     boost::container::small_vector<u32, 8> image_descriptor_array_sizes;
+    const auto bind_null_image = [&](bool is_written) {
+        auto& null_binding =
+            image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+        null_binding.second.type = is_written ? VideoCore::TextureCache::BindingType::Storage
+                                              : VideoCore::TextureCache::BindingType::Texture;
+        image_descriptor_array_sizes.push_back(1);
+    };
 
     for (const auto& image_desc : stage.images) {
         const auto tsharp = image_desc.GetSharp(stage);
@@ -760,12 +767,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         const auto data_fmt = tsharp.GetDataFmt();
         const auto num_fmt = tsharp.GetNumberFmt();
         if (tsharp.Address() == 0 || data_fmt == AmdGpu::DataFormat::FormatInvalid) {
-            auto& binding =
-                image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
-            binding.second.type = image_desc.is_written
-                                      ? VideoCore::TextureCache::BindingType::Storage
-                                      : VideoCore::TextureCache::BindingType::Texture;
-            image_descriptor_array_sizes.push_back(1);
+            bind_null_image(image_desc.is_written);
             continue;
         }
 
@@ -776,12 +778,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                         "data_format={}, num_format={}",
                         tsharp.Address(), tsharp.pitch, tsharp.width, static_cast<u32>(data_fmt),
                         static_cast<u32>(num_fmt));
-            auto& binding =
-                image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
-            binding.second.type = image_desc.is_written
-                                      ? VideoCore::TextureCache::BindingType::Storage
-                                      : VideoCore::TextureCache::BindingType::Texture;
-            image_descriptor_array_sizes.push_back(1);
+            bind_null_image(image_desc.is_written);
             continue;
         }
 

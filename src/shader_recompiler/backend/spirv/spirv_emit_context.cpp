@@ -405,29 +405,24 @@ void EmitContext::DefineInputs() {
             }
         } else if (uses_khr_barycentrics) {
             if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth) ||
+                info.loads.GetAny(IR::Attribute::BaryCoordSmoothCentroid) ||
+                info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample) ||
                 info.loads.GetAny(IR::Attribute::BaryCoordPullModel)) {
-                bary_coord_smooth =
+                bary_coord =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
             }
-            if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothCentroid)) {
-                bary_coord_smooth_centroid =
-                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
-            }
-            if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample)) {
-                bary_coord_smooth_sample =
-                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
-            }
-            if (info.loads.GetAny(IR::Attribute::BaryCoordNoPersp)) {
+            if (info.loads.GetAny(IR::Attribute::BaryCoordNoPersp) ||
+                info.loads.GetAny(IR::Attribute::BaryCoordNoPerspCentroid) ||
+                info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample)) {
                 bary_coord_nopersp = DefineVariable(F32[3], spv::BuiltIn::BaryCoordNoPerspKHR,
                                                     spv::StorageClass::Input);
             }
-            if (info.loads.GetAny(IR::Attribute::BaryCoordNoPerspCentroid)) {
-                bary_coord_nopersp_centroid = DefineVariable(
-                    F32[3], spv::BuiltIn::BaryCoordNoPerspKHR, spv::StorageClass::Input);
-            }
-            if (info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample)) {
-                bary_coord_nopersp_sample = DefineVariable(
-                    F32[3], spv::BuiltIn::BaryCoordNoPerspKHR, spv::StorageClass::Input);
+            if ((info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample) ||
+                 info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample)) &&
+                !ValidId(sample_index)) {
+                sample_index =
+                    DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
+                Decorate(sample_index, spv::Decoration::Flat);
             }
         }
 
