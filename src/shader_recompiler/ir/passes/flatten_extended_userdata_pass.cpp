@@ -15,6 +15,7 @@
 #include "core/signals.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/dominance_search.h"
+#include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/ir/program.h"
@@ -638,10 +639,64 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
 }
 
-} // namespace
+void SimplifyReadConstAddressAdd(IR::Inst& inst) {
+    // This handles the following pattern by combining the addition with the offset
+    // %82 = IAdd32 %65, #28816
+    // %83 = ULessThan32 %82, %65
+    // %84 = SelectU32 %83, #1, #0
+    // %85 = IAdd32 %66, %84
+    // %86 = CompositeConstructU32x2 %82, %85
+    // %87 = ReadConst (flags=0x0)  %86, #0
+    if (inst.GetOpcode() != IR::Opcode::ReadConst) {
+        return;
+    }
+    IR::Inst* addr = inst.Arg(0).Inst();
+    IR::Inst* hi = addr->Arg(1).TryInst();
+    IR::Inst* lo = addr->Arg(0).TryInst();
+    if (!hi || !lo) {
+        return;
+    }
+
+    if (lo->GetOpcode() != IR::Opcode::IAdd32 ||
+        hi->GetOpcode() != IR::Opcode::IAdd32) {
+        return;
+    }
+
+    IR::Value add_offset = lo->Arg(0);
+    if (!add_offset.IsImmediate()) {
+        return;
+    }
+
+    IR::Inst* sel = hi->Arg(1).TryInst();
+    if (!sel || sel->GetOpcode() != IR::Opcode::SelectU32) {
+        return;
+    }
+
+    IR::Value sel_true = sel->Arg(1);
+    IR::Value sel_false = sel->Arg(2);
+    if (!sel_true.IsImmediate() || !sel_false.IsImmediate() || sel_true.U32() != 1 ||
+        sel_false.U32() != 0) {
+        return;
+    }
+
+    addr->SetArg(0, lo->Arg(0));
+    addr->SetArg(1, hi->Arg(0));
+    for (auto [user, operand] : addr->Uses()) {
+        ASSERT(user->GetOpcode() == IR::Opcode::ReadConst && operand == 0);
+        IR::IREmitter ir{*user->GetParent(), IR::Block::InstructionList::s_iterator_to(*user)};
+        const u32 dw_add_offset = add_offset.U32() >> 2u;
+        if (auto offset = user->Arg(1); offset.IsImmediate()) {
+            user->SetArg(1, ir.Imm32(offset.U32() + dw_add_offset));
+        } else {
+            user->SetArg(1, ir.IAdd(IR::U32{offset}, ir.Imm32(dw_add_offset)));
+        }
+    }
+}
+
+} // Anonymous namespace
 
 void FlattenExtendedUserdataPass(IR::Program& program) {
-    Shader::Info& info = program.info;
+    auto& post_order = program.post_order_blocks;
     PassInfo pass_info;
 
     // traverse at end and assign offsets to duplicate readconsts, using
@@ -649,9 +704,8 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
     boost::container::small_vector<IR::Inst*, 32> all_readconsts, visited;
     std::queue<IR::Inst*> queue;
 
-    for (auto r_it = program.post_order_blocks.rbegin(); r_it != program.post_order_blocks.rend();
-         r_it++) {
-        IR::Block* block = *r_it;
+    for (auto it = post_order.rbegin(); it != post_order.rend(); it++) {
+        IR::Block* block{*it};
         for (IR::Inst& inst : *block) {
             if (inst.GetOpcode() != IR::Opcode::ReadConst &&
                 inst.GetOpcode() != IR::Opcode::ReadConstBuffer) {
@@ -666,6 +720,8 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                     continue;
                 }
             }
+
+            SimplifyReadConstAddressAdd(inst);
 
             all_readconsts.push_back(&inst);
 
@@ -747,7 +803,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         }
     }
 
-    GenerateSrtProgram(info, pass_info);
+    GenerateSrtProgram(program.info, pass_info);
 
     // Assign offsets to duplicate readconsts
     for (IR::Inst* readconst : all_readconsts) {
@@ -756,7 +812,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         SetFlatbufOffset(readconst, GetFlatbufOffset(original));
     }
 
-    info.RefreshFlatBuf();
+    program.info.RefreshFlatBuf();
 }
 
 } // namespace Shader::Optimization
