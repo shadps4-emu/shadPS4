@@ -17,8 +17,7 @@ static bool IsLoadShared(const IR::Inst& inst) {
 
 static bool IsWriteShared(const IR::Inst& inst) {
     const IR::Opcode opcode = inst.GetOpcode();
-    if (opcode >= IR::Opcode::SharedAtomicIAdd32 &&
-        opcode <= IR::Opcode::SharedAtomicXor64) {
+    if (opcode >= IR::Opcode::SharedAtomicIAdd32 && opcode <= IR::Opcode::SharedAtomicXor64) {
         return !inst.Flags<bool>();
     }
     return opcode == IR::Opcode::WriteSharedU16 || opcode == IR::Opcode::WriteSharedU32 ||
