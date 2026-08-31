@@ -101,6 +101,7 @@ void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
 }
 
 void Translator::V_READLANE_B32(const GcnInst& inst) {
+    ASSERT(inst.src[0].field == OperandField::VectorGPR);
     const IR::U32 value{GetSrc(inst.src[0])};
     const IR::U32 lane{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ReadLane(value, lane));

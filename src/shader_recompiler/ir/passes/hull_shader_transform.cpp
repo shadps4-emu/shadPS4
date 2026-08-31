@@ -399,7 +399,7 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                 const u32 num_dwords = u32(opcode) - u32(IR::Opcode::StoreBufferU32) + 1;
 
                 const auto GetValue = [&](IR::Value data) -> IR::F32 {
-                    if (auto* inst = data.TryInstRecursive();
+                    if (auto* inst = data.TryInst();
                         inst && inst->GetOpcode() == IR::Opcode::BitCastU32F32) {
                         return IR::F32{inst->Arg(0)};
                     }
@@ -438,7 +438,7 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                     ir.SetPatch(get_factor_attr(gcn_factor_idx), GetValue(data));
                     break;
                 }
-                auto* inst = data.TryInstRecursive();
+                auto* inst = data.TryInst();
                 ASSERT(inst && (inst->GetOpcode() == IR::Opcode::CompositeConstructU32x2 ||
                                 inst->GetOpcode() == IR::Opcode::CompositeConstructU32x3 ||
                                 inst->GetOpcode() == IR::Opcode::CompositeConstructU32x4));
@@ -453,9 +453,8 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                 IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
                 const u32 num_dwords = opcode == IR::Opcode::WriteSharedU32 ? 1 : 2;
                 const IR::U32 addr{inst.Arg(0)};
-                const IR::Value data = num_dwords == 2
-                                           ? ir.UnpackUint2x32(IR::U64{inst.Arg(1).Resolve()})
-                                           : inst.Arg(1).Resolve();
+                const IR::Value data =
+                    num_dwords == 2 ? ir.UnpackUint2x32(IR::U64{inst.Arg(1)}) : inst.Arg(1);
 
                 const auto SetOutput = [&](IR::U32 addr, IR::U32 value, AttributeRegion output_kind,
                                            u32 off_dw) {

@@ -4,45 +4,19 @@
 #include <cstddef>
 #include <string_view>
 #include "common/hash.h"
+#include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
 
-Value::Value(IR::Inst* value) noexcept : type{Type::Opaque}, inst{value} {}
-
-Value::Value(IR::ScalarReg reg) noexcept : type{Type::ScalarReg}, sreg{reg} {}
-
-Value::Value(IR::VectorReg reg) noexcept : type{Type::VectorReg}, vreg{reg} {}
-
-Value::Value(IR::VirtualReg reg_) noexcept : type{Type::VirtualReg}, reg{reg_} {}
-
-Value::Value(IR::Attribute value) noexcept : type{Type::Attribute}, attribute{value} {}
-
-Value::Value(IR::Patch patch) noexcept : type{Type::Patch}, patch{patch} {}
-
-Value::Value(bool value) noexcept : type{Type::U1}, imm_u1{value} {}
-
-Value::Value(u8 value) noexcept : type{Type::U8}, imm_u8{value} {}
-
-Value::Value(u16 value) noexcept : type{Type::U16}, imm_u16{value} {}
-
-Value::Value(u32 value) noexcept : type{Type::U32}, imm_u32{value} {}
-
-Value::Value(f32 value) noexcept : type{Type::F32}, imm_f32{value} {}
-
-Value::Value(u64 value) noexcept : type{Type::U64}, imm_u64{value} {}
-
-Value::Value(f64 value) noexcept : type{Type::F64}, imm_f64{value} {}
-
-Value::Value(const char* value) noexcept : type{Type::StringLiteral}, string_literal{value} {}
+bool Value::IsPhi() const noexcept {
+    return type == Type::Opaque && inst->GetOpcode() == Opcode::Phi;
+}
 
 IR::Type Value::Type() const noexcept {
     if (IsPhi()) {
         // The type of a phi node is stored in its flags
         return inst->Flags<IR::Type>();
-    }
-    if (IsIdentity()) {
-        return inst->Arg(0).Type();
     }
     if (type == Type::Opaque) {
         return inst->Type();
@@ -114,7 +88,7 @@ std::size_t hash<Shader::IR::Value>::operator()(const Shader::IR::Value& v) cons
     case Type::Void:
         return h;
     case Type::Opaque:
-        return reinterpret_cast<u64>(v.InstRecursive());
+        return reinterpret_cast<u64>(v.Inst());
     case Type::ScalarReg:
         return HashCombine(static_cast<u64>(v.sreg), h);
     case Type::VectorReg:

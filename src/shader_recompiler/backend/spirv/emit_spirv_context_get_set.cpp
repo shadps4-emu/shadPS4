@@ -6,6 +6,7 @@
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/ir/attribute.h"
+#include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/ir/patch.h"
 #include "shader_recompiler/runtime_info.h"
 
@@ -246,6 +247,10 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
     if (IR::IsMrt(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
         const auto& info{ctx.frag_outputs.at(index)};
+        if (element < 3 && ctx.runtime_info.fs_info.color_buffers[index].blend_self_scale) {
+            // Emulates GCN's factor-scaled min/max blend: min/max(src*src, dst*dst).
+            value = ctx.OpFMul(ctx.F32[1], value, value);
+        }
         if (info.num_components == 1) {
             return op_store(info.id);
         } else {

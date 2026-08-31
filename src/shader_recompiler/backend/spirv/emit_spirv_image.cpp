@@ -4,6 +4,7 @@
 #include <boost/container/static_vector.hpp>
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/ir/microinstruction.h"
 
 namespace Shader::Backend::SPIRV {
 
@@ -33,7 +34,7 @@ struct ImageOperands {
             Add(spv::ImageOperandsMask::ConstOffset, ctx.ConstS32(operand));
             return;
         }
-        IR::Inst* const inst{offset.InstRecursive()};
+        IR::Inst* const inst{offset.Inst()};
         if (inst->AreAllArgsImmediates()) {
             switch (inst->GetOpcode()) {
             case IR::Opcode::CompositeConstructU32x2:

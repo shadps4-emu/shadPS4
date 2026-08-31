@@ -243,6 +243,9 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceRudp.sprx", &Libraries::Rudp::RegisterLib},
              {"libSceWkFontConfig.sprx", nullptr},
              {"libScePsmKitSystem.sprx", nullptr},
+             {"libSceDepth.sprx", nullptr},
+             {"libScePadTracker.sprx", nullptr},
+             {"libSceMoveTracker.sprx", nullptr},
              {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib},
              {"libSceXml.sprx", nullptr}});
 

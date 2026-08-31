@@ -237,7 +237,7 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
 }
 
-}; // namespace
+} // namespace
 
 void FlattenExtendedUserdataPass(IR::Program& program) {
     Shader::Info& info = program.info;
@@ -263,7 +263,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
                     continue;
                 }
 
-                IR::Inst* ptr_composite = inst.Arg(0).InstRecursive();
+                IR::Inst* ptr_composite = inst.Arg(0).Inst();
 
                 const auto pred = [](IR::Inst* inst) -> std::optional<IR::Inst*> {
                     if (inst->GetOpcode() == IR::Opcode::GetUserData ||
