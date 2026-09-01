@@ -163,13 +163,19 @@ private:
 using SharpSources = boost::container::small_vector<const IR::Inst*, 4>;
 
 SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
+    SharpLocation location{};
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return static_cast<SharpLocation>(inst->Arg(0).ScalarReg());
     } else if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-        return inst->Flags<IR::BufferInstInfo>().flatbuf_off_dw;
+        location = inst->Flags<IR::BufferInstInfo>().flatbuf_off_dw;
     } else {
-        return inst->Flags<SharpLocation>();
+        location = inst->Flags<SharpLocation>();
     }
+    if (location == 0) {
+        LOG_WARNING(Render_Recompiler, "Sharp source was not flatenned");
+        return -1;
+    }
+    return location;
 }
 
 void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors,
@@ -202,7 +208,6 @@ void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors
         });
     } else {
         // Normal buffer resource.
-        IR::Inst* buffer_handle = handle->Arg(0).Inst();
         const auto inst_info = inst.Flags<IR::BufferInstInfo>();
         const IR::Inst* sharp_source = resource.sharp_source;
         ASSERT_MSG(sharp_source, "Unable to find buffer sharp sources pc={:#x}",
@@ -234,12 +239,9 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
     ASSERT_MSG(sharp_source, "Unable to find image sharp sources pc={:#x}", inst_info.pc.Value());
 
-    const IR::Inst* image_handle = inst.Arg(0).Inst();
     const auto tsharp = SharpLocationFromSource(sharp_source);
     const bool is_atomic = IsImageAtomicInstruction(inst);
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite || is_atomic;
-    const bool is_storage =
-        inst.GetOpcode() == IR::Opcode::ImageRead || inst.GetOpcode() == IR::Opcode::ImageWrite;
     // ImageRead with !is_written gets emitted as OpImageFetch with LOD operand, doesn't
     // need fallback (TODO is this 100% true?)
     const bool needs_mip_storage_fallback =

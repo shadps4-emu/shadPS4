@@ -495,8 +495,11 @@ static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& p
         return true;
     case IR::Opcode::ReadConst:
     case IR::Opcode::ReadConstBuffer:
-        c.mov(reg, ptr[rsi + (GetFlatbufOffset(pass_info.DeduplicateInstruction(inst)) << 2)]);
-        return true;
+        if (u16 offset = GetFlatbufOffset(pass_info.DeduplicateInstruction(inst)); offset != 0) {
+            c.mov(reg, ptr[rsi + (offset << 2)]);
+            return true;
+        }
+        return false;
     case IR::Opcode::IAdd32:
         ABORT_ON_FAILURE(EmitComputeOffsetIAdd32(c, reg, pass_info, inst));
         return true;
@@ -561,6 +564,12 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
 
 static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
                          Xbyak::CodeGenerator& c) {
+    ASSERT(subtree->GetOpcode() == IR::Opcode::GetUserData ||
+           subtree->GetOpcode() == IR::Opcode::ReadConst);
+    if (subtree->GetOpcode() == IR::Opcode::ReadConst && subtree->Flags<u16>() == 0) {
+        return;
+    }
+
     if (!PushPtr(c, pass_info, off_dw)) {
         LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
         return;
@@ -786,6 +795,9 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         }
 
         IR::Inst* base = inst->Arg(0).Inst();
+        if (auto* inst = base->Arg(0).TryInst(); inst && inst->GetOpcode() == IR::Opcode::ReadFirstLane) {
+            continue;
+        }
         ASSERT_MSG(IsReadConstSource(base->Arg(0)), "ReadConst base low not from constant memory");
         ASSERT_MSG(IsReadConstSource(base->Arg(1)), "ReadConst base high not from constant memory");
 

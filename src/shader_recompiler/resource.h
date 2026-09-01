@@ -43,6 +43,9 @@ struct BufferResource {
     }
 
     constexpr AmdGpu::Buffer GetSharp(const auto& info) const noexcept {
+        if (sharp_idx == -1) {
+            return AmdGpu::Buffer::Null();
+        }
         AmdGpu::Buffer buffer{};
         if (inline_cbuf) {
             buffer = inline_cbuf;
@@ -74,6 +77,9 @@ struct ImageResource {
     u32 constant_mip_index{};
 
     constexpr AmdGpu::Image GetSharp(const auto& info) const noexcept {
+        if (sharp_idx == -1) {
+            return AmdGpu::Image::Null(is_depth);
+        }
         AmdGpu::Image image{};
         if (!is_r128) {
             image = info.template ReadUdSharp<AmdGpu::Image>(sharp_idx);
