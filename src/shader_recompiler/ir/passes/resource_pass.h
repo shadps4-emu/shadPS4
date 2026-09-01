@@ -10,8 +10,8 @@ namespace Shader::Optimization {
 
 struct ResourceDiscovery {
     IR::Inst* user{};
-    IR::Block* user_block{};
-    const IR::Inst* sharp_source{};
+    std::array<const IR::Inst*, 8> sharp_dwords{};
+    u32 num_dwords{};
 
     // for samplers
     const IR::Inst* sampler_sharp_source{};

@@ -536,6 +536,9 @@ static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& p
     case IR::Opcode::BitFieldUExtract:
         ABORT_ON_FAILURE(EmitComputeOffsetBitFieldUExtract(c, reg, pass_info, inst));
         return true;
+    case IR::Opcode::Phi:
+        c.xor_(reg, reg);
+        return true;
     default:
         LOG_ERROR(Render_Recompiler, "Unexpected instruction for offset computation, {}",
                   magic_enum::enum_name(inst->GetOpcode()));
@@ -648,6 +651,16 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
 }
 
+static bool IsReadConstSource(const IR::Value base) {
+    auto* inst = base.TryInst();
+    if (!inst) {
+        return false;
+    }
+    return inst->GetOpcode() == IR::Opcode::GetUserData ||
+           inst->GetOpcode() == IR::Opcode::ReadConst ||
+           inst->GetOpcode() == IR::Opcode::ReadConstBuffer;
+}
+
 void SimplifyReadConstAddressAdd(IR::Inst& inst) {
     // This handles the following pattern by combining the addition with the offset
     // %82 = IAdd32 %65, #28816
@@ -671,8 +684,13 @@ void SimplifyReadConstAddressAdd(IR::Inst& inst) {
         return;
     }
 
-    IR::Value add_offset = lo->Arg(0);
-    if (!add_offset.IsImmediate()) {
+    IR::Value add_offset;
+    IR::Value base;
+    if (base = lo->Arg(0); IsReadConstSource(base)) {
+        add_offset = lo->Arg(1);
+    } else if (base = lo->Arg(1); IsReadConstSource(base)) {
+        add_offset = lo->Arg(0);
+    } else {
         return;
     }
 
@@ -688,28 +706,20 @@ void SimplifyReadConstAddressAdd(IR::Inst& inst) {
         return;
     }
 
-    addr->SetArg(0, lo->Arg(0));
+    addr->SetArg(0, base);
     addr->SetArg(1, hi->Arg(0));
     for (auto [user, operand] : addr->Uses()) {
         ASSERT(user->GetOpcode() == IR::Opcode::ReadConst && operand == 0);
         IR::IREmitter ir{*user->GetParent(), IR::Block::InstructionList::s_iterator_to(*user)};
-        const u32 dw_add_offset = add_offset.U32() >> 2u;
-        if (auto offset = user->Arg(1); offset.IsImmediate()) {
-            user->SetArg(1, ir.Imm32(offset.U32() + dw_add_offset));
+        IR::U32 offset = IR::U32{user->Arg(1)};
+        IR::U32 dw_add_offset = add_offset.IsImmediate() ? ir.Imm32(add_offset.U32() >> 2u)
+                                                         : IR::U32{ir.ShiftRightLogical(IR::U32{add_offset}, ir.Imm32(2u))};
+        if (offset.IsImmediate() && dw_add_offset.IsImmediate()) {
+            user->SetArg(1, ir.Imm32(offset.U32() + dw_add_offset.U32()));
         } else {
-            user->SetArg(1, ir.IAdd(IR::U32{offset}, ir.Imm32(dw_add_offset)));
+            user->SetArg(1, ir.IAdd(offset, dw_add_offset));
         }
     }
-}
-
-static bool IsReadConstSource(const IR::Value base) {
-    auto* inst = base.TryInst();
-    if (!inst) {
-        return false;
-    }
-    return inst->GetOpcode() == IR::Opcode::GetUserData ||
-           inst->GetOpcode() == IR::Opcode::ReadConst ||
-           inst->GetOpcode() == IR::Opcode::ReadConstBuffer;
 }
 
 } // Anonymous namespace

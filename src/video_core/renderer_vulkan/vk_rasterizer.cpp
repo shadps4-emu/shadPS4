@@ -612,6 +612,9 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
         const auto vsharp = desc.GetSharp(stage);
         if (!desc.IsSpecial() && vsharp.base_address != 0 && vsharp.GetSize() > 0) {
             const u64 size = memory->ClampRangeSize(vsharp.base_address, vsharp.GetSize());
+            if (size != vsharp.GetSize()) {
+                LOG_ERROR(Render, "Clamped size from {} to {} for stage {:#x}", vsharp.GetSize(), size, stage.pgm_hash);
+            }
             const auto buffer_id = buffer_cache.FindBuffer(vsharp.base_address, size);
             buffer_bindings.emplace_back(buffer_id, vsharp, size);
         } else {
@@ -1121,7 +1124,8 @@ bool Rasterizer::IsMapped(VAddr addr, u64 size) {
     Common::RecursiveSharedLock lock{mapped_ranges_mutex};
     return boost::icl::contains(mapped_ranges, range);
 }
-
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
     {
         std::scoped_lock lock{mapped_ranges_mutex};

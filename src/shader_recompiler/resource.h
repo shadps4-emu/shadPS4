@@ -17,6 +17,10 @@ static constexpr u32 NUM_BUFFERS = 40;
 static constexpr u32 NUM_SAMPLERS = 16;
 static constexpr u32 NUM_FMASKS = 8;
 
+using SharpLocation = u16;
+
+constexpr SharpLocation UNKNOWN_LOCATION = std::numeric_limits<u16>::max();
+
 enum class BufferType : u32 {
     Guest,
     Flatbuf,
@@ -30,7 +34,7 @@ enum class BufferType : u32 {
 struct Info;
 
 struct BufferResource {
-    u32 sharp_idx;
+    SharpLocation sharp_idx;
     IR::Type used_types;
     AmdGpu::Buffer inline_cbuf;
     BufferType buffer_type;
@@ -43,7 +47,7 @@ struct BufferResource {
     }
 
     constexpr AmdGpu::Buffer GetSharp(const auto& info) const noexcept {
-        if (sharp_idx == -1) {
+        if (sharp_idx == UNKNOWN_LOCATION) {
             return AmdGpu::Buffer::Null();
         }
         AmdGpu::Buffer buffer{};
@@ -67,7 +71,7 @@ using BufferResourceList = boost::container::static_vector<BufferResource, NUM_B
 enum class MipStorageFallbackMode : u32 { None, DynamicIndex, ConstantIndex };
 
 struct ImageResource {
-    u32 sharp_idx;
+    SharpLocation sharp_idx;
     bool is_depth{};
     bool is_atomic{};
     bool is_array{};
@@ -77,7 +81,7 @@ struct ImageResource {
     u32 constant_mip_index{};
 
     constexpr AmdGpu::Image GetSharp(const auto& info) const noexcept {
-        if (sharp_idx == -1) {
+        if (sharp_idx == UNKNOWN_LOCATION) {
             return AmdGpu::Image::Null(is_depth);
         }
         AmdGpu::Image image{};
@@ -113,21 +117,26 @@ struct ImageResource {
 using ImageResourceList = boost::container::static_vector<ImageResource, NUM_IMAGES>;
 
 struct SamplerResource {
-    u32 sharp_idx;
+    SharpLocation sharp_idx;
     AmdGpu::Sampler inline_sampler;
     u32 is_inline_sampler : 1;
     u32 associated_image : 4;
     u32 disable_aniso : 1;
 
     constexpr AmdGpu::Sampler GetSharp(const auto& info) const noexcept {
-        return is_inline_sampler ? inline_sampler
-                                 : info.template ReadUdSharp<AmdGpu::Sampler>(sharp_idx);
+        if (is_inline_sampler) {
+            return inline_sampler;
+        } else if (sharp_idx == UNKNOWN_LOCATION) {
+            return AmdGpu::Sampler{};
+        } else {
+            return info.template ReadUdSharp<AmdGpu::Sampler>(sharp_idx);
+        }
     }
 };
 using SamplerResourceList = boost::container::static_vector<SamplerResource, NUM_SAMPLERS>;
 
 struct FMaskResource {
-    u32 sharp_idx;
+    SharpLocation sharp_idx;
 
     constexpr AmdGpu::Image GetSharp(const auto& info) const noexcept {
         return info.template ReadUdSharp<AmdGpu::Image>(sharp_idx);

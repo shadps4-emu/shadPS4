@@ -2077,6 +2077,10 @@ Value IREmitter::ImageAtomicCmpSwap(const Value& handle, const Value& coords, co
     return Inst(Opcode::ImageAtomicCmpSwap32, Flags{info}, handle, coords, value, cmp_value);
 }
 
+Value IREmitter::ImageHandle(const Value& tsharp_low, const Value& tsharp_high) {
+    return Inst(Opcode::ImageHandle, tsharp_low, tsharp_high);
+}
+
 Value IREmitter::ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
                                 const Value& address1, const Value& address2, const Value& address3,
                                 const Value& address4, TextureInstInfo info) {

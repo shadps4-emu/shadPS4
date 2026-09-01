@@ -58,14 +58,14 @@ void EmitControlFlowGraph(IR::Program& program, Pools& pools, Gcn::CFG& cfg,
             ir_block->AddBranch(false_block);
         }
     }
-    /*for (auto it = program.blocks.begin(); it != program.blocks.end(); ) {
+    for (auto it = program.blocks.begin() + 1; it != program.blocks.end(); ) {
         IR::Block* block{*it};
         if (block->imm_predecessors.empty()) {
             it = program.blocks.erase(it);
         } else {
             ++it;
         }
-    }*/
+    }
     program.post_order_blocks = Shader::IR::PostOrder(program.blocks.front());
 }
 
@@ -114,6 +114,7 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     }
     Shader::Optimization::RingAccessElimination(program, runtime_info);
     Shader::Optimization::ReadLaneEliminationPass(program);
+    Shader::IR::DumpProgram(program, info);
     auto resources = Shader::Optimization::ResourceDiscoverPass(program, profile);
     Shader::Optimization::FlattenExtendedUserdataPass(program);
     Shader::IR::DumpProgram(program, info);

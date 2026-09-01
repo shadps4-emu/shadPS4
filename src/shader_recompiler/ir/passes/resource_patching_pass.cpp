@@ -15,8 +15,6 @@
 namespace Shader::Optimization {
 namespace {
 
-using SharpLocation = u16;
-
 IR::Type BufferDataType(const IR::Inst& inst, const Profile& profile,
                         AmdGpu::NumberFormat num_format) {
     switch (inst.GetOpcode()) {
@@ -173,14 +171,13 @@ SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
     }
     if (location == 0) {
         LOG_WARNING(Render_Recompiler, "Sharp source was not flatenned");
-        return -1;
+        return UNKNOWN_LOCATION;
     }
     return location;
 }
 
 void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors,
                       const Profile& profile) {
-    IR::Block& block = *resource.user_block;
     IR::Inst& inst = *resource.user;
 
     IR::Inst* handle = inst.Arg(0).Inst();
@@ -201,7 +198,7 @@ void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors
         raw[1] = handle->Arg(2).U32() | u64(handle->Arg(3).U32()) << 32;
         const auto buffer = std::bit_cast<AmdGpu::Buffer>(raw);
         buffer_binding = descriptors.Add(BufferResource{
-            .sharp_idx = std::numeric_limits<u32>::max(),
+            .sharp_idx = UNKNOWN_LOCATION,
             .used_types = BufferDataType(inst, profile, buffer.GetNumberFmt()),
             .inline_cbuf = buffer,
             .buffer_type = BufferType::Guest,
@@ -209,10 +206,20 @@ void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors
     } else {
         // Normal buffer resource.
         const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-        const IR::Inst* sharp_source = resource.sharp_source;
-        ASSERT_MSG(sharp_source, "Unable to find buffer sharp sources pc={:#x}",
+        ASSERT_MSG(resource.num_dwords != 0, "Unable to find buffer sharp sources pc={:#x}",
                    inst_info.pc.Value());
-        const auto sharp_idx = SharpLocationFromSource(sharp_source);
+        for (size_t dword = resource.num_dwords - 1; dword > 0; --dword) {
+            auto idx_lhs = SharpLocationFromSource(resource.sharp_dwords[dword]);
+            auto idx_rhs = SharpLocationFromSource(resource.sharp_dwords[dword - 1]);
+            if (idx_lhs == UNKNOWN_LOCATION || idx_rhs == UNKNOWN_LOCATION) {
+                auto sharp_idx = SharpLocationFromSource(resource.sharp_dwords[0]);
+                ASSERT_MSG(sharp_idx == UNKNOWN_LOCATION, "Partially tracked sharp");
+                break;
+            }
+            ASSERT_MSG(idx_lhs - idx_rhs == 1, "Sharp dwords must be sequencial in flatbuf idx_lhs={}, idx_rhs={}",
+                       idx_lhs, idx_rhs);
+        }
+        const auto sharp_idx = SharpLocationFromSource(resource.sharp_dwords[0]);
         const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
         buffer_binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp_idx,
@@ -225,21 +232,32 @@ void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors
     }
 
     // Replace handle with binding index in buffer resource list.
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(buffer_binding));
 }
-
+#pragma GCC push_options
+#pragma GCC optimize ("O0")
 void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors,
                      const Profile& profile) {
-    IR::Block& block = *resource.user_block;
     IR::Inst& inst = *resource.user;
-    const IR::Inst* sharp_source = resource.sharp_source;
 
     // Read image sharp.
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-    ASSERT_MSG(sharp_source, "Unable to find image sharp sources pc={:#x}", inst_info.pc.Value());
+    ASSERT_MSG(resource.num_dwords != 0, "Unable to find image sharp sources pc={:#x}",
+               inst_info.pc.Value());
 
-    const auto tsharp = SharpLocationFromSource(sharp_source);
+    for (size_t dword = resource.num_dwords - 1; dword > 0; --dword) {
+        auto idx_lhs = SharpLocationFromSource(resource.sharp_dwords[dword]);
+        auto idx_rhs = SharpLocationFromSource(resource.sharp_dwords[dword - 1]);
+        if (idx_lhs == UNKNOWN_LOCATION || idx_rhs == UNKNOWN_LOCATION) {
+            auto sharp_idx = SharpLocationFromSource(resource.sharp_dwords[0]);
+            ASSERT_MSG(sharp_idx == UNKNOWN_LOCATION, "Partially tracked sharp");
+            break;
+        }
+        ASSERT_MSG(idx_lhs - idx_rhs == 1, "Sharp dwords must be sequencial in flatbuf idx_lhs={}, idx_rhs={}",
+                   idx_lhs, idx_rhs);
+    }
+    const auto tsharp = SharpLocationFromSource(resource.sharp_dwords[0]);
     const bool is_atomic = IsImageAtomicInstruction(inst);
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite || is_atomic;
     // ImageRead with !is_written gets emitted as OpImageFetch with LOD operand, doesn't
@@ -294,7 +312,7 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
     if (AmdGpu::IsFmask(image.GetDataFmt())) {
         ASSERT_MSG(!is_written, "FMask storage instructions are not supported");
 
-        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+        IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
         switch (inst.GetOpcode()) {
         case IR::Opcode::ImageRead:
         case IR::Opcode::ImageSampleRaw: {
@@ -325,7 +343,7 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
 
     u32 image_binding = descriptors.Add(image_res);
 
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
 
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
         u32 sampler_binding = 0;
@@ -338,7 +356,7 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
                 .raw1 = u64(sampler->Arg(3).U32()) << 32 | u64(sampler->Arg(2).U32()),
             };
             sampler_binding = descriptors.Add(SamplerResource{
-                .sharp_idx = std::numeric_limits<u32>::max(),
+                .sharp_idx = UNKNOWN_LOCATION,
                 .inline_sampler = inline_sampler,
                 .is_inline_sampler = true,
             });
@@ -361,7 +379,7 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
     }
 }
 
-void PatchGlobalDataShareAccess(IR::Block& block, IR::Inst& inst, Info& info,
+void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info,
                                 Descriptors& descriptors, const Profile& profile) {
     const u32 binding = descriptors.Add(BufferResource{
         .used_types = IR::Type::U32,
@@ -370,7 +388,7 @@ void PatchGlobalDataShareAccess(IR::Block& block, IR::Inst& inst, Info& info,
         .is_written = true,
     });
 
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
 
     // For data append/consume operations attempt to deduce the GDS address.
     if (inst.GetOpcode() == IR::Opcode::DataAppend || inst.GetOpcode() == IR::Opcode::DataConsume) {
@@ -540,7 +558,7 @@ IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const In
     return buffer_offset;
 }
 
-void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
+void PatchBufferArgs(IR::Inst& inst, Info& info) {
     const auto handle = inst.Arg(0);
     const auto buffer_res = info.buffers[handle.U32()];
     const auto buffer = buffer_res.GetSharp(info);
@@ -550,7 +568,7 @@ void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
         return;
     }
 
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(IR::LoadBufferArgs::Address,
                 CalculateBufferAddress(ir, inst, info, buffer, buffer.stride));
 }
@@ -569,13 +587,13 @@ IR::Value FixCubeCoords(IR::IREmitter& ir, const AmdGpu::Image& image, const IR:
     return ir.CompositeConstruct(fixed_x, fixed_y, fixed_face);
 }
 
-void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
+void PatchImageSampleArgs(IR::Inst& inst, Info& info,
                           const ImageResource& image_res, const AmdGpu::Image& image) {
     const auto handle = inst.Arg(0);
     const auto& sampler_res = info.samplers[(handle.U32() >> 16) & 0xFFFF];
     const auto sampler = sampler_res.GetSharp(info);
 
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
     const auto view_type = image.GetViewType(image_res.is_array);
 
@@ -762,7 +780,7 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
     inst.ReplaceUsesWith(converted);
 }
 
-void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
+void PatchImageArgs(IR::Inst& inst, Info& info) {
     // Nothing to patch for dimension query.
     if (inst.GetOpcode() == IR::Opcode::ImageQueryDimensions) {
         return;
@@ -775,10 +793,10 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
 
     // Sample instructions must be handled separately using address register data.
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
-        return PatchImageSampleArgs(block, inst, info, image_res, image);
+        return PatchImageSampleArgs(inst, info, image_res, image);
     }
 
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
     auto inst_info = inst.Flags<IR::TextureInstInfo>();
     const auto view_type = image.GetViewType(image_res.is_array);
 
@@ -876,11 +894,11 @@ void ResourcePatchingPass(Shader::Info& info, const ResourceDiscoveryList& resou
     for (const auto& usage : resources) {
         IR::Inst& inst = *usage.user;
         if (IsBufferInstruction(inst)) {
-            PatchBufferArgs(*usage.user_block, inst, info);
+            PatchBufferArgs(inst, info);
         } else if (IsImageInstruction(inst)) {
-            PatchImageArgs(*usage.user_block, inst, info);
+            PatchImageArgs(inst, info);
         } else if (IsDataRingInstruction(inst)) {
-            PatchGlobalDataShareAccess(*usage.user_block, inst, info, descriptors, profile);
+            PatchGlobalDataShareAccess(inst, info, descriptors, profile);
         }
     }
 }

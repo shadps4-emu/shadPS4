@@ -64,83 +64,55 @@ IR::Inst* FindSharpSource(IR::Inst* handle) {
     return handle;
 }
 
-void MarkReadConstBufferSharpSources(IR::Inst& first, IR::Block& block, u32 count, bool check_use) {
-    // TODO: check_use is temporal here until a refactor is made to reference all components of the
-    // tsharp in image insts
-    auto first_handle = FindSharpSource(&first)->Arg(0);
-    auto it = block.Instructions().iterator_to(first);
-    auto end = block.Instructions().end();
-    u32 marked_count = 0;
-    for (; it != end && marked_count < count; ++it) {
-        IR::Inst& inst = *it;
-        if (inst.GetOpcode() == IR::Opcode::SetScalarRegister ||
-            inst.GetOpcode() == IR::Opcode::IAdd32) {
-            continue;
-        }
-        auto source = FindSharpSource(&inst);
+void MarkReadConstBufferSharpSources(const IR::Inst* handle, const IR::Inst** out_sharp_dwords = nullptr) {
+    for (size_t arg = 0; arg < handle->NumArgs(); ++arg) {
+        IR::Inst* sharp_dword = handle->Arg(arg).Inst();
+        auto source = FindSharpSource(sharp_dword);
         if (source && source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-            ASSERT(source->Arg(0) == first_handle);
-            ASSERT(!check_use || source->HasUses());
-            marked_count++;
             auto flags = source->Flags<IR::BufferInstInfo>();
             flags.sharp_source.Assign(1u);
             source->SetFlags(flags);
-            continue;
         }
-        break;
+        if (out_sharp_dwords) {
+            *(out_sharp_dwords++) = source;
+        }
     }
-    ASSERT(marked_count == count);
 }
 
 void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList& sharp_usages) {
     IR::Inst* handle = inst.Arg(0).Inst();
-    if (handle->AreAllArgsImmediates()) {
-        // For inmediates, add a sharp usage with null sharp source.
-        sharp_usages.emplace_back(ResourceDiscovery{&inst, &block, nullptr});
-    } else {
-        IR::Inst* buffer_handle = handle->Arg(0).Inst();
-        IR::Inst* sharp_source = FindSharpSource(buffer_handle);
-        if (sharp_source && sharp_source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-            MarkReadConstBufferSharpSources(*sharp_source, *sharp_source->GetParent(), 4, true);
-        }
-        sharp_usages.emplace_back(ResourceDiscovery{&inst, &block, sharp_source});
+    auto& resource = sharp_usages.emplace_back(&inst);
+
+    if (!handle->AreAllArgsImmediates()) {
+        MarkReadConstBufferSharpSources(handle, resource.sharp_dwords.data());
+        resource.num_dwords = handle->NumArgs();
     }
 }
 
 void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList& sharp_usages) {
     IR::Inst* image_handle = inst.Arg(0).Inst();
-    IR::Inst* sharp_source = FindSharpSource(image_handle);
-    IR::Inst* sampler_sharp_source = nullptr;
-    bool disable_aniso = false;
+    ASSERT(image_handle->GetOpcode() == IR::Opcode::ImageHandle);
+    auto& resource = sharp_usages.emplace_back(&inst);
 
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
         const IR::Inst* sampler = inst.Arg(1).Inst();
         if (!sampler->AreAllArgsImmediates()) {
             auto [sampler_handle, found] =
                 CheckDisableAnisoLod0Pattern(sampler->Arg(0).Inst());
-            sampler_sharp_source = FindSharpSource(sampler_handle);
-            disable_aniso = found;
+            resource.sampler_sharp_source = FindSharpSource(sampler_handle);
+            resource.disable_aniso = found;
+            MarkReadConstBufferSharpSources(sampler);
         }
     }
 
-    if (sharp_source && sharp_source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-        const auto texture_flags = inst.Flags<IR::TextureInstInfo>();
-        const auto is_r128 = texture_flags.is_r128.Value();
-        MarkReadConstBufferSharpSources(*sharp_source, *sharp_source->GetParent(), is_r128 ? 4 : 8,
-                                        false);
-    }
-    if (sampler_sharp_source && sampler_sharp_source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-        MarkReadConstBufferSharpSources(*sampler_sharp_source, *sampler_sharp_source->GetParent(),
-                                        4, false);
-    }
+    IR::Inst* tsharp_low = image_handle->Arg(0).Inst();
+    MarkReadConstBufferSharpSources(tsharp_low, resource.sharp_dwords.data());
+    resource.num_dwords = tsharp_low->NumArgs();
 
-    sharp_usages.emplace_back(ResourceDiscovery{
-        &inst,
-        &block,
-        sharp_source,
-        sampler_sharp_source,
-        disable_aniso,
-    });
+    if (auto tsharp_high = image_handle->Arg(1).TryInst()) {
+        MarkReadConstBufferSharpSources(tsharp_high, resource.sharp_dwords.data() + tsharp_low->NumArgs());
+        resource.num_dwords += tsharp_high->NumArgs();
+    }
 }
 
 ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& profile) {
@@ -153,7 +125,7 @@ ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& 
             } else if (IsImageInstruction(inst)) {
                 DiscoverImageSharp(*block, inst, sharp_usages);
             } else if (IsDataRingInstruction(inst)) {
-                sharp_usages.emplace_back(ResourceDiscovery{&inst, block, nullptr});
+                sharp_usages.emplace_back(&inst);
             }
         }
     }
