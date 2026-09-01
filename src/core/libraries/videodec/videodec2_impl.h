@@ -30,8 +30,8 @@ private:
     AVFrame* ConvertNV12Frame(AVFrame& frame);
 
 private:
-    AVCodecContext* mCodecContext = nullptr;
-    SwsContext* mSwsContext = nullptr;
+    AVCodecContext* m_codec_context = nullptr;
+    SwsContext* m_sws_context = nullptr;
 };
 
 } // namespace Libraries::Videodec2
