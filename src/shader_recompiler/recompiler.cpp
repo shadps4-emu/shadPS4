@@ -143,7 +143,7 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::SharedMemoryBarrierPass(program, runtime_info, profile);
     Shader::Optimization::CollectShaderInfoPass(program, profile);
-    Shader::IR::DumpProgram(program, info);
+    //Shader::IR::DumpProgram(program, info);
 
     return program;
 }
