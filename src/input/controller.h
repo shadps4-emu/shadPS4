@@ -95,8 +95,10 @@ public:
 
     void Button(Libraries::Pad::OrbisPadButtonDataOffset button, bool isPressed);
     void Axis(Input::Axis axis, int value, bool smooth = true);
-    void UpdateGyro(const float gyro[3]);
-    void UpdateAcceleration(const float acceleration[3]);
+    /// device_frame marks data straight from a physical sensor, which may need
+    /// reorienting; emulated motion is already in the frame a game expects.
+    void UpdateGyro(const float gyro[3], bool device_frame = false);
+    void UpdateAcceleration(const float acceleration[3], bool device_frame = false);
     void PollState();
     void ResetOrientation();
     void SetLightBarRGB(u8 const r, u8 const g, u8 const b);

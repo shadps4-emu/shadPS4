@@ -61,6 +61,7 @@ void SettingsWindow::LoadSettings(std::string profile) {
 
     /////////// Input Tab
     motionControlsSetting = EmulatorSettings.IsMotionControlsEnabled();
+    motionControlsVerticalSetting = EmulatorSettings.IsMotionControlsVertical();
     backgroundControllerSetting = EmulatorSettings.IsBackgroundControllerInput();
     cursorStateSetting = EmulatorSettings.GetCursorState();
     cursorTimeoutSetting = EmulatorSettings.GetCursorHideTimeout();
@@ -126,6 +127,7 @@ void SettingsWindow::SaveSettings(std::string profile) {
 
     /////////// Input Tab
     EmulatorSettings.SetMotionControlsEnabled(motionControlsSetting, isSpecific);
+    EmulatorSettings.SetMotionControlsVertical(motionControlsVerticalSetting, isSpecific);
     EmulatorSettings.SetBackgroundControllerInput(backgroundControllerSetting, isSpecific);
     EmulatorSettings.SetCursorState(cursorStateSetting, isSpecific);
     EmulatorSettings.SetCursorHideTimeout(cursorTimeoutSetting, isSpecific);
@@ -711,6 +713,9 @@ void SettingsWindow::DrawSettingsTable(SettingsCategory category) {
             ImGui::TableSetupColumn("Value");
 
             AddSettingCheckbox("Enable Motion Controls", motionControlsSetting);
+            if (motionControlsSetting) {
+                AddSettingCheckbox("Motion Controls Held Upright", motionControlsVerticalSetting);
+            }
             AddSettingCheckbox("Enable Background Controller Input", backgroundControllerSetting);
             AddSettingCombo("Hide Cursor", cursorStateSetting, hideCursorOptions);
 

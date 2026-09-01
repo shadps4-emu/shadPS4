@@ -142,6 +142,7 @@ private:
 
     // Input tab
     bool motionControlsSetting;
+    bool motionControlsVerticalSetting;
     bool backgroundControllerSetting;
     int cursorStateSetting;
     int cursorTimeoutSetting;

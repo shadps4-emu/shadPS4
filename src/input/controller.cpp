@@ -23,6 +23,24 @@ using Libraries::Pad::OrbisPadButtonDataOffset;
 
 namespace {
 
+/// SDL reports gamepad motion in the frame of a controller lying face up. A
+/// handheld is held upright instead, so its Y and Z are that frame's Z and -Y
+/// -- which is why yaw and roll feel swapped. Rotating -90 degrees about X puts
+/// them back where a game written for a DualShock expects them.
+///
+/// Off by default: nothing SDL reports says how the device is being held. Only
+/// applied to a physical sensor, never to emulated motion, which arrives in the
+/// frame a game already expects.
+void OrientMotion(const float in[3], float out[3], bool device_frame) {
+    if (device_frame && EmulatorSettings.IsMotionControlsVertical()) {
+        out[0] = in[0];
+        out[1] = -in[2];
+        out[2] = in[1];
+    } else {
+        std::memcpy(out, in, sizeof(float[3]));
+    }
+}
+
 void CalculateOrientation(const Libraries::Pad::OrbisFVector3& angular_velocity, float delta_time,
                           const Libraries::Pad::OrbisFQuaternion& last_orientation,
                           Libraries::Pad::OrbisFQuaternion& orientation) {
@@ -107,14 +125,14 @@ void GameController::Axis(Input::Axis axis, int value, bool smooth) {
     PushStateLocked(timestamp);
 }
 
-void GameController::UpdateGyro(const float gyro[3]) {
+void GameController::UpdateGyro(const float gyro[3], bool device_frame) {
     std::lock_guard lock{m_state_mutex};
-    std::memcpy(gyro_buf, gyro, sizeof(gyro_buf));
+    OrientMotion(gyro, gyro_buf, device_frame);
 }
 
-void GameController::UpdateAcceleration(const float acceleration[3]) {
+void GameController::UpdateAcceleration(const float acceleration[3], bool device_frame) {
     std::lock_guard lock{m_state_mutex};
-    std::memcpy(accel_buf, acceleration, sizeof(accel_buf));
+    OrientMotion(acceleration, accel_buf, device_frame);
 }
 
 void GameController::PollState() {
