@@ -300,8 +300,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideodec2GetPictureInfo);
     LIB_FUNCTION("kjrLbcyhEiw", "libSceVideodec2", 1, "libSceVideodec2",
                  sceVideodec2GetAvcPictureInfo);
-    // LIB_FUNCTION("???????????", "libSceVideodec2", 1, "libSceVideodec2",
-    //              sceVideodec2GetHevcPictureInfo);
+    LIB_FUNCTION("7M+1UFqWOAI", "libSceVideodec2", 1, "libSceVideodec2",
+                 sceVideodec2GetHevcPictureInfo);
 }
 
 } // namespace Libraries::Videodec2
