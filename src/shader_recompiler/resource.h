@@ -56,6 +56,8 @@ enum class SharpFetchPostOp : u8 {
     // For buffers
     BitwiseOrDw1WithImm,
     OffsetByProgramBase,
+    // For images,
+    ConvertCubeTo2DArray,
     // For samplers
     DisableAnisoIfSingleLod,
     ForceRepeatClamp,
@@ -117,11 +119,16 @@ struct ImageResource {
     bool is_r128{};
     u8 constant_mip_index{};
     MipStorageFallbackMode mip_fallback_mode{};
+    SharpFetchPostOp post_op{};
 
     constexpr AmdGpu::Image GetSharp(const auto& info) const noexcept {
         AmdGpu::Image image{};
         if (!Fetch(info.flattened_ud_buf.data(), &image)) {
             return AmdGpu::Image::Null(is_depth);
+        }
+        if (post_op == SharpFetchPostOp::ConvertCubeTo2DArray) {
+            image.type = u64(AmdGpu::ImageType::Color2DArray);
+            image.depth = (image.depth + 1) * 6 - 1;
         }
         if (!image.Valid()) {
             image = AmdGpu::Image::Null(is_depth);

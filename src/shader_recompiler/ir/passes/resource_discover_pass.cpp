@@ -71,6 +71,62 @@ InlineCbufResult CheckInlineCbufPattern(IR::Value value) {
     return {IR::Value{prod->Arg(0).U32() + offset}, true};
 }
 
+struct CubeTo2DArrayResult {
+    IR::Value tsharp_dw3;
+    IR::Value tsharp_dw4;
+    bool found;
+};
+CubeTo2DArrayResult CheckCubeTo2DArrayPattern(IR::Value dword3, IR::Value dword4) {
+    // Assuming T# is in s[12:19]
+    // The next pattern:
+    //  s_bfe_u32       vcc_lo, s16, 0xd0000
+    //  s_mul_i32       vcc_lo, vcc_lo, 6
+    //  s_add_i32       vcc_lo, vcc_lo, 5
+    //  s_and_b32       vcc_hi, 0x1fff, vcc_lo
+    //  s_and_b32       vcc_lo, s16, 0xffffe000
+    //  s_or_b32        s16, vcc_hi, vcc_lo
+    //  s_and_b32       vcc_lo, s15, 0xfffffff
+    //  s_or_b32        s15, 0xd0000000, vcc_lo
+    //  image_load_mip  v[4:7], v[0:3], s[12:19] dmask:15 da
+    // is used to convert the resource from cubemap to 2d-array
+
+    // Check pattern that forces type to Color2DArray
+    auto* dw3_inst = dword3.TryInst();
+    if (!dw3_inst) {
+        return {dword3, dword4, false};
+    }
+
+    if (dw3_inst->GetOpcode() != IR::Opcode::BitwiseOr32 || dw3_inst->Arg(1).IsImmediate() ||
+        !dw3_inst->Arg(0).IsImmediate() || dw3_inst->Arg(0).U32() != 0xd0000000u) {
+        return {dword3, dword4, false};
+    }
+
+    auto* dw3_and = dw3_inst->Arg(1).Inst();
+    if (dw3_and->GetOpcode() != IR::Opcode::BitwiseAnd32 || !dw3_and->Arg(1).IsImmediate() ||
+        dw3_and->Arg(1).U32() != 0xfffffffu) {
+        return {dword3, dword4, false};
+    }
+
+    // Check pattern that translates cubemap depth to slices
+    auto* dw4_inst = dword4.TryInst();
+    if (!dw4_inst) {
+        return {dword3, dword4, false};
+    }
+
+    if (dw4_inst->GetOpcode() != IR::Opcode::BitwiseOr32 || dw4_inst->Arg(0).IsImmediate() ||
+        dw4_inst->Arg(1).IsImmediate()) {
+        return {dword3, dword4, false};
+    }
+
+    auto* dw4_rhs = dw4_inst->Arg(1).Inst();
+    if (dw4_rhs->GetOpcode() != IR::Opcode::BitwiseAnd32 || !dw4_rhs->Arg(1).IsImmediate() ||
+        dw4_rhs->Arg(1).U32() != 0xffffe000u) {
+        return {dword3, dword4, false};
+    }
+
+    return {dw3_and->Arg(0), dw4_rhs->Arg(0), true};
+}
+
 struct AnisoLod0Result {
     IR::Value ssharp_dw0;
     IR::Value tsharp_dw3;
@@ -208,30 +264,38 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
             tsharp.dwords[tsharp.num_dwords++] = tsharp_high->Arg(i);
         }
     }
+
+    if (auto [tsharp_dw3, tsharp_dw4, found] =
+            CheckCubeTo2DArrayPattern(tsharp.dwords[3], tsharp.dwords[4]);
+        found) {
+        tsharp.post_op = SharpFetchPostOp::ConvertCubeTo2DArray;
+        tsharp.dwords[3] = tsharp_dw3;
+        tsharp.dwords[4] = tsharp_dw4;
+    }
+
     MarkReadConstBufferSharpSources(tsharp);
 
-    // Gather S# dwords
-    if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
-        const IR::Inst* sampler = inst.Arg(1).Inst();
-        auto& ssharp = resource.sharps[1];
-
-        if (auto [ssharp_dw0, tsharp_dw3, found] = CheckDisableAnisoLod0Pattern(sampler->Arg(0));
-            found) {
-            ssharp.post_op = SharpFetchPostOp::DisableAnisoIfSingleLod;
-            ssharp.post_op_data.lod_prod = tsharp_dw3;
-            ssharp.dwords[ssharp.num_dwords++] = ssharp_dw0;
-        } else if (auto [ssharp_dw0, found] = CheckForceClampToWrapPattern(sampler->Arg(0));
-                   found) {
-            ssharp.post_op = SharpFetchPostOp::ForceRepeatClamp;
-            ssharp.dwords[ssharp.num_dwords++] = ssharp_dw0;
-        }
-
-        // Gather remaining S# dwords
-        for (size_t i = ssharp.num_dwords; i < sampler->NumArgs(); ++i) {
-            ssharp.dwords[ssharp.num_dwords++] = sampler->Arg(i);
-        }
-        MarkReadConstBufferSharpSources(ssharp);
+    if (inst.GetOpcode() != IR::Opcode::ImageSampleRaw) {
+        return;
     }
+
+    // Gather S# dwords
+    const IR::Inst* sampler = inst.Arg(1).Inst();
+    auto& ssharp = resource.sharps[1];
+    for (size_t i = 0; i < sampler->NumArgs(); ++i) {
+        ssharp.dwords[ssharp.num_dwords++] = sampler->Arg(i);
+    }
+    if (auto [ssharp_dw0, tsharp_dw3, found] = CheckDisableAnisoLod0Pattern(sampler->Arg(0));
+        found) {
+        ssharp.post_op = SharpFetchPostOp::DisableAnisoIfSingleLod;
+        ssharp.post_op_data.lod_prod = tsharp_dw3;
+        ssharp.dwords[0] = ssharp_dw0;
+    } else if (auto [ssharp_dw0, found] = CheckForceClampToWrapPattern(sampler->Arg(0)); found) {
+        ssharp.post_op = SharpFetchPostOp::ForceRepeatClamp;
+        ssharp.dwords[0] = ssharp_dw0;
+    }
+
+    MarkReadConstBufferSharpSources(ssharp);
 }
 
 ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& profile) {

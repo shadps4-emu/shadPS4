@@ -113,7 +113,8 @@ public:
         const u32 index{Add(image_resources, desc, [&desc](const auto& existing) {
             return desc.sharp_fetch == existing.sharp_fetch && desc.is_array == existing.is_array &&
                    desc.mip_fallback_mode == existing.mip_fallback_mode &&
-                   desc.constant_mip_index == existing.constant_mip_index;
+                   desc.constant_mip_index == existing.constant_mip_index &&
+                   desc.post_op == existing.post_op;
         })};
         auto& image = image_resources[index];
         image.is_atomic |= desc.is_atomic;
@@ -228,6 +229,7 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
         .is_array = bool(inst_info.is_array),
         .is_written = is_written,
         .is_r128 = bool(inst_info.is_r128),
+        .post_op = resource.sharps[0].post_op,
     };
 
     auto image = image_res.GetSharp(info);
