@@ -105,14 +105,16 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& input_data,
         frame = nv12_frame;
     }
 
-    Videodec::CopyNV12Data((u8*)frame_buffer.frame_buffer, *frame);
+    const bool is_avc = m_codec_context->codec_id == AV_CODEC_ID_H264;
+    const u64 info_size =
+        is_avc ? sizeof(OrbisVideodec2AvcPictureInfo) : sizeof(OrbisVideodec2HevcPictureInfo);
+    Videodec::CopyNV12Data((u8*)frame_buffer.frame_buffer,
+                           frame_buffer.frame_buffer_size - info_size, *frame);
     frame_buffer.is_accepted = true;
 
     const auto width = Common::AlignUp<u32>(frame->width, 16);
     const auto pitch = Common::AlignUp<u32>(frame->width, 64);
     const auto height = Common::AlignUp<u32>(frame->height, 16);
-
-    const bool is_avc = m_codec_context->codec_id == AV_CODEC_ID_H264;
 
     output_info.is_valid = true;
     output_info.is_error_frame = false;
@@ -196,14 +198,16 @@ s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frame_buffer,
         frame = nv12_frame;
     }
 
-    Videodec::CopyNV12Data((u8*)frame_buffer.frame_buffer, *frame);
+    const bool is_avc = m_codec_context->codec_id == AV_CODEC_ID_H264;
+    const u64 info_size =
+        is_avc ? sizeof(OrbisVideodec2AvcPictureInfo) : sizeof(OrbisVideodec2HevcPictureInfo);
+    Videodec::CopyNV12Data((u8*)frame_buffer.frame_buffer,
+                           frame_buffer.frame_buffer_size - info_size, *frame);
     frame_buffer.is_accepted = true;
 
     const auto width = Common::AlignUp<u32>(frame->width, 16);
     const auto pitch = Common::AlignUp<u32>(frame->width, 64);
     const auto height = Common::AlignUp<u32>(frame->height, 16);
-
-    const bool is_avc = m_codec_context->codec_id == AV_CODEC_ID_H264;
 
     output_info.is_valid = true;
     output_info.is_error_frame = false;
