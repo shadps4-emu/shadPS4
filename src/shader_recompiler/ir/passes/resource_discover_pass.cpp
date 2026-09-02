@@ -180,13 +180,13 @@ AnisoLod0Result CheckDisableAnisoLod0Pattern(IR::Value value) {
     return {inst->Arg(2), prod0_arg0->Arg(0), true};
 }
 
-struct ForceWrapResult {
+struct SamplerClampSetResult {
     IR::Value ssharp_dw0;
     bool found;
 };
-ForceWrapResult CheckForceClampToWrapPattern(IR::Value value) {
+SamplerClampSetResult CheckForceClampToWrapPattern(IR::Value value) {
     // s_and_b32 s12, 0xfffffe00, s12
-    // is used to force clamping to repeat
+    // is used to force clamp_x/y/z to wrap
 
     auto* inst = value.TryInst();
     if (!inst) {
@@ -199,6 +199,30 @@ ForceWrapResult CheckForceClampToWrapPattern(IR::Value value) {
     }
 
     return {inst->Arg(1), true};
+}
+
+SamplerClampSetResult CheckForceClampToLastTexelPattern(IR::Value value) {
+    // s_and_b32 s12, 0xfffffe00, s12
+    // s_or_b32  0x12, s12
+    // is used to force clamp_x/y to last texel
+
+    auto* inst = value.TryInst();
+    if (!inst) {
+        return {value, false};
+    }
+
+    if (inst->GetOpcode() != IR::Opcode::BitwiseOr32 || inst->Arg(1).IsImmediate() ||
+        !inst->Arg(0).IsImmediate() || inst->Arg(0).U32() != 0x12u) {
+        return {value, false};
+    }
+
+    auto* prod = inst->Arg(1).Inst();
+    if (prod->GetOpcode() != IR::Opcode::BitwiseAnd32 || !prod->Arg(0).IsImmediate() ||
+        prod->Arg(0).U32() != 0xfffffe00u) {
+        return {value, false};
+    }
+
+    return {prod->Arg(1), true};
 }
 
 IR::Inst* FindSharpSource(IR::Inst* handle) {
@@ -285,13 +309,17 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
     for (size_t i = 0; i < sampler->NumArgs(); ++i) {
         ssharp.dwords[ssharp.num_dwords++] = sampler->Arg(i);
     }
-    if (auto [ssharp_dw0, tsharp_dw3, found] = CheckDisableAnisoLod0Pattern(sampler->Arg(0));
+    if (auto [ssharp_dw0, tsharp_dw3, found] = CheckDisableAnisoLod0Pattern(ssharp.dwords[0]);
         found) {
         ssharp.post_op = SharpFetchPostOp::DisableAnisoIfSingleLod;
         ssharp.post_op_data.lod_prod = tsharp_dw3;
         ssharp.dwords[0] = ssharp_dw0;
-    } else if (auto [ssharp_dw0, found] = CheckForceClampToWrapPattern(sampler->Arg(0)); found) {
-        ssharp.post_op = SharpFetchPostOp::ForceRepeatClamp;
+    } else if (auto [ssharp_dw0, found] = CheckForceClampToWrapPattern(ssharp.dwords[0]); found) {
+        ssharp.post_op = SharpFetchPostOp::ForceRepeatXyzClamp;
+        ssharp.dwords[0] = ssharp_dw0;
+    } else if (auto [ssharp_dw0, found] = CheckForceClampToLastTexelPattern(ssharp.dwords[0]);
+               found) {
+        ssharp.post_op = SharpFetchPostOp::ForceLastTexelXyClamp;
         ssharp.dwords[0] = ssharp_dw0;
     }
 
