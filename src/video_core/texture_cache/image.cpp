@@ -17,6 +17,7 @@ namespace VideoCore {
 using namespace Vulkan;
 
 Common::IncrementalIdProvider<u64> Image::global_image_uid{};
+Common::IncrementalIdProvider<u64> Image::global_contents_version{};
 
 static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance& instance,
                                            const ImageInfo& info) {
