@@ -74,12 +74,18 @@ bool HostFile::IsOpen() const {
     return m_file.IsOpen();
 }
 
-void HostFile::Stat(FileStat& out) {
-    out.size = Size();
+bool StatHostPath(const std::filesystem::path& path, FileStat& out) {
+    std::error_code size_ec;
+    const auto sz = std::filesystem::file_size(path, size_ec);
+    if (size_ec) {
+        return false;
+    }
+    out.size = static_cast<u64>(sz);
     out.is_directory = false;
+
 #if defined(__linux__) || defined(__FreeBSD__)
     struct stat st = {};
-    if (::stat(m_path.string().c_str(), &st) == 0) {
+    if (::stat(path.string().c_str(), &st) == 0) {
         out.mtime_sec = static_cast<s64>(st.st_mtim.tv_sec);
         out.mtime_nsec = static_cast<s64>(st.st_mtim.tv_nsec);
         out.atime_sec = static_cast<s64>(st.st_atim.tv_sec);
@@ -89,7 +95,7 @@ void HostFile::Stat(FileStat& out) {
     }
 #elif defined(__APPLE__)
     struct stat st = {};
-    if (::stat(m_path.string().c_str(), &st) == 0) {
+    if (::stat(path.string().c_str(), &st) == 0) {
         out.mtime_sec = static_cast<s64>(st.st_mtimespec.tv_sec);
         out.mtime_nsec = static_cast<s64>(st.st_mtimespec.tv_nsec);
         out.atime_sec = static_cast<s64>(st.st_atimespec.tv_sec);
@@ -99,7 +105,7 @@ void HostFile::Stat(FileStat& out) {
     }
 #else
     std::error_code ec;
-    const auto ft = std::filesystem::last_write_time(m_path, ec);
+    const auto ft = std::filesystem::last_write_time(path, ec);
     if (!ec) {
         const auto sctp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
             ft - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
@@ -113,6 +119,21 @@ void HostFile::Stat(FileStat& out) {
         out.ctime_nsec = out.mtime_nsec;
     }
 #endif
+    return true;
+}
+
+void HostFile::Stat(FileStat& out) {
+    out.size = Size();
+    out.is_directory = false;
+    FileStat times{};
+    if (StatHostPath(m_path, times)) {
+        out.mtime_sec = times.mtime_sec;
+        out.mtime_nsec = times.mtime_nsec;
+        out.atime_sec = times.atime_sec;
+        out.atime_nsec = times.atime_nsec;
+        out.ctime_sec = times.ctime_sec;
+        out.ctime_nsec = times.ctime_nsec;
+    }
 }
 
 HostDirectory::HostDirectory(const std::filesystem::path& root) : m_root(root) {
@@ -198,11 +219,13 @@ std::optional<std::filesystem::path> HostFsBackend::ResolveCaseInsensitive(
 
 IBackend::NodeInfo HostFsBackend::Query(std::string_view rel_path) {
     std::error_code ec;
-    const auto status = std::filesystem::status(Resolve(rel_path), ec);
+    auto path = Resolve(rel_path);
+    const auto status = std::filesystem::status(path, ec);
 
     NodeInfo info;
     info.exists = std::filesystem::exists(status);
     info.is_directory = std::filesystem::is_directory(status);
+    info.host_path = std::move(path);
     return info;
 }
 
@@ -225,6 +248,7 @@ std::unique_ptr<IFile> HostFsBackend::Open(std::string_view rel_path,
     if (mode != Common::FS::FileAccessMode::Create && !std::filesystem::is_regular_file(path, ec)) {
         return nullptr;
     }
+    errno = 0;
     auto handle =
         std::make_unique<HostFile>(path, mode, m_read_only || !writable, /*immutable=*/m_read_only);
     if (!handle->IsOpen()) {
@@ -242,8 +266,23 @@ std::unique_ptr<IDirectory> HostFsBackend::OpenDir(std::string_view rel_path) {
     return std::make_unique<HostDirectory>(path);
 }
 
+std::unique_ptr<IFile> HostFsBackend::OpenAt(const std::filesystem::path& host_path,
+                                             Common::FS::FileAccessMode mode) {
+    const bool writable = mode != Common::FS::FileAccessMode::Read;
+    if (writable && m_read_only) {
+        return nullptr;
+    }
+    errno = 0;
+    auto handle = std::make_unique<HostFile>(host_path, mode, m_read_only || !writable,
+                                             /*immutable=*/m_read_only);
+    if (!handle->IsOpen()) {
+        return nullptr;
+    }
+    return handle;
+}
+
 std::optional<std::vector<u8>> HostFsBackend::ReadFile(std::string_view rel_path) const {
-    const std::filesystem::path full_path = m_root / rel_path;
+    const std::filesystem::path full_path = Resolve(rel_path);
     std::error_code ec;
     if (!std::filesystem::is_regular_file(full_path, ec) || ec) {
         return std::nullopt;

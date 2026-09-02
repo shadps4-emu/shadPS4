@@ -15,8 +15,12 @@
 
 #include <io.h>
 #include <share.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <windows.h>
 #else
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 #endif
 
@@ -364,6 +368,19 @@ u64 IOFile::GetSize() const {
     if (file_access_mode != FileAccessMode::Read) {
         std::fflush(file);
     }
+
+    // Stat the descriptor rather than the path
+#ifdef _WIN64
+    struct _stat64 st{};
+    if (_fstat64(_fileno(file), &st) == 0) {
+        return static_cast<u64>(st.st_size);
+    }
+#else
+    struct stat st{};
+    if (::fstat(fileno(file), &st) == 0) {
+        return static_cast<u64>(st.st_size);
+    }
+#endif
 
     std::error_code ec;
 

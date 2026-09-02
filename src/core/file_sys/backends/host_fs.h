@@ -35,7 +35,9 @@ public:
     }
 
     Common::FS::IOFile* GetHostFile() override {
-        ForgetSize();
+        if (!m_immutable) {
+            ForgetSize();
+        }
         return &m_file;
     }
 
@@ -97,6 +99,8 @@ public:
 
     std::unique_ptr<IFile> Open(std::string_view rel_path,
                                 Common::FS::FileAccessMode mode) override;
+    std::unique_ptr<IFile> OpenAt(const std::filesystem::path& host_path,
+                                  Common::FS::FileAccessMode mode) override;
     std::unique_ptr<IDirectory> OpenDir(std::string_view rel_path) override;
 
     bool IsReadOnly() const override {

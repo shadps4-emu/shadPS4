@@ -237,7 +237,7 @@ MntPoints::Resolution MntPoints::ResolvePath(std::string_view guest_path, HostPa
     const size_t first = path_type == HostPathType::Base ? stack.size() - 1 : 0;
     for (size_t i = first; i < stack.size(); ++i) {
         const auto& backend = stack[i];
-        const auto info = backend->Query(res.rel);
+        auto info = backend->Query(res.rel);
         if (!info.exists) {
             continue;
         }
@@ -246,7 +246,9 @@ MntPoints::Resolution MntPoints::ResolvePath(std::string_view guest_path, HostPa
         res.exists = true;
         res.is_directory = info.is_directory;
         res.read_only = mount->read_only || owner->IsReadOnly();
-        if (auto host = owner->ResolveHostPath(res.rel)) {
+        if (owner.get() == backend.get() && info.host_path) {
+            res.host_path = std::move(*info.host_path);
+        } else if (auto host = owner->ResolveHostPath(res.rel)) {
             res.host_path = std::move(*host);
         }
         break;
@@ -396,7 +398,27 @@ std::unique_ptr<IFile> MntPoints::OpenResolved(const Resolution& resolution,
     if (resolution.backend == nullptr || resolution.is_directory) {
         return nullptr;
     }
+    if (!resolution.host_path.empty()) {
+        if (auto handle = resolution.backend->OpenAt(resolution.host_path, mode)) {
+            return handle;
+        }
+    }
     return resolution.backend->Open(resolution.rel, mode);
+}
+
+bool MntPoints::StatResolved(const Resolution& resolution, FileStat& out) {
+    if (!resolution.exists || resolution.backend == nullptr) {
+        return false;
+    }
+    if (resolution.host_path.empty()) {
+        auto handle = OpenResolved(resolution, Common::FS::FileAccessMode::Read);
+        if (!handle) {
+            return false;
+        }
+        handle->Stat(out);
+        return true;
+    }
+    return StatHostPath(resolution.host_path, out);
 }
 
 std::unique_ptr<IDirectory> MntPoints::OpenDir(std::string_view guest_path) {
@@ -414,7 +436,8 @@ std::unique_ptr<IDirectory> MntPoints::OpenDir(std::string_view guest_path) {
     std::unordered_set<std::string> seen;
     bool found = false;
     for (const auto& backend : mount->backends) {
-        if (!backend->Exists(rel) || !backend->IsDirectory(rel)) {
+        const auto info = backend->Query(rel);
+        if (!info.exists || !info.is_directory) {
             continue;
         }
         found = true;

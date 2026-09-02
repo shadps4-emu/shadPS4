@@ -111,6 +111,9 @@ public:
     /// Opens a path already resolved by ResolvePath, without resolving again.
     std::unique_ptr<IFile> OpenResolved(const Resolution& resolution,
                                         Common::FS::FileAccessMode mode);
+    /// Fills out size and timestamps for an already-resolved path without
+    /// opening it. Returns false if the backend cannot answer without an open.
+    bool StatResolved(const Resolution& resolution, FileStat& out);
 
     /// Opens a directory through the mount's backend stack.
     std::unique_ptr<IDirectory> OpenDir(std::string_view guest_path);

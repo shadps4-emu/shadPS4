@@ -169,8 +169,14 @@ public:
 
     template <typename T>
     size_t ReadRaw(void* data, size_t size) const {
-        u64 read = std::fread(data, sizeof(T), size, file);
-        ASSERT_MSG(std::ferror(file) == 0, "Failed to read file, error = {}", std::strerror(errno));
+        if (!IsOpen()) {
+            return 0;
+        }
+        const u64 read = std::fread(data, sizeof(T), size, file);
+        if (std::ferror(file) != 0) {
+            LOG_ERROR(Common_Filesystem, "Failed to read file, error = {}", std::strerror(errno));
+            std::clearerr(file);
+        }
         return read;
     }
 
@@ -185,7 +191,6 @@ public:
         u64 written = std::fwrite(data.data(), sizeof(T), data.size(), file);
         ASSERT_MSG(std::ferror(file) == 0, "Failed to write to file, error = {}",
                    std::strerror(errno));
-        std::fflush(file);
         return written;
     }
 
@@ -222,8 +227,8 @@ public:
         }
 
         u64 bytes = std::fwrite(&object, sizeof(T), 1, file) == 1;
-        ASSERT_MSG(std::ferror(file) == 0, "Failed to read file, error = {}", std::strerror(errno));
-        std::fflush(file);
+        ASSERT_MSG(std::ferror(file) == 0, "Failed to write to file, error = {}",
+                   std::strerror(errno));
         return bytes;
     }
 

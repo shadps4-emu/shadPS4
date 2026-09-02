@@ -240,13 +240,18 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             access_mode = Common::FS::FileAccessMode::Read;
         }
 
+        errno = 0;
         file->handle = mnt->OpenResolved(resolved, access_mode);
         if (!file->handle || !file->handle->IsOpen()) {
             h->DeleteHandle(handle);
-            *__Error() = (write || rdwr || truncate) && mnt->GetMount(raw_path)->read_only
-                             ? POSIX_EROFS
-                             : POSIX_EIO;
-            LOG_ERROR(Kernel_Fs, "Opening {} failed, backend did not serve the file", raw_path);
+            if (const int host_errno = errno; host_errno != 0) {
+                SetPosixErrno(host_errno);
+            } else {
+                *__Error() = (write || rdwr || truncate) && mnt->GetMount(raw_path)->read_only
+                                 ? POSIX_EROFS
+                                 : POSIX_EIO;
+            }
+            LOG_ERROR(Kernel_Fs, "Opening {} failed, error = {}", raw_path, *__Error());
             return -1;
         }
 
@@ -389,7 +394,11 @@ s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
 
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_read += ReadFile(file, iov[i].iov_base, iov[i].iov_len);
+        const s64 chunk = ReadFile(file, iov[i].iov_base, iov[i].iov_len);
+        if (chunk < 0) {
+            return total_read > 0 ? total_read : -1;
+        }
+        total_read += chunk;
     }
     return total_read;
 }
@@ -714,11 +723,14 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     const auto now_file = fs::file_time_type::clock::now();
     // calculate the file modified time
     std::error_code ec;
-    const auto mtime =
-        fs::exists(path_name, ec) ? fs::last_write_time(path_name, ec) : fs::file_time_type{};
-    const auto mtimestamp = now_sys + (mtime - now_file);
+    const auto host_mtimestamp = [&] {
+        const auto mtime =
+            fs::exists(path_name, ec) ? fs::last_write_time(path_name, ec) : fs::file_time_type{};
+        return now_sys + (mtime - now_file);
+    };
 
     if (is_dir) {
+        const auto mtimestamp = host_mtimestamp();
         sb->st_mode = 0000777u | 0040000u;
         sb->st_size = 65536;
         sb->st_blksize = 65536;
@@ -728,25 +740,24 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         // TODO incomplete
     } else {
         sb->st_mode = 0000777u | 0100000u;
-        if (auto handle = mnt->OpenResolved(resolved, Common::FS::FileAccessMode::Read)) {
-            Core::FileSys::FileStat fst{};
-            handle->Stat(fst);
+        Core::FileSys::FileStat fst{};
+        const bool statted = mnt->StatResolved(resolved, fst);
+        if (statted) {
             sb->st_size = static_cast<s64>(fst.size);
-            if (fst.mtime_sec != 0 || fst.mtime_nsec != 0) {
-                sb->st_mtim.tv_sec = fst.mtime_sec;
-                sb->st_mtim.tv_nsec = fst.mtime_nsec;
-                sb->st_atim.tv_sec = fst.atime_sec;
-                sb->st_atim.tv_nsec = fst.atime_nsec;
-                sb->st_ctim.tv_sec = fst.ctime_sec;
-                sb->st_ctim.tv_nsec = fst.ctime_nsec;
-            } else {
-                sb->st_mtim.tv_sec =
-                    std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch())
-                        .count();
-            }
+        }
+        if (statted && (fst.mtime_sec != 0 || fst.mtime_nsec != 0)) {
+            sb->st_mtim.tv_sec = fst.mtime_sec;
+            sb->st_mtim.tv_nsec = fst.mtime_nsec;
+            sb->st_atim.tv_sec = fst.atime_sec;
+            sb->st_atim.tv_nsec = fst.atime_nsec;
+            sb->st_ctim.tv_sec = fst.ctime_sec;
+            sb->st_ctim.tv_nsec = fst.ctime_nsec;
         } else {
-            sb->st_size =
-                fs::exists(path_name, ec) ? static_cast<s64>(fs::file_size(path_name, ec)) : 0;
+            if (!statted) {
+                sb->st_size =
+                    fs::exists(path_name, ec) ? static_cast<s64>(fs::file_size(path_name, ec)) : 0;
+            }
+            const auto mtimestamp = host_mtimestamp();
             sb->st_mtim.tv_sec =
                 std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch())
                     .count();
@@ -1024,7 +1035,11 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 off
     }
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_read += ReadFile(file, iov[i].iov_base, iov[i].iov_len);
+        const s64 chunk = ReadFile(file, iov[i].iov_base, iov[i].iov_len);
+        if (chunk < 0) {
+            return total_read > 0 ? total_read : -1;
+        }
+        total_read += chunk;
     }
     return total_read;
 }
