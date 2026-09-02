@@ -124,6 +124,27 @@ AnisoLod0Result CheckDisableAnisoLod0Pattern(IR::Value value) {
     return {inst->Arg(2), prod0_arg0->Arg(0), true};
 }
 
+struct ForceWrapResult {
+    IR::Value ssharp_dw0;
+    bool found;
+};
+ForceWrapResult CheckForceClampToWrapPattern(IR::Value value) {
+    // s_and_b32 s12, 0xfffffe00, s12
+    // is used to force clamping to repeat
+
+    auto* inst = value.TryInst();
+    if (!inst) {
+        return {value, false};
+    }
+
+    if (inst->GetOpcode() != IR::Opcode::BitwiseAnd32 || !inst->Arg(0).IsImmediate() ||
+        inst->Arg(0).U32() != 0xfffffe00u) {
+        return {value, false};
+    }
+
+    return {inst->Arg(1), true};
+}
+
 IR::Inst* FindSharpSource(IR::Inst* handle) {
     ASSERT(IsSharpSource(handle));
     return handle;
@@ -151,22 +172,23 @@ void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList
     auto& resource = resources.emplace_back(&inst);
     auto& vsharp = resource.sharps[0];
 
-    // V# usage can be performed with various patterns
-    if (auto [dword0, found] = CheckInlineCbufPattern(handle->Arg(0)); found) {
+    // Gather V# dwords
+    vsharp.num_dwords = handle->NumArgs();
+    for (size_t i = 0; i < handle->NumArgs(); ++i) {
+        vsharp.dwords[i] = handle->Arg(i);
+    }
+
+    // Attempt to "see through" various V# access patterns and have binding reproduce them
+    if (auto [dword0, found] = CheckInlineCbufPattern(vsharp.dwords[0]); found) {
         vsharp.post_op = SharpFetchPostOp::OffsetByProgramBase;
-        vsharp.dwords[vsharp.num_dwords++] = dword0;
-        vsharp.dwords[vsharp.num_dwords++] = IR::Value{0U};
+        vsharp.dwords[0] = dword0;
+        vsharp.dwords[1] = IR::Value{0U};
     } else if (auto [dword1, mask, found] = CheckStridePatchPattern(handle->Arg(1)); found) {
         vsharp.post_op = SharpFetchPostOp::BitwiseOrDw1WithImm;
         vsharp.post_op_data.dw1_mask = mask;
-        vsharp.dwords[vsharp.num_dwords++] = handle->Arg(0);
-        vsharp.dwords[vsharp.num_dwords++] = dword1;
+        vsharp.dwords[1] = dword1;
     }
 
-    // Gather remaining V# dwords
-    for (size_t i = vsharp.num_dwords; i < handle->NumArgs(); ++i) {
-        vsharp.dwords[vsharp.num_dwords++] = handle->Arg(i);
-    }
     MarkReadConstBufferSharpSources(vsharp);
 }
 
@@ -193,13 +215,19 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
         const IR::Inst* sampler = inst.Arg(1).Inst();
         auto& ssharp = resource.sharps[1];
 
-        auto [ssharp_dw0, tsharp_dw3, found] = CheckDisableAnisoLod0Pattern(sampler->Arg(0));
-        if (found) {
+        if (auto [ssharp_dw0, tsharp_dw3, found] = CheckDisableAnisoLod0Pattern(sampler->Arg(0));
+            found) {
             ssharp.post_op = SharpFetchPostOp::DisableAnisoIfSingleLod;
             ssharp.post_op_data.lod_prod = tsharp_dw3;
+            ssharp.dwords[ssharp.num_dwords++] = ssharp_dw0;
+        } else if (auto [ssharp_dw0, found] = CheckForceClampToWrapPattern(sampler->Arg(0));
+                   found) {
+            ssharp.post_op = SharpFetchPostOp::ForceRepeatClamp;
+            ssharp.dwords[ssharp.num_dwords++] = ssharp_dw0;
         }
-        ssharp.dwords[ssharp.num_dwords++] = ssharp_dw0;
-        for (size_t i = 1; i < sampler->NumArgs(); ++i) {
+
+        // Gather remaining S# dwords
+        for (size_t i = ssharp.num_dwords; i < sampler->NumArgs(); ++i) {
             ssharp.dwords[ssharp.num_dwords++] = sampler->Arg(i);
         }
         MarkReadConstBufferSharpSources(ssharp);

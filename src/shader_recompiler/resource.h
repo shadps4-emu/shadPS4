@@ -58,6 +58,7 @@ enum class SharpFetchPostOp : u8 {
     OffsetByProgramBase,
     // For samplers
     DisableAnisoIfSingleLod,
+    ForceRepeatClamp,
 };
 
 enum class BufferType : u8 {
@@ -169,6 +170,10 @@ struct SamplerResource {
             if (((tsharp_dw3 >> 12) & 0xff) == 0) {
                 sampler.max_aniso.Assign(AmdGpu::AnisoRatio::One);
             }
+        } else if (post_op == SharpFetchPostOp::ForceRepeatClamp) {
+            sampler.clamp_x.Assign(AmdGpu::ClampMode::Wrap);
+            sampler.clamp_y.Assign(AmdGpu::ClampMode::Wrap);
+            sampler.clamp_z.Assign(AmdGpu::ClampMode::Wrap);
         }
         return sampler;
     }

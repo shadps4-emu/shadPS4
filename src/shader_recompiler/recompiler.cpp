@@ -47,6 +47,7 @@ void EmitControlFlowGraph(IR::Program& program, Pools& pools, Gcn::CFG& cfg,
         }
         program.blocks.push_back(ir_block);
     }
+    ASSERT_MSG(!program.info.translation_failed, "Shader translation has failed");
     for (auto& block : cfg) {
         auto* ir_block = block.ir_block;
         if (block.branch_true) {
@@ -56,14 +57,6 @@ void EmitControlFlowGraph(IR::Program& program, Pools& pools, Gcn::CFG& cfg,
         if (block.branch_false) {
             auto* false_block = block.branch_false->ir_block;
             ir_block->AddBranch(false_block);
-        }
-    }
-    for (auto it = program.blocks.begin() + 1; it != program.blocks.end();) {
-        IR::Block* block{*it};
-        if (block->imm_predecessors.empty()) {
-            it = program.blocks.erase(it);
-        } else {
-            ++it;
         }
     }
     program.post_order_blocks = Shader::IR::PostOrder(program.blocks.front());

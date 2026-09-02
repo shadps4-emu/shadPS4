@@ -16,7 +16,7 @@ namespace Shader::Optimization {
 
 union PostOpData {
     u32 dw1_mask;
-    IR::Value lod_prod;
+    IR::Value lod_prod{};
 };
 
 struct SharpReference {
