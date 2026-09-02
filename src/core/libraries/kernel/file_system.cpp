@@ -354,12 +354,37 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
     return result;
 }
 
+static constexpr u64 ReadChunkSize = 256_KB;
+static thread_local std::vector<u8> file_buf{};
+
 s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = file->GetSize() - file->Tell();
     memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
-    return file->Read(buf, nbytes);
+    const u64 chunk = std::min<u64>(nbytes, ReadChunkSize);
+    if (file_buf.size() < chunk) {
+        file_buf.resize(chunk);
+    }
+
+    auto* dst = static_cast<u8*>(buf);
+    s64 total = 0;
+    while (static_cast<u64>(total) < nbytes) {
+        const u64 want = std::min<u64>(ReadChunkSize, nbytes - total);
+        const s64 got = file->Read(file_buf.data(), want);
+        if (got < 0) {
+            return total > 0 ? total : got;
+        }
+        if (got == 0) {
+            break;
+        }
+        std::memcpy(dst + total, file_buf.data(), got);
+        total += got;
+        if (static_cast<u64>(got) < want) {
+            break;
+        }
+    }
+    return total;
 }
 
 s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
