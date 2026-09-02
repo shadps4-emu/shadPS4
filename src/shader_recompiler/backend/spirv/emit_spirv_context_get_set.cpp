@@ -566,4 +566,8 @@ void EmitGetMaskLaneVariable(EmitContext&) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
+Id EmitGetPcLo(EmitContext& ctx, Id pc) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
 } // namespace Shader::Backend::SPIRV

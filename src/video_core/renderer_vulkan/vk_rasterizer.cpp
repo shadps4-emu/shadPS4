@@ -613,7 +613,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
         if (!desc.IsSpecial() && vsharp.base_address != 0 && vsharp.GetSize() > 0) {
             const u64 size = memory->ClampRangeSize(vsharp.base_address, vsharp.GetSize());
             if (size != vsharp.GetSize()) {
-                LOG_ERROR(Render, "Clamped size from {} to {} for stage {:#x}", vsharp.GetSize(), size, stage.pgm_hash);
+                LOG_ERROR(Render, "Clamped size from {} to {} for stage {:#x}", vsharp.GetSize(),
+                          size, stage.pgm_hash);
             }
             const auto buffer_id = buffer_cache.FindBuffer(vsharp.base_address, size);
             buffer_bindings.emplace_back(buffer_id, vsharp, size);
@@ -715,6 +716,10 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
     // This array holds the size of each consecutive array with the number of bindings consumed.
     // This is currently always 1 for anything other than mip fallback arrays.
     boost::container::small_vector<u32, 8> image_descriptor_array_sizes;
+
+    if (stage.pgm_hash == 0x291dbcd0) {
+        printf("bad\n");
+    }
 
     for (const auto& image_desc : stage.images) {
         const auto tsharp = image_desc.GetSharp(stage);
@@ -852,12 +857,6 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
 
     for (const auto& sampler : stage.samplers) {
         auto ssharp = sampler.GetSharp(stage);
-        if (sampler.disable_aniso) {
-            const auto& tsharp = stage.images[sampler.associated_image].GetSharp(stage);
-            if (tsharp.base_level == 0 && tsharp.last_level == 0) {
-                ssharp.max_aniso.Assign(AmdGpu::AnisoRatio::One);
-            }
-        }
         const auto vk_sampler = texture_cache.GetSampler(ssharp, liverpool->regs.ta_bc_base);
         image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         auto& set_write = set_writes[set_write_index++];
@@ -1125,7 +1124,7 @@ bool Rasterizer::IsMapped(VAddr addr, u64 size) {
     return boost::icl::contains(mapped_ranges, range);
 }
 #pragma GCC push_options
-#pragma GCC optimize ("O0")
+#pragma GCC optimize("O0")
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
     {
         std::scoped_lock lock{mapped_ranges_mutex};

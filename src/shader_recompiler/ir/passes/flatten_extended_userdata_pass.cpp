@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <queue>
 #include <unordered_map>
 #include <boost/container/flat_map.hpp>
+#include <queue>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
 #include "common/arch.h"
@@ -567,9 +567,9 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
 
 static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
                          Xbyak::CodeGenerator& c) {
-    ASSERT(subtree->GetOpcode() == IR::Opcode::GetUserData ||
-           subtree->GetOpcode() == IR::Opcode::ReadConst);
-    if (subtree->GetOpcode() == IR::Opcode::ReadConst && subtree->Flags<u16>() == 0) {
+    if (subtree->GetOpcode() == IR::Opcode::ReadConst && subtree->Flags<u16>() == 0 ||
+        subtree->GetOpcode() == IR::Opcode::ReadConstBuffer &&
+            subtree->Flags<IR::BufferInstInfo>().flatbuf_off_dw == 0) {
         return;
     }
 
@@ -679,8 +679,7 @@ void SimplifyReadConstAddressAdd(IR::Inst& inst) {
         return;
     }
 
-    if (lo->GetOpcode() != IR::Opcode::IAdd32 ||
-        hi->GetOpcode() != IR::Opcode::IAdd32) {
+    if (lo->GetOpcode() != IR::Opcode::IAdd32 || hi->GetOpcode() != IR::Opcode::IAdd32) {
         return;
     }
 
@@ -712,8 +711,10 @@ void SimplifyReadConstAddressAdd(IR::Inst& inst) {
         ASSERT(user->GetOpcode() == IR::Opcode::ReadConst && operand == 0);
         IR::IREmitter ir{*user->GetParent(), IR::Block::InstructionList::s_iterator_to(*user)};
         IR::U32 offset = IR::U32{user->Arg(1)};
-        IR::U32 dw_add_offset = add_offset.IsImmediate() ? ir.Imm32(add_offset.U32() >> 2u)
-                                                         : IR::U32{ir.ShiftRightLogical(IR::U32{add_offset}, ir.Imm32(2u))};
+        IR::U32 dw_add_offset =
+            add_offset.IsImmediate()
+                ? ir.Imm32(add_offset.U32() >> 2u)
+                : IR::U32{ir.ShiftRightLogical(IR::U32{add_offset}, ir.Imm32(2u))};
         if (offset.IsImmediate() && dw_add_offset.IsImmediate()) {
             user->SetArg(1, ir.Imm32(offset.U32() + dw_add_offset.U32()));
         } else {
@@ -805,7 +806,8 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         }
 
         IR::Inst* base = inst->Arg(0).Inst();
-        if (auto* inst = base->Arg(0).TryInst(); inst && inst->GetOpcode() == IR::Opcode::ReadFirstLane) {
+        if (auto* inst = base->Arg(0).TryInst();
+            inst && inst->GetOpcode() == IR::Opcode::ReadFirstLane) {
             continue;
         }
         ASSERT_MSG(IsReadConstSource(base->Arg(0)), "ReadConst base low not from constant memory");

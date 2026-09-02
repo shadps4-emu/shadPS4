@@ -294,6 +294,10 @@ F32 IREmitter::ReadTcsGenericOuputAttribute(const U32& vertex_index, const U32& 
                      comp_index);
 }
 
+U32 IREmitter::GetPcLo(const U32& pc) {
+    return Inst<U32>(IR::Opcode::GetPcLo, pc);
+}
+
 F32 IREmitter::GetPatch(Patch patch) {
     return Inst<F32>(Opcode::GetPatch, patch);
 }

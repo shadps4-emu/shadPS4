@@ -7,6 +7,7 @@
 #include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
+#include "shader_recompiler/resource.h"
 
 namespace Shader::Optimization {
 
@@ -16,25 +17,89 @@ static bool IsSharpSource(const IR::Inst* inst) {
            inst->GetOpcode() == IR::Opcode::ReadConstBuffer;
 }
 
-std::pair<IR::Inst*, bool> CheckDisableAnisoLod0Pattern(IR::Inst* inst) {
-    // Find sample source trying to disable anisotropy for lod0.
-    // Assuming S# is in UD s[12:15] and T# is in s[4:11]
+struct StridePatchResult {
+    IR::Value vsharp_dw1;
+    u32 dw1_mask;
+    bool found;
+};
+StridePatchResult CheckStridePatchPattern(IR::Value value) {
+    // s_or_b32        s37, s101, 0x400000
+    // s_mov_b32       s36, s100
+    // s_mov_b32       s38, -1
+    // s_mov_b32       s39, 0x2000c004
+    // s_movk_i32      s0, 0x6d0
+    // buffer_load_dwordx4 v[17:20], v59, s[36:39], s0 idxen
+
+    auto* inst = value.TryInst();
+    if (!inst) {
+        return {value, 0, false};
+    }
+    if (inst->GetOpcode() != IR::Opcode::BitwiseOr32 || !inst->Arg(1).IsImmediate()) {
+        return {value, 0, false};
+    }
+    return {inst->Arg(0), inst->Arg(1).U32(), true};
+}
+
+struct InlineCbufResult {
+    IR::Value vsharp_dw0;
+    bool found;
+};
+InlineCbufResult CheckInlineCbufPattern(IR::Value value) {
+    // Assuming V# is in s[32:35]
+    // The next pattern:
+    //  s_getpc_b64 s[32:33]
+    //  s_add_u32   s32, <const>, s32
+    //  s_addc_u32  s33, 0, s33
+    //  s_mov_b32   s35, <const>
+    //  s_movk_i32  s34, <const>
+    //  buffer_load_format_xyz v[8:10], v1, s[32:35], 0 ...
+    // is used to define an inline constant buffer
+
+    auto* inst = value.TryInst();
+    if (!inst) {
+        return {value, false};
+    }
+    if (inst->GetOpcode() != IR::Opcode::IAdd32 ||
+        inst->Arg(0).IsImmediate() == inst->Arg(1).IsImmediate()) {
+        return {value, false};
+    }
+    const u32 offset = inst->Arg(0).IsImmediate() ? inst->Arg(0).U32() : inst->Arg(1).U32();
+    auto* prod = inst->Arg(0).IsImmediate() ? inst->Arg(1).Inst() : inst->Arg(0).Inst();
+    if (prod->GetOpcode() != IR::Opcode::GetPcLo) {
+        return {value, false};
+    }
+    return {IR::Value{prod->Arg(0).U32() + offset}, true};
+}
+
+struct AnisoLod0Result {
+    IR::Value ssharp_dw0;
+    IR::Value tsharp_dw3;
+    bool found;
+};
+AnisoLod0Result CheckDisableAnisoLod0Pattern(IR::Value value) {
+    // Assuming S# is in s[12:15] and T# is in s[4:11]
     // The next pattern:
     //  s_bfe_u32     s0, s7,  $0x0008000c
     //  s_and_b32     s1, s12, $0xfffff1ff
     //  s_cmp_eq_u32  s0, 0
     //  s_cselect_b32 s0, s1, s12
+    //  s_mov_b32     s12, s0
     // is used to disable anisotropy in the sampler if the sampled texture doesn't have mips
 
+    auto* inst = value.TryInst();
+    if (!inst) {
+        return {value, {}, false};
+    }
+
     if (inst->GetOpcode() != IR::Opcode::SelectU32) {
-        return {inst, false};
+        return {value, {}, false};
     }
 
     // Select should be based on zero check
     const auto* prod0 = inst->Arg(0).Inst();
     if (prod0->GetOpcode() != IR::Opcode::IEqual32 ||
         !(prod0->Arg(1).IsImmediate() && prod0->Arg(1).U32() == 0u)) {
-        return {inst, false};
+        return {value, {}, false};
     }
 
     auto* prod0_arg0 = prod0->Arg(0).Inst();
@@ -44,19 +109,19 @@ std::pair<IR::Inst*, bool> CheckDisableAnisoLod0Pattern(IR::Inst* inst) {
     if (prod0_arg0->GetOpcode() != IR::Opcode::BitFieldUExtract ||
         !(prod0_arg0->Arg(1).IsImmediate() && prod0_arg0->Arg(1).U32() == 12) ||
         !(prod0_arg0->Arg(2).IsImmediate() && prod0_arg0->Arg(2).U32() == 8)) {
-        return {inst, false};
+        return {value, {}, false};
     }
 
     // Make sure mask is masking out anisotropy
     const auto* prod1 = inst->Arg(1).Inst();
     if (prod1->GetOpcode() != IR::Opcode::BitwiseAnd32 || prod1->Arg(1).U32() != 0xfffff1ff) {
-        return {inst, false};
+        return {value, {}, false};
     }
 
-    // We're working on the first dword of s#
+    // We're working on the first dword of S#
     auto* prod2 = inst->Arg(2).Inst();
     ASSERT(prod2->GetOpcode() != IR::Opcode::Phi);
-    return {prod2, true};
+    return {inst->Arg(2), prod0_arg0->Arg(0), true};
 }
 
 IR::Inst* FindSharpSource(IR::Inst* handle) {
@@ -64,54 +129,80 @@ IR::Inst* FindSharpSource(IR::Inst* handle) {
     return handle;
 }
 
-void MarkReadConstBufferSharpSources(const IR::Inst* handle, const IR::Inst** out_sharp_dwords = nullptr) {
-    for (size_t arg = 0; arg < handle->NumArgs(); ++arg) {
-        IR::Inst* sharp_dword = handle->Arg(arg).Inst();
-        auto source = FindSharpSource(sharp_dword);
-        if (source && source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+void MarkReadConstBufferSharpSources(const SharpReference& sharp) {
+    // In cases of bindless sharp fetches mark all producer instructions
+    // so the extended userdata flattening pass will include them.
+    for (size_t i = 0; i < sharp.num_dwords; i++) {
+        IR::Inst* source = sharp.dwords[i].TryInst();
+        if (!source) {
+            continue;
+        }
+        ASSERT(IsSharpSource(source));
+        if (source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
             auto flags = source->Flags<IR::BufferInstInfo>();
             flags.sharp_source.Assign(1u);
             source->SetFlags(flags);
         }
-        if (out_sharp_dwords) {
-            *(out_sharp_dwords++) = source;
-        }
     }
 }
 
-void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList& sharp_usages) {
+void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList& resources) {
     IR::Inst* handle = inst.Arg(0).Inst();
-    auto& resource = sharp_usages.emplace_back(&inst);
+    auto& resource = resources.emplace_back(&inst);
+    auto& vsharp = resource.sharps[0];
 
-    if (!handle->AreAllArgsImmediates()) {
-        MarkReadConstBufferSharpSources(handle, resource.sharp_dwords.data());
-        resource.num_dwords = handle->NumArgs();
+    // V# usage can be performed with various patterns
+    if (auto [dword0, found] = CheckInlineCbufPattern(handle->Arg(0)); found) {
+        vsharp.post_op = SharpFetchPostOp::OffsetByProgramBase;
+        vsharp.dwords[vsharp.num_dwords++] = dword0;
+        vsharp.dwords[vsharp.num_dwords++] = IR::Value{0U};
+    } else if (auto [dword1, mask, found] = CheckStridePatchPattern(handle->Arg(1)); found) {
+        vsharp.post_op = SharpFetchPostOp::BitwiseOrDw1WithImm;
+        vsharp.post_op_data.dw1_mask = mask;
+        vsharp.dwords[vsharp.num_dwords++] = handle->Arg(0);
+        vsharp.dwords[vsharp.num_dwords++] = dword1;
     }
+
+    // Gather remaining V# dwords
+    for (size_t i = vsharp.num_dwords; i < handle->NumArgs(); ++i) {
+        vsharp.dwords[vsharp.num_dwords++] = handle->Arg(i);
+    }
+    MarkReadConstBufferSharpSources(vsharp);
 }
 
-void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList& sharp_usages) {
+void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList& resources) {
     IR::Inst* image_handle = inst.Arg(0).Inst();
     ASSERT(image_handle->GetOpcode() == IR::Opcode::ImageHandle);
-    auto& resource = sharp_usages.emplace_back(&inst);
+    auto& resource = resources.emplace_back(&inst);
+    auto& tsharp = resource.sharps[0];
 
-    if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
-        const IR::Inst* sampler = inst.Arg(1).Inst();
-        if (!sampler->AreAllArgsImmediates()) {
-            auto [sampler_handle, found] =
-                CheckDisableAnisoLod0Pattern(sampler->Arg(0).Inst());
-            resource.sampler_sharp_source = FindSharpSource(sampler_handle);
-            resource.disable_aniso = found;
-            MarkReadConstBufferSharpSources(sampler);
+    // Gather T# dwords
+    IR::Inst* tsharp_low = image_handle->Arg(0).Inst();
+    for (size_t i = 0; i < tsharp_low->NumArgs(); ++i) {
+        tsharp.dwords[tsharp.num_dwords++] = tsharp_low->Arg(i);
+    }
+    if (auto tsharp_high = image_handle->Arg(1).TryInst()) {
+        for (size_t i = 0; i < tsharp_high->NumArgs(); ++i) {
+            tsharp.dwords[tsharp.num_dwords++] = tsharp_high->Arg(i);
         }
     }
+    MarkReadConstBufferSharpSources(tsharp);
 
-    IR::Inst* tsharp_low = image_handle->Arg(0).Inst();
-    MarkReadConstBufferSharpSources(tsharp_low, resource.sharp_dwords.data());
-    resource.num_dwords = tsharp_low->NumArgs();
+    // Gather S# dwords
+    if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
+        const IR::Inst* sampler = inst.Arg(1).Inst();
+        auto& ssharp = resource.sharps[1];
 
-    if (auto tsharp_high = image_handle->Arg(1).TryInst()) {
-        MarkReadConstBufferSharpSources(tsharp_high, resource.sharp_dwords.data() + tsharp_low->NumArgs());
-        resource.num_dwords += tsharp_high->NumArgs();
+        auto [ssharp_dw0, tsharp_dw3, found] = CheckDisableAnisoLod0Pattern(sampler->Arg(0));
+        if (found) {
+            ssharp.post_op = SharpFetchPostOp::DisableAnisoIfSingleLod;
+            ssharp.post_op_data.lod_prod = tsharp_dw3;
+        }
+        ssharp.dwords[ssharp.num_dwords++] = ssharp_dw0;
+        for (size_t i = 1; i < sampler->NumArgs(); ++i) {
+            ssharp.dwords[ssharp.num_dwords++] = sampler->Arg(i);
+        }
+        MarkReadConstBufferSharpSources(ssharp);
     }
 }
 

@@ -95,6 +95,8 @@ public:
     [[nodiscard]] F32 ReadTcsGenericOuputAttribute(const U32& vertex_index, const U32& attr_index,
                                                    const U32& comp_index);
 
+    [[nodiscard]] U32 GetPcLo(const U32& pc);
+
     [[nodiscard]] F32 GetPatch(Patch patch);
     void SetPatch(Patch patch, const F32& value);
 
@@ -372,29 +374,24 @@ public:
 
     [[nodiscard]] Value ImageHandle(const Value& tsharp_low, const Value& tsharp_high);
 
-    [[nodiscard]] Value ImageSampleRaw(const Value& handle,
-                                       const Value& sampler_handle,
+    [[nodiscard]] Value ImageSampleRaw(const Value& handle, const Value& sampler_handle,
                                        const Value& address1, const Value& address2,
                                        const Value& address3, const Value& address4,
                                        TextureInstInfo info);
 
-    [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle,
-                                               const Value& body,
+    [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& body,
                                                const F32& bias, const Value& offset,
                                                TextureInstInfo info);
 
-    [[nodiscard]] Value ImageSampleExplicitLod(const Value& handle,
-                                               const Value& body,
+    [[nodiscard]] Value ImageSampleExplicitLod(const Value& handle, const Value& body,
                                                const F32& lod, const Value& offset,
                                                TextureInstInfo info);
 
-    [[nodiscard]] Value ImageSampleDrefImplicitLod(const Value& handle,
-                                                   const Value& body,
+    [[nodiscard]] Value ImageSampleDrefImplicitLod(const Value& handle, const Value& body,
                                                    const F32& dref, const F32& bias,
                                                    const Value& offset, TextureInstInfo info);
 
-    [[nodiscard]] Value ImageSampleDrefExplicitLod(const Value& handle,
-                                                   const Value& body,
+    [[nodiscard]] Value ImageSampleDrefExplicitLod(const Value& handle, const Value& body,
                                                    const F32& dref, const F32& lod,
                                                    const Value& offset, TextureInstInfo info);
 

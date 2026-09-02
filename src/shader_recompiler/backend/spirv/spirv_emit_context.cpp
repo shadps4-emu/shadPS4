@@ -981,8 +981,7 @@ void EmitContext::DefineImagesAndSamplers() {
         Decorate(id, spv::Decoration::Binding, binding.unified);
         binding.unified += num_bindings;
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        // TODO better naming for resources (flattened sharp_idx is not informative)
-        Name(id, fmt::format("{}_{}{}", stage, "img", image_desc.sharp_idx));
+        Name(id, fmt::format("{}_{}{}", stage, "img", images.size()));
         images.push_back({
             .data_types = &data_types,
             .id = id,
@@ -995,7 +994,8 @@ void EmitContext::DefineImagesAndSamplers() {
         });
         interfaces.push_back(id);
     }
-    if (std::ranges::any_of(info.images, &ImageResource::is_atomic)) {
+    if (std::ranges::any_of(info.images,
+                            [](const ImageResource& image) { return image.is_atomic; })) {
         image_u32 = TypePointer(spv::StorageClass::Image, U32[1]);
         image_f32 = TypePointer(spv::StorageClass::Image, F32[1]);
     }
@@ -1008,12 +1008,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        const auto sharp_desc =
-            samp_desc.is_inline_sampler
-                ? fmt::format("inline:{:#x}:{:#x}", samp_desc.inline_sampler.raw0,
-                              samp_desc.inline_sampler.raw1)
-                : fmt::format("sgpr:{}", samp_desc.sharp_idx);
-        Name(id, fmt::format("{}_{}{}", stage, "samp", sharp_desc));
+        Name(id, fmt::format("{}_{}{}", stage, "samp", samplers.size()));
         samplers.push_back(id);
         interfaces.push_back(id);
     }

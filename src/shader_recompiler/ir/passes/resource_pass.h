@@ -3,19 +3,32 @@
 
 #pragma once
 
+#include <boost/container/small_vector.hpp>
+
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
 
+namespace Shader {
+enum class SharpFetchPostOp : u8;
+}
+
 namespace Shader::Optimization {
+
+union PostOpData {
+    u32 dw1_mask;
+    IR::Value lod_prod;
+};
+
+struct SharpReference {
+    std::array<IR::Value, 8> dwords{};
+    u32 num_dwords{};
+    SharpFetchPostOp post_op{};
+    PostOpData post_op_data;
+};
 
 struct ResourceDiscovery {
     IR::Inst* user{};
-    std::array<const IR::Inst*, 8> sharp_dwords{};
-    u32 num_dwords{};
-
-    // for samplers
-    const IR::Inst* sampler_sharp_source{};
-    bool disable_aniso{false};
+    std::array<SharpReference, 2> sharps;
 };
 using ResourceDiscoveryList = boost::container::small_vector<ResourceDiscovery, 32>;
 

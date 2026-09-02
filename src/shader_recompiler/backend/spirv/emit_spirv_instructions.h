@@ -119,6 +119,7 @@ Id EmitGetTessGenericAttribute(EmitContext& ctx, Id vertex_index, Id attr_index,
 void EmitSetTcsGenericAttribute(EmitContext& ctx, Id value, Id attr_index, Id comp_index);
 Id EmitReadTcsGenericOuputAttribute(EmitContext& ctx, Id vertex_index, Id attr_index,
                                     Id comp_index);
+Id EmitGetPcLo(EmitContext& ctx, Id pc);
 Id EmitGetPatch(EmitContext& ctx, IR::Patch patch);
 void EmitSetPatch(EmitContext& ctx, IR::Patch patch, Id value);
 void EmitSetFragColor(EmitContext& ctx, u32 index, u32 component, Id value);

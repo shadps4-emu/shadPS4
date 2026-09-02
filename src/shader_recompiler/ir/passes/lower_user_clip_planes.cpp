@@ -17,27 +17,16 @@ static constexpr u32 NumUserClipPlanes = 6;
 // PA_CL_CLIP_CNTL, to clip distances. Planes apply to the post-transform position and change per
 // draw, so they are supplied through a per-draw uniform buffer.
 void LowerUserClipPlanes(IR::Program& program, const RuntimeInfo& runtime_info) {
-    // vs_info is populated for the hardware vertex stage, whether it runs the vertex shader or,
-    // under tessellation, the domain shader.
-    if (program.info.stage != Stage::Vertex) {
+    Info& info = program.info;
+    if (info.stage != Stage::Vertex) {
         return;
     }
 
-    // Permutations of a shader binary share one Info and therefore one descriptor set layout, so
-    // the buffer is declared for every permutation, keeping each module's binding numbering in
-    // sync with that layout. The list persists across permutation compiles, so an existing entry
-    // is reused.
-    auto it = std::ranges::find(program.info.buffers, BufferType::ClipPlanes,
-                                &BufferResource::buffer_type);
-    if (it == program.info.buffers.end()) {
-        it = program.info.buffers.insert(it, {
-                                                 .used_types = IR::Type::F32,
-                                                 .inline_cbuf = AmdGpu::Buffer::Placeholder(
-                                                     NumUserClipPlanes * 4 * sizeof(float)),
-                                                 .buffer_type = BufferType::ClipPlanes,
-                                             });
-    }
-    const u32 binding = static_cast<u32>(std::distance(program.info.buffers.begin(), it));
+    const u32 binding = static_cast<u32>(info.buffers.size());
+    info.buffers.push_back(BufferResource{
+        .used_types = IR::Type::F32,
+        .buffer_type = BufferType::ClipPlanes,
+    });
 
     const u32 enabled_mask = runtime_info.vs_info.user_clip_plane_mask;
     if (enabled_mask == 0) {
@@ -54,7 +43,7 @@ void LowerUserClipPlanes(IR::Program& program, const RuntimeInfo& runtime_info) 
                 LOG_WARNING(Render_Vulkan,
                             "Skipping user clip plane lowering: shader {:#x} exports its own clip "
                             "distances",
-                            program.info.pgm_hash);
+                            info.pgm_hash);
                 return;
             }
         }
