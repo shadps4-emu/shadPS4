@@ -445,6 +445,7 @@ struct VirtualReg {
     u32 index{};
     Type type{};
 };
+static_assert(offsetof(VirtualReg, index) == 0, "Required for RegTag");
 
 template <class T>
 concept RegT = std::is_same_v<T, ScalarReg> || std::is_same_v<T, VectorReg>;
