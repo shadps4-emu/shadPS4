@@ -19,6 +19,7 @@
 #include <unordered_set>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include <zlib.h>
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -55,7 +56,7 @@ struct HttpSettings {
     u64 response_header_max = 0; // Max response-header bytes accepted; 0 = default
     bool auto_redirect = true;
     bool inflate_gzip = true;                     // Auto-decompress response body if gzipped
-    bool accept_encoding_gzip = true;             // Send "Accept-Encoding: gzip" request header
+    bool accept_encoding_gzip = false;            // Send "Accept-Encoding: gzip" request header.
     bool cache_redirected_connection = true;      // sceHttpCacheRedirectedConnectionEnabled.
     u32 ssl_flags = ORBIS_HTTPS_FLAG_SDK_DEFAULT; // SSL flag mask. Bitmask of OrbisHttpsFlags.
     bool nonblock = false; // false = blocking (default), true = nonblock (EAGAIN)
@@ -431,7 +432,6 @@ struct SendRequestPlan {
     // True if the request's owning ctx had sceHttpsLoadCert called. In that
     // case we bypass TLS verification because we can't load the game's CAs.
     bool ctx_has_loaded_certs = false;
-    // libhttpCtxId owning the request's template. Used to scope the 301 redirect cache
     int ctx_id = 0;
 };
 
@@ -717,6 +717,48 @@ std::optional<ResolvedRedirect> ResolveRedirectLocation(const std::string& curre
     return std::nullopt;
 }
 
+// Inflate a strictly GZIP-formatted body (header + deflate stream + trailer).
+static std::optional<std::vector<u8>> InflateGzipBody(const std::string& compressed) {
+    if (compressed.empty()) {
+        return std::vector<u8>{};
+    }
+    z_stream strm{};
+    if (inflateInit2(&strm, 15 + 16) != Z_OK) {
+        return std::nullopt;
+    }
+    strm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(compressed.data()));
+    strm.avail_in = static_cast<uInt>(compressed.size());
+
+    std::vector<u8> out;
+    out.resize(std::max<size_t>(compressed.size() * 3, 4096));
+    size_t produced = 0;
+    int ret = Z_OK;
+    while (true) {
+        if (produced == out.size()) {
+            out.resize(out.size() * 2);
+        }
+        strm.next_out = reinterpret_cast<Bytef*>(out.data() + produced);
+        strm.avail_out = static_cast<uInt>(out.size() - produced);
+        const uInt avail_out_before = strm.avail_out;
+        ret = inflate(&strm, Z_NO_FLUSH);
+        produced += (avail_out_before - strm.avail_out);
+        if (ret == Z_STREAM_END) {
+            break;
+        }
+        if (ret != Z_OK) {
+            inflateEnd(&strm);
+            return std::nullopt;
+        }
+        if (strm.avail_in == 0 && strm.avail_out > 0) {
+            inflateEnd(&strm);
+            return std::nullopt;
+        }
+    }
+    inflateEnd(&strm);
+    out.resize(produced);
+    return out;
+}
+
 static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_res,
                               u32& out_event_bits) {
     out_event_bits = 0;
@@ -744,7 +786,7 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_
     };
 
     for (int depth = 0; depth <= MaxRedirects; ++depth) {
-        // Replay a cached 301 target
+        // Replay a cached 301 target.
         if (depth < MaxRedirects && plan.settings.auto_redirect &&
             plan.settings.cache_redirected_connection) {
             std::optional<ResolvedRedirect> cached;
@@ -804,9 +846,8 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_
 
         // We always handle redirects manually per PS4 rules
         cli.set_follow_location(false);
-#ifdef CPPHTTPLIB_ZLIB_SUPPORT
-        cli.set_decompress(plan.settings.inflate_gzip);
-#endif
+        cli.set_decompress(false);
+
         bool game_set_accept_encoding = false;
         for (const auto& [k, v] : plan.headers) {
             if (HeaderNameMatches(k, "Accept-Encoding")) {
@@ -888,10 +929,33 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_
 
         // Populate response (overwrites any prior-iteration 3xx).
         out_res.status_code = result->status;
-        out_res.body.assign(result->body.begin(), result->body.end());
-        out_res.content_length = result->body.size();
         out_res.content_length_result = 0;
         out_res.read_cursor = 0;
+
+        // Inflate only when the response is actually GZIP-encoded and the flag is enabled
+        std::string content_encoding;
+        for (const auto& [k, v] : result->headers) {
+            if (HeaderNameMatches(k, "Content-Encoding")) {
+                content_encoding = v;
+                break;
+            }
+        }
+        bool inflated = false;
+        if (plan.settings.inflate_gzip && HeaderNameMatches(content_encoding, "gzip")) {
+            if (auto inflated_body = InflateGzipBody(result->body)) {
+                out_res.body = std::move(*inflated_body);
+                inflated = true;
+            } else {
+                LOG_ERROR(Lib_Http,
+                          "{}://{}{}: Content-Encoding: gzip but body failed to inflate; "
+                          "returning raw bytes",
+                          plan.scheme, plan.host, plan.path);
+            }
+        }
+        if (!inflated) {
+            out_res.body.assign(result->body.begin(), result->body.end());
+        }
+        out_res.content_length = out_res.body.size();
         std::string reason;
         {
             const std::string label = HttpStatusLabel(result->status);
@@ -944,6 +1008,7 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_
         const s32 prev_method = plan.method;
         const s32 next_method = MethodAfterRedirect(prev_status, prev_method);
         const bool host_changed = (resolved->host != plan.host) || (resolved->port != plan.port);
+
         if (prev_status == 301 && plan.settings.cache_redirected_connection) {
             const std::string cache_key =
                 Make301CacheKey(plan.scheme, plan.host, plan.port, plan.path);
