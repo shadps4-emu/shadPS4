@@ -27,6 +27,11 @@ void EmitBarrier(EmitContext& ctx) {
         memory = spv::Scope::Workgroup;
         memory_semantics =
             spv::MemorySemanticsMask::AcquireRelease | spv::MemorySemanticsMask::WorkgroupMemory;
+        if (std::ranges::any_of(ctx.info.buffers, [](const BufferResource& desc) {
+                return desc.buffer_type == BufferType::SharedMemory;
+            })) {
+            memory_semantics = memory_semantics | spv::MemorySemanticsMask::UniformMemory;
+        }
     }
     ctx.OpControlBarrier(ctx.ConstU32(static_cast<u32>(execution)),
                          ctx.ConstU32(static_cast<u32>(memory)),

@@ -115,6 +115,10 @@ struct Image : public Common::LRUNode<> {
                IsVulkanFormatCompatible(info.pixel_format, backing->image.image_ci.format);
     }
 
+    void MarkModified() {
+        contents_version = global_contents_version.Next();
+    }
+
     void AssociateDepth(ImageId depth_image_id, u64 depth_image_uid) {
         depth_id = depth_image_id;
         depth_uid = depth_image_uid;
@@ -170,6 +174,7 @@ public:
     BackingImage* backing{};
     u64* memory_usage_counter{};
     u64 image_uid{};
+    u64 contents_version{};
     u64 lru_id{};
     u64 tick_accessed_last{};
     u64 cpu_hash{};
@@ -192,6 +197,7 @@ public:
 
 private:
     static Common::IncrementalIdProvider<u64> global_image_uid;
+    static Common::IncrementalIdProvider<u64> global_contents_version;
 };
 
 } // namespace VideoCore
