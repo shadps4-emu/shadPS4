@@ -4,6 +4,7 @@
 #include "video_utils.h"
 
 #include "common/alignment.h"
+#include "common/assert.h"
 
 #include <libavutil/frame.h>
 
@@ -11,9 +12,11 @@
 
 namespace Libraries::Videodec {
 
-void CopyNV12Data(u8* dst, const AVFrame& src) {
+void CopyNV12Data(u8* dst, u64 max_size, const AVFrame& src) {
     const auto dst_pitch = Common::AlignUp<u32>(src.width, 64);
     const auto dst_height = Common::AlignUp<u32>(src.height, 16);
+
+    ASSERT(((dst_pitch * dst_height * 3) / 2) < max_size);
 
     const auto luma_dst = dst;
     const auto chroma_dst = dst + dst_pitch * dst_height;
