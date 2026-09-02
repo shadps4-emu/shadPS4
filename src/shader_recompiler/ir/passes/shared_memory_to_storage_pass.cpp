@@ -44,6 +44,30 @@ static bool IsSharedAccess(const IR::Inst& inst) {
     }
 }
 
+static u32 SharedAccessIndexShift(IR::Opcode opcode) {
+    switch (opcode) {
+    case IR::Opcode::LoadSharedU16:
+    case IR::Opcode::WriteSharedU16:
+        return 1;
+    case IR::Opcode::LoadSharedU64:
+    case IR::Opcode::WriteSharedU64:
+    case IR::Opcode::SharedAtomicIAdd64:
+    case IR::Opcode::SharedAtomicISub64:
+    case IR::Opcode::SharedAtomicSMin64:
+    case IR::Opcode::SharedAtomicUMin64:
+    case IR::Opcode::SharedAtomicSMax64:
+    case IR::Opcode::SharedAtomicUMax64:
+    case IR::Opcode::SharedAtomicInc64:
+    case IR::Opcode::SharedAtomicDec64:
+    case IR::Opcode::SharedAtomicAnd64:
+    case IR::Opcode::SharedAtomicOr64:
+    case IR::Opcode::SharedAtomicXor64:
+        return 3;
+    default:
+        return 2;
+    }
+}
+
 IR::Type CalculateSharedMemoryTypes(IR::Program& program) {
     IR::Type used_types{IR::Type::Void};
     for (IR::Block* const block : program.blocks) {
@@ -131,7 +155,11 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
             const IR::U32 handle = ir.Imm32(binding);
             const IR::U32 offset = ir.IMul(ir.GetAttributeU32(IR::Attribute::WorkgroupIndex),
                                            ir.Imm32(shared_memory_size));
-            const IR::U32 address = ir.IAdd(IR::U32{inst.Arg(0)}, offset);
+            const IR::U32 byte_address = ir.IAdd(IR::U32{inst.Arg(0)}, offset);
+            // Shared-memory addresses are byte offsets, while buffer instructions index
+            // elements of the selected SPIR-V alias type.
+            const IR::U32 address = ir.ShiftRightLogical(
+                byte_address, ir.Imm32(SharedAccessIndexShift(inst.GetOpcode())));
             switch (inst.GetOpcode()) {
             case IR::Opcode::SharedAtomicIAdd32:
             case IR::Opcode::SharedAtomicIAdd64:

@@ -618,6 +618,32 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
     return {};
 }
 
+void TextureCache::UpdateImage(ImageId image_id) {
+    std::scoped_lock lock{mutex};
+    Image& image = slot_images[image_id];
+    TrackImage(image_id);
+    TouchImage(image);
+
+    // Different texture extents at the same address cannot share a Vulkan image
+    // view: normalized coordinates and image queries must keep the guest extent.
+    // Refresh a cropped image from the newest compatible GPU-written backing,
+    // not from CPU memory which still contains the pre-render contents.
+    Image* source = nullptr;
+    ForEachImageInRegion(
+        image.info.guest_address, image.info.guest_size, [&](ImageId other_id, Image& other) {
+            if (other_id != image_id && other.contents_version > image.contents_version &&
+                other.SafeToDownload() && image.info.IsSubrectOf(other.info) &&
+                (!source || other.contents_version > source->contents_version)) {
+                source = &other;
+            }
+        });
+    if (source) {
+        image.CopySubrect(*source);
+    } else {
+        RefreshImage(image);
+    }
+}
+
 ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
@@ -629,6 +655,9 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
         }
     }
     UpdateImage(image_id);
+    if (desc.type == BindingType::Storage) {
+        image.MarkModified();
+    }
     return image.FindView(desc.view_info);
 }
 
@@ -641,6 +670,7 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
     }
     image.usage.render_target = 1u;
     UpdateImage(image_id);
+    image.MarkModified();
 
     // Register meta data for this color buffer
     if (desc.info.meta_info.cmask_addr) {
@@ -663,6 +693,7 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
     image.flags |= ImageFlagBits::GpuModified;
     image.usage.depth_target = 1u;
     UpdateImage(image_id);
+    image.MarkModified();
 
     // Register meta data for this depth buffer
     if (desc.info.meta_info.htile_addr) {
