@@ -1081,12 +1081,7 @@ static bool HeaderNameMatches(std::string_view a, std::string_view b) {
 }
 
 static std::string GetLibhttpSystemVersionString() {
-    u32 sw_hex = CURRENT_FIRMWARE_VERSION;
-    Libraries::Kernel::SwVersionStruct sw{};
-    sw.struct_size = sizeof(sw);
-    if (Libraries::Kernel::sceKernelGetSystemSwVersion(&sw) == ORBIS_OK) {
-        sw_hex = sw.hex_representation;
-    }
+    constexpr u32 sw_hex = CURRENT_FIRMWARE_VERSION;
     const u32 major = ((sw_hex >> 0x18) & 0xf) + ((sw_hex >> 0x1c) * 10);
     const u32 minor = ((sw_hex >> 0x10) & 0xf) + (((sw_hex >> 0x14) & 0xf) * 10);
     return fmt::format("{}.{:02}", major, minor);
