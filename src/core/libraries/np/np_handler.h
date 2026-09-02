@@ -114,6 +114,12 @@ public:
     // Returns -1 if no connected user has that Online ID.
     s32 GetUserIdByOnlineId(const OrbisNpOnlineId& online_id) const;
 
+    // Global online ID to account ID resolution
+    void ResolveOnlineId(
+        s32 user_id, const std::string& online_id,
+        std::function<void(s32 result, u64 account_id, const std::string& canonical_online_id)>
+            on_result);
+
     // Friend list
     u32 GetNumFriends(s32 user_id) const;
     std::optional<std::string> GetFriendNpid(s32 user_id, u32 index) const;
@@ -401,6 +407,17 @@ private:
     std::mutex m_mutex_pending_trophy;
     std::map<u64, std::function<void(const std::vector<std::pair<s32, u64>>&)>> m_pending_trophy;
     void OnTrophyReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
+                       const std::vector<u8>& body);
+
+    // Callbacks awaiting a LookupOnlineId reply, keyed by packet id.
+    struct PendingLookupRequest {
+        s32 user_id = -1; // submitting user, for flushing on disconnect
+        std::function<void(s32 result, u64 account_id, const std::string& canonical_online_id)>
+            on_result;
+    };
+    mutable std::mutex m_mutex_pending_lookup;
+    std::map<u64, PendingLookupRequest> m_pending_lookup;
+    void OnLookupReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
                        const std::vector<u8>& body);
 
     // TUS requests awaiting a reply, keyed by the submit packet id.

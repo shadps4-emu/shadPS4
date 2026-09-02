@@ -29,11 +29,10 @@ public:
     }
 
     u32 GetValueNumber(IR::Value v) {
-        v = v.Resolve();
         if (auto it = value_numbers.find(v); it != value_numbers.end()) {
             return it->second;
         }
-        if (auto inst = v.TryInstRecursive()) {
+        if (auto* inst = v.TryInst()) {
             return ComputeInstValueNumber(inst);
         }
         return NextValueNumber(v);
@@ -98,7 +97,6 @@ private:
     using InstVector = boost::container::small_vector<u32, 8>;
 
     InstVector MakeInstVector(IR::Inst* inst) {
-        ASSERT(inst->GetOpcode() != IR::Opcode::Identity);
         InstVector iv;
         iv.reserve(2 + inst->NumArgs());
         iv.push_back(static_cast<u32>(inst->GetOpcode()));
