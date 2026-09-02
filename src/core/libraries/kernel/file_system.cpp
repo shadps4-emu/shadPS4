@@ -357,11 +357,14 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
 static constexpr u64 ReadChunkSize = 256_KB;
 static thread_local std::vector<u8> file_buf{};
 
-s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
+// Fills a guest buffer via the staging buffer. read_chunk reads into host
+// memory and returns the byte count, or a negative value on failure.
+template <typename ReadChunk>
+static s64 StageIntoGuest(void* buf, u64 nbytes, u64 invalidate_bytes, ReadChunk&& read_chunk) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
-    const auto remaining = file->GetSize() - file->Tell();
-    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
+    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), invalidate_bytes);
+
     const u64 chunk = std::min<u64>(nbytes, ReadChunkSize);
     if (file_buf.size() < chunk) {
         file_buf.resize(chunk);
@@ -371,7 +374,7 @@ s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
     s64 total = 0;
     while (static_cast<u64>(total) < nbytes) {
         const u64 want = std::min<u64>(ReadChunkSize, nbytes - total);
-        const s64 got = file->Read(file_buf.data(), want);
+        const s64 got = read_chunk(file_buf.data(), want);
         if (got < 0) {
             return total > 0 ? total : got;
         }
@@ -385,6 +388,19 @@ s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
         }
     }
     return total;
+}
+
+s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
+    const auto remaining = file->GetSize() - file->Tell();
+    return StageIntoGuest(buf, nbytes, std::min<u64>(nbytes, remaining),
+                          [file](void* dst, u64 want) { return file->Read(dst, want); });
+}
+
+s64 ReadFileToGuest(Common::FS::IOFile& file, void* guest_buf, u64 nbytes) {
+    const auto remaining = file.GetSize() - file.Tell();
+    return StageIntoGuest(
+        guest_buf, nbytes, std::min<u64>(nbytes, remaining),
+        [&file](void* dst, u64 want) { return static_cast<s64>(file.ReadRaw<u8>(dst, want)); });
 }
 
 s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {

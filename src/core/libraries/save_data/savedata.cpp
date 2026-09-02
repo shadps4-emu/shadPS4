@@ -19,6 +19,7 @@
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/file_system.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/save_data/savedata.h"
 #include "core/libraries/save_data/savedata_error.h"
@@ -133,10 +134,10 @@ struct OrbisSaveDataIcon {
 
     Error LoadIcon(const fs::path& icon_path) {
         try {
-            const Common::FS::IOFile file(icon_path, Common::FS::FileAccessMode::Read);
+            Common::FS::IOFile file(icon_path, Common::FS::FileAccessMode::Read);
             dataSize = file.GetSize();
             file.Seek(0);
-            file.ReadRaw<u8>(buf, std::min(bufSize, dataSize));
+            Libraries::Kernel::ReadFileToGuest(file, buf, std::min(bufSize, dataSize));
         } catch (const fs::filesystem_error& e) {
             LOG_ERROR(Lib_SaveData, "Failed to load icon: {}", e.what());
             return Error::INTERNAL;
