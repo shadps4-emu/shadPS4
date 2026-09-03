@@ -184,14 +184,14 @@ endif()
 
 # Dear ImGui
 add_library(Dear_ImGui
-        dear_imgui/imgui.cpp
-        dear_imgui/imgui_demo.cpp
-        dear_imgui/imgui_draw.cpp
-        dear_imgui/imgui_internal.h
-        dear_imgui/imgui_tables.cpp
-        dear_imgui/imgui_widgets.cpp
+        imgui/imgui.cpp
+        imgui/imgui_demo.cpp
+        imgui/imgui_draw.cpp
+        imgui/imgui_internal.h
+        imgui/imgui_tables.cpp
+        imgui/imgui_widgets.cpp
 )
-target_include_directories(Dear_ImGui INTERFACE dear_imgui/)
+target_include_directories(Dear_ImGui INTERFACE imgui/)
 
 # Tracy
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
