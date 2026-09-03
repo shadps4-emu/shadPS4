@@ -180,11 +180,11 @@ AnisoLod0Result CheckDisableAnisoLod0Pattern(IR::Value value) {
     return {inst->Arg(2), prod0_arg0->Arg(0), true};
 }
 
-struct SamplerClampSetResult {
+struct SamplerPatchResult {
     IR::Value ssharp_dw0;
     bool found;
 };
-SamplerClampSetResult CheckForceClampToWrapPattern(IR::Value value) {
+SamplerPatchResult CheckForceClampToWrapPattern(IR::Value value) {
     // s_and_b32 s12, 0xfffffe00, s12
     // is used to force clamp_x/y/z to wrap
 
@@ -201,7 +201,7 @@ SamplerClampSetResult CheckForceClampToWrapPattern(IR::Value value) {
     return {inst->Arg(1), true};
 }
 
-SamplerClampSetResult CheckForceClampToLastTexelPattern(IR::Value value) {
+SamplerPatchResult CheckForceClampToLastTexelPattern(IR::Value value) {
     // s_and_b32 s12, 0xfffffe00, s12
     // s_or_b32  0x12, s12
     // is used to force clamp_x/y to last texel
@@ -223,6 +223,23 @@ SamplerClampSetResult CheckForceClampToLastTexelPattern(IR::Value value) {
     }
 
     return {prod->Arg(1), true};
+}
+
+SamplerPatchResult CheckClearAnisoRatioAndThresholdPattern(IR::Value value) {
+    // s_and_b32 s12, s12, 0xfff8f1ff
+    // is used to clear anisotropy ratio and threshold fields
+
+    auto* inst = value.TryInst();
+    if (!inst) {
+        return {value, false};
+    }
+
+    if (inst->GetOpcode() != IR::Opcode::BitwiseAnd32 || !inst->Arg(1).IsImmediate() ||
+        inst->Arg(1).U32() != 0xfff8f1ffu) {
+        return {value, false};
+    }
+
+    return {inst->Arg(0), true};
 }
 
 IR::Inst* FindSharpSource(IR::Inst* handle) {
@@ -320,6 +337,10 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
     } else if (auto [ssharp_dw0, found] = CheckForceClampToLastTexelPattern(ssharp.dwords[0]);
                found) {
         ssharp.post_op = SharpFetchPostOp::ForceLastTexelXyClamp;
+        ssharp.dwords[0] = ssharp_dw0;
+    } else if (auto [ssharp_dw0, found] = CheckClearAnisoRatioAndThresholdPattern(ssharp.dwords[0]);
+               found) {
+        ssharp.post_op = SharpFetchPostOp::ClearAnisoRatioAndThreshold;
         ssharp.dwords[0] = ssharp_dw0;
     }
 

@@ -62,6 +62,7 @@ enum class SharpFetchPostOp : u8 {
     DisableAnisoIfSingleLod,
     ForceRepeatXyzClamp,
     ForceLastTexelXyClamp,
+    ClearAnisoRatioAndThreshold,
 };
 
 enum class BufferType : u8 {
@@ -186,6 +187,9 @@ struct SamplerResource {
             sampler.clamp_x.Assign(AmdGpu::ClampMode::ClampLastTexel);
             sampler.clamp_y.Assign(AmdGpu::ClampMode::ClampLastTexel);
             sampler.clamp_z.Assign(AmdGpu::ClampMode::Wrap);
+        } else if (post_op == SharpFetchPostOp::ClearAnisoRatioAndThreshold) {
+            sampler.max_aniso.Assign(AmdGpu::AnisoRatio::One);
+            sampler.aniso_threshold.Assign(0);
         }
         return sampler;
     }
