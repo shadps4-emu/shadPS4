@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -759,7 +759,8 @@ static size_t GetSurfaceFormatTableIndex(AmdGpu::DataFormat data_format,
 }
 
 static auto surface_format_table = []() constexpr {
-    std::array<vk::Format, 1 << amd_gpu_data_format_bit_size * 1 << amd_gpu_number_format_bit_size>
+    std::array<vk::Format,
+               (1 << amd_gpu_data_format_bit_size) * (1 << amd_gpu_number_format_bit_size)>
         result;
     for (auto& entry : result) {
         entry = vk::Format::eUndefined;

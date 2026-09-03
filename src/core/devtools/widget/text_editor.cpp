@@ -2106,7 +2106,7 @@ void TextEditor::ColorizeInternal() {
                             commentStartIndex = currentIndex;
                         }
 
-                        inComment = inComment =
+                        inComment =
                             (commentStartLine < currentLine || (commentStartLine == currentLine &&
                                                                 commentStartIndex <= currentIndex));
 
