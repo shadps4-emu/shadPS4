@@ -317,15 +317,17 @@ void Launch(char* executableName, bool sameProcess) {
         ImGui::DrawPrettyBackground();
         ImGui::SetWindowFontScale(uiScale);
 
-        ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                                       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
+        ImGuiChildFlags child_flags = ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened;
+
+        ImGuiWindowFlags window_flags =
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
 
         if (ImGui::IsWindowAppearing()) {
             ImGui::SetNextWindowFocus();
         }
 
-        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true,
-                          child_flags);
+        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()),
+                          child_flags, window_flags);
         Overlay::TextCentered("Select Game");
         ImGui::Dummy(ImVec2(0.0f, 10.f * uiScale));
 
