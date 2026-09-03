@@ -684,7 +684,7 @@ void RenderDrawData(ImDrawData& draw_data, vk::CommandBuffer command_buffer,
                 command_buffer.setScissor(0, 1, &scissor);
 
                 // Bind DescriptorSet with font or user texture
-                vk::DescriptorSet desc_set[1]{pcmd->TextureId->descriptor_set};
+                vk::DescriptorSet desc_set[1]{pcmd->GetTexID()->descriptor_set};
                 command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
                                                   bd->pipeline_layout, 0, {desc_set}, {});
 
