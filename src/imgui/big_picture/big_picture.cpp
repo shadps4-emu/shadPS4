@@ -1,6 +1,8 @@
 //  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <bit>
 #include <fstream>
 #include <stb_image.h>
 
@@ -259,6 +261,12 @@ void Launch(char* executableName, bool sameProcess) {
     io.FontDefault = ImGui::FontStack::AddPrimaryUiFont(
         io.Fonts, 64.0f, EmulatorSettings.GetConsoleLanguage(), cfgBase, true);
     io.FontGlobalScale = 0.5f;
+    // size the big picture font atlas cap from the renderer limit
+    const auto max_dim = SDL_GetNumberProperty(SDL_GetRendererProperties(renderer),
+                                               SDL_PROP_RENDERER_MAX_TEXTURE_SIZE_NUMBER, 8192);
+    const int atlas_max = static_cast<int>(std::bit_floor(std::max<u64>(max_dim, 512)));
+    io.Fonts->TexMaxWidth = atlas_max;
+    io.Fonts->TexMaxHeight = atlas_max;
     io.Fonts->Build();
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
@@ -310,6 +318,7 @@ void Launch(char* executableName, bool sameProcess) {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
+
         ImGuiWindowFlags window_flags =
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse;
 
@@ -317,15 +326,18 @@ void Launch(char* executableName, bool sameProcess) {
         ImGui::DrawPrettyBackground();
         ImGui::SetWindowFontScale(uiScale);
 
-        ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                                       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
+        ImGuiChildFlags child_flags = ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened;
+
+        ImGuiWindowFlags child_window_flags =
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
 
         if (ImGui::IsWindowAppearing()) {
             ImGui::SetNextWindowFocus();
         }
 
-        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true,
-                          child_flags);
+        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()),
+                          child_flags, child_window_flags);
+
         Overlay::TextCentered("Select Game");
         ImGui::Dummy(ImVec2(0.0f, 10.f * uiScale));
 
