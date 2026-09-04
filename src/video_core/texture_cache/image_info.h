@@ -69,6 +69,7 @@ struct ImageInfo {
                num_samples == info.num_samples && pitch == info.pitch &&
                tile_mode == info.tile_mode && bank_swizzle == info.bank_swizzle &&
                alt_tile == info.alt_tile && mips_layout[0].pitch == info.mips_layout[0].pitch &&
+               (size.width < info.size.width || size.height < info.size.height) &&
                size.width <= info.size.width && size.height <= info.size.height &&
                size.depth == 1 && info.size.depth == 1;
     }
