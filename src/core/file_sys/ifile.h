@@ -190,10 +190,33 @@ class IBackend {
 public:
     virtual ~IBackend() = default;
 
+    /// Result of a single path lookup.
+    struct NodeInfo {
+        bool exists{false};
+        bool is_directory{false};
+        std::optional<std::filesystem::path> host_path;
+    };
+
+    virtual NodeInfo Query(std::string_view rel_path) {
+        NodeInfo info;
+        info.exists = Exists(rel_path);
+        info.is_directory = info.exists && IsDirectory(rel_path);
+        return info;
+    }
+
+    virtual std::optional<std::filesystem::path> ResolveHostPath(std::string_view rel_path) {
+        return std::nullopt;
+    }
+
     virtual bool Exists(std::string_view rel_path) = 0;
     virtual bool IsDirectory(std::string_view rel_path) = 0;
     virtual std::unique_ptr<IFile> Open(std::string_view rel_path,
                                         Common::FS::FileAccessMode mode) = 0;
+    /// Opens a path this backend already resolved
+    virtual std::unique_ptr<IFile> OpenAt(const std::filesystem::path& host_path,
+                                          Common::FS::FileAccessMode mode) {
+        return nullptr;
+    }
     virtual std::unique_ptr<IDirectory> OpenDir(std::string_view rel_path) = 0;
 
     virtual bool IsReadOnly() const = 0;
@@ -204,6 +227,9 @@ public:
     virtual std::filesystem::path RootPath() const = 0;
     virtual std::optional<std::vector<u8>> ReadFile(std::string_view rel_path) const = 0;
 };
+
+// Fills size and timestamps for a host path. Returns false if it cannot be read.
+[[nodiscard]] bool StatHostPath(const std::filesystem::path& path, FileStat& out);
 
 // True if path is a regular file with a ".zar" extension
 [[nodiscard]] bool IsZArchiveFile(const std::filesystem::path& path);

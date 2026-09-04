@@ -111,6 +111,7 @@ public:
 
     bool Exists(std::string_view rel_path) override;
     bool IsDirectory(std::string_view rel_path) override;
+    NodeInfo Query(std::string_view rel_path) override;
 
     std::unique_ptr<IFile> Open(std::string_view rel_path,
                                 Common::FS::FileAccessMode mode) override;

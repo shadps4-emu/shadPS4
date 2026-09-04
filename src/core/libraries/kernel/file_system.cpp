@@ -131,10 +131,11 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
     }
 
-    bool read_only = false;
     file->m_guest_name = path;
-    file->m_host_name = mnt->GetHostPath(file->m_guest_name, &read_only);
-    bool exists = mnt->Exists(file->m_guest_name);
+    auto resolved = mnt->ResolvePath(file->m_guest_name);
+    const bool read_only = resolved.read_only;
+    file->m_host_name = resolved.host_path;
+    bool exists = resolved.exists;
 
     if (create) {
         if (excl && exists) {
@@ -153,8 +154,13 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
                 LOG_ERROR(Kernel_Fs, "Creating {} failed, path is read-only", raw_path);
                 return -1;
             }
-            // Create a file if it doesn't exist
-            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Create);
+            // Create a file if it doesn't exist, on the mount's writable layer.
+            if (mnt->OpenResolved(resolved, Common::FS::FileAccessMode::Create)) {
+                resolved.backend = resolved.mount->backends.back().get();
+                resolved.exists = true;
+                resolved.is_directory = false;
+                exists = true;
+            }
         }
     } else if (!exists) {
         // If we're not creating a file, and it doesn't exist, return ENOENT
@@ -164,14 +170,14 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         return -1;
     }
 
-    if (mnt->IsDirectory(file->m_guest_name) || directory) {
+    if (resolved.is_directory || directory) {
         // Directories can be opened even if the directory flag isn't set.
         // In these cases, error behavior is identical to the directory code path.
         directory = true;
     }
 
     if (directory) {
-        if (!mnt->IsDirectory(file->m_guest_name)) {
+        if (!resolved.is_directory) {
             // If the opened file is not a directory, return ENOTDIR.
             // This will trigger when create & directory is specified, this is expected.
             h->DeleteHandle(handle);
@@ -234,13 +240,18 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             access_mode = Common::FS::FileAccessMode::Read;
         }
 
-        file->handle = mnt->Open(file->m_guest_name, access_mode);
+        errno = 0;
+        file->handle = mnt->OpenResolved(resolved, access_mode);
         if (!file->handle || !file->handle->IsOpen()) {
             h->DeleteHandle(handle);
-            *__Error() = (write || rdwr || truncate) && mnt->GetMount(raw_path)->read_only
-                             ? POSIX_EROFS
-                             : POSIX_EIO;
-            LOG_ERROR(Kernel_Fs, "Opening {} failed, backend did not serve the file", raw_path);
+            if (const int host_errno = errno; host_errno != 0) {
+                SetPosixErrno(host_errno);
+            } else {
+                *__Error() = (write || rdwr || truncate) && mnt->GetMount(raw_path)->read_only
+                                 ? POSIX_EROFS
+                                 : POSIX_EIO;
+            }
+            LOG_ERROR(Kernel_Fs, "Opening {} failed, error = {}", raw_path, *__Error());
             return -1;
         }
 
@@ -343,22 +354,53 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
     return result;
 }
 
+static constexpr u64 ReadChunkSize = 256_KB;
 static thread_local std::vector<u8> file_buf{};
 
-s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
+// Fills a guest buffer via the staging buffer. read_chunk reads into host
+// memory and returns the byte count, or a negative value on failure.
+template <typename ReadChunk>
+static s64 StageIntoGuest(void* buf, u64 nbytes, u64 invalidate_bytes, ReadChunk&& read_chunk) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
+    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), invalidate_bytes);
+
+    const u64 chunk = std::min<u64>(nbytes, ReadChunkSize);
+    if (file_buf.size() < chunk) {
+        file_buf.resize(chunk);
+    }
+
+    auto* dst = static_cast<u8*>(buf);
+    s64 total = 0;
+    while (static_cast<u64>(total) < nbytes) {
+        const u64 want = std::min<u64>(ReadChunkSize, nbytes - total);
+        const s64 got = read_chunk(file_buf.data(), want);
+        if (got < 0) {
+            return total > 0 ? total : got;
+        }
+        if (got == 0) {
+            break;
+        }
+        std::memcpy(dst + total, file_buf.data(), got);
+        total += got;
+        if (static_cast<u64>(got) < want) {
+            break;
+        }
+    }
+    return total;
+}
+
+s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
     const auto remaining = file->GetSize() - file->Tell();
-    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
-    if (file_buf.capacity() < nbytes) {
-        file_buf.reserve(nbytes);
-    }
-    s64 bytes = file->Read(file_buf.data(), nbytes);
-    if (bytes < 0) {
-        return bytes;
-    }
-    std::memcpy(buf, file_buf.data(), bytes);
-    return bytes;
+    return StageIntoGuest(buf, nbytes, std::min<u64>(nbytes, remaining),
+                          [file](void* dst, u64 want) { return file->Read(dst, want); });
+}
+
+s64 ReadFileToGuest(Common::FS::IOFile& file, void* guest_buf, u64 nbytes) {
+    const auto remaining = file.GetSize() - file.Tell();
+    return StageIntoGuest(
+        guest_buf, nbytes, std::min<u64>(nbytes, remaining),
+        [&file](void* dst, u64 want) { return static_cast<s64>(file.ReadRaw<u8>(dst, want)); });
 }
 
 s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
@@ -393,7 +435,11 @@ s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
 
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_read += ReadFile(file, iov[i].iov_base, iov[i].iov_len);
+        const s64 chunk = ReadFile(file, iov[i].iov_base, iov[i].iov_len);
+        if (chunk < 0) {
+            return total_read > 0 ? total_read : -1;
+        }
+        total_read += chunk;
     }
     return total_read;
 }
@@ -584,15 +630,15 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
-    bool ro = false;
-    const auto dir_name = mnt->GetHostPath(path, &ro);
+    const auto resolved = mnt->ResolvePath(path);
+    const auto& dir_name = resolved.host_path;
 
-    if (mnt->Exists(path)) {
+    if (resolved.exists) {
         *__Error() = POSIX_EEXIST;
         return -1;
     }
 
-    if (ro) {
+    if (resolved.read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
@@ -626,21 +672,21 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
         return -1;
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    bool ro = false;
 
-    const fs::path dir_name = mnt->GetHostPath(path, &ro);
+    const auto resolved = mnt->ResolvePath(path);
+    const fs::path& dir_name = resolved.host_path;
 
-    if (ro) {
+    if (resolved.read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
 
-    if (dir_name.empty() || !fs::is_directory(dir_name)) {
+    if (dir_name.empty() || !resolved.is_directory) {
         *__Error() = POSIX_ENOTDIR;
         return -1;
     }
 
-    if (!fs::exists(dir_name)) {
+    if (!resolved.exists) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
@@ -672,8 +718,9 @@ s32 PS4_SYSV_ABI posix_access(const char* path, s32 mode) {
     }
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const bool is_dir = mnt->IsDirectory(path);
-    const bool is_file = !is_dir && mnt->Exists(path);
+    const auto resolved = mnt->ResolvePath(path);
+    const bool is_dir = resolved.is_directory;
+    const bool is_file = !is_dir && resolved.exists;
     const bool is_root = strncmp(path, "/", 2) == 0;
     if (!is_dir && !is_file && !is_root) {
         *__Error() = POSIX_ENOENT;
@@ -692,11 +739,12 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         return -1;
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto path_name = mnt->GetHostPath(path);
+    const auto resolved = mnt->ResolvePath(path);
+    const auto& path_name = resolved.host_path;
     std::memset(sb, 0, sizeof(OrbisKernelStat));
 
-    const bool is_dir = mnt->IsDirectory(path);
-    const bool is_file = !is_dir && mnt->Exists(path);
+    const bool is_dir = resolved.is_directory;
+    const bool is_file = !is_dir && resolved.exists;
     const bool is_root = strncmp(path, "/", 2) == 0;
     if (!is_dir && !is_file && !is_root) {
         *__Error() = POSIX_ENOENT;
@@ -716,11 +764,14 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     const auto now_file = fs::file_time_type::clock::now();
     // calculate the file modified time
     std::error_code ec;
-    const auto mtime =
-        fs::exists(path_name, ec) ? fs::last_write_time(path_name, ec) : fs::file_time_type{};
-    const auto mtimestamp = now_sys + (mtime - now_file);
+    const auto host_mtimestamp = [&] {
+        const auto mtime =
+            fs::exists(path_name, ec) ? fs::last_write_time(path_name, ec) : fs::file_time_type{};
+        return now_sys + (mtime - now_file);
+    };
 
     if (is_dir) {
+        const auto mtimestamp = host_mtimestamp();
         sb->st_mode = 0000777u | 0040000u;
         sb->st_size = 65536;
         sb->st_blksize = 65536;
@@ -730,25 +781,24 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         // TODO incomplete
     } else {
         sb->st_mode = 0000777u | 0100000u;
-        if (auto handle = mnt->Open(path, /*writable=*/false)) {
-            Core::FileSys::FileStat fst{};
-            handle->Stat(fst);
+        Core::FileSys::FileStat fst{};
+        const bool statted = mnt->StatResolved(resolved, fst);
+        if (statted) {
             sb->st_size = static_cast<s64>(fst.size);
-            if (fst.mtime_sec != 0 || fst.mtime_nsec != 0) {
-                sb->st_mtim.tv_sec = fst.mtime_sec;
-                sb->st_mtim.tv_nsec = fst.mtime_nsec;
-                sb->st_atim.tv_sec = fst.atime_sec;
-                sb->st_atim.tv_nsec = fst.atime_nsec;
-                sb->st_ctim.tv_sec = fst.ctime_sec;
-                sb->st_ctim.tv_nsec = fst.ctime_nsec;
-            } else {
-                sb->st_mtim.tv_sec =
-                    std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch())
-                        .count();
-            }
+        }
+        if (statted && (fst.mtime_sec != 0 || fst.mtime_nsec != 0)) {
+            sb->st_mtim.tv_sec = fst.mtime_sec;
+            sb->st_mtim.tv_nsec = fst.mtime_nsec;
+            sb->st_atim.tv_sec = fst.atime_sec;
+            sb->st_atim.tv_nsec = fst.atime_nsec;
+            sb->st_ctim.tv_sec = fst.ctime_sec;
+            sb->st_ctim.tv_nsec = fst.ctime_nsec;
         } else {
-            sb->st_size =
-                fs::exists(path_name, ec) ? static_cast<s64>(fs::file_size(path_name, ec)) : 0;
+            if (!statted) {
+                sb->st_size =
+                    fs::exists(path_name, ec) ? static_cast<s64>(fs::file_size(path_name, ec)) : 0;
+            }
+            const auto mtimestamp = host_mtimestamp();
             sb->st_mtim.tv_sec =
                 std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch())
                     .count();
@@ -782,7 +832,6 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
             return ORBIS_OK;
         }
     }
-    const auto path_name = mnt->GetHostPath(guest_path);
     if (!mnt->Exists(guest_path)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
@@ -909,8 +958,6 @@ s32 PS4_SYSV_ABI sceKernelFtruncate(s32 fd, s64 length) {
 
 s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    bool ro = false;
-    const auto src_path = mnt->GetHostPath(from, &ro);
     if (strlen(from) > 255) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
@@ -919,23 +966,26 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
-    if (!fs::exists(src_path)) {
+    const auto src = mnt->ResolvePath(from);
+    const auto& src_path = src.host_path;
+    if (!src.exists) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
-    if (ro) {
+    if (src.read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
-    const auto dst_path = mnt->GetHostPath(to, &ro);
-    if (ro) {
+    const auto dst = mnt->ResolvePath(to);
+    const auto& dst_path = dst.host_path;
+    if (dst.read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
-    const bool src_is_dir = fs::is_directory(src_path);
-    const bool dst_is_dir = fs::is_directory(dst_path);
+    const bool src_is_dir = src.is_directory;
+    const bool dst_is_dir = dst.is_directory;
 
-    if (fs::exists(dst_path)) {
+    if (dst.exists) {
         if (src_is_dir && !dst_is_dir) {
             *__Error() = POSIX_ENOTDIR;
             return -1;
@@ -1026,7 +1076,11 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 off
     }
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_read += ReadFile(file, iov[i].iov_base, iov[i].iov_len);
+        const s64 chunk = ReadFile(file, iov[i].iov_base, iov[i].iov_len);
+        if (chunk < 0) {
+            return total_read > 0 ? total_read : -1;
+        }
+        total_read += chunk;
     }
     return total_read;
 }
@@ -1231,19 +1285,19 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
-    bool ro = false;
-    const auto host_path = mnt->GetHostPath(path, &ro);
+    const auto resolved = mnt->ResolvePath(path);
+    const auto& host_path = resolved.host_path;
     if (host_path.empty()) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
 
-    if (ro) {
+    if (resolved.read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
 
-    if (fs::is_directory(host_path)) {
+    if (resolved.is_directory) {
         *__Error() = POSIX_EPERM;
         return -1;
     }

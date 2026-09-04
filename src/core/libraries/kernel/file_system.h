@@ -1,8 +1,9 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
+#include "common/io_file.h"
 #include "common/types.h"
 #include "core/libraries/kernel/time.h"
 
@@ -13,6 +14,9 @@ class SymbolsResolver;
 namespace Libraries::Kernel {
 
 constexpr int ORBIS_MAX_PATH = 255;
+
+// Reads from a host file into a guest buffer.
+s64 ReadFileToGuest(Common::FS::IOFile& file, void* guest_buf, u64 nbytes);
 
 struct OrbisKernelIovec {
     void* iov_base;

@@ -14,8 +14,10 @@
 
 namespace Core::FileSys {
 
-HostFile::HostFile(std::filesystem::path host_path, Common::FS::FileAccessMode mode, bool read_only)
-    : m_path(std::move(host_path)), m_file(m_path, mode), m_read_only(read_only) {}
+HostFile::HostFile(std::filesystem::path host_path, Common::FS::FileAccessMode mode, bool read_only,
+                   bool immutable)
+    : m_path(std::move(host_path)), m_file(m_path, mode), m_read_only(read_only),
+      m_immutable(immutable) {}
 
 s64 HostFile::Read(void* dst, u64 size) {
     if (!m_file.IsOpen()) {
@@ -28,6 +30,7 @@ s64 HostFile::Write(const void* src, u64 size) {
     if (!m_file.IsOpen() || m_read_only) {
         return -1;
     }
+    ForgetSize();
     return static_cast<s64>(m_file.WriteRaw<u8>(src, size));
 }
 
@@ -49,7 +52,15 @@ u64 HostFile::Size() const {
     if (!m_file.IsOpen()) {
         return 0;
     }
-    return m_file.GetSize();
+    if (!m_immutable) {
+        return m_file.GetSize();
+    }
+    u64 cached = m_cached_size.load(std::memory_order_relaxed);
+    if (cached == UnknownSize) {
+        cached = m_file.GetSize();
+        m_cached_size.store(cached, std::memory_order_relaxed);
+    }
+    return cached;
 }
 
 bool HostFile::Flush() {
@@ -63,12 +74,18 @@ bool HostFile::IsOpen() const {
     return m_file.IsOpen();
 }
 
-void HostFile::Stat(FileStat& out) {
-    out.size = Size();
+bool StatHostPath(const std::filesystem::path& path, FileStat& out) {
+    std::error_code size_ec;
+    const auto sz = std::filesystem::file_size(path, size_ec);
+    if (size_ec) {
+        return false;
+    }
+    out.size = static_cast<u64>(sz);
     out.is_directory = false;
+
 #if defined(__linux__) || defined(__FreeBSD__)
     struct stat st = {};
-    if (::stat(m_path.string().c_str(), &st) == 0) {
+    if (::stat(path.string().c_str(), &st) == 0) {
         out.mtime_sec = static_cast<s64>(st.st_mtim.tv_sec);
         out.mtime_nsec = static_cast<s64>(st.st_mtim.tv_nsec);
         out.atime_sec = static_cast<s64>(st.st_atim.tv_sec);
@@ -78,7 +95,7 @@ void HostFile::Stat(FileStat& out) {
     }
 #elif defined(__APPLE__)
     struct stat st = {};
-    if (::stat(m_path.string().c_str(), &st) == 0) {
+    if (::stat(path.string().c_str(), &st) == 0) {
         out.mtime_sec = static_cast<s64>(st.st_mtimespec.tv_sec);
         out.mtime_nsec = static_cast<s64>(st.st_mtimespec.tv_nsec);
         out.atime_sec = static_cast<s64>(st.st_atimespec.tv_sec);
@@ -88,7 +105,7 @@ void HostFile::Stat(FileStat& out) {
     }
 #else
     std::error_code ec;
-    const auto ft = std::filesystem::last_write_time(m_path, ec);
+    const auto ft = std::filesystem::last_write_time(path, ec);
     if (!ec) {
         const auto sctp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
             ft - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
@@ -102,6 +119,21 @@ void HostFile::Stat(FileStat& out) {
         out.ctime_nsec = out.mtime_nsec;
     }
 #endif
+    return true;
+}
+
+void HostFile::Stat(FileStat& out) {
+    out.size = Size();
+    out.is_directory = false;
+    FileStat times{};
+    if (StatHostPath(m_path, times)) {
+        out.mtime_sec = times.mtime_sec;
+        out.mtime_nsec = times.mtime_nsec;
+        out.atime_sec = times.atime_sec;
+        out.atime_nsec = times.atime_nsec;
+        out.ctime_sec = times.ctime_sec;
+        out.ctime_nsec = times.ctime_nsec;
+    }
 }
 
 HostDirectory::HostDirectory(const std::filesystem::path& root) : m_root(root) {
@@ -119,7 +151,7 @@ bool HostDirectory::Next(DirEntry& out) {
     std::error_code ec;
     out.name = entry.path().filename().string();
     out.is_directory = entry.is_directory(ec);
-    out.size = out.is_directory ? 0 : entry.file_size(ec);
+    out.size = 0;
 
     ++m_it;
     return true;
@@ -152,10 +184,7 @@ std::filesystem::path HostFsBackend::Resolve(std::string_view rel_path) const {
 
 std::optional<std::filesystem::path> HostFsBackend::ResolveCaseInsensitive(
     std::string_view rel_path) const {
-    std::scoped_lock lk{m_case_cache_mutex};
-
     std::filesystem::path current = m_root;
-    std::string prefix;
     std::error_code ec;
 
     for (const auto& part : std::filesystem::path(rel_path)) {
@@ -163,20 +192,10 @@ std::optional<std::filesystem::path> HostFsBackend::ResolveCaseInsensitive(
         if (part_str.empty() || part_str == ".") {
             continue;
         }
-        if (!prefix.empty()) {
-            prefix += '/';
-        }
-        prefix += Common::ToLower(part_str);
-
-        if (const auto it = m_case_cache.find(prefix); it != m_case_cache.end()) {
-            current = it->second;
-            continue;
-        }
 
         if (std::filesystem::path candidate = current / part_str;
             std::filesystem::exists(candidate, ec)) {
             current = std::move(candidate);
-            m_case_cache.emplace(prefix, current);
             continue;
         }
 
@@ -188,7 +207,6 @@ std::optional<std::filesystem::path> HostFsBackend::ResolveCaseInsensitive(
                 continue;
             }
             current /= name;
-            m_case_cache.emplace(prefix, current);
             found = true;
             break;
         }
@@ -199,14 +217,24 @@ std::optional<std::filesystem::path> HostFsBackend::ResolveCaseInsensitive(
     return current;
 }
 
-bool HostFsBackend::Exists(std::string_view rel_path) {
+IBackend::NodeInfo HostFsBackend::Query(std::string_view rel_path) {
     std::error_code ec;
-    return std::filesystem::exists(Resolve(rel_path), ec);
+    auto path = Resolve(rel_path);
+    const auto status = std::filesystem::status(path, ec);
+
+    NodeInfo info;
+    info.exists = std::filesystem::exists(status);
+    info.is_directory = std::filesystem::is_directory(status);
+    info.host_path = std::move(path);
+    return info;
+}
+
+bool HostFsBackend::Exists(std::string_view rel_path) {
+    return Query(rel_path).exists;
 }
 
 bool HostFsBackend::IsDirectory(std::string_view rel_path) {
-    std::error_code ec;
-    return std::filesystem::is_directory(Resolve(rel_path), ec);
+    return Query(rel_path).is_directory;
 }
 
 std::unique_ptr<IFile> HostFsBackend::Open(std::string_view rel_path,
@@ -220,7 +248,9 @@ std::unique_ptr<IFile> HostFsBackend::Open(std::string_view rel_path,
     if (mode != Common::FS::FileAccessMode::Create && !std::filesystem::is_regular_file(path, ec)) {
         return nullptr;
     }
-    auto handle = std::make_unique<HostFile>(path, mode, m_read_only || !writable);
+    errno = 0;
+    auto handle =
+        std::make_unique<HostFile>(path, mode, m_read_only || !writable, /*immutable=*/m_read_only);
     if (!handle->IsOpen()) {
         return nullptr;
     }
@@ -236,8 +266,23 @@ std::unique_ptr<IDirectory> HostFsBackend::OpenDir(std::string_view rel_path) {
     return std::make_unique<HostDirectory>(path);
 }
 
+std::unique_ptr<IFile> HostFsBackend::OpenAt(const std::filesystem::path& host_path,
+                                             Common::FS::FileAccessMode mode) {
+    const bool writable = mode != Common::FS::FileAccessMode::Read;
+    if (writable && m_read_only) {
+        return nullptr;
+    }
+    errno = 0;
+    auto handle = std::make_unique<HostFile>(host_path, mode, m_read_only || !writable,
+                                             /*immutable=*/m_read_only);
+    if (!handle->IsOpen()) {
+        return nullptr;
+    }
+    return handle;
+}
+
 std::optional<std::vector<u8>> HostFsBackend::ReadFile(std::string_view rel_path) const {
-    const std::filesystem::path full_path = m_root / rel_path;
+    const std::filesystem::path full_path = Resolve(rel_path);
     std::error_code ec;
     if (!std::filesystem::is_regular_file(full_path, ec) || ec) {
         return std::nullopt;

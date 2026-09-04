@@ -11,6 +11,7 @@
 #include "common/path_util.h"
 #include "common/slot_vector.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/kernel/file_system.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_handler.h"
@@ -360,15 +361,6 @@ s32 PS4_SYSV_ABI sceNpTrophyDestroyHandle(OrbisNpTrophyHandle handle) {
     return ORBIS_OK;
 }
 
-u64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
-    const auto* memory = Core::Memory::Instance();
-    // Invalidate up to the actual number of bytes that could be read.
-    const auto remaining = file.GetSize() - file.Tell();
-    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
-
-    return file.ReadRaw<u8>(buf, nbytes);
-}
-
 int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
                                         void* buffer, u64* size) {
     ASSERT(size != nullptr);
@@ -392,7 +384,7 @@ int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTro
     u64 icon_size = icon.GetSize();
 
     if (buffer != nullptr) {
-        ReadFile(icon, buffer, *size);
+        Libraries::Kernel::ReadFileToGuest(icon, buffer, *size);
     } else {
         *size = icon_size;
     }
@@ -704,7 +696,7 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyIcon(OrbisNpTrophyContext context, OrbisNpT
     }
 
     if (buffer != nullptr) {
-        ReadFile(icon, buffer, *size);
+        Libraries::Kernel::ReadFileToGuest(icon, buffer, *size);
     } else {
         *size = icon.GetSize();
     }
