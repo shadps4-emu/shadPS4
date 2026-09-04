@@ -124,6 +124,7 @@ set(GCN_TEST_SOURCES
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/passes/constant_propagation_pass.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/passes/dead_code_elimination_pass.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/passes/shader_info_collection_pass.cpp
+    ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/passes/shared_memory_barrier_pass.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/post_order.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/post_order.h
@@ -160,6 +161,7 @@ set(GCN_TEST_SOURCES
 
     # Tests
     gcn/test_gcn_instructions.cpp
+    gcn/test_shared_memory_barrier_pass.cpp
 )
 
 add_executable(shadps4_settings_test ${SETTINGS_TEST_SOURCES})

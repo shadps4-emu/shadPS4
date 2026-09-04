@@ -3,6 +3,7 @@
 
 #include "translator.hpp"
 
+#include <array>
 #include <iostream>
 
 #include "common/io_file.h"
@@ -11,6 +12,7 @@
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/post_order.h"
 #include "shader_recompiler/ir/program.h"
@@ -103,4 +105,137 @@ std::vector<u32> TranslateToSpirv(std::span<const u64> raw_gcn_insts) {
     const auto spirv = Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
 
     return spirv;
+}
+
+std::vector<u32> TranslateFragmentBarycentricsToSpirv(const Shader::Profile& profile,
+                                                      const Shader::RuntimeInfo& runtime_info) {
+    Shader::Info info{};
+    info.stage = Stage::Fragment;
+    info.l_stage = LogicalStage::Fragment;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Block;
+    program.syntax_list.back().data.block = block;
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Return;
+    program.post_order_blocks = IR::PostOrder(block);
+
+    IR::IREmitter ir{*block};
+    ir.Prologue();
+    IR::F32 sum = ir.Imm32(0.0f);
+    static constexpr std::array attributes = {
+        IR::Attribute::BaryCoordSmooth,          IR::Attribute::BaryCoordSmoothCentroid,
+        IR::Attribute::BaryCoordSmoothSample,    IR::Attribute::BaryCoordNoPersp,
+        IR::Attribute::BaryCoordNoPerspCentroid, IR::Attribute::BaryCoordNoPerspSample,
+    };
+    for (const IR::Attribute attribute : attributes) {
+        sum = ir.FPAdd(sum, ir.GetAttribute(attribute, 0));
+        sum = ir.FPAdd(sum, ir.GetAttribute(attribute, 1));
+    }
+    for (u32 comp = 0; comp < 3; ++comp) {
+        sum = ir.FPAdd(sum, ir.GetAttribute(IR::Attribute::BaryCoordPullModel, comp));
+    }
+    ir.SetAttribute(IR::Attribute::RenderTarget0, sum);
+    ir.Epilogue();
+
+    Optimization::CollectShaderInfoPass(program, profile);
+    Backend::Bindings bindings{};
+    return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
+}
+
+std::vector<u32> TranslateFragmentFrontFaceToSpirv(const Shader::Profile& profile,
+                                                   const Shader::RuntimeInfo& runtime_info) {
+    Shader::Info info{};
+    info.stage = Stage::Fragment;
+    info.l_stage = LogicalStage::Fragment;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Block;
+    program.syntax_list.back().data.block = block;
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Return;
+    program.post_order_blocks = IR::PostOrder(block);
+
+    Gcn::Translator translator(program.info, runtime_info, profile);
+    translator.EmitPrologue(block);
+
+    IR::IREmitter ir{*block};
+    const IR::U32 front_face = ir.GetVectorReg<IR::U32>(IR::VectorReg::V0);
+    ir.SetAttribute(IR::Attribute::RenderTarget0, ir.BitCast<IR::F32>(front_face));
+    ir.Epilogue();
+
+    Optimization::SsaRewritePass(program);
+    Optimization::ConstantPropagationPass(program.blocks);
+    Optimization::DeadCodeEliminationPass(program);
+    Optimization::CollectShaderInfoPass(program, profile);
+    Backend::Bindings bindings{};
+    return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
+}
+
+std::vector<u32> TranslateFragmentSampleCoverageToSpirv(const Shader::Profile& profile,
+                                                        const Shader::RuntimeInfo& runtime_info) {
+    Shader::Info info{};
+    info.stage = Stage::Fragment;
+    info.l_stage = LogicalStage::Fragment;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Block;
+    program.syntax_list.back().data.block = block;
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Return;
+    program.post_order_blocks = IR::PostOrder(block);
+
+    IR::IREmitter ir{*block};
+    ir.Prologue();
+    const IR::U32 coverage = ir.GetAttributeU32(IR::Attribute::SampleCoverage);
+    ir.SetAttribute(IR::Attribute::RenderTarget0, ir.BitCast<IR::F32>(coverage));
+    ir.Epilogue();
+
+    Optimization::CollectShaderInfoPass(program, profile);
+    Backend::Bindings bindings{};
+    return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
+}
+
+std::vector<u32> TranslateFragmentScalarPerVertexToSpirv(const Shader::Profile& profile,
+                                                         const Shader::RuntimeInfo& runtime_info) {
+    Shader::Info info{};
+    info.stage = Stage::Fragment;
+    info.l_stage = LogicalStage::Fragment;
+    info.fs_interpolation[0].primary = Qualifier::PerVertex;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Block;
+    program.syntax_list.back().data.block = block;
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Return;
+    program.post_order_blocks = IR::PostOrder(block);
+
+    IR::IREmitter ir{*block};
+    ir.Prologue();
+    IR::F32 sum = ir.Imm32(0.0f);
+    for (u32 vertex = 0; vertex < 3; ++vertex) {
+        sum = ir.FPAdd(sum, ir.GetAttribute(IR::Attribute::Param0, 0, vertex));
+    }
+    ir.SetAttribute(IR::Attribute::RenderTarget0, sum);
+    ir.Epilogue();
+
+    Optimization::CollectShaderInfoPass(program, profile);
+    Backend::Bindings bindings{};
+    return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
 }

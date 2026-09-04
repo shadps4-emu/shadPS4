@@ -258,6 +258,8 @@ public:
     Id frag_depth{};
     Id stencil_ref{};
     Id sample_mask{};
+    Id sample_mask_in{};
+    Id helper_invocation{};
     Id sample_index{};
     Id clip_distances{};
     Id cull_distances{};
@@ -289,7 +291,9 @@ public:
     Id bary_coord_smooth{};
     Id bary_coord_smooth_centroid{};
     Id bary_coord_smooth_sample{};
+    Id bary_coord_pull_model{};
     Id bary_coord_nopersp{};
+    Id bary_coord_nopersp_centroid{};
     Id bary_coord_nopersp_sample{};
 
     struct TextureDefinition {

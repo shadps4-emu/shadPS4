@@ -114,6 +114,7 @@ private:
     bool IsComputeMetaClear(const Pipeline* pipeline);
     bool IsComputeImageCopy(const Pipeline* pipeline);
     bool IsComputeImageClear(const Pipeline* pipeline);
+    u64 ClampToMappedRange(VAddr addr, u64 size);
 
 private:
     friend class VideoCore::BufferCache;

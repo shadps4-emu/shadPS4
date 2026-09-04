@@ -4,6 +4,7 @@
 #include "common/assert.h"
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/fragment_barycentric.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/runtime_info.h"
@@ -338,7 +339,14 @@ void EmitContext::DefineInputs() {
         break;
     }
     case LogicalStage::Fragment: {
-        if (info.loads.GetAny(IR::Attribute::FragCoord)) {
+        const bool uses_amd_barycentrics = profile.supports_amd_shader_explicit_vertex_parameter;
+        const bool uses_khr_barycentrics =
+            !uses_amd_barycentrics && profile.supports_fragment_shader_barycentric;
+        const bool needs_primitive_parity =
+            uses_khr_barycentrics &&
+            GetFragmentBarycentricMapping(runtime_info, profile).uses_primitive_parity;
+        if (info.loads.GetAny(IR::Attribute::FragCoord) ||
+            (info.loads.GetAny(IR::Attribute::BaryCoordPullModel) && !uses_amd_barycentrics)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         }
         if (info.loads.Get(IR::Attribute::IsFrontFace)) {
@@ -353,56 +361,68 @@ void EmitContext::DefineInputs() {
             sample_index = DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
             Decorate(sample_index, spv::Decoration::Flat);
         }
-        if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth)) {
-            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+        if (info.loads.Get(IR::Attribute::SampleCoverage)) {
+            helper_invocation =
+                DefineVariable(U1[1], spv::BuiltIn::HelperInvocation, spv::StorageClass::Input);
+            if (runtime_info.fs_info.num_samples > 1) {
+                sample_mask_in = DefineVariable(TypeArray(U32[1], u32_one_value),
+                                                spv::BuiltIn::SampleMask, spv::StorageClass::Input);
+            }
+        }
+        if (info.loads.Get(IR::Attribute::PrimitiveId) || needs_primitive_parity) {
+            primitive_id =
+                DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
+            Decorate(primitive_id, spv::Decoration::Flat);
+        }
+        if (uses_amd_barycentrics) {
+            if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth)) {
                 bary_coord_smooth = DefineVariable(F32[2], spv::BuiltIn::BaryCoordSmoothAMD,
                                                    spv::StorageClass::Input);
-            } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
-                bary_coord =
-                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
             }
-        }
-        if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothCentroid)) {
-            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+            if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothCentroid)) {
                 bary_coord_smooth_centroid = DefineVariable(
                     F32[2], spv::BuiltIn::BaryCoordSmoothCentroidAMD, spv::StorageClass::Input);
-            } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
-                bary_coord =
-                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
             }
-        }
-        if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample)) {
-            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+            if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample)) {
                 bary_coord_smooth_sample = DefineVariable(
                     F32[2], spv::BuiltIn::BaryCoordSmoothSampleAMD, spv::StorageClass::Input);
-            } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
-                bary_coord =
-                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
-                // we would need sample_index to interpolate the bary_coord later
-                if (!ValidId(sample_index)) {
-                    sample_index =
-                        DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
-                    Decorate(sample_index, spv::Decoration::Flat);
-                }
             }
-        }
-        if (info.loads.GetAny(IR::Attribute::BaryCoordNoPersp)) {
-            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+            if (info.loads.GetAny(IR::Attribute::BaryCoordPullModel)) {
+                bary_coord_pull_model = DefineVariable(F32[3], spv::BuiltIn::BaryCoordPullModelAMD,
+                                                       spv::StorageClass::Input);
+            }
+            if (info.loads.GetAny(IR::Attribute::BaryCoordNoPersp)) {
                 bary_coord_nopersp = DefineVariable(F32[2], spv::BuiltIn::BaryCoordNoPerspAMD,
                                                     spv::StorageClass::Input);
-            } else if (profile.supports_fragment_shader_barycentric) {
+            }
+            if (info.loads.GetAny(IR::Attribute::BaryCoordNoPerspCentroid)) {
+                bary_coord_nopersp_centroid = DefineVariable(
+                    F32[2], spv::BuiltIn::BaryCoordNoPerspCentroidAMD, spv::StorageClass::Input);
+            }
+            if (info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample)) {
+                bary_coord_nopersp_sample = DefineVariable(
+                    F32[2], spv::BuiltIn::BaryCoordNoPerspSampleAMD, spv::StorageClass::Input);
+            }
+        } else if (uses_khr_barycentrics) {
+            if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth) ||
+                info.loads.GetAny(IR::Attribute::BaryCoordSmoothCentroid) ||
+                info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample) ||
+                info.loads.GetAny(IR::Attribute::BaryCoordPullModel)) {
+                bary_coord =
+                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+            }
+            if (info.loads.GetAny(IR::Attribute::BaryCoordNoPersp) ||
+                info.loads.GetAny(IR::Attribute::BaryCoordNoPerspCentroid) ||
+                info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample)) {
                 bary_coord_nopersp = DefineVariable(F32[3], spv::BuiltIn::BaryCoordNoPerspKHR,
                                                     spv::StorageClass::Input);
             }
-        }
-        if (info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample)) {
-            if (profile.supports_amd_shader_explicit_vertex_parameter) {
-                bary_coord_nopersp_sample = DefineVariable(
-                    F32[2], spv::BuiltIn::BaryCoordNoPerspSampleAMD, spv::StorageClass::Input);
-            } else if (profile.supports_fragment_shader_barycentric) {
-                bary_coord_nopersp_sample = DefineVariable(
-                    F32[3], spv::BuiltIn::BaryCoordNoPerspKHR, spv::StorageClass::Input);
-                // Decorate(bary_coord_nopersp_sample, spv::Decoration::Sample);
+            if ((info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample) ||
+                 info.loads.GetAny(IR::Attribute::BaryCoordNoPerspSample)) &&
+                !ValidId(sample_index)) {
+                sample_index =
+                    DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
+                Decorate(sample_index, spv::Decoration::Flat);
             }
         }
 
@@ -422,8 +442,7 @@ void EmitContext::DefineInputs() {
             const Id type = F32[num_components];
             const Id attr_id = [&] {
                 const auto bind_location = input.param_index + (has_clip_distance_inputs ? 1 : 0);
-                if (primary == Qualifier::PerVertex &&
-                    profile.supports_fragment_shader_barycentric) {
+                if (primary == Qualifier::PerVertex && uses_khr_barycentrics) {
                     return Name(DefineInput(TypeArray(type, ConstU32(3U)), bind_location),
                                 fmt::format("fs_in_attr{}_p", i));
                 }

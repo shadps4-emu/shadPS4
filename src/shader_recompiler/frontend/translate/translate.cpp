@@ -166,7 +166,14 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         }
         if (runtime_info.fs_info.addr_flags.front_face_ena) {
             if (runtime_info.fs_info.en_flags.front_face_ena) {
-                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::IsFrontFace));
+                const IR::U1 front_face = ir.GetAttributeU1(IR::Attribute::IsFrontFace);
+                if (runtime_info.fs_info.front_face_all_bits) {
+                    ir.SetVectorReg(dst_vreg++,
+                                    IR::U32{ir.Select(front_face, ir.Imm32(1), ir.Imm32(0))});
+                } else {
+                    ir.SetVectorReg(dst_vreg++, IR::F32{ir.Select(front_face, ir.Imm32(1.0f),
+                                                                  ir.Imm32(-1.0f))});
+                }
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }
@@ -174,6 +181,13 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         if (runtime_info.fs_info.addr_flags.ancillary_ena) {
             if (runtime_info.fs_info.en_flags.ancillary_ena) {
                 ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::PackedAncillary));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+            }
+        }
+        if (runtime_info.fs_info.addr_flags.sample_coverage_ena) {
+            if (runtime_info.fs_info.en_flags.sample_coverage_ena) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::SampleCoverage));
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }

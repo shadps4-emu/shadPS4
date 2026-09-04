@@ -22,6 +22,8 @@ static Interpolation GetInterpolation(IR::Attribute attribute) {
         return {Qualifier::Smooth, Qualifier::Centroid};
     case IR::Attribute::BaryCoordSmoothSample:
         return {Qualifier::Smooth, Qualifier::Sample};
+    case IR::Attribute::BaryCoordPullModel:
+        return {Qualifier::Smooth, Qualifier::None};
     default:
         UNREACHABLE_MSG("Unhandled barycentric attribute {}", NameOf(attribute));
     }
@@ -51,16 +53,25 @@ void Translator::EmitVectorInterpolation(const GcnInst& inst) {
 // VINTRP
 
 void Translator::V_INTERP_P1_F32(const GcnInst& inst) {
-    if (!profile.needs_manual_interpolation) {
-        return;
-    }
     const u32 attr_index = inst.control.vintrp.attr;
     const auto& attr = runtime_info.fs_info.inputs[attr_index];
+    auto& interp = info.fs_interpolation[attr_index];
     if (attr.IsDefault()) {
+        SetDst(inst.dst[0],
+               ir.Imm32(DefaultValTable[attr.default_value][inst.control.vintrp.chan]));
         return;
     }
-    // VDST = P10 * VSRC + P0
     const IR::Attribute attrib = IR::Attribute::Param0 + attr_index;
+    if (attr.is_flat) {
+        interp.primary = Qualifier::Flat;
+        SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
+        return;
+    }
+    if (!profile.supports_amd_shader_explicit_vertex_parameter &&
+        !profile.supports_fragment_shader_barycentric) {
+        return;
+    }
+    interp.primary = Qualifier::PerVertex;
     const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 0);
     const IR::F32 p1 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 1);
     const IR::F32 i = GetSrc<IR::F32>(inst.src[0]);
@@ -78,8 +89,12 @@ void Translator::V_INTERP_P2_F32(const GcnInst& inst) {
                ir.Imm32(DefaultValTable[attr.default_value][inst.control.vintrp.chan]));
         return;
     }
-    ASSERT(!attr.is_flat);
-    if (!profile.needs_manual_interpolation) {
+    if (attr.is_flat) {
+        interp.primary = Qualifier::Flat;
+        return;
+    }
+    if (!profile.supports_amd_shader_explicit_vertex_parameter &&
+        !profile.supports_fragment_shader_barycentric) {
         interp = GetInterpolation(vgpr_to_interp[inst.src[0].code]);
         SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
         return;
@@ -98,17 +113,44 @@ void Translator::V_INTERP_MOV_F32(const GcnInst& inst) {
     const IR::Attribute attrib = IR::Attribute::Param0 + attr_index;
     const auto& attr = runtime_info.fs_info.inputs[attr_index];
     auto& interp = info.fs_interpolation[attr_index];
-    ASSERT(attr.is_flat || inst.src[0].code == 2);
+    const u32 src_select = inst.src[0].code;
+    ASSERT_MSG(src_select < 3, "Invalid V_INTERP_MOV_F32 selector {}", src_select);
+
+    if (attr.IsDefault()) {
+        // A default input is constant over the primitive, so only P0 is non-zero.
+        const float value =
+            src_select == 2 ? DefaultValTable[attr.default_value][inst.control.vintrp.chan] : 0.0f;
+        SetDst(inst.dst[0], ir.Imm32(value));
+        return;
+    }
+
     if (profile.supports_amd_shader_explicit_vertex_parameter ||
         profile.supports_fragment_shader_barycentric) {
-        // VSRC 0=P10, 1=P20, 2=P0
+        // Explicit per-vertex access exposes the basis value selected by P10, P20, or P0.
         interp.primary = Qualifier::PerVertex;
-        SetDst(inst.dst[0],
-               ir.GetAttribute(attrib, inst.control.vintrp.chan, (inst.src[0].code + 1) % 3));
-    } else {
+        const u32 vertex_index = (src_select + 1) % 3;
+        SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan, vertex_index));
+        return;
+    }
+
+    if (attr.is_flat) {
+        // Without explicit coefficient support, a flat input only exposes its P0 value.
+        interp.primary = Qualifier::Flat;
+        if (src_select == 2) {
+            SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
+        } else {
+            SetDst(inst.dst[0], ir.Imm32(0.0f));
+        }
+        return;
+    }
+
+    if (src_select == 2) {
         interp.primary = Qualifier::Flat;
         SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
+        return;
     }
+
+    UNREACHABLE_MSG("V_INTERP_MOV_F32 P10/P20 requires explicit per-vertex parameter support");
 }
 
 } // namespace Shader::Gcn
