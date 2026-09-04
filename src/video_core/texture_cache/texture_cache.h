@@ -150,8 +150,13 @@ public:
     /// Links the stencil plane of a depth surface to its depth image.
     void AssociateStencil(ImageId depth_id, const ImageInfo& depth_info);
 
-    /// Updates image contents from guest memory or a newer overlapping GPU image.
-    void UpdateImage(ImageId image_id);
+    /// Updates image contents if it was modified by CPU.
+    void UpdateImage(ImageId image_id) {
+        Image& image = slot_images[image_id];
+        TouchImage(image);
+        TrackImage(image_id);
+        RefreshImage(image);
+    }
 
     /// Resolves overlap between existing cache image and pending merged image
     [[nodiscard]] std::tuple<ImageId, int, int> ResolveOverlap(const ImageInfo& info,
