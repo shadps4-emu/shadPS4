@@ -270,6 +270,10 @@ F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, u32 index) {
     return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), Imm32(index));
 }
 
+U1 IREmitter::GetAttributeU1(IR::Attribute attribute, u32 comp) {
+    return Inst<U1>(Opcode::GetAttributeU1, attribute, Imm32(comp));
+}
+
 U32 IREmitter::GetAttributeU32(IR::Attribute attribute, u32 comp) {
     return Inst<U32>(Opcode::GetAttributeU32, attribute, Imm32(comp));
 }
