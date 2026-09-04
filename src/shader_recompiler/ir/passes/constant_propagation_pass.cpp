@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <bit>
+#include <limits>
 #include <optional>
 #include <type_traits>
 #include "common/func_traits.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/ir/opcodes.h"
 
 namespace Shader::Optimization {
 
@@ -208,6 +210,23 @@ void FoldUnpack32x2(IR::Block& block, IR::Inst& inst, IR::Opcode reverse) {
     }
 }
 
+void FoldInverseBallot(IR::Inst& inst) {
+    const IR::Value value{inst.Arg(0)};
+    if (value.IsImmediate()) {
+        if (value.U64() == 0ULL) {
+            inst.ReplaceUsesWithAndRemove(IR::Value{false});
+        } else if (value.U64() == std::numeric_limits<u64>::max()) {
+            inst.ReplaceUsesWithAndRemove(IR::Value{true});
+        }
+        return;
+    }
+    IR::Inst* const arg_inst{value.Inst()};
+    if (arg_inst->GetOpcode() == IR::Opcode::Ballot) {
+        inst.ReplaceUsesWithAndRemove(arg_inst->Arg(0));
+        return;
+    }
+}
+
 void FoldInverseFunc(IR::Inst& inst, IR::Opcode reverse) {
     const IR::Value value{inst.Arg(0)};
     if (value.IsImmediate()) {
@@ -362,6 +381,8 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return FoldUnpack32x2(block, inst, IR::Opcode::PackUint2x32);
     case IR::Opcode::UnpackDouble2x32:
         return FoldUnpack32x2(block, inst, IR::Opcode::PackDouble2x32);
+    case IR::Opcode::InverseBallot:
+        return FoldInverseBallot(inst);
     // 2x16
     case IR::Opcode::PackUnorm2x16:
         return FoldInverseFunc(inst, IR::Opcode::UnpackUnorm2x16);

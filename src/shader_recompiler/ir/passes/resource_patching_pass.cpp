@@ -328,15 +328,8 @@ void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descrip
 
     IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
 
-    // For data append/consume operations attempt to deduce the GDS address.
     if (inst.GetOpcode() == IR::Opcode::DataAppend || inst.GetOpcode() == IR::Opcode::DataConsume) {
-        // Patch instruction to GDS buffer atomic increment/decrement.
-        const IR::U32 handle = ir.Imm32(binding);
-        const IR::U32 index = ir.ShiftRightLogical(IR::U32{inst.Arg(0)}, ir.Imm32(2));
-        const bool is_append = inst.GetOpcode() == IR::Opcode::DataAppend;
-        const IR::Value prev = is_append ? ir.BufferAtomicInc(handle, index, {})
-                                         : ir.BufferAtomicDec(handle, index, {});
-        inst.ReplaceUsesWithAndRemove(prev);
+        inst.SetArg(1, ir.Imm32(binding));
     } else {
         // Convert shared memory opcode to storage buffer atomic to GDS buffer.
         auto& buffer = info.buffers[binding];

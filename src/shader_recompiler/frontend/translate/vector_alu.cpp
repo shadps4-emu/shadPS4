@@ -3,6 +3,7 @@
 
 #include "shader_recompiler/frontend/opcodes.h"
 #include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/profile.h"
 
 namespace Shader::Gcn {
@@ -531,12 +532,14 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
 // VOP2
 
 void Translator::V_CNDMASK_B32(const GcnInst& inst) {
-    const IR::ScalarReg flag_reg{inst.src[2].code};
-    const IR::U1 flag = inst.src[2].field == OperandField::ScalarGPR
-                            ? ir.GetThreadBitScalarReg(flag_reg)
-                            : ir.GetVcc();
-    const IR::Value result =
-        ir.Select(flag, GetSrc<IR::F32>(inst.src[1]), GetSrc<IR::F32>(inst.src[0]));
+    IR::U64 mask;
+    if (inst.src[2].field == OperandField::Undefined) {
+        mask = ir.PackUint2x32(ir.CompositeConstruct(ir.GetVccLo(), ir.GetVccHi()));
+    } else {
+        mask = GetSrc64(inst.src[2]);
+    }
+    const IR::Value result = ir.Select(ir.InverseBallot(mask), GetSrc<IR::F32>(inst.src[1]),
+                                       GetSrc<IR::F32>(inst.src[0]));
     SetDst(inst.dst[0], IR::U32F32{result});
 }
 
@@ -676,7 +679,8 @@ void Translator::V_AND_B32(const GcnInst& inst) {
 void Translator::V_OR_B32(bool is_xor, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
-    SetDst(inst.dst[0], is_xor ? ir.BitwiseXor(src0, src1) : IR::U32(ir.BitwiseOr(src0, src1)));
+    SetDst(inst.dst[0],
+           is_xor ? IR::U32{ir.BitwiseXor(src0, src1)} : IR::U32{ir.BitwiseOr(src0, src1)});
 }
 
 void Translator::V_BFM_B32(const GcnInst& inst) {
@@ -709,40 +713,19 @@ void Translator::V_BCNT_U32_B32(const GcnInst& inst) {
 }
 
 void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
-    if (!is_low) {
-        // v_mbcnt_hi_u32_b32 vX, -1, 0
-        if (inst.src[0].field == OperandField::SignedConstIntNeg && inst.src[0].code == 193 &&
-            inst.src[1].field == OperandField::ConstZero) {
-            return;
-        }
-        // v_mbcnt_hi_u32_b32 vX, exec_hi, 0/vZ
-        if ((inst.src[0].field == OperandField::ExecHi ||
-             inst.src[0].field == OperandField::VccHi ||
-             inst.src[0].field == OperandField::ScalarGPR) &&
-            (inst.src[1].field == OperandField::ConstZero ||
-             inst.src[1].field == OperandField::VectorGPR)) {
-            return SetDst(inst.dst[0], GetSrc(inst.src[1]));
-        }
-        UNREACHABLE();
-    } else {
-        // v_mbcnt_lo_u32_b32 vY, -1, vX
-        // used combined with above to fetch lane id in non-compute stages
-        if (inst.src[0].field == OperandField::SignedConstIntNeg && inst.src[0].code == 193) {
-            return SetDst(inst.dst[0], ir.LaneId());
-        }
-        // v_mbcnt_lo_u32_b32 vY, exec_lo, vX
-        // used combined with above for append buffer indexing.
-        if (inst.src[0].field == OperandField::ExecLo || inst.src[0].field == OperandField::VccLo ||
-            inst.src[0].field == OperandField::ScalarGPR) {
-            return SetDst(inst.dst[0], GetSrc(inst.src[1]));
-        }
-        UNREACHABLE();
+    if (!is_low && inst.src[0].field == OperandField::SignedConstIntNeg &&
+        inst.src[0].code == 193 && inst.src[1].field == OperandField::ConstZero) {
+        return;
+    } else if (is_low && inst.src[0].field == OperandField::SignedConstIntNeg &&
+               inst.src[0].code == 193) {
+        return SetDst(inst.dst[0], ir.LaneId());
     }
+    const IR::U32 thread_mask{ir.GetAttributeU32(IR::Attribute::SubgroupLtMask, is_low ? 0 : 1)};
+    SetDst(inst.dst[0], ir.IAdd(ir.BitCount(ir.BitwiseAnd(GetSrc(inst.src[0]), thread_mask)),
+                                GetSrc(inst.src[1])));
 }
 
 void Translator::V_ADD_I32(const GcnInst& inst) {
-    // The sum is identical for signed and unsigned components. VCC (or the VOP3 scalar
-    // destination) receives the unsigned carry-out, despite the legacy _I32 mnemonic.
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 result{ir.IAdd(src0, src1)};
@@ -1193,10 +1176,10 @@ void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
         // and the VCC/SDST destination, zeroing inactive lanes' bits.
         const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
         ir.SetExec(masked);
-        SetDst1(inst.dst[1], masked);
+        SetDst64(inst.dst[1], ir.Ballot(masked));
         return;
     }
-    SetDst1(inst.dst[1], result);
+    SetDst64(inst.dst[1], ir.Ballot(result));
 }
 
 void Translator::V_CMP_F64(ConditionOp op, bool set_exec, const GcnInst& inst) {
@@ -1228,10 +1211,10 @@ void Translator::V_CMP_F64(ConditionOp op, bool set_exec, const GcnInst& inst) {
         // See the V_CMPX note in V_CMP_F32.
         const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
         ir.SetExec(masked);
-        SetDst1(inst.dst[1], masked);
+        SetDst64(inst.dst[1], ir.Ballot(masked));
         return;
     }
-    SetDst1(inst.dst[1], result);
+    SetDst64(inst.dst[1], ir.Ballot(result));
 }
 
 void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
@@ -1263,52 +1246,44 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
         // See the V_CMPX note in V_CMP_F32.
         const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
         ir.SetExec(masked);
-        SetDst1(inst.dst[1], masked);
+        SetDst64(inst.dst[1], ir.Ballot(masked));
         return;
     }
-    SetDst1(inst.dst[1], result);
+    SetDst64(inst.dst[1], ir.Ballot(result));
 }
 
 void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
-    const bool is_zero = inst.src[1].field == OperandField::ConstZero;
-    const bool is_neg_one = inst.src[1].field == OperandField::SignedConstIntNeg;
-    ASSERT(is_zero || is_neg_one);
-    if (is_neg_one) {
-        ASSERT_MSG(-s32(inst.src[1].code) + SignedConstIntNegMin - 1 == -1,
-                   "SignedConstIntNeg must be -1");
-    }
-
-    const IR::U1 src0 = [&] {
-        switch (inst.src[0].field) {
-        case OperandField::ScalarGPR:
-            return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
-        case OperandField::VccLo:
-            return ir.GetVcc();
-        default:
-            UNREACHABLE_MSG("src0 = {}", u32(inst.src[0].field));
-        }
-    }();
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U64 src1{GetSrc64(inst.src[1])};
     const IR::U1 result = [&] {
         switch (op) {
+        case ConditionOp::F:
+            return ir.Imm1(false);
+        case ConditionOp::TRU:
+            return ir.Imm1(true);
         case ConditionOp::EQ:
-            return is_zero ? ir.LogicalNot(src0) : src0;
-        case ConditionOp::LG: // NE
-            return is_zero ? src0 : ir.LogicalNot(src0);
+            return ir.IEqual(src0, src1);
+        case ConditionOp::LG:
+            return ir.INotEqual(src0, src1);
         case ConditionOp::GT:
-            ASSERT(is_zero);
-            return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
+            return ir.IGreaterThan(src0, src1, is_signed);
+        case ConditionOp::LT:
+            return ir.ILessThan(src0, src1, is_signed);
+        case ConditionOp::LE:
+            return ir.ILessThanEqual(src0, src1, is_signed);
+        case ConditionOp::GE:
+            return ir.IGreaterThanEqual(src0, src1, is_signed);
         default:
-            UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
+            UNREACHABLE();
         }
     }();
-
     if (is_signed) {
         UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
     }
     if (set_exec) {
         UNREACHABLE_MSG("Exec setting for V_CMP_U64 is not supported");
     }
-    SetDst1(inst.dst[1], result);
+    SetDst64(inst.dst[1], ir.Ballot(result));
 }
 
 void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
@@ -1330,7 +1305,7 @@ void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
         // We don't know the type yet, delay its resolution.
         value = ir.FPCmpClass32(src0, src1);
     }
-    SetDst1(inst.dst[1], value);
+    SetDst64(inst.dst[1], ir.Ballot(value));
 }
 
 // VOP3a
@@ -1624,7 +1599,12 @@ void Translator::V_MAD_U64_U32(const GcnInst& inst) {
     const IR::U1 less_src0 = ir.ILessThan(sum_result, mul_result, false);
     const IR::U1 less_src1 = ir.ILessThan(sum_result, src2, false);
     const IR::U1 did_overflow = ir.LogicalOr(less_src0, less_src1);
-    ir.SetVcc(did_overflow);
+
+    const auto unpacked = ir.UnpackUint2x32(ir.Ballot(did_overflow));
+    const IR::U32 lo{ir.CompositeExtract(unpacked, 0U)};
+    const IR::U32 hi{ir.CompositeExtract(unpacked, 1U)};
+    ir.SetVccLo(lo);
+    ir.SetVccHi(hi);
 }
 
 void Translator::V_LSHLREV_B16(const GcnInst& inst) {
@@ -1941,21 +1921,25 @@ void Translator::V_MAD_MIXHI_F16(const GcnInst& inst) {
 }
 
 IR::U32 Translator::GetCarryIn(const GcnInst& inst) {
-    IR::U1 carry;
+    IR::U64 carry;
     if (inst.src_count == 3) { // VOP3
-        carry = GetSrc1(inst.src[2]);
+        carry = GetSrc64(inst.src[2]);
     } else { // VOP2
-        carry = ir.GetVcc();
+        carry = ir.PackUint2x32(ir.CompositeConstruct(ir.GetVccLo(), ir.GetVccHi()));
     }
 
-    return IR::U32{ir.Select(carry, ir.Imm32(1), ir.Imm32(0))};
+    return IR::U32{ir.Select(ir.InverseBallot(carry), ir.Imm32(1), ir.Imm32(0))};
 }
 
 void Translator::SetCarryOut(const GcnInst& inst, const IR::U1& carry) {
     if (inst.dst_count == 2) { // VOP3
-        SetDst1(inst.dst[1], carry);
+        SetDst64(inst.dst[1], ir.Ballot(carry));
     } else { // VOP2
-        ir.SetVcc(carry);
+        const auto unpacked = ir.UnpackUint2x32(ir.Ballot(carry));
+        const IR::U32 lo{ir.CompositeExtract(unpacked, 0U)};
+        const IR::U32 hi{ir.CompositeExtract(unpacked, 1U)};
+        ir.SetVccLo(lo);
+        ir.SetVccHi(hi);
     }
 }
 

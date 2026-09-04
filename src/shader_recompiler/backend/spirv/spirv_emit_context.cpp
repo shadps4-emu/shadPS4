@@ -11,6 +11,7 @@
 
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
+#include <spirv/unified1/spirv.hpp11>
 
 #include <numbers>
 #include <string_view>
@@ -313,6 +314,11 @@ void EmitContext::DefineInputs() {
             U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
         Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
     }
+    if (info.loads.GetAny(IR::Attribute::SubgroupLtMask)) {
+        subgroup_lt_mask =
+            DefineVariable(U32[4], spv::BuiltIn::SubgroupLtMask, spv::StorageClass::Input);
+        Decorate(subgroup_lt_mask, spv::Decoration::Flat);
+    }
     switch (l_stage) {
     case LogicalStage::Vertex: {
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
@@ -466,6 +472,10 @@ void EmitContext::DefineInputs() {
         if (info.loads.GetAny(IR::Attribute::LocalInvocationId)) {
             local_invocation_id =
                 DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
+        }
+        if (info.loads.Get(IR::Attribute::LocalInvocationIndex)) {
+            local_invocation_index = DefineVariable(U32[1], spv::BuiltIn::LocalInvocationIndex,
+                                                    spv::StorageClass::Input);
         }
         break;
     case LogicalStage::Geometry: {

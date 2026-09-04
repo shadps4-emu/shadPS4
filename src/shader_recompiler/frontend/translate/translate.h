@@ -347,7 +347,6 @@ public:
     void IMAGE_GET_LOD(const GcnInst& inst);
 
 private:
-    IR::U1 GetSrc1(const InstOperand& operand);
     template <typename T = IR::U32>
     [[nodiscard]] T GetSrc(const InstOperand& operand);
     template <typename T = IR::U32, bool is_signed = false>
@@ -357,7 +356,6 @@ private:
     [[nodiscard]] IR::F32 GetSrcMix(const InstOperand& operand);
     template <typename T = IR::U32, bool is_signed = false>
     [[nodiscard]] pk_type<T> GetSrcPk(const InstOperand& operand);
-    void SetDst1(const InstOperand& operand, const IR::U1& value);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     template <bool is_signed = false>
     void SetDst16(const InstOperand& operand, const IR::U32F32& value);
