@@ -279,6 +279,27 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
     // Equal address
     if (image_info.guest_address == cache_image.info.guest_address) {
+        // Vulkan image views cannot restrict the dimensions of a mip, so an
+        // origin-aligned crop needs its own image. Keep that image synchronized
+        // with a newer GPU-written backing instead of reloading stale guest memory.
+        if (image_info.IsSubrectOf(cache_image.info)) {
+            ImageId result_id = merged_image_id;
+            if (!result_id) {
+                result_id = slot_images.insert(instance, scheduler, blit_helper, slot_image_views,
+                                               image_info);
+                RegisterImage(result_id);
+            }
+
+            // Inserting can grow the slot vector, so reacquire both references.
+            auto& source_image = slot_images[cache_image_id];
+            auto& result_image = slot_images[result_id];
+            if (source_image.contents_version > result_image.contents_version &&
+                source_image.SafeToDownload()) {
+                result_image.CopySubrect(source_image);
+            }
+            return {result_id, -1, -1};
+        }
+
         const u32 lhs_block_size = image_info.num_bits * image_info.num_samples;
         const u32 rhs_block_size = cache_image.info.num_bits * cache_image.info.num_samples;
         if (image_info.BlockDim() != cache_image.info.BlockDim() ||
@@ -553,6 +574,25 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
                 view_slice = overlap_view_slice;
             }
         }
+    } else {
+        // A perfect match can still have a newer, larger backing at the same
+        // address. Revisit only this compatible crop relationship; all other
+        // overlaps were resolved when the image was created.
+        for (const auto& cache_id : image_ids) {
+            if (cache_id == image_id) {
+                continue;
+            }
+
+            const auto& merged_info = slot_images[image_id].info;
+            if (!merged_info.IsSubrectOf(slot_images[cache_id].info)) {
+                continue;
+            }
+
+            const auto [overlap_image_id, overlap_view_mip, overlap_view_slice] =
+                ResolveOverlap(merged_info, desc.type, cache_id, image_id);
+            ASSERT(overlap_image_id == image_id);
+            ASSERT(overlap_view_mip == -1 && overlap_view_slice == -1);
+        }
     }
 
     if (image_id) {
@@ -616,32 +656,6 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
                     size);
     }
     return {};
-}
-
-void TextureCache::UpdateImage(ImageId image_id) {
-    std::scoped_lock lock{mutex};
-    Image& image = slot_images[image_id];
-    TrackImage(image_id);
-    TouchImage(image);
-
-    // Different texture extents at the same address cannot share a Vulkan image
-    // view: normalized coordinates and image queries must keep the guest extent.
-    // Refresh a cropped image from the newest compatible GPU-written backing,
-    // not from CPU memory which still contains the pre-render contents.
-    Image* source = nullptr;
-    ForEachImageInRegion(
-        image.info.guest_address, image.info.guest_size, [&](ImageId other_id, Image& other) {
-            if (other_id != image_id && other.contents_version > image.contents_version &&
-                other.SafeToDownload() && image.info.IsSubrectOf(other.info) &&
-                (!source || other.contents_version > source->contents_version)) {
-                source = &other;
-            }
-        });
-    if (source) {
-        image.CopySubrect(*source);
-    } else {
-        RefreshImage(image);
-    }
 }
 
 ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {

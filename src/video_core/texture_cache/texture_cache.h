@@ -111,8 +111,14 @@ public:
     /// Retrieves the depth target with specified properties
     [[nodiscard]] ImageView& FindDepthTarget(ImageId image_id, const ImageDesc& desc);
 
-    /// Updates image contents from guest memory or a newer overlapping GPU image.
-    void UpdateImage(ImageId image_id);
+    /// Updates image contents if it was modified by CPU.
+    void UpdateImage(ImageId image_id) {
+        std::scoped_lock lock{mutex};
+        Image& image = slot_images[image_id];
+        TrackImage(image_id);
+        TouchImage(image);
+        RefreshImage(image);
+    }
 
     /// Resolves overlap between existing cache image and pending merged image
     [[nodiscard]] std::tuple<ImageId, int, int> ResolveOverlap(const ImageInfo& info,
