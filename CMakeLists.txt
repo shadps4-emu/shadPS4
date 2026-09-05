@@ -398,6 +398,8 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/sys_net.cpp
                  src/core/libraries/network/sys_net.h
                  src/core/libraries/network/posix_sockets.cpp
+                 src/core/libraries/network/p2p_port.cpp
+                 src/core/libraries/network/p2p_port.h
                  src/core/libraries/network/p2p_sockets.cpp
                  src/core/libraries/network/unix_sockets.cpp
                  src/core/libraries/network/sockets.h
