@@ -82,7 +82,7 @@ OPCODE(SetPatch,                                            Void,           Patc
 OPCODE(GetTessGenericAttribute,                             F32,            U32,            U32,            U32,                                            )
 OPCODE(SetTcsGenericAttribute,                              Void,           F32,            U32,            U32,                                            )
 OPCODE(ReadTcsGenericOuputAttribute,                        F32,            U32,            U32,            U32,                                            )
-
+OPCODE(GetPcLo,                                             U32,            U32,                                                                            )
 
 // Flags
 OPCODE(GetScc,                                              U1,             Void,                                                                           )
@@ -414,6 +414,7 @@ OPCODE(ConvertS32S8,                                        U32,            U8, 
 OPCODE(ConvertS32S16,                                       U32,            U16,                                                                            )
 
 // Image operations
+OPCODE(ImageHandle,                                         Opaque,         U32x4,          U32x4,                                                          )
 OPCODE(ImageSampleRaw,                                      F32x4,          Opaque,         Opaque,         F32x4,          F32x4,          F32x4,          F32,           )
 OPCODE(ImageSampleImplicitLod,                              F32x4,          Opaque,         F32x4,          F32,            Opaque,                         )
 OPCODE(ImageSampleExplicitLod,                              F32x4,          Opaque,         Opaque,         F32,            Opaque,                         )

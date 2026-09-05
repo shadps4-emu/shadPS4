@@ -71,6 +71,10 @@ struct ImageOperands {
     boost::container::static_vector<Id, 4> operands;
 };
 
+Id EmitImageHandle(EmitContext& ctx, Id, Id) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
 Id EmitImageSampleRaw(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address1, Id address2,
                       Id address3, Id address4) {
     UNREACHABLE_MSG("Unreachable instruction");

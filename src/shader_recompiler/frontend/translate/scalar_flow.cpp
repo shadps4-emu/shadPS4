@@ -47,7 +47,7 @@ void Translator::S_BARRIER() {
 
 void Translator::S_GETPC_B64(const GcnInst& inst) {
     const IR::ScalarReg dst{inst.dst[0].code};
-    ir.SetScalarReg(dst, ir.Imm32(pc));
+    ir.SetScalarReg(dst, ir.GetPcLo(ir.Imm32(pc)));
     ir.SetScalarReg(dst + 1, ir.Imm32(0));
 }
 

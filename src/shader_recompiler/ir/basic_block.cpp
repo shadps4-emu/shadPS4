@@ -168,6 +168,10 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
 
         if (op == Opcode::ReadConst || op == Opcode::ImageSampleRaw) {
             ret += fmt::format(" (flags={:#x}) ", inst.Flags<u32>());
+        } else if (op == Opcode::ReadConstBuffer) {
+            const auto info = inst.Flags<BufferInstInfo>();
+            ret += fmt::format(" (sharp_source={}, flatbuf_off_dw={:#x}) ", bool(info.sharp_source),
+                               info.flatbuf_off_dw.Value());
         }
         const size_t arg_count{inst.NumArgs()};
         for (size_t arg_index = 0; arg_index < arg_count; ++arg_index) {

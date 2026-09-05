@@ -294,6 +294,10 @@ F32 IREmitter::ReadTcsGenericOuputAttribute(const U32& vertex_index, const U32& 
                      comp_index);
 }
 
+U32 IREmitter::GetPcLo(const U32& pc) {
+    return Inst<U32>(IR::Opcode::GetPcLo, pc);
+}
+
 F32 IREmitter::GetPatch(Patch patch) {
     return Inst<F32>(Opcode::GetPatch, patch);
 }
@@ -2075,6 +2079,10 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
 Value IREmitter::ImageAtomicCmpSwap(const Value& handle, const Value& coords, const Value& value,
                                     const Value& cmp_value, TextureInstInfo info) {
     return Inst(Opcode::ImageAtomicCmpSwap32, Flags{info}, handle, coords, value, cmp_value);
+}
+
+Value IREmitter::ImageHandle(const Value& tsharp_low, const Value& tsharp_high) {
+    return Inst(Opcode::ImageHandle, tsharp_low, tsharp_high);
 }
 
 Value IREmitter::ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
