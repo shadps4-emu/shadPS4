@@ -134,6 +134,9 @@ public:
     /// Return true when a region is registered on the cache
     [[nodiscard]] bool IsRegionRegistered(VAddr addr, size_t size);
 
+    /// Return true when a region is mapped for GPU access.
+    [[nodiscard]] bool IsRegionGpuMapped(VAddr addr, size_t size) const;
+
     /// Return true when a CPU region is modified from the CPU
     [[nodiscard]] bool IsRegionCpuModified(VAddr addr, size_t size);
 
