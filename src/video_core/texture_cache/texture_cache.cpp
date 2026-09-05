@@ -562,6 +562,16 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
             image_id = {};
         } else if (image_resolved.info.resources < info.resources) {
             // The image was clearly picked up wrong.
+            LOG_DEBUG(Render_Vulkan,
+                     "Image overlap resolve failed: requested addr={:#x} size={:#x} format={} "
+                     "levels={} layers={} | resolved addr={:#x} size={:#x} format={} levels={} "
+                     "layers={}",
+                     info.guest_address, info.guest_size, vk::to_string(info.pixel_format),
+                     info.resources.levels, info.resources.layers,
+                     image_resolved.info.guest_address, image_resolved.info.guest_size,
+                     vk::to_string(image_resolved.info.pixel_format),
+                     image_resolved.info.resources.levels,
+                     image_resolved.info.resources.layers);
             FreeImage(image_id);
             image_id = {};
             LOG_WARNING(Render_Vulkan, "Image overlap resolve failed");
