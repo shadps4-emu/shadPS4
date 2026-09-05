@@ -136,6 +136,27 @@ void FoldCompositeExtract(IR::Inst& inst, IR::Opcode construct, IR::Opcode inser
     inst.ReplaceUsesWithAndRemove(*result);
 }
 
+void FoldCompositeConstruct(IR::Inst& inst, IR::Opcode extract) {
+    IR::Value result{};
+    for (size_t i = 0; i < inst.NumArgs(); ++i) {
+        const IR::Value value{inst.Arg(i)};
+        if (value.IsImmediate()) {
+            return;
+        }
+        IR::Inst* const inst = value.Inst();
+        if (inst->GetOpcode() != extract || inst->Arg(1).U32() != i) {
+            return;
+        }
+
+        if (result.IsEmpty()) {
+            result = inst->Arg(0);
+        } else if (result != inst->Arg(0)) {
+            return;
+        }
+    }
+    inst.ReplaceUsesWithAndRemove(result);
+}
+
 void FoldConvert(IR::Inst& inst, IR::Opcode opposite) {
     const IR::Value value{inst.Arg(0)};
     if (value.IsImmediate()) {
@@ -165,6 +186,12 @@ void FoldSelect(IR::Inst& inst) {
     const IR::Value cond{inst.Arg(0)};
     if (cond.IsImmediate()) {
         inst.ReplaceUsesWithAndRemove(cond.U1() ? inst.Arg(1) : inst.Arg(2));
+    }
+    if (inst.GetOpcode() == IR::Opcode::SelectU1) {
+        if (inst.Arg(1).IsImmediate() && inst.Arg(1).U1() == true && inst.Arg(2).IsImmediate() &&
+            inst.Arg(2).U1() == false) {
+            inst.ReplaceUsesWithAndRemove(cond);
+        }
     }
 }
 
@@ -377,8 +404,12 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return FoldBitCast<IR::Opcode::BitCastF32U32, f32, u32>(inst, IR::Opcode::BitCastU32F32);
     case IR::Opcode::BitCastU32F32:
         return FoldBitCast<IR::Opcode::BitCastU32F32, u32, f32>(inst, IR::Opcode::BitCastF32U32);
+    case IR::Opcode::PackUint2x32:
+        return FoldInverseFunc(inst, IR::Opcode::UnpackUint2x32);
     case IR::Opcode::UnpackUint2x32:
         return FoldUnpack32x2(block, inst, IR::Opcode::PackUint2x32);
+    case IR::Opcode::PackDouble2x32:
+        return FoldInverseFunc(inst, IR::Opcode::UnpackDouble2x32);
     case IR::Opcode::UnpackDouble2x32:
         return FoldUnpack32x2(block, inst, IR::Opcode::PackDouble2x32);
     case IR::Opcode::InverseBallot:
@@ -606,6 +637,12 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::CompositeExtractF32x4:
         return FoldCompositeExtract(inst, IR::Opcode::CompositeConstructF32x4,
                                     IR::Opcode::CompositeInsertF32x4);
+    case IR::Opcode::CompositeConstructU32x2:
+        return FoldCompositeConstruct(inst, IR::Opcode::CompositeExtractU32x2);
+    case IR::Opcode::CompositeConstructU32x3:
+        return FoldCompositeConstruct(inst, IR::Opcode::CompositeExtractU32x3);
+    case IR::Opcode::CompositeConstructU32x4:
+        return FoldCompositeConstruct(inst, IR::Opcode::CompositeExtractU32x4);
     case IR::Opcode::ConvertF32F16:
         return FoldConvert(inst, IR::Opcode::ConvertF16F32);
     case IR::Opcode::ConvertF16F32:
