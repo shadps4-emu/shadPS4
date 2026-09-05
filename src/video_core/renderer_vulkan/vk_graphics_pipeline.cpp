@@ -303,12 +303,33 @@ GraphicsPipeline::GraphicsPipeline(
         const auto alpha_blend =
             control.separate_alpha_blend ? LiverpoolToVK::BlendOp(control.alpha_func) : color_blend;
 
+        // Vulkan ignores blend factors for min/max, but a factor that zeroes one operand
+        // makes the operation collapse to a plain selection: min(s, 0) is 0 and max(s, 0)
+        // is s for normalized alpha. Rewrite those to the equivalent add so the result is
+        // exact instead of leaving the other operand to survive.
+        auto eff_src_alpha = src_alpha;
+        auto eff_dst_alpha = dst_alpha;
+        auto eff_alpha_blend = alpha_blend;
+        if (alpha_blend == vk::BlendOp::eMin || alpha_blend == vk::BlendOp::eMax) {
+            const bool takes_max = alpha_blend == vk::BlendOp::eMax;
+            if (src_alpha == vk::BlendFactor::eOne && dst_alpha == vk::BlendFactor::eZero) {
+                eff_alpha_blend = vk::BlendOp::eAdd;
+                eff_src_alpha = takes_max ? vk::BlendFactor::eOne : vk::BlendFactor::eZero;
+                eff_dst_alpha = vk::BlendFactor::eZero;
+            } else if (src_alpha == vk::BlendFactor::eZero && dst_alpha == vk::BlendFactor::eOne) {
+                eff_alpha_blend = vk::BlendOp::eAdd;
+                eff_src_alpha = vk::BlendFactor::eZero;
+                eff_dst_alpha = takes_max ? vk::BlendFactor::eOne : vk::BlendFactor::eZero;
+            }
+        }
+
         const auto color_scaled_min_max =
             (color_blend == vk::BlendOp::eMin || color_blend == vk::BlendOp::eMax) &&
-            (src_color != vk::BlendFactor::eOne || dst_color != vk::BlendFactor::eOne);
+            (src_color != vk::BlendFactor::eOne || dst_color != vk::BlendFactor::eOne) &&
+            !key.color_buffers[i].blend_self_scale;
         const auto alpha_scaled_min_max =
-            (alpha_blend == vk::BlendOp::eMin || alpha_blend == vk::BlendOp::eMax) &&
-            (src_alpha != vk::BlendFactor::eOne || dst_alpha != vk::BlendFactor::eOne);
+            (eff_alpha_blend == vk::BlendOp::eMin || eff_alpha_blend == vk::BlendOp::eMax) &&
+            (eff_src_alpha != vk::BlendFactor::eOne || eff_dst_alpha != vk::BlendFactor::eOne);
         if (color_scaled_min_max || alpha_scaled_min_max) {
             LOG_WARNING(
                 Render_Vulkan,
@@ -320,15 +341,25 @@ GraphicsPipeline::GraphicsPipeline(
             .srcColorBlendFactor = src_color,
             .dstColorBlendFactor = dst_color,
             .colorBlendOp = color_blend,
-            .srcAlphaBlendFactor = src_alpha,
-            .dstAlphaBlendFactor = dst_alpha,
-            .alphaBlendOp = alpha_blend,
+            .srcAlphaBlendFactor = eff_src_alpha,
+            .dstAlphaBlendFactor = eff_dst_alpha,
+            .alphaBlendOp = eff_alpha_blend,
             .colorWriteMask =
                 instance.IsDynamicColorWriteMaskSupported()
                     ? vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
                     : key.write_masks[i],
         };
+
+        // The shader squares its color output for this attachment (see PsColorBuffer), so the
+        // factors must not scale the operands again.
+        if (key.color_buffers[i].blend_self_scale) {
+            LOG_WARNING(
+                Render_Vulkan,
+                "Emulating scaled min/max blend with squared shader output on attachment {}", i);
+            attachments[i].srcColorBlendFactor = vk::BlendFactor::eOne;
+            attachments[i].dstColorBlendFactor = vk::BlendFactor::eOne;
+        }
 
         // On GCN GPU there is an additional mask which allows to control color components exported
         // from a pixel shader. A situation possible, when the game may mask out the alpha channel,

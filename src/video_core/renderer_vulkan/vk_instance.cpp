@@ -130,6 +130,14 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                 return left_is_discrete;
             }
 
+            // Software renderers advertise system memory as device local, so they
+            // would win the memory comparison below against real hardware.
+            const bool left_is_cpu = left_prop.deviceType == vk::PhysicalDeviceType::eCpu;
+            const bool right_is_cpu = right_prop.deviceType == vk::PhysicalDeviceType::eCpu;
+            if (left_is_cpu != right_is_cpu) {
+                return right_is_cpu;
+            }
+
             constexpr auto get_mem = [](const vk::PhysicalDeviceMemoryProperties& mem) -> size_t {
                 size_t max = 0;
                 for (u32 i = 0; i < mem.memoryHeapCount; i++) {

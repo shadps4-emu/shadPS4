@@ -8,6 +8,6 @@
 
 namespace Shader::IR {
 
-BlockList PostOrder(const AbstractSyntaxNode& root);
+BlockList PostOrder(Block* const first_block);
 
 } // namespace Shader::IR

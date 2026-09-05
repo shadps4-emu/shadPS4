@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <bit>
 #include <cstdint>
 #include <SDL3/SDL_events.h>
 #include <imgui.h>
@@ -102,6 +103,13 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     // Big Picture
     FontStack::AddPrimaryUiFont(ImGui::GetIO().Fonts, 64.0f, EmulatorSettings.GetConsoleLanguage(),
                                 font_cfg, true);
+
+    // Let the atlas size grow to the largest image the device can create,
+    // floored to the power of two the packer requires.
+    const u32 max_dim = instance.GetPhysicalDevice().getProperties().limits.maxImageDimension2D;
+    const int atlas_max = static_cast<int>(std::bit_floor(std::max<u32>(max_dim, 512u)));
+    io.Fonts->TexMaxWidth = atlas_max;
+    io.Fonts->TexMaxHeight = atlas_max;
 
     io.Fonts->Build();
 

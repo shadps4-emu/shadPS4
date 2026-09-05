@@ -28,9 +28,9 @@ static_assert(LoadBufferArgs::Address == StoreBufferArgs::Address);
 // Get certain components of buffer address argument, used in Load/StoreBuffer variants.
 // We keep components separate as u32x3, before combining after sharp tracking
 static inline IR::U32 GetBufferAddressComponent(const Inst* buffer_inst, u32 comp) {
-    Inst* address = buffer_inst->Arg(1).InstRecursive();
+    Inst* address = buffer_inst->Arg(1).Inst();
     ASSERT(address->GetOpcode() == IR::Opcode::CompositeConstructU32x3);
-    return IR::U32{address->Arg(comp).Resolve()};
+    return IR::U32{address->Arg(comp)};
 }
 
 static inline U32 GetBufferIndexArg(const Inst* buffer_inst) {
