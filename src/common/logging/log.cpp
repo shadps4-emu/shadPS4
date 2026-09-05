@@ -79,6 +79,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_InvitationDialog, nullptr},
     {Class::Lib_Jpeg, nullptr},
     {Class::Lib_Kernel, nullptr},
+    {Class::Lib_Keyboard, nullptr},
     {Class::Lib_LibcInternal, nullptr},
     {Class::Lib_Mouse, nullptr},
     {Class::Lib_Move, nullptr},
