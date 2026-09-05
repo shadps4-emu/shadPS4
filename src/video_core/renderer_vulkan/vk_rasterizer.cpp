@@ -428,9 +428,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
         uses_dma |= stage->uses_dma;
-        if (stage->uses_dma) {
-            LOG_ERROR(Render, "Enabling DMA for shader {:#x}", stage->pgm_hash);
-        }
     }
 
     if (uses_dma) {
@@ -1119,8 +1116,7 @@ bool Rasterizer::IsMapped(VAddr addr, u64 size) {
     Common::RecursiveSharedLock lock{mapped_ranges_mutex};
     return boost::icl::contains(mapped_ranges, range);
 }
-#pragma GCC push_options
-#pragma GCC optimize("O0")
+
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
     {
         std::scoped_lock lock{mapped_ranges_mutex};
