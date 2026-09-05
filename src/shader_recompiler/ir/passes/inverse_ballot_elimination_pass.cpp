@@ -46,6 +46,14 @@ void InverseBallotEliminationPass(IR::Program& program) {
             continue;
         }
 
+        IR::Block* const block = prod->GetParent();
+        if (prod->GetOpcode() == IR::Opcode::UndefU64) {
+            auto insert_point = IR::Block::InstructionList::s_iterator_to(*prod);
+            IR::Value const undef{&*block->PrependNewInst(insert_point, IR::Opcode::UndefU1)};
+            inst->ReplaceUsesWithAndRemove(undef);
+            continue;
+        }
+
         if (prod->GetOpcode() != IR::Opcode::BitwiseAnd64 &&
             prod->GetOpcode() != IR::Opcode::BitwiseNot64 &&
             prod->GetOpcode() != IR::Opcode::BitwiseOr64 &&
@@ -56,7 +64,6 @@ void InverseBallotEliminationPass(IR::Program& program) {
 
         auto [it, is_new] = inst_cache.try_emplace(prod);
         if (is_new) {
-            IR::Block* const block = prod->GetParent();
             auto insert_point = IR::Block::InstructionList::s_iterator_to(*prod);
             IR::IREmitter ir{*block, insert_point};
 
