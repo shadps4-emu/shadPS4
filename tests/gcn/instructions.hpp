@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "shader_recompiler/frontend/instruction.h"
 #include "shader_recompiler/frontend/opcodes.h"
 
 #include <ranges>
@@ -1139,6 +1140,8 @@ private:
     static_assert(sizeof(SOPKInternal) == sizeof(u32));
 };
 
+class Sdwa;
+
 class VOP1 {
 public:
     explicit constexpr VOP1(OpcodeVOP1 op, VOperand8 vdst, SOperand9 src0) {
@@ -1152,7 +1155,15 @@ public:
         return std::bit_cast<u32>(i);
     }
 
+    friend class Sdwa;
+
 private:
+    VOP1& SetSrc0(SOperand9 src0) {
+        i.src0 = std::to_underlying(src0);
+
+        return *this;
+    }
+
     struct VOP1Internal {
         u32 src0 : 9;
         u32 op : 8;
@@ -1177,7 +1188,15 @@ public:
         return std::bit_cast<u32>(i);
     }
 
+    friend class Sdwa;
+
 private:
+    VOP2& SetSrc0(SOperand9 src0) {
+        i.src0 = std::to_underlying(src0);
+
+        return *this;
+    }
+
     struct VOP2Internal {
         u32 src0 : 9;
         u32 vsrc1 : 8;
@@ -1266,7 +1285,7 @@ private:
         u64 src2 : 9;
         u64 omod : 2;
         u64 neg : 3;
-    } i{};
+    } i;
 
     static_assert(sizeof(VOP3Internal) == sizeof(u64));
 };
@@ -1345,7 +1364,154 @@ private:
         u64 src2 : 9;
         u64 op_sel_hi01 : 2;
         u64 neg : 3;
-    } i{};
+    } i;
 
     static_assert(sizeof(VOP3PInternal) == sizeof(u64));
+};
+
+namespace {
+
+template<class... Ts>
+struct overloaded : Ts... {
+    using Ts::operator()...;
+};
+template<class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
+};
+
+template <typename T>
+concept VOP12 = std::same_as<T, VOP1> || std::same_as<T, VOP2>;
+
+class Sdwa {
+    using SdwaSelector = Shader::Gcn::SdwaSelector;
+    using SdwaDstUnused = Shader::Gcn::SdwaDstUnused;
+    using SdwaVop12 = Shader::Gcn::SdwaVop12;
+    using SdwaVopc = Shader::Gcn::SdwaVopc;
+public:
+    explicit constexpr Sdwa(VOP12 auto vop12) {
+        i = Shader::Gcn::SdwaVop12{
+            .src0 = vop12.i.src0 & 0xFFu,
+            .dst_sel = std::to_underlying(SdwaSelector::Dword),
+            .dst_u = std::to_underlying(SdwaDstUnused::Pad),
+            .s0 = vop12.i.src0 > 255,
+        };
+        vop12.SetSrc0(SOperand9::Sdwa);
+        raw_vop = vop12.Get();
+    }
+
+    Sdwa& SetAbs(const std::array<bool, 2>& abs) {
+        std::visit(::overloaded{
+            [&](SdwaVop12& vop12) {
+                vop12.src0_abs = abs[0];
+                vop12.src1_abs = abs[1];
+            },
+            [&](SdwaVopc& vopc) {
+                vopc.src0_abs = abs[0];
+                vopc.src1_abs = abs[1];
+            },
+        }, i);
+        return *this;
+    }
+
+    Sdwa& SetClamp(bool clamp) {
+        std::visit(::overloaded{
+            [&](SdwaVop12& vop12) {
+                vop12.clamp = clamp;
+            },
+            [&](SdwaVopc& vopc) {
+
+            },
+        }, i);
+        return *this;
+    }
+
+    Sdwa& SetDstSel(SdwaSelector dst_sel) {
+        std::visit(::overloaded{
+            [&](SdwaVop12& vop12) {
+                vop12.dst_sel = std::to_underlying(dst_sel);
+            },
+            [&](SdwaVopc& vopc) {
+
+            },
+        }, i);
+        return *this;
+    }
+
+    Sdwa& SetDstUnused(SdwaDstUnused dst_u) {
+        std::visit(::overloaded{
+            [&](SdwaVop12& vop12) {
+                vop12.dst_u = std::to_underlying(dst_u);
+            },
+            [&](SdwaVopc& vopc) {
+
+            },
+        }, i);
+        return *this;
+    }
+
+    Sdwa& SetNeg(const std::array<bool, 2>& neg) {
+        std::visit(::overloaded{
+            [&](SdwaVop12& vop12) {
+                vop12.src0_neg = neg[0];
+                vop12.src1_neg = neg[1];
+            },
+            [&](SdwaVopc& vopc) {
+                vopc.src0_neg = neg[0];
+                vopc.src1_neg = neg[1];
+            },
+        }, i);
+        return *this;
+    }
+
+    Sdwa& SetOmod(Omod omod) {
+        std::visit(::overloaded{
+            [&](SdwaVop12& vop12) {
+                vop12.omod = std::to_underlying(omod);
+            },
+            [&](SdwaVopc& vopc) {
+
+            },
+        }, i);
+        return *this;
+    }
+
+    Sdwa& SetSext(const std::array<bool, 2>& sext) {
+        std::visit(::overloaded{
+            [&](SdwaVop12& vop12) {
+                vop12.src0_sext = sext[0];
+                vop12.src1_sext = sext[1];
+            },
+            [&](SdwaVopc& vopc) {
+                vopc.src0_sext = sext[0];
+                vopc.src1_sext = sext[1];
+            },
+        }, i);
+        return *this;
+    }
+
+    Sdwa& SetSrcSel(const std::array<SdwaSelector, 2>& sel) {
+        std::visit(::overloaded{
+            [&](SdwaVop12& vop12) {
+                vop12.src0_sel = std::to_underlying(sel[0]);
+                vop12.src1_sel = std::to_underlying(sel[1]);
+            },
+            [&](SdwaVopc& vopc) {
+                vopc.src0_sel = std::to_underlying(sel[0]);
+                vopc.src1_sel = std::to_underlying(sel[1]);
+            },
+        }, i);
+        return *this;
+    }
+
+    u64 Get() {
+        if (std::holds_alternative<SdwaVop12>(i))
+            return static_cast<u64>(raw_vop) << 32 | std::bit_cast<u32>(std::get<SdwaVop12>(i));
+        else
+            return static_cast<u64>(raw_vop) << 32 | std::bit_cast<u32>(std::get<SdwaVopc>(i));
+    }
+
+private:
+    std::variant<SdwaVop12, SdwaVopc> i;
+    u32 raw_vop;
 };
