@@ -140,6 +140,7 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     Shader::IR::DumpProgram(program, info, "post-repair.");
     Shader::Optimization::SsaRewritePass(program);
     Shader::IR::DumpProgram(program, info, "post-ssa2.");
+    Shader::Optimization::InverseBallotEliminationPass(program);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::SharedMemoryBarrierPass(program, runtime_info, profile);
