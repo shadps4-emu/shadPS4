@@ -269,29 +269,6 @@ IR::VectorReg Translator::GetScratchVgpr(u32 offset) {
     return it->second;
 }
 
-IR::U1 Translator::GetSrc1(const InstOperand& operand) {
-    switch (operand.field) {
-    case OperandField::VccLo:
-        return ir.GetVcc();
-    case OperandField::ExecLo:
-        return ir.GetExec();
-    case OperandField::ScalarGPR:
-        return ir.GetThreadBitScalarReg(IR::ScalarReg(operand.code));
-    case OperandField::ConstZero:
-        return ir.Imm1(false);
-    case OperandField::SignedConstIntNeg:
-        ASSERT_MSG(-s32(operand.code) + SignedConstIntNegMin - 1 == -1,
-                   "SignedConstIntNeg must be -1");
-        return ir.Imm1(true);
-    case OperandField::LiteralConst:
-        ASSERT_MSG(operand.code == 0 || operand.code == std::numeric_limits<u32>::max(),
-                   "Unsupported literal {:#x}", operand.code);
-        return ir.Imm1(operand.code & 1);
-    default:
-        UNREACHABLE_MSG("Unknown field {}", u32(operand.field));
-    }
-}
-
 template <typename T>
 T Translator::GetSrc(const InstOperand& operand) {
     constexpr bool is_float = std::is_same_v<T, IR::F32>;
@@ -380,11 +357,27 @@ T Translator::GetSrc(const InstOperand& operand) {
         if constexpr (is_float) {
             UNREACHABLE();
         } else {
-            value = ir.BitCast<IR::U32>(ir.GetScc());
+            value = IR::U32{ir.Select(ir.GetScc(), ir.Imm32(1u), ir.Imm32(0u))};
+        }
+        break;
+    case OperandField::ExecLo:
+        if constexpr (is_float) {
+            value = ir.BitCast<IR::F32>(
+                IR::U32{ir.CompositeExtract(ir.UnpackUint2x32(ir.Ballot(ir.GetExec())), 0)});
+        } else {
+            value = IR::U32{ir.CompositeExtract(ir.UnpackUint2x32(ir.Ballot(ir.GetExec())), 0)};
+        }
+        break;
+    case OperandField::ExecHi:
+        if constexpr (is_float) {
+            value = ir.BitCast<IR::F32>(
+                IR::U32{ir.CompositeExtract(ir.UnpackUint2x32(ir.Ballot(ir.GetExec())), 1)});
+        } else {
+            value = IR::U32{ir.CompositeExtract(ir.UnpackUint2x32(ir.Ballot(ir.GetExec())), 1)};
         }
         break;
     default:
-        UNREACHABLE_MSG("unexpected operand: {}", std::to_underlying(operand.field));
+        UNREACHABLE_MSG("Unexpected operand: {}", std::to_underlying(operand.field));
     }
 
     if constexpr (is_float) {
@@ -517,17 +510,8 @@ T Translator::GetSrc16(const InstOperand& operand) {
                 ir.Unpack2x16(number_format, bitcast_to_u(ir.GetVccLo())), op_sel ? 1 : 0)});
         }
         break;
-    case OperandField::VccHi:
-        UNREACHABLE();
-        break;
-    case OperandField::M0:
-        UNREACHABLE();
-        break;
-    case OperandField::Scc:
-        UNREACHABLE();
-        break;
     default:
-        UNREACHABLE_MSG("unexpected operand: {}", std::to_underlying(operand.field));
+        UNREACHABLE_MSG("Unexpected operand: {}", std::to_underlying(operand.field));
     }
 
     if constexpr (is_float) {
@@ -648,14 +632,8 @@ IR::F32 Translator::GetSrcMix(const InstOperand& operand) {
     case OperandField::Inv2Pi:
         value = get_imm(static_cast<float>(1.0f / (2.0f * std::numbers::pi)));
         break;
-    case OperandField::Sdwa:
-        UNREACHABLE_MSG("unhandled SDWA");
-        break;
-    case OperandField::Dpp:
-        UNREACHABLE_MSG("unhandled DPP");
-        break;
     default:
-        UNREACHABLE_MSG("unexpected operand: {}", std::to_underlying(operand.field));
+        UNREACHABLE_MSG("Unexpected operand: {}", std::to_underlying(operand.field));
     }
 
     if (operand.input_modifier.neg_hi) {
@@ -744,9 +722,15 @@ T Translator::GetSrc64(const InstOperand& operand) {
             value = ir.PackUint2x32(ir.CompositeConstruct(ir.GetVccLo(), ir.GetVccHi()));
         }
         break;
-    case OperandField::VccHi:
+    case OperandField::ExecLo:
+        if constexpr (is_float) {
+            UNREACHABLE();
+        } else {
+            value = ir.Ballot(ir.GetExec());
+        }
+        break;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unexpected operand: {}", std::to_underlying(operand.field));
     }
 
     if constexpr (is_float) {
@@ -885,7 +869,7 @@ pk_type<T> Translator::GetSrcPk(const InstOperand& operand) {
         value = extract(ir.GetVccLo());
         break;
     default:
-        UNREACHABLE_MSG("unexpected operand: {}", std::to_underlying(operand.field));
+        UNREACHABLE_MSG("Unexpected operand: {}", std::to_underlying(operand.field));
     }
 
     if constexpr (is_float) {
@@ -909,22 +893,6 @@ pk_type<T> Translator::GetSrcPk(const InstOperand& operand) {
 template pk_type<IR::U32> Translator::GetSrcPk<IR::U32, true>(const InstOperand&);
 template pk_type<IR::U32> Translator::GetSrcPk<IR::U32, false>(const InstOperand&);
 template pk_type<IR::F32> Translator::GetSrcPk<IR::F32, false>(const InstOperand&);
-
-void Translator::SetDst1(const InstOperand& operand, const IR::U1& value) {
-    switch (operand.field) {
-    case OperandField::VccLo:
-        ir.SetVcc(value);
-        break;
-    case OperandField::ScalarGPR:
-        ir.SetThreadBitScalarReg(IR::ScalarReg(operand.code), value);
-        break;
-    case OperandField::ExecLo:
-        ir.SetExec(value);
-        break;
-    default:
-        UNREACHABLE_MSG("Unknown field {}", u32(operand.field));
-    }
-}
 
 void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
     IR::U32F32 result = value;
@@ -1000,14 +968,8 @@ void Translator::SetDst16(const InstOperand& operand, const IR::U32F32& value) {
             ir.BitFieldInsert(prev_dst, result_16, ir.Imm32(op_sel ? 16 : 0), ir.Imm32(16));
         return ir.SetVectorReg(IR::VectorReg(operand.code), new_dst);
     }
-    case OperandField::VccLo:
-        UNREACHABLE();
-    case OperandField::VccHi:
-        UNREACHABLE();
-    case OperandField::M0:
-        UNREACHABLE();
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unexpected operand: {}", std::to_underlying(operand.field));
     }
 }
 
@@ -1028,26 +990,37 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
         }
     }
 
-    const IR::Value unpacked{is_float ? ir.UnpackDouble2x32(IR::F64{value_untyped})
-                                      : ir.UnpackUint2x32(IR::U64{value_untyped})};
-    const IR::U32 lo{ir.CompositeExtract(unpacked, 0U)};
-    const IR::U32 hi{ir.CompositeExtract(unpacked, 1U)};
+    const auto split = [&] -> std::pair<IR::U32, IR::U32> {
+        const IR::Value unpacked{is_float ? ir.UnpackDouble2x32(IR::F64{value_untyped})
+                                          : ir.UnpackUint2x32(IR::U64{value_untyped})};
+        const IR::U32 lo{ir.CompositeExtract(unpacked, 0U)};
+        const IR::U32 hi{ir.CompositeExtract(unpacked, 1U)};
+        return {lo, hi};
+    };
     switch (operand.field) {
-    case OperandField::ScalarGPR:
+    case OperandField::ScalarGPR: {
+        const auto [lo, hi] = split();
         ir.SetScalarReg(IR::ScalarReg(operand.code + 1), hi);
-        return ir.SetScalarReg(IR::ScalarReg(operand.code), lo);
-    case OperandField::VectorGPR:
+        ir.SetScalarReg(IR::ScalarReg(operand.code), lo);
+        break;
+    }
+    case OperandField::VectorGPR: {
+        const auto [lo, hi] = split();
         ir.SetVectorReg(IR::VectorReg(operand.code + 1), hi);
-        return ir.SetVectorReg(IR::VectorReg(operand.code), lo);
-    case OperandField::VccLo:
+        ir.SetVectorReg(IR::VectorReg(operand.code), lo);
+        break;
+    }
+    case OperandField::VccLo: {
+        const auto [lo, hi] = split();
         ir.SetVccLo(lo);
-        return ir.SetVccHi(hi);
-    case OperandField::VccHi:
-        UNREACHABLE();
-    case OperandField::M0:
+        ir.SetVccHi(hi);
+        break;
+    }
+    case OperandField::ExecLo:
+        ir.SetExec(ir.InverseBallot(value_untyped));
         break;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unexpected operand: {}", std::to_underlying(operand.field));
     }
 }
 

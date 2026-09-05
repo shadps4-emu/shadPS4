@@ -16,22 +16,16 @@ static IR::Value LoadForRegType(IR::IREmitter& ir, IR::RegTag tag) {
         return ir.GetScalarReg(tag.sreg);
     case IR::RegType::VectorReg:
         return ir.GetVectorReg(tag.vreg);
-    case IR::RegType::ThreadBitReg:
-        return ir.GetThreadBitScalarReg(tag.sreg);
     case IR::RegType::Scc:
         return ir.GetScc();
     case IR::RegType::Exec:
         return ir.GetExec();
-    case IR::RegType::Vcc:
-        return ir.GetVcc();
     case IR::RegType::VccLo:
         return ir.GetVccLo();
     case IR::RegType::VccHi:
         return ir.GetVccHi();
     case IR::RegType::M0:
         return ir.GetM0();
-    case IR::RegType::MaskLaneVariable:
-        return ir.GetMaskLaneVariable(tag.lane_reg.vreg, tag.lane_reg.lane);
     case IR::RegType::VirtualReg:
         return ir.GetVirtualReg(tag.reg);
     default:

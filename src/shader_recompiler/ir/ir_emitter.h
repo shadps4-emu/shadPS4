@@ -50,8 +50,6 @@ public:
     void DeviceMemoryBarrier();
 
     [[nodiscard]] U32 GetUserData(IR::ScalarReg reg);
-    [[nodiscard]] U1 GetThreadBitScalarReg(IR::ScalarReg reg);
-    void SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value);
 
     template <typename T = U32>
     [[nodiscard]] T GetScalarReg(IR::ScalarReg reg);
@@ -66,18 +64,13 @@ public:
     [[nodiscard]] U1 GetGotoVariable(u32 id);
     void SetGotoVariable(u32 id, const U1& value);
 
-    [[nodiscard]] U1 GetMaskLaneVariable(IR::VectorReg vgpr, u32 lane);
-    void SetMaskLaneVariable(IR::VectorReg vgpr, u32 lane, const U1& value);
-
     [[nodiscard]] U1 GetScc();
     [[nodiscard]] U1 GetExec();
-    [[nodiscard]] U1 GetVcc();
     [[nodiscard]] U32 GetVccLo();
     [[nodiscard]] U32 GetVccHi();
     [[nodiscard]] U32 GetM0();
     void SetScc(const U1& value);
     void SetExec(const U1& value);
-    void SetVcc(const U1& value);
     void SetVccLo(const U32& value);
     void SetVccHi(const U32& value);
     void SetM0(const U32& value);
@@ -183,8 +176,9 @@ public:
     [[nodiscard]] U32 ReadFirstLane(const U32& value);
     [[nodiscard]] U32 ReadLane(const U32& value, const U32& lane);
     [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
-    [[nodiscard]] Value Ballot(const U1& bit);
-    [[nodiscard]] U32 BallotFindLsb(const Value& mask);
+    [[nodiscard]] U64 Ballot(const U1& bit);
+    [[nodiscard]] U32 BallotFindLsb(const U64& mask);
+    [[nodiscard]] U1 InverseBallot(const U64& mask);
     [[nodiscard]] U1 GroupAny(const U1& bit);
 
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2);
@@ -284,14 +278,14 @@ public:
     [[nodiscard]] U32U64 ShiftRightArithmetic(const U32U64& base, const U32& shift);
     [[nodiscard]] U32U64 BitwiseAnd(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32U64 BitwiseOr(const U32U64& a, const U32U64& b);
-    [[nodiscard]] U32 BitwiseXor(const U32& a, const U32& b);
+    [[nodiscard]] U32U64 BitwiseXor(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32 BitFieldInsert(const U32& base, const U32& insert, const U32& offset,
                                      const U32& count);
     [[nodiscard]] U32 BitFieldExtract(const U32& base, const U32& offset, const U32& count,
                                       bool is_signed = false);
     [[nodiscard]] U32 BitReverse(const U32& value);
     [[nodiscard]] U32 BitCount(const U32U64& value);
-    [[nodiscard]] U32 BitwiseNot(const U32& value);
+    [[nodiscard]] U32U64 BitwiseNot(const U32U64& value);
 
     [[nodiscard]] U32 FindSMsb(const U32& value);
     [[nodiscard]] U32 FindUMsb(const U32U64& value);

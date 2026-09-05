@@ -16,6 +16,8 @@ namespace Shader::Optimization {
 
 void SsaRewritePass(IR::Program& program);
 void SsaRepairPass(IR::Program& program);
+void PhiSimplificationPass(IR::Program& program);
+void InverseBallotEliminationPass(IR::Program& program);
 void LowerPhisToRegsPass(IR::Program& program);
 void DeadCodeEliminationPass(IR::Program& program);
 void ConstantPropagationPass(IR::BlockList& program);
