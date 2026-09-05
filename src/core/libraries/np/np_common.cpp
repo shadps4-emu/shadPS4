@@ -120,7 +120,7 @@ s32 PS4_SYSV_ABI sceNpCmpNpIdInOrder(OrbisNpId* np_id1, OrbisNpId* np_id2, u32* 
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    u32 compare =
+    s32 compare =
         std::strncmp(np_id1->handle.data, np_id2->handle.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
     if (compare < 0) {
         *out_result = -1;

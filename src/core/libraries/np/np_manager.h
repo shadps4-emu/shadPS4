@@ -20,7 +20,7 @@ constexpr s32 ORBIS_NP_MANAGER_REQUEST_LIMIT = 0x20;
 constexpr s32 ORBIS_NP_MANAGER_REQUEST_ID_OFFSET = 0x20000000;
 
 enum class OrbisNpState : u32 {
-    Unknown = 0,
+    NotSignedUp = 0,
     SignedOut = 1,
     SignedIn = 2,
 };

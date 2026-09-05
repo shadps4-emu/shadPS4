@@ -129,7 +129,7 @@ bool AvPlayerSource::FindStreams() {
         }
     }
     m_duration = DurationMillis();
-    return m_streams.size() >= 0;
+    return m_streams.size() > 0;
 }
 
 s32 AvPlayerSource::GetStreamCount() {
