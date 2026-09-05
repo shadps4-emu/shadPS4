@@ -304,13 +304,17 @@ T Translator::GetSrc(const InstOperand& operand) {
         }
     };
 
+    bool is_literal = true;
+
     T value{};
     switch (operand.field) {
     case OperandField::ScalarGPR:
         value = ir.GetScalarReg<T>(IR::ScalarReg(operand.code));
+        is_literal = false;
         break;
     case OperandField::VectorGPR:
         value = ir.GetVectorReg<T>(IR::VectorReg(operand.code));
+        is_literal = false;
         break;
     case OperandField::ConstZero:
         value = get_imm(0U);
@@ -361,6 +365,7 @@ T Translator::GetSrc(const InstOperand& operand) {
         } else {
             value = ir.GetVccLo();
         }
+        is_literal = false;
         break;
     case OperandField::VccHi:
         if constexpr (is_float) {
@@ -368,6 +373,7 @@ T Translator::GetSrc(const InstOperand& operand) {
         } else {
             value = ir.GetVccHi();
         }
+        is_literal = false;
         break;
     case OperandField::M0:
         if constexpr (is_float) {
@@ -375,6 +381,7 @@ T Translator::GetSrc(const InstOperand& operand) {
         } else {
             value = ir.GetM0();
         }
+        is_literal = false;
         break;
     case OperandField::Scc:
         if constexpr (is_float) {
@@ -382,9 +389,19 @@ T Translator::GetSrc(const InstOperand& operand) {
         } else {
             value = ir.BitCast<IR::U32>(ir.GetScc());
         }
+        is_literal = false;
         break;
     default:
         UNREACHABLE_MSG("unexpected operand: {}", std::to_underlying(operand.field));
+    }
+
+    if (!is_literal && operand.sdwa_sel != SdwaSelector::Invalid) {
+        if constexpr (is_float) {
+            value = ir.BitCast<IR::F32>(SdwaSelect(ir.BitCast<IR::U32>(value), operand.sdwa_sel,
+                                                   operand.input_modifier.sext));
+        } else {
+            value = SdwaSelect(value, operand.sdwa_sel, operand.input_modifier.sext);
+        }
     }
 
     if constexpr (is_float) {
@@ -937,6 +954,89 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
         }
     }
 
+    const auto raw_dst = [&]() -> IR::U32 {
+        switch (operand.field) {
+        case OperandField::ScalarGPR:
+            return ir.GetScalarReg(IR::ScalarReg(operand.code));
+        case OperandField::VectorGPR:
+            return ir.GetVectorReg(IR::VectorReg(operand.code));
+        case OperandField::VccLo:
+            return ir.GetVccLo();
+        case OperandField::VccHi:
+            return ir.GetVccHi();
+        case OperandField::M0:
+            return ir.GetM0();
+        default:
+            UNREACHABLE();
+        }
+    };
+
+    if (operand.sdwa_sel != SdwaSelector::Invalid && operand.sdwa_sel != SdwaSelector::Dword) {
+        u32 data_size = 0U;
+        u32 offset = 0U;
+        u32 overwrite = 0U;
+        bool sext = true;
+        IR::U32 base{};
+        switch (operand.sdwa_sel) {
+        case SdwaSelector::Byte0: {
+            data_size = 8U;
+            offset = 0U;
+            break;
+        }
+        case SdwaSelector::Byte1: {
+            data_size = 8U;
+            offset = 8U;
+            break;
+        }
+        case SdwaSelector::Byte2: {
+            data_size = 8U;
+            offset = 16U;
+            break;
+        }
+        case SdwaSelector::Byte3: {
+            data_size = 8U;
+            offset = 24U;
+            break;
+        }
+        case SdwaSelector::Word0: {
+            data_size = 16U;
+            offset = 0U;
+            break;
+        }
+        case SdwaSelector::Word1: {
+            data_size = 16U;
+            offset = 16U;
+            break;
+        }
+        case SdwaSelector::Dword:
+        case SdwaSelector::Invalid:
+        default:
+            UNREACHABLE();
+        }
+        switch (operand.sdwa_dst) {
+        case SdwaDstUnused::Pad:
+            sext = false;
+        case SdwaDstUnused::Sext:
+            base = ir.Imm32(0U);
+            overwrite = 32 - offset;
+            break;
+        case SdwaDstUnused::Preserve:
+            sext = false;
+            base = raw_dst();
+            overwrite = data_size;
+            break;
+        case SdwaDstUnused::Invalid:
+        default:
+            UNREACHABLE();
+        }
+        if (result.Type() == IR::Type::F32) {
+            result = ir.BitCast<IR::U32, IR::F32>(result);
+        }
+        const auto result_part =
+            ir.BitFieldExtract(result, ir.Imm32(0U), ir.Imm32(data_size), sext);
+        result = ir.BitFieldInsert(base, result_part, ir.Imm32(offset), ir.Imm32(overwrite));
+    }
+
     switch (operand.field) {
     case OperandField::ScalarGPR:
         return ir.SetScalarReg(IR::ScalarReg(operand.code), result);
@@ -1048,6 +1148,28 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
         break;
     default:
         UNREACHABLE();
+    }
+}
+
+IR::U32 Translator::SdwaSelect(const IR::U32& value, SdwaSelector sel, bool is_signed) {
+    switch (sel) {
+    case SdwaSelector::Byte0:
+        return ir.BitFieldExtract(value, ir.Imm32(0U), ir.Imm32(8U), is_signed);
+    case SdwaSelector::Byte1:
+        return ir.BitFieldExtract(value, ir.Imm32(8U), ir.Imm32(8U), is_signed);
+    case SdwaSelector::Byte2:
+        return ir.BitFieldExtract(value, ir.Imm32(16U), ir.Imm32(8U), is_signed);
+    case SdwaSelector::Byte3:
+        return ir.BitFieldExtract(value, ir.Imm32(24U), ir.Imm32(8U), is_signed);
+    case SdwaSelector::Word0:
+        return ir.BitFieldExtract(value, ir.Imm32(0U), ir.Imm32(16U), is_signed);
+    case SdwaSelector::Word1:
+        return ir.BitFieldExtract(value, ir.Imm32(16U), ir.Imm32(16U), is_signed);
+    case SdwaSelector::Dword:
+        return value;
+    case SdwaSelector::Invalid:
+    default:
+        UNREACHABLE_MSG("sdwa_sel out of range: {}", u32(sel));
     }
 }
 

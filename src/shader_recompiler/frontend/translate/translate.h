@@ -365,6 +365,8 @@ private:
     template <typename T = IR::U32, bool is_signed = false>
     void SetDstPk(const InstOperand& operand, const pk_type<T>& value);
 
+    IR::U32 SdwaSelect(const IR::U32& value, SdwaSelector sel, bool is_signed);
+
     // Vector ALU Helpers
     IR::U32 GetCarryIn(const GcnInst& inst);
     void SetCarryOut(const GcnInst& inst, const IR::U1& carry);
