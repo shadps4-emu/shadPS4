@@ -108,7 +108,7 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         }();
         return param.is_integer ? ctx.OpBitcast(ctx.F32[1], value) : value;
     }
-    if (IR::IsBarycentricCoord(attr) && ctx.profile.supports_fragment_shader_barycentric) {
+    if (IR::IsBaryCoordIJPair(attr) && ctx.profile.supports_fragment_shader_barycentric) {
         ++comp;
     }
     switch (attr) {
@@ -158,9 +158,58 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp,
                                                         ctx.ConstU32(comp)));
     case IR::Attribute::BaryCoordNoPerspSample:
-        return ctx.OpLoad(
-            ctx.F32[1],
-            ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp_sample, ctx.ConstU32(comp)));
+        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
+            return ctx.OpLoad(ctx.F32[1],
+                              ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp_sample,
+                                                ctx.ConstU32(comp)));
+        } else {
+            return ctx.OpCompositeExtract(
+                ctx.F32[1],
+                ctx.OpInterpolateAtSample(ctx.F32[3], ctx.bary_coord_nopersp,
+                                          ctx.OpLoad(ctx.U32[1], ctx.sample_index)),
+                comp);
+        }
+    case IR::Attribute::BaryCoordPullModel:
+        // VGPRs order on the real hardware would be (I/W, J/W, 1/W), and that's what
+        // comp 0,1,2 represents. BaryCoordPullModelAMD provides (1/W, 1/I, 1/J) instead,
+        // so we also need to convert the values
+        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
+            const Id one_over_w =
+                ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_pullmodel,
+                                                         ctx.u32_zero_value));
+            switch (comp) {
+            case 0:
+            case 1: {
+                // (1/W) / (1/x) = x/W
+                const Id inv_ij = ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32,
+                                                                           ctx.bary_coord_pullmodel,
+                                                                           ctx.ConstU32(comp + 1)));
+                return ctx.OpFDiv(ctx.F32[1], one_over_w, inv_ij);
+            }
+            case 2:
+                return one_over_w;
+            default:
+                UNREACHABLE_MSG("BaryCoordPullModel comp {}", comp);
+            }
+        } else {
+            // gl_FragCoord.w is 1/W.
+            const Id one_over_w = ctx.OpLoad(
+                ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.frag_coord, ctx.ConstU32(3U)));
+            switch (comp) {
+            case 0:
+            case 1: {
+                // BaryCoordKHR is (K, I, J), and comp is not shifted for this attribute, as
+                // BaryCoordPullModel is not included in BaryCoordIJPair check
+                const Id ij = ctx.OpCompositeExtract(
+                    ctx.F32[1], ctx.OpLoad(ctx.F32[3], ctx.bary_coord), comp + 1);
+                return ctx.OpFMul(ctx.F32[1], ij, one_over_w);
+            }
+            case 2:
+                return one_over_w;
+            default:
+                UNREACHABLE_MSG("BaryCoordPullModel comp {}", comp);
+            }
+        }
     default:
         UNREACHABLE_MSG("Read attribute {}", attr);
     }

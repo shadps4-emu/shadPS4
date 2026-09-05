@@ -399,10 +399,32 @@ void EmitContext::DefineInputs() {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_nopersp_sample = DefineVariable(
                     F32[2], spv::BuiltIn::BaryCoordNoPerspSampleAMD, spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric &&
+                       !ValidId(bary_coord_nopersp)) {
+                bary_coord_nopersp = DefineVariable(F32[3], spv::BuiltIn::BaryCoordNoPerspKHR,
+                                                    spv::StorageClass::Input);
+                // we would need sample_index to interpolate the bary_coord_nopersp later
+                if (!ValidId(sample_index)) {
+                    sample_index =
+                        DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
+                    Decorate(sample_index, spv::Decoration::Flat);
+                }
+            }
+        }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordPullModel)) {
+            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                bary_coord_pullmodel = DefineVariable(F32[3], spv::BuiltIn::BaryCoordPullModelAMD,
+                                                      spv::StorageClass::Input);
             } else if (profile.supports_fragment_shader_barycentric) {
-                bary_coord_nopersp_sample = DefineVariable(
-                    F32[3], spv::BuiltIn::BaryCoordNoPerspKHR, spv::StorageClass::Input);
-                // Decorate(bary_coord_nopersp_sample, spv::Decoration::Sample);
+                if (!ValidId(bary_coord)) {
+                    bary_coord = DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR,
+                                                spv::StorageClass::Input);
+                }
+                // we would need frag_coord to reconstruct 1/W later
+                if (!ValidId(frag_coord)) {
+                    frag_coord =
+                        DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
+                }
             }
         }
 

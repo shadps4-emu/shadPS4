@@ -98,16 +98,50 @@ void Translator::V_INTERP_MOV_F32(const GcnInst& inst) {
     const IR::Attribute attrib = IR::Attribute::Param0 + attr_index;
     const auto& attr = runtime_info.fs_info.inputs[attr_index];
     auto& interp = info.fs_interpolation[attr_index];
-    ASSERT(attr.is_flat || inst.src[0].code == 2);
-    if (profile.supports_amd_shader_explicit_vertex_parameter ||
-        profile.supports_fragment_shader_barycentric) {
+    auto supports_per_vertex = profile.supports_amd_shader_explicit_vertex_parameter ||
+                               profile.supports_fragment_shader_barycentric;
+
+    if (attr.IsDefault()) {
+        LOG_ERROR(Render_Recompiler, "V_INTERP_MOV_F32 on undeclared default attribute {}",
+                  attr_index);
+    }
+
+    if (attr.is_flat && attr.is_default && supports_per_vertex) {
+        interp.primary = Qualifier::PerVertex;
+        return SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan,
+                                                   (inst.src[0].code + 1) % 3));
+    }
+
+    if (!attr.is_flat && supports_per_vertex) {
         // VSRC 0=P10, 1=P20, 2=P0
         interp.primary = Qualifier::PerVertex;
-        SetDst(inst.dst[0],
-               ir.GetAttribute(attrib, inst.control.vintrp.chan, (inst.src[0].code + 1) % 3));
+        switch (inst.src[0].code) {
+        case 0: { // P10
+            const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 0);
+            const IR::F32 p1 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 1);
+            return SetDst(inst.dst[0], ir.FPSub(p1, p0));
+        }
+        case 1: { // P20
+            const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 0);
+            const IR::F32 p2 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 2);
+            return SetDst(inst.dst[0], ir.FPSub(p2, p0));
+        }
+        case 2: // P0
+            return SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan, 0));
+        default:
+            UNREACHABLE();
+        }
     } else {
         interp.primary = Qualifier::Flat;
-        SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
+        switch (inst.src[0].code) {
+        case 0:
+        case 1:
+            UNREACHABLE_MSG("V_INTERP_MOV_F32: flat, not default with 0/1");
+        case 2: // P0
+            return SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
+        default:
+            UNREACHABLE();
+        }
     }
 }
 

@@ -115,10 +115,15 @@ constexpr bool IsMrt(Attribute attribute) noexcept {
     return attribute >= Attribute::RenderTarget0 && attribute <= Attribute::RenderTarget7;
 }
 
-constexpr bool IsBarycentricCoord(Attribute attribute) noexcept {
+// AMD delivers these as vec2 (I, J), Vulkan (with KHR extensions) as vec3 (K, I, J),
+// so the KHR path needs the component index shifted by one. BaryCoordPullModel is
+// deliberately excluded — its components are I/W, J/W, 1/W, not an I/J pair.
+// BaryCoord...AMD equivalents do not need that shift, as they are equal to GCN
+constexpr bool IsBaryCoordIJPair(Attribute attribute) noexcept {
     return attribute >= Attribute::BaryCoordNoPersp &&
            attribute <= Attribute::BaryCoordSmoothSample;
 }
+static_assert(!IsBaryCoordIJPair(Attribute::BaryCoordPullModel));
 
 [[nodiscard]] std::string NameOf(Attribute attribute);
 
