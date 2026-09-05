@@ -70,6 +70,53 @@ static bool AllPhiArgsHaveSameOp(IR::Inst& phi) {
     return true;
 }
 
+static bool IdenticalInst(const IR::Inst* a, const IR::Inst* b) {
+    if (a->GetOpcode() != b->GetOpcode()) {
+        return false;
+    }
+    if (a->NumArgs() != b->NumArgs()) {
+        return false;
+    }
+    for (size_t i = 0; i < a->NumArgs(); i++) {
+        if (a->Arg(i) != b->Arg(i)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void DeduplicateUsers(IR::Inst* phi) {
+    IR::Block* block = phi->GetParent();
+
+    boost::container::small_vector<IR::Inst*, 8> users;
+    for (IR::Inst& inst : block->Instructions()) {
+        if (IR::IsPhi(inst)) {
+            continue;
+        }
+        for (size_t i = 0; i < inst.NumArgs(); i++) {
+            if (!inst.Arg(i).IsImmediate() && inst.Arg(i).Inst() == phi) {
+                users.push_back(&inst);
+                break;
+            }
+        }
+    }
+
+    for (size_t i = 0; i < users.size(); i++) {
+        if (!users[i]) {
+            continue;
+        }
+        for (size_t j = i + 1; j < users.size(); j++) {
+            if (!users[j]) {
+                continue;
+            }
+            if (IdenticalInst(users[i], users[j])) {
+                users[j]->ReplaceUsesWithAndRemove(IR::Value{users[i]});
+                users[j] = nullptr;
+            }
+        }
+    }
+}
+
 static IR::Inst* VisitPhiNode(IR::Inst& phi) {
     if (phi.Arg(0).IsImmediate()) {
         return nullptr;
@@ -100,6 +147,7 @@ static IR::Inst* VisitPhiNode(IR::Inst& phi) {
         }
         if (identical) {
             phi.ReplaceUsesWithAndRemove(IR::Value{&inst});
+            DeduplicateUsers(&inst);
             auto it = IR::Block::InstructionList::s_iterator_to(phi);
             block->Instructions().erase(it);
             return &inst;

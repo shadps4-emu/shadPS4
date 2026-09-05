@@ -141,12 +141,13 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     Shader::Optimization::SsaRewritePass(program);
     Shader::IR::DumpProgram(program, info, "post-ssa2.");
     Shader::Optimization::PhiSimplificationPass(program);
-    Shader::Optimization::InverseBallotEliminationPass(program);
+    Shader::IR::DumpProgram(program, info, "pre-ballot-elim.");
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
+    Shader::Optimization::InverseBallotEliminationPass(program);
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::SharedMemoryBarrierPass(program, runtime_info, profile);
     Shader::Optimization::CollectShaderInfoPass(program, profile);
-    // Shader::IR::DumpProgram(program, info);
+    Shader::IR::DumpProgram(program, info);
 
     return program;
 }
