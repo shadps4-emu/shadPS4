@@ -105,10 +105,10 @@ constexpr IR::Opcode UndefOpcode(IR::RegTag tag) noexcept {
         case IR::Type::U1:
             return IR::Opcode::UndefU1;
         default:
-            UNREACHABLE();
+            UNREACHABLE_MSG("Unknown virtual reg type {}", tag.reg.type);
         }
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unknown reg type {}", magic_enum::enum_name(tag.type));
     }
 }
 
