@@ -10,6 +10,7 @@
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/attribute.h"
+#include "shader_recompiler/ir/condition.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/reinterpret.h"
 #include "shader_recompiler/profile.h"
@@ -1128,7 +1129,7 @@ void Translator::LogMissingOpcode(const GcnInst& inst) {
     info.translation_failed = true;
 }
 
-void Translator::Translate(IR::Block* block, u32 start_pc, std::span<const GcnInst> inst_list) {
+void Translator::Translate(IR::Block* block, u32 start_pc, IR::Condition cond, std::span<const GcnInst> inst_list) {
     if (inst_list.empty()) {
         return;
     }
@@ -1146,6 +1147,9 @@ void Translator::Translate(IR::Block* block, u32 start_pc, std::span<const GcnIn
         }
 
         TranslateInstruction(inst);
+    }
+    if (cond != IR::Condition::True && cond != IR::Condition::False) {
+        block->branch_cond = ir.ConditionRef(ir.Condition(cond));
     }
 }
 

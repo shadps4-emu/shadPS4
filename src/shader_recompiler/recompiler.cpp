@@ -40,7 +40,7 @@ void EmitControlFlowGraph(IR::Program& program, Pools& pools, Gcn::CFG& cfg,
         auto* ir_block = pools.block_pool.Create(pools.inst_pool);
         ir_block->cfg_block = &block;
         block.ir_block = ir_block;
-        translator.Translate(ir_block, block.begin,
+        translator.Translate(ir_block, block.begin, block.cond,
                              std::span{program.ins_list}.subspan(start, size));
         if (emit_prologue) {
             translator.EmitPrologue(ir_block);
@@ -116,6 +116,9 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     Shader::Optimization::SharedMemorySimplifyPass(program, profile);
     Shader::Optimization::SharedMemoryToStoragePass(program, runtime_info, profile);
     Shader::Optimization::LowerUserClipPlanes(program, runtime_info);
+    Shader::Optimization::PhiSimplificationPass(program);
+    Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
+    Shader::Optimization::InverseBallotEliminationPass(program);
     Shader::IR::DumpProgram(program, info, "pre-lower-phi.");
 
     // Prepare for structurization by clearing flow graph and lowering phis
@@ -132,15 +135,9 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front().data.block);
 
     // Run optimization passes on structured graph
-    Shader::IR::DumpProgram(program, info, "pre-repair.");
     Shader::Optimization::SsaRepairPass(program);
-    Shader::IR::DumpProgram(program, info, "post-repair.");
     Shader::Optimization::SsaRewritePass(program);
-    Shader::IR::DumpProgram(program, info, "post-ssa2.");
-    Shader::Optimization::PhiSimplificationPass(program);
-    Shader::IR::DumpProgram(program, info, "pre-ballot-elim.");
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
-    Shader::Optimization::InverseBallotEliminationPass(program);
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::SharedMemoryBarrierPass(program, runtime_info, profile);
     Shader::Optimization::CollectShaderInfoPass(program, profile);

@@ -90,8 +90,8 @@ struct Statement : ListBaseHook {
     Statement(Return, Statement* up_) : up{up_}, type{StatementType::Return} {}
     Statement(Unreachable, Statement* up_) : up{up_}, type{StatementType::Unreachable} {}
     Statement(FunctionTag) : children{}, type{StatementType::Function} {}
-    Statement(Identity, IR::Condition cond_, Statement* up_)
-        : guest_cond{cond_}, up{up_}, type{StatementType::Identity} {}
+    Statement(Identity, IR::Value cond_ref_, IR::Condition guest_cond_, Statement* up_)
+        : cond_ref{cond_ref_}, guest_cond{guest_cond_}, up{up_}, type{StatementType::Identity} {}
     Statement(Not, Statement* op_, Statement* up_) : op{op_}, up{up_}, type{StatementType::Not} {}
     Statement(Or, Statement* op_a_, Statement* op_b_, Statement* up_)
         : op_a{op_a_}, op_b{op_b_}, up{up_}, type{StatementType::Or} {}
@@ -110,7 +110,7 @@ struct Statement : ListBaseHook {
         const Block* block;
         Node label;
         Tree children;
-        IR::Condition guest_cond;
+        IR::U1 cond_ref;
         Statement* op;
         Statement* op_a;
         u32 location;
@@ -120,6 +120,7 @@ struct Statement : ListBaseHook {
         Statement* cond;
         Statement* op_b;
         u32 id;
+        IR::Condition guest_cond;
     };
     Statement* up{};
     StatementType type;
@@ -356,7 +357,7 @@ private:
 
     void BuildTree(CFG& cfg, u32& label_id, std::vector<Node>& gotos, Node function_insert_point,
                    std::optional<Node> return_label) {
-        Statement* const false_stmt{pool.Create(Identity{}, IR::Condition::False, &root_stmt)};
+        Statement* const false_stmt{pool.Create(Identity{}, IR::Value{false}, IR::Condition::False, &root_stmt)};
         Tree& root{root_stmt.children};
         std::unordered_map<Block*, Node> local_labels;
         local_labels.reserve(cfg.blocks.size());
@@ -383,7 +384,7 @@ private:
             switch (block.end_class) {
             case EndClass::Branch: {
                 Statement* const always_cond{
-                    pool.Create(Identity{}, IR::Condition::True, &root_stmt)};
+                    pool.Create(Identity{}, IR::Value{true}, IR::Condition::True, &root_stmt)};
                 if (block.cond == IR::Condition::True) {
                     const Node true_label{local_labels.at(block.branch_true)};
                     gotos.push_back(
@@ -393,9 +394,13 @@ private:
                     gotos.push_back(root.insert(
                         ip, *pool.Create(Goto{}, always_cond, false_label, &root_stmt)));
                 } else {
+                    const IR::Value value = block.ir_block->branch_cond;
+                    ASSERT(!value.IsEmpty());
+                    IR::Inst* cond_ref = value.Inst();
                     const Node true_label{local_labels.at(block.branch_true)};
                     const Node false_label{local_labels.at(block.branch_false)};
-                    Statement* const true_cond{pool.Create(Identity{}, block.cond, &root_stmt)};
+                    Statement* const true_cond{pool.Create(Identity{}, cond_ref->Arg(0), block.cond, &root_stmt)};
+                    cond_ref->Invalidate();
                     gotos.push_back(
                         root.insert(ip, *pool.Create(Goto{}, true_cond, true_label, &root_stmt)));
                     gotos.push_back(root.insert(
@@ -574,9 +579,9 @@ private:
 [[nodiscard]] IR::U1 VisitExpr(IR::IREmitter& ir, const Statement& stmt) {
     switch (stmt.type) {
     case StatementType::Identity:
-        return ir.Condition(stmt.guest_cond);
+        return stmt.cond_ref;
     case StatementType::Not:
-        return ir.LogicalNot(IR::U1{VisitExpr(ir, *stmt.op)});
+        return ir.LogicalNot(VisitExpr(ir, *stmt.op));
     case StatementType::Or:
         return ir.LogicalOr(VisitExpr(ir, *stmt.op_a), VisitExpr(ir, *stmt.op_b));
     case StatementType::Variable:
