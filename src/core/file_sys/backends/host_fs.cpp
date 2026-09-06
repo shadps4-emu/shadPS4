@@ -14,9 +14,7 @@
 
 namespace Core::FileSys {
 
-// Guests code expect POSIX behaviour here: if a file is already open for writing on one fd,
-// opening it again on another one should still work. That is not what we get by default, so ask
-// for full sharing explicitly, otherwise the second open comes back as EACCES.
+// Guest code expects POSIX sharing: opening a file already open for writing must not fail.
 HostFile::HostFile(std::filesystem::path host_path, Common::FS::FileAccessMode mode, bool read_only)
     : m_path(std::move(host_path)), m_file(m_path, mode, Common::FS::FileType::BinaryFile,
                                            Common::FS::FileShareFlag::ShareReadWrite),
