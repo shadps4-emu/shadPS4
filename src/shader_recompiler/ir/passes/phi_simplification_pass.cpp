@@ -144,7 +144,6 @@ static void VisitPhiFromList(std::vector<IR::Inst*>& worklist) {
         return;
     }
 
-    // If all phi operands are the same operation, pull them through the phi
     if (AllPhiArgsHaveSameOp(phi)) {
         if (IR::Inst* inst = FoldPhiArgOpIntoPhi(phi)) {
             for (auto& [user, operand] : inst->Uses()) {
@@ -157,7 +156,6 @@ static void VisitPhiFromList(std::vector<IR::Inst*>& worklist) {
         }
     }
 
-    // If there are identical phi nodes in the current block, deduplicate them
     IR::Block* block = phi->GetParent();
     for (IR::Inst& inst : block->Instructions()) {
         if (inst.GetOpcode() != IR::Opcode::Phi) {
