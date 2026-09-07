@@ -90,6 +90,7 @@ static void DrawCenteredText(const char* text, const char* text_end = nullptr,
     TextEx(text, text_end, ImGuiTextFlags_NoWidthForLargeClippedText);
     PopTextWrapPos();
     SetCursorPos(pos + content);
+    Dummy(ImVec2(0.0f, 0.0f));
 }
 
 // Limited-length InputTextEx wrapper (limits UTF-8 code points)
