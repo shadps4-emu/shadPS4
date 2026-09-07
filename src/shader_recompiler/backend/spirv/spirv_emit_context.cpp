@@ -338,7 +338,9 @@ void EmitContext::DefineInputs() {
         break;
     }
     case LogicalStage::Fragment: {
-        if (info.loads.GetAny(IR::Attribute::FragCoord)) {
+        if (info.loads.GetAny(IR::Attribute::FragCoord) ||
+            (info.loads.GetAny(IR::Attribute::BaryCoordPullModel) &&
+             !profile.supports_amd_shader_explicit_vertex_parameter)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         }
         if (info.loads.Get(IR::Attribute::IsFrontFace)) {
@@ -353,10 +355,27 @@ void EmitContext::DefineInputs() {
             sample_index = DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
             Decorate(sample_index, spv::Decoration::Flat);
         }
+        if (info.loads.Get(IR::Attribute::SampleCoverage)) {
+            helper_invocation =
+                DefineVariable(U1[1], spv::BuiltIn::HelperInvocation, spv::StorageClass::Input);
+            if (runtime_info.fs_info.num_samples > 1) {
+                sample_mask_in = DefineVariable(TypeArray(U32[1], u32_one_value),
+                                                spv::BuiltIn::SampleMask, spv::StorageClass::Input);
+            }
+        }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth)) {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_smooth = DefineVariable(F32[2], spv::BuiltIn::BaryCoordSmoothAMD,
                                                    spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
+                bary_coord =
+                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+            }
+        }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordPullModel)) {
+            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                bary_coord_pull_model = DefineVariable(F32[3], spv::BuiltIn::BaryCoordPullModelAMD,
+                                                       spv::StorageClass::Input);
             } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
                 bary_coord =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);

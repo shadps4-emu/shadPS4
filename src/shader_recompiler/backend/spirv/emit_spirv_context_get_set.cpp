@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+
 #include "common/assert.h"
 #include "core/emulator_settings.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
@@ -108,7 +110,8 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         }();
         return param.is_integer ? ctx.OpBitcast(ctx.F32[1], value) : value;
     }
-    if (IR::IsBarycentricCoord(attr) && ctx.profile.supports_fragment_shader_barycentric) {
+    if (IR::IsBarycentricCoord(attr) && attr != IR::Attribute::BaryCoordPullModel &&
+        ctx.profile.supports_fragment_shader_barycentric) {
         ++comp;
     }
     switch (attr) {
@@ -161,6 +164,27 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
         return ctx.OpLoad(
             ctx.F32[1],
             ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp_sample, ctx.ConstU32(comp)));
+    case IR::Attribute::BaryCoordPullModel: {
+        ASSERT_MSG(comp < 3, "Invalid BaryCoordPullModel component {}", comp);
+
+        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
+            return ctx.OpLoad(
+                ctx.F32[1],
+                ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_pull_model, ctx.ConstU32(comp)));
+        }
+
+        // FragCoord.w is reciprocal clip W at the fragment center. Perspective barycentrics
+        // are (I/W)/(1/W) and (J/W)/(1/W), so multiplying by FragCoord.w recovers the
+        // pull-model values expected by the guest.
+        const Id inv_w = ctx.OpLoad(
+            ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.frag_coord, ctx.ConstU32(3U)));
+        if (comp == 2) {
+            return inv_w;
+        }
+        const Id ij =
+            ctx.OpCompositeExtract(ctx.F32[1], ctx.OpLoad(ctx.F32[3], ctx.bary_coord), comp + 1);
+        return ctx.OpFMul(ctx.F32[1], ij, inv_w);
+    }
     default:
         UNREACHABLE_MSG("Read attribute {}", attr);
     }
@@ -179,11 +203,26 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     case IR::Attribute::LocalInvocationId:
         return ctx.OpCompositeExtract(ctx.U32[1], ctx.OpLoad(ctx.U32[3], ctx.local_invocation_id),
                                       comp);
-    case IR::Attribute::IsFrontFace:
-        return ctx.OpSelect(ctx.U32[1], ctx.OpLoad(ctx.U1[1], ctx.front_facing), ctx.u32_one_value,
-                            ctx.u32_zero_value);
+    case IR::Attribute::IsFrontFace: {
+        const bool all_bits = ctx.runtime_info.fs_info.front_face_all_bits;
+        const Id front = all_bits ? ctx.u32_one_value : ctx.ConstU32(0x3f800000U);
+        const Id back = all_bits ? ctx.u32_zero_value : ctx.ConstU32(0xbf800000U);
+        return ctx.OpSelect(ctx.U32[1], ctx.OpLoad(ctx.U1[1], ctx.front_facing), front, back);
+    }
     case IR::Attribute::SampleIndex:
         return ctx.OpLoad(ctx.U32[1], ctx.sample_index);
+    case IR::Attribute::SampleCoverage: {
+        const u32 num_samples = std::clamp<u32>(ctx.runtime_info.fs_info.num_samples, 1U, 16U);
+        Id coverage = ctx.u32_one_value;
+        if (num_samples > 1) {
+            coverage = ctx.OpLoad(ctx.U32[1], ctx.OpAccessChain(ctx.input_u32, ctx.sample_mask_in,
+                                                                ctx.u32_zero_value));
+            const u32 valid_samples = (1U << num_samples) - 1U;
+            coverage = ctx.OpBitwiseAnd(ctx.U32[1], coverage, ctx.ConstU32(valid_samples));
+        }
+        const Id is_helper = ctx.OpLoad(ctx.U1[1], ctx.helper_invocation);
+        return ctx.OpSelect(ctx.U32[1], is_helper, ctx.u32_zero_value, coverage);
+    }
     case IR::Attribute::RenderTargetIndex:
         return ctx.OpLoad(ctx.U32[1], ctx.output_layer);
     case IR::Attribute::PrimitiveId:

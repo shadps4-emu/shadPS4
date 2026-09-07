@@ -484,50 +484,94 @@ bool Rasterizer::IsComputeImageCopy(const Pipeline* pipeline) {
         return false;
     }
 
-    // Ensure shader only has 2 bound buffers
     const auto& cs_pgm = liverpool->GetCsRegs();
     const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
-    if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() != 2 || !info.images.empty()) {
+    // A whole-image copy has one source and one destination. Some variants also use a small
+    // read-only buffer for the source and destination bounds.
+    if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() < 2 || info.buffers.size() > 3 ||
+        !info.images.empty()) {
+        return false;
+    }
+    const bool is_formatted_copy =
+        info.buffers.size() == 2 &&
+        std::ranges::all_of(info.buffers, &Shader::BufferResource::is_formatted);
+    const bool is_bounded_raw_copy =
+        info.buffers.size() == 3 &&
+        std::ranges::none_of(info.buffers, &Shader::BufferResource::is_formatted);
+    if (!is_formatted_copy && !is_bounded_raw_copy) {
         return false;
     }
 
-    // Those 2 buffers must both be formatted. One must be source and another destination.
-    const auto& desc0 = info.buffers[0];
-    const auto& desc1 = info.buffers[1];
-    if (!desc0.is_formatted || !desc1.is_formatted || desc0.is_written == desc1.is_written) {
+    const Shader::BufferResource* dst_desc{};
+    for (const auto& desc : info.buffers) {
+        if (!desc.is_written) {
+            continue;
+        }
+        if (desc.IsSpecial() || dst_desc) {
+            return false;
+        }
+        dst_desc = &desc;
+    }
+    if (!dst_desc) {
         return false;
     }
 
-    // Buffers must have the same size and each thread of the dispatch must copy 1 dword of data
-    const AmdGpu::Buffer buf0 = desc0.GetSharp(info);
-    const AmdGpu::Buffer buf1 = desc1.GetSharp(info);
-    if (buf0.GetSize() != buf1.GetSize() || cs_pgm.dim_x != (buf0.GetSize() / 256)) {
+    // Each invocation copies one dword and each workgroup contains 64 invocations.
+    const AmdGpu::Buffer dst_buffer = dst_desc->GetSharp(info);
+    if (static_cast<u64>(cs_pgm.dim_x) * 256 != dst_buffer.GetSize()) {
         return false;
     }
 
-    // Find images the buffer alias
-    const auto image0_id = texture_cache.FindImageFromRange(buf0.base_address, buf0.GetSize());
-    if (!image0_id) {
+    const Shader::BufferResource* src_desc{};
+    AmdGpu::Buffer src_buffer{};
+    for (const auto& desc : info.buffers) {
+        if (&desc == dst_desc) {
+            continue;
+        }
+        if (desc.IsSpecial() || desc.is_written) {
+            return false;
+        }
+
+        const AmdGpu::Buffer buffer = desc.GetSharp(info);
+        const bool matches_copy =
+            desc.is_formatted == dst_desc->is_formatted && buffer.GetSize() == dst_buffer.GetSize();
+        if (matches_copy) {
+            if (src_desc) {
+                return false;
+            }
+            src_desc = &desc;
+            src_buffer = buffer;
+        } else if (info.buffers.size() != 3 || desc.is_formatted || buffer.GetSize() > 256) {
+            return false;
+        }
+    }
+    if (!src_desc || src_buffer.base_address == dst_buffer.base_address) {
         return false;
     }
-    const auto image1_id =
-        texture_cache.FindImageFromRange(buf1.base_address, buf1.GetSize(), false);
-    if (!image1_id) {
+
+    // Find the images aliased by the source and destination buffers.
+    const auto src_image_id =
+        texture_cache.FindImageFromRange(src_buffer.base_address, src_buffer.GetSize());
+    if (!src_image_id) {
+        return false;
+    }
+    const auto dst_image_id =
+        texture_cache.FindImageFromRange(dst_buffer.base_address, dst_buffer.GetSize(), false);
+    if (!dst_image_id) {
         return false;
     }
 
     // Image copy must be valid
-    VideoCore::Image& image0 = texture_cache.GetImage(image0_id);
-    VideoCore::Image& image1 = texture_cache.GetImage(image1_id);
-    if (image0.info.guest_size != image1.info.guest_size ||
-        image0.info.pitch != image1.info.pitch || image0.info.guest_size != buf0.GetSize() ||
-        image0.info.num_bits != image1.info.num_bits) {
+    VideoCore::Image& src_image = texture_cache.GetImage(src_image_id);
+    VideoCore::Image& dst_image = texture_cache.GetImage(dst_image_id);
+    if (src_image.info.guest_size != dst_image.info.guest_size ||
+        src_image.info.pitch != dst_image.info.pitch ||
+        src_image.info.guest_size != src_buffer.GetSize() ||
+        src_image.info.num_bits != dst_image.info.num_bits) {
         return false;
     }
 
     // Perform image copy
-    VideoCore::Image& src_image = desc0.is_written ? image1 : image0;
-    VideoCore::Image& dst_image = desc0.is_written ? image0 : image1;
     if (instance.IsMaintenance8Supported() ||
         src_image.info.props.is_depth == dst_image.info.props.is_depth) {
         dst_image.CopyImage(src_image);
@@ -688,7 +732,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                                           vk::PipelineStageFlagBits2::eAllCommands)) {
                 buffer_barriers.emplace_back(*barrier);
             }
-            if (desc.is_written && desc.is_formatted) {
+            if (desc.is_written) {
+                // Raw storage-buffer writes can also make an aliased cached image stale.
                 texture_cache.InvalidateMemoryFromGPU(vsharp.base_address, size);
             }
         }

@@ -178,6 +178,13 @@ void Translator::EmitPrologue(IR::Block* first_block) {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }
         }
+        if (runtime_info.fs_info.addr_flags.sample_coverage_ena) {
+            if (runtime_info.fs_info.en_flags.sample_coverage_ena) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::SampleCoverage));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+            }
+        }
         break;
     case LogicalStage::TessellationControl: {
         ir.SetVectorReg(IR::VectorReg::V0, ir.GetAttributeU32(IR::Attribute::PrimitiveId));

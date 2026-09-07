@@ -1,14 +1,22 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <cmath>
+#include <unordered_map>
 
 #include <gtest/gtest.h>
 #include <half.hpp>
+#include <spirv/unified1/spirv.hpp11>
 
 #include "gcn_test_runner.hpp"
 #include "instructions.hpp"
+#include "shader_recompiler/frontend/translate/translate.h"
+#include "shader_recompiler/profile.h"
+#include "shader_recompiler/recompiler.h"
+#include "shader_recompiler/runtime_info.h"
 #include "translator.hpp"
+#include "video_core/amdgpu/resource.h"
 
 class GcnTest : public ::testing::Test {
 protected:
@@ -25,6 +33,145 @@ struct F32x2 {
     float a;
     float b;
 };
+
+namespace {
+
+struct SpirvFacts {
+    std::unordered_map<u32, u32> capabilities;
+    std::unordered_map<u32, u32> builtins;
+    std::unordered_map<u32, u32> opcodes;
+    std::unordered_map<u32, u32> constant_words;
+
+    u32 CountCapability(spv::Capability capability) const {
+        const auto it = capabilities.find(static_cast<u32>(capability));
+        return it == capabilities.end() ? 0U : it->second;
+    }
+
+    u32 CountBuiltin(spv::BuiltIn builtin) const {
+        const auto it = builtins.find(static_cast<u32>(builtin));
+        return it == builtins.end() ? 0U : it->second;
+    }
+
+    u32 CountOpcode(spv::Op opcode) const {
+        const auto it = opcodes.find(static_cast<u32>(opcode));
+        return it == opcodes.end() ? 0U : it->second;
+    }
+
+    u32 CountConstantWord(u32 value) const {
+        const auto it = constant_words.find(value);
+        return it == constant_words.end() ? 0U : it->second;
+    }
+};
+
+SpirvFacts InspectSpirv(std::span<const u32> spirv) {
+    EXPECT_GE(spirv.size(), 5U);
+    SpirvFacts facts{};
+    for (size_t offset = 5; offset < spirv.size();) {
+        const u32 instruction = spirv[offset];
+        const u32 word_count = instruction >> 16;
+        const u32 opcode = instruction & 0xffffU;
+        EXPECT_GT(word_count, 0U);
+        EXPECT_LE(offset + word_count, spirv.size());
+        if (word_count == 0 || offset + word_count > spirv.size()) {
+            break;
+        }
+        ++facts.opcodes[opcode];
+        switch (static_cast<spv::Op>(opcode)) {
+        case spv::Op::OpCapability:
+            EXPECT_GE(word_count, 2U);
+            ++facts.capabilities[spirv[offset + 1]];
+            break;
+        case spv::Op::OpDecorate:
+            EXPECT_GE(word_count, 3U);
+            if (spirv[offset + 2] == static_cast<u32>(spv::Decoration::BuiltIn)) {
+                EXPECT_GE(word_count, 4U);
+                ++facts.builtins[spirv[offset + 3]];
+            }
+            break;
+        case spv::Op::OpConstant:
+            EXPECT_GE(word_count, 4U);
+            if (word_count == 4U) {
+                ++facts.constant_words[spirv[offset + 3]];
+            }
+            break;
+        default:
+            break;
+        }
+        offset += word_count;
+    }
+    return facts;
+}
+
+bool FragmentPrologueLoadsSampleCoverage(bool enabled) {
+    Shader::Pools pools;
+    Shader::Info info{};
+    info.stage = Shader::Stage::Fragment;
+    info.l_stage = Shader::LogicalStage::Fragment;
+
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.addr_flags.sample_coverage_ena = 1;
+    runtime_info.fs_info.en_flags.sample_coverage_ena = enabled;
+
+    Shader::Profile profile{};
+    Shader::IR::Block block{pools.inst_pool};
+    Shader::Gcn::Translator translator{info, runtime_info, profile};
+    translator.EmitPrologue(&block);
+
+    return std::ranges::any_of(block, [](const Shader::IR::Inst& inst) {
+        return inst.GetOpcode() == Shader::IR::Opcode::GetAttributeU32 &&
+               inst.Arg(0).Attribute() == Shader::IR::Attribute::SampleCoverage;
+    });
+}
+
+struct InterpMovResult {
+    Shader::Qualifier qualifier{};
+    u32 vertex_index{};
+};
+
+InterpMovResult TranslateInterpMovToIr(u32 selector) {
+    Shader::Pools pools;
+    Shader::Info info{};
+    info.stage = Shader::Stage::Fragment;
+    info.l_stage = Shader::LogicalStage::Fragment;
+
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.num_inputs = 1;
+    runtime_info.fs_info.inputs[0].param_index = 0;
+
+    Shader::Profile profile{};
+    profile.supports_fragment_shader_barycentric = true;
+
+    Shader::IR::Block block{pools.inst_pool};
+    Shader::Gcn::Translator translator{info, runtime_info, profile};
+    translator.EmitPrologue(&block);
+    Shader::Gcn::GcnInst inst{};
+    inst.src[0].code = selector;
+    inst.dst[0].field = Shader::Gcn::OperandField::VectorGPR;
+    inst.dst[0].code = 0;
+    inst.control.vintrp.attr = 0;
+    translator.V_INTERP_MOV_F32(inst);
+
+    const auto attr = std::ranges::find_if(block, [](const Shader::IR::Inst& inst) {
+        return inst.GetOpcode() == Shader::IR::Opcode::GetAttribute;
+    });
+    EXPECT_NE(attr, block.end());
+    return {
+        .qualifier = info.fs_interpolation[0].primary,
+        .vertex_index = attr == block.end() ? 0U : attr->Arg(2).U32(),
+    };
+}
+
+Shader::RuntimeInfo PullModelRuntimeInfo() {
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.addr_flags.persp_pull_model_ena = 1;
+    runtime_info.fs_info.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
+    return runtime_info;
+}
+
+} // namespace
 
 // Example
 // TEST_F(GcnTest, test_name) {
@@ -43,6 +190,115 @@ struct F32x2 {
 //     EXPECT_TRUE(result.has_value());
 //     EXPECT_EQ(*result, 7.5f);
 // }
+
+TEST_F(GcnTest, interp_mov_uses_explicit_p10_and_p20_coefficients) {
+    const auto p10 = TranslateInterpMovToIr(0);
+    EXPECT_EQ(p10.qualifier, Shader::Qualifier::PerVertex);
+    EXPECT_EQ(p10.vertex_index, 1U);
+
+    const auto p20 = TranslateInterpMovToIr(1);
+    EXPECT_EQ(p20.qualifier, Shader::Qualifier::PerVertex);
+    EXPECT_EQ(p20.vertex_index, 2U);
+}
+
+TEST_F(GcnTest, khr_barycentrics_reconstruct_pull_model) {
+    Shader::Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    profile.supports_fragment_shader_barycentric = true;
+    const auto spirv = TranslateFragmentPullModelToSpirv(profile, PullModelRuntimeInfo());
+    const auto facts = InspectSpirv(spirv);
+
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::BaryCoordKHR), 1U);
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::FragCoord), 1U);
+    EXPECT_EQ(facts.CountCapability(spv::Capability::FragmentBarycentricKHR), 1U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpFMul), 2U);
+}
+
+TEST_F(GcnTest, amd_barycentrics_use_native_pull_model) {
+    Shader::Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    profile.supports_amd_shader_explicit_vertex_parameter = true;
+    const auto spirv = TranslateFragmentPullModelToSpirv(profile, PullModelRuntimeInfo());
+    const auto facts = InspectSpirv(spirv);
+
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::BaryCoordPullModelAMD), 1U);
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::FragCoord), 0U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpFMul), 0U);
+}
+
+TEST_F(GcnTest, fragment_front_face_uses_float_sign_bits) {
+    Shader::Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.addr_flags.front_face_ena = 1;
+    runtime_info.fs_info.en_flags.front_face_ena = 1;
+    runtime_info.fs_info.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
+
+    const auto facts = InspectSpirv(TranslateFragmentFrontFaceToSpirv(profile, runtime_info));
+
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::FrontFacing), 1U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpSelect), 1U);
+    EXPECT_GE(facts.CountConstantWord(0x3f800000U), 1U);
+    EXPECT_GE(facts.CountConstantWord(0xbf800000U), 1U);
+}
+
+TEST_F(GcnTest, fragment_front_face_uses_all_bits) {
+    Shader::Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.addr_flags.front_face_ena = 1;
+    runtime_info.fs_info.en_flags.front_face_ena = 1;
+    runtime_info.fs_info.front_face_all_bits = true;
+    runtime_info.fs_info.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
+
+    const auto facts = InspectSpirv(TranslateFragmentFrontFaceToSpirv(profile, runtime_info));
+
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::FrontFacing), 1U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpSelect), 1U);
+    EXPECT_GE(facts.CountConstantWord(1U), 1U);
+    EXPECT_EQ(facts.CountConstantWord(0x3f800000U), 0U);
+    EXPECT_EQ(facts.CountConstantWord(0xbf800000U), 0U);
+}
+
+TEST_F(GcnTest, fragment_sample_coverage_uses_fast_single_sample_path) {
+    Shader::Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.color_buffers[0].num_format = AmdGpu::NumberFormat::Uint;
+
+    const auto facts = InspectSpirv(TranslateFragmentSampleCoverageToSpirv(profile, runtime_info));
+
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::SampleMask), 0U);
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::HelperInvocation), 1U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpBitwiseAnd), 0U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpSelect), 1U);
+    EXPECT_GE(facts.CountConstantWord(1U), 1U);
+}
+
+TEST_F(GcnTest, fragment_prologue_loads_enabled_sample_coverage) {
+    EXPECT_TRUE(FragmentPrologueLoadsSampleCoverage(true));
+    EXPECT_FALSE(FragmentPrologueLoadsSampleCoverage(false));
+}
+
+TEST_F(GcnTest, fragment_sample_coverage_masks_multisample_input) {
+    Shader::Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    Shader::RuntimeInfo runtime_info{};
+    runtime_info.Initialize(Shader::Stage::Fragment);
+    runtime_info.fs_info.num_samples = 4;
+    runtime_info.fs_info.color_buffers[0].num_format = AmdGpu::NumberFormat::Uint;
+
+    const auto facts = InspectSpirv(TranslateFragmentSampleCoverageToSpirv(profile, runtime_info));
+
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::SampleMask), 1U);
+    EXPECT_EQ(facts.CountBuiltin(spv::BuiltIn::HelperInvocation), 1U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpBitwiseAnd), 1U);
+    EXPECT_EQ(facts.CountOpcode(spv::Op::OpSelect), 1U);
+    EXPECT_GE(facts.CountConstantWord(0xfU), 1U);
+}
 
 TEST_F(GcnTest, add_f32) {
     auto runner = gcn_test::Runner::instance().value();
