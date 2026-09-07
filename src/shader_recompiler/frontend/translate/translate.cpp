@@ -1129,7 +1129,8 @@ void Translator::LogMissingOpcode(const GcnInst& inst) {
     info.translation_failed = true;
 }
 
-void Translator::Translate(IR::Block* block, u32 start_pc, IR::Condition cond, std::span<const GcnInst> inst_list) {
+void Translator::Translate(IR::Block* block, u32 start_pc, IR::Condition cond,
+                           std::span<const GcnInst> inst_list) {
     if (inst_list.empty()) {
         return;
     }

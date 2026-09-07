@@ -64,7 +64,8 @@ class Translator {
 public:
     explicit Translator(Info& info, const RuntimeInfo& runtime_info, const Profile& profile);
 
-    void Translate(IR::Block* block, u32 pc, IR::Condition cond, std::span<const GcnInst> inst_list);
+    void Translate(IR::Block* block, u32 pc, IR::Condition cond,
+                   std::span<const GcnInst> inst_list);
     void TranslateInstruction(const GcnInst& inst);
 
     // Instruction categories

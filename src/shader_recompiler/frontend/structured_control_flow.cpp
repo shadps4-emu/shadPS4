@@ -357,7 +357,8 @@ private:
 
     void BuildTree(CFG& cfg, u32& label_id, std::vector<Node>& gotos, Node function_insert_point,
                    std::optional<Node> return_label) {
-        Statement* const false_stmt{pool.Create(Identity{}, IR::Value{false}, IR::Condition::False, &root_stmt)};
+        Statement* const false_stmt{
+            pool.Create(Identity{}, IR::Value{false}, IR::Condition::False, &root_stmt)};
         Tree& root{root_stmt.children};
         std::unordered_map<Block*, Node> local_labels;
         local_labels.reserve(cfg.blocks.size());
@@ -399,7 +400,8 @@ private:
                     IR::Inst* cond_ref = value.Inst();
                     const Node true_label{local_labels.at(block.branch_true)};
                     const Node false_label{local_labels.at(block.branch_false)};
-                    Statement* const true_cond{pool.Create(Identity{}, cond_ref->Arg(0), block.cond, &root_stmt)};
+                    Statement* const true_cond{
+                        pool.Create(Identity{}, cond_ref->Arg(0), block.cond, &root_stmt)};
                     cond_ref->Invalidate();
                     gotos.push_back(
                         root.insert(ip, *pool.Create(Goto{}, true_cond, true_label, &root_stmt)));

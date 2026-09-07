@@ -39,8 +39,7 @@ static bool IsIdenticalInst(const IR::Inst* a, const IR::Inst* b) {
 
 static bool IsAllowedInst(const IR::Inst& inst) {
     return inst.GetOpcode() == IR::Opcode::Ballot ||
-           inst.GetOpcode() == IR::Opcode::UnpackUint2x32 ||
-           inst.GetOpcode() == IR::Opcode::Phi;
+           inst.GetOpcode() == IR::Opcode::UnpackUint2x32 || inst.GetOpcode() == IR::Opcode::Phi;
 }
 
 using InstList = boost::container::small_vector<IR::Inst*, 8>;
@@ -49,7 +48,8 @@ static bool DeduplicateInst(IR::Inst& inst, InstList& inst_list) {
     if (!IsAllowedInst(inst)) {
         return false;
     }
-    const auto it = std::ranges::find_if(inst_list, [&](const IR::Inst* b) { return IsIdenticalInst(&inst, b); });
+    const auto it = std::ranges::find_if(
+        inst_list, [&](const IR::Inst* b) { return IsIdenticalInst(&inst, b); });
     if (it != inst_list.end()) {
         inst.ReplaceUsesWithAndRemove(IR::Value{*it});
         return true;
