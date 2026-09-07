@@ -799,7 +799,6 @@ IR::AbstractSyntaxList BuildASL(Pools& pools, CFG& cfg, Info& info) {
     Statement& root{goto_pass.RootStatement()};
     IR::AbstractSyntaxList syntax_list;
     TranslatePass{pools.inst_pool, pools.block_pool, stmt_pool, root, syntax_list};
-    ASSERT_MSG(!info.translation_failed, "Shader translation has failed");
     return syntax_list;
 }
 

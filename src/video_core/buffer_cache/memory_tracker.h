@@ -30,7 +30,6 @@ public:
     bool IsRegionCpuModified(VAddr query_cpu_addr, u64 query_size) noexcept {
         return IteratePages<true>(
             query_cpu_addr, query_size, [](RegionManager* manager, u64 offset, size_t size) {
-                std::scoped_lock lk{manager->lock};
                 return manager->template IsRegionModified<Type::CPU>(offset, size);
             });
     }
@@ -39,7 +38,6 @@ public:
     bool IsRegionGpuModified(VAddr query_cpu_addr, u64 query_size) noexcept {
         return IteratePages<false>(
             query_cpu_addr, query_size, [](RegionManager* manager, u64 offset, size_t size) {
-                std::scoped_lock lk{manager->lock};
                 return manager->template IsRegionModified<Type::GPU>(offset, size);
             });
     }
