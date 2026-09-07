@@ -13,9 +13,7 @@
 //      https://link.springer.com/chapter/10.1007/978-3-642-37051-9_6
 //
 
-#include <variant>
 #include <vector>
-
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/program.h"
@@ -100,6 +98,12 @@ constexpr IR::Opcode UndefOpcode(IR::RegTag tag) noexcept {
             return IR::Opcode::UndefU64;
         case IR::Type::U32:
             return IR::Opcode::UndefU32;
+        case IR::Type::U32x2:
+            return IR::Opcode::UndefU32x2;
+        case IR::Type::U32x3:
+            return IR::Opcode::UndefU32x3;
+        case IR::Type::U32x4:
+            return IR::Opcode::UndefU32x4;
         case IR::Type::F32:
             return IR::Opcode::UndefF32;
         case IR::Type::U1:

@@ -99,6 +99,9 @@ OPCODE(UndefU1,                                             U1,                 
 OPCODE(UndefU8,                                             U8,                                                                                             )
 OPCODE(UndefU16,                                            U16,                                                                                            )
 OPCODE(UndefU32,                                            U32,                                                                                            )
+OPCODE(UndefU32x2,                                          U32x2,                                                                                            )
+OPCODE(UndefU32x3,                                          U32x3,                                                                                            )
+OPCODE(UndefU32x4,                                          U32x4,                                                                                            )
 OPCODE(UndefF32,                                            F32,                                                                                            )
 OPCODE(UndefU64,                                            U64,                                                                                            )
 

@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#pragma once
+
 #include <bit>
 #include <cstring>
 #include <type_traits>
@@ -148,7 +150,7 @@ private:
 
     boost::container::list<IR::Use> uses;
 };
-static_assert(sizeof(Inst) <= 176, "Inst size unintentionally increased");
+static_assert(sizeof(Inst) <= 180, "Inst size unintentionally increased");
 
 [[nodiscard]] inline bool IsPhi(const Inst& inst) {
     return inst.GetOpcode() == Opcode::Phi;

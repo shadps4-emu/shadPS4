@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <vector>
+#include <boost/container/small_vector.hpp>
+
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/program.h"
 
@@ -18,8 +20,8 @@ static bool IsCompositeExtract(IR::Inst* const inst) {
     }
 }
 
-static bool IsBallotInst(const IR::Inst* inst) {
-    return inst->GetOpcode() == IR::Opcode::Ballot || inst->GetOpcode() == IR::Opcode::InverseBallot;
+static bool IsDisallowedInst(const IR::Inst* inst) {
+    return inst->GetOpcode() == IR::Opcode::InverseBallot;
 }
 
 static IR::Inst* FoldPhi(IR::Inst* const phi, IR::Opcode opcode, IR::Type type, auto&&... args) {
@@ -54,7 +56,7 @@ static IR::Inst* FoldPhiArgOpIntoPhi(IR::Inst* const phi) {
             }
         }
         return FoldPhi(phi, opcode, phi_type, index);
-    } else if (first_arg->NumArgs() == 1 && !IsBallotInst(first_arg)) {
+    } else if (first_arg->NumArgs() == 1 && !IsDisallowedInst(first_arg)) {
         return FoldPhi(phi, opcode, phi_type);
     }
 
@@ -75,103 +77,23 @@ static bool AllPhiArgsHaveSameOp(const IR::Inst* phi) {
     return true;
 }
 
-static bool IdenticalInst(const IR::Inst* a, const IR::Inst* b) {
-    if (a->GetOpcode() != b->GetOpcode()) {
-        return false;
-    }
-    if (a->NumArgs() != b->NumArgs()) {
-        return false;
-    }
-    for (size_t i = 0; i < a->NumArgs(); i++) {
-        if (a->Arg(i) != b->Arg(i)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-static bool IsIdenticalPhi(const IR::Inst* a, const IR::Inst* b) {
-    if (a->NumArgs() != b->NumArgs()) {
-        return false;
-    }
-    for (size_t i = 0; i < a->NumArgs(); i++) {
-        if (a->PhiBlock(i) != b->PhiBlock(i) || a->Arg(i) != b->Arg(i)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-static void DeduplicateUsers(IR::Inst* phi) {
-    IR::Block* block = phi->GetParent();
-
-    boost::container::small_vector<IR::Inst*, 8> users;
-    for (IR::Inst& inst : block->Instructions()) {
-        if (IR::IsPhi(inst)) {
-            continue;
-        }
-        for (size_t i = 0; i < inst.NumArgs(); i++) {
-            if (!inst.Arg(i).IsImmediate() && inst.Arg(i).Inst() == phi) {
-                users.push_back(&inst);
-                break;
-            }
-        }
-    }
-
-    for (size_t i = 0; i < users.size(); i++) {
-        if (!users[i]) {
-            continue;
-        }
-        for (size_t j = i + 1; j < users.size(); j++) {
-            if (!users[j]) {
-                continue;
-            }
-            if (IdenticalInst(users[i], users[j])) {
-                users[j]->ReplaceUsesWithAndRemove(IR::Value{users[i]});
-                users[j] = nullptr;
-            }
-        }
-    }
-}
-
 static void VisitPhiFromList(std::vector<IR::Inst*>& worklist) {
     IR::Inst* phi = worklist.back();
     worklist.pop_back();
-    if (phi->GetOpcode() != IR::Opcode::Phi) {
-        return;
-    }
-    if (phi->Arg(0).IsImmediate()) {
-        return;
-    }
 
-    if (AllPhiArgsHaveSameOp(phi)) {
-        if (IR::Inst* inst = FoldPhiArgOpIntoPhi(phi)) {
-            for (auto& [user, operand] : inst->Uses()) {
-                if (user->GetOpcode() == IR::Opcode::Phi) {
-                    worklist.push_back(user);
-                }
+    if (phi->GetOpcode() != IR::Opcode::Phi || phi->Arg(0).IsImmediate()) {
+        return;
+    }
+    if (!AllPhiArgsHaveSameOp(phi)) {
+        return;
+    }
+    if (IR::Inst* inst = FoldPhiArgOpIntoPhi(phi)) {
+        for (auto& [user, operand] : inst->Uses()) {
+            if (user->GetOpcode() == IR::Opcode::Phi) {
+                worklist.push_back(user);
             }
-            worklist.push_back(inst->Arg(0).Inst());
-            return;
         }
-    }
-
-    IR::Block* block = phi->GetParent();
-    for (IR::Inst& inst : block->Instructions()) {
-        if (inst.GetOpcode() != IR::Opcode::Phi) {
-            break;
-        }
-        if (&inst == phi) {
-            continue;
-        }
-        if (IsIdenticalPhi(phi, &inst)) {
-            phi->ReplaceUsesWithAndRemove(IR::Value{&inst});
-            DeduplicateUsers(&inst);
-            auto it = IR::Block::InstructionList::s_iterator_to(*phi);
-            block->Instructions().erase(it);
-            worklist.push_back(&inst);
-            break;
-        }
+        worklist.push_back(inst->Arg(0).Inst());
     }
 }
 

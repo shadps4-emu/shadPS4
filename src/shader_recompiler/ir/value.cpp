@@ -24,6 +24,50 @@ IR::Type Value::Type() const noexcept {
     return type;
 }
 
+u64 Value::Hash() const noexcept {
+    const u64 h = HashCombine(static_cast<u64>(type), 0ULL);
+    switch (type) {
+    case Type::Void:
+        return h;
+    case Type::Opaque:
+        return reinterpret_cast<u64>(inst);
+    case Type::ScalarReg:
+        return HashCombine(static_cast<u64>(sreg), h);
+    case Type::VectorReg:
+        return HashCombine(static_cast<u64>(vreg), h);
+    case Type::Attribute:
+        return HashCombine(static_cast<u64>(attribute), h);
+    case Type::U1:
+        return HashCombine(static_cast<u64>(imm_u1), h);
+    case Type::U8:
+        return HashCombine(static_cast<u64>(imm_u8), h);
+    case Type::U16:
+    case Type::F16:
+        return HashCombine(static_cast<u64>(imm_u16), h);
+    case Type::U32:
+    case Type::F32:
+        return HashCombine(static_cast<u64>(imm_u32), h);
+    case Type::U64:
+    case Type::F64:
+        return HashCombine(static_cast<u64>(imm_u64), h);
+    case Type::U32x2:
+    case Type::U32x3:
+    case Type::U32x4:
+    case Type::F16x2:
+    case Type::F16x3:
+    case Type::F16x4:
+    case Type::F32x2:
+    case Type::F32x3:
+    case Type::F32x4:
+    case Type::F64x2:
+    case Type::F64x3:
+    case Type::F64x4:
+    default:
+        break;
+    }
+    UNREACHABLE_MSG("Invalid type {}", type);
+}
+
 bool Value::operator==(const Value& other) const {
     if (type != other.type) {
         return false;
@@ -77,52 +121,3 @@ bool Value::operator!=(const Value& other) const {
 }
 
 } // namespace Shader::IR
-
-namespace std {
-std::size_t hash<Shader::IR::Value>::operator()(const Shader::IR::Value& v) const {
-    using namespace Shader::IR;
-
-    u64 h = HashCombine(static_cast<u64>(v.type), 0ULL);
-
-    switch (v.type) {
-    case Type::Void:
-        return h;
-    case Type::Opaque:
-        return reinterpret_cast<u64>(v.Inst());
-    case Type::ScalarReg:
-        return HashCombine(static_cast<u64>(v.sreg), h);
-    case Type::VectorReg:
-        return HashCombine(static_cast<u64>(v.vreg), h);
-    case Type::Attribute:
-        return HashCombine(static_cast<u64>(v.attribute), h);
-    case Type::U1:
-        return HashCombine(static_cast<u64>(v.attribute), h);
-    case Type::U8:
-        return HashCombine(static_cast<u64>(v.imm_u8), h);
-    case Type::U16:
-    case Type::F16:
-        return HashCombine(static_cast<u64>(v.imm_u16), h);
-    case Type::U32:
-    case Type::F32:
-        return HashCombine(static_cast<u64>(v.imm_u32), h);
-    case Type::U64:
-    case Type::F64:
-        return HashCombine(static_cast<u64>(v.imm_u64), h);
-    case Type::U32x2:
-    case Type::U32x3:
-    case Type::U32x4:
-    case Type::F16x2:
-    case Type::F16x3:
-    case Type::F16x4:
-    case Type::F32x2:
-    case Type::F32x3:
-    case Type::F32x4:
-    case Type::F64x2:
-    case Type::F64x3:
-    case Type::F64x4:
-    default:
-        break;
-    }
-    UNREACHABLE_MSG("Invalid type {}", v.type);
-}
-} // namespace std

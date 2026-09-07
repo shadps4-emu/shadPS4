@@ -43,7 +43,6 @@ void LowerPhisToRegsPass(IR::Program& program) {
                 continue;
             }
             if (inst.GetOpcode() != IR::Opcode::Phi) {
-                // Phis are always first in a block
                 break;
             }
 
