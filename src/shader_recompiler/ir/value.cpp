@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cstddef>
 #include <string_view>
 #include "common/hash.h"
 #include "shader_recompiler/ir/microinstruction.h"
@@ -14,10 +13,6 @@ bool Value::IsPhi() const noexcept {
 }
 
 IR::Type Value::Type() const noexcept {
-    if (IsPhi()) {
-        // The type of a phi node is stored in its flags
-        return inst->Flags<IR::Type>();
-    }
     if (type == Type::Opaque) {
         return inst->Type();
     }
