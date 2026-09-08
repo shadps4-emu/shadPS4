@@ -23,7 +23,8 @@ static bool IsIdenticalInst(const IR::Inst* a, const IR::Inst* b) {
 }
 
 static bool IsAllowedInst(const IR::Inst& inst) {
-    return inst.GetOpcode() == IR::Opcode::Ballot || inst.GetOpcode() == IR::Opcode::UnpackUint2x32;
+    return inst.GetOpcode() == IR::Opcode::Ballot ||
+           inst.GetOpcode() == IR::Opcode::UnpackUint2x32;
 }
 
 using InstList = boost::container::small_vector<IR::Inst*, 8>;
@@ -43,6 +44,54 @@ static bool DeduplicateInst(IR::Inst& inst, InstList& inst_list) {
     return false;
 }
 
+static void FoldCompositeConstruct(IR::Inst& inst, IR::Opcode extract) {
+    IR::Value result{};
+    for (size_t i = 0; i < inst.NumArgs(); ++i) {
+        const IR::Value value{inst.Arg(i)};
+        if (value.IsImmediate()) {
+            return;
+        }
+        IR::Inst* const inst = value.Inst();
+        if (inst->GetOpcode() != extract || inst->Arg(1).U32() != i) {
+            return;
+        }
+
+        if (result.IsEmpty()) {
+            result = inst->Arg(0);
+        } else if (result != inst->Arg(0)) {
+            return;
+        }
+    }
+    inst.ReplaceUsesWithAndRemove(result);
+}
+
+static void FoldInverseFunc(IR::Inst& inst, IR::Opcode reverse) {
+    const IR::Value value{inst.Arg(0)};
+    if (value.IsImmediate()) {
+        return;
+    }
+    IR::Inst* const arg_inst{value.Inst()};
+    if (arg_inst->GetOpcode() == reverse) {
+        inst.ReplaceUsesWithAndRemove(arg_inst->Arg(0));
+        return;
+    }
+}
+
+static void TrySimplifyInst(IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::PackUint2x32:
+        return FoldInverseFunc(inst, IR::Opcode::UnpackUint2x32);
+    case IR::Opcode::CompositeConstructU32x2:
+        return FoldCompositeConstruct(inst, IR::Opcode::CompositeExtractU32x2);
+    case IR::Opcode::CompositeConstructU32x3:
+        return FoldCompositeConstruct(inst, IR::Opcode::CompositeExtractU32x3);
+    case IR::Opcode::CompositeConstructU32x4:
+        return FoldCompositeConstruct(inst, IR::Opcode::CompositeExtractU32x4);
+    default:
+        break;
+    }
+}
+
 void InverseBallotEliminationPass(IR::Program& program) {
     InstList inst_list;
     std::vector<IR::Inst*> worklist;
@@ -52,6 +101,7 @@ void InverseBallotEliminationPass(IR::Program& program) {
             if (DeduplicateInst(inst, inst_list)) {
                 continue;
             }
+            TrySimplifyInst(inst);
             if (inst.GetOpcode() != IR::Opcode::InverseBallot) {
                 continue;
             }
