@@ -136,8 +136,16 @@ Id TypeId(const EmitContext& ctx, IR::Type type) {
         return ctx.U1[1];
     case IR::Type::U32:
         return ctx.U32[1];
+    case IR::Type::U32x2:
+        return ctx.U32[2];
+    case IR::Type::U32x3:
+        return ctx.U32[3];
+    case IR::Type::U32x4:
+        return ctx.U32[4];
     case IR::Type::F32:
         return ctx.F32[1];
+    case IR::Type::U64:
+        return ctx.U64;
     default:
         UNREACHABLE_MSG("Phi node type {}", type);
     }
@@ -292,7 +300,7 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
     if (info.uses_group_quad) {
         ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
     }
-    if (info.uses_group_ballot) {
+    if (info.uses_group_ballot || info.loads.Get(IR::Attribute::SubgroupLtMask)) {
         ctx.AddCapability(spv::Capability::GroupNonUniformBallot);
     }
     const auto stage = info.l_stage;
