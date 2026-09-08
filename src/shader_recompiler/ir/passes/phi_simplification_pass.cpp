@@ -23,6 +23,7 @@
 
 #include "common/hash.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/passes/expression_elimination.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/ssa.h"
 
@@ -395,6 +396,7 @@ static void DeduplicateSccs(std::vector<PhiScc>& sccs) {
                             }
                         }
                         user->SetArg(operand, IR::Value{new_phi});
+                        RunLocalCSE(user->GetParent());
                     }
                 }
                 remove.dead = true;

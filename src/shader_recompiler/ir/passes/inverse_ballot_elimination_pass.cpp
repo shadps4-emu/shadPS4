@@ -3,46 +3,12 @@
 
 #include <unordered_map>
 #include <vector>
-#include <boost/container/small_vector.hpp>
 
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/ir/passes/expression_elimination.h"
 #include "shader_recompiler/ir/program.h"
 
 namespace Shader::Optimization {
-
-static bool IsIdenticalInst(const IR::Inst* a, const IR::Inst* b) {
-    if (a->GetOpcode() != b->GetOpcode()) {
-        return false;
-    }
-    for (size_t i = 0; i < a->NumArgs(); i++) {
-        if (a->Arg(i) != b->Arg(i)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-static bool IsAllowedInst(const IR::Inst& inst) {
-    return inst.GetOpcode() == IR::Opcode::Ballot ||
-           inst.GetOpcode() == IR::Opcode::UnpackUint2x32;
-}
-
-using InstList = boost::container::small_vector<IR::Inst*, 8>;
-
-static bool DeduplicateInst(IR::Inst& inst, InstList& inst_list) {
-    if (!IsAllowedInst(inst)) {
-        return false;
-    }
-    const auto it = std::ranges::find_if(
-        inst_list, [&](const IR::Inst* b) { return IsIdenticalInst(&inst, b); });
-    if (it != inst_list.end()) {
-        inst.ReplaceUsesWithAndRemove(IR::Value{*it});
-        return true;
-    }
-
-    inst_list.emplace_back(&inst);
-    return false;
-}
 
 static void FoldCompositeConstruct(IR::Inst& inst, IR::Opcode extract) {
     IR::Value result{};
@@ -93,14 +59,10 @@ static void TrySimplifyInst(IR::Inst& inst) {
 }
 
 void InverseBallotEliminationPass(IR::Program& program) {
-    InstList inst_list;
     std::vector<IR::Inst*> worklist;
     for (IR::Block* const block : program.blocks) {
-        inst_list.clear();
+        RunLocalCSE(block);
         for (IR::Inst& inst : block->Instructions()) {
-            if (DeduplicateInst(inst, inst_list)) {
-                continue;
-            }
             TrySimplifyInst(inst);
             if (inst.GetOpcode() != IR::Opcode::InverseBallot) {
                 continue;
