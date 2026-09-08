@@ -128,6 +128,8 @@ public:
     void Invalidate();
     void ClearArgs();
 
+    u32 scc_index{};
+
 private:
     struct NonTriviallyDummy {
         NonTriviallyDummy() noexcept {}
@@ -150,7 +152,7 @@ private:
 
     boost::container::list<IR::Use> uses;
 };
-static_assert(sizeof(Inst) <= 180, "Inst size unintentionally increased");
+static_assert(sizeof(Inst) <= 184, "Inst size unintentionally increased");
 
 [[nodiscard]] inline bool IsPhi(const Inst& inst) {
     return inst.GetOpcode() == Opcode::Phi;

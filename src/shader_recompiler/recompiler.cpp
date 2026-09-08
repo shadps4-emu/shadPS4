@@ -117,6 +117,7 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     Shader::Optimization::SharedMemoryToStoragePass(program, runtime_info, profile);
     Shader::Optimization::LowerUserClipPlanes(program, runtime_info);
     Shader::Optimization::PhiSimplificationPass(program);
+    Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::InverseBallotEliminationPass(program);
     Shader::IR::DumpProgram(program, info, "pre-lower-phi.");
 

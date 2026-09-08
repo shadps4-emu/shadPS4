@@ -191,6 +191,9 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
             if (auto tag = inst.GetRegTag()) {
                 ret += fmt::format(" (tag: {})", RegTagInfo(tag));
             }
+            if (op == Opcode::Phi) {
+                ret += fmt::format(" (scc{})", inst.scc_index);
+            }
             ret += '\n';
         } else {
             ret += '\n';
