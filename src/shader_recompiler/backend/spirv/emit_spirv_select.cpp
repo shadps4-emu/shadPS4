@@ -18,4 +18,8 @@ Id EmitSelectF32(EmitContext& ctx, Id cond, Id true_value, Id false_value) {
     return ctx.OpSelect(ctx.F32[1], cond, true_value, false_value);
 }
 
+Id EmitSelectU64(EmitContext& ctx, Id cond, Id true_value, Id false_value) {
+    return ctx.OpSelect(ctx.U64, cond, true_value, false_value);
+}
+
 } // namespace Shader::Backend::SPIRV
