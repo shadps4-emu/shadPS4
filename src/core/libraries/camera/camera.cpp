@@ -720,29 +720,34 @@ s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId us
         return ORBIS_CAMERA_ERROR_PARAM;
     }
 
-    constexpr s32 camera_system_mem_size = 0xfd0000;
-    void* camera_garlic_pool = (void*)0xfd0000000;
+    static bool buffers_initialized = false;
 
-    s32 ret = Libraries::Kernel::sceKernelMapNamedSystemFlexibleMemory(
-        &camera_garlic_pool, camera_system_mem_size,
-        (s32)(Core::MemoryProt::CpuReadWrite | Core::MemoryProt::GpuRead), 0,
-        "SceCameraGpuGarlicPool");
-    ASSERT(ret == ORBIS_OK);
+    if (!buffers_initialized) {
+        constexpr s32 camera_system_mem_size = 0xfd0000;
+        void* camera_garlic_pool = (void*)0xfd0000000;
 
-    constexpr s32 raw8_buffer_size = c_width * c_height * sizeof(u8);
-    constexpr s32 raw16_buffer_size = c_width * c_height * sizeof(u16);
+        s32 ret = Libraries::Kernel::sceKernelMapNamedSystemFlexibleMemory(
+            &camera_garlic_pool, camera_system_mem_size,
+            (s32)(Core::MemoryProt::CpuReadWrite | Core::MemoryProt::GpuRead), 0,
+            "SceCameraGpuGarlicPool");
+        ASSERT(ret == ORBIS_OK);
 
-    u8* remaining_camera_buf = (u8*)camera_garlic_pool;
+        constexpr s32 raw8_buffer_size = c_width * c_height * sizeof(u8);
+        constexpr s32 raw16_buffer_size = c_width * c_height * sizeof(u16);
 
-    raw8_buffer1 = remaining_camera_buf += raw8_buffer_size;
-    raw8_buffer2 = remaining_camera_buf += raw8_buffer_size;
-    raw16_buffer1 = (u16*)(remaining_camera_buf += raw16_buffer_size);
-    raw16_buffer2 = (u16*)(remaining_camera_buf += raw16_buffer_size);
+        u8* remaining_camera_buf = (u8*)camera_garlic_pool;
 
-    ASSERT(remaining_camera_buf <= (u8*)camera_garlic_pool + camera_system_mem_size);
+        raw8_buffer1 = remaining_camera_buf += raw8_buffer_size;
+        raw8_buffer2 = remaining_camera_buf += raw8_buffer_size;
+        raw16_buffer1 = (u16*)(remaining_camera_buf += raw16_buffer_size);
+        raw16_buffer2 = (u16*)(remaining_camera_buf += raw16_buffer_size);
 
-    ASSERT(Core::Memory::Instance()->IsValidGpuMapping((VAddr)camera_garlic_pool,
-                                                       camera_system_mem_size));
+        ASSERT(remaining_camera_buf <= (u8*)camera_garlic_pool + camera_system_mem_size);
+
+        ASSERT(Core::Memory::Instance()->IsValidGpuMapping((VAddr)camera_garlic_pool,
+                                                           camera_system_mem_size));
+        buffers_initialized = true;
+    }
 
     g_library_opened = true;
     return ++g_handles;
@@ -1153,6 +1158,12 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
     cam_spec.framerate_numerator = 60;
     cam_spec.framerate_denominator = 1;
     sdl_camera = SDL_OpenCamera(devices[EmulatorSettings.GetCameraId()], &cam_spec);
+
+    if (!sdl_camera) {
+        LOG_ERROR(Lib_Camera, "Failed to open camera: {}", SDL_GetError());
+        return ORBIS_CAMERA_ERROR_FATAL;
+    }
+
     LOG_INFO(Lib_Camera, "SDL backend in use: {}", SDL_GetCurrentCameraDriver());
     char const* camera_name = SDL_GetCameraName(devices[EmulatorSettings.GetCameraId()]);
     if (camera_name)
@@ -1179,11 +1190,6 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
             }
             std::this_thread::sleep_for(std::chrono::nanoseconds(10));
         }
-    }
-
-    if (!sdl_camera) {
-        LOG_ERROR(Lib_Camera, "Failed to open camera: {}", SDL_GetError());
-        return ORBIS_CAMERA_ERROR_FATAL;
     }
 
     return ORBIS_OK;
