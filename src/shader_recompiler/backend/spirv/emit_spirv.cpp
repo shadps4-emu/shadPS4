@@ -300,6 +300,9 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
     if (info.uses_group_quad) {
         ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
     }
+    if (info.uses_group_shuffle) {
+        ctx.AddCapability(spv::Capability::GroupNonUniformShuffle);
+    }
     if (info.uses_group_ballot || info.loads.Get(IR::Attribute::SubgroupLtMask)) {
         ctx.AddCapability(spv::Capability::GroupNonUniformBallot);
     }
