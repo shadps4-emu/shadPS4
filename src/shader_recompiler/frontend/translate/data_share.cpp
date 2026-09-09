@@ -276,8 +276,9 @@ void Translator::DS_SWIZZLE_B32(const GcnInst& inst) {
     if (offset1 & 0x80) {
         const IR::U32 id_in_group = ir.BitwiseAnd(lane_id, ir.Imm32(0b11));
         const IR::U32 base = ir.ShiftLeftLogical(id_in_group, ir.Imm32(1));
-        const IR::U32 index = ir.BitFieldExtract(ir.Imm32(offset0), base, ir.Imm32(2));
-        SetDst(inst.dst[0], ir.QuadShuffle(src, index));
+        const IR::U32 sel = ir.BitFieldExtract(ir.Imm32(offset0), base, ir.Imm32(2));
+        const IR::U32 quad_base = ir.BitwiseAnd(lane_id, ir.Imm32(~3u));
+        SetDst(inst.dst[0], ir.Shuffle(src, ir.BitwiseOr(quad_base, sel)));
     } else {
         const u8 and_mask = (offset0 & 0x1f) | (~u8{0} << 5);
         const u8 or_mask = (offset0 >> 5) | ((offset1 & 0x3) << 3);
@@ -285,7 +286,7 @@ void Translator::DS_SWIZZLE_B32(const GcnInst& inst) {
         const IR::U32 index = ir.BitwiseXor(
             ir.BitwiseOr(ir.BitwiseAnd(lane_id, ir.Imm32(and_mask)), ir.Imm32(or_mask)),
             ir.Imm32(xor_mask));
-        SetDst(inst.dst[0], ir.ReadLane(src, index));
+        SetDst(inst.dst[0], ir.Shuffle(src, index));
     }
 }
 

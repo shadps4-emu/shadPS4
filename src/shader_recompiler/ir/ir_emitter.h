@@ -173,6 +173,7 @@ public:
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WarpId();
     [[nodiscard]] U32 QuadShuffle(const U32& value, const U32& index);
+    [[nodiscard]] U32 Shuffle(const U32& value, const U32& index);
     [[nodiscard]] U32 ReadFirstLane(const U32& value);
     [[nodiscard]] U32 ReadLane(const U32& value, const U32& lane);
     [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
