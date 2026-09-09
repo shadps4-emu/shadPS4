@@ -138,7 +138,7 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
                                          vk::ShaderStageFlagBits::eCompute, device, defines);
     const auto module_name = fmt::format("{}_{} {}", magic_enum::enum_name(info.tile_mode),
                                          info.num_bits, is_tiler ? "tiler" : "detiler");
-    LOG_INFO(Render_Vulkan, "Compiling shader {}", module_name);
+    LOG_INFO(Render_Vulkan, "Creating pipeline {}", module_name);
     for (const auto& def : defines) {
         LOG_INFO(Render_Vulkan, "#define {}", def);
     }
