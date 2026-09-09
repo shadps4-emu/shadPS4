@@ -15,6 +15,7 @@
 #endif
 
 void assert_fail_impl() {
+    LOG_INFO(Debug, "Guest crash backtrace:\n{}", Core::StackTracer::Dump());
     Core::Signals::Instance()->RemoveHandlers();
     Common::Singleton<Core::Emulator>::Instance()->Shutdown();
     Crash();
