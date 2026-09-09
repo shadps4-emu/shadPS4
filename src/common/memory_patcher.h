@@ -36,16 +36,20 @@ struct patchInfo {
     bool littleEndian;
     PatchMask patchMask;
     int maskOffset;
+    // Module this patch belongs to; empty means the address is an eboot one.
+    std::string moduleStr;
 };
 
 std::string convertValueToHex(const std::string type, const std::string valueStr);
 
 void OnGameLoaded();
+void OnModuleLoaded(const std::string& module_name, uintptr_t base_address, uint64_t image_size);
 void AddPatchToQueue(const patchInfo& patchToAdd);
 
 void PatchMemory(const patchInfo& patch);
 
 static std::vector<int32_t> PatternToByte(const std::string& pattern);
-uintptr_t PatternScan(const std::string& signature);
+uintptr_t PatternScan(const std::string& signature, uintptr_t scan_base = 0,
+                      uint64_t scan_size = 0);
 
 } // namespace MemoryPatcher
