@@ -311,10 +311,10 @@ void Translator::S_CSELECT_B32(const GcnInst& inst) {
 }
 
 void Translator::S_CSELECT_B64(const GcnInst& inst) {
-    const IR::U1 src0{GetSrc1(inst.src[0])};
-    const IR::U1 src1{GetSrc1(inst.src[1])};
-    const IR::U1 result{ir.Select(ir.GetScc(), src0, src1)};
-    SetDst1(inst.dst[0], result);
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U64 src1{GetSrc64(inst.src[1])};
+    const IR::U64 result{ir.Select(ir.GetScc(), src0, src1)};
+    SetDst64(inst.dst[0], result);
 }
 
 void Translator::S_AND_B32(NegateMode negate, const GcnInst& inst) {
@@ -332,17 +332,17 @@ void Translator::S_AND_B32(NegateMode negate, const GcnInst& inst) {
 }
 
 void Translator::S_AND_B64(NegateMode negate, const GcnInst& inst) {
-    const IR::U1 src0{GetSrc1(inst.src[0])};
-    IR::U1 src1{GetSrc1(inst.src[1])};
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    IR::U64 src1{GetSrc64(inst.src[1])};
     if (negate == NegateMode::Src1) {
-        src1 = ir.LogicalNot(src1);
+        src1 = ir.BitwiseNot(src1);
     }
-    IR::U1 result = ir.LogicalAnd(src0, src1);
+    IR::U64 result = ir.BitwiseAnd(src0, src1);
     if (negate == NegateMode::Result) {
-        result = ir.LogicalNot(result);
+        result = ir.BitwiseNot(result);
     }
-    ir.SetScc(result);
-    SetDst1(inst.dst[0], result);
+    ir.SetScc(ir.InverseBallot(result));
+    SetDst64(inst.dst[0], result);
 }
 
 void Translator::S_OR_B32(const GcnInst& inst) {
@@ -354,17 +354,17 @@ void Translator::S_OR_B32(const GcnInst& inst) {
 }
 
 void Translator::S_OR_B64(NegateMode negate, bool is_xor, const GcnInst& inst) {
-    const IR::U1 src0{GetSrc1(inst.src[0])};
-    IR::U1 src1{GetSrc1(inst.src[1])};
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    IR::U64 src1{GetSrc64(inst.src[1])};
     if (negate == NegateMode::Src1) {
-        src1 = ir.LogicalNot(src1);
+        src1 = ir.BitwiseNot(src1);
     }
-    IR::U1 result = is_xor ? ir.LogicalXor(src0, src1) : ir.LogicalOr(src0, src1);
+    IR::U64 result = is_xor ? ir.BitwiseXor(src0, src1) : ir.BitwiseOr(src0, src1);
     if (negate == NegateMode::Result) {
-        result = ir.LogicalNot(result);
+        result = ir.BitwiseNot(result);
     }
-    ir.SetScc(result);
-    SetDst1(inst.dst[0], result);
+    ir.SetScc(ir.InverseBallot(result));
+    SetDst64(inst.dst[0], result);
 }
 
 void Translator::S_XOR_B32(const GcnInst& inst) {
@@ -504,35 +504,18 @@ void Translator::S_MULK_I32(const GcnInst& inst) {
 // SOP1
 
 void Translator::S_MOV(const GcnInst& inst) {
-    if (inst.dst[0].field == OperandField::ScalarGPR) {
-        if (inst.src[0].field == OperandField::ExecLo) {
-            ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), ir.GetExec());
-            return;
-        } else if (inst.src[0].field == OperandField::ExecHi) {
-            return;
-        }
-    }
     SetDst(inst.dst[0], GetSrc(inst.src[0]));
 }
 
 void Translator::S_MOV_B64(const GcnInst& inst) {
-    // Moving SGPR to SGPR is used for thread masks, like most operations, but it can also be used
-    // for moving sharps.
-    if (inst.dst[0].field == OperandField::ScalarGPR &&
-        inst.src[0].field == OperandField::ScalarGPR) {
-        ir.SetScalarReg(IR::ScalarReg(inst.dst[0].code),
-                        ir.GetScalarReg(IR::ScalarReg(inst.src[0].code)));
-        ir.SetScalarReg(IR::ScalarReg(inst.dst[0].code + 1),
-                        ir.GetScalarReg(IR::ScalarReg(inst.src[0].code + 1)));
-    }
-    SetDst1(inst.dst[0], GetSrc1(inst.src[0]));
+    SetDst64(inst.dst[0], GetSrc64(inst.src[0]));
 }
 
 void Translator::S_NOT_B64(const GcnInst& inst) {
-    const IR::U1 src0{GetSrc1(inst.src[0])};
-    const IR::U1 result = ir.LogicalNot(src0);
-    ir.SetScc(result);
-    SetDst1(inst.dst[0], result);
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U64 result = ir.BitwiseNot(src0);
+    ir.SetScc(ir.InverseBallot(result));
+    SetDst64(inst.dst[0], result);
 }
 
 void Translator::S_BREV_B32(const GcnInst& inst) {
@@ -558,7 +541,8 @@ void Translator::S_FF1_I32_B32(const GcnInst& inst) {
 }
 
 void Translator::S_FF1_I32_B64(const GcnInst& inst) {
-    SetDst(inst.dst[0], ir.BallotFindLsb(ir.Ballot(GetSrc1(inst.src[0]))));
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    SetDst(inst.dst[0], ir.BallotFindLsb(src0));
 }
 
 void Translator::S_FLBIT_I32_B32(const GcnInst& inst) {
@@ -591,23 +575,21 @@ void Translator::S_BITSET_B32(const GcnInst& inst, u32 bit_value) {
 }
 
 void Translator::S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst) {
-    // This instruction normally operates on 64-bit data (EXEC, VCC, SGPRs)
-    // However here we flatten it to 1-bit EXEC and 1-bit VCC. For the destination
-    // SGPR we have a special IR opcode for SPGRs that act as thread masks.
-    IR::U1 exec{ir.GetExec()};
-    const IR::U1 src{GetSrc1(inst.src[0])};
-    SetDst1(inst.dst[0], exec);
+    IR::U64 exec{ir.Ballot(ir.GetExec())};
+    const IR::U64 src{GetSrc64(inst.src[0])};
+    SetDst64(inst.dst[0], exec);
 
     // Update EXEC.
     if (negate == NegateMode::Src1) {
-        exec = ir.LogicalNot(exec);
+        exec = ir.BitwiseNot(exec);
     }
-    IR::U1 result = is_or ? ir.LogicalOr(exec, src) : ir.LogicalAnd(exec, src);
+    IR::U64 result = is_or ? ir.BitwiseOr(exec, src) : ir.BitwiseAnd(exec, src);
     if (negate == NegateMode::Result) {
-        result = ir.LogicalNot(result);
+        result = ir.BitwiseNot(result);
     }
-    ir.SetExec(result);
-    ir.SetScc(result);
+    const IR::U1 result_u1 = ir.InverseBallot(result);
+    ir.SetExec(result_u1);
+    ir.SetScc(result_u1);
 }
 
 void Translator::S_ABS_I32(const GcnInst& inst) {

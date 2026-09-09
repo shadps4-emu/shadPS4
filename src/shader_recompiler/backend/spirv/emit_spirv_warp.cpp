@@ -35,11 +35,20 @@ Id EmitWriteLane(EmitContext& ctx, Id value, Id write_value, u32 lane) {
 }
 
 Id EmitBallot(EmitContext& ctx, Id bit) {
-    return ctx.OpGroupNonUniformBallot(ctx.U32[4], SubgroupScope(ctx), bit);
+    const Id ballot{ctx.OpGroupNonUniformBallot(ctx.U32[4], SubgroupScope(ctx), bit)};
+    return ctx.OpBitcast(ctx.U64, ctx.OpVectorShuffle(ctx.U32[2], ballot, ballot, 0, 1));
 }
 
 Id EmitBallotFindLsb(EmitContext& ctx, Id mask) {
-    return ctx.OpGroupNonUniformBallotFindLSB(ctx.U32[1], SubgroupScope(ctx), mask);
+    const Id value{ctx.OpCompositeConstruct(ctx.U32[4], ctx.OpBitcast(ctx.U32[2], mask),
+                                            ctx.u32_zero_value, ctx.u32_zero_value)};
+    return ctx.OpGroupNonUniformBallotFindLSB(ctx.U32[1], SubgroupScope(ctx), value);
+}
+
+Id EmitInverseBallot(EmitContext& ctx, Id mask) {
+    const Id value{ctx.OpCompositeConstruct(ctx.U32[4], ctx.OpBitcast(ctx.U32[2], mask),
+                                            ctx.u32_zero_value, ctx.u32_zero_value)};
+    return ctx.OpGroupNonUniformInverseBallot(ctx.U1[1], SubgroupScope(ctx), value);
 }
 
 Id EmitGroupAny(EmitContext& ctx, Id bit) {
