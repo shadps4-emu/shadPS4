@@ -417,6 +417,7 @@ void L::Draw() {
                 visibility_toggled = false;
             }
             if (BeginPopupContextWindow()) {
+                GetCurrentWindow()->Flags |= ImGuiWindowFlags_NoNav;
 #define M(label, value)                                                                            \
     if (MenuItem(label, nullptr, fps_scale == value))                                              \
     fps_scale = value

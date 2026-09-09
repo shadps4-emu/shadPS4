@@ -200,7 +200,8 @@ bool ProcessEvent(SDL_Event* event) {
         }
         const auto& io = GetIO();
         return io.WantCaptureKeyboard && io.Ctx->NavWindow != nullptr &&
-               io.Ctx->NavWindow->ID != dock_id;
+               io.Ctx->NavWindow->ID != dock_id &&
+               (io.Ctx->NavWindow->Flags & ImGuiWindowFlags_NoNav) == 0;
     }
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
@@ -215,7 +216,8 @@ bool ProcessEvent(SDL_Event* event) {
             return false;
         }
         const auto& io = GetIO();
-        return io.NavActive && io.Ctx->NavWindow != nullptr && io.Ctx->NavWindow->ID != dock_id;
+        return io.NavActive && io.Ctx->NavWindow != nullptr && io.Ctx->NavWindow->ID != dock_id &&
+               (io.Ctx->NavWindow->Flags & ImGuiWindowFlags_NoNav) == 0;
     }
     default:
         return false;
