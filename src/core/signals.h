@@ -17,8 +17,6 @@
 #endif
 namespace Core {
 
-class Linker;
-
 using AccessViolationHandler = bool (*)(void* context, void* fault_address);
 using IllegalInstructionHandler = bool (*)(void* context);
 
@@ -26,10 +24,9 @@ using IllegalInstructionHandler = bool (*)(void* context);
 void SignalHandler(int sig, siginfo_t* info, void* raw_context);
 #endif
 
-// Best-effort native stack walker used to symbolicate crash addresses against loaded guest
-// modules. RBP-chain based (SysV frame-pointer convention). Safe to call from within a signal
-// handler: touches no emulator locks, only OS-level page queries and the Linker's already-
-// populated module list.
+// Best-effort native stack walker used to symbolicate the current call stack against loaded
+// guest modules. RBP-chain based (SysV frame-pointer convention). Meant to be called from
+// assert_fail_impl, so it always self-captures the caller's context rather than taking one.
 class StackTracer {
 public:
     struct Frame {
@@ -43,12 +40,7 @@ public:
         VAddr symbol_offset{};
     };
 
-    /// Must be called once the Linker owning loaded modules exists. Before that, frames just
-    /// report as unmapped instead of failing.
-    static void RegisterLinker(Linker* linker);
-
-    /// context is a platform ucontext_t*/EXCEPTION_POINTERS*; null captures from the call site.
-    static std::vector<VAddr> Capture(void* context, u32 max_frames = 64);
+    static std::vector<VAddr> Capture(u32 max_frames = 64);
 
     static std::vector<Frame> Resolve(const std::vector<VAddr>& return_addrs);
 
@@ -56,7 +48,7 @@ public:
     static std::string Format(const std::vector<Frame>& frames);
 
     /// Capture + Resolve + Format in one call.
-    static std::string Dump(void* context = nullptr, u32 max_frames = 64);
+    static std::string Dump(u32 max_frames = 64);
 };
 
 /// Receives OS signals and dispatches to the appropriate handlers.

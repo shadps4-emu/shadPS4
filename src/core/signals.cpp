@@ -26,26 +26,12 @@ static constexpr DWORD MS_VC_EXCEPTION = 0x406D1388;
 #include <Zydis/Formatter.h>
 #endif
 #endif
-// HI THIS COMMENT IS HERE CAUSE GITHUB ACTIONS IS BROKEN AND I NEED TO TRIGGER ANOTHER PUSH, IF I DONT REMOVE THIS PING HOG.0 ON THE DISCORD
+
 namespace Core {
 
 namespace {
-Linker* g_linker = nullptr;
 
 #if defined(_WIN32)
-void GetContextRegs(void* context, VAddr& rip, VAddr& rbp) {
-    CONTEXT local_ctx{};
-    const CONTEXT* ctx;
-    if (context) {
-        ctx = static_cast<EXCEPTION_POINTERS*>(context)->ContextRecord;
-    } else {
-        RtlCaptureContext(&local_ctx);
-        ctx = &local_ctx;
-    }
-    rip = ctx->Rip;
-    rbp = ctx->Rbp;
-}
-
 bool IsReadable(VAddr addr, u64 size) {
     MEMORY_BASIC_INFORMATION info{};
     if (!VirtualQuery(reinterpret_cast<LPCVOID>(addr), &info, sizeof(info))) {
@@ -59,27 +45,6 @@ bool IsReadable(VAddr addr, u64 size) {
     return addr + size <= region_end;
 }
 #else
-void GetContextRegs(void* context, VAddr& rip, VAddr& rbp) {
-    ucontext_t local_ctx{};
-    const ucontext_t* ctx;
-    if (context) {
-        ctx = static_cast<ucontext_t*>(context);
-    } else {
-        getcontext(&local_ctx);
-        ctx = &local_ctx;
-    }
-#if defined(__APPLE__)
-    rip = ctx->uc_mcontext->__ss.__rip;
-    rbp = ctx->uc_mcontext->__ss.__rbp;
-#elif defined(__FreeBSD__)
-    rip = ctx->uc_mcontext.mc_rip;
-    rbp = ctx->uc_mcontext.mc_rbp;
-#else
-    rip = ctx->uc_mcontext.gregs[REG_RIP];
-    rbp = ctx->uc_mcontext.gregs[REG_RBP];
-#endif
-}
-
 bool IsReadable(VAddr addr, u64 size) {
 #if defined(__APPLE__) || defined(__FreeBSD__)
     using MincoreVecT = char;
@@ -96,18 +61,24 @@ bool IsReadable(VAddr addr, u64 size) {
 
 } // namespace
 
-void StackTracer::RegisterLinker(Linker* linker) {
-    g_linker = linker;
-}
-
-std::vector<VAddr> StackTracer::Capture(void* context, u32 max_frames) {
+std::vector<VAddr> StackTracer::Capture(u32 max_frames) {
     std::vector<VAddr> trace;
 #if defined(ARCH_X86_64)
-    VAddr rip{};
-    VAddr rbp{};
-    GetContextRegs(context, rip, rbp);
-    if (rip != 0) {
-        trace.push_back(rip);
+    // Self-capture the caller's context via the project's portable Ucontext, rather than
+    // reading platform registers by hand.
+#if defined(_WIN32)
+    CONTEXT raw_ctx{};
+    RtlCaptureContext(&raw_ctx);
+    const Libraries::Kernel::Ucontext ctx{&raw_ctx};
+#else
+    ucontext_t raw_ctx{};
+    getcontext(&raw_ctx);
+    siginfo_t dummy_info{};
+    const Libraries::Kernel::Ucontext ctx{&dummy_info, &raw_ctx};
+#endif
+    VAddr rbp = ctx.uc_mcontext.mc_rbp;
+    if (ctx.uc_mcontext.mc_rip != 0) {
+        trace.push_back(ctx.uc_mcontext.mc_rip);
     }
 
     VAddr prev_rbp = 0;
@@ -141,7 +112,7 @@ std::vector<StackTracer::Frame> StackTracer::Resolve(const std::vector<VAddr>& r
 
     for (const VAddr addr : return_addrs) {
         Frame frame{.return_addr = addr};
-        Module* module = g_linker ? g_linker->FindByAddress(addr) : nullptr;
+        Module* module = Common::Singleton<Linker>::Instance()->FindByAddress(addr);
 
         if (module) {
             frame.has_module = true;
@@ -204,8 +175,8 @@ std::string StackTracer::Format(const std::vector<Frame>& frames) {
     return out;
 }
 
-std::string StackTracer::Dump(void* context, u32 max_frames) {
-    return Format(Resolve(Capture(context, max_frames)));
+std::string StackTracer::Dump(u32 max_frames) {
+    return Format(Resolve(Capture(max_frames)));
 }
 
 #if defined(_WIN32)
@@ -324,7 +295,6 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     const bool report_unhandled =
         use_static_windows_guest_red_zone_protection ? static_protection_exception : true;
     if (report_unhandled) {
-        LOG_CRITICAL(Debug, "Guest crash backtrace:\n{}", StackTracer::Dump(pExp));
         LOG_CRITICAL(Debug, "Unhandled Exception code {:#x} at {}", code, address);
         Common::Singleton<Core::Emulator>::Instance()->Shutdown();
     }
@@ -457,7 +427,6 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
             if (thread && thread->DispatchSignal(NativeToOrbisSignal(sig), info_p, context_p)) {
                 return;
             }
-            LOG_CRITICAL(Core, "Guest crash backtrace:\n{}", StackTracer::Dump(raw_context));
             UNREACHABLE_MSG("Unhandled access violation at code address {}: {} address {}",
                             fmt::ptr(code_address), is_write ? "Write to" : "Read from",
                             fmt::ptr(info->si_addr));
@@ -475,7 +444,6 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
             return;
         }
 
-        LOG_CRITICAL(Core, "Guest crash backtrace:\n{}", StackTracer::Dump(raw_context));
         UNREACHABLE_MSG("Unhandled signal {} at code address {}", sig, fmt::ptr(code_address));
     }
     case SIGSLEEP: {
