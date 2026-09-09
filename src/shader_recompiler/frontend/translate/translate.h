@@ -214,6 +214,7 @@ public:
     void V_CVT_F64_F32(const GcnInst& inst);
     void V_CVT_F32_UBYTE(u32 index, const GcnInst& inst);
     void V_FLOOR_F64(const GcnInst& inst);
+    void V_TRUNC_F64(const GcnInst& inst);
     void V_FRACT_F32(const GcnInst& inst);
     void V_TRUNC_F32(const GcnInst& inst);
     void V_CEIL_F32(const GcnInst& inst);
@@ -278,6 +279,7 @@ public:
     void V_ALIGNBYTE_B32(const GcnInst& inst);
     void V_MUL_F64(const GcnInst& inst);
     void V_MAX_F64(const GcnInst& inst);
+    void V_MIN_F64(const GcnInst& inst);
     void V_MUL_LO_U32(const GcnInst& inst);
     void V_MUL_HI_U32(bool is_signed, const GcnInst& inst);
     void V_MAD_U64_U32(const GcnInst& inst);
