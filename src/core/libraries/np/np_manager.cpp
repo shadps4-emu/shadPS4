@@ -275,7 +275,7 @@ s32 PS4_SYSV_ABI sceNpCheckPlus(s32 req_id, const OrbisNpCheckPlusParameter* par
         return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
     LOG_DEBUG(Lib_NpManager, "req_id = {:#x}, features = {:#x}", req_id, param->features);
-    // Grant PS+ — shadNet has no subscription gating.
+    // Grant PS+  shadNet has no subscription gating.
     result->authorized = true;
     return CompleteRequest(*req, ORBIS_OK);
 }
@@ -1167,6 +1167,12 @@ s32 PS4_SYSV_ABI sceNpIsPlusMember(Libraries::UserService::OrbisUserServiceUserI
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpNotifyPlusFeature(void* param) {
+    LOG_DEBUG(Lib_NpManager, "called");
+
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceNpRegisterPlusEventCallback(OrbisNpPlusEventCallback callback, void* userdata) {
     if (callback == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
@@ -1256,6 +1262,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("aJZyCcHxzu4", "libSceNpManager", 1, "libSceNpManager",
                  sceNpUnregisterGamePresenceCallbackA);
     LIB_FUNCTION("Ybu6AxV6S0o", "libSceNpManager", 1, "libSceNpManager", sceNpIsPlusMember);
+    LIB_FUNCTION("Gaxrp3EWY-M", "libSceNpManager", 1, "libSceNpManager", sceNpNotifyPlusFeature);
     LIB_FUNCTION("GImICnh+boA", "libSceNpManager", 1, "libSceNpManager",
                  sceNpRegisterPlusEventCallback);
     LIB_FUNCTION("xViqJdDgKl0", "libSceNpManager", 1, "libSceNpManager",
