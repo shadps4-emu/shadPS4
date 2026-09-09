@@ -62,6 +62,7 @@ struct InfoPersistent {
     };
     UserDataMask ud_mask{};
     u32 fetch_shader_sgpr_base{};
+    u32 shared_memory_scratch_size{};
 
     u64 pgm_hash{};
 
