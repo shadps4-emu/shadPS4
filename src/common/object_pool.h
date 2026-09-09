@@ -77,7 +77,9 @@ private:
         }
 
         void Release() {
-            std::destroy_n(storage.get(), used_objects);
+            for (size_t i = used_objects; i > 0; --i) {
+                std::destroy_at(std::addressof(storage[i - 1].object));
+            }
             used_objects = 0;
         }
 
