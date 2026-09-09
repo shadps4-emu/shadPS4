@@ -179,6 +179,8 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     case IR::Attribute::LocalInvocationId:
         return ctx.OpCompositeExtract(ctx.U32[1], ctx.OpLoad(ctx.U32[3], ctx.local_invocation_id),
                                       comp);
+    case IR::Attribute::LocalInvocationIndex:
+        return ctx.OpLoad(ctx.U32[1], ctx.local_invocation_index);
     case IR::Attribute::IsFrontFace:
         return ctx.OpSelect(ctx.U32[1], ctx.OpLoad(ctx.U1[1], ctx.front_facing), ctx.u32_one_value,
                             ctx.u32_zero_value);
@@ -192,6 +194,9 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         ASSERT(ctx.info.l_stage == LogicalStage::Geometry ||
                ctx.info.l_stage == LogicalStage::TessellationControl);
         return ctx.OpLoad(ctx.U32[1], ctx.invocation_id);
+    case IR::Attribute::SubgroupLtMask:
+        return ctx.OpLoad(
+            ctx.U32[1], ctx.OpAccessChain(ctx.input_u32, ctx.subgroup_lt_mask, ctx.ConstU32(comp)));
     case IR::Attribute::PatchVertices:
         ASSERT(ctx.info.l_stage == LogicalStage::TessellationControl);
         return ctx.OpLoad(ctx.U32[1], ctx.patch_vertices);
@@ -205,7 +210,7 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
             // each output control point.
             // If Gcn shader uses this value, we should make sure all threads in the
             // Vulkan shader use 0
-            return ctx.ConstU32(0u);
+            return ctx.u32_zero_value;
         } else {
             const Id invocation_id = ctx.OpLoad(ctx.U32[1], ctx.invocation_id);
             return ctx.OpShiftLeftLogical(ctx.U32[1], invocation_id, ctx.ConstU32(8u));
