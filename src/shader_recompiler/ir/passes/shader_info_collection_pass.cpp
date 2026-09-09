@@ -133,6 +133,9 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::LaneId:
         info.uses_lane_id = true;
         break;
+    case IR::Opcode::Memtime:
+        info.uses_shader_clock = true;
+        break;
     case IR::Opcode::ReadConst:
         if (!info.has_readconst) {
             info.buffers.push_back({
