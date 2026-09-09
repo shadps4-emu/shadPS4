@@ -26,6 +26,10 @@ Id EmitReadFirstLane(EmitContext& ctx, Id value) {
     return ctx.OpGroupNonUniformBroadcastFirst(ctx.U32[1], SubgroupScope(ctx), value);
 }
 
+Id EmitShuffle(EmitContext& ctx, Id value, Id index) {
+    return ctx.OpGroupNonUniformShuffle(ctx.U32[1], SubgroupScope(ctx), value, index);
+}
+
 Id EmitReadLane(EmitContext& ctx, Id value, Id lane) {
     return ctx.OpGroupNonUniformBroadcast(ctx.U32[1], SubgroupScope(ctx), value, lane);
 }
