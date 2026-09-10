@@ -150,6 +150,9 @@ public:
 
     void Fill(u64 offset, u32 num_bytes, u32 value);
 
+    /// Makes a completed download range visible to the CPU.
+    void Invalidate(u64 offset, u64 size);
+
 public:
     VAddr cpu_addr = 0;
     bool is_picked{};
