@@ -266,10 +266,6 @@ static void* RunThread(void* arg) {
     UnblockPthreadCancelSignal();
 #endif
 
-#ifdef WIN32
-    std::set_terminate(Common::Log::Terminate);
-#endif
-
     /* Run the current thread's start routine with argument: */
     auto* const stack =
         (void*)(((size_t)curthread->attr.stackaddr_attr + curthread->attr.stacksize_attr) & (~15));
@@ -865,8 +861,8 @@ static bool SigDflHandler(int sig) {
     case POSIX_SIGPROF:
     case POSIX_SIGUSR1:
     case POSIX_SIGUSR2:
-        return false;
     case POSIX_SIGTRAP:
+        return false;
     default:
         LOG_DEBUG(Lib_Kernel, "called, sig: {}", sig);
         return true;
@@ -1259,6 +1255,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("P41kTWUS3EI", "libkernel", 1, "libkernel", ORBIS(posix_pthread_getschedparam));
     LIB_FUNCTION("oIRFTjoILbg", "libkernel", 1, "libkernel", ORBIS(posix_pthread_setschedparam));
     LIB_FUNCTION("How7B8Oet6k", "libkernel", 1, "libkernel", ORBIS(posix_pthread_getname_np));
+    LIB_FUNCTION("9HzfhdtESio", "libkernel", 1, "libkernel", posix_pthread_getname_np);
     LIB_FUNCTION("3kg7rT0NQIs", "libkernel", 1, "libkernel", posix_pthread_exit);
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", posix_pthread_self);
     LIB_FUNCTION("qBDmpCyGssE", "libkernel", 1, "libkernel", scePthreadCancel);
