@@ -246,6 +246,27 @@ IR::Inst* FindSharpSource(IR::Inst* handle) {
     return handle;
 }
 
+static void PeelDwordMasks(SharpReference& sharp) {
+    for (size_t i = 0; i < sharp.num_dwords; i++) {
+        IR::Inst* source = sharp.dwords[i].TryInst();
+        while (source && source->GetOpcode() == IR::Opcode::BitwiseAnd32) {
+            const IR::Value arg0 = source->Arg(0);
+            const IR::Value arg1 = source->Arg(1);
+            if (arg0.IsImmediate() == arg1.IsImmediate()) {
+                break;
+            }
+            const IR::Value operand = arg0.IsImmediate() ? arg1 : arg0;
+            IR::Inst* const next = operand.TryInst();
+            if (!next) {
+                break;
+            }
+            sharp.clear_masks[i] |= ~(arg0.IsImmediate() ? arg0.U32() : arg1.U32());
+            sharp.dwords[i] = operand;
+            source = next;
+        }
+    }
+}
+
 void MarkReadConstBufferSharpSources(const SharpReference& sharp) {
     // In cases of bindless sharp fetches mark all producer instructions
     // so the extended userdata flattening pass will include them.
@@ -285,6 +306,7 @@ void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList
         vsharp.dwords[1] = dword1;
     }
 
+    PeelDwordMasks(vsharp);
     MarkReadConstBufferSharpSources(vsharp);
 }
 
@@ -313,6 +335,7 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
         tsharp.dwords[4] = tsharp_dw4;
     }
 
+    PeelDwordMasks(tsharp);
     MarkReadConstBufferSharpSources(tsharp);
 
     if (inst.GetOpcode() != IR::Opcode::ImageSampleRaw) {
@@ -343,6 +366,7 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
         ssharp.dwords[0] = ssharp_dw0;
     }
 
+    PeelDwordMasks(ssharp);
     MarkReadConstBufferSharpSources(ssharp);
 }
 
