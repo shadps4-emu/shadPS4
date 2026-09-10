@@ -30,7 +30,7 @@ public:
              std::optional<std::filesystem::path> game_folder = {},
              std::vector<std::pair<std::filesystem::path, std::string>> mounts = {},
              std::vector<std::string> const& env_vars = {});
-    void UpdatePlayTime(const std::string& serial);
+    void UpdatePlayTime(const std::string_view serial);
     void Shutdown();
 
     /**

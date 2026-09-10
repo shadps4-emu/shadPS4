@@ -181,15 +181,6 @@ void StartThread() {
     LOG_DEBUG(Lib_SaveData, "Starting backup thread");
     g_backup_status = WorkerStatus::Waiting;
     g_backup_thread = std::jthread{BackupThreadBody};
-    static std::once_flag flag;
-    std::call_once(flag, [] {
-        std::at_quick_exit([] {
-            StopThread();
-            while (GetWorkerStatus() != WorkerStatus::NotStarted) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            }
-        });
-    });
 }
 
 void StopThread() {
@@ -203,6 +194,9 @@ void StopThread() {
         g_backup_queue.emplace_back(BackupRequest{});
     }
     g_backup_thread_semaphore.release();
+    while (GetWorkerStatus() != WorkerStatus::NotStarted) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 }
 
 bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view title_id,
