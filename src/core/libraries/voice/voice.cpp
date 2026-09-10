@@ -93,7 +93,7 @@ s32 PS4_SYSV_ABI sceVoicePausePortAll() {
 
 s32 PS4_SYSV_ABI sceVoiceReadFromOPort() {
     LOG_ERROR(Lib_Voice, "(STUBBED) called");
-    return ORBIS_OK;
+    return ORBIS_FAIL;
 }
 
 s32 PS4_SYSV_ABI sceVoiceResetPort() {
