@@ -121,6 +121,9 @@ vk::PrimitiveTopology PrimitiveType(AmdGpu::PrimitiveType type) {
         return vk::PrimitiveTopology::eTriangleFan;
     case AmdGpu::PrimitiveType::TriangleStrip:
         return vk::PrimitiveTopology::eTriangleStrip;
+    case AmdGpu::PrimitiveType::QuadStrip:
+        LOG_WARNING(Render_Vulkan, "Unimplemented primitive type, using TriangleStrip.");
+        return vk::PrimitiveTopology::eTriangleStrip;
     case AmdGpu::PrimitiveType::AdjLineList:
         return vk::PrimitiveTopology::eLineListWithAdjacency;
     case AmdGpu::PrimitiveType::AdjLineStrip:

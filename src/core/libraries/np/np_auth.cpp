@@ -15,6 +15,7 @@ namespace Libraries::Np::NpAuth {
 static bool g_shadnet_enabled = false;
 static s32 g_active_auth_requests = 0;
 static std::mutex g_auth_request_mutex;
+static constexpr s32 ORBIS_NP_AUTH_ISSUER_ID = 0x100;
 
 // Internal types for storing request-related information
 enum class NpAuthRequestState {
@@ -123,8 +124,12 @@ s32 GetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParame
     std::memset(auth_code, 0, sizeof(OrbisNpAuthorizationCode));
     std::strncpy(auth_code->code, "AUTHEN", 7);
     if (issuer_id != nullptr) {
-        *issuer_id = 0x100;
+        *issuer_id = ORBIS_NP_AUTH_ISSUER_ID;
     }
+    request.result = ORBIS_OK;
+    LOG_INFO(Lib_NpAuth, "req_id = {:#x}, async = {}, scope = '{}', code = '{}', issuer_id = {:#x}",
+             req_id, request.async, param->scope ? param->scope : "(null)", auth_code->code,
+             ORBIS_NP_AUTH_ISSUER_ID);
     return ORBIS_OK;
 }
 

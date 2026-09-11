@@ -11,6 +11,7 @@
 
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
+#include <spirv/unified1/spirv.hpp11>
 
 #include <numbers>
 #include <string_view>
@@ -313,6 +314,11 @@ void EmitContext::DefineInputs() {
             U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
         Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
     }
+    if (info.loads.GetAny(IR::Attribute::SubgroupLtMask)) {
+        subgroup_lt_mask =
+            DefineVariable(U32[4], spv::BuiltIn::SubgroupLtMask, spv::StorageClass::Input);
+        Decorate(subgroup_lt_mask, spv::Decoration::Flat);
+    }
     switch (l_stage) {
     case LogicalStage::Vertex: {
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
@@ -466,6 +472,10 @@ void EmitContext::DefineInputs() {
         if (info.loads.GetAny(IR::Attribute::LocalInvocationId)) {
             local_invocation_id =
                 DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
+        }
+        if (info.loads.Get(IR::Attribute::LocalInvocationIndex)) {
+            local_invocation_index = DefineVariable(U32[1], spv::BuiltIn::LocalInvocationIndex,
+                                                    spv::StorageClass::Input);
         }
         break;
     case LogicalStage::Geometry: {
@@ -981,8 +991,7 @@ void EmitContext::DefineImagesAndSamplers() {
         Decorate(id, spv::Decoration::Binding, binding.unified);
         binding.unified += num_bindings;
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        // TODO better naming for resources (flattened sharp_idx is not informative)
-        Name(id, fmt::format("{}_{}{}", stage, "img", image_desc.sharp_idx));
+        Name(id, fmt::format("{}_{}{}", stage, "img", images.size()));
         images.push_back({
             .data_types = &data_types,
             .id = id,
@@ -995,7 +1004,8 @@ void EmitContext::DefineImagesAndSamplers() {
         });
         interfaces.push_back(id);
     }
-    if (std::ranges::any_of(info.images, &ImageResource::is_atomic)) {
+    if (std::ranges::any_of(info.images,
+                            [](const ImageResource& image) { return image.is_atomic; })) {
         image_u32 = TypePointer(spv::StorageClass::Image, U32[1]);
         image_f32 = TypePointer(spv::StorageClass::Image, F32[1]);
     }
@@ -1008,12 +1018,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        const auto sharp_desc =
-            samp_desc.is_inline_sampler
-                ? fmt::format("inline:{:#x}:{:#x}", samp_desc.inline_sampler.raw0,
-                              samp_desc.inline_sampler.raw1)
-                : fmt::format("sgpr:{}", samp_desc.sharp_idx);
-        Name(id, fmt::format("{}_{}{}", stage, "samp", sharp_desc));
+        Name(id, fmt::format("{}_{}{}", stage, "samp", samplers.size()));
         samplers.push_back(id);
         interfaces.push_back(id);
     }

@@ -202,16 +202,15 @@ std::string Instance::GetDriverVersionName() {
 }
 
 bool Instance::CreateDevice() {
-    const vk::StructureChain feature_chain =
-        physical_device
-            .getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features,
-                          vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
-                          vk::PhysicalDeviceRobustness2FeaturesEXT,
-                          vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
-                          vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
-                          vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
-                          vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
-                          vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
+    const vk::StructureChain feature_chain = physical_device.getFeatures2<
+        vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features,
+        vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
+        vk::PhysicalDeviceRobustness2FeaturesEXT,
+        vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
+        vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
+        vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
+        vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
+        vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -344,6 +343,12 @@ bool Instance::CreateDevice() {
     }
     image_view_min_lod = add_extension(VK_EXT_IMAGE_VIEW_MIN_LOD_EXTENSION_NAME);
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+    shader_clock = add_extension(VK_KHR_SHADER_CLOCK_EXTENSION_NAME);
+    if (shader_clock) {
+        shader_clock_features = feature_chain.get<vk::PhysicalDeviceShaderClockFeaturesKHR>();
+        LOG_INFO(Render_Vulkan, "- shaderSubgroupClock: {}",
+                 shader_clock_features.shaderSubgroupClock);
+    }
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
 
@@ -509,6 +514,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceImageViewMinLodFeaturesEXT{
             .minLod = true,
         },
+        vk::PhysicalDeviceShaderClockFeaturesKHR{
+            .shaderSubgroupClock = shader_clock_features.shaderSubgroupClock,
+        },
     };
 
     if (!custom_border_color) {
@@ -553,6 +561,9 @@ bool Instance::CreateDevice() {
     }
     if (!image_view_min_lod) {
         device_chain.unlink<vk::PhysicalDeviceImageViewMinLodFeaturesEXT>();
+    }
+    if (!shader_clock) {
+        device_chain.unlink<vk::PhysicalDeviceShaderClockFeaturesKHR>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());

@@ -91,13 +91,7 @@ void Translator::EmitDataShare(const GcnInst& inst) {
 
 void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
     const IR::U32 value{GetSrc(inst.src[0])};
-
-    if (info.l_stage == LogicalStage::Compute ||
-        info.l_stage == LogicalStage::TessellationControl) {
-        SetDst(inst.dst[0], ir.ReadFirstLane(value));
-    } else {
-        SetDst(inst.dst[0], value);
-    }
+    SetDst(inst.dst[0], ir.ReadFirstLane(value));
 }
 
 void Translator::V_READLANE_B32(const GcnInst& inst) {
@@ -105,19 +99,6 @@ void Translator::V_READLANE_B32(const GcnInst& inst) {
     const IR::U32 value{GetSrc(inst.src[0])};
     const IR::U32 lane{GetSrc(inst.src[1])};
     SetDst(inst.dst[0], ir.ReadLane(value, lane));
-
-    // Restore a thread mask's per-lane bool spilled by V_WRITELANE_B32. Only the low (even) half
-    // of a 64-bit mask carries the view; SetDst1 routes it to the SGPR, VCC, or EXEC.
-    if (lane.IsImmediate()) {
-        ASSERT(lane.U32() < 64);
-        const auto& dst = inst.dst[0];
-        const bool is_mask_lo = (dst.field == OperandField::ScalarGPR && dst.code % 2 == 0) ||
-                                dst.field == OperandField::VccLo ||
-                                dst.field == OperandField::ExecLo;
-        if (is_mask_lo) {
-            SetDst1(dst, ir.GetMaskLaneVariable(IR::VectorReg(inst.src[0].code), lane.U32()));
-        }
-    }
 }
 
 void Translator::V_WRITELANE_B32(const GcnInst& inst) {
@@ -126,19 +107,6 @@ void Translator::V_WRITELANE_B32(const GcnInst& inst) {
     const IR::U32 lane{GetSrc(inst.src[1])};
     const IR::U32 old_value{GetSrc(inst.dst[0])};
     ir.SetVectorReg(dst, ir.WriteLane(old_value, value, lane));
-
-    // A thread mask may be spilled from a scalar to a vector lane. Shadow the low (even) half's
-    // per-lane bool so V_READLANE_B32 can restore it; the high half and plain data store nothing.
-    if (lane.IsImmediate()) {
-        ASSERT(lane.U32() < 64);
-        const auto& src = inst.src[0];
-        const bool is_mask_lo = (src.field == OperandField::ScalarGPR && src.code % 2 == 0) ||
-                                src.field == OperandField::VccLo ||
-                                src.field == OperandField::ExecLo;
-        if (is_mask_lo) {
-            ir.SetMaskLaneVariable(dst, lane.U32(), GetSrc1(src));
-        }
-    }
 }
 
 // DS
@@ -325,7 +293,7 @@ void Translator::DS_APPEND(const GcnInst& inst) {
     const u32 inst_offset = (u32(inst.control.ds.offset1) << 8u) + inst.control.ds.offset0;
     const IR::U32 base = ir.BitFieldExtract(ir.GetM0(), ir.Imm32(16), ir.Imm32(16));
     const IR::U32 gds_offset = ir.IAdd(base, ir.Imm32(inst_offset));
-    const IR::U32 prev = ir.DataAppend(gds_offset);
+    const IR::U32 prev = ir.DataAppend(ir.ShiftRightLogical(gds_offset, ir.Imm32(2u)));
     SetDst(inst.dst[0], prev);
 }
 
@@ -333,7 +301,7 @@ void Translator::DS_CONSUME(const GcnInst& inst) {
     const u32 inst_offset = (u32(inst.control.ds.offset1) << 8u) + inst.control.ds.offset0;
     const IR::U32 base = ir.BitFieldExtract(ir.GetM0(), ir.Imm32(16), ir.Imm32(16));
     const IR::U32 gds_offset = ir.IAdd(base, ir.Imm32(inst_offset));
-    const IR::U32 prev = ir.DataConsume(gds_offset);
+    const IR::U32 prev = ir.DataConsume(ir.ShiftRightLogical(gds_offset, ir.Imm32(2u)));
     SetDst(inst.dst[0], prev);
 }
 

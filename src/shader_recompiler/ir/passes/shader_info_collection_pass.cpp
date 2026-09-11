@@ -123,25 +123,32 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicUMin64:
         info.uses_buffer_int64_atomics = true;
         break;
+    case IR::Opcode::DataAppend:
+    case IR::Opcode::DataConsume:
+    case IR::Opcode::Ballot:
+    case IR::Opcode::InverseBallot:
+    case IR::Opcode::BallotFindLsb:
+        info.uses_group_ballot = true;
+        [[fallthrough]];
     case IR::Opcode::LaneId:
         info.uses_lane_id = true;
         break;
+    case IR::Opcode::Memtime:
+        info.uses_shader_clock = true;
+        break;
     case IR::Opcode::ReadConst:
-        if (!info.uses_dma) {
+        if (!info.has_readconst) {
             info.buffers.push_back({
                 .used_types = IR::Type::U32,
-                // We can't guarantee that flatbuf will not grow past UBO
-                // limit if there are a lot of ReadConsts. (We could specialize)
-                .inline_cbuf = AmdGpu::Buffer::Placeholder(std::numeric_limits<u32>::max()),
                 .buffer_type = BufferType::Flatbuf,
             });
+            info.has_readconst = true;
         }
-        if (inst.Flags<u32>() != 0) {
+        if (inst.Flags<u32>() == 0) {
             info.readconst_types |= Info::ReadConstType::Immediate;
-        } else {
             info.readconst_types |= Info::ReadConstType::Dynamic;
+            info.uses_dma = true;
         }
-        info.uses_dma = true;
         break;
     case IR::Opcode::PackUfloat10_11_11:
         info.uses_pack_10_11_11 = true;
@@ -155,7 +162,7 @@ void Visit(Info& info, const IR::Inst& inst) {
 }
 
 void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
-    auto& info = program.info;
+    Info& info = program.info;
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             Visit(info, inst);
@@ -170,16 +177,15 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
     if (info.uses_dma) {
         info.buffers.push_back({
             .used_types = IR::Type::U64,
-            .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::BDA_PAGETABLE_SIZE),
             .buffer_type = BufferType::BdaPagetable,
             .is_written = true,
         });
         info.buffers.push_back({
             .used_types = IR::Type::U32,
-            .inline_cbuf = AmdGpu::Buffer::Placeholder(std::numeric_limits<u32>::max()),
             .buffer_type = BufferType::FaultBuffer,
             .is_written = true,
         });
+        LOG_ERROR(Render, "Enabling DMA for shader {:#x}", info.pgm_hash);
     }
 }
 

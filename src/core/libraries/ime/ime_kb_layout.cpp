@@ -1967,8 +1967,8 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             if (filled) {
                 draw->AddConvexPolyFilled(shape.data(), static_cast<int>(shape.size()), color);
             } else {
-                draw->AddPolyline(shape.data(), static_cast<int>(shape.size()), color, true,
-                                  thickness);
+                draw->AddPolyline(shape.data(), static_cast<int>(shape.size()), color, thickness,
+                                  ImDrawFlags_Closed);
             }
 
             if (caps_locked) {
@@ -2000,7 +2000,8 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
                 ImVec2{left, bottom},
                 tip,
             };
-            draw->AddPolyline(frame.data(), static_cast<int>(frame.size()), color, true, thickness);
+            draw->AddPolyline(frame.data(), static_cast<int>(frame.size()), color, thickness,
+                              ImDrawFlags_Closed);
 
             const float cross_half = extent * 0.10f;
             const float cross_cx = left + body_w * 0.57f;

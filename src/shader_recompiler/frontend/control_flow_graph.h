@@ -41,6 +41,7 @@ struct Block : Hook {
     u32 end;
     u32 begin_index;
     u32 end_index;
+    u32 num_predecessors{};
     IR::Condition cond{};
     GcnInst end_inst{};
     EndClass end_class{};
@@ -72,6 +73,7 @@ private:
     void EmitBlocks();
     void LinkBlocks();
     void SplitDivergenceScopes();
+    void RemoveUnreachableBlocks();
 
     void AddLabel(Label address) {
         const auto it = std::ranges::find(labels, address);

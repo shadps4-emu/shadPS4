@@ -29,7 +29,7 @@ namespace Core {
 static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     using namespace Libraries::Kernel;
     const auto* signals = Signals::Instance();
-    // Windows static guest red-zone protection
+
     const bool use_static_windows_guest_red_zone_protection =
         WindowsGuestRedZoneProtection::IsStaticPatchingEnabled();
     DWORD code = 0;
@@ -137,11 +137,9 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
         }
     }
 
-    // Windows static guest red-zone protection
-    const bool report_unhandled = use_static_windows_guest_red_zone_protection
-                                      ? static_protection_exception
-                                      : code != EXCEPTION_BREAKPOINT;
-    if (report_unhandled) { // Windows static guest red-zone protection
+    const bool report_unhandled =
+        use_static_windows_guest_red_zone_protection ? static_protection_exception : true;
+    if (report_unhandled) {
         LOG_CRITICAL(Debug, "Unhandled Exception code {:#x} at {}", code, address);
         Common::Singleton<Core::Emulator>::Instance()->Shutdown();
     }
