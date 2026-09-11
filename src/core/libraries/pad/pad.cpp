@@ -4,8 +4,10 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
+#include "core/debug_state.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/pad/input_replay.h"
 #include "core/libraries/pad/pad_errors.h"
 #include "core/user_settings.h"
 #include "imgui/renderer/imgui_core.h"
@@ -429,8 +431,7 @@ int ProcessStates(OrbisPadData* pData, const Input::State* states, s32 num) {
     return num;
 }
 
-int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
-    LOG_TRACE(Lib_Pad, "called");
+static int ReadImpl(InputReplay::ApiKind api, s32 handle, OrbisPadData* pData, s32 num) {
     if (pData == nullptr || num < 1 || num > ORBIS_PAD_MAX_DATA_NUM) {
         return ORBIS_PAD_ERROR_INVALID_ARG;
     }
@@ -439,40 +440,51 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     auto& controller = *it->second;
-    std::array<Input::State, ORBIS_PAD_MAX_DATA_NUM> states;
-    const int ret_num = controller.ReadStates(states.data(), num);
-    return ProcessStates(pData, states.data(), ret_num);
+    const u32 progression = DebugState.GetGnmFrameNum();
+    return InputReplay::Dispatch(
+        api, handle, pData, num, progression,
+        [&controller](OrbisPadData* output, s32 capacity) {
+            std::array<Input::State, ORBIS_PAD_MAX_DATA_NUM> states{};
+            const int ret_num = controller.ReadStates(states.data(), capacity);
+            return ProcessStates(output, states.data(), ret_num);
+        });
+}
+
+int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
+    LOG_TRACE(Lib_Pad, "called");
+    return ReadImpl(InputReplay::ApiKind::Read, handle, pData, num);
 }
 
 int PS4_SYSV_ABI scePadReadBlasterForTracker() {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+    return InputReplay::RejectUnsupported("scePadReadBlasterForTracker",
+                                          DebugState.GetGnmFrameNum());
 }
 
 int PS4_SYSV_ABI scePadReadExt() {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+    return InputReplay::RejectUnsupported("scePadReadExt", DebugState.GetGnmFrameNum());
 }
 
 int PS4_SYSV_ABI scePadReadForTracker() {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+    return InputReplay::RejectUnsupported("scePadReadForTracker", DebugState.GetGnmFrameNum());
 }
 
 int PS4_SYSV_ABI scePadReadHistory() {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+    return InputReplay::RejectUnsupported("scePadReadHistory", DebugState.GetGnmFrameNum());
 }
 
 int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     LOG_TRACE(Lib_Pad, "handle: {}", handle);
-    const int result = scePadRead(handle, pData, 1);
+    const int result = ReadImpl(InputReplay::ApiKind::ReadState, handle, pData, 1);
     return result < 0 ? result : ORBIS_OK;
 }
 
 int PS4_SYSV_ABI scePadReadStateExt() {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+    return InputReplay::RejectUnsupported("scePadReadStateExt", DebugState.GetGnmFrameNum());
 }
 
 int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {

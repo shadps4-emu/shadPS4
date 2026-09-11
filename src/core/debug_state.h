@@ -233,6 +233,10 @@ public:
         return flip_frame_count;
     }
 
+    u32 GetGnmFrameNum() const {
+        return gnm_frame_count.load(std::memory_order_relaxed);
+    }
+
     bool DumpingCurrentFrame() const {
         return gnm_frame_dump_request_count > 0;
     }

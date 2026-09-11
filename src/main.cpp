@@ -19,6 +19,7 @@
 #include "core/emulator_state.h"
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
+#include "core/libraries/pad/input_replay.h"
 #include "core/user_settings.h"
 #include "emulator.h"
 #include "imgui/big_picture/big_picture.h"
@@ -67,6 +68,11 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> addGameFolder;
     std::optional<std::filesystem::path> setAddonFolder;
     std::optional<std::string> patchFile;
+    std::optional<std::filesystem::path> inputRecord;
+    std::optional<std::filesystem::path> inputReplay;
+    std::optional<std::filesystem::path> inputReplaySelfTest;
+    bool exitAfterReplay = false;
+    bool inputReplayOrdered = false;
 
     std::vector<std::pair<std::filesystem::path, std::string>> mounts;
     static std::vector<std::string> env_vars;
@@ -98,6 +104,17 @@ int main(int argc, char* argv[]) {
     app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
     app.add_option("--mount", mounts, "Mount source to destination");
     app.add_option("-e,--env", env_vars, "Environment variables to pass to the guest");
+    app.add_option("--input-record", inputRecord,
+                   "Record guest-visible pad reads after pressing F10");
+    app.add_option("--input-replay", inputReplay,
+                   "Replay guest-visible pad reads after pressing F10")
+        ->check(CLI::ExistingFile);
+    app.add_flag("--exit-after-replay", exitAfterReplay,
+                 "Exit zero after consuming a replay; replay failures exit nonzero");
+    app.add_flag("--input-replay-ordered", inputReplayOrdered,
+                 "Match replay calls in order while retaining GNM positions as diagnostics");
+    app.add_option("--input-replay-self-test", inputReplaySelfTest,
+                   "Run the production input replay dispatcher self-test in this directory");
 
     // ---- Capture args after `--` verbatim ----
     app.allow_extras();
@@ -143,6 +160,29 @@ int main(int argc, char* argv[]) {
     Common::Log::Setup("shadps4.log");
 
     LOG_INFO(Debug, "Run: {}", std::span(argv, argc));
+
+    if ((inputRecord.has_value() ? 1 : 0) + (inputReplay.has_value() ? 1 : 0) +
+            (inputReplaySelfTest.has_value() ? 1 : 0) >
+        1) {
+        LOG_ERROR(Debug, "Choose only one input record, replay, or self-test mode.");
+        return 2;
+    }
+    if (inputReplaySelfTest) {
+        return Libraries::Pad::InputReplay::RunSelfTest(*inputReplaySelfTest);
+    }
+    if (inputReplayOrdered && !inputReplay) {
+        LOG_ERROR(Debug, "--input-replay-ordered requires --input-replay.");
+        return 2;
+    }
+    if (inputRecord &&
+        !Libraries::Pad::InputReplay::ConfigureRecord(*inputRecord, exitAfterReplay)) {
+        return 2;
+    }
+    if (inputReplay &&
+        !Libraries::Pad::InputReplay::ConfigureReplay(*inputReplay, exitAfterReplay,
+                                                      inputReplayOrdered)) {
+        return 2;
+    }
 
     IPC::Instance().Init();
 

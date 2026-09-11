@@ -20,6 +20,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
+#include "core/libraries/pad/input_replay.h"
 #include "core/libraries/system/userservice.h"
 #include "core/user_settings.h"
 #include "imgui/friends_layer.h"
@@ -205,6 +206,14 @@ void WindowSDL::WaitEvent() {
     SDL_Event event;
 
     if (!SDL_WaitEvent(&event)) {
+        return;
+    }
+
+    if ((event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_KEY_UP) &&
+        event.key.key == SDLK_F10 && Libraries::Pad::InputReplay::IsEnabled()) {
+        if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat) {
+            Libraries::Pad::InputReplay::RequestToggle();
+        }
         return;
     }
 
