@@ -272,14 +272,19 @@ void Translator::DS_SWIZZLE_B32(const GcnInst& inst) {
     const u8 offset0 = inst.control.ds.offset0;
     const u8 offset1 = inst.control.ds.offset1;
     const IR::U32 src{GetSrc(inst.src[0])};
-    const IR::U32 lane_id = ir.LaneId();
     if (offset1 & 0x80) {
-        const IR::U32 id_in_group = ir.BitwiseAnd(lane_id, ir.Imm32(0b11));
-        const IR::U32 base = ir.ShiftLeftLogical(id_in_group, ir.Imm32(1));
-        const IR::U32 sel = ir.BitFieldExtract(ir.Imm32(offset0), base, ir.Imm32(2));
-        const IR::U32 quad_base = ir.BitwiseAnd(lane_id, ir.Imm32(~3u));
-        SetDst(inst.dst[0], ir.Shuffle(src, ir.BitwiseOr(quad_base, sel)));
+        if (offset0 == 0x0 || offset0 == 0x55 || offset0 == 0xAA || offset0 == 0xFF) {
+            SetDst(inst.dst[0], ir.QuadShuffle(src, ir.Imm32(offset0 & 3)));
+        } else {
+            const IR::U32 lane_id = ir.LaneId();
+            const IR::U32 id_in_quad = ir.BitwiseAnd(lane_id, ir.Imm32(3));
+            const IR::U32 base = ir.ShiftLeftLogical(id_in_quad, ir.Imm32(1));
+            const IR::U32 sel = ir.BitFieldExtract(ir.Imm32(offset0), base, ir.Imm32(2));
+            const IR::U32 quad_base = ir.BitwiseAnd(lane_id, ir.Imm32(~3u));
+            SetDst(inst.dst[0], ir.Shuffle(src, ir.BitwiseOr(quad_base, sel)));
+        }
     } else {
+        const IR::U32 lane_id = ir.LaneId();
         const u8 and_mask = (offset0 & 0x1f) | (~u8{0} << 5);
         const u8 or_mask = (offset0 >> 5) | ((offset1 & 0x3) << 3);
         const u8 xor_mask = offset1 >> 2;
