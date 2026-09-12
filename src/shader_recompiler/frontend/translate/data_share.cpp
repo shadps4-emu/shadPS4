@@ -54,6 +54,14 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_OP(inst, AtomicOp::Or, true);
     case Opcode::DS_XOR_RTN_B32:
         return DS_OP(inst, AtomicOp::Xor, true);
+    case Opcode::DS_CMPST_B32:
+        return DS_CMPST(32, false, inst);
+    case Opcode::DS_CMPST_RTN_B32:
+        return DS_CMPST(32, true, inst);
+    case Opcode::DS_CMPST_B64:
+        return DS_CMPST(64, false, inst);
+    case Opcode::DS_CMPST_RTN_B64:
+        return DS_CMPST(64, true, inst);
     case Opcode::DS_SWIZZLE_B32:
         return DS_SWIZZLE_B32(inst);
     case Opcode::DS_READ_B32:
@@ -161,6 +169,35 @@ void Translator::DS_OP(const GcnInst& inst, AtomicOp op, bool rtn) {
             SetDst(inst.dst[0], original_val);
         } else {
             SetDst64(inst.dst[0], original_val);
+        }
+    }
+}
+
+void Translator::DS_CMPST(int bit_size, bool rtn, const GcnInst& inst) {
+    // DS_CMPST_[RTN_]B32/B64: compare-and-swap against shared (or GDS) memory.
+    // DATA0 (src[1]) is the compare value, DATA1 (src[2]) is the value written on a match:
+    //   tmp = MEM[ADDR]; if (tmp == DATA0) MEM[ADDR] = DATA1; VDST = tmp (RTN only)
+    // Note the operand order here is the opposite of BUFFER_ATOMIC_CMPSWAP.
+    const bool is_gds = inst.control.ds.gds;
+    const IR::U32 addr{GetSrc(inst.src[0])};
+    const IR::U32 offset =
+        ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
+    const IR::U32 addr_offset = ir.IAdd(addr, offset);
+    if (bit_size == 64) {
+        const IR::U64 cmp_value{GetSrc64(inst.src[1])};
+        const IR::U64 write_value{GetSrc64(inst.src[2])};
+        const IR::U64 original_val =
+            ir.SharedAtomicCmpSwap(addr_offset, write_value, cmp_value, is_gds);
+        if (rtn) {
+            SetDst64(inst.dst[0], original_val);
+        }
+    } else {
+        const IR::U32 cmp_value{GetSrc(inst.src[1])};
+        const IR::U32 write_value{GetSrc(inst.src[2])};
+        const IR::U32 original_val =
+            ir.SharedAtomicCmpSwap(addr_offset, write_value, cmp_value, is_gds);
+        if (rtn) {
+            SetDst(inst.dst[0], original_val);
         }
     }
 }
