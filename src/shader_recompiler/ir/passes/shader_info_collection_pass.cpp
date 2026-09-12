@@ -11,6 +11,7 @@ namespace Shader::Optimization {
 void Visit(Info& info, const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::GetAttribute:
+    case IR::Opcode::GetAttributeU1:
     case IR::Opcode::GetAttributeU32:
         info.loads.Set(inst.Arg(0).Attribute(), inst.Arg(1).U32());
         break;
