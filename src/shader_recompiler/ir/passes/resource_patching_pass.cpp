@@ -378,6 +378,10 @@ void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descrip
         case IR::Opcode::SharedAtomicXor32:
             inst.ReplaceUsesWith(ir.BufferAtomicXor(handle, address_dwords, inst.Arg(1), {}));
             break;
+        case IR::Opcode::SharedAtomicCmpSwap32:
+            inst.ReplaceUsesWith(
+                ir.BufferAtomicCmpSwap(handle, address_dwords, inst.Arg(1), inst.Arg(2), {}));
+            break;
         case IR::Opcode::LoadSharedU16: {
             inst.ReplaceUsesWith(ir.LoadBufferU16(handle, address_words, {}));
             buffer.used_types |= IR::Type::U16;
