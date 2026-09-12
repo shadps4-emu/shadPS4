@@ -28,6 +28,7 @@ struct SharpFetch {
 
     std::array<u32, N> immediates;
     std::array<SharpLocation, N> offsets;
+    std::array<u32, N> clear_masks;
     u8 load_mask;
 
     bool operator==(const SharpFetch&) const = default;
@@ -43,7 +44,7 @@ struct SharpFetch {
         }
         std::array<u32, num_dwords> out_dw;
         for (u32 i = 0; i < num_dwords; i++) {
-            out_dw[i] = (mask & 1) ? flatbuf[offsets[i]] : immediates[i];
+            out_dw[i] = ((mask & 1) ? flatbuf[offsets[i]] : immediates[i]) & ~clear_masks[i];
             mask >>= 1;
         }
         std::memcpy(out, out_dw.data(), sizeof(out_dw));
