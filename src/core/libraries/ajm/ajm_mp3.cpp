@@ -150,29 +150,25 @@ DecoderResult AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuff
     DecoderResult result{};
     AVPacket* pkt = av_packet_alloc();
 
-    m_header = std::byteswap(*reinterpret_cast<u32*>(in_buf.data()));
-    AjmDecMp3ParseFrame info{};
-    ParseMp3Header(in_buf.data(), in_buf.size(), true, &info);
-    m_frame_samples = info.samples_per_channel;
-    if (info.total_samples != 0 || info.encoder_delay != 0) {
-        gapless.init = {
-            .total_samples = info.total_samples,
-            .skip_samples = static_cast<u16>(info.encoder_delay),
-            .skipped_samples = 0,
-        };
-        gapless.current = gapless.init;
-    }
-
-    if (in_buf.size() < info.frame_size) {
-        result.result |= ORBIS_AJM_RESULT_PARTIAL_INPUT;
-    }
-
     int ret = av_parser_parse2(m_parser, m_codec_context, &pkt->data, &pkt->size, in_buf.data(),
                                in_buf.size(), AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
     ASSERT_MSG(ret >= 0, "Error while parsing {}", ret);
     in_buf = in_buf.subspan(ret);
 
     if (pkt->size) {
+        m_header = std::byteswap(*reinterpret_cast<u32*>(pkt->data));
+        AjmDecMp3ParseFrame info{};
+        ASSERT(ParseMp3Header(pkt->data, pkt->size, true, &info) == ORBIS_OK);
+        m_frame_samples = info.samples_per_channel;
+        if (info.total_samples != 0 || info.encoder_delay != 0) {
+            gapless.init = {
+                .total_samples = info.total_samples,
+                .skip_samples = static_cast<u16>(info.encoder_delay),
+                .skipped_samples = 0,
+            };
+            gapless.current = gapless.init;
+        }
+
         // Send the packet with the compressed data to the decoder
         pkt->pts = m_parser->pts;
         pkt->dts = m_parser->dts;
@@ -228,6 +224,8 @@ DecoderResult AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuff
 
             av_frame_free(&frame);
         }
+    } else {
+        result.result |= ORBIS_AJM_RESULT_PARTIAL_INPUT;
     }
 
     av_packet_free(&pkt);
@@ -294,7 +292,13 @@ int AjmMp3Decoder::ParseMp3Header(const u8* p_begin, u32 stream_size, int parse_
     }
 
     frame->sample_rate = Mp3SampleRateTable[u32(header->version)][header->sampling_rate_idx];
+    if (frame->sample_rate == 0) {
+        return ORBIS_AJM_ERROR_INVALID_PARAMETER;
+    }
     frame->bitrate = Mp3BitRateTable[u32(header->version)][header->bitrate_idx] * 1000;
+    if (frame->bitrate == 0) {
+        return ORBIS_AJM_ERROR_INVALID_PARAMETER;
+    }
     frame->num_channels = header->channel_mode == Mp3ChannelMode::SingleChannel ? 1 : 2;
     if (header->version == Mp3AudioVersion::V1) {
         frame->frame_size = (144 * frame->bitrate) / frame->sample_rate + header->padding;
