@@ -226,12 +226,9 @@ void BufferCache::BindVertexBuffers(
         const auto [buffer, offset] = ObtainBuffer(range.base_address, size, false);
         range.vk_buffer = buffer->buffer;
         range.offset = offset;
-        if (IsRegionGpuModified(range.base_address, size)) {
-            if (auto barrier =
-                    buffer->GetBarrier(vk::AccessFlagBits2::eVertexAttributeRead,
-                                       vk::PipelineStageFlagBits2::eVertexAttributeInput)) {
-                barriers.emplace_back(*barrier);
-            }
+        if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eVertexAttributeRead,
+                                              vk::PipelineStageFlagBits2::eVertexAttributeInput)) {
+            barriers.emplace_back(*barrier);
         }
     }
 
@@ -283,11 +280,9 @@ void BufferCache::BindIndexBuffer(
     // Bind index buffer.
     const u32 index_buffer_size = regs.num_indices * index_size;
     const auto [vk_buffer, offset] = ObtainBuffer(index_address, index_buffer_size, false);
-    if (IsRegionGpuModified(index_address, index_buffer_size)) {
-        if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eIndexRead,
-                                                 vk::PipelineStageFlagBits2::eIndexInput)) {
-            barriers.emplace_back(*barrier);
-        }
+    if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eIndexRead,
+                                             vk::PipelineStageFlagBits2::eIndexInput)) {
+        barriers.emplace_back(*barrier);
     }
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindIndexBuffer(vk_buffer->Handle(), offset, index_type);
@@ -404,10 +399,18 @@ void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, 
     });
 }
 
+static std::pair<VAddr, u64> CachePageRange(VAddr addr, u64 size) {
+    const VAddr begin = Common::AlignDown(addr, BufferCache::CACHING_PAGESIZE);
+    const VAddr end = Common::AlignUp(addr + size, BufferCache::CACHING_PAGESIZE);
+    return {begin, end - begin};
+}
+
 std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written,
                                                   bool is_texel_buffer, BufferId buffer_id) {
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
-    if (!is_written && size <= CACHING_PAGESIZE && !IsRegionGpuModified(device_addr, size)) {
+    const auto [page_addr, page_size] = CachePageRange(device_addr, size);
+    if (!is_written && size <= CACHING_PAGESIZE && !IsRegionRegistered(device_addr, size) &&
+        !IsRegionGpuModified(page_addr, page_size)) {
         const u64 offset = stream_buffer.Copy(device_addr, size, instance.UniformMinAlignment());
         return {&stream_buffer, offset};
     }
@@ -417,7 +420,10 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
     Buffer& buffer = slot_buffers[buffer_id];
     SynchronizeBuffer(buffer, device_addr, size, is_written, is_texel_buffer);
     if (is_written) {
-        gpu_modified_ranges.Add(device_addr, size);
+        gpu_modified_ranges.Add(page_addr, page_size);
+        const auto [buffer_page_addr, buffer_page_size] =
+            CachePageRange(buffer.CpuAddr(), buffer.SizeBytes());
+        gpu_modified_ranges.Add(buffer_page_addr, buffer_page_size);
     }
     return {&buffer, buffer.Offset(device_addr)};
 }
@@ -452,7 +458,8 @@ bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
 }
 
 bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
-    return memory_tracker->IsRegionGpuModified(addr, size);
+    return memory_tracker->IsRegionGpuModified(addr, size) ||
+           gpu_modified_ranges.Intersects(addr, size);
 }
 
 BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {
