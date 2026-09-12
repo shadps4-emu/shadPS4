@@ -371,6 +371,10 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_CMPX_TRU_U32:
         return V_CMP_U32(ConditionOp::TRU, false, true, inst);
 
+        //     V_CMPX_{OP8}_I64
+    case Opcode::V_CMPX_EQ_I64:
+        return V_CMP_U64(ConditionOp::EQ, true, true, inst);
+
         //     V_CMP_{OP8}_U64
     case Opcode::V_CMP_EQ_U64:
         return V_CMP_U64(ConditionOp::EQ, false, false, inst);
@@ -1285,9 +1289,6 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
             UNREACHABLE();
         }
     }();
-    if (is_signed) {
-        UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
-    }
     if (set_exec) {
         // See the V_CMPX note in V_CMP_F32.
         const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
