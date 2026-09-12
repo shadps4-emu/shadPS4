@@ -210,7 +210,8 @@ bool Instance::CreateDevice() {
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
         vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
         vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
-        vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR>();
+        vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR,
+        vk::PhysicalDeviceFaultFeaturesEXT>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -342,6 +343,14 @@ bool Instance::CreateDevice() {
                  image_2d_view_of_3d_features.sampler2DViewOf3D);
     }
     image_view_min_lod = add_extension(VK_EXT_IMAGE_VIEW_MIN_LOD_EXTENSION_NAME);
+    device_fault = add_extension(VK_EXT_DEVICE_FAULT_EXTENSION_NAME);
+    if (device_fault) {
+        const auto fault_features = feature_chain.get<vk::PhysicalDeviceFaultFeaturesEXT>();
+        device_fault = fault_features.deviceFault;
+        LOG_INFO(Render_Vulkan, "- deviceFault: {}", fault_features.deviceFault);
+        LOG_INFO(Render_Vulkan, "- deviceFaultVendorBinary: {}",
+                 fault_features.deviceFaultVendorBinary);
+    }
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
     shader_clock = add_extension(VK_KHR_SHADER_CLOCK_EXTENSION_NAME);
     if (shader_clock) {
@@ -517,6 +526,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceShaderClockFeaturesKHR{
             .shaderSubgroupClock = shader_clock_features.shaderSubgroupClock,
         },
+        vk::PhysicalDeviceFaultFeaturesEXT{
+            .deviceFault = true,
+        },
     };
 
     if (!custom_border_color) {
@@ -564,6 +576,9 @@ bool Instance::CreateDevice() {
     }
     if (!shader_clock) {
         device_chain.unlink<vk::PhysicalDeviceShaderClockFeaturesKHR>();
+    }
+    if (!device_fault) {
+        device_chain.unlink<vk::PhysicalDeviceFaultFeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
@@ -812,6 +827,53 @@ vk::Format Instance::GetSupportedFormat(const vk::Format format,
         }
     }
     return format;
+}
+
+void Instance::LogDeviceFault() const {
+    if (!device_fault) {
+        LOG_CRITICAL(Render_Vulkan, "Device lost, VK_EXT_device_fault unavailable for details");
+        return;
+    }
+
+    // Two-call pattern: first query the counts, then fetch the address/vendor info arrays.
+    vk::DeviceFaultCountsEXT counts{};
+    if (device->getFaultInfoEXT(&counts, nullptr) != vk::Result::eSuccess) {
+        LOG_CRITICAL(Render_Vulkan, "Device lost, vkGetDeviceFaultInfoEXT (counts) failed");
+        return;
+    }
+
+    std::vector<vk::DeviceFaultAddressInfoEXT> addresses(counts.addressInfoCount);
+    std::vector<vk::DeviceFaultVendorInfoEXT> vendor_infos(counts.vendorInfoCount);
+    vk::DeviceFaultInfoEXT info{
+        .pAddressInfos = addresses.data(),
+        .pVendorInfos = vendor_infos.data(),
+        .pVendorBinaryData = nullptr,
+    };
+    counts.vendorBinarySize = 0;
+    const auto result = device->getFaultInfoEXT(&counts, &info);
+    if (result != vk::Result::eSuccess && result != vk::Result::eIncomplete) {
+        LOG_CRITICAL(Render_Vulkan, "Device lost, vkGetDeviceFaultInfoEXT (info) failed: {}",
+                     vk::to_string(result));
+        return;
+    }
+
+    LOG_CRITICAL(Render_Vulkan, "===== GPU DEVICE FAULT =====");
+    LOG_CRITICAL(Render_Vulkan, "Description: {}", info.description.data());
+    for (u32 i = 0; i < counts.addressInfoCount; ++i) {
+        const auto& addr = addresses[i];
+        LOG_CRITICAL(Render_Vulkan,
+                     "Address fault [{}]: type = {}, reported address = {:#x}, precision = {:#x} "
+                     "(range {:#x} - {:#x})",
+                     i, vk::to_string(addr.addressType), addr.reportedAddress,
+                     addr.addressPrecision, addr.reportedAddress & ~(addr.addressPrecision - 1),
+                     (addr.reportedAddress | (addr.addressPrecision - 1)));
+    }
+    for (u32 i = 0; i < counts.vendorInfoCount; ++i) {
+        const auto& vendor = vendor_infos[i];
+        LOG_CRITICAL(Render_Vulkan, "Vendor fault [{}]: {} (code = {:#x}, data = {:#x})", i,
+                     vendor.description.data(), vendor.vendorFaultCode, vendor.vendorFaultData);
+    }
+    LOG_CRITICAL(Render_Vulkan, "============================");
 }
 
 } // namespace Vulkan

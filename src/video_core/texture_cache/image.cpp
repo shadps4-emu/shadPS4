@@ -501,10 +501,21 @@ void Image::CopyImage(Image& src_image) {
                   vk::to_string(src_info.pixel_format), vk::to_string(info.pixel_format));
     }
 
-    const u32 base_width = src_info.size.width;
-    const u32 base_height = src_info.size.height;
-    const u32 base_depth =
-        info.type == AmdGpu::ImageType::Color3D ? info.size.depth : src_info.size.depth;
+    // Copy regions must lie within BOTH images. The destination may be smaller than the source
+    // (e.g. overlap resolution recreating a 2048x1152 depth surface as 1920x1080); using the
+    // source extent unclamped makes vkCmdCopyImage write past the end of the destination
+    // allocation, which surfaces as a GPU page fault (VK_ERROR_DEVICE_LOST).
+    const u32 base_width = std::min(src_info.size.width, info.size.width);
+    const u32 base_height = std::min(src_info.size.height, info.size.height);
+    const u32 base_depth = info.type == AmdGpu::ImageType::Color3D
+                               ? std::min(info.size.depth, src_info.size.depth)
+                               : std::min(src_info.size.depth, info.size.depth);
+    if (base_width != src_info.size.width || base_height != src_info.size.height) {
+        LOG_WARNING(Render_Vulkan,
+                    "CopyImage: clamping copy extent {}x{} (src) to {}x{} (dst) for {:#x}",
+                    src_info.size.width, src_info.size.height, base_width, base_height,
+                    info.guest_address);
+    }
 
     // Match sample count before copying
     SetBackingSamples(info.num_samples, false);
@@ -598,11 +609,22 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
     SetBackingSamples(info.num_samples, false);
     src_image.SetBackingSamples(src_info.num_samples);
 
+    // See CopyImage: regions must fit inside the destination as well as the source.
+    const u32 base_width = std::min(src_info.size.width, info.size.width);
+    const u32 base_height = std::min(src_info.size.height, info.size.height);
+    const u32 base_depth = std::min(src_info.size.depth, info.size.depth);
+    if (base_width != src_info.size.width || base_height != src_info.size.height) {
+        LOG_WARNING(Render_Vulkan,
+                    "CopyImageWithBuffer: clamping copy extent {}x{} (src) to {}x{} (dst) for {:#x}",
+                    src_info.size.width, src_info.size.height, base_width, base_height,
+                    info.guest_address);
+    }
+
     boost::container::small_vector<vk::BufferImageCopy, 8> buffer_copies;
     for (u32 mip = 0; mip < num_mips; ++mip) {
-        const auto mip_w = std::max(src_info.size.width >> mip, 1u);
-        const auto mip_h = std::max(src_info.size.height >> mip, 1u);
-        const auto mip_d = std::max(src_info.size.depth >> mip, 1u);
+        const auto mip_w = std::max(base_width >> mip, 1u);
+        const auto mip_h = std::max(base_height >> mip, 1u);
+        const auto mip_d = std::max(base_depth >> mip, 1u);
 
         buffer_copies.emplace_back(vk::BufferImageCopy{
             .bufferOffset = offset,

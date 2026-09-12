@@ -435,6 +435,15 @@ public:
         return image_view_min_lod;
     }
 
+    /// Returns whether VK_EXT_device_fault is supported.
+    bool IsDeviceFaultSupported() const {
+        return device_fault;
+    }
+
+    /// Queries VK_EXT_device_fault after a VK_ERROR_DEVICE_LOST and logs the fault
+    /// addresses/vendor info reported by the driver. No-op if unsupported.
+    void LogDeviceFault() const;
+
     /// Returns whether the device can report memory usage.
     bool CanReportMemoryUsage() const {
         return supports_memory_budget;
@@ -522,6 +531,7 @@ private:
     bool image_2d_view_of_3d{};
     bool image_view_min_lod{};
     bool shader_clock{};
+    bool device_fault{};
     bool supports_memory_budget{};
     bool supports_block_texel_view{};
     u64 total_memory_budget{};

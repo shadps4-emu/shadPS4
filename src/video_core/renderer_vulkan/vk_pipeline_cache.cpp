@@ -463,11 +463,18 @@ bool PipelineCache::RefreshGraphicsKey() {
         key.num_samples = std::max(key.num_samples, color_samples);
     }
 
-    // Force all color samples to match depth samples to avoid unsupported MSAA configuration
+    // Force all color samples to match depth samples to avoid unsupported MSAA configuration.
+    // Note: VK_NV_framebuffer_mixed_samples / VK_AMD_mixed_attachment_samples only permit color
+    // attachments with FEWER samples than the depth/stencil attachment (rasterizationSamples must
+    // equal the depth sample count). Color samples > depth samples is invalid on every GPU; the
+    // driver then rasterizes at the color rate and writes past the end of the depth allocation
+    // (observed as VK_ERROR_DEVICE_LOST with a WriteInvalid fault just past a 1x D32S8 image).
     if (color_samples != 0) {
         const bool depth_mismatch = db_enabled && color_samples != key.depth_samples;
+        const bool mixed_depth_ok =
+            instance.IsMixedDepthSamplesSupported() && color_samples < key.depth_samples;
         if (!all_color_samples_same && !instance.IsMixedAnySamplesSupported() ||
-            all_color_samples_same && depth_mismatch && !instance.IsMixedDepthSamplesSupported()) {
+            all_color_samples_same && depth_mismatch && !mixed_depth_ok) {
             key.color_samples.fill(key.depth_samples);
             key.num_samples = key.depth_samples;
         }
