@@ -191,6 +191,10 @@ Id EmitBitFieldInsert(EmitContext& ctx, Id base, Id insert, Id offset, Id count)
     return ctx.OpBitFieldInsert(ctx.U32[1], base, insert, offset, count);
 }
 
+Id EmitBitFieldInsert64(EmitContext& ctx, Id base, Id insert, Id offset, Id count) {
+    return ctx.OpBitFieldInsert(ctx.U64, base, insert, offset, count);
+}
+
 Id EmitBitFieldSExtract(EmitContext& ctx, IR::Inst* inst, Id base, Id offset, Id count) {
     const Id result{ctx.OpBitFieldSExtract(ctx.U32[1], base, offset, count)};
     SetZeroFlag(ctx, inst, result);

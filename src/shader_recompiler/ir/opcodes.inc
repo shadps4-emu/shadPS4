@@ -342,6 +342,7 @@ OPCODE(BitwiseOr64,                                         U64,            U64,
 OPCODE(BitwiseXor32,                                        U32,            U32,            U32,                                                            )
 OPCODE(BitwiseXor64,                                        U64,            U64,            U64,                                                            )
 OPCODE(BitFieldInsert,                                      U32,            U32,            U32,            U32,            U32,                            )
+OPCODE(BitFieldInsert64,                                    U64,            U64,            U64,            U32,            U32,                            )
 OPCODE(BitFieldSExtract,                                    U32,            U32,            U32,            U32,                                            )
 OPCODE(BitFieldUExtract,                                    U32,            U32,            U32,            U32,                                            )
 OPCODE(BitReverse32,                                        U32,            U32,                                                                            )

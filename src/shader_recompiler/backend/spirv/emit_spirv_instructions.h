@@ -345,6 +345,7 @@ Id EmitBitwiseOr64(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitBitwiseXor32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitBitwiseXor64(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitBitFieldInsert(EmitContext& ctx, Id base, Id insert, Id offset, Id count);
+Id EmitBitFieldInsert64(EmitContext& ctx, Id base, Id insert, Id offset, Id count);
 Id EmitBitFieldSExtract(EmitContext& ctx, IR::Inst* inst, Id base, Id offset, Id count);
 Id EmitBitFieldUExtract(EmitContext& ctx, IR::Inst* inst, Id base, Id offset, Id count);
 Id EmitBitReverse32(EmitContext& ctx, Id value);

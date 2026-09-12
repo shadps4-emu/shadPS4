@@ -1595,6 +1595,11 @@ U32 IREmitter::BitFieldInsert(const U32& base, const U32& insert, const U32& off
     return Inst<U32>(Opcode::BitFieldInsert, base, insert, offset, count);
 }
 
+U64 IREmitter::BitFieldInsert(const U64& base, const U64& insert, const U32& offset,
+                              const U32& count) {
+    return Inst<U64>(Opcode::BitFieldInsert64, base, insert, offset, count);
+}
+
 U32 IREmitter::BitFieldExtract(const U32& base, const U32& offset, const U32& count,
                                bool is_signed) {
     return Inst<U32>(is_signed ? Opcode::BitFieldSExtract : Opcode::BitFieldUExtract, base, offset,
