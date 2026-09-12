@@ -4,6 +4,7 @@
 #pragma once
 
 #include "video_core/buffer_cache/buffer.h"
+#include "video_core/buffer_cache/fault_address.h"
 #include "video_core/buffer_cache/range_set.h"
 
 namespace VideoCore {

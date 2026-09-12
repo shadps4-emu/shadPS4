@@ -26,6 +26,9 @@ FaultManager::FaultManager(const Vulkan::Instance& instance, Vulkan::Scheduler& 
                       0,        AllFlags,  MaxPendingFaults * PageFaultAreaSize} {
     const auto device = instance.GetDevice();
     Vulkan::SetObjectName(device, fault_buffer.Handle(), "Fault Buffer");
+    // The guest shaders atomically set bits in this bitmap. Device-local allocation contents are
+    // undefined, so the initial state must be made explicitly empty.
+    fault_buffer.Fill(0, static_cast<u32>(fault_buffer_size), 0);
 
     const std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {{
         {
@@ -100,7 +103,7 @@ void FaultManager::ProcessFaultBuffer() {
         .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
         .srcAccessMask = vk::AccessFlagBits2::eShaderWrite,
         .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .dstAccessMask = vk::AccessFlagBits2::eShaderWrite,
+        .dstAccessMask = vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite,
         .buffer = fault_buffer.Handle(),
         .offset = 0,
         .size = fault_buffer_size,
@@ -157,10 +160,16 @@ void FaultManager::ProcessFaultBuffer() {
     scheduler.DeferOperation([this, mapped, area = current_area] {
         fault_ranges.Clear();
         const u64* fault_buf = std::bit_cast<const u64*>(mapped);
-        const u32 fault_count = fault_buf[0];
+        const u32 fault_count = ClampFaultCount(fault_buf[0], MaxPageFaults);
         for (u32 i = 1; i <= fault_count; ++i) {
-            fault_ranges.Add(fault_buf[i], caching_pagesize);
-            LOG_INFO(Render_Vulkan, "Accessed non-GPU cached memory at {:#x}", fault_buf[i]);
+            const VAddr fault_address = fault_buf[i];
+            const bool is_gpu_mapped =
+                buffer_cache.IsRegionGpuMapped(fault_address, caching_pagesize);
+            if (!IsFaultAddressCacheable(fault_address, is_gpu_mapped)) {
+                continue;
+            }
+            fault_ranges.Add(fault_address, caching_pagesize);
+            LOG_INFO(Render_Vulkan, "Accessed non-GPU cached memory at {:#x}", fault_address);
         }
         fault_ranges.ForEach([&](VAddr start, VAddr end) {
             ASSERT_MSG((end - start) <= std::numeric_limits<u32>::max(),
