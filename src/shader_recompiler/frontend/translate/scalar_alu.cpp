@@ -123,7 +123,7 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
         case Opcode::S_BITSET0_B64:
             return S_BITSET_B64(inst, 0);
         case Opcode::S_BITSET1_B64:
-            return S_BITSET_B64(inst, 1);    
+            return S_BITSET_B64(inst, 1);
         case Opcode::S_AND_SAVEEXEC_B64:
             return S_SAVEEXEC_B64(NegateMode::None, false, inst);
         case Opcode::S_ORN2_SAVEEXEC_B64:
