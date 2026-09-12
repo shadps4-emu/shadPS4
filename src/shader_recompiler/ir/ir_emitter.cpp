@@ -637,12 +637,16 @@ U32 IREmitter::WarpId() {
     return Inst<U32>(Opcode::WarpId);
 }
 
-U32 IREmitter::QuadShuffle(const U32& value, const U32& index) {
-    return Inst<U32>(Opcode::QuadShuffle, value, index);
+U32 IREmitter::QuadBroadcast(const U32& value, const U32& index) {
+    return Inst<U32>(Opcode::QuadBroadcast, value, index);
 }
 
 U32 IREmitter::Shuffle(const U32& value, const U32& index) {
     return Inst<U32>(Opcode::Shuffle, value, index);
+}
+
+U32 IREmitter::ShuffleXor(const U32& value, const U32& mask) {
+    return Inst<U32>(Opcode::ShuffleXor, value, mask);
 }
 
 U32 IREmitter::ReadFirstLane(const U32& value) {
