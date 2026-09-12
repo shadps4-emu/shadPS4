@@ -1590,14 +1590,19 @@ U32U64 IREmitter::BitwiseXor(const U32U64& a, const U32U64& b) {
     }
 }
 
-U32 IREmitter::BitFieldInsert(const U32& base, const U32& insert, const U32& offset,
-                              const U32& count) {
-    return Inst<U32>(Opcode::BitFieldInsert, base, insert, offset, count);
-}
-
-U64 IREmitter::BitFieldInsert(const U64& base, const U64& insert, const U32& offset,
-                              const U32& count) {
-    return Inst<U64>(Opcode::BitFieldInsert64, base, insert, offset, count);
+U32U64 IREmitter::BitFieldInsert(const U32U64& base, const U32U64& insert, const U32& offset,
+                                 const U32& count) {
+    if (base.Type() != insert.Type()) {
+        UNREACHABLE_MSG("Mismatching types {} and {}", base.Type(), insert.Type());
+    }
+    switch (base.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::BitFieldInsert32, base, insert, offset, count);
+    case Type::U64:
+        return Inst<U64>(Opcode::BitFieldInsert64, base, insert, offset, count);
+    default:
+        ThrowInvalidType(base.Type());
+    }
 }
 
 U32 IREmitter::BitFieldExtract(const U32& base, const U32& offset, const U32& count,
