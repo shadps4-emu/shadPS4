@@ -557,40 +557,6 @@ TEST_F(EmulatorSettingsTest, ClearGameSpecificOverrides_NoopWhenNothingLoaded) {
     EXPECT_NO_THROW(temp_settings->ClearGameSpecificOverrides());
 }
 
-// ResetGameSpecificValue tests
-
-TEST_F(EmulatorSettingsTest, ResetGameSpecificValue_ClearsNamedKey) {
-    temp_settings->SetWindowWidth(1280);
-    json game;
-    game["GPU"]["window_width"] = 3840;
-    WriteJson(GameConfig("CUSA01234"), game);
-    temp_settings->Load("CUSA01234");
-
-    temp_settings->SetConfigMode(ConfigMode::Default);
-    ASSERT_EQ(temp_settings->GetWindowWidth(), 3840);
-
-    temp_settings->ResetGameSpecificValue("window_width");
-    EXPECT_EQ(temp_settings->GetWindowWidth(), 1280);
-}
-
-TEST_F(EmulatorSettingsTest, ResetGameSpecificValueOnlyAffectsTargetKey) {
-    json game;
-    game["GPU"]["window_width"] = 3840;
-    game["General"]["neo_mode"] = true;
-    WriteJson(GameConfig("CUSA01234"), game);
-    temp_settings->Load("CUSA01234");
-
-    temp_settings->ResetGameSpecificValue("window_width");
-    temp_settings->SetConfigMode(ConfigMode::Default);
-
-    EXPECT_EQ(temp_settings->GetWindowWidth(), 1280); // cleared
-    EXPECT_TRUE(temp_settings->IsNeo());              // still set
-}
-
-TEST_F(EmulatorSettingsTest, ResetGameSpecificValueUnknownKeyNoOp) {
-    EXPECT_NO_THROW(temp_settings->ResetGameSpecificValue("does_not_exist"));
-}
-
 // GameInstallDir tests
 
 TEST_F(EmulatorSettingsTest, AddGameInstallDirAddsEnabled) {

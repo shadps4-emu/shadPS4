@@ -539,9 +539,6 @@ public:
     /// the emulator reverts to global settings.
     void ClearGameSpecificOverrides();
 
-    /// Reset a single field's game-specific override by its JSON ke
-    void ResetGameSpecificValue(const std::string& key);
-
     // general accessors
     bool AddGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
     std::vector<std::filesystem::path> GetGameInstallDirs() const;
