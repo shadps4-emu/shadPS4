@@ -580,8 +580,7 @@ void Translator::S_BITSET_B32(const GcnInst& inst, u32 bit_value) {
 
 void Translator::S_BITSET_B64(const GcnInst& inst, u32 bit_value) {
     const IR::U64 old_value{GetSrc64(inst.dst[0])};
-    const IR::U64 masked_offset{ir.BitwiseAnd(GetSrc64(inst.src[0]), ir.Imm64(u64(0x3F)))};
-    const IR::U32 offset{ir.CompositeExtract(ir.UnpackUint2x32(masked_offset), 0)};
+    const IR::U32 offset{ir.BitwiseAnd(GetSrc(inst.src[0]), ir.Imm32(0x3F))};
     const IR::U64 result{
         ir.BitFieldInsert(old_value, ir.Imm64(u64(bit_value)), offset, ir.Imm32(1U))};
     SetDst64(inst.dst[0], result);
