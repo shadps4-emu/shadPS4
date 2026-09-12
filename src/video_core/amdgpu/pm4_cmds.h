@@ -536,17 +536,21 @@ enum class DmaDataSrc : u32 {
 
 struct PM4DmaData {
     PM4Type3Header header;
-    union {
-        BitField<0, 1, u32> engine;
-        BitField<12, 1, u32> src_atc;
-        BitField<13, 2, u32> src_cache_policy;
-        BitField<15, 1, u32> src_volatile;
-        BitField<20, 2, DmaDataDst> dst_sel;
-        BitField<24, 1, u32> dst_atc;
-        BitField<25, 2, u32> dst_cache_policy;
-        BitField<27, 1, u32> dst_volatile;
-        BitField<29, 2, DmaDataSrc> src_sel;
-        BitField<31, 1, u32> cp_sync;
+    struct {
+        u32 engine : 1;
+        u32 reserved1 : 11;
+        u32 src_atc : 1;
+        u32 src_cache_policy : 2;
+        u32 src_volatile : 1;
+        u32 reserved2 :  4;
+        DmaDataDst dst_sel :  2;
+        u32 reserved3 :  2;
+        u32 dst_atc : 1;
+        u32 dst_cache_policy : 2;
+        u32 dst_volatile : 1;
+        u32 reserved4 : 1;
+        DmaDataSrc src_sel : 2;
+        u32 cp_sync : 1;
     };
     union {
         u32 src_addr_lo;
@@ -555,7 +559,18 @@ struct PM4DmaData {
     u32 src_addr_hi;
     u32 dst_addr_lo;
     u32 dst_addr_hi;
-    u32 command;
+    struct {
+        u32 num_bytes : 21;
+        u32 dis_wc : 1;
+        u32 src_swap : 2;
+        u32 dst_swap : 2;
+        u32 sas : 1;
+        u32 das : 1;
+        u32 saic : 1;
+        u32 daic : 1;
+        u32 raw_wait : 1;
+        u32 reserved5 : 1;
+    } command;
 
     template <typename T>
     T SrcAddress() const {
@@ -568,7 +583,7 @@ struct PM4DmaData {
     }
 
     u32 NumBytes() const noexcept {
-        return command & 0x1fffff;
+        return command.num_bytes;
     }
 };
 
