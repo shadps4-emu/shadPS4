@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -45,6 +45,13 @@ constexpr int ORBIS_APP_CONTENT_ENTITLEMENT_KEY_SIZE = 16;
 constexpr int ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET = 20;
 constexpr int ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE = 2500;
 
+// The maximum number of additional content that can be mounted at the same time
+constexpr int ORBIS_APP_CONTENT_ADDCONT_MOUNT_MAXNUM = 64;
+
+// Valid NP service labels are 0-7. 0 is the application's own additional content
+// 1-7 name shared sets via SERVICE_ID_ADDCONT_ADD_n in the application's param.sfo.
+constexpr u32 ORBIS_NP_SERVICE_LABEL_MAX = 8;
+
 enum class OrbisAppContentAddcontDownloadStatus : u32 {
     NoExtraData = 0,
     NoInQueue = 1,
@@ -77,7 +84,7 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
                                            const OrbisNpUnifiedEntitlementLabel* entitlement_label,
                                            OrbisAppContentMountPoint* mount_point);
 int PS4_SYSV_ABI sceAppContentAddcontShrink();
-int PS4_SYSV_ABI sceAppContentAddcontUnmount();
+int PS4_SYSV_ABI sceAppContentAddcontUnmount(OrbisAppContentMountPoint* mount_point);
 int PS4_SYSV_ABI sceAppContentAppParamGetInt(OrbisAppContentAppParamId paramId, s32* value);
 int PS4_SYSV_ABI sceAppContentAppParamGetString();
 int PS4_SYSV_ABI sceAppContentDownload0Expand();

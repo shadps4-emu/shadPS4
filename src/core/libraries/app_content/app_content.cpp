@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <filesystem>
+#include <string>
 
 #include "app_content.h"
 #include "common/assert.h"
@@ -22,6 +27,12 @@ struct AddContInfo {
     char entitlement_label[ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE];
     OrbisAppContentAddcontDownloadStatus status;
     OrbisAppContentGetEntitlementKey key;
+    /// Host folder this entitlement was loaded from
+    std::filesystem::path path;
+    /// NP service label this entitlement belongs to. 0 is the application's own
+    /// additional content,1-7 are shared sets named by SERVICE_ID_ADDCONT_ADD_n
+    /// in the application's param.sfo.
+    u32 service_label = 0;
 };
 
 static std::array<AddContInfo, ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE> addcont_info = {{
@@ -33,8 +44,145 @@ static std::array<AddContInfo, ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE> addcont_inf
 
 static s32 sdk_ver = 0;
 static s32 addcont_count = 0;
+
+// allow at most ORBIS_APP_CONTENT_ADDCONT_MOUNT_MAXNUM simultaneous mounts
+struct MountedAddcont {
+    bool used = false;
+    s32 addcont_index = -1;
+};
+static std::array<MountedAddcont, ORBIS_APP_CONTENT_ADDCONT_MOUNT_MAXNUM> mounted_addcont{};
 static std::string title_id;
 static bool is_initialized = false;
+
+s32 CheckEntitlementLabel(const OrbisNpUnifiedEntitlementLabel* label, const char* caller) {
+    if (label == nullptr) {
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+    if (sdk_ver >= Common::ElfInfo::FW_150 &&
+        (label->padding[0] != 0 || label->padding[1] != 0 || label->padding[2] != 0)) {
+        LOG_ERROR(Lib_AppContent, "{}: CheckEntitlementLabel() parameter error", caller);
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+    return ORBIS_OK;
+}
+
+s32 ScanAddcontDir(const std::filesystem::path& addon_path, u32 service_label) {
+    if (addon_path.empty()) {
+        return 0;
+    }
+    if (!std::filesystem::exists(addon_path)) {
+        LOG_INFO(Lib_AppContent, "No additional content directory at '{}' (service label {})",
+                 addon_path.string(), service_label);
+        return 0;
+    }
+
+    LOG_INFO(Lib_AppContent, "Scanning '{}' for service label {}", addon_path.string(),
+             service_label);
+
+    s32 found = 0;
+    s32 examined = 0;
+    for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
+        if (!entry.is_directory()) {
+            continue;
+        }
+        examined++;
+
+        // Look for a param.sfo in the additional content directory.
+        const auto param_sfo_path = entry.path() / "sce_sys/param.sfo";
+        if (!std::filesystem::exists(param_sfo_path)) {
+            const bool has_nested =
+                std::filesystem::exists(entry.path() / "sce_sys") == false &&
+                std::any_of(std::filesystem::directory_iterator(entry.path()),
+                            std::filesystem::directory_iterator{}, [](const auto& sub) {
+                                return sub.is_directory() &&
+                                       std::filesystem::exists(sub.path() / "sce_sys/param.sfo");
+                            });
+            if (has_nested) {
+                LOG_WARNING(Lib_AppContent,
+                            "'{}' has no param.sfo but its subfolders do the entitlement "
+                            "folders are nested one level too deep. Move them up into '{}'.",
+                            entry.path().string(), addon_path.string());
+            } else {
+                LOG_WARNING(Lib_AppContent,
+                            "Additional content folder '{}' has no sce_sys/param.sfo",
+                            entry.path().string());
+            }
+            continue;
+        }
+        PSF dlc_params;
+        if (!dlc_params.Open(param_sfo_path)) {
+            LOG_WARNING(Lib_AppContent, "Additional content folder {} has an unreadable param.sfo",
+                        entry.path().filename().string());
+            continue;
+        }
+
+        const auto category = dlc_params.GetString("CATEGORY");
+        if (!category.has_value() || strncmp(category.value().data(), "ac", 2) != 0) {
+            LOG_WARNING(Lib_AppContent, "Additional content folder {} is not additional content",
+                        entry.path().filename().string());
+            continue;
+        }
+
+        // We've located additional content. Find the entitlement id from the content id.
+        const auto content_id = dlc_params.GetString("CONTENT_ID");
+        if (!content_id.has_value()) {
+            LOG_WARNING(Lib_AppContent, "Additional content {} param.sfo is missing CONTENT_ID",
+                        entry.path().filename().string());
+            continue;
+        }
+
+        // content id's have consistent formatting, so this will always work.
+        // They follow the format UPXXXX-CUSAXXXXX_XX-entitlement
+        if (content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
+            LOG_WARNING(Lib_AppContent, "Additional content {} param.sfo has malformed CONTENT_ID",
+                        entry.path().filename().string());
+            continue;
+        }
+
+        if (addcont_count >= ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE) {
+            LOG_ERROR(Lib_AppContent, "More than {} additional content entries, ignoring the rest",
+                      ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE);
+            break;
+        }
+
+        const auto entitlement_id =
+            content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
+        LOG_INFO(Lib_AppContent, "Entitlement {} found", entitlement_id);
+        auto& info = addcont_info[addcont_count++];
+        std::memset(info.entitlement_label, 0, sizeof(info.entitlement_label));
+        entitlement_id.copy(info.entitlement_label, sizeof(info.entitlement_label) - 1);
+        const bool has_content =
+            std::any_of(std::filesystem::directory_iterator(entry.path()),
+                        std::filesystem::directory_iterator{},
+                        [](const auto& sub) { return sub.path().filename() != "sce_sys"; });
+        if (!has_content) {
+            LOG_WARNING(Lib_AppContent,
+                        "'{}' holds no content besides sce_sys reporting NoExtraData. If this "
+                        "DLC is meant to have data, the folder was not extracted correctly.",
+                        entry.path().string());
+        }
+        info.status = has_content ? OrbisAppContentAddcontDownloadStatus::Installed
+                                  : OrbisAppContentAddcontDownloadStatus::NoExtraData;
+        info.path = entry.path();
+        info.service_label = service_label;
+        found++;
+    }
+
+    LOG_INFO(Lib_AppContent, "'{}': {} of {} subfolders were valid additional content",
+             addon_path.string(), found, examined);
+    return found;
+}
+
+/// Pull the title id out of a Service ID of the form "UP4108-CUSA01665_00".
+std::string TitleIdFromServiceId(std::string_view service_id) {
+    const auto dash = service_id.find('-');
+    const auto underscore = service_id.rfind('_');
+    if (dash == std::string_view::npos || underscore == std::string_view::npos ||
+        underscore <= dash + 1) {
+        return {};
+    }
+    return std::string{service_id.substr(dash + 1, underscore - dash - 1)};
+}
 
 int PS4_SYSV_ABI _Z5dummyv() {
     LOG_ERROR(Lib_AppContent, "(STUBBED) called");
@@ -59,64 +207,75 @@ int PS4_SYSV_ABI sceAppContentAddcontEnqueueDownloadSp() {
 int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
                                            const OrbisNpUnifiedEntitlementLabel* entitlement_label,
                                            OrbisAppContentMountPoint* mount_point) {
-    LOG_INFO(Lib_AppContent, "called");
+    LOG_INFO(Lib_AppContent, "called, service_label = {}", service_label);
 
-    const auto& addon_path = EmulatorSettings.GetAddonInstallDir() / title_id;
+    if (!is_initialized) {
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
+    if (entitlement_label == nullptr || mount_point == nullptr ||
+        service_label >= ORBIS_NP_SERVICE_LABEL_MAX) {
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+    if (const s32 err = CheckEntitlementLabel(entitlement_label, "AddcontMount"); err != ORBIS_OK) {
+        return err;
+    }
+
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
-    // Determine which loaded additional content this entitlement label is for.
-    s32 i = 0;
-    while (i < addcont_count) {
-        if (strncmp(entitlement_label->data, addcont_info[i].entitlement_label,
-                    ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1) == 0) {
-            snprintf(mount_point->data, ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE, "/addcont%d", i);
-            break;
-        }
-        ++i;
-    }
-
-    if (i == addcont_count) {
-        // None of the loaded additional content match the entitlement label requested.
-        return ORBIS_APP_CONTENT_ERROR_NOT_FOUND;
-    }
-
-    // Find which directory corresponds to this entitlement
-    for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
-        if (!entry.is_directory()) {
+    for (s32 i = 0; i < addcont_count; i++) {
+        if (addcont_info[i].service_label != service_label ||
+            strncmp(entitlement_label->data, addcont_info[i].entitlement_label,
+                    ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1) != 0) {
             continue;
         }
 
-        // Open the param.sfo in this folder
-        PSF* dlc_params = new PSF();
-        const auto& param_sfo_path = entry.path() / "sce_sys/param.sfo";
-        if (!std::filesystem::exists(param_sfo_path)) {
-            // This folder doesn't have a param.sfo
-            continue;
-        }
-        dlc_params->Open(param_sfo_path);
-
-        // Validate the available params
-        auto category = dlc_params->GetString("CATEGORY");
-        auto content_id = dlc_params->GetString("CONTENT_ID");
-        if (!category.has_value() || strncmp(category.value().data(), "ac", 2) != 0 ||
-            !content_id.has_value() ||
-            content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
-            // This folder fails the error checks performed in sceAppContentInitialize.
-            continue;
+        if (addcont_info[i].status == OrbisAppContentAddcontDownloadStatus::NoExtraData) {
+            LOG_ERROR(Lib_AppContent, "Entitlement {} has no data to mount",
+                      addcont_info[i].entitlement_label);
+            return ORBIS_APP_CONTENT_ERROR_NOT_FOUND;
         }
 
-        auto entitlement_id = content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
-        if (strncmp(entitlement_id.data(), entitlement_label->data, entitlement_id.length()) == 0) {
-            // We've located the correct folder.
-            mnt->Mount(entry.path(), mount_point->data);
-            return ORBIS_OK;
+        if (addcont_info[i].path.empty() || !std::filesystem::exists(addcont_info[i].path)) {
+            LOG_ERROR(Lib_AppContent, "Folder for entitlement {} is gone",
+                      addcont_info[i].entitlement_label);
+            return ORBIS_APP_CONTENT_ERROR_NOT_FOUND;
         }
+
+        // Mounting the same additional content twice is an error, not a second mount.
+        for (const auto& m : mounted_addcont) {
+            if (m.used && m.addcont_index == i) {
+                LOG_ERROR(Lib_AppContent, "Entitlement {} is already mounted",
+                          addcont_info[i].entitlement_label);
+                return ORBIS_APP_CONTENT_ERROR_BUSY;
+            }
+        }
+
+        // Take the lowest free mount slot
+        s32 slot = -1;
+        for (s32 s = 0; s < ORBIS_APP_CONTENT_ADDCONT_MOUNT_MAXNUM; s++) {
+            if (!mounted_addcont[s].used) {
+                slot = s;
+                break;
+            }
+        }
+        if (slot < 0) {
+            LOG_ERROR(Lib_AppContent, "All {} mount slots are in use",
+                      ORBIS_APP_CONTENT_ADDCONT_MOUNT_MAXNUM);
+            return ORBIS_APP_CONTENT_ERROR_MOUNT_FULL;
+        }
+
+        snprintf(mount_point->data, ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE, "/addcont%d", slot);
+        mnt->Mount(addcont_info[i].path, mount_point->data);
+        mounted_addcont[slot].used = true;
+        mounted_addcont[slot].addcont_index = i;
+        LOG_INFO(Lib_AppContent, "Mounted entitlement {} at {}", addcont_info[i].entitlement_label,
+                 mount_point->data);
+        return ORBIS_OK;
     }
 
-    // Hitting this shouldn't be possible, as it would mean the entitlement was loaded,
-    // but the folder it was loaded from doesn't exist.
-    UNREACHABLE_MSG("Folder for loaded entitlement label {} doesn't exist.",
-                    entitlement_label->data);
+    // Not a loaded entitlement.
+    LOG_ERROR(Lib_AppContent, "Entitlement {} is not installed", entitlement_label->data);
+    return ORBIS_APP_CONTENT_ERROR_NOT_FOUND;
 }
 
 int PS4_SYSV_ABI sceAppContentAddcontShrink() {
@@ -124,8 +283,28 @@ int PS4_SYSV_ABI sceAppContentAddcontShrink() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentAddcontUnmount() {
-    LOG_ERROR(Lib_AppContent, "(STUBBED) called");
+int PS4_SYSV_ABI sceAppContentAddcontUnmount(OrbisAppContentMountPoint* mount_point) {
+    LOG_INFO(Lib_AppContent, "called");
+
+    if (!is_initialized) {
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
+    if (mount_point == nullptr) {
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+
+    // Mount points are named "/addcont<slot>", so recover the slot and look up what
+    // was mounted into it.
+    s32 slot = -1;
+    if (sscanf(mount_point->data, "/addcont%d", &slot) != 1 || slot < 0 ||
+        slot >= ORBIS_APP_CONTENT_ADDCONT_MOUNT_MAXNUM || !mounted_addcont[slot].used) {
+        LOG_ERROR(Lib_AppContent, "Mount point {} is not mounted", mount_point->data);
+        return ORBIS_APP_CONTENT_ERROR_NOT_MOUNTED;
+    }
+
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    mnt->Unmount(addcont_info[mounted_addcont[slot].addcont_index].path, mount_point->data);
+    mounted_addcont[slot] = {};
     return ORBIS_OK;
 }
 
@@ -203,20 +382,30 @@ int PS4_SYSV_ABI sceAppContentGetAddcontDownloadProgress() {
 int PS4_SYSV_ABI sceAppContentGetAddcontInfo(u32 service_label,
                                              const OrbisNpUnifiedEntitlementLabel* entitlementLabel,
                                              OrbisAppContentAddcontInfo* info) {
-    LOG_INFO(Lib_AppContent, "called");
+    LOG_INFO(Lib_AppContent, "called, service_label = {}", service_label);
 
-    if (entitlementLabel == nullptr || info == nullptr) {
+    if (!is_initialized) {
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
+    if (entitlementLabel == nullptr || info == nullptr ||
+        service_label >= ORBIS_NP_SERVICE_LABEL_MAX) {
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+    if (const s32 err = CheckEntitlementLabel(entitlementLabel, "GetAddcontInfo");
+        err != ORBIS_OK) {
+        return err;
     }
 
     for (auto i = 0; i < addcont_count; i++) {
-        if (strncmp(entitlementLabel->data, addcont_info[i].entitlement_label,
+        if (addcont_info[i].service_label != service_label ||
+            strncmp(entitlementLabel->data, addcont_info[i].entitlement_label,
                     ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1) != 0) {
             continue;
         }
 
         LOG_INFO(Lib_AppContent, "found DLC {}", entitlementLabel->data);
 
+        std::memset(info, 0, sizeof(*info));
         strncpy(info->entitlement_label.data, addcont_info[i].entitlement_label,
                 ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE);
         info->status = addcont_info[i].status;
@@ -229,42 +418,56 @@ int PS4_SYSV_ABI sceAppContentGetAddcontInfo(u32 service_label,
 int PS4_SYSV_ABI sceAppContentGetAddcontInfoList(u32 service_label,
                                                  OrbisAppContentAddcontInfo* list, u32 list_num,
                                                  u32* hit_num) {
-    LOG_INFO(Lib_AppContent, "called");
+    LOG_INFO(Lib_AppContent, "called, service_label = {}, list_num = {}", service_label, list_num);
 
-    if (list_num == 0 || list == nullptr) {
-        if (hit_num == nullptr) {
-            return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    if (!is_initialized) {
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
+    if (hit_num == nullptr || service_label >= ORBIS_NP_SERVICE_LABEL_MAX) {
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+    u32 total = 0;
+    u32 written = 0;
+    for (s32 i = 0; i < addcont_count; i++) {
+        if (addcont_info[i].service_label != service_label) {
+            continue;
         }
+        total++;
 
-        *hit_num = addcont_count;
-        return ORBIS_OK;
-    }
-
-    int dlcs_to_list = addcont_count < list_num ? addcont_count : list_num;
-    for (int i = 0; i < dlcs_to_list; i++) {
-        strncpy(list[i].entitlement_label.data, addcont_info[i].entitlement_label,
+        if (list == nullptr || written >= list_num) {
+            continue;
+        }
+        std::memset(&list[written], 0, sizeof(list[written]));
+        strncpy(list[written].entitlement_label.data, addcont_info[i].entitlement_label,
                 ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE);
-        list[i].status = addcont_info[i].status;
+        list[written].status = addcont_info[i].status;
+        written++;
     }
 
-    if (hit_num != nullptr) {
-        *hit_num = dlcs_to_list;
-    }
-
+    *hit_num = total;
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceAppContentGetEntitlementKey(
     u32 service_label, const OrbisNpUnifiedEntitlementLabel* entitlement_label,
     OrbisAppContentGetEntitlementKey* key) {
-    LOG_INFO(Lib_AppContent, "called");
+    LOG_INFO(Lib_AppContent, "called, service_label = {}", service_label);
 
-    if (entitlement_label == nullptr || key == nullptr) {
+    if (!is_initialized) {
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
+    if (entitlement_label == nullptr || key == nullptr ||
+        service_label >= ORBIS_NP_SERVICE_LABEL_MAX) {
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+    if (const s32 err = CheckEntitlementLabel(entitlement_label, "GetEntitlementKey");
+        err != ORBIS_OK) {
+        return err;
     }
 
     for (int i = 0; i < addcont_count; i++) {
-        if (strncmp(entitlement_label->data, addcont_info[i].entitlement_label,
+        if (addcont_info[i].service_label != service_label ||
+            strncmp(entitlement_label->data, addcont_info[i].entitlement_label,
                     ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1) != 0) {
             continue;
         }
@@ -290,66 +493,54 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
 
     LOG_WARNING(Lib_AppContent, "(DUMMY) called");
     is_initialized = true;
+
+    if (bootParam != nullptr) {
+        std::memset(bootParam, 0, sizeof(*bootParam));
+    }
+
     auto* param_sfo = Common::Singleton<PSF>::Instance();
 
     const auto addons_dir = EmulatorSettings.GetAddonInstallDir();
+    LOG_INFO(Lib_AppContent, "Additional content root is '{}'", addons_dir.string());
     if (const auto value = param_sfo->GetString("TITLE_ID"); value.has_value()) {
         title_id = *value;
     } else {
         UNREACHABLE_MSG("Failed to get TITLE_ID");
     }
-    const auto addon_path = addons_dir / title_id;
-    if (!std::filesystem::exists(addon_path)) {
-        return ORBIS_OK;
-    }
+    addcont_count = 0;
+    mounted_addcont.fill({});
 
-    for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
-        if (entry.is_directory()) {
-            // Look for a param.sfo in the additional content directory.
-            const auto& param_sfo_path = entry.path() / "sce_sys/param.sfo";
-            if (!std::filesystem::exists(param_sfo_path)) {
-                LOG_WARNING(Lib_AppContent, "Additonal content folder {} has no param.sfo",
-                            entry.path().filename().string());
-                continue;
-            }
+    // Service label 0 is the application's own additional content.
+    ScanAddcontDir(addons_dir / title_id, 0);
 
-            // Open the param.sfo, make sure it's actually for additional content.
-            PSF* dlc_params = new PSF();
-            dlc_params->Open(param_sfo_path);
+    // Labels 1-7 are shared additional content belonging to other applications. The
+    // base game's param.sfo names them in SERVICE_ID_ADDCONT_ADD_n as Service IDs
+    for (u32 label = 1; label < ORBIS_NP_SERVICE_LABEL_MAX; label++) {
+        const auto key = "SERVICE_ID_ADDCONT_ADD_" + std::to_string(label);
+        const auto service_id = param_sfo->GetString(key);
+        if (!service_id.has_value() || service_id->empty()) {
+            continue;
+        }
 
-            auto category = dlc_params->GetString("CATEGORY");
-            if (category.has_value() && strncmp(category.value().data(), "ac", 2) == 0) {
-                // We've located additional content. Find the entitlement id from the content id.
-                auto content_id = dlc_params->GetString("CONTENT_ID");
-                if (!content_id.has_value()) {
-                    LOG_WARNING(Lib_AppContent,
-                                "Additonal content {} param.sfo is missing CONTENT_ID",
-                                entry.path().filename().string());
-                    continue;
-                }
+        const auto shared_title_id = TitleIdFromServiceId(*service_id);
+        if (shared_title_id.empty()) {
+            LOG_WARNING(Lib_AppContent, "{} = '{}' is not a usable Service ID", key, *service_id);
+            continue;
+        }
 
-                // content id's have consistent formatting, so this will always work.
-                // They follow the format UPXXXX-CUSAXXXXX_XX-entitlement
-                if (content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
-                    LOG_WARNING(Lib_AppContent,
-                                "Additonal content {} param.sfo has malformed CONTENT_ID",
-                                entry.path().filename().string());
-                    continue;
-                }
-                auto entitlement_id =
-                    content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
-                LOG_INFO(Lib_AppContent, "Entitlement {} found", entitlement_id);
-
-                // Save the additional content info in addcont_info.
-                auto& info = addcont_info[addcont_count++];
-                entitlement_id.copy(info.entitlement_label, entitlement_id.length());
-                info.status = OrbisAppContentAddcontDownloadStatus::Installed;
-            } else {
-                LOG_WARNING(Lib_AppContent, "Additonal content folder {} is not additional content",
-                            entry.path().filename().string());
-                continue;
+        s32 found = ScanAddcontDir(addons_dir / shared_title_id, label);
+        if (found == 0) {
+            found = ScanAddcontDir(addons_dir / title_id, label);
+            if (found > 0) {
+                LOG_WARNING(Lib_AppContent,
+                            "Shared DLC for label {} found under the base title {} rather "
+                            "than its own title {}",
+                            label, title_id, shared_title_id);
             }
         }
+
+        LOG_INFO(Lib_AppContent, "Service label {} -> {} ({} entitlements)", label, shared_title_id,
+                 found);
     }
 
     if (addcont_count > 0) {
