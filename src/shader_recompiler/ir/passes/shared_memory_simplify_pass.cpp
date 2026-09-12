@@ -25,6 +25,7 @@ static bool Requires64BitSharedAtomic(const IR::Inst& inst) {
     case IR::Opcode::SharedAtomicAnd64:
     case IR::Opcode::SharedAtomicOr64:
     case IR::Opcode::SharedAtomicXor64:
+    case IR::Opcode::SharedAtomicCmpSwap64:
         return true;
     default:
         return false;
