@@ -85,7 +85,7 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::ImageWrite:
         info.has_storage_images = true;
         break;
-    case IR::Opcode::QuadShuffle:
+    case IR::Opcode::QuadBroadcast:
         info.uses_group_quad = true;
         break;
     case IR::Opcode::Shuffle:
