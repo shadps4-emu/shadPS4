@@ -136,6 +136,16 @@ Id TypeId(const EmitContext& ctx, IR::Type type) {
         return ctx.U1[1];
     case IR::Type::U32:
         return ctx.U32[1];
+    case IR::Type::U32x2:
+        return ctx.U32[2];
+    case IR::Type::U32x3:
+        return ctx.U32[3];
+    case IR::Type::U32x4:
+        return ctx.U32[4];
+    case IR::Type::F32:
+        return ctx.F32[1];
+    case IR::Type::U64:
+        return ctx.U64;
     default:
         UNREACHABLE_MSG("Phi node type {}", type);
     }
@@ -290,8 +300,18 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
     if (info.uses_group_quad) {
         ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
     }
-    if (info.uses_group_ballot) {
+    if (info.uses_group_ballot || info.loads.Get(IR::Attribute::SubgroupLtMask)) {
         ctx.AddCapability(spv::Capability::GroupNonUniformBallot);
+    }
+    if (info.uses_shader_clock) {
+        if (ctx.profile.supports_shader_subgroup_clock) {
+            ctx.AddExtension("SPV_KHR_shader_clock");
+            ctx.AddCapability(spv::Capability::ShaderClockKHR);
+        } else {
+            LOG_WARNING(Render_Recompiler,
+                        "Shader requires support for ShaderClockKHR capability"
+                        " that your Vulkan instance does not advertise. Results may vary");
+        }
     }
     const auto stage = info.l_stage;
     if (stage == LogicalStage::Vertex) {
@@ -514,7 +534,8 @@ void SetupRoundingMode(EmitContext& ctx, const Profile& profile, const RuntimeIn
             });
         }
     } else if (fp_round_mode != AmdGpu::FpRoundMode::NearestEven) {
-        LOG_WARNING(Render_Vulkan, "Unknown FP rounding mode {}", u32(fp_round_mode));
+        LOG_WARNING(Render_Vulkan, "Unimplemented FP rounding mode {}",
+                    magic_enum::enum_name(fp_round_mode));
     }
 
     if (ctx.info.uses_fp16 || ctx.info.uses_fp64) {
@@ -618,14 +639,13 @@ void PatchPhiNodes(const IR::Program& program, EmitContext& ctx) {
     ctx.PatchDeferredPhi([&](u32 phi_arg, Id first_parent) {
         if (phi_arg == 0) {
             ++inst;
-            if (inst == program.blocks[block_index]->end() ||
-                inst->GetOpcode() != IR::Opcode::Phi) {
-                do {
-                    ++block_index;
-                    inst = program.blocks[block_index]->begin();
-                } while (inst->GetOpcode() != IR::Opcode::Phi);
+            while (inst == program.blocks[block_index]->end() ||
+                   inst->GetOpcode() != IR::Opcode::Phi) {
+                ++block_index;
+                inst = program.blocks[block_index]->begin();
             }
         }
+        ASSERT(inst != program.blocks[block_index]->end());
         const Id arg = ctx.Def(inst->Arg(phi_arg));
         const Id parent = ctx.first_to_last_label_map[first_parent.value];
         return std::make_pair(arg, parent);
@@ -658,10 +678,6 @@ Id EmitPhi(EmitContext& ctx, IR::Inst* inst) {
 }
 
 void EmitVoid(EmitContext&) {}
-
-Id EmitIdentity(EmitContext& ctx, const IR::Value& value) {
-    UNREACHABLE_MSG("Forward identity declaration");
-}
 
 Id EmitConditionRef(EmitContext& ctx, const IR::Value& value) {
     const Id id{ctx.Def(value)};
@@ -712,10 +728,6 @@ void EmitSetExec(EmitContext& ctx) {
 }
 
 void EmitSetVcc(EmitContext& ctx) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitSetSccLo(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 

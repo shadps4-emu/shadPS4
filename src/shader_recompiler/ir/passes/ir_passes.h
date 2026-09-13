@@ -4,6 +4,7 @@
 #pragma once
 
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/program.h"
 
 namespace Shader {
@@ -14,13 +15,17 @@ void InjectClipDistanceAttributes(IR::Program& program, RuntimeInfo& runtime_inf
 namespace Shader::Optimization {
 
 void SsaRewritePass(IR::Program& program);
-void SsaDestroyPass(IR::Program& program);
-void IdentityRemovalPass(IR::BlockList& program);
+void SsaRepairPass(IR::Program& program);
+void PhiSimplificationPass(IR::Program& program);
+void InverseBallotEliminationPass(IR::Program& program);
+void LowerPhisToRegsPass(IR::Program& program);
 void DeadCodeEliminationPass(IR::Program& program);
 void ConstantPropagationPass(IR::BlockList& program);
 void FlattenExtendedUserdataPass(IR::Program& program);
 void ReadLaneEliminationPass(IR::Program& program);
-void ResourceTrackingPass(IR::Program& program, const Profile& profile);
+ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& profile);
+void ResourcePatchingPass(Shader::Info& info, const ResourceDiscoveryList& sharp_usages,
+                          const Profile& profile);
 void CollectShaderInfoPass(IR::Program& program, const Profile& profile);
 void LowerBufferFormatToRaw(IR::Program& program);
 void LowerUserClipPlanes(IR::Program& program, const RuntimeInfo& runtime_info);

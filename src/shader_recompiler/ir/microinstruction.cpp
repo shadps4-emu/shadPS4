@@ -143,6 +143,14 @@ bool Inst::AreAllArgsImmediates() const {
 }
 
 IR::Type Inst::Type() const {
+    if (op == Opcode::Phi) {
+        // The type of a phi node is stored in its flags
+        return Flags<IR::Type>();
+    }
+    if (op == Opcode::GetVirtualRegister) {
+        // The type of a virtual register load depends on the register id
+        return Arg(0).VirtualReg().type;
+    }
     return TypeOf(op);
 }
 
@@ -151,11 +159,11 @@ void Inst::SetArg(size_t index, Value value) {
         UNREACHABLE_MSG("Out of bounds argument index {} in opcode {}", index, op);
     }
     const IR::Value arg{Arg(index)};
-    if (!arg.IsImmediate()) {
-        UndoUse(arg.Inst(), index);
+    if (auto* inst = arg.TryInst()) {
+        UndoUse(inst, index);
     }
-    if (!value.IsImmediate()) {
-        Use(value.Inst(), index);
+    if (auto* inst = value.TryInst()) {
+        Use(inst, index);
     }
     if (op == Opcode::Phi) {
         phi_args[index].second = value;
@@ -175,8 +183,8 @@ Block* Inst::PhiBlock(size_t index) const {
 }
 
 void Inst::AddPhiOperand(Block* predecessor, const Value& value) {
-    if (!value.IsImmediate()) {
-        Use(value.Inst(), phi_args.size());
+    if (auto* inst = value.TryInst()) {
+        Use(inst, phi_args.size());
     }
     phi_args.emplace_back(predecessor, value);
 }
@@ -191,16 +199,16 @@ void Inst::ClearArgs() {
         for (auto i = 0; i < phi_args.size(); i++) {
             auto& pair = phi_args[i];
             IR::Value& value{pair.second};
-            if (!value.IsImmediate()) {
-                UndoUse(value.Inst(), i);
+            if (auto* inst = value.TryInst()) {
+                UndoUse(inst, i);
             }
         }
         phi_args.clear();
     } else {
         for (auto i = 0; i < args.size(); i++) {
             auto& value = args[i];
-            if (!value.IsImmediate()) {
-                UndoUse(value.Inst(), i);
+            if (auto* inst = value.TryInst()) {
+                UndoUse(inst, i);
             }
         }
         // Reset arguments to null
@@ -210,20 +218,13 @@ void Inst::ClearArgs() {
 }
 
 void Inst::ReplaceUsesWith(Value replacement, bool preserve) {
-    // Copy since user->SetArg will mutate this->uses
-    // Could also do temp_uses = std::move(uses) but more readable
-    const auto temp_uses = uses;
-    for (const auto& [user, operand] : temp_uses) {
+    for (auto it = uses.begin(); it != uses.end();) {
+        auto [user, operand] = *it;
+        it = std::next(it);
         DEBUG_ASSERT(user->Arg(operand).Inst() == this);
         user->SetArg(operand, replacement);
     }
     Invalidate();
-    if (preserve) {
-        // Still useful to have Identity for indirection.
-        // SSA pass would be more complicated without it
-        ReplaceOpcode(Opcode::Identity);
-        SetArg(0, replacement);
-    }
 }
 
 void Inst::ReplaceOpcode(IR::Opcode opcode) {

@@ -63,7 +63,7 @@ std::vector<u32> TranslateToSpirv(std::span<const u64> raw_gcn_insts) {
     program.syntax_list.back().data.block = block;
     program.syntax_list.emplace_back();
     program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Return;
-    program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());
+    program.post_order_blocks = Shader::IR::PostOrder(block);
 
     Profile profile{};
     profile.supported_spirv = 0x00010600;
@@ -93,7 +93,6 @@ std::vector<u32> TranslateToSpirv(std::span<const u64> raw_gcn_insts) {
     translator.TranslateInstruction(store_inst);
 
     Shader::Optimization::SsaRewritePass(program);
-    Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::ResourceTrackingPassStub(program, profile);
     Shader::Optimization::ConstantPropagationPass(program.blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);

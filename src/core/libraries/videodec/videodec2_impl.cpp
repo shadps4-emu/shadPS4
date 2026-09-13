@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "videodec2_impl.h"
@@ -13,39 +13,39 @@
 
 namespace Libraries::Videodec2 {
 
-VdecDecoder::VdecDecoder(const OrbisVideodec2DecoderConfigInfo& configInfo,
-                         const OrbisVideodec2DecoderMemoryInfo& memoryInfo) {
-    ASSERT(configInfo.codecType == 1); /* AVC */
-
-    const AVCodec* codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+VdecDecoder::VdecDecoder(const OrbisVideodec2DecoderConfigInfo& config_info,
+                         const OrbisVideodec2DecoderMemoryInfo& memory_info) {
+    const AVCodec* codec = avcodec_find_decoder(
+        config_info.codec_type == OrbisVideodec2CodecType::Avc ? AV_CODEC_ID_H264
+                                                               : AV_CODEC_ID_HEVC);
     ASSERT(codec);
 
-    mCodecContext = avcodec_alloc_context3(codec);
-    ASSERT(mCodecContext);
-    mCodecContext->width = configInfo.maxFrameWidth;
-    mCodecContext->height = configInfo.maxFrameHeight;
-    mCodecContext->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
+    m_codec_context = avcodec_alloc_context3(codec);
+    ASSERT(m_codec_context);
+    m_codec_context->width = config_info.max_frame_width;
+    m_codec_context->height = config_info.max_frame_height;
+    m_codec_context->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
 
-    avcodec_open2(mCodecContext, codec, nullptr);
+    avcodec_open2(m_codec_context, codec, nullptr);
 }
 
 VdecDecoder::~VdecDecoder() {
-    avcodec_free_context(&mCodecContext);
-    sws_freeContext(mSwsContext);
+    avcodec_free_context(&m_codec_context);
+    sws_freeContext(m_sws_context);
 }
 
-s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
-                        OrbisVideodec2FrameBuffer& frameBuffer,
-                        OrbisVideodec2OutputInfo& outputInfo) {
-    frameBuffer.isAccepted = false;
-    outputInfo.isValid = false;
-    outputInfo.pictureCount = 0;
+s32 VdecDecoder::Decode(const OrbisVideodec2InputData& input_data,
+                        OrbisVideodec2FrameBuffer& frame_buffer,
+                        OrbisVideodec2OutputInfo& output_info) {
+    frame_buffer.is_accepted = false;
+    output_info.is_valid = false;
+    output_info.picture_count = 0;
 
-    if (!inputData.auData) {
+    if (!input_data.au_data) {
         LOG_ERROR(Lib_Vdec2, "ORBIS_VIDEODEC2_ERROR_ACCESS_UNIT_POINTER");
         return ORBIS_VIDEODEC2_ERROR_ACCESS_UNIT_POINTER;
     }
-    if (inputData.auSize == 0) {
+    if (input_data.au_size == 0) {
         LOG_ERROR(Lib_Vdec2, "ORBIS_VIDEODEC2_ERROR_ACCESS_UNIT_SIZE");
         return ORBIS_VIDEODEC2_ERROR_ACCESS_UNIT_SIZE;
     }
@@ -56,17 +56,17 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
         return ORBIS_VIDEODEC2_ERROR_API_FAIL;
     }
 
-    packet->data = (u8*)inputData.auData;
-    packet->size = inputData.auSize;
-    packet->pts = inputData.ptsData;
-    packet->dts = inputData.dtsData;
-    packet->opaque = reinterpret_cast<void*>(inputData.attachedData);
+    packet->data = (u8*)input_data.au_data;
+    packet->size = input_data.au_size;
+    packet->pts = input_data.pts_data;
+    packet->dts = input_data.dts_data;
+    packet->opaque = reinterpret_cast<void*>(input_data.attached_data);
 
-    int ret = avcodec_send_packet(mCodecContext, packet);
+    int ret = avcodec_send_packet(m_codec_context, packet);
     if (ret == AVERROR_EOF) {
         // Attempt to flush buffers and try again.
-        avcodec_flush_buffers(mCodecContext);
-        ret = avcodec_send_packet(mCodecContext, packet);
+        avcodec_flush_buffers(m_codec_context);
+        ret = avcodec_send_packet(m_codec_context, packet);
     }
     if (ret < 0) {
         LOG_ERROR(Lib_Vdec2, "Error sending packet to decoder: {}", ret);
@@ -81,7 +81,7 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
         return ORBIS_VIDEODEC2_ERROR_API_FAIL;
     }
 
-    ret = avcodec_receive_frame(mCodecContext, frame);
+    ret = avcodec_receive_frame(m_codec_context, frame);
     if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
         LOG_TRACE(Lib_Vdec2, "AVERROR_EOF or AVERROR(EAGAIN)");
         av_packet_free(&packet);
@@ -105,54 +105,74 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& inputData,
         frame = nv12_frame;
     }
 
-    Videodec::CopyNV12Data((u8*)frameBuffer.frameBuffer, *frame);
-    frameBuffer.isAccepted = true;
+    const bool is_avc = m_codec_context->codec_id == AV_CODEC_ID_H264;
+    const u64 info_size =
+        is_avc ? sizeof(OrbisVideodec2AvcPictureInfo) : sizeof(OrbisVideodec2HevcPictureInfo);
+    Videodec::CopyNV12Data((u8*)frame_buffer.frame_buffer,
+                           frame_buffer.frame_buffer_size - info_size, *frame);
+    frame_buffer.is_accepted = true;
 
     const auto width = Common::AlignUp<u32>(frame->width, 16);
     const auto pitch = Common::AlignUp<u32>(frame->width, 64);
     const auto height = Common::AlignUp<u32>(frame->height, 16);
 
-    outputInfo.isValid = true;
-    outputInfo.isErrorFrame = false;
-    outputInfo.pictureCount = 1; // TODO: 2 pictures for interlaced video
-    outputInfo.codecType = 1;    // FIXME: Hardcoded to AVC
-    outputInfo.frameWidth = width;
-    outputInfo.framePitch = pitch;
-    outputInfo.frameHeight = height;
-    outputInfo.frameBuffer = frameBuffer.frameBuffer;
-    outputInfo.frameBufferSize = (pitch * height * 3) / 2;
+    output_info.is_valid = true;
+    output_info.is_error_frame = false;
+    output_info.picture_count = 1; // TODO: 2 pictures for interlaced video
+    output_info.codec_type = is_avc ? OrbisVideodec2CodecType::Avc : OrbisVideodec2CodecType::Hevc;
+    output_info.frame_width = width;
+    output_info.frame_pitch = pitch;
+    output_info.frame_height = height;
+    output_info.frame_buffer = frame_buffer.frame_buffer;
+    output_info.frame_buffer_size = (pitch * height * 3) / 2;
 
     // Only set frameFormat and framePitchInBytes if the game uses the newer struct version.
-    if (outputInfo.thisSize == sizeof(OrbisVideodec2OutputInfo)) {
-        outputInfo.frameFormat = 0;
-        outputInfo.framePitchInBytes = pitch;
+    if (output_info.this_size == sizeof(OrbisVideodec2OutputInfo)) {
+        output_info.frame_format = 0;
+        output_info.frame_pitch_in_bytes = pitch;
     }
 
-    auto& pictureInfo =
-        *(OrbisVideodec2AvcPictureInfo*)((u8*)outputInfo.frameBuffer + outputInfo.frameBufferSize);
+    if (is_avc) {
+        auto& picture_info = *(OrbisVideodec2AvcPictureInfo*)((u8*)output_info.frame_buffer +
+                                                              output_info.frame_buffer_size);
 
-    pictureInfo = {};
-    pictureInfo.isValid = true;
+        picture_info = {};
+        picture_info.is_valid = true;
 
-    pictureInfo.ptsData = frame->pts;
-    pictureInfo.dtsData = frame->pkt_dts;
-    pictureInfo.attachedData = reinterpret_cast<u64>(frame->opaque);
+        picture_info.pts_data = frame->pts;
+        picture_info.dts_data = frame->pkt_dts;
+        picture_info.attached_data = reinterpret_cast<u64>(frame->opaque);
 
-    pictureInfo.frameCropTopOffset = 0;
-    pictureInfo.frameCropLeftOffset = 0;
-    pictureInfo.frameCropRightOffset = pitch - frame->width;
-    pictureInfo.frameCropBottomOffset = height - frame->height;
+        picture_info.frame_crop_top_offset = 0;
+        picture_info.frame_crop_left_offset = 0;
+        picture_info.frame_crop_right_offset = pitch - frame->width;
+        picture_info.frame_crop_bottom_offset = height - frame->height;
+    } else {
+        auto& picture_info = *(OrbisVideodec2HevcPictureInfo*)((u8*)output_info.frame_buffer +
+                                                               output_info.frame_buffer_size);
+        picture_info = {};
+        picture_info.is_valid = true;
+
+        picture_info.pts_data = frame->pts;
+        picture_info.dts_data = frame->pkt_dts;
+        picture_info.attached_data = reinterpret_cast<u64>(frame->opaque);
+
+        picture_info.frame_crop_top_offset = 0;
+        picture_info.frame_crop_left_offset = 0;
+        picture_info.frame_crop_right_offset = pitch - frame->width;
+        picture_info.frame_crop_bottom_offset = height - frame->height;
+    }
 
     av_packet_free(&packet);
     av_frame_free(&frame);
     return ORBIS_OK;
 }
 
-s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frameBuffer,
-                       OrbisVideodec2OutputInfo& outputInfo) {
-    frameBuffer.isAccepted = false;
-    outputInfo.isValid = false;
-    outputInfo.pictureCount = 0;
+s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frame_buffer,
+                       OrbisVideodec2OutputInfo& output_info) {
+    frame_buffer.is_accepted = false;
+    output_info.is_valid = false;
+    output_info.picture_count = 0;
 
     AVFrame* frame = av_frame_alloc();
     if (!frame) {
@@ -160,8 +180,8 @@ s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frameBuffer,
         return ORBIS_VIDEODEC2_ERROR_API_FAIL;
     }
 
-    avcodec_send_packet(mCodecContext, nullptr);
-    int ret = avcodec_receive_frame(mCodecContext, frame);
+    avcodec_send_packet(m_codec_context, nullptr);
+    int ret = avcodec_receive_frame(m_codec_context, frame);
     if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
         av_frame_free(&frame);
         return ORBIS_OK;
@@ -178,50 +198,70 @@ s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frameBuffer,
         frame = nv12_frame;
     }
 
-    Videodec::CopyNV12Data((u8*)frameBuffer.frameBuffer, *frame);
-    frameBuffer.isAccepted = true;
+    const bool is_avc = m_codec_context->codec_id == AV_CODEC_ID_H264;
+    const u64 info_size =
+        is_avc ? sizeof(OrbisVideodec2AvcPictureInfo) : sizeof(OrbisVideodec2HevcPictureInfo);
+    Videodec::CopyNV12Data((u8*)frame_buffer.frame_buffer,
+                           frame_buffer.frame_buffer_size - info_size, *frame);
+    frame_buffer.is_accepted = true;
 
     const auto width = Common::AlignUp<u32>(frame->width, 16);
     const auto pitch = Common::AlignUp<u32>(frame->width, 64);
     const auto height = Common::AlignUp<u32>(frame->height, 16);
 
-    outputInfo.isValid = true;
-    outputInfo.isErrorFrame = false;
-    outputInfo.pictureCount = 1; // TODO: 2 pictures for interlaced video
-    outputInfo.codecType = 1;    // FIXME: Hardcoded to AVC
-    outputInfo.frameWidth = width;
-    outputInfo.framePitch = pitch;
-    outputInfo.frameHeight = height;
-    outputInfo.frameBuffer = frameBuffer.frameBuffer;
-    outputInfo.frameBufferSize = (pitch * height * 3) / 2;
+    output_info.is_valid = true;
+    output_info.is_error_frame = false;
+    output_info.picture_count = 1; // TODO: 2 pictures for interlaced video
+    output_info.codec_type = is_avc ? OrbisVideodec2CodecType::Avc : OrbisVideodec2CodecType::Hevc;
+    output_info.frame_width = width;
+    output_info.frame_pitch = pitch;
+    output_info.frame_height = height;
+    output_info.frame_buffer = frame_buffer.frame_buffer;
+    output_info.frame_buffer_size = (pitch * height * 3) / 2;
 
     // Only set frameFormat and framePitchInBytes if the game uses the newer struct version.
-    if (outputInfo.thisSize == sizeof(OrbisVideodec2OutputInfo)) {
-        outputInfo.frameFormat = 0;
-        outputInfo.framePitchInBytes = pitch;
+    if (output_info.this_size == sizeof(OrbisVideodec2OutputInfo)) {
+        output_info.frame_format = 0;
+        output_info.frame_pitch_in_bytes = pitch;
     }
 
-    auto& pictureInfo =
-        *(OrbisVideodec2AvcPictureInfo*)((u8*)outputInfo.frameBuffer + outputInfo.frameBufferSize);
+    if (m_codec_context->codec_id == AV_CODEC_ID_H264) {
+        auto& picture_info = *(OrbisVideodec2AvcPictureInfo*)((u8*)output_info.frame_buffer +
+                                                              output_info.frame_buffer_size);
 
-    pictureInfo = {};
-    pictureInfo.isValid = true;
+        picture_info = {};
+        picture_info.is_valid = true;
 
-    pictureInfo.ptsData = frame->pts;
-    pictureInfo.dtsData = frame->pkt_dts;
-    pictureInfo.attachedData = reinterpret_cast<u64>(frame->opaque);
+        picture_info.pts_data = frame->pts;
+        picture_info.dts_data = frame->pkt_dts;
+        picture_info.attached_data = reinterpret_cast<u64>(frame->opaque);
 
-    pictureInfo.frameCropTopOffset = 0;
-    pictureInfo.frameCropLeftOffset = 0;
-    pictureInfo.frameCropRightOffset = pitch - frame->width;
-    pictureInfo.frameCropBottomOffset = height - frame->height;
+        picture_info.frame_crop_top_offset = 0;
+        picture_info.frame_crop_left_offset = 0;
+        picture_info.frame_crop_right_offset = pitch - frame->width;
+        picture_info.frame_crop_bottom_offset = height - frame->height;
+    } else {
+        auto& picture_info = *(OrbisVideodec2HevcPictureInfo*)((u8*)output_info.frame_buffer +
+                                                               output_info.frame_buffer_size);
+        picture_info = {};
+        picture_info.is_valid = true;
+
+        picture_info.pts_data = frame->pts;
+        picture_info.dts_data = frame->pkt_dts;
+        picture_info.attached_data = reinterpret_cast<u64>(frame->opaque);
+
+        picture_info.frame_crop_top_offset = 0;
+        picture_info.frame_crop_left_offset = 0;
+        picture_info.frame_crop_right_offset = pitch - frame->width;
+        picture_info.frame_crop_bottom_offset = height - frame->height;
+    }
 
     av_frame_free(&frame);
     return ORBIS_OK;
 }
 
 s32 VdecDecoder::Reset() {
-    avcodec_flush_buffers(mCodecContext);
+    avcodec_flush_buffers(m_codec_context);
     return ORBIS_OK;
 }
 
@@ -241,13 +281,13 @@ AVFrame* VdecDecoder::ConvertNV12Frame(AVFrame& frame) {
 
     av_frame_get_buffer(nv12_frame, 0);
 
-    if (mSwsContext == nullptr) {
-        mSwsContext = sws_getContext(frame.width, frame.height, AVPixelFormat(frame.format),
-                                     nv12_frame->width, nv12_frame->height, AV_PIX_FMT_NV12,
-                                     SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
+    if (m_sws_context == nullptr) {
+        m_sws_context = sws_getContext(frame.width, frame.height, AVPixelFormat(frame.format),
+                                       nv12_frame->width, nv12_frame->height, AV_PIX_FMT_NV12,
+                                       SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
     }
 
-    const auto res = sws_scale(mSwsContext, frame.data, frame.linesize, 0, frame.height,
+    const auto res = sws_scale(m_sws_context, frame.data, frame.linesize, 0, frame.height,
                                nv12_frame->data, nv12_frame->linesize);
     if (res < 0) {
         LOG_ERROR(Lib_Vdec2, "Could not convert to NV12: {}", av_err2str(res));

@@ -3,7 +3,7 @@
 
 project(ImGui_Resources)
 
-add_executable(Dear_ImGui_FontEmbed ${CMAKE_SOURCE_DIR}/externals/dear_imgui/misc/fonts/binary_to_compressed_c.cpp)
+add_executable(Dear_ImGui_FontEmbed ${CMAKE_SOURCE_DIR}/externals/imgui/misc/fonts/binary_to_compressed_c.cpp)
 
 set(FONT_LIST
     NotoSansArabic-Regular.ttf

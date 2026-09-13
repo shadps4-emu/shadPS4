@@ -115,9 +115,8 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
 
     // Add a buffer binding for shared memory storage buffer.
     const u32 binding = static_cast<u32>(program.info.buffers.size());
-    program.info.buffers.push_back({
+    program.info.buffers.push_back(BufferResource{
         .used_types = used_types,
-        .inline_cbuf = AmdGpu::Buffer::Null(),
         .buffer_type = BufferType::SharedMemory,
         .is_written = true,
     });

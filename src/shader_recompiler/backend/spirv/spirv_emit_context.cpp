@@ -5,11 +5,13 @@
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
+#include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
+#include <spirv/unified1/spirv.hpp11>
 
 #include <numbers>
 #include <string_view>
@@ -90,7 +92,7 @@ EmitContext::~EmitContext() = default;
 
 Id EmitContext::Def(const IR::Value& value) {
     if (!value.IsImmediate()) {
-        return value.InstRecursive()->Definition<Id>();
+        return value.Inst()->Definition<Id>();
     }
     switch (value.Type()) {
     case IR::Type::Void:
@@ -312,6 +314,11 @@ void EmitContext::DefineInputs() {
             U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
         Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
     }
+    if (info.loads.GetAny(IR::Attribute::SubgroupLtMask)) {
+        subgroup_lt_mask =
+            DefineVariable(U32[4], spv::BuiltIn::SubgroupLtMask, spv::StorageClass::Input);
+        Decorate(subgroup_lt_mask, spv::Decoration::Flat);
+    }
     switch (l_stage) {
     case LogicalStage::Vertex: {
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
@@ -465,6 +472,10 @@ void EmitContext::DefineInputs() {
         if (info.loads.GetAny(IR::Attribute::LocalInvocationId)) {
             local_invocation_id =
                 DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
+        }
+        if (info.loads.Get(IR::Attribute::LocalInvocationIndex)) {
+            local_invocation_index = DefineVariable(U32[1], spv::BuiltIn::LocalInvocationIndex,
+                                                    spv::StorageClass::Input);
         }
         break;
     case LogicalStage::Geometry: {
@@ -759,7 +770,7 @@ void EmitContext::DefinePushDataBlock() {
     interfaces.push_back(push_data_block);
 }
 
-EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, u32 elem_shift,
+EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, bool is_coherent, u32 elem_shift,
                                                  BufferType buffer_type, Id data_type) {
     // Define array type.
     const Id record_array_type{TypeRuntimeArray(data_type)};
@@ -782,6 +793,10 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, u32 elem_shift
     Decorate(id, spv::Decoration::DescriptorSet, 0U);
     if (!is_written) {
         Decorate(id, spv::Decoration::NonWritable);
+    } else if (is_coherent) {
+        // The guest V# MTYPE marks this buffer as shared between invocations;
+        // Coherent forbids caching its accesses in registers across barriers.
+        Decorate(id, spv::Decoration::Coherent);
     }
     switch (buffer_type) {
     case BufferType::GdsBuffer:
@@ -813,6 +828,10 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, u32 elem_shift
 void EmitContext::DefineBuffers() {
     for (const auto& desc : info.buffers) {
         const auto buf_sharp = desc.GetSharp(info);
+        // MTYPE class 3 marks guest buffers shared between invocations; shared
+        // memory lowered to a storage buffer needs the same guarantee.
+        const bool is_coherent =
+            desc.buffer_type == BufferType::SharedMemory || buf_sharp.mtype == 3;
 
         // Set indexes for special buffers.
         if (desc.buffer_type == BufferType::Flatbuf) {
@@ -827,23 +846,23 @@ void EmitContext::DefineBuffers() {
         auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
         if (True(desc.used_types & IR::Type::U64)) {
             spv_buffer.Alias(PointerType::U64) =
-                DefineBuffer(desc.is_written, 3, desc.buffer_type, U64);
+                DefineBuffer(desc.is_written, is_coherent, 3, desc.buffer_type, U64);
         }
         if (True(desc.used_types & IR::Type::U32)) {
             spv_buffer.Alias(PointerType::U32) =
-                DefineBuffer(desc.is_written, 2, desc.buffer_type, U32[1]);
+                DefineBuffer(desc.is_written, is_coherent, 2, desc.buffer_type, U32[1]);
         }
         if (True(desc.used_types & IR::Type::F32)) {
             spv_buffer.Alias(PointerType::F32) =
-                DefineBuffer(desc.is_written, 2, desc.buffer_type, F32[1]);
+                DefineBuffer(desc.is_written, is_coherent, 2, desc.buffer_type, F32[1]);
         }
         if (True(desc.used_types & IR::Type::U16)) {
             spv_buffer.Alias(PointerType::U16) =
-                DefineBuffer(desc.is_written, 1, desc.buffer_type, U16);
+                DefineBuffer(desc.is_written, is_coherent, 1, desc.buffer_type, U16);
         }
         if (True(desc.used_types & IR::Type::U8)) {
             spv_buffer.Alias(PointerType::U8) =
-                DefineBuffer(desc.is_written, 0, desc.buffer_type, U8);
+                DefineBuffer(desc.is_written, is_coherent, 0, desc.buffer_type, U8);
         }
         ++binding.unified;
     }
@@ -972,8 +991,7 @@ void EmitContext::DefineImagesAndSamplers() {
         Decorate(id, spv::Decoration::Binding, binding.unified);
         binding.unified += num_bindings;
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        // TODO better naming for resources (flattened sharp_idx is not informative)
-        Name(id, fmt::format("{}_{}{}", stage, "img", image_desc.sharp_idx));
+        Name(id, fmt::format("{}_{}{}", stage, "img", images.size()));
         images.push_back({
             .data_types = &data_types,
             .id = id,
@@ -986,7 +1004,8 @@ void EmitContext::DefineImagesAndSamplers() {
         });
         interfaces.push_back(id);
     }
-    if (std::ranges::any_of(info.images, &ImageResource::is_atomic)) {
+    if (std::ranges::any_of(info.images,
+                            [](const ImageResource& image) { return image.is_atomic; })) {
         image_u32 = TypePointer(spv::StorageClass::Image, U32[1]);
         image_f32 = TypePointer(spv::StorageClass::Image, F32[1]);
     }
@@ -999,12 +1018,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        const auto sharp_desc =
-            samp_desc.is_inline_sampler
-                ? fmt::format("inline:{:#x}:{:#x}", samp_desc.inline_sampler.raw0,
-                              samp_desc.inline_sampler.raw1)
-                : fmt::format("sgpr:{}", samp_desc.sharp_idx);
-        Name(id, fmt::format("{}_{}{}", stage, "samp", sharp_desc));
+        Name(id, fmt::format("{}_{}{}", stage, "samp", samplers.size()));
         samplers.push_back(id);
         interfaces.push_back(id);
     }

@@ -41,7 +41,7 @@ auto BreadthFirstSearch(Instruction* inst, Pred&& pred)
                 continue;
             }
             // Queue instruction if it hasn't been visited
-            Instruction* arg_inst{arg_value.InstRecursive()};
+            Instruction* arg_inst{arg_value.Inst()};
             if (std::ranges::find(visited, arg_inst) == visited.end()) {
                 visited.push_back(arg_inst);
                 queue.push(arg_inst);
@@ -59,7 +59,7 @@ auto BreadthFirstSearch(const Value& value, Pred&& pred)
         // Nothing to do with immediates
         return std::nullopt;
     }
-    return BreadthFirstSearch(value.InstRecursive(), pred);
+    return BreadthFirstSearch(value.Inst(), pred);
 }
 
 template <typename Pred>
@@ -68,7 +68,7 @@ auto BreadthFirstSearch(Value value, Pred&& pred) -> std::invoke_result_t<Pred, 
         // Nothing to do with immediates
         return std::nullopt;
     }
-    return BreadthFirstSearch(value.InstRecursive(), pred);
+    return BreadthFirstSearch(value.Inst(), pred);
 }
 
 } // namespace Shader::IR

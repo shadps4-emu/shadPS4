@@ -17,14 +17,6 @@
 #include "common/types.h"
 #include "core/emulator_settings.h"
 
-// return codes above 'standard'
-// https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes
-enum class ShadPs4ReturnCode : u32 {
-    TERMINATE_WITHOUT_EXCEPTION = 20'000,
-    TERMINATE_WITH_EXCEPTION = 20'001,
-    TERMINATE_WITH_UNKNOWN_EXCEPTION = 20'002,
-};
-
 namespace Common::Log {
 bool g_should_append = false;
 
@@ -99,6 +91,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_NpSnsFacebookDialog, nullptr},
     {Class::Lib_NpTrophy, nullptr},
     {Class::Lib_NpTus, nullptr},
+    {Class::Lib_NpUtility, nullptr},
     {Class::Lib_NpWebApi, nullptr},
     {Class::Lib_NpWebApi2, nullptr},
     {Class::Lib_Pad, nullptr},
@@ -182,7 +175,6 @@ void Setup(std::string_view shadps4_filename) {
     std::call_once(already_registered, []() {
         std::atexit(Shutdown);
         std::at_quick_exit(Flush);
-        std::set_terminate(Terminate);
     });
 
     for (auto& [name, logger] : ALL_LOGGERS) {
@@ -241,26 +233,6 @@ void Flush() {
 
     if (g_console_sink != nullptr) {
         g_console_sink->flush();
-    }
-}
-
-void Terminate() {
-    try {
-        if (std::exception_ptr eptr{std::current_exception()}) {
-            std::rethrow_exception(eptr);
-        }
-
-        LOG_CRITICAL(Debug, "Exiting without exception");
-
-        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITHOUT_EXCEPTION));
-    } catch (const std::exception& exception) {
-        LOG_CRITICAL(Debug, "Exception: {}", exception);
-
-        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITH_EXCEPTION));
-    } catch (...) {
-        LOG_CRITICAL(Debug, "Unknown exception caught");
-
-        std::quick_exit(std::to_underlying(ShadPs4ReturnCode::TERMINATE_WITH_UNKNOWN_EXCEPTION));
     }
 }
 

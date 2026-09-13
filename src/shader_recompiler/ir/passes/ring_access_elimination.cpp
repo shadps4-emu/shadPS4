@@ -38,8 +38,8 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 ASSERT(inst.Arg(0).IsImmediate());
 
                 u32 offset = inst.Arg(0).U32();
-                IR::Value data = is_composite ? ir.UnpackUint2x32(IR::U64{inst.Arg(1).Resolve()})
-                                              : inst.Arg(1).Resolve();
+                IR::Value data =
+                    is_composite ? ir.UnpackUint2x32(IR::U64{inst.Arg(1)}) : inst.Arg(1);
                 for (s32 i = 0; i < num_components; i++) {
                     const auto attrib = IR::Attribute::Param0 + (offset / 16);
                     const auto comp = (offset / 4) % 4;
@@ -126,7 +126,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                                            .U32() >>
                                        2;
                 const auto soffset = IR::GetBufferSOffsetArg(&inst);
-                const auto bucket = soffset.Resolve().U32() / 256u;
+                const auto bucket = soffset.U32() / 256u;
                 const auto attrib = bucket < 4 ? IR::Attribute::Position0
                                                : IR::Attribute::Param0 + (bucket / 4 - 1);
                 const auto comp = bucket % 4;

@@ -118,10 +118,6 @@ static IR::Opcode Replace(IR::Opcode op) {
         return IR::Opcode::FPIsInf32;
     case IR::Opcode::ConvertS32F64:
         return IR::Opcode::ConvertS32F32;
-    case IR::Opcode::ConvertF32F64:
-        return IR::Opcode::Identity;
-    case IR::Opcode::ConvertF64F32:
-        return IR::Opcode::Identity;
     case IR::Opcode::ConvertF64S32:
         return IR::Opcode::ConvertF32S32;
     case IR::Opcode::ConvertF64U32:
@@ -135,12 +131,18 @@ static void Lower(IR::Block& block, IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::PackDouble2x32: {
         IR::IREmitter ir(block, IR::Block::InstructionList::s_iterator_to(inst));
-        inst.ReplaceUsesWith(PackedF64ToF32(ir, inst.Arg(0)));
+        inst.ReplaceUsesWithAndRemove(PackedF64ToF32(ir, inst.Arg(0)));
         break;
     }
     case IR::Opcode::UnpackDouble2x32: {
         IR::IREmitter ir(block, IR::Block::InstructionList::s_iterator_to(inst));
-        inst.ReplaceUsesWith(F32ToPackedF64(ir, inst.Arg(0)));
+        inst.ReplaceUsesWithAndRemove(F32ToPackedF64(ir, inst.Arg(0)));
+        break;
+    }
+    case IR::Opcode::ConvertF64F32:
+    case IR::Opcode::ConvertF32F64: {
+        IR::IREmitter ir(block, IR::Block::InstructionList::s_iterator_to(inst));
+        inst.ReplaceUsesWithAndRemove(inst.Arg(0));
         break;
     }
     default:
