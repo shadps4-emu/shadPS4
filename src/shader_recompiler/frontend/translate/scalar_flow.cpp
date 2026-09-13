@@ -17,10 +17,6 @@ void Translator::EmitFlowControl(const GcnInst& inst) {
         LOG_WARNING(Render_Vulkan, "S_SETPRIO instruction!");
         return;
     case Opcode::S_SETVSKIP:
-        // Toggles a hardware mode bit that skips vector instruction issue for the
-        // wave when set. Not modeling it only means redundant VALU work may run
-        // that real hardware would have skipped as an optimization; results are
-        // unaffected, so it's safe to treat as a no-op.
         LOG_WARNING(Render_Vulkan, "S_SETVSKIP instruction!");
         return;
     case Opcode::S_TRAP:
