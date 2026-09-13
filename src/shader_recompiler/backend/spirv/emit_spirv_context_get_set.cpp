@@ -113,7 +113,7 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     }
     switch (attr) {
     case IR::Attribute::Position0:
-        ASSERT(ctx.l_stage == LogicalStage::Geometry);
+        ASSERT(ctx.sw_stage == SwStage::Geometry);
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(ctx.input_f32, ctx.gl_in, ctx.ConstU32(index),
                                             ctx.ConstU32(0U), ctx.ConstU32(comp)));
@@ -191,21 +191,21 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     case IR::Attribute::PrimitiveId:
         return ctx.OpLoad(ctx.U32[1], ctx.primitive_id);
     case IR::Attribute::InvocationId:
-        ASSERT(ctx.info.l_stage == LogicalStage::Geometry ||
-               ctx.info.l_stage == LogicalStage::TessellationControl);
+        ASSERT(ctx.info.sw_stage == SwStage::Geometry ||
+               ctx.info.sw_stage == SwStage::TessellationControl);
         return ctx.OpLoad(ctx.U32[1], ctx.invocation_id);
     case IR::Attribute::SubgroupLtMask:
         return ctx.OpLoad(
             ctx.U32[1], ctx.OpAccessChain(ctx.input_u32, ctx.subgroup_lt_mask, ctx.ConstU32(comp)));
     case IR::Attribute::PatchVertices:
-        ASSERT(ctx.info.l_stage == LogicalStage::TessellationControl);
+        ASSERT(ctx.info.sw_stage == SwStage::TessellationControl);
         return ctx.OpLoad(ctx.U32[1], ctx.patch_vertices);
     case IR::Attribute::PackedHullInvocationInfo: {
-        ASSERT(ctx.info.l_stage == LogicalStage::TessellationControl);
+        ASSERT(ctx.info.sw_stage == SwStage::TessellationControl);
         // [0:8]: patch id within VGT
         // [8:12]: output control point id
         // But 0:8 should be treated as 0 for attribute addressing purposes
-        if (ctx.runtime_info.hs_info.IsPassthrough()) {
+        if (ctx.runtime_info.sw.tcs.IsPassthrough()) {
             // Gcn shader would run with 1 thread, but we need to run a thread for
             // each output control point.
             // If Gcn shader uses this value, we should make sure all threads in the
@@ -232,7 +232,7 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
     };
     if (IR::IsParam(attr)) {
         const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
-        if (ctx.stage == Stage::Local) {
+        if (ctx.hw_stage == HwStage::Local) {
             const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
             return op_store(ctx.OpAccessChain(component_ptr, ctx.output_attr_array,
                                               ctx.ConstU32(attr_index), ctx.ConstU32(element)));
@@ -250,7 +250,7 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
     if (IR::IsMrt(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
         const auto& info{ctx.frag_outputs.at(index)};
-        if (element < 3 && ctx.runtime_info.fs_info.color_buffers[index].blend_self_scale) {
+        if (element < 3 && ctx.runtime_info.hw.fs.color_buffers[index].blend_self_scale) {
             // Emulates GCN's factor-scaled min/max blend: min/max(src*src, dst*dst).
             value = ctx.OpFMul(ctx.F32[1], value, value);
         }
@@ -315,8 +315,7 @@ void EmitSetTcsGenericAttribute(EmitContext& ctx, Id value, Id attr_index, Id co
 Id EmitGetPatch(EmitContext& ctx, IR::Patch patch) {
     const u32 index{IR::GenericPatchIndex(patch)};
     const Id element{ctx.ConstU32(IR::GenericPatchElement(patch))};
-    const Id type{ctx.l_stage == LogicalStage::TessellationControl ? ctx.output_f32
-                                                                   : ctx.input_f32};
+    const Id type{ctx.sw_stage == SwStage::TessellationControl ? ctx.output_f32 : ctx.input_f32};
     const Id pointer{ctx.OpAccessChain(type, ctx.patches.at(index), element)};
     return ctx.OpLoad(ctx.F32[1], pointer);
 }

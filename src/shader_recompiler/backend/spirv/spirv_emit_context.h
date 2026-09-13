@@ -193,8 +193,8 @@ public:
     Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
-    Stage stage;
-    LogicalStage l_stage{};
+    HwStage hw_stage;
+    SwStage sw_stage{};
 
     Id last_label{};
 

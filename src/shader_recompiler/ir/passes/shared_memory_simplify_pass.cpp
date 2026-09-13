@@ -61,7 +61,8 @@ IR::Type CalculateSpecialSharedAtomicTypes(IR::Program& program) {
 // Simplifies down U16 and U64 shared memory operations to U32 when aliasing is not supported and
 // atomics of the same type are not used.
 void SharedMemorySimplifyPass(IR::Program& program, const Profile& profile) {
-    if (program.info.stage != Stage::Compute || profile.supports_workgroup_explicit_memory_layout) {
+    if (program.info.hw_stage != HwStage::Compute ||
+        profile.supports_workgroup_explicit_memory_layout) {
         return;
     }
 
