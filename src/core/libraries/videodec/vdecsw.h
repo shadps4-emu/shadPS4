@@ -275,7 +275,5 @@ struct OrbisVdecswHevcPictureInfo {
 };
 static_assert(sizeof(OrbisVdecswHevcPictureInfo) == 0xB8);
 
-
-
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Vdecsw
