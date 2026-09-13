@@ -3,6 +3,7 @@
 
 #include <mutex>
 
+#include <unordered_set>
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -103,9 +104,53 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
 s32 PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal(char const* name, u64 args, void const* argp,
                                                       void const* popt, s32* res) {
     LOG_ERROR(Lib_SysModule, "(DUMMY) called, name: {}", name);
+
+    constexpr auto whitelisted_modules = std::to_array<char const*>({
+        "libScePsmUtil",
+        "libReactNative.Modules.Vsh",
+        "libmonosgen-2.0",
+        "libmono-btls-shared",
+    });
+
+    constexpr auto blacklisted_modules = std::to_array<char const*>({
+        "libSceDipsw",
+        "libSceComposite",
+        "libSceUpdateService",
+        "libScePatchCheckerClient",
+        "libSceMusicCoreServerClient",
+    });
+
+    bool is_whitelisted = std::ranges::find_if(whitelisted_modules, [name](char const* m) {
+                              return std::strcmp(name, m) == 0;
+                          }) != whitelisted_modules.end();
+
     std::string filename = std::string(name) + ".sprx";
-    s32 exists;
+    const auto& sys_module_path = EmulatorSettings.GetSysModulesDir();
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* game_info = Common::Singleton<Common::ElfInfo>::Instance();
     using namespace Kernel;
+
+    s32 ret;
+
+    if (is_whitelisted && std::filesystem::exists(sys_module_path / filename)) {
+        ret = linker->LoadAndStartModule(sys_module_path / filename, args, argp, res);
+        return ret >= 0 ? ret : ORBIS_KERNEL_ERROR_ENOENT;
+    }
+    if (std::filesystem::exists(sys_module_path / game_info->GameSerial() / filename)) {
+        ret = linker->LoadAndStartModule(sys_module_path / game_info->GameSerial() / filename, args,
+                                         argp, res);
+        return ret >= 0 ? ret : ORBIS_KERNEL_ERROR_ENOENT;
+    }
+
+    bool is_blacklisted = std::ranges::find_if(blacklisted_modules, [name](char const* m) {
+                              return std::strcmp(name, m) == 0;
+                          }) != blacklisted_modules.end();
+    if (is_blacklisted) {
+        static s32 stub_handles = 0x300;
+        return stub_handles++;
+    }
+
+    s32 exists;
     std::string system_base = std::string("/") + sceKernelGetFsSandboxRandomWord();
     exists = posix_access((system_base + "/common/lib/" + filename).c_str(), 0);
     if (exists == 0)
