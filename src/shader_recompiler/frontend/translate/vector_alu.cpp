@@ -371,6 +371,10 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_CMPX_TRU_U32:
         return V_CMP_U32(ConditionOp::TRU, false, true, inst);
 
+        //     V_CMPX_{OP8}_I64
+    case Opcode::V_CMPX_EQ_I64:
+        return V_CMP_U64(ConditionOp::EQ, true, true, inst);
+
         //     V_CMP_{OP8}_U64
     case Opcode::V_CMP_EQ_U64:
         return V_CMP_U64(ConditionOp::EQ, false, false, inst);
@@ -447,6 +451,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_LSHL_B64(inst);
     case Opcode::V_LSHR_B64:
         return V_LSHR_B64(inst);
+    case Opcode::V_ASHR_I64:
+        return V_ASHR_I64(inst);
     case Opcode::V_ADD_F64:
         return V_ADD_F64(inst);
     case Opcode::V_ALIGNBIT_B32:
@@ -1285,9 +1291,6 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
             UNREACHABLE();
         }
     }();
-    if (is_signed) {
-        UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
-    }
     if (set_exec) {
         // See the V_CMPX note in V_CMP_F32.
         const IR::U1 masked{ir.LogicalAnd(ir.GetExec(), result)};
@@ -1552,6 +1555,12 @@ void Translator::V_LSHR_B64(const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
     const IR::U64 src1{GetSrc64(inst.src[1])};
     SetDst64(inst.dst[0], ir.ShiftRightLogical(src0, ir.BitwiseAnd(src1, ir.Imm64(u64(0x3F)))));
+}
+
+void Translator::V_ASHR_I64(const GcnInst& inst) {
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U64 src1{GetSrc64(inst.src[1])};
+    SetDst64(inst.dst[0], ir.ShiftRightArithmetic(src0, ir.BitwiseAnd(src1, ir.Imm64(u64(0x3F)))));
 }
 
 void Translator::V_ALIGNBIT_B32(const GcnInst& inst) {

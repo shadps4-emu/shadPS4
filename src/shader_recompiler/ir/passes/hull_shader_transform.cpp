@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_map>
@@ -244,6 +244,7 @@ private:
                 // Stop here
                 return;
             }
+            break;
         }
         case IR::Opcode::Phi: {
             auto it = phi_infos.find(use.user);
