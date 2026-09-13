@@ -105,14 +105,14 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal(char const* name, u64 args
                                                       void const* popt, s32* res) {
     LOG_ERROR(Lib_SysModule, "(DUMMY) called, name: {}", name);
 
-    const std::unordered_set<std::string const> whitelisted_modules{
+    std::unordered_set<std::string const> const whitelisted_modules{
         "libScePsmUtil",
         "libReactNative.Modules.Vsh",
         "libmonosgen-2.0",
         "libmono-btls-shared",
     };
 
-    const std::unordered_set<std::string const> blacklisted_modules{
+    std::unordered_set<std::string const> const blacklisted_modules{
         "libSceDipsw",
         "libSceComposite",
         "libSceUpdateService",
