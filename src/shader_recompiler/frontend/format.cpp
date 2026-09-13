@@ -357,8 +357,8 @@ constexpr std::array<InstFormat, 17> InstructionFormatSOPC = {{
     // 15 = S_BITCMP1_B64
     {InstClass::ScalarCmp, InstCategory::ScalarALU, 2, 1, ScalarType::Uint64, ScalarType::Uint64},
     // 16 = S_SETVSKIP
-    {InstClass::ScalarProgFlow, InstCategory::FlowControl, 2, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::ScalarSync, InstCategory::FlowControl, 2, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
 }};
 
 constexpr std::array<InstFormat, 27> InstructionFormatSOPP = {{
