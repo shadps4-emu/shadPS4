@@ -462,8 +462,8 @@ OPCODE(WriteLane,                                           U32,            U32,
 OPCODE(Ballot,                                              U64,            U1,                                                                             )
 OPCODE(BallotFindLsb,                                       U32,            U64,                                                                            )
 OPCODE(InverseBallot,                                       U1,             U64,                                                                            )
-OPCODE(DataAppend,                                          U32,            U32,            U32                                                             )
-OPCODE(DataConsume,                                         U32,            U32,            U32                                                             )
+OPCODE(DataAppend,                                          U32,            U32,            U1                                                              )
+OPCODE(DataConsume,                                         U32,            U32,            U1                                                              )
 OPCODE(GroupAny,                                            U1,             U1,                                                                             )
 
 // Time operations

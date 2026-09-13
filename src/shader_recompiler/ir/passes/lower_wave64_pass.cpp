@@ -94,19 +94,13 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
     for (IR::Block* block : program.blocks) {
         const bool is_uniform = std::ranges::contains(uniform_blocks, block);
         for (IR::Inst& inst : block->Instructions()) {
-            if (inst.GetOpcode() == IR::Opcode::Ballot) {
+            if (inst.GetOpcode() == IR::Opcode::Ballot ||
+                inst.GetOpcode() == IR::Opcode::ReadLane) {
                 if (is_uniform) {
                     worklist.push_back(&inst);
                 } else {
-                    LOG_WARNING(Render_Recompiler,
-                                "Ballot instruction in non uniform control flow");
-                }
-            } else if (inst.GetOpcode() == IR::Opcode::ReadLane) {
-                if (is_uniform) {
-                    worklist.push_back(&inst);
-                } else {
-                    LOG_WARNING(Render_Recompiler,
-                                "ReadLane instruction in non uniform control flow");
+                    LOG_WARNING(Render_Recompiler, "{} instruction in non uniform control flow",
+                                inst.GetOpcode());
                 }
             } else if (inst.GetOpcode() == IR::Opcode::GetAttributeU32 &&
                        inst.Arg(0).Attribute() == IR::Attribute::SubgroupLtMask) {
@@ -119,8 +113,9 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
     }
 
     const auto [size_x, size_y, size_z] = runtime_info.cs_info.workgroup_size;
+    const u32 num_threads = Common::AlignUp(size_x * size_y * size_z, 64);
     const u32 scratch_base = Common::AlignUp(runtime_info.cs_info.shared_memory_size, sizeof(u64));
-    const u32 scratch_size = ((size_x * size_y * size_z) / profile.subgroup_size) * sizeof(u32);
+    const u32 scratch_size = (num_threads / profile.subgroup_size) * sizeof(u32);
     program.info.shared_memory_scratch_size =
         scratch_base + scratch_size - runtime_info.cs_info.shared_memory_size;
 

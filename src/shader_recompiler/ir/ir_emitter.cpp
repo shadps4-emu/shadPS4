@@ -621,12 +621,12 @@ Value IREmitter::BufferAtomicFCmpSwap(const Value& handle, const Value& address,
     return Inst(Opcode::BufferAtomicFCmpSwap32, Flags{info}, handle, address, vdata, cmp_value);
 }
 
-U32 IREmitter::DataAppend(const U32& counter) {
-    return Inst<U32>(Opcode::DataAppend, counter, Imm32(0));
+U32 IREmitter::DataAppend(const U32& gds_dw_offset) {
+    return Inst<U32>(Opcode::DataAppend, gds_dw_offset, GetExec());
 }
 
-U32 IREmitter::DataConsume(const U32& counter) {
-    return Inst<U32>(Opcode::DataConsume, counter, Imm32(0));
+U32 IREmitter::DataConsume(const U32& gds_dw_offset) {
+    return Inst<U32>(Opcode::DataConsume, gds_dw_offset, GetExec());
 }
 
 U32 IREmitter::LaneId() {
