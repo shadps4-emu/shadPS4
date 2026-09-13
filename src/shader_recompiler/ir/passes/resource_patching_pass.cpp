@@ -431,11 +431,14 @@ void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descrip
     IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
 
     if (IR::Inst* append_idx = IsAppendBufferPattern(inst); append_idx) {
-        const IR::Value gds_atomic =
-            inst.GetOpcode() == IR::Opcode::DataAppend
-                ? ir.BufferAtomicIAdd(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {})
-                : ir.BufferAtomicISub(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {});
-        append_idx->ReplaceUsesWithAndRemove(gds_atomic);
+        if (inst.GetOpcode() == IR::Opcode::DataAppend) {
+            append_idx->ReplaceUsesWithAndRemove(
+                ir.BufferAtomicIAdd(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {}));
+        } else {
+            const IR::U32 counter =
+                IR::U32{ir.BufferAtomicISub(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {})};
+            append_idx->ReplaceUsesWithAndRemove(ir.ISub(counter, ir.Imm32(1u)));
+        }
         return;
     }
 
