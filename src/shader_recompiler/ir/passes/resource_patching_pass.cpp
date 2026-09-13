@@ -382,7 +382,9 @@ static IR::Inst* IsAppendBufferPattern(IR::Inst& vx) {
                use.user->GetOpcode() == IR::Opcode::ISub32;
     });
     if (it == vx.Uses().end()) {
-        return nullptr;
+        ASSERT(vx.UseCount() == 1 &&
+               vx.Uses().back().user->GetOpcode() == IR::Opcode::SetVectorRegister);
+        return &vx;
     }
     const auto [user, operand] = *it;
     IR::U1 exec{vx.Arg(1)};
