@@ -10,13 +10,29 @@
 #include <mutex>
 #include <semaphore>
 #include <thread>
+#include <poll.h>
 #include <semaphore.h>
 #include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include <gtest/gtest.h>
 
 #ifndef _WIN32
 #include "core/pause_protocol.h"
+#endif
+
+#ifndef _WIN32
+namespace Core::DebugPause {
+
+struct ParticipantTestAccess {
+    static int PendingAckWakeCount(Participant& participant) {
+        int value{};
+        return sem_getvalue(&participant.ack_semaphore, &value) == 0 ? value : -1;
+    }
+};
+
+} // namespace Core::DebugPause
 #endif
 
 namespace {
@@ -98,11 +114,44 @@ TEST(PauseProtocolLegacy, PauseThenImmediateResumeCoalescesAndStrands) {
 
 #ifndef _WIN32
 
+using Core::DebugPause::AckWaitResult;
 using Core::DebugPause::Participant;
+using Core::DebugPause::ParticipantTestAccess;
 using Core::DebugPause::Protocol;
 using Core::DebugPause::State;
+using Core::DebugPause::StateWaitResult;
 
 constexpr auto TestTimeout = std::chrono::seconds{2};
+
+bool WaitForAck(Participant& participant, const std::uint64_t epoch,
+                const std::chrono::milliseconds timeout = TestTimeout) {
+    return participant.WaitForAckFor(epoch, timeout) == AckWaitResult::Acknowledged;
+}
+
+class PauseProtocol : public testing::Test {
+public:
+    void SetUp() override {
+        ASSERT_EQ(pthread_sigmask(SIG_SETMASK, nullptr, &old_mask), 0);
+        auto test_mask = old_mask;
+        ASSERT_EQ(sigdelset(&test_mask, SIGVTALRM), 0);
+        ASSERT_EQ(pthread_sigmask(SIG_SETMASK, &test_mask, nullptr), 0);
+
+        struct sigaction action{};
+        action.sa_sigaction = Core::DebugPause::PauseSignalHandler;
+        sigemptyset(&action.sa_mask);
+        action.sa_flags = SA_SIGINFO;
+        ASSERT_EQ(sigaction(SIGVTALRM, &action, &old_action), 0);
+    }
+
+    void TearDown() override {
+        EXPECT_EQ(sigaction(SIGVTALRM, &old_action, nullptr), 0);
+        EXPECT_EQ(pthread_sigmask(SIG_SETMASK, &old_mask, nullptr), 0);
+    }
+
+private:
+    struct sigaction old_action{};
+    sigset_t old_mask{};
+};
 
 void BlockPauseSignal() {
     sigset_t signal_set{};
@@ -121,9 +170,17 @@ int ConsumePauseSignal() {
 }
 
 class PauseTarget {
+private:
+    std::unique_ptr<Protocol> owned_protocol;
+
 public:
     PauseTarget()
-        : participant(std::make_shared<Participant>(protocol)), thread([this] { Run(); }) {}
+        : owned_protocol(std::make_unique<Protocol>()), protocol(*owned_protocol),
+          participant(std::make_shared<Participant>(protocol)), thread([this] { Run(); }) {}
+
+    explicit PauseTarget(Protocol& protocol_)
+        : protocol(protocol_), participant(std::make_shared<Participant>(protocol)),
+          thread([this] { Run(); }) {}
 
     PauseTarget(const PauseTarget&) = delete;
     PauseTarget& operator=(const PauseTarget&) = delete;
@@ -168,12 +225,13 @@ public:
         }
     }
 
-    Protocol protocol;
+    Protocol& protocol;
     std::shared_ptr<Participant> participant;
 
 private:
     void Run() {
         BlockPauseSignal();
+        Core::DebugPause::BindCurrentParticipant(participant.get());
         native_thread = pthread_self();
         native_ready.store(true, std::memory_order_release);
         ready.release();
@@ -187,6 +245,7 @@ private:
         finished.store(true, std::memory_order_release);
         done.release();
         participant->Unregister();
+        Core::DebugPause::ClearCurrentParticipant(participant.get());
     }
 
     void Cleanup() {
@@ -263,6 +322,7 @@ public:
 private:
     void Run() {
         BlockPauseSignal();
+        Core::DebugPause::BindCurrentParticipant(participant.get());
         native_thread = pthread_self();
         native_ready.store(true, std::memory_order_release);
         ready.release();
@@ -272,20 +332,16 @@ private:
             worker_error.store(true, std::memory_order_release);
             done.release();
             participant->Unregister();
+            Core::DebugPause::ClearCurrentParticipant(participant.get());
             return;
         }
         entered.release();
         allow_body.acquire();
         participant->HandleNotification();
-
-        // Resume is sent while the first handler body is held at entry. Consume that notification
-        // as the next handler entry so a pending standard signal cannot escape the test thread.
-        if (ConsumePauseSignal() != 0) {
-            worker_error.store(true, std::memory_order_release);
-        }
         finished.store(true, std::memory_order_release);
         done.release();
         participant->Unregister();
+        Core::DebugPause::ClearCurrentParticipant(participant.get());
     }
 
     void Cleanup() {
@@ -354,11 +410,13 @@ public:
 private:
     void Run() {
         BlockPauseSignal();
+        Core::DebugPause::BindCurrentParticipant(participant.get());
         native_thread = pthread_self();
         native_ready.store(true, std::memory_order_release);
         ready.release();
         exit.acquire();
         participant->Unregister();
+        Core::DebugPause::ClearCurrentParticipant(participant.get());
         finished.store(true, std::memory_order_release);
         done.release();
     }
@@ -369,6 +427,82 @@ private:
     std::counting_semaphore<4> ready{0};
     std::counting_semaphore<4> exit{0};
     std::counting_semaphore<4> done{0};
+    std::thread thread;
+};
+
+// Models the production AddCurrentThreadToGuestList ordering: publish the participant, then
+// synchronously honor the authoritative state before crossing into guest execution.
+class RegistrationTarget {
+private:
+    Protocol& protocol;
+
+public:
+    explicit RegistrationTarget(Protocol& protocol_)
+        : protocol(protocol_), participant(std::make_shared<Participant>(protocol)),
+          thread([this] { Run(); }) {}
+
+    RegistrationTarget(const RegistrationTarget&) = delete;
+    RegistrationTarget& operator=(const RegistrationTarget&) = delete;
+
+    ~RegistrationTarget() {
+        if (thread.joinable()) {
+            protocol.Request(State::Running);
+            if (native_ready.load(std::memory_order_acquire)) {
+                (void)pthread_kill(native_thread, SIGVTALRM);
+            }
+            thread.join();
+        }
+    }
+
+    bool WaitPublished() {
+        return published.try_acquire_for(TestTimeout);
+    }
+
+    bool WaitGuestEntry() {
+        return guest_entry.try_acquire_for(TestTimeout);
+    }
+
+    bool HasEnteredGuest() const {
+        return entered_guest.load(std::memory_order_acquire);
+    }
+
+    int Notify() const {
+        if (!native_ready.load(std::memory_order_acquire)) {
+            return ESRCH;
+        }
+        return pthread_kill(native_thread, SIGVTALRM);
+    }
+
+    void Join() {
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
+
+    std::shared_ptr<Participant> participant;
+
+private:
+    void Run() {
+        BlockPauseSignal();
+        Core::DebugPause::BindCurrentParticipant(participant.get());
+        native_thread = pthread_self();
+        native_ready.store(true, std::memory_order_release);
+        published.release();
+
+        const auto result = participant->SynchronizeState();
+        if (result == StateWaitResult::Running) {
+            entered_guest.store(true, std::memory_order_release);
+        }
+        guest_entry.release();
+        participant->Unregister();
+        Core::DebugPause::ClearCurrentParticipant(participant.get());
+    }
+
+    pthread_t native_thread{};
+    std::atomic_bool native_ready{};
+    std::atomic_bool entered_guest{};
+    std::counting_semaphore<4> published{0};
+    std::counting_semaphore<4> guest_entry{0};
     std::thread thread;
 };
 
@@ -404,7 +538,7 @@ public:
         action.sa_handler = TestCancellationSignalHandler;
         sigemptyset(&action.sa_mask);
         action.sa_flags = 0;
-        installed = sigaction(SIGUSR1, &action, &old_action) == 0;
+        installed = sigaction(SignalNumber(), &action, &old_action) == 0;
         if (installed) {
             cancel_seen.store(&semaphore, std::memory_order_release);
         }
@@ -416,7 +550,7 @@ public:
     ~ScopedCancellationSignal() {
         if (installed) {
             cancel_seen.store(nullptr, std::memory_order_release);
-            (void)sigaction(SIGUSR1, &old_action, nullptr);
+            (void)sigaction(SignalNumber(), &old_action, nullptr);
         }
     }
 
@@ -424,12 +558,20 @@ public:
         return installed;
     }
 
+    static int SignalNumber() {
+#if defined(__APPLE__) || defined(__FreeBSD__)
+        return SIGUSR2;
+#else
+        return SIGRTMAX;
+#endif
+    }
+
 private:
     struct sigaction old_action{};
     bool installed{};
 };
 
-TEST(PauseProtocol, PauseWaitsForAckThenResumes) {
+TEST_F(PauseProtocol, PauseWaitsForAckThenResumes) {
     PauseTarget target;
     ASSERT_TRUE(target.WaitReady());
 
@@ -441,7 +583,7 @@ TEST(PauseProtocol, PauseWaitsForAckThenResumes) {
     std::atomic_bool ack_result{};
     std::thread ack_waiter{[&] {
         waiter_ready.count_down();
-        ack_result.store(target.participant->WaitForAckFor(pause.snapshot.epoch, TestTimeout),
+        ack_result.store(WaitForAck(*target.participant, pause.snapshot.epoch),
                          std::memory_order_release);
     }};
     waiter_ready.wait();
@@ -460,7 +602,7 @@ TEST(PauseProtocol, PauseWaitsForAckThenResumes) {
     target.Join();
 }
 
-TEST(PauseProtocol, ImmediateResumeBeforeHandlerEntryUsesState) {
+TEST_F(PauseProtocol, ImmediateResumeBeforeHandlerEntryUsesState) {
     PauseTarget target;
     ASSERT_TRUE(target.WaitReady());
 
@@ -478,7 +620,7 @@ TEST(PauseProtocol, ImmediateResumeBeforeHandlerEntryUsesState) {
     target.Join();
 }
 
-TEST(PauseProtocol, ResumeRacingHandlerEntryUsesLatestState) {
+TEST_F(PauseProtocol, ResumeRacingHandlerEntryUsesLatestState) {
     DelayedEntryTarget target;
     ASSERT_TRUE(target.WaitReady());
 
@@ -497,7 +639,221 @@ TEST(PauseProtocol, ResumeRacingHandlerEntryUsesLatestState) {
     target.Join();
 }
 
-TEST(PauseProtocol, RapidPauseResumePauseAcknowledgesFinalPause) {
+TEST_F(PauseProtocol, RegistrationDuringActivePauseCannotEnterGuest) {
+    PauseTarget existing;
+    ASSERT_TRUE(existing.WaitReady());
+
+    auto pause_request = existing.protocol.AcquirePauseRequest();
+    const auto pause = existing.protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+    ASSERT_EQ(existing.Notify(), 0);
+    existing.ReleaseHandler();
+    ASSERT_TRUE(WaitForAck(*existing.participant, pause.snapshot.epoch));
+    pause_request.unlock();
+
+    RegistrationTarget newcomer{existing.protocol};
+    ASSERT_TRUE(newcomer.WaitPublished());
+    ASSERT_TRUE(WaitForAck(*newcomer.participant, pause.snapshot.epoch));
+    EXPECT_FALSE(newcomer.HasEnteredGuest());
+
+    const auto resume = existing.protocol.Request(State::Running);
+    ASSERT_TRUE(resume.changed);
+    ASSERT_EQ(existing.Notify(), 0);
+    ASSERT_EQ(newcomer.Notify(), 0);
+    ASSERT_TRUE(existing.WaitDone());
+    ASSERT_TRUE(newcomer.WaitGuestEntry());
+    EXPECT_TRUE(newcomer.HasEnteredGuest());
+    existing.Join();
+    newcomer.Join();
+}
+
+TEST_F(PauseProtocol, EmptyListPauseThenRegistrationCannotEnterGuest) {
+    Protocol protocol;
+    {
+        auto pause_request = protocol.AcquirePauseRequest();
+        const auto pause = protocol.Request(State::Paused);
+        ASSERT_TRUE(pause.changed);
+    }
+
+    RegistrationTarget target{protocol};
+    ASSERT_TRUE(target.WaitPublished());
+    const auto paused = protocol.Load();
+    ASSERT_EQ(paused.state, State::Paused);
+    ASSERT_TRUE(WaitForAck(*target.participant, paused.epoch));
+    EXPECT_FALSE(target.HasEnteredGuest());
+
+    const auto resume = protocol.Request(State::Running);
+    ASSERT_TRUE(resume.changed);
+    ASSERT_EQ(target.Notify(), 0);
+    ASSERT_TRUE(target.WaitGuestEntry());
+    EXPECT_TRUE(target.HasEnteredGuest());
+    target.Join();
+}
+
+TEST_F(PauseProtocol, ConcurrentPauseJoinsCurrentAcknowledgementEpoch) {
+    PauseTarget target;
+    ASSERT_TRUE(target.WaitReady());
+
+    std::counting_semaphore<4> first_published{0};
+    std::counting_semaphore<4> second_tried{0};
+    std::counting_semaphore<4> controllers_done{0};
+    std::atomic_bool first_ok{};
+    std::atomic_bool second_try_owned{};
+    std::atomic_bool second_ok{};
+
+    std::thread first{[&] {
+        auto pause_request = target.protocol.AcquirePauseRequest();
+        const auto pause = target.protocol.Request(State::Paused);
+        first_published.release();
+        if (pause.changed && target.Notify() == 0 &&
+            WaitForAck(*target.participant, pause.snapshot.epoch)) {
+            first_ok.store(true, std::memory_order_release);
+        }
+        controllers_done.release();
+    }};
+
+    ASSERT_TRUE(first_published.try_acquire_for(TestTimeout));
+    std::thread second{[&] {
+        auto try_request = target.protocol.TryAcquirePauseRequest();
+        second_try_owned.store(try_request.owns_lock(), std::memory_order_release);
+        if (try_request.owns_lock()) {
+            try_request.unlock();
+        }
+        second_tried.release();
+
+        auto pause_request = target.protocol.AcquirePauseRequest();
+        const auto pause = target.protocol.Request(State::Paused);
+        if (!pause.changed && !pause.exhausted &&
+            WaitForAck(*target.participant, pause.snapshot.epoch)) {
+            second_ok.store(true, std::memory_order_release);
+        }
+        controllers_done.release();
+    }};
+
+    ASSERT_TRUE(second_tried.try_acquire_for(TestTimeout));
+    EXPECT_FALSE(second_try_owned.load(std::memory_order_acquire));
+    target.ReleaseHandler();
+    ASSERT_TRUE(controllers_done.try_acquire_for(TestTimeout));
+    ASSERT_TRUE(controllers_done.try_acquire_for(TestTimeout));
+    first.join();
+    second.join();
+    EXPECT_TRUE(first_ok.load(std::memory_order_acquire));
+    EXPECT_TRUE(second_ok.load(std::memory_order_acquire));
+
+    ASSERT_TRUE(target.protocol.Request(State::Running).changed);
+    ASSERT_EQ(target.Notify(), 0);
+    ASSERT_TRUE(target.WaitDone());
+    target.Join();
+}
+
+TEST_F(PauseProtocol, ResumeDoesNotTakePauseSerializer) {
+    Protocol protocol;
+    auto pause_request = protocol.AcquirePauseRequest();
+    ASSERT_TRUE(protocol.Request(State::Paused).changed);
+
+    std::counting_semaphore<2> resumed{0};
+    std::atomic_bool resume_changed{};
+    std::thread resume_thread{[&] {
+        resume_changed.store(protocol.Request(State::Running).changed, std::memory_order_release);
+        resumed.release();
+    }};
+
+    ASSERT_TRUE(resumed.try_acquire_for(TestTimeout));
+    EXPECT_TRUE(resume_changed.load(std::memory_order_acquire));
+    pause_request.unlock();
+    resume_thread.join();
+}
+
+TEST_F(PauseProtocol, BlockedDeliveryTimesOutAndRollsBack) {
+    Protocol protocol;
+    Participant participant{protocol};
+    auto pause_request = protocol.AcquirePauseRequest();
+    const auto pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+
+    EXPECT_EQ(participant.WaitForAckFor(pause.snapshot.epoch, std::chrono::milliseconds{25}),
+              AckWaitResult::TimedOut);
+    const auto rollback = protocol.RollbackPause(pause.snapshot.epoch);
+    ASSERT_TRUE(rollback.changed);
+    EXPECT_EQ(rollback.snapshot.state, State::Running);
+    EXPECT_EQ(participant.SynchronizeState(), StateWaitResult::Running);
+    participant.Unregister();
+}
+
+TEST_F(PauseProtocol, InjectedDeliveryFailureCannotLeavePausedState) {
+    Protocol protocol;
+    auto pause_request = protocol.AcquirePauseRequest();
+    const auto pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+
+    constexpr int injected_delivery_result = EAGAIN;
+    ASSERT_NE(injected_delivery_result, 0);
+    const auto rollback = protocol.RollbackPause(pause.snapshot.epoch);
+    EXPECT_TRUE(rollback.changed);
+    EXPECT_EQ(protocol.Load().state, State::Running);
+    EXPECT_GT(rollback.snapshot.epoch, pause.snapshot.epoch);
+}
+
+TEST_F(PauseProtocol, FailedResumeNotificationUsesBoundedStateRecheck) {
+    PauseTarget target;
+    ASSERT_TRUE(target.WaitReady());
+
+    const auto pause = target.protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+    ASSERT_EQ(target.Notify(), 0);
+    target.ReleaseHandler();
+    ASSERT_TRUE(WaitForAck(*target.participant, pause.snapshot.epoch));
+
+    // Deliberately inject a failed/missing Resume notification. The handler's finite pselect wait
+    // must reread Running and return without an edge or a polling loop.
+    ASSERT_TRUE(target.protocol.Request(State::Running).changed);
+    ASSERT_TRUE(target.WaitDone());
+    target.Join();
+}
+
+TEST_F(PauseProtocol, MultipleTargetsAcknowledgeOneSnapshot) {
+    Protocol protocol;
+    PauseTarget first{protocol};
+    PauseTarget second{protocol};
+    PauseTarget third{protocol};
+    ASSERT_TRUE(first.WaitReady());
+    ASSERT_TRUE(second.WaitReady());
+    ASSERT_TRUE(third.WaitReady());
+
+    auto pause_request = protocol.AcquirePauseRequest();
+    const auto pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+    ASSERT_EQ(first.Notify(), 0);
+    ASSERT_EQ(second.Notify(), 0);
+    ASSERT_EQ(third.Notify(), 0);
+    first.ReleaseHandler();
+    second.ReleaseHandler();
+    third.ReleaseHandler();
+    const auto deadline = std::chrono::steady_clock::now() + TestTimeout;
+    EXPECT_EQ(first.participant->WaitForAckUntil(pause.snapshot.epoch, deadline),
+              AckWaitResult::Acknowledged);
+    EXPECT_EQ(second.participant->WaitForAckUntil(pause.snapshot.epoch, deadline),
+              AckWaitResult::Acknowledged);
+    EXPECT_EQ(third.participant->WaitForAckUntil(pause.snapshot.epoch, deadline),
+              AckWaitResult::Acknowledged);
+    EXPECT_FALSE(first.IsFinished());
+    EXPECT_FALSE(second.IsFinished());
+    EXPECT_FALSE(third.IsFinished());
+    pause_request.unlock();
+
+    ASSERT_TRUE(protocol.Request(State::Running).changed);
+    ASSERT_EQ(first.Notify(), 0);
+    ASSERT_EQ(second.Notify(), 0);
+    ASSERT_EQ(third.Notify(), 0);
+    ASSERT_TRUE(first.WaitDone());
+    ASSERT_TRUE(second.WaitDone());
+    ASSERT_TRUE(third.WaitDone());
+    first.Join();
+    second.Join();
+    third.Join();
+}
+
+TEST_F(PauseProtocol, RapidPauseResumePauseAcknowledgesFinalPause) {
     PauseTarget target;
     ASSERT_TRUE(target.WaitReady());
 
@@ -512,7 +868,7 @@ TEST(PauseProtocol, RapidPauseResumePauseAcknowledgesFinalPause) {
     ASSERT_EQ(target.Notify(), 0);
 
     target.ReleaseHandler();
-    ASSERT_TRUE(target.participant->WaitForAckFor(pause2.snapshot.epoch, TestTimeout));
+    ASSERT_TRUE(WaitForAck(*target.participant, pause2.snapshot.epoch));
     EXPECT_FALSE(target.IsFinished());
 
     const auto final_resume = target.protocol.Request(State::Running);
@@ -523,7 +879,7 @@ TEST(PauseProtocol, RapidPauseResumePauseAcknowledgesFinalPause) {
     target.Join();
 }
 
-TEST(PauseProtocol, RepeatedPauseIsIdempotent) {
+TEST_F(PauseProtocol, RepeatedPauseIsIdempotent) {
     PauseTarget target;
     ASSERT_TRUE(target.WaitReady());
 
@@ -534,7 +890,7 @@ TEST(PauseProtocol, RepeatedPauseIsIdempotent) {
     EXPECT_EQ(second.snapshot.epoch, first.snapshot.epoch);
     ASSERT_EQ(target.Notify(), 0);
     target.ReleaseHandler();
-    ASSERT_TRUE(target.participant->WaitForAckFor(first.snapshot.epoch, TestTimeout));
+    ASSERT_TRUE(WaitForAck(*target.participant, first.snapshot.epoch));
 
     ASSERT_TRUE(target.protocol.Request(State::Running).changed);
     ASSERT_EQ(target.Notify(), 0);
@@ -542,7 +898,7 @@ TEST(PauseProtocol, RepeatedPauseIsIdempotent) {
     target.Join();
 }
 
-TEST(PauseProtocol, RepeatedResumeIsIdempotent) {
+TEST_F(PauseProtocol, RepeatedResumeIsIdempotent) {
     PauseTarget target;
     ASSERT_TRUE(target.WaitReady());
 
@@ -550,7 +906,7 @@ TEST(PauseProtocol, RepeatedResumeIsIdempotent) {
     ASSERT_TRUE(pause.changed);
     ASSERT_EQ(target.Notify(), 0);
     target.ReleaseHandler();
-    ASSERT_TRUE(target.participant->WaitForAckFor(pause.snapshot.epoch, TestTimeout));
+    ASSERT_TRUE(WaitForAck(*target.participant, pause.snapshot.epoch));
 
     const auto first = target.protocol.Request(State::Running);
     const auto second = target.protocol.Request(State::Running);
@@ -562,7 +918,7 @@ TEST(PauseProtocol, RepeatedResumeIsIdempotent) {
     target.Join();
 }
 
-TEST(PauseProtocol, IndependentCancellationRunsWhilePaused) {
+TEST_F(PauseProtocol, DeferredCancellationSignalRunsWhilePaused) {
     sem_t cancel_semaphore{};
     ASSERT_EQ(sem_init(&cancel_semaphore, 0, 0), 0);
     {
@@ -575,9 +931,9 @@ TEST(PauseProtocol, IndependentCancellationRunsWhilePaused) {
         ASSERT_TRUE(pause.changed);
         ASSERT_EQ(target.Notify(), 0);
         target.ReleaseHandler();
-        ASSERT_TRUE(target.participant->WaitForAckFor(pause.snapshot.epoch, TestTimeout));
+        ASSERT_TRUE(WaitForAck(*target.participant, pause.snapshot.epoch));
 
-        ASSERT_EQ(target.NotifySignal(SIGUSR1), 0);
+        ASSERT_EQ(target.NotifySignal(ScopedCancellationSignal::SignalNumber()), 0);
         ASSERT_TRUE(WaitForSemaphore(cancel_semaphore));
         EXPECT_FALSE(target.IsFinished());
 
@@ -589,7 +945,147 @@ TEST(PauseProtocol, IndependentCancellationRunsWhilePaused) {
     ASSERT_EQ(sem_destroy(&cancel_semaphore), 0);
 }
 
-TEST(PauseProtocol, PendingPauseUnregistersWithoutHandlerTouch) {
+TEST_F(PauseProtocol, ForkIsolatedProductionPauseHandlerEntryResumes) {
+    int result_pipe[2]{};
+    ASSERT_EQ(pipe(result_pipe), 0);
+    const pid_t child = fork();
+    ASSERT_GE(child, 0);
+
+    if (child == 0) {
+        (void)close(result_pipe[0]);
+        struct sigaction action{};
+        action.sa_sigaction = Core::DebugPause::PauseSignalHandler;
+        sigemptyset(&action.sa_mask);
+        action.sa_flags = SA_SIGINFO;
+        if (sigaction(SIGVTALRM, &action, nullptr) != 0) {
+            _exit(2);
+        }
+
+        Protocol protocol;
+        Participant participant{protocol};
+        Core::DebugPause::BindCurrentParticipant(&participant);
+        const pthread_t target = pthread_self();
+        const auto pause = protocol.Request(State::Paused);
+        if (!pause.changed) {
+            _exit(3);
+        }
+
+        std::thread controller{[&] {
+            if (participant.WaitForAckFor(pause.snapshot.epoch, TestTimeout) !=
+                AckWaitResult::Acknowledged) {
+                return;
+            }
+            const auto resume = protocol.Request(State::Running);
+            if (resume.changed) {
+                (void)pthread_kill(target, SIGVTALRM);
+            }
+        }};
+
+        if (pthread_kill(target, SIGVTALRM) != 0) {
+            _exit(5);
+        }
+        controller.join();
+        const bool passed = protocol.Load().state == State::Running &&
+                            participant.AcknowledgedEpoch() >= pause.snapshot.epoch;
+        const char result = passed ? '1' : '0';
+        (void)write(result_pipe[1], &result, sizeof(result));
+        participant.Unregister();
+        Core::DebugPause::ClearCurrentParticipant(&participant);
+        _exit(passed ? 0 : 4);
+    }
+
+    (void)close(result_pipe[1]);
+    pollfd result_poll{.fd = result_pipe[0], .events = POLLIN};
+    const int poll_result = poll(&result_poll, 1, 2000);
+    if (poll_result <= 0) {
+        (void)kill(child, SIGKILL);
+    }
+    char result{};
+    const ssize_t bytes = poll_result > 0 ? read(result_pipe[0], &result, sizeof(result)) : -1;
+    int child_status{};
+    ASSERT_EQ(waitpid(child, &child_status, 0), child);
+    (void)close(result_pipe[0]);
+
+    ASSERT_GT(poll_result, 0);
+    ASSERT_EQ(bytes, 1);
+    EXPECT_EQ(result, '1');
+    ASSERT_TRUE(WIFEXITED(child_status));
+    EXPECT_EQ(WEXITSTATUS(child_status), 0);
+}
+
+TEST_F(PauseProtocol, MultiplePendingParticipantsUnregisterWithoutAckStrand) {
+    Protocol protocol;
+    auto first = std::make_shared<Participant>(protocol);
+    auto second = std::make_shared<Participant>(protocol);
+    auto third = std::make_shared<Participant>(protocol);
+    const auto pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+
+    std::counting_semaphore<4> release{0};
+    std::counting_semaphore<4> done{0};
+    std::vector<std::thread> targets;
+    for (const auto& participant : {first, second, third}) {
+        targets.emplace_back([&, participant] {
+            BlockPauseSignal();
+            release.acquire();
+            participant->Unregister();
+            done.release();
+        });
+    }
+    release.release(3);
+    ASSERT_TRUE(done.try_acquire_for(TestTimeout));
+    ASSERT_TRUE(done.try_acquire_for(TestTimeout));
+    ASSERT_TRUE(done.try_acquire_for(TestTimeout));
+    for (auto& target : targets) {
+        target.join();
+    }
+
+    const auto deadline = std::chrono::steady_clock::now() + TestTimeout;
+    EXPECT_EQ(first->WaitForAckUntil(pause.snapshot.epoch, deadline), AckWaitResult::Unregistered);
+    EXPECT_EQ(second->WaitForAckUntil(pause.snapshot.epoch, deadline), AckWaitResult::Unregistered);
+    EXPECT_EQ(third->WaitForAckUntil(pause.snapshot.epoch, deadline), AckWaitResult::Unregistered);
+    EXPECT_TRUE(protocol.RollbackPause(pause.snapshot.epoch).changed);
+}
+
+TEST_F(PauseProtocol, EpochExhaustionFailsWhileStillRunning) {
+    Protocol protocol{{
+        .state = State::Paused,
+        .epoch = Protocol::LastPausableRunningEpoch - 1,
+    }};
+
+    const auto final_resume = protocol.Request(State::Running);
+    ASSERT_TRUE(final_resume.changed);
+    ASSERT_EQ(final_resume.snapshot.epoch, Protocol::LastPausableRunningEpoch);
+    const auto rejected_pause = protocol.Request(State::Paused);
+    EXPECT_FALSE(rejected_pause.changed);
+    EXPECT_TRUE(rejected_pause.exhausted);
+    EXPECT_EQ(rejected_pause.snapshot.state, State::Running);
+    EXPECT_EQ(rejected_pause.snapshot.epoch, Protocol::LastPausableRunningEpoch);
+}
+
+TEST_F(PauseProtocol, AcknowledgementWakeDoesNotAccumulatePerEpoch) {
+    Protocol protocol;
+    Participant participant{protocol};
+    constexpr int Iterations = 5000;
+
+    for (int i = 0; i < Iterations; ++i) {
+        ASSERT_TRUE(protocol.Request(State::Paused).changed);
+        const auto running = protocol.Request(State::Running);
+        ASSERT_TRUE(running.changed);
+        ASSERT_EQ(participant.SynchronizeState(), StateWaitResult::Running);
+    }
+
+    EXPECT_EQ(ParticipantTestAccess::PendingAckWakeCount(participant), 1);
+    const auto final_pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(final_pause.changed);
+    EXPECT_EQ(participant.WaitForAckFor(final_pause.snapshot.epoch, std::chrono::milliseconds{25}),
+              AckWaitResult::TimedOut);
+    EXPECT_EQ(ParticipantTestAccess::PendingAckWakeCount(participant), 0);
+    EXPECT_TRUE(protocol.RollbackPause(final_pause.snapshot.epoch).changed);
+    participant.Unregister();
+}
+
+TEST_F(PauseProtocol, PendingPauseUnregistersWithoutHandlerTouch) {
     PendingExitTarget target;
     ASSERT_TRUE(target.WaitReady());
 
@@ -599,10 +1095,11 @@ TEST(PauseProtocol, PendingPauseUnregistersWithoutHandlerTouch) {
     target.Exit();
     ASSERT_TRUE(target.WaitDone());
     EXPECT_EQ(target.participant->AcknowledgedEpoch(), 0);
-    EXPECT_TRUE(target.participant->WaitForAckFor(pause.snapshot.epoch, TestTimeout));
+    EXPECT_EQ(target.participant->WaitForAckFor(pause.snapshot.epoch, TestTimeout),
+              AckWaitResult::Unregistered);
 }
 
-TEST(PauseProtocol, ThousandsOfCoalescedTransitionsDoNotPermanentlySleep) {
+TEST_F(PauseProtocol, ThousandsOfCoalescedTransitionsDoNotPermanentlySleep) {
     Protocol protocol;
     auto participant = std::make_shared<Participant>(protocol);
     std::counting_semaphore<4> ready{0};

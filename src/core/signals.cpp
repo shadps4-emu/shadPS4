@@ -17,6 +17,7 @@ static constexpr DWORD MS_VC_EXCEPTION = 0x406D1388;
 #else
 #include <csignal>
 #include <pthread.h>
+#include "core/pause_protocol.h"
 #ifdef ARCH_X86_64
 #include <Zydis/Formatter.h>
 #endif
@@ -291,10 +292,6 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
 
         UNREACHABLE_MSG("Unhandled signal {} at code address {}", sig, fmt::ptr(code_address));
     }
-    case SIGSLEEP: {
-        Core::HandlePauseSignal();
-        break;
-    }
     case SIGUSR1:
         if (thread) {
             thread->DispatchPendingSignals(info_p, context_p);
@@ -317,11 +314,15 @@ SignalDispatch::SignalDispatch() {
     action.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&action.sa_mask);
 
+    struct sigaction pause_action = action;
+    pause_action.sa_sigaction = DebugPause::PauseSignalHandler;
+
     ASSERT_MSG(
         sigaction(SIGSEGV, &action, nullptr) == 0 && sigaction(SIGBUS, &action, nullptr) == 0 &&
             sigaction(SIGILL, &action, nullptr) == 0 && sigaction(SIGFPE, &action, nullptr) == 0 &&
             sigaction(SIGTRAP, &action, nullptr) == 0 && sigaction(SIGSYS, &action, nullptr) == 0 &&
-            sigaction(SIGUSR1, &action, nullptr) == 0 && sigaction(SIGSLEEP, &action, nullptr) == 0,
+            sigaction(SIGUSR1, &action, nullptr) == 0 &&
+            sigaction(SIGSLEEP, &pause_action, nullptr) == 0,
         "Failed to register signal handlers.");
 #endif
 }

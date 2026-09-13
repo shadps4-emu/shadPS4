@@ -149,10 +149,11 @@ class DebugStateImpl {
     std::queue<std::string> debug_message_popup;
 
     std::mutex guest_threads_mutex{};
-    std::vector<GuestThreadEntry> guest_threads{};
 #ifndef _WIN32
     Core::DebugPause::Protocol pause_protocol{};
 #endif
+    // Declared after the protocol so participant records are destroyed before their protocol.
+    std::vector<GuestThreadEntry> guest_threads{};
     std::atomic_bool is_guest_threads_paused = false;
     u64 pause_time{};
 

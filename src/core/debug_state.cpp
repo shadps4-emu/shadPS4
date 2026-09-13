@@ -3,6 +3,8 @@
 
 #include <imgui.h>
 
+#include <chrono>
+
 #include "common/assert.h"
 #include "common/native_clock.h"
 #include "common/singleton.h"
@@ -39,49 +41,65 @@ static bool ThreadIDsEqual(const ThreadID left, const ThreadID right) {
 #ifndef _WIN32
 namespace {
 thread_local std::shared_ptr<Core::DebugPause::Participant> CurrentPauseParticipantOwner;
-thread_local Core::DebugPause::Participant* CurrentPauseParticipant{};
+
+constexpr auto PauseAcknowledgementTimeout = std::chrono::seconds{5};
+
+struct PauseTarget {
+    ThreadID id;
+    std::shared_ptr<Core::DebugPause::Participant> participant;
+};
+
+int NotifyPauseTarget(const ThreadID id) {
+    return pthread_kill(id, SIGSLEEP);
+}
 } // namespace
 #endif
 
-static void PauseThread(ThreadID id) {
 #ifdef _WIN32
+static void PauseThread(ThreadID id) {
     auto handle = OpenThread(THREAD_SUSPEND_RESUME, FALSE, id);
     SuspendThread(handle);
     CloseHandle(handle);
-#else
-    pthread_kill(id, SIGSLEEP);
-#endif
 }
 
 static void ResumeThread(ThreadID id) {
-#ifdef _WIN32
     auto handle = OpenThread(THREAD_SUSPEND_RESUME, FALSE, id);
     ResumeThread(handle);
     CloseHandle(handle);
-#else
-    pthread_kill(id, SIGSLEEP);
-#endif
 }
+#endif
 
 void DebugStateImpl::AddCurrentThreadToGuestList() {
 #ifndef _WIN32
     auto pause_participant = std::make_shared<Core::DebugPause::Participant>(pause_protocol);
     CurrentPauseParticipantOwner = pause_participant;
-    CurrentPauseParticipant = pause_participant.get();
+    Core::DebugPause::BindCurrentParticipant(pause_participant.get());
+    Core::DebugPause::Snapshot registration_snapshot{};
 #endif
-    std::lock_guard lock{guest_threads_mutex};
-    const ThreadID id = ThisThreadID();
-    GuestThreadEntry entry{.id = id};
+    {
+        std::lock_guard lock{guest_threads_mutex};
+        const ThreadID id = ThisThreadID();
+        GuestThreadEntry entry{.id = id};
 #ifndef _WIN32
-    entry.pause_participant = std::move(pause_participant);
+        entry.pause_participant = pause_participant;
+        registration_snapshot = pause_protocol.Load();
 #endif
-    guest_threads.push_back(std::move(entry));
+        guest_threads.push_back(std::move(entry));
+    }
+#ifndef _WIN32
+    if (registration_snapshot.state == Core::DebugPause::State::Paused &&
+        pause_participant->SynchronizeState() == Core::DebugPause::StateWaitResult::WaitError) {
+        LOG_ERROR(Core, "Failed to honor guest pause during thread registration: {}",
+                  pause_participant->WaitError());
+    }
+#endif
 }
 
 void DebugStateImpl::RemoveCurrentThreadFromGuestList() {
 #ifndef _WIN32
-    if (CurrentPauseParticipant != nullptr) {
-        CurrentPauseParticipant->Unregister();
+    auto pause_participant = CurrentPauseParticipantOwner;
+    if (pause_participant != nullptr) {
+        pause_participant->Unregister();
     }
 #endif
     std::lock_guard lock{guest_threads_mutex};
@@ -89,16 +107,25 @@ void DebugStateImpl::RemoveCurrentThreadFromGuestList() {
     std::erase_if(guest_threads,
                   [&](const GuestThreadEntry& entry) { return ThreadIDsEqual(entry.id, id); });
 #ifndef _WIN32
-    CurrentPauseParticipant = nullptr;
+    Core::DebugPause::ClearCurrentParticipant(pause_participant.get());
+    CurrentPauseParticipantOwner.reset();
 #endif
 }
 
 void DebugStateImpl::PauseGuestThreads() {
     using namespace Libraries::MsgDialog;
+#ifndef _WIN32
+    auto pause_request = pause_protocol.AcquirePauseRequest();
+    std::vector<PauseTarget> acknowledgements;
+    std::shared_ptr<Core::DebugPause::Participant> self_participant;
+    bool delivery_failed = false;
+    const ThreadID self_id = ThisThreadID();
+#endif
     std::unique_lock lock{guest_threads_mutex};
 #ifndef _WIN32
     const auto transition = pause_protocol.Request(Core::DebugPause::State::Paused);
-    if (!transition.changed) {
+    if (transition.exhausted) {
+        LOG_ERROR(Core, "Guest pause epoch exhausted at {}", transition.snapshot.epoch);
         return;
     }
 #else
@@ -106,45 +133,117 @@ void DebugStateImpl::PauseGuestThreads() {
         return;
     }
 #endif
+#ifndef _WIN32
+    if (transition.changed && ShouldPauseInSubmit()) {
+#else
     if (ShouldPauseInSubmit()) {
+#endif
         waiting_submit_pause = false;
         should_show_frame_dump = true;
     }
-    bool self_guest = false;
-    ThreadID self_id = ThisThreadID();
-#ifndef _WIN32
-    std::vector<std::shared_ptr<Core::DebugPause::Participant>> acknowledgements;
-#endif
     for (const auto& entry : guest_threads) {
-        if (ThreadIDsEqual(entry.id, self_id)) {
-            self_guest = true;
-        } else {
-            PauseThread(entry.id);
 #ifndef _WIN32
-            acknowledgements.push_back(entry.pause_participant);
-#endif
+        if (ThreadIDsEqual(entry.id, self_id)) {
+            self_participant = entry.pause_participant;
+        } else {
+            acknowledgements.push_back({.id = entry.id, .participant = entry.pause_participant});
+            if (entry.pause_participant->IsRegistered() &&
+                entry.pause_participant->AcknowledgedEpoch() < transition.snapshot.epoch) {
+                const int result = NotifyPauseTarget(entry.id);
+                if (result != 0 && entry.pause_participant->IsRegistered()) {
+                    LOG_ERROR(Core, "Failed to deliver guest pause notification at epoch {}: {}",
+                              transition.snapshot.epoch, result);
+                    delivery_failed = true;
+                }
+            }
         }
+#else
+        PauseThread(entry.id);
+#endif
     }
+#ifndef _WIN32
+    if (transition.changed) {
+        pause_time = Libraries::Kernel::Dev::GetClock()->GetUptime();
+        is_guest_threads_paused = true;
+    }
+#else
     pause_time = Libraries::Kernel::Dev::GetClock()->GetUptime();
     is_guest_threads_paused = true;
+#endif
     lock.unlock();
 #ifndef _WIN32
-    for (const auto& participant : acknowledgements) {
-        if (!participant->WaitForAck(transition.snapshot.epoch)) {
-            LOG_ERROR(Core, "Failed to wait for guest pause acknowledgement at epoch {}",
-                      transition.snapshot.epoch);
+
+    const auto rollback_pause = [&] {
+        const auto rollback = pause_protocol.RollbackPause(transition.snapshot.epoch);
+        if (!rollback.changed) {
+            return;
+        }
+
+        std::lock_guard list_lock{guest_threads_mutex};
+        if (is_guest_threads_paused.exchange(false, std::memory_order_acq_rel)) {
+            const u64 delta_time = Libraries::Kernel::Dev::GetClock()->GetUptime() - pause_time;
+            Libraries::Kernel::Dev::GetInitialPtc() += delta_time;
+        }
+        for (const auto& entry : guest_threads) {
+            if (ThreadIDsEqual(entry.id, self_id)) {
+                continue;
+            }
+            const int result = NotifyPauseTarget(entry.id);
+            if (result != 0 && entry.pause_participant->IsRegistered()) {
+                LOG_ERROR(Core,
+                          "Failed to deliver guest pause rollback notification at epoch {}: {}",
+                          rollback.snapshot.epoch, result);
+            }
+        }
+    };
+
+    if (delivery_failed) {
+        rollback_pause();
+        return;
+    }
+
+    const auto deadline = std::chrono::steady_clock::now() + PauseAcknowledgementTimeout;
+    for (const auto& target : acknowledgements) {
+        const auto result =
+            target.participant->WaitForAckUntil(transition.snapshot.epoch, deadline);
+        if (result == Core::DebugPause::AckWaitResult::Acknowledged ||
+            result == Core::DebugPause::AckWaitResult::Unregistered) {
+            continue;
+        }
+        LOG_ERROR(Core, "Guest pause acknowledgement failed at epoch {}: {}",
+                  transition.snapshot.epoch,
+                  result == Core::DebugPause::AckWaitResult::TimedOut ? "deadline expired"
+                                                                      : "wait error");
+        rollback_pause();
+        return;
+    }
+
+    for (const auto& target : acknowledgements) {
+        if (target.participant->WaitError() != 0) {
+            LOG_ERROR(Core, "Guest pause target wait failed at epoch {}: {}",
+                      transition.snapshot.epoch, target.participant->WaitError());
+            rollback_pause();
+            return;
         }
     }
-#endif
-    if (self_guest) {
-        PauseThread(self_id);
+
+    if (self_participant != nullptr &&
+        self_participant->SynchronizeState() == Core::DebugPause::StateWaitResult::WaitError) {
+        LOG_ERROR(Core, "Self guest pause failed at epoch {}: {}", transition.snapshot.epoch,
+                  self_participant->WaitError());
+        rollback_pause();
     }
+#endif
 }
 
 void DebugStateImpl::ResumeGuestThreads() {
     std::lock_guard lock{guest_threads_mutex};
 #ifndef _WIN32
     const auto transition = pause_protocol.Request(Core::DebugPause::State::Running);
+    if (transition.exhausted) {
+        LOG_ERROR(Core, "Guest resume epoch exhausted at {}", transition.snapshot.epoch);
+        return;
+    }
     if (!transition.changed) {
         return;
     }
@@ -157,22 +256,18 @@ void DebugStateImpl::ResumeGuestThreads() {
     u64 delta_time = Libraries::Kernel::Dev::GetClock()->GetUptime() - pause_time;
     Libraries::Kernel::Dev::GetInitialPtc() += delta_time;
     for (const auto& entry : guest_threads) {
+#ifndef _WIN32
+        const int result = NotifyPauseTarget(entry.id);
+        if (result != 0 && entry.pause_participant->IsRegistered()) {
+            LOG_ERROR(Core, "Failed to deliver guest resume notification at epoch {}: {}",
+                      transition.snapshot.epoch, result);
+        }
+#else
         ResumeThread(entry.id);
+#endif
     }
     is_guest_threads_paused = false;
 }
-
-#ifndef _WIN32
-namespace Core {
-
-void HandlePauseSignal() noexcept {
-    if (CurrentPauseParticipant != nullptr) {
-        CurrentPauseParticipant->HandleNotification();
-    }
-}
-
-} // namespace Core
-#endif
 
 void DebugStateImpl::RequestFrameDump(s32 count) {
     ASSERT(!DumpingCurrentFrame());
