@@ -174,10 +174,7 @@ void Translator::DS_OP(const GcnInst& inst, AtomicOp op, bool rtn) {
 }
 
 void Translator::DS_CMPST(int bit_size, bool rtn, const GcnInst& inst) {
-    // DS_CMPST_[RTN_]B32/B64: compare-and-swap against shared (or GDS) memory.
-    // DATA0 (src[1]) is the compare value, DATA1 (src[2]) is the value written on a match:
-    //   tmp = MEM[ADDR]; if (tmp == DATA0) MEM[ADDR] = DATA1; VDST = tmp (RTN only)
-    // Note the operand order here is the opposite of BUFFER_ATOMIC_CMPSWAP.
+
     const bool is_gds = inst.control.ds.gds;
     const IR::U32 addr{GetSrc(inst.src[0])};
     const IR::U32 offset =
