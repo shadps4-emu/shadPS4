@@ -4,6 +4,7 @@
 #pragma once
 
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <unordered_map>
@@ -11,6 +12,9 @@
 #include <queue>
 
 #include "common/types.h"
+#ifndef _WIN32
+#include "core/pause_protocol.h"
+#endif
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/regs.h"
 #include "video_core/renderer_vulkan/vk_common.h"
@@ -130,6 +134,13 @@ struct ShaderDump {
     }
 };
 
+struct GuestThreadEntry {
+    ThreadID id;
+#ifndef _WIN32
+    std::shared_ptr<Core::DebugPause::Participant> pause_participant;
+#endif
+};
+
 class DebugStateImpl {
     friend class Core::Devtools::Layer;
     friend class Core::Devtools::Widget::FrameGraph;
@@ -138,7 +149,10 @@ class DebugStateImpl {
     std::queue<std::string> debug_message_popup;
 
     std::mutex guest_threads_mutex{};
-    std::vector<ThreadID> guest_threads{};
+    std::vector<GuestThreadEntry> guest_threads{};
+#ifndef _WIN32
+    Core::DebugPause::Protocol pause_protocol{};
+#endif
     std::atomic_bool is_guest_threads_paused = false;
     u64 pause_time{};
 
@@ -190,7 +204,11 @@ public:
     void ResumeGuestThreads();
 
     bool IsGuestThreadsPaused() const {
+#ifndef _WIN32
+        return pause_protocol.IsPaused();
+#else
         return is_guest_threads_paused;
+#endif
     }
 
     void IncFlipFrameNum() {

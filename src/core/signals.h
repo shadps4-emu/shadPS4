@@ -20,6 +20,7 @@ using IllegalInstructionHandler = bool (*)(void* context);
 
 #ifndef _WIN32
 void SignalHandler(int sig, siginfo_t* info, void* raw_context);
+void HandlePauseSignal() noexcept;
 #endif
 
 /// Receives OS signals and dispatches to the appropriate handlers.

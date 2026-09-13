@@ -292,11 +292,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         UNREACHABLE_MSG("Unhandled signal {} at code address {}", sig, fmt::ptr(code_address));
     }
     case SIGSLEEP: {
-        // Sleep thread until signal is received again
-        sigset_t sigset;
-        sigemptyset(&sigset);
-        sigaddset(&sigset, SIGSLEEP);
-        sigwait(&sigset, &sig);
+        Core::HandlePauseSignal();
         break;
     }
     case SIGUSR1:

@@ -28,6 +28,21 @@ static ThreadID ThisThreadID() {
 #endif
 }
 
+static bool ThreadIDsEqual(const ThreadID left, const ThreadID right) {
+#ifdef _WIN32
+    return left == right;
+#else
+    return pthread_equal(left, right) != 0;
+#endif
+}
+
+#ifndef _WIN32
+namespace {
+thread_local std::shared_ptr<Core::DebugPause::Participant> CurrentPauseParticipantOwner;
+thread_local Core::DebugPause::Participant* CurrentPauseParticipant{};
+} // namespace
+#endif
+
 static void PauseThread(ThreadID id) {
 #ifdef _WIN32
     auto handle = OpenThread(THREAD_SUSPEND_RESUME, FALSE, id);
@@ -49,39 +64,78 @@ static void ResumeThread(ThreadID id) {
 }
 
 void DebugStateImpl::AddCurrentThreadToGuestList() {
+#ifndef _WIN32
+    auto pause_participant = std::make_shared<Core::DebugPause::Participant>(pause_protocol);
+    CurrentPauseParticipantOwner = pause_participant;
+    CurrentPauseParticipant = pause_participant.get();
+#endif
     std::lock_guard lock{guest_threads_mutex};
     const ThreadID id = ThisThreadID();
-    guest_threads.push_back(id);
+    GuestThreadEntry entry{.id = id};
+#ifndef _WIN32
+    entry.pause_participant = std::move(pause_participant);
+#endif
+    guest_threads.push_back(std::move(entry));
 }
 
 void DebugStateImpl::RemoveCurrentThreadFromGuestList() {
+#ifndef _WIN32
+    if (CurrentPauseParticipant != nullptr) {
+        CurrentPauseParticipant->Unregister();
+    }
+#endif
     std::lock_guard lock{guest_threads_mutex};
     const ThreadID id = ThisThreadID();
-    std::erase_if(guest_threads, [&](const ThreadID& v) { return v == id; });
+    std::erase_if(guest_threads,
+                  [&](const GuestThreadEntry& entry) { return ThreadIDsEqual(entry.id, id); });
+#ifndef _WIN32
+    CurrentPauseParticipant = nullptr;
+#endif
 }
 
 void DebugStateImpl::PauseGuestThreads() {
     using namespace Libraries::MsgDialog;
     std::unique_lock lock{guest_threads_mutex};
+#ifndef _WIN32
+    const auto transition = pause_protocol.Request(Core::DebugPause::State::Paused);
+    if (!transition.changed) {
+        return;
+    }
+#else
     if (is_guest_threads_paused) {
         return;
     }
+#endif
     if (ShouldPauseInSubmit()) {
         waiting_submit_pause = false;
         should_show_frame_dump = true;
     }
     bool self_guest = false;
     ThreadID self_id = ThisThreadID();
-    for (const auto& id : guest_threads) {
-        if (id == self_id) {
+#ifndef _WIN32
+    std::vector<std::shared_ptr<Core::DebugPause::Participant>> acknowledgements;
+#endif
+    for (const auto& entry : guest_threads) {
+        if (ThreadIDsEqual(entry.id, self_id)) {
             self_guest = true;
         } else {
-            PauseThread(id);
+            PauseThread(entry.id);
+#ifndef _WIN32
+            acknowledgements.push_back(entry.pause_participant);
+#endif
         }
     }
     pause_time = Libraries::Kernel::Dev::GetClock()->GetUptime();
     is_guest_threads_paused = true;
     lock.unlock();
+#ifndef _WIN32
+    for (const auto& participant : acknowledgements) {
+        if (!participant->WaitForAck(transition.snapshot.epoch)) {
+            LOG_ERROR(Core, "Failed to wait for guest pause acknowledgement at epoch {}",
+                      transition.snapshot.epoch);
+        }
+    }
+#endif
     if (self_guest) {
         PauseThread(self_id);
     }
@@ -89,17 +143,36 @@ void DebugStateImpl::PauseGuestThreads() {
 
 void DebugStateImpl::ResumeGuestThreads() {
     std::lock_guard lock{guest_threads_mutex};
+#ifndef _WIN32
+    const auto transition = pause_protocol.Request(Core::DebugPause::State::Running);
+    if (!transition.changed) {
+        return;
+    }
+#else
     if (!is_guest_threads_paused) {
         return;
     }
+#endif
 
     u64 delta_time = Libraries::Kernel::Dev::GetClock()->GetUptime() - pause_time;
     Libraries::Kernel::Dev::GetInitialPtc() += delta_time;
-    for (const auto& id : guest_threads) {
-        ResumeThread(id);
+    for (const auto& entry : guest_threads) {
+        ResumeThread(entry.id);
     }
     is_guest_threads_paused = false;
 }
+
+#ifndef _WIN32
+namespace Core {
+
+void HandlePauseSignal() noexcept {
+    if (CurrentPauseParticipant != nullptr) {
+        CurrentPauseParticipant->HandleNotification();
+    }
+}
+
+} // namespace Core
+#endif
 
 void DebugStateImpl::RequestFrameDump(s32 count) {
     ASSERT(!DumpingCurrentFrame());

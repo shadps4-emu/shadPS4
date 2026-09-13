@@ -338,9 +338,8 @@ gtest_discover_tests(shadps4_http_test
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     DISCOVERY_TIMEOUT 60
 )
-# Deterministic pause protocol regression tests. The first checkpoint contains the old one-slot
-# SIGSLEEP reproduction; the stateful participant tests are added before the production handler
-# is switched over.
+# Deterministic pause protocol regression tests. The suite retains the old one-slot SIGSLEEP
+# reproduction alongside the POSIX stateful participant cases.
 add_executable(shadps4_pause_protocol_test test_pause_protocol.cpp)
 target_compile_features(shadps4_pause_protocol_test PRIVATE cxx_std_23)
 target_link_libraries(shadps4_pause_protocol_test PRIVATE GTest::gtest_main)
