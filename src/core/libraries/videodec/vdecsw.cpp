@@ -26,7 +26,7 @@ static u64 ComputeFrameSizeBytes(s32 width, s32 height) {
 }
 
 static void ComputeWorstCaseDimensions(const OrbisVdecswDecoderConfigInfo& cfg, s32& out_width,
-                                        s32& out_height) {
+                                       s32& out_height) {
     if (cfg.max_frame_width > 0 && cfg.max_frame_height > 0) {
         out_width = cfg.max_frame_width;
         out_height = cfg.max_frame_height;
@@ -42,8 +42,7 @@ static void ComputeWorstCaseDimensions(const OrbisVdecswDecoderConfigInfo& cfg, 
     }
 }
 
-s32 PS4_SYSV_ABI
-sceVdecswQueryComputeMemoryInfo(OrbisVdecswComputeMemoryInfo* compute_mem_info) {
+s32 PS4_SYSV_ABI sceVdecswQueryComputeMemoryInfo(OrbisVdecswComputeMemoryInfo* compute_mem_info) {
     LOG_INFO(Lib_Vdecsw, "called");
 
     if (!compute_mem_info) {
@@ -110,7 +109,8 @@ sceVdecswQueryDecoderMemoryInfo(const OrbisVdecswDecoderConfigInfo* decoder_conf
         LOG_ERROR(Lib_Vdecsw, "Invalid arguments");
         return ORBIS_VDECSW_ERROR_ARGUMENT_POINTER;
     }
-    if (decoder_config_info_in->this_size != sizeof(OrbisVdecswDecoderConfigInfo) ||
+    if ((decoder_config_info_in->this_size != sizeof(OrbisVdecswDecoderConfigInfo) &&
+         decoder_config_info_in->this_size != sizeof(OrbisVdecswDecoderConfigInfoV1)) ||
         decoder_memory_info_out->this_size != sizeof(OrbisVdecswDecoderMemoryInfo)) {
         LOG_ERROR(Lib_Vdecsw, "Invalid struct size");
         return ORBIS_VDECSW_ERROR_STRUCT_SIZE;
@@ -151,7 +151,8 @@ s32 PS4_SYSV_ABI sceVdecswCreateDecoder(const OrbisVdecswDecoderConfigInfo* deco
         LOG_ERROR(Lib_Vdecsw, "Invalid arguments");
         return ORBIS_VDECSW_ERROR_ARGUMENT_POINTER;
     }
-    if (decoder_config_info_in->this_size != sizeof(OrbisVdecswDecoderConfigInfo) ||
+    if ((decoder_config_info_in->this_size != sizeof(OrbisVdecswDecoderConfigInfo) &&
+         decoder_config_info_in->this_size != sizeof(OrbisVdecswDecoderConfigInfoV1)) ||
         decoder_memory_info_in->this_size != sizeof(OrbisVdecswDecoderMemoryInfo)) {
         LOG_ERROR(Lib_Vdecsw, "Invalid struct size");
         return ORBIS_VDECSW_ERROR_STRUCT_SIZE;
@@ -338,8 +339,7 @@ s32 PS4_SYSV_ABI sceVdecswGetAvcPictureInfo(const OrbisVdecswOutputInfo* output_
                                             OrbisVdecswAvcPictureInfo* p_1st_picture_info_out,
                                             OrbisVdecswAvcPictureInfo* p_2nd_picture_info_out) {
     LOG_TRACE(Lib_Vdecsw, "called");
-    return sceVdecswGetPictureInfo(output_info_in, p_1st_picture_info_out,
-                                   p_2nd_picture_info_out);
+    return sceVdecswGetPictureInfo(output_info_in, p_1st_picture_info_out, p_2nd_picture_info_out);
 }
 
 s32 PS4_SYSV_ABI sceVdecswGetHevcPictureInfo(const OrbisVdecswOutputInfo* output_info_in,
