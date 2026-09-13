@@ -125,7 +125,8 @@ public:
     u32 Add(const SamplerResource& desc) {
         const u32 index{Add(sampler_resources, desc, [this, &desc](const auto& existing) {
             return desc.sharp_fetch == existing.sharp_fetch && desc.post_op == existing.post_op &&
-                   desc.post_op_tsharp_dw3_off == existing.post_op_tsharp_dw3_off;
+                   desc.post_op_tsharp_dw3_off == existing.post_op_tsharp_dw3_off &&
+                   desc.is_depth == existing.is_depth;
         })};
         return index;
     }
@@ -311,6 +312,7 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
             .post_op = resource.sharps[1].post_op,
             .post_op_tsharp_dw3_off =
                 lod_prod.IsEmpty() ? UNKNOWN_LOCATION : SharpLocationFromSource(lod_prod.Inst()),
+            .is_depth = bool(inst_info.is_depth), // true for the _C (compare) opcodes
         });
         inst.SetArg(0, ir.Imm32(image_binding | sampler_binding << 16));
     } else {
