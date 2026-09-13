@@ -33,7 +33,6 @@ IR::BlockList GenerateBlocks(const IR::AbstractSyntaxList& syntax_list) {
 void EmitControlFlowGraph(IR::Program& program, Pools& pools, Gcn::CFG& cfg,
                           RuntimeInfo& runtime_info, const Profile& profile) {
     Gcn::Translator translator{program.info, runtime_info, profile};
-    bool emit_prologue = true;
     for (auto& block : cfg) {
         const u32 start = block.begin_index;
         const u32 size = block.end_index - start + 1;
@@ -42,12 +41,9 @@ void EmitControlFlowGraph(IR::Program& program, Pools& pools, Gcn::CFG& cfg,
         block.ir_block = ir_block;
         translator.Translate(ir_block, block.begin, block.cond,
                              std::span{program.ins_list}.subspan(start, size));
-        if (emit_prologue) {
-            translator.EmitPrologue(ir_block);
-            emit_prologue = false;
-        }
         program.blocks.push_back(ir_block);
     }
+    translator.EmitPrologue(program.blocks.front());
     ASSERT_MSG(!program.info.translation_failed, "Shader translation has failed");
     for (auto& block : cfg) {
         auto* ir_block = block.ir_block;
