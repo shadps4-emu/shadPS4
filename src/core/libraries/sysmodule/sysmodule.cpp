@@ -105,24 +105,22 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal(char const* name, u64 args
                                                       void const* popt, s32* res) {
     LOG_ERROR(Lib_SysModule, "(DUMMY) called, name: {}", name);
 
-    constexpr auto whitelisted_modules = std::to_array<char const*>({
+    const std::unordered_set<std::string const> whitelisted_modules{
         "libScePsmUtil",
         "libReactNative.Modules.Vsh",
         "libmonosgen-2.0",
         "libmono-btls-shared",
-    });
+    };
 
-    constexpr auto blacklisted_modules = std::to_array<char const*>({
+    const std::unordered_set<std::string const> blacklisted_modules{
         "libSceDipsw",
         "libSceComposite",
         "libSceUpdateService",
         "libScePatchCheckerClient",
         "libSceMusicCoreServerClient",
-    });
+    };
 
-    bool is_whitelisted = std::ranges::find_if(whitelisted_modules, [name](char const* m) {
-                              return std::strcmp(name, m) == 0;
-                          }) != whitelisted_modules.end();
+    bool is_whitelisted = whitelisted_modules.contains(name);
 
     std::string filename = std::string(name) + ".sprx";
     const auto& sys_module_path = EmulatorSettings.GetSysModulesDir();
@@ -142,9 +140,7 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal(char const* name, u64 args
         return ret >= 0 ? ret : ORBIS_KERNEL_ERROR_ENOENT;
     }
 
-    bool is_blacklisted = std::ranges::find_if(blacklisted_modules, [name](char const* m) {
-                              return std::strcmp(name, m) == 0;
-                          }) != blacklisted_modules.end();
+    bool is_blacklisted = blacklisted_modules.contains(name);
     if (is_blacklisted) {
         static s32 stub_handles = 0x300;
         return stub_handles++;
