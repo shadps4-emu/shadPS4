@@ -345,7 +345,7 @@ void Translator::S_AND_B64(NegateMode negate, const GcnInst& inst) {
     if (negate == NegateMode::Result) {
         result = ir.BitwiseNot(result);
     }
-    ir.SetScc(ir.InverseBallot(result));
+    ir.SetScc(ir.INotEqual(result, ir.Imm64(u64(0))));
     SetDst64(inst.dst[0], result);
 }
 
@@ -367,7 +367,7 @@ void Translator::S_OR_B64(NegateMode negate, bool is_xor, const GcnInst& inst) {
     if (negate == NegateMode::Result) {
         result = ir.BitwiseNot(result);
     }
-    ir.SetScc(ir.InverseBallot(result));
+    ir.SetScc(ir.INotEqual(result, ir.Imm64(u64(0))));
     SetDst64(inst.dst[0], result);
 }
 
@@ -518,7 +518,7 @@ void Translator::S_MOV_B64(const GcnInst& inst) {
 void Translator::S_NOT_B64(const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
     const IR::U64 result = ir.BitwiseNot(src0);
-    ir.SetScc(ir.InverseBallot(result));
+    ir.SetScc(ir.INotEqual(result, ir.Imm64(u64(0))));
     SetDst64(inst.dst[0], result);
 }
 
