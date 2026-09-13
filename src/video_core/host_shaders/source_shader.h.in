@@ -3,12 +3,15 @@
 
 #pragma once
 
-#include <string_view>
+#include "video_core/host_shaders/host_shader.h"
 
 namespace HostShaders {
 
-constexpr std::string_view @CONTENTS_NAME@ = R"shader_src(
+constexpr ShaderSource @CONTENTS_NAME@{
+    .name = "@SHADER_FILE_NAME@",
+    .code = R"shader_src(
 @CONTENTS@
-)shader_src";
+)shader_src",
+};
 
 } // namespace HostShaders
