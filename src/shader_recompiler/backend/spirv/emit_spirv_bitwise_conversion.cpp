@@ -190,6 +190,70 @@ Id EmitUnpackUfloat10_11_11(EmitContext& ctx, Id value) {
     return ctx.OpCompositeConstruct(ctx.F32[3], cvt_x, cvt_y, cvt_z);
 }
 
+Id EmitPackUnorm10_11_11(EmitContext& ctx, Id value) {
+    const auto unorm_min{
+        ctx.ConstantComposite(ctx.F32[3], ctx.ConstF32(0.f), ctx.ConstF32(0.f), ctx.ConstF32(0.f))};
+    const auto unorm_max{
+        ctx.ConstantComposite(ctx.F32[3], ctx.ConstF32(1.f), ctx.ConstF32(1.f), ctx.ConstF32(1.f))};
+    const auto clamped{ctx.OpFClamp(ctx.F32[3], value, unorm_min, unorm_max)};
+    const auto unorm_mul{ctx.ConstantComposite(ctx.F32[3], ctx.ConstF32(2047.f),
+                                               ctx.ConstF32(2047.f), ctx.ConstF32(1023.f))};
+    const auto as_float{ctx.OpFMul(ctx.F32[3], clamped, unorm_mul)};
+    const auto as_uint{ctx.OpConvertFToU(ctx.U32[3], ctx.OpRoundEven(ctx.F32[3], as_float))};
+    return EmitPackUint10_11_11(ctx, ctx.OpBitcast(ctx.F32[3], as_uint));
+}
+
+Id EmitUnpackUnorm10_11_11(EmitContext& ctx, Id value) {
+    const auto unpacked{ctx.OpBitcast(ctx.U32[3], EmitUnpackUint10_11_11(ctx, value))};
+    const auto as_float{ctx.OpConvertUToF(ctx.F32[3], unpacked)};
+    const auto unorm_div{ctx.ConstantComposite(ctx.F32[3], ctx.ConstF32(2047.f),
+                                               ctx.ConstF32(2047.f), ctx.ConstF32(1023.f))};
+    return ctx.OpFDiv(ctx.F32[3], as_float, unorm_div);
+}
+
+Id EmitPackSnorm10_11_11(EmitContext& ctx, Id value) {
+    const auto snorm_min{ctx.ConstantComposite(ctx.F32[3], ctx.ConstF32(-1.f), ctx.ConstF32(-1.f),
+                                               ctx.ConstF32(-1.f))};
+    const auto snorm_max{
+        ctx.ConstantComposite(ctx.F32[3], ctx.ConstF32(1.f), ctx.ConstF32(1.f), ctx.ConstF32(1.f))};
+    const auto clamped{ctx.OpFClamp(ctx.F32[3], value, snorm_min, snorm_max)};
+    const auto snorm_mul{ctx.ConstantComposite(ctx.F32[3], ctx.ConstF32(1023.f),
+                                               ctx.ConstF32(1023.f), ctx.ConstF32(511.f))};
+    const auto as_float{ctx.OpFMul(ctx.F32[3], clamped, snorm_mul)};
+    const auto as_sint{ctx.OpConvertFToS(ctx.U32[3], ctx.OpRoundEven(ctx.F32[3], as_float))};
+    return EmitPackSint10_11_11(ctx, ctx.OpBitcast(ctx.F32[3], as_sint));
+}
+
+Id EmitUnpackSnorm10_11_11(EmitContext& ctx, Id value) {
+    const auto unpacked{ctx.OpBitcast(ctx.U32[3], EmitUnpackSint10_11_11(ctx, value))};
+    const auto as_float{ctx.OpConvertSToF(ctx.F32[3], unpacked)};
+    const auto snorm_div{ctx.ConstantComposite(ctx.F32[3], ctx.ConstF32(1023.f),
+                                               ctx.ConstF32(1023.f), ctx.ConstF32(511.f))};
+    return ctx.OpFDiv(ctx.F32[3], as_float, snorm_div);
+}
+
+Id EmitPackUint10_11_11(EmitContext& ctx, Id value) {
+    const auto unpacked{ctx.OpBitcast(ctx.U32[3], value)};
+    const auto [x, y, z] = ExtractComposite<3>(ctx, ctx.U32, unpacked);
+    return InsertBitFields(ctx, {x, y, z}, R(0, 11), R(11, 11), R(22, 10));
+}
+
+Id EmitUnpackUint10_11_11(EmitContext& ctx, Id value) {
+    const auto [x, y, z] = ExtractBitFields<false>(ctx, value, R(0, 11), R(11, 11), R(22, 10));
+    const auto unpacked{ctx.OpCompositeConstruct(ctx.U32[3], x, y, z)};
+    return ctx.OpBitcast(ctx.F32[3], unpacked);
+}
+
+Id EmitPackSint10_11_11(EmitContext& ctx, Id value) {
+    return EmitPackUint10_11_11(ctx, value);
+}
+
+Id EmitUnpackSint10_11_11(EmitContext& ctx, Id value) {
+    const auto [x, y, z] = ExtractBitFields<true>(ctx, value, R(0, 11), R(11, 11), R(22, 10));
+    const auto unpacked{ctx.OpCompositeConstruct(ctx.U32[3], x, y, z)};
+    return ctx.OpBitcast(ctx.F32[3], unpacked);
+}
+
 Id EmitPackUnorm2_10_10_10(EmitContext& ctx, Id value) {
     const auto unorm_min{ctx.ConstantComposite(ctx.F32[4], ctx.ConstF32(0.f), ctx.ConstF32(0.f),
                                                ctx.ConstF32(0.f), ctx.ConstF32(0.f))};
