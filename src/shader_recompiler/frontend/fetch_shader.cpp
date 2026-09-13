@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <unordered_map>
 #include "common/assert.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
@@ -45,12 +46,42 @@ const u32* GetFetchShaderCode(const Info& info, u32 sgpr_base) {
     return code;
 }
 
+// FNV-1a over the shader's dwords. Kept local rather than pulling in an external hash, because
+// this file is also compiled into the standalone test targets, which link fewer libraries.
+static u64 HashShaderCode(const u32* code, u32 size_bytes) {
+    u64 hash = 0xCBF29CE484222325ULL;
+    for (u32 i = 0; i < size_bytes / sizeof(u32); ++i) {
+        hash = (hash ^ code[i]) * 0x100000001B3ULL;
+    }
+    return hash;
+}
+
 std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info) {
     if (!info.has_fetch_shader) {
         return std::nullopt;
     }
 
     const auto* code = GetFetchShaderCode(info, info.fetch_shader_sgpr_base);
+
+    // Fetch shaders are parsed far more often than they change. StageSpecialization builds one
+    // per shader stage per draw, and every build disassembles the whole shader again. The parse
+    // only depends on the instruction bytes, so cache it and skip the repeats.
+    //
+    // Keyed by code address, with a hash of the parsed bytes so a reused address can't return a
+    // stale entry. thread_local keeps the lookup lock-free without assuming a single caller.
+    struct CacheEntry {
+        u64 code_hash{};
+        FetchShaderData data{};
+    };
+    thread_local std::unordered_map<const u32*, CacheEntry> parse_cache;
+
+    if (const auto it = parse_cache.find(code); it != parse_cache.end()) {
+        const auto& entry = it->second;
+        if (HashShaderCode(code, entry.data.size) == entry.code_hash) {
+            return entry.data;
+        }
+    }
+
     FetchShaderData data{};
     GcnCodeSlice code_slice(code, code + std::numeric_limits<u32>::max());
     GcnDecodeContext decoder;
@@ -108,6 +139,7 @@ std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info) {
         }
     }
 
+    parse_cache.insert_or_assign(code, CacheEntry{HashShaderCode(code, data.size), data});
     return data;
 }
 
