@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/logging/classes.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
@@ -89,18 +90,33 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
         return;
     }
 
+    const auto [size_x, size_y, size_z] = runtime_info.cs_info.workgroup_size;
+    const u32 num_threads = size_x * size_y * size_z;
+    if (num_threads <= 32) {
+        return;
+    }
+
     std::vector<IR::Inst*> worklist;
     const auto uniform_blocks = FindUniformBlocks(program);
     for (IR::Block* block : program.blocks) {
         const bool is_uniform = std::ranges::contains(uniform_blocks, block);
+        const auto push_worklist = [&](IR::Inst& inst) {
+            if (is_uniform) {
+                worklist.push_back(&inst);
+            } else {
+                LOG_WARNING(Render_Recompiler, "{} instruction in non uniform control flow",
+                            inst.GetOpcode());
+            }
+        };
         for (IR::Inst& inst : block->Instructions()) {
-            if (inst.GetOpcode() == IR::Opcode::Ballot ||
-                inst.GetOpcode() == IR::Opcode::ReadLane) {
-                if (is_uniform) {
-                    worklist.push_back(&inst);
-                } else {
-                    LOG_WARNING(Render_Recompiler, "{} instruction in non uniform control flow",
-                                inst.GetOpcode());
+            if (inst.GetOpcode() == IR::Opcode::ReadLane && inst.Arg(1).IsImmediate()) {
+                push_worklist(inst);
+            } else if (inst.GetOpcode() == IR::Opcode::Ballot) {
+                const auto is_unpack = [](const IR::Use& use) {
+                    return use.user->GetOpcode() == IR::Opcode::UnpackUint2x32;
+                };
+                if (std::ranges::any_of(inst.Uses(), is_unpack)) {
+                    push_worklist(inst);
                 }
             } else if (inst.GetOpcode() == IR::Opcode::GetAttributeU32 &&
                        inst.Arg(0).Attribute() == IR::Attribute::SubgroupLtMask) {
@@ -112,14 +128,14 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
         return;
     }
 
-    const auto [size_x, size_y, size_z] = runtime_info.cs_info.workgroup_size;
-    const u32 num_threads = Common::AlignUp(size_x * size_y * size_z, 64);
     const u32 scratch_base = Common::AlignUp(runtime_info.cs_info.shared_memory_size, sizeof(u64));
-    const u32 scratch_size = (num_threads / profile.subgroup_size) * sizeof(u32);
+    const u32 scratch_size =
+        (Common::AlignUp(num_threads, 64) / profile.subgroup_size) * sizeof(u32);
     program.info.shared_memory_scratch_size =
         scratch_base + scratch_size - runtime_info.cs_info.shared_memory_size;
 
     for (IR::Inst* inst : worklist) {
+        LOG_INFO(Render_Recompiler, "Lowering {} instruction for wave64", inst->GetOpcode());
         IR::IREmitter ir{*inst->GetParent(), IR::Block::InstructionList::s_iterator_to(*inst)};
         const IR::U32 invocation_index = ir.GetAttributeU32(IR::Attribute::LocalInvocationIndex);
         const IR::U32 subgroup_id = ir.ShiftRightLogical(invocation_index, ir.Imm32(5));
@@ -155,8 +171,6 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
                 ir.CompositeExtract(ir.UnpackUint2x32(mask), inst->Arg(1).U32()));
         }
     }
-
-    return;
 }
 
 } // namespace Shader::Optimization
