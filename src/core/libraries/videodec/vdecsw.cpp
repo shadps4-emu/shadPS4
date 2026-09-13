@@ -234,8 +234,7 @@ s32 PS4_SYSV_ABI sceVdecswTrySyncDecodeInput(OrbisVdecswDecoder decoder_instance
         return ORBIS_VDECSW_ERROR_ARGUMENT_POINTER;
     }
 
-    // Decoding is performed synchronously, so the result is always ready.
-    return decoder_instance_in->SyncDecodeInput(*input_result_out);
+    return decoder_instance_in->TrySyncDecodeInput(*input_result_out);
 }
 
 s32 PS4_SYSV_ABI sceVdecswSetDecodeOutput(OrbisVdecswDecoder decoder_instance_in,
@@ -287,8 +286,7 @@ s32 PS4_SYSV_ABI sceVdecswTrySyncDecodeOutput(OrbisVdecswDecoder decoder_instanc
         return ORBIS_VDECSW_ERROR_ARGUMENT_POINTER;
     }
 
-    // Decoding is performed synchronously, so the result is always ready.
-    return decoder_instance_in->SyncDecodeOutput(*output_info_out);
+    return decoder_instance_in->TrySyncDecodeOutput(*output_info_out);
 }
 
 s32 PS4_SYSV_ABI sceVdecswFinalizeDecodeSequence(OrbisVdecswDecoder decoder_instance_in) {
