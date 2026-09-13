@@ -392,6 +392,18 @@ U32U64 IREmitter::SharedAtomicISub(const U32& address, const U32U64& data, bool 
     }
 }
 
+U32U64 IREmitter::SharedAtomicCmpSwap(const U32& address, const U32U64& value,
+                                      const U32U64& cmp_value, bool is_gds) {
+    switch (value.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicCmpSwap32, Flags{is_gds}, address, value, cmp_value);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicCmpSwap64, Flags{is_gds}, address, value, cmp_value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
 template <>
 U32 IREmitter::SharedAtomicInc(const U32& address, bool is_gds) {
     return Inst<U32>(Opcode::SharedAtomicInc32, Flags{is_gds}, address);

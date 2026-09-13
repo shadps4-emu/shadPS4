@@ -168,6 +168,8 @@ Id EmitSharedAtomicDec32(EmitContext& ctx, Id offset);
 Id EmitSharedAtomicDec64(EmitContext& ctx, Id offset);
 Id EmitSharedAtomicISub32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicISub64(EmitContext& ctx, Id offset, Id value);
+Id EmitSharedAtomicCmpSwap32(EmitContext& ctx, Id offset, Id value, Id cmp_value);
+Id EmitSharedAtomicCmpSwap64(EmitContext& ctx, Id offset, Id value, Id cmp_value);
 
 Id EmitCompositeConstructU32x2(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2);
 Id EmitCompositeConstructU32x3(EmitContext& ctx, IR::Inst* inst, Id e1, Id e2, Id e3);

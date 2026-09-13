@@ -59,6 +59,8 @@ OPCODE(SharedAtomicOr32,                                    U32,            U32,
 OPCODE(SharedAtomicOr64,                                    U64,            U32,            U64,                                                            )
 OPCODE(SharedAtomicXor32,                                   U32,            U32,            U32,                                                            )
 OPCODE(SharedAtomicXor64,                                   U64,            U32,            U64,                                                            )
+OPCODE(SharedAtomicCmpSwap32,                               U32,            U32,            U32,            U32,                                            )
+OPCODE(SharedAtomicCmpSwap64,                               U64,            U32,            U64,            U64,                                            )
 
 // Context getters/setters
 OPCODE(GetUserData,                                         U32,            ScalarReg,                                                                      )
