@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
@@ -14,13 +14,12 @@
 
 namespace Libraries::Kernel {
 
-#define MAX_QUEUE 512
+static constexpr s32 ORBIS_KERNEL_AIO_MAX_QUEUES = 512;
 
 static s32* id_state;
 static s32 id_index;
 
 s32 PS4_SYSV_ABI sceKernelAioInitializeImpl(void* p, s32 size) {
-
     return 0;
 }
 
@@ -185,7 +184,7 @@ s32 PS4_SYSV_ABI sceKernelAioSubmitReadCommands(OrbisKernelAioRWRequest req[], s
 
     *id = id_index;
 
-    id_index = (id_index + 1) % MAX_QUEUE;
+    id_index = (id_index + 1) % ORBIS_KERNEL_AIO_MAX_QUEUES;
 
     if (!id_index)
         id_index++;
@@ -221,7 +220,7 @@ s32 PS4_SYSV_ABI sceKernelAioSubmitReadCommandsMultiple(OrbisKernelAioRWRequest 
 
         id[i] = id_index;
 
-        id_index = (id_index + 1) % MAX_QUEUE;
+        id_index = (id_index + 1) % ORBIS_KERNEL_AIO_MAX_QUEUES;
 
         if (!id_index)
             id_index++;
@@ -259,7 +258,7 @@ s32 PS4_SYSV_ABI sceKernelAioSubmitWriteCommands(OrbisKernelAioRWRequest req[], 
 
     *id = id_index;
 
-    id_index = (id_index + 1) % MAX_QUEUE;
+    id_index = (id_index + 1) % ORBIS_KERNEL_AIO_MAX_QUEUES;
 
     // skip id_index equals 0 , because sceKernelAioCancelRequest will submit id
     // equal to 0
@@ -294,7 +293,7 @@ s32 PS4_SYSV_ABI sceKernelAioSubmitWriteCommandsMultiple(OrbisKernelAioRWRequest
         }
 
         id[i] = id_index;
-        id_index = (id_index + 1) % MAX_QUEUE;
+        id_index = (id_index + 1) % ORBIS_KERNEL_AIO_MAX_QUEUES;
 
         if (!id_index)
             id_index++;
@@ -314,8 +313,8 @@ s32 PS4_SYSV_ABI sceKernelAioInitializeParam() {
 
 void RegisterAio(Core::Loader::SymbolsResolver* sym) {
     id_index = 1;
-    id_state = (int*)malloc(sizeof(int) * MAX_QUEUE);
-    memset(id_state, 0, sizeof(sizeof(int) * MAX_QUEUE));
+    id_state = reinterpret_cast<s32*>(malloc(sizeof(s32) * ORBIS_KERNEL_AIO_MAX_QUEUES));
+    memset(id_state, 0, sizeof(s32) * ORBIS_KERNEL_AIO_MAX_QUEUES);
 
     LIB_FUNCTION("fR521KIGgb8", "libkernel", 1, "libkernel", sceKernelAioCancelRequest);
     LIB_FUNCTION("3Lca1XBrQdY", "libkernel", 1, "libkernel", sceKernelAioCancelRequests);
