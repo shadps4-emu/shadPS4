@@ -725,13 +725,6 @@ void Translator::V_BCNT_U32_B32(const GcnInst& inst) {
 }
 
 void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
-    if (!is_low && inst.src[0].field == OperandField::SignedConstIntNeg &&
-        inst.src[0].code == 193 && inst.src[1].field == OperandField::ConstZero) {
-        return;
-    } else if (is_low && inst.src[0].field == OperandField::SignedConstIntNeg &&
-               inst.src[0].code == 193) {
-        return SetDst(inst.dst[0], ir.LaneId());
-    }
     const IR::U32 thread_mask{ir.GetAttributeU32(IR::Attribute::SubgroupLtMask, is_low ? 0 : 1)};
     SetDst(inst.dst[0], ir.IAdd(ir.BitCount(ir.BitwiseAnd(GetSrc(inst.src[0]), thread_mask)),
                                 GetSrc(inst.src[1])));

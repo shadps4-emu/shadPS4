@@ -98,7 +98,6 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
         Shader::Optimization::LowerFp64ToFp32(program);
     }
     Shader::Optimization::SsaRewritePass(program);
-    Shader::IR::DumpProgram(program, info, "post-ssa1.");
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     if (info.l_stage == LogicalStage::TessellationControl) {
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
@@ -117,7 +116,6 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     Shader::Optimization::SharedMemoryToStoragePass(program, runtime_info, profile);
     Shader::Optimization::LowerUserClipPlanes(program, runtime_info);
     Shader::Optimization::PhiSimplificationPass(program);
-    Shader::IR::DumpProgram(program, info, "pre-ballot-elim.");
     Shader::Optimization::InverseBallotEliminationPass(program);
     Shader::IR::DumpProgram(program, info, "pre-lower-phi.");
 
@@ -137,9 +135,11 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     // Run optimization passes on structured graph
     Shader::Optimization::SsaRepairPass(program);
     Shader::Optimization::SsaRewritePass(program);
+    Shader::Optimization::SharedMemoryBarrierPass(program, runtime_info, profile);
+    Shader::Optimization::DeadCodeEliminationPass(program);
+    Shader::Optimization::LowerWave64BallotPass(program, runtime_info, profile);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);
-    Shader::Optimization::SharedMemoryBarrierPass(program, runtime_info, profile);
     Shader::Optimization::CollectShaderInfoPass(program, profile);
     Shader::IR::DumpProgram(program, info);
 

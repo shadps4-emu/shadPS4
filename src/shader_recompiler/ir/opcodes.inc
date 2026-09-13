@@ -453,7 +453,9 @@ OPCODE(CubeFaceIndex,                                       F32,            F32x
 // Warp operations
 OPCODE(LaneId,                                              U32,                                                                                            )
 OPCODE(WarpId,                                              U32,                                                                                            )
-OPCODE(QuadShuffle,                                         U32,            U32,            U32                                                             )
+OPCODE(QuadBroadcast,                                       U32,            U32,            U32                                                             )
+OPCODE(Shuffle,                                             U32,            U32,            U32                                                             )
+OPCODE(ShuffleXor,                                          U32,            U32,            U32,                                                            )
 OPCODE(ReadFirstLane,                                       U32,            U32,                                                                            )
 OPCODE(ReadLane,                                            U32,            U32,            U32                                                             )
 OPCODE(WriteLane,                                           U32,            U32,            U32,            U32                                             )
