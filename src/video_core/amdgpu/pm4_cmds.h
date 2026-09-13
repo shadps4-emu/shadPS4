@@ -542,9 +542,9 @@ struct PM4DmaData {
         u32 src_atc : 1;
         u32 src_cache_policy : 2;
         u32 src_volatile : 1;
-        u32 reserved2 :  4;
-        DmaDataDst dst_sel :  2;
-        u32 reserved3 :  2;
+        u32 reserved2 : 4;
+        DmaDataDst dst_sel : 2;
+        u32 reserved3 : 2;
         u32 dst_atc : 1;
         u32 dst_cache_policy : 2;
         u32 dst_volatile : 1;
