@@ -5,11 +5,14 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/videodec/vdecsw.h"
+#include "core/libraries/videodec/vdecsw_impl.h"
 #include "core/libraries/videodec/videodec2.h"
-#include "core/libraries/videodec/videodec2_impl.h"
 #include "core/libraries/videodec/videodec_error.h"
 
 namespace Libraries::Videodec2 {
+
+using namespace Vdecsw;
 
 static constexpr u64 kMinimumMemorySize = 16_MB; ///> Fake minimum memory size for querying
 
@@ -47,6 +50,102 @@ static void ComputeWorstCaseDimensions(const OrbisVideodec2DecoderConfigInfo& cf
     if (cfg.max_level >= 150) {
         out_width = 3840;
         out_height = 2160;
+    }
+}
+
+static OrbisVdecswCodecType ConvertCodecType(OrbisVideodec2CodecType codec_type) {
+    return codec_type == OrbisVideodec2CodecType::Avc ? OrbisVdecswCodecType::Avc
+                                                      : OrbisVdecswCodecType::Hevc;
+}
+
+static OrbisVideodec2CodecType ConvertCodecType(OrbisVdecswCodecType codec_type) {
+    return codec_type == OrbisVdecswCodecType::Avc ? OrbisVideodec2CodecType::Avc
+                                                   : OrbisVideodec2CodecType::Hevc;
+}
+
+static OrbisVdecswDecoderConfigInfo ConvertDecoderConfigInfo(
+    const OrbisVideodec2DecoderConfigInfo& config_info) {
+    OrbisVdecswDecoderConfigInfo result{};
+    result.this_size = sizeof(OrbisVdecswDecoderConfigInfo);
+    result.resource_type = config_info.resource_type;
+    result.codec_type = ConvertCodecType(config_info.codec_type);
+    result.profile = config_info.profile;
+    result.max_level = config_info.max_level;
+    result.max_frame_width = config_info.max_frame_width;
+    result.max_frame_height = config_info.max_frame_height;
+    result.max_dpb_frame_count = config_info.max_dpb_frame_count;
+    result.decode_pipeline_depth = config_info.decode_pipeline_depth;
+    result.compute_queue = config_info.compute_queue;
+    result.cpu_affinity_mask = config_info.cpu_affinity_mask;
+    result.cpu_thread_priority = config_info.cpu_thread_priority;
+    result.optimize_progressive_video = config_info.optimize_progressive_video;
+    result.check_memory_type = config_info.check_memory_type;
+    return result;
+}
+
+static OrbisVdecswDecoderMemoryInfo ConvertDecoderMemoryInfo(
+    const OrbisVideodec2DecoderMemoryInfo& memory_info) {
+    OrbisVdecswDecoderMemoryInfo result{};
+    result.this_size = sizeof(OrbisVdecswDecoderMemoryInfo);
+    result.cpu_memory = memory_info.cpu_memory;
+    result.cpu_memory_size = memory_info.cpu_memory_size;
+    result.gpu_memory = memory_info.gpu_memory;
+    result.gpu_memory_size = memory_info.gpu_memory_size;
+    result.cpu_gpu_memory = memory_info.cpu_gpu_memory;
+    result.cpu_gpu_memory_size = memory_info.cpu_gpu_memory_size;
+    result.max_frame_buffer_size = memory_info.max_frame_buffer_size;
+    result.frame_buffer_alignment = memory_info.frame_buffer_alignment;
+    return result;
+}
+
+static OrbisVdecswInputData ConvertInputData(const OrbisVideodec2InputData& input_data) {
+    OrbisVdecswInputData result{};
+    result.this_size = sizeof(OrbisVdecswInputData);
+    result.au_data = input_data.au_data;
+    result.au_size = input_data.au_size;
+    result.pts_data = input_data.pts_data;
+    result.dts_data = input_data.dts_data;
+    result.attached_data = input_data.attached_data;
+    return result;
+}
+
+static OrbisVdecswFrameBuffer ConvertFrameBuffer(const OrbisVideodec2FrameBuffer& frame_buffer) {
+    OrbisVdecswFrameBuffer result{};
+    result.this_size = sizeof(OrbisVdecswFrameBuffer);
+    result.frame_buffer = frame_buffer.frame_buffer;
+    result.frame_buffer_size = frame_buffer.frame_buffer_size;
+    return result;
+}
+
+static void ConvertOutputInfo(const OrbisVdecswOutputInfo& src, OrbisVideodec2OutputInfo& dst) {
+    // this_size is preserved so the game keeps seeing its own struct version.
+    dst.is_valid = src.is_valid;
+    dst.is_error_frame = src.is_error_frame;
+    dst.picture_count = src.picture_count;
+    dst.codec_type = ConvertCodecType(src.codec_type);
+    dst.frame_width = src.frame_width;
+    dst.frame_pitch = src.frame_pitch;
+    dst.frame_height = src.frame_height;
+    dst.frame_buffer = src.frame_buffer;
+    dst.frame_buffer_size = src.frame_buffer_size;
+    dst.frame_format = src.frame_format;
+    dst.frame_pitch_in_bytes = src.frame_pitch_in_bytes;
+}
+
+static s32 ConvertVdecswError(s32 error) {
+    switch (error) {
+    case ORBIS_VDECSW_ERROR_API_FAIL:
+        return ORBIS_VIDEODEC2_ERROR_API_FAIL;
+    case ORBIS_VDECSW_ERROR_ACCESS_UNIT_POINTER:
+        return ORBIS_VIDEODEC2_ERROR_ACCESS_UNIT_POINTER;
+    case ORBIS_VDECSW_ERROR_ACCESS_UNIT_SIZE:
+        return ORBIS_VIDEODEC2_ERROR_ACCESS_UNIT_SIZE;
+    case ORBIS_VDECSW_ERROR_FRAME_BUFFER_POINTER:
+        return ORBIS_VIDEODEC2_ERROR_FRAME_BUFFER_POINTER;
+    case ORBIS_VDECSW_ERROR_FRAME_BUFFER_SIZE:
+        return ORBIS_VIDEODEC2_ERROR_FRAME_BUFFER_SIZE;
+    default:
+        return ORBIS_VIDEODEC2_ERROR_API_FAIL;
     }
 }
 
@@ -165,7 +264,8 @@ s32 PS4_SYSV_ABI sceVideodec2CreateDecoder(const OrbisVideodec2DecoderConfigInfo
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
 
-    *decoder = new VdecDecoder(*decoder_cfg_info, *decoder_mem_info);
+    *decoder = new Vdecsw::VdecDecoder(ConvertDecoderConfigInfo(*decoder_cfg_info),
+                                       ConvertDecoderMemoryInfo(*decoder_mem_info));
     return ORBIS_OK;
 }
 
@@ -201,7 +301,37 @@ s32 PS4_SYSV_ABI sceVideodec2Decode(OrbisVideodec2Decoder decoder,
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
 
-    return decoder->Decode(*input_data, *frame_buffer, *output_info);
+    s32 ret = decoder->SetDecodeInput(ConvertInputData(*input_data));
+    if (ret != ORBIS_OK) {
+        return ConvertVdecswError(ret);
+    }
+
+    OrbisVdecswInputResult input_result{};
+    input_result.this_size = sizeof(OrbisVdecswInputResult);
+    ret = decoder->SyncDecodeInput(input_result);
+    if (ret != ORBIS_OK) {
+        return ConvertVdecswError(ret);
+    }
+    if (input_result.output_frame_count == 0) {
+        output_info->is_valid = false;
+        return ORBIS_OK;
+    }
+
+    ret = decoder->SetDecodeOutput(ConvertFrameBuffer(*frame_buffer));
+    if (ret != ORBIS_OK) {
+        return ConvertVdecswError(ret);
+    }
+
+    OrbisVdecswOutputInfo vdecsw_output{};
+    vdecsw_output.this_size = output_info->this_size;
+    ret = decoder->SyncDecodeOutput(vdecsw_output);
+    if (ret != ORBIS_OK && ret != ORBIS_VDECSW_ERROR_DECODE_PENDING) {
+        return ConvertVdecswError(ret);
+    }
+
+    frame_buffer->is_accepted = vdecsw_output.is_valid;
+    ConvertOutputInfo(vdecsw_output, *output_info);
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVideodec2Flush(OrbisVideodec2Decoder decoder,
@@ -223,7 +353,25 @@ s32 PS4_SYSV_ABI sceVideodec2Flush(OrbisVideodec2Decoder decoder,
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
 
-    return decoder->Flush(*frame_buffer, *output_info);
+    // Drain the frames that are still held for reordering purposes and
+    // return the next one.
+    decoder->FinalizeDecodeSequence();
+
+    s32 ret = decoder->SetDecodeOutput(ConvertFrameBuffer(*frame_buffer));
+    if (ret != ORBIS_OK) {
+        return ConvertVdecswError(ret);
+    }
+
+    OrbisVdecswOutputInfo vdecsw_output{};
+    vdecsw_output.this_size = output_info->this_size;
+    ret = decoder->SyncDecodeOutput(vdecsw_output);
+    if (ret != ORBIS_OK && ret != ORBIS_VDECSW_ERROR_DECODE_PENDING) {
+        return ConvertVdecswError(ret);
+    }
+
+    frame_buffer->is_accepted = vdecsw_output.is_valid;
+    ConvertOutputInfo(vdecsw_output, *output_info);
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVideodec2Reset(OrbisVideodec2Decoder decoder) {
