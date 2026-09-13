@@ -27,7 +27,6 @@
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libc_internal/libc_internal.h"
-#include "core/libraries/libpng/pngdec.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/mouse/mouse.h"
 #include "core/libraries/move/move.h"
@@ -49,7 +48,8 @@
 #include "core/libraries/np/np_signaling/np_signaling.h"
 #include "core/libraries/np/np_sns_facebook_dialog.h"
 #include "core/libraries/np/np_trophy.h"
-#include "core/libraries/np/np_tus.h"
+#include "core/libraries/np/np_tus/np_tus.h"
+#include "core/libraries/np/np_utility/np_utility.h"
 #include "core/libraries/np/np_web_api/np_web_api.h"
 #include "core/libraries/np/np_web_api2/np_web_api2.h"
 #include "core/libraries/pad/pad.h"
@@ -139,7 +139,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceNpTus.sprx", Libraries::Np::NpTus::RegisterLib},
             {"libSceScreenShot.sprx", Libraries::ScreenShot::RegisterLib},
             {"libSceAppContent.sprx", Libraries::AppContent::RegisterLib},
-            {"libScePngDec.sprx", Libraries::PngDec::RegisterLib},
             {"libScePlayGo.sprx", Libraries::PlayGo::RegisterLib},
             {"libScePlayGoDialog.sprx", Libraries::PlayGo::Dialog::RegisterLib},
             {"libSceRandom.sprx", Libraries::Random::RegisterLib},
@@ -147,7 +146,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceAjm.sprx", Libraries::Ajm::RegisterLib},
             {"libSceErrorDialog.sprx", Libraries::ErrorDialog::RegisterLib},
             {"libSceImeDialog.sprx", Libraries::ImeDialog::RegisterLib},
-            {"libSceAvPlayer.sprx", Libraries::AvPlayer::RegisterLib},
             {"libSceVideodec.sprx", Libraries::Videodec::RegisterLib},
             {"libSceVideodec2.sprx", Libraries::Videodec2::RegisterLib},
             {"libSceIme.sprx", Libraries::Ime::RegisterLib},
@@ -172,6 +170,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceContentExport.sprx", Libraries::ContentExport::RegisterLib},
             {"libSceVideoRecording.sprx", Libraries::VideoRecording::RegisterLib},
             {"libSceInvitationDialog.sprx", Libraries::InvitationDialog::RegisterLib},
+            {"libSceNpUtility.sprx", Libraries::Np::NpUtility::RegisterLib},
 #ifdef ARCH_X86_64
             {"libSceFiber.sprx", Libraries::Fiber::RegisterLib},
 #endif

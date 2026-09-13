@@ -23,7 +23,6 @@ struct VsAttribSpecialization {
 
 struct BufferSpecialization {
     u32 stride : 14;
-    u32 is_storage : 1;
     u32 is_formatted : 1;
     u32 swizzle_enable : 1;
     u32 data_format : 6;
@@ -34,8 +33,8 @@ struct BufferSpecialization {
     AmdGpu::NumberConversion num_conversion{};
 
     bool operator==(const BufferSpecialization& other) const {
-        return stride == other.stride && is_storage == other.is_storage &&
-               is_formatted == other.is_formatted && swizzle_enable == other.swizzle_enable &&
+        return stride == other.stride && is_formatted == other.is_formatted &&
+               swizzle_enable == other.swizzle_enable &&
                (!is_formatted ||
                 (data_format == other.data_format && num_format == other.num_format &&
                  dst_select == other.dst_select && num_conversion == other.num_conversion)) &&
@@ -118,7 +117,6 @@ struct StageSpecialization {
         ForEachSharp(binding, buffers, info->buffers,
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.stride = sharp.GetStride();
-                         spec.is_storage = desc.IsStorage(sharp);
                          spec.is_formatted = desc.is_formatted;
                          spec.swizzle_enable = sharp.swizzle_enable;
                          if (spec.is_formatted) {

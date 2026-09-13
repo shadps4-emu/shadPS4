@@ -30,6 +30,8 @@ set(SETTINGS_TEST_SOURCES
     # Stubs that replace dependencies
     stubs/common_stub.cpp
     stubs/core_stub.cpp
+    stubs/signals_stub.cpp
+    stubs/file_sys_stub.cpp
     stubs/scm_rev_stub.cpp
     stubs/sdl_stub.cpp
 
@@ -56,6 +58,8 @@ set(NGS2_TEST_SOURCES
     # Stubs that replace dependencies
     stubs/common_stub.cpp
     stubs/core_stub.cpp
+    stubs/signals_stub.cpp
+    stubs/file_sys_stub.cpp
     stubs/scm_rev_stub.cpp
     stubs/sdl_stub.cpp
 
@@ -119,7 +123,6 @@ set(GCN_TEST_SOURCES
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/passes/ir_passes.h
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/passes/constant_propagation_pass.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/passes/dead_code_elimination_pass.cpp
-    ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/passes/identity_removal_pass.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/passes/shader_info_collection_pass.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/ir/post_order.cpp
@@ -147,6 +150,8 @@ set(GCN_TEST_SOURCES
     stubs/scm_rev_stub.cpp
     stubs/sdl_stub.cpp
     stubs/core_stub.cpp
+    stubs/signals_stub.cpp
+    stubs/file_sys_stub.cpp
 
     gcn/gcn_test_runner.hpp
     gcn/gcn_test_runner.cpp
@@ -268,6 +273,8 @@ set(HTTP_TEST_SOURCES
     stubs/sdl_stub.cpp
     stubs/loader_stub.cpp
     stubs/core_stub.cpp
+    stubs/signals_stub.cpp
+    stubs/file_sys_stub.cpp
     stubs/kernel_stub.cpp
 
     # Tests
@@ -296,6 +303,7 @@ target_link_libraries(shadps4_http_test PRIVATE
     toml11::toml11
     SDL3::SDL3
     spdlog::spdlog
+    ZLIB::ZLIB
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR

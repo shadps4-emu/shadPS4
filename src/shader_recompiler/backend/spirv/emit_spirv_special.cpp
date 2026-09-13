@@ -4,6 +4,7 @@
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/ir/debug_print.h"
+#include "shader_recompiler/ir/microinstruction.h"
 
 namespace Shader::Backend::SPIRV {
 
@@ -110,6 +111,14 @@ void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id fmt, Id arg0, Id arg1, 
     std::array<Id, IR::DEBUGPRINT_NUM_FORMAT_ARGS> fmt_args = {arg0, arg1, arg2, arg3};
     auto fmt_args_span = std::span<Id>(fmt_args.begin(), fmt_args.begin() + flags.num_args);
     ctx.OpDebugPrintf(fmt, fmt_args_span);
+}
+
+Id EmitMemtime(EmitContext& ctx) {
+    if (ctx.profile.supports_shader_subgroup_clock) {
+        return ctx.OpReadClockKHR(ctx.U64, ctx.ConstU32(std::to_underlying(spv::Scope::Subgroup)));
+    } else {
+        return ctx.Constant(ctx.U64, 1U);
+    }
 }
 
 } // namespace Shader::Backend::SPIRV

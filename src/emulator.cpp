@@ -59,6 +59,10 @@
 
 Frontend::WindowSDL* g_window = nullptr;
 
+namespace Libraries::Kernel {
+extern char const* g_environment[64];
+}
+
 namespace Core {
 
 std::mutex exit_mutex{};
@@ -86,6 +90,9 @@ void Emulator::Shutdown() {
         return;
     }
     Common::Log::Flush();
+    Libraries::SaveData::Backup::StopThread();
+    Storage::DataBase::Instance().Close();
+    UpdatePlayTime(Common::Singleton<Common::ElfInfo>::Instance()->GameSerial());
     if (controllers) {
         controllers->ResetLightbarColors();
         // need to give SDL time to do this before the runtime exits
@@ -266,7 +273,9 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
 }
 
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
-                   std::optional<std::filesystem::path> p_game_folder) {
+                   std::optional<std::filesystem::path> p_game_folder,
+                   std::vector<std::pair<std::filesystem::path, std::string>> mounts,
+                   std::vector<std::string> const& env_vars) {
     Common::SetCurrentThreadName("shadPS4:Main");
     if (waitForDebuggerBeforeRun) {
         Debugger::WaitForDebuggerAttach();
@@ -459,10 +468,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     game_info.game_folder = game_folder;
 
-    if (!mnt->Exists(guest_eboot_path)) {
-        LOG_CRITICAL(Loader, "eboot.bin does not exist: {}", guest_eboot_path);
-        std::quick_exit(0);
-    }
+    ASSERT_MSG(mnt->Exists(guest_eboot_path), "Guest app's main executable {} does not exist",
+               guest_eboot_path);
 
     LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::g_version);
     LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
@@ -652,9 +659,21 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                    std::string("/") + sandbox_root + "/common_ex/lib/");
     }
 
+    for (auto const& mount_pair : mounts) {
+        LOG_INFO(Loader, "Mounting {} to {}", mount_pair.first.string(), mount_pair.second);
+        mnt->Mount(mount_pair.first, mount_pair.second);
+    }
+
     if (std::filesystem::is_empty(host_font_dir) || std::filesystem::is_empty(host_font2_dir)) {
         LOG_WARNING(Loader, "No dumped system fonts, expect missing text or instability");
     }
+
+    auto env_max = std::min<u64>(env_vars.size(), 63);
+    for (int i = 0; i < env_max; i++) {
+        LOG_INFO(Loader, "Env {:02}: {}", i, env_vars[i]);
+        Libraries::Kernel::g_environment[i] = env_vars[i].c_str();
+    }
+    Libraries::Kernel::g_environment[env_max] = nullptr;
 
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());
@@ -693,9 +712,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     while (window->IsOpen()) {
         window->WaitEvent();
     }
-
-    UpdatePlayTime(id);
-    Storage::DataBase::Instance().Close();
 
     std::quick_exit(0);
 }
@@ -759,7 +775,6 @@ void Emulator::Restart(std::filesystem::path eboot_path,
         }
     }
 
-    Libraries::SaveData::Backup::StopThread();
     Relaunch(std::move(args));
 }
 
@@ -805,7 +820,7 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
-#elif defined(__APPLE__) || defined(__linux__) || defined(__FreeBSD__)
+#else
     std::vector<char*> argv;
 
     // Emulator executable
@@ -826,14 +841,12 @@ void Emulator::Restart(std::filesystem::path eboot_path,
         std::cerr << "Failed to restart game: fork failed" << std::endl;
         std::quick_exit(1);
     }
-#else
-#error "Unsupported platform"
 #endif
 
     std::quick_exit(0);
 }
 
-void Emulator::UpdatePlayTime(const std::string& serial) {
+void Emulator::UpdatePlayTime(const std::string_view serial) {
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     const auto filePath = (user_dir / "play_time.txt").string();
 

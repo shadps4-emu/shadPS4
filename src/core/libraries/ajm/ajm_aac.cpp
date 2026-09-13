@@ -111,9 +111,11 @@ void AjmAacDecoder::Initialize(const void* buffer, u32 buffer_size) {
 }
 
 void AjmAacDecoder::GetInfo(void* out_info) const {
+    const auto* const info = aacDecoder_GetStreamInfo(m_decoder);
     auto* codec_info = reinterpret_cast<AjmSidebandDecM4aacCodecInfo*>(out_info);
     *codec_info = {
-        .heaac = True(m_flags & AjmAacCodecFlags::EnableSbrDecode),
+        .heaac = info->aot == AOT_SBR || info->aot == AOT_PS || info->extAot == AOT_SBR ||
+                 info->extAot == AOT_PS,
     };
 }
 

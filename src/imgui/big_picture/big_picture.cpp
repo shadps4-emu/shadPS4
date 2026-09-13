@@ -1,6 +1,8 @@
 //  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <bit>
 #include <fstream>
 #include <stb_image.h>
 
@@ -35,38 +37,34 @@ SDL_Renderer* renderer;
 namespace {
 
 std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder) {
+    std::filesystem::path updatedPath = "";
+    std::filesystem::path basePath = game_folder.parent_path();
+    std::string fileName;
+    std::string item = "sce_sys/" + sceItem;
+
     if (Core::FileSys::IsZArchiveFile(game_folder)) {
-        std::filesystem::path path = Core::FileSys::StripZArchiveExtension(game_folder);
-        std::string item_string = "sce_sys/" + sceItem;
-        const auto update_zar = path += "-UPDATE.zar";
-        const auto patch_zar = path += "-patch.zar";
-
-        if (std::filesystem::exists(update_zar)) {
-            if (const auto resolved = Core::FileSys::ResolveGameFilePath(update_zar, item_string)) {
-                return *resolved;
-            }
-        } else if (std::filesystem::exists(patch_zar)) {
-            if (const auto resolved = Core::FileSys::ResolveGameFilePath(patch_zar, item_string)) {
-                return *resolved;
-            }
-        } else {
-            return Core::FileSys::ResolveGameFilePath(game_folder, item_string).value();
-        }
-    }
-
-    std::filesystem::path outputPath;
-    const auto update_folder = Core::FileSys::OverlayPath(game_folder, "-UPDATE");
-    const auto patch_folder = Core::FileSys::OverlayPath(game_folder, "-patch");
-
-    if (std::filesystem::exists(update_folder / "sce_sys" / sceItem)) {
-        outputPath = update_folder / "sce_sys" / sceItem;
-    } else if (std::filesystem::exists(patch_folder / "sce_sys" / sceItem)) {
-        outputPath = patch_folder / "sce_sys" / sceItem;
+        fileName = Core::FileSys::StripZArchiveExtension(game_folder).filename().string();
     } else {
-        outputPath = game_folder / "sce_sys" / sceItem;
+        fileName = game_folder.filename().string();
     }
 
-    return outputPath;
+    if (std::filesystem::exists(basePath / (fileName + "-UPDATE") / item)) {
+        updatedPath = basePath / (fileName + "-UPDATE") / item;
+    } else if (Core::FileSys::ResolveGameFilePath(basePath / (fileName + "-UPDATE.zar"), item)
+                   .has_value()) {
+        updatedPath =
+            Core::FileSys::ResolveGameFilePath(basePath / (fileName + "-UPDATE.zar"), item).value();
+    } else if (std::filesystem::exists(basePath / (fileName + "-patch") / item)) {
+        updatedPath = basePath / (fileName + "-patch") / item;
+    } else if (Core::FileSys::ResolveGameFilePath(basePath / (fileName + "-patch.zar"), item)
+                   .has_value()) {
+        updatedPath =
+            Core::FileSys::ResolveGameFilePath(basePath / (fileName + "-patch.zar"), item).value();
+    } else if (Core::FileSys::ResolveGameFilePath(game_folder, item).has_value()) {
+        updatedPath = Core::FileSys::ResolveGameFilePath(game_folder, item).value();
+    }
+
+    return updatedPath;
 }
 
 void SetGameIcons(std::vector<IconInfo>& gameIcons) {
@@ -263,6 +261,12 @@ void Launch(char* executableName, bool sameProcess) {
     io.FontDefault = ImGui::FontStack::AddPrimaryUiFont(
         io.Fonts, 64.0f, EmulatorSettings.GetConsoleLanguage(), cfgBase, true);
     io.FontGlobalScale = 0.5f;
+    // size the big picture font atlas cap from the renderer limit
+    const auto max_dim = SDL_GetNumberProperty(SDL_GetRendererProperties(renderer),
+                                               SDL_PROP_RENDERER_MAX_TEXTURE_SIZE_NUMBER, 8192);
+    const int atlas_max = static_cast<int>(std::bit_floor(std::max<u64>(max_dim, 512)));
+    io.Fonts->TexMaxWidth = atlas_max;
+    io.Fonts->TexMaxHeight = atlas_max;
     io.Fonts->Build();
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
@@ -314,6 +318,7 @@ void Launch(char* executableName, bool sameProcess) {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
+
         ImGuiWindowFlags window_flags =
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse;
 
@@ -321,15 +326,18 @@ void Launch(char* executableName, bool sameProcess) {
         ImGui::DrawPrettyBackground();
         ImGui::SetWindowFontScale(uiScale);
 
-        ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                                       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
+        ImGuiChildFlags child_flags = ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened;
+
+        ImGuiWindowFlags child_window_flags =
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
 
         if (ImGui::IsWindowAppearing()) {
             ImGui::SetNextWindowFocus();
         }
 
-        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true,
-                          child_flags);
+        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()),
+                          child_flags, child_window_flags);
+
         Overlay::TextCentered("Select Game");
         ImGui::Dummy(ImVec2(0.0f, 10.f * uiScale));
 

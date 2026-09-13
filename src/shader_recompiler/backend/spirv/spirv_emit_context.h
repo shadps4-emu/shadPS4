@@ -272,8 +272,10 @@ public:
     Id num_workgroups_id{};
     Id workgroup_index_id{};
     Id local_invocation_id{};
+    Id local_invocation_index{};
     Id invocation_id{};
     Id subgroup_local_invocation_id{};
+    Id subgroup_lt_mask{};
     Id image_u32{};
     Id image_f32{};
 
@@ -285,6 +287,7 @@ public:
     Id shared_memory_u32_type{};
     Id shared_memory_u64_type{};
 
+    Id bary_coord{};
     Id bary_coord_smooth{};
     Id bary_coord_smooth_centroid{};
     Id bary_coord_smooth_sample{};
@@ -400,8 +403,8 @@ private:
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
                                     bool output, bool loaded = false, bool array = false);
 
-    BufferSpv DefineBuffer(bool is_storage, bool is_written, u32 elem_shift, BufferType buffer_type,
-                           Id data_type);
+    BufferSpv DefineBuffer(bool is_written, bool is_coherent, u32 elem_shift,
+                           BufferType buffer_type, Id data_type);
 
     Id DefineFloat32ToUfloatM5(u32 mantissa_bits, std::string_view name);
     Id DefineUfloatM5ToFloat32(u32 mantissa_bits, std::string_view name);

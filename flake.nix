@@ -6,22 +6,16 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    
-    abseilCppSource = {
-      url = "github:abseil/abseil-cpp?ref=20250512.1";
-      flake = false;
-    };
   };
 
   outputs =
-    { self, nixpkgs, abseilCppSource }:
+    { self, nixpkgs }:
     let
       pkgsLinux = nixpkgs.legacyPackages.x86_64-linux;
 
     in
     {
       formatter.x86_64-linux = pkgsLinux.nixpkgs-fmt;
-
       devShells.x86_64-linux.default =
         let
           shell =
@@ -32,6 +26,8 @@
             , clang-tools
             , cmake
             , pkg-config
+            , vulkan-loader
+            , mesa
             , renderdoc
             , gef
             , strace
@@ -56,47 +52,53 @@
             , libxrandr
             , libxrender
             , libxtst
+            , libX11
+            , libxcb
             , libxscrnsaver
             , enableDebugTooling ? true
             ,
             }:
+            let
+              runtimeDeps = [
+                libGL
+                libxext
+                libdrm
+                libgbm
+                libpulseaudio
+              ];
+
+              # SDL3 requres extra libraries inside the devshell in order to pass CMake's configure.
+              sdlConfigureDeps = [
+                jack1
+                fribidi
+                libthai
+                sndio
+                libusb1
+                libxkbcommon
+                libxcursor
+                libxfixes
+                libxi
+                libxinerama
+                libxrandr
+                libxrender
+                libxtst
+                libxscrnsaver
+              ] ++ runtimeDeps;
+            in
 
             mkShell.override { stdenv = clangStdenv; } {
               inputsFrom = [ self.packages.x86_64-linux.default ];
 
-              packages =
-                let
-                  # SDL3 requres extra libraries inside the devshell in order to pass CMake's configure.
-                  sdlConfigureDeps = [
-                    libGL
-                    jack1
-                    fribidi
-                    libthai
-                    libpulseaudio
-                    sndio
-                    libdrm
-                    libgbm
-                    libusb1
-                    libxkbcommon
-                    libxcursor
-                    libxext
-                    libxfixes
-                    libxi
-                    libxinerama
-                    libxrandr
-                    libxrender
-                    libxtst
-                    libxscrnsaver
-                  ];
-                in
-                [
-                  clang-tools
-                  cmake
-                  pkg-config
-                ] ++ sdlConfigureDeps ++ lib.optionals enableDebugTooling [ renderdoc gef strace perf vulkan-tools ];
+              packages = [
+                clang-tools
+                cmake
+                pkg-config
+                libxcb.dev
+              ] ++ sdlConfigureDeps ++ lib.optionals enableDebugTooling [ renderdoc gef strace perf vulkan-tools ];
 
               shellHook = ''
                 echo "Entering shadPS4 development shell!"
+                export LD_LIBRARY_PATH="${lib.makeLibraryPath (lib.flatten runtimeDeps ++ [ vulkan-loader libX11 ])}:$LD_LIBRARY_PATH"
               '';
 
               CMAKE_C_COMPILER = "clang";
@@ -158,7 +160,6 @@
             , libuuid
             , systemdMinimal
             , libx11
-            , abseilCppSource
             , releaseMode ? "debug"
             , enableDiscordRpc ? false
             ,
@@ -167,7 +168,7 @@
             clangStdenv.mkDerivation (finalAttrs: {
               name = "${finalAttrs.pname}-${finalAttrs.version}-${finalAttrs.system}";
               pname = "shadps4";
-              version = "0.17.1";
+              version = "0.18.1";
               system = "x86_64-linux";
               src = ./.;
 
@@ -212,7 +213,6 @@
                 (lib.cmakeBool "ENABLE_DISCORD_RPC" enableDiscordRpc)
                 (lib.cmakeBool "ENABLE_TESTS" false)
                 (lib.cmakeBool "ENABLE_SYSTEM_LIBRARIES" true)
-                "-DFETCHCONTENT_SOURCE_DIR_ABSL=${abseilCppSource}"
               ];
               dontStrip = (getBuildSettings releaseMode).symbols;
 
@@ -228,10 +228,10 @@
             });
         in
         {
-          debug = pkgsLinux.callPackage build { releaseMode = "debug"; inherit abseilCppSource; };
-          release = pkgsLinux.callPackage build { releaseMode = "release"; inherit abseilCppSource; };
-          releaseWithDebInfo = pkgsLinux.callPackage build { releaseMode = "relWithDebInfo"; inherit abseilCppSource; };
-          default = pkgsLinux.callPackage build { releaseMode = "relWithDebInfo"; inherit abseilCppSource; };
+          debug = pkgsLinux.callPackage build { releaseMode = "debug"; };
+          release = pkgsLinux.callPackage build { releaseMode = "release"; };
+          releaseWithDebInfo = pkgsLinux.callPackage build { releaseMode = "relWithDebInfo"; };
+          default = pkgsLinux.callPackage build { releaseMode = "relWithDebInfo"; };
         };
     };
 }

@@ -132,9 +132,11 @@ struct Info : InfoPersistent {
     bool has_discard{};
     bool has_image_gather{};
     bool has_image_query{};
+    bool has_readconst{};
     bool uses_buffer_atomic_float_min_max{};
     bool uses_image_atomic_float_min_max{};
     bool uses_lane_id{};
+    bool uses_shader_clock{};
     bool uses_group_quad{};
     bool uses_group_ballot{};
     IR::Type shared_types{};

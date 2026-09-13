@@ -75,6 +75,7 @@ constexpr auto Lib_NpScore = "Lib.NpScore";                         ///< The Lib
 constexpr auto Lib_NpSnsFacebookDialog = "Lib.NpSnsFacebookDialog"; ///< The LibSceNpSnsFacebookDialog implementation
 constexpr auto Lib_NpTrophy = "Lib.NpTrophy";                       ///< The LibSceNpTrophy implementation
 constexpr auto Lib_NpTus = "Lib.NpTus";                             ///< The LibSceNpTus implementation
+constexpr auto Lib_NpUtility = "Lib.NpUtility";                     ///< The LibSceNpUtility implementation
 constexpr auto Lib_NpWebApi = "Lib.NpWebApi";                       ///< The LibSceWebApi implementation
 constexpr auto Lib_NpWebApi2 = "Lib.NpWebApi2";                     ///< The LibSceWebApi2 implementation
 constexpr auto Lib_Pad = "Lib.Pad";                                 ///< The LibScePad implementation.

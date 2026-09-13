@@ -135,7 +135,6 @@ private:
 
     std::filesystem::path m_archive_path;
     std::shared_ptr<SharedReader> m_reader;
-    ZArchiveReader* file_reader{nullptr};
 };
 
 } // namespace Core::FileSys

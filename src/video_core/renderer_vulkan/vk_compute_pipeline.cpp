@@ -41,8 +41,7 @@ ComputePipeline::ComputePipeline(const Instance& instance, Scheduler& scheduler,
         const auto sharp = preloading ? AmdGpu::Buffer{} : buffer.GetSharp(*info);
         bindings.push_back({
             .binding = binding++,
-            .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
-                                                      : vk::DescriptorType::eUniformBuffer,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
         });

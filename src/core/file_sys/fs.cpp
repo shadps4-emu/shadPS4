@@ -581,6 +581,18 @@ File* HandleTable::GetSocket(int d) {
     return file;
 }
 
+std::vector<int> HandleTable::GetSocketHandles() {
+    std::scoped_lock lock{m_mutex};
+    std::vector<int> handles;
+    for (int index = 0; index < m_files.size(); index++) {
+        const auto* file = m_files.at(index);
+        if (file && file->type == Core::FileSys::FileType::Socket) {
+            handles.push_back(index);
+        }
+    }
+    return handles;
+}
+
 File* HandleTable::GetEpoll(int d) {
     std::scoped_lock lock{m_mutex};
     if (d < 0 || d >= m_files.size()) {

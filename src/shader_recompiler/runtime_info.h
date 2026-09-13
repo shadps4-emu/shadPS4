@@ -172,6 +172,10 @@ struct PsColorBuffer {
     AmdGpu::NumberFormat num_format : 4;
     AmdGpu::NumberConversion num_conversion : 3;
     AmdGpu::ShaderExportFormat export_format : 4;
+    // GCN applies blend factors to min/max ops while Vulkan ignores them. For the self-scaled
+    // pattern min/max(src*src, dst*dst) the shader squares its color output instead, keeping
+    // the attachment in the squared domain end to end.
+    u32 blend_self_scale : 1;
     AmdGpu::CompMapping swizzle;
 
     bool operator==(const PsColorBuffer& other) const = default;
