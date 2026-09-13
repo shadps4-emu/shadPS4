@@ -5,6 +5,7 @@
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
+#include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -322,8 +323,15 @@ void EmitContext::DefineInputs() {
     switch (sw_stage) {
     case SwStage::Vertex: {
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
-        base_vertex = DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
         instance_id = DefineVariable(U32[1], spv::BuiltIn::InstanceIndex, spv::StorageClass::Input);
+        if (info.loads.Get(IR::Attribute::BaseVertex)) {
+            base_vertex =
+                DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
+        }
+        if (info.loads.Get(IR::Attribute::BaseInstance)) {
+            base_instance =
+                DefineVariable(U32[1], spv::BuiltIn::BaseInstance, spv::StorageClass::Input);
+        }
 
         const auto fetch_shader = Gcn::ParseFetchShader(info);
         if (!fetch_shader) {

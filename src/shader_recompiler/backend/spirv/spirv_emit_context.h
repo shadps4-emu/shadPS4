@@ -253,6 +253,7 @@ public:
     Id instance_id{};
     Id push_data_block{};
     Id base_vertex{};
+    Id base_instance{};
     Id frag_coord{};
     Id front_facing{};
     Id frag_depth{};
