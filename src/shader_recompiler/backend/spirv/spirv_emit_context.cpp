@@ -1030,7 +1030,8 @@ void EmitContext::DefineSharedMemory() {
         return;
     }
     ASSERT(info.stage == Stage::Compute);
-    const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
+    const u32 shared_memory_size =
+        runtime_info.cs_info.shared_memory_size + info.shared_memory_scratch_size;
 
     const auto make_type = [&](IR::Type type, Id element_type, u32 element_size,
                                std::string_view name) {
