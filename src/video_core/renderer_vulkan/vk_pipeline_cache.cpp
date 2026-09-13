@@ -191,6 +191,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.fs_info.en_flags = regs.ps_input_ena;
         info.fs_info.addr_flags = regs.ps_input_addr;
         info.fs_info.num_inputs = regs.num_interp;
+        info.fs_info.front_face_all_bits = regs.barycentric_control.front_face_all_bits;
         info.fs_info.z_export_format = regs.z_export_format;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
                                        regs.depth_shader_control.stencil_test_val_export_enable;
