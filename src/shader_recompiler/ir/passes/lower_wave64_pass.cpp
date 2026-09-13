@@ -86,11 +86,11 @@ static std::vector<IR::Block*> FindUniformBlocks(const IR::Program& program) {
 
 void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info,
                            const Profile& profile) {
-    if (program.info.stage != Stage::Compute || profile.subgroup_size == 64) {
+    if (program.info.hw_stage != HwStage::Compute || profile.subgroup_size == 64) {
         return;
     }
 
-    const auto [size_x, size_y, size_z] = runtime_info.cs_info.workgroup_size;
+    const auto [size_x, size_y, size_z] = runtime_info.hw.cs.workgroup_size;
     const u32 num_threads = size_x * size_y * size_z;
     if (num_threads <= 32) {
         return;
@@ -128,11 +128,11 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
         return;
     }
 
-    const u32 scratch_base = Common::AlignUp(runtime_info.cs_info.shared_memory_size, sizeof(u64));
+    const u32 scratch_base = Common::AlignUp(runtime_info.hw.cs.shared_memory_size, sizeof(u64));
     const u32 scratch_size =
         (Common::AlignUp(num_threads, 64) / profile.subgroup_size) * sizeof(u32);
     program.info.shared_memory_scratch_size =
-        scratch_base + scratch_size - runtime_info.cs_info.shared_memory_size;
+        scratch_base + scratch_size - runtime_info.hw.cs.shared_memory_size;
 
     for (IR::Inst* inst : worklist) {
         LOG_INFO(Render_Recompiler, "Lowering {} instruction for wave64", inst->GetOpcode());

@@ -25,8 +25,8 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         }
     };
 
-    switch (program.info.stage) {
-    case Stage::Local: {
+    switch (program.info.hw_stage) {
+    case HwStage::Local: {
         ForEachInstruction([=](IR::IREmitter& ir, IR::Inst& inst) {
             const auto opcode = inst.GetOpcode();
             switch (opcode) {
@@ -57,7 +57,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         });
         break;
     }
-    case Stage::Export: {
+    case HwStage::Export: {
         ForEachInstruction([=](IR::IREmitter& ir, IR::Inst& inst) {
             const auto opcode = inst.GetOpcode();
             switch (opcode) {
@@ -68,7 +68,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 }
 
                 const auto offset = inst.Flags<IR::BufferInstInfo>().inst_offset.Value();
-                ASSERT(offset < runtime_info.es_info.vertex_data_size * 4);
+                ASSERT(offset < runtime_info.hw.es.vertex_data_size * 4);
                 const auto data = ir.BitCast<IR::F32>(IR::U32{inst.Arg(2)});
                 const auto attrib =
                     IR::Value{offset < 16 ? IR::Attribute::Position0
@@ -88,8 +88,8 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         });
         break;
     }
-    case Stage::Geometry: {
-        const auto& gs_info = runtime_info.gs_info;
+    case HwStage::Geometry: {
+        const auto& gs_info = runtime_info.hw.gs;
         info.gs_copy_data = Shader::ParseCopyShader(gs_info.vs_copy);
 
         u32 output_vertices = gs_info.output_vertices;
@@ -155,7 +155,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
 
                 inst.Invalidate();
                 if (IsPosition(attr)) {
-                    ExportPosition(ir, runtime_info.gs_info, attr, comp, data);
+                    ExportPosition(ir, gs_info, false, attr, comp, data);
                 } else {
                     ir.SetAttribute(attr, data, comp);
                 }
