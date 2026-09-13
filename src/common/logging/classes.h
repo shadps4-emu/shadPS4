@@ -100,6 +100,7 @@ constexpr auto Lib_SystemService = "Lib.SystemService";             ///< The Lib
 constexpr auto Lib_Usbd = "Lib.Usbd";                               ///< The LibSceUsbd implementation.
 constexpr auto Lib_UserService = "Lib.UserService";                 ///< The LibSceUserService implementation.
 constexpr auto Lib_Vdec2 = "Lib.Vdec2";                             ///< The LibSceVideodec2 implementation.
+constexpr auto Lib_Vdecsw = "Lib.Vdecsw";                           ///< The LibSceVdecsw implementation.
 constexpr auto Lib_VideoOut = "Lib.VideoOut";                       ///< The LibSceVideoOut implementation.
 constexpr auto Lib_Videodec = "Lib.Videodec";                       ///< The LibSceVideodec implementation.
 constexpr auto Lib_VideoRecording = "Lib.VideoRecording";           ///< The LibSceVideoRecording implementation.
