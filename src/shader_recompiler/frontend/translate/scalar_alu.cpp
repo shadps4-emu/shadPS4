@@ -253,8 +253,11 @@ void Translator::S_SUBB_U32(const GcnInst& inst) {
     const IR::U32 result{ir.ISub(ir.ISub(src0, src1), borrow)};
     SetDst(inst.dst[0], result);
 
-    const IR::U32 sum_with_borrow{ir.IAdd(src1, borrow)};
-    ir.SetScc(ir.ILessThan(src0, sum_with_borrow, false));
+    // SCC = (S1.u + SCC > S0.u) as a 33-bit compare.
+    const IR::U1 underflow{ir.IGreaterThan(src1, src0, false)};
+    const IR::U32 difference{ir.ISub(src0, src1)};
+    const IR::U1 borrow_underflow{ir.IGreaterThan(borrow, difference, false)};
+    ir.SetScc(ir.LogicalOr(underflow, borrow_underflow));
 }
 
 void Translator::S_ADD_I32(const GcnInst& inst) {
