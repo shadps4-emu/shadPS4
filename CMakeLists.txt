@@ -619,6 +619,8 @@ set(FIBER_LIB src/core/libraries/fiber/fiber_context.cpp
 
 set(VDEC_LIB src/core/libraries/videodec/video_utils.cpp
              src/core/libraries/videodec/video_utils.h
+             src/core/libraries/videodec/vdecsw.cpp
+             src/core/libraries/videodec/vdecsw.h
              src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h
              src/core/libraries/videodec/videodec2.cpp
@@ -1029,6 +1031,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/passes/lower_buffer_format_to_raw.cpp
                       src/shader_recompiler/ir/passes/lower_fp64_to_fp32.cpp
                       src/shader_recompiler/ir/passes/lower_user_clip_planes.cpp
+                      src/shader_recompiler/ir/passes/lower_wave64_pass.cpp
                       src/shader_recompiler/ir/passes/phi_simplification_pass.cpp
                       src/shader_recompiler/ir/passes/readlane_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/resource_discover_pass.cpp

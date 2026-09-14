@@ -49,7 +49,7 @@ struct Program {
     ModuleList modules{};
 
     Program() = default;
-    Program(Shader::Stage stage, Shader::LogicalStage l_stage, Shader::ShaderParams params)
+    Program(Shader::HwStage stage, Shader::SwStage l_stage, Shader::ShaderParams params)
         : info{stage, l_stage, params} {}
 
     void AddPermut(vk::ShaderModule module, Shader::StageSpecialization&& spec) {
@@ -61,6 +61,11 @@ struct Program {
         modules.resize(std::max(modules.size(), perm_idx + 1)); // <-- beware of realloc
         modules[perm_idx] = {module, std::move(spec)};
     }
+};
+
+struct DrawIndirectParams {
+    u16 vertex_sgpr_offset;
+    u32 instance_sgpr_offset;
 };
 
 class PipelineCache {
@@ -76,19 +81,19 @@ public:
     bool LoadGraphicsPipeline(Serialization::Archive& ar);
     bool LoadPipelineStage(Serialization::Archive& ar, size_t stage);
 
-    const GraphicsPipeline* GetGraphicsPipeline();
+    const GraphicsPipeline* GetGraphicsPipeline(const DrawIndirectParams params = {});
 
     const ComputePipeline* GetComputePipeline();
 
     using Result = std::tuple<const Shader::Info*, vk::ShaderModule,
                               std::optional<Shader::Gcn::FetchShaderData>, u64>;
-    Result GetProgram(Shader::Stage stage, Shader::LogicalStage l_stage,
+    Result GetProgram(Shader::HwStage stage, Shader::SwStage l_stage,
                       const Shader::ShaderParams& params, Shader::Backend::Bindings& binding);
 
     std::optional<vk::ShaderModule> ReplaceShader(vk::ShaderModule module,
                                                   std::span<const u32> spv_code);
 
-    static std::string GetShaderName(Shader::Stage stage, u64 hash,
+    static std::string GetShaderName(Shader::HwStage stage, u64 hash,
                                      std::optional<size_t> perm = {});
 
     auto& GetProfile() const {
@@ -100,14 +105,14 @@ private:
     bool RefreshGraphicsStages();
     bool RefreshComputeKey();
 
-    void DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage, size_t perm_idx,
+    void DumpShader(std::span<const u32> code, u64 hash, Shader::HwStage stage, size_t perm_idx,
                     std::string_view ext);
-    std::optional<std::vector<u32>> GetShaderPatch(u64 hash, Shader::Stage stage, size_t perm_idx,
+    std::optional<std::vector<u32>> GetShaderPatch(u64 hash, Shader::HwStage stage, size_t perm_idx,
                                                    std::string_view ext);
     vk::ShaderModule CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                    const std::span<const u32>& code, size_t perm_idx,
                                    Shader::Backend::Bindings& binding);
-    const Shader::RuntimeInfo& BuildRuntimeInfo(Shader::Stage stage, Shader::LogicalStage l_stage);
+    const Shader::RuntimeInfo& BuildRuntimeInfo(Shader::HwStage stage, Shader::SwStage l_stage);
 
     [[nodiscard]] bool IsPipelineCacheDirty() const {
         return num_new_pipelines > 0;
@@ -122,6 +127,7 @@ private:
     vk::UniquePipelineLayout pipeline_layout;
     Shader::Profile profile{};
     Shader::Pools pools;
+    DrawIndirectParams draw_indirect_params{};
     tsl::robin_map<size_t, std::unique_ptr<Program>> program_cache;
     tsl::robin_map<ComputePipelineKey, std::unique_ptr<ComputePipeline>> compute_pipelines;
     tsl::robin_map<GraphicsPipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_pipelines;

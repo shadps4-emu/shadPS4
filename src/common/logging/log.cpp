@@ -116,6 +116,7 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Lib_Usbd, nullptr},
     {Class::Lib_UserService, nullptr},
     {Class::Lib_Vdec2, nullptr},
+    {Class::Lib_Vdecsw, nullptr},
     {Class::Lib_VideoOut, nullptr},
     {Class::Lib_Videodec, nullptr},
     {Class::Lib_VideoRecording, nullptr},

@@ -179,13 +179,13 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
             DebugState.ShowDebugMessage(msg);
         }
         if (compile) {
-            static std::map<Shader::LogicalStage, std::string> stage_arg = {
-                {Shader::LogicalStage::Vertex, "vert"},
-                {Shader::LogicalStage::TessellationControl, "tesc"},
-                {Shader::LogicalStage::TessellationEval, "tese"},
-                {Shader::LogicalStage::Geometry, "geom"},
-                {Shader::LogicalStage::Fragment, "frag"},
-                {Shader::LogicalStage::Compute, "comp"},
+            static std::map<Shader::SwStage, std::string> stage_arg = {
+                {Shader::SwStage::Vertex, "vert"},
+                {Shader::SwStage::TessellationControl, "tesc"},
+                {Shader::SwStage::TessellationEval, "tese"},
+                {Shader::SwStage::Geometry, "geom"},
+                {Shader::SwStage::Fragment, "frag"},
+                {Shader::SwStage::Compute, "comp"},
             };
             auto stage = stage_arg.find(value.l_stage);
             if (stage == stage_arg.end()) {

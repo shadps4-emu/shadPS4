@@ -44,10 +44,20 @@ public:
 
     void Draw(bool is_indexed, u32 index_offset = 0);
     void DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u32 size, u32 max_count,
-                      VAddr count_address);
+                      VAddr count_address, u16 vertex_sgpr_offset, u16 instance_sgpr_offset);
 
     void DispatchDirect();
     void DispatchIndirect(VAddr address, u32 offset, u32 size);
+
+    void ScopeMarker(fmt::string_view fmt, fmt::format_args args, auto&& func) {
+        if (host_markers_enabled) {
+            ScopeMarkerBegin(fmt::vformat(fmt, args));
+            func();
+            ScopeMarkerEnd();
+        } else {
+            func();
+        }
+    }
 
     void ScopeMarkerBegin(const std::string_view& str, bool from_guest = false);
     void ScopeMarkerEnd(bool from_guest = false);
@@ -128,6 +138,8 @@ private:
     boost::icl::interval_set<VAddr> mapped_ranges;
     Common::SharedFirstMutex mapped_ranges_mutex;
     PipelineCache pipeline_cache;
+    const bool host_markers_enabled;
+    const bool guest_markers_enabled;
 
     using RenderTargetInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::ImageDesc>;
     std::array<RenderTargetInfo, AmdGpu::NUM_COLOR_BUFFERS> cb_descs;
