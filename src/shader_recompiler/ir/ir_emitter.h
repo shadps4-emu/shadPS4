@@ -66,11 +66,13 @@ public:
 
     [[nodiscard]] U1 GetScc();
     [[nodiscard]] U1 GetExec();
+    [[nodiscard]] U1 GetVskip();
     [[nodiscard]] U32 GetVccLo();
     [[nodiscard]] U32 GetVccHi();
     [[nodiscard]] U32 GetM0();
     void SetScc(const U1& value);
     void SetExec(const U1& value);
+    void SetVskip(const U1& value);
     void SetVccLo(const U32& value);
     void SetVccHi(const U32& value);
     void SetM0(const U32& value);

@@ -14,6 +14,7 @@ enum class RegType {
     VectorReg = ScalarReg + NumScalarRegs,
     Scc = VectorReg + NumVectorRegs,
     Exec,
+    Vskip,
     VccLo,
     VccHi,
     M0,
