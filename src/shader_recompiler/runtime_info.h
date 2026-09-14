@@ -4,7 +4,6 @@
 #pragma once
 
 #include <algorithm>
-#include <ranges>
 #include <span>
 #include "common/types.h"
 #include "shader_recompiler/frontend/tessellation.h"
@@ -14,7 +13,7 @@
 
 namespace Shader {
 
-enum class Stage : u32 {
+enum class HwStage : u32 {
     Fragment,
     Vertex,
     Geometry,
@@ -25,7 +24,7 @@ enum class Stage : u32 {
 };
 
 // Vertex intentionally comes after TCS/TES due to order of compilation
-enum class LogicalStage : u32 {
+enum class SwStage : u32 {
     Fragment,
     TessellationControl,
     TessellationEval,
@@ -35,38 +34,12 @@ enum class LogicalStage : u32 {
     NumLogicalStages
 };
 
-constexpr u32 MaxStageTypes = static_cast<u32>(LogicalStage::NumLogicalStages);
+constexpr u32 MaxStageTypes = static_cast<u32>(SwStage::NumLogicalStages);
 constexpr auto MaxEmulatedClipDistances = 4u;
 
-constexpr Stage StageFromIndex(size_t index) noexcept {
-    return static_cast<Stage>(index);
+constexpr HwStage StageFromIndex(size_t index) noexcept {
+    return static_cast<HwStage>(index);
 }
-
-struct CommonHsEsVsRuntimeInfo {
-    u32 hs_output_cp_stride;
-
-    bool operator<=>(const CommonHsEsVsRuntimeInfo&) const noexcept = default;
-};
-
-struct CommonEsVsRuntimeInfo : protected CommonHsEsVsRuntimeInfo {
-    AmdGpu::TessellationType tess_type;
-    AmdGpu::TessellationTopology tess_topology;
-    AmdGpu::TessellationPartitioning tess_partitioning;
-
-    bool operator<=>(const CommonEsVsRuntimeInfo&) const noexcept = default;
-};
-
-struct LocalRuntimeInfo {
-    u32 ls_stride;
-
-    auto operator<=>(const LocalRuntimeInfo&) const noexcept = default;
-};
-
-struct ExportRuntimeInfo : protected CommonEsVsRuntimeInfo {
-    u32 vertex_data_size;
-
-    bool operator<=>(const ExportRuntimeInfo&) const noexcept = default;
-};
 
 enum class Output : u8 {
     None,
@@ -95,21 +68,40 @@ enum class Output : u8 {
 };
 using OutputMap = std::array<Output, 4>;
 
-struct VertexRuntimeInfo : protected CommonEsVsRuntimeInfo {
-    u32 num_outputs;
-    std::array<OutputMap, 3> outputs;
-    bool tess_emulated_primitive{};
-    bool emulate_depth_negative_one_to_one{};
-    bool clip_disable{};
+struct SwVertexRuntimeInfo {
     u32 step_rate_0;
     u32 step_rate_1;
-    /// UCP_ENA bits from PA_CL_CLIP_CNTL, lowered to clip distances in the shader.
-    u32 user_clip_plane_mask{};
+    u16 vertex_sgpr_offset{};
+    u16 instance_sgpr_offset{};
+    bool tess_emulated_primitive{};
 
-    bool operator<=>(const VertexRuntimeInfo& other) const noexcept = default;
+    bool operator==(const SwVertexRuntimeInfo& other) const noexcept = default;
 };
 
-struct HullRuntimeInfo : protected CommonHsEsVsRuntimeInfo {
+struct HwLocalRuntimeInfo {
+    u32 ls_stride;
+
+    bool operator==(const HwLocalRuntimeInfo& other) const noexcept = default;
+};
+
+struct HwExportRuntimeInfo {
+    u32 vertex_data_size;
+
+    bool operator==(const HwExportRuntimeInfo& other) const noexcept = default;
+};
+
+struct HwVertexRuntimeInfo {
+    u32 num_outputs;
+    std::array<OutputMap, 3> outputs;
+    bool emulate_depth_negative_one_to_one{};
+    bool clip_disable{};
+    u32 user_clip_plane_mask{};
+
+    bool operator==(const HwVertexRuntimeInfo& other) const noexcept = default;
+};
+
+struct SwTessControlRuntimeInfo {
+    u32 hs_output_cp_stride;
     u32 num_input_control_points;
     u32 num_threads;
     AmdGpu::TessellationType tess_type;
@@ -117,7 +109,7 @@ struct HullRuntimeInfo : protected CommonHsEsVsRuntimeInfo {
     u32 ls_stride;
     u32 hs_output_base;
 
-    bool operator==(const HullRuntimeInfo&) const = default;
+    bool operator==(const SwTessControlRuntimeInfo&) const = default;
 
     // It might be possible for a non-passthrough TCS to have these conditions, in some dumb
     // situation. In that case, it should be fine to assume passthrough and declare some extra
@@ -135,9 +127,18 @@ struct HullRuntimeInfo : protected CommonHsEsVsRuntimeInfo {
     }
 };
 
+struct SwTessEvalRuntimeInfo {
+    u32 hs_output_cp_stride;
+    AmdGpu::TessellationType tess_type;
+    AmdGpu::TessellationTopology tess_topology;
+    AmdGpu::TessellationPartitioning tess_partitioning;
+
+    bool operator==(const SwTessEvalRuntimeInfo&) const noexcept = default;
+};
+
 static constexpr auto GsMaxOutputStreams = 4u;
 using GsOutputPrimTypes = std::array<AmdGpu::GsOutputPrimitiveType, GsMaxOutputStreams>;
-struct GeometryRuntimeInfo {
+struct HwGeometryRuntimeInfo {
     u32 num_outputs;
     std::array<OutputMap, 3> outputs;
     u32 num_invocations{};
@@ -150,7 +151,7 @@ struct GeometryRuntimeInfo {
     std::span<const u32> vs_copy;
     u64 vs_copy_hash;
 
-    bool operator==(const GeometryRuntimeInfo& other) const {
+    bool operator==(const HwGeometryRuntimeInfo& other) const {
         return num_outputs == other.num_outputs && outputs == other.outputs && num_invocations &&
                other.num_invocations && output_vertices == other.output_vertices &&
                in_primitive == other.in_primitive &&
@@ -181,7 +182,7 @@ struct PsColorBuffer {
     bool operator==(const PsColorBuffer& other) const = default;
 };
 
-struct FragmentRuntimeInfo {
+struct HwFragmentRuntimeInfo {
     struct PsInput {
         u8 param_index;
         bool is_default;
@@ -204,7 +205,7 @@ struct FragmentRuntimeInfo {
     bool dual_source_blending{false};
     bool clip_distance_emulation{false};
 
-    bool operator==(const FragmentRuntimeInfo& other) const noexcept {
+    bool operator==(const HwFragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
                en_flags == other.en_flags && addr_flags == other.addr_flags &&
                num_inputs == other.num_inputs && z_export_format == other.z_export_format &&
@@ -215,12 +216,12 @@ struct FragmentRuntimeInfo {
     }
 };
 
-struct ComputeRuntimeInfo {
+struct HwComputeRuntimeInfo {
     u32 shared_memory_size;
     std::array<u32, 3> workgroup_size;
     std::array<bool, 3> tgid_enable;
 
-    bool operator==(const ComputeRuntimeInfo& other) const noexcept {
+    bool operator==(const HwComputeRuntimeInfo& other) const noexcept {
         return workgroup_size == other.workgroup_size && tgid_enable == other.tgid_enable;
     }
 };
@@ -231,59 +232,82 @@ struct ComputeRuntimeInfo {
  * It's also possible to store any other custom information that needs to be part of shader key.
  */
 struct RuntimeInfo {
-    Stage stage;
-    u32 num_user_data;
-    u32 num_input_vgprs;
-    u32 num_allocated_vgprs;
-    AmdGpu::FpDenormMode fp_denorm_mode32;
-    AmdGpu::FpDenormMode fp_denorm_mode16_64;
-    AmdGpu::FpRoundMode fp_round_mode32;
-    AmdGpu::FpRoundMode fp_round_mode16_64;
-    union {
-        LocalRuntimeInfo ls_info;
-        ExportRuntimeInfo es_info;
-        VertexRuntimeInfo vs_info;
-        HullRuntimeInfo hs_info;
-        GeometryRuntimeInfo gs_info;
-        FragmentRuntimeInfo fs_info;
-        ComputeRuntimeInfo cs_info;
-        // Hs/Es/VsRuntimeInfo inherit from these so we can
-        // access common info with correct offsets
-        CommonHsEsVsRuntimeInfo hs_es_vs_info;
-        CommonEsVsRuntimeInfo es_vs_info;
-    };
+    SwStage sw_stage;
+    HwStage hw_stage;
+    struct Properties {
+        AmdGpu::FpDenormMode fp_denorm_mode32;
+        AmdGpu::FpDenormMode fp_denorm_mode16_64;
+        AmdGpu::FpRoundMode fp_round_mode32;
+        AmdGpu::FpRoundMode fp_round_mode16_64;
+        u32 num_user_data;
+        u32 num_input_vgprs;
+        u32 num_allocated_vgprs;
+        bool operator==(const Properties&) const noexcept = default;
+    } props;
+    union SwInfo {
+        SwVertexRuntimeInfo vs;
+        SwTessControlRuntimeInfo tcs;
+        SwTessEvalRuntimeInfo tes;
+    } sw;
+    union HwInfo {
+        HwLocalRuntimeInfo ls;
+        HwExportRuntimeInfo es;
+        HwGeometryRuntimeInfo gs;
+        HwVertexRuntimeInfo vs;
+        HwFragmentRuntimeInfo fs;
+        HwComputeRuntimeInfo cs;
+    } hw;
 
-    void Initialize(Stage stage_) {
+    void Initialize(HwStage stage, SwStage l_stage) {
         memset(this, 0, sizeof(*this));
-        stage = stage_;
+        this->hw_stage = stage;
+        this->sw_stage = l_stage;
     }
 
     bool operator==(const RuntimeInfo& other) const noexcept {
-        switch (stage) {
-        case Stage::Fragment:
-            return fs_info == other.fs_info;
-        case Stage::Vertex:
-            return vs_info == other.vs_info;
-        case Stage::Compute:
-            return cs_info == other.cs_info;
-        case Stage::Export:
-            return es_info == other.es_info;
-        case Stage::Geometry:
-            return gs_info == other.gs_info;
-        case Stage::Hull:
-            return hs_info == other.hs_info;
-        case Stage::Local:
-            return ls_info == other.ls_info;
+        return hw_stage == other.hw_stage && sw_stage == other.sw_stage && props == other.props &&
+               HasSameSwInfo(other.sw) && HasSameHwInfo(other.hw);
+    }
+
+    bool HasSameSwInfo(const SwInfo& other) const noexcept {
+        switch (sw_stage) {
+        case SwStage::Vertex:
+            return sw.vs == other.vs;
+        case SwStage::TessellationControl:
+            return sw.tcs == other.tcs;
+        case SwStage::TessellationEval:
+            return sw.tes == other.tes;
+        default:
+            return true;
+        }
+    }
+
+    bool HasSameHwInfo(const HwInfo& other) const noexcept {
+        switch (hw_stage) {
+        case HwStage::Local:
+            return hw.ls == other.ls;
+        case HwStage::Export:
+            return hw.es == other.es;
+        case HwStage::Geometry:
+            return hw.gs == other.gs;
+        case HwStage::Vertex:
+            return hw.vs == other.vs;
+        case HwStage::Fragment:
+            return hw.fs == other.fs;
+        case HwStage::Compute:
+            return hw.cs == other.cs;
         default:
             return true;
         }
     }
 
     void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
-        hs_es_vs_info.hs_output_cp_stride = tess_constants.hs_cp_stride;
-        if (stage == Stage::Hull) {
-            hs_info.ls_stride = tess_constants.ls_stride;
-            hs_info.hs_output_base = tess_constants.hs_output_base;
+        if (sw_stage == SwStage::TessellationControl) {
+            sw.tcs.hs_output_cp_stride = tess_constants.hs_cp_stride;
+            sw.tcs.ls_stride = tess_constants.ls_stride;
+            sw.tcs.hs_output_base = tess_constants.hs_output_base;
+        } else if (sw_stage == SwStage::TessellationEval) {
+            sw.tes.hs_output_cp_stride = tess_constants.hs_cp_stride;
         }
     }
 };
@@ -291,11 +315,11 @@ struct RuntimeInfo {
 } // namespace Shader
 
 template <>
-struct fmt::formatter<Shader::Stage> {
+struct fmt::formatter<Shader::HwStage> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
-    auto format(const Shader::Stage stage, format_context& ctx) const {
+    auto format(const Shader::HwStage stage, format_context& ctx) const {
         constexpr static std::array names = {"fs", "vs", "gs", "es", "hs", "ls", "cs"};
         return fmt::format_to(ctx.out(), "{}", names[static_cast<size_t>(stage)]);
     }

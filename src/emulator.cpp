@@ -90,6 +90,9 @@ void Emulator::Shutdown() {
         return;
     }
     Common::Log::Flush();
+    Libraries::SaveData::Backup::StopThread();
+    Storage::DataBase::Instance().Close();
+    UpdatePlayTime(Common::Singleton<Common::ElfInfo>::Instance()->GameSerial());
     if (controllers) {
         controllers->ResetLightbarColors();
         // need to give SDL time to do this before the runtime exits
@@ -700,9 +703,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         window->WaitEvent();
     }
 
-    UpdatePlayTime(id);
-    Storage::DataBase::Instance().Close();
-
     std::quick_exit(0);
 }
 
@@ -765,7 +765,6 @@ void Emulator::Restart(std::filesystem::path eboot_path,
         }
     }
 
-    Libraries::SaveData::Backup::StopThread();
     Relaunch(std::move(args));
 }
 
@@ -811,7 +810,7 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
-#elif defined(__APPLE__) || defined(__linux__) || defined(__FreeBSD__)
+#else
     std::vector<char*> argv;
 
     // Emulator executable
@@ -832,14 +831,12 @@ void Emulator::Restart(std::filesystem::path eboot_path,
         std::cerr << "Failed to restart game: fork failed" << std::endl;
         std::quick_exit(1);
     }
-#else
-#error "Unsupported platform"
 #endif
 
     std::quick_exit(0);
 }
 
-void Emulator::UpdatePlayTime(const std::string& serial) {
+void Emulator::UpdatePlayTime(const std::string_view serial) {
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     const auto filePath = (user_dir / "play_time.txt").string();
 

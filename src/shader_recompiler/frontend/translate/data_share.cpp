@@ -172,7 +172,7 @@ void Translator::DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool strid
     const IR::VectorReg data0{inst.src[1].code};
     const IR::VectorReg data1{inst.src[2].code};
     const u32 offset = (inst.control.ds.offset1 << 8u) + inst.control.ds.offset0;
-    if (info.stage == Stage::Fragment) {
+    if (info.hw_stage == HwStage::Fragment) {
         ASSERT_MSG(!is_pair && bit_size == 32 && offset % 256 == 0,
                    "Unexpected shared memory offset alignment: {}", offset);
         ir.SetVectorReg(GetScratchVgpr(offset), ir.GetVectorReg(data0));
@@ -222,7 +222,7 @@ void Translator::DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride
     const IR::U32 addr{ir.GetVectorReg(IR::VectorReg(inst.src[0].code))};
     IR::VectorReg dst_reg{inst.dst[0].code};
     const u32 offset = (inst.control.ds.offset1 << 8u) + inst.control.ds.offset0;
-    if (info.stage == Stage::Fragment) {
+    if (info.hw_stage == HwStage::Fragment) {
         ASSERT_MSG(!is_pair && bit_size == 32 && offset % 256 == 0,
                    "Unexpected shared memory offset alignment: {}", offset);
         ir.SetVectorReg(dst_reg, ir.GetVectorReg(GetScratchVgpr(offset)));
@@ -272,20 +272,32 @@ void Translator::DS_SWIZZLE_B32(const GcnInst& inst) {
     const u8 offset0 = inst.control.ds.offset0;
     const u8 offset1 = inst.control.ds.offset1;
     const IR::U32 src{GetSrc(inst.src[0])};
-    const IR::U32 lane_id = ir.LaneId();
     if (offset1 & 0x80) {
-        const IR::U32 id_in_group = ir.BitwiseAnd(lane_id, ir.Imm32(0b11));
-        const IR::U32 base = ir.ShiftLeftLogical(id_in_group, ir.Imm32(1));
-        const IR::U32 index = ir.BitFieldExtract(ir.Imm32(offset0), base, ir.Imm32(2));
-        SetDst(inst.dst[0], ir.QuadShuffle(src, index));
+        if (offset0 == 0x0 || offset0 == 0x55 || offset0 == 0xAA || offset0 == 0xFF) {
+            SetDst(inst.dst[0], ir.QuadBroadcast(src, ir.Imm32(offset0 & 3)));
+        } else {
+            const IR::U32 lane_id = ir.LaneId();
+            const IR::U32 id_in_quad = ir.BitwiseAnd(lane_id, ir.Imm32(3));
+            const IR::U32 base = ir.ShiftLeftLogical(id_in_quad, ir.Imm32(1));
+            const IR::U32 sel = ir.BitFieldExtract(ir.Imm32(offset0), base, ir.Imm32(2));
+            const IR::U32 quad_base = ir.BitwiseAnd(lane_id, ir.Imm32(~3u));
+            SetDst(inst.dst[0], ir.Shuffle(src, ir.BitwiseOr(quad_base, sel)));
+        }
     } else {
         const u8 and_mask = (offset0 & 0x1f) | (~u8{0} << 5);
         const u8 or_mask = (offset0 >> 5) | ((offset1 & 0x3) << 3);
         const u8 xor_mask = offset1 >> 2;
-        const IR::U32 index = ir.BitwiseXor(
-            ir.BitwiseOr(ir.BitwiseAnd(lane_id, ir.Imm32(and_mask)), ir.Imm32(or_mask)),
-            ir.Imm32(xor_mask));
-        SetDst(inst.dst[0], ir.ReadLane(src, index));
+        if (or_mask == 0u && and_mask == 255u) {
+            SetDst(inst.dst[0], ir.ShuffleXor(src, ir.Imm32(xor_mask)));
+        } else {
+            const IR::U32 lane_id = ir.LaneId();
+            const IR::U32 local = ir.BitwiseAnd(lane_id, ir.Imm32(31u));
+            const IR::U32 half = ir.BitwiseAnd(lane_id, ir.Imm32(~31u));
+            const IR::U32 index = ir.BitwiseXor(
+                ir.BitwiseOr(ir.BitwiseAnd(local, ir.Imm32(and_mask)), ir.Imm32(or_mask)),
+                ir.Imm32(xor_mask));
+            SetDst(inst.dst[0], ir.Shuffle(src, ir.BitwiseOr(index, half)));
+        }
     }
 }
 

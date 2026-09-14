@@ -168,11 +168,13 @@ public:
                                              const Value& value, const Value& cmp_value,
                                              BufferInstInfo info);
 
-    [[nodiscard]] U32 DataAppend(const U32& counter);
-    [[nodiscard]] U32 DataConsume(const U32& counter);
+    [[nodiscard]] U32 DataAppend(const U32& gds_dw_offset);
+    [[nodiscard]] U32 DataConsume(const U32& gds_dw_offset);
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WarpId();
-    [[nodiscard]] U32 QuadShuffle(const U32& value, const U32& index);
+    [[nodiscard]] U32 QuadBroadcast(const U32& value, const U32& index);
+    [[nodiscard]] U32 Shuffle(const U32& value, const U32& index);
+    [[nodiscard]] U32 ShuffleXor(const U32& value, const U32& mask);
     [[nodiscard]] U32 ReadFirstLane(const U32& value);
     [[nodiscard]] U32 ReadLane(const U32& value, const U32& lane);
     [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
@@ -279,8 +281,8 @@ public:
     [[nodiscard]] U32U64 BitwiseAnd(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32U64 BitwiseOr(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32U64 BitwiseXor(const U32U64& a, const U32U64& b);
-    [[nodiscard]] U32 BitFieldInsert(const U32& base, const U32& insert, const U32& offset,
-                                     const U32& count);
+    [[nodiscard]] U32U64 BitFieldInsert(const U32U64& base, const U32U64& insert, const U32& offset,
+                                        const U32& count);
     [[nodiscard]] U32 BitFieldExtract(const U32& base, const U32& offset, const U32& count,
                                       bool is_signed = false);
     [[nodiscard]] U32 BitReverse(const U32& value);

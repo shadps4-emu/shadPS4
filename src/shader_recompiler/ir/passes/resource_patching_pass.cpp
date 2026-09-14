@@ -5,6 +5,7 @@
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/passes/resource_pass.h"
@@ -318,6 +319,109 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
     }
 }
 
+static IR::Value IsResultOfMbcntExec(IR::Value value, bool is_hi, IR::U1 exec) {
+    // See V_MBCNT_U32_B32 for the pattern being checked
+    if (value.IsImmediate()) {
+        return {};
+    }
+    const IR::Inst* inst = value.Inst();
+    if (inst->GetOpcode() != IR::Opcode::IAdd32 || inst->Arg(0).IsImmediate()) {
+        return {};
+    }
+    IR::Inst* prod = inst->Arg(0).Inst();
+    if (prod->GetOpcode() != IR::Opcode::BitCount32 || prod->Arg(0).IsImmediate()) {
+        return {};
+    }
+    prod = prod->Arg(0).Inst();
+    if (prod->GetOpcode() != IR::Opcode::BitwiseAnd32 || prod->Arg(0).IsImmediate() ||
+        prod->Arg(1).IsImmediate()) {
+        return {};
+    }
+    const IR::Inst* lt_mask = prod->Arg(1).Inst();
+    if (lt_mask->GetOpcode() != IR::Opcode::GetAttributeU32 ||
+        lt_mask->Arg(0).Attribute() != IR::Attribute::SubgroupLtMask ||
+        lt_mask->Arg(1).U32() != is_hi) {
+        return {};
+    }
+    prod = prod->Arg(0).Inst();
+    if (prod->GetOpcode() != IR::Opcode::CompositeExtractU32x2 || prod->Arg(0).IsImmediate() ||
+        prod->Arg(1).U32() != is_hi) {
+        return {};
+    }
+    prod = prod->Arg(0).Inst();
+    if (prod->GetOpcode() != IR::Opcode::UnpackUint2x32 || prod->Arg(0).IsImmediate()) {
+        return {};
+    }
+    prod = prod->Arg(0).Inst();
+    if (prod->GetOpcode() != IR::Opcode::Ballot || prod->Arg(0) != exec) {
+        return {};
+    }
+    return inst->Arg(1);
+}
+
+static IR::Inst* IsAppendBufferPattern(IR::Inst& vx) {
+    // Attempt to detect either of the following patterns:
+    //
+    // v_mbcnt_hi_u32_b32 vZ, exec_hi, 0
+    // v_mbcnt_lo_u32_b32 vY, exec_lo, vZ
+    // ds_append       vX gds
+    // v_add_i32       idx, vcc, vX, vY
+    //
+    // ds_append       vX gds
+    // v_mbcnt_hi_u32_b32 vY, exec_hi, vX
+    // v_mbcnt_lo_u32_b32 idx, exec_lo, vY
+    //
+    // and return the instruction to replace with a GDS atomic.
+    // ds_consume always uses the first pattern with v_sub_i32
+
+    if (vx.GetOpcode() != IR::Opcode::DataAppend && vx.GetOpcode() != IR::Opcode::DataConsume) {
+        return nullptr;
+    }
+    const auto it = std::ranges::find_if(vx.Uses(), [](const IR::Use& use) {
+        return use.user->GetOpcode() == IR::Opcode::IAdd32 ||
+               use.user->GetOpcode() == IR::Opcode::ISub32;
+    });
+    if (it == vx.Uses().end()) {
+        ASSERT(vx.UseCount() == 1 &&
+               vx.Uses().back().user->GetOpcode() == IR::Opcode::SetVectorRegister);
+        return &vx;
+    }
+    const auto [user, operand] = *it;
+    IR::U1 exec{vx.Arg(1)};
+    if (operand == 0) {
+        // First pattern
+        auto vy = user->Arg(1);
+        auto vz = IsResultOfMbcntExec(vy, false, exec);
+        if (vz.IsEmpty()) {
+            return nullptr;
+        }
+        auto zero_const = IsResultOfMbcntExec(vz, true, exec);
+        if (!zero_const.IsImmediate() || zero_const.U32() != 0u) {
+            return nullptr;
+        }
+        return user;
+    } else {
+        // Second pattern
+        IR::Inst* vy = user;
+        auto vx_2 = IsResultOfMbcntExec(IR::Value{vy}, true, exec);
+        if (vx_2.IsEmpty() || vx_2 != IR::Value{&vx}) {
+            return nullptr;
+        }
+        const auto it = std::ranges::find_if(vy->Uses(), [](const IR::Use& use) {
+            return use.user->GetOpcode() == IR::Opcode::IAdd32;
+        });
+        if (it == vy->Uses().end()) {
+            return nullptr;
+        }
+        const auto [idx, operand] = *it;
+        auto vy_2 = IsResultOfMbcntExec(IR::Value{idx}, false, exec);
+        if (vy_2.IsEmpty() || vy_2 != IR::Value{vy}) {
+            return nullptr;
+        }
+        return idx;
+    }
+}
+
 void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descriptors,
                                 const Profile& profile) {
     const u32 binding = descriptors.Add(BufferResource{
@@ -328,88 +432,95 @@ void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descrip
 
     IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
 
-    if (inst.GetOpcode() == IR::Opcode::DataAppend || inst.GetOpcode() == IR::Opcode::DataConsume) {
-        inst.SetArg(1, ir.Imm32(binding));
-    } else {
-        // Convert shared memory opcode to storage buffer atomic to GDS buffer.
-        auto& buffer = info.buffers[binding];
-        const IR::U32 offset = IR::U32{inst.Arg(0)};
-        const IR::U32 address_words = ir.ShiftRightLogical(offset, ir.Imm32(1));
-        const IR::U32 address_dwords = ir.ShiftRightLogical(offset, ir.Imm32(2));
-        const IR::U32 address_qwords = ir.ShiftRightLogical(offset, ir.Imm32(3));
-        const IR::U32 handle = ir.Imm32(binding);
-        switch (inst.GetOpcode()) {
-        case IR::Opcode::SharedAtomicIAdd32:
-            inst.ReplaceUsesWith(ir.BufferAtomicIAdd(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicIAdd64:
-            inst.ReplaceUsesWith(
-                ir.BufferAtomicIAdd(handle, address_qwords, IR::U64{inst.Arg(1)}, {}));
-            break;
-        case IR::Opcode::SharedAtomicISub32:
-            inst.ReplaceUsesWith(ir.BufferAtomicISub(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicSMin32:
-        case IR::Opcode::SharedAtomicUMin32: {
-            const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMin32;
-            inst.ReplaceUsesWith(
-                ir.BufferAtomicIMin(handle, address_dwords, inst.Arg(1), is_signed, {}));
-            break;
+    if (IR::Inst* append_idx = IsAppendBufferPattern(inst); append_idx) {
+        if (inst.GetOpcode() == IR::Opcode::DataAppend) {
+            append_idx->ReplaceUsesWithAndRemove(
+                ir.BufferAtomicIAdd(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {}));
+        } else {
+            const IR::U32 counter =
+                IR::U32{ir.BufferAtomicISub(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {})};
+            append_idx->ReplaceUsesWithAndRemove(ir.ISub(counter, ir.Imm32(1u)));
         }
-        case IR::Opcode::SharedAtomicSMax32:
-        case IR::Opcode::SharedAtomicUMax32: {
-            const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMax32;
-            inst.ReplaceUsesWith(
-                ir.BufferAtomicIMax(handle, address_dwords, inst.Arg(1), is_signed, {}));
-            break;
-        }
-        case IR::Opcode::SharedAtomicInc32:
-            inst.ReplaceUsesWith(ir.BufferAtomicInc(handle, address_dwords, {}));
-            break;
-        case IR::Opcode::SharedAtomicDec32:
-            inst.ReplaceUsesWith(ir.BufferAtomicDec(handle, address_dwords, {}));
-            break;
-        case IR::Opcode::SharedAtomicAnd32:
-            inst.ReplaceUsesWith(ir.BufferAtomicAnd(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicOr32:
-            inst.ReplaceUsesWith(ir.BufferAtomicOr(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicXor32:
-            inst.ReplaceUsesWith(ir.BufferAtomicXor(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::LoadSharedU16: {
-            inst.ReplaceUsesWith(ir.LoadBufferU16(handle, address_words, {}));
-            buffer.used_types |= IR::Type::U16;
-            break;
-        }
-        case IR::Opcode::LoadSharedU32:
-            inst.ReplaceUsesWith(ir.LoadBufferU32(1, handle, address_dwords, {}));
-            break;
-        case IR::Opcode::LoadSharedU64: {
-            inst.ReplaceUsesWith(ir.LoadBufferU64(handle, address_qwords, {}));
-            buffer.used_types |= IR::Type::U64;
-            break;
-        }
-        case IR::Opcode::WriteSharedU16: {
-            ir.StoreBufferU16(handle, address_words, IR::U16{inst.Arg(1)}, {});
-            inst.Invalidate();
-            buffer.used_types |= IR::Type::U16;
-            break;
-        }
-        case IR::Opcode::WriteSharedU32:
-            ir.StoreBufferU32(1, handle, address_dwords, inst.Arg(1), {});
-            inst.Invalidate();
-            break;
-        case IR::Opcode::WriteSharedU64: {
-            ir.StoreBufferU64(handle, address_qwords, IR::U64{inst.Arg(1)}, {});
-            inst.Invalidate();
-            buffer.used_types |= IR::Type::U64;
-            break;
-        }
-        default:
-            UNREACHABLE();
-        }
+        return;
+    }
+
+    // Convert shared memory opcode to storage buffer atomic to GDS buffer.
+    auto& buffer = info.buffers[binding];
+    const IR::U32 offset = IR::U32{inst.Arg(0)};
+    const IR::U32 address_words = ir.ShiftRightLogical(offset, ir.Imm32(1));
+    const IR::U32 address_dwords = ir.ShiftRightLogical(offset, ir.Imm32(2));
+    const IR::U32 address_qwords = ir.ShiftRightLogical(offset, ir.Imm32(3));
+    const IR::U32 handle = ir.Imm32(binding);
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::SharedAtomicIAdd32:
+        inst.ReplaceUsesWith(ir.BufferAtomicIAdd(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    case IR::Opcode::SharedAtomicIAdd64:
+        inst.ReplaceUsesWith(ir.BufferAtomicIAdd(handle, address_qwords, IR::U64{inst.Arg(1)}, {}));
+        break;
+    case IR::Opcode::SharedAtomicISub32:
+        inst.ReplaceUsesWith(ir.BufferAtomicISub(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    case IR::Opcode::SharedAtomicSMin32:
+    case IR::Opcode::SharedAtomicUMin32: {
+        const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMin32;
+        inst.ReplaceUsesWith(
+            ir.BufferAtomicIMin(handle, address_dwords, inst.Arg(1), is_signed, {}));
+        break;
+    }
+    case IR::Opcode::SharedAtomicSMax32:
+    case IR::Opcode::SharedAtomicUMax32: {
+        const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMax32;
+        inst.ReplaceUsesWith(
+            ir.BufferAtomicIMax(handle, address_dwords, inst.Arg(1), is_signed, {}));
+        break;
+    }
+    case IR::Opcode::SharedAtomicInc32:
+        inst.ReplaceUsesWith(ir.BufferAtomicInc(handle, address_dwords, {}));
+        break;
+    case IR::Opcode::SharedAtomicDec32:
+        inst.ReplaceUsesWith(ir.BufferAtomicDec(handle, address_dwords, {}));
+        break;
+    case IR::Opcode::SharedAtomicAnd32:
+        inst.ReplaceUsesWith(ir.BufferAtomicAnd(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    case IR::Opcode::SharedAtomicOr32:
+        inst.ReplaceUsesWith(ir.BufferAtomicOr(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    case IR::Opcode::SharedAtomicXor32:
+        inst.ReplaceUsesWith(ir.BufferAtomicXor(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    case IR::Opcode::LoadSharedU16: {
+        inst.ReplaceUsesWith(ir.LoadBufferU16(handle, address_words, {}));
+        buffer.used_types |= IR::Type::U16;
+        break;
+    }
+    case IR::Opcode::LoadSharedU32:
+        inst.ReplaceUsesWith(ir.LoadBufferU32(1, handle, address_dwords, {}));
+        break;
+    case IR::Opcode::LoadSharedU64: {
+        inst.ReplaceUsesWith(ir.LoadBufferU64(handle, address_qwords, {}));
+        buffer.used_types |= IR::Type::U64;
+        break;
+    }
+    case IR::Opcode::WriteSharedU16: {
+        ir.StoreBufferU16(handle, address_words, IR::U16{inst.Arg(1)}, {});
+        inst.Invalidate();
+        buffer.used_types |= IR::Type::U16;
+        break;
+    }
+    case IR::Opcode::WriteSharedU32:
+        ir.StoreBufferU32(1, handle, address_dwords, inst.Arg(1), {});
+        inst.Invalidate();
+        break;
+    case IR::Opcode::WriteSharedU64: {
+        ir.StoreBufferU64(handle, address_qwords, IR::U64{inst.Arg(1)}, {});
+        inst.Invalidate();
+        buffer.used_types |= IR::Type::U64;
+        break;
+    }
+    default:
+        UNREACHABLE_MSG("Unexpected opcode {}", inst.GetOpcode());
     }
 }
 
@@ -445,7 +556,7 @@ IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const In
         index = ir.IAdd(index, vgpr_index);
     }
     if (buffer.add_tid_enable) {
-        ASSERT_MSG(info.l_stage == LogicalStage::Compute,
+        ASSERT_MSG(info.sw_stage == SwStage::Compute,
                    "Thread ID buffer addressing is not supported outside of compute.");
         const IR::U32 thread_id{ir.LaneId()};
         index = ir.IAdd(index, thread_id);

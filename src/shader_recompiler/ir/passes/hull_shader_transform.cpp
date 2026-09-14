@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_map>
@@ -244,6 +244,7 @@ private:
                 // Stop here
                 return;
             }
+            break;
         }
         case IR::Opcode::Phi: {
             auto it = phi_infos.find(use.user);
@@ -288,8 +289,8 @@ static AttributeRegion GetAttributeRegionKind(IR::Inst* ring_access, const Shade
     u32 count = ring_access->Flags<u32>();
     if (count == 0) {
         return AttributeRegion::InputCP;
-    } else if (info.l_stage == LogicalStage::TessellationControl &&
-               runtime_info.hs_info.IsPassthrough()) {
+    } else if (info.sw_stage == SwStage::TessellationControl &&
+               runtime_info.sw.tcs.IsPassthrough()) {
         ASSERT(count <= 1);
         return AttributeRegion::PatchConst;
     } else {
@@ -415,7 +416,7 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                     // a hull program shader binary archive, but this doesn't seem to be
                     // communicated to the driver.
                     // The layout seems to be implied by the type of the abstract domain.
-                    switch (runtime_info.hs_info.tess_type) {
+                    switch (runtime_info.sw.tcs.tess_type) {
                     case AmdGpu::TessellationType::Isoline:
                         ASSERT(gcn_factor_idx < 2);
                         return IR::PatchFactor(gcn_factor_idx);
@@ -464,7 +465,7 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                         if (off_dw > 0) {
                             addr = ir.IAdd(addr, ir.Imm32(off_dw));
                         }
-                        const u32 stride = runtime_info.hs_es_vs_info.hs_output_cp_stride;
+                        const u32 stride = runtime_info.sw.tcs.hs_output_cp_stride;
                         // Invocation ID array index is implicit, handled by SPIRV backend
                         const IR::U32 opt_addr = TryOptimizeAddressModulo(addr, stride, ir);
                         const IR::U32 offset = ir.IMod(opt_addr, ir.Imm32(stride));
@@ -502,9 +503,8 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                                region == AttributeRegion::OutputCP,
                            "Unhandled read of patchconst attribute in hull shader");
                 const bool is_tcs_output_read = region == AttributeRegion::OutputCP;
-                const u32 stride = is_tcs_output_read
-                                       ? runtime_info.hs_es_vs_info.hs_output_cp_stride
-                                       : runtime_info.hs_info.ls_stride;
+                const u32 stride = is_tcs_output_read ? runtime_info.sw.tcs.hs_output_cp_stride
+                                                      : runtime_info.sw.tcs.ls_stride;
                 IR::Value attr_read;
                 if (num_dwords == 1) {
                     attr_read = ir.BitCast<IR::U32>(
@@ -528,7 +528,7 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
         }
     }
 
-    if (runtime_info.hs_info.IsPassthrough()) {
+    if (runtime_info.sw.tcs.IsPassthrough()) {
         // Copy input attributes to output attributes, indexed by InvocationID
         // Passthrough should imply that input and output patches have same number of vertices
         IR::Block* entry_block = *program.blocks.begin();
@@ -545,7 +545,7 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
         // ...
         IR::IREmitter ir{*entry_block, it};
 
-        u32 num_attributes = Common::AlignUp(runtime_info.hs_info.ls_stride, 16) >> 4;
+        u32 num_attributes = Common::AlignUp(runtime_info.sw.tcs.ls_stride, 16) >> 4;
         const auto invocation_id = ir.GetAttributeU32(IR::Attribute::InvocationId);
         for (u32 attr_no = 0; attr_no < num_attributes; attr_no++) {
             for (u32 comp = 0; comp < 4; comp++) {
@@ -580,8 +580,7 @@ void DomainShaderTransform(const IR::Program& program, const RuntimeInfo& runtim
                 const auto GetInput = [&](IR::U32 addr, u32 off_dw) -> IR::F32 {
                     if (region == AttributeRegion::OutputCP) {
                         return ReadTessControlPointAttribute(
-                            addr, runtime_info.hs_es_vs_info.hs_output_cp_stride, ir, off_dw,
-                            false);
+                            addr, runtime_info.sw.tcs.hs_output_cp_stride, ir, off_dw, false);
                     } else {
                         ASSERT(region == AttributeRegion::PatchConst);
                         return ir.GetPatch(IR::PatchGeneric((addr.U32() >> 2) + off_dw));
@@ -685,7 +684,7 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
                     switch (tess_const_attr) {
                     case TessConstantAttribute::LsStride:
                         // If not, we may need to make this runtime state for TES
-                        ASSERT(info.l_stage == LogicalStage::TessellationControl);
+                        ASSERT(info.sw_stage == SwStage::TessellationControl);
                         inst.ReplaceUsesWithAndRemove(IR::Value(tess_constants.ls_stride));
                         break;
                     case TessConstantAttribute::HsCpStride:
@@ -719,7 +718,7 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
     // These pattern matching are neccessary for now unless we support dynamic indexing of
     // PatchConst attributes and tess factors. PatchConst should be easy, turn those into a single
     // vec4 array like in/out attrs. Not sure about tess factors.
-    if (info.l_stage == LogicalStage::TessellationControl) {
+    if (info.sw_stage == SwStage::TessellationControl) {
         // Replace the BFEs on V1 (packed with patch id within VGT and output cp id)
         for (IR::Block* block : program.blocks) {
             for (auto it = block->Instructions().begin(); it != block->Instructions().end(); it++) {
@@ -742,7 +741,7 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
                                .Match(IR::Value{&inst})) {
                     IR::IREmitter ir(*block, it);
                     IR::Value replacement;
-                    if (runtime_info.hs_info.IsPassthrough()) {
+                    if (runtime_info.sw.tcs.IsPassthrough()) {
                         // Deal with annoying pattern in BB where InvocationID use makes no
                         // sense (in addr calculation for patchconst or tess factor write)
                         replacement = ir.Imm32(0);
