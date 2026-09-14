@@ -497,7 +497,16 @@ void Translator::S_CMPK(ConditionOp cond, bool is_signed, const GcnInst& inst) {
 
 void Translator::S_ADDK_I32(const GcnInst& inst) {
     const s32 simm16 = inst.control.sopk.simm;
-    SetDst(inst.dst[0], ir.IAdd(GetSrc(inst.dst[0]), ir.Imm32(simm16)));
+    const IR::U32 src0{GetSrc(inst.dst[0])};
+    const IR::U32 src1{ir.Imm32(simm16)};
+    const IR::U32 result{ir.IAdd(src0, src1)};
+    SetDst(inst.dst[0], result);
+
+    const IR::U32 shift{ir.Imm32(31)};
+    const IR::U32 sign0{ir.ShiftRightLogical(src0, shift)};
+    const IR::U32 sign1{ir.ShiftRightLogical(src1, shift)};
+    const IR::U32 signr{ir.ShiftRightLogical(result, shift)};
+    ir.SetScc(ir.LogicalAnd(ir.IEqual(sign0, sign1), ir.INotEqual(sign0, signr)));
 }
 
 void Translator::S_MULK_I32(const GcnInst& inst) {
