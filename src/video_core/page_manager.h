@@ -15,6 +15,9 @@ class Rasterizer;
 
 namespace VideoCore {
 
+struct UffdImpl;
+struct SignalImpl;
+
 class PageManager {
     // PAGE_SIZE and PAGE_BITS conflicts with machine/param.h definitions on freebsd!
     // Use the same page size as the tracker.
@@ -54,6 +57,8 @@ public:
     }
 
 private:
+    friend struct UffdImpl;
+    friend struct SignalImpl;
     struct Impl;
     std::unique_ptr<Impl> impl;
 };
