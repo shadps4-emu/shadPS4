@@ -7,8 +7,8 @@
 #include <map>
 #include <common/path_util.h>
 #include <common/scm_rev.h>
-#include "common/logging/log.h"
 #include "common/assert.h"
+#include "common/logging/log.h"
 #include "user_settings.h"
 
 using json = nlohmann::json;
