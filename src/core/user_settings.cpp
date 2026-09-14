@@ -8,6 +8,7 @@
 #include <common/path_util.h>
 #include <common/scm_rev.h>
 #include "common/logging/log.h"
+#include "common/assert.h"
 #include "user_settings.h"
 
 using json = nlohmann::json;
@@ -103,7 +104,7 @@ bool UserSettingsImpl::Load() {
 
         return true;
     } catch (const std::exception& e) {
-        LOG_ERROR(Config, "Error loading user settings: {}", e.what());
+        UNREACHABLE_MSG("Error loading user settings: {}", e.what());
         if (m_userManager.GetUsers().user.empty())
             m_userManager.GetUsers() = m_userManager.CreateDefaultUsers();
         return false;
