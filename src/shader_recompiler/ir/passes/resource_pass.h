@@ -21,6 +21,7 @@ union PostOpData {
 
 struct SharpReference {
     std::array<IR::Value, 8> dwords{};
+    std::array<u32, 8> clear_masks{};
     u32 num_dwords{};
     SharpFetchPostOp post_op{};
     PostOpData post_op_data;
