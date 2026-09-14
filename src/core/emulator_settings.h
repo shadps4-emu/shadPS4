@@ -434,6 +434,7 @@ struct GPUSettings {
     Setting<bool> fsr_enabled{false};
     Setting<bool> rcas_enabled{true};
     Setting<int> rcas_attenuation{250};
+    Setting<bool> userfaultfd{false};
     // TODO add overrides
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -743,6 +744,7 @@ public:
     SETTING_FORWARD_BOOL(m_gpu, ReadbackLinearImagesEnabled, readback_linear_images_enabled)
     SETTING_FORWARD_BOOL(m_gpu, DirectMemoryAccessEnabled, direct_memory_access_enabled)
     SETTING_FORWARD_BOOL_READONLY(m_gpu, PatchShaders, patch_shaders)
+    SETTING_FORWARD_BOOL(m_gpu, UserfaultfdTracking, userfaultfd)
 
     u32 GetVblankFrequency() {
         if (m_gpu.vblank_frequency.value < 30) {
