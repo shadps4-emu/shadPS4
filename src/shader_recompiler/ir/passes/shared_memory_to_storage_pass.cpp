@@ -96,7 +96,7 @@ IR::Type CalculateSharedMemoryTypes(IR::Program& program) {
 
 void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_info,
                                const Profile& profile) {
-    if (program.info.stage != Stage::Compute) {
+    if (program.info.hw_stage != HwStage::Compute) {
         return;
     }
 
@@ -105,7 +105,7 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
     // * One of the following is true:
     //   * Requested shared memory size is too large for the host shared memory.
     //   * Workgroup explicit memory is not supported and multiple shared memory types are used.
-    const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
+    const u32 shared_memory_size = runtime_info.hw.cs.shared_memory_size;
     const auto used_types = CalculateSharedMemoryTypes(program);
     if (used_types == IR::Type::Void || (shared_memory_size <= profile.max_shared_memory_size &&
                                          (profile.supports_workgroup_explicit_memory_layout ||
@@ -115,9 +115,8 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
 
     // Add a buffer binding for shared memory storage buffer.
     const u32 binding = static_cast<u32>(program.info.buffers.size());
-    program.info.buffers.push_back({
+    program.info.buffers.push_back(BufferResource{
         .used_types = used_types,
-        .inline_cbuf = AmdGpu::Buffer::Null(),
         .buffer_type = BufferType::SharedMemory,
         .is_written = true,
     });

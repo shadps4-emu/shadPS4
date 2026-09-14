@@ -5,11 +5,14 @@
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
+#include "shader_recompiler/ir/attribute.h"
+#include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
+#include <spirv/unified1/spirv.hpp11>
 
 #include <numbers>
 #include <string_view>
@@ -17,21 +20,21 @@
 namespace Shader::Backend::SPIRV {
 namespace {
 
-std::string_view StageName(Stage stage) {
+std::string_view StageName(HwStage stage) {
     switch (stage) {
-    case Stage::Vertex:
+    case HwStage::Vertex:
         return "vs";
-    case Stage::Local:
+    case HwStage::Local:
         return "ls";
-    case Stage::Export:
+    case HwStage::Export:
         return "es";
-    case Stage::Hull:
+    case HwStage::Hull:
         return "hs";
-    case Stage::Geometry:
+    case HwStage::Geometry:
         return "gs";
-    case Stage::Fragment:
+    case HwStage::Fragment:
         return "fs";
-    case Stage::Compute:
+    case HwStage::Compute:
         return "cs";
     }
     UNREACHABLE_MSG("Invalid hw stage {}", u32(stage));
@@ -59,7 +62,7 @@ static constexpr u32 NumVertices(AmdGpu::PrimitiveType type) {
 
 template <typename... Args>
 void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... args) {
-    ctx.Name(object, fmt::format(fmt::runtime(format_str), StageName(ctx.stage),
+    ctx.Name(object, fmt::format(fmt::runtime(format_str), StageName(ctx.hw_stage),
                                  std::forward<Args>(args)...)
                          .c_str());
 }
@@ -69,7 +72,7 @@ void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... ar
 EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_info_, Info& info_,
                          Bindings& binding_)
     : Sirit::Module(profile_.supported_spirv), info{info_}, runtime_info{runtime_info_},
-      profile{profile_}, stage{info.stage}, l_stage{info.l_stage}, binding{binding_} {
+      profile{profile_}, hw_stage{info.hw_stage}, sw_stage{info.sw_stage}, binding{binding_} {
     if (info.uses_dma) {
         SetMemoryModel(spv::AddressingModel::PhysicalStorageBuffer64, spv::MemoryModel::GLSL450);
     } else {
@@ -90,7 +93,7 @@ EmitContext::~EmitContext() = default;
 
 Id EmitContext::Def(const IR::Value& value) {
     if (!value.IsImmediate()) {
-        return value.InstRecursive()->Definition<Id>();
+        return value.Inst()->Definition<Id>();
     }
     switch (value.Type()) {
     case IR::Type::Void:
@@ -275,8 +278,8 @@ void EmitContext::DefineAmdPerVertexAttribs() {
     if (!profile.supports_amd_shader_explicit_vertex_parameter) {
         return;
     }
-    for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
-        const auto& input = runtime_info.fs_info.inputs[i];
+    for (s32 i = 0; i < runtime_info.hw.fs.num_inputs; i++) {
+        const auto& input = runtime_info.hw.fs.inputs[i];
         if (input.IsDefault() || info.fs_interpolation[i].primary != Qualifier::PerVertex) {
             continue;
         }
@@ -312,11 +315,23 @@ void EmitContext::DefineInputs() {
             U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
         Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
     }
-    switch (l_stage) {
-    case LogicalStage::Vertex: {
+    if (info.loads.GetAny(IR::Attribute::SubgroupLtMask)) {
+        subgroup_lt_mask =
+            DefineVariable(U32[4], spv::BuiltIn::SubgroupLtMask, spv::StorageClass::Input);
+        Decorate(subgroup_lt_mask, spv::Decoration::Flat);
+    }
+    switch (sw_stage) {
+    case SwStage::Vertex: {
         vertex_index = DefineVariable(U32[1], spv::BuiltIn::VertexIndex, spv::StorageClass::Input);
-        base_vertex = DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
         instance_id = DefineVariable(U32[1], spv::BuiltIn::InstanceIndex, spv::StorageClass::Input);
+        if (info.loads.Get(IR::Attribute::BaseVertex)) {
+            base_vertex =
+                DefineVariable(U32[1], spv::BuiltIn::BaseVertex, spv::StorageClass::Input);
+        }
+        if (info.loads.Get(IR::Attribute::BaseInstance)) {
+            base_instance =
+                DefineVariable(U32[1], spv::BuiltIn::BaseInstance, spv::StorageClass::Input);
+        }
 
         const auto fetch_shader = Gcn::ParseFetchShader(info);
         if (!fetch_shader) {
@@ -336,7 +351,7 @@ void EmitContext::DefineInputs() {
         }
         break;
     }
-    case LogicalStage::Fragment: {
+    case SwStage::Fragment: {
         if (info.loads.GetAny(IR::Attribute::FragCoord)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         }
@@ -405,13 +420,12 @@ void EmitContext::DefineInputs() {
             }
         }
 
-        const bool has_clip_distance_inputs = runtime_info.fs_info.clip_distance_emulation;
+        const bool has_clip_distance_inputs = runtime_info.hw.fs.clip_distance_emulation;
         // Clip distances attribute vector is the last in inputs array
-        const auto num_inputs =
-            runtime_info.fs_info.num_inputs - (has_clip_distance_inputs ? 1 : 0);
+        const auto num_inputs = runtime_info.hw.fs.num_inputs - (has_clip_distance_inputs ? 1 : 0);
 
         for (s32 i = 0; i < num_inputs; i++) {
-            const auto& input = runtime_info.fs_info.inputs[i];
+            const auto& input = runtime_info.hw.fs.inputs[i];
             if (input.IsDefault()) {
                 continue;
             }
@@ -452,7 +466,7 @@ void EmitContext::DefineInputs() {
         }
         break;
     }
-    case LogicalStage::Compute:
+    case SwStage::Compute:
         if (info.loads.GetAny(IR::Attribute::WorkgroupIndex) ||
             info.loads.GetAny(IR::Attribute::WorkgroupId)) {
             workgroup_id =
@@ -466,8 +480,12 @@ void EmitContext::DefineInputs() {
             local_invocation_id =
                 DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
         }
+        if (info.loads.Get(IR::Attribute::LocalInvocationIndex)) {
+            local_invocation_index = DefineVariable(U32[1], spv::BuiltIn::LocalInvocationIndex,
+                                                    spv::StorageClass::Input);
+        }
         break;
-    case LogicalStage::Geometry: {
+    case SwStage::Geometry: {
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
         const auto gl_per_vertex =
             Name(TypeStruct(F32[4], F32[1], TypeArray(F32[1], ConstU32(1u))), "gl_PerVertex");
@@ -481,12 +499,12 @@ void EmitContext::DefineInputs() {
         MemberDecorate(gl_per_vertex, 2, spv::Decoration::BuiltIn,
                        static_cast<u32>(spv::BuiltIn::ClipDistance));
         Decorate(gl_per_vertex, spv::Decoration::Block);
-        const auto num_verts_in = NumVertices(runtime_info.gs_info.in_primitive);
+        const auto num_verts_in = NumVertices(runtime_info.hw.gs.in_primitive);
         const auto vertices_in = TypeArray(gl_per_vertex, ConstU32(num_verts_in));
         gl_in = Name(DefineVar(vertices_in, spv::StorageClass::Input), "gl_in");
         interfaces.push_back(gl_in);
 
-        const auto num_params = runtime_info.gs_info.in_vertex_data_size / 4 - 1u;
+        const auto num_params = runtime_info.hw.gs.in_vertex_data_size / 4 - 1u;
         for (int param_id = 0; param_id < num_params; ++param_id) {
             const Id type{TypeArray(F32[4], ConstU32(num_verts_in))};
             const Id id{DefineInput(type, param_id)};
@@ -496,14 +514,14 @@ void EmitContext::DefineInputs() {
         }
         break;
     }
-    case LogicalStage::TessellationControl: {
+    case SwStage::TessellationControl: {
         invocation_id =
             DefineVariable(U32[1], spv::BuiltIn::InvocationId, spv::StorageClass::Input);
         patch_vertices =
             DefineVariable(U32[1], spv::BuiltIn::PatchVertices, spv::StorageClass::Input);
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
 
-        const u32 num_attrs = Common::AlignUp(runtime_info.hs_info.ls_stride, 16) >> 4;
+        const u32 num_attrs = Common::AlignUp(runtime_info.sw.tcs.ls_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
             // The input vertex count isn't statically known, so make length 32 (what
@@ -514,12 +532,11 @@ void EmitContext::DefineInputs() {
         }
         break;
     }
-    case LogicalStage::TessellationEval: {
+    case SwStage::TessellationEval: {
         tess_coord = DefineInput(F32[3], std::nullopt, spv::BuiltIn::TessCoord);
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
 
-        const u32 num_attrs =
-            Common::AlignUp(runtime_info.hs_es_vs_info.hs_output_cp_stride, 16) >> 4;
+        const u32 num_attrs = Common::AlignUp(runtime_info.sw.tes.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
             // The input vertex count isn't statically known, so make length 32 (what
@@ -550,8 +567,8 @@ void EmitContext::DefineVertexBlock() {
     const std::array<Id, 8> zero{f32_zero_value, f32_zero_value, f32_zero_value, f32_zero_value,
                                  f32_zero_value, f32_zero_value, f32_zero_value, f32_zero_value};
     output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
-    const bool needs_clip_distance_emulation = l_stage == LogicalStage::Vertex &&
-                                               stage == Stage::Vertex &&
+    const bool needs_clip_distance_emulation = sw_stage == SwStage::Vertex &&
+                                               hw_stage == HwStage::Vertex &&
                                                profile.needs_clip_distance_emulation;
     const auto has_clip_distance_outputs = info.stores.GetAny(IR::Attribute::ClipDistance);
     if (has_clip_distance_outputs && !needs_clip_distance_emulation) {
@@ -580,11 +597,11 @@ void EmitContext::DefineVertexBlock() {
 }
 
 void EmitContext::DefineOutputs() {
-    switch (l_stage) {
-    case LogicalStage::Vertex: {
+    switch (sw_stage) {
+    case SwStage::Vertex: {
         DefineVertexBlock();
-        if (stage == Shader::Stage::Local) {
-            const u32 num_attrs = Common::AlignUp(runtime_info.ls_info.ls_stride, 16) >> 4;
+        if (hw_stage == Shader::HwStage::Local) {
+            const u32 num_attrs = Common::AlignUp(runtime_info.hw.ls.ls_stride, 16) >> 4;
             if (num_attrs > 0) {
                 const Id type{TypeArray(F32[4], ConstU32(num_attrs))};
                 output_attr_array = DefineOutput(type, 0);
@@ -592,7 +609,7 @@ void EmitContext::DefineOutputs() {
             }
         } else {
             const bool needs_clip_distance_emulation =
-                stage == Stage::Vertex && profile.needs_clip_distance_emulation &&
+                hw_stage == HwStage::Vertex && profile.needs_clip_distance_emulation &&
                 info.stores.GetAny(IR::Attribute::ClipDistance);
             u32 num_attrs = 0u;
             for (u32 i = 0; i < IR::NumParams; i++) {
@@ -618,7 +635,7 @@ void EmitContext::DefineOutputs() {
         }
         break;
     }
-    case LogicalStage::TessellationControl: {
+    case SwStage::TessellationControl: {
         if (info.stores_tess_level_outer) {
             const Id type{TypeArray(F32[1], ConstU32(4U))};
             output_tess_level_outer =
@@ -632,14 +649,13 @@ void EmitContext::DefineOutputs() {
             Decorate(output_tess_level_inner, spv::Decoration::Patch);
         }
 
-        const u32 num_attrs =
-            Common::AlignUp(runtime_info.hs_es_vs_info.hs_output_cp_stride, 16) >> 4;
+        const u32 num_attrs = Common::AlignUp(runtime_info.sw.tcs.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
             // The input vertex count isn't statically known, so make length 32 (what
             // glslang does)
-            const Id patch_array_type{TypeArray(
-                per_vertex_type, ConstU32(runtime_info.hs_info.NumOutputControlPoints()))};
+            const Id patch_array_type{
+                TypeArray(per_vertex_type, ConstU32(runtime_info.sw.tcs.NumOutputControlPoints()))};
             output_attr_array = DefineOutput(patch_array_type, 0);
             Name(output_attr_array, "out_attrs");
         }
@@ -656,7 +672,7 @@ void EmitContext::DefineOutputs() {
         }
         break;
     }
-    case LogicalStage::TessellationEval: {
+    case SwStage::TessellationEval: {
         DefineVertexBlock();
         for (u32 i = 0; i < IR::NumParams; i++) {
             const IR::Attribute param{IR::Attribute::Param0 + i};
@@ -671,7 +687,7 @@ void EmitContext::DefineOutputs() {
         }
         break;
     }
-    case LogicalStage::Fragment: {
+    case SwStage::Fragment: {
         if (info.stores.Get(IR::Attribute::Depth)) {
             frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
         }
@@ -690,10 +706,10 @@ void EmitContext::DefineOutputs() {
                 continue;
             }
             const u32 num_components = info.stores.NumComponents(mrt);
-            const AmdGpu::NumberFormat num_format{runtime_info.fs_info.color_buffers[i].num_format};
+            const AmdGpu::NumberFormat num_format{runtime_info.hw.fs.color_buffers[i].num_format};
             const Id type{GetAttributeType(*this, num_format)[num_components]};
             Id id;
-            if (runtime_info.fs_info.dual_source_blending) {
+            if (runtime_info.hw.fs.dual_source_blending) {
                 id = DefineOutput(type, 0);
                 Decorate(id, spv::Decoration::Index, i);
             } else {
@@ -706,11 +722,11 @@ void EmitContext::DefineOutputs() {
         // Dual source blending allows at most 2 render targets, one for each source.
         // Fewer targets are allowed but the missing blending source values will be
         // undefined.
-        ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets <= 2,
+        ASSERT_MSG(!runtime_info.hw.fs.dual_source_blending || num_render_targets <= 2,
                    "Dual source blending enabled, there must be at most two MRT exports");
         break;
     }
-    case LogicalStage::Geometry: {
+    case SwStage::Geometry: {
         DefineVertexBlock();
         for (u32 attr_id = 0; attr_id < info.gs_copy_data.num_attrs; attr_id++) {
             const Id id{DefineOutput(F32[4], attr_id)};
@@ -719,7 +735,7 @@ void EmitContext::DefineOutputs() {
         }
         break;
     }
-    case LogicalStage::Compute:
+    case SwStage::Compute:
         break;
     default:
         UNREACHABLE();
@@ -759,7 +775,7 @@ void EmitContext::DefinePushDataBlock() {
     interfaces.push_back(push_data_block);
 }
 
-EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, u32 elem_shift,
+EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, bool is_coherent, u32 elem_shift,
                                                  BufferType buffer_type, Id data_type) {
     // Define array type.
     const Id record_array_type{TypeRuntimeArray(data_type)};
@@ -782,6 +798,10 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, u32 elem_shift
     Decorate(id, spv::Decoration::DescriptorSet, 0U);
     if (!is_written) {
         Decorate(id, spv::Decoration::NonWritable);
+    } else if (is_coherent) {
+        // The guest V# MTYPE marks this buffer as shared between invocations;
+        // Coherent forbids caching its accesses in registers across barriers.
+        Decorate(id, spv::Decoration::Coherent);
     }
     switch (buffer_type) {
     case BufferType::GdsBuffer:
@@ -813,6 +833,10 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, u32 elem_shift
 void EmitContext::DefineBuffers() {
     for (const auto& desc : info.buffers) {
         const auto buf_sharp = desc.GetSharp(info);
+        // MTYPE class 3 marks guest buffers shared between invocations; shared
+        // memory lowered to a storage buffer needs the same guarantee.
+        const bool is_coherent =
+            desc.buffer_type == BufferType::SharedMemory || buf_sharp.mtype == 3;
 
         // Set indexes for special buffers.
         if (desc.buffer_type == BufferType::Flatbuf) {
@@ -827,23 +851,23 @@ void EmitContext::DefineBuffers() {
         auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
         if (True(desc.used_types & IR::Type::U64)) {
             spv_buffer.Alias(PointerType::U64) =
-                DefineBuffer(desc.is_written, 3, desc.buffer_type, U64);
+                DefineBuffer(desc.is_written, is_coherent, 3, desc.buffer_type, U64);
         }
         if (True(desc.used_types & IR::Type::U32)) {
             spv_buffer.Alias(PointerType::U32) =
-                DefineBuffer(desc.is_written, 2, desc.buffer_type, U32[1]);
+                DefineBuffer(desc.is_written, is_coherent, 2, desc.buffer_type, U32[1]);
         }
         if (True(desc.used_types & IR::Type::F32)) {
             spv_buffer.Alias(PointerType::F32) =
-                DefineBuffer(desc.is_written, 2, desc.buffer_type, F32[1]);
+                DefineBuffer(desc.is_written, is_coherent, 2, desc.buffer_type, F32[1]);
         }
         if (True(desc.used_types & IR::Type::U16)) {
             spv_buffer.Alias(PointerType::U16) =
-                DefineBuffer(desc.is_written, 1, desc.buffer_type, U16);
+                DefineBuffer(desc.is_written, is_coherent, 1, desc.buffer_type, U16);
         }
         if (True(desc.used_types & IR::Type::U8)) {
             spv_buffer.Alias(PointerType::U8) =
-                DefineBuffer(desc.is_written, 0, desc.buffer_type, U8);
+                DefineBuffer(desc.is_written, is_coherent, 0, desc.buffer_type, U8);
         }
         ++binding.unified;
     }
@@ -972,8 +996,7 @@ void EmitContext::DefineImagesAndSamplers() {
         Decorate(id, spv::Decoration::Binding, binding.unified);
         binding.unified += num_bindings;
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        // TODO better naming for resources (flattened sharp_idx is not informative)
-        Name(id, fmt::format("{}_{}{}", stage, "img", image_desc.sharp_idx));
+        Name(id, fmt::format("{}_{}{}", hw_stage, "img", images.size()));
         images.push_back({
             .data_types = &data_types,
             .id = id,
@@ -986,7 +1009,8 @@ void EmitContext::DefineImagesAndSamplers() {
         });
         interfaces.push_back(id);
     }
-    if (std::ranges::any_of(info.images, &ImageResource::is_atomic)) {
+    if (std::ranges::any_of(info.images,
+                            [](const ImageResource& image) { return image.is_atomic; })) {
         image_u32 = TypePointer(spv::StorageClass::Image, U32[1]);
         image_f32 = TypePointer(spv::StorageClass::Image, F32[1]);
     }
@@ -999,12 +1023,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        const auto sharp_desc =
-            samp_desc.is_inline_sampler
-                ? fmt::format("inline:{:#x}:{:#x}", samp_desc.inline_sampler.raw0,
-                              samp_desc.inline_sampler.raw1)
-                : fmt::format("sgpr:{}", samp_desc.sharp_idx);
-        Name(id, fmt::format("{}_{}{}", stage, "samp", sharp_desc));
+        Name(id, fmt::format("{}_{}{}", hw_stage, "samp", samplers.size()));
         samplers.push_back(id);
         interfaces.push_back(id);
     }
@@ -1015,8 +1034,9 @@ void EmitContext::DefineSharedMemory() {
     if (num_types == 0) {
         return;
     }
-    ASSERT(info.stage == Stage::Compute);
-    const u32 shared_memory_size = runtime_info.cs_info.shared_memory_size;
+    ASSERT(info.hw_stage == HwStage::Compute);
+    const u32 shared_memory_size =
+        runtime_info.hw.cs.shared_memory_size + info.shared_memory_scratch_size;
 
     const auto make_type = [&](IR::Type type, Id element_type, u32 element_size,
                                std::string_view name) {

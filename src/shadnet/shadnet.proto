@@ -530,6 +530,16 @@ message GetTokenReply {
     string npid = 3;
 }
 
+// Resolve an arbitrary online ID to its account ID
+message LookupOnlineIdRequest {
+    string npid = 1; // online ID to resolve
+}
+
+message LookupOnlineIdReply {
+    uint64 account_id = 1;
+    string npid        = 2; // canonical online ID as registered on the server
+}
+
 // Notification payloads
 
 // NotificationType::RoomEvent (10) — every room event maps onto

@@ -5,9 +5,11 @@
 
 #include <span>
 #include <unordered_map>
+#include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/instruction.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/condition.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 
 namespace Shader {
@@ -63,7 +65,8 @@ class Translator {
 public:
     explicit Translator(Info& info, const RuntimeInfo& runtime_info, const Profile& profile);
 
-    void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list);
+    void Translate(IR::Block* block, u32 pc, IR::Condition cond,
+                   std::span<const GcnInst> inst_list);
     void TranslateInstruction(const GcnInst& inst);
 
     // Instruction categories
@@ -129,6 +132,7 @@ public:
     void S_FLBIT_I32_B32(const GcnInst& inst);
     void S_FLBIT_I32_B64(const GcnInst& inst);
     void S_BITSET_B32(const GcnInst& inst, u32 bit_value);
+    void S_BITSET_B64(const GcnInst& inst, u32 bit_value);
     void S_GETPC_B64(const GcnInst& inst);
     void S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst);
     void S_ABS_I32(const GcnInst& inst);
@@ -145,6 +149,7 @@ public:
     // SMRD
     void S_LOAD_DWORD(int num_dwords, const GcnInst& inst);
     void S_BUFFER_LOAD_DWORD(int num_dwords, const GcnInst& inst);
+    void S_MEMTIME(const GcnInst& inst);
 
     // Vector ALU
     // VOP2
@@ -271,6 +276,7 @@ public:
     void V_CVT_PK_U8_F32(const GcnInst& inst);
     void V_LSHL_B64(const GcnInst& inst);
     void V_LSHR_B64(const GcnInst& inst);
+    void V_ASHR_I64(const GcnInst& inst);
     void V_ALIGNBIT_B32(const GcnInst& inst);
     void V_ALIGNBYTE_B32(const GcnInst& inst);
     void V_MUL_F64(const GcnInst& inst);
@@ -347,7 +353,6 @@ public:
     void IMAGE_GET_LOD(const GcnInst& inst);
 
 private:
-    IR::U1 GetSrc1(const InstOperand& operand);
     template <typename T = IR::U32>
     [[nodiscard]] T GetSrc(const InstOperand& operand);
     template <typename T = IR::U32, bool is_signed = false>
@@ -357,7 +362,6 @@ private:
     [[nodiscard]] IR::F32 GetSrcMix(const InstOperand& operand);
     template <typename T = IR::U32, bool is_signed = false>
     [[nodiscard]] pk_type<T> GetSrcPk(const InstOperand& operand);
-    void SetDst1(const InstOperand& operand, const IR::U1& value);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     template <bool is_signed = false>
     void SetDst16(const InstOperand& operand, const IR::U32F32& value);
@@ -388,6 +392,7 @@ private:
     u32 next_vgpr_num;
     std::unordered_map<u32, IR::VectorReg> vgpr_map;
     std::array<IR::Attribute, MaxInterpVgpr> vgpr_to_interp{};
+    std::optional<FetchShaderData> fetch_data{};
     bool opcode_missing = false;
     u32 pc{};
 };

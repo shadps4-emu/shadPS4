@@ -434,11 +434,11 @@ Id EmitImageAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coo
                                  &Sirit::Module::OpAtomicCompareExchange);
 }
 
-Id EmitDataAppend(EmitContext& ctx, u32 gds_addr, u32 binding) {
+Id EmitDataAppend(EmitContext& ctx, Id gds_dw_offset, Id exec) {
     UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
-Id EmitDataConsume(EmitContext& ctx, u32 gds_addr, u32 binding) {
+Id EmitDataConsume(EmitContext& ctx, Id gds_dw_offset, Id exec) {
     UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
