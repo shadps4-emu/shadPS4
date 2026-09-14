@@ -172,6 +172,10 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         return ctx.OpLoad(ctx.U32[1], ctx.vertex_index);
     case IR::Attribute::InstanceId:
         return ctx.OpLoad(ctx.U32[1], ctx.instance_id);
+    case IR::Attribute::BaseVertex:
+        return ctx.OpLoad(ctx.U32[1], ctx.base_vertex);
+    case IR::Attribute::BaseInstance:
+        return ctx.OpLoad(ctx.U32[1], ctx.base_instance);
     case IR::Attribute::WorkgroupIndex:
         return ctx.workgroup_index_id;
     case IR::Attribute::WorkgroupId:

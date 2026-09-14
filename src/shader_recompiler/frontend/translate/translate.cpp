@@ -61,6 +61,16 @@ static IR::VectorReg IterateBarycentrics(const RuntimeInfo& runtime_info, auto&&
     return IR::VectorReg(dst_vreg);
 }
 
+static s8 UdRegFromShOffset(u16 sgpr_offset, HwStage hw_stage) {
+    static constexpr std::array indirect_sgpr_offsets{0u, 0x4cu, 0u, 0xccu, 0u, 0x14cu};
+    if (sgpr_offset) {
+        const u32 ud_reg = sgpr_offset - indirect_sgpr_offsets[u32(hw_stage)];
+        ASSERT_MSG(ud_reg < 16, "Out of bounds indirect SGPR copy");
+        return ud_reg;
+    }
+    return -1;
+}
+
 Translator::Translator(Info& info_, const RuntimeInfo& runtime_info_, const Profile& profile_)
     : info{info_}, runtime_info{runtime_info_}, profile{profile_},
       next_vgpr_num{runtime_info.props.num_allocated_vgprs} {
@@ -84,9 +94,32 @@ void Translator::EmitPrologue(IR::Block* first_block) {
 
     IR::VectorReg dst_vreg = IR::VectorReg::V0;
     switch (info.sw_stage) {
-    case SwStage::Vertex:
+    case SwStage::Vertex: {
+        const s8 base_vertex_sgpr =
+            UdRegFromShOffset(runtime_info.sw.vs.vertex_sgpr_offset, info.hw_stage);
+        if (base_vertex_sgpr != -1) {
+            ir.SetScalarReg(IR::ScalarReg(base_vertex_sgpr),
+                            ir.GetAttributeU32(IR::Attribute::BaseVertex));
+        }
+        const s8 base_instance_sgpr =
+            UdRegFromShOffset(runtime_info.sw.vs.instance_sgpr_offset, info.hw_stage);
+        if (base_instance_sgpr != -1) {
+            ir.SetScalarReg(IR::ScalarReg(base_instance_sgpr),
+                            ir.GetAttributeU32(IR::Attribute::BaseInstance));
+        }
+
         // v0: vertex ID, always present
-        ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::VertexId));
+        IR::U32 vertex_id = ir.GetAttributeU32(IR::Attribute::VertexId);
+        if (base_vertex_sgpr != -1) {
+            if (!fetch_data || fetch_data->vertex_offset_sgpr == -1) {
+                vertex_id = ir.ISub(vertex_id, ir.GetAttributeU32(IR::Attribute::BaseVertex));
+            } else {
+                ASSERT_MSG(fetch_data->vertex_offset_sgpr == base_vertex_sgpr,
+                           "Fetch shader in indirect draw uses wrong base vertex");
+            }
+        }
+        ir.SetVectorReg(dst_vreg++, vertex_id);
+
         if (info.hw_stage == HwStage::Local) {
             // v1: rel patch ID
             if (runtime_info.props.num_input_vgprs > 0) {
@@ -95,10 +128,6 @@ void Translator::EmitPrologue(IR::Block* first_block) {
             // v2: unknown
             if (runtime_info.props.num_input_vgprs > 1) {
                 ++dst_vreg;
-            }
-            // v3: instance ID, plain
-            if (runtime_info.props.num_input_vgprs > 2) {
-                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
             }
         } else {
             // v1: instance ID, step rate 0
@@ -121,12 +150,24 @@ void Translator::EmitPrologue(IR::Block* first_block) {
                     ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
                 }
             }
-            // v3: instance ID, plain
-            if (runtime_info.props.num_input_vgprs > 2) {
-                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
+        }
+
+        // v3: instance ID, plain
+        if (runtime_info.props.num_input_vgprs > 2) {
+            IR::U32 instance_id = ir.GetAttributeU32(IR::Attribute::InstanceId);
+            if (base_instance_sgpr != -1) {
+                if (!fetch_data || fetch_data->instance_offset_sgpr == -1) {
+                    instance_id =
+                        ir.ISub(instance_id, ir.GetAttributeU32(IR::Attribute::BaseInstance));
+                } else {
+                    ASSERT_MSG(fetch_data->instance_offset_sgpr == base_instance_sgpr,
+                               "Fetch shader in indirect draw uses wrong base instance");
+                }
             }
+            ir.SetVectorReg(dst_vreg++, instance_id);
         }
         break;
+    }
     case SwStage::Fragment: {
         dst_vreg =
             IterateBarycentrics(runtime_info, [this](u32 vreg, IR::Attribute attrib, u32 comp) {
@@ -1091,7 +1132,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
     info.has_fetch_shader = true;
     info.fetch_shader_sgpr_base = code_sgpr_base;
 
-    const auto fetch_data = ParseFetchShader(info);
+    fetch_data = ParseFetchShader(info);
     ASSERT(fetch_data.has_value());
 
     if (EmulatorSettings.IsDumpShaders()) {

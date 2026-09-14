@@ -71,6 +71,8 @@ using OutputMap = std::array<Output, 4>;
 struct SwVertexRuntimeInfo {
     u32 step_rate_0;
     u32 step_rate_1;
+    u16 vertex_sgpr_offset{};
+    u16 instance_sgpr_offset{};
     bool tess_emulated_primitive{};
 
     bool operator==(const SwVertexRuntimeInfo& other) const noexcept = default;
