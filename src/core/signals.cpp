@@ -327,6 +327,17 @@ SignalDispatch::SignalDispatch() {
 #endif
 }
 
+#if defined(SHADPS4_PAUSE_PROTOCOL_TEST) && !defined(_WIN32)
+SignalDispatch::SignalDispatch(PauseOnlyTestTag) : pause_only_test{true} {
+    struct sigaction pause_action{};
+    pause_action.sa_sigaction = DebugPause::PauseSignalHandler;
+    pause_action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    sigemptyset(&pause_action.sa_mask);
+    ASSERT_MSG(sigaction(SIGSLEEP, &pause_action, nullptr) == 0,
+               "Failed to register pause signal handler.");
+}
+#endif
+
 void SignalDispatch::RemoveHandlers() {
     // asserting here would get into an infinite loop until too
     // many nested exceptions makes the OS kill the process
@@ -353,6 +364,17 @@ void SignalDispatch::RemoveHandlers() {
 }
 
 SignalDispatch::~SignalDispatch() {
+#if defined(SHADPS4_PAUSE_PROTOCOL_TEST) && !defined(_WIN32)
+    if (pause_only_test) {
+        struct sigaction action{};
+        action.sa_handler = SIG_DFL;
+        sigemptyset(&action.sa_mask);
+        if (sigaction(SIGSLEEP, &action, nullptr) != 0) {
+            std::quick_exit(1);
+        }
+        return;
+    }
+#endif
     RemoveHandlers();
 }
 

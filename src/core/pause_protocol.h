@@ -12,10 +12,13 @@
 #include <cstdlib>
 #include <limits>
 #include <mutex>
+#include <fcntl.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <signal.h>
 #include <sys/select.h>
+#include <time.h>
+#include <unistd.h>
 
 namespace Core::DebugPause {
 
@@ -63,10 +66,12 @@ public:
 
     // A narrow deterministic seam for the near-exhaustion test. Production always starts at
     // Running epoch zero.
-    explicit Protocol(const Snapshot initial) : state(Encode(initial.state, initial.epoch)) {
-        if (initial.epoch > MaximumEpoch) {
+    explicit Protocol(const Snapshot initial) {
+        if (initial.epoch > MaximumEpoch ||
+            (initial.state == State::Paused && initial.epoch == MaximumEpoch)) {
             std::abort();
         }
+        state.store(Encode(initial.state, initial.epoch), std::memory_order_relaxed);
     }
 
     std::unique_lock<std::mutex> AcquirePauseRequest() {
@@ -150,10 +155,9 @@ private:
 
 struct ParticipantTestAccess;
 
-// One record belongs to one native POSIX thread. Signal-handler code uses only operations POSIX
-// specifies as async-signal-safe plus C++ atomics statically required to be lock-free. The timed
-// pselect is a bounded wake fallback: state, never timeout or signal count, decides whether the
-// target remains paused.
+// One record belongs to one native POSIX thread. SIGVTALRM is only an entry notification. Once in
+// the handler it remains blocked and state transitions use a coalesced nonblocking pipe wake, so a
+// persistent pause handler cannot recursively re-enter itself.
 class Participant final {
 public:
     static_assert(std::atomic_bool::is_always_lock_free,
@@ -167,12 +171,19 @@ public:
         if (sem_init(&ack_semaphore, 0, 0) != 0) {
             std::abort();
         }
+        if (pipe(state_wake_pipe) != 0 || state_wake_pipe[0] >= FD_SETSIZE ||
+            state_wake_pipe[1] >= FD_SETSIZE || !SetNonBlocking(state_wake_pipe[0]) ||
+            !SetNonBlocking(state_wake_pipe[1]) || !SetCloseOnExec(state_wake_pipe[0]) ||
+            !SetCloseOnExec(state_wake_pipe[1])) {
+            AbortConstruction();
+        }
     }
 
     Participant(const Participant&) = delete;
     Participant& operator=(const Participant&) = delete;
 
     ~Participant() {
+        CloseStateWakePipe();
         sem_destroy(&ack_semaphore);
     }
 
@@ -188,6 +199,51 @@ public:
         return wait_error.load(std::memory_order_acquire);
     }
 
+    int StateWakeError() const noexcept {
+        return state_wake_error.load(std::memory_order_acquire);
+    }
+
+    std::uint64_t FailedPauseEpoch() const noexcept {
+        return failed_pause_epoch.load(std::memory_order_acquire);
+    }
+
+    std::uint64_t FailOpenRunningEpoch() const noexcept {
+        return fail_open_running_epoch.load(std::memory_order_acquire);
+    }
+
+    int NotifyStateChange() noexcept {
+        if (state_wake_pending.exchange(true, std::memory_order_acq_rel)) {
+            return 0;
+        }
+        const char token = 1;
+        const ssize_t result = write(state_wake_pipe[1], &token, sizeof(token));
+        if (result == sizeof(token)) {
+            return 0;
+        }
+        const int error = result < 0 ? errno : EIO;
+        if (error == EAGAIN || error == EWOULDBLOCK) {
+            // EAGAIN means the pipe already contains a wake. Keep the pending bit set so later
+            // callers cannot turn the coalescer into an unbounded token producer.
+            return 0;
+        }
+        if (error == EINTR) {
+            // The state word is authoritative and the handler has a finite recheck interval. A
+            // transiently interrupted wake must not poison the participant or turn a coalesced
+            // notification into a false delivery failure.
+            state_wake_pending.store(false, std::memory_order_release);
+            return 0;
+        }
+        state_wake_error.store(error != 0 ? error : EIO, std::memory_order_release);
+        state_wake_pending.store(false, std::memory_order_release);
+        return error != 0 ? error : EIO;
+    }
+
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+    void InjectStateWaitErrorForTest() noexcept {
+        injected_wait_error.store(EBADF, std::memory_order_release);
+    }
+#endif
+
     // Called by the target thread, never by a signal handler. Invalidation precedes signal
     // blocking and list removal. An in-flight controller shared_ptr remains a lifetime pin.
     void Unregister() noexcept {
@@ -198,32 +254,45 @@ public:
         sigset_t signal_set{};
         sigemptyset(&signal_set);
         sigaddset(&signal_set, SIGVTALRM);
-        (void)pthread_sigmask(SIG_BLOCK, &signal_set, nullptr);
+        sigset_t previous_mask{};
+        const int block_result = pthread_sigmask(SIG_BLOCK, &signal_set, &previous_mask);
+        (void)NotifyStateChange();
         PostAckWake();
+        if (block_result == 0) {
+            (void)pthread_sigmask(SIG_SETMASK, &previous_mask, nullptr);
+        }
     }
 
     // Used both by the actual SIGVTALRM handler and synchronously by registration. The latter is
     // what prevents insertion after a controller snapshot from crossing into guest execution
     // while the authoritative state is already Paused.
     StateWaitResult SynchronizeState() noexcept {
-        sigset_t wait_mask{};
-        const int mask_result = pthread_sigmask(SIG_SETMASK, nullptr, &wait_mask);
-        if (mask_result != 0 || sigdelset(&wait_mask, SIGVTALRM) != 0) {
-            return FailOpen(mask_result != 0 ? mask_result : errno);
+        sigset_t original_mask{};
+        int result = pthread_sigmask(SIG_SETMASK, nullptr, &original_mask);
+        if (result != 0) {
+            return FailOpen(result);
+        }
+        auto wait_mask = original_mask;
+        if (sigaddset(&wait_mask, SIGVTALRM) != 0) {
+            return FinishWait(FailOpen(errno), original_mask);
+        }
+        result = pthread_sigmask(SIG_SETMASK, &wait_mask, nullptr);
+        if (result != 0) {
+            return FailOpen(result);
         }
 
         for (;;) {
             if (!registered.load(std::memory_order_acquire)) {
-                return StateWaitResult::Unregistered;
+                return FinishWait(StateWaitResult::Unregistered, original_mask);
             }
 
             const auto snapshot = protocol->Load();
             Acknowledge(snapshot.epoch);
             if (!registered.load(std::memory_order_acquire)) {
-                return StateWaitResult::Unregistered;
+                return FinishWait(StateWaitResult::Unregistered, original_mask);
             }
             if (snapshot.state == State::Running) {
-                return StateWaitResult::Running;
+                return FinishWait(StateWaitResult::Running, original_mask);
             }
 
             // Close the state-change-before-wait race. If Resume changed the word and its signal
@@ -233,17 +302,44 @@ public:
                 continue;
             }
 
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+            if (const int injected = injected_wait_error.load(std::memory_order_acquire);
+                injected != 0) {
+                return FinishWait(FailOpen(injected, snapshot.epoch), original_mask);
+            }
+#endif
+            if (state_wake_pipe[0] < 0) {
+                return FinishWait(FailOpen(EBADF, snapshot.epoch), original_mask);
+            }
+            fd_set read_fds;
+            FD_ZERO(&read_fds);
+            FD_SET(state_wake_pipe[0], &read_fds);
             timespec timeout = StateRecheckInterval;
-            const int result = pselect(0, nullptr, nullptr, nullptr, &timeout, &wait_mask);
+            result =
+                pselect(state_wake_pipe[0] + 1, &read_fds, nullptr, nullptr, &timeout, &wait_mask);
+            if (result > 0) {
+                const int drain_error = DrainStateWake();
+                if (drain_error != 0 && drain_error != EINTR) {
+                    return FinishWait(FailOpen(drain_error, snapshot.epoch), original_mask);
+                }
+                continue;
+            }
             if (result == 0 || (result < 0 && errno == EINTR)) {
                 continue;
             }
-            return FailOpen(errno, snapshot.epoch);
+            return FinishWait(FailOpen(errno, snapshot.epoch), original_mask);
         }
     }
 
     void HandleNotification() noexcept {
+        const auto depth = handler_depth.fetch_add(1, std::memory_order_acq_rel) + 1;
+        auto maximum = maximum_handler_depth.load(std::memory_order_relaxed);
+        while (maximum < depth &&
+               !maximum_handler_depth.compare_exchange_weak(
+                   maximum, depth, std::memory_order_release, std::memory_order_relaxed)) {
+        }
         (void)SynchronizeState();
+        handler_depth.fetch_sub(1, std::memory_order_release);
     }
 
     [[nodiscard]] AckWaitResult WaitForAckUntil(
@@ -253,7 +349,8 @@ public:
                 return AckWaitResult::Unregistered;
             }
             if (wait_error.load(std::memory_order_acquire) != 0 ||
-                ack_wake_error.load(std::memory_order_acquire) != 0) {
+                ack_wake_error.load(std::memory_order_acquire) != 0 ||
+                state_wake_error.load(std::memory_order_acquire) != 0) {
                 return AckWaitResult::WaitError;
             }
             if (acknowledged_epoch.load(std::memory_order_acquire) >= epoch) {
@@ -265,25 +362,56 @@ public:
                 return AckWaitResult::TimedOut;
             }
 
-            timespec realtime_deadline{};
-            if (clock_gettime(CLOCK_REALTIME, &realtime_deadline) != 0) {
+            timespec monotonic_deadline{};
+            if (clock_gettime(CLOCK_MONOTONIC, &monotonic_deadline) != 0) {
                 return AckWaitResult::WaitError;
             }
             const auto remaining =
                 std::chrono::duration_cast<std::chrono::nanoseconds>(deadline - now).count();
-            realtime_deadline.tv_sec += remaining / NanosecondsPerSecond;
-            realtime_deadline.tv_nsec += remaining % NanosecondsPerSecond;
-            if (realtime_deadline.tv_nsec >= NanosecondsPerSecond) {
-                ++realtime_deadline.tv_sec;
-                realtime_deadline.tv_nsec -= NanosecondsPerSecond;
+            monotonic_deadline.tv_sec += remaining / NanosecondsPerSecond;
+            monotonic_deadline.tv_nsec += remaining % NanosecondsPerSecond;
+            if (monotonic_deadline.tv_nsec >= NanosecondsPerSecond) {
+                ++monotonic_deadline.tv_sec;
+                monotonic_deadline.tv_nsec -= NanosecondsPerSecond;
             }
 
-            if (sem_timedwait(&ack_semaphore, &realtime_deadline) == 0) {
+#if defined(__linux__) && defined(__GLIBC__) && defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2, 30)
+            if (sem_clockwait(&ack_semaphore, CLOCK_MONOTONIC, &monotonic_deadline) == 0) {
                 // A single producer token covers any number of epoch publications. Clearing after
                 // consuming closes the producer/consumer handoff; the predicate is always reread.
                 ack_wake_pending.store(false, std::memory_order_release);
                 continue;
             }
+#else
+            if (sem_trywait(&ack_semaphore) == 0) {
+                ack_wake_pending.store(false, std::memory_order_release);
+                continue;
+            }
+            if (errno == EAGAIN) {
+                auto sleep_until = monotonic_deadline;
+                const auto slice_ns = MonotonicFallbackSlice.count();
+                timespec slice_until{};
+                if (clock_gettime(CLOCK_MONOTONIC, &slice_until) != 0) {
+                    return AckWaitResult::WaitError;
+                }
+                slice_until.tv_nsec += slice_ns;
+                if (slice_until.tv_nsec >= NanosecondsPerSecond) {
+                    ++slice_until.tv_sec;
+                    slice_until.tv_nsec -= NanosecondsPerSecond;
+                }
+                if (slice_until.tv_sec < sleep_until.tv_sec ||
+                    (slice_until.tv_sec == sleep_until.tv_sec &&
+                     slice_until.tv_nsec < sleep_until.tv_nsec)) {
+                    sleep_until = slice_until;
+                }
+                const int sleep_result =
+                    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &sleep_until, nullptr);
+                if (sleep_result == 0 || sleep_result == EINTR) {
+                    continue;
+                }
+                return AckWaitResult::WaitError;
+            }
+#endif
             if (errno == EINTR) {
                 continue;
             }
@@ -305,6 +433,61 @@ private:
         .tv_sec = 0,
         .tv_nsec = 100'000'000,
     };
+    static constexpr auto MonotonicFallbackSlice = std::chrono::milliseconds{10};
+
+    static bool SetNonBlocking(const int fd) noexcept {
+        const int flags = fcntl(fd, F_GETFL);
+        return flags >= 0 && fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0;
+    }
+
+    static bool SetCloseOnExec(const int fd) noexcept {
+        const int flags = fcntl(fd, F_GETFD);
+        return flags >= 0 && fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == 0;
+    }
+
+    [[noreturn]] void AbortConstruction() noexcept {
+        CloseStateWakePipe();
+        (void)sem_destroy(&ack_semaphore);
+        std::abort();
+    }
+
+    void CloseStateWakePipe() noexcept {
+        if (state_wake_pipe[0] >= 0) {
+            (void)close(state_wake_pipe[0]);
+            state_wake_pipe[0] = -1;
+        }
+        if (state_wake_pipe[1] >= 0) {
+            (void)close(state_wake_pipe[1]);
+            state_wake_pipe[1] = -1;
+        }
+    }
+
+    StateWaitResult FinishWait(const StateWaitResult result,
+                               const sigset_t& original_mask) noexcept {
+        const int restore_result = pthread_sigmask(SIG_SETMASK, &original_mask, nullptr);
+        if (restore_result != 0 && result != StateWaitResult::WaitError) {
+            return FailOpen(restore_result);
+        }
+        return result;
+    }
+
+    int DrainStateWake() noexcept {
+        char token{};
+        const ssize_t result = read(state_wake_pipe[0], &token, sizeof(token));
+        if (result == sizeof(token)) {
+            state_wake_pending.store(false, std::memory_order_release);
+            return 0;
+        }
+        const int error = result < 0 ? errno : EIO;
+        if (error == EINTR) {
+            return EINTR;
+        }
+        if (error == EAGAIN || error == EWOULDBLOCK) {
+            state_wake_pending.store(false, std::memory_order_release);
+            return 0;
+        }
+        return error != 0 ? error : EIO;
+    }
 
     void Acknowledge(const std::uint64_t epoch) noexcept {
         auto current = acknowledged_epoch.load(std::memory_order_relaxed);
@@ -330,6 +513,10 @@ private:
     StateWaitResult FailOpen(const int error, const std::uint64_t paused_epoch) noexcept {
         wait_error.store(error != 0 ? error : EIO, std::memory_order_release);
         const auto rollback = protocol->RollbackPause(paused_epoch);
+        if (rollback.changed) {
+            failed_pause_epoch.store(paused_epoch, std::memory_order_release);
+            fail_open_running_epoch.store(rollback.snapshot.epoch, std::memory_order_release);
+        }
         Acknowledge(rollback.snapshot.epoch);
         return StateWaitResult::WaitError;
     }
@@ -352,7 +539,19 @@ private:
     std::atomic_bool ack_wake_pending{};
     std::atomic_int ack_wake_error{};
     std::atomic_int wait_error{};
+    std::atomic_int state_wake_error{};
+    std::atomic_bool state_wake_pending{};
+    std::atomic<std::uint64_t> failed_pause_epoch{MaximumRecordedEpoch};
+    std::atomic<std::uint64_t> fail_open_running_epoch{MaximumRecordedEpoch};
+    std::atomic_int handler_depth{};
+    std::atomic_int maximum_handler_depth{};
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+    std::atomic_int injected_wait_error{};
+#endif
     sem_t ack_semaphore{};
+    int state_wake_pipe[2]{-1, -1};
+
+    static constexpr std::uint64_t MaximumRecordedEpoch = std::numeric_limits<std::uint64_t>::max();
 };
 
 inline thread_local Participant* CurrentParticipant{};
@@ -367,12 +566,22 @@ inline void ClearCurrentParticipant(const Participant* const participant) noexce
     }
 }
 
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+inline void InjectCurrentParticipantStateWaitErrorForTest() noexcept {
+    if (CurrentParticipant != nullptr) {
+        CurrentParticipant->InjectStateWaitErrorForTest();
+    }
+}
+#endif
+
 // Installed directly for SIGVTALRM. Keeping this entry point separate from the generic guest
 // fault/signal translator ensures the pause path executes only the audited async-signal-safe core.
 inline void PauseSignalHandler(int, siginfo_t*, void*) noexcept {
+    const int saved_errno = errno;
     if (CurrentParticipant != nullptr) {
         CurrentParticipant->HandleNotification();
     }
+    errno = saved_errno;
 }
 
 } // namespace Core::DebugPause

@@ -43,6 +43,12 @@ namespace DebugStateType {
 
 extern bool showing_debug_menu_bar;
 
+#if defined(SHADPS4_PAUSE_PROTOCOL_TEST) && !defined(_WIN32)
+using PauseRegistrationTestHook = void (*)() noexcept;
+void SetPauseRegistrationTestHook(PauseRegistrationTestHook hook) noexcept;
+void SetPauseSignalDeliveryFailureForTest(bool enabled) noexcept;
+#endif
+
 enum class QueueType {
     dcb = 0,
     ccb = 1,
@@ -211,6 +217,21 @@ public:
         return is_guest_threads_paused;
 #endif
     }
+
+#if defined(SHADPS4_PAUSE_PROTOCOL_TEST) && !defined(_WIN32)
+    bool TestPauseBookkeepingSet() const {
+        return is_guest_threads_paused.load(std::memory_order_acquire);
+    }
+
+    std::size_t TestGuestThreadCount() {
+        std::lock_guard lock{guest_threads_mutex};
+        return guest_threads.size();
+    }
+
+    Core::DebugPause::Snapshot TestPauseSnapshot() const {
+        return pause_protocol.Load();
+    }
+#endif
 
     void IncFlipFrameNum() {
         // Low weight on the newest frame, so the average settles instead of jumping around.

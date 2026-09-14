@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <atomic>
+#include <cerrno>
 #include <chrono>
 #include <condition_variable>
 #include <ctime>
@@ -29,6 +30,48 @@ struct ParticipantTestAccess {
     static int PendingAckWakeCount(Participant& participant) {
         int value{};
         return sem_getvalue(&participant.ack_semaphore, &value) == 0 ? value : -1;
+    }
+
+    static int MaximumHandlerDepth(const Participant& participant) {
+        return participant.maximum_handler_depth.load(std::memory_order_acquire);
+    }
+
+    static bool StateWakePending(const Participant& participant) {
+        return participant.state_wake_pending.load(std::memory_order_acquire);
+    }
+
+    static void InjectStateWaitError(Participant& participant) {
+        participant.InjectStateWaitErrorForTest();
+    }
+
+    static int FillStateWakePipe(Participant& participant) {
+        const char token = 1;
+        for (;;) {
+            const ssize_t result = write(participant.state_wake_pipe[1], &token, sizeof(token));
+            if (result == sizeof(token)) {
+                continue;
+            }
+            if (result < 0 && errno == EINTR) {
+                continue;
+            }
+            return result < 0 ? errno : EIO;
+        }
+    }
+
+    static int DrainOneStateWake(Participant& participant) {
+        return participant.DrainStateWake();
+    }
+
+    static void EmptyStateWakePipe(Participant& participant) {
+        char tokens[64];
+        while (read(participant.state_wake_pipe[0], tokens, sizeof(tokens)) > 0) {
+        }
+    }
+
+    static void CloseStateWakeWriteEnd(Participant& participant) {
+        ASSERT_GE(participant.state_wake_pipe[1], 0);
+        ASSERT_EQ(close(participant.state_wake_pipe[1]), 0);
+        participant.state_wake_pipe[1] = -1;
     }
 };
 
@@ -268,6 +311,74 @@ private:
     std::counting_semaphore<4> ready{0};
     std::counting_semaphore<4> start{0};
     std::counting_semaphore<4> done{0};
+    std::thread thread;
+};
+
+class LiveSignalTarget {
+public:
+    LiveSignalTarget()
+        : participant(std::make_shared<Participant>(protocol)), thread([this] { Run(); }) {}
+
+    LiveSignalTarget(const LiveSignalTarget&) = delete;
+    LiveSignalTarget& operator=(const LiveSignalTarget&) = delete;
+
+    ~LiveSignalTarget() {
+        protocol.Request(State::Running);
+        (void)participant->NotifyStateChange();
+        stop.store(true, std::memory_order_release);
+        if (native_ready.load(std::memory_order_acquire)) {
+            (void)pthread_kill(native_thread, SIGVTALRM);
+        }
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
+
+    bool WaitReady() {
+        return ready.try_acquire_for(TestTimeout);
+    }
+
+    int NotifyEntry() const {
+        return pthread_kill(native_thread, SIGVTALRM);
+    }
+
+    bool WaitStopped() {
+        return stopped.try_acquire_for(TestTimeout);
+    }
+
+    void Stop() {
+        stop.store(true, std::memory_order_release);
+    }
+
+    Protocol protocol;
+    std::shared_ptr<Participant> participant;
+
+private:
+    void Run() {
+        sigset_t old_mask{};
+        sigset_t unblocked{};
+        EXPECT_EQ(pthread_sigmask(SIG_SETMASK, nullptr, &old_mask), 0);
+        unblocked = old_mask;
+        EXPECT_EQ(sigdelset(&unblocked, SIGVTALRM), 0);
+        EXPECT_EQ(pthread_sigmask(SIG_SETMASK, &unblocked, nullptr), 0);
+        Core::DebugPause::BindCurrentParticipant(participant.get());
+        native_thread = pthread_self();
+        native_ready.store(true, std::memory_order_release);
+        ready.release();
+        while (!stop.load(std::memory_order_acquire)) {
+            std::this_thread::yield();
+        }
+        participant->Unregister();
+        Core::DebugPause::ClearCurrentParticipant(participant.get());
+        EXPECT_EQ(pthread_sigmask(SIG_SETMASK, &old_mask, nullptr), 0);
+        stopped.release();
+    }
+
+    pthread_t native_thread{};
+    std::atomic_bool native_ready{};
+    std::atomic_bool stop{};
+    std::counting_semaphore<2> ready{0};
+    std::counting_semaphore<2> stopped{0};
     std::thread thread;
 };
 
@@ -1085,6 +1196,71 @@ TEST_F(PauseProtocol, AcknowledgementWakeDoesNotAccumulatePerEpoch) {
     participant.Unregister();
 }
 
+TEST_F(PauseProtocol, StateWakePipeFullUsesCoalescedEagainAndRecovers) {
+    Protocol protocol;
+    Participant participant{protocol};
+
+    ASSERT_EQ(ParticipantTestAccess::FillStateWakePipe(participant), EAGAIN);
+    EXPECT_EQ(participant.NotifyStateChange(), 0);
+    EXPECT_EQ(participant.StateWakeError(), 0);
+    EXPECT_TRUE(ParticipantTestAccess::StateWakePending(participant));
+    EXPECT_EQ(ParticipantTestAccess::DrainOneStateWake(participant), 0);
+
+    // The test-filled pipe remains readable/full after one drain. EAGAIN is still a valid
+    // coalesced wake because readability, not the write result, is the predicate.
+    EXPECT_EQ(participant.NotifyStateChange(), 0);
+    EXPECT_EQ(participant.StateWakeError(), 0);
+    ParticipantTestAccess::EmptyStateWakePipe(participant);
+    EXPECT_EQ(ParticipantTestAccess::DrainOneStateWake(participant), 0);
+    participant.Unregister();
+}
+
+TEST_F(PauseProtocol, StateWakePipeErrorClearsPendingAndIsReportedToController) {
+    Protocol protocol;
+    Participant participant{protocol};
+    ParticipantTestAccess::CloseStateWakeWriteEnd(participant);
+
+    EXPECT_EQ(participant.NotifyStateChange(), EBADF);
+    EXPECT_EQ(participant.StateWakeError(), EBADF);
+    EXPECT_EQ(participant.NotifyStateChange(), EBADF);
+    EXPECT_EQ(participant.StateWakeError(), EBADF);
+
+    const auto pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+    EXPECT_EQ(participant.WaitForAckFor(pause.snapshot.epoch, std::chrono::milliseconds{25}),
+              AckWaitResult::WaitError);
+    participant.Unregister();
+}
+
+TEST_F(PauseProtocol, UnregisterRestoresPauseSignalMask) {
+    Protocol protocol;
+    Participant participant{protocol};
+    sigset_t before{};
+    sigset_t after{};
+    ASSERT_EQ(pthread_sigmask(SIG_SETMASK, nullptr, &before), 0);
+
+    participant.Unregister();
+
+    ASSERT_EQ(pthread_sigmask(SIG_SETMASK, nullptr, &after), 0);
+    EXPECT_EQ(sigismember(&after, SIGVTALRM), sigismember(&before, SIGVTALRM));
+}
+
+TEST_F(PauseProtocol, AcknowledgementDeadlineUsesMonotonicBound) {
+    Protocol protocol;
+    Participant participant{protocol};
+    const auto pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+
+    const auto start = std::chrono::steady_clock::now();
+    EXPECT_EQ(participant.WaitForAckFor(pause.snapshot.epoch, std::chrono::milliseconds{50}),
+              AckWaitResult::TimedOut);
+    const auto elapsed = std::chrono::steady_clock::now() - start;
+    EXPECT_LT(elapsed, std::chrono::seconds{1});
+
+    ASSERT_TRUE(protocol.RollbackPause(pause.snapshot.epoch).changed);
+    participant.Unregister();
+}
+
 TEST_F(PauseProtocol, PendingPauseUnregistersWithoutHandlerTouch) {
     PendingExitTarget target;
     ASSERT_TRUE(target.WaitReady());
@@ -1159,6 +1335,89 @@ TEST_F(PauseProtocol, ThousandsOfCoalescedTransitionsDoNotPermanentlySleep) {
 
     EXPECT_TRUE(completed);
     EXPECT_FALSE(worker_error.load(std::memory_order_acquire));
+}
+
+TEST_F(PauseProtocol, PersistentHandlerDepthStaysOneAcrossThousandsOfCycles) {
+    LiveSignalTarget target;
+    ASSERT_TRUE(target.WaitReady());
+
+    auto transition = target.protocol.Request(State::Paused);
+    ASSERT_TRUE(transition.changed);
+    ASSERT_EQ(target.participant->NotifyStateChange(), 0);
+    ASSERT_EQ(target.NotifyEntry(), 0);
+    ASSERT_TRUE(WaitForAck(*target.participant, transition.snapshot.epoch));
+
+    constexpr int Iterations = 5000;
+    for (int i = 0; i < Iterations; ++i) {
+        transition = target.protocol.Request(State::Running);
+        ASSERT_TRUE(transition.changed);
+        ASSERT_EQ(target.participant->NotifyStateChange(), 0);
+        transition = target.protocol.Request(State::Paused);
+        ASSERT_TRUE(transition.changed);
+        ASSERT_EQ(target.participant->NotifyStateChange(), 0);
+        ASSERT_EQ(target.NotifyEntry(), 0);
+    }
+    ASSERT_TRUE(WaitForAck(*target.participant, transition.snapshot.epoch));
+
+    const auto resume = target.protocol.Request(State::Running);
+    ASSERT_TRUE(resume.changed);
+    ASSERT_EQ(target.participant->NotifyStateChange(), 0);
+    target.Stop();
+    ASSERT_TRUE(target.WaitStopped());
+    EXPECT_EQ(ParticipantTestAccess::MaximumHandlerDepth(*target.participant), 1);
+}
+
+TEST_F(PauseProtocol, PauseSignalHandlerPreservesErrnoOnFastPath) {
+    Protocol protocol;
+    Participant participant{protocol};
+    Core::DebugPause::BindCurrentParticipant(&participant);
+    errno = EDOM;
+    Core::DebugPause::PauseSignalHandler(SIGVTALRM, nullptr, nullptr);
+    EXPECT_EQ(errno, EDOM);
+    Core::DebugPause::ClearCurrentParticipant(&participant);
+    participant.Unregister();
+}
+
+TEST_F(PauseProtocol, PauseSignalHandlerPreservesErrnoAcrossPausedWait) {
+    Protocol protocol;
+    Participant participant{protocol};
+    const auto pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+    Core::DebugPause::BindCurrentParticipant(&participant);
+
+    std::thread controller{[&] {
+        EXPECT_TRUE(WaitForAck(participant, pause.snapshot.epoch));
+        EXPECT_TRUE(protocol.Request(State::Running).changed);
+        EXPECT_EQ(participant.NotifyStateChange(), 0);
+    }};
+    errno = ERANGE;
+    Core::DebugPause::PauseSignalHandler(SIGVTALRM, nullptr, nullptr);
+    EXPECT_EQ(errno, ERANGE);
+    controller.join();
+
+    Core::DebugPause::ClearCurrentParticipant(&participant);
+    participant.Unregister();
+}
+
+TEST_F(PauseProtocol, HandlerWaitErrorRecordsExactFailOpenTransition) {
+    Protocol protocol;
+    Participant participant{protocol};
+    const auto pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+    ParticipantTestAccess::InjectStateWaitError(participant);
+    Core::DebugPause::BindCurrentParticipant(&participant);
+
+    errno = E2BIG;
+    Core::DebugPause::PauseSignalHandler(SIGVTALRM, nullptr, nullptr);
+    EXPECT_EQ(errno, E2BIG);
+    EXPECT_EQ(participant.WaitError(), EBADF);
+    EXPECT_EQ(participant.FailedPauseEpoch(), pause.snapshot.epoch);
+    EXPECT_EQ(participant.FailOpenRunningEpoch(), pause.snapshot.epoch + 1);
+    EXPECT_EQ(protocol.Load().state, State::Running);
+    EXPECT_EQ(protocol.Load().epoch, pause.snapshot.epoch + 1);
+
+    Core::DebugPause::ClearCurrentParticipant(&participant);
+    participant.Unregister();
 }
 
 #endif // !_WIN32

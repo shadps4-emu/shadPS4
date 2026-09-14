@@ -26,6 +26,10 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context);
 class SignalDispatch {
 public:
     SignalDispatch();
+#if defined(SHADPS4_PAUSE_PROTOCOL_TEST) && !defined(_WIN32)
+    struct PauseOnlyTestTag {};
+    explicit SignalDispatch(PauseOnlyTestTag);
+#endif
     ~SignalDispatch();
 
     void RemoveHandlers();
@@ -61,6 +65,8 @@ private:
 
 #ifdef _WIN32
     void* handle{};
+#elif defined(SHADPS4_PAUSE_PROTOCOL_TEST)
+    bool pause_only_test{};
 #endif
 };
 

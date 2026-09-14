@@ -342,8 +342,58 @@ gtest_discover_tests(shadps4_http_test
 # reproduction alongside the POSIX stateful participant cases.
 add_executable(shadps4_pause_protocol_test test_pause_protocol.cpp)
 target_compile_features(shadps4_pause_protocol_test PRIVATE cxx_std_23)
+target_compile_definitions(shadps4_pause_protocol_test PRIVATE SHADPS4_PAUSE_PROTOCOL_TEST)
 target_link_libraries(shadps4_pause_protocol_test PRIVATE GTest::gtest_main)
 gtest_discover_tests(shadps4_pause_protocol_test
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     DISCOVERY_TIMEOUT 60
 )
+
+if(NOT WIN32)
+    add_executable(shadps4_pause_integration_test
+        ${CMAKE_SOURCE_DIR}/src/core/debug_state.cpp
+        ${CMAKE_SOURCE_DIR}/src/core/signals.cpp
+        ${CMAKE_SOURCE_DIR}/src/common/native_clock.cpp
+        stubs/pause_integration_stub.cpp
+        test_pause_integration.cpp
+    )
+    target_include_directories(shadps4_pause_integration_test PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/externals/imgui
+        ${CMAKE_SOURCE_DIR}/externals/zydis/include
+        ${CMAKE_SOURCE_DIR}/externals/json/include
+        ${CMAKE_SOURCE_DIR}/externals/toml11/include
+        ${CMAKE_SOURCE_DIR}/externals/magic_enum/include
+    )
+    target_compile_features(shadps4_pause_integration_test PRIVATE cxx_std_23)
+    target_compile_definitions(shadps4_pause_integration_test PRIVATE
+        BOOST_ASIO_STANDALONE
+        SHADPS4_PAUSE_PROTOCOL_TEST
+    )
+    target_compile_options(shadps4_pause_integration_test PRIVATE
+        -ffunction-sections
+        -fdata-sections
+    )
+    target_link_options(shadps4_pause_integration_test PRIVATE -Wl,--gc-sections)
+    target_link_libraries(shadps4_pause_integration_test PRIVATE
+        GTest::gtest_main
+        fmt::fmt
+        magic_enum::magic_enum
+        nlohmann_json::nlohmann_json
+        toml11::toml11
+        tsl::robin_map
+        Boost::headers
+        Dear_ImGui
+        ImGuiFileDialog
+        Zydis::Zydis
+        xxHash::xxhash
+        spdlog::spdlog
+        SDL3::SDL3
+        Vulkan::Headers
+    )
+    gtest_discover_tests(shadps4_pause_integration_test
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        DISCOVERY_TIMEOUT 60
+    )
+endif()
