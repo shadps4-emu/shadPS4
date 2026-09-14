@@ -71,6 +71,7 @@ constexpr IR::Type TypeOf(IR::RegTag tag) noexcept {
         return IR::Type::U32;
     case RegType::Scc:
     case RegType::Exec:
+    case RegType::Vskip:
     case RegType::GotoVariable:
         return IR::Type::U1;
     case RegType::VirtualReg:
@@ -90,6 +91,7 @@ constexpr IR::Opcode UndefOpcode(IR::RegTag tag) noexcept {
         return IR::Opcode::UndefU32;
     case RegType::Scc:
     case RegType::Exec:
+    case RegType::Vskip:
     case RegType::GotoVariable:
         return IR::Opcode::UndefU1;
     case RegType::VirtualReg:
@@ -248,6 +250,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     case IR::Opcode::SetScc:
         pass.WriteVariable(IR::RegTag{RegType::Scc}, block, inst.Arg(0));
         break;
+    case IR::Opcode::SetVskip:
+        pass.WriteVariable(IR::RegTag{RegType::Vskip}, block, inst.Arg(0));
+        break;
     case IR::Opcode::SetVccLo:
         pass.WriteVariable(IR::RegTag{RegType::VccLo}, block, inst.Arg(0));
         break;
@@ -278,6 +283,9 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         break;
     case IR::Opcode::GetScc:
         inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::Scc}, block));
+        break;
+    case IR::Opcode::GetVskip:
+        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::Vskip}, block));
         break;
     case IR::Opcode::GetVccLo:
         inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::VccLo}, block));
