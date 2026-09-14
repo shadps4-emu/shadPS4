@@ -13,6 +13,7 @@
 
 #include "common/lru_cache.h"
 #include "common/slot_vector.h"
+#include "core/emulator_settings.h"
 #include "shader_recompiler/resource.h"
 #include "video_core/multi_level_page_table.h"
 #include "video_core/texture_cache/blit_helper.h"
@@ -281,6 +282,9 @@ private:
     /// Copies image memory back to CPU.
     void DownloadImageMemory(ImageId image_id, bool sync = false);
 
+    /// Checks if an image should be downloaded
+    bool ShouldDownloadImage(const Image& image);
+
     /// Thread function for copying downloaded images out to CPU memory.
     void DownloadedImagesThread(const std::stop_token& token);
 
@@ -343,7 +347,7 @@ private:
     u64 gc_tick = 0;
     Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
     Common::LeastRecentlyUsedCache<u64, u64> sampler_lru_cache;
-    bool readback_linear_images;
+    GpuImageReadbacksMode image_readbacks_mode;
     PageTable page_table;
     std::mutex mutex;
     std::mutex samplers_mutex;
