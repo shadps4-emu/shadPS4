@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <limits>
 #include <semaphore>
 #include <thread>
 #include <signal.h>
@@ -38,10 +39,19 @@ using namespace std::chrono_literals;
 constexpr auto TestTimeout = 5s;
 
 std::atomic<std::binary_semaphore*> registration_barrier{};
+std::atomic_bool fail_open_record_reached{};
+std::atomic_bool fail_open_record_release{};
 
 void RegistrationPublished() noexcept {
     if (auto* barrier = registration_barrier.load(std::memory_order_acquire); barrier != nullptr) {
         barrier->release();
+    }
+}
+
+void HoldFailOpenRecord() noexcept {
+    // This hook runs in the real pause handler. Keep the barrier to lock-free atomics only.
+    fail_open_record_reached.store(true, std::memory_order_release);
+    while (!fail_open_record_release.load(std::memory_order_acquire)) {
     }
 }
 
@@ -287,6 +297,62 @@ bool RunIntegrationChild() {
         }
         failing.Stop();
         failing.Join();
+    }
+
+    {
+        RegisteredTarget failing;
+        if (!failing.WaitEntered() || failing.SetupFailed()) {
+            return false;
+        }
+        DebugState.PauseGuestThreads();
+        if (DebugState.TestPauseSnapshot().state != Core::DebugPause::State::Paused ||
+            !DebugState.TestPauseBookkeepingSet()) {
+            return false;
+        }
+        const u64 pause_time = DebugState.TestPauseTime();
+        const u64 initial_ptc = Libraries::Kernel::Dev::GetInitialPtc();
+        fail_open_record_reached.store(false, std::memory_order_release);
+        fail_open_record_release.store(false, std::memory_order_release);
+        Core::DebugPause::SetFailOpenRecordTestHook(&HoldFailOpenRecord);
+        DebugState.TestTriggerWaitError();
+        const auto record_deadline = std::chrono::steady_clock::now() + TestTimeout;
+        while (!fail_open_record_reached.load(std::memory_order_acquire) &&
+               std::chrono::steady_clock::now() < record_deadline) {
+            std::this_thread::yield();
+        }
+        if (!fail_open_record_reached.load(std::memory_order_acquire) ||
+            DebugState.TestPauseSnapshot().state != Core::DebugPause::State::Running ||
+            !DebugState.TestPauseBookkeepingSet()) {
+            fail_open_record_release.store(true, std::memory_order_release);
+            return false;
+        }
+        DebugState.ResumeGuestThreads();
+        if (!DebugState.TestPauseBookkeepingSet()) {
+            fail_open_record_release.store(true, std::memory_order_release);
+            return false;
+        }
+        fail_open_record_release.store(true, std::memory_order_release);
+        Core::DebugPause::SetFailOpenRecordTestHook(nullptr);
+        const auto deadline = std::chrono::steady_clock::now() + TestTimeout;
+        while (std::chrono::steady_clock::now() < deadline &&
+               (DebugState.TestPauseSnapshot().state != Core::DebugPause::State::Running ||
+                DebugState.TestFailOpenRunningEpoch() == std::numeric_limits<u64>::max())) {
+            std::this_thread::yield();
+        }
+        const u64 fail_open_time = DebugState.TestFailOpenUptime();
+        if (DebugState.TestPauseSnapshot().state != Core::DebugPause::State::Running ||
+            fail_open_time == std::numeric_limits<u64>::max()) {
+            return false;
+        }
+        std::this_thread::sleep_for(50ms);
+        failing.Stop();
+        failing.Join();
+        DebugState.ResumeGuestThreads();
+        const u64 accounted = Libraries::Kernel::Dev::GetInitialPtc() - initial_ptc;
+        const u64 expected = fail_open_time > pause_time ? fail_open_time - pause_time : 0;
+        if (accounted > expected + 20'000'000 || DebugState.TestPauseBookkeepingSet()) {
+            return false;
+        }
     }
 
     {

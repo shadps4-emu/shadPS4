@@ -92,6 +92,53 @@ static void ResumeThread(ThreadID id) {
 }
 #endif
 
+#ifndef _WIN32
+bool DebugStateImpl::ReconcilePauseBookkeeping() {
+    const auto current = pause_protocol.Load();
+    if (current.state != Core::DebugPause::State::Running ||
+        !is_guest_threads_paused.load(std::memory_order_acquire)) {
+        return false;
+    }
+
+    // The protocol CAS publishes Running before a handler can publish its exact rollback record.
+    // Leave the durable interval open until that release-published record is complete.
+    for (const auto& entry : guest_threads) {
+        if (entry.pause_participant->FailOpenPublicationPending()) {
+            return false;
+        }
+    }
+
+    u64 end_time = Libraries::Kernel::Dev::GetClock()->GetUptime();
+    for (const auto& entry : guest_threads) {
+        if (entry.pause_participant->FailOpenRunningEpoch() != current.epoch) {
+            continue;
+        }
+        const auto fail_open_time = entry.pause_participant->FailOpenUptime();
+        if (fail_open_time != std::numeric_limits<u64>::max() && fail_open_time < end_time) {
+            end_time = fail_open_time;
+        }
+    }
+
+    if (!is_guest_threads_paused.exchange(false, std::memory_order_acq_rel)) {
+        return false;
+    }
+    if (end_time < pause_time) {
+        end_time = pause_time;
+    }
+    Libraries::Kernel::Dev::GetInitialPtc() += end_time - pause_time;
+    return true;
+}
+
+bool DebugStateImpl::FailOpenPublicationPending() const {
+    for (const auto& entry : guest_threads) {
+        if (entry.pause_participant->FailOpenPublicationPending()) {
+            return true;
+        }
+    }
+    return false;
+}
+#endif
+
 void DebugStateImpl::AddCurrentThreadToGuestList() {
 #ifndef _WIN32
     auto pause_participant = std::make_shared<Core::DebugPause::Participant>(pause_protocol);
@@ -132,6 +179,9 @@ void DebugStateImpl::RemoveCurrentThreadFromGuestList() {
     }
 #endif
     std::lock_guard lock{guest_threads_mutex};
+#ifndef _WIN32
+    ReconcilePauseBookkeeping();
+#endif
     const ThreadID id = ThisThreadID();
     std::erase_if(guest_threads,
                   [&](const GuestThreadEntry& entry) { return ThreadIDsEqual(entry.id, id); });
@@ -152,12 +202,11 @@ void DebugStateImpl::PauseGuestThreads() {
 #endif
     std::unique_lock lock{guest_threads_mutex};
 #ifndef _WIN32
-    // A participant can fail open while registering after an earlier Pause has already returned.
-    // Reconcile that exact Running state before a new Pause records a fresh pause start time.
-    if (pause_protocol.Load().state == Core::DebugPause::State::Running &&
-        is_guest_threads_paused.exchange(false, std::memory_order_acq_rel)) {
-        const u64 delta_time = Libraries::Kernel::Dev::GetClock()->GetUptime() - pause_time;
-        Libraries::Kernel::Dev::GetInitialPtc() += delta_time;
+    // A participant can fail open after an earlier Pause has returned. Reconcile that durable
+    // Running transition before a new Pause records a fresh pause start time.
+    (void)ReconcilePauseBookkeeping();
+    if (FailOpenPublicationPending()) {
+        return;
     }
     const auto transition = pause_protocol.Request(Core::DebugPause::State::Paused);
     if (transition.exhausted) {
@@ -214,47 +263,32 @@ void DebugStateImpl::PauseGuestThreads() {
 
     const auto rollback_pause = [&] {
         const auto rollback = pause_protocol.RollbackPause(transition.snapshot.epoch);
-        const auto expected_running_epoch = transition.snapshot.epoch + 1;
-        bool handler_fail_open_won = false;
-        if (!rollback.changed && rollback.snapshot.state == Core::DebugPause::State::Running &&
-            rollback.snapshot.epoch == expected_running_epoch) {
-            const auto is_exact_fail_open =
-                [&](const std::shared_ptr<Core::DebugPause::Participant>& participant) {
-                    return participant != nullptr &&
-                           participant->FailedPauseEpoch() == transition.snapshot.epoch &&
-                           participant->FailOpenRunningEpoch() == expected_running_epoch;
-                };
-            for (const auto& target : acknowledgements) {
-                if (is_exact_fail_open(target.participant)) {
-                    handler_fail_open_won = true;
-                    break;
-                }
-            }
-            if (!handler_fail_open_won && is_exact_fail_open(self_participant)) {
-                handler_fail_open_won = true;
-            }
-        }
-        if (!rollback.changed && !handler_fail_open_won) {
-            return;
-        }
-
         std::lock_guard list_lock{guest_threads_mutex};
         const auto current = pause_protocol.Load();
         if (current.state != Core::DebugPause::State::Running) {
             return;
         }
-        if (is_guest_threads_paused.exchange(false, std::memory_order_acq_rel)) {
-            const u64 delta_time = Libraries::Kernel::Dev::GetClock()->GetUptime() - pause_time;
-            Libraries::Kernel::Dev::GetInitialPtc() += delta_time;
-            for (const auto& entry : guest_threads) {
-                if (ThreadIDsEqual(entry.id, self_id)) {
-                    continue;
-                }
-                const int result = WakePauseTarget(entry.pause_participant);
-                if (result != 0 && entry.pause_participant->IsRegistered()) {
-                    LOG_ERROR(Core, "Failed to deliver guest pause rollback wake at epoch {}: {}",
-                              current.epoch, result);
-                }
+        bool reconciled = false;
+        if (rollback.changed) {
+            if (is_guest_threads_paused.exchange(false, std::memory_order_acq_rel)) {
+                const u64 delta_time = Libraries::Kernel::Dev::GetClock()->GetUptime() - pause_time;
+                Libraries::Kernel::Dev::GetInitialPtc() += delta_time;
+                reconciled = true;
+            }
+        } else {
+            reconciled = ReconcilePauseBookkeeping();
+        }
+        if (!rollback.changed && !reconciled) {
+            return;
+        }
+        for (const auto& entry : guest_threads) {
+            if (ThreadIDsEqual(entry.id, self_id)) {
+                continue;
+            }
+            const int result = WakePauseTarget(entry.pause_participant);
+            if (result != 0 && entry.pause_participant->IsRegistered()) {
+                LOG_ERROR(Core, "Failed to deliver guest pause rollback wake at epoch {}: {}",
+                          current.epoch, result);
             }
         }
     };
@@ -306,9 +340,13 @@ void DebugStateImpl::ResumeGuestThreads() {
         LOG_ERROR(Core, "Guest resume epoch exhausted at {}", transition.snapshot.epoch);
         return;
     }
-    const bool had_pause_bookkeeping =
-        is_guest_threads_paused.exchange(false, std::memory_order_acq_rel);
-    if (!transition.changed && !had_pause_bookkeeping) {
+    const bool reconciled = ReconcilePauseBookkeeping();
+    const bool publication_pending = FailOpenPublicationPending();
+    bool had_pause_bookkeeping = false;
+    if (transition.changed || !publication_pending) {
+        had_pause_bookkeeping = is_guest_threads_paused.exchange(false, std::memory_order_acq_rel);
+    }
+    if (!transition.changed && !had_pause_bookkeeping && !reconciled && !publication_pending) {
         return;
     }
 #else
@@ -333,6 +371,11 @@ void DebugStateImpl::ResumeGuestThreads() {
         ResumeThread(entry.id);
 #endif
     }
+#ifndef _WIN32
+    if (publication_pending) {
+        (void)ReconcilePauseBookkeeping();
+    }
+#endif
 #ifdef _WIN32
     is_guest_threads_paused = false;
 #endif

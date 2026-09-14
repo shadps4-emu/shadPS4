@@ -4,6 +4,7 @@
 #pragma once
 
 #include <atomic>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -162,6 +163,10 @@ class DebugStateImpl {
     std::vector<GuestThreadEntry> guest_threads{};
     std::atomic_bool is_guest_threads_paused = false;
     u64 pause_time{};
+#ifndef _WIN32
+    bool ReconcilePauseBookkeeping();
+    bool FailOpenPublicationPending() const;
+#endif
 
     std::atomic_int32_t flip_frame_count = 0;
     std::atomic_int32_t gnm_frame_count = 0;
@@ -230,6 +235,40 @@ public:
 
     Core::DebugPause::Snapshot TestPauseSnapshot() const {
         return pause_protocol.Load();
+    }
+
+    u64 TestPauseTime() const {
+        return pause_time;
+    }
+
+    void TestTriggerWaitError() {
+        std::lock_guard lock{guest_threads_mutex};
+        for (const auto& entry : guest_threads) {
+            entry.pause_participant->InjectStateWaitErrorForTest();
+            (void)entry.pause_participant->NotifyStateChange();
+        }
+    }
+
+    u64 TestFailOpenUptime() {
+        std::lock_guard lock{guest_threads_mutex};
+        for (const auto& entry : guest_threads) {
+            const auto uptime = entry.pause_participant->FailOpenUptime();
+            if (uptime != std::numeric_limits<u64>::max()) {
+                return uptime;
+            }
+        }
+        return std::numeric_limits<u64>::max();
+    }
+
+    u64 TestFailOpenRunningEpoch() {
+        std::lock_guard lock{guest_threads_mutex};
+        for (const auto& entry : guest_threads) {
+            const auto epoch = entry.pause_participant->FailOpenRunningEpoch();
+            if (epoch != std::numeric_limits<u64>::max()) {
+                return epoch;
+            }
+        }
+        return std::numeric_limits<u64>::max();
     }
 #endif
 

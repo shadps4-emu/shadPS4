@@ -44,6 +44,11 @@ struct ParticipantTestAccess {
         participant.InjectStateWaitErrorForTest();
     }
 
+    static StateWaitResult InvokeFailOpen(Participant& participant, const int error,
+                                          const std::uint64_t paused_epoch) {
+        return participant.FailOpen(error, paused_epoch);
+    }
+
     static int FillStateWakePipe(Participant& participant) {
         const char token = 1;
         for (;;) {
@@ -163,6 +168,33 @@ using Core::DebugPause::ParticipantTestAccess;
 using Core::DebugPause::Protocol;
 using Core::DebugPause::State;
 using Core::DebugPause::StateWaitResult;
+
+std::atomic<std::binary_semaphore*> fail_open_publication_reached{};
+std::atomic<std::binary_semaphore*> fail_open_publication_release{};
+std::atomic<std::binary_semaphore*> fail_open_rollback_reached{};
+std::atomic<std::binary_semaphore*> fail_open_rollback_release{};
+
+void HoldFailOpenPublication() noexcept {
+    if (auto* reached = fail_open_publication_reached.load(std::memory_order_acquire);
+        reached != nullptr) {
+        reached->release();
+    }
+    if (auto* release = fail_open_publication_release.load(std::memory_order_acquire);
+        release != nullptr) {
+        release->acquire();
+    }
+}
+
+void HoldFailOpenRollback() noexcept {
+    if (auto* reached = fail_open_rollback_reached.load(std::memory_order_acquire);
+        reached != nullptr) {
+        reached->release();
+    }
+    if (auto* release = fail_open_rollback_release.load(std::memory_order_acquire);
+        release != nullptr) {
+        release->acquire();
+    }
+}
 
 constexpr auto TestTimeout = std::chrono::seconds{2};
 
@@ -1417,6 +1449,114 @@ TEST_F(PauseProtocol, HandlerWaitErrorRecordsExactFailOpenTransition) {
     EXPECT_EQ(protocol.Load().epoch, pause.snapshot.epoch + 1);
 
     Core::DebugPause::ClearCurrentParticipant(&participant);
+    participant.Unregister();
+}
+
+TEST_F(PauseProtocol, FailOpenRollsBackCurrentPausedEpochAfterStateAdvance) {
+    Protocol protocol;
+    Participant participant{protocol};
+    const auto first_pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(first_pause.changed);
+    std::binary_semaphore reached{0};
+    std::binary_semaphore release{0};
+    fail_open_rollback_reached.store(&reached, std::memory_order_release);
+    fail_open_rollback_release.store(&release, std::memory_order_release);
+    Core::DebugPause::SetFailOpenRollbackTestHook(&HoldFailOpenRollback);
+
+    std::atomic<StateWaitResult> result{StateWaitResult::Running};
+    std::thread failure{[&] {
+        result.store(
+            ParticipantTestAccess::InvokeFailOpen(participant, EBADF, first_pause.snapshot.epoch),
+            std::memory_order_release);
+    }};
+    const bool hook_reached = reached.try_acquire_for(TestTimeout);
+    EXPECT_TRUE(hook_reached);
+    auto newer_pause = first_pause;
+    if (hook_reached) {
+        EXPECT_TRUE(protocol.Request(State::Running).changed);
+        newer_pause = protocol.Request(State::Paused);
+        EXPECT_TRUE(newer_pause.changed);
+    }
+    release.release();
+    failure.join();
+    Core::DebugPause::SetFailOpenRollbackTestHook(nullptr);
+    fail_open_rollback_reached.store(nullptr, std::memory_order_release);
+    fail_open_rollback_release.store(nullptr, std::memory_order_release);
+
+    EXPECT_EQ(result.load(std::memory_order_acquire), StateWaitResult::WaitError);
+    const auto final_snapshot = protocol.Load();
+    EXPECT_EQ(final_snapshot.state, State::Running);
+    EXPECT_EQ(final_snapshot.epoch, newer_pause.snapshot.epoch + 1);
+    EXPECT_EQ(participant.FailedPauseEpoch(), newer_pause.snapshot.epoch);
+    EXPECT_EQ(participant.FailOpenRunningEpoch(), final_snapshot.epoch);
+    EXPECT_EQ(participant.AcknowledgedEpoch(), final_snapshot.epoch);
+    participant.Unregister();
+}
+
+TEST_F(PauseProtocol, FailOpenPublishesRollbackRecordBeforeWaitError) {
+    Protocol protocol;
+    Participant participant{protocol};
+    const auto pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+
+    std::binary_semaphore reached{0};
+    std::binary_semaphore release{0};
+    fail_open_publication_reached.store(&reached, std::memory_order_release);
+    fail_open_publication_release.store(&release, std::memory_order_release);
+    Core::DebugPause::SetFailOpenPublicationTestHook(&HoldFailOpenPublication);
+
+    std::atomic<StateWaitResult> result{StateWaitResult::Running};
+    std::thread failure{[&] {
+        result.store(
+            ParticipantTestAccess::InvokeFailOpen(participant, EBADF, pause.snapshot.epoch),
+            std::memory_order_release);
+    }};
+    EXPECT_TRUE(reached.try_acquire_for(TestTimeout));
+    EXPECT_EQ(participant.FailedPauseEpoch(), pause.snapshot.epoch);
+    EXPECT_EQ(participant.FailOpenRunningEpoch(), pause.snapshot.epoch + 1);
+    EXPECT_EQ(participant.WaitError(), 0);
+    EXPECT_EQ(participant.WaitForAckFor(pause.snapshot.epoch, std::chrono::milliseconds{25}),
+              AckWaitResult::WaitError);
+
+    release.release();
+    failure.join();
+    Core::DebugPause::SetFailOpenPublicationTestHook(nullptr);
+    fail_open_publication_reached.store(nullptr, std::memory_order_release);
+    fail_open_publication_release.store(nullptr, std::memory_order_release);
+
+    EXPECT_EQ(result.load(std::memory_order_acquire), StateWaitResult::WaitError);
+    participant.Unregister();
+}
+
+TEST_F(PauseProtocol, CurrentParticipantBindingCanBeInterruptedDuringBindAndClear) {
+    Protocol protocol;
+    Participant participant{protocol};
+    const pthread_t owner = pthread_self();
+    std::atomic_bool stop{};
+    std::thread interrupter{[&] {
+        while (!stop.load(std::memory_order_acquire)) {
+            (void)pthread_kill(owner, SIGVTALRM);
+        }
+    }};
+
+    Core::DebugPause::BindCurrentParticipant(&participant);
+    const auto deadline = std::chrono::steady_clock::now() + TestTimeout;
+    while (ParticipantTestAccess::MaximumHandlerDepth(participant) == 0 &&
+           std::chrono::steady_clock::now() < deadline) {
+        std::this_thread::yield();
+    }
+    const bool handler_observed_binding =
+        ParticipantTestAccess::MaximumHandlerDepth(participant) > 0;
+
+    for (int i = 0; i < 10'000; ++i) {
+        Core::DebugPause::ClearCurrentParticipant(&participant);
+        Core::DebugPause::BindCurrentParticipant(&participant);
+    }
+    Core::DebugPause::ClearCurrentParticipant(&participant);
+    stop.store(true, std::memory_order_release);
+    interrupter.join();
+
+    EXPECT_TRUE(handler_observed_binding);
     participant.Unregister();
 }
 

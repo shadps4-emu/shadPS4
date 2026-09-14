@@ -20,6 +20,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "common/rdtsc.h"
+
 namespace Core::DebugPause {
 
 enum class State : std::uint8_t {
@@ -50,6 +52,29 @@ enum class StateWaitResult : std::uint8_t {
     Unregistered,
     WaitError,
 };
+
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+using FailOpenPublicationTestHook = void (*)() noexcept;
+inline std::atomic<FailOpenPublicationTestHook> fail_open_publication_test_hook{};
+
+using FailOpenRollbackTestHook = void (*)() noexcept;
+inline std::atomic<FailOpenRollbackTestHook> fail_open_rollback_test_hook{};
+
+using FailOpenRecordTestHook = void (*)() noexcept;
+inline std::atomic<FailOpenRecordTestHook> fail_open_record_test_hook{};
+
+inline void SetFailOpenPublicationTestHook(const FailOpenPublicationTestHook hook) noexcept {
+    fail_open_publication_test_hook.store(hook, std::memory_order_release);
+}
+
+inline void SetFailOpenRollbackTestHook(const FailOpenRollbackTestHook hook) noexcept {
+    fail_open_rollback_test_hook.store(hook, std::memory_order_release);
+}
+
+inline void SetFailOpenRecordTestHook(const FailOpenRecordTestHook hook) noexcept {
+    fail_open_record_test_hook.store(hook, std::memory_order_release);
+}
+#endif
 
 // The state bit and epoch are one release/acquire publication. Pause callers are serialized so
 // every call joins the participant snapshot for the current paused epoch. Resume never takes this
@@ -204,11 +229,25 @@ public:
     }
 
     std::uint64_t FailedPauseEpoch() const noexcept {
+        if (fail_open_running_epoch.load(std::memory_order_acquire) == MaximumRecordedEpoch) {
+            return MaximumRecordedEpoch;
+        }
         return failed_pause_epoch.load(std::memory_order_acquire);
     }
 
     std::uint64_t FailOpenRunningEpoch() const noexcept {
         return fail_open_running_epoch.load(std::memory_order_acquire);
+    }
+
+    bool FailOpenPublicationPending() const noexcept {
+        return fail_open_publication_pending.load(std::memory_order_acquire);
+    }
+
+    std::uint64_t FailOpenUptime() const noexcept {
+        if (fail_open_running_epoch.load(std::memory_order_acquire) == MaximumRecordedEpoch) {
+            return MaximumRecordedEpoch;
+        }
+        return fail_open_uptime.load(std::memory_order_acquire);
     }
 
     int NotifyStateChange() noexcept {
@@ -349,6 +388,7 @@ public:
                 return AckWaitResult::Unregistered;
             }
             if (wait_error.load(std::memory_order_acquire) != 0 ||
+                fail_open_running_epoch.load(std::memory_order_acquire) != MaximumRecordedEpoch ||
                 ack_wake_error.load(std::memory_order_acquire) != 0 ||
                 state_wake_error.load(std::memory_order_acquire) != 0) {
                 return AckWaitResult::WaitError;
@@ -510,25 +550,68 @@ private:
         }
     }
 
-    StateWaitResult FailOpen(const int error, const std::uint64_t paused_epoch) noexcept {
-        wait_error.store(error != 0 ? error : EIO, std::memory_order_release);
-        const auto rollback = protocol->RollbackPause(paused_epoch);
-        if (rollback.changed) {
-            failed_pause_epoch.store(paused_epoch, std::memory_order_release);
-            fail_open_running_epoch.store(rollback.snapshot.epoch, std::memory_order_release);
+    StateWaitResult FailOpen(const int error, const std::uint64_t /*paused_epoch*/) noexcept {
+        const int recorded_error = error != 0 ? error : EIO;
+        fail_open_publication_pending.store(true, std::memory_order_release);
+        auto snapshot = protocol->Load();
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+        if (const auto hook = fail_open_rollback_test_hook.load(std::memory_order_acquire);
+            hook != nullptr) {
+            hook();
         }
-        Acknowledge(rollback.snapshot.epoch);
-        return StateWaitResult::WaitError;
+#endif
+        for (;;) {
+            if (!registered.load(std::memory_order_acquire)) {
+                wait_error.store(recorded_error, std::memory_order_release);
+                fail_open_publication_pending.store(false, std::memory_order_release);
+                return StateWaitResult::WaitError;
+            }
+            if (snapshot.state == State::Running) {
+                wait_error.store(recorded_error, std::memory_order_release);
+                Acknowledge(snapshot.epoch);
+                fail_open_publication_pending.store(false, std::memory_order_release);
+                return StateWaitResult::WaitError;
+            }
+
+            const auto failed_epoch = snapshot.epoch;
+            const auto rollback = protocol->RollbackPause(failed_epoch);
+            if (!rollback.changed) {
+                // The error may have been detected from an older snapshot. Never acknowledge the
+                // newer Paused state as complete; reread and either roll that epoch back or wait
+                // until another actor has made the authoritative state Running/unregistered.
+                snapshot = protocol->Load();
+                continue;
+            }
+
+            // Publish the rollback metadata as one release record. Readers that observe the
+            // running epoch also observe the exact failed epoch and its monotonic timestamp.
+            failed_pause_epoch.store(failed_epoch, std::memory_order_relaxed);
+            fail_open_uptime.store(Common::FencedRDTSC(), std::memory_order_relaxed);
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+            if (const auto hook = fail_open_record_test_hook.load(std::memory_order_acquire);
+                hook != nullptr) {
+                hook();
+            }
+#endif
+            fail_open_running_epoch.store(rollback.snapshot.epoch, std::memory_order_release);
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+            if (const auto hook = fail_open_publication_test_hook.load(std::memory_order_acquire);
+                hook != nullptr) {
+                hook();
+            }
+#endif
+            wait_error.store(recorded_error, std::memory_order_release);
+            if (registered.load(std::memory_order_acquire)) {
+                Acknowledge(rollback.snapshot.epoch);
+            }
+            fail_open_publication_pending.store(false, std::memory_order_release);
+            return StateWaitResult::WaitError;
+        }
     }
 
     StateWaitResult FailOpen(const int error) noexcept {
         const auto snapshot = protocol->Load();
-        if (snapshot.state == State::Paused) {
-            return FailOpen(error, snapshot.epoch);
-        }
-        wait_error.store(error != 0 ? error : EIO, std::memory_order_release);
-        Acknowledge(snapshot.epoch);
-        return StateWaitResult::WaitError;
+        return FailOpen(error, snapshot.epoch);
     }
 
     friend struct ParticipantTestAccess;
@@ -543,6 +626,8 @@ private:
     std::atomic_bool state_wake_pending{};
     std::atomic<std::uint64_t> failed_pause_epoch{MaximumRecordedEpoch};
     std::atomic<std::uint64_t> fail_open_running_epoch{MaximumRecordedEpoch};
+    std::atomic<std::uint64_t> fail_open_uptime{MaximumRecordedEpoch};
+    std::atomic_bool fail_open_publication_pending{};
     std::atomic_int handler_depth{};
     std::atomic_int maximum_handler_depth{};
 #ifdef SHADPS4_PAUSE_PROTOCOL_TEST
@@ -554,22 +639,26 @@ private:
     static constexpr std::uint64_t MaximumRecordedEpoch = std::numeric_limits<std::uint64_t>::max();
 };
 
-inline thread_local Participant* CurrentParticipant{};
+static_assert(std::atomic<Participant*>::is_always_lock_free,
+              "Pause handler requires a lock-free participant pointer");
+
+inline thread_local std::atomic<Participant*> CurrentParticipant{};
 
 inline void BindCurrentParticipant(Participant* const participant) noexcept {
-    CurrentParticipant = participant;
+    CurrentParticipant.store(participant, std::memory_order_release);
 }
 
 inline void ClearCurrentParticipant(const Participant* const participant) noexcept {
-    if (CurrentParticipant == participant) {
-        CurrentParticipant = nullptr;
-    }
+    auto* expected = const_cast<Participant*>(participant);
+    (void)CurrentParticipant.compare_exchange_strong(expected, nullptr, std::memory_order_release,
+                                                     std::memory_order_relaxed);
 }
 
 #ifdef SHADPS4_PAUSE_PROTOCOL_TEST
 inline void InjectCurrentParticipantStateWaitErrorForTest() noexcept {
-    if (CurrentParticipant != nullptr) {
-        CurrentParticipant->InjectStateWaitErrorForTest();
+    if (auto* participant = CurrentParticipant.load(std::memory_order_acquire);
+        participant != nullptr) {
+        participant->InjectStateWaitErrorForTest();
     }
 }
 #endif
@@ -578,8 +667,9 @@ inline void InjectCurrentParticipantStateWaitErrorForTest() noexcept {
 // fault/signal translator ensures the pause path executes only the audited async-signal-safe core.
 inline void PauseSignalHandler(int, siginfo_t*, void*) noexcept {
     const int saved_errno = errno;
-    if (CurrentParticipant != nullptr) {
-        CurrentParticipant->HandleNotification();
+    if (auto* participant = CurrentParticipant.load(std::memory_order_acquire);
+        participant != nullptr) {
+        participant->HandleNotification();
     }
     errno = saved_errno;
 }
