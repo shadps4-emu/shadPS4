@@ -28,7 +28,7 @@ void DumpProgram(const Program& program, const Info& info, const std::string& ty
         std::filesystem::create_directories(dump_dir);
     }
     const auto ir_filename =
-        fmt::format("{}_{:#018x}.{}irprogram.txt", info.stage, info.pgm_hash, type);
+        fmt::format("{}_{:#018x}.{}irprogram.txt", info.hw_stage, info.pgm_hash, type);
     const auto ir_file = IOFile{dump_dir / ir_filename, FileAccessMode::Create, FileType::TextFile};
 
     size_t index{0};
@@ -45,7 +45,8 @@ void DumpProgram(const Program& program, const Info& info, const std::string& ty
         ir_file.WriteString(s);
     }
 
-    const auto asl_filename = fmt::format("{}_{:#018x}.{}asl.txt", info.stage, info.pgm_hash, type);
+    const auto asl_filename =
+        fmt::format("{}_{:#018x}.{}asl.txt", info.hw_stage, info.pgm_hash, type);
     const auto asl_file =
         IOFile{dump_dir / asl_filename, FileAccessMode::Create, FileType::TextFile};
 

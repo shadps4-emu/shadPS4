@@ -382,7 +382,9 @@ static IR::Inst* IsAppendBufferPattern(IR::Inst& vx) {
                use.user->GetOpcode() == IR::Opcode::ISub32;
     });
     if (it == vx.Uses().end()) {
-        return nullptr;
+        ASSERT(vx.UseCount() == 1 &&
+               vx.Uses().back().user->GetOpcode() == IR::Opcode::SetVectorRegister);
+        return &vx;
     }
     const auto [user, operand] = *it;
     IR::U1 exec{vx.Arg(1)};
@@ -554,7 +556,7 @@ IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const In
         index = ir.IAdd(index, vgpr_index);
     }
     if (buffer.add_tid_enable) {
-        ASSERT_MSG(info.l_stage == LogicalStage::Compute,
+        ASSERT_MSG(info.sw_stage == SwStage::Compute,
                    "Thread ID buffer addressing is not supported outside of compute.");
         const IR::U32 thread_id{ir.LaneId()};
         index = ir.IAdd(index, thread_id);
