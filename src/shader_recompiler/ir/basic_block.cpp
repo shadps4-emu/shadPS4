@@ -119,6 +119,8 @@ static std::string RegTagInfo(const RegTag tag) {
         return "VCC_HI";
     case RegType::Exec:
         return "EXEC";
+    case RegType::Vskip:
+        return "VSKIP";
     case RegType::Scc:
         return "SCC";
     case RegType::M0:

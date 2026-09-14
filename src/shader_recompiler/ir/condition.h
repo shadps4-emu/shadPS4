@@ -17,6 +17,7 @@ enum class Condition : u32 {
     Vccnz,
     Execz,
     Execnz,
+    Vskipz,
 };
 
 constexpr std::string_view NameOf(Condition condition) {
@@ -37,6 +38,8 @@ constexpr std::string_view NameOf(Condition condition) {
         return "Execz";
     case Condition::Execnz:
         return "Execnz";
+    case Condition::Vskipz:
+        return "Vskipz";
     default:
         UNREACHABLE();
     }
