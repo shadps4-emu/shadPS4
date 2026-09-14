@@ -191,6 +191,8 @@ U1 IREmitter::Condition(IR::Condition cond) {
         return LogicalNot(GetExec());
     case IR::Condition::Execnz:
         return GetExec();
+    case IR::Condition::Vskipz:
+        return LogicalNot(GetVskip());
     default:
         UNREACHABLE_MSG("");
     }
@@ -206,6 +208,10 @@ U1 IREmitter::GetScc() {
 
 U1 IREmitter::GetExec() {
     return Inst<U1>(Opcode::GetExec);
+}
+
+U1 IREmitter::GetVskip() {
+    return Inst<U1>(Opcode::GetVskip);
 }
 
 U32 IREmitter::GetVccLo() {
@@ -226,6 +232,10 @@ void IREmitter::SetScc(const U1& value) {
 
 void IREmitter::SetExec(const U1& value) {
     Inst(Opcode::SetExec, value);
+}
+
+void IREmitter::SetVskip(const U1& value) {
+    Inst(Opcode::SetVskip, value);
 }
 
 void IREmitter::SetVccLo(const U32& value) {
