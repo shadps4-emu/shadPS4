@@ -39,18 +39,38 @@ using namespace std::chrono_literals;
 constexpr auto TestTimeout = 5s;
 
 std::atomic<std::binary_semaphore*> registration_barrier{};
-std::atomic_bool fail_open_record_reached{};
-std::atomic_bool fail_open_record_release{};
-std::atomic<std::binary_semaphore*> fail_open_timestamp_reached{};
-std::atomic_bool fail_open_timestamp_release{};
-std::atomic<std::binary_semaphore*> fail_open_running_reached{};
-std::atomic_bool fail_open_running_release{};
-std::atomic<std::binary_semaphore*> fail_open_completion_reached{};
-std::atomic_bool fail_open_completion_release{};
-std::atomic<std::binary_semaphore*> state_wait_reached{};
-std::atomic_bool state_wait_release{};
-std::atomic<std::binary_semaphore*> rollback_completion_wait_reached{};
-std::atomic_bool rollback_completion_wait_release{};
+
+// These hooks may run from PauseSignalHandler. Keep their signal-context path to lock-free
+// atomics; the bounded wait remains on the test thread.
+struct SignalHookGate {
+    static_assert(std::atomic_bool::is_always_lock_free,
+                  "Signal test hooks require lock-free bool atomics");
+
+    void Reset() noexcept {
+        reached.store(false, std::memory_order_relaxed);
+        release.store(false, std::memory_order_relaxed);
+    }
+
+    void Hold() noexcept {
+        reached.store(true, std::memory_order_release);
+        while (!release.load(std::memory_order_acquire)) {
+        }
+    }
+
+    void Release() noexcept {
+        release.store(true, std::memory_order_release);
+    }
+
+    std::atomic_bool reached{};
+    std::atomic_bool release{};
+};
+
+SignalHookGate fail_open_record_gate;
+SignalHookGate fail_open_timestamp_gate;
+SignalHookGate fail_open_running_gate;
+SignalHookGate fail_open_completion_gate;
+SignalHookGate state_wait_gate;
+SignalHookGate rollback_completion_wait_gate;
 
 void RegistrationPublished() noexcept {
     if (auto* barrier = registration_barrier.load(std::memory_order_acquire); barrier != nullptr) {
@@ -60,60 +80,41 @@ void RegistrationPublished() noexcept {
 
 void HoldFailOpenRecord() noexcept {
     // This hook runs in the real pause handler. Keep the barrier to lock-free atomics only.
-    fail_open_record_reached.store(true, std::memory_order_release);
-    while (!fail_open_record_release.load(std::memory_order_acquire)) {
-    }
+    fail_open_record_gate.Hold();
 }
 
 void HoldFailOpenTimestamp() noexcept {
-    if (auto* reached = fail_open_timestamp_reached.load(std::memory_order_acquire);
-        reached != nullptr) {
-        reached->release();
-    }
-    while (!fail_open_timestamp_release.load(std::memory_order_acquire)) {
-    }
+    fail_open_timestamp_gate.Hold();
 }
 
 void HoldFailOpenRunning() noexcept {
-    if (auto* reached = fail_open_running_reached.load(std::memory_order_acquire);
-        reached != nullptr) {
-        reached->release();
-    }
-    while (!fail_open_running_release.load(std::memory_order_acquire)) {
-    }
+    fail_open_running_gate.Hold();
 }
 
 void HoldFailOpenCompletion() noexcept {
-    if (auto* reached = fail_open_completion_reached.load(std::memory_order_acquire);
-        reached != nullptr) {
-        reached->release();
-    }
-    while (!fail_open_completion_release.load(std::memory_order_acquire)) {
-    }
+    fail_open_completion_gate.Hold();
 }
 
 void HoldStateWait() noexcept {
-    if (auto* reached = state_wait_reached.load(std::memory_order_acquire); reached != nullptr) {
-        reached->release();
-    }
-    while (!state_wait_release.load(std::memory_order_acquire)) {
-    }
+    state_wait_gate.Hold();
 }
 
 void HoldRollbackCompletionWait() noexcept {
-    if (auto* reached = rollback_completion_wait_reached.load(std::memory_order_acquire);
-        reached != nullptr) {
-        reached->release();
+    rollback_completion_wait_gate.Hold();
+}
+
+bool WaitForTestFlag(const std::atomic_bool& flag) {
+    const auto deadline = std::chrono::steady_clock::now() + TestTimeout;
+    while (!flag.load(std::memory_order_acquire) && std::chrono::steady_clock::now() < deadline) {
+        std::this_thread::yield();
     }
-    while (!rollback_completion_wait_release.load(std::memory_order_acquire)) {
-    }
+    return flag.load(std::memory_order_acquire);
 }
 
 class ScopedStateWaitHook {
 public:
-    explicit ScopedStateWaitHook(std::binary_semaphore& reached) : reached{reached} {
-        state_wait_reached.store(&this->reached, std::memory_order_release);
-        state_wait_release.store(false, std::memory_order_release);
+    ScopedStateWaitHook() {
+        state_wait_gate.Reset();
         Core::DebugPause::SetStateWaitTestHook(&HoldStateWait);
     }
 
@@ -123,22 +124,17 @@ public:
     ~ScopedStateWaitHook() {
         Release();
         Core::DebugPause::SetStateWaitTestHook(nullptr);
-        state_wait_reached.store(nullptr, std::memory_order_release);
     }
 
     void Release() {
-        state_wait_release.store(true, std::memory_order_release);
+        state_wait_gate.Release();
     }
-
-private:
-    std::binary_semaphore& reached;
 };
 
 class ScopedRollbackCompletionWaitHook {
 public:
-    explicit ScopedRollbackCompletionWaitHook(std::binary_semaphore& reached) : reached{reached} {
-        rollback_completion_wait_reached.store(&this->reached, std::memory_order_release);
-        rollback_completion_wait_release.store(false, std::memory_order_release);
+    ScopedRollbackCompletionWaitHook() {
+        rollback_completion_wait_gate.Reset();
         Core::DebugPause::SetRollbackCompletionWaitTestHook(&HoldRollbackCompletionWait);
     }
 
@@ -148,22 +144,17 @@ public:
     ~ScopedRollbackCompletionWaitHook() {
         Release();
         Core::DebugPause::SetRollbackCompletionWaitTestHook(nullptr);
-        rollback_completion_wait_reached.store(nullptr, std::memory_order_release);
     }
 
     void Release() {
-        rollback_completion_wait_release.store(true, std::memory_order_release);
+        rollback_completion_wait_gate.Release();
     }
-
-private:
-    std::binary_semaphore& reached;
 };
 
 class ScopedFailOpenTimestampHook {
 public:
-    explicit ScopedFailOpenTimestampHook(std::binary_semaphore& reached) : reached{reached} {
-        fail_open_timestamp_reached.store(&this->reached, std::memory_order_release);
-        fail_open_timestamp_release.store(false, std::memory_order_release);
+    ScopedFailOpenTimestampHook() {
+        fail_open_timestamp_gate.Reset();
         Core::DebugPause::SetFailOpenTimestampTestHook(&HoldFailOpenTimestamp);
     }
 
@@ -173,22 +164,17 @@ public:
     ~ScopedFailOpenTimestampHook() {
         Release();
         Core::DebugPause::SetFailOpenTimestampTestHook(nullptr);
-        fail_open_timestamp_reached.store(nullptr, std::memory_order_release);
     }
 
     void Release() {
-        fail_open_timestamp_release.store(true, std::memory_order_release);
+        fail_open_timestamp_gate.Release();
     }
-
-private:
-    std::binary_semaphore& reached;
 };
 
 class ScopedFailOpenRecordHook {
 public:
     ScopedFailOpenRecordHook() {
-        fail_open_record_reached.store(false, std::memory_order_release);
-        fail_open_record_release.store(false, std::memory_order_release);
+        fail_open_record_gate.Reset();
         Core::DebugPause::SetFailOpenRecordTestHook(&HoldFailOpenRecord);
     }
 
@@ -201,27 +187,20 @@ public:
     }
 
     bool Reached() const {
-        return fail_open_record_reached.load(std::memory_order_acquire);
+        return fail_open_record_gate.reached.load(std::memory_order_acquire);
     }
 
     void Release() {
-        fail_open_record_release.store(true, std::memory_order_release);
+        fail_open_record_gate.Release();
     }
 };
 
 class ScopedFailOpenTestHooks {
 public:
-    ScopedFailOpenTestHooks(std::binary_semaphore& timestamp_reached,
-                            std::binary_semaphore& running_reached,
-                            std::binary_semaphore& completion_reached)
-        : timestamp_reached{timestamp_reached}, running_reached{running_reached},
-          completion_reached{completion_reached} {
-        fail_open_timestamp_reached.store(&this->timestamp_reached, std::memory_order_release);
-        fail_open_running_reached.store(&this->running_reached, std::memory_order_release);
-        fail_open_completion_reached.store(&this->completion_reached, std::memory_order_release);
-        fail_open_timestamp_release.store(false, std::memory_order_release);
-        fail_open_running_release.store(false, std::memory_order_release);
-        fail_open_completion_release.store(false, std::memory_order_release);
+    ScopedFailOpenTestHooks() {
+        fail_open_timestamp_gate.Reset();
+        fail_open_running_gate.Reset();
+        fail_open_completion_gate.Reset();
         Core::DebugPause::SetFailOpenTimestampTestHook(&HoldFailOpenTimestamp);
         Core::DebugPause::SetFailOpenRunningTestHook(&HoldFailOpenRunning);
         Core::DebugPause::SetFailOpenCompletionTestHook(&HoldFailOpenCompletion);
@@ -231,33 +210,25 @@ public:
     ScopedFailOpenTestHooks& operator=(const ScopedFailOpenTestHooks&) = delete;
 
     ~ScopedFailOpenTestHooks() {
-        fail_open_timestamp_release.store(true, std::memory_order_release);
-        fail_open_running_release.store(true, std::memory_order_release);
-        fail_open_completion_release.store(true, std::memory_order_release);
+        fail_open_timestamp_gate.Release();
+        fail_open_running_gate.Release();
+        fail_open_completion_gate.Release();
         Core::DebugPause::SetFailOpenTimestampTestHook(nullptr);
         Core::DebugPause::SetFailOpenRunningTestHook(nullptr);
         Core::DebugPause::SetFailOpenCompletionTestHook(nullptr);
-        fail_open_timestamp_reached.store(nullptr, std::memory_order_release);
-        fail_open_running_reached.store(nullptr, std::memory_order_release);
-        fail_open_completion_reached.store(nullptr, std::memory_order_release);
     }
 
     void ReleaseTimestamp() {
-        fail_open_timestamp_release.store(true, std::memory_order_release);
+        fail_open_timestamp_gate.Release();
     }
 
     void ReleaseRunning() {
-        fail_open_running_release.store(true, std::memory_order_release);
+        fail_open_running_gate.Release();
     }
 
     void ReleaseCompletion() {
-        fail_open_completion_release.store(true, std::memory_order_release);
+        fail_open_completion_gate.Release();
     }
-
-private:
-    std::binary_semaphore& timestamp_reached;
-    std::binary_semaphore& running_reached;
-    std::binary_semaphore& completion_reached;
 };
 
 class ScopedRegistrationHook {
@@ -309,8 +280,8 @@ public:
         return thread.native_handle();
     }
 
-    int Notify() {
-        return pthread_kill(thread.native_handle(), SIGVTALRM);
+    bool NotifyStateChange() {
+        return DebugState.TestNotifyStateChange(thread.native_handle());
     }
 
     void Stop() {
@@ -458,23 +429,21 @@ bool RunIntegrationChild() {
             return false;
         }
 
-        std::binary_semaphore timestamp_reached{0};
-        std::binary_semaphore state_wait_reached_signal{0};
-        ScopedFailOpenTimestampHook timestamp_hook{timestamp_reached};
+        ScopedFailOpenTimestampHook timestamp_hook;
         ScopedFailOpenRecordHook record_hook;
-        ScopedStateWaitHook state_wait_hook{state_wait_reached_signal};
+        ScopedStateWaitHook state_wait_hook;
         std::binary_semaphore registration_published{0};
         ScopedRegistrationHook registration_hook{registration_published};
         DebugState.TestTriggerWaitError();
 
-        bool scenario_ok = timestamp_reached.try_acquire_for(TestTimeout);
+        bool scenario_ok = WaitForTestFlag(fail_open_timestamp_gate.reached);
         scenario_ok = scenario_ok &&
                       DebugState.TestPauseSnapshot().state == Core::DebugPause::State::Running &&
                       DebugState.TestFailOpenPublicationPending();
 
         RegisteredTarget newcomer;
         scenario_ok = scenario_ok && registration_published.try_acquire_for(TestTimeout);
-        const bool state_wait_hook_reached = state_wait_reached_signal.try_acquire_for(TestTimeout);
+        const bool state_wait_hook_reached = WaitForTestFlag(state_wait_gate.reached);
         scenario_ok = scenario_ok && state_wait_hook_reached && !newcomer.HasEntered();
 
         timestamp_hook.Release();
@@ -494,9 +463,7 @@ bool RunIntegrationChild() {
         scenario_ok = scenario_ok && !newcomer.HasEntered();
 
         state_wait_hook.Release();
-        if (state_wait_hook_reached) {
-            scenario_ok = scenario_ok && newcomer.Notify() == 0;
-        }
+        scenario_ok = scenario_ok && newcomer.NotifyStateChange();
         scenario_ok = scenario_ok && newcomer.WaitEntered();
 
         newcomer.Stop();
@@ -547,15 +514,12 @@ bool RunIntegrationChild() {
         const u64 pause_time = DebugState.TestPauseTime();
         const u64 paused_epoch = DebugState.TestPauseSnapshot().epoch;
         const u64 initial_ptc = Libraries::Kernel::Dev::GetInitialPtc();
-        std::binary_semaphore timestamp_reached{0};
-        std::binary_semaphore running_reached{0};
-        std::binary_semaphore completion_reached{0};
-        ScopedFailOpenTestHooks hooks{timestamp_reached, running_reached, completion_reached};
+        ScopedFailOpenTestHooks hooks;
         const auto first_id = first.Id();
         const auto second_id = second.Id();
         DebugState.TestTriggerWaitError();
-        const bool timestamp_hook_reached = timestamp_reached.try_acquire_for(TestTimeout);
-        const bool running_hook_reached = running_reached.try_acquire_for(TestTimeout);
+        const bool timestamp_hook_reached = WaitForTestFlag(fail_open_timestamp_gate.reached);
+        const bool running_hook_reached = WaitForTestFlag(fail_open_running_gate.reached);
         if (!timestamp_hook_reached || !running_hook_reached ||
             DebugState.TestPauseSnapshot().state != Core::DebugPause::State::Running ||
             !DebugState.TestPauseBookkeepingSet() || !DebugState.TestFailOpenPublicationPending()) {
@@ -592,15 +556,14 @@ bool RunIntegrationChild() {
         }
 
         DebugState.TestClearWaitErrors();
-        std::binary_semaphore completion_wait_reached{0};
-        ScopedRollbackCompletionWaitHook completion_wait_hook{completion_wait_reached};
+        ScopedRollbackCompletionWaitHook completion_wait_hook;
         std::atomic_bool pause_returned{};
         std::thread controller{[&] {
             DebugState.PauseGuestThreads();
             pause_returned.store(true, std::memory_order_release);
         }};
         const bool completion_wait_hook_reached =
-            completion_wait_reached.try_acquire_for(TestTimeout);
+            WaitForTestFlag(rollback_completion_wait_gate.reached);
         if (!completion_wait_hook_reached) {
             hooks.ReleaseRunning();
             completion_wait_hook.Release();
@@ -613,7 +576,7 @@ bool RunIntegrationChild() {
         const bool no_early_adjustment = Libraries::Kernel::Dev::GetInitialPtc() == initial_ptc;
 
         hooks.ReleaseRunning();
-        if (!completion_reached.try_acquire_for(TestTimeout)) {
+        if (!WaitForTestFlag(fail_open_completion_gate.reached)) {
             hooks.ReleaseCompletion();
             completion_wait_hook.Release();
             controller.join();
@@ -695,22 +658,16 @@ bool RunIntegrationChild() {
         }
         const u64 pause_time = DebugState.TestPauseTime();
         const u64 initial_ptc = Libraries::Kernel::Dev::GetInitialPtc();
-        fail_open_record_reached.store(false, std::memory_order_release);
-        fail_open_record_release.store(false, std::memory_order_release);
+        fail_open_record_gate.Reset();
         Core::DebugPause::SetFailOpenRecordTestHook(&HoldFailOpenRecord);
         DebugState.TestTriggerWaitError();
-        const auto record_deadline = std::chrono::steady_clock::now() + TestTimeout;
-        while (!fail_open_record_reached.load(std::memory_order_acquire) &&
-               std::chrono::steady_clock::now() < record_deadline) {
-            std::this_thread::yield();
-        }
-        if (!fail_open_record_reached.load(std::memory_order_acquire) ||
+        if (!WaitForTestFlag(fail_open_record_gate.reached) ||
             DebugState.TestPauseSnapshot().state != Core::DebugPause::State::Running ||
             !DebugState.TestPauseBookkeepingSet()) {
-            fail_open_record_release.store(true, std::memory_order_release);
+            fail_open_record_gate.Release();
             return false;
         }
-        fail_open_record_release.store(true, std::memory_order_release);
+        fail_open_record_gate.Release();
         Core::DebugPause::SetFailOpenRecordTestHook(nullptr);
         const auto deadline = std::chrono::steady_clock::now() + TestTimeout;
         while (std::chrono::steady_clock::now() < deadline &&
@@ -742,10 +699,9 @@ bool RunIntegrationChild() {
             return false;
         }
         const u64 initial_ptc = Libraries::Kernel::Dev::GetInitialPtc();
-        std::binary_semaphore timestamp_reached{0};
-        ScopedFailOpenTimestampHook timestamp_hook{timestamp_reached};
+        ScopedFailOpenTimestampHook timestamp_hook;
         std::thread controller{[&] { DebugState.PauseGuestThreads(); }};
-        if (!timestamp_reached.try_acquire_for(TestTimeout)) {
+        if (!WaitForTestFlag(fail_open_timestamp_gate.reached)) {
             timestamp_hook.Release();
             leaving.Stop();
             leaving.Join();

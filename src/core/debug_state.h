@@ -253,6 +253,16 @@ public:
         }
     }
 
+    bool TestNotifyStateChange(const ThreadID id) {
+        std::lock_guard lock{guest_threads_mutex};
+        for (const auto& entry : guest_threads) {
+            if (pthread_equal(entry.id, id) != 0) {
+                return entry.pause_participant->NotifyStateChange() == 0;
+            }
+        }
+        return false;
+    }
+
     u64 TestFailOpenUptime() {
         const auto record = pause_protocol.LoadRollbackRecord();
         return record.valid ? record.uptime : std::numeric_limits<u64>::max();
