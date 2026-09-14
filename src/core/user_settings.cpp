@@ -19,10 +19,7 @@ std::mutex UserSettingsImpl::s_mutex;
 // Singleton
 UserSettingsImpl::UserSettingsImpl() = default;
 
-UserSettingsImpl::~UserSettingsImpl() {
-    if (m_loaded)
-        Save();
-}
+UserSettingsImpl::~UserSettingsImpl() {}
 
 std::shared_ptr<UserSettingsImpl> UserSettingsImpl::GetInstance() {
     std::lock_guard lock(s_mutex);
@@ -76,7 +73,6 @@ bool UserSettingsImpl::Load() {
         if (!std::filesystem::exists(path)) {
             if (m_userManager.GetUsers().user.empty())
                 m_userManager.GetUsers() = m_userManager.CreateDefaultUsers();
-            m_loaded = true;
             Save();
             return false;
         }
@@ -102,7 +98,6 @@ bool UserSettingsImpl::Load() {
             m_userManager.GetUsers() = default_users;
         }
 
-        m_loaded = true;
         if (m_userManager.GetUsers().commit_hash != Common::g_scm_rev)
             Save();
 
