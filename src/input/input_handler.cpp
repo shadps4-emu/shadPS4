@@ -513,7 +513,7 @@ void ParseInputConfig(const std::string game_id = "") {
                     {"rightjoystick", rightjoystick_deadzone},
                     {"l2", lefttrigger_deadzone},
                     {"r2", righttrigger_deadzone},
-            };
+                };
             output_gamepad_id = output_gamepad_id == -1 ? 1 : output_gamepad_id;
 
             if (auto it = deadzone_map.find(device); it != deadzone_map.end()) {
