@@ -12,7 +12,6 @@
 #include "core/libraries/kernel/process.h"
 #include "core/memory.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
-#include <sys/mman.h>
 
 namespace Core {
 
@@ -1109,17 +1108,12 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
 
     // Ensure the range to modify is valid
     std::scoped_lock lk{mutex, unmap_mutex};
+    ASSERT_MSG(IsValidMapping(addr, size), "Attempted to access invalid address {:#x}", addr);
 
     // Appropriately restrict flags.
     constexpr static MemoryProt flag_mask =
         MemoryProt::CpuReadWrite | MemoryProt::CpuExec | MemoryProt::GpuReadWrite;
     MemoryProt valid_flags = prot & flag_mask;
-
-    if (!IsValidMapping(addr, size)) {
-        // Forward mprotect to host directly
-        mprotect((void*)addr, size, static_cast<s32>(valid_flags));
-        return ORBIS_OK;
-    }
 
     // Protect all VMAs between addr and addr + size.
     s64 protected_bytes = 0;
