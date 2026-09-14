@@ -5,6 +5,7 @@
 
 #include "common/types.h"
 #include "video_core/amdgpu/cb_db_extent.h"
+#include "video_core/amdgpu/resource.h"
 #include "video_core/amdgpu/tiling.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/types.h"
@@ -12,8 +13,6 @@
 namespace AmdGpu {
 struct ColorBuffer;
 struct DepthBuffer;
-struct Image;
-enum class ImageType : u64;
 } // namespace AmdGpu
 
 namespace Libraries::VideoOut {
@@ -56,6 +55,24 @@ struct ImageInfo {
     s32 SliceOf(const ImageInfo& info, s32 mip) const;
 
     bool IsCompatible(const ImageInfo& info) const;
+
+    /// Whether this single-level color image is an origin-aligned crop of the same layout.
+    bool IsSubrectOf(const ImageInfo& info) const {
+        // A Vulkan image view cannot restrict the dimensions of a mip. Keep a separate
+        // image for a cropped descriptor, but only copy texels when the guest layouts
+        // really agree. Array slices and mip chains need separate offset calculations.
+        return guest_address == info.guest_address && type == AmdGpu::ImageType::Color2D &&
+               type == info.type && resources.levels == 1 && resources.layers == 1 &&
+               info.resources.levels == 1 && info.resources.layers == 1 && !props.is_depth &&
+               !info.props.is_depth && !props.is_block && !info.props.is_block &&
+               pixel_format == info.pixel_format && num_bits == info.num_bits &&
+               num_samples == info.num_samples && pitch == info.pitch &&
+               tile_mode == info.tile_mode && bank_swizzle == info.bank_swizzle &&
+               alt_tile == info.alt_tile && mips_layout[0].pitch == info.mips_layout[0].pitch &&
+               (size.width < info.size.width || size.height < info.size.height) &&
+               size.width <= info.size.width && size.height <= info.size.height &&
+               size.depth == 1 && info.size.depth == 1;
+    }
     void UpdateSize();
 
     struct {

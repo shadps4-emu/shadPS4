@@ -16,6 +16,7 @@ namespace VideoCore {
 using namespace Vulkan;
 
 Common::IncrementalIdProvider<u64> Image::global_image_uid{};
+Common::IncrementalIdProvider<u64> Image::global_contents_version{};
 
 static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance* instance,
                                            const ImageInfo& info) {
@@ -354,6 +355,7 @@ void Image::Transit(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
 
 void Image::Upload(std::span<const vk::BufferImageCopy> upload_copies, vk::Buffer buffer,
                    u64 offset) {
+    MarkModified();
     SetBackingSamples(info.num_samples, false);
     scheduler->EndRendering();
 
@@ -489,6 +491,7 @@ static std::pair<u32, u32> SanitizeCopyLayers(const ImageInfo& src_info, const I
 }
 
 void Image::CopyImage(Image& src_image) {
+    MarkModified();
     const auto& src_info = src_image.info;
 
     const u32 num_mips = std::min(src_info.resources.levels, info.resources.levels);
@@ -589,7 +592,33 @@ void Image::CopyImage(Image& src_image) {
     Transit(vk::ImageLayout::eGeneral,
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
+
+void Image::CopySubrect(Image& src_image) {
+    ASSERT(info.IsSubrectOf(src_image.info));
+    scheduler->EndRendering();
+    SetBackingSamples(info.num_samples, false);
+    src_image.SetBackingSamples(src_image.info.num_samples);
+    const auto src_state = src_image.backing->state;
+    src_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
+    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
+    const vk::ImageCopy copy{
+        .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+        .srcOffset = {0, 0, 0},
+        .dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+        .dstOffset = {0, 0, 0},
+        .extent = {info.size.width, info.size.height, 1},
+    };
+    scheduler->CommandBuffer().copyImage(src_image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
+                                         GetImage(), vk::ImageLayout::eTransferDstOptimal, copy);
+    // The source may already have a descriptor bound in this draw.
+    src_image.Transit(src_state.layout, src_state.access_mask, {});
+    contents_version = src_image.contents_version;
+    flags |= ImageFlagBits::GpuModified;
+    flags &= ~ImageFlagBits::Dirty;
+}
+
 void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset) {
+    MarkModified();
     const auto& src_info = src_image.info;
     const u32 num_mips = std::min(src_info.resources.levels, info.resources.levels);
     const u32 num_layers = std::min(src_info.resources.layers, info.resources.layers);
@@ -670,6 +699,7 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
 }
 
 void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
+    MarkModified();
     const auto& src_info = src_image.info;
 
     const auto dst_dim = info.props.is_block ? 2 : 0;
@@ -716,6 +746,7 @@ void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
 
 void Image::Resolve(Image& src_image, const VideoCore::SubresourceRange& mrt0_range,
                     const VideoCore::SubresourceRange& mrt1_range) {
+    MarkModified();
     SetBackingSamples(1, false);
     scheduler->EndRendering();
 
@@ -773,6 +804,7 @@ void Image::Resolve(Image& src_image, const VideoCore::SubresourceRange& mrt0_ra
 }
 
 void Image::Clear(const vk::ClearValue& clear_value, const VideoCore::SubresourceRange& range) {
+    MarkModified();
     const vk::ImageSubresourceRange vk_range = {
         .aspectMask = vk::ImageAspectFlagBits::eColor,
         .baseMipLevel = range.base.level,
