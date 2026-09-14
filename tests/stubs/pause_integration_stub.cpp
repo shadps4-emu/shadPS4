@@ -54,10 +54,6 @@ std::string DecoderImpl::disassembleInst(ZydisDecodedInstruction&, ZydisDecodedO
     return {};
 }
 
-void DecoderImpl::printInst(ZydisDecodedInstruction&, ZydisDecodedOperand*, u64) {}
-
-void DecoderImpl::printInstruction(void*, u64) {}
-
 ZyanStatus DecoderImpl::decodeInstruction(ZydisDecodedInstruction& inst,
                                           ZydisDecodedOperand* operands, void* data, u64 size) {
     return ZydisDecoderDecodeFull(&m_decoder, data, size, &inst, operands);
