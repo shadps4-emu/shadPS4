@@ -173,6 +173,10 @@ std::atomic<std::binary_semaphore*> fail_open_publication_reached{};
 std::atomic<std::binary_semaphore*> fail_open_publication_release{};
 std::atomic<std::binary_semaphore*> fail_open_rollback_reached{};
 std::atomic<std::binary_semaphore*> fail_open_rollback_release{};
+std::atomic<std::binary_semaphore*> fail_open_timestamp_reached{};
+std::atomic<std::binary_semaphore*> fail_open_timestamp_release{};
+std::atomic<std::binary_semaphore*> fail_open_running_reached{};
+std::atomic<std::binary_semaphore*> fail_open_running_release{};
 
 void HoldFailOpenPublication() noexcept {
     if (auto* reached = fail_open_publication_reached.load(std::memory_order_acquire);
@@ -191,6 +195,28 @@ void HoldFailOpenRollback() noexcept {
         reached->release();
     }
     if (auto* release = fail_open_rollback_release.load(std::memory_order_acquire);
+        release != nullptr) {
+        release->acquire();
+    }
+}
+
+void HoldFailOpenTimestamp() noexcept {
+    if (auto* reached = fail_open_timestamp_reached.load(std::memory_order_acquire);
+        reached != nullptr) {
+        reached->release();
+    }
+    if (auto* release = fail_open_timestamp_release.load(std::memory_order_acquire);
+        release != nullptr) {
+        release->acquire();
+    }
+}
+
+void HoldFailOpenRunning() noexcept {
+    if (auto* reached = fail_open_running_reached.load(std::memory_order_acquire);
+        reached != nullptr) {
+        reached->release();
+    }
+    if (auto* release = fail_open_running_release.load(std::memory_order_acquire);
         release != nullptr) {
         release->acquire();
     }
@@ -1526,6 +1552,166 @@ TEST_F(PauseProtocol, FailOpenPublishesRollbackRecordBeforeWaitError) {
 
     EXPECT_EQ(result.load(std::memory_order_acquire), StateWaitResult::WaitError);
     participant.Unregister();
+}
+
+TEST_F(PauseProtocol, PublicationGateBlocksRunningObserverDuringTimestampCapture) {
+    Protocol protocol;
+    Participant winner{protocol};
+    Participant observer{protocol};
+    const auto pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+
+    std::binary_semaphore timestamp_reached{0};
+    std::binary_semaphore timestamp_release{0};
+    fail_open_timestamp_reached.store(&timestamp_reached, std::memory_order_release);
+    fail_open_timestamp_release.store(&timestamp_release, std::memory_order_release);
+    Core::DebugPause::SetFailOpenTimestampTestHook(&HoldFailOpenTimestamp);
+
+    std::atomic<StateWaitResult> winner_result{StateWaitResult::Running};
+    std::thread failure{[&] {
+        winner_result.store(
+            ParticipantTestAccess::InvokeFailOpen(winner, EBADF, pause.snapshot.epoch),
+            std::memory_order_release);
+    }};
+    const bool timestamp_hook_reached = timestamp_reached.try_acquire_for(TestTimeout);
+    EXPECT_TRUE(timestamp_hook_reached);
+    EXPECT_EQ(protocol.Load().state, State::Running);
+    EXPECT_TRUE(protocol.RollbackPublicationPending());
+    EXPECT_FALSE(protocol.LoadRollbackRecord().valid);
+
+    std::binary_semaphore observer_started{0};
+    std::atomic_bool observer_returned{};
+    std::atomic<StateWaitResult> observer_result{StateWaitResult::WaitError};
+    std::thread observer_thread{[&] {
+        observer_started.release();
+        observer_result.store(observer.SynchronizeState(), std::memory_order_release);
+        observer_returned.store(true, std::memory_order_release);
+    }};
+    const bool observer_started_ok = observer_started.try_acquire_for(TestTimeout);
+    EXPECT_TRUE(observer_started_ok);
+    std::this_thread::sleep_for(std::chrono::milliseconds{25});
+    const bool observer_stayed_gated = !observer_returned.load(std::memory_order_acquire);
+
+    timestamp_release.release();
+    failure.join();
+    observer_thread.join();
+    Core::DebugPause::SetFailOpenTimestampTestHook(nullptr);
+    fail_open_timestamp_reached.store(nullptr, std::memory_order_release);
+    fail_open_timestamp_release.store(nullptr, std::memory_order_release);
+
+    EXPECT_TRUE(observer_stayed_gated);
+    EXPECT_EQ(winner_result.load(std::memory_order_acquire), StateWaitResult::WaitError);
+    EXPECT_EQ(observer_result.load(std::memory_order_acquire), StateWaitResult::Running);
+    const auto record = protocol.LoadRollbackRecord();
+    EXPECT_TRUE(record.valid);
+    EXPECT_EQ(record.failed_pause_epoch, pause.snapshot.epoch);
+    EXPECT_EQ(record.running_epoch, pause.snapshot.epoch + 1);
+    EXPECT_NE(record.uptime, Protocol::NoRollbackRecord);
+    EXPECT_FALSE(protocol.RollbackPublicationPending());
+    winner.Unregister();
+    observer.Unregister();
+}
+
+TEST_F(PauseProtocol, RollbackRecordSurvivesWinnerRemovalUntilLastPendingCompletion) {
+    Protocol protocol;
+    auto winner = std::make_unique<Participant>(protocol);
+    Participant loser{protocol};
+    const auto pause = protocol.Request(State::Paused);
+    ASSERT_TRUE(pause.changed);
+
+    std::binary_semaphore timestamp_reached{0};
+    std::binary_semaphore timestamp_release{0};
+    std::binary_semaphore running_reached{0};
+    std::binary_semaphore running_release{0};
+    fail_open_timestamp_reached.store(&timestamp_reached, std::memory_order_release);
+    fail_open_timestamp_release.store(&timestamp_release, std::memory_order_release);
+    fail_open_running_reached.store(&running_reached, std::memory_order_release);
+    fail_open_running_release.store(&running_release, std::memory_order_release);
+    Core::DebugPause::SetFailOpenTimestampTestHook(&HoldFailOpenTimestamp);
+    Core::DebugPause::SetFailOpenRunningTestHook(&HoldFailOpenRunning);
+
+    std::atomic<StateWaitResult> winner_result{StateWaitResult::Running};
+    std::thread winner_thread{[&] {
+        winner_result.store(
+            ParticipantTestAccess::InvokeFailOpen(*winner, EBADF, pause.snapshot.epoch),
+            std::memory_order_release);
+    }};
+    const bool winner_hook_reached = timestamp_reached.try_acquire_for(TestTimeout);
+    EXPECT_TRUE(winner_hook_reached);
+    if (!winner_hook_reached) {
+        timestamp_release.release();
+        winner_thread.join();
+        fail_open_timestamp_reached.store(nullptr, std::memory_order_release);
+        fail_open_timestamp_release.store(nullptr, std::memory_order_release);
+        fail_open_running_reached.store(nullptr, std::memory_order_release);
+        fail_open_running_release.store(nullptr, std::memory_order_release);
+        Core::DebugPause::SetFailOpenTimestampTestHook(nullptr);
+        Core::DebugPause::SetFailOpenRunningTestHook(nullptr);
+        winner->Unregister();
+        loser.Unregister();
+        return;
+    }
+
+    std::atomic<StateWaitResult> loser_result{StateWaitResult::Running};
+    std::thread loser_thread{[&] {
+        loser_result.store(
+            ParticipantTestAccess::InvokeFailOpen(loser, EBADF, pause.snapshot.epoch),
+            std::memory_order_release);
+    }};
+    const bool loser_hook_reached = running_reached.try_acquire_for(TestTimeout);
+    EXPECT_TRUE(loser_hook_reached);
+    if (!loser_hook_reached) {
+        timestamp_release.release();
+        running_release.release();
+        winner_thread.join();
+        loser_thread.join();
+        fail_open_timestamp_reached.store(nullptr, std::memory_order_release);
+        fail_open_timestamp_release.store(nullptr, std::memory_order_release);
+        fail_open_running_reached.store(nullptr, std::memory_order_release);
+        fail_open_running_release.store(nullptr, std::memory_order_release);
+        Core::DebugPause::SetFailOpenTimestampTestHook(nullptr);
+        Core::DebugPause::SetFailOpenRunningTestHook(nullptr);
+        winner->Unregister();
+        loser.Unregister();
+        return;
+    }
+
+    timestamp_release.release();
+    winner_thread.join();
+    Core::DebugPause::SetFailOpenTimestampTestHook(nullptr);
+    fail_open_timestamp_reached.store(nullptr, std::memory_order_release);
+    fail_open_timestamp_release.store(nullptr, std::memory_order_release);
+
+    const auto published_record = protocol.LoadRollbackRecord();
+    EXPECT_TRUE(published_record.valid);
+    EXPECT_TRUE(protocol.RollbackPublicationPending());
+    EXPECT_EQ(winner_result.load(std::memory_order_acquire), StateWaitResult::WaitError);
+    winner->Unregister();
+    winner.reset();
+    const auto retained_record = protocol.LoadRollbackRecord();
+    EXPECT_TRUE(retained_record.valid);
+    EXPECT_EQ(retained_record.failed_pause_epoch, pause.snapshot.epoch);
+    EXPECT_EQ(retained_record.running_epoch, pause.snapshot.epoch + 1);
+    EXPECT_EQ(retained_record.uptime, published_record.uptime);
+    EXPECT_TRUE(protocol.RollbackPublicationPending());
+
+    std::atomic_bool completion_woke{};
+    std::thread completion_waiter{[&] {
+        completion_woke.store(protocol.WaitForRollbackPublicationFor(TestTimeout),
+                              std::memory_order_release);
+    }};
+    running_release.release();
+    loser_thread.join();
+    completion_waiter.join();
+    Core::DebugPause::SetFailOpenRunningTestHook(nullptr);
+    fail_open_running_reached.store(nullptr, std::memory_order_release);
+    fail_open_running_release.store(nullptr, std::memory_order_release);
+
+    EXPECT_TRUE(completion_woke.load(std::memory_order_acquire));
+    EXPECT_EQ(loser_result.load(std::memory_order_acquire), StateWaitResult::WaitError);
+    EXPECT_FALSE(protocol.RollbackPublicationPending());
+    EXPECT_EQ(protocol.LoadRollbackRecord().uptime, published_record.uptime);
+    loser.Unregister();
 }
 
 TEST_F(PauseProtocol, CurrentParticipantBindingCanBeInterruptedDuringBindAndClear) {

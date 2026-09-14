@@ -237,6 +237,10 @@ public:
         return pause_protocol.Load();
     }
 
+    bool TestFailOpenPublicationPending() const {
+        return pause_protocol.RollbackPublicationPending();
+    }
+
     u64 TestPauseTime() const {
         return pause_time;
     }
@@ -250,25 +254,30 @@ public:
     }
 
     u64 TestFailOpenUptime() {
+        const auto record = pause_protocol.LoadRollbackRecord();
+        return record.valid ? record.uptime : std::numeric_limits<u64>::max();
+    }
+
+    u64 TestFailOpenRunningEpoch() {
+        const auto record = pause_protocol.LoadRollbackRecord();
+        return record.valid ? record.running_epoch : std::numeric_limits<u64>::max();
+    }
+
+    std::uint64_t TestFailOpenRunningEpoch(const ThreadID id) {
         std::lock_guard lock{guest_threads_mutex};
         for (const auto& entry : guest_threads) {
-            const auto uptime = entry.pause_participant->FailOpenUptime();
-            if (uptime != std::numeric_limits<u64>::max()) {
-                return uptime;
+            if (pthread_equal(entry.id, id) != 0) {
+                return entry.pause_participant->FailOpenRunningEpoch();
             }
         }
         return std::numeric_limits<u64>::max();
     }
 
-    u64 TestFailOpenRunningEpoch() {
+    void TestClearWaitErrors() {
         std::lock_guard lock{guest_threads_mutex};
         for (const auto& entry : guest_threads) {
-            const auto epoch = entry.pause_participant->FailOpenRunningEpoch();
-            if (epoch != std::numeric_limits<u64>::max()) {
-                return epoch;
-            }
+            entry.pause_participant->ClearStateWaitErrorForTest();
         }
-        return std::numeric_limits<u64>::max();
     }
 #endif
 

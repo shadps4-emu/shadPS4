@@ -100,23 +100,17 @@ bool DebugStateImpl::ReconcilePauseBookkeeping() {
         return false;
     }
 
-    // The protocol CAS publishes Running before a handler can publish its exact rollback record.
-    // Leave the durable interval open until that release-published record is complete.
-    for (const auto& entry : guest_threads) {
-        if (entry.pause_participant->FailOpenPublicationPending()) {
-            return false;
-        }
+    // The protocol-owned publication count is independent of guest-list membership. Leave the
+    // durable interval open until every participant that entered fail-open has completed.
+    if (pause_protocol.RollbackPublicationPending()) {
+        return false;
     }
 
     u64 end_time = Libraries::Kernel::Dev::GetClock()->GetUptime();
-    for (const auto& entry : guest_threads) {
-        if (entry.pause_participant->FailOpenRunningEpoch() != current.epoch) {
-            continue;
-        }
-        const auto fail_open_time = entry.pause_participant->FailOpenUptime();
-        if (fail_open_time != std::numeric_limits<u64>::max() && fail_open_time < end_time) {
-            end_time = fail_open_time;
-        }
+    const auto rollback_record = pause_protocol.LoadRollbackRecord();
+    if (rollback_record.valid && rollback_record.running_epoch == current.epoch &&
+        rollback_record.uptime < end_time) {
+        end_time = rollback_record.uptime;
     }
 
     if (!is_guest_threads_paused.exchange(false, std::memory_order_acq_rel)) {
@@ -130,12 +124,7 @@ bool DebugStateImpl::ReconcilePauseBookkeeping() {
 }
 
 bool DebugStateImpl::FailOpenPublicationPending() const {
-    for (const auto& entry : guest_threads) {
-        if (entry.pause_participant->FailOpenPublicationPending()) {
-            return true;
-        }
-    }
-    return false;
+    return pause_protocol.RollbackPublicationPending();
 }
 #endif
 
@@ -206,7 +195,13 @@ void DebugStateImpl::PauseGuestThreads() {
     // Running transition before a new Pause records a fresh pause start time.
     (void)ReconcilePauseBookkeeping();
     if (FailOpenPublicationPending()) {
-        return;
+        lock.unlock();
+        (void)pause_protocol.WaitForRollbackPublicationFor(PauseAcknowledgementTimeout);
+        lock.lock();
+        (void)ReconcilePauseBookkeeping();
+        if (FailOpenPublicationPending()) {
+            return;
+        }
     }
     const auto transition = pause_protocol.Request(Core::DebugPause::State::Paused);
     if (transition.exhausted) {
@@ -263,6 +258,7 @@ void DebugStateImpl::PauseGuestThreads() {
 
     const auto rollback_pause = [&] {
         const auto rollback = pause_protocol.RollbackPause(transition.snapshot.epoch);
+        (void)pause_protocol.WaitForRollbackPublicationFor(PauseAcknowledgementTimeout);
         std::lock_guard list_lock{guest_threads_mutex};
         const auto current = pause_protocol.Load();
         if (current.state != Core::DebugPause::State::Running) {
@@ -340,10 +336,13 @@ void DebugStateImpl::ResumeGuestThreads() {
         LOG_ERROR(Core, "Guest resume epoch exhausted at {}", transition.snapshot.epoch);
         return;
     }
+    if (FailOpenPublicationPending()) {
+        (void)pause_protocol.WaitForRollbackPublicationFor(PauseAcknowledgementTimeout);
+    }
     const bool reconciled = ReconcilePauseBookkeeping();
     const bool publication_pending = FailOpenPublicationPending();
     bool had_pause_bookkeeping = false;
-    if (transition.changed || !publication_pending) {
+    if (!publication_pending) {
         had_pause_bookkeeping = is_guest_threads_paused.exchange(false, std::memory_order_acq_rel);
     }
     if (!transition.changed && !had_pause_bookkeeping && !reconciled && !publication_pending) {

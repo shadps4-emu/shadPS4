@@ -40,6 +40,13 @@ struct Transition {
     bool exhausted;
 };
 
+struct RollbackRecord {
+    bool valid;
+    std::uint64_t failed_pause_epoch;
+    std::uint64_t running_epoch;
+    std::uint64_t uptime;
+};
+
 enum class AckWaitResult : std::uint8_t {
     Acknowledged,
     Unregistered,
@@ -63,6 +70,15 @@ inline std::atomic<FailOpenRollbackTestHook> fail_open_rollback_test_hook{};
 using FailOpenRecordTestHook = void (*)() noexcept;
 inline std::atomic<FailOpenRecordTestHook> fail_open_record_test_hook{};
 
+using FailOpenTimestampTestHook = void (*)() noexcept;
+inline std::atomic<FailOpenTimestampTestHook> fail_open_timestamp_test_hook{};
+
+using FailOpenRunningTestHook = void (*)() noexcept;
+inline std::atomic<FailOpenRunningTestHook> fail_open_running_test_hook{};
+
+using FailOpenCompletionTestHook = void (*)() noexcept;
+inline std::atomic<FailOpenCompletionTestHook> fail_open_completion_test_hook{};
+
 inline void SetFailOpenPublicationTestHook(const FailOpenPublicationTestHook hook) noexcept {
     fail_open_publication_test_hook.store(hook, std::memory_order_release);
 }
@@ -74,6 +90,18 @@ inline void SetFailOpenRollbackTestHook(const FailOpenRollbackTestHook hook) noe
 inline void SetFailOpenRecordTestHook(const FailOpenRecordTestHook hook) noexcept {
     fail_open_record_test_hook.store(hook, std::memory_order_release);
 }
+
+inline void SetFailOpenTimestampTestHook(const FailOpenTimestampTestHook hook) noexcept {
+    fail_open_timestamp_test_hook.store(hook, std::memory_order_release);
+}
+
+inline void SetFailOpenRunningTestHook(const FailOpenRunningTestHook hook) noexcept {
+    fail_open_running_test_hook.store(hook, std::memory_order_release);
+}
+
+inline void SetFailOpenCompletionTestHook(const FailOpenCompletionTestHook hook) noexcept {
+    fail_open_completion_test_hook.store(hook, std::memory_order_release);
+}
 #endif
 
 // The state bit and epoch are one release/acquire publication. Pause callers are serialized so
@@ -83,20 +111,32 @@ class Protocol final {
 public:
     static_assert(std::atomic<std::uint64_t>::is_always_lock_free,
                   "Pause protocol requires lock-free 64-bit atomics");
+    static_assert(std::atomic_int::is_always_lock_free,
+                  "Pause protocol requires a lock-free publication counter");
 
     static constexpr std::uint64_t MaximumEpoch = std::numeric_limits<std::uint64_t>::max() >> 1;
     static constexpr std::uint64_t LastPausableRunningEpoch = MaximumEpoch - 1;
+    static constexpr std::uint64_t NoRollbackRecord = std::numeric_limits<std::uint64_t>::max();
+    static constexpr long NanosecondsPerSecond = 1'000'000'000;
 
-    Protocol() = default;
+    Protocol() {
+        if (sem_init(&rollback_completion_semaphore, 0, 0) != 0) {
+            std::abort();
+        }
+    }
 
     // A narrow deterministic seam for the near-exhaustion test. Production always starts at
     // Running epoch zero.
-    explicit Protocol(const Snapshot initial) {
+    explicit Protocol(const Snapshot initial) : Protocol() {
         if (initial.epoch > MaximumEpoch ||
             (initial.state == State::Paused && initial.epoch == MaximumEpoch)) {
             std::abort();
         }
         state.store(Encode(initial.state, initial.epoch), std::memory_order_relaxed);
+    }
+
+    ~Protocol() {
+        (void)sem_destroy(&rollback_completion_semaphore);
     }
 
     std::unique_lock<std::mutex> AcquirePauseRequest() {
@@ -109,6 +149,99 @@ public:
 
     Snapshot Load() const noexcept {
         return Decode(state.load(std::memory_order_acquire));
+    }
+
+    bool RollbackPublicationPending() const noexcept {
+        return rollback_publication_count.load(std::memory_order_acquire) != 0;
+    }
+
+    RollbackRecord LoadRollbackRecord() const noexcept {
+        const auto running_epoch = rollback_running_epoch.load(std::memory_order_acquire);
+        if (running_epoch == NoRollbackRecord) {
+            return {.valid = false,
+                    .failed_pause_epoch = NoRollbackRecord,
+                    .running_epoch = NoRollbackRecord,
+                    .uptime = NoRollbackRecord};
+        }
+        return {.valid = true,
+                .failed_pause_epoch = rollback_failed_pause_epoch.load(std::memory_order_relaxed),
+                .running_epoch = running_epoch,
+                .uptime = rollback_uptime.load(std::memory_order_relaxed)};
+    }
+
+    void BeginRollbackPublication() noexcept {
+        rollback_publication_count.fetch_add(1, std::memory_order_acq_rel);
+    }
+
+    void PublishRollbackRecord(const std::uint64_t failed_pause_epoch,
+                               const std::uint64_t running_epoch,
+                               const std::uint64_t uptime) noexcept {
+        rollback_failed_pause_epoch.store(failed_pause_epoch, std::memory_order_relaxed);
+        rollback_uptime.store(uptime, std::memory_order_relaxed);
+        rollback_running_epoch.store(running_epoch, std::memory_order_release);
+    }
+
+    void CompleteRollbackPublication() noexcept {
+        const auto previous = rollback_publication_count.fetch_sub(1, std::memory_order_acq_rel);
+        if (previous != 1 ||
+            rollback_completion_wake_pending.exchange(true, std::memory_order_acq_rel)) {
+            return;
+        }
+        if (sem_post(&rollback_completion_semaphore) != 0) {
+            rollback_completion_wake_pending.store(false, std::memory_order_release);
+        }
+    }
+
+    bool WaitForRollbackPublicationFor(const std::chrono::milliseconds timeout) noexcept {
+        const auto deadline = std::chrono::steady_clock::now() + timeout;
+        for (;;) {
+            if (!RollbackPublicationPending()) {
+                return true;
+            }
+
+            const auto now = std::chrono::steady_clock::now();
+            if (now >= deadline) {
+                return false;
+            }
+
+            timespec monotonic_deadline{};
+            if (clock_gettime(CLOCK_MONOTONIC, &monotonic_deadline) != 0) {
+                return false;
+            }
+            const auto remaining =
+                std::chrono::duration_cast<std::chrono::nanoseconds>(deadline - now).count();
+            monotonic_deadline.tv_sec += remaining / NanosecondsPerSecond;
+            monotonic_deadline.tv_nsec += remaining % NanosecondsPerSecond;
+            if (monotonic_deadline.tv_nsec >= NanosecondsPerSecond) {
+                ++monotonic_deadline.tv_sec;
+                monotonic_deadline.tv_nsec -= NanosecondsPerSecond;
+            }
+
+#if defined(__linux__) && defined(__GLIBC__) && defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2, 30)
+            if (sem_clockwait(&rollback_completion_semaphore, CLOCK_MONOTONIC,
+                              &monotonic_deadline) == 0) {
+                rollback_completion_wake_pending.store(false, std::memory_order_release);
+                continue;
+            }
+#else
+            if (sem_trywait(&rollback_completion_semaphore) == 0) {
+                rollback_completion_wake_pending.store(false, std::memory_order_release);
+                continue;
+            }
+            if (errno == EAGAIN) {
+                const auto sleep_result =
+                    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &monotonic_deadline, nullptr);
+                if (sleep_result == 0 || sleep_result == EINTR) {
+                    continue;
+                }
+                return false;
+            }
+#endif
+            if (errno == EINTR || errno == ETIMEDOUT) {
+                continue;
+            }
+            return false;
+        }
     }
 
     Transition Request(const State desired) noexcept {
@@ -176,6 +309,12 @@ private:
 
     std::mutex pause_request_mutex;
     std::atomic<std::uint64_t> state{};
+    std::atomic_int rollback_publication_count{};
+    std::atomic_bool rollback_completion_wake_pending{};
+    std::atomic<std::uint64_t> rollback_failed_pause_epoch{NoRollbackRecord};
+    std::atomic<std::uint64_t> rollback_running_epoch{NoRollbackRecord};
+    std::atomic<std::uint64_t> rollback_uptime{NoRollbackRecord};
+    sem_t rollback_completion_semaphore{};
 };
 
 struct ParticipantTestAccess;
@@ -281,6 +420,11 @@ public:
     void InjectStateWaitErrorForTest() noexcept {
         injected_wait_error.store(EBADF, std::memory_order_release);
     }
+
+    void ClearStateWaitErrorForTest() noexcept {
+        injected_wait_error.store(0, std::memory_order_release);
+        wait_error.store(0, std::memory_order_release);
+    }
 #endif
 
     // Called by the target thread, never by a signal handler. Invalidation precedes signal
@@ -330,14 +474,16 @@ public:
             if (!registered.load(std::memory_order_acquire)) {
                 return FinishWait(StateWaitResult::Unregistered, original_mask);
             }
-            if (snapshot.state == State::Running) {
+            if (snapshot.state == State::Running && !protocol->RollbackPublicationPending()) {
                 return FinishWait(StateWaitResult::Running, original_mask);
             }
 
             // Close the state-change-before-wait race. If Resume changed the word and its signal
             // is delayed or failed, this acquire read avoids entering the wait at all.
             const auto before_wait = protocol->Load();
-            if (before_wait.state != State::Paused || before_wait.epoch != snapshot.epoch) {
+            const bool publication_pending = protocol->RollbackPublicationPending();
+            if (before_wait.state != snapshot.state || before_wait.epoch != snapshot.epoch ||
+                (snapshot.state == State::Running && !publication_pending)) {
                 continue;
             }
 
@@ -387,7 +533,8 @@ public:
             if (!registered.load(std::memory_order_acquire)) {
                 return AckWaitResult::Unregistered;
             }
-            if (wait_error.load(std::memory_order_acquire) != 0 ||
+            if (protocol->RollbackPublicationPending() ||
+                wait_error.load(std::memory_order_acquire) != 0 ||
                 fail_open_running_epoch.load(std::memory_order_acquire) != MaximumRecordedEpoch ||
                 ack_wake_error.load(std::memory_order_acquire) != 0 ||
                 state_wake_error.load(std::memory_order_acquire) != 0) {
@@ -552,6 +699,7 @@ private:
 
     StateWaitResult FailOpen(const int error, const std::uint64_t /*paused_epoch*/) noexcept {
         const int recorded_error = error != 0 ? error : EIO;
+        protocol->BeginRollbackPublication();
         fail_open_publication_pending.store(true, std::memory_order_release);
         auto snapshot = protocol->Load();
 #ifdef SHADPS4_PAUSE_PROTOCOL_TEST
@@ -564,12 +712,27 @@ private:
             if (!registered.load(std::memory_order_acquire)) {
                 wait_error.store(recorded_error, std::memory_order_release);
                 fail_open_publication_pending.store(false, std::memory_order_release);
+                protocol->CompleteRollbackPublication();
                 return StateWaitResult::WaitError;
             }
             if (snapshot.state == State::Running) {
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+                if (const auto hook = fail_open_running_test_hook.load(std::memory_order_acquire);
+                    hook != nullptr) {
+                    hook();
+                }
+#endif
                 wait_error.store(recorded_error, std::memory_order_release);
                 Acknowledge(snapshot.epoch);
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+                if (const auto hook =
+                        fail_open_completion_test_hook.load(std::memory_order_acquire);
+                    hook != nullptr) {
+                    hook();
+                }
+#endif
                 fail_open_publication_pending.store(false, std::memory_order_release);
+                protocol->CompleteRollbackPublication();
                 return StateWaitResult::WaitError;
             }
 
@@ -583,10 +746,20 @@ private:
                 continue;
             }
 
-            // Publish the rollback metadata as one release record. Readers that observe the
-            // running epoch also observe the exact failed epoch and its monotonic timestamp.
+            // The protocol-owned count gates every handler that observes Running until this
+            // release-published record is complete. The local fields remain diagnostic mirrors;
+            // reconciliation reads the durable protocol record so participant removal cannot
+            // erase the accounting boundary.
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+            if (const auto hook = fail_open_timestamp_test_hook.load(std::memory_order_acquire);
+                hook != nullptr) {
+                hook();
+            }
+#endif
+            const auto fail_open_time = Common::FencedRDTSC();
             failed_pause_epoch.store(failed_epoch, std::memory_order_relaxed);
-            fail_open_uptime.store(Common::FencedRDTSC(), std::memory_order_relaxed);
+            fail_open_uptime.store(fail_open_time, std::memory_order_relaxed);
+            protocol->PublishRollbackRecord(failed_epoch, rollback.snapshot.epoch, fail_open_time);
 #ifdef SHADPS4_PAUSE_PROTOCOL_TEST
             if (const auto hook = fail_open_record_test_hook.load(std::memory_order_acquire);
                 hook != nullptr) {
@@ -605,6 +778,7 @@ private:
                 Acknowledge(rollback.snapshot.epoch);
             }
             fail_open_publication_pending.store(false, std::memory_order_release);
+            protocol->CompleteRollbackPublication();
             return StateWaitResult::WaitError;
         }
     }
