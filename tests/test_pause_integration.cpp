@@ -47,6 +47,10 @@ std::atomic<std::binary_semaphore*> fail_open_running_reached{};
 std::atomic_bool fail_open_running_release{};
 std::atomic<std::binary_semaphore*> fail_open_completion_reached{};
 std::atomic_bool fail_open_completion_release{};
+std::atomic<std::binary_semaphore*> state_wait_reached{};
+std::atomic_bool state_wait_release{};
+std::atomic<std::binary_semaphore*> rollback_completion_wait_reached{};
+std::atomic_bool rollback_completion_wait_release{};
 
 void RegistrationPublished() noexcept {
     if (auto* barrier = registration_barrier.load(std::memory_order_acquire); barrier != nullptr) {
@@ -87,6 +91,123 @@ void HoldFailOpenCompletion() noexcept {
     while (!fail_open_completion_release.load(std::memory_order_acquire)) {
     }
 }
+
+void HoldStateWait() noexcept {
+    if (auto* reached = state_wait_reached.load(std::memory_order_acquire); reached != nullptr) {
+        reached->release();
+    }
+    while (!state_wait_release.load(std::memory_order_acquire)) {
+    }
+}
+
+void HoldRollbackCompletionWait() noexcept {
+    if (auto* reached = rollback_completion_wait_reached.load(std::memory_order_acquire);
+        reached != nullptr) {
+        reached->release();
+    }
+    while (!rollback_completion_wait_release.load(std::memory_order_acquire)) {
+    }
+}
+
+class ScopedStateWaitHook {
+public:
+    explicit ScopedStateWaitHook(std::binary_semaphore& reached) : reached{reached} {
+        state_wait_reached.store(&this->reached, std::memory_order_release);
+        state_wait_release.store(false, std::memory_order_release);
+        Core::DebugPause::SetStateWaitTestHook(&HoldStateWait);
+    }
+
+    ScopedStateWaitHook(const ScopedStateWaitHook&) = delete;
+    ScopedStateWaitHook& operator=(const ScopedStateWaitHook&) = delete;
+
+    ~ScopedStateWaitHook() {
+        Release();
+        Core::DebugPause::SetStateWaitTestHook(nullptr);
+        state_wait_reached.store(nullptr, std::memory_order_release);
+    }
+
+    void Release() {
+        state_wait_release.store(true, std::memory_order_release);
+    }
+
+private:
+    std::binary_semaphore& reached;
+};
+
+class ScopedRollbackCompletionWaitHook {
+public:
+    explicit ScopedRollbackCompletionWaitHook(std::binary_semaphore& reached) : reached{reached} {
+        rollback_completion_wait_reached.store(&this->reached, std::memory_order_release);
+        rollback_completion_wait_release.store(false, std::memory_order_release);
+        Core::DebugPause::SetRollbackCompletionWaitTestHook(&HoldRollbackCompletionWait);
+    }
+
+    ScopedRollbackCompletionWaitHook(const ScopedRollbackCompletionWaitHook&) = delete;
+    ScopedRollbackCompletionWaitHook& operator=(const ScopedRollbackCompletionWaitHook&) = delete;
+
+    ~ScopedRollbackCompletionWaitHook() {
+        Release();
+        Core::DebugPause::SetRollbackCompletionWaitTestHook(nullptr);
+        rollback_completion_wait_reached.store(nullptr, std::memory_order_release);
+    }
+
+    void Release() {
+        rollback_completion_wait_release.store(true, std::memory_order_release);
+    }
+
+private:
+    std::binary_semaphore& reached;
+};
+
+class ScopedFailOpenTimestampHook {
+public:
+    explicit ScopedFailOpenTimestampHook(std::binary_semaphore& reached) : reached{reached} {
+        fail_open_timestamp_reached.store(&this->reached, std::memory_order_release);
+        fail_open_timestamp_release.store(false, std::memory_order_release);
+        Core::DebugPause::SetFailOpenTimestampTestHook(&HoldFailOpenTimestamp);
+    }
+
+    ScopedFailOpenTimestampHook(const ScopedFailOpenTimestampHook&) = delete;
+    ScopedFailOpenTimestampHook& operator=(const ScopedFailOpenTimestampHook&) = delete;
+
+    ~ScopedFailOpenTimestampHook() {
+        Release();
+        Core::DebugPause::SetFailOpenTimestampTestHook(nullptr);
+        fail_open_timestamp_reached.store(nullptr, std::memory_order_release);
+    }
+
+    void Release() {
+        fail_open_timestamp_release.store(true, std::memory_order_release);
+    }
+
+private:
+    std::binary_semaphore& reached;
+};
+
+class ScopedFailOpenRecordHook {
+public:
+    ScopedFailOpenRecordHook() {
+        fail_open_record_reached.store(false, std::memory_order_release);
+        fail_open_record_release.store(false, std::memory_order_release);
+        Core::DebugPause::SetFailOpenRecordTestHook(&HoldFailOpenRecord);
+    }
+
+    ScopedFailOpenRecordHook(const ScopedFailOpenRecordHook&) = delete;
+    ScopedFailOpenRecordHook& operator=(const ScopedFailOpenRecordHook&) = delete;
+
+    ~ScopedFailOpenRecordHook() {
+        Release();
+        Core::DebugPause::SetFailOpenRecordTestHook(nullptr);
+    }
+
+    bool Reached() const {
+        return fail_open_record_reached.load(std::memory_order_acquire);
+    }
+
+    void Release() {
+        fail_open_record_release.store(true, std::memory_order_release);
+    }
+};
 
 class ScopedFailOpenTestHooks {
 public:
@@ -186,6 +307,10 @@ public:
 
     ThreadID Id() {
         return thread.native_handle();
+    }
+
+    int Notify() {
+        return pthread_kill(thread.native_handle(), SIGVTALRM);
     }
 
     void Stop() {
@@ -323,6 +448,68 @@ bool RunIntegrationChild() {
     }
 
     {
+        RegisteredTarget failing;
+        if (!failing.WaitEntered() || failing.SetupFailed()) {
+            return false;
+        }
+        DebugState.PauseGuestThreads();
+        if (DebugState.TestPauseSnapshot().state != Core::DebugPause::State::Paused ||
+            !DebugState.TestPauseBookkeepingSet()) {
+            return false;
+        }
+
+        std::binary_semaphore timestamp_reached{0};
+        std::binary_semaphore state_wait_reached_signal{0};
+        ScopedFailOpenTimestampHook timestamp_hook{timestamp_reached};
+        ScopedFailOpenRecordHook record_hook;
+        ScopedStateWaitHook state_wait_hook{state_wait_reached_signal};
+        std::binary_semaphore registration_published{0};
+        ScopedRegistrationHook registration_hook{registration_published};
+        DebugState.TestTriggerWaitError();
+
+        bool scenario_ok = timestamp_reached.try_acquire_for(TestTimeout);
+        scenario_ok = scenario_ok &&
+                      DebugState.TestPauseSnapshot().state == Core::DebugPause::State::Running &&
+                      DebugState.TestFailOpenPublicationPending();
+
+        RegisteredTarget newcomer;
+        scenario_ok = scenario_ok && registration_published.try_acquire_for(TestTimeout);
+        const bool state_wait_hook_reached = state_wait_reached_signal.try_acquire_for(TestTimeout);
+        scenario_ok = scenario_ok && state_wait_hook_reached && !newcomer.HasEntered();
+
+        timestamp_hook.Release();
+        const auto record_deadline = std::chrono::steady_clock::now() + TestTimeout;
+        while (!record_hook.Reached() && std::chrono::steady_clock::now() < record_deadline) {
+            std::this_thread::yield();
+        }
+        scenario_ok = scenario_ok && record_hook.Reached();
+        record_hook.Release();
+
+        const auto publication_deadline = std::chrono::steady_clock::now() + TestTimeout;
+        while (DebugState.TestFailOpenPublicationPending() &&
+               std::chrono::steady_clock::now() < publication_deadline) {
+            std::this_thread::yield();
+        }
+        scenario_ok = scenario_ok && !DebugState.TestFailOpenPublicationPending();
+        scenario_ok = scenario_ok && !newcomer.HasEntered();
+
+        state_wait_hook.Release();
+        if (state_wait_hook_reached) {
+            scenario_ok = scenario_ok && newcomer.Notify() == 0;
+        }
+        scenario_ok = scenario_ok && newcomer.WaitEntered();
+
+        newcomer.Stop();
+        newcomer.Join();
+        failing.Stop();
+        failing.Join();
+        DebugState.ResumeGuestThreads();
+        if (!scenario_ok || DebugState.TestGuestThreadCount() != 0) {
+            return false;
+        }
+    }
+
+    {
         RegisteredTarget unregistering{true};
         if (!unregistering.WaitEntered()) {
             return false;
@@ -405,19 +592,22 @@ bool RunIntegrationChild() {
         }
 
         DebugState.TestClearWaitErrors();
-        std::binary_semaphore pause_started{0};
+        std::binary_semaphore completion_wait_reached{0};
+        ScopedRollbackCompletionWaitHook completion_wait_hook{completion_wait_reached};
         std::atomic_bool pause_returned{};
         std::thread controller{[&] {
-            pause_started.release();
             DebugState.PauseGuestThreads();
             pause_returned.store(true, std::memory_order_release);
         }};
-        if (!pause_started.try_acquire_for(TestTimeout)) {
+        const bool completion_wait_hook_reached =
+            completion_wait_reached.try_acquire_for(TestTimeout);
+        if (!completion_wait_hook_reached) {
             hooks.ReleaseRunning();
+            completion_wait_hook.Release();
+            hooks.ReleaseCompletion();
             controller.join();
             return false;
         }
-        std::this_thread::sleep_for(25ms);
         const bool pause_waited_for_last_completion =
             !pause_returned.load(std::memory_order_acquire);
         const bool no_early_adjustment = Libraries::Kernel::Dev::GetInitialPtc() == initial_ptc;
@@ -425,11 +615,13 @@ bool RunIntegrationChild() {
         hooks.ReleaseRunning();
         if (!completion_reached.try_acquire_for(TestTimeout)) {
             hooks.ReleaseCompletion();
+            completion_wait_hook.Release();
             controller.join();
             return false;
         }
         DebugState.TestClearWaitErrors();
         loser->Stop();
+        completion_wait_hook.Release();
         hooks.ReleaseCompletion();
         controller.join();
         if (!pause_waited_for_last_completion || !no_early_adjustment ||
@@ -550,12 +742,31 @@ bool RunIntegrationChild() {
             return false;
         }
         const u64 initial_ptc = Libraries::Kernel::Dev::GetInitialPtc();
+        std::binary_semaphore timestamp_reached{0};
+        ScopedFailOpenTimestampHook timestamp_hook{timestamp_reached};
         std::thread controller{[&] { DebugState.PauseGuestThreads(); }};
-        if (!WaitUntilPaused()) {
+        if (!timestamp_reached.try_acquire_for(TestTimeout)) {
+            timestamp_hook.Release();
+            leaving.Stop();
+            leaving.Join();
+            controller.join();
+            return false;
+        }
+        const auto bookkeeping_deadline = std::chrono::steady_clock::now() + TestTimeout;
+        while (!DebugState.TestPauseBookkeepingSet() &&
+               std::chrono::steady_clock::now() < bookkeeping_deadline) {
+            std::this_thread::yield();
+        }
+        if (!DebugState.TestPauseBookkeepingSet()) {
+            timestamp_hook.Release();
+            leaving.Stop();
+            leaving.Join();
+            controller.join();
             return false;
         }
         leaving.Stop();
         leaving.Join();
+        timestamp_hook.Release();
         controller.join();
         if (DebugState.TestPauseSnapshot().state != Core::DebugPause::State::Running ||
             DebugState.TestPauseBookkeepingSet() ||

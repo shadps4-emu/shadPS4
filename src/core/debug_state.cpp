@@ -133,7 +133,6 @@ void DebugStateImpl::AddCurrentThreadToGuestList() {
     auto pause_participant = std::make_shared<Core::DebugPause::Participant>(pause_protocol);
     CurrentPauseParticipantOwner = pause_participant;
     Core::DebugPause::BindCurrentParticipant(pause_participant.get());
-    Core::DebugPause::Snapshot registration_snapshot{};
 #endif
     {
         std::lock_guard lock{guest_threads_mutex};
@@ -141,7 +140,6 @@ void DebugStateImpl::AddCurrentThreadToGuestList() {
         GuestThreadEntry entry{.id = id};
 #ifndef _WIN32
         entry.pause_participant = pause_participant;
-        registration_snapshot = pause_protocol.Load();
 #endif
         guest_threads.push_back(std::move(entry));
     }
@@ -152,8 +150,7 @@ void DebugStateImpl::AddCurrentThreadToGuestList() {
         hook();
     }
 #endif
-    if (registration_snapshot.state == Core::DebugPause::State::Paused &&
-        pause_participant->SynchronizeState() == Core::DebugPause::StateWaitResult::WaitError) {
+    if (pause_participant->SynchronizeState() == Core::DebugPause::StateWaitResult::WaitError) {
         LOG_ERROR(Core, "Failed to honor guest pause during thread registration: {}",
                   pause_participant->WaitError());
     }

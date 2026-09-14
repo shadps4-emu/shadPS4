@@ -79,6 +79,12 @@ inline std::atomic<FailOpenRunningTestHook> fail_open_running_test_hook{};
 using FailOpenCompletionTestHook = void (*)() noexcept;
 inline std::atomic<FailOpenCompletionTestHook> fail_open_completion_test_hook{};
 
+using StateWaitTestHook = void (*)() noexcept;
+inline std::atomic<StateWaitTestHook> state_wait_test_hook{};
+
+using RollbackCompletionWaitTestHook = void (*)() noexcept;
+inline std::atomic<RollbackCompletionWaitTestHook> rollback_completion_wait_test_hook{};
+
 inline void SetFailOpenPublicationTestHook(const FailOpenPublicationTestHook hook) noexcept {
     fail_open_publication_test_hook.store(hook, std::memory_order_release);
 }
@@ -101,6 +107,14 @@ inline void SetFailOpenRunningTestHook(const FailOpenRunningTestHook hook) noexc
 
 inline void SetFailOpenCompletionTestHook(const FailOpenCompletionTestHook hook) noexcept {
     fail_open_completion_test_hook.store(hook, std::memory_order_release);
+}
+
+inline void SetStateWaitTestHook(const StateWaitTestHook hook) noexcept {
+    state_wait_test_hook.store(hook, std::memory_order_release);
+}
+
+inline void SetRollbackCompletionWaitTestHook(const RollbackCompletionWaitTestHook hook) noexcept {
+    rollback_completion_wait_test_hook.store(hook, std::memory_order_release);
 }
 #endif
 
@@ -217,6 +231,13 @@ public:
                 monotonic_deadline.tv_nsec -= NanosecondsPerSecond;
             }
 
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+            if (const auto hook =
+                    rollback_completion_wait_test_hook.load(std::memory_order_acquire);
+                hook != nullptr) {
+                hook();
+            }
+#endif
 #if defined(__linux__) && defined(__GLIBC__) && defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2, 30)
             if (sem_clockwait(&rollback_completion_semaphore, CLOCK_MONOTONIC,
                               &monotonic_deadline) == 0) {
@@ -500,6 +521,14 @@ public:
             FD_ZERO(&read_fds);
             FD_SET(state_wake_pipe[0], &read_fds);
             timespec timeout = StateRecheckInterval;
+#ifdef SHADPS4_PAUSE_PROTOCOL_TEST
+            if (snapshot.state == State::Running && publication_pending) {
+                if (const auto hook = state_wait_test_hook.load(std::memory_order_acquire);
+                    hook != nullptr) {
+                    hook();
+                }
+            }
+#endif
             result =
                 pselect(state_wake_pipe[0] + 1, &read_fds, nullptr, nullptr, &timeout, &wait_mask);
             if (result > 0) {
