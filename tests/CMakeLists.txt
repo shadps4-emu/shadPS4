@@ -15,6 +15,15 @@ set(TEST_TARGETS
     shadps4_gcn_test
 )
 
+add_executable(shadps4_texture_types_test
+    test_texture_types.cpp
+)
+target_link_libraries(shadps4_texture_types_test PRIVATE
+    GTest::gtest_main
+    spdlog::spdlog
+)
+list(APPEND TEST_TARGETS shadps4_texture_types_test)
+
 set(SETTINGS_TEST_SOURCES
     # Under test
     ${CMAKE_SOURCE_DIR}/src/core/emulator_settings.cpp
