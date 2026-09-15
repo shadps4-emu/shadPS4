@@ -46,6 +46,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     }
     memory->SetRasterizer(this);
 
+    scheduler.SetSessionCallback([this] { buffer_cache.FlushSyncBatch(); });
+
     scheduler.SetSubmitCallback([this](Vulkan::SubmitInfo& info) {
         runtime.FlushBarriers();
         buffer_cache.SubmitPendingArenaBinds(info);
@@ -395,6 +397,8 @@ void Rasterizer::OnSubmit() {
         fault_process_pending = false;
         buffer_cache.ProcessFaultBuffer();
     }
+    LOG_WARNING(Render, "Num batches for frame {}",
+                std::exchange(buffer_cache.num_flushes_per_frame, 0u));
     texture_cache.ProcessDownloadImages();
     texture_cache.RunGarbageCollector();
     runtime.TickFrame();
@@ -1221,6 +1225,7 @@ bool Rasterizer::ReadMemory(VAddr addr, u64 size, bool assume_locks) {
 
 void Rasterizer::ProcessDownloadImages() {
     texture_cache.ProcessDownloadImages();
+    buffer_cache.FlushSyncBatch();
 }
 
 bool Rasterizer::IsMapped(VAddr addr, u64 size) {

@@ -48,7 +48,7 @@ public:
         });
     }
 
-    /// Mmark region as modified from the CPU
+    /// Mark region as modified from the CPU
     void MarkRegionAsCpuModified(VAddr cpu_addr, u64 size) noexcept {
         IteratePages(cpu_addr, size, [](RegionManager* manager, u64 offset, u64 size) {
             manager->template ChangeRegionState<StateOp::Set, StateOp::None>(offset, size);
@@ -63,14 +63,14 @@ public:
         bool should_flush = false;
         IteratePages(cpu_addr, size, [&should_flush](RegionManager* manager, u64 offset, u64 size) {
             const auto bounds = manager->GetBounds(offset, size);
-            manager->LockWords(bounds);
+            manager->Lock(bounds);
             const bool modified = manager->template IsRegionModified<Type::GPU>(offset, size);
             if (!modified) {
                 manager->template ChangeRegionState<StateOp::Set, StateOp::None, false>(offset,
                                                                                         size);
             }
             should_flush |= modified;
-            manager->UnlockWords(bounds);
+            manager->Unlock(bounds);
         });
         if (should_flush) {
             on_flush();

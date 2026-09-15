@@ -102,6 +102,129 @@ public:
     /// Commits pending sparse buffer memory binds. Must be called before every scheduler submit.
     void SubmitPendingArenaBinds(Vulkan::SubmitInfo& info);
 
+    /// Flushes pending synchronization requests
+    void FlushSyncBatch(bool from_scheduler = false);
+
+    class SyncBatchList {
+    public:
+        struct Range {
+            u64 lo;
+            u64 hi;
+            bool written;
+        };
+
+        const Range* begin() const {
+            return v_.data();
+        }
+        const Range* end() const {
+            return v_.data() + v_.size();
+        }
+
+        void Clear() {
+            v_.clear();
+        }
+        bool Empty() const {
+            return v_.empty();
+        }
+        std::size_t Size() const {
+            return v_.size();
+        }
+
+        void Add(u64 lo, u64 hi, bool written) {
+            if (lo >= hi) {
+                return;
+            }
+
+            auto i = std::ranges::lower_bound(v_, lo, {}, &Range::hi);
+            auto k = i;
+            while (k != v_.end() && k->lo <= hi) {
+                ++k;
+            }
+            const std::size_t first = i - v_.begin(), last = k - v_.begin();
+
+            scratch_.clear();
+            if (i != k && i->lo < lo) {
+                scratch_.emplace_back(i->lo, lo, i->written);
+            }
+            u64 cur = lo;
+            for (auto it = i; it != k; ++it) {
+                if (!it->written) {
+                    continue;
+                }
+                const u64 a = std::max(it->lo, lo), b = std::min(it->hi, hi);
+                if (a >= b) {
+                    continue;
+                }
+                if (cur < a) {
+                    scratch_.emplace_back(cur, a, written);
+                }
+                scratch_.emplace_back(a, b, true);
+                cur = b;
+            }
+            if (cur < hi) {
+                scratch_.emplace_back(cur, hi, written);
+            }
+            if (i != k && (k - 1)->hi > hi) {
+                scratch_.emplace_back(hi, (k - 1)->hi, (k - 1)->written);
+            }
+
+            Coalesce(scratch_);
+            v_.erase(v_.begin() + first, v_.begin() + last);
+            v_.insert(v_.begin() + first, scratch_.begin(), scratch_.end());
+        }
+
+        bool Overlaps(u64 lo, u64 hi) const {
+            if (lo >= hi) {
+                return false;
+            }
+            auto i = std::ranges::upper_bound(v_, lo, {}, &Range::hi);
+            return i != v_.end() && i->lo < hi;
+        }
+
+        bool OverlapsWritten(u64 lo, u64 hi) const {
+            if (lo >= hi) {
+                return false;
+            }
+            auto it = std::ranges::upper_bound(v_, lo, {}, &Range::hi);
+            for (; it != v_.end() && it->lo < hi; ++it) {
+                if (it->written) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        const Range* At(u64 x) const {
+            auto it = std::ranges::upper_bound(v_, x, {}, &Range::lo);
+            if (it == v_.begin()) {
+                return nullptr;
+            }
+            --it;
+            return (it->lo <= x && x < it->hi) ? &*it : nullptr;
+        }
+
+    private:
+        static void Coalesce(std::vector<Range>& out) {
+            std::size_t w = 0;
+            for (std::size_t r = 1; r < out.size(); ++r) {
+                if (out[w].hi == out[r].lo && out[w].written == out[r].written) {
+                    out[w].hi = out[r].hi;
+                } else {
+                    out[++w] = out[r];
+                }
+            }
+            if (!out.empty()) {
+                out.resize(w + 1);
+            }
+        }
+
+        std::vector<Range> v_;
+        std::vector<Range> scratch_;
+    };
+
+    SyncBatchList sync_batch{};
+    u32 num_flushes_per_frame{};
+
 private:
     struct ArenaBinds {
         const Buffer* arena;

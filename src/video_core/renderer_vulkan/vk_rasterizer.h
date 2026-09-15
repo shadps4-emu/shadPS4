@@ -30,6 +30,10 @@ public:
                         AmdGpu::Liverpool* liverpool);
     ~Rasterizer();
 
+    [[nodiscard]] Scheduler& GetScheduler() noexcept {
+        return scheduler;
+    }
+
     [[nodiscard]] Runtime& GetRuntime() noexcept {
         return runtime;
     }
