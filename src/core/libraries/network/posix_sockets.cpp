@@ -1,8 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <cstring>
+#include <unordered_map>
 #include <vector>
 #include <common/assert.h>
+#include <fmt/format.h>
 #include "common/error.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/kernel.h"
@@ -10,10 +14,32 @@
 #ifndef _WIN32
 #include <sys/stat.h>
 #endif
+#include "dns_hook.h"
 #include "net_error.h"
 #include "sockets.h"
 
 namespace Libraries::Net {
+
+static std::string FormatEndpoint(const sockaddr* sa) {
+    const auto* in = reinterpret_cast<const sockaddr_in*>(sa);
+    const u8* o = reinterpret_cast<const u8*>(&in->sin_addr);
+    return fmt::format("{}.{}.{}.{}:{}", o[0], o[1], o[2], o[3], ntohs(in->sin_port));
+}
+
+static std::mutex g_dest_log_mutex;
+static std::unordered_map<u64, u64> g_last_dest; // sock -> (ip << 16) | port
+
+static bool DestChanged(u64 sock, const sockaddr* sa) {
+    const auto* in = reinterpret_cast<const sockaddr_in*>(sa);
+    const u64 key = (static_cast<u64>(in->sin_addr.s_addr) << 16) | ntohs(in->sin_port);
+    std::lock_guard lock(g_dest_log_mutex);
+    auto [it, inserted] = g_last_dest.try_emplace(sock, key);
+    if (inserted || it->second != key) {
+        it->second = key;
+        return true;
+    }
+    return false;
+}
 
 #ifdef _WIN32
 #define ERROR_CASE(errname)                                                                        \
@@ -164,6 +190,11 @@ bool PosixSocket::IsValid() const {
 
 int PosixSocket::Close() {
     std::scoped_lock lock{m_mutex};
+    DnsHook::Instance().RemoveSpy(static_cast<u64>(sock));
+    {
+        std::lock_guard dlock(g_dest_log_mutex);
+        g_last_dest.erase(static_cast<u64>(sock));
+    }
 #ifdef _WIN32
     auto out = closesocket(sock);
 #else
@@ -298,11 +329,33 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
     }
 #endif
     const auto posix_flags = convertOrbisFlagsToPosix(socket_type, flags);
+
+    // DNS override: mark datagram sockets talking to port 53, then try to answer
+    // matching queries locally instead of sending them out.
+    auto& dns = DnsHook::Instance();
+    if (to != nullptr && socket_type == ORBIS_NET_SOCK_DGRAM) {
+        sockaddr dst{};
+        convertOrbisNetSockaddrToPosix(to, &dst);
+        if (ntohs(((sockaddr_in*)&dst)->sin_port) == 53) {
+            dns.AddSpy(static_cast<u64>(sock));
+        }
+    }
+    if (dns.IsSpy(static_cast<u64>(sock))) {
+        const s32 intercepted = dns.AnalyzeQuery(static_cast<u64>(sock), (const u8*)msg, len,
+                                                 socket_type == ORBIS_NET_SOCK_STREAM);
+        if (intercepted >= 0) {
+            return intercepted; // swallow the real query; answer is queued
+        }
+    }
+
     if (to == nullptr) {
         res = send(sock, (const char*)msg, len, posix_flags);
     } else {
         sockaddr addr{};
         convertOrbisNetSockaddrToPosix(to, &addr);
+        if (DestChanged(static_cast<u64>(sock), &addr)) {
+            LOG_INFO(Lib_Net, "sendto -> {}", FormatEndpoint(&addr));
+        }
         res = sendto(sock, (const char*)msg, len, posix_flags, &addr, tolen);
     }
     return ConvertReturnErrorCode(res);
@@ -391,6 +444,24 @@ int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* 
     }
 #endif
     const auto posix_flags = convertOrbisFlagsToPosix(socket_type, flags);
+
+    // DNS override: hand back a forged answer if one is queued for this socket.
+    auto& dns = DnsHook::Instance();
+    if (dns.IsSpy(static_cast<u64>(sock)) && dns.HasQueued(static_cast<u64>(sock))) {
+        const bool is_stream = (socket_type == ORBIS_NET_SOCK_STREAM);
+        const u32 copy_len = dns.ConsumeQueued(static_cast<u64>(sock), (u8*)buf, len, is_stream);
+        if (from != nullptr) {
+            sockaddr_in src{};
+            src.sin_family = AF_INET;
+            src.sin_port = htons(53);
+            src.sin_addr.s_addr = dns.GetDnsServerAddr();
+            convertPosixSockaddrToOrbis((sockaddr*)&src, from);
+            if (fromlen)
+                *fromlen = sizeof(OrbisNetSockaddrIn);
+        }
+        return static_cast<int>(copy_len);
+    }
+
     if (from == nullptr) {
         res = recv(sock, (char*)buf, len, posix_flags);
     } else {
@@ -429,6 +500,14 @@ int PosixSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
     std::scoped_lock lock{m_mutex};
     sockaddr addr2;
     convertOrbisNetSockaddrToPosix(addr, &addr2);
+
+    // DNS override: mark ANY socket connecting to port 53 as a DNS spy
+    if (ntohs(((sockaddr_in*)&addr2)->sin_port) == 53) {
+        DnsHook::Instance().AddSpy(static_cast<u64>(sock));
+    }
+
+    LOG_INFO(Lib_Net, "connect -> {}", FormatEndpoint(&addr2));
+
     int result = ::connect(sock, &addr2, sizeof(sockaddr_in));
 #ifdef _WIN32
     // Winsock returns EWOULDBLOCK where real hardware returns EINPROGRESS
