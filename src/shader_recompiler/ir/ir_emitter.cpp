@@ -621,12 +621,12 @@ Value IREmitter::BufferAtomicFCmpSwap(const Value& handle, const Value& address,
     return Inst(Opcode::BufferAtomicFCmpSwap32, Flags{info}, handle, address, vdata, cmp_value);
 }
 
-U32 IREmitter::DataAppend(const U32& counter) {
-    return Inst<U32>(Opcode::DataAppend, counter, Imm32(0));
+U32 IREmitter::DataAppend(const U32& gds_dw_offset) {
+    return Inst<U32>(Opcode::DataAppend, gds_dw_offset, GetExec());
 }
 
-U32 IREmitter::DataConsume(const U32& counter) {
-    return Inst<U32>(Opcode::DataConsume, counter, Imm32(0));
+U32 IREmitter::DataConsume(const U32& gds_dw_offset) {
+    return Inst<U32>(Opcode::DataConsume, gds_dw_offset, GetExec());
 }
 
 U32 IREmitter::LaneId() {
@@ -637,8 +637,16 @@ U32 IREmitter::WarpId() {
     return Inst<U32>(Opcode::WarpId);
 }
 
-U32 IREmitter::QuadShuffle(const U32& value, const U32& index) {
-    return Inst<U32>(Opcode::QuadShuffle, value, index);
+U32 IREmitter::QuadBroadcast(const U32& value, const U32& index) {
+    return Inst<U32>(Opcode::QuadBroadcast, value, index);
+}
+
+U32 IREmitter::Shuffle(const U32& value, const U32& index) {
+    return Inst<U32>(Opcode::Shuffle, value, index);
+}
+
+U32 IREmitter::ShuffleXor(const U32& value, const U32& mask) {
+    return Inst<U32>(Opcode::ShuffleXor, value, mask);
 }
 
 U32 IREmitter::ReadFirstLane(const U32& value) {

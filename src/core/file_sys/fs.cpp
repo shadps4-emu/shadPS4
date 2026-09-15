@@ -239,7 +239,13 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         std::scoped_lock lk{m_mutex};
         path_parts.clear();
         auto current_path = host_path;
-        while (!current_path.empty() && !std::filesystem::exists(current_path)) {
+        std::error_code ec;
+        while (!current_path.empty() && !std::filesystem::exists(current_path, ec)) {
+            if (ec) {
+                LOG_ERROR(Kernel_Fs, "fs::exists returned {}", ec.message());
+                current_path = "";
+                break;
+            }
             // We have probably cached this if it's a folder.
             if (auto it = path_cache.find(current_path); it != path_cache.end()) {
                 current_path = it->second;
@@ -261,9 +267,12 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
                     path_parts.pop_back();
                 };
                 // Can happen when the mismatch is in upper folder.
-                if (std::filesystem::exists(current_path / part)) {
+                std::error_code ec;
+                if (std::filesystem::exists(current_path / part, ec)) {
                     add_match(part);
                     continue;
+                } else if (ec) {
+                    LOG_ERROR(Kernel_Fs, "fs::exists returned {}", ec.message());
                 }
                 const auto part_low = Common::ToLower(part.string());
                 bool found_match = false;

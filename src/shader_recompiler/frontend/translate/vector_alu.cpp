@@ -727,13 +727,6 @@ void Translator::V_BCNT_U32_B32(const GcnInst& inst) {
 }
 
 void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
-    if (!is_low && inst.src[0].field == OperandField::SignedConstIntNeg &&
-        inst.src[0].code == 193 && inst.src[1].field == OperandField::ConstZero) {
-        return;
-    } else if (is_low && inst.src[0].field == OperandField::SignedConstIntNeg &&
-               inst.src[0].code == 193) {
-        return SetDst(inst.dst[0], ir.LaneId());
-    }
     const IR::U32 thread_mask{ir.GetAttributeU32(IR::Attribute::SubgroupLtMask, is_low ? 0 : 1)};
     SetDst(inst.dst[0], ir.IAdd(ir.BitCount(ir.BitwiseAnd(GetSrc(inst.src[0]), thread_mask)),
                                 GetSrc(inst.src[1])));
@@ -1970,7 +1963,7 @@ void Translator::SetCarryOut(const GcnInst& inst, const IR::U1& carry) {
 IR::U32 Translator::VMovRelSHelper(u32 src_vgprno, const IR::U32 m0) {
     // Read from VGPR0 by default when src_vgprno + m0 > num_allocated_vgprs
     IR::U32 src_val = ir.GetVectorReg<IR::U32>(IR::VectorReg::V0);
-    for (u32 i = src_vgprno; i < runtime_info.num_allocated_vgprs; i++) {
+    for (u32 i = src_vgprno; i < runtime_info.props.num_allocated_vgprs; i++) {
         const IR::U1 cond = ir.IEqual(m0, ir.Imm32(i - src_vgprno));
         src_val =
             IR::U32{ir.Select(cond, ir.GetVectorReg<IR::U32>(IR::VectorReg::V0 + i), src_val)};
@@ -1979,7 +1972,7 @@ IR::U32 Translator::VMovRelSHelper(u32 src_vgprno, const IR::U32 m0) {
 }
 
 void Translator::VMovRelDHelper(u32 dst_vgprno, const IR::U32 src_val, const IR::U32 m0) {
-    for (u32 i = dst_vgprno; i < runtime_info.num_allocated_vgprs; i++) {
+    for (u32 i = dst_vgprno; i < runtime_info.props.num_allocated_vgprs; i++) {
         const IR::U1 cond = ir.IEqual(m0, ir.Imm32(i - dst_vgprno));
         const IR::U32 dst_val =
             IR::U32{ir.Select(cond, src_val, ir.GetVectorReg<IR::U32>(IR::VectorReg::V0 + i))};

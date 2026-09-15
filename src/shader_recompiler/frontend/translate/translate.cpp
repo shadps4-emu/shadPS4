@@ -4,8 +4,6 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
-#include "core/libraries/kernel/process.h"
-#include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/info.h"
@@ -23,48 +21,59 @@
 namespace Shader::Gcn {
 
 static IR::VectorReg IterateBarycentrics(const RuntimeInfo& runtime_info, auto&& set_attribute) {
-    if (runtime_info.stage != Stage::Fragment) {
+    if (runtime_info.hw_stage != HwStage::Fragment) {
         return IR::VectorReg::V0;
     }
     u32 dst_vreg{};
-    if (runtime_info.fs_info.addr_flags.persp_sample_ena) {
+    const auto addr_flags = runtime_info.hw.fs.addr_flags;
+    if (addr_flags.persp_sample_ena) {
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmoothSample, 0); // I
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmoothSample, 1); // J
     }
-    if (runtime_info.fs_info.addr_flags.persp_center_ena) {
+    if (addr_flags.persp_center_ena) {
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmooth, 0); // I
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmooth, 1); // J
     }
-    if (runtime_info.fs_info.addr_flags.persp_centroid_ena) {
+    if (addr_flags.persp_centroid_ena) {
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmoothCentroid, 0); // I
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordSmoothCentroid, 1); // J
     }
-    if (runtime_info.fs_info.addr_flags.persp_pull_model_ena) {
+    if (addr_flags.persp_pull_model_ena) {
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordPullModel, 0); // I/W
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordPullModel, 1); // J/W
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordPullModel, 2); // 1/W
     }
-    if (runtime_info.fs_info.addr_flags.linear_sample_ena) {
+    if (addr_flags.linear_sample_ena) {
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordNoPerspSample, 0); // I
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordNoPerspSample, 1); // J
     }
-    if (runtime_info.fs_info.addr_flags.linear_center_ena) {
+    if (addr_flags.linear_center_ena) {
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordNoPersp, 0); // I
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordNoPersp, 1); // J
     }
-    if (runtime_info.fs_info.addr_flags.linear_centroid_ena) {
+    if (addr_flags.linear_centroid_ena) {
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordNoPerspCentroid, 0); // I
         set_attribute(dst_vreg++, IR::Attribute::BaryCoordNoPerspCentroid, 1); // J
     }
-    if (runtime_info.fs_info.addr_flags.line_stipple_tex_ena) {
+    if (addr_flags.line_stipple_tex_ena) {
         ++dst_vreg;
     }
     return IR::VectorReg(dst_vreg);
 }
 
+static s8 UdRegFromShOffset(u16 sgpr_offset, HwStage hw_stage) {
+    static constexpr std::array indirect_sgpr_offsets{0u, 0x4cu, 0u, 0xccu, 0u, 0x14cu};
+    if (sgpr_offset) {
+        const u32 ud_reg = sgpr_offset - indirect_sgpr_offsets[u32(hw_stage)];
+        ASSERT_MSG(ud_reg < 16, "Out of bounds indirect SGPR copy");
+        return ud_reg;
+    }
+    return -1;
+}
+
 Translator::Translator(Info& info_, const RuntimeInfo& runtime_info_, const Profile& profile_)
     : info{info_}, runtime_info{runtime_info_}, profile{profile_},
-      next_vgpr_num{runtime_info.num_allocated_vgprs} {
+      next_vgpr_num{runtime_info.props.num_allocated_vgprs} {
     IterateBarycentrics(runtime_info, [this](u32 vreg, IR::Attribute attrib, u32) {
         vgpr_to_interp[vreg] = attrib;
     });
@@ -78,57 +87,88 @@ void Translator::EmitPrologue(IR::Block* first_block) {
 
     // Initialize user data.
     IR::ScalarReg dst_sreg = IR::ScalarReg::S0;
-    for (u32 i = 0; i < runtime_info.num_user_data; i++) {
+    for (u32 i = 0; i < runtime_info.props.num_user_data; i++) {
         ir.SetScalarReg(dst_sreg, ir.GetUserData(dst_sreg));
         ++dst_sreg;
     }
 
     IR::VectorReg dst_vreg = IR::VectorReg::V0;
-    switch (info.l_stage) {
-    case LogicalStage::Vertex:
+    switch (info.sw_stage) {
+    case SwStage::Vertex: {
+        const s8 base_vertex_sgpr =
+            UdRegFromShOffset(runtime_info.sw.vs.vertex_sgpr_offset, info.hw_stage);
+        if (base_vertex_sgpr != -1) {
+            ir.SetScalarReg(IR::ScalarReg(base_vertex_sgpr),
+                            ir.GetAttributeU32(IR::Attribute::BaseVertex));
+        }
+        const s8 base_instance_sgpr =
+            UdRegFromShOffset(runtime_info.sw.vs.instance_sgpr_offset, info.hw_stage);
+        if (base_instance_sgpr != -1) {
+            ir.SetScalarReg(IR::ScalarReg(base_instance_sgpr),
+                            ir.GetAttributeU32(IR::Attribute::BaseInstance));
+        }
+
         // v0: vertex ID, always present
-        ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::VertexId));
-        if (info.stage == Stage::Local) {
+        IR::U32 vertex_id = ir.GetAttributeU32(IR::Attribute::VertexId);
+        if (base_vertex_sgpr != -1) {
+            if (!fetch_data || fetch_data->vertex_offset_sgpr == -1) {
+                vertex_id = ir.ISub(vertex_id, ir.GetAttributeU32(IR::Attribute::BaseVertex));
+            } else {
+                ASSERT_MSG(fetch_data->vertex_offset_sgpr == base_vertex_sgpr,
+                           "Fetch shader in indirect draw uses wrong base vertex");
+            }
+        }
+        ir.SetVectorReg(dst_vreg++, vertex_id);
+
+        if (info.hw_stage == HwStage::Local) {
             // v1: rel patch ID
-            if (runtime_info.num_input_vgprs > 0) {
+            if (runtime_info.props.num_input_vgprs > 0) {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }
             // v2: unknown
-            if (runtime_info.num_input_vgprs > 1) {
+            if (runtime_info.props.num_input_vgprs > 1) {
                 ++dst_vreg;
-            }
-            // v3: instance ID, plain
-            if (runtime_info.num_input_vgprs > 2) {
-                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
             }
         } else {
             // v1: instance ID, step rate 0
-            if (runtime_info.num_input_vgprs > 0) {
-                if (runtime_info.vs_info.step_rate_0 != 0) {
+            if (runtime_info.props.num_input_vgprs > 0) {
+                if (runtime_info.sw.vs.step_rate_0 != 0) {
                     ir.SetVectorReg(dst_vreg++,
                                     ir.IDiv(ir.GetAttributeU32(IR::Attribute::InstanceId),
-                                            ir.Imm32(runtime_info.vs_info.step_rate_0)));
+                                            ir.Imm32(runtime_info.sw.vs.step_rate_0)));
                 } else {
                     ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
                 }
             }
             // v2: instance ID, step rate 1
-            if (runtime_info.num_input_vgprs > 1) {
-                if (runtime_info.vs_info.step_rate_1 != 0) {
+            if (runtime_info.props.num_input_vgprs > 1) {
+                if (runtime_info.sw.vs.step_rate_1 != 0) {
                     ir.SetVectorReg(dst_vreg++,
                                     ir.IDiv(ir.GetAttributeU32(IR::Attribute::InstanceId),
-                                            ir.Imm32(runtime_info.vs_info.step_rate_1)));
+                                            ir.Imm32(runtime_info.sw.vs.step_rate_1)));
                 } else {
                     ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
                 }
             }
-            // v3: instance ID, plain
-            if (runtime_info.num_input_vgprs > 2) {
-                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::InstanceId));
+        }
+
+        // v3: instance ID, plain
+        if (runtime_info.props.num_input_vgprs > 2) {
+            IR::U32 instance_id = ir.GetAttributeU32(IR::Attribute::InstanceId);
+            if (base_instance_sgpr != -1) {
+                if (!fetch_data || fetch_data->instance_offset_sgpr == -1) {
+                    instance_id =
+                        ir.ISub(instance_id, ir.GetAttributeU32(IR::Attribute::BaseInstance));
+                } else {
+                    ASSERT_MSG(fetch_data->instance_offset_sgpr == base_instance_sgpr,
+                               "Fetch shader in indirect draw uses wrong base instance");
+                }
             }
+            ir.SetVectorReg(dst_vreg++, instance_id);
         }
         break;
-    case LogicalStage::Fragment:
+    }
+    case SwStage::Fragment: {
         dst_vreg =
             IterateBarycentrics(runtime_info, [this](u32 vreg, IR::Attribute attrib, u32 comp) {
                 if (profile.supports_amd_shader_explicit_vertex_parameter ||
@@ -136,51 +176,54 @@ void Translator::EmitPrologue(IR::Block* first_block) {
                     ir.SetVectorReg(IR::VectorReg(vreg), ir.GetAttribute(attrib, comp));
                 }
             });
-        if (runtime_info.fs_info.addr_flags.pos_x_float_ena) {
-            if (runtime_info.fs_info.en_flags.pos_x_float_ena) {
+        const auto addr_flags = runtime_info.hw.fs.addr_flags;
+        const auto en_flags = runtime_info.hw.fs.en_flags;
+        if (addr_flags.pos_x_float_ena) {
+            if (en_flags.pos_x_float_ena) {
                 ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, 0));
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0.0f));
             }
         }
-        if (runtime_info.fs_info.addr_flags.pos_y_float_ena) {
-            if (runtime_info.fs_info.en_flags.pos_y_float_ena) {
+        if (addr_flags.pos_y_float_ena) {
+            if (en_flags.pos_y_float_ena) {
                 ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, 1));
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0.0f));
             }
         }
-        if (runtime_info.fs_info.addr_flags.pos_z_float_ena) {
-            if (runtime_info.fs_info.en_flags.pos_z_float_ena) {
+        if (addr_flags.pos_z_float_ena) {
+            if (en_flags.pos_z_float_ena) {
                 ir.SetVectorReg(dst_vreg++, ir.GetAttribute(IR::Attribute::FragCoord, 2));
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0.0f));
             }
         }
-        if (runtime_info.fs_info.addr_flags.pos_w_float_ena) {
-            if (runtime_info.fs_info.en_flags.pos_w_float_ena) {
+        if (addr_flags.pos_w_float_ena) {
+            if (en_flags.pos_w_float_ena) {
                 ir.SetVectorReg(dst_vreg++,
                                 ir.FPRecip(ir.GetAttribute(IR::Attribute::FragCoord, 3)));
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0.0f));
             }
         }
-        if (runtime_info.fs_info.addr_flags.front_face_ena) {
-            if (runtime_info.fs_info.en_flags.front_face_ena) {
+        if (addr_flags.front_face_ena) {
+            if (en_flags.front_face_ena) {
                 ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::IsFrontFace));
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }
         }
-        if (runtime_info.fs_info.addr_flags.ancillary_ena) {
-            if (runtime_info.fs_info.en_flags.ancillary_ena) {
+        if (addr_flags.ancillary_ena) {
+            if (en_flags.ancillary_ena) {
                 ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::PackedAncillary));
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }
         }
         break;
-    case LogicalStage::TessellationControl: {
+    }
+    case SwStage::TessellationControl: {
         ir.SetVectorReg(IR::VectorReg::V0, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
         // Should be laid out like:
         // [0:8]: patch id within VGT
@@ -188,7 +231,7 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         ir.SetVectorReg(IR::VectorReg::V1,
                         ir.GetAttributeU32(IR::Attribute::PackedHullInvocationInfo));
 
-        if (runtime_info.hs_info.offchip_lds_enable) {
+        if (runtime_info.sw.tcs.offchip_lds_enable) {
             // No off-chip tessellation has been observed yet. If this survives dead code elim,
             // revisit
             ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::OffChipLdsBase));
@@ -197,7 +240,7 @@ void Translator::EmitPrologue(IR::Block* first_block) {
 
         break;
     }
-    case LogicalStage::TessellationEval:
+    case SwStage::TessellationEval:
         ir.SetVectorReg(IR::VectorReg::V0,
                         ir.GetAttribute(IR::Attribute::TessellationEvaluationPointU));
         ir.SetVectorReg(IR::VectorReg::V1,
@@ -211,26 +254,26 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         // V3 is the actual PrimitiveID as intended by the shader author.
         ir.SetVectorReg(IR::VectorReg::V3, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
         break;
-    case LogicalStage::Compute:
+    case SwStage::Compute:
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 0));
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 1));
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 2));
 
-        if (runtime_info.cs_info.tgid_enable[0]) {
+        if (runtime_info.hw.cs.tgid_enable[0]) {
             ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::WorkgroupId, 0));
         }
-        if (runtime_info.cs_info.tgid_enable[1]) {
+        if (runtime_info.hw.cs.tgid_enable[1]) {
             ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::WorkgroupId, 1));
         }
-        if (runtime_info.cs_info.tgid_enable[2]) {
+        if (runtime_info.hw.cs.tgid_enable[2]) {
             ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::WorkgroupId, 2));
         }
         break;
-    case LogicalStage::Geometry:
+    case SwStage::Geometry:
         // The GS wave receives one ES vertex offset per input primitive vertex in V0-V6, with
         // the primitive id in V2. The offset count is a property of the input primitive type;
         // adjacency primitives carry up to 6 vertices.
-        switch (runtime_info.gs_info.in_primitive) {
+        switch (runtime_info.hw.gs.in_primitive) {
         case AmdGpu::PrimitiveType::AdjTriangleList:
         case AmdGpu::PrimitiveType::AdjTriangleStrip:
             ir.SetVectorReg(IR::VectorReg::V6, ir.Imm32(5u)); // vertex 5
@@ -1089,7 +1132,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
     info.has_fetch_shader = true;
     info.fetch_shader_sgpr_base = code_sgpr_base;
 
-    const auto fetch_data = ParseFetchShader(info);
+    fetch_data = ParseFetchShader(info);
     ASSERT(fetch_data.has_value());
 
     if (EmulatorSettings.IsDumpShaders()) {
@@ -1141,8 +1184,8 @@ void Translator::Translate(IR::Block* block, u32 start_pc, IR::Condition cond,
 
         // Special case for emitting fetch shader.
         if (inst.opcode == Opcode::S_SWAPPC_B64) {
-            ASSERT(info.stage == Stage::Vertex || info.stage == Stage::Export ||
-                   info.stage == Stage::Local);
+            ASSERT(info.hw_stage == HwStage::Vertex || info.hw_stage == HwStage::Export ||
+                   info.hw_stage == HwStage::Local);
             EmitFetch(inst);
             continue;
         }
