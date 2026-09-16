@@ -67,6 +67,8 @@ static constexpr bool UseNeoCompatSequences = false;
 static u32 submission_lock{};
 std::condition_variable cv_lock{};
 std::mutex m_submission{};
+
+static std::mutex m_flip_submission{};
 static u64 frames_submitted{};      // frame counter
 static bool send_init_packet{true}; // initialize HW state before first game's submit in a frame
 static s32 sdk_version{0};
@@ -2183,6 +2185,7 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
     u32* ccb_sizes_in_bytes, u32 vo_handle, u32 buf_idx, u32 flip_mode, s64 flip_arg) {
     LOG_DEBUG(Lib_GnmDriver, "called [buf = {}]", buf_idx);
 
+    std::scoped_lock flip_lock{m_flip_submission};
     auto* cmdbuf = dcb_gpu_addrs[count - 1];
     const auto size_dw = dcb_sizes_in_bytes[count - 1] / 4;
 
