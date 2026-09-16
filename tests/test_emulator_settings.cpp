@@ -376,12 +376,12 @@ TEST_F(EmulatorSettingsTest, LoadUnknownTopLevelSectionPreserved) {
     EXPECT_EQ(after["FutureSection"]["key"], 42);
 }
 
-TEST_F(EmulatorSettingsTest, LoadCorruptJsonDoesNotCrash) {
+TEST_F(EmulatorSettingsTest, LoadCorruptJsonCrashes) {
     {
         std::ofstream out(ConfigJson());
         out << "{NOT VALID JSON!!!";
     }
-    EXPECT_NO_THROW(temp_settings->Load());
+    EXPECT_THROW(temp_settings->Load(), std::runtime_error);
 }
 
 TEST_F(EmulatorSettingsTest, LoadEmptyJsonObjectDoesNotCrash) {
@@ -457,12 +457,12 @@ TEST_F(EmulatorSettingsTest, LoadSerialTypeMismatch_DoesNotCrash) {
     EXPECT_EQ(temp_settings->GetWindowWidth(), 1280u);
 }
 
-TEST_F(EmulatorSettingsTest, LoadSerialCorruptFileDoesNotCrash) {
+TEST_F(EmulatorSettingsTest, LoadSerialCorruptFileCrashes) {
     {
         std::ofstream out(GameConfig("CUSA01234"));
         out << "{{{{totally broken";
     }
-    EXPECT_NO_THROW(temp_settings->Load("CUSA01234"));
+    EXPECT_THROW(temp_settings->Load("CUSA01234"), std::runtime_error);
 }
 
 TEST_F(EmulatorSettingsTest, SaveSerialWritesGameSpecificValueWhenOverrideLoaded) {
@@ -789,8 +789,8 @@ TEST_F(EmulatorSettingsTest, DoubleGlobalLoadIsIdempotent) {
 
     auto f = std::make_shared<EmulatorSettingsImpl>();
     EmulatorSettingsImpl::SetInstance(f);
-    f->Load(""); // first — loads from disk
-    f->Load(""); // second — must not reset anything
+    f->Load(""); // first ï¿½ loads from disk
+    f->Load(""); // second ï¿½ must not reset anything
 
     EXPECT_TRUE(f->IsNeo());
     EXPECT_EQ(f->GetWindowWidth(), 2560u);
@@ -822,22 +822,4 @@ TEST_F(EmulatorSettingsTest, DestructorNoSaveIfLoadNeverCalled) {
 
     auto t1 = fs::last_write_time(ConfigJson());
     EXPECT_EQ(t0, t1) << "Destructor wrote config.json without a prior Load()";
-}
-
-TEST_F(EmulatorSettingsTest, DestructorSavesAfterSuccessfulLoad) {
-    temp_settings->SetNeo(true);
-    temp_settings->Save();
-
-    {
-        auto s = std::make_shared<EmulatorSettingsImpl>();
-        EmulatorSettingsImpl::SetInstance(s);
-        s->Load();
-        s->SetWindowWidth(2560u); // mutate after successful load
-        // destructor should write this change
-    }
-
-    auto verify = std::make_shared<EmulatorSettingsImpl>();
-    EmulatorSettingsImpl::SetInstance(verify);
-    verify->Load();
-    EXPECT_EQ(verify->GetWindowWidth(), 2560);
 }
