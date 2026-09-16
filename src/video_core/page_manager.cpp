@@ -303,7 +303,7 @@ public:
         uffdio_writeprotect wp;
         wp.range.start = address;
         wp.range.len = size;
-        wp.mode = allow_write ? 0 : UFFDIO_WRITEPROTECT_MODE_WP;
+        wp.mode = allow_write ? UFFDIO_WRITEPROTECT_MODE_DONTWAKE : UFFDIO_WRITEPROTECT_MODE_WP;
         const int ret = ioctl(uffd, UFFDIO_WRITEPROTECT, &wp);
         ASSERT_MSG(ret != -1, "Uffdio writeprotect failed with error: {}",
                    Common::GetLastErrorMsg());
@@ -341,9 +341,13 @@ public:
             // Read message from kernel.
             uffd_msg msg;
             const int readret = read(uffd, &msg, sizeof(msg));
-            ASSERT_MSG(readret != -1 || errno == EAGAIN, "Unexpected result of uffd read");
-            if (errno == EAGAIN) {
-                continue;
+            if (readret == -1) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    continue;
+                }
+                LOG_ERROR(Common_Memory, "Unexpected result of uffd read: {}",
+                          Common::GetLastErrorMsg());
+                break;
             }
             ASSERT_MSG(readret == sizeof(msg), "Unexpected short read, exiting");
             ASSERT(msg.arg.pagefault.flags & UFFD_PAGEFAULT_FLAG_WP);
@@ -351,6 +355,16 @@ public:
             // Notify rasterizer about the fault.
             const VAddr addr = msg.arg.pagefault.address;
             rasterizer->InvalidateMemory(addr, 1);
+
+            // Some calls to InvalidateMemory never reach the UFFDIO_WRITEPROTECT ioctl in
+            // ::Protect, therefore we use MODE_DONTWAKE and wake the thread with UFFDIO_WAKE here
+            const auto ptid = msg.arg.pagefault.feat.ptid;
+            uffdio_range wake;
+            wake.start = msg.arg.pagefault.address;
+            wake.len = PM_PAGE_SIZE;
+            const int ret = ioctl(uffd, UFFDIO_WAKE, &wake);
+            ASSERT_MSG(ret != -1, "Waking thread {} failed with: {}", ptid,
+                       Common::GetLastErrorMsg());
         }
     }
 };
