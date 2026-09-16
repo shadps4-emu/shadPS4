@@ -174,7 +174,6 @@ void Translator::DS_OP(const GcnInst& inst, AtomicOp op, bool rtn) {
 }
 
 void Translator::DS_CMPST(int bit_size, bool rtn, const GcnInst& inst) {
-
     const bool is_gds = inst.control.ds.gds;
     const IR::U32 addr{GetSrc(inst.src[0])};
     const IR::U32 offset =
