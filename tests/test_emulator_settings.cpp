@@ -789,8 +789,8 @@ TEST_F(EmulatorSettingsTest, DoubleGlobalLoadIsIdempotent) {
 
     auto f = std::make_shared<EmulatorSettingsImpl>();
     EmulatorSettingsImpl::SetInstance(f);
-    f->Load(""); // first � loads from disk
-    f->Load(""); // second � must not reset anything
+    f->Load(""); // first load loads from disk
+    f->Load(""); // second load must not reset anything
 
     EXPECT_TRUE(f->IsNeo());
     EXPECT_EQ(f->GetWindowWidth(), 2560u);
