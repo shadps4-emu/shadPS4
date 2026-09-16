@@ -432,91 +432,6 @@ void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descrip
 
     IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
 
-    if (inst.GetOpcode() == IR::Opcode::DataAppend || inst.GetOpcode() == IR::Opcode::DataConsume) {
-        inst.SetArg(1, ir.Imm32(binding));
-    } else {
-        // Convert shared memory opcode to storage buffer atomic to GDS buffer.
-        auto& buffer = info.buffers[binding];
-        const IR::U32 offset = IR::U32{inst.Arg(0)};
-        const IR::U32 address_words = ir.ShiftRightLogical(offset, ir.Imm32(1));
-        const IR::U32 address_dwords = ir.ShiftRightLogical(offset, ir.Imm32(2));
-        const IR::U32 address_qwords = ir.ShiftRightLogical(offset, ir.Imm32(3));
-        const IR::U32 handle = ir.Imm32(binding);
-        switch (inst.GetOpcode()) {
-        case IR::Opcode::SharedAtomicIAdd32:
-            inst.ReplaceUsesWith(ir.BufferAtomicIAdd(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicIAdd64:
-            inst.ReplaceUsesWith(
-                ir.BufferAtomicIAdd(handle, address_qwords, IR::U64{inst.Arg(1)}, {}));
-            break;
-        case IR::Opcode::SharedAtomicISub32:
-            inst.ReplaceUsesWith(ir.BufferAtomicISub(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicSMin32:
-        case IR::Opcode::SharedAtomicUMin32: {
-            const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMin32;
-            inst.ReplaceUsesWith(
-                ir.BufferAtomicIMin(handle, address_dwords, inst.Arg(1), is_signed, {}));
-            break;
-        }
-        case IR::Opcode::SharedAtomicSMax32:
-        case IR::Opcode::SharedAtomicUMax32: {
-            const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMax32;
-            inst.ReplaceUsesWith(
-                ir.BufferAtomicIMax(handle, address_dwords, inst.Arg(1), is_signed, {}));
-            break;
-        }
-        case IR::Opcode::SharedAtomicInc32:
-            inst.ReplaceUsesWith(ir.BufferAtomicInc(handle, address_dwords, {}));
-            break;
-        case IR::Opcode::SharedAtomicDec32:
-            inst.ReplaceUsesWith(ir.BufferAtomicDec(handle, address_dwords, {}));
-            break;
-        case IR::Opcode::SharedAtomicAnd32:
-            inst.ReplaceUsesWith(ir.BufferAtomicAnd(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicOr32:
-            inst.ReplaceUsesWith(ir.BufferAtomicOr(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicXor32:
-            inst.ReplaceUsesWith(ir.BufferAtomicXor(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicCmpSwap32:
-            inst.ReplaceUsesWith(
-                ir.BufferAtomicCmpSwap(handle, address_dwords, inst.Arg(1), inst.Arg(2), {}));
-            break;
-        case IR::Opcode::LoadSharedU16: {
-            inst.ReplaceUsesWith(ir.LoadBufferU16(handle, address_words, {}));
-            buffer.used_types |= IR::Type::U16;
-            break;
-        }
-        case IR::Opcode::LoadSharedU32:
-            inst.ReplaceUsesWith(ir.LoadBufferU32(1, handle, address_dwords, {}));
-            break;
-        case IR::Opcode::LoadSharedU64: {
-            inst.ReplaceUsesWith(ir.LoadBufferU64(handle, address_qwords, {}));
-            buffer.used_types |= IR::Type::U64;
-            break;
-        }
-        case IR::Opcode::WriteSharedU16: {
-            ir.StoreBufferU16(handle, address_words, IR::U16{inst.Arg(1)}, {});
-            inst.Invalidate();
-            buffer.used_types |= IR::Type::U16;
-            break;
-        }
-        case IR::Opcode::WriteSharedU32:
-            ir.StoreBufferU32(1, handle, address_dwords, inst.Arg(1), {});
-            inst.Invalidate();
-            break;
-        case IR::Opcode::WriteSharedU64: {
-            ir.StoreBufferU64(handle, address_qwords, IR::U64{inst.Arg(1)}, {});
-            inst.Invalidate();
-            buffer.used_types |= IR::Type::U64;
-            break;
-        }
-        default:
-            UNREACHABLE();
     if (IR::Inst* append_idx = IsAppendBufferPattern(inst); append_idx) {
         if (inst.GetOpcode() == IR::Opcode::DataAppend) {
             append_idx->ReplaceUsesWithAndRemove(
@@ -574,6 +489,11 @@ void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descrip
         break;
     case IR::Opcode::SharedAtomicXor32:
         inst.ReplaceUsesWith(ir.BufferAtomicXor(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    case IR::Opcode::SharedAtomicCmpSwap32:
+        // Args are (address, value, cmp_value)
+        inst.ReplaceUsesWith(
+            ir.BufferAtomicCmpSwap(handle, address_dwords, inst.Arg(1), inst.Arg(2), {}));
         break;
     case IR::Opcode::LoadSharedU16: {
         inst.ReplaceUsesWith(ir.LoadBufferU16(handle, address_words, {}));
