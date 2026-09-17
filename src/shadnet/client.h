@@ -67,6 +67,7 @@ enum class CommandType : u16 {
     AddBlock = 10,
     RemoveBlock = 11,
     GetServerFeatures = 12,
+    SetClientVersion = 13,
     GetBoardInfos = 30,
     RecordScore = 31,
     RecordScoreData = 32,
@@ -78,6 +79,7 @@ enum class CommandType : u16 {
     GetScoreGameDataByAccId = 38,
     GetToken = 39,
     SetAppearOffline = 40,
+    LookupOnlineId = 41,
     // Matchmaking
     ContextStart = 100,
     CreateRoom = 101,
@@ -95,6 +97,24 @@ enum class CommandType : u16 {
     GetUserInfoList = 113,
     GetRoomMemberDataExternalList = 114,
     SendRoomMessage = 115,
+    // Title User Storage (TUS)
+    TusSetData = 201,
+    TusGetData = 202,
+    TusSetMultiSlotVariable = 203,
+    TusGetMultiSlotVariable = 204,
+    TusAddAndGetVariable = 205,
+    TusGetMultiSlotDataStatus = 206,
+    TusGetMultiUserDataStatus = 207,
+    TusGetFriendsDataStatus = 208,
+    TusDeleteMultiSlotData = 209,
+    TusGetMultiUserVariable = 210,
+    TusTryAndSetVariable = 211,
+    TusGetFriendsVariable = 212,
+    TusDeleteMultiSlotVariable = 213,
+    TssGetData = 214,
+    // Trophies
+    UnlockTrophy = 301,
+    SyncTrophies = 302,
 };
 
 enum class NotificationType : u16 {
@@ -142,6 +162,7 @@ enum class ErrorType : uint8_t {
     ScoreHasData = 31,
     CondFail = 32,
     Unsupported = 33,
+    TooLarge = 34, // TSS file on the server exceeds the slot's documented maximum
 };
 
 enum class ShadNetState {
@@ -272,12 +293,21 @@ public:
 
     const std::string& GetAvatarUrl() const;
     u64 GetUserId() const;
+    // Online ID this client logged in with (set once in Start()).
+    const std::string& GetNpid() const;
     u32 GetServerProtocolVersion() const {
         return m_server_protocol_version.load();
     }
     u32 GetAddrLocal() const;
     u32 GetAddrServer() const;
     bool IsMatching2Enabled() const;
+    bool IsTrophiesEnabled() const;
+    u64 ReportClientVersion();
+    static std::string BuildVersionString();
+
+    u64 UnlockTrophy(const std::string& com_id, s32 trophy_id, u64 timestamp);
+    u64 SyncTrophies(const std::string& com_id,
+                     const std::vector<std::pair<s32, u64>>& local_trophies);
     u32 GetNumFriends() const;
     std::optional<std::string> GetFriendNpid(u32 index) const;
 
@@ -312,6 +342,8 @@ public:
     u64 RemoveBlock(const std::string& npid);
     // Set the Appear-Offline preference mid-session (server handles us as offline while set).
     u64 SetAppearOffline(bool enable);
+    // Global online ID to account ID resolution
+    u64 LookupOnlineId(const std::string& npid);
 
 private:
     void ConnectThread();
@@ -374,6 +406,7 @@ private:
     std::atomic<u32> m_addr_server{0};
     std::atomic<u32> m_server_protocol_version{0};
     std::atomic<bool> m_matching2_enabled{false};
+    std::atomic<bool> m_trophies_enabled{false};
     std::atomic<bool> m_server_features_received{false};
 
     mutable std::mutex m_mutex_friends;

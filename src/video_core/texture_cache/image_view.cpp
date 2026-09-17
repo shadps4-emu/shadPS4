@@ -60,7 +60,7 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     }
 
     range.base.level = image.base_level;
-    range.base.layer = image.base_array;
+    range.base.layer = std::min<u32>(image.base_array, image.NumLayers() - 1);
     range.extent.levels = image.NumViewLevels(desc.is_array);
     range.extent.layers = image.NumViewLayers(desc.is_array);
     type = image.GetViewType(desc.is_array);

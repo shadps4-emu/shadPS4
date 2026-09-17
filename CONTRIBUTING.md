@@ -13,6 +13,11 @@ SPDX-License-Identifier: GPL-2.0-or-later
 * Use namespaces often
 * Avoid the use of C-style casts and instead prefer C++-style static_cast and reinterpret_cast. Try to avoid using dynamic_cast. Never use const_cast except for when dealing with external const-incorrect APIs.
 
+## A.I. Rules
+
+* AI use should always be disclosed and described. If a user is found to have used AI without disclosure, they may be banned from making further PRs.
+* Descriptions and comments should never be written by AI, everything needs to be human written, so it is human readable.
+* Any AI-generated code that you wish to keep in the PR needs to be pre-reviewed and polished. The user needs to be able to logically explain their decisions, including those of any AI they use, regardless of the code's functionality.
 ## Naming Rules
 
 * Functions: `PascalCase`

@@ -107,15 +107,17 @@ static int GetPortRange(OrbisAudioOutPort type) {
 }
 
 static int GetPortId(s32 handle) {
-    int port_id = handle & 0xFF;
+    const int port_id = handle & 0xFF;
 
     if (port_id >= ORBIS_AUDIO_OUT_NUM_PORTS) {
-        LOG_ERROR(Lib_AudioOut, "Invalid port");
+        LOG_DEBUG(Lib_AudioOut, "Invalid handle {:#x}: port index {} out of range (max {})", handle,
+                  port_id, ORBIS_AUDIO_OUT_NUM_PORTS - 1);
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 
     if ((handle & 0x3F000000) != 0x20000000) {
-        LOG_ERROR(Lib_AudioOut, "Invalid port");
+        LOG_DEBUG(Lib_AudioOut, "Invalid handle {:#x}: bad magic {:#x}, expected {:#x}", handle,
+                  handle & 0x3F000000, 0x20000000);
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 
@@ -184,7 +186,7 @@ static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_tok
             }
         }
 
-        port->output_cv.notify_one();
+        port->output_cv.notify_all();
 
         if (stop.stop_requested()) {
             break;
@@ -192,6 +194,13 @@ static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_tok
 
         timer.End();
     }
+
+    {
+        std::unique_lock lock{port->mutex};
+        port->closing = true;
+        port->output_ready = false;
+    }
+    port->output_cv.notify_all();
 }
 
 /*
@@ -329,8 +338,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         }
 
         // Start output thread - pass shared_ptr by value to keep port alive
-        port->output_thread.Run(
-            [port](const std::stop_token& stop) { AudioOutputThread(port, stop); });
+        port->output_thread.Run([port](std::stop_token stop) { AudioOutputThread(port, stop); });
 
         // Set initial volume
         port->impl->SetVolume(port->volume);
@@ -349,6 +357,8 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
 
     // Create handle
     s32 handle = (_type << 16) | port_id | 0x20000000;
+    LOG_INFO(Lib_AudioOut, "opened port_type={}({}) -> port_id={}, handle={:#x}",
+             magic_enum::enum_name(port_type), _type, port_id, handle);
     return handle;
 }
 
@@ -362,7 +372,7 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
 
     int port_id = GetPortId(handle);
     if (port_id < 0) {
-        LOG_ERROR(Lib_AudioOut, "Invalid port id");
+        LOG_ERROR(Lib_AudioOut, "Invalid port id for handle {:#x}", handle);
         return port_id;
     }
 
@@ -393,10 +403,22 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
         return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
     }
 
-    // Stop the output thread
+    // Kick out any guest thread blocked in sceAudioOutOutput before joining.
+    {
+        std::unique_lock port_lock{port->mutex};
+        port->closing = true;
+        port->output_ready = false;
+    }
+    port->output_cv.notify_all();
+
+    // Stop the output thread.
     port->output_thread.Stop();
 
-    std::free(port->output_buffer);
+    {
+        std::unique_lock port_lock{port->mutex};
+        std::free(port->output_buffer);
+        port->output_buffer = nullptr;
+    }
 
     LOG_DEBUG(Lib_AudioOut, "Closed audio port {}", port_id);
     return ORBIS_OK;
@@ -410,7 +432,7 @@ s32 PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
 
     int port_id = GetPortId(handle);
     if (port_id < 0) {
-        LOG_ERROR(Lib_AudioOut, "Invalid port id");
+        LOG_DEBUG(Lib_AudioOut, "Invalid port id for handle {:#x}", handle);
         return port_id;
     }
 
@@ -444,7 +466,7 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
 
     int port_id = GetPortId(handle);
     if (port_id < 0) {
-        LOG_ERROR(Lib_AudioOut, "Invalid port id");
+        LOG_DEBUG(Lib_AudioOut, "Invalid port id for handle {:#x}", handle);
         return port_id;
     }
 
@@ -517,7 +539,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
 
     int port_id = GetPortId(handle);
     if (port_id < 0) {
-        LOG_ERROR(Lib_AudioOut, "invalid port id");
+        LOG_ERROR(Lib_AudioOut, "invalid port id for handle {:#x}", handle);
         return port_id;
     }
 
@@ -548,7 +570,12 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
     s32 samples_sent = 0;
     {
         std::unique_lock lock{port->mutex};
-        port->output_cv.wait(lock, [&] { return !port->output_ready; });
+        port->output_cv.wait(lock, [&] { return !port->output_ready || port->closing; });
+
+        if (port->closing) {
+            LOG_DEBUG(Lib_AudioOut, "Port {} closed while waiting for drain", port_id);
+            return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
+        }
 
         if (ptr != nullptr) {
             std::memcpy(port->output_buffer, ptr, port->BufferSize());
@@ -645,7 +672,13 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
 
     // Wait for all ports to be ready
     for (u32 i = 0; i < num; i++) {
-        ports[i]->output_cv.wait(locks[i], [&] { return !ports[i]->output_ready; });
+        ports[i]->output_cv.wait(locks[i],
+                                 [&] { return !ports[i]->output_ready || ports[i]->closing; });
+
+        if (ports[i]->closing) {
+            LOG_DEBUG(Lib_AudioOut, "Port closed while waiting for drain");
+            return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
+        }
     }
 
     // Copy data to all ports

@@ -14,8 +14,11 @@
 
 namespace Core::FileSys {
 
+// Guest code expects POSIX sharing: opening a file already open for writing must not fail.
 HostFile::HostFile(std::filesystem::path host_path, Common::FS::FileAccessMode mode, bool read_only)
-    : m_path(std::move(host_path)), m_file(m_path, mode), m_read_only(read_only) {}
+    : m_path(std::move(host_path)), m_file(m_path, mode, Common::FS::FileType::BinaryFile,
+                                           Common::FS::FileShareFlag::ShareReadWrite),
+      m_read_only(read_only) {}
 
 s64 HostFile::Read(void* dst, u64 size) {
     if (!m_file.IsOpen()) {
@@ -234,6 +237,30 @@ std::unique_ptr<IDirectory> HostFsBackend::OpenDir(std::string_view rel_path) {
         return nullptr;
     }
     return std::make_unique<HostDirectory>(path);
+}
+
+std::optional<std::vector<u8>> HostFsBackend::ReadFile(std::string_view rel_path) const {
+    const std::filesystem::path full_path = m_root / rel_path;
+    std::error_code ec;
+    if (!std::filesystem::is_regular_file(full_path, ec) || ec) {
+        return std::nullopt;
+    }
+
+    std::ifstream in(full_path, std::ios::binary | std::ios::ate);
+    if (!in.is_open()) {
+        return std::nullopt;
+    }
+    const auto size = in.tellg();
+    if (size < 0) {
+        return std::nullopt;
+    }
+    std::vector<u8> data(static_cast<size_t>(size));
+    in.seekg(0);
+    in.read(reinterpret_cast<char*>(data.data()), size);
+    if (!in.good() && !in.eof()) {
+        return std::nullopt;
+    }
+    return data;
 }
 
 } // namespace Core::FileSys

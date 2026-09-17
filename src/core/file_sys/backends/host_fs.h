@@ -92,6 +92,12 @@ public:
         return m_root;
     }
 
+    std::filesystem::path RootPath() const override {
+        return m_root;
+    }
+
+    std::optional<std::vector<u8>> ReadFile(std::string_view rel_path) const override;
+
 private:
     std::filesystem::path Resolve(std::string_view rel_path) const;
     std::optional<std::filesystem::path> ResolveCaseInsensitive(std::string_view rel_path) const;

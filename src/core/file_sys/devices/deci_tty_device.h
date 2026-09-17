@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -7,14 +7,14 @@
 
 namespace Core::Devices {
 
-class DeciTty6Device final : public BaseDevice {
+class DeciTtyDevice final : public BaseDevice {
     u32 handle;
 
 public:
     static std::shared_ptr<BaseDevice> Create(u32 handle, const char*, s32, u16);
-    explicit DeciTty6Device(u32 handle) : handle(handle) {}
+    explicit DeciTtyDevice(u32 handle) : handle(handle) {}
 
-    ~DeciTty6Device() override = default;
+    ~DeciTtyDevice() override = default;
 
     s32 ioctl(u64 cmd, Common::VaCtx* args) override;
     s64 write(const void* buf, u64 nbytes) override;

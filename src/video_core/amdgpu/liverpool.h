@@ -222,6 +222,7 @@ private:
 
     Vulkan::Rasterizer* rasterizer{};
     Libraries::VideoOut::VideoOutPort* vo_port{};
+    const bool guest_markers_enabled;
     std::jthread process_thread{};
     std::atomic<u32> num_submits{};
     std::atomic<u32> num_commands{};

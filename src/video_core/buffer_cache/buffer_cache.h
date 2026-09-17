@@ -170,7 +170,7 @@ private:
     }
 
     template <bool async>
-    void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write);
+    void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size);
 
     [[nodiscard]] OverlapResult ResolveOverlaps(VAddr device_addr, u32 wanted_size);
 

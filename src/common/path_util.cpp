@@ -7,6 +7,7 @@
 #include "common/path_util.h"
 #include "common/scope_exit.h"
 #include "common/types.h"
+#include "core/file_sys/ifile.h"
 
 #ifdef __APPLE__
 #include <CoreFoundation/CFBundle.h>
@@ -202,18 +203,43 @@ std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& gam
         return std::nullopt;
     }
 
-    // Check if this is the game we're looking for
-    if (dir.filename() == game_id && fs::exists(dir / "sce_sys" / "param.sfo")) {
-        auto eboot_path = dir / "eboot.bin";
-        if (fs::exists(eboot_path)) {
-            return eboot_path;
+    const auto boot_path_for = [](const fs::path& root) -> std::optional<fs::path> {
+        std::error_code ec;
+        if (fs::is_directory(root, ec) && !ec) {
+            if (!fs::exists(root / "sce_sys" / "param.sfo")) {
+                return std::nullopt;
+            }
+            if (auto eboot_path = root / "eboot.bin"; fs::exists(eboot_path)) {
+                return eboot_path;
+            }
+            return std::nullopt;
         }
+        if (Core::FileSys::IsZArchiveFile(root) &&
+            Core::FileSys::ReadGameFile(root, "sce_sys/param.sfo").has_value()) {
+            return root;
+        }
+        return std::nullopt;
+    };
+
+    // Check if this is the game we're looking for
+    if (dir.filename() == game_id) {
+        if (auto found = boot_path_for(dir)) {
+            return found;
+        }
+    }
+
+    if (auto found = boot_path_for(dir / game_id)) {
+        return found;
+    }
+    if (auto found = boot_path_for(dir / (game_id + ".zar"))) {
+        return found;
     }
 
     // Recursively search subdirectories
     std::error_code ec;
     for (const auto& entry : fs::directory_iterator(dir, ec)) {
-        if (!entry.is_directory()) {
+        std::error_code entry_ec;
+        if (!entry.is_directory(entry_ec) || entry_ec) {
             continue;
         }
         if (auto found = FindGameByID(entry.path(), game_id, max_depth - 1)) {

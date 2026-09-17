@@ -184,14 +184,14 @@ endif()
 
 # Dear ImGui
 add_library(Dear_ImGui
-        dear_imgui/imgui.cpp
-        dear_imgui/imgui_demo.cpp
-        dear_imgui/imgui_draw.cpp
-        dear_imgui/imgui_internal.h
-        dear_imgui/imgui_tables.cpp
-        dear_imgui/imgui_widgets.cpp
+        imgui/imgui.cpp
+        imgui/imgui_demo.cpp
+        imgui/imgui_draw.cpp
+        imgui/imgui_internal.h
+        imgui/imgui_tables.cpp
+        imgui/imgui_widgets.cpp
 )
-target_include_directories(Dear_ImGui INTERFACE dear_imgui/)
+target_include_directories(Dear_ImGui INTERFACE imgui/)
 
 # Tracy
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -382,6 +382,11 @@ if (APPLE AND NOT ENABLE_SYSTEM_VULKAN AND NOT ENABLE_TESTS)
     set(VULKAN_ICD_PATH "${CMAKE_CURRENT_BINARY_DIR}/mesa-kosmickrisp/outputs/kosmickrisp_mesa_icd.json" PARENT_SCOPE)
 endif()
 
+# abseil (for protobuf)
+if (NOT TARGET absl::strings)
+    add_subdirectory(abseil-cpp EXCLUDE_FROM_ALL)
+endif()
+
 # protobuf
 set(protobuf_BUILD_TESTS              OFF CACHE INTERNAL "")
 set(protobuf_BUILD_EXAMPLES           OFF CACHE INTERNAL "")
@@ -389,7 +394,8 @@ set(protobuf_BUILD_PROTOC_BINARIES    ON  CACHE INTERNAL "")
 set(protobuf_INSTALL                  OFF CACHE INTERNAL "")
 set(protobuf_WITH_ZLIB                OFF CACHE INTERNAL "")
 set(protobuf_BUILD_SHARED_LIBS        OFF CACHE INTERNAL "")
-set(protobuf_FORCE_FETCH_DEPENDENCIES ON  CACHE INTERNAL "")
+set(protobuf_LOCAL_DEPENDENCIES_ONLY  ON  CACHE INTERNAL "")
+set(protobuf_FORCE_FETCH_DEPENDENCIES OFF CACHE INTERNAL "")
 if(MSVC)
 set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
 endif()

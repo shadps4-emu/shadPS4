@@ -7,6 +7,7 @@
 #include "common/bit_field.h"
 #include "common/enum.h"
 #include "common/types.h"
+#include "shader_recompiler/ir/type.h"
 #include "video_core/amdgpu/pixel_format.h"
 
 namespace Shader::IR {
@@ -58,7 +59,9 @@ union BufferInstInfo {
     BitField<16, 1, u64> typed;
     BitField<17, 4, AmdGpu::DataFormat> inst_data_fmt;
     BitField<21, 3, AmdGpu::NumberFormat> inst_num_fmt;
+    BitField<24, 1, u64> sharp_source;
     BitField<32, 16, u64> pc;
+    BitField<48, 16, u64> flatbuf_off_dw;
 };
 
 enum class ScalarReg : u32 {
@@ -431,6 +434,23 @@ enum class VectorReg : u32 {
 };
 static constexpr size_t NumVectorRegs = static_cast<size_t>(VectorReg::Max);
 
+struct VirtualReg {
+    explicit VirtualReg() = default;
+    explicit VirtualReg(u32 index_, Type type_) : index{index_}, type{type_} {
+        ASSERT(type != IR::Type::Opaque);
+    }
+
+    auto operator<=>(const VirtualReg&) const noexcept = default;
+
+    constexpr u64 Key() const noexcept {
+        return static_cast<u64>(index) | static_cast<u64>(type) << 32;
+    }
+
+    u32 index{};
+    Type type{};
+};
+static_assert(offsetof(VirtualReg, index) == 0, "Required for RegTag");
+
 template <class T>
 concept RegT = std::is_same_v<T, ScalarReg> || std::is_same_v<T, VectorReg>;
 
@@ -487,5 +507,14 @@ struct fmt::formatter<Shader::IR::VectorReg> {
     }
     auto format(Shader::IR::VectorReg reg, format_context& ctx) const {
         return fmt::format_to(ctx.out(), "VGPR{}", static_cast<u32>(reg));
+    }
+};
+template <>
+struct fmt::formatter<Shader::IR::VirtualReg> {
+    constexpr auto parse(format_parse_context& ctx) {
+        return ctx.begin();
+    }
+    auto format(Shader::IR::VirtualReg reg, format_context& ctx) const {
+        return fmt::format_to(ctx.out(), "REG{}_{}", reg.index, reg.type);
     }
 };
