@@ -698,7 +698,7 @@ s32 PS4_SYSV_ABI sceNpUtilityTerm() {
 // The below are effectively stubbed as they don't have a true implementation yet.
 // Word filtering is a NP Community server provided service.
 // We would eventually want to replace the below with proper handling via a shadnet command.
-// The library reaches out with requests for that service to check input against a stored XML list of presumably censored words.
+// The library sends requests to check input against a stored XML list of censored words.
 
 static std::shared_ptr<WordFilterRequestCtx> GetWordFilterRequest(
     OrbisNpWordFilterRequestId reqId) {
