@@ -36,6 +36,10 @@ constexpr std::optional<u32> CmaskColorExpandedValue(u32 num_samples) {
             return 0;
     }
 }
+static_assert(CmaskColorExpandedValue(1) == 0xFFFFFFFF);
+static_assert(CmaskColorExpandedValue(2) == 0xDDDDDDDD);
+static_assert(CmaskColorExpandedValue(4) == 0xEEEEEEEE);
+static_assert(CmaskColorExpandedValue(8) == 0xFFFFFFFF);
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
@@ -768,13 +772,21 @@ vk::Buffer BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> c
 }
 
 bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size) {
-    if (auto type = texture_cache.IsMeta(device_addr)) {
-        if (*type == TextureCache::MetaType::HTile) {
+    if (const auto meta = texture_cache.GetMetaInfo(device_addr)) {
+        if (meta->type == TextureCache::MetaType::HTile) {
             static constexpr u32 ZmaskUncompressed = 0xf;
             buffer.Fill(buffer.Offset(device_addr), size, ZmaskUncompressed);
             return true;
-        } else if (*type == TextureCache::MetaType::CMask) {
-            const auto expanded_value = CmaskColorExpandedValue(*type->num_samples);
+        } else if (meta->type == TextureCache::MetaType::CMask) {
+            const auto expanded_value = CmaskColorExpandedValue(meta->num_samples);
+            if (!expanded_value) {
+                LOG_WARNING(Render_Vulkan,
+                            "Unsupported CMask sample count: address={:#x}, size={:#x}, "
+                            "samples={}, owner={}:{}",
+                            device_addr, size, meta->num_samples, meta->owner_id.index,
+                            meta->owner_uid);
+                return false;
+            }
             buffer.Fill(buffer.Offset(device_addr), size, *expanded_value);
             return true;
         }
@@ -782,7 +794,7 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
             LOG_WARNING(Render_Vulkan,
                         "Unhandled metadata buffer synchronization: metadata={}, address={:#x}, "
                         "size={:#x}, host_buffer={:#x}:{:#x}, offset={:#x}",
-                        magic_enum::enum_name(*type), device_addr, size, buffer.CpuAddr(),
+                        magic_enum::enum_name(meta->type), device_addr, size, buffer.CpuAddr(),
                         buffer.SizeBytes(), buffer.Offset(device_addr));
         }
     }
