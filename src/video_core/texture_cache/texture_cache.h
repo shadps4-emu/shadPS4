@@ -201,7 +201,6 @@ public:
         return meta;
     }
 
-
     /// Returns meta type if the specified address is a metadata surface.
     std::optional<MetaType> IsMeta(VAddr address) const {
         auto it = surface_metas.find(address);

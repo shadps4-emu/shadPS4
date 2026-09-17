@@ -24,16 +24,16 @@ static constexpr size_t UboStreamBufferSize = 64_MB;
 static constexpr size_t DeviceBufferSize = 128_MB;
 constexpr std::optional<u32> CmaskColorExpandedValue(u32 num_samples) {
     switch (num_samples) {
-        case 1:
-            return 0xFFFFFFFF;
-        case 2:
-            return 0xDDDDDDDD;
-        case 4:
-            return 0xEEEEEEEE;
-        case 8:
-            return 0xFFFFFFFF;
-        default:
-            return 0;
+    case 1:
+        return 0xFFFFFFFF;
+    case 2:
+        return 0xDDDDDDDD;
+    case 4:
+        return 0xEEEEEEEE;
+    case 8:
+        return 0xFFFFFFFF;
+    default:
+        return 0;
     }
 }
 static_assert(CmaskColorExpandedValue(1) == 0xFFFFFFFF);
@@ -789,9 +789,9 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
             }
             buffer.Fill(buffer.Offset(device_addr), size, *expanded_value);
             return true;
-        }
-        else {
-            LOG_WARNING(Render_Vulkan, "Unhandled metadata type {}", magic_enum::enum_name(meta->type));
+        } else {
+            LOG_WARNING(Render_Vulkan, "Unhandled metadata type {}",
+                        magic_enum::enum_name(meta->type));
         }
     }
     const ImageId image_id = texture_cache.FindImageFromRange(device_addr, size);
