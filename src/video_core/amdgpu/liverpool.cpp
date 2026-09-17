@@ -729,7 +729,18 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const u32 data_size = (header->type3.count.Value() - 2) * 4;
                 u64* address = write_data->Address<u64*>();
                 if (!write_data->wr_one_addr.Value()) {
-                    std::memcpy(address, write_data->data, data_size);
+                    if (vo_port->IsVoLabel(address)) {
+                        // Flip label writes race with VideoOutDriver::Flip(), which resets
+                        // the previously displayed buffer's label from the present thread.
+                        // Both sides need to go through vo_mutex, or the reset can clobber a
+                        // label this thread just set (or vice versa), independent of how
+                        // well-ordered the two flip submissions themselves are.
+                        std::scoped_lock lock{vo_port->vo_mutex};
+                        std::memcpy(address, write_data->data, data_size);
+                        vo_port->vo_cv.notify_one();
+                    } else {
+                        std::memcpy(address, write_data->data, data_size);
+                    }
                 } else {
                     UNREACHABLE();
                 }

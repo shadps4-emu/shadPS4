@@ -270,8 +270,9 @@ void VideoOutDriver::Flip(const Request& req) {
 
     // Reset prev flip label
     if (port->prev_index != -1) {
+        std::scoped_lock lock{port->vo_mutex};
         port->buffer_labels[port->prev_index] = 0;
-        port->SignalVoLabel();
+        port->vo_cv.notify_one();
     }
     // save to prev buf index
     port->prev_index = req.index;
