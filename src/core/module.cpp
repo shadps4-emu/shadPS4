@@ -629,9 +629,8 @@ const LibraryInfo* Module::FindLibrary(std::string_view id) {
 void* Module::FindByName(std::string_view name) {
     const auto nid_str = StringToNid(name);
     const auto symbols = export_sym.GetSymbols();
-    const auto it = std::ranges::find_if(symbols, [&](const Loader::SymbolRecord& record) {
-        return record.symbol.name == nid_str;
-    });
+    const auto it = std::ranges::find_if(
+        symbols, [&](const Loader::SymbolRecord& record) { return record.symbol.name == nid_str; });
     if (it != symbols.end()) {
         return reinterpret_cast<void*>(it->virtual_address);
     }
