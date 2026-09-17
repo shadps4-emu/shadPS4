@@ -837,7 +837,7 @@ Frame* Presenter::PrepareBlankFrame(bool present_thread) {
     return frame;
 }
 
-void Presenter::Present(Frame* frame, bool is_reusing_frame) {
+void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame) {
     // Free the frame for reuse
     const auto free_frame = [&] {
         if (!is_reusing_frame) {
@@ -1084,7 +1084,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
     }
 
     free_frame();
-    if (!is_reusing_frame) {
+    if (!is_reusing_frame && is_game_frame) {
         DebugState.IncFlipFrameNum();
     }
 }
