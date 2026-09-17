@@ -1200,7 +1200,7 @@ u32 GcnDecodeContext::getMimgModifier(OpcodeMIMG opcode) {
 void GcnDecodeContext::decodeInstructionMIMG(uint64_t hexInstruction) {
     u32 op_msb = bit::extract(hexInstruction, 0, 0);
     u32 op = bit::extract(hexInstruction, 24, 18);
-    op = op + (op_msb * (1 << 7));
+    op = op + (Libraries::Kernel::sceKernelIsNeoMode() ? op_msb * (1 << 7) : 0);
     u32 vaddr = bit::extract(hexInstruction, 39, 32);
     u32 vdata = bit::extract(hexInstruction, 47, 40);
     u32 srsrc = bit::extract(hexInstruction, 52, 48);
