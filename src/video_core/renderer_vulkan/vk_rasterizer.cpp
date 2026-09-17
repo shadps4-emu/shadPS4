@@ -39,7 +39,7 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
       buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, liverpool_, buffer_cache, page_manager},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
-      pipeline_cache{instance, scheduler, liverpool},
+      pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
       host_markers_enabled{EmulatorSettings.IsVkHostMarkersEnabled()},
       guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()} {
     if (!EmulatorSettings.IsNullGPU()) {
@@ -269,16 +269,16 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         buffer_cache.BindIndexBuffer(0, buffer_barriers);
     }
 
-    const auto& [buffer, base] =
+    const auto [buffer, base] =
         buffer_cache.ObtainBuffer(arg_address + offset, stride * max_count, false);
 
-    VideoCore::Buffer* count_buffer{};
-    u32 count_base{};
+    vk::Buffer count_buffer{};
+    u64 count_base{};
     if (count_address != 0) {
         std::tie(count_buffer, count_base) = buffer_cache.ObtainBuffer(count_address, 4, false);
     }
 
-    if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
+    /*if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
                                           vk::PipelineStageFlagBits2::eDrawIndirect)) {
         buffer_barriers.emplace_back(*barrier);
     }
@@ -287,7 +287,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
                                                     vk::PipelineStageFlagBits2::eDrawIndirect)) {
             buffer_barriers.emplace_back(*barrier);
         }
-    }
+    }*/
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
     UpdateDynamicState(pipeline, is_indexed);
@@ -303,20 +303,19 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         ASSERT(sizeof(VkDrawIndexedIndirectCommand) == stride);
 
         if (count_address != 0) {
-            cmdbuf.drawIndexedIndirectCount(buffer->Handle(), base, count_buffer->Handle(),
-                                            count_base, max_count, stride);
+            cmdbuf.drawIndexedIndirectCount(buffer, base, count_buffer, count_base, max_count,
+                                            stride);
         } else {
-            cmdbuf.drawIndexedIndirect(buffer->Handle(), base, max_count, stride);
+            cmdbuf.drawIndexedIndirect(buffer, base, max_count, stride);
         }
         DebugState.IncDrawCall();
     } else {
         ASSERT(sizeof(VkDrawIndirectCommand) == stride);
 
         if (count_address != 0) {
-            cmdbuf.drawIndirectCount(buffer->Handle(), base, count_buffer->Handle(), count_base,
-                                     max_count, stride);
+            cmdbuf.drawIndirectCount(buffer, base, count_buffer, count_base, max_count, stride);
         } else {
-            cmdbuf.drawIndirect(buffer->Handle(), base, max_count, stride);
+            cmdbuf.drawIndirect(buffer, base, max_count, stride);
         }
         DebugState.IncDrawCall();
     }
@@ -372,17 +371,17 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
 
-    if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
+    /*if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
                                           vk::PipelineStageFlagBits2::eDrawIndirect)) {
         buffer_barriers.emplace_back(*barrier);
-    }
+    }*/
 
     scheduler.EndRendering();
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
-    cmdbuf.dispatchIndirect(buffer->Handle(), base);
+    cmdbuf.dispatchIndirect(buffer, base);
     DebugState.IncDispatch();
 
     ResetBindings();
@@ -406,7 +405,7 @@ void Rasterizer::OnSubmit() {
     }
     texture_cache.ProcessDownloadImages();
     texture_cache.RunGarbageCollector();
-    buffer_cache.RunGarbageCollector();
+    // buffer_cache.RunGarbageCollector();
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
@@ -439,11 +438,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     }
 
     if (uses_dma) {
-        // We only use fault buffer for DMA right now.
-        Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-        for (auto& range : mapped_ranges) {
-            buffer_cache.SynchronizeBuffersInRange(range.lower(), range.upper() - range.lower());
-        }
+        buffer_cache.SynchronizeDmaBuffers();
         fault_process_pending = true;
     }
 
@@ -611,30 +606,9 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
 
 void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
                              Shader::PushData& push_data) {
-    buffer_bindings.clear();
-
+    const u64 alignment = instance.StorageMinAlignment();
     for (const auto& desc : stage.buffers) {
-        const auto vsharp = desc.GetSharp(stage);
-        if (!desc.IsSpecial() && vsharp.base_address != 0 && vsharp.GetSize() > 0) {
-            const u64 size = memory->ClampRangeSize(vsharp.base_address, vsharp.GetSize());
-            if (size != vsharp.GetSize()) {
-                LOG_ERROR(Render, "Clamped size from {} to {} for stage {:#x}", vsharp.GetSize(),
-                          size, stage.pgm_hash);
-            }
-            const auto buffer_id = buffer_cache.FindBuffer(vsharp.base_address, size);
-            buffer_bindings.emplace_back(buffer_id, vsharp, size);
-        } else {
-            buffer_bindings.emplace_back(VideoCore::BufferId{}, vsharp, 0);
-        }
-    }
-
-    // Second pass to re-bind buffers that were updated after binding
-    for (u32 i = 0; i < buffer_bindings.size(); i++) {
-        const auto& [buffer_id, vsharp, size] = buffer_bindings[i];
-        const auto& desc = stage.buffers[i];
-        const u32 alignment = instance.StorageMinAlignment();
-        // Buffer is not from the cache, either a special buffer or unbound.
-        if (!buffer_id) {
+        if (desc.IsSpecial()) {
             if (desc.buffer_type == Shader::BufferType::GdsBuffer) {
                 const auto* gds_buf = buffer_cache.GetGdsBuffer();
                 buffer_infos.emplace_back(gds_buf->Handle(), 0, gds_buf->SizeBytes());
@@ -677,27 +651,37 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 std::memset(data, 0, lds_size);
                 buffer_infos.emplace_back(lds_buffer.Handle(), offset, lds_size);
             } else {
-                buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
+                UNREACHABLE_MSG("Unexpected buffer type {}", u32(desc.buffer_type));
             }
         } else {
-            const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
-                vsharp.base_address, size, desc.is_written, desc.is_formatted, buffer_id);
-            const u32 offset_aligned = Common::AlignDown(offset, alignment);
-            const u32 adjust = offset - offset_aligned;
-            if (adjust % 4 != 0) {
-                LOG_WARNING(Render_Vulkan, "Buffer binding {} in shader {:#x} isn't dword aligned",
-                            i, stage.pgm_hash);
-            }
-            push_data.AddOffset(binding.buffer, adjust);
-            buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
-            if (auto barrier =
-                    vk_buffer->GetBarrier(desc.is_written ? vk::AccessFlagBits2::eShaderWrite
-                                                          : vk::AccessFlagBits2::eShaderRead,
-                                          vk::PipelineStageFlagBits2::eAllCommands)) {
-                buffer_barriers.emplace_back(*barrier);
-            }
-            if (desc.is_written && desc.is_formatted) {
-                texture_cache.InvalidateMemoryFromGPU(vsharp.base_address, size);
+            const auto vsharp = desc.GetSharp(stage);
+            if (vsharp.base_address == 0 || vsharp.GetSize() == 0) {
+                buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
+            } else {
+                const u64 size = memory->ClampRangeSize(vsharp.base_address, vsharp.GetSize());
+                if (size != vsharp.GetSize()) {
+                    LOG_ERROR(Render, "Clamped size from {} to {} for stage {:#x}",
+                              vsharp.GetSize(), size, stage.pgm_hash);
+                }
+                const auto [buffer, offset] = buffer_cache.ObtainBuffer(
+                    vsharp.base_address, size, desc.is_written, desc.is_formatted);
+                const u64 offset_aligned = Common::AlignDown(offset, alignment);
+                const u64 adjust = offset - offset_aligned;
+                if (adjust % 4 != 0) {
+                    LOG_WARNING(Render_Vulkan, "Buffer binding in shader {:#x} isn't dword aligned",
+                                stage.pgm_hash);
+                }
+                push_data.AddOffset(binding.buffer, adjust);
+                buffer_infos.emplace_back(buffer, offset_aligned, size + adjust);
+                /*if (auto barrier =
+                        vk_buffer->GetBarrier(desc.is_written ? vk::AccessFlagBits2::eShaderWrite
+                                                                : vk::AccessFlagBits2::eShaderRead,
+                                                vk::PipelineStageFlagBits2::eAllCommands)) {
+                    buffer_barriers.emplace_back(*barrier);
+                }*/
+                if (desc.is_written && desc.is_formatted) {
+                    texture_cache.InvalidateMemoryFromGPU(vsharp.base_address, size);
+                }
             }
         }
 

@@ -35,7 +35,7 @@ enum class MemoryUsage {
 constexpr vk::BufferUsageFlags ReadFlags =
     vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer |
     vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer |
-    vk::BufferUsageFlagBits::eIndirectBuffer;
+    vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
 constexpr vk::BufferUsageFlags AllFlags =
     ReadFlags | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer;
@@ -75,22 +75,14 @@ struct UniqueBuffer {
 class Buffer {
 public:
     explicit Buffer(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                    MemoryUsage usage, VAddr cpu_addr_, vk::BufferUsageFlags flags,
-                    u64 size_bytes_);
+                    MemoryUsage usage, VAddr cpu_addr_, vk::BufferUsageFlags flags, u64 size_bytes_,
+                    std::string_view debug_name = "");
 
     Buffer& operator=(const Buffer&) = delete;
     Buffer(const Buffer&) = delete;
 
     Buffer& operator=(Buffer&&) = default;
     Buffer(Buffer&&) = default;
-
-    void IncreaseStreamScore(int score) noexcept {
-        stream_score += score;
-    }
-
-    [[nodiscard]] int StreamScore() const noexcept {
-        return stream_score;
-    }
 
     [[nodiscard]] bool IsInBounds(VAddr addr, u64 size) const noexcept {
         return addr >= cpu_addr && addr + size <= cpu_addr + SizeBytes();
@@ -106,14 +98,6 @@ public:
 
     size_t SizeBytes() const {
         return size_bytes;
-    }
-
-    void SetLRUId(u64 id) noexcept {
-        lru_id = id;
-    }
-
-    u64 LRUId() const noexcept {
-        return lru_id;
     }
 
     vk::Buffer Handle() const noexcept {
@@ -148,22 +132,17 @@ public:
         return barrier;
     }
 
-    void Fill(u64 offset, u32 num_bytes, u32 value);
-
 public:
     VAddr cpu_addr = 0;
     bool is_picked{};
     bool is_coherent{};
-    bool is_deleted{};
-    int stream_score = 0;
     size_t size_bytes = 0;
-    u64 lru_id = 0;
     std::span<u8> mapped_data;
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;
     MemoryUsage usage;
     UniqueBuffer buffer;
-    vk::Flags<vk::AccessFlagBits2> access_mask{
+    vk::AccessFlags2 access_mask{
         vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite |
         vk::AccessFlagBits2::eTransferRead | vk::AccessFlagBits2::eTransferWrite};
     vk::PipelineStageFlagBits2 stage{vk::PipelineStageFlagBits2::eAllCommands};

@@ -101,7 +101,8 @@ void UniqueBuffer::Create(const vk::BufferCreateInfo& buffer_ci, MemoryUsage usa
 }
 
 Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_, MemoryUsage usage_,
-               VAddr cpu_addr_, vk::BufferUsageFlags flags, u64 size_bytes_)
+               VAddr cpu_addr_, vk::BufferUsageFlags flags, u64 size_bytes_,
+               std::string_view debug_name)
     : cpu_addr{cpu_addr_}, size_bytes{size_bytes_}, instance{&instance_}, scheduler{&scheduler_},
       usage{usage_}, buffer{instance->GetDevice(), instance->GetAllocator()} {
     // Create buffer object.
@@ -113,7 +114,11 @@ Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     buffer.Create(buffer_ci, usage, &alloc_info);
 
     const auto device = instance->GetDevice();
-    Vulkan::SetObjectName(device, Handle(), "Buffer {:#x}:{:#x}", cpu_addr, size_bytes);
+    if (!debug_name.empty()) {
+        Vulkan::SetObjectName(device, Handle(), debug_name);
+    } else {
+        Vulkan::SetObjectName(device, Handle(), "Buffer {:#x}:{:#x}", cpu_addr, size_bytes);
+    }
 
     // Map it if it is host visible.
     VkMemoryPropertyFlags property_flags{};
@@ -124,53 +129,20 @@ Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     is_coherent = property_flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 }
 
-void Buffer::Fill(u64 offset, u32 num_bytes, u32 value) {
-    scheduler->EndRendering();
-    ASSERT_MSG(offset % 4 == 0 && num_bytes % 4 == 0,
-               "FillBuffer size must be a multiple of 4 bytes");
-    const auto cmdbuf = scheduler->CommandBuffer();
-    const vk::BufferMemoryBarrier2 pre_barrier = {
-        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .srcAccessMask = vk::AccessFlagBits2::eMemoryRead,
-        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .buffer = buffer,
-        .offset = offset,
-        .size = num_bytes,
-    };
-    const vk::BufferMemoryBarrier2 post_barrier = {
-        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
-        .buffer = buffer,
-        .offset = offset,
-        .size = num_bytes,
-    };
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &pre_barrier,
-    });
-    cmdbuf.fillBuffer(buffer, offset, num_bytes, value);
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &post_barrier,
-    });
-}
-
 constexpr u64 WATCHES_INITIAL_RESERVE = 0x4000;
 constexpr u64 WATCHES_RESERVE_CHUNK = 0x1000;
 
 StreamBuffer::StreamBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
                            MemoryUsage usage, u64 size_bytes)
-    : Buffer{instance, scheduler, usage, 0, AllFlags, size_bytes} {
+    : Buffer{instance,
+             scheduler,
+             usage,
+             0,
+             AllFlags,
+             size_bytes,
+             fmt::format("StreamBuffer({}):{:#x}", BufferTypeName(usage), size_bytes)} {
     ReserveWatches(current_watches, WATCHES_INITIAL_RESERVE);
     ReserveWatches(previous_watches, WATCHES_INITIAL_RESERVE);
-    const auto device = instance.GetDevice();
-    Vulkan::SetObjectName(device, Handle(), "StreamBuffer({}):{:#x}", BufferTypeName(usage),
-                          size_bytes);
 }
 
 std::pair<u8*, u64> StreamBuffer::Map(u64 size, u64 alignment, bool allow_wait) {

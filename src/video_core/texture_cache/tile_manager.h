@@ -18,16 +18,16 @@ class TileManager {
 
 public:
     using ScratchBuffer = std::pair<vk::Buffer, VmaAllocation>;
-    using Result = std::pair<vk::Buffer, u32>;
+    using Result = std::pair<vk::Buffer, u64>;
 
     explicit TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
                          StreamBuffer& stream_buffer);
     ~TileManager();
 
     void TileImage(Image& in_image, std::span<vk::BufferImageCopy> buffer_copies,
-                   vk::Buffer out_buffer, u32 out_offset, u32 copy_size);
+                   vk::Buffer out_buffer, u64 out_offset, u64 copy_size);
 
-    Result DetileImage(vk::Buffer in_buffer, u32 in_offset, const ImageInfo& info);
+    Result DetileImage(vk::Buffer in_buffer, u64 in_offset, const ImageInfo& info);
 
 private:
     vk::Pipeline GetTilingPipeline(const ImageInfo& info, bool is_tiler);
