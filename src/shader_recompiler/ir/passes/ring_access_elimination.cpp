@@ -25,8 +25,8 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         }
     };
 
-    switch (program.info.stage) {
-    case Stage::Local: {
+    switch (program.info.hw_stage) {
+    case HwStage::Local: {
         ForEachInstruction([=](IR::IREmitter& ir, IR::Inst& inst) {
             const auto opcode = inst.GetOpcode();
             switch (opcode) {
@@ -38,8 +38,8 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 ASSERT(inst.Arg(0).IsImmediate());
 
                 u32 offset = inst.Arg(0).U32();
-                IR::Value data = is_composite ? ir.UnpackUint2x32(IR::U64{inst.Arg(1).Resolve()})
-                                              : inst.Arg(1).Resolve();
+                IR::Value data =
+                    is_composite ? ir.UnpackUint2x32(IR::U64{inst.Arg(1)}) : inst.Arg(1);
                 for (s32 i = 0; i < num_components; i++) {
                     const auto attrib = IR::Attribute::Param0 + (offset / 16);
                     const auto comp = (offset / 4) % 4;
@@ -57,7 +57,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         });
         break;
     }
-    case Stage::Export: {
+    case HwStage::Export: {
         ForEachInstruction([=](IR::IREmitter& ir, IR::Inst& inst) {
             const auto opcode = inst.GetOpcode();
             switch (opcode) {
@@ -68,7 +68,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 }
 
                 const auto offset = inst.Flags<IR::BufferInstInfo>().inst_offset.Value();
-                ASSERT(offset < runtime_info.es_info.vertex_data_size * 4);
+                ASSERT(offset < runtime_info.hw.es.vertex_data_size * 4);
                 const auto data = ir.BitCast<IR::F32>(IR::U32{inst.Arg(2)});
                 const auto attrib =
                     IR::Value{offset < 16 ? IR::Attribute::Position0
@@ -88,8 +88,8 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         });
         break;
     }
-    case Stage::Geometry: {
-        const auto& gs_info = runtime_info.gs_info;
+    case HwStage::Geometry: {
+        const auto& gs_info = runtime_info.hw.gs;
         info.gs_copy_data = Shader::ParseCopyShader(gs_info.vs_copy);
 
         u32 output_vertices = gs_info.output_vertices;
@@ -126,7 +126,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                                            .U32() >>
                                        2;
                 const auto soffset = IR::GetBufferSOffsetArg(&inst);
-                const auto bucket = soffset.Resolve().U32() / 256u;
+                const auto bucket = soffset.U32() / 256u;
                 const auto attrib = bucket < 4 ? IR::Attribute::Position0
                                                : IR::Attribute::Param0 + (bucket / 4 - 1);
                 const auto comp = bucket % 4;
@@ -155,7 +155,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
 
                 inst.Invalidate();
                 if (IsPosition(attr)) {
-                    ExportPosition(ir, runtime_info.gs_info, attr, comp, data);
+                    ExportPosition(ir, gs_info, false, attr, comp, data);
                 } else {
                     ir.SetAttribute(attr, data, comp);
                 }

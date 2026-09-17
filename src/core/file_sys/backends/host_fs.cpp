@@ -14,8 +14,11 @@
 
 namespace Core::FileSys {
 
+// Guest code expects POSIX sharing: opening a file already open for writing must not fail.
 HostFile::HostFile(std::filesystem::path host_path, Common::FS::FileAccessMode mode, bool read_only)
-    : m_path(std::move(host_path)), m_file(m_path, mode), m_read_only(read_only) {}
+    : m_path(std::move(host_path)), m_file(m_path, mode, Common::FS::FileType::BinaryFile,
+                                           Common::FS::FileShareFlag::ShareReadWrite),
+      m_read_only(read_only) {}
 
 s64 HostFile::Read(void* dst, u64 size) {
     if (!m_file.IsOpen()) {

@@ -9,6 +9,6 @@ struct AVFrame;
 
 namespace Libraries::Videodec {
 
-void CopyNV12Data(u8* dst, const AVFrame& src);
+void CopyNV12Data(u8* dst, u64 max_size, const AVFrame& src);
 
 }

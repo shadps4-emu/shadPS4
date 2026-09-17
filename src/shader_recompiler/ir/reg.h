@@ -59,7 +59,9 @@ union BufferInstInfo {
     BitField<16, 1, u64> typed;
     BitField<17, 4, AmdGpu::DataFormat> inst_data_fmt;
     BitField<21, 3, AmdGpu::NumberFormat> inst_num_fmt;
+    BitField<24, 1, u64> sharp_source;
     BitField<32, 16, u64> pc;
+    BitField<48, 16, u64> flatbuf_off_dw;
 };
 
 enum class ScalarReg : u32 {
@@ -434,7 +436,9 @@ static constexpr size_t NumVectorRegs = static_cast<size_t>(VectorReg::Max);
 
 struct VirtualReg {
     explicit VirtualReg() = default;
-    explicit VirtualReg(u32 index_, Type type_) : index{index_}, type{type_} {}
+    explicit VirtualReg(u32 index_, Type type_) : index{index_}, type{type_} {
+        ASSERT(type != IR::Type::Opaque);
+    }
 
     auto operator<=>(const VirtualReg&) const noexcept = default;
 
@@ -445,6 +449,7 @@ struct VirtualReg {
     u32 index{};
     Type type{};
 };
+static_assert(offsetof(VirtualReg, index) == 0, "Required for RegTag");
 
 template <class T>
 concept RegT = std::is_same_v<T, ScalarReg> || std::is_same_v<T, VectorReg>;

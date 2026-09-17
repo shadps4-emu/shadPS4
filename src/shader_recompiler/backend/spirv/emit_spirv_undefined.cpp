@@ -22,6 +22,22 @@ Id EmitUndefU32(EmitContext& ctx) {
     return ctx.OpUndef(ctx.U32[1]);
 }
 
+Id EmitUndefU32x2(EmitContext& ctx) {
+    return ctx.OpUndef(ctx.U32[2]);
+}
+
+Id EmitUndefU32x3(EmitContext& ctx) {
+    return ctx.OpUndef(ctx.U32[3]);
+}
+
+Id EmitUndefU32x4(EmitContext& ctx) {
+    return ctx.OpUndef(ctx.U32[4]);
+}
+
+Id EmitUndefF32(EmitContext& ctx) {
+    return ctx.OpUndef(ctx.F32[1]);
+}
+
 Id EmitUndefU64(EmitContext&) {
     UNREACHABLE_MSG("SPIR-V Instruction");
 }

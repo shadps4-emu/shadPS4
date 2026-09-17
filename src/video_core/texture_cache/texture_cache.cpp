@@ -355,6 +355,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   "  Guest size:     {:#x}\n"
                   "  Last accessed:  tick {}\n"
                   "  Safe to delete: {}\n"
+                  "  isPow2:         {}\n"
+                  "  Alt tile:       {}\n"
                   "\n"
                   "=== NEW IMAGE (requested) ===\n"
                   "  Address:        {:#x}\n"
@@ -372,6 +374,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   "  Block size:     {} bits\n"
                   "  Is block-comp:  {}\n"
                   "  Guest size:     {:#x}\n"
+                  "  isPow2:         {}\n"
+                  "  Alt tile:       {}\n"
                   "\n"
                   "=== COMPARISON ===\n"
                   "  Same format:           {}\n"
@@ -380,6 +384,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   "  Same block size:       {}\n"
                   "  Same BlockDim:         {}\n"
                   "  Same pitch:            {}\n"
+                  "  Same pow2:             {}\n"
+                  "  Same alt tile:         {}\n"
                   "  Old resources <= new:  {} (old: {}, new: {})\n"
                   "  Old size <= new size:  {}\n"
                   "  Expected size (calc):  {} bytes\n"
@@ -401,6 +407,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   cache_image.info.num_samples, static_cast<u32>(cache_image.info.tile_mode),
                   cache_image.info.num_bits, +cache_image.info.props.is_block,
                   cache_image.info.guest_size, cache_image.tick_accessed_last, safe_to_delete,
+                  bool(cache_image.info.props.is_pow2), cache_image.info.alt_tile,
 
                   // New image details
                   image_info.guest_address, image_info.guest_size,
@@ -409,6 +416,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   image_info.pitch, image_info.resources.levels, image_info.resources.layers,
                   image_info.num_samples, static_cast<u32>(image_info.tile_mode),
                   image_info.num_bits, image_info.props.is_block, image_info.guest_size,
+                  bool(image_info.props.is_pow2), image_info.alt_tile,
 
                   // Comparison
                   (image_info.pixel_format == cache_image.info.pixel_format),
@@ -417,6 +425,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   (image_info.num_bits == cache_image.info.num_bits),
                   (image_info.BlockDim() == cache_image.info.BlockDim()),
                   (image_info.pitch == cache_image.info.pitch),
+                  (image_info.props.is_pow2 == cache_image.info.props.is_pow2),
+                  (image_info.alt_tile == cache_image.info.alt_tile),
                   (cache_image.info.resources <= image_info.resources),
                   cache_image.info.resources.levels, image_info.resources.levels,
                   (cache_image.info.guest_size <= image_info.guest_size), expected_size,
