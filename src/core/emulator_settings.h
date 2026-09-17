@@ -578,8 +578,6 @@ private:
     // rest of this run regardless of the persisted setting
     std::atomic<bool> m_shadnet_session_disabled{false};
 
-    bool m_loaded{false};
-
     static std::shared_ptr<EmulatorSettingsImpl> s_instance;
     static std::mutex s_mutex;
 
