@@ -791,11 +791,7 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
             return true;
         }
         else {
-            LOG_WARNING(Render_Vulkan,
-                        "Unhandled metadata buffer synchronization: metadata={}, address={:#x}, "
-                        "size={:#x}, host_buffer={:#x}:{:#x}, offset={:#x}",
-                        magic_enum::enum_name(meta->type), device_addr, size, buffer.CpuAddr(),
-                        buffer.SizeBytes(), buffer.Offset(device_addr));
+            LOG_WARNING(Render_Vulkan, "Unhandled metadata type {}", magic_enum::enum_name(meta->type));
         }
     }
     const ImageId image_id = texture_cache.FindImageFromRange(device_addr, size);
