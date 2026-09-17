@@ -1104,6 +1104,7 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/buffer_cache/buffer_cache.h
                src/video_core/buffer_cache/fault_manager.cpp
                src/video_core/buffer_cache/fault_manager.h
+               src/video_core/buffer_cache/interval_set.h
                src/video_core/buffer_cache/memory_tracker.h
                src/video_core/buffer_cache/range_set.h
                src/video_core/buffer_cache/region_definitions.h
@@ -1118,8 +1119,6 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/vk_graphics_pipeline.h
                src/video_core/renderer_vulkan/vk_instance.cpp
                src/video_core/renderer_vulkan/vk_instance.h
-               src/video_core/renderer_vulkan/vk_master_semaphore.cpp
-               src/video_core/renderer_vulkan/vk_master_semaphore.h
                src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
                src/video_core/renderer_vulkan/vk_pipeline_cache.h
                src/video_core/renderer_vulkan/vk_pipeline_common.cpp
@@ -1136,6 +1135,8 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/vk_resource_pool.h
                src/video_core/renderer_vulkan/vk_scheduler.cpp
                src/video_core/renderer_vulkan/vk_scheduler.h
+               src/video_core/renderer_vulkan/vk_semaphore.cpp
+               src/video_core/renderer_vulkan/vk_semaphore.h
                src/video_core/renderer_vulkan/vk_shader_hle.cpp
                src/video_core/renderer_vulkan/vk_shader_hle.h
                src/video_core/renderer_vulkan/vk_shader_util.cpp

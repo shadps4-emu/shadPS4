@@ -3,7 +3,7 @@
 
 #include <limits>
 #include "video_core/renderer_vulkan/vk_instance.h"
-#include "video_core/renderer_vulkan/vk_master_semaphore.h"
+#include "video_core/renderer_vulkan/vk_semaphore.h"
 
 #include "common/assert.h"
 
@@ -11,7 +11,7 @@ namespace Vulkan {
 
 constexpr u64 WAIT_TIMEOUT = std::numeric_limits<u64>::max();
 
-MasterSemaphore::MasterSemaphore(const Instance& instance_) : instance{instance_} {
+Semaphore::Semaphore(const Instance& instance_) : instance{instance_} {
     const vk::StructureChain semaphore_chain = {
         vk::SemaphoreCreateInfo{},
         vk::SemaphoreTypeCreateInfo{
@@ -26,9 +26,9 @@ MasterSemaphore::MasterSemaphore(const Instance& instance_) : instance{instance_
     semaphore = std::move(sem);
 }
 
-MasterSemaphore::~MasterSemaphore() = default;
+Semaphore::~Semaphore() = default;
 
-void MasterSemaphore::Refresh() {
+void Semaphore::Refresh() {
     u64 this_tick{};
     u64 counter{};
     do {
@@ -44,7 +44,7 @@ void MasterSemaphore::Refresh() {
                                              std::memory_order_relaxed));
 }
 
-void MasterSemaphore::Wait(u64 tick) {
+void Semaphore::Wait(u64 tick) {
     // No need to wait if the GPU is ahead of the tick
     if (IsFree(tick)) {
         return;
