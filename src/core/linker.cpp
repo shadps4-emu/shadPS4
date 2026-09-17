@@ -32,13 +32,15 @@
 #include <signal.h>
 #endif
 
+#pragma optimize off
+
 namespace Core {
 
 static PS4_SYSV_ABI void ProgramExitFunc() {
     LOG_ERROR(Core_Linker, "Exit function called");
 }
 
-static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
+static PS4_SYSV_ABI void* RunMainEntry [[noreturn]](EntryParams* params) {
 #ifdef ARCH_X86_64
     // Start shared library modules
     asm volatile("andq $-16, %%rsp\n" // Align to 16 bytes
@@ -373,7 +375,7 @@ void Linker::Relocate(Module* module) {
             }
             rel_is_resolved = (symbol_virtual_addr != 0);
             rel_value = (rel_is_resolved ? symbol_virtual_addr + addend : 0);
-            rel_name = symrec.name;
+            rel_name = symrec.symbol.name;
             break;
         }
         default:
@@ -393,7 +395,7 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     const auto ids = Common::SplitString(name, '#');
     if (ids.size() != 3) {
         return_info->virtual_address = 0;
-        return_info->name = name;
+        return_info->symbol.name = ids.at(0);
         LOG_ERROR(Core_Linker, "Not Resolved {}", name);
         return false;
     }
@@ -434,23 +436,23 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
 
     const auto aeronid = AeroLib::FindByNid(sr.name.c_str());
     if (sym_type == Loader::SymbolType::Object) {
-        return_info->name = aeronid ? aeronid->name : "Unknown object";
+        return_info->symbol.nidName = aeronid ? aeronid->name : "Unknown object";
         return_info->virtual_address = 0;
     } else if (aeronid) {
-        return_info->name = aeronid->name;
+        return_info->symbol.nidName = aeronid->name;
         return_info->virtual_address = AeroLib::GetStub(aeronid->nid);
     } else {
         return_info->virtual_address = AeroLib::GetStub(sr.name.c_str());
-        return_info->name = "Unknown !!!";
+        return_info->symbol.nidName = "Unknown !!!";
     }
     if (library->name != "libc" && library->name != "libSceFios2") {
         LOG_WARNING(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
-                    return_info->name, library->name, module->name);
+                    return_info->symbol.nidName, library->name, module->name);
     } else {
-        if (library->name == "libc" && return_info->name == "Need_sceLibc") {
+        if (library->name == "libc" && return_info->symbol.nidName == "Need_sceLibc") {
             Libraries::SysModule::g_need_scelibc = true;
         }
-        if (library->name == "libSceFios2" && return_info->name == "sceFiosInitialize") {
+        if (library->name == "libSceFios2" && return_info->symbol.nidName == "sceFiosInitialize") {
             Libraries::SysModule::g_need_scelibc = true;
         }
     }
