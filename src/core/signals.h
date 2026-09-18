@@ -28,6 +28,8 @@ public:
     SignalDispatch();
     ~SignalDispatch();
 
+    void RemoveHandlers();
+
     /// Registers a handler for memory access violation signals.
     void RegisterAccessViolationHandler(const AccessViolationHandler& handler, u32 priority) {
         access_violation_handlers.emplace(handler, priority);

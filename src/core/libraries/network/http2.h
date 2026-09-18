@@ -37,6 +37,7 @@ s32 PS4_SYSV_ABI sceHttp2CreateTemplate(s32 ctx_id, const char* user_agent, s32 
 s32 PS4_SYSV_ABI sceHttp2DeleteRequest(s32 req_id);
 s32 PS4_SYSV_ABI sceHttp2DeleteTemplate(s32 tmpl_id);
 s32 PS4_SYSV_ABI sceHttp2GetAllResponseHeaders(s32 req_id, char** header, u64* header_size);
+s32 PS4_SYSV_ABI sceHttp2GetResponseContentLength(s32 req_id, s32* result, u64* content_length);
 s32 PS4_SYSV_ABI sceHttp2GetStatusCode(s32 request_id, s32* status_code);
 s32 PS4_SYSV_ABI sceHttp2Init(s32 net_id, s32 ssl_id, u64 pool_size, s32 max_requests);
 s32 PS4_SYSV_ABI sceHttp2ReadData(s32 req_id, void* data, u64 size);
@@ -44,6 +45,7 @@ s32 PS4_SYSV_ABI sceHttp2SendRequest(s32 req_id, const void* data, u64 size);
 s32 PS4_SYSV_ABI sceHttp2SetPreSendCallback(s32 template_id, OrbisHttp2PreSendCallback cb_func,
                                             void* user_arg);
 s32 PS4_SYSV_ABI sceHttp2SetRequestContentLength(s32 req_id, u64 content_length);
+s32 PS4_SYSV_ABI sceHttp2Term(s32 ctx_id);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Http2

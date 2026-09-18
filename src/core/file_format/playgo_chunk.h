@@ -4,6 +4,7 @@
 #pragma once
 #include <filesystem>
 #include <mutex>
+#include <span>
 #include <vector>
 #include "common/io_file.h"
 #include "core/libraries/playgo/playgo_types.h"
@@ -111,6 +112,7 @@ public:
     ~PlaygoFile() = default;
 
     bool Open(const std::filesystem::path& filepath);
+    bool Open(std::span<const u8> data);
     bool LoadChunks(const Common::FS::IOFile& file);
 
     PlaygoHeader& GetPlaygoHeader() {

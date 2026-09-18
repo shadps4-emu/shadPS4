@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
@@ -43,7 +43,7 @@
 namespace Libraries::Kernel {
 
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
-static std::vector<char*> g_environ{};
+char const* g_environment[64];
 static const char* g_progname = "eboot.bin";
 
 boost::asio::io_context io_context;
@@ -105,63 +105,55 @@ s32 PS4_SYSV_ABI sceKernelError(s32 posix_error) {
     return posix_error + ORBIS_KERNEL_ERROR_UNKNOWN;
 }
 
-void SetPosixErrno(s32 e) {
+s32 NativeToPosixErrno(s32 const e) {
     // Some error numbers are different between supported OSes
     switch (e) {
+    case 0:
+        return 0;
     case EPERM:
-        g_posix_errno = POSIX_EPERM;
+        return POSIX_EPERM;
         break;
     case ENOENT:
-        g_posix_errno = POSIX_ENOENT;
+        return POSIX_ENOENT;
+        break;
+    case EINTR:
+        return POSIX_EINTR;
         break;
     case EDEADLK:
-        g_posix_errno = POSIX_EDEADLK;
+        return POSIX_EDEADLK;
         break;
     case ENOMEM:
-        g_posix_errno = POSIX_ENOMEM;
+        return POSIX_ENOMEM;
         break;
     case EACCES:
-        g_posix_errno = POSIX_EACCES;
+        return POSIX_EACCES;
         break;
     case EFAULT:
-        g_posix_errno = POSIX_EFAULT;
+        return POSIX_EFAULT;
         break;
     case EINVAL:
-        g_posix_errno = POSIX_EINVAL;
+        return POSIX_EINVAL;
         break;
     case ENOSPC:
-        g_posix_errno = POSIX_ENOSPC;
+        return POSIX_ENOSPC;
         break;
     case ERANGE:
-        g_posix_errno = POSIX_ERANGE;
+        return POSIX_ERANGE;
         break;
     case EAGAIN:
-        g_posix_errno = POSIX_EAGAIN;
+        return POSIX_EAGAIN;
         break;
     case ETIMEDOUT:
-        g_posix_errno = POSIX_ETIMEDOUT;
+        return POSIX_ETIMEDOUT;
         break;
     default:
         LOG_WARNING(Kernel, "Unhandled errno {}", e);
-        g_posix_errno = e;
+        return e;
     }
 }
 
-static u64 g_mspace_atomic_id_mask = 0;
-static u64 g_mstate_table[64] = {0};
-
-struct HeapInfoInfo {
-    u64 size = sizeof(HeapInfoInfo);
-    u32 flag;
-    u32 getSegmentInfo;
-    u64* mspace_atomic_id_mask;
-    u64* mstate_table;
-};
-
-void PS4_SYSV_ABI sceLibcHeapGetTraceInfo(HeapInfoInfo* info) {
-    info->mspace_atomic_id_mask = &g_mspace_atomic_id_mask;
-    info->mstate_table = g_mstate_table;
-    info->getSegmentInfo = 0;
+void SetPosixErrno(s32 e) {
+    g_posix_errno = NativeToPosixErrno(e);
 }
 
 struct OrbisKernelUuid {
@@ -453,7 +445,8 @@ u64 PS4_SYSV_ABI posix_sysconf(s32 name) {
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
-    g_environ.emplace_back(nullptr);
+
+    static char const** kernel_environ = g_environment;
 
     Libraries::Kernel::RegisterFileSystem(sym);
     Libraries::Kernel::RegisterTime(sym);
@@ -468,7 +461,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterCoredump(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", &g_stack_chk_guard);
-    LIB_OBJ("+2thxYZ4syk", "libkernel", 1, "libkernel", &g_environ);
+    LIB_OBJ("+2thxYZ4syk", "libkernel", 1, "libkernel", &kernel_environ);
     LIB_OBJ("djxxOmW6-aw", "libkernel", 1, "libkernel", &g_progname);
     LIB_FUNCTION("D4yla3vx4tY", "libkernel", 1, "libkernel", sceKernelError);
     LIB_FUNCTION("YeU23Szo3BM", "libkernel", 1, "libkernel", sceKernelGetAllowedSdkVersionOnSystem);
@@ -480,6 +473,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("wW+k21cmbwQ", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", sceKernelGetFsSandboxRandomWord);
+    LIB_FUNCTION("JGfTMBOdUJo", "libkernel_psmkit", 1, "libkernel",
+                 sceKernelGetFsSandboxRandomWord);
     LIB_FUNCTION("6xVpy0Fdq+I", "libkernel", 1, "libkernel", _sigprocmask);
     LIB_FUNCTION("Xjoosiw+XPI", "libkernel", 1, "libkernel", sceKernelUuidCreate);
     LIB_FUNCTION("Ou3iL1abvng", "libkernel", 1, "libkernel", stack_chk_fail);
@@ -490,9 +485,6 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("mkawd0NA9ts", "libkernel", 1, "libkernel", posix_sysconf);
     LIB_FUNCTION("mkawd0NA9ts", "libScePosix", 1, "libkernel", posix_sysconf);
-
-    LIB_FUNCTION("NWtTN10cJzE", "libSceLibcInternalExt", 1, "libSceLibcInternal",
-                 sceLibcHeapGetTraceInfo);
 
     // network
     LIB_FUNCTION("XVL8So3QJUk", "libkernel", 1, "libkernel", Libraries::Net::sys_connect);

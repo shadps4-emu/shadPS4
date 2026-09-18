@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -120,6 +120,9 @@ vk::PrimitiveTopology PrimitiveType(AmdGpu::PrimitiveType type) {
     case AmdGpu::PrimitiveType::Polygon:
         return vk::PrimitiveTopology::eTriangleFan;
     case AmdGpu::PrimitiveType::TriangleStrip:
+        return vk::PrimitiveTopology::eTriangleStrip;
+    case AmdGpu::PrimitiveType::QuadStrip:
+        LOG_WARNING(Render_Vulkan, "Unimplemented primitive type, using TriangleStrip.");
         return vk::PrimitiveTopology::eTriangleStrip;
     case AmdGpu::PrimitiveType::AdjLineList:
         return vk::PrimitiveTopology::eLineListWithAdjacency;
@@ -491,16 +494,19 @@ static constexpr vk::FormatFeatureFlags2 GetDataFormatFeatureFlags(
     case AmdGpu::DataFormat::Format32_As_8_8:
     case AmdGpu::DataFormat::Format32_As_32_32_32_32:
         return ImageRead;
-    case AmdGpu::DataFormat::FormatFmask8_1:
-    case AmdGpu::DataFormat::FormatFmask8_2:
-    case AmdGpu::DataFormat::FormatFmask8_4:
-    case AmdGpu::DataFormat::FormatFmask16_1:
-    case AmdGpu::DataFormat::FormatFmask16_2:
-    case AmdGpu::DataFormat::FormatFmask32_2:
-    case AmdGpu::DataFormat::FormatFmask32_4:
-    case AmdGpu::DataFormat::FormatFmask32_8:
-    case AmdGpu::DataFormat::FormatFmask64_4:
-    case AmdGpu::DataFormat::FormatFmask64_8:
+    case AmdGpu::DataFormat::FormatFmask8_S2_F1:
+    case AmdGpu::DataFormat::FormatFmask8_S4_F1:
+    case AmdGpu::DataFormat::FormatFmask8_S8_F1:
+    case AmdGpu::DataFormat::FormatFmask8_S2_F2:
+    case AmdGpu::DataFormat::FormatFmask8_S4_F2:
+    case AmdGpu::DataFormat::FormatFmask8_S4_F4:
+    case AmdGpu::DataFormat::FormatFmask16_S16_F1:
+    case AmdGpu::DataFormat::FormatFmask16_S8_F2:
+    case AmdGpu::DataFormat::FormatFmask32_S16_F2:
+    case AmdGpu::DataFormat::FormatFmask32_S8_F4:
+    case AmdGpu::DataFormat::FormatFmask32_S8_F8:
+    case AmdGpu::DataFormat::FormatFmask64_S16_F4:
+    case AmdGpu::DataFormat::FormatFmask64_S16_F8:
         return ImageRead | ImageWrite;
     }
     UNREACHABLE_MSG("Missing feature flags for data format {}", static_cast<u32>(data_format));
@@ -756,7 +762,8 @@ static size_t GetSurfaceFormatTableIndex(AmdGpu::DataFormat data_format,
 }
 
 static auto surface_format_table = []() constexpr {
-    std::array<vk::Format, 1 << amd_gpu_data_format_bit_size * 1 << amd_gpu_number_format_bit_size>
+    std::array<vk::Format,
+               (1 << amd_gpu_data_format_bit_size) * (1 << amd_gpu_number_format_bit_size)>
         result;
     for (auto& entry : result) {
         entry = vk::Format::eUndefined;

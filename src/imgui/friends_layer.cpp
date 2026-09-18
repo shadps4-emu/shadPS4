@@ -22,6 +22,9 @@ char g_add_buf[64] = {};
 class FriendsLayer final : public ImGui::Layer {
 public:
     void Draw() override;
+    bool ShouldKeepDrawing() override {
+        return g_open;
+    }
 };
 
 FriendsLayer g_layer;

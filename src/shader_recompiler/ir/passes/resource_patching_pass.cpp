@@ -1,13 +1,14 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/operand_helper.h"
-#include "shader_recompiler/ir/program.h"
+#include "shader_recompiler/ir/passes/ir_passes.h"
+#include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/reinterpret.h"
 #include "shader_recompiler/profile.h"
 #include "video_core/amdgpu/resource.h"
@@ -15,119 +16,7 @@
 namespace Shader::Optimization {
 namespace {
 
-using SharpLocation = u32;
-
-bool IsBufferAtomic(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::BufferAtomicIAdd32:
-    case IR::Opcode::BufferAtomicIAdd64:
-    case IR::Opcode::BufferAtomicISub32:
-    case IR::Opcode::BufferAtomicSMin32:
-    case IR::Opcode::BufferAtomicSMin64:
-    case IR::Opcode::BufferAtomicUMin32:
-    case IR::Opcode::BufferAtomicUMin64:
-    case IR::Opcode::BufferAtomicFMin32:
-    case IR::Opcode::BufferAtomicSMax32:
-    case IR::Opcode::BufferAtomicSMax64:
-    case IR::Opcode::BufferAtomicUMax32:
-    case IR::Opcode::BufferAtomicUMax64:
-    case IR::Opcode::BufferAtomicFMax32:
-    case IR::Opcode::BufferAtomicInc32:
-    case IR::Opcode::BufferAtomicDec32:
-    case IR::Opcode::BufferAtomicAnd32:
-    case IR::Opcode::BufferAtomicOr32:
-    case IR::Opcode::BufferAtomicXor32:
-    case IR::Opcode::BufferAtomicSwap32:
-    case IR::Opcode::BufferAtomicCmpSwap32:
-    case IR::Opcode::BufferAtomicFCmpSwap32:
-        return true;
-    default:
-        return false;
-    }
-}
-
-bool IsBufferStore(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::StoreBufferU8:
-    case IR::Opcode::StoreBufferU16:
-    case IR::Opcode::StoreBufferU32:
-    case IR::Opcode::StoreBufferU32x2:
-    case IR::Opcode::StoreBufferU32x3:
-    case IR::Opcode::StoreBufferU32x4:
-    case IR::Opcode::StoreBufferU64:
-    case IR::Opcode::StoreBufferF32:
-    case IR::Opcode::StoreBufferF32x2:
-    case IR::Opcode::StoreBufferF32x3:
-    case IR::Opcode::StoreBufferF32x4:
-    case IR::Opcode::StoreBufferFormatF32:
-        return true;
-    default:
-        return IsBufferAtomic(inst);
-    }
-}
-
-bool IsBufferInstruction(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::LoadBufferU8:
-    case IR::Opcode::LoadBufferU16:
-    case IR::Opcode::LoadBufferU32:
-    case IR::Opcode::LoadBufferU32x2:
-    case IR::Opcode::LoadBufferU32x3:
-    case IR::Opcode::LoadBufferU32x4:
-    case IR::Opcode::LoadBufferU64:
-    case IR::Opcode::LoadBufferF32:
-    case IR::Opcode::LoadBufferF32x2:
-    case IR::Opcode::LoadBufferF32x3:
-    case IR::Opcode::LoadBufferF32x4:
-    case IR::Opcode::LoadBufferFormatF32:
-    case IR::Opcode::ReadConstBuffer:
-        return true;
-    default:
-        return IsBufferStore(inst);
-    }
-}
-
-bool IsDataRingInstruction(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::DataAppend:
-    case IR::Opcode::DataConsume:
-        return true;
-    case IR::Opcode::LoadSharedU16:
-    case IR::Opcode::LoadSharedU32:
-    case IR::Opcode::LoadSharedU64:
-    case IR::Opcode::WriteSharedU16:
-    case IR::Opcode::WriteSharedU32:
-    case IR::Opcode::WriteSharedU64:
-    case IR::Opcode::SharedAtomicIAdd32:
-    case IR::Opcode::SharedAtomicIAdd64:
-    case IR::Opcode::SharedAtomicUMin32:
-    case IR::Opcode::SharedAtomicUMin64:
-    case IR::Opcode::SharedAtomicSMin32:
-    case IR::Opcode::SharedAtomicSMin64:
-    case IR::Opcode::SharedAtomicUMax32:
-    case IR::Opcode::SharedAtomicUMax64:
-    case IR::Opcode::SharedAtomicSMax32:
-    case IR::Opcode::SharedAtomicSMax64:
-    case IR::Opcode::SharedAtomicAnd32:
-    case IR::Opcode::SharedAtomicAnd64:
-    case IR::Opcode::SharedAtomicOr32:
-    case IR::Opcode::SharedAtomicOr64:
-    case IR::Opcode::SharedAtomicXor32:
-    case IR::Opcode::SharedAtomicXor64:
-    case IR::Opcode::SharedAtomicISub32:
-    case IR::Opcode::SharedAtomicISub64:
-    case IR::Opcode::SharedAtomicInc32:
-    case IR::Opcode::SharedAtomicInc64:
-    case IR::Opcode::SharedAtomicDec32:
-    case IR::Opcode::SharedAtomicDec64:
-        return inst.Flags<bool>(); // is_gds
-    default:
-        return false;
-    }
-}
-
-IR::Type BufferDataType(const IR::Inst& inst, const Profile& profile,
-                        AmdGpu::NumberFormat num_format) {
+IR::Type BufferDataType(const IR::Inst& inst, const Profile& profile) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::LoadBufferU8:
     case IR::Opcode::StoreBufferU8:
@@ -202,41 +91,6 @@ u32 BufferAddressShift(const IR::Inst& inst, AmdGpu::DataFormat data_format) {
     }
 }
 
-bool IsImageAtomicInstruction(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::ImageAtomicIAdd32:
-    case IR::Opcode::ImageAtomicSMin32:
-    case IR::Opcode::ImageAtomicUMin32:
-    case IR::Opcode::ImageAtomicSMax32:
-    case IR::Opcode::ImageAtomicUMax32:
-    case IR::Opcode::ImageAtomicFMax32:
-    case IR::Opcode::ImageAtomicFMin32:
-    case IR::Opcode::ImageAtomicInc32:
-    case IR::Opcode::ImageAtomicDec32:
-    case IR::Opcode::ImageAtomicAnd32:
-    case IR::Opcode::ImageAtomicOr32:
-    case IR::Opcode::ImageAtomicXor32:
-    case IR::Opcode::ImageAtomicExchange32:
-    case IR::Opcode::ImageAtomicCmpSwap32:
-        return true;
-    default:
-        return false;
-    }
-}
-
-bool IsImageInstruction(const IR::Inst& inst) {
-    switch (inst.GetOpcode()) {
-    case IR::Opcode::ImageRead:
-    case IR::Opcode::ImageWrite:
-    case IR::Opcode::ImageQueryDimensions:
-    case IR::Opcode::ImageQueryLod:
-    case IR::Opcode::ImageSampleRaw:
-        return true;
-    default:
-        return IsImageAtomicInstruction(inst);
-    }
-}
-
 class Descriptors {
 public:
     explicit Descriptors(Info& info_)
@@ -245,8 +99,8 @@ public:
 
     u32 Add(const BufferResource& desc) {
         const u32 index{Add(buffer_resources, desc, [&desc](const auto& existing) {
-            return desc.sharp_idx == existing.sharp_idx &&
-                   desc.inline_cbuf == existing.inline_cbuf &&
+            return desc.sharp_fetch == existing.sharp_fetch && desc.post_op == existing.post_op &&
+                   desc.post_op_dw1_mask == existing.post_op_dw1_mask &&
                    desc.buffer_type == existing.buffer_type;
         })};
         auto& buffer = buffer_resources[index];
@@ -258,9 +112,10 @@ public:
 
     u32 Add(const ImageResource& desc) {
         const u32 index{Add(image_resources, desc, [&desc](const auto& existing) {
-            return desc.sharp_idx == existing.sharp_idx && desc.is_array == existing.is_array &&
+            return desc.sharp_fetch == existing.sharp_fetch && desc.is_array == existing.is_array &&
                    desc.mip_fallback_mode == existing.mip_fallback_mode &&
-                   desc.constant_mip_index == existing.constant_mip_index;
+                   desc.constant_mip_index == existing.constant_mip_index &&
+                   desc.post_op == existing.post_op;
         })};
         auto& image = image_resources[index];
         image.is_atomic |= desc.is_atomic;
@@ -270,9 +125,8 @@ public:
 
     u32 Add(const SamplerResource& desc) {
         const u32 index{Add(sampler_resources, desc, [this, &desc](const auto& existing) {
-            return desc.sharp_idx == existing.sharp_idx &&
-                   desc.is_inline_sampler == existing.is_inline_sampler &&
-                   desc.inline_sampler == existing.inline_sampler;
+            return desc.sharp_fetch == existing.sharp_fetch && desc.post_op == existing.post_op &&
+                   desc.post_op_tsharp_dw3_off == existing.post_op_tsharp_dw3_off;
         })};
         return index;
     }
@@ -304,259 +158,79 @@ private:
 
 } // Anonymous namespace
 
-std::pair<const IR::Inst*, bool> TryDisableAnisoLod0(const IR::Inst* inst) {
-    std::pair not_found{inst, false};
-
-    // Assuming S# is in UD s[12:15] and T# is in s[4:11]
-    // The next pattern:
-    //  s_bfe_u32     s0, s7,  $0x0008000c
-    //  s_and_b32     s1, s12, $0xfffff1ff
-    //  s_cmp_eq_u32  s0, 0
-    //  s_cselect_b32 s0, s1, s12
-    // is used to disable anisotropy in the sampler if the sampled texture doesn't have mips
-
-    if (inst->GetOpcode() != IR::Opcode::SelectU32) {
-        return not_found;
-    }
-
-    // Select should be based on zero check
-    const auto* prod0 = inst->Arg(0).InstRecursive();
-    if (prod0->GetOpcode() != IR::Opcode::IEqual32 ||
-        !(prod0->Arg(1).IsImmediate() && prod0->Arg(1).U32() == 0u)) {
-        return not_found;
-    }
-
-    // The bitfield extract might be hidden by phi sometimes
-    auto* prod0_arg0 = prod0->Arg(0).InstRecursive();
-    if (prod0_arg0->GetOpcode() == IR::Opcode::Phi) {
-        auto arg0 = prod0_arg0->Arg(0);
-        auto arg1 = prod0_arg0->Arg(1);
-        if (!arg0.IsImmediate() &&
-            arg0.InstRecursive()->GetOpcode() == IR::Opcode::BitFieldUExtract) {
-            prod0_arg0 = arg0.InstRecursive();
-        } else if (!arg1.IsImmediate() &&
-                   arg1.InstRecursive()->GetOpcode() == IR::Opcode::BitFieldUExtract) {
-            prod0_arg0 = arg1.InstRecursive();
-        }
-    }
-
-    // The bits range is for lods (note that constants are changed after constant propagation pass)
-    if (prod0_arg0->GetOpcode() != IR::Opcode::BitFieldUExtract ||
-        !(prod0_arg0->Arg(1).IsImmediate() && prod0_arg0->Arg(1).U32() == 12) ||
-        !(prod0_arg0->Arg(2).IsImmediate() && prod0_arg0->Arg(2).U32() == 8)) {
-        return not_found;
-    }
-
-    // Make sure mask is masking out anisotropy
-    const auto* prod1 = inst->Arg(1).InstRecursive();
-    if (prod1->GetOpcode() != IR::Opcode::BitwiseAnd32 || prod1->Arg(1).U32() != 0xfffff1ff) {
-        return not_found;
-    }
-
-    // We're working on the first dword of s#
-    const auto* prod2 = inst->Arg(2).InstRecursive();
-    if (prod2->GetOpcode() != IR::Opcode::GetUserData &&
-        prod2->GetOpcode() != IR::Opcode::ReadConst && prod2->GetOpcode() != IR::Opcode::Phi) {
-        return not_found;
-    }
-
-    return {prod2, true};
-}
-
 using SharpSources = boost::container::small_vector<const IR::Inst*, 4>;
 
-bool IsSharpSource(const IR::Inst* inst) {
-    return inst->GetOpcode() == IR::Opcode::GetUserData ||
-           inst->GetOpcode() == IR::Opcode::ReadConst;
-}
-
-SharpSources FindSharpSources(const IR::Inst* handle, u32 pc) {
-    SharpSources sources;
-    if (IsSharpSource(handle)) {
-        sources.push_back(handle);
-        return sources;
-    }
-
-    bool found_read_const_buffer = false;
-
-    boost::container::small_vector<const IR::Inst*, 8> visited;
-    std::queue<const IR::Inst*> queue;
-    queue.push(handle);
-
-    while (!queue.empty()) {
-        const IR::Inst* inst{queue.front()};
-        queue.pop();
-        if (IsSharpSource(inst)) {
-            sources.push_back(inst);
-            continue;
-        }
-        found_read_const_buffer |= inst->GetOpcode() == IR::Opcode::ReadConstBuffer;
-        if (inst->GetOpcode() != IR::Opcode::Phi) {
-            continue;
-        }
-        for (size_t arg = inst->NumArgs(); arg--;) {
-            const IR::Value arg_value = inst->Arg(arg);
-            if (arg_value.IsImmediate()) {
-                continue;
-            }
-            const IR::Inst* arg_inst = arg_value.InstRecursive();
-            if (std::ranges::find(visited, arg_inst) == visited.end()) {
-                visited.push_back(arg_inst);
-                queue.push(arg_inst);
-            }
-        }
-    }
-    if (sources.empty()) {
-        if (found_read_const_buffer) {
-            UNREACHABLE_MSG("Bindless sharp access detected pc={:#x}", pc);
-        } else {
-            UNREACHABLE_MSG("Unable to find sharp sources pc={:#x}", pc);
-        }
-    }
-    return sources;
-}
-
-bool IsCfgBlockDominatedBy(const Shader::Gcn::Block* maybe_dominator,
-                           const Shader::Gcn::Block* block, const Shader::Gcn::Block* dest_block) {
-    if (block == maybe_dominator) {
-        return true;
-    }
-
-    boost::container::small_vector<const Shader::Gcn::Block*, 8> visited;
-    std::queue<const Shader::Gcn::Block*> queue;
-    queue.push(block);
-
-    while (!queue.empty()) {
-        const Shader::Gcn::Block* block{queue.front()};
-        queue.pop();
-        if (block == dest_block) {
-            return false;
-        }
-        if (block == maybe_dominator) {
-            continue;
-        }
-        if (block->branch_false && !std::ranges::contains(visited, block->branch_false)) {
-            visited.push_back(block->branch_false);
-            queue.push(block->branch_false);
-        }
-        if (block->branch_true && !std::ranges::contains(visited, block->branch_true)) {
-            visited.push_back(block->branch_true);
-            queue.push(block->branch_true);
-        }
-    }
-
-    return true;
-}
-
 SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
+    SharpLocation location{};
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return static_cast<SharpLocation>(inst->Arg(0).ScalarReg());
+    } else if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        location = inst->Flags<IR::BufferInstInfo>().flatbuf_off_dw;
     } else {
-        return inst->Flags<u32>();
+        location = inst->Flags<SharpLocation>();
     }
+    if (location == 0) {
+        LOG_WARNING(Render_Recompiler, "Sharp source was not flatenned");
+        return UNKNOWN_LOCATION;
+    }
+    return location;
 }
 
-SharpLocation TrackSharp(const IR::Inst* inst, const IR::Block& current_parent, u32 pc = 0) {
-    auto sources = FindSharpSources(inst, pc);
-    size_t num_sources = sources.size();
-    ASSERT(current_parent.cfg_block);
-
-    // Perform dominance analysis on found sources and eliminate ones that don't pass
-    // If a sharp source is dominated by another, the former can be eliminated.
-    for (s32 i = 0; i < num_sources;) {
-        const IR::Block* block = sources[i]->GetParent();
-        ASSERT(block->cfg_block);
-        bool was_removed = false;
-        for (s32 j = 0; j < num_sources;) {
-            const IR::Block* dominator = sources[j]->GetParent();
-            ASSERT(dominator->cfg_block);
-            if (i != j && IsCfgBlockDominatedBy(dominator->cfg_block, block->cfg_block,
-                                                current_parent.cfg_block)) {
-                std::swap(sources[i], sources[num_sources - 1]);
-                --num_sources;
-                sources.pop_back();
-                was_removed = true;
-                break;
-            } else {
-                ++j;
-            }
-        }
-        if (!was_removed) {
-            ++i;
+template <typename T>
+SharpFetch<T> ConstructSharpFetch(const SharpReference& sharp) {
+    SharpFetch<T> sharp_fetch{};
+    for (u32 i = 0; i < sharp.num_dwords; i++) {
+        auto dword = sharp.dwords[i];
+        if (dword.IsImmediate()) {
+            sharp_fetch.immediates[i] = dword.U32();
+        } else {
+            sharp_fetch.offsets[i] = SharpLocationFromSource(dword.Inst());
+            sharp_fetch.load_mask |= (1 << i);
         }
     }
-
-    ASSERT_MSG(sources.size() == 1, "Unable to deduce sharp source");
-    return SharpLocationFromSource(sources[0]);
+    return sharp_fetch;
 }
 
-void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors,
+void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors,
                       const Profile& profile) {
-    IR::Inst* handle = inst.Arg(0).InstRecursive();
-    u32 buffer_binding = 0;
-    if (handle->AreAllArgsImmediates()) {
-        // Assuming V# is in UD s[32:35]
-        // The next pattern:
-        // s_getpc_b64     s[32:33]
-        // s_add_u32       s32, <const>, s32
-        // s_addc_u32      s33, 0, s33
-        // s_mov_b32       s35, <const>
-        // s_movk_i32      s34, <const>
-        // buffer_load_format_xyz v[8:10], v1, s[32:35], 0 ...
-        // is used to define an inline buffer resource
-        std::array<u64, 2> raw;
-        // Keep relative address, we'll do fixup of the address at buffer fetch later
-        raw[0] = handle->Arg(0).U32() | u64(handle->Arg(1).U32()) << 32;
-        raw[1] = handle->Arg(2).U32() | u64(handle->Arg(3).U32()) << 32;
-        const auto buffer = std::bit_cast<AmdGpu::Buffer>(raw);
-        buffer_binding = descriptors.Add(BufferResource{
-            .sharp_idx = std::numeric_limits<u32>::max(),
-            .used_types = BufferDataType(inst, profile, buffer.GetNumberFmt()),
-            .inline_cbuf = buffer,
-            .buffer_type = BufferType::Guest,
-        });
-    } else {
-        // Normal buffer resource.
-        IR::Inst* buffer_handle = handle->Arg(0).InstRecursive();
-        const auto inst_info = inst.Flags<IR::BufferInstInfo>();
-        const auto sharp_idx = TrackSharp(buffer_handle, block, inst_info.pc);
-        const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
-        buffer_binding = descriptors.Add(BufferResource{
-            .sharp_idx = sharp_idx,
-            .used_types = BufferDataType(inst, profile, buffer.GetNumberFmt()),
-            .buffer_type = BufferType::Guest,
-            .is_written = IsBufferStore(inst),
-            .is_formatted = inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32 ||
-                            inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
-        });
-    }
+    IR::Inst& inst = *resource.user;
+
+    const u32 buffer_binding = descriptors.Add(BufferResource{
+        .sharp_fetch = ConstructSharpFetch<AmdGpu::Buffer>(resource.sharps[0]),
+        .used_types = BufferDataType(inst, profile),
+        .buffer_type = BufferType::Guest,
+        .is_written = IsBufferStore(inst),
+        .is_formatted = inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32 ||
+                        inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
+        .post_op = resource.sharps[0].post_op,
+        .post_op_dw1_mask = resource.sharps[0].post_op_data.dw1_mask,
+    });
 
     // Replace handle with binding index in buffer resource list.
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(0, ir.Imm32(buffer_binding));
 }
 
-void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors,
+void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors,
                      const Profile& profile) {
+    IR::Inst& inst = *resource.user;
+
     // Read image sharp.
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
-    const IR::Inst* image_handle = inst.Arg(0).InstRecursive();
-    const auto tsharp = TrackSharp(image_handle, block, inst_info.pc);
     const bool is_atomic = IsImageAtomicInstruction(inst);
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite || is_atomic;
-    const bool is_storage =
-        inst.GetOpcode() == IR::Opcode::ImageRead || inst.GetOpcode() == IR::Opcode::ImageWrite;
     // ImageRead with !is_written gets emitted as OpImageFetch with LOD operand, doesn't
     // need fallback (TODO is this 100% true?)
     const bool needs_mip_storage_fallback =
         inst_info.has_lod && is_written && !profile.supports_image_load_store_lod;
     ImageResource image_res = {
-        .sharp_idx = tsharp,
+        .sharp_fetch = ConstructSharpFetch<AmdGpu::Image>(resource.sharps[0]),
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = is_atomic,
         .is_array = bool(inst_info.is_array),
         .is_written = is_written,
         .is_r128 = bool(inst_info.is_r128),
+        .post_op = resource.sharps[0].post_op,
     };
 
     auto image = image_res.GetSharp(info);
@@ -568,7 +242,7 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
         // If index is dynamic, we will bind levels as an array
         const auto view_type = image.GetViewType(image_res.is_array);
 
-        IR::Inst* body = inst.Arg(1).InstRecursive();
+        IR::Inst* body = inst.Arg(1).Inst();
         const auto lod_arg = [&] -> IR::Value {
             switch (view_type) {
             case AmdGpu::ImageType::Color1D: // x, [lod]
@@ -598,7 +272,7 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
     if (AmdGpu::IsFmask(image.GetDataFmt())) {
         ASSERT_MSG(!is_written, "FMask storage instructions are not supported");
 
-        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+        IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
         switch (inst.GetOpcode()) {
         case IR::Opcode::ImageRead:
         case IR::Opcode::ImageSampleRaw: {
@@ -611,14 +285,14 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
             inst.ReplaceUsesWith(ir.Imm32(1));
             return;
         case IR::Opcode::ImageQueryDimensions: {
-            IR::Value dims = ir.CompositeConstruct(ir.Imm32(static_cast<u32>(image.width)), // x
-                                                   ir.Imm32(static_cast<u32>(image.width)), // y
+            IR::Value dims = ir.CompositeConstruct(ir.Imm32(static_cast<u32>(image.width)),  // x
+                                                   ir.Imm32(static_cast<u32>(image.height)), // y
                                                    ir.Imm32(1), ir.Imm32(1)); // depth, mip
             inst.ReplaceUsesWith(dims);
 
             // Track FMask resource to do specialization.
             descriptors.Add(FMaskResource{
-                .sharp_idx = tsharp,
+                .sharp_idx = SharpLocationFromSource(resource.sharps[0].dwords[0].Inst()),
             });
             return;
         }
@@ -629,167 +303,229 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
 
     u32 image_binding = descriptors.Add(image_res);
 
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
 
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
-        u32 sampler_binding = 0;
-        const IR::Inst* sampler = inst.Arg(1).InstRecursive();
-        ASSERT(sampler && sampler->GetOpcode() == IR::Opcode::CompositeConstructU32x4);
-        // Inline sampler resource.
-        if (sampler->AreAllArgsImmediates()) {
-            const auto inline_sampler = AmdGpu::Sampler{
-                .raw0 = u64(sampler->Arg(1).U32()) << 32 | u64(sampler->Arg(0).U32()),
-                .raw1 = u64(sampler->Arg(3).U32()) << 32 | u64(sampler->Arg(2).U32()),
-            };
-            sampler_binding = descriptors.Add(SamplerResource{
-                .sharp_idx = std::numeric_limits<u32>::max(),
-                .inline_sampler = inline_sampler,
-                .is_inline_sampler = true,
-            });
-        } else {
-            // Normal sampler resource.
-            const auto& [sampler_handle, disable_aniso] =
-                TryDisableAnisoLod0(sampler->Arg(0).InstRecursive());
-            const auto ssharp = TrackSharp(sampler_handle, block, inst_info.pc);
-            sampler_binding = descriptors.Add(SamplerResource{
-                .sharp_idx = ssharp,
-                .is_inline_sampler = false,
-                .associated_image = image_binding,
-                .disable_aniso = disable_aniso,
-            });
-        }
+        auto& lod_prod = resource.sharps[1].post_op_data.lod_prod;
+        const u32 sampler_binding = descriptors.Add(SamplerResource{
+            .sharp_fetch = ConstructSharpFetch<AmdGpu::Sampler>(resource.sharps[1]),
+            .post_op = resource.sharps[1].post_op,
+            .post_op_tsharp_dw3_off =
+                lod_prod.IsEmpty() ? UNKNOWN_LOCATION : SharpLocationFromSource(lod_prod.Inst()),
+        });
         inst.SetArg(0, ir.Imm32(image_binding | sampler_binding << 16));
     } else {
         inst.SetArg(0, ir.Imm32(image_binding));
     }
 }
 
-void PatchGlobalDataShareAccess(IR::Block& block, IR::Inst& inst, Info& info,
-                                Descriptors& descriptors, const Profile& profile) {
+static IR::Value IsResultOfMbcntExec(IR::Value value, bool is_hi, IR::U1 exec) {
+    // See V_MBCNT_U32_B32 for the pattern being checked
+    if (value.IsImmediate()) {
+        return {};
+    }
+    const IR::Inst* inst = value.Inst();
+    if (inst->GetOpcode() != IR::Opcode::IAdd32 || inst->Arg(0).IsImmediate()) {
+        return {};
+    }
+    IR::Inst* prod = inst->Arg(0).Inst();
+    if (prod->GetOpcode() != IR::Opcode::BitCount32 || prod->Arg(0).IsImmediate()) {
+        return {};
+    }
+    prod = prod->Arg(0).Inst();
+    if (prod->GetOpcode() != IR::Opcode::BitwiseAnd32 || prod->Arg(0).IsImmediate() ||
+        prod->Arg(1).IsImmediate()) {
+        return {};
+    }
+    const IR::Inst* lt_mask = prod->Arg(1).Inst();
+    if (lt_mask->GetOpcode() != IR::Opcode::GetAttributeU32 ||
+        lt_mask->Arg(0).Attribute() != IR::Attribute::SubgroupLtMask ||
+        lt_mask->Arg(1).U32() != is_hi) {
+        return {};
+    }
+    prod = prod->Arg(0).Inst();
+    if (prod->GetOpcode() != IR::Opcode::CompositeExtractU32x2 || prod->Arg(0).IsImmediate() ||
+        prod->Arg(1).U32() != is_hi) {
+        return {};
+    }
+    prod = prod->Arg(0).Inst();
+    if (prod->GetOpcode() != IR::Opcode::UnpackUint2x32 || prod->Arg(0).IsImmediate()) {
+        return {};
+    }
+    prod = prod->Arg(0).Inst();
+    if (prod->GetOpcode() != IR::Opcode::Ballot || prod->Arg(0) != exec) {
+        return {};
+    }
+    return inst->Arg(1);
+}
+
+static IR::Inst* IsAppendBufferPattern(IR::Inst& vx) {
+    // Attempt to detect either of the following patterns:
+    //
+    // v_mbcnt_hi_u32_b32 vZ, exec_hi, 0
+    // v_mbcnt_lo_u32_b32 vY, exec_lo, vZ
+    // ds_append       vX gds
+    // v_add_i32       idx, vcc, vX, vY
+    //
+    // ds_append       vX gds
+    // v_mbcnt_hi_u32_b32 vY, exec_hi, vX
+    // v_mbcnt_lo_u32_b32 idx, exec_lo, vY
+    //
+    // and return the instruction to replace with a GDS atomic.
+    // ds_consume always uses the first pattern with v_sub_i32
+
+    if (vx.GetOpcode() != IR::Opcode::DataAppend && vx.GetOpcode() != IR::Opcode::DataConsume) {
+        return nullptr;
+    }
+    const auto it = std::ranges::find_if(vx.Uses(), [](const IR::Use& use) {
+        return use.user->GetOpcode() == IR::Opcode::IAdd32 ||
+               use.user->GetOpcode() == IR::Opcode::ISub32;
+    });
+    if (it == vx.Uses().end()) {
+        ASSERT(vx.UseCount() == 1 &&
+               vx.Uses().back().user->GetOpcode() == IR::Opcode::SetVectorRegister);
+        return &vx;
+    }
+    const auto [user, operand] = *it;
+    IR::U1 exec{vx.Arg(1)};
+    if (operand == 0) {
+        // First pattern
+        auto vy = user->Arg(1);
+        auto vz = IsResultOfMbcntExec(vy, false, exec);
+        if (vz.IsEmpty()) {
+            return nullptr;
+        }
+        auto zero_const = IsResultOfMbcntExec(vz, true, exec);
+        if (!zero_const.IsImmediate() || zero_const.U32() != 0u) {
+            return nullptr;
+        }
+        return user;
+    } else {
+        // Second pattern
+        IR::Inst* vy = user;
+        auto vx_2 = IsResultOfMbcntExec(IR::Value{vy}, true, exec);
+        if (vx_2.IsEmpty() || vx_2 != IR::Value{&vx}) {
+            return nullptr;
+        }
+        const auto it = std::ranges::find_if(vy->Uses(), [](const IR::Use& use) {
+            return use.user->GetOpcode() == IR::Opcode::IAdd32;
+        });
+        if (it == vy->Uses().end()) {
+            return nullptr;
+        }
+        const auto [idx, operand] = *it;
+        auto vy_2 = IsResultOfMbcntExec(IR::Value{idx}, false, exec);
+        if (vy_2.IsEmpty() || vy_2 != IR::Value{vy}) {
+            return nullptr;
+        }
+        return idx;
+    }
+}
+
+void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descriptors,
+                                const Profile& profile) {
     const u32 binding = descriptors.Add(BufferResource{
         .used_types = IR::Type::U32,
-        .inline_cbuf = AmdGpu::Buffer::Null(),
         .buffer_type = BufferType::GdsBuffer,
         .is_written = true,
     });
 
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
 
-    // For data append/consume operations attempt to deduce the GDS address.
-    if (inst.GetOpcode() == IR::Opcode::DataAppend || inst.GetOpcode() == IR::Opcode::DataConsume) {
-        const auto pred = [](const IR::Inst* inst) -> std::optional<const IR::Inst*> {
-            if (inst->GetOpcode() == IR::Opcode::GetUserData) {
-                return inst;
-            }
-            return std::nullopt;
-        };
-
-        u32 gds_addr = 0;
-        const IR::Value& gds_offset = inst.Arg(0);
-        if (gds_offset.IsImmediate()) {
-            // Nothing to do, offset is known.
-            gds_addr = gds_offset.U32() & 0xFFFF;
+    if (IR::Inst* append_idx = IsAppendBufferPattern(inst); append_idx) {
+        if (inst.GetOpcode() == IR::Opcode::DataAppend) {
+            append_idx->ReplaceUsesWithAndRemove(
+                ir.BufferAtomicIAdd(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {}));
         } else {
-            const auto result = IR::BreadthFirstSearch(&inst, pred);
-            ASSERT_MSG(result, "Unable to track M0 source");
+            const IR::U32 counter =
+                IR::U32{ir.BufferAtomicISub(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {})};
+            append_idx->ReplaceUsesWithAndRemove(ir.ISub(counter, ir.Imm32(1u)));
+        }
+        return;
+    }
 
-            // M0 must be set by some user data register.
-            const IR::Inst* prod = gds_offset.InstRecursive();
-            const u32 ud_reg = u32(result.value()->Arg(0).ScalarReg());
-            u32 m0_val = info.user_data[ud_reg] >> 16;
-            if (prod->GetOpcode() == IR::Opcode::IAdd32) {
-                m0_val += prod->Arg(1).U32();
-            }
-            gds_addr = m0_val & 0xFFFF;
-        }
-
-        // Patch instruction to GDS buffer atomic increment/decrement.
-        const IR::U32 handle = ir.Imm32(binding);
-        const IR::U32 index = ir.Imm32(gds_addr >> 2);
-        const bool is_append = inst.GetOpcode() == IR::Opcode::DataAppend;
-        const IR::Value prev = is_append ? ir.BufferAtomicInc(handle, index, {})
-                                         : ir.BufferAtomicDec(handle, index, {});
-        inst.ReplaceUsesWithAndRemove(prev);
-    } else {
-        // Convert shared memory opcode to storage buffer atomic to GDS buffer.
-        auto& buffer = info.buffers[binding];
-        const IR::U32 offset = IR::U32{inst.Arg(0)};
-        const IR::U32 address_words = ir.ShiftRightLogical(offset, ir.Imm32(1));
-        const IR::U32 address_dwords = ir.ShiftRightLogical(offset, ir.Imm32(2));
-        const IR::U32 address_qwords = ir.ShiftRightLogical(offset, ir.Imm32(3));
-        const IR::U32 handle = ir.Imm32(binding);
-        switch (inst.GetOpcode()) {
-        case IR::Opcode::SharedAtomicIAdd32:
-            inst.ReplaceUsesWith(ir.BufferAtomicIAdd(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicIAdd64:
-            inst.ReplaceUsesWith(
-                ir.BufferAtomicIAdd(handle, address_qwords, IR::U64{inst.Arg(1)}, {}));
-            break;
-        case IR::Opcode::SharedAtomicISub32:
-            inst.ReplaceUsesWith(ir.BufferAtomicISub(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicSMin32:
-        case IR::Opcode::SharedAtomicUMin32: {
-            const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMin32;
-            inst.ReplaceUsesWith(
-                ir.BufferAtomicIMin(handle, address_dwords, inst.Arg(1), is_signed, {}));
-            break;
-        }
-        case IR::Opcode::SharedAtomicSMax32:
-        case IR::Opcode::SharedAtomicUMax32: {
-            const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMax32;
-            inst.ReplaceUsesWith(
-                ir.BufferAtomicIMax(handle, address_dwords, inst.Arg(1), is_signed, {}));
-            break;
-        }
-        case IR::Opcode::SharedAtomicInc32:
-            inst.ReplaceUsesWith(ir.BufferAtomicInc(handle, address_dwords, {}));
-            break;
-        case IR::Opcode::SharedAtomicDec32:
-            inst.ReplaceUsesWith(ir.BufferAtomicDec(handle, address_dwords, {}));
-            break;
-        case IR::Opcode::SharedAtomicAnd32:
-            inst.ReplaceUsesWith(ir.BufferAtomicAnd(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicOr32:
-            inst.ReplaceUsesWith(ir.BufferAtomicOr(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::SharedAtomicXor32:
-            inst.ReplaceUsesWith(ir.BufferAtomicXor(handle, address_dwords, inst.Arg(1), {}));
-            break;
-        case IR::Opcode::LoadSharedU16: {
-            inst.ReplaceUsesWith(ir.LoadBufferU16(handle, address_words, {}));
-            buffer.used_types |= IR::Type::U16;
-            break;
-        }
-        case IR::Opcode::LoadSharedU32:
-            inst.ReplaceUsesWith(ir.LoadBufferU32(1, handle, address_dwords, {}));
-            break;
-        case IR::Opcode::LoadSharedU64: {
-            inst.ReplaceUsesWith(ir.LoadBufferU64(handle, address_qwords, {}));
-            buffer.used_types |= IR::Type::U64;
-            break;
-        }
-        case IR::Opcode::WriteSharedU16: {
-            ir.StoreBufferU16(handle, address_words, IR::U16{inst.Arg(1)}, {});
-            inst.Invalidate();
-            buffer.used_types |= IR::Type::U16;
-            break;
-        }
-        case IR::Opcode::WriteSharedU32:
-            ir.StoreBufferU32(1, handle, address_dwords, inst.Arg(1), {});
-            inst.Invalidate();
-            break;
-        case IR::Opcode::WriteSharedU64: {
-            ir.StoreBufferU64(handle, address_qwords, IR::U64{inst.Arg(1)}, {});
-            inst.Invalidate();
-            buffer.used_types |= IR::Type::U64;
-            break;
-        }
-        default:
-            UNREACHABLE();
-        }
+    // Convert shared memory opcode to storage buffer atomic to GDS buffer.
+    auto& buffer = info.buffers[binding];
+    const IR::U32 offset = IR::U32{inst.Arg(0)};
+    const IR::U32 address_words = ir.ShiftRightLogical(offset, ir.Imm32(1));
+    const IR::U32 address_dwords = ir.ShiftRightLogical(offset, ir.Imm32(2));
+    const IR::U32 address_qwords = ir.ShiftRightLogical(offset, ir.Imm32(3));
+    const IR::U32 handle = ir.Imm32(binding);
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::SharedAtomicIAdd32:
+        inst.ReplaceUsesWith(ir.BufferAtomicIAdd(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    case IR::Opcode::SharedAtomicIAdd64:
+        inst.ReplaceUsesWith(ir.BufferAtomicIAdd(handle, address_qwords, IR::U64{inst.Arg(1)}, {}));
+        break;
+    case IR::Opcode::SharedAtomicISub32:
+        inst.ReplaceUsesWith(ir.BufferAtomicISub(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    case IR::Opcode::SharedAtomicSMin32:
+    case IR::Opcode::SharedAtomicUMin32: {
+        const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMin32;
+        inst.ReplaceUsesWith(
+            ir.BufferAtomicIMin(handle, address_dwords, inst.Arg(1), is_signed, {}));
+        break;
+    }
+    case IR::Opcode::SharedAtomicSMax32:
+    case IR::Opcode::SharedAtomicUMax32: {
+        const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMax32;
+        inst.ReplaceUsesWith(
+            ir.BufferAtomicIMax(handle, address_dwords, inst.Arg(1), is_signed, {}));
+        break;
+    }
+    case IR::Opcode::SharedAtomicInc32:
+        inst.ReplaceUsesWith(ir.BufferAtomicInc(handle, address_dwords, {}));
+        break;
+    case IR::Opcode::SharedAtomicDec32:
+        inst.ReplaceUsesWith(ir.BufferAtomicDec(handle, address_dwords, {}));
+        break;
+    case IR::Opcode::SharedAtomicAnd32:
+        inst.ReplaceUsesWith(ir.BufferAtomicAnd(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    case IR::Opcode::SharedAtomicOr32:
+        inst.ReplaceUsesWith(ir.BufferAtomicOr(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    case IR::Opcode::SharedAtomicXor32:
+        inst.ReplaceUsesWith(ir.BufferAtomicXor(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    case IR::Opcode::SharedAtomicCmpSwap32:
+        // Args are (address, value, cmp_value)
+        inst.ReplaceUsesWith(
+            ir.BufferAtomicCmpSwap(handle, address_dwords, inst.Arg(1), inst.Arg(2), {}));
+        break;
+    case IR::Opcode::LoadSharedU16: {
+        inst.ReplaceUsesWith(ir.LoadBufferU16(handle, address_words, {}));
+        buffer.used_types |= IR::Type::U16;
+        break;
+    }
+    case IR::Opcode::LoadSharedU32:
+        inst.ReplaceUsesWith(ir.LoadBufferU32(1, handle, address_dwords, {}));
+        break;
+    case IR::Opcode::LoadSharedU64: {
+        inst.ReplaceUsesWith(ir.LoadBufferU64(handle, address_qwords, {}));
+        buffer.used_types |= IR::Type::U64;
+        break;
+    }
+    case IR::Opcode::WriteSharedU16: {
+        ir.StoreBufferU16(handle, address_words, IR::U16{inst.Arg(1)}, {});
+        inst.Invalidate();
+        buffer.used_types |= IR::Type::U16;
+        break;
+    }
+    case IR::Opcode::WriteSharedU32:
+        ir.StoreBufferU32(1, handle, address_dwords, inst.Arg(1), {});
+        inst.Invalidate();
+        break;
+    case IR::Opcode::WriteSharedU64: {
+        ir.StoreBufferU64(handle, address_qwords, IR::U64{inst.Arg(1)}, {});
+        inst.Invalidate();
+        buffer.used_types |= IR::Type::U64;
+        break;
+    }
+    default:
+        UNREACHABLE_MSG("Unexpected opcode {}", inst.GetOpcode());
     }
 }
 
@@ -825,7 +561,7 @@ IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const In
         index = ir.IAdd(index, vgpr_index);
     }
     if (buffer.add_tid_enable) {
-        ASSERT_MSG(info.l_stage == LogicalStage::Compute,
+        ASSERT_MSG(info.sw_stage == SwStage::Compute,
                    "Thread ID buffer addressing is not supported outside of compute.");
         const IR::U32 thread_id{ir.LaneId()};
         index = ir.IAdd(index, thread_id);
@@ -869,7 +605,7 @@ IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const In
     return buffer_offset;
 }
 
-void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
+void PatchBufferArgs(IR::Inst& inst, Info& info) {
     const auto handle = inst.Arg(0);
     const auto buffer_res = info.buffers[handle.U32()];
     const auto buffer = buffer_res.GetSharp(info);
@@ -879,7 +615,7 @@ void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
         return;
     }
 
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
     inst.SetArg(IR::LoadBufferArgs::Address,
                 CalculateBufferAddress(ir, inst, info, buffer, buffer.stride));
 }
@@ -893,22 +629,24 @@ IR::Value FixCubeCoords(IR::IREmitter& ir, const AmdGpu::Image& image, const IR:
     // to convert this to the range [0.0, 1.0] to get correct results.
     const auto fixed_x = ir.FPSub(IR::F32{x}, ir.Imm32(1.f));
     const auto fixed_y = ir.FPSub(IR::F32{y}, ir.Imm32(1.f));
-    return ir.CompositeConstruct(fixed_x, fixed_y, face);
+    const auto fixed_face =
+        ir.FPFma(ir.FPFloor(ir.FPDiv(IR::F32{face}, ir.Imm32(8.f))), ir.Imm32(-2.f), IR::F32{face});
+    return ir.CompositeConstruct(fixed_x, fixed_y, fixed_face);
 }
 
-void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
-                          const ImageResource& image_res, const AmdGpu::Image& image) {
+void PatchImageSampleArgs(IR::Inst& inst, Info& info, const ImageResource& image_res,
+                          const AmdGpu::Image& image) {
     const auto handle = inst.Arg(0);
     const auto& sampler_res = info.samplers[(handle.U32() >> 16) & 0xFFFF];
     const auto sampler = sampler_res.GetSharp(info);
 
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
     const auto view_type = image.GetViewType(image_res.is_array);
 
-    IR::Inst* body1 = inst.Arg(2).InstRecursive();
-    IR::Inst* body2 = inst.Arg(3).InstRecursive();
-    IR::Inst* body3 = inst.Arg(4).InstRecursive();
+    IR::Inst* body1 = inst.Arg(2).Inst();
+    IR::Inst* body2 = inst.Arg(3).Inst();
+    IR::Inst* body3 = inst.Arg(4).Inst();
     IR::F32 body4 = IR::F32{inst.Arg(5)};
     const auto get_addr_reg = [&](u32 index) -> IR::F32 {
         if (index <= 3) {
@@ -936,7 +674,7 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
 
         // The offsets are six-bit signed integers: X=[5:0], Y=[13:8], and Z=[21:16].
         IR::Value arg = get_addr_reg(addr_reg++);
-        if (const IR::Inst* offset_inst = arg.TryInstRecursive()) {
+        if (const IR::Inst* offset_inst = arg.TryInst()) {
             ASSERT(offset_inst->GetOpcode() == IR::Opcode::BitCastF32U32);
             arg = offset_inst->Arg(0);
         }
@@ -1089,7 +827,7 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
     inst.ReplaceUsesWith(converted);
 }
 
-void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
+void PatchImageArgs(IR::Inst& inst, Info& info) {
     // Nothing to patch for dimension query.
     if (inst.GetOpcode() == IR::Opcode::ImageQueryDimensions) {
         return;
@@ -1102,15 +840,15 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
 
     // Sample instructions must be handled separately using address register data.
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
-        return PatchImageSampleArgs(block, inst, info, image_res, image);
+        return PatchImageSampleArgs(inst, info, image_res, image);
     }
 
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
     auto inst_info = inst.Flags<IR::TextureInstInfo>();
     const auto view_type = image.GetViewType(image_res.is_array);
 
     // Now that we know the image type, adjust texture coordinate vector.
-    IR::Inst* body = inst.Arg(1).InstRecursive();
+    IR::Inst* body = inst.Arg(1).Inst();
     const auto [coords, arg] = [&] -> std::pair<IR::Value, IR::Value> {
         switch (view_type) {
         case AmdGpu::ImageType::Color1D: // x, [lod]
@@ -1185,32 +923,29 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 }
 
-void ResourceTrackingPass(IR::Program& program, const Profile& profile) {
-    // Iterate resource instructions and patch them after finding the sharp.
-    auto& info = program.info;
-
+void ResourcePatchingPass(Shader::Info& info, const ResourceDiscoveryList& resources,
+                          const Profile& profile) {
+    // Iterate over discovered resources and patch them after finding the sharp.
     // Pass 1: Track resource sharps
     Descriptors descriptors{info};
-    for (IR::Block* const block : program.blocks) {
-        for (IR::Inst& inst : block->Instructions()) {
-            if (IsBufferInstruction(inst)) {
-                PatchBufferSharp(*block, inst, info, descriptors, profile);
-            } else if (IsImageInstruction(inst)) {
-                PatchImageSharp(*block, inst, info, descriptors, profile);
-            }
+    for (const auto& usage : resources) {
+        IR::Inst& inst = *usage.user;
+        if (IsBufferInstruction(inst)) {
+            PatchBufferSharp(usage, info, descriptors, profile);
+        } else if (IsImageInstruction(inst)) {
+            PatchImageSharp(usage, info, descriptors, profile);
         }
     }
 
     // Pass 2: Patch instruction args
-    for (IR::Block* const block : program.blocks) {
-        for (IR::Inst& inst : block->Instructions()) {
-            if (IsBufferInstruction(inst)) {
-                PatchBufferArgs(*block, inst, info);
-            } else if (IsImageInstruction(inst)) {
-                PatchImageArgs(*block, inst, info);
-            } else if (IsDataRingInstruction(inst)) {
-                PatchGlobalDataShareAccess(*block, inst, info, descriptors, profile);
-            }
+    for (const auto& usage : resources) {
+        IR::Inst& inst = *usage.user;
+        if (IsBufferInstruction(inst)) {
+            PatchBufferArgs(inst, info);
+        } else if (IsImageInstruction(inst)) {
+            PatchImageArgs(inst, info);
+        } else if (IsDataRingInstruction(inst)) {
+            PatchGlobalDataShareAccess(inst, info, descriptors, profile);
         }
     }
 }

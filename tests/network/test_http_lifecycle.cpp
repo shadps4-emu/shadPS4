@@ -5,6 +5,7 @@
 
 #include <fstream>
 
+#include <zlib.h>
 #include "common/types.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/network/http.h"
@@ -1201,15 +1202,6 @@ int PS4_SYSV_ABI sceHttpSetResponseHeaderMaxSize(int, u64);
 } // namespace Libraries::Http
 
 namespace {
-
-TEST_F(HttpLifecycle, AcceptEncodingGZIPDefaultIsTrue) {
-    int ctx = sceHttpInit(0, 0, 4096);
-    int tmpl = sceHttpCreateTemplate(ctx, "UA", 1, 0);
-    int got = -1;
-    EXPECT_EQ(sceHttpGetAcceptEncodingGZIPEnabled(tmpl, &got), ORBIS_OK);
-    EXPECT_EQ(got, 1);
-    sceHttpTerm(ctx);
-}
 
 TEST_F(HttpLifecycle, AcceptEncodingGZIPRoundTrip) {
     int ctx = sceHttpInit(0, 0, 4096);

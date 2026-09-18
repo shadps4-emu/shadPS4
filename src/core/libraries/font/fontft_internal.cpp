@@ -2976,6 +2976,7 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
     u32 size = 0;
     void* owned_data = nullptr;
     std::shared_ptr<std::vector<unsigned char>> shared_data;
+    std::shared_ptr<std::vector<u8>> archive_font_bytes;
     std::string open_path;
     std::filesystem::path host_path_fs{};
 
@@ -2994,9 +2995,15 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
         open_path = path;
         if (path[0] == '/') {
             auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-            host_path_fs = mnt ? mnt->GetHostPath(path) : std::filesystem::path{};
-            if (!host_path_fs.empty()) {
-                open_path = host_path_fs.string();
+            if (mnt) {
+                if (auto handle = mnt->Open(path, /*writable=*/false)) {
+                    if (auto host = handle->GetHostPath(); host.has_value()) {
+                        host_path_fs = *host;
+                        open_path = host_path_fs.string();
+                    } else if (auto bytes = mnt->ReadFile(path)) {
+                        archive_font_bytes = std::make_shared<std::vector<u8>>(std::move(*bytes));
+                    }
+                }
             }
         }
     } else {
@@ -3017,6 +3024,16 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
         ft_err = FT_New_Memory_Face(ctx->ft_lib, reinterpret_cast<const FT_Byte*>(data),
                                     static_cast<FT_Long>(size), static_cast<FT_Long>(subFontIndex),
                                     &face);
+    } else if (archive_font_bytes) {
+        ft_err = FT_New_Memory_Face(ctx->ft_lib,
+                                    reinterpret_cast<const FT_Byte*>(archive_font_bytes->data()),
+                                    static_cast<FT_Long>(archive_font_bytes->size()),
+                                    static_cast<FT_Long>(subFontIndex), &face);
+        if (ft_err == 0 && face) {
+            shared_data = archive_font_bytes;
+            data = archive_font_bytes->data();
+            size = static_cast<u32>(archive_font_bytes->size());
+        }
     } else {
         std::vector<std::string> candidates;
         candidates.emplace_back(open_path);

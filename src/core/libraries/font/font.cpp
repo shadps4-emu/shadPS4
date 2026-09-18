@@ -580,6 +580,7 @@ using Internal::GetNativeFont;
 using Internal::kPointsPerInch;
 using Internal::kStyleFrameMagic;
 using Internal::LoadGuestFileBytes;
+using Internal::LoadGuestPathBytes;
 using Internal::LogCachedStyleOnce;
 using Internal::LogFontOpenError;
 using Internal::LogRenderResultSample;
@@ -3193,7 +3194,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontFile(OrbisFontLib library, const char* guest_pat
     ReleaseLibraryLock(lib, prev_lib_lock);
 
     std::vector<unsigned char> file_bytes;
-    if (LoadGuestFileBytes(path_to_open, file_bytes) &&
+    if (LoadGuestPathBytes(guest_path, file_bytes) &&
         file_bytes.size() <= std::numeric_limits<u32>::max()) {
         auto& st = Internal::GetState(handle);
         Internal::DestroyFreeTypeFace(st.ext_ft_face);

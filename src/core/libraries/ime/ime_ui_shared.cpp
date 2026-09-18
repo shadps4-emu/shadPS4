@@ -86,11 +86,8 @@ bool ReadControllerState(Libraries::UserService::OrbisUserServiceUserId user_id,
         if (has_state) {
             *has_state = false;
         }
-        Input::State pad_state{};
-        bool connected = false;
-        int connected_count = 0;
-        (*controllers)[index]->ReadState(&pad_state, &connected, &connected_count);
-        if (!connected) {
+        Input::State pad_state = (*controllers)[index]->ReadState();
+        if (!pad_state.connected) {
             return false;
         }
         if (has_state) {
