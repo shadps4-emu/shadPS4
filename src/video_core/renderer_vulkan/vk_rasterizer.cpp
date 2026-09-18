@@ -36,7 +36,7 @@ static Shader::PushData MakeUserData(const AmdGpu::Regs& regs) {
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
                        AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, page_manager{this},
-      buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
+      buffer_cache{instance, scheduler, liverpool_, texture_cache, barriers, page_manager},
       texture_cache{instance, scheduler, liverpool_, buffer_cache, page_manager},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
@@ -49,19 +49,6 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
 }
 
 Rasterizer::~Rasterizer() = default;
-
-void Rasterizer::CpSync() {
-    scheduler.EndRendering();
-    auto cmdbuf = scheduler.CommandBuffer();
-
-    const vk::MemoryBarrier ib_barrier{
-        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
-        .dstAccessMask = vk::AccessFlagBits::eIndirectCommandRead,
-    };
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
-                           vk::PipelineStageFlagBits::eDrawIndirect,
-                           vk::DependencyFlagBits::eByRegion, ib_barrier, {}, {});
-}
 
 bool Rasterizer::FilterDraw() {
     const auto& regs = liverpool->regs;
@@ -215,7 +202,9 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         BindIndexBuffer(index_offset);
     }
 
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    barriers.FlushBarriers(scheduler);
+
+    pipeline->BindResources(set_writes, push_data);
     UpdateDynamicState(pipeline, is_indexed);
     scheduler.BeginRendering(state);
 
@@ -271,25 +260,18 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 
     const auto [buffer, base] =
         buffer_cache.ObtainBuffer(arg_address + offset, stride * max_count, false);
+    barriers.IsRegionAccessed(arg_address + offset, stride * max_count);
 
     vk::Buffer count_buffer{};
     u64 count_base{};
     if (count_address != 0) {
         std::tie(count_buffer, count_base) = buffer_cache.ObtainBuffer(count_address, 4, false);
+        barriers.IsRegionAccessed(count_address, 4);
     }
 
-    /*if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
-                                          vk::PipelineStageFlagBits2::eDrawIndirect)) {
-        buffer_barriers.emplace_back(*barrier);
-    }
-    if (count_buffer) {
-        if (auto barrier = count_buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
-                                                    vk::PipelineStageFlagBits2::eDrawIndirect)) {
-            buffer_barriers.emplace_back(*barrier);
-        }
-    }*/
+    barriers.FlushBarriers(scheduler);
 
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    pipeline->BindResources(set_writes, push_data);
     UpdateDynamicState(pipeline, is_indexed);
     scheduler.BeginRendering(state);
 
@@ -343,8 +325,9 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
+    barriers.FlushBarriers(scheduler);
     scheduler.EndRendering();
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    pipeline->BindResources(set_writes, push_data);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
@@ -370,14 +353,11 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     }
 
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
-
-    /*if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
-                                          vk::PipelineStageFlagBits2::eDrawIndirect)) {
-        buffer_barriers.emplace_back(*barrier);
-    }*/
+    barriers.IsRegionAccessed(address + offset, size);
+    barriers.FlushBarriers(scheduler);
 
     scheduler.EndRendering();
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    pipeline->BindResources(set_writes, push_data);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
@@ -415,7 +395,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     set_write_index = 0;
     set_writes.clear();
-    buffer_barriers.clear();
     buffer_infos.clear();
     image_infos.clear();
 
@@ -503,16 +482,9 @@ void Rasterizer::BindVertexBuffers(const GraphicsPipeline* pipeline) {
     // Map buffers for merged ranges
     for (auto& range : ranges_merged) {
         const u64 size = memory->ClampRangeSize(range.base_address, range.GetSize());
-        const auto [buffer, offset] = buffer_cache.ObtainBuffer(range.base_address, size, false);
-        range.buffer = buffer;
-        range.offset = offset;
-        /*if (IsRegionGpuModified(range.base_address, size)) {
-            if (auto barrier =
-                    buffer->GetBarrier(vk::AccessFlagBits2::eVertexAttributeRead,
-                                       vk::PipelineStageFlagBits2::eVertexAttributeInput)) {
-                barriers.emplace_back(*barrier);
-            }
-            }*/
+        std::tie(range.buffer, range.offset) =
+            buffer_cache.ObtainBuffer(range.base_address, size, false);
+        barriers.IsRegionAccessed(range.base_address, size);
     }
 
     // Bind vertex buffers
@@ -563,12 +535,7 @@ void Rasterizer::BindIndexBuffer(u32 index_offset) {
     const u32 index_buffer_size = regs.num_indices * index_size;
     const auto [buffer, offset] =
         buffer_cache.ObtainBuffer(index_address, index_buffer_size, false);
-    /*if (IsRegionGpuModified(index_address, index_buffer_size)) {
-        if (auto barrier = vk_buffer->GetBarrier(vk::AccessFlagBits2::eIndexRead,
-                                                 vk::PipelineStageFlagBits2::eIndexInput)) {
-            barriers.emplace_back(*barrier);
-        }
-        }*/
+    barriers.IsRegionAccessed(index_address, index_buffer_size);
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindIndexBuffer(buffer, offset, index_type);
 }
@@ -801,12 +768,12 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 }
                 push_data.AddOffset(binding.buffer, adjust);
                 buffer_infos.emplace_back(buffer, offset_aligned, size + adjust);
-                /*if (auto barrier =
-                        vk_buffer->GetBarrier(desc.is_written ? vk::AccessFlagBits2::eShaderWrite
-                                                                : vk::AccessFlagBits2::eShaderRead,
-                                                vk::PipelineStageFlagBits2::eAllCommands)) {
-                    buffer_barriers.emplace_back(*barrier);
-                }*/
+                barriers.IsRegionAccessed(vsharp.base_address, size);
+                if (desc.is_written) {
+                    barriers.AccessMemory(
+                        vsharp.base_address, size, vk::PipelineStageFlagBits2::eAllGraphics,
+                        vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite);
+                }
                 if (desc.is_written && desc.is_formatted) {
                     texture_cache.InvalidateMemoryFromGPU(vsharp.base_address, size);
                 }
@@ -1185,11 +1152,73 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
 }
 
 void Rasterizer::FillBuffer(VAddr address, u32 num_bytes, u32 value, bool is_gds) {
-    buffer_cache.FillBuffer(address, num_bytes, value, is_gds);
+    ASSERT_MSG(address % 4 == 0 && num_bytes % 4 == 0,
+               "FillBuffer address and size must be a multiple of 4 bytes");
+    if (!is_gds) {
+        texture_cache.ClearMeta(address);
+        if (!buffer_cache.IsRegionGpuModified(address, num_bytes)) {
+            u32* buffer = std::bit_cast<u32*>(address);
+            std::fill(buffer, buffer + (num_bytes / sizeof(u32)), value);
+            return;
+        }
+    }
+    const auto [buffer, offset] = [&] -> std::pair<vk::Buffer, u64> {
+        if (is_gds) {
+            return {buffer_cache.GetGdsBuffer()->Handle(), address};
+        }
+        barriers.IsRegionAccessed(address, num_bytes, true);
+        return buffer_cache.ObtainBuffer(address, num_bytes, true);
+    }();
+    barriers.FlushBarriers(scheduler);
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.fillBuffer(buffer, offset, num_bytes, value);
+    if (!is_gds) {
+        barriers.AccessMemory(address, num_bytes, vk::PipelineStageFlagBits2::eTransfer,
+                              vk::AccessFlagBits2::eTransferWrite);
+    }
 }
 
 void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {
-    buffer_cache.CopyBuffer(dst, src, num_bytes, dst_gds, src_gds);
+    if (!dst_gds && !buffer_cache.IsRegionGpuModified(dst, num_bytes)) {
+        if (!src_gds && !buffer_cache.IsRegionGpuModified(src, num_bytes) &&
+            !texture_cache.FindImageFromRange(src, num_bytes)) {
+            // Both buffers were not transferred to GPU yet. Can safely copy in host memory.
+            std::memcpy(std::bit_cast<void*>(dst), std::bit_cast<void*>(src), num_bytes);
+            return;
+        }
+        // Without a readback there's nothing we can do with this
+        // Fallback to creating dst buffer on GPU to at least have this data there
+    }
+    texture_cache.InvalidateMemoryFromGPU(dst, num_bytes);
+    const auto& gds_buffer = buffer_cache.GetGdsBuffer();
+    const auto [src_buffer, src_offset] = [&] -> std::pair<vk::Buffer, u64> {
+        if (src_gds) {
+            return {gds_buffer->Handle(), src};
+        }
+        barriers.IsRegionAccessed(src, num_bytes);
+        return buffer_cache.ObtainBuffer(src, num_bytes, false, true);
+    }();
+    const auto [dst_buffer, dst_offset] = [&] -> std::pair<vk::Buffer, u64> {
+        if (dst_gds) {
+            return {gds_buffer->Handle(), dst};
+        }
+        barriers.IsRegionAccessed(dst, num_bytes, true);
+        return buffer_cache.ObtainBuffer(dst, num_bytes, true, true);
+    }();
+    barriers.FlushBarriers(scheduler);
+    const vk::BufferCopy copy = {
+        .srcOffset = src_offset,
+        .dstOffset = dst_offset,
+        .size = num_bytes,
+    };
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.copyBuffer(src_buffer, dst_buffer, copy);
+    if (!dst_gds) {
+        barriers.AccessMemory(dst, num_bytes, vk::PipelineStageFlagBits2::eTransfer,
+                              vk::AccessFlagBits2::eTransferWrite);
+    }
 }
 
 u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {
