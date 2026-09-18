@@ -619,6 +619,8 @@ set(FIBER_LIB src/core/libraries/fiber/fiber_context.cpp
 
 set(VDEC_LIB src/core/libraries/videodec/video_utils.cpp
              src/core/libraries/videodec/video_utils.h
+             src/core/libraries/videodec/vdecsw.cpp
+             src/core/libraries/videodec/vdecsw.h
              src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h
              src/core/libraries/videodec/videodec2.cpp
@@ -1029,6 +1031,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/passes/lower_buffer_format_to_raw.cpp
                       src/shader_recompiler/ir/passes/lower_fp64_to_fp32.cpp
                       src/shader_recompiler/ir/passes/lower_user_clip_planes.cpp
+                      src/shader_recompiler/ir/passes/lower_wave64_pass.cpp
                       src/shader_recompiler/ir/passes/phi_simplification_pass.cpp
                       src/shader_recompiler/ir/passes/readlane_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/resource_discover_pass.cpp
@@ -1294,11 +1297,6 @@ if (ENABLE_DISCORD_RPC)
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    # Optional due to https://github.com/shadps4-emu/shadPS4/issues/1704
-    if (ENABLE_USERFAULTFD)
-        target_compile_definitions(shadps4 PRIVATE ENABLE_USERFAULTFD)
-    endif()
-
     target_link_libraries(shadps4 PRIVATE uuid)
 endif()
 

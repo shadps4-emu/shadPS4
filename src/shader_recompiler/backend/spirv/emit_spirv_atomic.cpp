@@ -52,6 +52,24 @@ Id SharedAtomicU64IncDec(EmitContext& ctx, Id offset,
     return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics);
 }
 
+Id SharedAtomicU32CmpSwap(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
+    const Id shift_id{ctx.ConstU32(2U)};
+    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
+    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return ctx.OpAtomicCompareExchange(ctx.U32[1], pointer, scope, semantics, semantics, value,
+                                       cmp_value);
+}
+
+Id SharedAtomicU64CmpSwap(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
+    const Id shift_id{ctx.ConstU32(3U)};
+    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
+    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return ctx.OpAtomicCompareExchange(ctx.U64, pointer, scope, semantics, semantics, value,
+                                       cmp_value);
+}
+
 template <bool is_float = false>
 Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
@@ -199,6 +217,14 @@ Id EmitSharedAtomicISub32(EmitContext& ctx, Id offset, Id value) {
 
 Id EmitSharedAtomicISub64(EmitContext& ctx, Id offset, Id value) {
     return SharedAtomicU64(ctx, offset, value, &Sirit::Module::OpAtomicISub);
+}
+
+Id EmitSharedAtomicCmpSwap32(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
+    return SharedAtomicU32CmpSwap(ctx, offset, value, cmp_value);
+}
+
+Id EmitSharedAtomicCmpSwap64(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
+    return SharedAtomicU64CmpSwap(ctx, offset, value, cmp_value);
 }
 
 Id EmitSharedAtomicInc32(EmitContext& ctx, Id offset) {
@@ -434,35 +460,12 @@ Id EmitImageAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coo
                                  &Sirit::Module::OpAtomicCompareExchange);
 }
 
-static Id DataAppendConsume(EmitContext& ctx, auto&& atomic_op) {
-    const auto last_label = ctx.last_label;
-    const Id subgroup_scope{ctx.ConstU32(static_cast<u32>(spv::Scope::Subgroup))};
-    const Id exec{ctx.OpGroupNonUniformBallot(ctx.U32[4], subgroup_scope, ctx.true_value)};
-    const Id elect_cond{ctx.OpGroupNonUniformElect(ctx.U1[1], subgroup_scope)};
-    const Id append_label{ctx.OpLabel()};
-    const Id merge_label{ctx.OpLabel()};
-    ctx.OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
-    ctx.OpBranchConditional(elect_cond, append_label, merge_label);
-    ctx.AddLabel(append_label);
-    const Id exec_bits{ctx.OpGroupNonUniformBallotBitCount(ctx.U32[1], subgroup_scope,
-                                                           spv::GroupOperation::Reduce, exec)};
-    const Id rtnval{atomic_op(exec_bits)};
-    ctx.OpBranch(merge_label);
-    ctx.AddLabel(merge_label);
-    Id base{ctx.OpPhi(ctx.U32[1], ctx.u32_zero_value, last_label, rtnval, append_label)};
-    return ctx.OpGroupNonUniformBroadcastFirst(ctx.U32[1], subgroup_scope, base);
+Id EmitDataAppend(EmitContext& ctx, Id gds_dw_offset, Id exec) {
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
-Id EmitDataAppend(EmitContext& ctx, Id gds_addr, u32 handle) {
-    return DataAppendConsume(ctx, [&](Id exec_bits) {
-        return EmitBufferAtomicIAdd32(ctx, nullptr, handle, gds_addr, exec_bits);
-    });
-}
-
-Id EmitDataConsume(EmitContext& ctx, Id gds_addr, u32 handle) {
-    return DataAppendConsume(ctx, [&](Id exec_bits) {
-        return EmitBufferAtomicISub32(ctx, nullptr, handle, gds_addr, exec_bits);
-    });
+Id EmitDataConsume(EmitContext& ctx, Id gds_dw_offset, Id exec) {
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 } // namespace Shader::Backend::SPIRV

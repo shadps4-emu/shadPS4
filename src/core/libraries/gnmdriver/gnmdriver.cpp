@@ -66,7 +66,8 @@ static constexpr bool UseNeoCompatSequences = false;
 // In case if `submitDone` is issued we need to block submissions until GPU idle
 static u32 submission_lock{};
 std::condition_variable cv_lock{};
-std::mutex m_submission{};
+std::mutex m_wait_idle{};
+std::mutex m_submit_lock{};
 static u64 frames_submitted{};      // frame counter
 static bool send_init_packet{true}; // initialize HW state before first game's submit in a frame
 static s32 sdk_version{0};
@@ -78,14 +79,14 @@ static VAddr tessellation_factors_ring_addr = -1;
 static constexpr u32 tessellation_offchip_buffer_size = 0x800000u;
 
 static void ResetSubmissionLock(Platform::InterruptId irq) {
-    std::unique_lock lock{m_submission};
+    std::unique_lock lock{m_wait_idle};
     submission_lock = 0;
     cv_lock.notify_all();
 }
 
 static void WaitGpuIdle() {
     HLE_TRACE;
-    std::unique_lock lock{m_submission};
+    std::unique_lock lock{m_wait_idle};
     cv_lock.wait(lock, [] { return submission_lock == 0; });
 }
 
@@ -297,6 +298,7 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
         return;
     }
 
+    std::scoped_lock lk{m_submit_lock};
     WaitGpuIdle();
 
     if (DebugState.ShouldPauseInSubmit()) {
@@ -2169,66 +2171,8 @@ static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, u32* dcb_gpu_addrs[],
-                                                   u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
-                                                   u32* ccb_sizes_in_bytes, u32 vo_handle,
-                                                   u32 buf_idx, u32 flip_mode, s64 flip_arg) {
-    return sceGnmSubmitAndFlipCommandBuffersForWorkload(
-        count, count, dcb_gpu_addrs, dcb_sizes_in_bytes, ccb_gpu_addrs, ccb_sizes_in_bytes,
-        vo_handle, buf_idx, flip_mode, flip_arg);
-}
-
-s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
-    u32 workload, u32 count, u32* dcb_gpu_addrs[], u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
-    u32* ccb_sizes_in_bytes, u32 vo_handle, u32 buf_idx, u32 flip_mode, s64 flip_arg) {
-    LOG_DEBUG(Lib_GnmDriver, "called [buf = {}]", buf_idx);
-
-    auto* cmdbuf = dcb_gpu_addrs[count - 1];
-    const auto size_dw = dcb_sizes_in_bytes[count - 1] / 4;
-
-    const s32 patch_result =
-        PatchFlipRequest(cmdbuf, size_dw, vo_handle, buf_idx, flip_mode, flip_arg, nullptr /*unk*/);
-    if (patch_result != ORBIS_OK) {
-        return patch_result;
-    }
-
-    return sceGnmSubmitCommandBuffers(count, const_cast<const u32**>(dcb_gpu_addrs),
-                                      dcb_sizes_in_bytes, const_cast<const u32**>(ccb_gpu_addrs),
-                                      ccb_sizes_in_bytes);
-}
-
-int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
-                                                       const u32* dcb_gpu_addrs[],
-                                                       u32* dcb_sizes_in_bytes,
-                                                       const u32* ccb_gpu_addrs[],
-                                                       u32* ccb_sizes_in_bytes) {
-    HLE_TRACE;
-    LOG_DEBUG(Lib_GnmDriver, "called");
-
-    if (!dcb_gpu_addrs || !dcb_sizes_in_bytes) {
-        LOG_ERROR(Lib_GnmDriver, "dcbGpuAddrs and dcbSizesInBytes must not be NULL");
-        return 0x80d11000;
-    }
-
-    for (u32 i = 0; i < count; i++) {
-        if (dcb_sizes_in_bytes[i] == 0) {
-            LOG_ERROR(Lib_GnmDriver, "Submitting a null DCB {}", i);
-            return 0x80d11000;
-        }
-        if (dcb_sizes_in_bytes[i] > 0x3ffffc) {
-            LOG_ERROR(Lib_GnmDriver, "dcbSizesInBytes[{}] ({}) is limited to (2*20)-1 DWORDS", i,
-                      dcb_sizes_in_bytes[i]);
-            return 0x80d11000;
-        }
-        if (ccb_sizes_in_bytes && ccb_sizes_in_bytes[i] > 0x3ffffc) {
-            LOG_ERROR(Lib_GnmDriver, "ccbSizesInBytes[{}] ({}) is limited to (2*20)-1 DWORDS", i,
-                      ccb_sizes_in_bytes[i]);
-            return 0x80d11000;
-        }
-    }
-
-    WaitGpuIdle();
-
+static inline s32 PerformSubmit(u32 count, const u32* dcb_gpu_addrs[], u32* dcb_sizes_in_bytes,
+                                const u32* ccb_gpu_addrs[], u32* ccb_sizes_in_bytes) {
     if (DebugState.ShouldPauseInSubmit()) {
         DebugState.PauseGuestThreads();
     }
@@ -2299,8 +2243,106 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
         }
         liverpool->SubmitGfx(dcb_span, ccb_span);
     }
-
     return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, u32* dcb_gpu_addrs[],
+                                                   u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
+                                                   u32* ccb_sizes_in_bytes, u32 vo_handle,
+                                                   u32 buf_idx, u32 flip_mode, s64 flip_arg) {
+    return sceGnmSubmitAndFlipCommandBuffersForWorkload(
+        count, count, dcb_gpu_addrs, dcb_sizes_in_bytes, ccb_gpu_addrs, ccb_sizes_in_bytes,
+        vo_handle, buf_idx, flip_mode, flip_arg);
+}
+
+s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
+    u32 workload, u32 count, u32* dcb_gpu_addrs[], u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
+    u32* ccb_sizes_in_bytes, u32 vo_handle, u32 buf_idx, u32 flip_mode, s64 flip_arg) {
+    LOG_DEBUG(Lib_GnmDriver, "called [buf = {}]", buf_idx);
+
+    if (count != 0) {
+        if (!dcb_gpu_addrs) {
+            LOG_ERROR(Lib_GnmDriver, "dcbGpuAddrs must not be NULL");
+            return 0x80d11000;
+        }
+        if (!dcb_sizes_in_bytes) {
+            LOG_ERROR(Lib_GnmDriver, "dcbSizesInBytes must not be NULL");
+            return 0x80d11000;
+        }
+        if (ccb_sizes_in_bytes && !ccb_gpu_addrs) {
+            LOG_ERROR(Lib_GnmDriver, "ccbGpuAddrs must not be NULL if ccbSizesInBytes is non-NULL");
+            return 0x80d11000;
+        }
+    }
+
+    for (u32 i = 0; i < count; i++) {
+        if (dcb_sizes_in_bytes[i] == 0) {
+            LOG_ERROR(Lib_GnmDriver, "Submitting a null DCB {}", i);
+            return 0x80d11000;
+        }
+        if (dcb_sizes_in_bytes[i] > 0x3ffffc) {
+            LOG_ERROR(Lib_GnmDriver, "dcbSizesInBytes[{}] ({}) is limited to (2*20)-1 DWORDS", i,
+                      dcb_sizes_in_bytes[i]);
+            return 0x80d11000;
+        }
+        if (ccb_sizes_in_bytes && ccb_sizes_in_bytes[i] > 0x3ffffc) {
+            LOG_ERROR(Lib_GnmDriver, "ccbSizesInBytes[{}] ({}) is limited to (2*20)-1 DWORDS", i,
+                      ccb_sizes_in_bytes[i]);
+            return 0x80d11000;
+        }
+    }
+
+    auto* cmdbuf = dcb_gpu_addrs[count - 1];
+    const auto size_dw = dcb_sizes_in_bytes[count - 1] / 4;
+
+    std::scoped_lock lk{m_submit_lock};
+    WaitGpuIdle();
+
+    const s32 patch_result =
+        PatchFlipRequest(cmdbuf, size_dw, vo_handle, buf_idx, flip_mode, flip_arg, nullptr /*unk*/);
+    if (patch_result != ORBIS_OK) {
+        return patch_result;
+    }
+
+    return PerformSubmit(count, const_cast<const u32**>(dcb_gpu_addrs), dcb_sizes_in_bytes,
+                         const_cast<const u32**>(ccb_gpu_addrs), ccb_sizes_in_bytes);
+}
+
+s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
+                                                       const u32* dcb_gpu_addrs[],
+                                                       u32* dcb_sizes_in_bytes,
+                                                       const u32* ccb_gpu_addrs[],
+                                                       u32* ccb_sizes_in_bytes) {
+    HLE_TRACE;
+    LOG_DEBUG(Lib_GnmDriver, "called");
+
+    if (!dcb_gpu_addrs || !dcb_sizes_in_bytes) {
+        LOG_ERROR(Lib_GnmDriver, "dcbGpuAddrs and dcbSizesInBytes must not be NULL");
+        return 0x80d11000;
+    }
+
+    for (u32 i = 0; i < count; i++) {
+        if (dcb_sizes_in_bytes[i] == 0) {
+            LOG_ERROR(Lib_GnmDriver, "Submitting a null DCB {}", i);
+            return 0x80d11000;
+        }
+        if (dcb_sizes_in_bytes[i] > 0x3ffffc) {
+            LOG_ERROR(Lib_GnmDriver, "dcbSizesInBytes[{}] ({}) is limited to (2*20)-1 DWORDS", i,
+                      dcb_sizes_in_bytes[i]);
+            return 0x80d11000;
+        }
+        if (ccb_sizes_in_bytes && ccb_sizes_in_bytes[i] > 0x3ffffc) {
+            LOG_ERROR(Lib_GnmDriver, "ccbSizesInBytes[{}] ({}) is limited to (2*20)-1 DWORDS", i,
+                      ccb_sizes_in_bytes[i]);
+            return 0x80d11000;
+        }
+    }
+
+    std::scoped_lock lk{m_submit_lock};
+    WaitGpuIdle();
+
+    return PerformSubmit(count, const_cast<const u32**>(dcb_gpu_addrs), dcb_sizes_in_bytes,
+                         const_cast<const u32**>(ccb_gpu_addrs), ccb_sizes_in_bytes);
 }
 
 s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[],
@@ -2310,14 +2352,16 @@ s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[
                                                  ccb_gpu_addrs, ccb_sizes_in_bytes);
 }
 
-int PS4_SYSV_ABI sceGnmSubmitDone() {
+s32 PS4_SYSV_ABI sceGnmSubmitDone() {
     HLE_TRACE;
     LOG_DEBUG(Lib_GnmDriver, "called");
+    std::scoped_lock lk{m_submit_lock};
     WaitGpuIdle();
     if (!liverpool->IsGpuIdle()) {
         submission_lock = true;
     }
     liverpool->SubmitDone();
+    WaitGpuIdle();
     send_init_packet = true;
     ++frames_submitted;
     DebugState.IncGnmFrameNum();

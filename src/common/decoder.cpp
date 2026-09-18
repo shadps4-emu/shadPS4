@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fmt/format.h>
@@ -20,24 +20,6 @@ std::string DecoderImpl::disassembleInst(ZydisDecodedInstruction& inst,
     ZydisFormatterFormatInstruction(&m_formatter, &inst, operands, inst.operand_count_visible,
                                     szBuffer, sizeof(szBuffer), address, ZYAN_NULL);
     return szBuffer;
-}
-
-void DecoderImpl::printInstruction(void* code, u64 address) {
-    ZydisDecodedInstruction instruction;
-    ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT_VISIBLE];
-    ZyanStatus status =
-        ZydisDecoderDecodeFull(&m_decoder, code, sizeof(code), &instruction, operands);
-    if (!ZYAN_SUCCESS(status)) {
-        fmt::print("decode instruction failed at {}\n", fmt::ptr(code));
-    } else {
-        printInst(instruction, operands, address);
-    }
-}
-
-void DecoderImpl::printInst(ZydisDecodedInstruction& inst, ZydisDecodedOperand* operands,
-                            u64 address) {
-    std::string s = disassembleInst(inst, operands, address);
-    fmt::print("instruction: {}\n", s);
 }
 
 ZyanStatus DecoderImpl::decodeInstruction(ZydisDecodedInstruction& inst,
