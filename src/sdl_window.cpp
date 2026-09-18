@@ -87,13 +87,6 @@ static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint3
     return interval;
 }
 
-static Uint32 SDLCALL PollControllerLightColour(void* userdata, SDL_TimerID timer_id,
-                                                Uint32 interval) {
-    auto* controller = reinterpret_cast<Input::GameController*>(userdata);
-    controller->PollLightColour();
-    return interval;
-}
-
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controllers_,
                      std::string_view window_title)
     : width{width_}, height{height_}, controllers{*controllers_} {
@@ -341,6 +334,7 @@ void WindowSDL::WaitEvent() {
 void WindowSDL::InitTimers() {
     for (int i = 0; i < 4; ++i) {
         SDL_AddTimer(4, &PollController, controllers[i]);
+        SDL_AddTimer(13, &PollController, controllers.moves(i));
     }
     SDL_AddTimer(33, Input::MousePolling, (void*)controllers[0]);
 }
@@ -424,12 +418,22 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
             gamepad = controllers.GetGamepadIndexFromJoystickId(event->gsensor.which);
             if (gamepad < 5) {
                 controllers[gamepad]->UpdateGyro(event->gsensor.data);
+            } else {
+                gamepad = controllers.GetMoveIndexFromJoystickId(event->gsensor.which);
+                if (gamepad < 4) {
+                    controllers.moves(gamepad)->UpdateGyro(event->gsensor.data);
+                }
             }
             break;
         case SDL_SENSOR_ACCEL:
             gamepad = controllers.GetGamepadIndexFromJoystickId(event->gsensor.which);
             if (gamepad < 5) {
                 controllers[gamepad]->UpdateAcceleration(event->gsensor.data);
+            } else {
+                gamepad = controllers.GetMoveIndexFromJoystickId(event->gsensor.which);
+                if (gamepad < 4) {
+                    controllers.moves(gamepad)->UpdateAcceleration(event->gsensor.data);
+                }
             }
             break;
         default:
