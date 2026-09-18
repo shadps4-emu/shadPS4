@@ -605,7 +605,7 @@ const ModuleInfo* Module::FindModule(std::string_view id) {
         }
         i++;
     }
-    return nullptr;
+    return id.empty() ? &export_modules[0] : nullptr;
 }
 
 const LibraryInfo* Module::FindLibrary(std::string_view id) {
@@ -623,7 +623,7 @@ const LibraryInfo* Module::FindLibrary(std::string_view id) {
         }
         i++;
     }
-    return nullptr;
+    return id.empty() ? &export_libs[0] : nullptr;
 }
 
 void* Module::FindByName(std::string_view name) {

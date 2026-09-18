@@ -391,15 +391,22 @@ void Linker::Relocate(Module* module) {
 bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Module* m,
                      Loader::SymbolRecord* return_info) {
     const auto ids = Common::SplitString(name, '#');
-    if (ids.size() != 3) {
+    const LibraryInfo* library = m->FindLibrary(ids[1]);
+    const ModuleInfo* module = m->FindModule(ids[2]);
+    if (ids.size() != 3 && sym_type != Loader::SymbolType::NoType) {
         return_info->virtual_address = 0;
         return_info->symbol.name = ids.at(0);
         LOG_ERROR(Core_Linker, "Not Resolved {}", name);
         return false;
+    } else if (ids.size() == 1 && sym_type == Loader::SymbolType::NoType) {
+        LOG_DEBUG(Core_Linker, "NoType export {}", name);
+        library = m->FindLibrary("");
+        module = m->FindModule("");
+    } else {
+        library = m->FindLibrary(ids[1]);
+        module = m->FindModule(ids[2]);
     }
 
-    const LibraryInfo* library = m->FindLibrary(ids[1]);
-    const ModuleInfo* module = m->FindModule(ids[2]);
     ASSERT_MSG(library && module, "Unable to find library and module");
 
     Loader::SymbolResolver sr{};
