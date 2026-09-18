@@ -32,8 +32,6 @@
 #include <signal.h>
 #endif
 
-#pragma optimize off
-
 namespace Core {
 
 static PS4_SYSV_ABI void ProgramExitFunc() {
