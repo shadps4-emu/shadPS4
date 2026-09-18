@@ -70,7 +70,7 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
     s32 extra_fmem = EmulatorSettings.GetExtraFmemInMBytes();
     if (extra_fmem != 0) {
         LOG_WARNING(Kernel_Vmm, "extraFmemInMbytes is {} MB! Old Size: {:#x} -> New Size: {:#x}",
-                    extra_dmem, ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE,
+                    extra_fmem, ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE,
                     ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE + extra_fmem * 1_MB);
         total_size += extra_fmem * 1_MB;
         flexible_size += extra_fmem * 1_MB;
