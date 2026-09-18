@@ -67,6 +67,40 @@ static bool IgnoresExecMask(const GcnInst& inst) {
     return false;
 }
 
+static bool IsConstantOperand(const InstOperand& operand) {
+    // These fields read a register (or a status flag backed by one) whose value is
+    // only known at runtime. Everything else is an inline constant baked into the
+    // instruction encoding itself.
+    switch (operand.field) {
+    case OperandField::ScalarGPR:
+    case OperandField::VectorGPR:
+    case OperandField::VccLo:
+    case OperandField::VccHi:
+    case OperandField::M0:
+    case OperandField::ExecLo:
+    case OperandField::ExecHi:
+    case OperandField::VccZ:
+    case OperandField::ExecZ:
+    case OperandField::Scc:
+    case OperandField::LdsDirect:
+    case OperandField::Sdwa:
+    case OperandField::Dpp:
+    case OperandField::Undefined:
+        return false;
+    default:
+        return true;
+    }
+}
+
+static bool IsVskipConstant(const GcnInst& inst) {
+    // VSKIP = (SSRC0 & (1 << (SSRC1 & 31))) != 0. If both operands are compile-time
+    // constants the result is a fixed, known value regardless of any prior program
+    // state (e.g. S_SETVSKIP -1, 0, but equally any other literal/literal pairing).
+    // Such an instruction can't be the start of a data-dependent divergence scope,
+    // it can only be unconditionally closing one.
+    return IsConstantOperand(inst.src[0]) && IsConstantOperand(inst.src[1]);
+}
+
 static std::optional<u32> ResolveSetPcTarget(std::span<const GcnInst> list, u32 setpc_index,
                                              std::span<const u32> pc_map) {
     if (setpc_index < 3) {
@@ -168,7 +202,11 @@ void CFG::SplitDivergenceScopes() {
                // with SAVEEXEC to mask the threads that didn't pass the condition
                // of initial branch.
                (inst.opcode == Opcode::S_ANDN2_B64 && inst.dst[0].field == OperandField::ExecLo) ||
-               inst.IsCmpx();
+               inst.IsCmpx() ||
+               // A S_SETVSKIP whose result depends on register state (as opposed to a
+               // fixed literal/literal pair) is the compiler deciding, based on some
+               // runtime condition, whether to skip the following vector instructions.
+               (inst.opcode == Opcode::S_SETVSKIP && !IsVskipConstant(inst));
     };
     const auto is_close_scope = [](const GcnInst& inst) {
         // Closing an EXEC scope can be either a branch instruction
@@ -179,12 +217,17 @@ void CFG::SplitDivergenceScopes() {
                // Those instructions need to be wrapped in the condition as well so allow branch
                // as end scope instruction.
                inst.opcode == Opcode::S_CBRANCH_EXECZ || inst.opcode == Opcode::S_ENDPGM ||
-               (inst.opcode == Opcode::S_ANDN2_B64 && inst.dst[0].field == OperandField::ExecLo);
+               (inst.opcode == Opcode::S_ANDN2_B64 && inst.dst[0].field == OperandField::ExecLo) ||
+               // A S_SETVSKIP with only constant operands always resolves to the same
+               // value no matter what happened before, so it deterministically closes
+               // any VSKIP scope opened earlier.
+               (inst.opcode == Opcode::S_SETVSKIP && IsVskipConstant(inst));
     };
 
     for (auto blk = blocks.begin(); blk != blocks.end(); blk++) {
         auto next_blk = std::next(blk);
         s32 curr_begin = -1;
+        IR::Condition curr_cond = IR::Condition::Execnz;
         for (size_t index = blk->begin_index; index <= blk->end_index; index++) {
             const auto& inst = inst_list[index];
             const bool is_close = is_close_scope(inst);
@@ -264,16 +307,18 @@ void CFG::SplitDivergenceScopes() {
                     blk->end = index_to_pc[curr_begin];
                     blk->end_index = curr_begin;
                     blk->end_inst = inst_list[curr_begin];
-                    blk->cond = IR::Condition::Execnz;
+                    blk->cond = curr_cond;
                     blk->end_class = EndClass::Branch;
                     blk->branch_true = block;
                 }
                 // Reset scope begin.
                 curr_begin = -1;
             }
-            // Mark a potential start of an exec scope.
+            // Mark a potential start of a divergence scope.
             if (is_open_scope(inst)) {
                 curr_begin = index;
+                curr_cond = inst.opcode == Opcode::S_SETVSKIP ? IR::Condition::Vskipz
+                                                              : IR::Condition::Execnz;
             }
         }
     }
