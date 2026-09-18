@@ -273,7 +273,7 @@ const BufferCache::Arena* BufferCache::GetArena(u64 first_block, u64 last_block)
 
     LOG_WARNING(Render, "Migrating arena");
 
-    const u64 base_block = first_arena->base_address >> ARENA_PAGE_BITS;
+    const u64 base_block = first_arena->base_address >> block_shift;
     const u64 num_pages = first_arena->num_pages + last_arena->num_pages;
     const u64 end_block = base_block + (num_pages << blocks_per_arena_page_shift);
     Arena* new_arena = CreateArena(base_block, num_pages);
