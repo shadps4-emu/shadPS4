@@ -15,7 +15,7 @@ namespace Core::AeroLib {
 // If it runs out of stubs with name information, it will return
 // a default implementation without function name details
 
-constexpr u32 MAX_STUBS = 8192;
+constexpr u32 MAX_STUBS = 16384;
 
 u64 UnresolvedStub() {
     LOG_ERROR(Core, "Returning zero to {}", __builtin_return_address(0));
