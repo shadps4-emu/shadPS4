@@ -56,7 +56,7 @@ void SymbolsResolver::DebugDump(const std::filesystem::path& file_name) {
 }
 
 bool SymbolResolver::operator==(SymbolResolver const& o) const {
-    // not checking the version and type as they're ignored (second pending confirmation)
+    // not checking the version and type as they're ignored on real hardware as well
     return this->name == o.name && this->library == o.library && this->module == o.module;
 }
 
