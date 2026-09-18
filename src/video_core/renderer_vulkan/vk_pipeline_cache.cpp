@@ -257,9 +257,9 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
 }
 
 PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
-                             AmdGpu::Liverpool* liverpool_)
+                             AmdGpu::Liverpool* liverpool_, u32 sparse_page_shift)
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
-      desc_heap{instance, scheduler.GetMasterSemaphore(), DescriptorHeapSizes} {
+      desc_heap{instance, scheduler.GetWorkSemaphore(), DescriptorHeapSizes} {
     const auto& vk12_props = instance.GetVk12Properties();
     profile = Shader::Profile{
         .max_viewport_width = instance.GetMaxViewportWidth(),
@@ -267,6 +267,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .max_shared_memory_size = instance.MaxComputeSharedMemorySize(),
         .supported_spirv = SpirvVersion1_6,
         .subgroup_size = instance.SubgroupSize(),
+        .sparse_page_shift = sparse_page_shift,
         .support_int8 = instance.IsShaderInt8Supported(),
         .support_int16 = instance.IsShaderInt16Supported(),
         .support_int64 = instance.IsShaderInt64Supported(),

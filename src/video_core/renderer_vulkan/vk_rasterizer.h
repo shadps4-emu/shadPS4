@@ -5,6 +5,7 @@
 
 #include "common/recursive_lock.h"
 #include "common/shared_first_mutex.h"
+#include "video_core/buffer_cache/barrier_batch.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
@@ -75,7 +76,6 @@ public:
     void MapMemory(VAddr addr, u64 size);
     void UnmapMemory(VAddr addr, u64 size);
 
-    void CpSync();
     u64 Flush();
     void Finish();
     void OnSubmit();
@@ -114,6 +114,9 @@ private:
     void BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding);
     bool BindResources(const Pipeline* pipeline);
 
+    void BindVertexBuffers(const GraphicsPipeline* pipeline);
+    void BindIndexBuffer(u32 index_offset = 0);
+
     void ResetBindings() {
         for (auto& image_id : bound_images) {
             texture_cache.GetImage(image_id).binding = {};
@@ -150,11 +153,9 @@ private:
 
     u32 set_write_index{};
     Pipeline::DescriptorWrites set_writes;
-    Pipeline::BufferBarriers buffer_barriers;
+    VideoCore::BarrierBatch barriers;
     Shader::PushData push_data;
 
-    using BufferBindingInfo = std::tuple<VideoCore::BufferId, AmdGpu::Buffer, u64>;
-    boost::container::static_vector<BufferBindingInfo, Shader::NUM_BUFFERS> buffer_bindings;
     using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::ImageDesc>;
     boost::container::static_vector<ImageBindingInfo, Shader::NUM_IMAGES> image_bindings;
     bool fault_process_pending{};

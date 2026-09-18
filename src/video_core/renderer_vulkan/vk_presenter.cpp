@@ -645,7 +645,7 @@ Frame* Presenter::PrepareLastFrame() {
     });
 
     // Flush frame creation commands.
-    frame->ready_semaphore = scheduler.GetMasterSemaphore()->Handle();
+    frame->ready_semaphore = scheduler.GetWorkSemaphore()->Handle();
     frame->ready_tick = scheduler.CurrentTick();
     SubmitInfo info{};
     scheduler.Flush(info);
@@ -757,7 +757,7 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
     }
 
     // Flush frame creation commands.
-    frame->ready_semaphore = draw_scheduler.GetMasterSemaphore()->Handle();
+    frame->ready_semaphore = draw_scheduler.GetWorkSemaphore()->Handle();
     frame->ready_tick = draw_scheduler.CurrentTick();
     SubmitInfo info{};
     draw_scheduler.Flush(info);
@@ -830,7 +830,7 @@ Frame* Presenter::PrepareBlankFrame(bool present_thread) {
     });
 
     // Flush frame creation commands.
-    frame->ready_semaphore = scheduler.GetMasterSemaphore()->Handle();
+    frame->ready_semaphore = scheduler.GetWorkSemaphore()->Handle();
     frame->ready_tick = scheduler.CurrentTick();
     SubmitInfo info{};
     scheduler.Flush(info);

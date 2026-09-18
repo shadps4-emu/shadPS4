@@ -36,10 +36,10 @@ static Shader::PushData MakeUserData(const AmdGpu::Regs& regs) {
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
                        AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, page_manager{this},
-      buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
+      buffer_cache{instance, scheduler, liverpool_, texture_cache, barriers, page_manager},
       texture_cache{instance, scheduler, liverpool_, buffer_cache, page_manager},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
-      pipeline_cache{instance, scheduler, liverpool},
+      pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
       host_markers_enabled{EmulatorSettings.IsVkHostMarkersEnabled()},
       guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()} {
     if (!EmulatorSettings.IsNullGPU()) {
@@ -49,19 +49,6 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
 }
 
 Rasterizer::~Rasterizer() = default;
-
-void Rasterizer::CpSync() {
-    scheduler.EndRendering();
-    auto cmdbuf = scheduler.CommandBuffer();
-
-    const vk::MemoryBarrier ib_barrier{
-        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
-        .dstAccessMask = vk::AccessFlagBits::eIndirectCommandRead,
-    };
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
-                           vk::PipelineStageFlagBits::eDrawIndirect,
-                           vk::DependencyFlagBits::eByRegion, ib_barrier, {}, {});
-}
 
 bool Rasterizer::FilterDraw() {
     const auto& regs = liverpool->regs;
@@ -210,12 +197,14 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     }
     const auto state = BeginRendering(pipeline);
 
-    buffer_cache.BindVertexBuffers(*pipeline, buffer_barriers);
+    BindVertexBuffers(pipeline);
     if (is_indexed) {
-        buffer_cache.BindIndexBuffer(index_offset, buffer_barriers);
+        BindIndexBuffer(index_offset);
     }
 
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    barriers.FlushBarriers(scheduler);
+
+    pipeline->BindResources(set_writes, push_data);
     UpdateDynamicState(pipeline, is_indexed);
     scheduler.BeginRendering(state);
 
@@ -264,32 +253,25 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     }
     const auto state = BeginRendering(pipeline);
 
-    buffer_cache.BindVertexBuffers(*pipeline, buffer_barriers);
+    BindVertexBuffers(pipeline);
     if (is_indexed) {
-        buffer_cache.BindIndexBuffer(0, buffer_barriers);
+        BindIndexBuffer();
     }
 
-    const auto& [buffer, base] =
+    const auto [buffer, base] =
         buffer_cache.ObtainBuffer(arg_address + offset, stride * max_count, false);
+    barriers.IsRegionAccessed(arg_address + offset, stride * max_count);
 
-    VideoCore::Buffer* count_buffer{};
-    u32 count_base{};
+    vk::Buffer count_buffer{};
+    u64 count_base{};
     if (count_address != 0) {
         std::tie(count_buffer, count_base) = buffer_cache.ObtainBuffer(count_address, 4, false);
+        barriers.IsRegionAccessed(count_address, 4);
     }
 
-    if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
-                                          vk::PipelineStageFlagBits2::eDrawIndirect)) {
-        buffer_barriers.emplace_back(*barrier);
-    }
-    if (count_buffer) {
-        if (auto barrier = count_buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
-                                                    vk::PipelineStageFlagBits2::eDrawIndirect)) {
-            buffer_barriers.emplace_back(*barrier);
-        }
-    }
+    barriers.FlushBarriers(scheduler);
 
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    pipeline->BindResources(set_writes, push_data);
     UpdateDynamicState(pipeline, is_indexed);
     scheduler.BeginRendering(state);
 
@@ -303,20 +285,19 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         ASSERT(sizeof(VkDrawIndexedIndirectCommand) == stride);
 
         if (count_address != 0) {
-            cmdbuf.drawIndexedIndirectCount(buffer->Handle(), base, count_buffer->Handle(),
-                                            count_base, max_count, stride);
+            cmdbuf.drawIndexedIndirectCount(buffer, base, count_buffer, count_base, max_count,
+                                            stride);
         } else {
-            cmdbuf.drawIndexedIndirect(buffer->Handle(), base, max_count, stride);
+            cmdbuf.drawIndexedIndirect(buffer, base, max_count, stride);
         }
         DebugState.IncDrawCall();
     } else {
         ASSERT(sizeof(VkDrawIndirectCommand) == stride);
 
         if (count_address != 0) {
-            cmdbuf.drawIndirectCount(buffer->Handle(), base, count_buffer->Handle(), count_base,
-                                     max_count, stride);
+            cmdbuf.drawIndirectCount(buffer, base, count_buffer, count_base, max_count, stride);
         } else {
-            cmdbuf.drawIndirect(buffer->Handle(), base, max_count, stride);
+            cmdbuf.drawIndirect(buffer, base, max_count, stride);
         }
         DebugState.IncDrawCall();
     }
@@ -344,8 +325,9 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
+    barriers.FlushBarriers(scheduler);
     scheduler.EndRendering();
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    pipeline->BindResources(set_writes, push_data);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
@@ -371,18 +353,15 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     }
 
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
-
-    if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
-                                          vk::PipelineStageFlagBits2::eDrawIndirect)) {
-        buffer_barriers.emplace_back(*barrier);
-    }
+    barriers.IsRegionAccessed(address + offset, size);
+    barriers.FlushBarriers(scheduler);
 
     scheduler.EndRendering();
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    pipeline->BindResources(set_writes, push_data);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
-    cmdbuf.dispatchIndirect(buffer->Handle(), base);
+    cmdbuf.dispatchIndirect(buffer, base);
     DebugState.IncDispatch();
 
     ResetBindings();
@@ -406,7 +385,6 @@ void Rasterizer::OnSubmit() {
     }
     texture_cache.ProcessDownloadImages();
     texture_cache.RunGarbageCollector();
-    buffer_cache.RunGarbageCollector();
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
@@ -417,7 +395,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     set_write_index = 0;
     set_writes.clear();
-    buffer_barriers.clear();
     buffer_infos.clear();
     image_infos.clear();
 
@@ -439,15 +416,128 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     }
 
     if (uses_dma) {
-        // We only use fault buffer for DMA right now.
-        Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-        for (auto& range : mapped_ranges) {
-            buffer_cache.SynchronizeBuffersInRange(range.lower(), range.upper() - range.lower());
-        }
+        buffer_cache.SynchronizeDmaBuffers();
         fault_process_pending = true;
     }
 
     return true;
+}
+
+void Rasterizer::BindVertexBuffers(const GraphicsPipeline* pipeline) {
+    const auto& regs = liverpool->regs;
+    VertexInputs<vk::VertexInputAttributeDescription2EXT> attributes;
+    VertexInputs<vk::VertexInputBindingDescription2EXT> bindings;
+    VertexInputs<vk::VertexInputBindingDivisorDescriptionEXT> divisors;
+    VertexInputs<AmdGpu::Buffer> guest_buffers;
+    pipeline->GetVertexInputs(attributes, bindings, divisors, guest_buffers,
+                              regs.vgt_instance_step_rate_0, regs.vgt_instance_step_rate_1);
+
+    if (instance.IsVertexInputDynamicState()) {
+        // Update current vertex inputs.
+        const auto cmdbuf = scheduler.CommandBuffer();
+        cmdbuf.setVertexInputEXT(bindings, attributes);
+    }
+
+    if (bindings.empty()) {
+        // If there are no bindings, there is nothing further to do.
+        return;
+    }
+
+    struct BufferRange {
+        VAddr base_address;
+        VAddr end_address;
+        vk::Buffer buffer;
+        u64 offset;
+
+        [[nodiscard]] size_t GetSize() const {
+            return end_address - base_address;
+        }
+    };
+
+    // Build list of ranges covering the requested buffers
+    VertexInputs<BufferRange> ranges{};
+    for (const auto& buffer : guest_buffers) {
+        if (buffer.base_address != 0 && buffer.GetSize() > 0) {
+            ranges.emplace_back(buffer.base_address, buffer.base_address + buffer.GetSize());
+        }
+    }
+
+    // Merge connecting ranges together
+    VertexInputs<BufferRange> ranges_merged{};
+    if (!ranges.empty()) {
+        std::ranges::sort(ranges, [](const BufferRange& lhv, const BufferRange& rhv) {
+            return lhv.base_address < rhv.base_address;
+        });
+        ranges_merged.emplace_back(ranges[0]);
+        for (auto range : ranges) {
+            auto& prev_range = ranges_merged.back();
+            if (prev_range.end_address < range.base_address) {
+                ranges_merged.emplace_back(range);
+            } else {
+                prev_range.end_address = std::max(prev_range.end_address, range.end_address);
+            }
+        }
+    }
+
+    // Map buffers for merged ranges
+    for (auto& range : ranges_merged) {
+        const u64 size = memory->ClampRangeSize(range.base_address, range.GetSize());
+        std::tie(range.buffer, range.offset) =
+            buffer_cache.ObtainBuffer(range.base_address, size, false);
+        barriers.IsRegionAccessed(range.base_address, size);
+    }
+
+    // Bind vertex buffers
+    VertexInputs<vk::Buffer> host_buffers;
+    VertexInputs<vk::DeviceSize> host_offsets;
+    VertexInputs<vk::DeviceSize> host_sizes;
+    VertexInputs<vk::DeviceSize> host_strides;
+    for (const auto& buffer : guest_buffers) {
+        if (buffer.base_address != 0 && buffer.GetSize() > 0) {
+            const auto host_buffer_info =
+                std::ranges::find_if(ranges_merged, [&](const BufferRange& range) {
+                    return buffer.base_address >= range.base_address &&
+                           buffer.base_address < range.end_address;
+                });
+            ASSERT(host_buffer_info != ranges_merged.cend());
+            host_buffers.emplace_back(host_buffer_info->buffer);
+            host_offsets.push_back(host_buffer_info->offset + buffer.base_address -
+                                   host_buffer_info->base_address);
+        } else {
+            host_buffers.emplace_back(VK_NULL_HANDLE);
+            host_offsets.push_back(0);
+        }
+        host_sizes.push_back(buffer.GetSize());
+        host_strides.push_back(buffer.GetStride());
+    }
+
+    const auto cmdbuf = scheduler.CommandBuffer();
+    const auto num_buffers = guest_buffers.size();
+    if (instance.IsVertexInputDynamicState()) {
+        cmdbuf.bindVertexBuffers(0, num_buffers, host_buffers.data(), host_offsets.data());
+    } else {
+        cmdbuf.bindVertexBuffers2(0, num_buffers, host_buffers.data(), host_offsets.data(),
+                                  host_sizes.data(), host_strides.data());
+    }
+}
+
+void Rasterizer::BindIndexBuffer(u32 index_offset) {
+    const auto& regs = liverpool->regs;
+
+    // Figure out index type and size.
+    const bool is_index16 = regs.index_buffer_type.index_type == AmdGpu::IndexType::Index16;
+    const vk::IndexType index_type = is_index16 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
+    const u32 index_size = is_index16 ? sizeof(u16) : sizeof(u32);
+    const VAddr index_address =
+        regs.index_base_address.Address<VAddr>() + index_offset * index_size;
+
+    // Bind index buffer.
+    const u32 index_buffer_size = regs.num_indices * index_size;
+    const auto [buffer, offset] =
+        buffer_cache.ObtainBuffer(index_address, index_buffer_size, false);
+    barriers.IsRegionAccessed(index_address, index_buffer_size);
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.bindIndexBuffer(buffer, offset, index_type);
 }
 
 bool Rasterizer::IsComputeMetaClear(const Pipeline* pipeline) {
@@ -611,30 +701,9 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
 
 void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
                              Shader::PushData& push_data) {
-    buffer_bindings.clear();
-
+    const u64 alignment = instance.StorageMinAlignment();
     for (const auto& desc : stage.buffers) {
-        const auto vsharp = desc.GetSharp(stage);
-        if (!desc.IsSpecial() && vsharp.base_address != 0 && vsharp.GetSize() > 0) {
-            const u64 size = memory->ClampRangeSize(vsharp.base_address, vsharp.GetSize());
-            if (size != vsharp.GetSize()) {
-                LOG_ERROR(Render, "Clamped size from {} to {} for stage {:#x}", vsharp.GetSize(),
-                          size, stage.pgm_hash);
-            }
-            const auto buffer_id = buffer_cache.FindBuffer(vsharp.base_address, size);
-            buffer_bindings.emplace_back(buffer_id, vsharp, size);
-        } else {
-            buffer_bindings.emplace_back(VideoCore::BufferId{}, vsharp, 0);
-        }
-    }
-
-    // Second pass to re-bind buffers that were updated after binding
-    for (u32 i = 0; i < buffer_bindings.size(); i++) {
-        const auto& [buffer_id, vsharp, size] = buffer_bindings[i];
-        const auto& desc = stage.buffers[i];
-        const u32 alignment = instance.StorageMinAlignment();
-        // Buffer is not from the cache, either a special buffer or unbound.
-        if (!buffer_id) {
+        if (desc.IsSpecial()) {
             if (desc.buffer_type == Shader::BufferType::GdsBuffer) {
                 const auto* gds_buf = buffer_cache.GetGdsBuffer();
                 buffer_infos.emplace_back(gds_buf->Handle(), 0, gds_buf->SizeBytes());
@@ -677,27 +746,37 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 std::memset(data, 0, lds_size);
                 buffer_infos.emplace_back(lds_buffer.Handle(), offset, lds_size);
             } else {
-                buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
+                UNREACHABLE_MSG("Unexpected buffer type {}", u32(desc.buffer_type));
             }
         } else {
-            const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
-                vsharp.base_address, size, desc.is_written, desc.is_formatted, buffer_id);
-            const u32 offset_aligned = Common::AlignDown(offset, alignment);
-            const u32 adjust = offset - offset_aligned;
-            if (adjust % 4 != 0) {
-                LOG_WARNING(Render_Vulkan, "Buffer binding {} in shader {:#x} isn't dword aligned",
-                            i, stage.pgm_hash);
-            }
-            push_data.AddOffset(binding.buffer, adjust);
-            buffer_infos.emplace_back(vk_buffer->Handle(), offset_aligned, size + adjust);
-            if (auto barrier =
-                    vk_buffer->GetBarrier(desc.is_written ? vk::AccessFlagBits2::eShaderWrite
-                                                          : vk::AccessFlagBits2::eShaderRead,
-                                          vk::PipelineStageFlagBits2::eAllCommands)) {
-                buffer_barriers.emplace_back(*barrier);
-            }
-            if (desc.is_written && desc.is_formatted) {
-                texture_cache.InvalidateMemoryFromGPU(vsharp.base_address, size);
+            const auto vsharp = desc.GetSharp(stage);
+            if (vsharp.base_address == 0 || vsharp.GetSize() == 0) {
+                buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
+            } else {
+                const u64 size = memory->ClampRangeSize(vsharp.base_address, vsharp.GetSize());
+                if (size != vsharp.GetSize()) {
+                    LOG_ERROR(Render, "Clamped size from {} to {} for stage {:#x}",
+                              vsharp.GetSize(), size, stage.pgm_hash);
+                }
+                const auto [buffer, offset] = buffer_cache.ObtainBuffer(
+                    vsharp.base_address, size, desc.is_written, desc.is_formatted);
+                const u64 offset_aligned = Common::AlignDown(offset, alignment);
+                const u64 adjust = offset - offset_aligned;
+                if (adjust % 4 != 0) {
+                    LOG_WARNING(Render_Vulkan, "Buffer binding in shader {:#x} isn't dword aligned",
+                                stage.pgm_hash);
+                }
+                push_data.AddOffset(binding.buffer, adjust);
+                buffer_infos.emplace_back(buffer, offset_aligned, size + adjust);
+                barriers.IsRegionAccessed(vsharp.base_address, size);
+                if (desc.is_written) {
+                    barriers.AccessMemory(
+                        vsharp.base_address, size, vk::PipelineStageFlagBits2::eAllGraphics,
+                        vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite);
+                }
+                if (desc.is_written && desc.is_formatted) {
+                    texture_cache.InvalidateMemoryFromGPU(vsharp.base_address, size);
+                }
             }
         }
 
@@ -1073,11 +1152,73 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
 }
 
 void Rasterizer::FillBuffer(VAddr address, u32 num_bytes, u32 value, bool is_gds) {
-    buffer_cache.FillBuffer(address, num_bytes, value, is_gds);
+    ASSERT_MSG(address % 4 == 0 && num_bytes % 4 == 0,
+               "FillBuffer address and size must be a multiple of 4 bytes");
+    if (!is_gds) {
+        texture_cache.ClearMeta(address);
+        if (!buffer_cache.IsRegionGpuModified(address, num_bytes)) {
+            u32* buffer = std::bit_cast<u32*>(address);
+            std::fill(buffer, buffer + (num_bytes / sizeof(u32)), value);
+            return;
+        }
+    }
+    const auto [buffer, offset] = [&] -> std::pair<vk::Buffer, u64> {
+        if (is_gds) {
+            return {buffer_cache.GetGdsBuffer()->Handle(), address};
+        }
+        barriers.IsRegionAccessed(address, num_bytes, true);
+        return buffer_cache.ObtainBuffer(address, num_bytes, true);
+    }();
+    barriers.FlushBarriers(scheduler);
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.fillBuffer(buffer, offset, num_bytes, value);
+    if (!is_gds) {
+        barriers.AccessMemory(address, num_bytes, vk::PipelineStageFlagBits2::eTransfer,
+                              vk::AccessFlagBits2::eTransferWrite);
+    }
 }
 
 void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {
-    buffer_cache.CopyBuffer(dst, src, num_bytes, dst_gds, src_gds);
+    if (!dst_gds && !buffer_cache.IsRegionGpuModified(dst, num_bytes)) {
+        if (!src_gds && !buffer_cache.IsRegionGpuModified(src, num_bytes) &&
+            !texture_cache.FindImageFromRange(src, num_bytes)) {
+            // Both buffers were not transferred to GPU yet. Can safely copy in host memory.
+            std::memcpy(std::bit_cast<void*>(dst), std::bit_cast<void*>(src), num_bytes);
+            return;
+        }
+        // Without a readback there's nothing we can do with this
+        // Fallback to creating dst buffer on GPU to at least have this data there
+    }
+    texture_cache.InvalidateMemoryFromGPU(dst, num_bytes);
+    const auto& gds_buffer = buffer_cache.GetGdsBuffer();
+    const auto [src_buffer, src_offset] = [&] -> std::pair<vk::Buffer, u64> {
+        if (src_gds) {
+            return {gds_buffer->Handle(), src};
+        }
+        barriers.IsRegionAccessed(src, num_bytes);
+        return buffer_cache.ObtainBuffer(src, num_bytes, false, true);
+    }();
+    const auto [dst_buffer, dst_offset] = [&] -> std::pair<vk::Buffer, u64> {
+        if (dst_gds) {
+            return {gds_buffer->Handle(), dst};
+        }
+        barriers.IsRegionAccessed(dst, num_bytes, true);
+        return buffer_cache.ObtainBuffer(dst, num_bytes, true, true);
+    }();
+    barriers.FlushBarriers(scheduler);
+    const vk::BufferCopy copy = {
+        .srcOffset = src_offset,
+        .dstOffset = dst_offset,
+        .size = num_bytes,
+    };
+    scheduler.EndRendering();
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.copyBuffer(src_buffer, dst_buffer, copy);
+    if (!dst_gds) {
+        barriers.AccessMemory(dst, num_bytes, vk::PipelineStageFlagBits2::eTransfer,
+                              vk::AccessFlagBits2::eTransferWrite);
+    }
 }
 
 u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {
