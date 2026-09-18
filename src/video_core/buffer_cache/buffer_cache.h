@@ -32,6 +32,8 @@ class TextureCache;
 class MemoryTracker;
 class PageManager;
 
+struct BarrierBatch;
+
 class BufferCache {
     static constexpr u64 ADDRESS_SPACE_BITS = 40;
     static constexpr u64 ARENA_PAGE_BITS = 32;
@@ -43,7 +45,7 @@ class BufferCache {
 public:
     explicit BufferCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
                          AmdGpu::Liverpool* liverpool, TextureCache& texture_cache,
-                         PageManager& tracker);
+                         BarrierBatch& barriers, PageManager& tracker);
     ~BufferCache();
 
     /// Returns a pointer to GDS device local buffer.
@@ -85,12 +87,6 @@ public:
     /// Flushes any GPU modified buffer in the logical page range back to CPU memory.
     void ReadMemory(VAddr device_addr, u64 size, bool is_write = false);
 
-    /// Writes a value to GPU buffer.
-    void FillBuffer(VAddr address, u32 num_bytes, u32 value, bool is_gds);
-
-    /// Performs buffer to buffer data copy on the GPU.
-    void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
-
     /// Finds a buffer for the specified region.
     [[nodiscard]] std::pair<vk::Buffer, u64> ObtainBuffer(VAddr device_addr, u32 size,
                                                           bool is_written,
@@ -99,10 +95,10 @@ public:
     /// Attempts to obtain a buffer without modifying the cache contents.
     [[nodiscard]] std::pair<vk::Buffer, u64> ObtainBufferForImage(VAddr device_addr, u32 size);
 
-    /// Return true when a CPU region is modified from the CPU
+    /// Return true when a region is modified from the CPU
     [[nodiscard]] bool IsRegionCpuModified(VAddr addr, size_t size);
 
-    /// Return true when a CPU region is modified from the GPU
+    /// Return true when a region is modified from the GPU
     [[nodiscard]] bool IsRegionGpuModified(VAddr addr, size_t size);
 
     /// Processes the fault buffer.
@@ -146,11 +142,6 @@ private:
     vk::Buffer UploadCopies(const Arena* arena, std::span<vk::BufferCopy> copies,
                             size_t total_size_bytes);
 
-    void FillBufferImpl(vk::Buffer buffer, u64 offset, u32 num_bytes, u32 value);
-
-    void CopyBufferImpl(vk::Buffer src_buffer, vk::Buffer dst_buffer,
-                        std::span<const vk::BufferCopy> copies, bool needs_pre_barrier);
-
     bool SynchronizeMemoryFromImage(const Arena* arena, VAddr device_addr, u32 size);
 
     void SubmitPendingArenaBinds(Vulkan::SubmitInfo& info);
@@ -160,6 +151,7 @@ private:
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     TextureCache& texture_cache;
+    BarrierBatch& barriers;
     std::unique_ptr<MemoryTracker> memory_tracker;
 
     StreamBuffer staging_buffer;

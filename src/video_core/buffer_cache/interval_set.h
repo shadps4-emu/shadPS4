@@ -7,6 +7,8 @@
 #include <concepts>
 #include <iterator>
 #include <vector>
+#include <boost/container/small_vector.hpp>
+
 #include "common/types.h"
 
 struct Interval {
