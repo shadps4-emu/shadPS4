@@ -255,12 +255,6 @@ void MarkReadConstBufferSharpSources(const SharpReference& sharp) {
             continue;
         }
         if (!IsSharpSource(source)) {
-            // None of the "see through" patterns above recognized how this dword was
-            // computed. Rather than asserting (and crashing the whole emulator), leave the
-            // dword unmarked. Downstream passes already treat an unresolved sharp source as
-            // a soft failure (see SharpLocationFromSource/UNKNOWN_LOCATION in
-            // resource_patching_pass.cpp), degrading to a null buffer/image for it instead
-            // of requiring every producer pattern to be known ahead of time.
             LOG_WARNING(Render_Recompiler,
                         "Unrecognized sharp source instruction {} for dword {}, skipping",
                         magic_enum::enum_name(source->GetOpcode()), i);
