@@ -789,6 +789,7 @@ set(COMMON src/common/logging/classes.h
            src/common/endian.h
            src/common/enum.h
            src/common/incremental_id.h
+           src/common/interval_set.h
            src/common/io_file.cpp
            src/common/io_file.h
            src/common/lru_cache.h
@@ -1098,14 +1099,12 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/amdgpu/resource.h
                src/video_core/amdgpu/tiling.cpp
                src/video_core/amdgpu/tiling.h
-               src/video_core/buffer_cache/barrier_batch.h
                src/video_core/buffer_cache/buffer.cpp
                src/video_core/buffer_cache/buffer.h
                src/video_core/buffer_cache/buffer_cache.cpp
                src/video_core/buffer_cache/buffer_cache.h
                src/video_core/buffer_cache/fault_manager.cpp
                src/video_core/buffer_cache/fault_manager.h
-               src/video_core/buffer_cache/interval_set.h
                src/video_core/buffer_cache/memory_tracker.h
                src/video_core/buffer_cache/range_set.h
                src/video_core/buffer_cache/region_definitions.h
@@ -1134,6 +1133,8 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/vk_rasterizer.h
                src/video_core/renderer_vulkan/vk_resource_pool.cpp
                src/video_core/renderer_vulkan/vk_resource_pool.h
+               src/video_core/renderer_vulkan/vk_runtime.cpp
+               src/video_core/renderer_vulkan/vk_runtime.h
                src/video_core/renderer_vulkan/vk_scheduler.cpp
                src/video_core/renderer_vulkan/vk_scheduler.h
                src/video_core/renderer_vulkan/vk_semaphore.cpp

@@ -7,7 +7,6 @@
 #include <concepts>
 #include <iterator>
 #include <vector>
-#include <boost/container/small_vector.hpp>
 
 #include "common/types.h"
 
@@ -203,68 +202,4 @@ protected:
     }
 
     List intervals;
-};
-
-struct SyncInterval : Interval {
-    bool written;
-    constexpr bool CanMergeWith(const SyncInterval& other) const noexcept {
-        return written == other.written;
-    }
-    constexpr SyncInterval SubRange(u64 a, u64 b) const noexcept {
-        return {{a, b}, written};
-    }
-    constexpr bool Dominant() const noexcept {
-        return written;
-    }
-};
-
-struct SyncBatchList : public IntervalList<SyncInterval> {
-    /// Adds a range to the interval set. Written intervals always dominating non-written intervals.
-    void Add(SyncInterval n) {
-        if (n.start >= n.end) [[unlikely]] {
-            return;
-        }
-
-        boost::container::small_vector<SyncInterval, 8> out;
-
-        auto [first, last] = OverlapRun(n.start, n.end);
-        if (first != last && first->start < n.start) {
-            out.emplace_back(first->SubRange(first->start, n.start));
-        }
-        u64 cur = n.start;
-        for (auto it = first; it != last; ++it) {
-            if (!it->Dominant()) {
-                continue;
-            }
-            const u64 a = std::max(it->start, n.start);
-            const u64 b = std::min(it->end, n.end);
-            if (a >= b) {
-                continue;
-            }
-            if (cur < a) {
-                out.emplace_back(n.SubRange(cur, a));
-            }
-            out.emplace_back(it->SubRange(a, b));
-            cur = b;
-        }
-        if (cur < n.end) {
-            out.emplace_back(n.SubRange(cur, n.end));
-        }
-        auto prev = std::prev(last);
-        if (first != last && prev->end > n.end) {
-            out.emplace_back(prev->SubRange(n.end, prev->end));
-        }
-        u32 w = 0;
-        for (u32 r = 1; r < out.size(); ++r) {
-            if (out[w].end == out[r].start && out[w].CanMergeWith(out[r])) {
-                out[w].end = out[r].end;
-            } else {
-                out[++w] = out[r];
-            }
-        }
-        if (!out.empty()) {
-            out.resize(w + 1);
-        }
-        Splice(first, last, out.data(), out.size());
-    }
 };

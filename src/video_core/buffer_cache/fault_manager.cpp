@@ -20,9 +20,8 @@ FaultManager::FaultManager(const Vulkan::Instance& instance, Vulkan::Scheduler& 
                            BufferCache& buffer_cache_, u32 sparse_pagebits, u64 sparse_num_pages_)
     : scheduler{scheduler_}, buffer_cache{buffer_cache_}, sparse_pagesize{1ULL << sparse_pagebits},
       sparse_num_pages{sparse_num_pages_}, fault_buffer_size{sparse_num_pages_ / 8},
-      fault_buffer{instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags, fault_buffer_size},
-      download_buffer{instance, scheduler, MemoryUsage::Download,
-                      0,        AllFlags,  MaxPendingFaults * PageFaultAreaSize} {
+      fault_buffer{instance, 0, fault_buffer_size, MemoryType::DeviceLocal},
+      download_buffer{instance, 0, MaxPendingFaults * PageFaultAreaSize, MemoryType::HostCached} {
     const auto device = instance.GetDevice();
     Vulkan::SetObjectName(device, fault_buffer.Handle(), "Fault Buffer");
 

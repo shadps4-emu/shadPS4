@@ -109,7 +109,7 @@ static bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Compute
         // Execute buffer copies.
         LOG_TRACE(Render_Vulkan, "HLE buffer copy: src_size = {}, dst_size = {}",
                   src_offset_max - src_offset_min, dst_offset_max - dst_offset_min);
-        scheduler.CommandBuffer().copyBuffer(src_buf, dst_buf, vk_copies);
+        scheduler.CommandBuffer().copyBuffer(src_buf->Handle(), dst_buf->Handle(), vk_copies);
         batch_start = batch_end;
     }
 

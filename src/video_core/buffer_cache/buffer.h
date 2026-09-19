@@ -11,10 +11,12 @@
 #include "core/memory.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_common.h"
+#include "vulkan/vulkan.hpp"
 
 namespace Vulkan {
 class Instance;
 class Scheduler;
+struct BarrierTracker;
 } // namespace Vulkan
 
 VK_DEFINE_HANDLE(VmaAllocation)
@@ -25,11 +27,12 @@ struct VmaAllocationInfo;
 namespace VideoCore {
 
 /// Hints and requirements for the backing memory type of a commit
-enum class MemoryUsage {
-    DeviceLocal, ///< Requests device local buffer.
-    Upload,      ///< Requires a host visible memory type optimized for CPU to GPU uploads
-    Download,    ///< Requires a host visible memory type optimized for GPU to CPU readbacks
-    Stream,      ///< Requests device local host visible buffer, falling back host memory.
+enum class MemoryType : u8 {
+    DeviceLocal,  ///< Requests device local buffer.
+    HostUncached, ///< Requires a host visible memory type optimized for CPU to GPU uploads
+    HostCached,   ///< Requires a host visible memory type optimized for GPU to CPU readbacks
+    Stream,       ///< Requests device local host visible buffer, falling back host memory.
+    Sparse,       ///< Requires an unbacked sparse resident buffer.
 };
 
 constexpr vk::BufferUsageFlags ReadFlags =
@@ -58,25 +61,19 @@ struct UniqueBuffer {
         return *this;
     }
 
-    void Create(const vk::BufferCreateInfo& image_ci, MemoryUsage usage,
+    void Create(vk::BufferCreateInfo& buffer_ci, MemoryType mem_type,
                 VmaAllocationInfo* out_alloc_info);
 
-    operator vk::Buffer() const {
-        return buffer;
-    }
-
     vk::Device device;
-    VmaAllocator allocator;
-    VmaAllocation allocation;
     vk::Buffer buffer{};
-    vk::DeviceAddress bda_addr = 0;
+    vk::DeviceAddress bda_addr{};
+    VmaAllocator allocator;
+    VmaAllocation allocation{};
 };
 
-class Buffer {
-public:
-    explicit Buffer(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                    MemoryUsage usage, VAddr cpu_addr_, vk::BufferUsageFlags flags, u64 size_bytes_,
-                    std::string_view debug_name = "");
+struct Buffer {
+    explicit Buffer(const Vulkan::Instance& instance, VAddr cpu_addr_, u64 size_bytes_,
+                    MemoryType mem_type, std::string_view debug_name = "");
 
     Buffer& operator=(const Buffer&) = delete;
     Buffer(const Buffer&) = delete;
@@ -101,7 +98,7 @@ public:
     }
 
     vk::Buffer Handle() const noexcept {
-        return buffer;
+        return buffer.buffer;
     }
 
     vk::DeviceAddress BufferDeviceAddress() const noexcept {
@@ -109,49 +106,17 @@ public:
         return buffer.bda_addr;
     }
 
-    std::optional<vk::BufferMemoryBarrier2> GetBarrier(vk::AccessFlags2 dst_acess_mask,
-                                                       vk::PipelineStageFlagBits2 dst_stage,
-                                                       u32 offset = 0) {
-        if (dst_acess_mask == access_mask && stage == dst_stage) {
-            return {};
-        }
-
-        DEBUG_ASSERT(offset < size_bytes);
-
-        const auto barrier = vk::BufferMemoryBarrier2{
-            .srcStageMask = stage,
-            .srcAccessMask = access_mask,
-            .dstStageMask = dst_stage,
-            .dstAccessMask = dst_acess_mask,
-            .buffer = buffer.buffer,
-            .offset = offset,
-            .size = size_bytes - offset,
-        };
-        access_mask = dst_acess_mask;
-        stage = dst_stage;
-        return barrier;
-    }
-
-public:
     VAddr cpu_addr = 0;
-    bool is_picked{};
-    bool is_coherent{};
     size_t size_bytes = 0;
-    std::span<u8> mapped_data;
-    const Vulkan::Instance* instance;
-    Vulkan::Scheduler* scheduler;
-    MemoryUsage usage;
+    std::span<u8> mapped_data{};
+    bool is_coherent{};
+    MemoryType mem_type{MemoryType::DeviceLocal};
     UniqueBuffer buffer;
-    vk::AccessFlags2 access_mask{
-        vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite |
-        vk::AccessFlagBits2::eTransferRead | vk::AccessFlagBits2::eTransferWrite};
-    vk::PipelineStageFlagBits2 stage{vk::PipelineStageFlagBits2::eAllCommands};
 };
 
-class StreamBuffer : public Buffer {
-public:
+struct StreamBuffer : public Buffer {
     explicit StreamBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                          MemoryUsage usage, u64 size_bytes_);
+                          MemoryType mem_type, u64 size_bytes);
 
     /// Reserves a region of memory from the stream buffer.
     std::pair<u8*, u64> Map(u64 size, u64 alignment = 0, bool allow_wait = true);
@@ -186,6 +151,8 @@ private:
     bool WaitPendingOperations(u64 requested_upper_bound, bool allow_wait);
 
 private:
+    Vulkan::Scheduler& scheduler;
+    vk::DeviceSize non_coherent_atom_size{};
     u64 offset{};
     u64 mapped_size{};
     std::vector<Watch> current_watches;

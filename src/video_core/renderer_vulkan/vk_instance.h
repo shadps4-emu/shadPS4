@@ -326,7 +326,7 @@ public:
         return properties.limits.minStorageBufferOffsetAlignment;
     }
 
-    /// Returns the minimum alignemt required for accessing host-mapped device memory
+    /// Returns the minimum alignment required for accessing host-mapped device memory
     vk::DeviceSize NonCoherentAtomSize() const {
         return properties.limits.nonCoherentAtomSize;
     }
