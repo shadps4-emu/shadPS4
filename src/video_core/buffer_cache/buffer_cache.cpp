@@ -14,6 +14,7 @@
 #include "video_core/renderer_vulkan/vk_runtime.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
+#include "vulkan/vulkan.hpp"
 
 #include <vk_mem_alloc.h>
 
@@ -30,6 +31,20 @@ static constexpr auto ARENA_USAGE =
     vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer |
     vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer |
     vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+
+std::optional<u32> FindMemoryType(const vk::PhysicalDeviceMemoryProperties& properties,
+                                  vk::MemoryPropertyFlags wanted, u32 memory_type_bits) {
+    for (u32 i = 0; i < properties.memoryTypeCount; ++i) {
+        if (((memory_type_bits >> i) & 1) == 0) {
+            continue;
+        }
+        const auto flags = properties.memoryTypes[i].propertyFlags;
+        if ((flags & wanted) == wanted) {
+            return i;
+        }
+    }
+    return std::nullopt;
+}
 
 BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                          Vulkan::Runtime& runtime_, AmdGpu::Liverpool* liverpool_,
@@ -59,8 +74,11 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
                block_size);
     block_shift = std::bit_width(block_size) - 1;
     blocks_per_arena_page = ARENA_PAGE_SIZE / block_size;
-    blocks_per_arena_page_shift = std::bit_width(blocks_per_arena_page) - 1;
-    arena_memory_type_bits = reqs.memoryTypeBits;
+    blocks_per_arena_page_shift = ARENA_PAGE_BITS - block_shift;
+    arena_memory_type_index =
+        FindMemoryType(instance.GetMemoryProperties(), vk::MemoryPropertyFlagBits::eDeviceLocal,
+                       reqs.memoryTypeBits)
+            .value();
 
     const u64 bda_pagetable_size =
         (blocks_per_arena_page * NUM_ARENA_PAGES) * sizeof(vk::DeviceAddress);
@@ -139,8 +157,6 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
 
 std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 size,
                                                         bool is_written, bool is_texel_buffer) {
-    size = std::min(size, 1500u * 1024u * 1024u);
-
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
     if (!is_written && size <= STREAM_THRESHOLD && !IsRegionGpuModified(device_addr, size)) {
         const u64 offset = stream_buffer.Copy(device_addr, size, instance.UniformMinAlignment());
@@ -238,69 +254,49 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
 }
 
 void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_block) {
-    ArenaBinds* bind{};
     u32 resident_blocks{};
-    u32 existing_binds{};
+    IntervalList bind_ranges;
     resident_ranges.ForEachGap(first_block, last_block + 1, [&](u64 start, u64 end) {
-        if (!bind) {
-            bind = BindsForArena(arena);
-            existing_binds = bind->binds.size();
-        }
         resident_blocks += end - start;
-        auto& binds = bind->binds;
-        binds.push_back(vk::SparseMemoryBind{
-            .resourceOffset = start,
-            .size = end - start,
-        });
+        bind_ranges.Add({start, end});
     });
 
-    if (!bind || bind->binds.size() == existing_binds) {
+    if (bind_ranges.Empty()) {
         return;
     }
 
-    const vk::MemoryRequirements memory_reqs = {
-        .size = resident_blocks << block_shift,
-        .alignment = block_size,
-        .memoryTypeBits = arena_memory_type_bits,
+    const vk::MemoryAllocateInfo alloc_info = {
+        .allocationSize = resident_blocks << block_shift,
+        .memoryTypeIndex = arena_memory_type_index,
     };
-    const VkMemoryRequirements memory_reqs_unsafe = static_cast<VkMemoryRequirements>(memory_reqs);
-    const VmaAllocationCreateInfo alloc_ci = {
-        .flags = VMA_ALLOCATION_CREATE_CAN_ALIAS_BIT,
-        .usage = VMA_MEMORY_USAGE_UNKNOWN,
-        .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    };
-    VmaAllocation allocation{};
-    VmaAllocationInfo alloc_info{};
-    const auto result = vmaAllocateMemory(instance.GetAllocator(), &memory_reqs_unsafe, &alloc_ci,
-                                          &allocation, &alloc_info);
-    ASSERT_MSG(result == VK_SUCCESS, "Unable to allocate backing memory with error {}",
-               vk::to_string(vk::Result{result}));
+    const auto device_memory = Vulkan::Check(instance.GetDevice().allocateMemory(alloc_info));
 
     boost::container::small_vector<vk::BufferCopy, 8> copies;
     auto [staging, offset] = staging_buffer.Map(resident_blocks * sizeof(vk::DeviceAddress));
 
-    u64 memory_offset = alloc_info.offset;
-    auto& binds = bind->binds;
+    u64 memory_offset{};
+    ArenaBinds* binds = BindsForArena(arena);
     auto* bda_addrs = reinterpret_cast<vk::DeviceAddress*>(staging);
-    for (u32 i = existing_binds; i < binds.size(); ++i) {
+    for (const auto& range : bind_ranges) {
         Backing backing;
-        backing.start = binds[i].resourceOffset;
-        backing.end = binds[i].resourceOffset + binds[i].size;
-        backing.memory = alloc_info.deviceMemory;
+        backing.start = range.start;
+        backing.end = range.end;
+        backing.memory = device_memory;
         backing.offset = memory_offset;
         resident_ranges.Add(backing);
 
         LOG_INFO(Render, "Making range start={}, end={} resident", backing.start, backing.end);
 
-        binds[i].resourceOffset <<= block_shift;
-        binds[i].resourceOffset -= arena->cpu_addr;
-        binds[i].size <<= block_shift;
-        binds[i].memory = alloc_info.deviceMemory;
-        binds[i].memoryOffset = memory_offset;
-        memory_offset += binds[i].size;
+        const auto& bind = binds->binds.emplace_back(vk::SparseMemoryBind{
+            .resourceOffset = (range.start << block_shift) - arena->cpu_addr,
+            .size = (range.end - range.start) << block_shift,
+            .memory = device_memory,
+            .memoryOffset = memory_offset,
+        });
+        memory_offset += bind.size;
 
-        for (u32 block = 0; block < binds[i].size; block += block_size) {
-            *(bda_addrs++) = arena->BufferDeviceAddress() + binds[i].resourceOffset + block;
+        for (u32 block = 0; block < bind.size; block += block_size) {
+            *(bda_addrs++) = arena->BufferDeviceAddress() + bind.resourceOffset + block;
         }
         const u64 copy_size = (backing.end - backing.start) * sizeof(vk::DeviceAddress);
         copies.emplace_back(offset, backing.start * sizeof(vk::DeviceAddress), copy_size);

@@ -169,7 +169,7 @@ private:
     };
     IntervalList<Backing> resident_ranges;
 
-    u32 arena_memory_type_bits{};
+    u32 arena_memory_type_index{};
     u32 block_size{};
     u32 block_shift{};
     u32 blocks_per_arena_page{};
