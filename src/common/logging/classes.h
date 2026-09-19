@@ -55,6 +55,7 @@ constexpr auto Lib_ImeDialog = "Lib.ImeDialog";                     ///< The Lib
 constexpr auto Lib_InvitationDialog="Lib.InvitationDialog";         ///< The LibSceInvitationDialog implementation.
 constexpr auto Lib_Jpeg = "Lib.Jpeg";                               ///< The LibSceJpeg implementation.
 constexpr auto Lib_Kernel = "Lib.Kernel";                           ///< The LibKernel implementation.
+constexpr auto Lib_Keyboard = "Lib.Keyboard";                       ///< The LibSceKeyboard implementation.
 constexpr auto Lib_LibcInternal = "Lib.LibcInternal";               ///< The LibSceLibcInternal implementation.
 constexpr auto Lib_Mouse = "Lib.Mouse";                             ///< The LibSceMouse implementation
 constexpr auto Lib_Move = "Lib.Move";                               ///< The LibSceMove implementation.
