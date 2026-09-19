@@ -1139,8 +1139,6 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/vk_scheduler.h
                src/video_core/renderer_vulkan/vk_semaphore.cpp
                src/video_core/renderer_vulkan/vk_semaphore.h
-               src/video_core/renderer_vulkan/vk_shader_hle.cpp
-               src/video_core/renderer_vulkan/vk_shader_hle.h
                src/video_core/renderer_vulkan/vk_shader_util.cpp
                src/video_core/renderer_vulkan/vk_shader_util.h
                src/video_core/renderer_vulkan/vk_swapchain.cpp
