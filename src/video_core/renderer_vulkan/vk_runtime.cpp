@@ -8,6 +8,7 @@
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/blit_helper.h"
 #include "video_core/texture_cache/image.h"
+#include "vulkan/vulkan.hpp"
 
 #include <vulkan/vulkan_format_traits.hpp>
 
@@ -450,7 +451,8 @@ void Runtime::CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst) {
             Transit(src, vk::ImageLayout::eShaderReadOnlyOptimal,
                     vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderRead);
         needs_flush |= Transit(dst, vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                               vk::PipelineStageFlagBits2::eLateFragmentTests,
+                               vk::PipelineStageFlagBits2::eEarlyFragmentTests |
+                                   vk::PipelineStageFlagBits2::eLateFragmentTests,
                                vk::AccessFlagBits2::eDepthStencilAttachmentWrite);
         if (needs_flush) {
             FlushBarriers();
@@ -637,11 +639,12 @@ void Runtime::SetBackingSamples(VideoCore::Image* image, u32 num_samples, bool c
 
         // Transition dest backing to color attachment layout, not caring of previous contents
         constexpr auto dst_stage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
-        constexpr auto dst_access = vk::AccessFlagBits2::eColorAttachmentWrite;
+        constexpr auto dst_access =
+            vk::AccessFlagBits2::eColorAttachmentRead | vk::AccessFlagBits2::eColorAttachmentWrite;
         constexpr auto dst_layout = vk::ImageLayout::eColorAttachmentOptimal;
         image_barriers.push_back(vk::ImageMemoryBarrier2{
             .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-            .srcAccessMask = vk::AccessFlagBits2::eNone,
+            .srcAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
             .dstStageMask = dst_stage,
             .dstAccessMask = dst_access,
             .oldLayout = vk::ImageLayout::eUndefined,
