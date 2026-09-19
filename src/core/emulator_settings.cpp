@@ -235,37 +235,6 @@ void EmulatorSettingsImpl::ClearGameSpecificOverrides() {
     ClearGroupOverrides(m_vulkan);
 }
 
-void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
-    // Walk every overrideable group until we find the matching key.
-    auto tryGroup = [&key](auto& group) {
-        for (auto& item : group.GetOverrideableFields()) {
-            if (key == item.key) {
-                item.reset_game_specific(&group);
-                return true;
-            }
-        }
-        return false;
-    };
-    if (tryGroup(m_general))
-        return;
-    if (tryGroup(m_log))
-        return;
-    if (tryGroup(m_debug))
-        return;
-    if (tryGroup(m_input))
-        return;
-    if (tryGroup(m_audio))
-        return;
-    // Windows static guest red-zone protection
-    if (tryGroup(m_windows_guest_red_zone_protection))
-        return;
-    if (tryGroup(m_gpu))
-        return;
-    if (tryGroup(m_vulkan))
-        return;
-    LOG_WARNING(Config, "ResetGameSpecificValue: key '{}' not found", key);
-}
-
 bool EmulatorSettingsImpl::Save(const std::string& serial) {
     try {
         if (!serial.empty()) {
