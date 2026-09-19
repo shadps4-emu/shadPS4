@@ -254,14 +254,14 @@ void MarkReadConstBufferSharpSources(const SharpReference& sharp) {
         if (!source) {
             continue;
         }
-        
+
         if (!IsSharpSource(source)) {
             LOG_WARNING(Render_Recompiler,
                         "Unrecognized sharp source instruction {} for dword {}, skipping",
                         magic_enum::enum_name(source->GetOpcode()), i);
             continue;
         }
-        
+
         if (source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
             auto flags = source->Flags<IR::BufferInstInfo>();
             flags.sharp_source.Assign(1u);
