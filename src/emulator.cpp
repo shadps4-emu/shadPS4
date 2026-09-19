@@ -649,6 +649,16 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
     mnt->Mount(host_font2_dir, guest_font_dir);
 
+    if (!id.empty() && std::filesystem::exists(EmulatorSettings.GetSysModulesDir() / id)) {
+        mnt->Mount(EmulatorSettings.GetSysModulesDir() / id,
+                   std::string("/") + sandbox_root + "/common/lib/");
+        mnt->Mount(EmulatorSettings.GetSysModulesDir() / id,
+                   std::string("/") + sandbox_root + "/priv/lib/");
+        // should be empty but whatever
+        mnt->Mount(EmulatorSettings.GetSysModulesDir() / id,
+                   std::string("/") + sandbox_root + "/common_ex/lib/");
+    }
+
     for (auto const& mount_pair : mounts) {
         LOG_INFO(Loader, "Mounting {} to {}", mount_pair.first.string(), mount_pair.second);
         mnt->Mount(mount_pair.first, mount_pair.second);
