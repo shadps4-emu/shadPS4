@@ -178,4 +178,20 @@ inline bool IsImageInstruction(const IR::Inst& inst) {
     }
 }
 
+// V_READFIRSTLANE_B32 broadcasts a per-lane VGPR value that the shader compiler has determined
+// to already be uniform across the wave into an SGPR, e.g. so it can be used as a buffer/image
+// descriptor dword. It doesn't change the value, so when looking for the ultimate producer of a
+// sharp dword, see through any chain of these to find the real source instruction.
+template <typename InstT>
+InstT* UnwrapReadFirstLane(InstT* inst) {
+    while (inst->GetOpcode() == IR::Opcode::ReadFirstLane) {
+        const IR::Value arg = inst->Arg(0);
+        if (arg.IsImmediate()) {
+            break;
+        }
+        inst = arg.Inst();
+    }
+    return inst;
+}
+
 } // namespace Shader::Optimization
