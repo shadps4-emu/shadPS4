@@ -281,9 +281,17 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
+        const bool pow2_padding_only =
+            image_info.props.is_pow2 != cache_image.info.props.is_pow2 &&
+            image_info.tile_mode == cache_image.info.tile_mode &&
+            image_info.size == cache_image.info.size &&
+            image_info.pitch == cache_image.info.pitch && image_info.resources.levels == 1 &&
+            cache_image.info.resources.levels == 1 && image_info.resources.layers == 1 &&
+            cache_image.info.resources.layers == 1;
+
         // Size and resources are less than or equal, use image view.
         if (image_info.pixel_format != cache_image.info.pixel_format ||
-            image_info.guest_size <= cache_image.info.guest_size) {
+            image_info.guest_size <= cache_image.info.guest_size || pow2_padding_only) {
             auto result_id = merged_image_id ? merged_image_id : cache_image_id;
             const auto& result_image = slot_images[result_id];
             const bool is_compatible =
