@@ -432,7 +432,7 @@ void Runtime::CopyMip(VideoCore::Image* src, VideoCore::Image* dst, u32 mip, u32
 
 void Runtime::CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst) {
     if (src->info.num_samples == 1 && dst->info.num_samples == 1) {
-        if (instance.IsMaintenance8Supported() &&
+        if (instance.IsMaintenance8Supported() ||
             src->info.props.is_depth == dst->info.props.is_depth) {
             CopyImage(src, dst);
         } else {
