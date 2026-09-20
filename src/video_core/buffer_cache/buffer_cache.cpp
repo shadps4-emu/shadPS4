@@ -225,11 +225,14 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
 
     LOG_WARNING(Render, "Migrating arena");
 
-    const u64 base_block = first_arena->cpu_addr >> block_shift;
-    const u64 total_size = first_arena->size_bytes + last_arena->size_bytes;
-    const u64 end_block = (first_arena->cpu_addr + total_size) >> block_shift;
-    auto* new_arena =
-        &arenas.emplace_back(instance, first_arena->cpu_addr, total_size, MemoryType::Sparse);
+    const u64 first_addr = first_arena ? first_arena->cpu_addr : (first_page << ARENA_PAGE_BITS);
+    const u64 first_size = first_arena ? first_arena->size_bytes : ARENA_PAGE_SIZE;
+    const u64 last_size = last_arena ? last_arena->size_bytes : ARENA_PAGE_SIZE;
+
+    const u64 base_block = first_addr >> block_shift;
+    const u64 total_size = first_size + last_size;
+    const u64 end_block = (first_addr + total_size) >> block_shift;
+    auto* new_arena = &arenas.emplace_back(instance, first_addr, total_size, MemoryType::Sparse);
     auto* bind = BindsForArena(new_arena);
     resident_ranges.ForEachInRange(base_block, end_block, [&](const Backing& backing) {
         const u64 start = std::max(base_block, backing.start);
@@ -242,12 +245,12 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
         });
     });
 
-    u64 base_page = first_arena->cpu_addr >> ARENA_PAGE_BITS;
-    for (u32 page = 0; page < (first_arena->size_bytes >> ARENA_PAGE_BITS); ++page) {
+    u64 base_page = first_addr >> ARENA_PAGE_BITS;
+    for (u32 page = 0; page < (first_size >> ARENA_PAGE_BITS); ++page) {
         address_space[base_page + page] = new_arena;
     }
-    base_page = last_arena->cpu_addr >> ARENA_PAGE_BITS;
-    for (u32 page = 0; page < (last_arena->size_bytes >> ARENA_PAGE_BITS); ++page) {
+    base_page = last_page;
+    for (u32 page = 0; page < (last_size >> ARENA_PAGE_BITS); ++page) {
         address_space[base_page + page] = new_arena;
     }
     return new_arena;
