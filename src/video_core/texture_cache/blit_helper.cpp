@@ -250,10 +250,10 @@ void BlitHelper::CopyBetweenMsImages(u32 width, u32 height, u32 num_samples,
 
 void BlitHelper::CreateShaders() {
     const auto device = instance.GetDevice();
-    fs_tri_vertex = Vulkan::CompileSPV(HostShaders::FS_TRI_VERT, device);
-    color_to_ms_depth_frag = Vulkan::CompileSPV(HostShaders::COLOR_TO_MS_DEPTH_FRAG, device);
-    src_msaa_copy_frag = Vulkan::CompileSPV(HostShaders::MS_IMAGE_BLIT_MSAA_FRAG, device);
-    src_non_msaa_copy_frag = Vulkan::CompileSPV(HostShaders::MS_IMAGE_BLIT_FRAG, device);
+    fs_tri_vertex = Vulkan::CompileSPV(FS_TRI_VERT, device);
+    color_to_ms_depth_frag = Vulkan::CompileSPV(COLOR_TO_MS_DEPTH_FRAG, device);
+    src_msaa_copy_frag = Vulkan::CompileSPV(MS_IMAGE_BLIT_MSAA_FRAG, device);
+    src_non_msaa_copy_frag = Vulkan::CompileSPV(MS_IMAGE_BLIT_FRAG, device);
 }
 
 void BlitHelper::CreatePipelineLayouts() {

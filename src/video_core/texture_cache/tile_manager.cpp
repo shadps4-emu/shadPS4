@@ -146,28 +146,28 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
     std::span<const u32> code;
     switch (info.num_bits) {
     case 8:
-        code = is_macro ? std::span<const u32>{HostShaders::TILING_MACRO_8_COMP}
-                        : std::span<const u32>{HostShaders::TILING_MICRO_8_COMP};
+        code = is_macro ? std::span<const u32>{TILING_MACRO_8_COMP}
+                        : std::span<const u32>{TILING_MICRO_8_COMP};
         break;
     case 16:
-        code = is_macro ? std::span<const u32>{HostShaders::TILING_MACRO_16_COMP}
-                        : std::span<const u32>{HostShaders::TILING_MICRO_16_COMP};
+        code = is_macro ? std::span<const u32>{TILING_MACRO_16_COMP}
+                        : std::span<const u32>{TILING_MICRO_16_COMP};
         break;
     case 32:
-        code = is_macro ? std::span<const u32>{HostShaders::TILING_MACRO_32_COMP}
-                        : std::span<const u32>{HostShaders::TILING_MICRO_32_COMP};
+        code = is_macro ? std::span<const u32>{TILING_MACRO_32_COMP}
+                        : std::span<const u32>{TILING_MICRO_32_COMP};
         break;
     case 64:
-        code = is_macro ? std::span<const u32>{HostShaders::TILING_MACRO_64_COMP}
-                        : std::span<const u32>{HostShaders::TILING_MICRO_64_COMP};
+        code = is_macro ? std::span<const u32>{TILING_MACRO_64_COMP}
+                        : std::span<const u32>{TILING_MICRO_64_COMP};
         break;
     case 96:
-        code = is_macro ? std::span<const u32>{HostShaders::TILING_MACRO_96_COMP}
-                        : std::span<const u32>{HostShaders::TILING_MICRO_96_COMP};
+        code = is_macro ? std::span<const u32>{TILING_MACRO_96_COMP}
+                        : std::span<const u32>{TILING_MICRO_96_COMP};
         break;
     case 128:
-        code = is_macro ? std::span<const u32>{HostShaders::TILING_MACRO_128_COMP}
-                        : std::span<const u32>{HostShaders::TILING_MICRO_128_COMP};
+        code = is_macro ? std::span<const u32>{TILING_MACRO_128_COMP}
+                        : std::span<const u32>{TILING_MICRO_128_COMP};
         break;
     default:
         UNREACHABLE_MSG("Unsupported tiling pixel width {}", info.num_bits);

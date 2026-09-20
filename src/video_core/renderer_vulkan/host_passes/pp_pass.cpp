@@ -40,11 +40,11 @@ void PostProcessingPass::Create(vk::Device device, const vk::Format surface_form
         .size = sizeof(Settings),
     };
 
-    const auto& vs_module = CompileSPV(HostShaders::FS_TRI_VERT, device);
+    const auto& vs_module = CompileSPV(FS_TRI_VERT, device);
     ASSERT(vs_module);
     SetObjectName(device, vs_module, "fs_tri.vert");
 
-    const auto& fs_module = CompileSPV(HostShaders::POST_PROCESS_FRAG, device);
+    const auto& fs_module = CompileSPV(POST_PROCESS_FRAG, device);
     ASSERT(fs_module);
     SetObjectName(device, fs_module, "post_process.frag");
 

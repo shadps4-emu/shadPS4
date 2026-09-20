@@ -60,7 +60,7 @@ FaultManager::FaultManager(const Vulkan::Instance& instance, Vulkan::Scheduler& 
         .dataSize = sizeof(spec_data),
         .pData = spec_data.data(),
     };
-    const auto module = Vulkan::CompileSPV(HostShaders::FAULT_BUFFER_PROCESS_COMP, device);
+    const auto module = Vulkan::CompileSPV(FAULT_BUFFER_PROCESS_COMP, device);
     Vulkan::SetObjectName(device, module, "Fault Buffer Parser");
 
     const vk::PipelineShaderStageCreateInfo shader_ci = {

@@ -77,11 +77,11 @@ void FsrPass::Create(vk::Device device, VmaAllocator allocator, u32 num_images) 
         .size = sizeof(FSRConstants),
     };
 
-    const auto& cs_easu_module = CompileSPV(HostShaders::FSR_EASU_COMP, device);
+    const auto& cs_easu_module = CompileSPV(FSR_EASU_COMP, device);
     ASSERT(cs_easu_module);
     SetObjectName(device, cs_easu_module, "fsr.comp [EASU]");
 
-    const auto& cs_rcas_module = CompileSPV(HostShaders::FSR_RCAS_COMP, device);
+    const auto& cs_rcas_module = CompileSPV(FSR_RCAS_COMP, device);
     ASSERT(cs_rcas_module);
     SetObjectName(device, cs_rcas_module, "fsr.comp [RCAS]");
 

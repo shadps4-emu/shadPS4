@@ -1,8 +1,11 @@
 # SPDX-FileCopyrightText: Copyright 2023 Citra Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-add_executable(host_shader_compiler shader_compiler.cpp)
-target_link_libraries(host_shader_compiler PRIVATE glslang::glslang glslang::glslang-default-resource-limits)
+if (TARGET glslang-standalone)
+    set(GLSLANG_COMPILER glslang-standalone)
+elseif (TARGET glslang::glslang-standalone)
+    set(GLSLANG_COMPILER glslang::glslang-standalone)
+endif()
 
 set(SHADER_INCLUDE ${CMAKE_CURRENT_BINARY_DIR}/include)
 set(SHADER_DIR ${SHADER_INCLUDE}/video_core/host_shaders)
@@ -14,12 +17,15 @@ function(add_host_shader FILENAME SHADER_NAME)
     set(SOURCE_HEADER_FILE ${SHADER_DIR}/${SHADER_NAME}.h)
     set(DEPFILE ${SOURCE_HEADER_FILE}.d)
     string(TOUPPER ${SHADER_NAME} SYMBOL)
+    set(SHADER_DEFINES ${ARGN})
+    list(TRANSFORM SHADER_DEFINES PREPEND "-D")
     add_custom_command(
         OUTPUT ${SOURCE_HEADER_FILE}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADER_DIR}
-        COMMAND host_shader_compiler ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
-                ${SOURCE_HEADER_FILE} ${DEPFILE} ${SYMBOL} ${ARGN}
-        DEPENDS host_shader_compiler ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
+        COMMAND ${GLSLANG_COMPILER} --target-env vulkan1.3
+                -o ${SOURCE_HEADER_FILE} --vn ${SYMBOL} --depfile ${DEPFILE}
+                ${SHADER_DEFINES} ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
+        DEPENDS ${GLSLANG_COMPILER} ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
         DEPFILE ${DEPFILE}
         BYPRODUCTS ${DEPFILE}
         COMMENT "Building host shader ${FILENAME} -> ${SOURCE_HEADER_FILE}"
