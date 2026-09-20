@@ -25,7 +25,10 @@ function(add_host_shader FILENAME SHADER_NAME)
         COMMAND ${GLSLANG_COMPILER} --target-env vulkan1.3
                 -o ${SOURCE_HEADER_FILE} --vn ${SYMBOL} --depfile ${DEPFILE}
                 ${SHADER_DEFINES} ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
+        COMMAND ${CMAKE_COMMAND} "-DHEADER_FILE=${SOURCE_HEADER_FILE}"
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/AddShaderHeaderInclude.cmake
         DEPENDS ${GLSLANG_COMPILER} ${CMAKE_CURRENT_SOURCE_DIR}/${FILENAME}
+                ${CMAKE_CURRENT_SOURCE_DIR}/AddShaderHeaderInclude.cmake
         DEPFILE ${DEPFILE}
         BYPRODUCTS ${DEPFILE}
         COMMENT "Building host shader ${FILENAME} -> ${SOURCE_HEADER_FILE}"
