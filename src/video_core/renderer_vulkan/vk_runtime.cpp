@@ -746,6 +746,8 @@ void Runtime::FlushBarriers() {
         resource.read_ranges.Clear();
         resource.write_ranges.Clear();
     }
+    resources.clear();
+    resource = nullptr;
 }
 
 void Runtime::MakeCurrent(const VideoCore::Buffer* handle) {
