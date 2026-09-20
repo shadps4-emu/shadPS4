@@ -807,6 +807,11 @@ vk::Format Instance::GetSupportedFormat(const vk::Format format,
                 return vk::Format::eR8Unorm;
             }
             break;
+        case vk::Format::eR8G8Srgb:
+            if (IsFormatSupported(vk::Format::eR8G8Unorm, flags)) {
+                return vk::Format::eR8G8Unorm;
+            }
+            break;
         default:
             break;
         }
