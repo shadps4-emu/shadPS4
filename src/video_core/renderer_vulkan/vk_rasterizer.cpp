@@ -1584,5 +1584,4 @@ u32 Rasterizer::GetGpuCommandProcessorThreadId() {
 }
 #endif
 
-
 } // namespace Vulkan

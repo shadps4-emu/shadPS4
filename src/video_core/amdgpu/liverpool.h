@@ -13,6 +13,11 @@
 #include <vector>
 #include <queue>
 
+#ifdef __linux__
+#define _GNU_SOURCE
+#include <pthread.h>
+#endif
+
 #include "common/assert.h"
 #include "common/slot_vector.h"
 #include "common/types.h"
@@ -96,10 +101,7 @@ public:
     }
 
     template <bool wait_done = false>
-    void SendCommand(auto&& func, bool handling_userfault_from_gpu_thread = false) {
-        if (std::this_thread::get_id() == gpu_id || handling_userfault_from_gpu_thread) {
-            return func();
-        }
+    void SendCommand(auto&& func) {
         if constexpr (wait_done) {
             std::binary_semaphore sem{0};
             {

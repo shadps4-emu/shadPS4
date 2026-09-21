@@ -465,10 +465,10 @@ struct AddressSpace::Impl {
         }
     }
 
-    void Unmap(VAddr virtual_addr, u64 size) {
+    VAddr Unmap(VAddr virtual_addr, u64* size) {
         std::scoped_lock lk{mutex};
         // Loop through all regions in the requested range
-        u64 remaining_size = size;
+        u64 remaining_size = *size;
         VAddr current_addr = virtual_addr;
         while (remaining_size > 0) {
             // Get a pointer to the region containing virtual_addr
@@ -504,6 +504,8 @@ struct AddressSpace::Impl {
 
         // Coalesce any free space produced from these unmaps.
         CoalesceFreeRegions(virtual_addr);
+
+        return virtual_addr;
     }
 
     void Protect(VAddr virtual_addr, u64 size, bool read, bool write, bool execute) {
