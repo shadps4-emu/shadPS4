@@ -310,6 +310,12 @@ public:
     }
 
     void UffdHandler(std::stop_token token) {
+        auto regions = Core::Memory::Instance()->GetAddressSpace().GetUsableRegions();
+        for (auto& region : regions) {
+            OnMap(region.lower(), region.upper());
+        }
+        LOG_INFO(Common_Memory, "registered reserved memory with userfaultfd");
+
         while (!token.stop_requested()) {
             pollfd pollfd;
             pollfd.fd = uffd;
