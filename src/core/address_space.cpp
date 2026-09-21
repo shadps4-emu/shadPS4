@@ -760,7 +760,7 @@ struct AddressSpace::Impl {
         // Check to see if we are adjacent to any regions.
         VAddr start_address = virtual_addr;
         VAddr end_address = start_address + size;
-       
+
         // If we are, join with them, ensuring we stay in bounds.
         auto it = m_free_regions.find({start_address - 1, end_address});
         if (it != m_free_regions.end()) {
