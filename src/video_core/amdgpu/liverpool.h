@@ -96,8 +96,8 @@ public:
     }
 
     template <bool wait_done = false>
-    void SendCommand(auto&& func) {
-        if (std::this_thread::get_id() == gpu_id) {
+    void SendCommand(auto&& func, bool handling_userfault_from_gpu_thread = false) {
+        if (std::this_thread::get_id() == gpu_id || handling_userfault_from_gpu_thread) {
             return func();
         }
         if constexpr (wait_done) {
@@ -142,6 +142,12 @@ public:
         u32 tmp_dwords;
     };
     Common::SlotVector<AscQueueInfo> asc_queues{};
+
+#ifdef __linux__
+    u32 GetGpuCommandProcessorThreadId() {
+        return pthread_gettid_np(process_thread.native_handle());
+    }
+#endif
 
 private:
     struct Task {
