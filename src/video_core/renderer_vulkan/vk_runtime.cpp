@@ -8,7 +8,6 @@
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/blit_helper.h"
 #include "video_core/texture_cache/image.h"
-#include "vulkan/vulkan.hpp"
 
 #include <vulkan/vulkan_format_traits.hpp>
 
@@ -678,21 +677,24 @@ void Runtime::SetBackingSamples(VideoCore::Image* image, u32 num_samples, bool c
 
 bool Runtime::IsBufferAccessed(const VideoCore::Buffer* handle, u64 offset, u64 size,
                                bool check_read_access) {
-    MakeCurrent(handle);
-    bool has_access = resource->write_ranges.Overlaps(offset, offset + size);
+    const AddressRange range = {
+        .resource = reinterpret_cast<u64>(handle),
+        .range_start = offset,
+        .range_end = offset + size - 1,
+    };
+    bool has_access = barrier_tracker.FindRange(range, Access::Write);
     if (check_read_access && !has_access) {
-        has_access |= resource->read_ranges.Overlaps(offset, offset + size);
+        has_access |= barrier_tracker.FindRange(range, Access::Read);
     }
     return has_access;
 }
 
 void Runtime::AccessBuffer(const VideoCore::Buffer* handle, u64 offset, u64 size,
                            vk::PipelineStageFlags2 src_stage, vk::AccessFlags2 src_access) {
-    MakeCurrent(handle);
-
-    const Interval range = {
-        .start = offset,
-        .end = offset + size,
+    const AddressRange range = {
+        .resource = reinterpret_cast<u64>(handle),
+        .range_start = offset,
+        .range_end = offset + size - 1,
     };
 
     constexpr static vk::AccessFlags2 READ_MASK =
@@ -705,17 +707,17 @@ void Runtime::AccessBuffer(const VideoCore::Buffer* handle, u64 offset, u64 size
     constexpr static vk::AccessFlags2 WRITE_MASK =
         vk::AccessFlagBits2::eShaderWrite | vk::AccessFlagBits2::eColorAttachmentWrite |
         vk::AccessFlagBits2::eDepthStencilAttachmentWrite | vk::AccessFlagBits2::eTransferWrite |
-        vk::AccessFlagBits2::eMemoryWrite;
+        vk::AccessFlagBits2::eMemoryWrite | vk::AccessFlagBits2::eTransformFeedbackWriteEXT;
 
     if (src_access & WRITE_MASK) {
-        resource->write_ranges.Add(range);
+        barrier_tracker.InsertRange(range, Access::Write);
     }
     if (src_access & READ_MASK) {
-        resource->read_ranges.Add(range);
+        barrier_tracker.InsertRange(range, Access::Read);
     }
 
     memory_barrier.srcStageMask |= src_stage;
-    memory_barrier.srcAccessMask |= src_access;
+    memory_barrier.srcAccessMask |= src_access & WRITE_MASK;
 }
 
 void Runtime::FlushBarriers() {
@@ -742,24 +744,7 @@ void Runtime::FlushBarriers() {
     memory_barrier.srcAccessMask = vk::AccessFlagBits2::eNone;
 
     image_barriers.clear();
-    for (auto& resource : resources) {
-        resource.read_ranges.Clear();
-        resource.write_ranges.Clear();
-    }
-    resources.clear();
-    resource = nullptr;
-}
-
-void Runtime::MakeCurrent(const VideoCore::Buffer* handle) {
-    if (resource && resource->handle == handle) {
-        return;
-    }
-    auto it = std::ranges::find(resources, handle, &BufferBarriers::handle);
-    if (it != resources.end()) {
-        resource = std::addressof(*it);
-        return;
-    }
-    resource = &resources.emplace_back(handle);
+    barrier_tracker.Clear();
 }
 
 } // namespace Vulkan

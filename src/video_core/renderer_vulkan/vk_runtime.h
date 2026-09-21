@@ -4,12 +4,11 @@
 #pragma once
 
 #include "common/interval_set.h"
-#include "common/object_pool.h"
 #include "common/types.h"
 #include "video_core/buffer_cache/buffer.h"
+#include "video_core/renderer_vulkan/vk_barrier_tracker.h"
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/types.h"
-#include "vulkan/vulkan.hpp"
 
 namespace VideoCore {
 class BlitHelper;
@@ -72,22 +71,12 @@ public:
     void FlushBarriers();
 
 private:
-    void MakeCurrent(const VideoCore::Buffer* handle);
-
-private:
     const Instance& instance;
     Scheduler& scheduler;
     std::unique_ptr<VideoCore::BlitHelper> blit_helper;
     std::unique_ptr<VideoCore::Buffer> copy_buffer{};
 
-    struct BufferBarriers {
-        const VideoCore::Buffer* handle;
-        using AccessList = IntervalList<Interval>;
-        AccessList read_ranges;
-        AccessList write_ranges;
-    };
-    BufferBarriers* resource{};
-    std::vector<BufferBarriers> resources;
+    BarrierTracker barrier_tracker;
     VideoCore::Image::Barriers image_barriers;
     vk::MemoryBarrier2 memory_barrier{};
 };
