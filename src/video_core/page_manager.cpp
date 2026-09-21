@@ -310,6 +310,8 @@ public:
     }
 
     void UffdHandler(std::stop_token token) {
+        Common::SetCurrentThreadName("shadPS4:Uffd");
+
         auto regions = Core::Memory::Instance()->GetAddressSpace().GetUsableRegions();
         for (auto& region : regions) {
             OnMap(region.lower(), region.upper());
