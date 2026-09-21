@@ -162,7 +162,6 @@ using SharpSources = boost::container::small_vector<const IR::Inst*, 4>;
 
 SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
     SharpLocation location{};
-    inst = UnwrapReadFirstLane(inst);
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return static_cast<SharpLocation>(inst->Arg(0).ScalarReg());
     } else if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {

@@ -254,13 +254,7 @@ void MarkReadConstBufferSharpSources(const SharpReference& sharp) {
         if (!source) {
             continue;
         }
-        source = UnwrapReadFirstLane(source);
-        if (!IsSharpSource(source)) {
-            LOG_WARNING(Render_Recompiler,
-                        "Unrecognized sharp source instruction {} for dword {}, skipping",
-                        magic_enum::enum_name(source->GetOpcode()), i);
-            continue;
-        }
+        ASSERT(IsSharpSource(source));
         if (source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
             auto flags = source->Flags<IR::BufferInstInfo>();
             flags.sharp_source.Assign(1u);
@@ -278,6 +272,10 @@ void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList
     vsharp.num_dwords = handle->NumArgs();
     for (size_t i = 0; i < handle->NumArgs(); ++i) {
         vsharp.dwords[i] = handle->Arg(i);
+        if (auto* inst = vsharp.dwords[i].TryInst();
+            inst && inst->GetOpcode() == IR::Opcode::ReadFirstLane) {
+            vsharp.dwords[i] = inst->Arg(0);
+        }
     }
 
     // Attempt to "see through" various V# access patterns and have binding reproduce them
