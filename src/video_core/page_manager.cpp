@@ -287,7 +287,7 @@ public:
         reg.range.len = size;
         reg.mode = UFFDIO_REGISTER_MODE_WP;
         const int ret = ioctl(uffd, UFFDIO_REGISTER, &reg);
-        ASSERT_MSG(ret != -1, "Uffdio register failed");
+        ASSERT_MSG(ret != -1, "Uffdio register failed with error: {}", Common::GetLastErrorMsg());
     }
 
     void OnUnmap(VAddr address, size_t size) override {
@@ -295,7 +295,7 @@ public:
         range.start = address;
         range.len = size;
         const int ret = ioctl(uffd, UFFDIO_UNREGISTER, &range);
-        ASSERT_MSG(ret != -1, "Uffdio unregister failed");
+        ASSERT_MSG(ret != -1, "Uffdio unregister failed with error: {}", Common::GetLastErrorMsg());
     }
 
     void Protect(VAddr address, size_t size, Core::MemoryPermission perms) override {
