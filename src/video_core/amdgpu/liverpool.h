@@ -13,11 +13,6 @@
 #include <vector>
 #include <queue>
 
-#ifdef __linux__
-#define _GNU_SOURCE
-#include <pthread.h>
-#endif
-
 #include "common/assert.h"
 #include "common/slot_vector.h"
 #include "common/types.h"
@@ -147,7 +142,7 @@ public:
 
 #ifdef __linux__
     u32 GetGpuCommandProcessorThreadId() {
-        return pthread_gettid_np(process_thread.native_handle());
+        return gpu_tid;
     }
 #endif
 
@@ -239,6 +234,9 @@ private:
     std::condition_variable_any submit_cv;
     std::queue<Common::UniqueFunction<void>> command_queue{};
     std::thread::id gpu_id;
+#ifdef __linux__
+    u32 gpu_tid;
+#endif
     s32 curr_qid{-1};
 };
 

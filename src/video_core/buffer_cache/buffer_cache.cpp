@@ -87,8 +87,9 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 BufferCache::~BufferCache() = default;
 
 void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool assume_locks) {
-    memory_tracker->InvalidateRegion(
-        device_addr, size, [this, device_addr, size, assume_locks] { ReadMemory(device_addr, size, true, assume_locks); });
+    memory_tracker->InvalidateRegion(device_addr, size, [this, device_addr, size, assume_locks] {
+        ReadMemory(device_addr, size, true, assume_locks);
+    });
 }
 
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool assume_locks) {
