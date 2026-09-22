@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <numeric>
+
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "video_core/buffer_cache/buffer.h"
@@ -65,11 +67,18 @@ UniqueBuffer::UniqueBuffer(vk::Device device_, VmaAllocator allocator_)
     : device{device_}, allocator{allocator_} {}
 
 UniqueBuffer::~UniqueBuffer() {
+    Destroy();
+}
+
+void UniqueBuffer::Destroy() {
     if (allocation) {
         vmaDestroyBuffer(allocator, buffer, allocation);
     } else if (buffer) {
         device.destroyBuffer(buffer);
     }
+    buffer = VK_NULL_HANDLE;
+    allocation = VK_NULL_HANDLE;
+    bda_addr = 0;
 }
 
 void UniqueBuffer::Create(vk::BufferCreateInfo& buffer_ci, MemoryType mem_type,
@@ -97,8 +106,8 @@ void UniqueBuffer::Create(vk::BufferCreateInfo& buffer_ci, MemoryType mem_type,
         buffer = vk::Buffer{unsafe_buffer};
     } else {
         buffer_ci.flags |=
-            vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency,
-            buffer = Vulkan::Check(device.createBuffer(buffer_ci));
+            vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency;
+        buffer = Vulkan::Check(device.createBuffer(buffer_ci));
     }
 
     if (with_bda) {
@@ -142,8 +151,22 @@ Buffer::Buffer(const Vulkan::Instance& instance, VAddr cpu_addr_, u64 size_bytes
     }
 }
 
-constexpr u64 WATCHES_INITIAL_RESERVE = 0x4000;
-constexpr u64 WATCHES_RESERVE_CHUNK = 0x1000;
+void Buffer::Flush(u64 offset, u64 size) {
+    if (mapped_data.empty() || is_coherent) {
+        return;
+    }
+    vmaFlushAllocation(buffer.allocator, buffer.allocation, offset, size);
+}
+
+void Buffer::Invalidate(u64 offset, u64 size) {
+    if (mapped_data.empty() || is_coherent) {
+        return;
+    }
+    vmaInvalidateAllocation(buffer.allocator, buffer.allocation, offset, size);
+}
+
+constexpr u64 WATCHES_INITIAL_RESERVE = 0x100;
+constexpr u64 WATCHES_RESERVE_CHUNK = 0x100;
 
 StreamBuffer::StreamBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler_,
                            MemoryType mem_type, u64 size_bytes)
@@ -155,16 +178,16 @@ StreamBuffer::StreamBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& 
                           BufferTypeName(mem_type), size_bytes);
 }
 
-std::pair<u8*, u64> StreamBuffer::Map(u64 size, u64 alignment, bool allow_wait) {
-    if (!is_coherent && mem_type == MemoryType::Stream) {
+bool StreamBuffer::PrepareMap(u64 size, u64 alignment, bool allow_wait) {
+    if (!mapped_data.empty() && !is_coherent) {
         size = Common::AlignUp(size, non_coherent_atom_size);
+        alignment =
+            alignment > 0 ? std::lcm(alignment, non_coherent_atom_size) : non_coherent_atom_size;
     }
 
     if (size > this->size_bytes) {
-        return {nullptr, 0};
+        return false;
     }
-
-    mapped_size = size;
 
     if (alignment > 0) {
         offset = Common::AlignUp(offset, alignment);
@@ -182,27 +205,48 @@ std::pair<u8*, u64> StreamBuffer::Map(u64 size, u64 alignment, bool allow_wait) 
         wait_bound = 0;
     }
 
-    const u64 mapped_upper_bound = offset + size;
-    if (!WaitPendingOperations(mapped_upper_bound, allow_wait)) {
-        return {nullptr, 0};
+    if (!WaitPendingOperations(offset + size, allow_wait)) {
+        return false;
     }
 
-    return {mapped_data.data() + offset, offset};
+    mapped_size = size;
+    return true;
+}
+
+std::pair<u8*, u64> StreamBuffer::Map(u64 size, u64 alignment, bool allow_wait) {
+    if (!PrepareMap(size, alignment, allow_wait)) {
+        return {nullptr, 0};
+    }
+    u8* const data = mapped_data.empty() ? nullptr : mapped_data.data() + offset;
+    return {data, offset};
 }
 
 void StreamBuffer::Commit() {
-    if (!is_coherent) {
-        if (mem_type == MemoryType::HostCached) {
-            vmaInvalidateAllocation(buffer.allocator, buffer.allocation, offset, mapped_size);
-        } else {
-            vmaFlushAllocation(buffer.allocator, buffer.allocation, offset, mapped_size);
-        }
+    if (mem_type == MemoryType::HostCached) {
+        Invalidate(offset, mapped_size);
+    } else {
+        Flush(offset, mapped_size);
     }
+    AdvanceAndWatch();
+}
 
+std::optional<u64> StreamBuffer::Reserve(u64 size, u64 alignment, bool allow_wait) {
+    if (!PrepareMap(size, alignment, allow_wait)) {
+        return std::nullopt;
+    }
+    const u64 reserved_offset = offset;
+    AdvanceAndWatch();
+    return reserved_offset;
+}
+
+void StreamBuffer::AdvanceAndWatch() {
     offset += mapped_size;
-    if (current_watch_cursor != 0 &&
-        current_watches[current_watch_cursor].tick == scheduler.CurrentTick()) {
-        current_watches[current_watch_cursor].upper_bound = offset;
+    const u64 tick = scheduler.CurrentTick();
+    last_tick = tick;
+
+    // Extend the last watch if it belongs to the same tick.
+    if (current_watch_cursor != 0 && current_watches[current_watch_cursor - 1].tick == tick) {
+        current_watches[current_watch_cursor - 1].upper_bound = offset;
         return;
     }
 
@@ -213,7 +257,7 @@ void StreamBuffer::Commit() {
 
     auto& watch = current_watches[current_watch_cursor++];
     watch.upper_bound = offset;
-    watch.tick = scheduler.CurrentTick();
+    watch.tick = tick;
 }
 
 void StreamBuffer::ReserveWatches(std::vector<Watch>& watches, std::size_t grow_size) {

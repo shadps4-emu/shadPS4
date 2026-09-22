@@ -163,10 +163,9 @@ std::pair<const Buffer*, u64> TileManager::DetileImage(const VideoCore::Buffer* 
         .range = sizeof(params),
     };
 
-    auto* out_buffer = new Buffer(instance, 0, info.guest_size, MemoryType::DeviceLocal);
-    scheduler.DeferOperation([out_buffer]() { delete out_buffer; });
-    scheduler.EndRendering();
+    const auto staging = runtime.GetStagingPool().Request(info.guest_size, MemoryType::DeviceLocal);
 
+    scheduler.EndRendering();
     runtime.FlushBarriers();
 
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -179,8 +178,8 @@ std::pair<const Buffer*, u64> TileManager::DetileImage(const VideoCore::Buffer* 
     };
 
     const vk::DescriptorBufferInfo linear_buffer_info{
-        .buffer = out_buffer->Handle(),
-        .offset = 0,
+        .buffer = staging.buffer->Handle(),
+        .offset = staging.offset,
         .range = info.guest_size,
     };
 
@@ -215,10 +214,11 @@ std::pair<const Buffer*, u64> TileManager::DetileImage(const VideoCore::Buffer* 
     const auto dim_x = (info.guest_size / (info.num_bits / 8)) / 64;
     cmdbuf.dispatch(dim_x, 1, 1);
 
-    runtime.AccessBuffer(out_buffer, 0, info.guest_size, vk::PipelineStageFlagBits2::eComputeShader,
+    runtime.AccessBuffer(staging.buffer, staging.offset, info.guest_size,
+                         vk::PipelineStageFlagBits2::eComputeShader,
                          vk::AccessFlagBits2::eShaderWrite);
 
-    return {out_buffer, 0};
+    return {staging.buffer, staging.offset};
 }
 
 void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buffer_copies,
@@ -251,14 +251,15 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
         .range = sizeof(params),
     };
 
-    auto* temp_buffer = new Buffer(instance, 0, info.guest_size, MemoryType::DeviceLocal);
-    scheduler.DeferOperation([temp_buffer]() { delete temp_buffer; });
+    const auto staging = runtime.GetStagingPool().Request(info.guest_size, MemoryType::DeviceLocal);
+    for (auto& copy : buffer_copies) {
+        copy.bufferOffset += staging.offset;
+    }
 
-    const auto cmdbuf = scheduler.CommandBuffer();
-    runtime.DownloadImage(&in_image, temp_buffer, buffer_copies);
-
+    runtime.DownloadImage(&in_image, staging.buffer, buffer_copies);
     runtime.FlushBarriers();
 
+    const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, GetTilingPipeline(info, true));
 
     const vk::DescriptorBufferInfo tiled_buffer_info{
@@ -268,8 +269,8 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
     };
 
     const vk::DescriptorBufferInfo linear_buffer_info{
-        .buffer = temp_buffer->Handle(),
-        .offset = 0,
+        .buffer = staging.buffer->Handle(),
+        .offset = staging.offset,
         .range = info.guest_size,
     };
 

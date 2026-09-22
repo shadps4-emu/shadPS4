@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "common/interval_set.h"
 #include "common/types.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/renderer_vulkan/vk_barrier_tracker.h"
+#include "video_core/renderer_vulkan/vk_staging_buffer_pool.h"
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/types.h"
 
@@ -27,6 +27,12 @@ public:
     const Instance& GetInstance() const {
         return instance;
     }
+
+    StagingBufferPool& GetStagingPool() {
+        return staging_pool;
+    }
+
+    void TickFrame();
 
     void CopyBuffer(const VideoCore::Buffer* src, const VideoCore::Buffer* dst,
                     std::span<const vk::BufferCopy> copies);
@@ -74,8 +80,7 @@ private:
     const Instance& instance;
     Scheduler& scheduler;
     std::unique_ptr<VideoCore::BlitHelper> blit_helper;
-    std::unique_ptr<VideoCore::Buffer> copy_buffer{};
-
+    StagingBufferPool staging_pool;
     BarrierTracker barrier_tracker;
     VideoCore::Image::Barriers image_barriers;
     vk::MemoryBarrier2 memory_barrier{};

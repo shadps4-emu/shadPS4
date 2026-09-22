@@ -95,12 +95,16 @@ static u32 BufferImageCopySize(const vk::BufferImageCopy& copy, const vk::Format
 }
 
 Runtime::Runtime(const Instance& instance_, Scheduler& scheduler_)
-    : instance{instance_}, scheduler{scheduler_} {
+    : instance{instance_}, scheduler{scheduler_}, staging_pool{instance_, scheduler_} {
     blit_helper = std::make_unique<VideoCore::BlitHelper>(instance, scheduler);
 
     memory_barrier.dstStageMask = vk::PipelineStageFlagBits2::eAllCommands;
     memory_barrier.dstAccessMask =
         vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite;
+}
+
+void Runtime::TickFrame() {
+    staging_pool.TickFrame();
 }
 
 void Runtime::CopyBuffer(const VideoCore::Buffer* src, const VideoCore::Buffer* dst,
@@ -437,11 +441,9 @@ void Runtime::CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst) {
         } else {
             // Perform depth from/to color copy using the intermediate copy buffer.
             static constexpr size_t COPY_BUFFER_SIZE = 128_MB;
-            if (!copy_buffer) {
-                copy_buffer = std::make_unique<VideoCore::Buffer>(
-                    instance, 0u, COPY_BUFFER_SIZE, VideoCore::MemoryType::DeviceLocal);
-            }
-            CopyImageWithBuffer(src, dst, copy_buffer.get(), 0);
+            const auto copy_ref =
+                staging_pool.Request(COPY_BUFFER_SIZE, VideoCore::MemoryType::DeviceLocal);
+            CopyImageWithBuffer(src, dst, copy_ref.buffer, copy_ref.offset);
         }
     } else if (src->info.num_samples == 1 && dst->info.num_samples > 1 &&
                dst->info.props.is_depth) {

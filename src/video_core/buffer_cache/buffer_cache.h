@@ -11,7 +11,6 @@
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/buffer_cache/fault_manager.h"
 #include "video_core/buffer_cache/range_set.h"
-#include "video_core/renderer_vulkan/vk_runtime.h"
 #include "video_core/renderer_vulkan/vk_semaphore.h"
 
 namespace AmdGpu {
@@ -25,6 +24,8 @@ class MemoryManager;
 namespace Vulkan {
 class GraphicsPipeline;
 struct SubmitInfo;
+class Runtime;
+class StagingBufferPool;
 } // namespace Vulkan
 
 namespace VideoCore {
@@ -62,15 +63,9 @@ public:
         return fault_manager->GetFaultBuffer();
     }
 
-    /// Retrieves a utility buffer optimized for specified memory usage.
-    StreamBuffer& GetUtilityBuffer(MemoryType mem_type) noexcept {
-        if (mem_type == MemoryType::Stream) {
-            return stream_buffer;
-        } else if (mem_type == MemoryType::HostCached) {
-            return download_buffer;
-        } else {
-            return staging_buffer;
-        }
+    /// Retrieves the stream buffer.
+    StreamBuffer& GetStreamBuffer() noexcept {
+        return stream_buffer;
     }
 
     /// Returns minimum granularity of a sparse memory bind.
@@ -138,14 +133,13 @@ private:
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
     Vulkan::Runtime& runtime;
+    Vulkan::StagingBufferPool& staging_pool;
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     TextureCache& texture_cache;
     std::unique_ptr<MemoryTracker> memory_tracker;
 
-    StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
-    StreamBuffer download_buffer;
     Buffer gds_buffer;
     RangeSet gpu_modified_ranges;
 
