@@ -23,7 +23,6 @@
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/texture_cache/image.h"
-#include "vulkan/vulkan.hpp"
 
 #include <algorithm>
 #include <array>

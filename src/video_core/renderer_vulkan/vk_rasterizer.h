@@ -10,7 +10,6 @@
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
-#include "vulkan/vulkan.hpp"
 
 namespace AmdGpu {
 struct Liverpool;
