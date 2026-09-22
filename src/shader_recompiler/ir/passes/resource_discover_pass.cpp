@@ -272,6 +272,10 @@ void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList
     vsharp.num_dwords = handle->NumArgs();
     for (size_t i = 0; i < handle->NumArgs(); ++i) {
         vsharp.dwords[i] = handle->Arg(i);
+        if (auto* inst = vsharp.dwords[i].TryInst();
+            inst && inst->GetOpcode() == IR::Opcode::ReadFirstLane) {
+            vsharp.dwords[i] = inst->Arg(0);
+        }
     }
 
     // Attempt to "see through" various V# access patterns and have binding reproduce them
