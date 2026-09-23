@@ -764,6 +764,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 const auto lds_size = cs_program.SharedMemSize() * cs_program.NumWorkgroups();
                 const auto [data, offset] = lds_buffer.Map(lds_size, alignment);
                 std::memset(data, 0, lds_size);
+                lds_buffer.Commit();
                 buffer_infos.emplace_back(lds_buffer.Handle(), offset, lds_size);
             } else {
                 UNREACHABLE_MSG("Unexpected buffer type {}", u32(desc.buffer_type));
