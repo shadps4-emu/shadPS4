@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/div_ceil.h"
+#include "common/hash.h"
 #include "common/scope_exit.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
@@ -766,11 +767,14 @@ void TextureCache::RefreshImage(Image& image) {
 }
 
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler,
-                                     AmdGpu::BorderColorBuffer border_color_base) {
-    const u64 hash = XXH3_64bits(&sampler, sizeof(sampler));
+                                     AmdGpu::BorderColorBuffer border_color_base,
+                                     const bool is_depth) {
+    // Compare and plain uses of one S# need separate samplers.
+    const u64 hash = HashCombine(XXH3_64bits(&sampler, sizeof(sampler)), is_depth);
 
     std::scoped_lock lock{samplers_mutex};
-    const auto [it, new_sampler] = samplers.try_emplace(hash, instance, sampler, border_color_base);
+    const auto [it, new_sampler] =
+        samplers.try_emplace(hash, instance, sampler, border_color_base, is_depth);
     if (new_sampler) {
         samplers.at(hash).lru_id = sampler_lru_cache.Insert(hash, gc_tick);
     } else {
