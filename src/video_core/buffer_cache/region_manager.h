@@ -4,8 +4,6 @@
 #pragma once
 
 #include <utility>
-#include "common/adaptive_mutex.h"
-#include "common/spin_lock.h"
 #include "common/types.h"
 #include "core/emulator_settings.h"
 #include "video_core/buffer_cache/region_definitions.h"
@@ -83,32 +81,21 @@ public:
         bool update_watchers{};
         auto bounds = GetBounds(offset, size);
         auto watcher_bounds = MIN_BOUNDS;
-        const u64 lock_mask = bounds.WordMask();
         if constexpr (locked) {
-            lock.Lock(lock_mask);
-            // mutex.lock();
+            mutex.lock();
         }
         IterateWords(bounds, [&](u64 index, u64 mask) {
             update_watchers |= UpdateStateAndProtection<cpu_op, gpu_op>(
                 write_prot, read_prot, watcher_bounds, index, mask);
         });
         if (update_watchers) {
-            const u64 watcher_mask = watcher_bounds.WordMask();
-            if constexpr (locked) {
-                lock.Unlock(lock_mask & ~watcher_mask);
-            }
             const auto write_op = GetPageOp<Type::CPU>(cpu_op);
             const auto read_op = GetPageOp<Type::GPU>(gpu_op);
             tracker->UpdatePageWatchersForRegion(cpu_addr, watcher_bounds, write_prot, read_prot,
                                                  write_op, read_op);
-            if constexpr (locked) {
-                lock.Unlock(watcher_mask);
-            }
-        } else if (locked) {
-            lock.Unlock(lock_mask);
         }
-        if (locked) {
-            // mutex.unlock();
+        if constexpr (locked) {
+            mutex.unlock();
         }
     }
 
@@ -122,10 +109,8 @@ public:
         u64 end_page{};
         auto bounds = GetBounds(offset, size);
         auto watcher_bounds = MIN_BOUNDS;
-        const u64 lock_mask = bounds.WordMask();
         if constexpr (locked) {
-            lock.Lock(lock_mask);
-            // mutex.lock();
+            mutex.lock();
         }
         IterateWords(bounds, [&](u64 index, u64 mask) {
             const u64 base_page = index * PAGES_PER_WORD;
@@ -149,22 +134,13 @@ public:
             func(cpu_addr + start_page * BYTES_PER_PAGE, (end_page - start_page) * BYTES_PER_PAGE);
         }
         if (update_watchers) {
-            const u64 watcher_mask = watcher_bounds.WordMask();
-            if constexpr (locked) {
-                lock.Unlock(lock_mask & ~watcher_mask);
-            }
             const auto write_op = GetPageOp<Type::CPU>(cpu_op);
             const auto read_op = GetPageOp<Type::GPU>(gpu_op);
             tracker->UpdatePageWatchersForRegion(cpu_addr, watcher_bounds, write_prot, read_prot,
                                                  write_op, read_op);
-            if constexpr (locked) {
-                lock.Unlock(watcher_mask);
-            }
-        } else if (locked) {
-            lock.Unlock(lock_mask);
         }
-        if (locked) {
-            // mutex.unlock();
+        if constexpr (locked) {
+            mutex.unlock();
         }
     }
 
@@ -189,13 +165,11 @@ public:
     }
 
     void Lock(const Bounds& bounds) noexcept {
-        lock.Lock(bounds.WordMask());
-        // mutex.lock();
+        mutex.lock();
     }
 
     void Unlock(const Bounds& bounds) noexcept {
-        lock.Unlock(bounds.WordMask());
-        // mutex.unlock();
+        mutex.unlock();
     }
 
 private:
@@ -276,8 +250,7 @@ private:
     RegionBits gpu;
     RegionBits writeable;
     RegionBits readable;
-    WordLock lock;
-    // std::mutex mutex;
+    std::mutex mutex;
 
     PageManager* tracker;
     VAddr cpu_addr{};

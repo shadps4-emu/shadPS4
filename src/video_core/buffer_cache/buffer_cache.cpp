@@ -164,7 +164,7 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
     if (!is_written && size <= STREAM_THRESHOLD && !IsRegionGpuModified(device_addr, size)) {
         const auto [data, offset] = stream_buffer.Map(size, instance.UniformMinAlignment());
-        memory->CopySparseMemory(device_addr, data, size);
+        std::memcpy(data, reinterpret_cast<const void*>(device_addr), size);
         stream_buffer.Commit();
         return {&stream_buffer, offset};
     }
@@ -176,7 +176,7 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     if (is_texel_buffer && !is_written) {
         SynchronizeMemoryFromImage(arena, device_addr, size);
     }
-    //SynchronizeMemory(arena, device_addr, size, is_written, is_texel_buffer);
+    // SynchronizeMemory(arena, device_addr, size, is_written, is_texel_buffer);
     if (is_written) {
         gpu_modified_ranges.Add(device_addr, size);
     }
@@ -213,7 +213,7 @@ void BufferCache::SynchronizeDmaBuffers() {
         const VAddr device_addr = range.start << block_shift;
         const u64 size = (range.end - range.start) << block_shift;
         sync_batch.Add(device_addr, device_addr + size, false);
-        //SynchronizeMemory(address_space[page], device_addr, size, false, false);
+        // SynchronizeMemory(address_space[page], device_addr, size, false, false);
     }
 }
 
