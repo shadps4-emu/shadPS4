@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/div_ceil.h"
+#include "common/hash.h"
 #include "common/scope_exit.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
@@ -807,8 +808,7 @@ vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler,
                                      AmdGpu::BorderColorBuffer border_color_base,
                                      const bool is_depth) {
     // Compare and plain uses of one S# need separate samplers.
-    const u64 hash =
-        XXH3_64bits(&sampler, sizeof(sampler)) ^ (is_depth ? 0x9E3779B97F4A7C15ULL : 0);
+    const u64 hash = HashCombine(XXH3_64bits(&sampler, sizeof(sampler)), is_depth);
 
     std::scoped_lock lock{samplers_mutex};
     const auto [it, new_sampler] =
