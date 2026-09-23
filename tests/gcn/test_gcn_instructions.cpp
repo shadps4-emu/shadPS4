@@ -76,6 +76,57 @@ FrontFaceSpirvInfo InspectFrontFaceSpirv(const std::vector<u32>& spirv) {
     return info;
 }
 
+struct PullModelSpirvInfo {
+    u32 bary_coord_khr_count{};
+    u32 frag_coord_count{};
+    u32 pull_model_amd_count{};
+    u32 fragment_barycentric_khr_count{};
+    u32 fmul_count{};
+};
+
+PullModelSpirvInfo InspectPullModelSpirv(const std::vector<u32>& spirv) {
+    PullModelSpirvInfo info{};
+    if (spirv.size() < 5U) {
+        ADD_FAILURE() << "SPIR-V header is truncated";
+        return info;
+    }
+
+    for (size_t offset = 5; offset < spirv.size();) {
+        const u32 instruction = spirv[offset];
+        const u32 word_count = instruction >> 16;
+        const auto opcode = static_cast<spv::Op>(instruction & 0xffffU);
+        if (word_count == 0U || offset + word_count > spirv.size()) {
+            ADD_FAILURE() << "Malformed SPIR-V instruction at word " << offset;
+            return info;
+        }
+
+        if (opcode == spv::Op::OpCapability && word_count >= 2U &&
+            spirv[offset + 1] == static_cast<u32>(spv::Capability::FragmentBarycentricKHR)) {
+            ++info.fragment_barycentric_khr_count;
+        } else if (opcode == spv::Op::OpDecorate && word_count >= 4U &&
+                   spirv[offset + 2] == static_cast<u32>(spv::Decoration::BuiltIn)) {
+            const auto builtin = static_cast<spv::BuiltIn>(spirv[offset + 3]);
+            switch (builtin) {
+            case spv::BuiltIn::BaryCoordKHR:
+                ++info.bary_coord_khr_count;
+                break;
+            case spv::BuiltIn::FragCoord:
+                ++info.frag_coord_count;
+                break;
+            case spv::BuiltIn::BaryCoordPullModelAMD:
+                ++info.pull_model_amd_count;
+                break;
+            default:
+                break;
+            }
+        } else if (opcode == spv::Op::OpFMul) {
+            ++info.fmul_count;
+        }
+        offset += word_count;
+    }
+    return info;
+}
+
 TEST_F(GcnTest, fragment_front_face_uses_float_sign_bits) {
     const auto info = InspectFrontFaceSpirv(TranslateFragmentFrontFaceToSpirv(false));
 
@@ -92,6 +143,25 @@ TEST_F(GcnTest, fragment_front_face_uses_all_bits) {
     EXPECT_EQ(info.select_count, 1U);
     EXPECT_EQ(info.true_value, 1U);
     EXPECT_EQ(info.false_value, 0U);
+}
+
+TEST_F(GcnTest, khr_barycentrics_reconstruct_pull_model) {
+    const auto info = InspectPullModelSpirv(TranslateFragmentPullModelToSpirv(false));
+
+    EXPECT_EQ(info.bary_coord_khr_count, 1U);
+    EXPECT_EQ(info.frag_coord_count, 1U);
+    EXPECT_EQ(info.fragment_barycentric_khr_count, 1U);
+    EXPECT_EQ(info.pull_model_amd_count, 0U);
+    EXPECT_EQ(info.fmul_count, 2U);
+}
+
+TEST_F(GcnTest, amd_barycentrics_use_native_pull_model) {
+    const auto info = InspectPullModelSpirv(TranslateFragmentPullModelToSpirv(true));
+
+    EXPECT_EQ(info.pull_model_amd_count, 1U);
+    EXPECT_EQ(info.frag_coord_count, 0U);
+    EXPECT_EQ(info.bary_coord_khr_count, 0U);
+    EXPECT_EQ(info.fmul_count, 0U);
 }
 
 // Example
