@@ -109,8 +109,8 @@ std::vector<u32> TranslateToSpirv(std::span<const u64> raw_gcn_insts) {
 
 std::vector<u32> TranslateFragmentFrontFaceToSpirv(bool front_face_all_bits) {
     Shader::Info info{};
-    info.stage = Stage::Fragment;
-    info.l_stage = LogicalStage::Fragment;
+    info.hw_stage = HwStage::Fragment;
+    info.sw_stage = SwStage::Fragment;
 
     IR::Program program{info};
     Pools pools{};
@@ -126,11 +126,11 @@ std::vector<u32> TranslateFragmentFrontFaceToSpirv(bool front_face_all_bits) {
     Profile profile{};
     profile.supported_spirv = 0x00010600;
     RuntimeInfo runtime_info{};
-    runtime_info.Initialize(Stage::Fragment);
-    runtime_info.fs_info.en_flags.front_face_ena = 1;
-    runtime_info.fs_info.addr_flags.front_face_ena = 1;
-    runtime_info.fs_info.front_face_all_bits = front_face_all_bits;
-    runtime_info.fs_info.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
+    runtime_info.Initialize(HwStage::Fragment, SwStage::Fragment);
+    runtime_info.hw.fs.en_flags.front_face_ena = 1;
+    runtime_info.hw.fs.addr_flags.front_face_ena = 1;
+    runtime_info.hw.fs.front_face_all_bits = front_face_all_bits;
+    runtime_info.hw.fs.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
 
     Gcn::Translator translator(program.info, runtime_info, profile);
     translator.EmitPrologue(block);

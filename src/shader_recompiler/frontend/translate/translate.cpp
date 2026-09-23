@@ -210,7 +210,7 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         if (addr_flags.front_face_ena) {
             if (en_flags.front_face_ena) {
                 const IR::U1 front_face = ir.GetAttributeU1(IR::Attribute::IsFrontFace);
-                if (runtime_info.fs_info.front_face_all_bits) {
+                if (runtime_info.hw.fs.front_face_all_bits) {
                     ir.SetVectorReg(dst_vreg++,
                                     IR::U32{ir.Select(front_face, ir.Imm32(1), ir.Imm32(0))});
                 } else {
