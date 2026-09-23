@@ -619,6 +619,8 @@ set(FIBER_LIB src/core/libraries/fiber/fiber_context.cpp
 
 set(VDEC_LIB src/core/libraries/videodec/video_utils.cpp
              src/core/libraries/videodec/video_utils.h
+             src/core/libraries/videodec/vdecsw.cpp
+             src/core/libraries/videodec/vdecsw.h
              src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h
              src/core/libraries/videodec/videodec2.cpp
@@ -750,6 +752,8 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/frame_dump.h
               src/core/devtools/widget/frame_graph.cpp
               src/core/devtools/widget/frame_graph.h
+              src/core/devtools/widget/gpu_memory.cpp
+              src/core/devtools/widget/gpu_memory.h
               src/core/devtools/widget/imgui_memory_editor.h
               src/core/devtools/widget/memory_map.cpp
               src/core/devtools/widget/memory_map.h
@@ -787,6 +791,7 @@ set(COMMON src/common/logging/classes.h
            src/common/endian.h
            src/common/enum.h
            src/common/incremental_id.h
+           src/common/interval_set.h
            src/common/io_file.cpp
            src/common/io_file.h
            src/common/lru_cache.h
@@ -1029,6 +1034,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/passes/lower_buffer_format_to_raw.cpp
                       src/shader_recompiler/ir/passes/lower_fp64_to_fp32.cpp
                       src/shader_recompiler/ir/passes/lower_user_clip_planes.cpp
+                      src/shader_recompiler/ir/passes/lower_wave64_pass.cpp
                       src/shader_recompiler/ir/passes/phi_simplification_pass.cpp
                       src/shader_recompiler/ir/passes/readlane_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/resource_discover_pass.cpp
@@ -1107,6 +1113,8 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/buffer_cache/region_manager.h
                src/video_core/renderer_vulkan/liverpool_to_vk.cpp
                src/video_core/renderer_vulkan/liverpool_to_vk.h
+               src/video_core/renderer_vulkan/vk_barrier_tracker.cpp
+               src/video_core/renderer_vulkan/vk_barrier_tracker.h
                src/video_core/renderer_vulkan/vk_common.cpp
                src/video_core/renderer_vulkan/vk_common.h
                src/video_core/renderer_vulkan/vk_compute_pipeline.cpp
@@ -1115,8 +1123,6 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/vk_graphics_pipeline.h
                src/video_core/renderer_vulkan/vk_instance.cpp
                src/video_core/renderer_vulkan/vk_instance.h
-               src/video_core/renderer_vulkan/vk_master_semaphore.cpp
-               src/video_core/renderer_vulkan/vk_master_semaphore.h
                src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
                src/video_core/renderer_vulkan/vk_pipeline_cache.h
                src/video_core/renderer_vulkan/vk_pipeline_common.cpp
@@ -1131,12 +1137,18 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/vk_rasterizer.h
                src/video_core/renderer_vulkan/vk_resource_pool.cpp
                src/video_core/renderer_vulkan/vk_resource_pool.h
+               src/video_core/renderer_vulkan/vk_runtime.cpp
+               src/video_core/renderer_vulkan/vk_runtime.h
                src/video_core/renderer_vulkan/vk_scheduler.cpp
                src/video_core/renderer_vulkan/vk_scheduler.h
+               src/video_core/renderer_vulkan/vk_semaphore.cpp
+               src/video_core/renderer_vulkan/vk_semaphore.h
                src/video_core/renderer_vulkan/vk_shader_hle.cpp
                src/video_core/renderer_vulkan/vk_shader_hle.h
                src/video_core/renderer_vulkan/vk_shader_util.cpp
                src/video_core/renderer_vulkan/vk_shader_util.h
+               src/video_core/renderer_vulkan/vk_staging_buffer_pool.cpp
+               src/video_core/renderer_vulkan/vk_staging_buffer_pool.h
                src/video_core/renderer_vulkan/vk_swapchain.cpp
                src/video_core/renderer_vulkan/vk_swapchain.h
                src/video_core/renderer_vulkan/host_passes/fsr_pass.cpp
@@ -1294,11 +1306,6 @@ if (ENABLE_DISCORD_RPC)
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    # Optional due to https://github.com/shadps4-emu/shadPS4/issues/1704
-    if (ENABLE_USERFAULTFD)
-        target_compile_definitions(shadps4 PRIVATE ENABLE_USERFAULTFD)
-    endif()
-
     target_link_libraries(shadps4 PRIVATE uuid)
 endif()
 

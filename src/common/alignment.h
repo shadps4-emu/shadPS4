@@ -23,6 +23,16 @@ template <typename T>
 }
 
 template <typename T>
+[[nodiscard]] constexpr T AlignUpPow2(T value, T size) {
+    return static_cast<T>(value + (size - 1) & ~(size - 1));
+}
+
+template <typename T>
+[[nodiscard]] constexpr T AlignDownPow2(T value, T size) {
+    return static_cast<T>(value & ~(size - 1));
+}
+
+template <typename T>
     requires std::is_integral_v<T>
 [[nodiscard]] constexpr bool IsAligned(T value, std::size_t alignment) {
     return (value & (alignment - 1)) == 0;

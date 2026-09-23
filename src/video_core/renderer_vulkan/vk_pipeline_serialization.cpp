@@ -285,7 +285,7 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
                 LOG_WARNING(Render_Vulkan,
                             "Cached permutation {} of {}_{:x} conflicts with index {}, skipping "
                             "preload",
-                            perm_idx, program->info.stage, program->info.pgm_hash, idx);
+                            perm_idx, program->info.hw_stage, program->info.pgm_hash, idx);
                 return false;
             }
             module = it->module;

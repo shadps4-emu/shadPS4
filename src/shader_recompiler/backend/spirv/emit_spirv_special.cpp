@@ -9,7 +9,7 @@
 namespace Shader::Backend::SPIRV {
 
 void EmitPrologue(EmitContext& ctx) {
-    if (ctx.stage == Stage::Fragment) {
+    if (ctx.hw_stage == HwStage::Fragment) {
         ctx.DefineAmdPerVertexAttribs();
     }
     if (ctx.info.loads.Get(IR::Attribute::WorkgroupIndex)) {
@@ -67,10 +67,11 @@ void ConvertPositionToClipSpace(EmitContext& ctx) {
 }
 
 void EmitEpilogue(EmitContext& ctx) {
-    if (ctx.stage == Stage::Vertex && ctx.runtime_info.vs_info.emulate_depth_negative_one_to_one) {
+    if (ctx.hw_stage == HwStage::Vertex &&
+        ctx.runtime_info.hw.vs.emulate_depth_negative_one_to_one) {
         ConvertDepthMode(ctx);
     }
-    if (ctx.stage == Stage::Vertex && ctx.runtime_info.vs_info.clip_disable) {
+    if (ctx.hw_stage == HwStage::Vertex && ctx.runtime_info.hw.vs.clip_disable) {
         ConvertPositionToClipSpace(ctx);
     }
 }

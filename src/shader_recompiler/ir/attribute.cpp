@@ -168,6 +168,10 @@ std::string NameOf(Attribute attribute) {
         return "PackedAncillary";
     case Attribute::SubgroupLtMask:
         return "SubgroupLtMask";
+    case Attribute::BaseVertex:
+        return "BaseVertex";
+    case Attribute::BaseInstance:
+        return "BaseInstance";
     default:
         break;
     }

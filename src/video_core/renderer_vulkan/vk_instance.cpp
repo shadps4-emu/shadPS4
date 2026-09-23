@@ -416,6 +416,8 @@ bool Instance::CreateDevice() {
                 .shaderFloat64 = features.shaderFloat64,
                 .shaderInt64 = features.shaderInt64,
                 .shaderInt16 = features.shaderInt16,
+                .sparseBinding = features.sparseBinding,
+                .sparseResidencyBuffer = features.sparseResidencyBuffer,
             },
         },
         vk::PhysicalDeviceVulkan11Features{
@@ -805,6 +807,11 @@ vk::Format Instance::GetSupportedFormat(const vk::Format format,
         case vk::Format::eR8Srgb:
             if (IsFormatSupported(vk::Format::eR8Unorm, flags)) {
                 return vk::Format::eR8Unorm;
+            }
+            break;
+        case vk::Format::eR8G8Srgb:
+            if (IsFormatSupported(vk::Format::eR8G8Unorm, flags)) {
+                return vk::Format::eR8G8Unorm;
             }
             break;
         default:

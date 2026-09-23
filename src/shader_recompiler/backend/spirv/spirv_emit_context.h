@@ -193,8 +193,8 @@ public:
     Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
-    Stage stage;
-    LogicalStage l_stage{};
+    HwStage hw_stage;
+    SwStage sw_stage{};
 
     Id last_label{};
 
@@ -253,6 +253,7 @@ public:
     Id instance_id{};
     Id push_data_block{};
     Id base_vertex{};
+    Id base_instance{};
     Id frag_coord{};
     Id front_facing{};
     Id frag_depth{};
