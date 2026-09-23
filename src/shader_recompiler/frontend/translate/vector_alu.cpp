@@ -371,6 +371,24 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_CMPX_TRU_U32:
         return V_CMP_U32(ConditionOp::TRU, false, true, inst);
 
+        //     V_CMP_{OP8}_I64
+    case Opcode::V_CMP_F_I64:
+        return V_CMP_U64(ConditionOp::F, true, false, inst);
+    case Opcode::V_CMP_LT_I64:
+        return V_CMP_U64(ConditionOp::LT, true, false, inst);
+    case Opcode::V_CMP_EQ_I64:
+        return V_CMP_U64(ConditionOp::EQ, true, false, inst);
+    case Opcode::V_CMP_LE_I64:
+        return V_CMP_U64(ConditionOp::LE, true, false, inst);
+    case Opcode::V_CMP_GT_I64:
+        return V_CMP_U64(ConditionOp::GT, true, false, inst);
+    case Opcode::V_CMP_NE_I64:
+        return V_CMP_U64(ConditionOp::LG, true, false, inst);
+    case Opcode::V_CMP_GE_I64:
+        return V_CMP_U64(ConditionOp::GE, true, false, inst);
+    case Opcode::V_CMP_TRU_I64:
+        return V_CMP_U64(ConditionOp::TRU, true, false, inst);
+
         //     V_CMPX_{OP8}_I64
     case Opcode::V_CMPX_EQ_I64:
         return V_CMP_U64(ConditionOp::EQ, true, true, inst);
