@@ -10,3 +10,4 @@
 
 std::vector<u32> TranslateToSpirv(u64 raw_gcn_inst);
 std::vector<u32> TranslateToSpirv(std::span<const u64> raw_gcn_insts);
+std::vector<u32> TranslateFragmentFrontFaceToSpirv(bool front_face_all_bits);
