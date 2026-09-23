@@ -529,3 +529,36 @@ TEST_F(GcnTest, pk_add_f16_op_sel_reversed) {
     EXPECT_TRUE(result.has_value());
     EXPECT_EQ(*result, (F16x2{half(6.0f), half(4.0f)}));
 }
+
+TEST_F(GcnTest, addc_u32_clears_scc) {
+    auto runner = gcn_test::Runner::instance().value();
+    const std::array<u64, 4> instructions{
+        SOP2(OpcodeSOP2::S_ADD_U32, SOperand7::S3, SOperand8::S0, SOperand8::S1).Get(),
+        SOP2(OpcodeSOP2::S_ADDC_U32, SOperand7::S3, SOperand8::Const0, SOperand8::Const0).Get(),
+        SOP2(OpcodeSOP2::S_CSELECT_B32, SOperand7::S0, SOperand8::Const1, SOperand8::Const0).Get(),
+        VOP1(OpcodeVOP1::V_MOV_B32, VOperand8::V0, SOperand9::S0).Get(),
+    };
+    const auto spirv = TranslateToSpirv(instructions);
+
+    auto result = runner->run<u32>(spirv, std::array{0xffffffffU, 1U, 0U, 0U});
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0U);
+}
+
+TEST_F(GcnTest, addc_u32_result_uses_scc) {
+    auto runner = gcn_test::Runner::instance().value();
+    const std::array<u64, 3> instructions{
+        SOP2(OpcodeSOP2::S_ADD_U32, SOperand7::S1, SOperand8::S0, SOperand8::S1).Get(),
+        SOP2(OpcodeSOP2::S_ADDC_U32, SOperand7::S0, SOperand8::S2, SOperand8::S3).Get(),
+        VOP1(OpcodeVOP1::V_MOV_B32, VOperand8::V0, SOperand9::S0).Get(),
+    };
+    const auto spirv = TranslateToSpirv(instructions);
+
+    auto overflow = runner->run<u32>(spirv, std::array{0xffffffffU, 1U, 7U, 0U});
+    ASSERT_TRUE(overflow.has_value());
+    EXPECT_EQ(*overflow, 8U);
+
+    auto no_overflow = runner->run<u32>(spirv, std::array{2U, 1U, 7U, 0U});
+    ASSERT_TRUE(no_overflow.has_value());
+    EXPECT_EQ(*no_overflow, 7U);
+}
