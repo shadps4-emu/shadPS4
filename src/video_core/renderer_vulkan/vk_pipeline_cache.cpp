@@ -583,7 +583,8 @@ bool PipelineCache::RefreshGraphicsStages() {
         bind_stage(HwStage::Vertex, SwStage::Vertex);
         break;
     default:
-        UNREACHABLE_MSG("unhandled stage_en: {}", (u32)regs.stage_enable.raw);
+        LOG_WARNING(Render_Vulkan, "unimplemented shader stage {}", (u32)regs.stage_enable.raw);
+        return false;
     }
 
     const auto* vs_info = infos[static_cast<u32>(SwStage::Vertex)];
