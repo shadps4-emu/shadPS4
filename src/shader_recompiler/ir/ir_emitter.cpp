@@ -86,14 +86,6 @@ U1 IREmitter::ConditionRef(const U1& value) {
     return Inst<U1>(Opcode::ConditionRef, value);
 }
 
-void IREmitter::Reference(const Value& value) {
-    Inst(Opcode::Reference, value);
-}
-
-void IREmitter::PhiMove(IR::Inst& phi, const Value& value) {
-    Inst(Opcode::PhiMove, Value{&phi}, value);
-}
-
 void IREmitter::Prologue() {
     Inst(Opcode::Prologue);
 }
