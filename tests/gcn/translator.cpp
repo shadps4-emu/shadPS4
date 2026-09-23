@@ -188,3 +188,38 @@ std::vector<u32> TranslateFragmentPullModelToSpirv(bool use_amd_barycentrics) {
     Backend::Bindings bindings{};
     return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
 }
+
+u32 TranslateFragmentInterpMovSelector(u32 src_select) {
+    Shader::Info info{};
+    info.hw_stage = HwStage::Fragment;
+    info.sw_stage = SwStage::Fragment;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+
+    Profile profile{};
+    profile.supports_fragment_shader_barycentric = true;
+    RuntimeInfo runtime_info{};
+    runtime_info.Initialize(HwStage::Fragment, SwStage::Fragment);
+
+    Gcn::Translator translator(program.info, runtime_info, profile);
+    translator.EmitPrologue(block);
+
+    Gcn::GcnInst inst{};
+    inst.src[0].code = src_select;
+    inst.dst[0].field = Gcn::OperandField::VectorGPR;
+    inst.dst[0].code = 0;
+    inst.control.vintrp.attr = 0;
+    inst.control.vintrp.chan = 0;
+    translator.V_INTERP_MOV_F32(inst);
+
+    for (const IR::Inst& ir_inst : block->Instructions()) {
+        if (ir_inst.GetOpcode() == IR::Opcode::GetAttribute &&
+            ir_inst.Arg(0).Attribute() == IR::Attribute::Param0) {
+            return ir_inst.Arg(2).U32();
+        }
+    }
+    return ~u32{};
+}

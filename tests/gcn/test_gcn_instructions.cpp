@@ -164,6 +164,12 @@ TEST_F(GcnTest, amd_barycentrics_use_native_pull_model) {
     EXPECT_EQ(info.fmul_count, 0U);
 }
 
+TEST_F(GcnTest, interp_mov_selects_p10_p20_and_p0) {
+    EXPECT_EQ(TranslateFragmentInterpMovSelector(0), 1U);
+    EXPECT_EQ(TranslateFragmentInterpMovSelector(1), 2U);
+    EXPECT_EQ(TranslateFragmentInterpMovSelector(2), 0U);
+}
+
 // Example
 // TEST_F(GcnTest, test_name) {
 //     // Runner sets the vulkan context
