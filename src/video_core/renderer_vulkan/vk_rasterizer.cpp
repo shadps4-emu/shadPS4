@@ -196,9 +196,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     }
 
     PrepareRenderState(pipeline);
-    if (!BindResources(pipeline)) {
-        return;
-    }
+    BindResources(pipeline);
     const auto state = BeginRendering(pipeline);
 
     BindVertexBuffers(pipeline);
@@ -254,9 +252,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     }
 
     PrepareRenderState(pipeline);
-    if (!BindResources(pipeline)) {
-        return;
-    }
+    BindResources(pipeline);
     const auto state = BeginRendering(pipeline);
 
     BindVertexBuffers(pipeline);
@@ -322,14 +318,17 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
+    if (IsComputeImageCopy(pipeline) || IsComputeMetaClear(pipeline) ||
+        IsComputeImageClear(pipeline)) {
+        return;
+    }
+
     const auto& cs = pipeline->GetStage(Shader::SwStage::Compute);
     if (ExecuteShaderHLE(cs, liverpool->regs, cs_program, *this)) {
         return;
     }
 
-    if (!BindResources(pipeline)) {
-        return;
-    }
+    BindResources(pipeline);
 
     if (needs_barrier) {
         runtime.FlushBarriers();
@@ -357,9 +356,12 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
         return;
     }
 
-    if (!BindResources(pipeline)) {
+    if (IsComputeImageCopy(pipeline) || IsComputeMetaClear(pipeline) ||
+        IsComputeImageClear(pipeline)) {
         return;
     }
+
+    BindResources(pipeline);
 
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
     needs_barrier |= runtime.IsBufferAccessed(buffer, base, size);
@@ -400,12 +402,7 @@ void Rasterizer::OnSubmit() {
     runtime.TickFrame();
 }
 
-bool Rasterizer::BindResources(const Pipeline* pipeline) {
-    if (IsComputeImageCopy(pipeline) || IsComputeMetaClear(pipeline) ||
-        IsComputeImageClear(pipeline)) {
-        return false;
-    }
-
+void Rasterizer::BindResources(const Pipeline* pipeline) {
     set_write_index = 0;
     set_writes.clear();
     buffer_infos.clear();
@@ -432,8 +429,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         buffer_cache.SynchronizeDmaBuffers();
         fault_process_pending = true;
     }
-
-    return true;
 }
 
 void Rasterizer::BindVertexBuffers(const GraphicsPipeline* pipeline) {
