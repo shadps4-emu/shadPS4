@@ -8,7 +8,6 @@
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/runtime_info.h"
-#include "video_core/buffer_cache/buffer_cache.h"
 
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
@@ -1173,9 +1172,9 @@ Id EmitContext::DefineUfloatM5ToFloat32(u32 mantissa_bits, const std::string_vie
 }
 
 Id EmitContext::DefineGetBdaPointer() {
-    const auto caching_pagebits{
-        Constant(U64, static_cast<u64>(VideoCore::BufferCache::CACHING_PAGEBITS))};
-    const auto caching_pagemask{Constant(U64, VideoCore::BufferCache::CACHING_PAGESIZE - 1)};
+    const auto caching_pagebits{Constant(U64, static_cast<u64>(profile.sparse_page_shift))};
+    const auto caching_pagemask{
+        Constant(U64, static_cast<u64>((1u << profile.sparse_page_shift) - 1))};
 
     const auto func_type{TypeFunction(U64, U64)};
     const auto func{OpFunction(U64, spv::FunctionControlMask::MaskNone, func_type)};

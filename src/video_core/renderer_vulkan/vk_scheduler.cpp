@@ -13,7 +13,7 @@ namespace Vulkan {
 std::mutex Scheduler::submit_mutex;
 
 Scheduler::Scheduler(const Instance& instance)
-    : instance{instance}, master_semaphore{instance}, command_pool{instance, &master_semaphore} {
+    : instance{instance}, work_semaphore{instance}, command_pool{instance, &work_semaphore} {
 #if TRACY_GPU_ENABLED
     profiler_scope = reinterpret_cast<tracy::VkCtxScope*>(std::malloc(sizeof(tracy::VkCtxScope)));
 #endif
@@ -110,18 +110,18 @@ void Scheduler::Finish() {
 }
 
 void Scheduler::Wait(u64 tick) {
-    if (tick >= master_semaphore.CurrentTick()) {
+    if (tick >= work_semaphore.CurrentTick()) {
         // Make sure we are not waiting for the current tick without signalling
         SubmitInfo info{};
         Flush(info);
     }
-    master_semaphore.Wait(tick);
+    work_semaphore.Wait(tick);
 }
 
 void Scheduler::PopPendingOperations() {
     std::unique_lock lk(pending_ops_mutex);
-    master_semaphore.Refresh();
-    while (!pending_ops.empty() && master_semaphore.IsFree(pending_ops.front().gpu_tick)) {
+    work_semaphore.Refresh();
+    while (!pending_ops.empty() && work_semaphore.IsFree(pending_ops.front().gpu_tick)) {
         pending_ops.front().callback();
         pending_ops.pop();
     }
@@ -150,7 +150,7 @@ void Scheduler::AllocateWorkerCommandBuffers() {
 
 void Scheduler::SubmitExecution(SubmitInfo& info) {
     std::scoped_lock lk{submit_mutex};
-    const u64 signal_value = master_semaphore.NextTick();
+    const u64 signal_value = work_semaphore.NextTick();
 
 #if TRACY_GPU_ENABLED
     auto* profiler_ctx = instance.GetProfilerContext();
@@ -160,10 +160,14 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     }
 #endif
 
+    if (on_submit) {
+        on_submit(info);
+    }
+
     EndRendering();
     Check(current_cmdbuf.end());
 
-    const vk::Semaphore timeline = master_semaphore.Handle();
+    const vk::Semaphore timeline = work_semaphore.Handle();
     info.AddSignal(timeline, signal_value);
 
     static constexpr std::array<vk::PipelineStageFlags, 2> wait_stage_masks = {
@@ -193,7 +197,7 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     auto submit_result = instance.GetGraphicsQueue().submit(submit_info, info.fence);
     ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost, "Device lost during submit");
 
-    master_semaphore.Refresh();
+    work_semaphore.Refresh();
     AllocateWorkerCommandBuffers();
 
     // Apply pending operations
@@ -217,7 +221,7 @@ void Scheduler::PriorityPendingOpsThread(std::stop_token stoken) {
             priority_pending_ops.pop();
         }
 
-        master_semaphore.Wait(op.gpu_tick);
+        work_semaphore.Wait(op.gpu_tick);
         if (stoken.stop_requested()) {
             break;
         }
