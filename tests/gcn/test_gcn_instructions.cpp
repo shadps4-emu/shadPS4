@@ -667,3 +667,17 @@ TEST_F(GcnTest, pk_add_f16_op_sel_reversed) {
     EXPECT_TRUE(result.has_value());
     EXPECT_EQ(*result, (F16x2{half(6.0f), half(4.0f)}));
 }
+
+TEST_F(GcnTest, bitcmp1_b64_bit32) {
+    auto runner = gcn_test::Runner::instance().value();
+    const std::array<u64, 3> instructions{
+        SOPC(OpcodeSOPC::S_BITCMP1_B64, SOperand8::S0, SOperand8::S2).Get(),
+        SOP2(OpcodeSOP2::S_CSELECT_B32, SOperand7::S0, SOperand8::Const1, SOperand8::Const0).Get(),
+        VOP1(OpcodeVOP1::V_MOV_B32, VOperand8::V0, SOperand9::S0).Get(),
+    };
+    const auto spirv = TranslateToSpirv(instructions);
+
+    auto result = runner->run<u32>(spirv, std::array{0U, 1U, 32U, 0U});
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 1U);
+}
