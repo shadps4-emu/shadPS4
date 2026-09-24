@@ -94,6 +94,7 @@ enum class Attribute : u64 {
     SubgroupLtMask = 97,
     BaseVertex = 98,
     BaseInstance = 99,
+    IsHelperInvocation = 100,
     Max,
 };
 
