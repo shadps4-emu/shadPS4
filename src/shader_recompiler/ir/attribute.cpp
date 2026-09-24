@@ -172,8 +172,8 @@ std::string NameOf(Attribute attribute) {
         return "BaseVertex";
     case Attribute::BaseInstance:
         return "BaseInstance";
-    case Attribute::SampleCoverage:
-        return "SampleCoverage";
+    case Attribute::IsHelperInvocation:
+        return "IsHelperInvocation";
     default:
         break;
     }

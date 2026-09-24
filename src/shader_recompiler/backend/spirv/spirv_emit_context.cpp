@@ -366,13 +366,13 @@ void EmitContext::DefineInputs() {
             sample_index = DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
             Decorate(sample_index, spv::Decoration::Flat);
         }
-        if (info.loads.Get(IR::Attribute::SampleCoverage)) {
+        if (info.loads.Get(IR::Attribute::IsHelperInvocation)) {
             helper_invocation =
                 DefineVariable(U1[1], spv::BuiltIn::HelperInvocation, spv::StorageClass::Input);
-            if (runtime_info.hw.fs.num_samples > 1) {
-                sample_mask_in = DefineVariable(TypeArray(U32[1], u32_one_value),
-                                                spv::BuiltIn::SampleMask, spv::StorageClass::Input);
-            }
+        }
+        if (info.loads.Get(IR::Attribute::SampleMask)) {
+            sample_mask_in = DefineVariable(TypeArray(U32[1], u32_one_value),
+                                            spv::BuiltIn::SampleMask, spv::StorageClass::Input);
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth)) {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
