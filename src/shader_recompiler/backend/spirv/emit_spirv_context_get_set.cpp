@@ -533,14 +533,6 @@ void EmitStoreBufferFormatF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id a
     UNREACHABLE_MSG("SPIR-V instruction");
 }
 
-void EmitGetThreadBitScalarReg(EmitContext& ctx) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitSetThreadBitScalarReg(EmitContext& ctx) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
 void EmitGetScalarRegister(EmitContext&) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
@@ -570,18 +562,6 @@ void EmitSetGotoVariable(EmitContext&) {
 }
 
 void EmitGetGotoVariable(EmitContext&) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitSetMaskLaneVariable(EmitContext&) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitGetMaskLaneVariable(EmitContext&) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-Id EmitGetPcLo(EmitContext& ctx, Id pc) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
