@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm>
-
 #include "common/assert.h"
 #include "core/emulator_settings.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
@@ -195,6 +193,8 @@ Id EmitGetAttributeU1(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     switch (attr) {
     case IR::Attribute::IsFrontFace:
         return ctx.OpLoad(ctx.U1[1], ctx.front_facing);
+    case IR::Attribute::IsHelperInvocation:
+        return ctx.OpLoad(ctx.U1[1], ctx.helper_invocation);
     default:
         UNREACHABLE_MSG("Unsupported U1 attribute {}", attr);
     }
@@ -221,18 +221,9 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         return ctx.OpLoad(ctx.U32[1], ctx.local_invocation_index);
     case IR::Attribute::SampleIndex:
         return ctx.OpLoad(ctx.U32[1], ctx.sample_index);
-    case IR::Attribute::SampleCoverage: {
-        const u32 num_samples = std::clamp<u32>(ctx.runtime_info.hw.fs.num_samples, 1U, 16U);
-        Id coverage = ctx.u32_one_value;
-        if (num_samples > 1) {
-            coverage = ctx.OpLoad(ctx.U32[1], ctx.OpAccessChain(ctx.input_u32, ctx.sample_mask_in,
-                                                                ctx.u32_zero_value));
-            const u32 valid_samples = (1U << num_samples) - 1U;
-            coverage = ctx.OpBitwiseAnd(ctx.U32[1], coverage, ctx.ConstU32(valid_samples));
-        }
-        const Id is_helper = ctx.OpLoad(ctx.U1[1], ctx.helper_invocation);
-        return ctx.OpSelect(ctx.U32[1], is_helper, ctx.u32_zero_value, coverage);
-    }
+    case IR::Attribute::SampleMask:
+        return ctx.OpLoad(ctx.U32[1],
+                          ctx.OpAccessChain(ctx.input_u32, ctx.sample_mask_in, ctx.u32_zero_value));
     case IR::Attribute::RenderTargetIndex:
         return ctx.OpLoad(ctx.U32[1], ctx.output_layer);
     case IR::Attribute::PrimitiveId:
