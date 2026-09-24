@@ -78,9 +78,9 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_BCNT_U32_B32:
         return V_BCNT_U32_B32(inst);
     case Opcode::V_MBCNT_LO_U32_B32:
-        return V_MBCNT_U32_B32(true, inst);
-    case Opcode::V_MBCNT_HI_U32_B32:
         return V_MBCNT_U32_B32(false, inst);
+    case Opcode::V_MBCNT_HI_U32_B32:
+        return V_MBCNT_U32_B32(true, inst);
     case Opcode::V_ADD_I32:
         return V_ADD_I32(inst);
     case Opcode::V_SUB_I32:
@@ -744,10 +744,10 @@ void Translator::V_BCNT_U32_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.IAdd(ir.BitCount(src0), src1));
 }
 
-void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
-    const IR::U32 thread_mask{ir.GetAttributeU32(IR::Attribute::SubgroupLtMask, is_low ? 0 : 1)};
-    SetDst(inst.dst[0], ir.IAdd(ir.BitCount(ir.BitwiseAnd(GetSrc(inst.src[0]), thread_mask)),
-                                GetSrc(inst.src[1])));
+void Translator::V_MBCNT_U32_B32(bool hi, const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.MaskedBitCount(src0, src1, hi));
 }
 
 void Translator::V_ADD_I32(const GcnInst& inst) {
