@@ -351,7 +351,9 @@ void EmitContext::DefineInputs() {
         break;
     }
     case SwStage::Fragment: {
-        if (info.loads.GetAny(IR::Attribute::FragCoord)) {
+        if (info.loads.GetAny(IR::Attribute::FragCoord) ||
+            (info.loads.GetAny(IR::Attribute::BaryCoordPullModel) &&
+             !profile.supports_amd_shader_explicit_vertex_parameter)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         }
         if (info.loads.Get(IR::Attribute::IsFrontFace)) {
@@ -378,6 +380,15 @@ void EmitContext::DefineInputs() {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_smooth = DefineVariable(F32[2], spv::BuiltIn::BaryCoordSmoothAMD,
                                                    spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
+                bary_coord =
+                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+            }
+        }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordPullModel)) {
+            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                bary_coord_pull_model = DefineVariable(F32[3], spv::BuiltIn::BaryCoordPullModelAMD,
+                                                       spv::StorageClass::Input);
             } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
                 bary_coord =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
