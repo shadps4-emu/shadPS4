@@ -23,16 +23,16 @@ static constexpr size_t GDS_BUFFER_SIZE = 64_KB;
 static constexpr size_t STREAM_BUFFER_SIZE = 128_MB;
 constexpr std::optional<u32> CmaskColorExpandedValue(u32 num_samples) {
     switch (num_samples) {
-        case 1:
-            return 0xFFFFFFFF;
-        case 2:
-            return 0xDDDDDDDD;
-        case 4:
-            return 0xEEEEEEEE;
-        case 8:
-            return 0xFFFFFFFF;
-        default:
-            return 0;
+    case 1:
+        return 0xFFFFFFFF;
+    case 2:
+        return 0xDDDDDDDD;
+    case 4:
+        return 0xEEEEEEEE;
+    case 8:
+        return 0xFFFFFFFF;
+    default:
+        return 0;
     }
 }
 static_assert(CmaskColorExpandedValue(1) == 0xFFFFFFFF);
