@@ -348,6 +348,7 @@ Id EmitBitCount32(EmitContext& ctx, Id value);
 Id EmitBitCount64(EmitContext& ctx, Id value);
 Id EmitBitwiseNot32(EmitContext& ctx, Id value);
 Id EmitBitwiseNot64(EmitContext& ctx, Id value);
+Id EmitMaskedBitCount32(EmitContext& ctx, Id value, Id addend, bool hi);
 Id EmitFindSMsb32(EmitContext& ctx, Id value);
 Id EmitFindUMsb32(EmitContext& ctx, Id value);
 Id EmitFindUMsb64(EmitContext& ctx, Id value);

@@ -351,6 +351,7 @@ OPCODE(BitCount32,                                          U32,            U32,
 OPCODE(BitCount64,                                          U32,            U64,                                                                            )
 OPCODE(BitwiseNot32,                                        U32,            U32,                                                                            )
 OPCODE(BitwiseNot64,                                        U64,            U64,                                                                            )
+OPCODE(MaskedBitCount32,                                    U32,            U32,            U32,            U1,                                             )
 
 OPCODE(FindSMsb32,                                          U32,            U32,                                                                            )
 OPCODE(FindUMsb32,                                          U32,            U32,                                                                            )

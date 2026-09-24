@@ -1653,6 +1653,10 @@ U32U64 IREmitter::BitwiseNot(const U32U64& value) {
     }
 }
 
+U32 IREmitter::MaskedBitCount(const U32& value, const U32& addend, bool hi) {
+    return Inst<U32>(Opcode::MaskedBitCount32, value, addend, Imm1(hi));
+}
+
 U32 IREmitter::FindSMsb(const U32& value) {
     return Inst<U32>(Opcode::FindSMsb32, value);
 }
