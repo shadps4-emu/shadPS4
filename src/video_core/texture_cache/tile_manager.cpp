@@ -10,7 +10,18 @@
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/tile_manager.h"
 
-#include "video_core/host_shaders/tiling_comp.h"
+#include "video_core/host_shaders/tiling_macro_128_comp.h"
+#include "video_core/host_shaders/tiling_macro_16_comp.h"
+#include "video_core/host_shaders/tiling_macro_32_comp.h"
+#include "video_core/host_shaders/tiling_macro_64_comp.h"
+#include "video_core/host_shaders/tiling_macro_8_comp.h"
+#include "video_core/host_shaders/tiling_macro_96_comp.h"
+#include "video_core/host_shaders/tiling_micro_128_comp.h"
+#include "video_core/host_shaders/tiling_micro_16_comp.h"
+#include "video_core/host_shaders/tiling_micro_32_comp.h"
+#include "video_core/host_shaders/tiling_micro_64_comp.h"
+#include "video_core/host_shaders/tiling_micro_8_comp.h"
+#include "video_core/host_shaders/tiling_micro_96_comp.h"
 
 #include <magic_enum/magic_enum.hpp>
 #include <vk_mem_alloc.h>
@@ -76,66 +87,110 @@ TileManager::TileManager(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 TileManager::~TileManager() = default;
 
 vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler) {
-    const u32 pl_id = u32(info.tile_mode) * NUM_BPPS + std::bit_width(info.num_bits) - 4;
-    auto& tiling_pipelines = is_tiler ? tilers : detilers;
-    if (auto pipeline = *tiling_pipelines[pl_id]; pipeline != VK_NULL_HANDLE) {
-        return pipeline;
+    const TilingKey key{
+        .tile_mode = info.tile_mode,
+        .num_bits = info.num_bits,
+        .num_samples = info.num_samples,
+        .is_tiler = is_tiler,
+    };
+    if (const auto it = tiling_pipelines.find(key); it != tiling_pipelines.end()) {
+        return *it->second;
     }
 
     const auto device = instance.GetDevice();
     const auto micro_tile_mode = AmdGpu::GetMicroTileMode(info.tile_mode);
-    std::vector<std::string> defines = {
-        fmt::format("BITS_PER_PIXEL={}", info.num_bits),
-        fmt::format("NUM_SAMPLES={}", info.num_samples),
-        fmt::format("ARRAY_MODE={}", u32(info.array_mode)),
-        fmt::format("MICRO_TILE_MODE={}", u32(micro_tile_mode)),
-        fmt::format("MICRO_TILE_THICKNESS={}", AmdGpu::GetMicroTileThickness(info.array_mode)),
+    const bool is_macro = AmdGpu::IsMacroTiled(info.array_mode);
+    std::array<u32, 12> spec_data{
+        info.num_samples,
+        u32(micro_tile_mode),
+        AmdGpu::GetMicroTileThickness(info.array_mode),
+        u32(is_tiler),
     };
-    if (AmdGpu::IsMacroTiled(info.array_mode)) {
+    if (is_macro) {
         const auto macro_tile_mode =
             AmdGpu::CalculateMacrotileMode(info.tile_mode, info.num_bits, info.num_samples);
-        const u32 num_banks = AmdGpu::GetNumBanks(macro_tile_mode);
-        defines.emplace_back(
-            fmt::format("PIPE_CONFIG={}", u32(AmdGpu::GetPipeConfig(info.tile_mode))));
-        defines.emplace_back(fmt::format("BANK_WIDTH={}", AmdGpu::GetBankWidth(macro_tile_mode)));
-        defines.emplace_back(fmt::format("BANK_HEIGHT={}", AmdGpu::GetBankHeight(macro_tile_mode)));
-        defines.emplace_back(fmt::format("NUM_BANKS={}", num_banks));
-        defines.emplace_back(fmt::format("NUM_BANK_BITS={}", std::bit_width(num_banks) - 1));
-        defines.emplace_back(fmt::format(
-            "TILE_SPLIT_BYTES={}", AmdGpu::CalculateTileSplit(info.tile_mode, info.array_mode,
-                                                              micro_tile_mode, info.num_bits)));
-        defines.emplace_back(
-            fmt::format("MACRO_TILE_ASPECT={}", AmdGpu::GetMacrotileAspect(macro_tile_mode)));
-    }
-    if (is_tiler) {
-        defines.emplace_back(fmt::format("IS_TILER=1"));
+        spec_data[4] = u32(info.array_mode);
+        spec_data[5] = u32(AmdGpu::GetPipeConfig(info.tile_mode));
+        spec_data[6] = AmdGpu::GetBankWidth(macro_tile_mode);
+        spec_data[7] = AmdGpu::GetBankHeight(macro_tile_mode);
+        spec_data[8] = AmdGpu::GetNumBanks(macro_tile_mode);
+        spec_data[9] = std::bit_width(spec_data[8]) - 1;
+        spec_data[10] = AmdGpu::CalculateTileSplit(info.tile_mode, info.array_mode, micro_tile_mode,
+                                                   info.num_bits);
+        spec_data[11] = AmdGpu::GetMacrotileAspect(macro_tile_mode);
     }
 
-    const auto& module = Vulkan::Compile(HostShaders::TILING_COMP,
-                                         vk::ShaderStageFlagBits::eCompute, device, defines);
+    std::span<const u32> code;
+    switch (info.num_bits) {
+    case 8:
+        code = is_macro ? std::span<const u32>{TILING_MACRO_8_COMP}
+                        : std::span<const u32>{TILING_MICRO_8_COMP};
+        break;
+    case 16:
+        code = is_macro ? std::span<const u32>{TILING_MACRO_16_COMP}
+                        : std::span<const u32>{TILING_MICRO_16_COMP};
+        break;
+    case 32:
+        code = is_macro ? std::span<const u32>{TILING_MACRO_32_COMP}
+                        : std::span<const u32>{TILING_MICRO_32_COMP};
+        break;
+    case 64:
+        code = is_macro ? std::span<const u32>{TILING_MACRO_64_COMP}
+                        : std::span<const u32>{TILING_MICRO_64_COMP};
+        break;
+    case 96:
+        code = is_macro ? std::span<const u32>{TILING_MACRO_96_COMP}
+                        : std::span<const u32>{TILING_MICRO_96_COMP};
+        break;
+    case 128:
+        code = is_macro ? std::span<const u32>{TILING_MACRO_128_COMP}
+                        : std::span<const u32>{TILING_MICRO_128_COMP};
+        break;
+    default:
+        UNREACHABLE_MSG("Unsupported tiling pixel width {}", info.num_bits);
+    }
+
+    const auto module = Vulkan::CompileSPV(code, device);
+    static constexpr auto spec_entries = [] {
+        std::array<vk::SpecializationMapEntry, 12> entries{};
+        for (u32 i = 0; i < entries.size(); ++i) {
+            entries[i] = vk::SpecializationMapEntry{i, i * u32(sizeof(u32)), sizeof(u32)};
+        }
+        return entries;
+    }();
+
+    const u32 spec_count = is_macro ? 12 : 4;
+    const vk::SpecializationInfo specialization{
+        .mapEntryCount = spec_count,
+        .pMapEntries = spec_entries.data(),
+        .dataSize = spec_count * sizeof(u32),
+        .pData = spec_data.data(),
+    };
+
     const auto module_name = fmt::format("{}_{} {}", magic_enum::enum_name(info.tile_mode),
                                          info.num_bits, is_tiler ? "tiler" : "detiler");
-    LOG_INFO(Render_Vulkan, "Compiling shader {}", module_name);
-    for (const auto& def : defines) {
-        LOG_INFO(Render_Vulkan, "#define {}", def);
-    }
+    LOG_INFO(Render_Vulkan, "Creating tiling pipeline {}", module_name);
     Vulkan::SetObjectName(device, module, module_name);
+
     const vk::PipelineShaderStageCreateInfo shader_ci = {
         .stage = vk::ShaderStageFlagBits::eCompute,
         .module = module,
         .pName = "main",
+        .pSpecializationInfo = &specialization,
     };
     const vk::ComputePipelineCreateInfo compute_pipeline_ci = {
         .stage = shader_ci,
         .layout = *pl_layout,
     };
+
     auto [result, pipeline] =
         device.createComputePipelineUnique(VK_NULL_HANDLE, compute_pipeline_ci);
     ASSERT_MSG(result == vk::Result::eSuccess, "Detiler pipeline creation failed {}",
                vk::to_string(result));
-    tiling_pipelines[pl_id] = std::move(pipeline);
+    const auto handle = *pipeline;
+    tiling_pipelines.emplace(key, std::move(pipeline));
     device.destroyShaderModule(module);
-    return *tiling_pipelines[pl_id];
+    return handle;
 }
 
 std::pair<const Buffer*, u64> TileManager::DetileImage(const VideoCore::Buffer* in_buffer,

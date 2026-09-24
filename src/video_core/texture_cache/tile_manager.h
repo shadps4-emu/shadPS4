@@ -3,6 +3,10 @@
 
 #pragma once
 
+#include <unordered_map>
+#include <utility>
+#include <boost/container_hash/hash.hpp>
+
 #include "common/types.h"
 #include "video_core/amdgpu/tiling.h"
 #include "video_core/buffer_cache/buffer.h"
@@ -17,7 +21,25 @@ struct ImageInfo;
 struct Image;
 
 class TileManager {
-    static constexpr size_t NUM_BPPS = 5;
+    struct TilingKey {
+        AmdGpu::TileMode tile_mode;
+        u32 num_bits;
+        u32 num_samples;
+        bool is_tiler;
+
+        bool operator==(const TilingKey&) const = default;
+
+        struct Hash {
+            size_t operator()(const TilingKey& key) const {
+                size_t hash = 0;
+                boost::hash_combine(hash, key.tile_mode);
+                boost::hash_combine(hash, key.num_bits);
+                boost::hash_combine(hash, key.num_samples);
+                boost::hash_combine(hash, key.is_tiler);
+                return hash;
+            }
+        };
+    };
 
 public:
     explicit TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
@@ -40,8 +62,7 @@ private:
     StreamBuffer& stream_buffer;
     vk::UniqueDescriptorSetLayout desc_layout;
     vk::UniquePipelineLayout pl_layout;
-    std::array<vk::UniquePipeline, AmdGpu::NUM_TILE_MODES * NUM_BPPS> detilers{};
-    std::array<vk::UniquePipeline, AmdGpu::NUM_TILE_MODES * NUM_BPPS> tilers{};
+    std::unordered_map<TilingKey, vk::UniquePipeline, TilingKey::Hash> tiling_pipelines;
 };
 
 } // namespace VideoCore
