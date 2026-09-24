@@ -4,12 +4,20 @@
 #pragma once
 
 #include <utility>
+
+#include "common/adaptive_mutex.h"
 #include "common/types.h"
 #include "core/emulator_settings.h"
 #include "video_core/buffer_cache/region_definitions.h"
 #include "video_core/page_manager.h"
 
 namespace VideoCore {
+
+#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
+using LockType = Common::AdaptiveMutex;
+#else
+using LockType = std::mutex;
+#endif
 
 /**
  * Allows tracking CPU and GPU modification of pages in a contigious virtual address region.
@@ -22,8 +30,6 @@ public:
           readbacks_mode{EmulatorSettings.GetReadbacksMode()} {
         cpu.Fill(~0ULL);
         gpu.Fill(0ULL);
-        writeable.Fill(~0ULL);
-        readable.Fill(~0ULL);
     }
     explicit RegionManager() = default;
 
@@ -78,19 +84,19 @@ public:
     void ChangeRegionState(u64 offset, u64 size) {
         RegionBits write_prot;
         RegionBits read_prot;
-        bool update_watchers{};
         auto bounds = GetBounds(offset, size);
-        auto watcher_bounds = MIN_BOUNDS;
+        Bounds watcher_bounds;
         if constexpr (locked) {
             mutex.lock();
         }
         IterateWords(bounds, [&](u64 index, u64 mask) {
-            update_watchers |= UpdateStateAndProtection<cpu_op, gpu_op>(
-                write_prot, read_prot, watcher_bounds, index, mask);
+            UpdateStateAndProtection<cpu_op, gpu_op>(write_prot, read_prot, index, mask);
         });
-        if (update_watchers) {
-            const auto write_op = GetPageOp<Type::CPU>(cpu_op);
-            const auto read_op = GetPageOp<Type::GPU>(gpu_op);
+        const auto write_op = GetPageOp<Type::CPU>(cpu_op);
+        const auto read_op = GetPageOp<Type::GPU>(gpu_op);
+        const bool update_watchers = write_op != PageOp::None || read_op != PageOp::None;
+        if (update_watchers &&
+            GetWatcherBounds<cpu_op, gpu_op>(bounds, write_prot, read_prot, watcher_bounds)) {
             tracker->UpdatePageWatchersForRegion(cpu_addr, watcher_bounds, write_prot, read_prot,
                                                  write_op, read_op);
         }
@@ -104,19 +110,17 @@ public:
         auto& state = GetRegionBits<type>();
         RegionBits write_prot;
         RegionBits read_prot;
-        bool update_watchers{};
         u64 start_page{};
         u64 end_page{};
         auto bounds = GetBounds(offset, size);
-        auto watcher_bounds = MIN_BOUNDS;
+        Bounds watcher_bounds;
         if constexpr (locked) {
             mutex.lock();
         }
         IterateWords(bounds, [&](u64 index, u64 mask) {
             const u64 base_page = index * PAGES_PER_WORD;
             const u64 word = state[index] & mask;
-            update_watchers |= UpdateStateAndProtection<cpu_op, gpu_op>(
-                write_prot, read_prot, watcher_bounds, index, mask);
+            UpdateStateAndProtection<cpu_op, gpu_op>(write_prot, read_prot, index, mask);
             IteratePages(word, [&](u64 pages_offset, u64 pages_size) {
                 if (end_page == base_page + pages_offset) {
                     end_page += pages_size;
@@ -133,9 +137,11 @@ public:
         if (end_page) {
             func(cpu_addr + start_page * BYTES_PER_PAGE, (end_page - start_page) * BYTES_PER_PAGE);
         }
-        if (update_watchers) {
-            const auto write_op = GetPageOp<Type::CPU>(cpu_op);
-            const auto read_op = GetPageOp<Type::GPU>(gpu_op);
+        const auto write_op = GetPageOp<Type::CPU>(cpu_op);
+        const auto read_op = GetPageOp<Type::GPU>(gpu_op);
+        const bool update_watchers = write_op != PageOp::None || read_op != PageOp::None;
+        if (update_watchers &&
+            GetWatcherBounds<cpu_op, gpu_op>(bounds, write_prot, read_prot, watcher_bounds)) {
             tracker->UpdatePageWatchersForRegion(cpu_addr, watcher_bounds, write_prot, read_prot,
                                                  write_op, read_op);
         }
@@ -174,47 +180,61 @@ public:
 
 private:
     template <StateOp cpu_op, StateOp gpu_op>
-    bool UpdateStateAndProtection(RegionBits& write_prot, RegionBits& read_prot, Bounds& bounds,
-                                  u64 index, u64 mask) {
-        u64 write_word{};
-        u64 read_word{};
+    void UpdateStateAndProtection(RegionBits& write_prot, RegionBits& read_prot, u64 index,
+                                  u64 mask) {
         if constexpr (cpu_op != StateOp::None) {
-            const u64 perm = writeable[index];
+            const u64 prev = cpu[index];
             if constexpr (cpu_op == StateOp::Clear) {
                 cpu[index] &= ~mask;
-                writeable[index] &= ~mask;
             } else {
                 cpu[index] |= mask;
-                writeable[index] |= mask;
             }
-            write_word = (cpu[index] ^ perm) & mask;
+            write_prot[index] = (cpu[index] ^ prev) & mask;
         }
         if constexpr (gpu_op != StateOp::None) {
-            const u64 perm = readable[index];
+            const u64 prev = gpu[index];
             if constexpr (gpu_op == StateOp::Clear) {
                 gpu[index] &= ~mask;
-                readable[index] |= mask;
             } else {
                 gpu[index] |= mask;
-                readable[index] &= ~mask;
             }
-            read_word = (~gpu[index] ^ perm) & mask;
+            read_prot[index] = (gpu[index] ^ prev) & mask;
         }
-        write_prot[index] = write_word;
-        read_prot[index] = read_word;
-        const u64 prot_word = read_word | write_word;
-        if (prot_word) {
-            if (index <= bounds.start_word) {
-                bounds.start_word = index;
-                bounds.start_page = std::countr_zero(prot_word);
+    }
+
+    template <StateOp cpu_op, StateOp gpu_op>
+    static bool GetWatcherBounds(const Bounds& bounds, RegionBits& write_prot,
+                                 RegionBits& read_prot, Bounds& watcher_bounds) {
+        const auto prot = [&](u64 index) {
+            u64 word{};
+            if constexpr (cpu_op != StateOp::None) {
+                word |= write_prot[index];
             }
-            if (index >= bounds.end_word) {
-                bounds.end_word = index;
-                bounds.end_page = PAGES_PER_WORD - std::countl_zero(prot_word) - 1;
+            if constexpr (gpu_op != StateOp::None) {
+                word |= read_prot[index];
             }
-            return true;
+            return word;
+        };
+        u64 start_word = bounds.start_word;
+        while (prot(start_word) == 0) {
+            if (start_word == bounds.end_word) {
+                return false;
+            }
+            ++start_word;
         }
-        return false;
+        u64 end_word = bounds.end_word;
+        while (prot(end_word) == 0) {
+            --end_word;
+        }
+        const u64 start_prot = prot(start_word);
+        const u64 end_prot = prot(end_word);
+        watcher_bounds = Bounds{
+            .start_word = start_word,
+            .start_page = static_cast<u64>(std::countr_zero(start_prot)),
+            .end_word = end_word,
+            .end_page = PAGES_PER_WORD - std::countl_zero(end_prot) - 1,
+        };
+        return true;
     }
 
     template <Type type>
@@ -246,15 +266,12 @@ private:
         }
     }
 
-    RegionBits cpu;
-    RegionBits gpu;
-    RegionBits writeable;
-    RegionBits readable;
-    std::mutex mutex;
-
     PageManager* tracker;
     VAddr cpu_addr{};
     u32 readbacks_mode;
+    RegionBits cpu;
+    RegionBits gpu;
+    LockType mutex;
 };
 
 } // namespace VideoCore

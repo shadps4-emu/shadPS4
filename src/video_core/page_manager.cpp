@@ -209,8 +209,9 @@ struct PageManager::Impl {
             }
 
             // Apply the change to the page state
-            const auto new_perms =
-                state.Update(write_op, write_mask.GetPage(page), read_op, read_mask.GetPage(page));
+            const bool update_write = write_op != PageOp::None && write_mask.GetPage(page);
+            const bool update_read = read_op != PageOp::None && read_mask.GetPage(page);
+            const auto new_perms = state.Update(write_op, update_write, read_op, update_read);
 
             if (new_perms != perms) [[unlikely]] {
                 // If the protection changed add pending (un)protect action

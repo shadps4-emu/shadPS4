@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include <array>
 #include <utility>
+
 #include "common/types.h"
 
 namespace VideoCore {
@@ -41,21 +43,6 @@ struct Bounds {
     u64 start_page;
     u64 end_word;
     u64 end_page;
-
-    constexpr bool Contains(u64 word) const {
-        return word >= start_word && word <= end_word;
-    }
-
-    constexpr u64 WordMask() const {
-        return (~u64{0} >> (63 - (end_word - start_word))) << start_word;
-    }
-};
-
-constexpr Bounds MIN_BOUNDS = {
-    .start_word = NUM_REGION_WORDS - 1,
-    .start_page = PAGES_PER_WORD - 1,
-    .end_word = 0,
-    .end_page = 0,
 };
 
 struct RegionBits {
