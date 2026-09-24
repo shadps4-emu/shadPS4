@@ -799,25 +799,29 @@ void Translator::V_ADDC_U32(const GcnInst& inst) {
 }
 
 void Translator::V_SUBB_U32(const GcnInst& inst) {
-    // Signed or unsigned components
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 carry{GetCarryIn(inst)};
     const IR::U32 result{ir.ISub(ir.ISub(src0, src1), carry)};
     SetDst(inst.dst[0], result);
 
-    // TODO: Carry-out with signed or unsigned components
+    const IR::U1 underflow{ir.IGreaterThan(src1, src0, false)};
+    const IR::U32 difference{ir.ISub(src0, src1)};
+    const IR::U1 borrow_underflow{ir.IGreaterThan(carry, difference, false)};
+    SetCarryOut(inst, ir.LogicalOr(underflow, borrow_underflow));
 }
 
 void Translator::V_SUBBREV_U32(const GcnInst& inst) {
-    // Signed or unsigned components
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 carry{GetCarryIn(inst)};
     const IR::U32 result{ir.ISub(ir.ISub(src1, src0), carry)};
     SetDst(inst.dst[0], result);
 
-    // TODO: Carry-out with signed or unsigned components
+    const IR::U1 underflow{ir.IGreaterThan(src0, src1, false)};
+    const IR::U32 difference{ir.ISub(src1, src0)};
+    const IR::U1 borrow_underflow{ir.IGreaterThan(carry, difference, false)};
+    SetCarryOut(inst, ir.LogicalOr(underflow, borrow_underflow));
 }
 
 void Translator::V_LDEXP_F32(const GcnInst& inst) {
