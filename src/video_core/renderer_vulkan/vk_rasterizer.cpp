@@ -393,12 +393,7 @@ void Rasterizer::Finish() {
 }
 
 void Rasterizer::OnSubmit() {
-    if (fault_process_pending) {
-        fault_process_pending = false;
-        buffer_cache.ProcessFaultBuffer();
-    }
-    LOG_WARNING(Render, "Num batches for frame {}",
-                std::exchange(buffer_cache.num_flushes_per_frame, 0u));
+    buffer_cache.TickFrame();
     texture_cache.ProcessDownloadImages();
     texture_cache.RunGarbageCollector();
     runtime.TickFrame();
@@ -434,7 +429,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     if (uses_dma) {
         buffer_cache.SynchronizeDmaBuffers();
-        fault_process_pending = true;
     }
 
     return true;

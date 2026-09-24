@@ -3,7 +3,9 @@
 
 #include <algorithm>
 #include <magic_enum/magic_enum.hpp>
+
 #include "common/alignment.h"
+#include "core/debug_state.h"
 #include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer.h"
@@ -86,6 +88,13 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 }
 
 BufferCache::~BufferCache() = default;
+
+void BufferCache::TickFrame() {
+    if (std::exchange(fault_process_pending, false)) {
+        fault_manager->ProcessFaultBuffer();
+    }
+    DebugState.num_batches_per_frame = std::exchange(num_flushes_per_frame, 0u);
+}
 
 void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool assume_locks) {
     memory_tracker->InvalidateRegion(device_addr, size, [this, device_addr, size, assume_locks] {
@@ -200,14 +209,17 @@ bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
     }
     const VAddr start = Common::AlignDown(addr, BYTES_PER_PAGE);
     const VAddr end = Common::AlignUp(addr + size, BYTES_PER_PAGE);
-    return sync_batch.OverlapsWritten(start, end);
-}
-
-void BufferCache::ProcessFaultBuffer() {
-    fault_manager->ProcessFaultBuffer();
+    auto it = std::ranges::upper_bound(sync_batch, start, {}, &SyncRange::end);
+    for (; it != sync_batch.end() && it->start < end; ++it) {
+        if (it->written) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void BufferCache::SynchronizeDmaBuffers() {
+    fault_process_pending = true;
     for (const auto& range : resident_ranges) {
         const u64 page = range.start >> (ARENA_PAGE_BITS - block_shift);
         const VAddr device_addr = range.start << block_shift;
@@ -458,7 +470,7 @@ void BufferCache::FlushSyncBatch(bool from_scheduler) {
     size_t total_size_bytes = 0;
     for (const auto& range : sync_batch) {
         memory_tracker->ForEachUploadRange(
-            range.lo, range.hi - range.lo, range.written,
+            range.start, range.end - range.start, range.written,
             [&](u64 addr, u64 range_size) {
                 copies.emplace_back(total_size_bytes, addr, range_size);
                 total_size_bytes += range_size;
