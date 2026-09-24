@@ -1253,12 +1253,12 @@ bool Rasterizer::InvalidateMemory(VAddr addr, u64 size, bool assume_locks) {
     return true;
 }
 
-bool Rasterizer::ReadMemory(VAddr addr, u64 size) {
+bool Rasterizer::ReadMemory(VAddr addr, u64 size, bool assume_locks) {
     if (!IsMapped(addr, size)) {
         // Not GPU mapped memory, can skip invalidation logic entirely.
         return false;
     }
-    buffer_cache.ReadMemory(addr, size);
+    buffer_cache.ReadMemory(addr, size, false, assume_locks);
     return true;
 }
 
@@ -1621,6 +1621,10 @@ void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 
         .color = std::array<f32, 4>(
             {(f32)((color >> 16) & 0xff) / 255.0f, (f32)((color >> 8) & 0xff) / 255.0f,
              (f32)(color & 0xff) / 255.0f, (f32)((color >> 24) & 0xff) / 255.0f})});
+}
+
+std::thread::id Rasterizer::GetGpuCommandProcessorThread() {
+    return liverpool->GetGpuCommandProcessorThread();
 }
 
 #ifdef __linux__
