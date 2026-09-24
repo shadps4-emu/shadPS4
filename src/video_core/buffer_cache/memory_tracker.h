@@ -78,8 +78,7 @@ public:
     }
 
     /// Call 'func' for each CPU modified range and unmark those pages as CPU modified
-    void ForEachUploadRange(VAddr cpu_addr, u64 size, bool is_written, auto&& func,
-                            auto&& on_upload) {
+    void ForEachUploadRange(VAddr cpu_addr, u64 size, bool is_written, auto&& func) {
         IteratePages<true>(
             cpu_addr, size, [&func, is_written](RegionManager* manager, u64 offset, u64 size) {
                 if (is_written) {
@@ -91,7 +90,6 @@ public:
                             offset, size, func);
                 }
             });
-        on_upload();
     }
 
     /// Call 'func' for each GPU modified range and unmark those pages as GPU modified

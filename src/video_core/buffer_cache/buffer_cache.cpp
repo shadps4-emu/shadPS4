@@ -185,7 +185,6 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     if (is_texel_buffer && !is_written) {
         SynchronizeMemoryFromImage(arena, device_addr, size);
     }
-    // SynchronizeMemory(arena, device_addr, size, is_written, is_texel_buffer);
     if (is_written) {
         gpu_modified_ranges.Add(device_addr, size);
     }
@@ -225,7 +224,6 @@ void BufferCache::SynchronizeDmaBuffers() {
         const VAddr device_addr = range.start << block_shift;
         const u64 size = (range.end - range.start) << block_shift;
         sync_batch.Add(device_addr, device_addr + size, false);
-        // SynchronizeMemory(address_space[page], device_addr, size, false, false);
     }
 }
 
@@ -339,43 +337,6 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
     runtime.CopyBuffer(staging.buffer, bda_pagetable_buffer.get(), copies);
 }
 
-bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size,
-                                    bool is_written, bool is_texel_buffer) {
-    boost::container::small_vector<vk::BufferCopy, 4> copies;
-    size_t total_size_bytes{};
-    const Buffer* src_buffer{};
-    memory_tracker->ForEachUploadRange(
-        device_addr, size, is_written,
-        [&](u64 addr, u64 size) {
-            copies.emplace_back(total_size_bytes, addr, size);
-            total_size_bytes += size;
-        },
-        [&] { src_buffer = UploadCopies(arena, copies, total_size_bytes); });
-
-    if (src_buffer) {
-        runtime.CopyBuffer(src_buffer, arena, copies);
-    }
-    if (is_texel_buffer && !is_written) {
-        return SynchronizeMemoryFromImage(arena, device_addr, size);
-    }
-    return false;
-}
-
-const Buffer* BufferCache::UploadCopies(const Buffer* arena, std::span<vk::BufferCopy> copies,
-                                        size_t total_size_bytes) {
-    if (copies.empty()) {
-        return nullptr;
-    }
-    const auto staging = staging_pool.Request(total_size_bytes, MemoryType::HostUncached);
-    for (auto& copy : copies) {
-        memory->CopySparseMemory(copy.dstOffset, staging.mapped + copy.srcOffset, copy.size);
-        copy.srcOffset += staging.offset;
-        copy.dstOffset -= arena->cpu_addr;
-    }
-    staging.Flush();
-    return staging.buffer;
-}
-
 bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size) {
     if (auto type = texture_cache.IsMeta(device_addr)) {
         if (*type == TextureCache::MetaType::HTile) {
@@ -470,12 +431,10 @@ void BufferCache::FlushSyncBatch(bool from_scheduler) {
     size_t total_size_bytes = 0;
     for (const auto& range : sync_batch) {
         memory_tracker->ForEachUploadRange(
-            range.start, range.end - range.start, range.written,
-            [&](u64 addr, u64 range_size) {
+            range.start, range.end - range.start, range.written, [&](u64 addr, u64 range_size) {
                 copies.emplace_back(total_size_bytes, addr, range_size);
                 total_size_bytes += range_size;
-            },
-            [] {});
+            });
     }
     sync_batch.Clear();
     if (copies.empty()) {
