@@ -167,37 +167,35 @@ bool MemoryManager::TryWriteBacking(void* address, const void* data, u64 size) {
     ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                virtual_addr);
 
-    std::vector<VirtualMemoryArea> vmas_to_write;
+    u64 remaining_size = size;
+    bool has_physical_backing = false;
     auto current_vma = FindVMA(virtual_addr);
     while (current_vma->second.Overlaps(virtual_addr, size)) {
-        if (!HasPhysicalBacking(current_vma->second)) {
+        const auto& vma = current_vma->second;
+        if (!HasPhysicalBacking(vma)) {
             break;
         }
-        vmas_to_write.emplace_back(current_vma->second);
-        current_vma++;
-    }
-
-    if (vmas_to_write.empty()) {
-        return false;
-    }
-
-    for (auto& vma : vmas_to_write) {
+        has_physical_backing = true;
         auto start_in_vma = std::max<VAddr>(virtual_addr, vma.base) - vma.base;
         auto phys_handle = std::prev(vma.phys_areas.upper_bound(start_in_vma));
         for (; phys_handle != vma.phys_areas.end(); phys_handle++) {
-            if (!size) {
+            if (!remaining_size) {
                 break;
             }
             const u64 start_in_dma =
                 std::max<u64>(start_in_vma, phys_handle->first) - phys_handle->first;
             u8* backing = impl.BackingBase() + phys_handle->second.base + start_in_dma;
-            u64 copy_size = std::min<u64>(size, phys_handle->second.size - start_in_dma);
+            u64 copy_size = std::min<u64>(remaining_size, phys_handle->second.size - start_in_dma);
             memcpy(backing, data, copy_size);
-            size -= copy_size;
+            remaining_size -= copy_size;
         }
+        if (!remaining_size) {
+            break;
+        }
+        ++current_vma;
     }
 
-    return true;
+    return has_physical_backing;
 }
 
 PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, u64 size, u64 alignment) {
