@@ -449,6 +449,8 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
 
         // Perform an address space mapping for each physical area
         void* out_addr = impl.Map(current_addr, size_to_map, new_dmem_area.base);
+        rasterizer->RegisterMemory(current_addr, size_to_map);
+
         // Tracy memory tracking breaks from merging memory areas. Disabled for now.
         // TRACK_ALLOC(out_addr, size_to_map, "VMEM");
 
@@ -622,6 +624,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
             // Perform an address space mapping for each physical area
             void* out_addr = impl.Map(current_addr, size_to_map, new_fmem_area.base, is_exec);
+            rasterizer->RegisterMemory(current_addr, size_to_map);
+
             // Tracy memory tracking breaks from merging memory areas. Disabled for now.
             // TRACK_ALLOC(out_addr, size_to_map, "VMEM");
 
@@ -678,6 +682,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         // Flexible address space mappings were performed while finding direct memory areas.
         if (type != VMAType::Flexible) {
             impl.Map(mapped_addr, size, phys_addr, is_exec);
+            rasterizer->RegisterMemory(mapped_addr, size);
             // Tracy memory tracking breaks from merging memory areas. Disabled for now.
             // TRACK_ALLOC(mapped_addr, size, "VMEM");
         }
@@ -810,6 +815,10 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
 
     file->handle->Map(reinterpret_cast<u8*>(mapped_addr), size, phys_addr, std::bit_cast<u32>(prot),
                       map_ctx);
+    if (prot != Core::MemoryProt::CpuRead) {
+        // read-only mappings cannot be registered with userfaultfd in writeprotect mode
+        rasterizer->RegisterMemory(mapped_addr, size);
+    }
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
     return ORBIS_OK;
@@ -891,7 +900,10 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     }
 
     // Unmap from address space
-    impl.Unmap(virtual_addr, size);
+    u64 size_to_unmap = size;
+    VAddr unmapped_addr = impl.Unmap(virtual_addr, &size_to_unmap);
+    rasterizer->RegisterMemory(unmapped_addr, size_to_unmap);
+
     // Tracy memory tracking breaks from merging memory areas. Disabled for now.
     // TRACK_FREE(virtual_addr, "VMEM");
 
@@ -985,7 +997,10 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
     if (vma_type != VMAType::Reserved && vma_type != VMAType::PoolReserved) {
         // Unmap the memory region.
-        impl.Unmap(virtual_addr, size_in_vma);
+        u64 size_to_unmap = size_in_vma;
+        VAddr unmapped_addr = impl.Unmap(virtual_addr, &size_to_unmap);
+        rasterizer->RegisterMemory(unmapped_addr, size_to_unmap);
+
         // Tracy memory tracking breaks from merging memory areas. Disabled for now.
         // TRACK_FREE(virtual_addr, "VMEM");
     }

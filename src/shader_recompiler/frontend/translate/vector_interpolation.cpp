@@ -22,6 +22,8 @@ static Interpolation GetInterpolation(IR::Attribute attribute) {
         return {Qualifier::Smooth, Qualifier::Centroid};
     case IR::Attribute::BaryCoordSmoothSample:
         return {Qualifier::Smooth, Qualifier::Sample};
+    case IR::Attribute::BaryCoordPullModel:
+        return {Qualifier::Smooth, Qualifier::None};
     default:
         UNREACHABLE_MSG("Unhandled barycentric attribute {}", NameOf(attribute));
     }
