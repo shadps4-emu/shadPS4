@@ -17,7 +17,7 @@
 
 namespace Vulkan {
 class Instance;
-class Scheduler;
+class Runtime;
 } // namespace Vulkan
 
 VK_DEFINE_HANDLE(VmaAllocation)
@@ -76,13 +76,12 @@ public:
     VmaAllocation allocation{};
     vk::Image image{};
     vk::ImageCreateInfo image_ci{};
+    vk::DeviceSize size_bytes{};
 };
 
-class BlitHelper;
-
 struct Image {
-    Image(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler, BlitHelper& blit_helper,
-          Common::SlotVector<ImageView>& slot_image_views, const ImageInfo& info);
+    explicit Image(const Vulkan::Instance& instance, Vulkan::Runtime& runtime,
+                   Common::SlotVector<ImageView>& slot_image_views, const ImageInfo& info);
     ~Image();
 
     Image(const Image&) = delete;
@@ -100,6 +99,10 @@ struct Image {
 
     vk::Image GetImage() const {
         return backing->image.image;
+    }
+
+    vk::DeviceSize GetHostImageSize() const {
+        return backing->image.size_bytes;
     }
 
     bool IsTracked() {
@@ -123,29 +126,12 @@ struct Image {
     ImageView& FindView(const ImageViewInfo& view_info, bool ensure_guest_samples = true);
 
     using Barriers = boost::container::small_vector<vk::ImageMemoryBarrier2, 32>;
-    Barriers GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
-                         vk::PipelineStageFlags2 dst_stage,
-                         std::optional<SubresourceRange> subres_range);
-    void Transit(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
-                 std::optional<SubresourceRange> range, vk::CommandBuffer cmdbuf = {});
-    void Upload(std::span<const vk::BufferImageCopy> upload_copies, vk::Buffer buffer, u64 offset);
-    void Download(std::span<const vk::BufferImageCopy> download_copies, vk::Buffer buffer,
-                  u64 offset, u64 download_size);
-
-    void CopyImage(Image& src_image);
-    void CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset);
-    void CopyMip(Image& src_image, u32 mip, u32 slice);
-
-    void Resolve(Image& src_image, const VideoCore::SubresourceRange& mrt0_range,
-                 const VideoCore::SubresourceRange& mrt1_range);
-    void Clear(const vk::ClearValue& clear_value, const VideoCore::SubresourceRange& range);
-
-    void SetBackingSamples(u32 num_samples, bool copy_backing = true);
+    void GetBarriers(Barriers& out_barriers, vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
+                     vk::PipelineStageFlags2 dst_stage,
+                     std::optional<SubresourceRange> subres_range = {});
 
 public:
-    const Vulkan::Instance* instance;
-    Vulkan::Scheduler* scheduler;
-    BlitHelper* blit_helper;
+    Vulkan::Runtime* runtime;
     Common::SlotVector<ImageView>* slot_image_views;
     ImageInfo info;
     vk::ImageAspectFlags aspect_mask = vk::ImageAspectFlagBits::eColor;
@@ -156,7 +142,6 @@ public:
     ImageId depth_id{};
     u64 depth_uid{};
 
-    // Resource state tracking
     vk::ImageUsageFlags usage_flags;
     vk::FormatFeatureFlags2 format_features;
     struct State {

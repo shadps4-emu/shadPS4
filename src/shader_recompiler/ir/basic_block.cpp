@@ -109,20 +109,14 @@ static std::string RegTagInfo(const RegTag tag) {
         return fmt::format("{}", tag.sreg);
     case RegType::VectorReg:
         return fmt::format("{}", tag.vreg);
-    case RegType::ThreadBitReg:
-        return fmt::format("{}_U1", tag.sreg);
     case RegType::VirtualReg:
         return fmt::format("{}", tag.reg);
     case RegType::GotoVariable:
         return fmt::format("GOTO{}", tag.index);
-    case RegType::MaskLaneVariable:
-        return fmt::format("{}_L{}", tag.lane_reg.vreg, tag.lane_reg.lane);
     case RegType::VccLo:
         return "VCC_LO";
     case RegType::VccHi:
         return "VCC_HI";
-    case RegType::Vcc:
-        return "VCC";
     case RegType::Exec:
         return "EXEC";
     case RegType::Scc:
@@ -168,6 +162,10 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
 
         if (op == Opcode::ReadConst || op == Opcode::ImageSampleRaw) {
             ret += fmt::format(" (flags={:#x}) ", inst.Flags<u32>());
+        } else if (op == Opcode::ReadConstBuffer) {
+            const auto info = inst.Flags<BufferInstInfo>();
+            ret += fmt::format(" (sharp_source={}, flatbuf_off_dw={:#x}) ", bool(info.sharp_source),
+                               info.flatbuf_off_dw.Value());
         }
         const size_t arg_count{inst.NumArgs()};
         for (size_t arg_index = 0; arg_index < arg_count; ++arg_index) {
@@ -192,6 +190,9 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
             ret += fmt::format(" (uses: {})", inst.UseCount());
             if (auto tag = inst.GetRegTag()) {
                 ret += fmt::format(" (tag: {})", RegTagInfo(tag));
+            }
+            if (op == Opcode::Phi) {
+                ret += fmt::format(" (scc{})", inst.scc_index);
             }
             ret += '\n';
         } else {

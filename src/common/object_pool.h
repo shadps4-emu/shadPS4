@@ -14,7 +14,7 @@ template <typename T>
     requires std::is_destructible_v<T>
 class ObjectPool {
 public:
-    explicit ObjectPool(size_t chunk_size = 8192) : new_chunk_size{chunk_size} {
+    explicit ObjectPool(size_t chunk_size = 1024) : new_chunk_size{chunk_size} {
         node = &chunks.emplace_back(new_chunk_size);
     }
 
@@ -77,7 +77,9 @@ private:
         }
 
         void Release() {
-            std::destroy_n(storage.get(), used_objects);
+            for (size_t i = 0; i < used_objects; i++) {
+                storage[i].object.~T();
+            }
             used_objects = 0;
         }
 

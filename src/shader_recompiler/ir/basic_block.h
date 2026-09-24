@@ -135,6 +135,7 @@ public:
 
     SsaState ssa_state;
     const Shader::Gcn::Block* cfg_block{};
+    U1 branch_cond{};
 
     Common::ObjectPool<Inst>* inst_pool;
     InstructionList instructions;

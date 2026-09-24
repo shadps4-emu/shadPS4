@@ -35,9 +35,6 @@ public:
     [[nodiscard]] Dest BitCast(const Source& value);
 
     U1 ConditionRef(const U1& value);
-    void Reference(const Value& value);
-
-    void PhiMove(IR::Inst& phi, const Value& value);
 
     void Prologue();
     void Epilogue();
@@ -50,8 +47,6 @@ public:
     void DeviceMemoryBarrier();
 
     [[nodiscard]] U32 GetUserData(IR::ScalarReg reg);
-    [[nodiscard]] U1 GetThreadBitScalarReg(IR::ScalarReg reg);
-    void SetThreadBitScalarReg(IR::ScalarReg reg, const U1& value);
 
     template <typename T = U32>
     [[nodiscard]] T GetScalarReg(IR::ScalarReg reg);
@@ -66,18 +61,13 @@ public:
     [[nodiscard]] U1 GetGotoVariable(u32 id);
     void SetGotoVariable(u32 id, const U1& value);
 
-    [[nodiscard]] U1 GetMaskLaneVariable(IR::VectorReg vgpr, u32 lane);
-    void SetMaskLaneVariable(IR::VectorReg vgpr, u32 lane, const U1& value);
-
     [[nodiscard]] U1 GetScc();
     [[nodiscard]] U1 GetExec();
-    [[nodiscard]] U1 GetVcc();
     [[nodiscard]] U32 GetVccLo();
     [[nodiscard]] U32 GetVccHi();
     [[nodiscard]] U32 GetM0();
     void SetScc(const U1& value);
     void SetExec(const U1& value);
-    void SetVcc(const U1& value);
     void SetVccLo(const U32& value);
     void SetVccHi(const U32& value);
     void SetM0(const U32& value);
@@ -85,6 +75,7 @@ public:
     [[nodiscard]] U1 Condition(IR::Condition cond);
 
     [[nodiscard]] F32 GetAttribute(Attribute attribute, u32 comp = 0, u32 index = 0);
+    [[nodiscard]] U1 GetAttributeU1(Attribute attribute, u32 comp = 0);
     [[nodiscard]] U32 GetAttributeU32(Attribute attribute, u32 comp = 0);
     void SetAttribute(Attribute attribute, const F32& value, u32 comp = 0);
 
@@ -94,6 +85,8 @@ public:
 
     [[nodiscard]] F32 ReadTcsGenericOuputAttribute(const U32& vertex_index, const U32& attr_index,
                                                    const U32& comp_index);
+
+    [[nodiscard]] U32 GetPcLo(const U32& pc);
 
     [[nodiscard]] F32 GetPatch(Patch patch);
     void SetPatch(Patch patch, const F32& value);
@@ -111,6 +104,8 @@ public:
     [[nodiscard]] U32U64 SharedAtomicAnd(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicOr(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicXor(const U32& address, const U32U64& data, bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicCmpSwap(const U32& address, const U32U64& value,
+                                             const U32U64& cmp_value, bool is_gds);
 
     template <typename T = U32>
     [[nodiscard]] T SharedAtomicInc(const U32& address, bool is_gds);
@@ -173,16 +168,19 @@ public:
                                              const Value& value, const Value& cmp_value,
                                              BufferInstInfo info);
 
-    [[nodiscard]] U32 DataAppend(const U32& counter);
-    [[nodiscard]] U32 DataConsume(const U32& counter);
+    [[nodiscard]] U32 DataAppend(const U32& gds_dw_offset);
+    [[nodiscard]] U32 DataConsume(const U32& gds_dw_offset);
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WarpId();
-    [[nodiscard]] U32 QuadShuffle(const U32& value, const U32& index);
+    [[nodiscard]] U32 QuadBroadcast(const U32& value, const U32& index);
+    [[nodiscard]] U32 Shuffle(const U32& value, const U32& index);
+    [[nodiscard]] U32 ShuffleXor(const U32& value, const U32& mask);
     [[nodiscard]] U32 ReadFirstLane(const U32& value);
     [[nodiscard]] U32 ReadLane(const U32& value, const U32& lane);
     [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
-    [[nodiscard]] Value Ballot(const U1& bit);
-    [[nodiscard]] U32 BallotFindLsb(const Value& mask);
+    [[nodiscard]] U64 Ballot(const U1& bit);
+    [[nodiscard]] U32 BallotFindLsb(const U64& mask);
+    [[nodiscard]] U1 InverseBallot(const U64& mask);
     [[nodiscard]] U1 GroupAny(const U1& bit);
 
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2);
@@ -282,14 +280,15 @@ public:
     [[nodiscard]] U32U64 ShiftRightArithmetic(const U32U64& base, const U32& shift);
     [[nodiscard]] U32U64 BitwiseAnd(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32U64 BitwiseOr(const U32U64& a, const U32U64& b);
-    [[nodiscard]] U32 BitwiseXor(const U32& a, const U32& b);
-    [[nodiscard]] U32 BitFieldInsert(const U32& base, const U32& insert, const U32& offset,
-                                     const U32& count);
+    [[nodiscard]] U32U64 BitwiseXor(const U32U64& a, const U32U64& b);
+    [[nodiscard]] U32U64 BitFieldInsert(const U32U64& base, const U32U64& insert, const U32& offset,
+                                        const U32& count);
     [[nodiscard]] U32 BitFieldExtract(const U32& base, const U32& offset, const U32& count,
                                       bool is_signed = false);
     [[nodiscard]] U32 BitReverse(const U32& value);
     [[nodiscard]] U32 BitCount(const U32U64& value);
-    [[nodiscard]] U32 BitwiseNot(const U32& value);
+    [[nodiscard]] U32U64 BitwiseNot(const U32U64& value);
+    [[nodiscard]] U32 MaskedBitCount(const U32& value, const U32& addend, bool hi);
 
     [[nodiscard]] U32 FindSMsb(const U32& value);
     [[nodiscard]] U32 FindUMsb(const U32U64& value);
@@ -370,7 +369,9 @@ public:
                                            const Value& value, const Value& cmp_value,
                                            TextureInstInfo info);
 
-    [[nodiscard]] Value ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
+    [[nodiscard]] Value ImageHandle(const Value& tsharp_low, const Value& tsharp_high);
+
+    [[nodiscard]] Value ImageSampleRaw(const Value& handle, const Value& sampler_handle,
                                        const Value& address1, const Value& address2,
                                        const Value& address3, const Value& address4,
                                        TextureInstInfo info);
@@ -413,6 +414,7 @@ public:
 
     void EmitVertex();
     void EmitPrimitive();
+    U64 Memtime();
 
 private:
     Block* block;

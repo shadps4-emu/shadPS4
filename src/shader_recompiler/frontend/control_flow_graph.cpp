@@ -5,6 +5,7 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
+#include "shader_recompiler/ir/condition.h"
 
 namespace Shader::Gcn {
 
@@ -110,6 +111,7 @@ CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_l
     EmitBlocks();
     LinkBlocks();
     SplitDivergenceScopes();
+    RemoveUnreachableBlocks();
 }
 
 void CFG::EmitLabels() {
@@ -216,6 +218,7 @@ void CFG::SplitDivergenceScopes() {
                     block->begin_index = curr_begin;
                     block->end_index = curr_end;
                     block->end_inst = inst_list[curr_end];
+                    block->num_predecessors = 1;
                     blocks.insert_before(next_blk, *block);
 
                     // If we are inside the parent block, make an epilogue block and jump to it.
@@ -230,6 +233,7 @@ void CFG::SplitDivergenceScopes() {
                         epi_block->end_class = blk->end_class;
                         epi_block->branch_true = blk->branch_true;
                         epi_block->branch_false = blk->branch_false;
+                        epi_block->num_predecessors = 2;
                         blocks.insert_before(next_blk, *epi_block);
 
                         // Have divergence block always jump to epilogue block.
@@ -252,6 +256,7 @@ void CFG::SplitDivergenceScopes() {
                         // If the parent block didn't enter the divergence scope
                         // have it jump directly to the next one
                         blk->branch_false = blk->branch_true;
+                        blk->branch_true->num_predecessors++;
                     }
 
                     // Shrink parent block to end right before curr_begin
@@ -320,6 +325,7 @@ void CFG::LinkBlocks() {
             auto* next_block = get_block(block.end);
             block.branch_true = next_block;
             block.end_class = EndClass::Branch;
+            next_block->num_predecessors++;
             continue;
         }
 
@@ -342,16 +348,35 @@ void CFG::LinkBlocks() {
             auto* target_block = get_block(target_pc);
             block.branch_true = target_block;
             block.end_class = EndClass::Branch;
+            target_block->num_predecessors++;
         } else if (end_inst.IsConditionalBranch()) {
-            auto* target_block = get_block(target_pc);
             auto* end_block = get_block(block.end);
-            block.branch_true = target_block;
-            block.branch_false = end_block;
             block.end_class = EndClass::Branch;
+            if (target_pc != block.end) {
+                auto* target_block = get_block(target_pc);
+                block.branch_true = target_block;
+                block.branch_false = end_block;
+                target_block->num_predecessors++;
+            } else {
+                block.branch_true = end_block;
+                block.cond = IR::Condition::True;
+            }
+            end_block->num_predecessors++;
         } else if (end_inst.opcode == Opcode::S_ENDPGM) {
             block.end_class = EndClass::Exit;
         } else {
             UNREACHABLE();
+        }
+    }
+}
+
+void CFG::RemoveUnreachableBlocks() {
+    for (auto it = std::next(blocks.begin()); it != blocks.end();) {
+        if (it->num_predecessors == 0) {
+            LOG_WARNING(Render_Recompiler, "Removing unreachable block begin={:#x}", it->begin);
+            it = blocks.erase(it);
+        } else {
+            it++;
         }
     }
 }

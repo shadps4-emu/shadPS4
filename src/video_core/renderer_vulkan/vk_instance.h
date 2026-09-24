@@ -260,6 +260,12 @@ public:
         return features.tessellationShader;
     }
 
+    /// Returns true when the shaderSubgroupClock feature of
+    /// VK_KHR_shader_clock is supported.
+    bool IsShaderSubgroupClockSupported() const {
+        return shader_clock && shader_clock_features.shaderSubgroupClock;
+    }
+
     /// Returns the vendor ID of the physical device
     u32 GetVendorID() const {
         return properties.vendorID;
@@ -320,7 +326,7 @@ public:
         return properties.limits.minStorageBufferOffsetAlignment;
     }
 
-    /// Returns the minimum alignemt required for accessing host-mapped device memory
+    /// Returns the minimum alignment required for accessing host-mapped device memory
     vk::DeviceSize NonCoherentAtomSize() const {
         return properties.limits.nonCoherentAtomSize;
     }
@@ -348,6 +354,11 @@ public:
     /// Returns the maximum number of push descriptors.
     u32 MaxPushDescriptors() const {
         return push_descriptor_props.maxPushDescriptors;
+    }
+
+    /// Returns the maximum size of a single VkDeviceMemory
+    vk::DeviceSize MaxMemoryAllocationSize() const {
+        return vk11_props.maxMemoryAllocationSize;
     }
 
     /// Returns the vulkan 1.2 physical device properties.
@@ -480,6 +491,7 @@ private:
         workgroup_memory_explicit_layout_features;
     vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT image_2d_view_of_3d_features;
     vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT list_restart_features;
+    vk::PhysicalDeviceShaderClockFeaturesKHR shader_clock_features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};
     std::string vendor_name;
@@ -510,10 +522,12 @@ private:
     bool shader_atomic_float{};
     bool shader_atomic_float2{};
     bool workgroup_memory_explicit_layout{};
+    bool maintenance_5{};
     bool maintenance_8{};
     bool attachment_feedback_loop{};
     bool image_2d_view_of_3d{};
     bool image_view_min_lod{};
+    bool shader_clock{};
     bool supports_memory_budget{};
     bool supports_block_texel_view{};
     u64 total_memory_budget{};

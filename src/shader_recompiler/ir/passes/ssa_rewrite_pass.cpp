@@ -13,9 +13,7 @@
 //      https://link.springer.com/chapter/10.1007/978-3-642-37051-9_6
 //
 
-#include <variant>
 #include <vector>
-
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/program.h"
@@ -36,8 +34,6 @@ struct DefTable {
         switch (tag.type) {
         case RegType::GotoVariable:
             return goto_vars[tag.index][block];
-        case RegType::MaskLaneVariable:
-            return mask_lane_vars[tag.lane_reg.Key()][block];
         case RegType::VirtualReg:
             return reg_vars[tag.reg.Key()][block];
         default:
@@ -53,9 +49,6 @@ struct DefTable {
         case RegType::GotoVariable:
             goto_vars[tag.index].insert_or_assign(block, value);
             return;
-        case RegType::MaskLaneVariable:
-            mask_lane_vars[tag.lane_reg.Key()].insert_or_assign(block, value);
-            return;
         case RegType::VirtualReg:
             reg_vars[tag.reg.Key()].insert_or_assign(block, value);
             return;
@@ -65,7 +58,6 @@ struct DefTable {
     }
 
     std::unordered_map<u32, ValueMap> goto_vars;
-    std::unordered_map<u32, ValueMap> mask_lane_vars;
     std::unordered_map<u64, ValueMap> reg_vars;
 };
 
@@ -77,12 +69,9 @@ constexpr IR::Type TypeOf(IR::RegTag tag) noexcept {
     case RegType::VccHi:
     case RegType::M0:
         return IR::Type::U32;
-    case RegType::ThreadBitReg:
     case RegType::Scc:
-    case RegType::Vcc:
     case RegType::Exec:
     case RegType::GotoVariable:
-    case RegType::MaskLaneVariable:
         return IR::Type::U1;
     case RegType::VirtualReg:
         return tag.reg.type;
@@ -99,26 +88,31 @@ constexpr IR::Opcode UndefOpcode(IR::RegTag tag) noexcept {
     case RegType::VccHi:
     case RegType::M0:
         return IR::Opcode::UndefU32;
-    case RegType::ThreadBitReg:
     case RegType::Scc:
-    case RegType::Vcc:
     case RegType::Exec:
     case RegType::GotoVariable:
-    case RegType::MaskLaneVariable:
         return IR::Opcode::UndefU1;
     case RegType::VirtualReg:
         switch (tag.reg.type) {
+        case IR::Type::U64:
+            return IR::Opcode::UndefU64;
         case IR::Type::U32:
             return IR::Opcode::UndefU32;
+        case IR::Type::U32x2:
+            return IR::Opcode::UndefU32x2;
+        case IR::Type::U32x3:
+            return IR::Opcode::UndefU32x3;
+        case IR::Type::U32x4:
+            return IR::Opcode::UndefU32x4;
         case IR::Type::F32:
             return IR::Opcode::UndefF32;
         case IR::Type::U1:
             return IR::Opcode::UndefU1;
         default:
-            UNREACHABLE();
+            UNREACHABLE_MSG("Unknown virtual reg type {}", tag.reg.type);
         }
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unknown reg type {}", magic_enum::enum_name(tag.type));
     }
 }
 
@@ -222,6 +216,8 @@ public:
                 }
             }
             phi->ReplaceUsesWithAndRemove(same);
+            auto it = IR::Block::InstructionList::s_iterator_to(*phi);
+            block->Instructions().erase(it);
         }
     }
 
@@ -233,9 +229,6 @@ private:
 void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
     const IR::Opcode opcode{inst.GetOpcode()};
     switch (opcode) {
-    case IR::Opcode::SetThreadBitScalarReg:
-        pass.WriteVariable(IR::RegTag{inst.Arg(0).ScalarReg(), true}, block, inst.Arg(1));
-        break;
     case IR::Opcode::SetScalarRegister:
         pass.WriteVariable(IR::RegTag{inst.Arg(0).ScalarReg()}, block, inst.Arg(1));
         break;
@@ -249,18 +242,11 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         pass.WriteVariable(IR::RegTag{RegType::GotoVariable, inst.Arg(0).U32()}, block,
                            inst.Arg(1));
         break;
-    case IR::Opcode::SetMaskLaneVariable:
-        pass.WriteVariable(IR::RegTag{inst.Arg(0).VectorReg(), inst.Arg(1).U32()}, block,
-                           inst.Arg(2));
-        break;
     case IR::Opcode::SetExec:
         pass.WriteVariable(IR::RegTag{RegType::Exec}, block, inst.Arg(0));
         break;
     case IR::Opcode::SetScc:
         pass.WriteVariable(IR::RegTag{RegType::Scc}, block, inst.Arg(0));
-        break;
-    case IR::Opcode::SetVcc:
-        pass.WriteVariable(IR::RegTag{RegType::Vcc}, block, inst.Arg(0));
         break;
     case IR::Opcode::SetVccLo:
         pass.WriteVariable(IR::RegTag{RegType::VccLo}, block, inst.Arg(0));
@@ -270,10 +256,6 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         break;
     case IR::Opcode::SetM0:
         pass.WriteVariable(IR::RegTag{RegType::M0}, block, inst.Arg(0));
-        break;
-    case IR::Opcode::GetThreadBitScalarReg:
-        inst.ReplaceUsesWithAndRemove(
-            pass.ReadVariable(IR::RegTag{inst.Arg(0).ScalarReg(), true}, block));
         break;
     case IR::Opcode::GetScalarRegister:
         inst.ReplaceUsesWithAndRemove(
@@ -291,18 +273,11 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         inst.ReplaceUsesWithAndRemove(
             pass.ReadVariable(IR::RegTag{RegType::GotoVariable, inst.Arg(0).U32()}, block));
         break;
-    case IR::Opcode::GetMaskLaneVariable:
-        inst.ReplaceUsesWithAndRemove(
-            pass.ReadVariable(IR::RegTag{inst.Arg(0).VectorReg(), inst.Arg(1).U32()}, block));
-        break;
     case IR::Opcode::GetExec:
         inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::Exec}, block));
         break;
     case IR::Opcode::GetScc:
         inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::Scc}, block));
-        break;
-    case IR::Opcode::GetVcc:
-        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::Vcc}, block));
         break;
     case IR::Opcode::GetVccLo:
         inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::VccLo}, block));

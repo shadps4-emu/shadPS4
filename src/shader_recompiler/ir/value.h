@@ -39,6 +39,7 @@ public:
 
     bool IsPhi() const noexcept;
     IR::Type Type() const noexcept;
+    u64 Hash() const noexcept;
 
     inline bool IsEmpty() const noexcept {
         return type == Type::Void;
@@ -188,6 +189,8 @@ using UAny = TypedValue<Type::U8 | Type::U16 | Type::U32 | Type::U64>;
 namespace std {
 template <>
 struct hash<Shader::IR::Value> {
-    std::size_t operator()(const Shader::IR::Value& v) const;
+    std::size_t operator()(const Shader::IR::Value& v) const {
+        return v.Hash();
+    }
 };
 } // namespace std

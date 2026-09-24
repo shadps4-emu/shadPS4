@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -120,6 +120,9 @@ vk::PrimitiveTopology PrimitiveType(AmdGpu::PrimitiveType type) {
     case AmdGpu::PrimitiveType::Polygon:
         return vk::PrimitiveTopology::eTriangleFan;
     case AmdGpu::PrimitiveType::TriangleStrip:
+        return vk::PrimitiveTopology::eTriangleStrip;
+    case AmdGpu::PrimitiveType::QuadStrip:
+        LOG_WARNING(Render_Vulkan, "Unimplemented primitive type, using TriangleStrip.");
         return vk::PrimitiveTopology::eTriangleStrip;
     case AmdGpu::PrimitiveType::AdjLineList:
         return vk::PrimitiveTopology::eLineListWithAdjacency;
@@ -274,6 +277,10 @@ vk::LogicOp LogicOp(AmdGpu::ColorControl::LogicOp logic_op) {
         return vk::LogicOp::eAndReverse;
     case LogicOp::Invert:
         return vk::LogicOp::eInvert;
+    case LogicOp::BrushXor:
+        LOG_WARNING(Render_Vulkan, "Unimplemented logic op {:#x}, using closest equivalent",
+                    u32(logic_op));
+        [[fallthrough]];
     case LogicOp::Xor:
         return vk::LogicOp::eXor;
     case LogicOp::Nand:
@@ -759,7 +766,8 @@ static size_t GetSurfaceFormatTableIndex(AmdGpu::DataFormat data_format,
 }
 
 static auto surface_format_table = []() constexpr {
-    std::array<vk::Format, 1 << amd_gpu_data_format_bit_size * 1 << amd_gpu_number_format_bit_size>
+    std::array<vk::Format,
+               (1 << amd_gpu_data_format_bit_size) * (1 << amd_gpu_number_format_bit_size)>
         result;
     for (auto& entry : result) {
         entry = vk::Format::eUndefined;

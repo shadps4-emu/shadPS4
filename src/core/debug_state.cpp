@@ -200,14 +200,14 @@ void DebugStateImpl::PushRegsDumpCompute(uintptr_t base_addr, uintptr_t header_a
 
     const auto params = AmdGpu::GetParams(cs);
     (*dump)->cs_data = PipelineComputerProgramDump{
-        .name = Vulkan::PipelineCache::GetShaderName(Shader::Stage::Compute, params.hash),
+        .name = Vulkan::PipelineCache::GetShaderName(Shader::HwStage::Compute, params.hash),
         .hash = params.hash,
         .cs_program = cs,
         .code = std::vector<u32>{params.code.begin(), params.code.end()},
     };
 }
 
-void DebugStateImpl::CollectShader(const std::string& name, Shader::LogicalStage l_stage,
+void DebugStateImpl::CollectShader(const std::string& name, Shader::SwStage l_stage,
                                    vk::ShaderModule module, std::span<const u32> spv,
                                    std::span<const u32> raw_code, std::span<const u32> patch_spv,
                                    bool is_patched) {

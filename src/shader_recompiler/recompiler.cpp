@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/logging/classes.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/structured_control_flow.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/post_order.h"
+#include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/recompiler.h"
 
@@ -32,21 +34,18 @@ IR::BlockList GenerateBlocks(const IR::AbstractSyntaxList& syntax_list) {
 void EmitControlFlowGraph(IR::Program& program, Pools& pools, Gcn::CFG& cfg,
                           RuntimeInfo& runtime_info, const Profile& profile) {
     Gcn::Translator translator{program.info, runtime_info, profile};
-    bool emit_prologue = true;
     for (auto& block : cfg) {
         const u32 start = block.begin_index;
         const u32 size = block.end_index - start + 1;
         auto* ir_block = pools.block_pool.Create(pools.inst_pool);
         ir_block->cfg_block = &block;
         block.ir_block = ir_block;
-        translator.Translate(ir_block, block.begin,
+        translator.Translate(ir_block, block.begin, block.cond,
                              std::span{program.ins_list}.subspan(start, size));
-        if (emit_prologue) {
-            translator.EmitPrologue(ir_block);
-            emit_prologue = false;
-        }
         program.blocks.push_back(ir_block);
     }
+    translator.EmitPrologue(program.blocks.front());
+    ASSERT_MSG(!program.info.translation_failed, "Shader translation has failed");
     for (auto& block : cfg) {
         auto* ir_block = block.ir_block;
         if (block.branch_true) {
@@ -58,14 +57,6 @@ void EmitControlFlowGraph(IR::Program& program, Pools& pools, Gcn::CFG& cfg,
             ir_block->AddBranch(false_block);
         }
     }
-    /*for (auto it = program.blocks.begin(); it != program.blocks.end(); ) {
-        IR::Block* block{*it};
-        if (block->imm_predecessors.empty()) {
-            it = program.blocks.erase(it);
-        } else {
-            ++it;
-        }
-    }*/
     program.post_order_blocks = Shader::IR::PostOrder(program.blocks.front());
 }
 
@@ -105,21 +96,28 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     }
     Shader::Optimization::SsaRewritePass(program);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
-    if (info.l_stage == LogicalStage::TessellationControl) {
+    if (info.sw_stage == SwStage::TessellationControl) {
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
         Shader::Optimization::HullShaderTransform(program, runtime_info);
-    } else if (info.l_stage == LogicalStage::TessellationEval) {
+    } else if (info.sw_stage == SwStage::TessellationEval) {
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
         Shader::Optimization::DomainShaderTransform(program, runtime_info);
     }
     Shader::Optimization::RingAccessElimination(program, runtime_info);
     Shader::Optimization::ReadLaneEliminationPass(program);
+    Shader::IR::DumpProgram(program, info, "pre-res-discover.");
+    auto resources = Shader::Optimization::ResourceDiscoverPass(program, profile);
     Shader::Optimization::FlattenExtendedUserdataPass(program);
-    Shader::Optimization::ResourceTrackingPass(program, profile);
+    Shader::IR::DumpProgram(program, info, "pre-res-patch.");
+    Shader::Optimization::ResourcePatchingPass(program.info, resources, profile);
     Shader::Optimization::LowerBufferFormatToRaw(program);
     Shader::Optimization::SharedMemorySimplifyPass(program, profile);
     Shader::Optimization::SharedMemoryToStoragePass(program, runtime_info, profile);
     Shader::Optimization::LowerUserClipPlanes(program, runtime_info);
+    Shader::Optimization::PhiSimplificationPass(program);
+    Shader::Optimization::InverseBallotEliminationPass(program);
+    Shader::Optimization::LowerHardwareIntrinsics(program);
+    Shader::IR::DumpProgram(program, info, "pre-lower-phi.");
 
     // Prepare for structurization by clearing flow graph and lowering phis
     for (auto* ir_block : program.blocks) {
@@ -137,9 +135,11 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     // Run optimization passes on structured graph
     Shader::Optimization::SsaRepairPass(program);
     Shader::Optimization::SsaRewritePass(program);
+    Shader::Optimization::SharedMemoryBarrierPass(program, runtime_info, profile);
+    Shader::Optimization::DeadCodeEliminationPass(program);
+    Shader::Optimization::LowerWave64BallotPass(program, runtime_info, profile);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);
-    Shader::Optimization::SharedMemoryBarrierPass(program, runtime_info, profile);
     Shader::Optimization::CollectShaderInfoPass(program, profile);
     Shader::IR::DumpProgram(program, info);
 
