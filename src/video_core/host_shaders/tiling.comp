@@ -9,18 +9,20 @@
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
-// #define BITS_PER_PIXEL
-// #define NUM_SAMPLES
-// #define MICRO_TILE_MODE
-// #define ARRAY_MODE
-// #define MICRO_TILE_THICKNESS
-// #define PIPE_CONFIG
-// #define BANK_WIDTH
-// #define BANK_HEIGHT
-// #define NUM_BANKS
-// #define NUM_BANK_BITS
-// #define TILE_SPLIT_BYTES
-// #define MACRO_TILE_ASPECT
+layout(constant_id = 0) const uint NUM_SAMPLES = 1;
+layout(constant_id = 1) const uint MICRO_TILE_MODE = 1;
+layout(constant_id = 2) const uint MICRO_TILE_THICKNESS = 1;
+layout(constant_id = 3) const uint IS_TILER = 0;
+#if IS_MACRO_TILED
+layout(constant_id = 4) const uint ARRAY_MODE = 0;
+layout(constant_id = 5) const uint PIPE_CONFIG = 0;
+layout(constant_id = 6) const uint BANK_WIDTH = 1;
+layout(constant_id = 7) const uint BANK_HEIGHT = 1;
+layout(constant_id = 8) const uint NUM_BANKS = 1;
+layout(constant_id = 9) const uint NUM_BANK_BITS = 1;
+layout(constant_id = 10) const uint TILE_SPLIT_BYTES = 1;
+layout(constant_id = 11) const uint MACRO_TILE_ASPECT = 1;
+#endif
 
 #define BYTES_PER_PIXEL (BITS_PER_PIXEL / 8)
 
@@ -38,12 +40,9 @@ layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 #define BLOCK_TYPE u32vec4
 #endif
 
-#if PIPE_CONFIG == ADDR_SURF_P2
-#define NUM_PIPES 2
-#define NUM_PIPE_BITS 1
-#else
-#define NUM_PIPES 8
-#define NUM_PIPE_BITS 3
+#if IS_MACRO_TILED
+const uint NUM_PIPES = PIPE_CONFIG == 0 ? 2 : 8;
+const uint NUM_PIPE_BITS = PIPE_CONFIG == 0 ? 1 : 3;
 #endif
 
 #define MICRO_TILE_WIDTH 8
@@ -128,80 +127,81 @@ uint32_t ComputePixelIndexWithinMicroTile(uint32_t x, uint32_t y, uint32_t z) {
     uint32_t z1 = _BIT(z, 1);
     uint32_t z2 = _BIT(z, 2);
 
-#if MICRO_TILE_MODE == ADDR_SURF_DISPLAY_MICRO_TILING
-    #if BITS_PER_PIXEL == 8
+    if (MICRO_TILE_MODE == ADDR_SURF_DISPLAY_MICRO_TILING) {
+#if BITS_PER_PIXEL == 8
         p0 = x0;
         p1 = x1;
         p2 = x2;
         p3 = y1;
         p4 = y0;
         p5 = y2;
-    #elif BITS_PER_PIXEL == 16
+#elif BITS_PER_PIXEL == 16
         p0 = x0;
         p1 = x1;
         p2 = x2;
         p3 = y0;
         p4 = y1;
         p5 = y2;
-    #elif BITS_PER_PIXEL == 32
+#elif BITS_PER_PIXEL == 32
         p0 = x0;
         p1 = x1;
         p2 = y0;
         p3 = x2;
         p4 = y1;
         p5 = y2;
-    #elif BITS_PER_PIXEL == 64
+#elif BITS_PER_PIXEL == 64
         p0 = x0;
         p1 = y0;
         p2 = x1;
         p3 = x2;
         p4 = y1;
         p5 = y2;
-    #elif BITS_PER_PIXEL == 128
+#elif BITS_PER_PIXEL == 128
         p0 = y0;
         p1 = x0;
         p2 = x1;
         p3 = x2;
         p4 = y1;
         p5 = y2;
-    #endif
-#elif MICRO_TILE_MODE == ADDR_SURF_THIN_MICRO_TILING || MICRO_TILE_MODE == ADDR_SURF_DEPTH_MICRO_TILING
+#endif
+    } else if (MICRO_TILE_MODE == ADDR_SURF_THIN_MICRO_TILING ||
+        MICRO_TILE_MODE == ADDR_SURF_DEPTH_MICRO_TILING) {
         p0 = x0;
         p1 = y0;
         p2 = x1;
         p3 = y1;
         p4 = x2;
         p5 = y2;
-#else
-    #if BITS_PER_PIXEL == 8 || BITS_PER_PIXEL == 16
+    } else {
+#if BITS_PER_PIXEL == 8 || BITS_PER_PIXEL == 16
         p0 = x0;
         p1 = y0;
         p2 = x1;
         p3 = y1;
         p4 = z0;
         p5 = z1;
-    #elif BITS_PER_PIXEL == 32
+#elif BITS_PER_PIXEL == 32
         p0 = x0;
         p1 = y0;
         p2 = x1;
         p3 = z0;
         p4 = y1;
         p5 = z1;
-    #elif BITS_PER_PIXEL == 64 || BITS_PER_PIXEL == 128
+#elif BITS_PER_PIXEL == 64 || BITS_PER_PIXEL == 128
         p0 = x0;
         p1 = y0;
         p2 = z0;
         p3 = x1;
         p4 = y1;
         p5 = z1;
-    #endif
+#endif
         p6 = x2;
         p7 = y2;
 
-    #if MICRO_TILE_THICKNESS == 8
-        p8 = z2;
-    #endif
-#endif
+        if (MICRO_TILE_THICKNESS == 8) {
+            p8 = z2;
+        }
+    }
 
     uint32_t pixel_number =
         ((p0) | (p1 << 1) | (p2 << 2) | (p3 << 3) | (p4 << 4) |
@@ -210,7 +210,7 @@ uint32_t ComputePixelIndexWithinMicroTile(uint32_t x, uint32_t y, uint32_t z) {
     return pixel_number;
 }
 
-#if ARRAY_MODE == ARRAY_1D_TILED_THIN1 || ARRAY_MODE == ARRAY_1D_TILED_THICK
+#if !IS_MACRO_TILED
 uint32_t ComputeSurfaceAddrFromCoordMicroTiled(uint32_t x, uint32_t y, uint32_t slice, uint32_t pitch, uint32_t height, uint32_t sample_index) {
     uint32_t slice_bytes = BITS_TO_BYTES(pitch * height * MICRO_TILE_THICKNESS * BITS_PER_PIXEL * NUM_SAMPLES);
 
@@ -226,17 +226,18 @@ uint32_t ComputeSurfaceAddrFromCoordMicroTiled(uint32_t x, uint32_t y, uint32_t 
 
     uint32_t sample_offset;
     uint32_t pixel_offset;
-#if MICRO_TILE_MODE == ADDR_SURF_DEPTH_MICRO_TILING
-    sample_offset = sample_index * BITS_PER_PIXEL;
-    pixel_offset = pixel_index * BITS_PER_PIXEL * NUM_SAMPLES;
-#else
-    sample_offset = sample_index * (MICRO_TILE_BYTES * 8 / NUM_SAMPLES);
-    pixel_offset = pixel_index * BITS_PER_PIXEL;
-#endif
+    if (MICRO_TILE_MODE == ADDR_SURF_DEPTH_MICRO_TILING) {
+        sample_offset = sample_index * BITS_PER_PIXEL;
+        pixel_offset = pixel_index * BITS_PER_PIXEL * NUM_SAMPLES;
+    } else {
+        sample_offset = sample_index * (MICRO_TILE_BYTES * 8 / NUM_SAMPLES);
+        pixel_offset = pixel_index * BITS_PER_PIXEL;
+    }
 
     uint32_t elem_offset = (sample_offset + pixel_offset) / 8;
     return slice_offset + micro_tile_offset + elem_offset;
 }
+
 #else
 uint32_t ComputePipeFromCoord(uint32_t x, uint32_t y, uint32_t slice) {
     uint32_t p0 = 0;
@@ -252,24 +253,25 @@ uint32_t ComputePipeFromCoord(uint32_t x, uint32_t y, uint32_t slice) {
     uint32_t y4 = _BIT(ty, 1);
     uint32_t y5 = _BIT(ty, 2);
 
-#if PIPE_CONFIG == ADDR_SURF_P2
-    p0 = x3 ^ y3;
-#elif PIPE_CONFIG == ADDR_SURF_P8_32x32_8x16
-    p0 = x4 ^ y3 ^ x5;
-    p1 = x3 ^ y4;
-    p2 = x5 ^ y5;
-#elif PIPE_CONFIG == ADDR_SURF_P8_32x32_16x16
-    p0 = x3 ^ y3 ^ x4;
-    p1 = x4 ^ y4;
-    p2 = x5 ^ y5;
-#endif
+    if (PIPE_CONFIG == ADDR_SURF_P2) {
+        p0 = x3 ^ y3;
+    } else if (PIPE_CONFIG == ADDR_SURF_P8_32x32_8x16) {
+        p0 = x4 ^ y3 ^ x5;
+        p1 = x3 ^ y4;
+        p2 = x5 ^ y5;
+    } else if (PIPE_CONFIG == ADDR_SURF_P8_32x32_16x16) {
+        p0 = x3 ^ y3 ^ x4;
+        p1 = x4 ^ y4;
+        p2 = x5 ^ y5;
+    }
 
     uint32_t pipe = p0 | (p1 << 1) | (p2 << 2);
 
     uint32_t pipe_swizzle = 0;
-#if ARRAY_MODE == ARRAY_3D_TILED_THIN1 || ARRAY_MODE == ARRAY_3D_TILED_THICK || ARRAY_MODE == ARRAY_3D_TILED_XTHICK
-    pipe_swizzle += max(1, NUM_PIPES / 2 - 1) * (slice / MICRO_TILE_THICKNESS);
-#endif
+    if (ARRAY_MODE == ARRAY_3D_TILED_THIN1 || ARRAY_MODE == ARRAY_3D_TILED_THICK ||
+        ARRAY_MODE == ARRAY_3D_TILED_XTHICK) {
+        pipe_swizzle += max(1u, NUM_PIPES / 2 - 1) * (slice / MICRO_TILE_THICKNESS);
+    }
     pipe_swizzle &= (NUM_PIPES - 1);
     pipe = pipe ^ pipe_swizzle;
     return pipe;
@@ -295,34 +297,36 @@ uint32_t ComputeBankFromCoord(uint32_t x, uint32_t y, uint32_t slice, uint32_t t
     uint32_t y5 = _BIT(ty, 2);
     uint32_t y6 = _BIT(ty, 3);
 
-#if NUM_BANKS == 16
-    b0 = x3 ^ y6;
-    b1 = x4 ^ y5 ^ y6;
-    b2 = x5 ^ y4;
-    b3 = x6 ^ y3;
-#elif NUM_BANKS == 8
-    b0 = x3 ^ y5;
-    b1 = x4 ^ y4 ^ y5;
-    b2 = x5 ^ y3;
-#elif NUM_BANKS == 4
-    b0 = x3 ^ y4;
-    b1 = x4 ^ y3;
-#elif NUM_BANKS == 2
-    b0 = x3 ^ y3;
-#endif
+    if (NUM_BANKS == 16) {
+        b0 = x3 ^ y6;
+        b1 = x4 ^ y5 ^ y6;
+        b2 = x5 ^ y4;
+        b3 = x6 ^ y3;
+    } else if (NUM_BANKS == 8) {
+        b0 = x3 ^ y5;
+        b1 = x4 ^ y4 ^ y5;
+        b2 = x5 ^ y3;
+    } else if (NUM_BANKS == 4) {
+        b0 = x3 ^ y4;
+        b1 = x4 ^ y3;
+    } else if (NUM_BANKS == 2) {
+        b0 = x3 ^ y3;
+    }
 
     uint32_t bank = b0 | (b1 << 1) | (b2 << 2) | (b3 << 3);
 
-#if ARRAY_MODE == ARRAY_2D_TILED_THIN1 || ARRAY_MODE == ARRAY_2D_TILED_THICK || ARRAY_MODE == ARRAY_2D_TILED_XTHICK
-    slice_rotation = ((NUM_BANKS / 2) - 1) * (slice / MICRO_TILE_THICKNESS);
-#elif ARRAY_MODE == ARRAY_3D_TILED_THIN1 || ARRAY_MODE == ARRAY_3D_TILED_THICK || ARRAY_MODE == ARRAY_3D_TILED_XTHICK
-    slice_rotation = max(1u, (NUM_PIPES / 2) - 1) * (slice / MICRO_TILE_THICKNESS) / NUM_PIPES;
-#endif
+    if (ARRAY_MODE == ARRAY_2D_TILED_THIN1 || ARRAY_MODE == ARRAY_2D_TILED_THICK ||
+        ARRAY_MODE == ARRAY_2D_TILED_XTHICK) {
+        slice_rotation = ((NUM_BANKS / 2) - 1) * (slice / MICRO_TILE_THICKNESS);
+    } else if (ARRAY_MODE == ARRAY_3D_TILED_THIN1 || ARRAY_MODE == ARRAY_3D_TILED_THICK ||
+        ARRAY_MODE == ARRAY_3D_TILED_XTHICK) {
+        slice_rotation = max(1u, (NUM_PIPES / 2) - 1) * (slice / MICRO_TILE_THICKNESS) / NUM_PIPES;
+    }
 
-#if ARRAY_MODE == ARRAY_2D_TILED_THIN1 || ARRAY_MODE == ARRAY_3D_TILED_THIN1 || \
-    ARRAY_MODE == ARRAY_PRT_2D_TILED_THIN1 || ARRAY_MODE == ARRAY_PRT_3D_TILED_THIN1
-                                                                tile_split_rotation = ((NUM_BANKS / 2) + 1) * tile_split_slice;
-#endif
+    if (ARRAY_MODE == ARRAY_2D_TILED_THIN1 || ARRAY_MODE == ARRAY_3D_TILED_THIN1 ||
+        ARRAY_MODE == ARRAY_PRT_2D_TILED_THIN1 || ARRAY_MODE == ARRAY_PRT_3D_TILED_THIN1) {
+        tile_split_rotation = ((NUM_BANKS / 2) + 1) * tile_split_slice;
+    }
 
     bank ^= info.bank_swizzle + slice_rotation;
     bank ^= tile_split_rotation;
@@ -336,30 +340,30 @@ uint32_t ComputeSurfaceAddrFromCoordMacroTiled(uint32_t x, uint32_t y, uint32_t 
 
     uint32_t sample_offset;
     uint32_t pixel_offset;
-#if MICRO_TILE_MODE == ADDR_SURF_DEPTH_MICRO_TILING
-    sample_offset = sample_index * BITS_PER_PIXEL;
-    pixel_offset = pixel_index * BITS_PER_PIXEL * NUM_SAMPLES;
-#else
-    sample_offset = sample_index * (MICRO_TILE_BITS / NUM_SAMPLES);
-    pixel_offset = pixel_index * BITS_PER_PIXEL;
-#endif
+    if (MICRO_TILE_MODE == ADDR_SURF_DEPTH_MICRO_TILING) {
+        sample_offset = sample_index * BITS_PER_PIXEL;
+        pixel_offset = pixel_index * BITS_PER_PIXEL * NUM_SAMPLES;
+    } else {
+        sample_offset = sample_index * (MICRO_TILE_BITS / NUM_SAMPLES);
+        pixel_offset = pixel_index * BITS_PER_PIXEL;
+    }
 
     uint32_t element_offset = (pixel_offset + sample_offset) / 8;
 
+    uint32_t micro_tile_bytes = MICRO_TILE_BYTES;
     uint32_t slices_per_tile = 1;
     uint32_t tile_split_slice = 0;
-#if MICRO_TILE_BYTES > TILE_SPLIT_BYTES && MICRO_TILE_THICKNESS == 1
-    slices_per_tile = MICRO_TILE_BYTES / TILE_SPLIT_BYTES;
-    tile_split_slice = element_offset / TILE_SPLIT_BYTES;
-    element_offset %= TILE_SPLIT_BYTES;
-    #undef MICRO_TILE_BYTES
-    #define MICRO_TILE_BYTES TILE_SPLIT_BYTES
-#endif
+    if (MICRO_TILE_BYTES > TILE_SPLIT_BYTES && MICRO_TILE_THICKNESS == 1) {
+        slices_per_tile = MICRO_TILE_BYTES / TILE_SPLIT_BYTES;
+        tile_split_slice = element_offset / TILE_SPLIT_BYTES;
+        element_offset %= TILE_SPLIT_BYTES;
+        micro_tile_bytes = TILE_SPLIT_BYTES;
+    }
 
     uint32_t macro_tile_pitch = (MICRO_TILE_WIDTH * BANK_WIDTH * NUM_PIPES) * MACRO_TILE_ASPECT;
     uint32_t macro_tile_height = (MICRO_TILE_HEIGHT * BANK_HEIGHT * NUM_BANKS) / MACRO_TILE_ASPECT;
 
-    uint32_t macro_tile_bytes = MICRO_TILE_BYTES *
+    uint32_t macro_tile_bytes = micro_tile_bytes *
                                (macro_tile_pitch / MICRO_TILE_WIDTH) *
                                (macro_tile_height / MICRO_TILE_HEIGHT) / (NUM_PIPES * NUM_BANKS);
 
@@ -378,16 +382,16 @@ uint32_t ComputeSurfaceAddrFromCoordMacroTiled(uint32_t x, uint32_t y, uint32_t 
     uint32_t tile_row_index = (y / MICRO_TILE_HEIGHT) % BANK_HEIGHT;
     uint32_t tile_column_index = ((x / MICRO_TILE_WIDTH) / NUM_PIPES) % BANK_WIDTH;
     uint32_t tile_index = (tile_row_index * BANK_WIDTH) + tile_column_index;
-    uint32_t tile_offset = tile_index * MICRO_TILE_BYTES;
+    uint32_t tile_offset = tile_index * micro_tile_bytes;
 
     uint32_t total_offset = slice_offset + macro_tile_offset + element_offset + tile_offset;
 
-#if ARRAY_MODE == ARRAY_PRT_TILED_THIN1 || ARRAY_MODE == ARRAY_PRT_TILED_THICK || \
-    ARRAY_MODE == ARRAY_PRT_2D_TILED_THIN1 || ARRAY_MODE == ARRAY_PRT_2D_TILED_THICK || \
-    ARRAY_MODE == ARRAY_PRT_3D_TILED_THIN1 || ARRAY_MODE == ARRAY_PRT_3D_TILED_THICK
-    x %= macro_tile_pitch;
-    y %= macro_tile_height;
-#endif
+    if (ARRAY_MODE == ARRAY_PRT_TILED_THIN1 || ARRAY_MODE == ARRAY_PRT_TILED_THICK ||
+        ARRAY_MODE == ARRAY_PRT_2D_TILED_THIN1 || ARRAY_MODE == ARRAY_PRT_2D_TILED_THICK ||
+        ARRAY_MODE == ARRAY_PRT_3D_TILED_THIN1 || ARRAY_MODE == ARRAY_PRT_3D_TILED_THICK) {
+        x %= macro_tile_pitch;
+        y %= macro_tile_height;
+    }
 
     uint32_t pipe = ComputePipeFromCoord(x, y, slice);
     uint32_t bank = ComputeBankFromCoord(x, y, slice, tile_split_slice);
@@ -430,15 +434,15 @@ void main() {
     uint y = (texel / pitch) % height;
     uint slice = texel / (pitch * height);
 
-#if ARRAY_MODE == ARRAY_1D_TILED_THIN1 || ARRAY_MODE == ARRAY_1D_TILED_THICK
-    tiled_offset += ComputeSurfaceAddrFromCoordMicroTiled(x, y, slice, pitch, height, 0);
-#else
+#if IS_MACRO_TILED
     tiled_offset += ComputeSurfaceAddrFromCoordMacroTiled(x, y, slice, pitch, height, 0);
+#else
+    tiled_offset += ComputeSurfaceAddrFromCoordMicroTiled(x, y, slice, pitch, height, 0);
 #endif
 
-#ifdef IS_TILER
-    tiled_data[tiled_offset / BYTES_PER_PIXEL] = linear_data[gl_GlobalInvocationID.x];
-#else
-    linear_data[gl_GlobalInvocationID.x] = tiled_data[tiled_offset / BYTES_PER_PIXEL];
-#endif
+    if (IS_TILER != 0) {
+        tiled_data[tiled_offset / BYTES_PER_PIXEL] = linear_data[gl_GlobalInvocationID.x];
+    } else {
+        linear_data[gl_GlobalInvocationID.x] = tiled_data[tiled_offset / BYTES_PER_PIXEL];
+    }
 }
