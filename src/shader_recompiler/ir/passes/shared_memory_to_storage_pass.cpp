@@ -38,6 +38,8 @@ static bool IsSharedAccess(const IR::Inst& inst) {
     case IR::Opcode::SharedAtomicAnd64:
     case IR::Opcode::SharedAtomicOr64:
     case IR::Opcode::SharedAtomicXor64:
+    case IR::Opcode::SharedAtomicCmpSwap32:
+    case IR::Opcode::SharedAtomicCmpSwap64:
         return true;
     default:
         return false;
@@ -69,6 +71,7 @@ IR::Type CalculateSharedMemoryTypes(IR::Program& program) {
             case IR::Opcode::SharedAtomicAnd32:
             case IR::Opcode::SharedAtomicOr32:
             case IR::Opcode::SharedAtomicXor32:
+            case IR::Opcode::SharedAtomicCmpSwap32:
                 used_types |= IR::Type::U32;
                 break;
             case IR::Opcode::LoadSharedU64:
@@ -84,6 +87,7 @@ IR::Type CalculateSharedMemoryTypes(IR::Program& program) {
             case IR::Opcode::SharedAtomicAnd64:
             case IR::Opcode::SharedAtomicOr64:
             case IR::Opcode::SharedAtomicXor64:
+            case IR::Opcode::SharedAtomicCmpSwap64:
                 used_types |= IR::Type::U64;
                 break;
             default:
@@ -179,6 +183,11 @@ void SharedMemoryToStoragePass(IR::Program& program, const RuntimeInfo& runtime_
             case IR::Opcode::SharedAtomicXor32:
             case IR::Opcode::SharedAtomicXor64:
                 inst.ReplaceUsesWithAndRemove(ir.BufferAtomicXor(handle, address, inst.Arg(1), {}));
+                continue;
+            case IR::Opcode::SharedAtomicCmpSwap32:
+            case IR::Opcode::SharedAtomicCmpSwap64:
+                inst.ReplaceUsesWithAndRemove(
+                    ir.BufferAtomicCmpSwap(handle, address, inst.Arg(1), inst.Arg(2), {}));
                 continue;
             case IR::Opcode::LoadSharedU16:
                 inst.ReplaceUsesWithAndRemove(ir.LoadBufferU16(handle, address, {}));

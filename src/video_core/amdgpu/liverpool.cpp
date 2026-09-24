@@ -92,6 +92,9 @@ void Liverpool::ProcessCommands() {
 void Liverpool::Process(std::stop_token stoken) {
     Common::SetCurrentThreadName("shadPS4:GpuCommandProcessor");
     gpu_id = std::this_thread::get_id();
+#ifdef __linux__
+    gpu_tid = gettid();
+#endif
 
     while (!stoken.stop_requested()) {
         {
@@ -812,9 +815,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::PfpSyncMe: {
-                if (rasterizer) {
-                    rasterizer->CpSync();
-                }
                 break;
             }
             case PM4ItOpcode::StrmoutBufferUpdate: {
