@@ -12,6 +12,7 @@
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/post_order.h"
 #include "shader_recompiler/ir/program.h"
@@ -143,6 +144,46 @@ std::vector<u32> TranslateFragmentFrontFaceToSpirv(bool front_face_all_bits) {
     Optimization::SsaRewritePass(program);
     Optimization::ConstantPropagationPass(program.blocks);
     Optimization::DeadCodeEliminationPass(program);
+    Optimization::CollectShaderInfoPass(program, profile);
+    Backend::Bindings bindings{};
+    return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
+}
+
+std::vector<u32> TranslateFragmentPullModelToSpirv(bool use_amd_barycentrics) {
+    Shader::Info info{};
+    info.hw_stage = HwStage::Fragment;
+    info.sw_stage = SwStage::Fragment;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Block;
+    program.syntax_list.back().data.block = block;
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Return;
+    program.post_order_blocks = IR::PostOrder(block);
+
+    Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    profile.supports_amd_shader_explicit_vertex_parameter = use_amd_barycentrics;
+    profile.supports_fragment_shader_barycentric = !use_amd_barycentrics;
+
+    RuntimeInfo runtime_info{};
+    runtime_info.Initialize(HwStage::Fragment, SwStage::Fragment);
+    runtime_info.hw.fs.addr_flags.persp_pull_model_ena = 1;
+    runtime_info.hw.fs.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
+
+    IR::IREmitter ir{*block};
+    ir.Prologue();
+    IR::F32 sum = ir.Imm32(0.0f);
+    for (u32 comp = 0; comp < 3; ++comp) {
+        sum = ir.FPAdd(sum, ir.GetAttribute(IR::Attribute::BaryCoordPullModel, comp));
+    }
+    ir.SetAttribute(IR::Attribute::RenderTarget0, sum);
+    ir.Epilogue();
+
     Optimization::CollectShaderInfoPass(program, profile);
     Backend::Bindings bindings{};
     return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
