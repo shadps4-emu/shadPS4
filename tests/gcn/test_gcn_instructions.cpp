@@ -698,3 +698,17 @@ TEST_F(GcnTest, bitcmp1_b64_bit32) {
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(*result, 1U);
 }
+
+TEST_F(GcnTest, subb_u32_clears_vcc) {
+    auto runner = gcn_test::Runner::instance().value();
+    const std::array<u64, 3> instructions{
+        VOP2(OpcodeVOP2::V_SUB_I32, VOperand8::V1, SOperand9::S0, VOperand8::V1).Get(),
+        VOP2(OpcodeVOP2::V_SUBB_U32, VOperand8::V1, SOperand9::S2, VOperand8::V3).Get(),
+        VOP2(OpcodeVOP2::V_ADDC_U32, VOperand8::V0, SOperand9::Const0, VOperand8::V3).Get(),
+    };
+    const auto spirv = TranslateToSpirv(instructions);
+
+    auto result = runner->run<u32>(spirv, std::array{0U, 1U, 5U, 0U});
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0U);
+}
