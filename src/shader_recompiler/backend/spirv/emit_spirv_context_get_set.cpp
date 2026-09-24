@@ -171,6 +171,8 @@ Id EmitGetAttributeU1(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     switch (attr) {
     case IR::Attribute::IsFrontFace:
         return ctx.OpLoad(ctx.U1[1], ctx.front_facing);
+    case IR::Attribute::IsHelperInvocation:
+        return ctx.OpLoad(ctx.U1[1], ctx.helper_invocation);
     default:
         UNREACHABLE_MSG("Unsupported U1 attribute {}", attr);
     }
@@ -197,6 +199,9 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         return ctx.OpLoad(ctx.U32[1], ctx.local_invocation_index);
     case IR::Attribute::SampleIndex:
         return ctx.OpLoad(ctx.U32[1], ctx.sample_index);
+    case IR::Attribute::SampleMask:
+        return ctx.OpLoad(ctx.U32[1],
+                          ctx.OpAccessChain(ctx.input_u32, ctx.sample_mask_in, ctx.u32_zero_value));
     case IR::Attribute::RenderTargetIndex:
         return ctx.OpLoad(ctx.U32[1], ctx.output_layer);
     case IR::Attribute::PrimitiveId:
