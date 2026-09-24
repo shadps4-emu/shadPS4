@@ -79,7 +79,10 @@ public:
     void* MapFile(VAddr virtual_addr, u64 size, u64 offset, u32 prot, uintptr_t fd);
 
     /// Unmaps specified virtual memory area.
-    void Unmap(VAddr virtual_addr, u64 size);
+    /// Due to coalescing unmapped areas (implemented to save on VMAs), the real replaced area
+    /// might be different to what has been passed to Unmap. Therefore, a new address is returned
+    /// and size is updated to properly represent the mmapped area.
+    VAddr Unmap(VAddr virtual_addr, u64* size);
 
     /// Protects requested region.
     void Protect(VAddr virtual_addr, u64 size, MemoryPermission perms);
