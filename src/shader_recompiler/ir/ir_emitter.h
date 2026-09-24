@@ -35,9 +35,6 @@ public:
     [[nodiscard]] Dest BitCast(const Source& value);
 
     U1 ConditionRef(const U1& value);
-    void Reference(const Value& value);
-
-    void PhiMove(IR::Inst& phi, const Value& value);
 
     void Prologue();
     void Epilogue();
@@ -78,6 +75,7 @@ public:
     [[nodiscard]] U1 Condition(IR::Condition cond);
 
     [[nodiscard]] F32 GetAttribute(Attribute attribute, u32 comp = 0, u32 index = 0);
+    [[nodiscard]] U1 GetAttributeU1(Attribute attribute, u32 comp = 0);
     [[nodiscard]] U32 GetAttributeU32(Attribute attribute, u32 comp = 0);
     void SetAttribute(Attribute attribute, const F32& value, u32 comp = 0);
 
@@ -106,6 +104,8 @@ public:
     [[nodiscard]] U32U64 SharedAtomicAnd(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicOr(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicXor(const U32& address, const U32U64& data, bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicCmpSwap(const U32& address, const U32U64& value,
+                                             const U32U64& cmp_value, bool is_gds);
 
     template <typename T = U32>
     [[nodiscard]] T SharedAtomicInc(const U32& address, bool is_gds);
@@ -168,11 +168,13 @@ public:
                                              const Value& value, const Value& cmp_value,
                                              BufferInstInfo info);
 
-    [[nodiscard]] U32 DataAppend(const U32& counter);
-    [[nodiscard]] U32 DataConsume(const U32& counter);
+    [[nodiscard]] U32 DataAppend(const U32& gds_dw_offset);
+    [[nodiscard]] U32 DataConsume(const U32& gds_dw_offset);
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WarpId();
-    [[nodiscard]] U32 QuadShuffle(const U32& value, const U32& index);
+    [[nodiscard]] U32 QuadBroadcast(const U32& value, const U32& index);
+    [[nodiscard]] U32 Shuffle(const U32& value, const U32& index);
+    [[nodiscard]] U32 ShuffleXor(const U32& value, const U32& mask);
     [[nodiscard]] U32 ReadFirstLane(const U32& value);
     [[nodiscard]] U32 ReadLane(const U32& value, const U32& lane);
     [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
@@ -279,13 +281,14 @@ public:
     [[nodiscard]] U32U64 BitwiseAnd(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32U64 BitwiseOr(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32U64 BitwiseXor(const U32U64& a, const U32U64& b);
-    [[nodiscard]] U32 BitFieldInsert(const U32& base, const U32& insert, const U32& offset,
-                                     const U32& count);
+    [[nodiscard]] U32U64 BitFieldInsert(const U32U64& base, const U32U64& insert, const U32& offset,
+                                        const U32& count);
     [[nodiscard]] U32 BitFieldExtract(const U32& base, const U32& offset, const U32& count,
                                       bool is_signed = false);
     [[nodiscard]] U32 BitReverse(const U32& value);
     [[nodiscard]] U32 BitCount(const U32U64& value);
     [[nodiscard]] U32U64 BitwiseNot(const U32U64& value);
+    [[nodiscard]] U32 MaskedBitCount(const U32& value, const U32& addend, bool hi);
 
     [[nodiscard]] U32 FindSMsb(const U32& value);
     [[nodiscard]] U32 FindUMsb(const U32U64& value);

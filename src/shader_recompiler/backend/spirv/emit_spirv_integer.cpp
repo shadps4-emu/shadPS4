@@ -187,8 +187,12 @@ Id EmitBitwiseXor64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
     return result;
 }
 
-Id EmitBitFieldInsert(EmitContext& ctx, Id base, Id insert, Id offset, Id count) {
+Id EmitBitFieldInsert32(EmitContext& ctx, Id base, Id insert, Id offset, Id count) {
     return ctx.OpBitFieldInsert(ctx.U32[1], base, insert, offset, count);
+}
+
+Id EmitBitFieldInsert64(EmitContext& ctx, Id base, Id insert, Id offset, Id count) {
+    return ctx.OpBitFieldInsert(ctx.U64, base, insert, offset, count);
 }
 
 Id EmitBitFieldSExtract(EmitContext& ctx, IR::Inst* inst, Id base, Id offset, Id count) {
@@ -436,6 +440,10 @@ Id EmitUGreaterThanEqual32(EmitContext& ctx, Id lhs, Id rhs) {
 
 Id EmitUGreaterThanEqual64(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpUGreaterThanEqual(ctx.U1[1], lhs, rhs);
+}
+
+Id EmitMaskedBitCount32(EmitContext& ctx, Id value, Id addend, bool hi) {
+    UNREACHABLE_MSG("Unreachable instruction");
 }
 
 } // namespace Shader::Backend::SPIRV

@@ -50,7 +50,7 @@ static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t code
     if (!std::filesystem::exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
-    const auto filename = fmt::format("{}_{:#018x}.srtprogram.txt", info.stage, info.pgm_hash);
+    const auto filename = fmt::format("{}_{:#018x}.srtprogram.txt", info.hw_stage, info.pgm_hash);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Create, FileType::TextFile};
 
     u64 address = reinterpret_cast<u64>(code);
