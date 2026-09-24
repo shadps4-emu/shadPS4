@@ -169,6 +169,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         info.hw.fs.addr_flags = regs.ps_input_addr;
         info.hw.fs.num_inputs = regs.num_interp;
         info.hw.fs.front_face_all_bits = regs.barycentric_control.front_face_all_bits;
+        info.hw.fs.num_samples =
+            regs.ps_input_addr.sample_coverage_ena && regs.ps_input_ena.sample_coverage_ena
+                ? regs.aa_config.NumSamples()
+                : 1;
         info.hw.fs.z_export_format = regs.z_export_format;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
                                        regs.depth_shader_control.stencil_test_val_export_enable;

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <limits>
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
@@ -9,6 +10,7 @@
 #include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/passes/resource_pass.h"
+#include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reinterpret.h"
 #include "shader_recompiler/profile.h"
 #include "video_core/amdgpu/resource.h"
@@ -321,31 +323,16 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
     }
 }
 
-static IR::Value IsResultOfMbcntExec(IR::Value value, bool is_hi, IR::U1 exec) {
-    // See V_MBCNT_U32_B32 for the pattern being checked
+static IR::Value IsMbcntWithExec(IR::Value value, bool is_hi, IR::U1 exec) {
     if (value.IsImmediate()) {
         return {};
     }
     const IR::Inst* inst = value.Inst();
-    if (inst->GetOpcode() != IR::Opcode::IAdd32 || inst->Arg(0).IsImmediate()) {
+    if (inst->GetOpcode() != IR::Opcode::MaskedBitCount32 || inst->Arg(0).IsImmediate() ||
+        inst->Arg(2).U1() != is_hi) {
         return {};
     }
     IR::Inst* prod = inst->Arg(0).Inst();
-    if (prod->GetOpcode() != IR::Opcode::BitCount32 || prod->Arg(0).IsImmediate()) {
-        return {};
-    }
-    prod = prod->Arg(0).Inst();
-    if (prod->GetOpcode() != IR::Opcode::BitwiseAnd32 || prod->Arg(0).IsImmediate() ||
-        prod->Arg(1).IsImmediate()) {
-        return {};
-    }
-    const IR::Inst* lt_mask = prod->Arg(1).Inst();
-    if (lt_mask->GetOpcode() != IR::Opcode::GetAttributeU32 ||
-        lt_mask->Arg(0).Attribute() != IR::Attribute::SubgroupLtMask ||
-        lt_mask->Arg(1).U32() != is_hi) {
-        return {};
-    }
-    prod = prod->Arg(0).Inst();
     if (prod->GetOpcode() != IR::Opcode::CompositeExtractU32x2 || prod->Arg(0).IsImmediate() ||
         prod->Arg(1).U32() != is_hi) {
         return {};
@@ -355,72 +342,88 @@ static IR::Value IsResultOfMbcntExec(IR::Value value, bool is_hi, IR::U1 exec) {
         return {};
     }
     prod = prod->Arg(0).Inst();
-    if (prod->GetOpcode() != IR::Opcode::Ballot || prod->Arg(0) != exec) {
+    if (prod->GetOpcode() != IR::Opcode::Ballot || (prod->Arg(0) != exec && !is_hi)) {
         return {};
     }
     return inst->Arg(1);
 }
 
-static IR::Inst* IsAppendBufferPattern(IR::Inst& vx) {
-    // Attempt to detect either of the following patterns:
-    //
-    // v_mbcnt_hi_u32_b32 vZ, exec_hi, 0
-    // v_mbcnt_lo_u32_b32 vY, exec_lo, vZ
-    // ds_append       vX gds
-    // v_add_i32       idx, vcc, vX, vY
+static IR::Use FindUniqueUser(IR::Inst* inst, auto&& pred) {
+    IR::Use picked{};
+    for (auto& use : inst->Uses()) {
+        if (pred(use.user)) {
+            ASSERT(!picked.user);
+            picked = use;
+        }
+    }
+    ASSERT(picked.user);
+    return picked;
+}
+
+static void RemoveAppendBufferLaneOffset(IR::Inst& vx) {
+    // Attempt to detect either of the following patterns and
+    // remove the lane id addition/subtraction to ds instruction.
     //
     // ds_append       vX gds
     // v_mbcnt_hi_u32_b32 vY, exec_hi, vX
     // v_mbcnt_lo_u32_b32 idx, exec_lo, vY
     //
-    // and return the instruction to replace with a GDS atomic.
-    // ds_consume always uses the first pattern with v_sub_i32
+    // v_mbcnt_hi_u32_b32 vY, exec_hi, 0
+    // v_mbcnt_lo_u32_b32 vZ, exec_lo, vY
+    // ds_append       vX gds
+    // v_add_i32       idx, vcc, vX, vZ
+    //
+    // ds_consume      vX gds
+    // v_mbcnt_hi_u32_b32 vY, exec_hi, 0
+    // v_mbcnt_lo_u32_b32 vZ, exec_lo, vY
+    // v_sub_i32       vK, vcc, vX, vZ
+    // v_subrev_i32    idx, vcc, 1, vK / v_add_i32    idx, vcc, -1, vK
+    //
+    // ds_consume      vX gds
+    // v_mbcnt_hi_u32_b32 vY, exec_hi, 0
+    // v_mbcnt_lo_u32_b32 vZ, exec_lo, vY
+    // v_add_i32       vK, vcc, -1, vX
+    // v_sub_i32       idx, vcc, vK, vZ
 
-    if (vx.GetOpcode() != IR::Opcode::DataAppend && vx.GetOpcode() != IR::Opcode::DataConsume) {
-        return nullptr;
-    }
-    const auto it = std::ranges::find_if(vx.Uses(), [](const IR::Use& use) {
-        return use.user->GetOpcode() == IR::Opcode::IAdd32 ||
-               use.user->GetOpcode() == IR::Opcode::ISub32;
-    });
-    if (it == vx.Uses().end()) {
-        ASSERT(vx.UseCount() == 1 &&
-               vx.Uses().back().user->GetOpcode() == IR::Opcode::SetVectorRegister);
-        return &vx;
-    }
-    const auto [user, operand] = *it;
     IR::U1 exec{vx.Arg(1)};
-    if (operand == 0) {
-        // First pattern
-        auto vy = user->Arg(1);
-        auto vz = IsResultOfMbcntExec(vy, false, exec);
-        if (vz.IsEmpty()) {
-            return nullptr;
+    const auto uses = vx.Uses();
+    for (auto use : uses) {
+        const auto& [user, operand] = use;
+        if (user->GetOpcode() == IR::Opcode::MaskedBitCount32) {
+            // First pattern
+            ASSERT(vx.GetOpcode() == IR::Opcode::DataAppend);
+            IR::Inst* vy = user;
+            auto vx_2 = IsMbcntWithExec(IR::Value{vy}, true, exec);
+            ASSERT(!vx_2.IsEmpty() && vx_2 == IR::Value{&vx});
+            const auto [idx, operand] = FindUniqueUser(vy, [](const IR::Inst* inst) {
+                return inst->GetOpcode() == IR::Opcode::MaskedBitCount32;
+            });
+            auto vy_2 = IsMbcntWithExec(IR::Value{idx}, false, exec);
+            ASSERT(!vy_2.IsEmpty() && vy_2 == IR::Value{vy});
+            idx->ReplaceUsesWithAndRemove(IR::Value{&vx});
+            continue;
         }
-        auto zero_const = IsResultOfMbcntExec(vz, true, exec);
-        if (!zero_const.IsImmediate() || zero_const.U32() != 0u) {
-            return nullptr;
+        if (user->GetOpcode() != IR::Opcode::IAdd32 && user->GetOpcode() != IR::Opcode::ISub32) {
+            continue;
         }
-        return user;
-    } else {
-        // Second pattern
-        IR::Inst* vy = user;
-        auto vx_2 = IsResultOfMbcntExec(IR::Value{vy}, true, exec);
-        if (vx_2.IsEmpty() || vx_2 != IR::Value{&vx}) {
-            return nullptr;
+        const auto other = user->Arg(1 - operand);
+        if (other.IsImmediate()) {
+            ASSERT_MSG(other.U32() == 1u || other.U32() == std::numeric_limits<u32>::max() &&
+                                                vx.GetOpcode() == IR::Opcode::DataConsume,
+                       "Unexpected constant offset {} to DataConsume result", other.U32());
+            use = FindUniqueUser(user, [](const IR::Inst* inst) {
+                return inst->GetOpcode() == IR::Opcode::IAdd32 ||
+                       inst->GetOpcode() == IR::Opcode::ISub32;
+            });
         }
-        const auto it = std::ranges::find_if(vy->Uses(), [](const IR::Use& use) {
-            return use.user->GetOpcode() == IR::Opcode::IAdd32;
-        });
-        if (it == vy->Uses().end()) {
-            return nullptr;
-        }
-        const auto [idx, operand] = *it;
-        auto vy_2 = IsResultOfMbcntExec(IR::Value{idx}, false, exec);
-        if (vy_2.IsEmpty() || vy_2 != IR::Value{vy}) {
-            return nullptr;
-        }
-        return idx;
+
+        // Other patterns
+        auto vz = user->Arg(1 - operand);
+        auto vy = IsMbcntWithExec(vz, false, exec);
+        ASSERT(!vy.IsEmpty() && !vy.IsImmediate());
+        auto zero_const = IsMbcntWithExec(vy, true, exec);
+        ASSERT(!zero_const.IsEmpty() && zero_const.IsImmediate() && zero_const.U32() == 0u);
+        vz.Inst()->ReplaceUsesWithAndRemove(IR::Value{u32{0u}});
     }
 }
 
@@ -434,15 +437,13 @@ void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descrip
 
     IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
 
-    if (IR::Inst* append_idx = IsAppendBufferPattern(inst); append_idx) {
-        if (inst.GetOpcode() == IR::Opcode::DataAppend) {
-            append_idx->ReplaceUsesWithAndRemove(
-                ir.BufferAtomicIAdd(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {}));
-        } else {
-            const IR::U32 counter =
-                IR::U32{ir.BufferAtomicISub(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {})};
-            append_idx->ReplaceUsesWithAndRemove(ir.ISub(counter, ir.Imm32(1u)));
-        }
+    if (inst.GetOpcode() == IR::Opcode::DataAppend || inst.GetOpcode() == IR::Opcode::DataConsume) {
+        RemoveAppendBufferLaneOffset(inst);
+        const IR::Value replacement =
+            inst.GetOpcode() == IR::Opcode::DataAppend
+                ? ir.BufferAtomicIAdd(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {})
+                : ir.BufferAtomicISub(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {});
+        inst.ReplaceUsesWithAndRemove(replacement);
         return;
     }
 

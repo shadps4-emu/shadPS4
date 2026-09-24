@@ -35,9 +35,6 @@ public:
     [[nodiscard]] Dest BitCast(const Source& value);
 
     U1 ConditionRef(const U1& value);
-    void Reference(const Value& value);
-
-    void PhiMove(IR::Inst& phi, const Value& value);
 
     void Prologue();
     void Epilogue();
@@ -291,6 +288,7 @@ public:
     [[nodiscard]] U32 BitReverse(const U32& value);
     [[nodiscard]] U32 BitCount(const U32U64& value);
     [[nodiscard]] U32U64 BitwiseNot(const U32U64& value);
+    [[nodiscard]] U32 MaskedBitCount(const U32& value, const U32& addend, bool hi);
 
     [[nodiscard]] U32 FindSMsb(const U32& value);
     [[nodiscard]] U32 FindUMsb(const U32U64& value);
