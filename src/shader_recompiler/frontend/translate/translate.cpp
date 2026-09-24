@@ -756,7 +756,11 @@ T Translator::GetSrc64(const InstOperand& operand) {
         value = get_imm(-s64(operand.code) + SignedConstIntNegMin - 1);
         break;
     case OperandField::LiteralConst:
-        value = get_imm(u64(operand.code));
+        if constexpr (is_float) {
+            value = get_imm(u64(operand.code) << 32);
+        } else {
+            value = get_imm(u64(operand.code));
+        }
         break;
     case OperandField::ConstFloatPos_1_0:
         value = get_imm(1.0);
