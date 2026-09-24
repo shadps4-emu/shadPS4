@@ -326,7 +326,7 @@ public:
         return properties.limits.minStorageBufferOffsetAlignment;
     }
 
-    /// Returns the minimum alignemt required for accessing host-mapped device memory
+    /// Returns the minimum alignment required for accessing host-mapped device memory
     vk::DeviceSize NonCoherentAtomSize() const {
         return properties.limits.nonCoherentAtomSize;
     }
@@ -354,6 +354,11 @@ public:
     /// Returns the maximum number of push descriptors.
     u32 MaxPushDescriptors() const {
         return push_descriptor_props.maxPushDescriptors;
+    }
+
+    /// Returns the maximum size of a single VkDeviceMemory
+    vk::DeviceSize MaxMemoryAllocationSize() const {
+        return vk11_props.maxMemoryAllocationSize;
     }
 
     /// Returns the vulkan 1.2 physical device properties.
@@ -517,6 +522,7 @@ private:
     bool shader_atomic_float{};
     bool shader_atomic_float2{};
     bool workgroup_memory_explicit_layout{};
+    bool maintenance_5{};
     bool maintenance_8{};
     bool attachment_feedback_loop{};
     bool image_2d_view_of_3d{};

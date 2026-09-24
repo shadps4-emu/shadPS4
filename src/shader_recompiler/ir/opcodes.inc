@@ -5,8 +5,6 @@
 OPCODE(Phi,                                                 Opaque,                                                                                         )
 OPCODE(Void,                                                Void,                                                                                           )
 OPCODE(ConditionRef,                                        U1,             U1,                                                                             )
-OPCODE(Reference,                                           Void,           Opaque,                                                                         )
-OPCODE(PhiMove,                                             Void,           Opaque,         Opaque,                                                         )
 
 // Special operations
 OPCODE(Prologue,                                            Void,                                                                                           )
@@ -73,6 +71,7 @@ OPCODE(SetVirtualRegister,                                  Void,           Virt
 OPCODE(GetGotoVariable,                                     U1,             U32,                                                                            )
 OPCODE(SetGotoVariable,                                     Void,           U32,            U1,                                                             )
 OPCODE(GetAttribute,                                        F32,            Attribute,      U32,            U32,                                            )
+OPCODE(GetAttributeU1,                                      U1,             Attribute,      U32,                                                            )
 OPCODE(GetAttributeU32,                                     U32,            Attribute,      U32,                                                            )
 OPCODE(SetAttribute,                                        Void,           Attribute,      F32,            U32,                                            )
 OPCODE(GetPatch,                                            F32,            Patch,                                                                          )
@@ -352,6 +351,7 @@ OPCODE(BitCount32,                                          U32,            U32,
 OPCODE(BitCount64,                                          U32,            U64,                                                                            )
 OPCODE(BitwiseNot32,                                        U32,            U32,                                                                            )
 OPCODE(BitwiseNot64,                                        U64,            U64,                                                                            )
+OPCODE(MaskedBitCount32,                                    U32,            U32,            U32,            U1,                                             )
 
 OPCODE(FindSMsb32,                                          U32,            U32,                                                                            )
 OPCODE(FindUMsb32,                                          U32,            U32,                                                                            )
