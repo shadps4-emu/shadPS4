@@ -11,15 +11,6 @@
 namespace Vulkan {
 
 /**
- * @brief Creates a vulkan shader module from GLSL by converting it to SPIR-V using glslang.
- * @param code The string containing GLSL code.
- * @param stage The pipeline stage the shader will be used in.
- * @param device The vulkan device handle.
- */
-vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, vk::Device device,
-                         std::vector<std::string> defines = {});
-
-/**
  * @brief Creates a vulkan shader module from SPIR-V bytecode.
  * @param code The SPIR-V bytecode data.
  * @param device The vulkan device handle
