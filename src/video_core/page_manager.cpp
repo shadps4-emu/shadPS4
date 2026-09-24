@@ -34,9 +34,6 @@
 
 namespace VideoCore {
 
-constexpr size_t PM_PAGE_SIZE = 4_KB;
-constexpr size_t PM_PAGE_BITS = 12;
-
 struct PageManager::Impl {
     struct PageState {
         u8 num_write_watchers;
@@ -89,7 +86,8 @@ struct PageManager::Impl {
     };
 
     static constexpr size_t ADDRESS_BITS = 40;
-    static constexpr size_t NUM_ADDRESS_PAGES = 1ULL << (40 - PAGE_BITS);
+    static constexpr size_t NUM_ADDRESS_PAGES = 1ULL << (40 - PM_PAGE_BITS);
+    static constexpr size_t NUM_ADDRESS_LOCKS = NUM_ADDRESS_PAGES / NUM_REGION_PAGES;
     inline static Vulkan::Rasterizer* rasterizer;
 
     Impl() = default;
@@ -107,15 +105,15 @@ struct PageManager::Impl {
     virtual void Protect(VAddr address, size_t size, Core::MemoryPermission perms) = 0;
 
     void EnsurePages(VAddr begin, VAddr end) {
-        const size_t start_page = begin >> PageTraits::PageBits;
-        const size_t end_page = end >> PageTraits::PageBits;
+        const size_t start_page = begin >> PM_PAGE_BITS;
+        const size_t end_page = end >> PM_PAGE_BITS;
         cached_pages.reserve(start_page, end_page);
         locks.reserve(start_page, end_page);
     }
 
     void UpdatePageWatchers(VAddr addr, u64 size, PageOp write_op) {
-        const u64 page_start = addr >> PAGE_BITS;
-        const u64 page_end = Common::DivCeil(addr + size, PAGE_SIZE);
+        const u64 page_start = addr >> PM_PAGE_BITS;
+        const u64 page_end = Common::DivCeil(addr + size, PM_PAGE_SIZE);
 
         Core::MemoryPermission perms{};
         u64 range_begin = page_start;
@@ -124,15 +122,15 @@ struct PageManager::Impl {
 
         const auto release_pending = [&] {
             if (range_pages > 0) {
-                Protect(range_begin << PAGE_BITS, range_pages << PAGE_BITS, perms);
+                Protect(range_begin << PM_PAGE_BITS, range_pages << PM_PAGE_BITS, perms);
                 range_pages = 0;
                 potential_pages = 0;
             }
         };
 
         // Iterate requested pages
-        const u64 aligned_addr = page_start << PAGE_BITS;
-        const u64 aligned_end = page_end << PAGE_BITS;
+        const u64 aligned_addr = page_start << PM_PAGE_BITS;
+        const u64 aligned_end = page_end << PM_PAGE_BITS;
         if (!rasterizer->IsMapped(aligned_addr, aligned_end - aligned_addr)) {
             LOG_WARNING(Render,
                         "Tracking memory region {:#x} - {:#x} which is not fully GPU mapped.",
@@ -141,16 +139,20 @@ struct PageManager::Impl {
         }
 
         for (u64 page = page_start; page != page_end; ++page) {
-            PageState& state = cached_pages[page];
+            PageState* state = cached_pages.find(page);
+            if (!state) {
+                continue;
+            }
+
             locks[page].lock();
 
-            const auto old_perms = state.Perms();
+            const auto old_perms = state->Perms();
             if (page == page_start) {
                 perms = old_perms;
             }
 
             // Apply the change to the page state
-            const auto new_perms = state.Update(write_op);
+            const auto new_perms = state->Update(write_op);
             if (new_perms != perms) [[unlikely]] {
                 // If the protection changed add pending (un)protect action
                 release_pending();
@@ -175,14 +177,16 @@ struct PageManager::Impl {
         release_pending();
 
         for (u64 page = page_start; page != page_end; ++page) {
-            locks[page].unlock();
+            if (auto* lock = locks.find(page)) {
+                lock->unlock();
+            }
         }
     }
 
     void UpdatePageWatchersForRegion(VAddr base_addr, const Bounds& bounds,
                                      const RegionBits& write_mask, const RegionBits& read_mask,
                                      PageOp write_op, PageOp read_op) {
-        const u64 base_page = base_addr >> PAGE_BITS;
+        const u64 base_page = base_addr >> PM_PAGE_BITS;
         const u64 page_start = bounds.start_word * PAGES_PER_WORD + bounds.start_page;
         const u64 page_end = bounds.end_word * PAGES_PER_WORD + bounds.end_page + 1;
 
@@ -193,17 +197,21 @@ struct PageManager::Impl {
 
         const auto release_pending = [&] {
             if (range_pages > 0) {
-                Protect(range_begin << PAGE_BITS, range_pages << PAGE_BITS, perms);
+                Protect(range_begin << PM_PAGE_BITS, range_pages << PM_PAGE_BITS, perms);
                 range_pages = 0;
                 potential_pages = 0;
             }
         };
 
         for (u64 page = page_start; page != page_end; ++page) {
-            PageState& state = cached_pages[base_page + page];
+            PageState* state = cached_pages.find(base_page + page);
+            if (!state) {
+                continue;
+            }
+
             locks[base_page + page].lock();
 
-            const auto old_perms = state.Perms();
+            const auto old_perms = state->Perms();
             if (page == page_start) {
                 perms = old_perms;
             }
@@ -211,7 +219,7 @@ struct PageManager::Impl {
             // Apply the change to the page state
             const bool update_write = write_op != PageOp::None && write_mask.GetPage(page);
             const bool update_read = read_op != PageOp::None && read_mask.GetPage(page);
-            const auto new_perms = state.Update(write_op, update_write, read_op, update_read);
+            const auto new_perms = state->Update(write_op, update_write, read_op, update_read);
 
             if (new_perms != perms) [[unlikely]] {
                 // If the protection changed add pending (un)protect action
@@ -238,16 +246,18 @@ struct PageManager::Impl {
         release_pending();
 
         for (u64 page = page_start; page != page_end; ++page) {
-            locks[base_page + page].unlock();
+            if (auto* lock = locks.find(base_page + page)) {
+                lock->unlock();
+            }
         }
     }
 
     struct PageTraits {
         using Entry = PageState;
-        static constexpr size_t AddressSpaceBits = ADDRESS_BITS;
-        static constexpr size_t FirstLevelBits = 16;
-        static constexpr size_t PageBits = PAGE_BITS;
-        static constexpr bool NullCheck = false;
+        static constexpr size_t ADDRESS_SPACE_BITS = ADDRESS_BITS;
+        static constexpr size_t L1_BITS = 16;
+        static constexpr size_t PAGE_BITS = PM_PAGE_BITS;
+        static constexpr bool NULL_CHECK = false;
     };
     MultiLevelPageTable<PageTraits> cached_pages;
     struct MutexTraits {
@@ -256,10 +266,10 @@ struct PageManager::Impl {
 #else
         using Entry = std::mutex;
 #endif
-        static constexpr size_t AddressSpaceBits = ADDRESS_BITS;
-        static constexpr size_t FirstLevelBits = 16;
-        static constexpr size_t PageBits = PAGE_BITS;
-        static constexpr bool NullCheck = false;
+        static constexpr size_t ADDRESS_SPACE_BITS = ADDRESS_BITS;
+        static constexpr size_t L1_BITS = 16;
+        static constexpr size_t PAGE_BITS = PM_PAGE_BITS;
+        static constexpr bool NULL_CHECK = false;
     };
     MultiLevelPageTable<MutexTraits> locks;
 };
@@ -388,7 +398,7 @@ public:
             // ::Protect, therefore we use MODE_DONTWAKE and wake the thread with UFFDIO_WAKE here
             uffdio_range wake;
             wake.start = msg.arg.pagefault.address;
-            wake.len = PM_PAGE_SIZE;
+            wake.len = PageManager::PM_PAGE_SIZE;
             const int ret = ioctl(uffd, UFFDIO_WAKE, &wake);
             ASSERT_MSG(ret != -1, "Waking thread {} failed with: {}", ptid,
                        Common::GetLastErrorMsg());

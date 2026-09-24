@@ -25,10 +25,8 @@ enum class PageOp : s8 {
 };
 
 class PageManager {
-    // PAGE_SIZE and PAGE_BITS conflicts with machine/param.h definitions on freebsd!
-    // Use the same page size as the tracker.
-    static constexpr size_t PAGE_BITS = 12;
-    static constexpr size_t PAGE_SIZE = 1ULL << PAGE_BITS;
+    static constexpr size_t PM_PAGE_BITS = 12;
+    static constexpr size_t PM_PAGE_SIZE = 1ULL << PM_PAGE_BITS;
 
 public:
     explicit PageManager(Vulkan::Rasterizer* rasterizer);
@@ -50,12 +48,12 @@ public:
 
     /// Returns page aligned address.
     static constexpr VAddr GetPageAddr(VAddr addr) {
-        return Common::AlignDown(addr, PAGE_SIZE);
+        return Common::AlignDown(addr, PM_PAGE_SIZE);
     }
 
     /// Returns address of the next page.
     static constexpr VAddr GetNextPageAddr(VAddr addr) {
-        return Common::AlignUp(addr + 1, PAGE_SIZE);
+        return Common::AlignUp(addr + 1, PM_PAGE_SIZE);
     }
 
 private:
