@@ -129,6 +129,7 @@ struct OrbisNpWebApiExtendedPushEventFilter {
     s32 filterId;
     bool internal;
     std::vector<OrbisNpWebApiExtdPushEventFilterParameter> filterParams;
+    std::vector<std::vector<std::string>> extdDataKeys;
     std::string npServiceName;
     OrbisNpServiceLabel npServiceLabel;
     OrbisNpWebApiContext* parentContext;

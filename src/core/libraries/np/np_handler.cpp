@@ -844,6 +844,27 @@ void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEv
         SetNpOnlineId(ev.toOnlineId, n.toNpid);
     }
     ev.extdData = n.extdData; // extended-data (key,value) pairs -> dispatched as pExtdData
+    // Account ids for pFrom/pTo.
+    ev.toAccountId = n.toAccountId != 0 ? n.toAccountId : GetAccountId(user_id);
+    ev.fromAccountId = n.fromAccountId;
+    if (ev.fromAccountId == 0) {
+        for (const auto& kv : n.extdData) {
+            if (kv.first == "fromAccountId") {
+                ev.fromAccountId = std::strtoull(kv.second.c_str(), nullptr, 10);
+                break;
+            }
+        }
+    }
+    if (ev.toAccountId != 0) {
+        ev.hasTo = true;
+        if (n.toNpid.empty()) {
+            // e.g. friendlist events carry no toNpid; the recipient is still us.
+            std::lock_guard lock(m_mutex_clients);
+            if (const auto it = m_np_ids.find(user_id); it != m_np_ids.end()) {
+                std::memcpy(ev.toOnlineId.data, it->second.handle.data, sizeof(ev.toOnlineId.data));
+            }
+        }
+    }
     NpWebApi::EnqueuePushEvent(ev);
 
     // Also surface a SESSION_INVITATION system-service event for titles that watch it instead of
