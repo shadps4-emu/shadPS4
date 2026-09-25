@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "common/types.h"
 #include "common/interval_set.h"
+#include "common/types.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/renderer_vulkan/vk_staging_buffer_pool.h"
 #include "video_core/texture_cache/image.h"

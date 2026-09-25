@@ -143,17 +143,16 @@ void Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
     }
 }
 
-static std::pair<u32, u32> GetDrawOffsets(
-    const AmdGpu::Regs& regs, const Shader::Info& info,
-    const std::optional<Shader::Gcn::FetchShaderData>& fetch_shader) {
+static std::pair<u32, u32> GetDrawOffsets(const AmdGpu::Regs& regs, const Shader::Info& info,
+                                          const Shader::Gcn::FetchShaderData& fetch_shader) {
     u32 vertex_offset = regs.index_offset;
     u32 instance_offset = 0;
-    if (fetch_shader) {
-        if (vertex_offset == 0 && fetch_shader->vertex_offset_sgpr != -1) {
-            vertex_offset = info.user_data[fetch_shader->vertex_offset_sgpr];
+    if (!fetch_shader.Empty()) {
+        if (vertex_offset == 0 && fetch_shader.vertex_offset_sgpr != -1) {
+            vertex_offset = info.user_data[fetch_shader.vertex_offset_sgpr];
         }
-        if (fetch_shader->instance_offset_sgpr != -1) {
-            instance_offset = info.user_data[fetch_shader->instance_offset_sgpr];
+        if (fetch_shader.instance_offset_sgpr != -1) {
+            instance_offset = info.user_data[fetch_shader.instance_offset_sgpr];
         }
     }
     return {vertex_offset, instance_offset};
