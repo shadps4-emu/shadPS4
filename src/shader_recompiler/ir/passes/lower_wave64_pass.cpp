@@ -120,7 +120,7 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
                 }
             } else if (inst.GetOpcode() == IR::Opcode::GetAttributeU32 &&
                        inst.Arg(0).Attribute() == IR::Attribute::SubgroupLtMask) {
-                worklist.push_back(&inst);
+                push_worklist(inst);
             }
         }
     }
