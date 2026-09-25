@@ -888,9 +888,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 if (desc.is_written) {
                     flags |= VideoCore::ObtainBufferFlags::IsWritten;
                 }
-                if (desc.is_formatted) {
-                    flags |= VideoCore::ObtainBufferFlags::IsTexelBuffer;
-                }
+                flags |= VideoCore::ObtainBufferFlags::SynchronizeImage;
                 const auto [buffer, offset] =
                     buffer_cache.ObtainBuffer(vsharp.base_address, size, flags);
                 const u64 offset_aligned = Common::AlignDown(offset, alignment);
@@ -1314,7 +1312,7 @@ void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, b
             return {gds_buffer, src};
         }
         return buffer_cache.ObtainBuffer(src, num_bytes,
-                                         VideoCore::ObtainBufferFlags::IsTexelBuffer);
+                                         VideoCore::ObtainBufferFlags::SynchronizeImage);
     }();
     const auto [dst_buffer, dst_offset] = [&] -> std::pair<const VideoCore::Buffer*, u64> {
         if (dst_gds) {
@@ -1322,7 +1320,7 @@ void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, b
         }
         return buffer_cache.ObtainBuffer(dst, num_bytes,
                                          VideoCore::ObtainBufferFlags::IsWritten |
-                                             VideoCore::ObtainBufferFlags::IsTexelBuffer);
+                                             VideoCore::ObtainBufferFlags::SynchronizeImage);
     }();
     const vk::BufferCopy copy = {
         .srcOffset = src_offset,
