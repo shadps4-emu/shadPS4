@@ -779,7 +779,6 @@ set(COMMON src/common/logging/classes.h
            src/common/arch.h
            src/common/assert.cpp
            src/common/assert.h
-           src/common/bit_array.h
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
@@ -805,7 +804,6 @@ set(COMMON src/common/logging/classes.h
            src/common/path_util.h
            src/common/object_pool.h
            src/common/polyfill_thread.h
-           src/common/range_lock.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
            src/common/recursive_lock.cpp
@@ -818,6 +816,7 @@ set(COMMON src/common/logging/classes.h
            src/common/signal_context.cpp
            src/common/singleton.h
            src/common/slab_heap.h
+           src/common/small_vector.h
            src/common/slot_vector.h
            src/common/spin_lock.cpp
            src/common/spin_lock.h
@@ -885,6 +884,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/psf.h
          src/core/file_format/playgo_chunk.cpp
          src/core/file_format/playgo_chunk.h
+         src/core/file_format/rif.cpp
+         src/core/file_format/rif.h
          src/core/file_format/trp.cpp
          src/core/file_format/trp.h
          src/core/file_format/npbind.cpp
@@ -1033,6 +1034,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/passes/ir_passes.h
                       src/shader_recompiler/ir/passes/lower_buffer_format_to_raw.cpp
                       src/shader_recompiler/ir/passes/lower_fp64_to_fp32.cpp
+                      src/shader_recompiler/ir/passes/lower_hardware_intrinsics.cpp
                       src/shader_recompiler/ir/passes/lower_user_clip_planes.cpp
                       src/shader_recompiler/ir/passes/lower_wave64_pass.cpp
                       src/shader_recompiler/ir/passes/phi_simplification_pass.cpp
@@ -1284,7 +1286,7 @@ create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE spdlog::spdlog)
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui ImGuiFileDialog gcn half::half ZLIB::ZLIB PNG::PNG minimp3)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis SDL3::SDL3 pugixml::pugixml)
 target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib miniupnpc::miniupnpc)
 target_link_libraries(shadps4 PRIVATE Freetype::Freetype)
 target_link_libraries(shadps4 PRIVATE libprotobuf)

@@ -46,6 +46,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     }
     memory->SetRasterizer(this);
 
+    scheduler.SetSessionCallback([this] { buffer_cache.FlushSyncBatch(true); });
+
     scheduler.SetSubmitCallback([this](Vulkan::SubmitInfo& info) {
         runtime.FlushBarriers();
         buffer_cache.SubmitPendingArenaBinds(info);
@@ -391,13 +393,15 @@ void Rasterizer::Finish() {
 }
 
 void Rasterizer::OnSubmit() {
-    if (fault_process_pending) {
-        fault_process_pending = false;
-        buffer_cache.ProcessFaultBuffer();
-    }
+    buffer_cache.TickFrame();
     texture_cache.ProcessDownloadImages();
     texture_cache.RunGarbageCollector();
     runtime.TickFrame();
+}
+
+void Rasterizer::OnFence() {
+    texture_cache.ProcessDownloadImages();
+    buffer_cache.FlushSyncBatch();
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
@@ -430,7 +434,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     if (uses_dma) {
         buffer_cache.SynchronizeDmaBuffers();
-        fault_process_pending = true;
     }
 
     return true;
@@ -790,7 +793,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 push_data.AddOffset(binding.buffer, adjust);
                 buffer_infos.emplace_back(buffer->Handle(), offset_aligned, size + adjust);
                 bound_buffers.emplace_back(buffer, offset, size, desc.is_written);
-                if (desc.is_written && desc.is_formatted) {
+                if (desc.is_written) {
+                    // Raw storage-buffer writes can also make an aliased cached image stale.
                     texture_cache.InvalidateMemoryFromGPU(vsharp.base_address, size);
                 }
                 needs_barrier |= runtime.IsBufferAccessed(buffer, offset, size, desc.is_written);
@@ -1199,27 +1203,23 @@ u32 Rasterizer::ReadDataFromGds(u32 gds_offset) {
     return value;
 }
 
-bool Rasterizer::InvalidateMemory(VAddr addr, u64 size) {
+bool Rasterizer::InvalidateMemory(VAddr addr, u64 size, bool assume_locks) {
     if (!IsMapped(addr, size)) {
         // Not GPU mapped memory, can skip invalidation logic entirely.
         return false;
     }
-    buffer_cache.InvalidateMemory(addr, size);
+    buffer_cache.InvalidateMemory(addr, size, assume_locks);
     texture_cache.InvalidateMemory(addr, size);
     return true;
 }
 
-bool Rasterizer::ReadMemory(VAddr addr, u64 size) {
+bool Rasterizer::ReadMemory(VAddr addr, u64 size, bool assume_locks) {
     if (!IsMapped(addr, size)) {
         // Not GPU mapped memory, can skip invalidation logic entirely.
         return false;
     }
-    buffer_cache.ReadMemory(addr, size);
+    buffer_cache.ReadMemory(addr, size, false, assume_locks);
     return true;
-}
-
-void Rasterizer::ProcessDownloadImages() {
-    texture_cache.ProcessDownloadImages();
 }
 
 bool Rasterizer::IsMapped(VAddr addr, u64 size) {
@@ -1242,13 +1242,15 @@ void Rasterizer::MapMemory(VAddr addr, u64 size) {
         std::scoped_lock lock{mapped_ranges_mutex};
         mapped_ranges += decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
     }
+}
+
+void Rasterizer::RegisterMemory(VAddr addr, u64 size) {
     page_manager.OnGpuMap(addr, size);
 }
 
 void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     buffer_cache.InvalidateMemory(addr, size);
     texture_cache.UnmapMemory(addr, size);
-    page_manager.OnGpuUnmap(addr, size);
     {
         std::scoped_lock lock{mapped_ranges_mutex};
         mapped_ranges -= decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
@@ -1576,5 +1578,15 @@ void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 
             {(f32)((color >> 16) & 0xff) / 255.0f, (f32)((color >> 8) & 0xff) / 255.0f,
              (f32)(color & 0xff) / 255.0f, (f32)((color >> 24) & 0xff) / 255.0f})});
 }
+
+std::thread::id Rasterizer::GetGpuCommandProcessorThread() {
+    return liverpool->GetGpuCommandProcessorThread();
+}
+
+#ifdef __linux__
+u32 Rasterizer::GetGpuCommandProcessorThreadId() {
+    return liverpool->GetGpuCommandProcessorThreadId();
+}
+#endif
 
 } // namespace Vulkan

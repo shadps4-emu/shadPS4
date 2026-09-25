@@ -15,6 +15,7 @@
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 
+#include <algorithm>
 #include <numbers>
 #include <magic_enum/magic_enum.hpp>
 
@@ -224,6 +225,21 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         if (addr_flags.ancillary_ena) {
             if (en_flags.ancillary_ena) {
                 ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::PackedAncillary));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+            }
+        }
+        if (addr_flags.sample_coverage_ena) {
+            if (en_flags.sample_coverage_ena) {
+                const u32 num_samples = std::clamp<u32>(runtime_info.hw.fs.num_samples, 1U, 16U);
+                IR::U32 coverage = ir.Imm32(1U);
+                if (num_samples > 1) {
+                    const u32 valid_samples = (1U << num_samples) - 1U;
+                    coverage = ir.BitwiseAnd(ir.GetAttributeU32(IR::Attribute::SampleMask),
+                                             ir.Imm32(valid_samples));
+                }
+                const IR::U1 is_helper = ir.GetAttributeU1(IR::Attribute::IsHelperInvocation);
+                ir.SetVectorReg(dst_vreg++, IR::U32{ir.Select(is_helper, ir.Imm32(0U), coverage)});
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }

@@ -76,6 +76,57 @@ FrontFaceSpirvInfo InspectFrontFaceSpirv(const std::vector<u32>& spirv) {
     return info;
 }
 
+struct PullModelSpirvInfo {
+    u32 bary_coord_khr_count{};
+    u32 frag_coord_count{};
+    u32 pull_model_amd_count{};
+    u32 fragment_barycentric_khr_count{};
+    u32 fmul_count{};
+};
+
+PullModelSpirvInfo InspectPullModelSpirv(const std::vector<u32>& spirv) {
+    PullModelSpirvInfo info{};
+    if (spirv.size() < 5U) {
+        ADD_FAILURE() << "SPIR-V header is truncated";
+        return info;
+    }
+
+    for (size_t offset = 5; offset < spirv.size();) {
+        const u32 instruction = spirv[offset];
+        const u32 word_count = instruction >> 16;
+        const auto opcode = static_cast<spv::Op>(instruction & 0xffffU);
+        if (word_count == 0U || offset + word_count > spirv.size()) {
+            ADD_FAILURE() << "Malformed SPIR-V instruction at word " << offset;
+            return info;
+        }
+
+        if (opcode == spv::Op::OpCapability && word_count >= 2U &&
+            spirv[offset + 1] == static_cast<u32>(spv::Capability::FragmentBarycentricKHR)) {
+            ++info.fragment_barycentric_khr_count;
+        } else if (opcode == spv::Op::OpDecorate && word_count >= 4U &&
+                   spirv[offset + 2] == static_cast<u32>(spv::Decoration::BuiltIn)) {
+            const auto builtin = static_cast<spv::BuiltIn>(spirv[offset + 3]);
+            switch (builtin) {
+            case spv::BuiltIn::BaryCoordKHR:
+                ++info.bary_coord_khr_count;
+                break;
+            case spv::BuiltIn::FragCoord:
+                ++info.frag_coord_count;
+                break;
+            case spv::BuiltIn::BaryCoordPullModelAMD:
+                ++info.pull_model_amd_count;
+                break;
+            default:
+                break;
+            }
+        } else if (opcode == spv::Op::OpFMul) {
+            ++info.fmul_count;
+        }
+        offset += word_count;
+    }
+    return info;
+}
+
 TEST_F(GcnTest, fragment_front_face_uses_float_sign_bits) {
     const auto info = InspectFrontFaceSpirv(TranslateFragmentFrontFaceToSpirv(false));
 
@@ -92,6 +143,25 @@ TEST_F(GcnTest, fragment_front_face_uses_all_bits) {
     EXPECT_EQ(info.select_count, 1U);
     EXPECT_EQ(info.true_value, 1U);
     EXPECT_EQ(info.false_value, 0U);
+}
+
+TEST_F(GcnTest, khr_barycentrics_reconstruct_pull_model) {
+    const auto info = InspectPullModelSpirv(TranslateFragmentPullModelToSpirv(false));
+
+    EXPECT_EQ(info.bary_coord_khr_count, 1U);
+    EXPECT_EQ(info.frag_coord_count, 1U);
+    EXPECT_EQ(info.fragment_barycentric_khr_count, 1U);
+    EXPECT_EQ(info.pull_model_amd_count, 0U);
+    EXPECT_EQ(info.fmul_count, 2U);
+}
+
+TEST_F(GcnTest, amd_barycentrics_use_native_pull_model) {
+    const auto info = InspectPullModelSpirv(TranslateFragmentPullModelToSpirv(true));
+
+    EXPECT_EQ(info.pull_model_amd_count, 1U);
+    EXPECT_EQ(info.frag_coord_count, 0U);
+    EXPECT_EQ(info.bary_coord_khr_count, 0U);
+    EXPECT_EQ(info.fmul_count, 0U);
 }
 
 // Example
@@ -596,4 +666,49 @@ TEST_F(GcnTest, pk_add_f16_op_sel_reversed) {
 
     EXPECT_TRUE(result.has_value());
     EXPECT_EQ(*result, (F16x2{half(6.0f), half(4.0f)}));
+}
+
+TEST_F(GcnTest, addk_i32_overflow_scc) {
+    auto runner = gcn_test::Runner::instance().value();
+    const std::array<u64, 3> instructions{
+        SOPK(OpcodeSOPK::S_ADDK_I32, SOperand7::S0, 0xffff).Get(),
+        SOP2(OpcodeSOP2::S_CSELECT_B32, SOperand7::S0, SOperand8::Const1, SOperand8::Const0).Get(),
+        VOP1(OpcodeVOP1::V_MOV_B32, VOperand8::V0, SOperand9::S0).Get(),
+    };
+    const auto spirv = TranslateToSpirv(instructions);
+    auto overflow = runner->run<u32>(spirv, std::array{0x80000000U, 0U, 0U, 0U});
+    ASSERT_TRUE(overflow.has_value());
+    EXPECT_EQ(*overflow, 1U);
+
+    auto no_overflow = runner->run<u32>(spirv, std::array{5U, 0U, 0U, 0U});
+    ASSERT_TRUE(no_overflow.has_value());
+    EXPECT_EQ(*no_overflow, 0U);
+}
+
+TEST_F(GcnTest, bitcmp1_b64_bit32) {
+    auto runner = gcn_test::Runner::instance().value();
+    const std::array<u64, 3> instructions{
+        SOPC(OpcodeSOPC::S_BITCMP1_B64, SOperand8::S0, SOperand8::S2).Get(),
+        SOP2(OpcodeSOP2::S_CSELECT_B32, SOperand7::S0, SOperand8::Const1, SOperand8::Const0).Get(),
+        VOP1(OpcodeVOP1::V_MOV_B32, VOperand8::V0, SOperand9::S0).Get(),
+    };
+    const auto spirv = TranslateToSpirv(instructions);
+
+    auto result = runner->run<u32>(spirv, std::array{0U, 1U, 32U, 0U});
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 1U);
+}
+
+TEST_F(GcnTest, subb_u32_clears_vcc) {
+    auto runner = gcn_test::Runner::instance().value();
+    const std::array<u64, 3> instructions{
+        VOP2(OpcodeVOP2::V_SUB_I32, VOperand8::V1, SOperand9::S0, VOperand8::V1).Get(),
+        VOP2(OpcodeVOP2::V_SUBB_U32, VOperand8::V1, SOperand9::S2, VOperand8::V3).Get(),
+        VOP2(OpcodeVOP2::V_ADDC_U32, VOperand8::V0, SOperand9::Const0, VOperand8::V3).Get(),
+    };
+    const auto spirv = TranslateToSpirv(instructions);
+
+    auto result = runner->run<u32>(spirv, std::array{0U, 1U, 5U, 0U});
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0U);
 }
