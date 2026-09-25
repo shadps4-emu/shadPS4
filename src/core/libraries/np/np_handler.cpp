@@ -642,8 +642,8 @@ void NpHandler::PostSessionInvitationEvent(s32 user_id, const std::string& sessi
     LOG_INFO(NpHandler,
              "Posted SESSION_INVITATION user_id={} session='{}' invitation='{}' flag={} "
              "onlineId='{}' referral='{}'({})",
-             user_id, session_id, invitation_id, param->flag, accepter_online_id,
-             inviter_online_id, inviter_account_id);
+             user_id, session_id, invitation_id, param->flag, accepter_online_id, inviter_online_id,
+             inviter_account_id);
 }
 
 std::vector<NpHandler::PendingInvitation> NpHandler::GetPendingInvitations(s32 user_id) const {
@@ -900,8 +900,7 @@ void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEv
                                            return p.invitation_id == invitation_id;
                                        }),
                         v.end());
-                PendingInvitation inv{session_id, invitation_id, n.fromNpid, n.toNpid,
-                                      valid_until};
+                PendingInvitation inv{session_id, invitation_id, n.fromNpid, n.toNpid, valid_until};
                 inv.from_account_id = ev.fromAccountId;
                 v.push_back(std::move(inv));
             }

@@ -92,9 +92,9 @@ public:
     struct PendingInvitation {
         std::string session_id;
         std::string invitation_id;
-        std::string from_npid;   // sender (for display)
-        std::string to_npid;     // local recipient / accepter
-        int64_t valid_until = 0; // ms since epoch; 0 = never expires
+        std::string from_npid;                // sender (for display)
+        std::string to_npid;                  // local recipient / accepter
+        int64_t valid_until = 0;              // ms since epoch; 0 = never expires
         OrbisNpAccountId from_account_id = 0; // sender account id (0 = unknown)
     };
     // Pending invitations stashed for a local user (newest last), populated on arrival.
