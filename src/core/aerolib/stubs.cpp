@@ -48,7 +48,7 @@ u64 GetStub(const char* nid) {
     std::scoped_lock lock{g_stub_mutex};
 
     if (g_stub_entries.empty()) {
-        g_stub_entries.reserve(2000);
+        g_stub_entries.reserve(500);
     }
 
     const u64 index = g_stub_entries.size();
