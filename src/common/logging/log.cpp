@@ -147,7 +147,7 @@ void Setup(std::string_view shadps4_filename) {
     UpdateSinks();
 }
 
-void Switch(std::string_view game_filename) {
+void Switch(std::string_view game_filename, bool append_log) {
     UpdateSinks();
     UpdateLogLevels(EmulatorSettings.GetLogFilter());
     UpdateLogFlushLevel(EmulatorSettings.GetLogFlushLevel());
@@ -155,7 +155,7 @@ void Switch(std::string_view game_filename) {
     g_shad_file_sink->_size_limit = EmulatorSettings.GetLogSizeLimit();
     g_shad_file_sink->session_file_helper_.open(
         (GetUserPath(Common::FS::PathType::LogDir) / game_filename).string(),
-        !EmulatorSettings.IsLogAppend());
+        !(append_log || EmulatorSettings.IsLogAppend()));
 }
 
 void Shutdown() {

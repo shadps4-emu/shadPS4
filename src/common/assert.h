@@ -44,9 +44,7 @@ template <typename... Args>
     do {                                                                                           \
         if (!(_a_)) [[unlikely]] {                                                                 \
             [&, shad_func_ = __func__]() SHAD_NO_INLINE {                                          \
-                LOG_GENERIC_AT(Debug, Common::Log::Level::Critical, shad_func_,                    \
-                               "Assertion Failed!");                                               \
-                assert_fail_impl();                                                                \
+                Common::Detail::AssertFail(__FILE__, __LINE__, __func__, "Assertion Failed!\n");   \
             }();                                                                                   \
         }                                                                                          \
     } while (false)
@@ -60,10 +58,7 @@ template <typename... Args>
     } while (0)
 
 #define UNREACHABLE()                                                                              \
-    [&, shad_func_ = __func__] [[noreturn]] () SHAD_NO_INLINE {                                    \
-        LOG_GENERIC_AT(Debug, Common::Log::Level::Critical, shad_func_, "Unreachable code!");      \
-        unreachable_impl();                                                                        \
-    }()
+    Common::Detail::UnreachableFail(__FILE__, __LINE__, __func__, "Unreachable code!\n")
 
 #define UNREACHABLE_MSG(...)                                                                       \
     Common::Detail::UnreachableFail(__FILE__, __LINE__, __func__, "Unreachable code!\n" __VA_ARGS__)

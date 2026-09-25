@@ -23,7 +23,7 @@ enum class Level : std::uint8_t {
 extern std::array<Level, NUM_LOG_CLASSES> g_class_levels;
 
 void Setup(std::string_view shadps4_filename);
-void Switch(std::string_view game_filename);
+void Switch(std::string_view game_filename, bool append_log);
 void Shutdown();
 void Flush();
 void Terminate();
