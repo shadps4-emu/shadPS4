@@ -1000,8 +1000,8 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
         }
         LOG_INFO(ShadNet,
                  "WebApiPushEvent svc='{}' type='{}' from='{}'({}) to='{}'({}) bytes={} extd={}",
-                 n.npServiceName, n.dataType, n.fromNpid, n.fromAccountId, n.toNpid,
-                 n.toAccountId, n.data.size(), n.extdData.size());
+                 n.npServiceName, n.dataType, n.fromNpid, n.fromAccountId, n.toNpid, n.toAccountId,
+                 n.data.size(), n.extdData.size());
         if (onWebApiPushEvent)
             onWebApiPushEvent(n);
         break;
