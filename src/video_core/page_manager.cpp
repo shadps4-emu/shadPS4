@@ -7,6 +7,7 @@
 #include "common/debug.h"
 #include "common/div_ceil.h"
 #include "common/error.h"
+#include "common/thread.h"
 #include "common/signal_context.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"

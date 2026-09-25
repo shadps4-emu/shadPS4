@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <ctime>
+#include <cstring>
 #include "common/logging/log.h"
 #include "core/file_sys/devices/srandom_device.h"
 

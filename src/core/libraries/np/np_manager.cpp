@@ -8,7 +8,7 @@
 #include <mutex>
 #include <vector>
 
-#include <core/user_settings.h>
+#include "core/user_settings.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"

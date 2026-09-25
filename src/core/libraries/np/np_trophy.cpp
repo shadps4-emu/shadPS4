@@ -5,7 +5,7 @@
 #include <thread>
 #include <unordered_map>
 #include <pugixml.hpp>
-
+#include <fmt/format.h>
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"

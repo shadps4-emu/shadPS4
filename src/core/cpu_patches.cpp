@@ -13,6 +13,7 @@
 #include <set>
 #include <unordered_set>
 #include <vector>
+#include <fmt/format.h>
 #include <Zydis/Zydis.h>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
