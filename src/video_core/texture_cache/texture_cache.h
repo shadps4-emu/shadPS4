@@ -44,9 +44,10 @@ class TextureCache {
 
     struct Traits {
         using Entry = ImageIds;
-        static constexpr size_t AddressSpaceBits = 40;
-        static constexpr size_t FirstLevelBits = 10;
-        static constexpr size_t PageBits = 20;
+        static constexpr size_t ADDRESS_SPACE_BITS = 40;
+        static constexpr size_t L1_BITS = 10;
+        static constexpr size_t PAGE_BITS = 20;
+        static constexpr bool NULL_CHECK = true;
     };
     using PageTable = MultiLevelPageTable<Traits>;
 
@@ -272,8 +273,8 @@ private:
     template <typename Func>
     static void ForEachPage(PAddr addr, size_t size, Func&& func) {
         static constexpr bool RETURNS_BOOL = std::is_same_v<std::invoke_result<Func, u64>, bool>;
-        const u64 page_end = (addr + size - 1) >> Traits::PageBits;
-        for (u64 page = addr >> Traits::PageBits; page <= page_end; ++page) {
+        const u64 page_end = (addr + size - 1) >> Traits::PAGE_BITS;
+        for (u64 page = addr >> Traits::PAGE_BITS; page <= page_end; ++page) {
             if constexpr (RETURNS_BOOL) {
                 if (func(page)) {
                     break;
