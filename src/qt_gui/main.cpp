@@ -30,8 +30,8 @@ extern std::unique_ptr<Vulkan::Presenter> presenter;
 WindowThemes m_window_themes;
 
 #ifdef _WIN32
-#include <windows.h>
 #include <shellapi.h>
+#include <windows.h>
 #endif
 #include <input/input_handler.h>
 std::shared_ptr<IpcClient> m_ipc_client;
@@ -46,12 +46,12 @@ int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleCP(CP_UTF8);
     SetConsoleOutputCP(CP_UTF8);
-    
+
     int argc_w;
     wchar_t** argv_w = CommandLineToArgvW(GetCommandLineW(), &argc_w);
-    
+
     QApplication* a = nullptr;
-    
+
     if (argv_w != nullptr) {
         std::vector<std::string> argv_utf8;
         std::vector<char*> argv_converted;
@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
         argv_converted.push_back(nullptr);
 
         a = new QApplication(argc_w, argv_converted.data());
-        
+
         LocalFree(argv_w);
     } else {
         a = new QApplication(argc, argv);

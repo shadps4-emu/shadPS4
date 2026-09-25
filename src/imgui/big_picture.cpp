@@ -84,7 +84,8 @@ void Launch() {
         ImGui::FontStack::AddPrimaryUiFont(io.Fonts, 32.0f, Config::GetLanguage(), font_cfg, true);
     io.FontDefault = myFont;
 
-    io.FontDefault = ImGui::FontStack::AddPrimaryUiFont(io.Fonts, 64.0f, Config::GetLanguage(), font_cfg, true);
+    io.FontDefault =
+        ImGui::FontStack::AddPrimaryUiFont(io.Fonts, 64.0f, Config::GetLanguage(), font_cfg, true);
     io.FontGlobalScale = 0.5f;
     // size the big picture font atlas cap from the renderer limit
     const auto max_dim = SDL_GetNumberProperty(SDL_GetRendererProperties(renderer),
