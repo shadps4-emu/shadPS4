@@ -172,6 +172,10 @@ int PosixSocket::Close() {
     return ConvertReturnErrorCode(out);
 }
 
+int PosixSocket::Shutdown(int how) {
+    return ConvertReturnErrorCode(::shutdown(sock, how));
+}
+
 int PosixSocket::Bind(const OrbisNetSockaddr* addr, u32 addrlen) {
     std::scoped_lock lock{m_mutex};
     sockaddr addr2;
