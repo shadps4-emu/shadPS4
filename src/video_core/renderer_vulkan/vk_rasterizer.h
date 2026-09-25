@@ -74,7 +74,6 @@ public:
     u32 ReadDataFromGds(u32 gsd_offset);
     bool InvalidateMemory(VAddr addr, u64 size, bool assume_locks = false);
     bool ReadMemory(VAddr addr, u64 size, bool assume_locks = false);
-    void ProcessDownloadImages();
     bool IsMapped(VAddr addr, u64 size);
     void MapMemory(VAddr addr, u64 size);
     void RegisterMemory(VAddr addr, u64 size);
@@ -83,6 +82,7 @@ public:
     u64 Flush();
     void Finish();
     void OnSubmit();
+    void OnFence();
 
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;

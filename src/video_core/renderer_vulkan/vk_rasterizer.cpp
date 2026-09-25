@@ -399,6 +399,11 @@ void Rasterizer::OnSubmit() {
     runtime.TickFrame();
 }
 
+void Rasterizer::OnFence() {
+    texture_cache.ProcessDownloadImages();
+    buffer_cache.FlushSyncBatch();
+}
+
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
     if (IsComputeImageCopy(pipeline) || IsComputeMetaClear(pipeline) ||
         IsComputeImageClear(pipeline)) {
@@ -1215,11 +1220,6 @@ bool Rasterizer::ReadMemory(VAddr addr, u64 size, bool assume_locks) {
     }
     buffer_cache.ReadMemory(addr, size, false, assume_locks);
     return true;
-}
-
-void Rasterizer::ProcessDownloadImages() {
-    texture_cache.ProcessDownloadImages();
-    buffer_cache.FlushSyncBatch();
 }
 
 bool Rasterizer::IsMapped(VAddr addr, u64 size) {
