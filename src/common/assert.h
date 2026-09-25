@@ -17,36 +17,51 @@ void assert_fail_impl();
 #ifdef _MSC_VER
 #define SHAD_NO_INLINE __declspec(noinline)
 #else
-#define SHAD_NO_INLINE __attribute__((noinline))
+#define SHAD_NO_INLINE __attribute__((cold, noinline))
 #endif
+
+namespace Common::Detail {
+
+template <typename... Args>
+SHAD_NO_INLINE void AssertFail(const char* file, int line, const char* func,
+                               fmt::format_string<Args...> format, Args... args) {
+    Common::Log::VLog(Common::Log::Class::Debug, Common::Log::Level::Critical, file, line, func,
+                      format, fmt::make_format_args(args...));
+    assert_fail_impl();
+}
+
+template <typename... Args>
+[[noreturn]] SHAD_NO_INLINE void UnreachableFail(const char* file, int line, const char* func,
+                                                 fmt::format_string<Args...> format, Args... args) {
+    Common::Log::VLog(Common::Log::Class::Debug, Common::Log::Level::Critical, file, line, func,
+                      format, fmt::make_format_args(args...));
+    unreachable_impl();
+}
+
+} // namespace Common::Detail
 
 #define ASSERT(_a_)                                                                                \
     do {                                                                                           \
         if (!(_a_)) [[unlikely]] {                                                                 \
-            LOG_CRITICAL(Debug, "Assertion Failed!");                                              \
-            assert_fail_impl();                                                                    \
+            [&, shad_func_ = __func__]() SHAD_NO_INLINE {                                          \
+                Common::Detail::AssertFail(__FILE__, __LINE__, __func__, "Assertion Failed!\n");   \
+            }();                                                                                   \
         }                                                                                          \
     } while (false)
 
 #define ASSERT_MSG(_a_, ...)                                                                       \
     do {                                                                                           \
         if (!(_a_)) [[unlikely]] {                                                                 \
-            LOG_CRITICAL(Debug, "Assertion Failed!\n" __VA_ARGS__);                                \
-            assert_fail_impl();                                                                    \
+            Common::Detail::AssertFail(__FILE__, __LINE__, __func__,                               \
+                                       "Assertion Failed!\n" __VA_ARGS__);                         \
         }                                                                                          \
-    } while (false)
+    } while (0)
 
 #define UNREACHABLE()                                                                              \
-    do {                                                                                           \
-        LOG_CRITICAL(Debug, "Unreachable code!");                                                  \
-        unreachable_impl();                                                                        \
-    } while (0)
+    Common::Detail::UnreachableFail(__FILE__, __LINE__, __func__, "Unreachable code!\n")
 
 #define UNREACHABLE_MSG(...)                                                                       \
-    do {                                                                                           \
-        LOG_CRITICAL(Debug, "Unreachable code!\n" __VA_ARGS__);                                    \
-        unreachable_impl();                                                                        \
-    } while (0)
+    Common::Detail::UnreachableFail(__FILE__, __LINE__, __func__, "Unreachable code!\n" __VA_ARGS__)
 
 #ifdef _DEBUG
 #define DEBUG_ASSERT(_a_) ASSERT(_a_)
@@ -65,21 +80,3 @@ void assert_fail_impl();
 
 #define UNIMPLEMENTED_IF(cond) ASSERT_MSG(!(cond), "Unimplemented code!")
 #define UNIMPLEMENTED_IF_MSG(cond, ...) ASSERT_MSG(!(cond), __VA_ARGS__)
-
-// If the assert is ignored, execute _b_
-#define ASSERT_OR_EXECUTE(_a_, _b_)                                                                \
-    do {                                                                                           \
-        ASSERT(_a_);                                                                               \
-        if (!(_a_)) [[unlikely]] {                                                                 \
-            _b_                                                                                    \
-        }                                                                                          \
-    } while (0)
-
-// If the assert is ignored, execute _b_
-#define ASSERT_OR_EXECUTE_MSG(_a_, _b_, ...)                                                       \
-    do {                                                                                           \
-        ASSERT_MSG(_a_, __VA_ARGS__);                                                              \
-        if (!(_a_)) [[unlikely]] {                                                                 \
-            _b_                                                                                    \
-        }                                                                                          \
-    } while (0)

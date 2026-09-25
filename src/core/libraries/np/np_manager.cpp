@@ -8,7 +8,6 @@
 #include <mutex>
 #include <vector>
 
-#include <core/user_settings.h>
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
@@ -19,6 +18,7 @@
 #include "core/libraries/np/np_manager.h"
 #include "core/tls.h"
 #include "core/user_manager.h"
+#include "core/user_settings.h"
 #include "np_handler.h"
 
 namespace Libraries::Np::NpManager {
