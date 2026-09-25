@@ -890,7 +890,7 @@ void TextureCache::TrackImage(ImageId image_id) {
         // Re-track the whole image
         image.track_addr = image_begin;
         image.track_addr_end = image_end;
-        tracker.UpdatePageWatchers<1>(image_begin, image.info.guest_size);
+        tracker.UpdatePageWatchers(image_begin, image.info.guest_size, PageOp::Track);
     } else {
         if (image_begin < image.track_addr) {
             TrackImageHead(image_id);
@@ -913,7 +913,7 @@ void TextureCache::TrackImageHead(ImageId image_id) {
     ASSERT(image.track_addr != 0 && image_begin < image.track_addr);
     const auto size = image.track_addr - image_begin;
     image.track_addr = image_begin;
-    tracker.UpdatePageWatchers<1>(image_begin, size);
+    tracker.UpdatePageWatchers(image_begin, size, PageOp::Track);
 }
 
 void TextureCache::TrackImageTail(ImageId image_id) {
@@ -929,7 +929,7 @@ void TextureCache::TrackImageTail(ImageId image_id) {
     const auto addr = image.track_addr_end;
     const auto size = image_end - image.track_addr_end;
     image.track_addr_end = image_end;
-    tracker.UpdatePageWatchers<1>(addr, size);
+    tracker.UpdatePageWatchers(addr, size, PageOp::Track);
 }
 
 void TextureCache::UntrackImage(ImageId image_id) {
@@ -942,7 +942,7 @@ void TextureCache::UntrackImage(ImageId image_id) {
     image.track_addr = 0;
     image.track_addr_end = 0;
     if (size != 0) {
-        tracker.UpdatePageWatchers<false>(addr, size);
+        tracker.UpdatePageWatchers(addr, size, PageOp::Untrack);
     }
 }
 
@@ -961,7 +961,7 @@ void TextureCache::UntrackImageHead(ImageId image_id) {
         // Cehck its hash later.
         MarkAsMaybeDirty(image_id, image);
     }
-    tracker.UpdatePageWatchers<false>(image_begin, size);
+    tracker.UpdatePageWatchers(image_begin, size, PageOp::Untrack);
 }
 
 void TextureCache::UntrackImageTail(ImageId image_id) {
@@ -980,7 +980,7 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
         // Cehck its hash later.
         MarkAsMaybeDirty(image_id, image);
     }
-    tracker.UpdatePageWatchers<false>(addr, size);
+    tracker.UpdatePageWatchers(addr, size, PageOp::Untrack);
 }
 
 void TextureCache::GarbageCollectImages() {
