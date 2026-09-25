@@ -10,6 +10,7 @@
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
+#include "core/file_format/rif.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/app_content/app_content_error.h"
 #include "core/libraries/kernel/process.h"
@@ -299,55 +300,84 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
         UNREACHABLE_MSG("Failed to get TITLE_ID");
     }
     const auto addon_path = addons_dir / title_id;
-    if (!std::filesystem::exists(addon_path)) {
-        return ORBIS_OK;
+    if (std::filesystem::exists(addon_path)) {
+        for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
+            if (entry.is_directory()) {
+                // Look for a param.sfo in the additional content directory.
+                const auto& param_sfo_path = entry.path() / "sce_sys/param.sfo";
+                if (!std::filesystem::exists(param_sfo_path)) {
+                    LOG_WARNING(Lib_AppContent, "Additonal content folder {} has no param.sfo",
+                                entry.path().filename().string());
+                    continue;
+                }
+
+                // Open the param.sfo, make sure it's actually for additional content.
+                PSF* dlc_params = new PSF();
+                dlc_params->Open(param_sfo_path);
+
+                auto category = dlc_params->GetString("CATEGORY");
+                if (category.has_value() && strncmp(category.value().data(), "ac", 2) == 0) {
+                    // We've located additional content. Find the entitlement id from the content
+                    // id.
+                    auto content_id = dlc_params->GetString("CONTENT_ID");
+                    if (!content_id.has_value()) {
+                        LOG_WARNING(Lib_AppContent,
+                                    "Additonal content {} param.sfo is missing CONTENT_ID",
+                                    entry.path().filename().string());
+                        continue;
+                    }
+
+                    // content id's have consistent formatting, so this will always work.
+                    // They follow the format UPXXXX-CUSAXXXXX_XX-entitlement
+                    if (content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
+                        LOG_WARNING(Lib_AppContent,
+                                    "Additonal content {} param.sfo has malformed CONTENT_ID",
+                                    entry.path().filename().string());
+                        continue;
+                    }
+                    auto entitlement_id =
+                        content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
+                    LOG_INFO(Lib_AppContent, "Entitlement {} found", entitlement_id);
+
+                    // Save the additional content info in addcont_info.
+                    auto& info = addcont_info[addcont_count++];
+                    entitlement_id.copy(info.entitlement_label, entitlement_id.length());
+                    info.status = OrbisAppContentAddcontDownloadStatus::Installed;
+                } else {
+                    LOG_WARNING(Lib_AppContent,
+                                "Additonal content folder {} is not additional content",
+                                entry.path().filename().string());
+                    continue;
+                }
+            }
+        }
     }
 
-    for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
-        if (entry.is_directory()) {
-            // Look for a param.sfo in the additional content directory.
-            const auto& param_sfo_path = entry.path() / "sce_sys/param.sfo";
-            if (!std::filesystem::exists(param_sfo_path)) {
-                LOG_WARNING(Lib_AppContent, "Additonal content folder {} has no param.sfo",
-                            entry.path().filename().string());
-                continue;
-            }
+    // Load license files for any license-only DLC.
+    if (const auto value = param_sfo->GetString("CONTENT_ID"); value.has_value()) {
+        const std::string_view& content_id = *value;
+        std::string service_id(content_id.substr(0, content_id.find_last_of('-')));
 
-            // Open the param.sfo, make sure it's actually for additional content.
-            PSF* dlc_params = new PSF();
-            dlc_params->Open(param_sfo_path);
+        const std::filesystem::path& licenses_dir =
+            Common::FS::GetUserPath(Common::FS::PathType::LicensesDir);
+        std::filesystem::path ridx_path = licenses_dir / (service_id + ".idx");
+        std::filesystem::path rifa_path = licenses_dir / (service_id + ".rif");
 
-            auto category = dlc_params->GetString("CATEGORY");
-            if (category.has_value() && strncmp(category.value().data(), "ac", 2) == 0) {
-                // We've located additional content. Find the entitlement id from the content id.
-                auto content_id = dlc_params->GetString("CONTENT_ID");
-                if (!content_id.has_value()) {
-                    LOG_WARNING(Lib_AppContent,
-                                "Additonal content {} param.sfo is missing CONTENT_ID",
-                                entry.path().filename().string());
-                    continue;
+        if (std::filesystem::exists(ridx_path) && std::filesystem::exists(rifa_path)) {
+            if (RIF rif; rif.Open(ridx_path, rifa_path)) {
+                LOG_INFO(Lib_AppContent, "Checking license {} for additional entitlements",
+                         service_id);
+
+                const std::vector<std::string>& entitlements = rif.GetLicenseOnlyEntitlements();
+                for (const auto& entitlement_id : entitlements) {
+                    LOG_INFO(Lib_AppContent, "License-only entitlement {} found", entitlement_id);
+
+                    auto& info = addcont_info[addcont_count++];
+                    entitlement_id.copy(info.entitlement_label, entitlement_id.length());
+                    info.status = OrbisAppContentAddcontDownloadStatus::NoExtraData;
                 }
-
-                // content id's have consistent formatting, so this will always work.
-                // They follow the format UPXXXX-CUSAXXXXX_XX-entitlement
-                if (content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
-                    LOG_WARNING(Lib_AppContent,
-                                "Additonal content {} param.sfo has malformed CONTENT_ID",
-                                entry.path().filename().string());
-                    continue;
-                }
-                auto entitlement_id =
-                    content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
-                LOG_INFO(Lib_AppContent, "Entitlement {} found", entitlement_id);
-
-                // Save the additional content info in addcont_info.
-                auto& info = addcont_info[addcont_count++];
-                entitlement_id.copy(info.entitlement_label, entitlement_id.length());
-                info.status = OrbisAppContentAddcontDownloadStatus::Installed;
             } else {
-                LOG_WARNING(Lib_AppContent, "Additonal content folder {} is not additional content",
-                            entry.path().filename().string());
-                continue;
+                LOG_ERROR(Lib_AppContent, "Could not open license file for {}", service_id);
             }
         }
     }
