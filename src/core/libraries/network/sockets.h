@@ -66,6 +66,7 @@ struct Socket {
     virtual ~Socket() = default;
     virtual bool IsValid() const = 0;
     virtual int Close() = 0;
+    virtual int Shutdown(int how) = 0;
     virtual int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) = 0;
     virtual int GetSocketOptions(int level, int optname, void* optval, u32* optlen) = 0;
     virtual int Bind(const OrbisNetSockaddr* addr, u32 addrlen) = 0;
@@ -106,6 +107,7 @@ struct PosixSocket : public Socket {
     explicit PosixSocket(net_socket sock) : Socket(0, 0, 0), sock(sock) {}
     bool IsValid() const override;
     int Close() override;
+    int Shutdown(int how) override;
     int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
     int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
     int Bind(const OrbisNetSockaddr* addr, u32 addrlen) override;
@@ -131,6 +133,7 @@ struct P2PSocket : public Socket {
         return true;
     }
     int Close() override;
+    int Shutdown(int how) override;
     int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
     int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
     int Bind(const OrbisNetSockaddr* addr, u32 addrlen) override;
@@ -160,6 +163,7 @@ struct UnixSocket : public Socket {
     explicit UnixSocket(net_socket sock) : Socket(0, 0, 0), sock(sock) {}
     bool IsValid() const override;
     int Close() override;
+    int Shutdown(int how) override;
     int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
     int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
     int Bind(const OrbisNetSockaddr* addr, u32 addrlen) override;
