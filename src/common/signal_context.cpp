@@ -47,4 +47,20 @@ bool IsWriteError(void* ctx) {
 #endif
 }
 
+bool IsExecuteError(void* ctx) {
+#if defined(_WIN32)
+    return ((EXCEPTION_POINTERS*)ctx)->ExceptionRecord->ExceptionInformation[0] == 1;
+#elif defined(__APPLE__) && defined(ARCH_X86_64)
+    return ((ucontext_t*)ctx)->uc_mcontext->__es.__err & 0x16;
+#elif defined(__APPLE__) && defined(ARCH_ARM64)
+    return false; // idk
+#elif defined(__FreeBSD__) && defined(ARCH_X86_64)
+    return ((ucontext_t*)ctx)->uc_mcontext.mc_err & 0x16;
+#elif defined(ARCH_X86_64)
+    return ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_ERR] & 0x16;
+#else
+#error "Unsupported architecture"
+#endif
+}
+
 } // namespace Common
