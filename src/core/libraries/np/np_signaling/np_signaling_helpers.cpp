@@ -3,7 +3,7 @@
 
 #include <chrono>
 #include <cstring>
-
+#include <fmt/format.h>
 #include "common/alignment.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"

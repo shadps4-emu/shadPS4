@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstring>
 #include <utility>
+#include <fmt/format.h>
 
 #include "common/logging/log.h"
 #include "common/thread.h"
