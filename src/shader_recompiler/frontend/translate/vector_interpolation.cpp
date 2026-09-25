@@ -109,8 +109,14 @@ void Translator::V_INTERP_MOV_F32(const GcnInst& inst) {
         profile.supports_fragment_shader_barycentric) {
         // VSRC 0=P10, 1=P20, 2=P0
         interp.primary = Qualifier::PerVertex;
-        SetDst(inst.dst[0],
-               ir.GetAttribute(attrib, inst.control.vintrp.chan, (src_select + 1) % 3));
+        IR::F32 result = ir.GetAttribute(attrib, inst.control.vintrp.chan, (src_select + 1) % 3);
+        // is_default stores OFFSET5, which selects passthrough mode together with flat_shade.
+        const bool is_passthrough = attr.is_flat && attr.is_default;
+        if (src_select != 2 && !is_passthrough) {
+            const IR::F32 p0 = ir.GetAttribute(attrib, inst.control.vintrp.chan, 0);
+            result = ir.FPSub(result, p0);
+        }
+        SetDst(inst.dst[0], result);
     } else {
         interp.primary = Qualifier::Flat;
         SetDst(inst.dst[0], ir.GetAttribute(attrib, inst.control.vintrp.chan));
