@@ -951,12 +951,9 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                     LOG_ERROR(Render, "Clamped size from {} to {} for stage {:#x}",
                               vsharp.GetSize(), size, stage.pgm_hash);
                 }
-                VideoCore::ObtainBufferFlags flags = {};
+                VideoCore::ObtainBufferFlags flags = VideoCore::ObtainBufferFlags::IsTexelBuffer;
                 if (desc.is_written) {
                     flags |= VideoCore::ObtainBufferFlags::IsWritten;
-                }
-                if (desc.is_formatted) {
-                    flags |= VideoCore::ObtainBufferFlags::IsTexelBuffer;
                 }
                 const auto [buffer, offset] =
                     buffer_cache.ObtainBuffer(vsharp.base_address, size, flags);
