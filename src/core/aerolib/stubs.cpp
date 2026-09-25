@@ -56,8 +56,7 @@ u64 GetStub(const char* nid) {
     StubEntry e;
     if (const auto* entry = FindByNid(nid)) {
         if (auto const& it = std::ranges::find_if(
-                g_stub_entries,
-                [nid](StubEntry const& en) { return en.nid && en.nid->nid == nid; });
+                g_stub_entries, [entry](StubEntry const& en) { return en.nid && en.nid == entry; });
             it != g_stub_entries.end()) {
             return reinterpret_cast<u64>(it->code->getCode());
         }
