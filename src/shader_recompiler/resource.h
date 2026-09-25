@@ -26,6 +26,13 @@ struct SharpFetch {
     static constexpr std::size_t N = sizeof(T) / sizeof(u32);
     static_assert(N <= 8);
 
+    enum class Summary : u8 {
+        SingleLoad,
+        MultiLoad,
+        Invalid,
+    };
+
+    Summary summary{Summary::MultiLoad};
     std::array<u32, N> immediates;
     std::array<SharpLocation, N> offsets;
     u8 load_mask;
@@ -35,12 +42,13 @@ struct SharpFetch {
     template <u32 num_dwords = N>
         requires(num_dwords <= N)
     constexpr bool Fetch(const u32* flatbuf, T* out) const {
-        u8 mask = load_mask;
-        for (u32 i = 0; i < num_dwords; i++) {
-            if (offsets[i] == UNKNOWN_LOCATION) {
-                return false;
-            }
+        if (summary == Summary::SingleLoad) [[likely]] {
+            std::memcpy(out, flatbuf + offsets[0], num_dwords * sizeof(u32));
+            return true;
+        } else if (summary == Summary::Invalid) [[unlikely]] {
+            return false;
         }
+        u8 mask = load_mask;
         std::array<u32, num_dwords> out_dw;
         for (u32 i = 0; i < num_dwords; i++) {
             out_dw[i] = (mask & 1) ? flatbuf[offsets[i]] : immediates[i];
