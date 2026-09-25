@@ -1165,7 +1165,8 @@ void Rasterizer::FillBuffer(VAddr address, u32 num_bytes, u32 value, bool is_gds
 }
 
 void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {
-    if (!dst_gds && !buffer_cache.IsRegionGpuModified(dst, num_bytes)) {
+    if (!dst_gds && !buffer_cache.IsRegionGpuModified(dst, num_bytes) &&
+        !buffer_cache.IsRegionInSyncBatch(dst, num_bytes)) {
         if (!src_gds && !buffer_cache.IsRegionGpuModified(src, num_bytes) &&
             !texture_cache.FindImageFromRange(src, num_bytes)) {
             // Both buffers were not transferred to GPU yet. Can safely copy in host memory.
