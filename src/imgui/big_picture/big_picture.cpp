@@ -7,6 +7,7 @@
 #include <stb_image.h>
 
 #include "common/logging/log.h"
+#include "common/path_util.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
