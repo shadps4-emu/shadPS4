@@ -194,11 +194,11 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     }
 #endif
 
-    EndSession();
-
     if (on_submit) {
         on_submit(info);
     }
+
+    EndSession();
 
     std::vector<vk::CommandBuffer> cmd_buffers;
     cmd_buffers.reserve(sessions.size() * 2);
