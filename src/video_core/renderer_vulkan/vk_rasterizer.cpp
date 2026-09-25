@@ -615,50 +615,169 @@ bool Rasterizer::IsComputeImageCopy(const Pipeline* pipeline) {
         return false;
     }
 
-    // Ensure shader only has 2 bound buffers
     const auto& cs_pgm = liverpool->GetCsRegs();
     const auto& info = pipeline->GetStage(Shader::SwStage::Compute);
-    if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() != 2 || !info.images.empty()) {
+    // A whole-image copy has one source and one destination. Some variants also use a small
+    // read-only buffer for the source and destination bounds.
+    if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() < 2 || info.buffers.size() > 3 ||
+        !info.images.empty()) {
+        return false;
+    }
+    const bool is_formatted_copy =
+        info.buffers.size() == 2 &&
+        std::ranges::all_of(info.buffers, &Shader::BufferResource::is_formatted);
+    const bool is_bounded_raw_copy =
+        info.buffers.size() == 3 &&
+        std::ranges::none_of(info.buffers, &Shader::BufferResource::is_formatted);
+    if (!is_formatted_copy && !is_bounded_raw_copy) {
         return false;
     }
 
-    // Those 2 buffers must both be formatted. One must be source and another destination.
-    const auto& desc0 = info.buffers[0];
-    const auto& desc1 = info.buffers[1];
-    if (!desc0.is_formatted || !desc1.is_formatted || desc0.is_written == desc1.is_written) {
+    const Shader::BufferResource* dst_desc{};
+    for (const auto& desc : info.buffers) {
+        if (!desc.is_written) {
+            continue;
+        }
+        if (desc.IsSpecial() || dst_desc) {
+            return false;
+        }
+        dst_desc = &desc;
+    }
+    if (!dst_desc) {
         return false;
     }
 
-    // Buffers must have the same size and each thread of the dispatch must copy 1 dword of data
-    const AmdGpu::Buffer buf0 = desc0.GetSharp(info);
-    const AmdGpu::Buffer buf1 = desc1.GetSharp(info);
-    if (buf0.GetSize() != buf1.GetSize() || cs_pgm.dim_x != (buf0.GetSize() / 256)) {
+    // Each invocation copies one dword and each workgroup contains 64 invocations.
+    const AmdGpu::Buffer dst_buffer = dst_desc->GetSharp(info);
+    if (static_cast<u64>(cs_pgm.dim_x) * 256 != dst_buffer.GetSize()) {
         return false;
     }
 
-    // Find images the buffer alias
-    const auto image0_id = texture_cache.FindImageFromRange(buf0.base_address, buf0.GetSize());
-    if (!image0_id) {
+    const Shader::BufferResource* src_desc{};
+    const Shader::BufferResource* metadata_desc{};
+    AmdGpu::Buffer src_buffer{};
+    AmdGpu::Buffer metadata_buffer{};
+    for (const auto& desc : info.buffers) {
+        if (&desc == dst_desc) {
+            continue;
+        }
+        if (desc.IsSpecial() || desc.is_written) {
+            return false;
+        }
+
+        const AmdGpu::Buffer buffer = desc.GetSharp(info);
+        const bool matches_copy =
+            desc.is_formatted == dst_desc->is_formatted && buffer.GetSize() == dst_buffer.GetSize();
+        if (matches_copy) {
+            if (src_desc) {
+                return false;
+            }
+            src_desc = &desc;
+            src_buffer = buffer;
+        } else {
+            if (!is_bounded_raw_copy || desc.is_formatted || buffer.GetSize() < sizeof(u32) ||
+                buffer.GetSize() > 256 || metadata_desc) {
+                return false;
+            }
+            metadata_desc = &desc;
+            metadata_buffer = buffer;
+        }
+    }
+    if (!src_desc || src_buffer.base_address == dst_buffer.base_address) {
         return false;
     }
-    const auto image1_id =
-        texture_cache.FindImageFromRange(buf1.base_address, buf1.GetSize(), false);
-    if (!image1_id) {
+
+    if (is_bounded_raw_copy) {
+        if (!metadata_desc || cs_pgm.dim_y != 1 || cs_pgm.dim_z != 1 ||
+            cs_pgm.num_thread_y.full != 1 || cs_pgm.num_thread_z.full != 1 ||
+            cs_pgm.settings.num_user_regs <= 6 || dst_buffer.GetSize() % sizeof(u32) != 0) {
+            return false;
+        }
+
+        // Replacing the shader with an image copy is only valid when both raw descriptors map
+        // each index to the same byte offset. Format, component selection, cache policy, and
+        // reserved fields do not participate in raw buffer addressing.
+        const bool matching_addressing = src_buffer.stride == dst_buffer.stride &&
+                                         src_buffer.num_records == dst_buffer.num_records &&
+                                         src_buffer.cache_swizzle == dst_buffer.cache_swizzle &&
+                                         src_buffer.swizzle_enable == dst_buffer.swizzle_enable &&
+                                         src_buffer.element_size == dst_buffer.element_size &&
+                                         src_buffer.index_stride == dst_buffer.index_stride &&
+                                         src_buffer.add_tid_enable == dst_buffer.add_tid_enable;
+        if (!matching_addressing) {
+            return false;
+        }
+
+        // The shader bounds the source with metadata_buffer[0] and the destination with user
+        // SGPR 6. Both bounds must cover the whole dispatch before it can be replaced by a
+        // whole-image copy.
+        if (!IsMapped(metadata_buffer.base_address, sizeof(u32)) ||
+            buffer_cache.IsRegionGpuModified(metadata_buffer.base_address, sizeof(u32))) {
+            return false;
+        }
+        u32 src_elements{};
+        memory->CopySparseMemory(metadata_buffer.base_address, reinterpret_cast<u8*>(&src_elements),
+                                 sizeof(src_elements));
+        const u64 dst_elements = dst_buffer.GetSize() / sizeof(u32);
+        const u64 dispatched_elements = static_cast<u64>(cs_pgm.dim_x) * cs_pgm.num_thread_x.full;
+        if (src_elements != dst_elements || cs_pgm.user_data[6] != dst_elements ||
+            dispatched_elements != dst_elements) {
+            return false;
+        }
+    }
+
+    // Find the images aliased by the source and destination buffers.
+    const auto src_image_id =
+        texture_cache.FindImageFromRange(src_buffer.base_address, src_buffer.GetSize());
+    if (!src_image_id) {
+        return false;
+    }
+
+    const auto dst_image_id =
+        texture_cache.FindImageFromRange(dst_buffer.base_address, dst_buffer.GetSize(), false);
+    if (!dst_image_id) {
         return false;
     }
 
     // Image copy must be valid
-    VideoCore::Image& image0 = texture_cache.GetImage(image0_id);
-    VideoCore::Image& image1 = texture_cache.GetImage(image1_id);
-    if (image0.info.guest_size != image1.info.guest_size ||
-        image0.info.pitch != image1.info.pitch || image0.info.guest_size != buf0.GetSize() ||
-        image0.info.num_bits != image1.info.num_bits) {
+    VideoCore::Image& src_image = texture_cache.GetImage(src_image_id);
+    VideoCore::Image& dst_image = texture_cache.GetImage(dst_image_id);
+    if (src_image.info.guest_size != dst_image.info.guest_size ||
+        src_image.info.pitch != dst_image.info.pitch ||
+        src_image.info.guest_size != src_buffer.GetSize() ||
+        src_image.info.num_bits != dst_image.info.num_bits) {
         return false;
     }
 
-    // Perform image copy
-    VideoCore::Image& src_image = desc0.is_written ? image1 : image0;
-    VideoCore::Image& dst_image = desc0.is_written ? image0 : image1;
+    if (is_bounded_raw_copy) {
+        const auto& src = src_image.info;
+        const auto& dst = dst_image.info;
+        const auto has_aux_metadata = [](const VideoCore::ImageInfo& image) {
+            return image.meta_info.cmask_addr != 0 || image.meta_info.fmask_addr != 0 ||
+                   image.meta_info.htile_addr != 0;
+        };
+        if (src.guest_address != src_buffer.base_address ||
+            dst.guest_address != dst_buffer.base_address || src.size != dst.size ||
+            src.resources != dst.resources || src.type != dst.type || src.pitch != dst.pitch ||
+            src.tile_mode != dst.tile_mode || src.array_mode != dst.array_mode ||
+            src.num_samples != dst.num_samples || src.bank_swizzle != dst.bank_swizzle ||
+            src.alt_tile != dst.alt_tile || src.props.is_volume != dst.props.is_volume ||
+            src.props.is_tiled != dst.props.is_tiled || src.props.is_pow2 != dst.props.is_pow2 ||
+            src.props.is_block != dst.props.is_block ||
+            src.props.has_stencil != dst.props.has_stencil || !src.IsCompatible(dst) ||
+            has_aux_metadata(src) || has_aux_metadata(dst)) {
+            return false;
+        }
+        for (u32 mip = 0; mip < src.resources.levels; ++mip) {
+            const auto& src_mip = src.mips_layout[mip];
+            const auto& dst_mip = dst.mips_layout[mip];
+            if (src_mip.size != dst_mip.size || src_mip.pitch != dst_mip.pitch ||
+                src_mip.height != dst_mip.height || src_mip.offset != dst_mip.offset) {
+                return false;
+            }
+        }
+    }
+
     runtime.CopyColorAndDepth(&src_image, &dst_image);
     return true;
 }
@@ -782,8 +901,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                     LOG_ERROR(Render, "Clamped size from {} to {} for stage {:#x}",
                               vsharp.GetSize(), size, stage.pgm_hash);
                 }
-                const auto [buffer, offset] = buffer_cache.ObtainBuffer(
-                    vsharp.base_address, size, desc.is_written, desc.is_formatted);
+                const auto [buffer, offset] =
+                    buffer_cache.ObtainBuffer(vsharp.base_address, size, desc.is_written, true);
                 const u64 offset_aligned = Common::AlignDown(offset, alignment);
                 const u64 adjust = offset - offset_aligned;
                 if (adjust % 4 != 0) {
