@@ -4,9 +4,9 @@
 #include <filesystem>
 #include <fstream>
 #include <mutex>
-#include <fmt/format.h>
 #include <SDL3/SDL_init.h>
 #include <cmrc/cmrc.hpp>
+#include <fmt/format.h>
 #include <imgui.h>
 #include <imgui/imgui_std.h>
 #include <queue>

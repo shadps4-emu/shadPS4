@@ -7,10 +7,10 @@
 #include <optional>
 #include <span>
 #include <vector>
-#include <fmt/format.h>
-#include <fmt/ranges.h>
 #include <CLI/CLI.hpp>
 #include <SDL3/SDL_messagebox.h>
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "common/arch.h"
 #include "common/key_manager.h"

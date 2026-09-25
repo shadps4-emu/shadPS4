@@ -6,8 +6,8 @@
 #include <shared_mutex>
 #include <stop_token>
 #include <thread>
-#include <magic_enum/magic_enum.hpp>
 #include <fmt/format.h>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
 #include "common/logging/log.h"
