@@ -3,80 +3,70 @@
 
 #pragma once
 
-#include <iostream>
-#include <unordered_map>
-#include <vector>
-#include <spdlog/details/fmt_helper.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-
-#ifdef _WIN32
-#include <spdlog/sinks/msvc_sink.h>
-#include <spdlog/sinks/wincolor_sink.h>
-using spdlog_stdout = spdlog::sinks::sink;
-#else
-using spdlog_stdout = spdlog::sinks::stdout_color_sink_mt;
-#endif
-#include <spdlog/spdlog.h>
+#include <array>
+#include <cstdint>
+#include <fmt/base.h>
 
 #include "common/logging/classes.h"
-#include "common/path_util.h"
-#include "common/thread.h"
 
 namespace Common::Log {
-extern bool g_should_append;
-extern std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGERS;
+
+enum class Level : std::uint8_t {
+    Trace = 0,
+    Debug,
+    Info,
+    Warning,
+    Error,
+    Critical,
+    Off,
+};
+extern std::array<Level, NUM_LOG_CLASSES> g_class_levels;
 
 void Setup(std::string_view shadps4_filename);
-
-void Switch(std::string_view game_filename);
-
+void Switch(std::string_view game_filename, bool append_log);
 void Shutdown();
-
 void Flush();
-
 void Terminate();
-
 void UpdateSinks();
-
 void UpdateLogLevels(std::string_view log_filter);
 void UpdateLogFlushLevel(std::string_view log_flush_level);
 
-static constexpr std::array level_string_views{"Trace", "Debug",    "Info", "Warning",
-                                               "Error", "Critical", "Off"};
-
-[[nodiscard]] static constexpr std::string_view to_string_view(spdlog::level lvl) noexcept {
-    return level_string_views.at(level_to_number(lvl));
+[[nodiscard]] inline bool ShouldLog(Class log_class, Level level) {
+    return level >= g_class_levels[static_cast<std::size_t>(log_class)];
 }
+
+void VLog(Class log_class, Level level, const char* file, int line, const char* func,
+          fmt::string_view format, fmt::format_args args);
+
+template <typename... Args>
+void Log(Class log_class, Level level, const char* file, int line, const char* func,
+         fmt::format_string<Args...> format, Args&&... args) {
+    VLog(log_class, level, file, line, func, format, fmt::make_format_args(args...));
+}
+
 } // namespace Common::Log
 
 // Define the fmt lib macros
-#define LOG_GENERIC(log_class, log_level, format, ...)                                             \
+#define LOG_GENERIC_AT(log_class, log_level, func, ...)                                            \
     do {                                                                                           \
-        if (auto logger = Common::Log::ALL_LOGGERS[log_class];                                     \
-            logger && logger->should_log(log_level)) {                                             \
-            logger->log(log_level, "[{}] <{}> ({}) {}:{} {}: " format, log_class,                  \
-                        Common::Log::to_string_view(log_level), Common::GetCurrentThreadName(),    \
-                        spdlog::source_loc::basename(__FILE__), __LINE__,                          \
-                        std::string_view(__func__) == "operator()" ? "lambda" : __func__,          \
-                        ##__VA_ARGS__);                                                            \
+        if (Common::Log::ShouldLog(Common::Log::Class::log_class, log_level)) {                    \
+            Common::Log::Log(Common::Log::Class::log_class, log_level, __FILE__, __LINE__, func,   \
+                             __VA_ARGS__);                                                         \
         }                                                                                          \
     } while (false)
+
+#define LOG_GENERIC(log_class, log_level, ...)                                                     \
+    LOG_GENERIC_AT(log_class, log_level, __func__, __VA_ARGS__)
 
 #ifdef NDEBUG
 #define LOG_TRACE(log_class, ...) (void(0))
 #else
-#define LOG_TRACE(log_class, ...)                                                                  \
-    LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::trace, __VA_ARGS__)
+#define LOG_TRACE(log_class, ...) LOG_GENERIC(log_class, Common::Log::Level::Trace, __VA_ARGS__)
 #endif
 
-#define LOG_DEBUG(log_class, ...)                                                                  \
-    LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::debug, __VA_ARGS__)
-#define LOG_INFO(log_class, ...)                                                                   \
-    LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::info, __VA_ARGS__)
-#define LOG_WARNING(log_class, ...)                                                                \
-    LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::warn, __VA_ARGS__)
-#define LOG_ERROR(log_class, ...)                                                                  \
-    LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::err, __VA_ARGS__)
+#define LOG_DEBUG(log_class, ...) LOG_GENERIC(log_class, Common::Log::Level::Debug, __VA_ARGS__)
+#define LOG_INFO(log_class, ...) LOG_GENERIC(log_class, Common::Log::Level::Info, __VA_ARGS__)
+#define LOG_WARNING(log_class, ...) LOG_GENERIC(log_class, Common::Log::Level::Warning, __VA_ARGS__)
+#define LOG_ERROR(log_class, ...) LOG_GENERIC(log_class, Common::Log::Level::Error, __VA_ARGS__)
 #define LOG_CRITICAL(log_class, ...)                                                               \
-    LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::critical, __VA_ARGS__)
+    LOG_GENERIC(log_class, Common::Log::Level::Critical, __VA_ARGS__)

@@ -6,6 +6,7 @@
 #include <ctime>
 #include <string>
 #include <thread>
+#include <fmt/format.h>
 
 #include "core/libraries/fiber/fiber.h"
 #include "core/libraries/kernel/threads/pthread.h"

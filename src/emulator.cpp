@@ -275,7 +275,7 @@ std::map<s32, std::string> ExtractTrophies(std::string_view npbind_guest,
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                    std::optional<std::filesystem::path> p_game_folder,
                    std::vector<std::pair<std::filesystem::path, std::string>> mounts,
-                   std::vector<std::string> const& env_vars) {
+                   std::vector<std::string> const& env_vars, bool append_log) {
     Common::SetCurrentThreadName("shadPS4:Main");
     if (waitForDebuggerBeforeRun) {
         Debugger::WaitForDebuggerAttach();
@@ -438,7 +438,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         EmulatorSettings.GetWindowsGuestRedZoneProtectionMode());
     // Switch to configured log
     Common::Log::Switch((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
-                                                                          : "shad_log.txt");
+                                                                          : "shad_log.txt",
+                        append_log);
 #ifdef _WIN32
     // Windows static guest red-zone protection
     if (WindowsGuestRedZoneProtection::IsStaticPatchingEnabled()) {

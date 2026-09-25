@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <thread>
 #include <unordered_map>
+#include <fmt/format.h>
 #include <pugixml.hpp>
-
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"

@@ -3,7 +3,7 @@
 
 #include <cstring>
 #include <vector>
-
+#include <fmt/format.h>
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/libraries/error_codes.h"

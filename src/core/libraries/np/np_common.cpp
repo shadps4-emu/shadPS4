@@ -4,6 +4,7 @@
 #include <cctype>
 #include <cstddef>
 #include <cstring>
+#include <fmt/format.h>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"

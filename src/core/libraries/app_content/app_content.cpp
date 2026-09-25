@@ -7,6 +7,7 @@
 #include "common/assert.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "common/path_util.h"
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"

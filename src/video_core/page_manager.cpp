@@ -8,6 +8,7 @@
 #include "common/div_ceil.h"
 #include "common/error.h"
 #include "common/signal_context.h"
+#include "common/thread.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "core/signals.h"
