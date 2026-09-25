@@ -184,7 +184,12 @@ struct ComputeProgram {
     struct {
         u64 num_vgprs : 6;
         u64 num_sgprs : 4;
-        u64 : 23;
+        u64 : 2;
+        u64 fp_round_mode32 : 2;
+        u64 fp_round_mode64 : 2;
+        u64 fp_denorm_mode32 : 2;
+        u64 fp_denorm_mode64 : 2;
+        u64 : 13;
         u64 num_user_regs : 5;
         u64 : 1;
         u64 tgid_enable : 3;

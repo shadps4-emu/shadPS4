@@ -222,6 +222,14 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         const auto& cs_pgm = liverpool->GetCsRegs();
         info.props.num_user_data = cs_pgm.settings.num_user_regs;
         info.props.num_allocated_vgprs = cs_pgm.settings.num_vgprs * 4;
+        info.props.fp_denorm_mode32 =
+            static_cast<AmdGpu::FpDenormMode>(cs_pgm.settings.fp_denorm_mode32);
+        info.props.fp_denorm_mode16_64 =
+            static_cast<AmdGpu::FpDenormMode>(cs_pgm.settings.fp_denorm_mode64);
+        info.props.fp_round_mode32 =
+            static_cast<AmdGpu::FpRoundMode>(cs_pgm.settings.fp_round_mode32);
+        info.props.fp_round_mode16_64 =
+            static_cast<AmdGpu::FpRoundMode>(cs_pgm.settings.fp_round_mode64);
         info.hw.cs.workgroup_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
                                      cs_pgm.num_thread_z.full};
         info.hw.cs.tgid_enable = {cs_pgm.IsTgidEnabled(0), cs_pgm.IsTgidEnabled(1),
