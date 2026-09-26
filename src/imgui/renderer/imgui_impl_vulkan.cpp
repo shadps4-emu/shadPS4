@@ -37,6 +37,18 @@ struct WindowRenderBuffers {
     std::vector<FrameRenderBuffers> frame_render_buffers{};
 };
 
+struct StagingBuffer {
+    vk::Buffer buffer{};
+    vk::DeviceMemory memory{};
+};
+
+// Backend storage of a texture the font atlas requested (ImTextureData::BackendUserData)
+struct AtlasTexture {
+    vk::Image image{};
+    vk::DeviceMemory memory{};
+    vk::ImageView view{};
+};
+
 // Vulkan data
 struct VkData {
     const InitInfo init_info;
@@ -53,12 +65,9 @@ struct VkData {
     vk::CommandPool command_pool{};
     vk::Sampler simple_sampler{};
 
-    // Font data
-    vk::DeviceMemory font_memory{};
-    vk::Image font_image{};
-    vk::ImageView font_view{};
-    ImTextureID font_texture{};
-    vk::CommandBuffer font_command_buffer{};
+    // Font atlas uploads. A frame's staging buffers live until its slot comes round again
+    std::vector<std::vector<StagingBuffer>> upload_buffers{};
+    uint32_t upload_index{};
 
     // Render buffers
     WindowRenderBuffers render_buffers{};
@@ -67,6 +76,7 @@ struct VkData {
     VkData(const InitInfo init_info) : init_info(init_info) {
         render_buffers.count = init_info.image_count;
         render_buffers.frame_render_buffers.resize(render_buffers.count);
+        upload_buffers.resize(render_buffers.count);
     }
 };
 
@@ -700,50 +710,47 @@ void RenderDrawData(ImDrawData& draw_data, vk::CommandBuffer command_buffer,
     //    command_buffer.setScissor(0, 1, &scissor);
 }
 
-static void DestroyFontsTexture();
+static void DestroyStagingBuffers(std::vector<StagingBuffer>& buffers) {
+    VkData* bd = GetBackendData();
+    const InitInfo& v = bd->init_info;
+    for (const StagingBuffer& staging : buffers) {
+        v.device.destroyBuffer(staging.buffer, v.allocator);
+        v.device.freeMemory(staging.memory, v.allocator);
+    }
+    buffers.clear();
+}
 
-static bool CreateFontsTexture() {
-    ImGuiIO& io = ImGui::GetIO();
+static void DestroyTexture(ImTextureData* tex) {
+    if (auto* backend_tex = static_cast<AtlasTexture*>(tex->BackendUserData)) {
+        VkData* bd = GetBackendData();
+        const InitInfo& v = bd->init_info;
+        RemoveTexture(tex->TexID);
+        v.device.destroyImageView(backend_tex->view, v.allocator);
+        v.device.destroyImage(backend_tex->image, v.allocator);
+        v.device.freeMemory(backend_tex->memory, v.allocator);
+        IM_DELETE(backend_tex);
+
+        tex->SetTexID(ImTextureID_Invalid);
+        tex->BackendUserData = nullptr;
+    }
+    tex->SetStatus(ImTextureStatus_Destroyed);
+}
+
+static void UpdateTexture(ImTextureData* tex, vk::CommandBuffer cmdbuf) {
     VkData* bd = GetBackendData();
     const InitInfo& v = bd->init_info;
 
-    // Destroy existing texture (if any)
-    if (bd->font_view || bd->font_image || bd->font_memory || bd->font_texture) {
-        CheckVkErr(v.queue.waitIdle());
-        DestroyFontsTexture();
-    }
+    if (tex->Status == ImTextureStatus_WantCreate) {
+        IM_ASSERT(tex->TexID == ImTextureID_Invalid && tex->BackendUserData == nullptr);
+        IM_ASSERT(tex->Format == ImTextureFormat_RGBA32);
+        auto* backend_tex = IM_NEW(AtlasTexture)();
 
-    // Create command buffer
-    if (bd->font_command_buffer == VK_NULL_HANDLE) {
-        vk::CommandBufferAllocateInfo info{
-            .commandPool = bd->command_pool,
-            .commandBufferCount = 1,
-        };
-        std::unique_lock lk(bd->command_pool_mutex);
-        bd->font_command_buffer = CheckVkResult(v.device.allocateCommandBuffers(info)).front();
-    }
-
-    // Start command buffer
-    {
-        CheckVkErr(bd->font_command_buffer.reset());
-        vk::CommandBufferBeginInfo begin_info{};
-        begin_info.flags |= vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-        CheckVkErr(bd->font_command_buffer.begin(&begin_info));
-    }
-
-    unsigned char* pixels;
-    int width, height;
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-    size_t upload_size = width * height * 4 * sizeof(char);
-
-    // Create the Image:
-    {
-        vk::ImageCreateInfo info{
+        const vk::ImageCreateInfo image_info{
             .imageType = vk::ImageType::e2D,
             .format = vk::Format::eR8G8B8A8Unorm,
             .extent{
-                .width = static_cast<uint32_t>(width),
-                .height = static_cast<uint32_t>(height),
+                .width = static_cast<uint32_t>(tex->Width),
+                .height = static_cast<uint32_t>(tex->Height),
                 .depth = 1,
             },
             .mipLevels = 1,
@@ -754,21 +761,18 @@ static bool CreateFontsTexture() {
             .sharingMode = vk::SharingMode::eExclusive,
             .initialLayout = vk::ImageLayout::eUndefined,
         };
-        bd->font_image = CheckVkResult(v.device.createImage(info, v.allocator));
-        vk::MemoryRequirements req = v.device.getImageMemoryRequirements(bd->font_image);
-        vk::MemoryAllocateInfo alloc_info{
+        backend_tex->image = CheckVkResult(v.device.createImage(image_info, v.allocator));
+        const vk::MemoryRequirements req = v.device.getImageMemoryRequirements(backend_tex->image);
+        const vk::MemoryAllocateInfo alloc_info{
             .allocationSize = IM_MAX(v.min_allocation_size, req.size),
             .memoryTypeIndex =
                 FindMemoryType(vk::MemoryPropertyFlagBits::eDeviceLocal, req.memoryTypeBits),
         };
-        bd->font_memory = CheckVkResult(v.device.allocateMemory(alloc_info, v.allocator));
-        CheckVkErr(v.device.bindImageMemory(bd->font_image, bd->font_memory, 0));
-    }
+        backend_tex->memory = CheckVkResult(v.device.allocateMemory(alloc_info, v.allocator));
+        CheckVkErr(v.device.bindImageMemory(backend_tex->image, backend_tex->memory, 0));
 
-    // Create the Image View:
-    {
-        vk::ImageViewCreateInfo info{
-            .image = bd->font_image,
+        const vk::ImageViewCreateInfo view_info{
+            .image = backend_tex->image,
             .viewType = vk::ImageViewType::e2D,
             .format = vk::Format::eR8G8B8A8Unorm,
             .subresourceRange{
@@ -777,143 +781,129 @@ static bool CreateFontsTexture() {
                 .layerCount = 1,
             },
         };
-        bd->font_view = CheckVkResult(v.device.createImageView(info, v.allocator));
+        backend_tex->view = CheckVkResult(v.device.createImageView(view_info, v.allocator));
+
+        tex->SetTexID(AddTexture(backend_tex->view, vk::ImageLayout::eShaderReadOnlyOptimal));
+        tex->BackendUserData = backend_tex;
     }
 
-    // Create the Descriptor Set:
-    bd->font_texture = AddTexture(bd->font_view, vk::ImageLayout::eShaderReadOnlyOptimal);
+    if (tex->Status == ImTextureStatus_WantCreate || tex->Status == ImTextureStatus_WantUpdates) {
+        const auto* backend_tex = static_cast<AtlasTexture*>(tex->BackendUserData);
+        // A new texture uploads whole, which also clears it. An update uploads the bounding box
+        // of the regions written since, which the atlas never writes while they are in use.
+        const bool create = tex->Status == ImTextureStatus_WantCreate;
+        const int upload_x = create ? 0 : tex->UpdateRect.x;
+        const int upload_y = create ? 0 : tex->UpdateRect.y;
+        const int upload_w = create ? tex->Width : tex->UpdateRect.w;
+        const int upload_h = create ? tex->Height : tex->UpdateRect.h;
+        const size_t upload_pitch = static_cast<size_t>(upload_w) * tex->BytesPerPixel;
+        const vk::DeviceSize upload_size = upload_pitch * upload_h;
 
-    // Create the Upload Buffer:
-    vk::DeviceMemory upload_buffer_memory{};
-    vk::Buffer upload_buffer{};
-    {
-        vk::BufferCreateInfo buffer_info{
+        StagingBuffer staging{};
+        const vk::BufferCreateInfo buffer_info{
             .size = upload_size,
             .usage = vk::BufferUsageFlagBits::eTransferSrc,
             .sharingMode = vk::SharingMode::eExclusive,
         };
-        upload_buffer = CheckVkResult(v.device.createBuffer(buffer_info, v.allocator));
-        vk::MemoryRequirements req = v.device.getBufferMemoryRequirements(upload_buffer);
+        staging.buffer = CheckVkResult(v.device.createBuffer(buffer_info, v.allocator));
+        const vk::MemoryRequirements req = v.device.getBufferMemoryRequirements(staging.buffer);
         bd->buffer_memory_alignment = IM_MAX(bd->buffer_memory_alignment, req.alignment);
-        vk::MemoryAllocateInfo alloc_info{
+        const vk::MemoryAllocateInfo alloc_info{
             .allocationSize = IM_MAX(v.min_allocation_size, req.size),
             .memoryTypeIndex =
                 FindMemoryType(vk::MemoryPropertyFlagBits::eHostVisible, req.memoryTypeBits),
         };
-        upload_buffer_memory = CheckVkResult(v.device.allocateMemory(alloc_info, v.allocator));
-        CheckVkErr(v.device.bindBufferMemory(upload_buffer, upload_buffer_memory, 0));
-    }
+        staging.memory = CheckVkResult(v.device.allocateMemory(alloc_info, v.allocator));
+        CheckVkErr(v.device.bindBufferMemory(staging.buffer, staging.memory, 0));
 
-    // Upload to Buffer:
-    {
-        char* map = (char*)CheckVkResult(v.device.mapMemory(upload_buffer_memory, 0, upload_size));
-        memcpy(map, pixels, upload_size);
-        vk::MappedMemoryRange range[1]{
-            {
-                .memory = upload_buffer_memory,
-                .size = upload_size,
+        char* map = (char*)CheckVkResult(v.device.mapMemory(staging.memory, 0, upload_size));
+        for (int y = 0; y < upload_h; y++) {
+            memcpy(map + upload_pitch * y, tex->GetPixelsAt(upload_x, upload_y + y), upload_pitch);
+        }
+        const vk::MappedMemoryRange range{
+            .memory = staging.memory,
+            .size = VK_WHOLE_SIZE,
+        };
+        CheckVkErr(v.device.flushMappedMemoryRanges(range));
+        v.device.unmapMemory(staging.memory);
+
+        const vk::ImageMemoryBarrier copy_barrier{
+            .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+            .oldLayout =
+                create ? vk::ImageLayout::eUndefined : vk::ImageLayout::eShaderReadOnlyOptimal,
+            .newLayout = vk::ImageLayout::eTransferDstOptimal,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = backend_tex->image,
+            .subresourceRange{
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .levelCount = 1,
+                .layerCount = 1,
             },
         };
-        CheckVkErr(v.device.flushMappedMemoryRanges({range}));
-        v.device.unmapMemory(upload_buffer_memory);
-    }
+        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader |
+                                   vk::PipelineStageFlagBits::eHost,
+                               vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, {copy_barrier});
 
-    // Copy to Image:
-    {
-        vk::ImageMemoryBarrier copy_barrier[1]{
-            {
-                .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
-                .oldLayout = vk::ImageLayout::eUndefined,
-                .newLayout = vk::ImageLayout::eTransferDstOptimal,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image = bd->font_image,
-                .subresourceRange{
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .levelCount = 1,
-                    .layerCount = 1,
-                },
-            },
-        };
-        bd->font_command_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eHost,
-                                                vk::PipelineStageFlagBits::eTransfer, {}, {}, {},
-                                                {copy_barrier});
-
-        vk::BufferImageCopy region{
+        const vk::BufferImageCopy region{
             .imageSubresource{
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .layerCount = 1,
             },
+            .imageOffset{
+                .x = upload_x,
+                .y = upload_y,
+            },
             .imageExtent{
-                .width = static_cast<uint32_t>(width),
-                .height = static_cast<uint32_t>(height),
+                .width = static_cast<uint32_t>(upload_w),
+                .height = static_cast<uint32_t>(upload_h),
                 .depth = 1,
             },
         };
-        bd->font_command_buffer.copyBufferToImage(upload_buffer, bd->font_image,
-                                                  vk::ImageLayout::eTransferDstOptimal, {region});
+        cmdbuf.copyBufferToImage(staging.buffer, backend_tex->image,
+                                 vk::ImageLayout::eTransferDstOptimal, {region});
 
-        vk::ImageMemoryBarrier use_barrier[1]{{
+        const vk::ImageMemoryBarrier use_barrier{
             .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
             .dstAccessMask = vk::AccessFlagBits::eShaderRead,
             .oldLayout = vk::ImageLayout::eTransferDstOptimal,
             .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = bd->font_image,
+            .image = backend_tex->image,
             .subresourceRange{
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .levelCount = 1,
                 .layerCount = 1,
             },
-        }};
-        bd->font_command_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
-                                                vk::PipelineStageFlagBits::eFragmentShader, {}, {},
-                                                {}, {use_barrier});
+        };
+        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                               vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {},
+                               {use_barrier});
+
+        bd->upload_buffers[bd->upload_index].push_back(staging);
+        tex->SetStatus(ImTextureStatus_OK);
     }
 
-    // Store our identifier
-    io.Fonts->SetTexID(bd->font_texture);
-
-    // End command buffer
-    vk::SubmitInfo end_info = {};
-    end_info.commandBufferCount = 1;
-    end_info.pCommandBuffers = &bd->font_command_buffer;
-    CheckVkErr(bd->font_command_buffer.end());
-    CheckVkErr(v.queue.submit({end_info}));
-
-    CheckVkErr(v.queue.waitIdle());
-
-    v.device.destroyBuffer(upload_buffer, v.allocator);
-    v.device.freeMemory(upload_buffer_memory, v.allocator);
-
-    return true;
+    // Unused for as many frames as can be in flight, so no pending frame samples it.
+    if (tex->Status == ImTextureStatus_WantDestroy &&
+        tex->UnusedFrames >= static_cast<int>(bd->render_buffers.count)) {
+        DestroyTexture(tex);
+    }
 }
 
-// You probably never need to call this, as it is called by CreateFontsTexture()
-// and Shutdown().
-static void DestroyFontsTexture() {
-    ImGuiIO& io = ImGui::GetIO();
+void UpdateTextures(ImDrawData& draw_data, vk::CommandBuffer command_buffer) {
     VkData* bd = GetBackendData();
-    const InitInfo& v = bd->init_info;
-
-    if (bd->font_texture) {
-        RemoveTexture(bd->font_texture);
-        bd->font_texture = nullptr;
-        io.Fonts->SetTexID(nullptr);
+    // The slot last served the frame image_count presents ago, which has completed.
+    bd->upload_index = (bd->upload_index + 1) % bd->render_buffers.count;
+    DestroyStagingBuffers(bd->upload_buffers[bd->upload_index]);
+    if (draw_data.Textures == nullptr) {
+        return;
     }
-
-    if (bd->font_view) {
-        v.device.destroyImageView(bd->font_view, v.allocator);
-        bd->font_view = VK_NULL_HANDLE;
-    }
-    if (bd->font_image) {
-        v.device.destroyImage(bd->font_image, v.allocator);
-        bd->font_image = VK_NULL_HANDLE;
-    }
-    if (bd->font_memory) {
-        v.device.freeMemory(bd->font_memory, v.allocator);
-        bd->font_memory = VK_NULL_HANDLE;
+    for (ImTextureData* tex : *draw_data.Textures) {
+        if (tex->Status != ImTextureStatus_OK) {
+            UpdateTexture(tex, command_buffer);
+        }
     }
 }
 
@@ -1191,12 +1181,13 @@ void ImGuiImplVulkanDestroyDeviceObjects() {
     VkData* bd = GetBackendData();
     const InitInfo& v = bd->init_info;
     DestroyWindowRenderBuffers(v.device, bd->render_buffers, v.allocator);
-    DestroyFontsTexture();
-
-    if (bd->font_command_buffer) {
-        std::unique_lock lk(bd->command_pool_mutex);
-        v.device.freeCommandBuffers(bd->command_pool, {bd->font_command_buffer});
-        bd->font_command_buffer = VK_NULL_HANDLE;
+    for (ImTextureData* tex : ImGui::GetPlatformIO().Textures) {
+        if (tex->RefCount == 1) {
+            DestroyTexture(tex);
+        }
+    }
+    for (auto& buffers : bd->upload_buffers) {
+        DestroyStagingBuffers(buffers);
     }
     if (bd->command_pool) {
         std::unique_lock lk(bd->command_pool_mutex);
@@ -1250,9 +1241,10 @@ bool Init(InitInfo info) {
     io.BackendRendererName = "imgui_impl_vulkan_shadps4";
     // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
+    // The font atlas grows on demand; UpdateTextures() services its texture requests.
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures;
 
     CreateDeviceObjects();
-    CreateFontsTexture();
 
     return true;
 }
@@ -1265,7 +1257,8 @@ void Shutdown() {
     ImGuiImplVulkanDestroyDeviceObjects();
     io.BackendRendererName = nullptr;
     io.BackendRendererUserData = nullptr;
-    io.BackendFlags &= ~ImGuiBackendFlags_RendererHasVtxOffset;
+    io.BackendFlags &=
+        ~(ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasTextures);
     IM_DELETE(bd);
 }
 
