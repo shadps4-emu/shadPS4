@@ -84,18 +84,28 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
 
     // Find which directory corresponds to this entitlement
     for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
-        if (!entry.is_directory()) {
+        if (!entry.is_directory() && entry.path().extension() != ".zar") {
             continue;
         }
 
-        // Open the param.sfo in this folder
-        PSF* dlc_params = new PSF();
-        const auto& param_sfo_path = entry.path() / "sce_sys/param.sfo";
-        if (!std::filesystem::exists(param_sfo_path)) {
-            // This folder doesn't have a param.sfo
+        // Mount the content so we can check its param.sfo
+        mnt->Mount(entry.path(), mount_point->data, true);
+
+        auto psf_path = fmt::format("{}/sce_sys/param.sfo", mount_point->data);
+        auto psf_handle = mnt->Open(psf_path, false);
+        if (psf_handle == nullptr) {
+            // This content doesn't have a param.sfo
+            mnt->Unmount(mount_point->data);
             continue;
         }
-        dlc_params->Open(param_sfo_path);
+
+        // Open the param.sfo in this content
+        std::unique_ptr<PSF> dlc_params = std::make_unique<PSF>();
+        if (!dlc_params->Open(psf_handle)) {
+            // The param.sfo is invalid
+            mnt->Unmount(mount_point->data);
+            continue;
+        }
 
         // Validate the available params
         auto category = dlc_params->GetString("CATEGORY");
@@ -103,16 +113,20 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
         if (!category.has_value() || strncmp(category.value().data(), "ac", 2) != 0 ||
             !content_id.has_value() ||
             content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
-            // This folder fails the error checks performed in sceAppContentInitialize.
+            // This content fails the error checks performed in sceAppContentInitialize.
+            mnt->Unmount(mount_point->data);
             continue;
         }
 
         auto entitlement_id = content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
-        if (strncmp(entitlement_id.data(), entitlement_label->data, entitlement_id.length()) == 0) {
-            // We've located the correct folder.
-            mnt->Mount(entry.path(), mount_point->data);
-            return ORBIS_OK;
+        if (strncmp(entitlement_id.data(), entitlement_label->data, entitlement_id.length()) != 0) {
+            // The entitlement ID is incorrect.
+            mnt->Unmount(mount_point->data);
+            continue;
         }
+
+        // We've located the correct folder.
+        return ORBIS_OK;
     }
 
     // Hitting this shouldn't be possible, as it would mean the entitlement was loaded,
@@ -303,54 +317,64 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
     const auto addon_path = addons_dir / title_id;
     if (std::filesystem::exists(addon_path)) {
         for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
-            if (entry.is_directory()) {
-                // Look for a param.sfo in the additional content directory.
-                const auto& param_sfo_path = entry.path() / "sce_sys/param.sfo";
-                if (!std::filesystem::exists(param_sfo_path)) {
-                    LOG_WARNING(Lib_AppContent, "Additonal content folder {} has no param.sfo",
-                                entry.path().filename().string());
-                    continue;
-                }
-
-                // Open the param.sfo, make sure it's actually for additional content.
-                PSF* dlc_params = new PSF();
-                dlc_params->Open(param_sfo_path);
-
-                auto category = dlc_params->GetString("CATEGORY");
-                if (category.has_value() && strncmp(category.value().data(), "ac", 2) == 0) {
-                    // We've located additional content. Find the entitlement id from the content
-                    // id.
-                    auto content_id = dlc_params->GetString("CONTENT_ID");
-                    if (!content_id.has_value()) {
-                        LOG_WARNING(Lib_AppContent,
-                                    "Additonal content {} param.sfo is missing CONTENT_ID",
-                                    entry.path().filename().string());
-                        continue;
-                    }
-
-                    // content id's have consistent formatting, so this will always work.
-                    // They follow the format UPXXXX-CUSAXXXXX_XX-entitlement
-                    if (content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
-                        LOG_WARNING(Lib_AppContent,
-                                    "Additonal content {} param.sfo has malformed CONTENT_ID",
-                                    entry.path().filename().string());
-                        continue;
-                    }
-                    auto entitlement_id =
-                        content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
-                    LOG_INFO(Lib_AppContent, "Entitlement {} found", entitlement_id);
-
-                    // Save the additional content info in addcont_info.
-                    auto& info = addcont_info[addcont_count++];
-                    entitlement_id.copy(info.entitlement_label, entitlement_id.length());
-                    info.status = OrbisAppContentAddcontDownloadStatus::Installed;
-                } else {
-                    LOG_WARNING(Lib_AppContent,
-                                "Additonal content folder {} is not additional content",
-                                entry.path().filename().string());
-                    continue;
-                }
+            if (!entry.is_directory() && entry.path().extension() != ".zar") {
+                continue;
             }
+
+            // Create a temporary filesystem backend to view the param.sfo
+            auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+            std::shared_ptr<Core::FileSys::IBackend> fs = mnt->CreateBackend(entry.path(), true);
+
+            // Look for a param.sfo in the additional content.
+            auto psf_handle = fs->Open("sce_sys/param.sfo", Common::FS::FileAccessMode::Read);
+            if (psf_handle == nullptr) {
+                // This content doesn't have a param.sfo
+                LOG_WARNING(Lib_AppContent, "Additional content {} has no param.sfo",
+                            entry.path().filename().string());
+                continue;
+            }
+
+            // Open the param.sfo in this content
+            std::unique_ptr<PSF> dlc_params = std::make_unique<PSF>();
+            if (!dlc_params->Open(psf_handle)) {
+                // The param.sfo is invalid
+                LOG_WARNING(Lib_AppContent, "Additional content {} has an invalid param.sfo",
+                            entry.path().filename().string());
+                continue;
+            }
+
+            auto category = dlc_params->GetString("CATEGORY");
+            if (category.has_value() && strncmp(category.value().data(), "ac", 2) != 0) {
+                LOG_WARNING(Lib_AppContent, "Additonal content {} is not additional content",
+                            entry.path().filename().string());
+                continue;
+            }
+
+            // Find the entitlement id from the content id.
+            auto content_id = dlc_params->GetString("CONTENT_ID");
+            if (!content_id.has_value()) {
+                LOG_WARNING(Lib_AppContent, "Additonal content {} param.sfo is missing CONTENT_ID",
+                            entry.path().filename().string());
+                continue;
+            }
+
+            // Content IDs have consistent formatting, so this will always work.
+            // They follow the format UPXXXX-CUSAXXXXX_XX-entitlement
+            if (content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
+                LOG_WARNING(Lib_AppContent,
+                            "Additonal content {} param.sfo has malformed CONTENT_ID",
+                            entry.path().filename().string());
+                continue;
+            }
+
+            auto entitlement_id =
+                content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
+            LOG_INFO(Lib_AppContent, "Entitlement {} found", entitlement_id);
+
+            // Save the additional content info in addcont_info.
+            auto& info = addcont_info[addcont_count++];
+            entitlement_id.copy(info.entitlement_label, entitlement_id.length());
+            info.status = OrbisAppContentAddcontDownloadStatus::Installed;
         }
     }
 

@@ -7,6 +7,7 @@
 #include <boost/icl/separate_interval_set.hpp>
 #include "common/arch.h"
 #include "common/enum.h"
+#include "common/multi_level_page_table.h"
 #include "common/types.h"
 
 namespace Core {
@@ -29,8 +30,20 @@ public:
     explicit AddressSpace();
     ~AddressSpace();
 
+    struct Traits {
+        using Entry = u8*;
+        static constexpr size_t ADDRESS_SPACE_BITS = 40;
+        static constexpr size_t L1_BITS = 16;
+        static constexpr size_t PAGE_BITS = 14;
+        static constexpr bool NULL_CHECK = true;
+    };
+    using BackingPageTable = Common::MultiLevelPageTable<Traits>;
+
     [[nodiscard]] u8* BackingBase() const noexcept {
         return backing_base;
+    }
+    [[nodiscard]] const BackingPageTable& BackingPages() const noexcept {
+        return backing_pages;
     }
 
     [[nodiscard]] VAddr SystemManagedVirtualBase() noexcept {
@@ -100,6 +113,7 @@ private:
     u64 system_reserved_size{};
     u8* user_base{};
     u64 user_size{};
+    BackingPageTable backing_pages;
 };
 
 } // namespace Core

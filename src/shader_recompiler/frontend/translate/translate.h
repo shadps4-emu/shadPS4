@@ -393,7 +393,7 @@ private:
     u32 next_vgpr_num;
     std::unordered_map<u32, IR::VectorReg> vgpr_map;
     std::array<IR::Attribute, MaxInterpVgpr> vgpr_to_interp{};
-    std::optional<FetchShaderData> fetch_data{};
+    FetchShaderData fetch_data{};
     bool opcode_missing = false;
     u32 pc{};
 };

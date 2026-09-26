@@ -82,16 +82,20 @@ public:
 
     // Raises ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION (0x10000002) so titles that watch the
     // system-service event learn about the invite.
-    void PostSessionInvitationEvent(const std::string& session_id, const std::string& invitation_id,
-                                    const std::string& accepter_online_id);
+    void PostSessionInvitationEvent(s32 user_id, const std::string& session_id,
+                                    const std::string& invitation_id,
+                                    const std::string& accepter_online_id,
+                                    const std::string& inviter_online_id,
+                                    OrbisNpAccountId inviter_account_id);
 
     // A session invitation surfaced from a shadNet push, stashed until the user acts on it.
     struct PendingInvitation {
         std::string session_id;
         std::string invitation_id;
-        std::string from_npid;   // sender (for display)
-        std::string to_npid;     // local recipient / accepter
-        int64_t valid_until = 0; // ms since epoch; 0 = never expires
+        std::string from_npid;                // sender (for display)
+        std::string to_npid;                  // local recipient / accepter
+        int64_t valid_until = 0;              // ms since epoch; 0 = never expires
+        OrbisNpAccountId from_account_id = 0; // sender account id (0 = unknown)
     };
     // Pending invitations stashed for a local user (newest last), populated on arrival.
     std::vector<PendingInvitation> GetPendingInvitations(s32 user_id) const;

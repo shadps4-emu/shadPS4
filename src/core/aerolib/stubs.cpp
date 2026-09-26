@@ -1,7 +1,12 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <memory>
+#include <mutex>
 #include <string>
+#include <vector>
+
+#include <xbyak/xbyak.h>
 
 #include "common/logging/log.h"
 #include "core/aerolib/aerolib.h"
@@ -11,65 +16,59 @@ namespace Core::AeroLib {
 
 // Helper to provide stub implementations for missing functions
 //
-// This works by pre-compiling generic stub functions ("slots"), and then
-// on lookup, setting up the nid_entry they are matched with
-//
-// If it runs out of stubs with name information, it will return
-// a default implementation without function name details
+// This works by constructing a minimal trampoline for each new stub which then jumps to a common
+// handler with its index provided as a parameter so nid info can be found
 
-constexpr u32 MAX_STUBS = 8192;
+struct StubEntry {
+    const NidEntry* nid = nullptr;
+    std::string nid_unknown;
+    std::unique_ptr<Xbyak::CodeGenerator> code;
+};
 
-u64 UnresolvedStub() {
-    LOG_ERROR(Core, "Returning zero to {}", __builtin_return_address(0));
-    return 0;
-}
+static std::vector<StubEntry> g_stub_entries;
+static std::mutex g_stub_mutex;
 
-static u64 UnknownStub() {
-    LOG_ERROR(Core, "Returning zero to {}", __builtin_return_address(0));
-    return 0;
-}
-
-static const NidEntry* stub_nids[MAX_STUBS];
-static std::string stub_nids_unknown[MAX_STUBS];
-
-static u64 CommonStub(int stub_index, void* addr) {
-    auto entry = stub_nids[stub_index];
-    if (entry) {
-        LOG_ERROR(Core, "Stub: {} (nid: {}) called, returning zero to {}", entry->name, entry->nid,
-                  addr);
+static u64 PS4_SYSV_ABI CommonStub(u64 index) {
+    const auto& e = g_stub_entries[index];
+    if (e.nid) {
+        LOG_ERROR(Core, "Stub: {} (nid: {}) called, returning zero to {}", e.nid->name, e.nid->nid,
+                  __builtin_return_address(0));
     } else {
-        LOG_ERROR(Core, "Stub: Unknown (nid: {}) called, returning zero to {}",
-                  stub_nids_unknown[stub_index], addr);
+        LOG_ERROR(Core, "Stub: Unknown (nid: {}) called, returning zero to {}", e.nid_unknown,
+                  __builtin_return_address(0));
     }
     return 0;
 }
-
-template <int stub_index>
-static u64 CommonStubTemplate() {
-    return CommonStub(stub_index, __builtin_return_address(0));
-}
-
-template <size_t... Is>
-consteval auto MakeStubArray(std::index_sequence<Is...>) {
-    return std::array<u64 (*)(), sizeof...(Is)>{&CommonStubTemplate<Is>...};
-}
-
-constexpr auto stub_handlers = MakeStubArray(std::make_index_sequence<MAX_STUBS>{});
-static u32 UsedStubEntries;
 
 u64 GetStub(const char* nid) {
-    if (UsedStubEntries >= MAX_STUBS) {
-        return (u64)&UnknownStub;
+    std::scoped_lock lock{g_stub_mutex};
+
+    if (g_stub_entries.empty()) {
+        g_stub_entries.reserve(500);
     }
 
-    const auto entry = FindByNid(nid);
-    if (!entry) {
-        stub_nids_unknown[UsedStubEntries] = nid;
+    const u64 index = g_stub_entries.size();
+
+    StubEntry e;
+    if (const auto* entry = FindByNid(nid)) {
+        if (auto const& it = std::ranges::find_if(
+                g_stub_entries, [entry](StubEntry const& en) { return en.nid && en.nid == entry; });
+            it != g_stub_entries.end()) {
+            return reinterpret_cast<u64>(it->code->getCode());
+        }
+        e.nid = entry;
     } else {
-        stub_nids[UsedStubEntries] = entry;
+        e.nid_unknown = nid;
     }
 
-    return (u64)stub_handlers[UsedStubEntries++];
+    e.code = std::make_unique<Xbyak::CodeGenerator>(32, Xbyak::AutoGrow);
+    e.code->mov(e.code->rdi, index);
+    e.code->mov(e.code->rax, reinterpret_cast<u64>(&CommonStub));
+    e.code->jmp(e.code->rax);
+    e.code->ready();
+
+    g_stub_entries.push_back(std::move(e));
+    return reinterpret_cast<u64>(g_stub_entries.back().code->getCode());
 }
 
 } // namespace Core::AeroLib
