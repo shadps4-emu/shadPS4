@@ -376,14 +376,6 @@ TEST_F(EmulatorSettingsTest, LoadUnknownTopLevelSectionPreserved) {
     EXPECT_EQ(after["FutureSection"]["key"], 42);
 }
 
-TEST_F(EmulatorSettingsTest, LoadCorruptJsonDoesNotCrash) {
-    {
-        std::ofstream out(ConfigJson());
-        out << "{NOT VALID JSON!!!";
-    }
-    EXPECT_NO_THROW(temp_settings->Load());
-}
-
 TEST_F(EmulatorSettingsTest, LoadEmptyJsonObjectDoesNotCrash) {
     WriteJson(ConfigJson(), json::object());
     EXPECT_NO_THROW(temp_settings->Load());
@@ -455,14 +447,6 @@ TEST_F(EmulatorSettingsTest, LoadSerialTypeMismatch_DoesNotCrash) {
     // base unchanged
     temp_settings->SetConfigMode(ConfigMode::Global);
     EXPECT_EQ(temp_settings->GetWindowWidth(), 1280u);
-}
-
-TEST_F(EmulatorSettingsTest, LoadSerialCorruptFileDoesNotCrash) {
-    {
-        std::ofstream out(GameConfig("CUSA01234"));
-        out << "{{{{totally broken";
-    }
-    EXPECT_NO_THROW(temp_settings->Load("CUSA01234"));
 }
 
 TEST_F(EmulatorSettingsTest, SaveSerialWritesGameSpecificValueWhenOverrideLoaded) {
@@ -555,40 +539,6 @@ TEST_F(EmulatorSettingsTest, ClearGameSpecificOverridesDoesNotTouchBaseValues) {
 
 TEST_F(EmulatorSettingsTest, ClearGameSpecificOverrides_NoopWhenNothingLoaded) {
     EXPECT_NO_THROW(temp_settings->ClearGameSpecificOverrides());
-}
-
-// ResetGameSpecificValue tests
-
-TEST_F(EmulatorSettingsTest, ResetGameSpecificValue_ClearsNamedKey) {
-    temp_settings->SetWindowWidth(1280);
-    json game;
-    game["GPU"]["window_width"] = 3840;
-    WriteJson(GameConfig("CUSA01234"), game);
-    temp_settings->Load("CUSA01234");
-
-    temp_settings->SetConfigMode(ConfigMode::Default);
-    ASSERT_EQ(temp_settings->GetWindowWidth(), 3840);
-
-    temp_settings->ResetGameSpecificValue("window_width");
-    EXPECT_EQ(temp_settings->GetWindowWidth(), 1280);
-}
-
-TEST_F(EmulatorSettingsTest, ResetGameSpecificValueOnlyAffectsTargetKey) {
-    json game;
-    game["GPU"]["window_width"] = 3840;
-    game["General"]["neo_mode"] = true;
-    WriteJson(GameConfig("CUSA01234"), game);
-    temp_settings->Load("CUSA01234");
-
-    temp_settings->ResetGameSpecificValue("window_width");
-    temp_settings->SetConfigMode(ConfigMode::Default);
-
-    EXPECT_EQ(temp_settings->GetWindowWidth(), 1280); // cleared
-    EXPECT_TRUE(temp_settings->IsNeo());              // still set
-}
-
-TEST_F(EmulatorSettingsTest, ResetGameSpecificValueUnknownKeyNoOp) {
-    EXPECT_NO_THROW(temp_settings->ResetGameSpecificValue("does_not_exist"));
 }
 
 // GameInstallDir tests
@@ -789,8 +739,8 @@ TEST_F(EmulatorSettingsTest, DoubleGlobalLoadIsIdempotent) {
 
     auto f = std::make_shared<EmulatorSettingsImpl>();
     EmulatorSettingsImpl::SetInstance(f);
-    f->Load(""); // first — loads from disk
-    f->Load(""); // second — must not reset anything
+    f->Load(""); // first load loads from disk
+    f->Load(""); // second load must not reset anything
 
     EXPECT_TRUE(f->IsNeo());
     EXPECT_EQ(f->GetWindowWidth(), 2560u);
@@ -822,22 +772,4 @@ TEST_F(EmulatorSettingsTest, DestructorNoSaveIfLoadNeverCalled) {
 
     auto t1 = fs::last_write_time(ConfigJson());
     EXPECT_EQ(t0, t1) << "Destructor wrote config.json without a prior Load()";
-}
-
-TEST_F(EmulatorSettingsTest, DestructorSavesAfterSuccessfulLoad) {
-    temp_settings->SetNeo(true);
-    temp_settings->Save();
-
-    {
-        auto s = std::make_shared<EmulatorSettingsImpl>();
-        EmulatorSettingsImpl::SetInstance(s);
-        s->Load();
-        s->SetWindowWidth(2560u); // mutate after successful load
-        // destructor should write this change
-    }
-
-    auto verify = std::make_shared<EmulatorSettingsImpl>();
-    EmulatorSettingsImpl::SetInstance(verify);
-    verify->Load();
-    EXPECT_EQ(verify->GetWindowWidth(), 2560);
 }

@@ -364,7 +364,6 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline(const DrawIndirectPar
                 }
             }
         }
-        fetch_shader.reset();
     }
     return it->second.get();
 }
@@ -497,7 +496,7 @@ bool PipelineCache::RefreshGraphicsKey() {
 bool PipelineCache::RefreshGraphicsStages() {
     const auto& regs = liverpool->regs;
     auto& key = graphics_key;
-    fetch_shader = std::nullopt;
+    fetch_shader = nullptr;
 
     Shader::Backend::Bindings binding{};
     const auto bind_stage = [&](HwStage stage_in, SwStage stage_out) -> bool {
@@ -517,13 +516,8 @@ bool PipelineCache::RefreshGraphicsStages() {
         }
 
         const auto params = AmdGpu::GetParams(*pgm);
-        std::optional<Shader::Gcn::FetchShaderData> fetch_shader_;
-        std::tie(infos[stage_out_idx], modules[stage_out_idx], fetch_shader_,
-                 key.stage_hashes[stage_out_idx]) =
+        std::tie(infos[stage_out_idx], modules[stage_out_idx], key.stage_hashes[stage_out_idx]) =
             GetProgram(stage_in, stage_out, params, binding);
-        if (fetch_shader_) {
-            fetch_shader = fetch_shader_;
-        }
         return true;
     };
 
@@ -622,7 +616,7 @@ bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};
     const auto& cs_pgm = liverpool->GetCsRegs();
     const auto cs_params = AmdGpu::GetParams(cs_pgm);
-    std::tie(infos[0], modules[0], fetch_shader, compute_key.value) =
+    std::tie(infos[0], modules[0], compute_key.value) =
         GetProgram(HwStage::Compute, SwStage::Compute, cs_params, binding);
     return true;
 }
@@ -675,8 +669,10 @@ PipelineCache::Result PipelineCache::GetProgram(HwStage hw_stage, SwStage sw_sta
 
         RegisterShaderMeta(program->info, spec.fetch_shader_data, spec, perm_hash, 0);
         program->AddPermut(module, std::move(spec));
-        return std::make_tuple(&program->info, module, program->modules[0].spec.fetch_shader_data,
-                               perm_hash);
+        if (auto& fetch = program->modules[0].spec.fetch_shader_data; !fetch.Empty()) {
+            fetch_shader = &fetch;
+        }
+        return std::make_tuple(&program->info, module, perm_hash);
     }
 
     auto& program = it_pgm.value();
@@ -704,8 +700,10 @@ PipelineCache::Result PipelineCache::GetProgram(HwStage hw_stage, SwStage sw_sta
         perm_idx = std::distance(program->modules.begin(), it);
         perm_hash = HashCombine(params.hash, perm_idx);
     }
-    return std::make_tuple(&program->info, module,
-                           program->modules[perm_idx].spec.fetch_shader_data, perm_hash);
+    if (auto& fetch = program->modules[perm_idx].spec.fetch_shader_data; !fetch.Empty()) {
+        fetch_shader = &fetch;
+    }
+    return std::make_tuple(&program->info, module, perm_hash);
 }
 
 std::optional<vk::ShaderModule> PipelineCache::ReplaceShader(vk::ShaderModule module,

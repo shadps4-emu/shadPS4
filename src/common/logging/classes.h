@@ -95,6 +95,7 @@ enum class Class {
     Lib_Voice,               ///< The LibSceVoice implementation.
     Lib_RazorCpu,            ///< The LibRazorCpu implementation.
     Lib_Mouse,               ///< The LibSceMouse implementation
+    Lib_Keyboard,            ///< The LibSceKeyboard implementation
     Lib_WebBrowserDialog,    ///< The LibSceWebBrowserDialog implementation
     Lib_NpParty,             ///< The LibSceNpParty implementation
     Lib_NpPartner,           ///< The LibSceNpPartner implementation
