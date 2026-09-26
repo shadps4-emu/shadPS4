@@ -119,6 +119,7 @@ public:
 
     /// Updates image contents if it was modified by CPU.
     void UpdateImage(ImageId image_id) {
+        std::scoped_lock lk{mutex};
         Image& image = slot_images[image_id];
         TrackImage(image_id);
         TouchImage(image);
