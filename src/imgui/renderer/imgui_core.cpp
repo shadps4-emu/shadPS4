@@ -111,8 +111,6 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     io.Fonts->TexMaxWidth = atlas_max;
     io.Fonts->TexMaxHeight = atlas_max;
 
-    io.Fonts->Build();
-
     io.FontGlobalScale = 0.5f;
 
     StyleColorsDark();
@@ -259,6 +257,8 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
             const vk::Extent2D& extent) {
     ImGui::Render();
     ImDrawData* draw_data = GetDrawData();
+    // Font atlas uploads are recorded ahead of the render pass that samples them.
+    Vulkan::UpdateTextures(*draw_data, cmdbuf);
     if (draw_data->CmdListsCount == 0) {
         return;
     }

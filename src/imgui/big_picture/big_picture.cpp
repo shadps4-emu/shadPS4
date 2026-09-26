@@ -268,7 +268,6 @@ void Launch(char* executableName, bool sameProcess) {
     const int atlas_max = static_cast<int>(std::bit_floor(std::max<u64>(max_dim, 512)));
     io.Fonts->TexMaxWidth = atlas_max;
     io.Fonts->TexMaxHeight = atlas_max;
-    io.Fonts->Build();
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);

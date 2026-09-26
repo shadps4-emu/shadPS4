@@ -173,6 +173,8 @@ std::string_view NameOf(Class log_class) {
         return "Lib.RazorCpu";
     case Class::Lib_Mouse:
         return "Lib.Mouse";
+    case Class::Lib_Keyboard:
+        return "Lib.Keyboard";
     case Class::Lib_WebBrowserDialog:
         return "Lib.WebBrowserDialog";
     case Class::Lib_NpParty:
