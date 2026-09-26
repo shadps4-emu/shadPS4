@@ -182,14 +182,20 @@ struct ComputeProgram {
     u64 address : 40;
     std::array<u32, 4> pad1;
     struct {
-        u64 num_vgprs : 6;
-        u64 num_sgprs : 4;
-        u64 : 23;
-        u64 num_user_regs : 5;
-        u64 : 1;
-        u64 tgid_enable : 3;
-        u64 : 5;
-        u64 lds_dwords : 9;
+        u32 num_vgprs : 6;
+        u32 num_sgprs : 4;
+        u32 : 2;
+        FpRoundMode fp_round_mode32 : 2;
+        FpRoundMode fp_round_mode64 : 2;
+        FpDenormMode fp_denorm_mode32 : 2;
+        FpDenormMode fp_denorm_mode64 : 2;
+        u32 : 12;
+        u32 scratch_en : 1;
+        u32 num_user_regs : 5;
+        u32 : 1;
+        u32 tgid_enable : 3;
+        u32 : 5;
+        u32 lds_dwords : 9;
     } settings;
     u32 pad2;
     u32 resource_limits;
