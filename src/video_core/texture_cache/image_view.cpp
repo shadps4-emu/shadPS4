@@ -20,6 +20,7 @@ vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
         return vk::ImageViewType::e2D;
     case AmdGpu::ImageType::Color1DArray:
     case AmdGpu::ImageType::Color2DArray:
+    case AmdGpu::ImageType::Cube:
         return vk::ImageViewType::e2DArray;
     case AmdGpu::ImageType::Color3D:
         return vk::ImageViewType::e3D;
@@ -36,6 +37,7 @@ bool IsViewTypeCompatible(AmdGpu::ImageType view_type, AmdGpu::ImageType image_t
     case AmdGpu::ImageType::Color2DArray:
     case AmdGpu::ImageType::Color2DMsaa:
     case AmdGpu::ImageType::Color2DMsaaArray:
+    case AmdGpu::ImageType::Cube:
         return image_type == AmdGpu::ImageType::Color1D ||
                image_type == AmdGpu::ImageType::Color2D || image_type == AmdGpu::ImageType::Color3D;
     case AmdGpu::ImageType::Color3D:

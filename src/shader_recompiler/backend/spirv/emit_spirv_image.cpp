@@ -88,6 +88,26 @@ static Id FixImageCoords(EmitContext& ctx, Id coords, AmdGpu::ImageType image_ty
         const auto slice = ctx.OpCompositeExtract(coord_type[1], coords, 1U);
         return ctx.OpCompositeConstruct(coord_type[3], x, zero, slice);
     }
+    case AmdGpu::ImageType::Cube: {
+        // Lowered to 2D array
+        if (is_float) {
+            const auto x = ctx.OpCompositeExtract(coord_type[1], coords, 0U);
+            const auto y = ctx.OpCompositeExtract(coord_type[1], coords, 1U);
+            const auto face = ctx.OpCompositeExtract(coord_type[1], coords, 2U);
+
+            // AMD cube math results in coordinates in the range [1.0, 2.0]. We need
+            // to convert this to the range [0.0, 1.0] to get correct results.
+            const auto one = ctx.ConstF32(1.f);
+            const auto fixed_x = ctx.OpFSub(coord_type[1], x, one);
+            const auto fixed_y = ctx.OpFSub(coord_type[1], y, one);
+            const auto fixed_face = ctx.OpFma(
+                coord_type[1],
+                ctx.OpFloor(coord_type[1], ctx.OpFDiv(coord_type[1], face, ctx.ConstF32(8.f))),
+                ctx.ConstF32(-2.f), face);
+            return ctx.OpCompositeConstruct(coord_type[3], fixed_x, fixed_y, fixed_face);
+        }
+        return coords;
+    }
     default:
         return coords;
     }
@@ -226,6 +246,7 @@ Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod
     case AmdGpu::ImageType::Color2DMsaa:
         return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[2]), zero, mips());
     case AmdGpu::ImageType::Color2DArray:
+    case AmdGpu::ImageType::Cube:
     case AmdGpu::ImageType::Color3D:
         return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[3]), mips());
     default:
