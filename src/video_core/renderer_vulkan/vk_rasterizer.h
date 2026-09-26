@@ -30,6 +30,10 @@ public:
                         AmdGpu::Liverpool* liverpool);
     ~Rasterizer();
 
+    [[nodiscard]] Scheduler& GetScheduler() noexcept {
+        return scheduler;
+    }
+
     [[nodiscard]] Runtime& GetRuntime() noexcept {
         return runtime;
     }
@@ -70,7 +74,6 @@ public:
     u32 ReadDataFromGds(u32 gsd_offset);
     bool InvalidateMemory(VAddr addr, u64 size, bool assume_locks = false);
     bool ReadMemory(VAddr addr, u64 size, bool assume_locks = false);
-    void ProcessDownloadImages();
     bool IsMapped(VAddr addr, u64 size);
     void MapMemory(VAddr addr, u64 size);
     void RegisterMemory(VAddr addr, u64 size);
@@ -79,6 +82,7 @@ public:
     u64 Flush();
     void Finish();
     void OnSubmit();
+    void OnFence();
 
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;
@@ -165,7 +169,6 @@ private:
 
     using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::ImageDesc>;
     boost::container::static_vector<ImageBindingInfo, Shader::NUM_IMAGES> image_bindings;
-    bool fault_process_pending{};
     bool attachment_feedback_loop{};
     bool needs_barrier{};
 };

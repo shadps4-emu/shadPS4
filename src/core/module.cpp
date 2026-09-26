@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fmt/format.h>
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
@@ -605,7 +606,7 @@ const ModuleInfo* Module::FindModule(std::string_view id) {
         }
         i++;
     }
-    return nullptr;
+    return id.empty() ? &export_modules[0] : nullptr;
 }
 
 const LibraryInfo* Module::FindLibrary(std::string_view id) {
@@ -623,14 +624,14 @@ const LibraryInfo* Module::FindLibrary(std::string_view id) {
         }
         i++;
     }
-    return nullptr;
+    return id.empty() ? &export_libs[0] : nullptr;
 }
 
 void* Module::FindByName(std::string_view name) {
     const auto nid_str = StringToNid(name);
     const auto symbols = export_sym.GetSymbols();
     const auto it = std::ranges::find_if(
-        symbols, [&](const Loader::SymbolRecord& record) { return record.name.contains(nid_str); });
+        symbols, [&](const Loader::SymbolRecord& record) { return record.symbol.name == nid_str; });
     if (it != symbols.end()) {
         return reinterpret_cast<void*>(it->virtual_address);
     }

@@ -440,6 +440,11 @@ public:
         return image_view_min_lod;
     }
 
+    /// Returns whether shaderStorageImageMultisample is supported.
+    bool IsMultisampleStorageImageSupported() const {
+        return features.shaderStorageImageMultisample;
+    }
+
     /// Returns whether the device can report memory usage.
     bool CanReportMemoryUsage() const {
         return supports_memory_budget;

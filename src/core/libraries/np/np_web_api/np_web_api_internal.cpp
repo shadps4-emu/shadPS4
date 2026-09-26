@@ -1592,13 +1592,19 @@ s32 createExtendedPushEventFilterInternal(
                    sizeof(OrbisNpWebApiExtdPushEventFilterParameter));
             LOG_INFO(Lib_NpWebApi, "  filterParam[{}] dataType='{}' extdKeys={}", param_idx,
                      copy.dataType.val, copy.extdDataKeyNum); // debug
+            std::vector<std::string> keys;
             if (copy.pExtdDataKey != nullptr) {
                 for (u64 k = 0; k < copy.extdDataKeyNum; k++) {
                     LOG_INFO(Lib_NpWebApi, "    extdDataKey[{}]='{}'", k,
                              copy.pExtdDataKey[k].val); // debug
+                    keys.emplace_back(
+                        copy.pExtdDataKey[k].val,
+                        strnlen(copy.pExtdDataKey[k].val, sizeof(copy.pExtdDataKey[k].val)));
                 }
             }
+            copy.pExtdDataKey = nullptr; // guest memory, see extdDataKeys
             filter->filterParams.emplace_back(copy);
+            filter->extdDataKeys.emplace_back(std::move(keys));
             // TODO: Every parameter is registered with an extended data filter through
             // sceNpPushRegisterExtendedDataFilter
         }
@@ -2128,6 +2134,14 @@ void DrainPushEvents() {
         std::snprintf(dt.val, sizeof(dt.val), "%s", ev.dataType.c_str());
         const OrbisNpOnlineId* from_p = ev.hasFrom ? &ev.fromOnlineId : nullptr;
         const OrbisNpOnlineId* to_p = ev.hasTo ? &ev.toOnlineId : nullptr;
+        OrbisNpPeerAddressA to_addr{};
+        OrbisNpPeerAddressA from_addr{};
+        to_addr.accountId = ev.toAccountId;
+        to_addr.platform = OrbisNpPlatformType::PS4;
+        from_addr.accountId = ev.fromAccountId;
+        from_addr.platform = OrbisNpPlatformType::PS4;
+        const OrbisNpPeerAddressA* to_addr_p = ev.toAccountId != 0 ? &to_addr : nullptr;
+        const OrbisNpPeerAddressA* from_addr_p = ev.fromAccountId != 0 ? &from_addr : nullptr;
 
         std::scoped_lock gl{g_global_mutex};
         for (auto& [libId, context] : g_contexts) {
@@ -2162,9 +2176,29 @@ void DrainPushEvents() {
                     if (!filterMatches(flt, ev.npServiceName, ev_has_service, ev.dataType)) {
                         continue;
                     }
+                    // Only hand the title the extended-data keys its filter asked for for this
+                    // dataType (SDK behaviour). This also keeps server-internal pairs such as
+                    // fromAccountId/toAccountId/fromPlatform out of pExtdData.
+                    const std::vector<std::string>* wanted_keys = nullptr;
+                    for (size_t i = 0; i < flt->filterParams.size(); ++i) {
+                        if (ev.dataType == flt->filterParams[i].dataType.val) {
+                            if (i < flt->extdDataKeys.size()) {
+                                wanted_keys = &flt->extdDataKeys[i];
+                            }
+                            break;
+                        }
+                    }
+                    auto key_requested = [wanted_keys](const std::string& k) {
+                        return wanted_keys != nullptr &&
+                               std::find(wanted_keys->begin(), wanted_keys->end(), k) !=
+                                   wanted_keys->end();
+                    };
                     std::vector<OrbisNpWebApiExtdPushEventExtdData> exarr;
                     exarr.reserve(ev.extdData.size());
                     for (auto& [k, v] : ev.extdData) {
+                        if (!key_requested(k)) {
+                            continue;
+                        }
                         OrbisNpWebApiExtdPushEventExtdData e{};
                         std::snprintf(e.extdDataKey.val, sizeof(e.extdDataKey.val), "%s",
                                       k.c_str());
@@ -2186,8 +2220,9 @@ void DrainPushEvents() {
                         title_user_ctx_id, cbId,
                         ev.dataType); // debug confirm the listener callback fires. to be removed
                     reinterpret_cast<ExtdCbA>(raw)(
-                        title_user_ctx_id, cbId, svc, flt->npServiceLabel, nullptr, to_p, nullptr,
-                        from_p, &dt, ext_data, ev.data.size(), ext_arr, exarr.size(), cb->pUserArg);
+                        title_user_ctx_id, cbId, svc, flt->npServiceLabel, to_addr_p, to_p,
+                        from_addr_p, from_p, &dt, ext_data, ev.data.size(), ext_arr, exarr.size(),
+                        cb->pUserArg);
                 }
 
                 // Service push

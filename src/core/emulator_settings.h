@@ -333,6 +333,7 @@ struct InputSettings {
     Setting<bool> is_circle_enter{false};             // specific
     Setting<s32> camera_id{-1};
     Setting<bool> use_mice_as_mice{false};
+    Setting<bool> use_keyboard_as_keyboard{false};
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -350,7 +351,9 @@ struct InputSettings {
                                          &InputSettings::ime_url_mail_short_panel),
             make_override<InputSettings>("is_circle_enter", &InputSettings::is_circle_enter),
             make_override<InputSettings>("camera_id", &InputSettings::camera_id),
-            make_override<InputSettings>("use_mice_as_mice", &InputSettings::use_mice_as_mice)};
+            make_override<InputSettings>("use_mice_as_mice", &InputSettings::use_mice_as_mice),
+            make_override<InputSettings>("use_keyboard_as_keyboard",
+                                         &InputSettings::use_keyboard_as_keyboard)};
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_timeout,
@@ -358,7 +361,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_time
                                    motion_controls_enabled, use_unified_input_config,
                                    default_controller_id, background_controller_input,
                                    ime_accessibility_enabled, ime_url_mail_short_panel, camera_id,
-                                   is_circle_enter, use_mice_as_mice)
+                                   is_circle_enter, use_mice_as_mice, use_keyboard_as_keyboard)
 // -------------------------------
 // Audio settings
 // -------------------------------
@@ -435,6 +438,7 @@ struct GPUSettings {
     Setting<bool> rcas_enabled{true};
     Setting<int> rcas_attenuation{250};
     Setting<bool> userfaultfd{false};
+    Setting<bool> inline_fetch_shader{false};
     // TODO add overrides
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -457,6 +461,7 @@ struct GPUSettings {
             make_override<GPUSettings>("direct_memory_access_enabled",
                                        &GPUSettings::direct_memory_access_enabled),
             make_override<GPUSettings>("vblank_frequency", &GPUSettings::vblank_frequency),
+            make_override<GPUSettings>("inline_fetch_shader", &GPUSettings::inline_fetch_shader),
         };
     }
 };
@@ -540,9 +545,6 @@ public:
     /// the emulator reverts to global settings.
     void ClearGameSpecificOverrides();
 
-    /// Reset a single field's game-specific override by its JSON ke
-    void ResetGameSpecificValue(const std::string& key);
-
     // general accessors
     bool AddGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
     std::vector<std::filesystem::path> GetGameInstallDirs() const;
@@ -577,8 +579,6 @@ private:
     // Runtime-only override: when true, IsShadNetEnabled() reports false for the
     // rest of this run regardless of the persisted setting
     std::atomic<bool> m_shadnet_session_disabled{false};
-
-    bool m_loaded{false};
 
     static std::shared_ptr<EmulatorSettingsImpl> s_instance;
     static std::mutex s_mutex;
@@ -745,6 +745,7 @@ public:
     SETTING_FORWARD_BOOL(m_gpu, DirectMemoryAccessEnabled, direct_memory_access_enabled)
     SETTING_FORWARD_BOOL_READONLY(m_gpu, PatchShaders, patch_shaders)
     SETTING_FORWARD_BOOL(m_gpu, UserfaultfdTracking, userfaultfd)
+    SETTING_FORWARD_BOOL_READONLY(m_gpu, InlineFetchShader, inline_fetch_shader)
 
     u32 GetVblankFrequency() {
         if (m_gpu.vblank_frequency.value < 30) {
@@ -776,6 +777,7 @@ public:
     SETTING_FORWARD(m_input, CameraId, camera_id)
     SETTING_FORWARD_BOOL(m_input, CircleEnter, is_circle_enter)
     SETTING_FORWARD_BOOL(m_input, MiceUsedAsMice, use_mice_as_mice)
+    SETTING_FORWARD_BOOL(m_input, KeyboardUsedAsKeyboard, use_keyboard_as_keyboard)
 
     // Vulkan settings
     SETTING_FORWARD(m_vulkan, GpuId, gpu_id)
