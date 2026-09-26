@@ -528,6 +528,32 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         image_id = cache_id;
     }
 
+    if (desc.type == BindingType::VideoOut &&
+        (!image_id || False(slot_images[image_id].flags & ImageFlagBits::GpuModified))) {
+        for (const auto& cache_id : image_ids) {
+            auto& cache_image = slot_images[cache_id];
+            if (cache_image.info.guest_address != info.guest_address ||
+                !cache_image.usage.render_target ||
+                False(cache_image.flags & ImageFlagBits::GpuModified)) {
+                continue;
+            }
+            if (!IsVulkanFormatCompatible(cache_image.info.pixel_format, info.pixel_format)) {
+                continue;
+            }
+            if (cache_image.info.size.width < info.size.width ||
+                cache_image.info.size.height < info.size.height) {
+                continue;
+            }
+            if (static_cast<u64>(cache_image.info.size.width) * info.size.height !=
+                static_cast<u64>(info.size.width) * cache_image.info.size.height) {
+                continue;
+            }
+
+            image_id = cache_id;
+            break;
+        }
+    }
+
     // Try to resolve overlaps (if any)
     int view_mip{-1};
     int view_slice{-1};
