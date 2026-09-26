@@ -86,7 +86,9 @@ union Regs {
         PsInput ps_input_addr;
         INSERT_PADDING_WORDS(1);
         u32 num_interp : 6;
-        INSERT_PADDING_WORDS(12);
+        INSERT_PADDING_WORDS(1);
+        BarycentricControl barycentric_control;
+        INSERT_PADDING_WORDS(10);
         ShaderPosFormat shader_pos_format;
         ShaderExportFormat z_export_format;
         ColorExportFormat color_export_format;

@@ -5,9 +5,12 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <span>
 #include <vector>
 #include <CLI/CLI.hpp>
 #include <SDL3/SDL_messagebox.h>
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "common/arch.h"
 #include "common/key_manager.h"
@@ -55,6 +58,7 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> overrideRoot;
     std::optional<int> waitPid;
     bool waitForDebugger = false;
+    bool userfaultfd = false;
 
     std::optional<std::string> fullscreenStr;
     bool ignoreGamePatch = false;
@@ -63,6 +67,7 @@ int main(int argc, char* argv[]) {
     bool configGlobal = false;
     bool bigPicture = false;
     bool sameProcess = false;
+    bool append_log{};
 
     std::optional<std::filesystem::path> addGameFolder;
     std::optional<std::filesystem::path> setAddonFolder;
@@ -88,11 +93,15 @@ int main(int argc, char* argv[]) {
 
     app.add_flag("--wait-for-debugger", waitForDebugger);
     app.add_option("--wait-for-pid", waitPid);
+#ifdef __linux__
+    app.add_flag("--userfaultfd", userfaultfd,
+                 "Enable userfaultfd for tracking memory (Linux only)");
+#endif
 
     app.add_flag("--show-fps", showFps);
     app.add_flag("--config-clean", configClean);
     app.add_flag("--config-global", configGlobal);
-    app.add_flag("--log-append", Common::Log::g_should_append);
+    app.add_flag("--log-append", append_log);
 
     app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
     app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
@@ -142,7 +151,7 @@ int main(int argc, char* argv[]) {
     // Initialize main log with default config
     Common::Log::Setup("shadps4.log");
 
-    LOG_INFO(Debug, "Run: {}", std::span(argv, argc));
+    LOG_INFO(Debug, "Run: {}", fmt::join(std::span(argv, argc), ""));
 
     IPC::Instance().Init();
 
@@ -152,9 +161,6 @@ int main(int argc, char* argv[]) {
     // Load configurations
     EmulatorSettings.Load();
     UserSettings.Load();
-
-    // Configure logger appropriately
-    Common::Log::g_should_append |= EmulatorSettings.IsLogAppend();
 
     if (bigPicture) {
         BigPictureMode::Launch(argv[0], sameProcess);
@@ -213,6 +219,10 @@ int main(int argc, char* argv[]) {
     if (configGlobal)
         EmulatorSettings.SetConfigMode(ConfigMode::Global);
 
+    if (userfaultfd) {
+        EmulatorSettings.SetUserfaultfdTracking(true);
+    }
+
     // ---- Resolve game path or ID ----
     std::filesystem::path ebootPath(*gamePath);
     const auto archive_component_exists = [](const std::filesystem::path& p) -> bool {
@@ -244,7 +254,7 @@ int main(int argc, char* argv[]) {
     auto* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
     emulator->waitForDebuggerBeforeRun = waitForDebugger;
-    emulator->Run(ebootPath, gameArgs, overrideRoot, mounts, env_vars);
+    emulator->Run(ebootPath, gameArgs, overrideRoot, mounts, env_vars, append_log);
 
     return 0;
 }

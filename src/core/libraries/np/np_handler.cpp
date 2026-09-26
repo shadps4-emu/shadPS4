@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <fmt/format.h>
 #include <httplib.h>
 #include "common/elf_info.h"
 #include "common/logging/log.h"
@@ -610,9 +611,11 @@ bool NpHandler::SendSessionInvitation(s32 user_id, const std::string& session_id
     return true;
 }
 
-void NpHandler::PostSessionInvitationEvent(const std::string& session_id,
+void NpHandler::PostSessionInvitationEvent(s32 user_id, const std::string& session_id,
                                            const std::string& invitation_id,
-                                           const std::string& accepter_online_id) {
+                                           const std::string& accepter_online_id,
+                                           const std::string& inviter_online_id,
+                                           OrbisNpAccountId inviter_account_id) {
     using Libraries::InvitationDialog::ORBIS_NP_SESSION_INVITATION_EVENT_FLAG_INVITATION;
     using Libraries::InvitationDialog::OrbisNpSessionInvitationEventParam;
 
@@ -629,12 +632,19 @@ void NpHandler::PostSessionInvitationEvent(const std::string& session_id,
     } else {
         param->flag = 0; // join from session info (no invitation id in the push)
     }
-    std::strncpy(param->onlineId.data, accepter_online_id.c_str(),
-                 sizeof(param->onlineId.data) - 1);
+    // data[16] is followed by its own 'term' byte, so a full 16-char online id must not be cut.
+    std::strncpy(param->onlineId.data, accepter_online_id.c_str(), sizeof(param->onlineId.data));
+    param->userId = user_id;
+    std::strncpy(param->referralOnlineId.data, inviter_online_id.c_str(),
+                 sizeof(param->referralOnlineId.data));
+    param->referralAccountId = inviter_account_id;
 
     Libraries::SystemService::PushSystemServiceEvent(event);
-    LOG_INFO(NpHandler, "Posted SESSION_INVITATION session='{}' flag={} onlineId='{}'", session_id,
-             param->flag, accepter_online_id);
+    LOG_INFO(NpHandler,
+             "Posted SESSION_INVITATION user_id={} session='{}' invitation='{}' flag={} "
+             "onlineId='{}' referral='{}'({})",
+             user_id, session_id, invitation_id, param->flag, accepter_online_id, inviter_online_id,
+             inviter_account_id);
 }
 
 std::vector<NpHandler::PendingInvitation> NpHandler::GetPendingInvitations(s32 user_id) const {
@@ -684,7 +694,8 @@ bool NpHandler::AcceptSessionInvitation(s32 user_id, const std::string& invitati
     }
     // Raise the join event now that the user has explicitly accepted (via the RECV dialog or the
     // emulator's system-UI equivalent).
-    PostSessionInvitationEvent(inv.session_id, invitation_id, inv.to_npid);
+    PostSessionInvitationEvent(user_id, inv.session_id, invitation_id, inv.to_npid, inv.from_npid,
+                               inv.from_account_id);
     // Consume it server-side (PUT usedFlag=true).
     const std::string base_url = EmulatorSettings.GetShadNetWebApiServer();
     const std::string token = GetBearerToken(user_id);
@@ -844,6 +855,27 @@ void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEv
         SetNpOnlineId(ev.toOnlineId, n.toNpid);
     }
     ev.extdData = n.extdData; // extended-data (key,value) pairs -> dispatched as pExtdData
+    // Account ids for pFrom/pTo.
+    ev.toAccountId = n.toAccountId != 0 ? n.toAccountId : GetAccountId(user_id);
+    ev.fromAccountId = n.fromAccountId;
+    if (ev.fromAccountId == 0) {
+        for (const auto& kv : n.extdData) {
+            if (kv.first == "fromAccountId") {
+                ev.fromAccountId = std::strtoull(kv.second.c_str(), nullptr, 10);
+                break;
+            }
+        }
+    }
+    if (ev.toAccountId != 0) {
+        ev.hasTo = true;
+        if (n.toNpid.empty()) {
+            // e.g. friendlist events carry no toNpid; the recipient is still us.
+            std::lock_guard lock(m_mutex_clients);
+            if (const auto it = m_np_ids.find(user_id); it != m_np_ids.end()) {
+                std::memcpy(ev.toOnlineId.data, it->second.handle.data, sizeof(ev.toOnlineId.data));
+            }
+        }
+    }
     NpWebApi::EnqueuePushEvent(ev);
 
     // Also surface a SESSION_INVITATION system-service event for titles that watch it instead of
@@ -869,7 +901,9 @@ void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEv
                                            return p.invitation_id == invitation_id;
                                        }),
                         v.end());
-                v.push_back({session_id, invitation_id, n.fromNpid, n.toNpid, valid_until});
+                PendingInvitation inv{session_id, invitation_id, n.fromNpid, n.toNpid, valid_until};
+                inv.from_account_id = ev.fromAccountId;
+                v.push_back(std::move(inv));
             }
             // ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION is a *join* event: it
             // fires only after the user explicitly accepts, via the game-opened invitation dialog

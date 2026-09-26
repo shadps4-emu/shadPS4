@@ -171,6 +171,10 @@ int UnixSocket::Close() {
     return ConvertReturnErrorCode(out);
 }
 
+int UnixSocket::Shutdown(int how) {
+    return ConvertReturnErrorCode(::shutdown(sock, how));
+}
+
 int UnixSocket::Bind(const OrbisNetSockaddr* addr, u32 addrlen) {
     std::scoped_lock lock{m_mutex};
     sockaddr_un addr2;

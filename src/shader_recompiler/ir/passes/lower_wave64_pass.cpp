@@ -84,13 +84,30 @@ static std::vector<IR::Block*> FindUniformBlocks(const IR::Program& program) {
     return blocks;
 }
 
+static IR::Inst* FindBallotForMaskedBitCount(const IR::Inst& mbcnt) {
+    IR::Value value = mbcnt.Arg(0);
+    if (value.IsImmediate()) {
+        return nullptr;
+    }
+    IR::Inst* inst = value.Inst();
+    if (inst->GetOpcode() != IR::Opcode::CompositeExtractU32x2 || inst->Arg(0).IsImmediate()) {
+        return nullptr;
+    }
+    inst = inst->Arg(0).Inst();
+    if (inst->GetOpcode() != IR::Opcode::UnpackUint2x32 || inst->Arg(0).IsImmediate()) {
+        return nullptr;
+    }
+    inst = inst->Arg(0).Inst();
+    return inst->GetOpcode() == IR::Opcode::Ballot ? inst : nullptr;
+}
+
 void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info,
                            const Profile& profile) {
-    if (program.info.stage != Stage::Compute || profile.subgroup_size == 64) {
+    if (program.info.hw_stage != HwStage::Compute || profile.subgroup_size == 64) {
         return;
     }
 
-    const auto [size_x, size_y, size_z] = runtime_info.cs_info.workgroup_size;
+    const auto [size_x, size_y, size_z] = runtime_info.hw.cs.workgroup_size;
     const u32 num_threads = size_x * size_y * size_z;
     if (num_threads <= 32) {
         return;
@@ -118,9 +135,12 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
                 if (std::ranges::any_of(inst.Uses(), is_unpack)) {
                     push_worklist(inst);
                 }
-            } else if (inst.GetOpcode() == IR::Opcode::GetAttributeU32 &&
-                       inst.Arg(0).Attribute() == IR::Attribute::SubgroupLtMask) {
-                worklist.push_back(&inst);
+            } else if (inst.GetOpcode() == IR::Opcode::MaskedBitCount32) {
+                IR::Inst* const ballot = FindBallotForMaskedBitCount(inst);
+                if (ballot == nullptr ||
+                    std::ranges::contains(uniform_blocks, ballot->GetParent())) {
+                    worklist.push_back(&inst);
+                }
             }
         }
     }
@@ -128,11 +148,11 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
         return;
     }
 
-    const u32 scratch_base = Common::AlignUp(runtime_info.cs_info.shared_memory_size, sizeof(u64));
+    const u32 scratch_base = Common::AlignUp(runtime_info.hw.cs.shared_memory_size, sizeof(u64));
     const u32 scratch_size =
         (Common::AlignUp(num_threads, 64) / profile.subgroup_size) * sizeof(u32);
     program.info.shared_memory_scratch_size =
-        scratch_base + scratch_size - runtime_info.cs_info.shared_memory_size;
+        scratch_base + scratch_size - runtime_info.hw.cs.shared_memory_size;
 
     for (IR::Inst* inst : worklist) {
         LOG_INFO(Render_Recompiler, "Lowering {} instruction for wave64", inst->GetOpcode());
@@ -162,13 +182,15 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
                                               ir.ShiftLeftLogical(half, ir.Imm32(2u))))};
             ir.Barrier();
             inst->ReplaceUsesWithAndRemove(value);
-        } else if (inst->GetOpcode() == IR::Opcode::GetAttributeU32 &&
-                   inst->Arg(0).Attribute() == IR::Attribute::SubgroupLtMask) {
+        } else if (inst->GetOpcode() == IR::Opcode::MaskedBitCount32) {
             const IR::U32 subgroup_invocation_id = ir.BitwiseAnd(invocation_index, ir.Imm32(63));
             const IR::U64 mask = ir.ISub(
                 ir.ShiftLeftLogical(ir.Imm64(u64{1}), subgroup_invocation_id), ir.Imm64(u64{1}));
-            inst->ReplaceUsesWithAndRemove(
-                ir.CompositeExtract(ir.UnpackUint2x32(mask), inst->Arg(1).U32()));
+            const IR::U32 thread_mask{
+                ir.CompositeExtract(ir.UnpackUint2x32(mask), inst->Arg(2).U1() ? 1u : 0u)};
+            const IR::U32 masked_value{
+                ir.BitCount(ir.BitwiseAnd(IR::U32{inst->Arg(0)}, thread_mask))};
+            inst->ReplaceUsesWithAndRemove(ir.IAdd(masked_value, IR::U32{inst->Arg(1)}));
         }
     }
 }

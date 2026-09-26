@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
+#include <fmt/format.h>
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
@@ -465,10 +466,10 @@ struct AddressSpace::Impl {
         }
     }
 
-    void Unmap(VAddr virtual_addr, u64 size) {
+    VAddr Unmap(VAddr virtual_addr, u64* size) {
         std::scoped_lock lk{mutex};
         // Loop through all regions in the requested range
-        u64 remaining_size = size;
+        u64 remaining_size = *size;
         VAddr current_addr = virtual_addr;
         while (remaining_size > 0) {
             // Get a pointer to the region containing virtual_addr
@@ -504,6 +505,8 @@ struct AddressSpace::Impl {
 
         // Coalesce any free space produced from these unmaps.
         CoalesceFreeRegions(virtual_addr);
+
+        return virtual_addr;
     }
 
     void Protect(VAddr virtual_addr, u64 size, bool read, bool write, bool execute) {
@@ -756,15 +759,18 @@ struct AddressSpace::Impl {
         return ret;
     }
 
-    void Unmap(VAddr virtual_addr, u64 size) {
+    VAddr Unmap(VAddr virtual_addr, u64* size) {
         // Check to see if we are adjacent to any regions.
         VAddr start_address = virtual_addr;
-        VAddr end_address = start_address + size;
-        auto it = m_free_regions.find({start_address - 1, end_address + 1});
+        VAddr end_address = start_address + *size;
 
         // If we are, join with them, ensuring we stay in bounds.
+        auto it = m_free_regions.find({start_address - 1, end_address});
         if (it != m_free_regions.end()) {
             start_address = std::min(start_address, it->lower());
+        }
+        it = m_free_regions.find({start_address, end_address + 1});
+        if (it != m_free_regions.end()) {
             end_address = std::max(end_address, it->upper());
         }
 
@@ -775,6 +781,9 @@ struct AddressSpace::Impl {
         void* ret = mmap(reinterpret_cast<void*>(start_address), end_address - start_address,
                          PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
         ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
+
+        *size = end_address - start_address;
+        return reinterpret_cast<VAddr>(ret);
     }
 
     void Protect(VAddr virtual_addr, u64 size, bool read, bool write, bool execute) {
@@ -839,8 +848,8 @@ void* AddressSpace::MapFile(VAddr virtual_addr, u64 size, u64 offset, u32 prot, 
 #endif
 }
 
-void AddressSpace::Unmap(VAddr virtual_addr, u64 size) {
-    impl->Unmap(virtual_addr, size);
+VAddr AddressSpace::Unmap(VAddr virtual_addr, u64* size) {
+    return impl->Unmap(virtual_addr, size);
 }
 
 void AddressSpace::Protect(VAddr virtual_addr, u64 size, MemoryPermission perms) {

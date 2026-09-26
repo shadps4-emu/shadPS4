@@ -61,9 +61,11 @@ public:
     explicit MntPoints() = default;
     ~MntPoints() = default;
 
+    std::shared_ptr<IBackend> CreateBackend(const std::filesystem::path& host_path, bool read_only);
+
     void Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
                bool read_only = false);
-    void Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder);
+    void Unmount(const std::string& guest_folder);
     void UnmountAll();
 
     std::filesystem::path GetHostPath(std::string_view guest_directory,

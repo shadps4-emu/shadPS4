@@ -13,11 +13,11 @@ namespace Vulkan {
 std::mutex Scheduler::submit_mutex;
 
 Scheduler::Scheduler(const Instance& instance)
-    : instance{instance}, master_semaphore{instance}, command_pool{instance, &master_semaphore} {
+    : instance{instance}, work_semaphore{instance}, command_pool{instance, &work_semaphore} {
 #if TRACY_GPU_ENABLED
     profiler_scope = reinterpret_cast<tracy::VkCtxScope*>(std::malloc(sizeof(tracy::VkCtxScope)));
 #endif
-    AllocateWorkerCommandBuffers();
+    BeginSession();
     priority_pending_ops_thread =
         std::jthread(std::bind_front(&Scheduler::PriorityPendingOpsThread, this));
 }
@@ -80,7 +80,7 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
         .pStencilAttachment = db.has_stencil ? &stencil_attachment : nullptr,
     };
 
-    current_cmdbuf.beginRendering(rendering_info);
+    CommandBuffer().beginRendering(rendering_info);
 }
 
 void Scheduler::EndRendering() {
@@ -88,7 +88,20 @@ void Scheduler::EndRendering() {
         return;
     }
     is_rendering = false;
-    current_cmdbuf.endRendering();
+    CommandBuffer().endRendering();
+}
+
+vk::CommandBuffer Scheduler::UploadCommandBuffer() {
+    auto& upload_cmdbuf = sessions.back().upload;
+    if (upload_cmdbuf) {
+        return upload_cmdbuf;
+    }
+    const vk::CommandBufferBeginInfo begin_info = {
+        .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+    };
+    upload_cmdbuf = command_pool.Commit();
+    Check(upload_cmdbuf.begin(begin_info));
+    return upload_cmdbuf;
 }
 
 void Scheduler::Flush(SubmitInfo& info) {
@@ -110,30 +123,33 @@ void Scheduler::Finish() {
 }
 
 void Scheduler::Wait(u64 tick) {
-    if (tick >= master_semaphore.CurrentTick()) {
+    if (tick >= work_semaphore.CurrentTick()) {
         // Make sure we are not waiting for the current tick without signalling
         SubmitInfo info{};
         Flush(info);
     }
-    master_semaphore.Wait(tick);
+    work_semaphore.Wait(tick);
 }
 
 void Scheduler::PopPendingOperations() {
     std::unique_lock lk(pending_ops_mutex);
-    master_semaphore.Refresh();
-    while (!pending_ops.empty() && master_semaphore.IsFree(pending_ops.front().gpu_tick)) {
+    work_semaphore.Refresh();
+    while (!pending_ops.empty() && work_semaphore.IsFree(pending_ops.front().gpu_tick)) {
         pending_ops.front().callback();
         pending_ops.pop();
     }
 }
 
-void Scheduler::AllocateWorkerCommandBuffers() {
+void Scheduler::BeginSession() {
+    EndSession();
+
+    auto& session = sessions.emplace_back();
+
     const vk::CommandBufferBeginInfo begin_info = {
         .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
     };
-
-    current_cmdbuf = command_pool.Commit();
-    Check(current_cmdbuf.begin(begin_info));
+    session.primary = command_pool.Commit();
+    Check(session.primary.begin(begin_info));
 
     // Invalidate dynamic state so it gets applied to the new command buffer.
     dynamic_state.Invalidate();
@@ -148,9 +164,27 @@ void Scheduler::AllocateWorkerCommandBuffers() {
 #endif
 }
 
+void Scheduler::EndSession() {
+    if (sessions.empty()) {
+        return;
+    }
+
+    if (on_session) {
+        on_session();
+    }
+
+    const auto& session = sessions.back();
+    if (session.upload) {
+        Check(session.upload.end());
+    }
+
+    EndRendering();
+    Check(session.primary.end());
+}
+
 void Scheduler::SubmitExecution(SubmitInfo& info) {
     std::scoped_lock lk{submit_mutex};
-    const u64 signal_value = master_semaphore.NextTick();
+    const u64 signal_value = work_semaphore.NextTick();
 
 #if TRACY_GPU_ENABLED
     auto* profiler_ctx = instance.GetProfilerContext();
@@ -160,10 +194,24 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     }
 #endif
 
-    EndRendering();
-    Check(current_cmdbuf.end());
+    if (on_submit) {
+        on_submit(info);
+    }
 
-    const vk::Semaphore timeline = master_semaphore.Handle();
+    EndSession();
+
+    std::vector<vk::CommandBuffer> cmd_buffers;
+    cmd_buffers.reserve(sessions.size() * 2);
+
+    for (const auto& session : sessions) {
+        if (session.upload) {
+            cmd_buffers.push_back(session.upload);
+        }
+        cmd_buffers.push_back(session.primary);
+    }
+    sessions.clear();
+
+    const vk::Semaphore timeline = work_semaphore.Handle();
     info.AddSignal(timeline, signal_value);
 
     static constexpr std::array<vk::PipelineStageFlags, 2> wait_stage_masks = {
@@ -183,8 +231,8 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
         .waitSemaphoreCount = info.num_wait_semas,
         .pWaitSemaphores = info.wait_semas.data(),
         .pWaitDstStageMask = wait_stage_masks.data(),
-        .commandBufferCount = 1U,
-        .pCommandBuffers = &current_cmdbuf,
+        .commandBufferCount = static_cast<u32>(cmd_buffers.size()),
+        .pCommandBuffers = cmd_buffers.data(),
         .signalSemaphoreCount = info.num_signal_semas,
         .pSignalSemaphores = info.signal_semas.data(),
     };
@@ -193,8 +241,8 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     auto submit_result = instance.GetGraphicsQueue().submit(submit_info, info.fence);
     ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost, "Device lost during submit");
 
-    master_semaphore.Refresh();
-    AllocateWorkerCommandBuffers();
+    work_semaphore.Refresh();
+    BeginSession();
 
     // Apply pending operations
     PopPendingOperations();
@@ -217,7 +265,7 @@ void Scheduler::PriorityPendingOpsThread(std::stop_token stoken) {
             priority_pending_ops.pop();
         }
 
-        master_semaphore.Wait(op.gpu_tick);
+        work_semaphore.Wait(op.gpu_tick);
         if (stoken.stop_requested()) {
             break;
         }
