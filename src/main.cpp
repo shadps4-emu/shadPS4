@@ -155,18 +155,12 @@ int main(int argc, char* argv[]) {
 
     IPC::Instance().Init();
 
-    auto emu_state = std::make_shared<EmulatorState>();
-    EmulatorState::SetInstance(emu_state);
-    UserSettings.Load();
-
     // Initialize key manager
-    auto key_manager = KeyManager::GetInstance();
-    key_manager->LoadFromFile();
+    KeyManager::GetInstance()->LoadFromFile();
 
     // Load configurations
-    std::shared_ptr<EmulatorSettingsImpl> emu_settings = std::make_shared<EmulatorSettingsImpl>();
-    EmulatorSettingsImpl::SetInstance(emu_settings);
-    emu_settings->Load();
+    EmulatorSettings.Load();
+    UserSettings.Load();
 
     if (bigPicture) {
         BigPictureMode::Launch(argv[0], sameProcess);
