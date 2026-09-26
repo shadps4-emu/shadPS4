@@ -978,20 +978,31 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
         if (off + 4 <= static_cast<int>(payload.size())) {
             const u32 count = GetLE32(payload.data() + off);
             off += 4;
+            bool extd_complete = count <= 256;
             for (u32 i = 0; i < count && i < 256; ++i) {
-                if (off + 4 > static_cast<int>(payload.size()))
+                if (off + 4 > static_cast<int>(payload.size())) {
+                    extd_complete = false;
                     break;
+                }
                 std::string key = ExtractBlob(payload, off);
                 off += 4 + static_cast<int>(key.size());
-                if (off + 4 > static_cast<int>(payload.size()))
+                if (off + 4 > static_cast<int>(payload.size())) {
+                    extd_complete = false;
                     break;
+                }
                 std::string val = ExtractBlob(payload, off);
                 off += 4 + static_cast<int>(val.size());
                 n.extdData.emplace_back(std::move(key), std::move(val));
             }
+            if (extd_complete && off + 16 <= static_cast<int>(payload.size())) {
+                n.fromAccountId = GetLE64(payload.data() + off);
+                n.toAccountId = GetLE64(payload.data() + off + 8);
+            }
         }
-        LOG_INFO(ShadNet, "WebApiPushEvent svc='{}' type='{}' from='{}' bytes={} extd={}",
-                 n.npServiceName, n.dataType, n.fromNpid, n.data.size(), n.extdData.size());
+        LOG_INFO(ShadNet,
+                 "WebApiPushEvent svc='{}' type='{}' from='{}'({}) to='{}'({}) bytes={} extd={}",
+                 n.npServiceName, n.dataType, n.fromNpid, n.fromAccountId, n.toNpid, n.toAccountId,
+                 n.data.size(), n.extdData.size());
         if (onWebApiPushEvent)
             onWebApiPushEvent(n);
         break;
