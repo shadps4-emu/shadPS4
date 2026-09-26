@@ -408,9 +408,11 @@ void EmitContext::DefineInputs() {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_smooth_sample = DefineVariable(
                     F32[2], spv::BuiltIn::BaryCoordSmoothSampleAMD, spv::StorageClass::Input);
-            } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
-                bary_coord =
-                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric) {
+                if (!ValidId(bary_coord)) {
+                    bary_coord = DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR,
+                                                spv::StorageClass::Input);
+                }
                 // we would need sample_index to interpolate the bary_coord later
                 if (!ValidId(sample_index)) {
                     sample_index =
