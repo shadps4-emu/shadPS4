@@ -65,7 +65,7 @@ u64 GetStub(const char* nid) {
     e.code->mov(e.code->rdi, index);
     e.code->mov(e.code->rax, reinterpret_cast<u64>(&CommonStub));
     e.code->jmp(e.code->rax);
-    e.code->readyRE();
+    e.code->ready();
 
     g_stub_entries.push_back(std::move(e));
     return reinterpret_cast<u64>(g_stub_entries.back().code->getCode());
