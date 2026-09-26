@@ -33,12 +33,16 @@ MemoryManager::MemoryManager() {
     if (extra_dmem != 0) {
         total_size += extra_dmem * 1_MB;
     }
+    s32 extra_fmem = EmulatorSettings.GetExtraFmemInMBytes();
+    if (extra_fmem != 0) {
+        total_size += extra_fmem * 1_MB;
+    }
     total_direct_size = total_size;
     dmem_map.clear();
     dmem_map.emplace(0, PhysicalMemoryArea{0, total_direct_size});
 
     // Pre-initialize flexible backing
-    total_flexible_size = ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE;
+    total_flexible_size = ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE + extra_fmem;
     fmem_map.clear();
     fmem_map.emplace(total_size, PhysicalMemoryArea{total_size, total_flexible_size});
 
@@ -62,6 +66,14 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
                     "extraDmemInMbytes is {} MB! Old Direct Size: {:#x} -> New Direct Size: {:#x}",
                     extra_dmem, total_size, total_size + extra_dmem * 1_MB);
         total_size += extra_dmem * 1_MB;
+    }
+    s32 extra_fmem = EmulatorSettings.GetExtraFmemInMBytes();
+    if (extra_fmem != 0) {
+        LOG_WARNING(Kernel_Vmm, "extraFmemInMbytes is {} MB! Old Size: {:#x} -> New Size: {:#x}",
+                    extra_fmem, ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE,
+                    ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE + extra_fmem * 1_MB);
+        total_size += extra_fmem * 1_MB;
+        flexible_size += extra_fmem * 1_MB;
     }
     if (!use_extended_mem1 && is_neo) {
         total_size -= 256_MB;
@@ -111,8 +123,8 @@ u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
     clamped_size = std::min(clamped_size, size);
 
     if (size != clamped_size) {
-        LOG_WARNING(Kernel_Vmm, "Clamped requested buffer range addr={:#x}, size={:#x} to {:#x}",
-                    virtual_addr, size, clamped_size);
+        LOG_DEBUG(Kernel_Vmm, "Clamped requested buffer range addr={:#x}, size={:#x} to {:#x}",
+                  virtual_addr, size, clamped_size);
     }
     return clamped_size;
 }
@@ -139,9 +151,14 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
 
     auto vma = FindVMA(virtual_addr);
     while (size) {
-        u64 copy_size = std::min<u64>(vma->second.size - (virtual_addr - vma->first), size);
+        const u64 offset = virtual_addr - vma->first;
+        const u64 copy_size = std::min<u64>(vma->second.size - (virtual_addr - vma->first), size);
         if (vma->second.IsMapped()) {
-            std::memcpy(dest, std::bit_cast<const u8*>(virtual_addr), copy_size);
+            u8* out = dest;
+            vma->second.ForEachPhysArea(offset, copy_size, [&](PAddr paddr, u32 chunk_size) {
+                std::memcpy(out, impl.BackingBase() + paddr, chunk_size);
+                out += chunk_size;
+            });
         } else {
             std::memset(dest, 0, copy_size);
         }
@@ -437,6 +454,8 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
 
         // Perform an address space mapping for each physical area
         void* out_addr = impl.Map(current_addr, size_to_map, new_dmem_area.base);
+        rasterizer->RegisterMemory(current_addr, size_to_map);
+
         // Tracy memory tracking breaks from merging memory areas. Disabled for now.
         // TRACK_ALLOC(out_addr, size_to_map, "VMEM");
 
@@ -610,6 +629,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
             // Perform an address space mapping for each physical area
             void* out_addr = impl.Map(current_addr, size_to_map, new_fmem_area.base, is_exec);
+            rasterizer->RegisterMemory(current_addr, size_to_map);
+
             // Tracy memory tracking breaks from merging memory areas. Disabled for now.
             // TRACK_ALLOC(out_addr, size_to_map, "VMEM");
 
@@ -666,6 +687,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         // Flexible address space mappings were performed while finding direct memory areas.
         if (type != VMAType::Flexible) {
             impl.Map(mapped_addr, size, phys_addr, is_exec);
+            rasterizer->RegisterMemory(mapped_addr, size);
             // Tracy memory tracking breaks from merging memory areas. Disabled for now.
             // TRACK_ALLOC(mapped_addr, size, "VMEM");
         }
@@ -703,14 +725,23 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
         prot |= MemoryProt::CpuRead;
     }
 
-    handle = file->f.GetFileMapping();
+    // Detect a non-host backend (ZArchive, ...).
+    Common::FS::IOFile* host_file = file->handle ? file->handle->GetHostFile() : nullptr;
+    const bool non_host_backed = file->handle && host_file == nullptr;
 
-    if (False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Write) &&
-        False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Append)) {
-        // If the file does not have write access, ensure prot does not contain write
-        // permissions. On real hardware, these mappings succeed, but the memory cannot be
-        // written to.
+    if (non_host_backed) {
+        // Non-host backends are read-only
         prot &= ~MemoryProt::CpuWrite;
+    } else {
+        handle = host_file->GetFileMapping();
+
+        if (False(host_file->GetAccessMode() & Common::FS::FileAccessMode::Write) &&
+            False(host_file->GetAccessMode() & Common::FS::FileAccessMode::Append)) {
+            // If the file does not have write access, ensure prot does not contain write
+            // permissions. On real hardware, these mappings succeed, but the memory cannot be
+            // written to.
+            prot &= ~MemoryProt::CpuWrite;
+        }
     }
 
     if (prot >= MemoryProt::GpuRead) {
@@ -759,9 +790,40 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     auto& new_vma = new_vma_handle->second;
     new_vma.fd = fd;
     auto mapped_addr = new_vma.base;
-    bool is_exec = True(prot & MemoryProt::CpuExec);
 
-    impl.MapFile(mapped_addr, size, phys_addr, std::bit_cast<u32>(prot), handle);
+    // Delegate the actual mapping to the file backend.
+    Core::FileSys::FileMapContext map_ctx{};
+    map_ctx.mapping_handle = handle;
+    map_ctx.map_native = [&](u8* addr, u64 sz, u64 off, u32 p, uintptr_t map_handle) {
+        impl.MapFile(reinterpret_cast<VAddr>(addr), sz, off, p, map_handle);
+    };
+    map_ctx.map_anonymous = [&](u8* addr, u64 sz) {
+        constexpr auto kAnonMarker = static_cast<u64>(-1);
+        constexpr auto kNoFd = static_cast<uintptr_t>(-1);
+        const auto rw_prot = std::bit_cast<u32>(MemoryProt::CpuRead | MemoryProt::CpuWrite);
+        impl.MapFile(reinterpret_cast<VAddr>(addr), sz, kAnonMarker, rw_prot, kNoFd);
+    };
+    map_ctx.protect = [&](u8* addr, u64 sz, u32 p) {
+        const auto mp = std::bit_cast<MemoryProt>(p);
+        Core::MemoryPermission perms{};
+        if (True(mp & MemoryProt::CpuRead)) {
+            perms |= Core::MemoryPermission::Read;
+        }
+        if (True(mp & MemoryProt::CpuReadWrite)) {
+            perms |= Core::MemoryPermission::ReadWrite;
+        }
+        if (True(mp & MemoryProt::CpuExec)) {
+            perms |= Core::MemoryPermission::Execute;
+        }
+        impl.Protect(reinterpret_cast<VAddr>(addr), sz, perms);
+    };
+
+    file->handle->Map(reinterpret_cast<u8*>(mapped_addr), size, phys_addr, std::bit_cast<u32>(prot),
+                      map_ctx);
+    if (prot != Core::MemoryProt::CpuRead) {
+        // read-only mappings cannot be registered with userfaultfd in writeprotect mode
+        rasterizer->RegisterMemory(mapped_addr, size);
+    }
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
     return ORBIS_OK;
@@ -843,7 +905,10 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     }
 
     // Unmap from address space
-    impl.Unmap(virtual_addr, size);
+    u64 size_to_unmap = size;
+    VAddr unmapped_addr = impl.Unmap(virtual_addr, &size_to_unmap);
+    rasterizer->RegisterMemory(unmapped_addr, size_to_unmap);
+
     // Tracy memory tracking breaks from merging memory areas. Disabled for now.
     // TRACK_FREE(virtual_addr, "VMEM");
 
@@ -937,7 +1002,10 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
     if (vma_type != VMAType::Reserved && vma_type != VMAType::PoolReserved) {
         // Unmap the memory region.
-        impl.Unmap(virtual_addr, size_in_vma);
+        u64 size_to_unmap = size_in_vma;
+        VAddr unmapped_addr = impl.Unmap(virtual_addr, &size_to_unmap);
+        rasterizer->RegisterMemory(unmapped_addr, size_to_unmap);
+
         // Tracy memory tracking breaks from merging memory areas. Disabled for now.
         // TRACK_FREE(virtual_addr, "VMEM");
     }

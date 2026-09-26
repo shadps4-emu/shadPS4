@@ -53,16 +53,16 @@ void ThreadState::Collect(Pthread* curthread) {
 
 void ThreadState::TryCollect(Pthread* thread) {
     SCOPE_EXIT {
-        thread->lock.unlock();
+        thread->lock->unlock();
     };
     if (!thread->ShouldCollect()) {
         return;
     }
 
     thread->refcount++;
-    thread->lock.unlock();
+    thread->lock->unlock();
     std::scoped_lock lk{thread_list_lock};
-    thread->lock.lock();
+    thread->lock->lock();
     thread->refcount--;
     if (thread->ShouldCollect()) {
         threads.erase(thread);
@@ -126,7 +126,6 @@ void ThreadState::Free(Pthread* curthread, Pthread* thread) {
     }
     thread->tcb = nullptr;
     auto* sleepqueue = thread->sleepqueue;
-    std::destroy_at(thread);
     bool should_free;
     {
         std::scoped_lock lk{free_thread_lock};
@@ -153,9 +152,9 @@ int ThreadState::FindThread(Pthread* thread, const bool include_dead) {
     if (it == threads.end()) {
         return POSIX_ESRCH;
     }
-    thread->lock.lock();
+    thread->lock->lock();
     if (!include_dead && thread->state == PthreadState::Dead) {
-        thread->lock.unlock();
+        thread->lock->unlock();
         return POSIX_ESRCH;
     }
     return 0;
@@ -172,12 +171,12 @@ int ThreadState::RefAdd(Pthread* thread, bool include_dead) {
     }
 
     thread->refcount++;
-    thread->lock.unlock();
+    thread->lock->unlock();
     return 0;
 }
 
 void ThreadState::RefDelete(Pthread* thread) {
-    thread->lock.lock();
+    thread->lock->lock();
     thread->refcount--;
     TryCollect(thread);
 }

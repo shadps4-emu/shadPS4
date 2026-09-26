@@ -80,7 +80,7 @@ struct MatchInstObject : MatchObject<MatchInstObject<opcode>> {
     MatchInstObject(Args&&... args) : pattern(std::forward_as_tuple(args...)) {}
 
     inline bool Match(IR::Value v) {
-        IR::Inst* inst = v.TryInstRecursive();
+        IR::Inst* inst = v.TryInst();
         if (!inst || inst->GetOpcode() != opcode) {
             return false;
         }

@@ -47,7 +47,7 @@ public:
         : m_memory_replacement(memory_replacement),
           m_data(is_texture ? AllocateTexture(memory_replacement, align, size)
                             : Allocate(memory_replacement, align, size)),
-          m_is_texture(is_texture) {
+          m_size(size), m_is_texture(is_texture) {
         ASSERT_MSG(m_data, "Could not allocate frame buffer.");
     }
 
@@ -66,7 +66,7 @@ public:
     GuestBuffer& operator=(const GuestBuffer&) noexcept = delete;
 
     GuestBuffer(GuestBuffer&& r) noexcept
-        : m_memory_replacement(r.m_memory_replacement), m_data(r.m_data),
+        : m_memory_replacement(r.m_memory_replacement), m_data(r.m_data), m_size(r.m_size),
           m_is_texture(r.m_is_texture) {
         r.m_data = nullptr;
     };
@@ -78,6 +78,10 @@ public:
 
     u8* GetBuffer() const noexcept {
         return m_data;
+    }
+
+    u64 Size() const noexcept {
+        return m_size;
     }
 
 private:
@@ -102,6 +106,7 @@ private:
 
     const AvPlayerMemAllocator& m_memory_replacement;
     u8* m_data = nullptr;
+    u64 m_size = 0;
     bool m_is_texture = false;
 };
 
@@ -142,11 +147,11 @@ private:
 
 class AvPlayerSource {
 public:
-    AvPlayerSource(AvPlayerStateCallback& state, bool use_vdec2);
+    AvPlayerSource(AvPlayerStateCallback& state);
     ~AvPlayerSource();
 
     bool Init(const AvPlayerInitData& init_data, std::string_view path);
-    bool FindStreamInfo();
+    bool FindStreams();
     s32 GetStreamCount();
     bool GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info);
     bool EnableStream(u32 stream_index);
@@ -164,6 +169,7 @@ public:
 
 private:
     u64 DurationMillis() const;
+    AvPlayerStreamInfo CreateStreamInfo(u32 stream_index);
 
     static void ReleaseAVPacket(AVPacket* packet);
     static void ReleaseAVFrame(AVFrame* frame);
@@ -192,7 +198,14 @@ private:
     Frame PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame);
 
     AvPlayerStateCallback& m_state;
-    bool m_use_vdec2 = false;
+
+    struct Stream {
+        size_t ffmpeg_index = 0;
+        AvPlayerStreamInfo info;
+    };
+
+    std::vector<Stream> m_streams;
+    u64 m_duration = 0;
 
     AvPlayerMemAllocator m_memory_replacement{};
     u32 m_max_num_video_framebuffers{};
@@ -238,6 +251,7 @@ private:
     SWSContextPtr m_sws_context{nullptr, &ReleaseSWSContext};
 
     std::optional<u64> m_last_audio_ts{};
+    std::optional<std::chrono::high_resolution_clock::time_point> m_last_data_time{};
     std::optional<std::chrono::high_resolution_clock::time_point> m_start_time{};
     std::chrono::high_resolution_clock::time_point m_pause_time{};
     std::chrono::high_resolution_clock::duration m_pause_duration{};

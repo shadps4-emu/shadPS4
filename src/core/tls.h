@@ -28,6 +28,8 @@ struct Tcb {
     Tcb* tcb_self;
     DtvEntry* tcb_dtv;
     void* tcb_thread;
+    void* tcb_spare[2];
+    u64 tcb_canary;
     ::Libraries::Fiber::OrbisFiberContext* tcb_fiber;
 };
 

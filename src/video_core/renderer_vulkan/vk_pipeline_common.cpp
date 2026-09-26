@@ -19,21 +19,11 @@ Pipeline::Pipeline(const Instance& instance_, Scheduler& scheduler_, DescriptorH
 
 Pipeline::~Pipeline() = default;
 
-void Pipeline::BindResources(DescriptorWrites& set_writes, const BufferBarriers& buffer_barriers,
+void Pipeline::BindResources(DescriptorWrites& set_writes,
                              const Shader::PushData& push_data) const {
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto bind_point =
         IsCompute() ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
-
-    if (!buffer_barriers.empty()) {
-        const auto dependencies = vk::DependencyInfo{
-            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-            .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
-            .pBufferMemoryBarriers = buffer_barriers.data(),
-        };
-        scheduler.EndRendering();
-        cmdbuf.pipelineBarrier2(dependencies);
-    }
 
     const auto stage_flags = IsCompute() ? vk::ShaderStageFlagBits::eCompute : AllGraphicsStageBits;
     cmdbuf.pushConstants(*pipeline_layout, stage_flags, 0u, sizeof(push_data), &push_data);
@@ -60,7 +50,7 @@ std::string Pipeline::GetDebugString() const {
     std::string stage_desc;
     for (const auto& stage : stages) {
         if (stage) {
-            const auto shader_name = PipelineCache::GetShaderName(stage->stage, stage->pgm_hash);
+            const auto shader_name = PipelineCache::GetShaderName(stage->hw_stage, stage->pgm_hash);
             if (stage_desc.empty()) {
                 stage_desc = shader_name;
             } else {

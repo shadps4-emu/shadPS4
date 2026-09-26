@@ -8,6 +8,7 @@
 #include <common/path_util.h>
 #include <common/scm_rev.h>
 #include <toml.hpp>
+#include "common/assert.h"
 #include "common/logging/formatter.h"
 #include "common/logging/log.h"
 #include "emulator_settings.h"
@@ -99,10 +100,7 @@ void EmulatorSettingsImpl::PrintChangedSummary(const std::vector<std::string>& c
 // ── Singleton ────────────────────────────────────────────────────────
 EmulatorSettingsImpl::EmulatorSettingsImpl() = default;
 
-EmulatorSettingsImpl::~EmulatorSettingsImpl() {
-    if (m_loaded)
-        Save();
-}
+EmulatorSettingsImpl::~EmulatorSettingsImpl() {}
 
 std::shared_ptr<EmulatorSettingsImpl> EmulatorSettingsImpl::GetInstance() {
     std::lock_guard lock(s_mutex);
@@ -229,6 +227,8 @@ void EmulatorSettingsImpl::ClearGameSpecificOverrides() {
     ClearGroupOverrides(m_debug);
     ClearGroupOverrides(m_input);
     ClearGroupOverrides(m_audio);
+    // Windows static guest red-zone protection
+    ClearGroupOverrides(m_windows_guest_red_zone_protection);
     ClearGroupOverrides(m_gpu);
     ClearGroupOverrides(m_vulkan);
 }
@@ -253,6 +253,9 @@ void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
     if (tryGroup(m_input))
         return;
     if (tryGroup(m_audio))
+        return;
+    // Windows static guest red-zone protection
+    if (tryGroup(m_windows_guest_red_zone_protection))
         return;
     if (tryGroup(m_gpu))
         return;
@@ -289,6 +292,12 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
             json audioObj = json::object();
             SaveGroupGameSpecific(m_audio, audioObj);
             j["Audio"] = audioObj;
+
+            // Windows static guest red-zone protection
+            json windowsGuestRedZoneProtectionObj = json::object();
+            SaveGroupGameSpecific(m_windows_guest_red_zone_protection,
+                                  windowsGuestRedZoneProtectionObj);
+            j["WindowsGuestRedZoneProtection"] = windowsGuestRedZoneProtectionObj;
 
             json gpuObj = json::object();
             SaveGroupGameSpecific(m_gpu, gpuObj);
@@ -357,6 +366,9 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
 // ── Load ──────────────────────────────────────────────────────────────
 
 bool EmulatorSettingsImpl::Load(const std::string& serial) {
+    // A newly loaded profile replaces, rather than extends, the previous profile.
+    ClearGameSpecificOverrides(); // Windows static guest red-zone protection
+
     try {
         if (serial.empty()) {
             // ── Global config ──────────────────────────────────────────
@@ -404,7 +416,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                     SDL_ShowMessageBox(&msg_box, &result);
                     if (result == 0) {
                         if (TransferSettings()) {
-                            m_loaded = true;
                             Save();
                             return true;
                         } else {
@@ -421,7 +432,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             if (GetConfigVersion() != Common::g_scm_rev) {
                 Save();
             }
-            m_loaded = true;
             return true;
         } else {
             // ── Per-game override file ─────────────────────────────────
@@ -459,6 +469,10 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 ApplyGroupOverrides(m_input, gj.at("Input"), changed);
             if (gj.contains("Audio"))
                 ApplyGroupOverrides(m_audio, gj.at("Audio"), changed);
+            // Windows static guest red-zone protection
+            if (gj.contains("WindowsGuestRedZoneProtection"))
+                ApplyGroupOverrides(m_windows_guest_red_zone_protection,
+                                    gj.at("WindowsGuestRedZoneProtection"), changed);
             if (gj.contains("GPU"))
                 ApplyGroupOverrides(m_gpu, gj.at("GPU"), changed);
             if (gj.contains("Vulkan"))
@@ -469,7 +483,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             return true;
         }
     } catch (const std::exception& e) {
-        LOG_ERROR(Config, "Error loading settings: {}", e.what());
+        UNREACHABLE_MSG("Error loading settings: {}", e.what());
         return false;
     }
 }
@@ -480,6 +494,8 @@ void EmulatorSettingsImpl::SetDefaultValues() {
     m_debug = DebugSettings{};
     m_input = InputSettings{};
     m_audio = AudioSettings{};
+    // Windows static guest red-zone protection
+    m_windows_guest_red_zone_protection = WindowsGuestRedZoneProtectionSettings{};
     m_gpu = GPUSettings{};
     m_vulkan = VulkanSettings{};
 }
@@ -738,6 +754,8 @@ std::vector<std::string> EmulatorSettingsImpl::GetAllOverrideableKeys() const {
     addGroup(m_debug.GetOverrideableFields());
     addGroup(m_input.GetOverrideableFields());
     addGroup(m_audio.GetOverrideableFields());
+    // Windows static guest red-zone protection
+    addGroup(m_windows_guest_red_zone_protection.GetOverrideableFields());
     addGroup(m_gpu.GetOverrideableFields());
     addGroup(m_vulkan.GetOverrideableFields());
     return keys;

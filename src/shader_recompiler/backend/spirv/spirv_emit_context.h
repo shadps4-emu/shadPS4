@@ -193,8 +193,8 @@ public:
     Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
-    Stage stage;
-    LogicalStage l_stage{};
+    HwStage hw_stage;
+    SwStage sw_stage{};
 
     Id last_label{};
 
@@ -253,11 +253,14 @@ public:
     Id instance_id{};
     Id push_data_block{};
     Id base_vertex{};
+    Id base_instance{};
     Id frag_coord{};
     Id front_facing{};
     Id frag_depth{};
     Id stencil_ref{};
     Id sample_mask{};
+    Id sample_mask_in{};
+    Id helper_invocation{};
     Id sample_index{};
     Id clip_distances{};
     Id cull_distances{};
@@ -272,8 +275,10 @@ public:
     Id num_workgroups_id{};
     Id workgroup_index_id{};
     Id local_invocation_id{};
+    Id local_invocation_index{};
     Id invocation_id{};
     Id subgroup_local_invocation_id{};
+    Id subgroup_lt_mask{};
     Id image_u32{};
     Id image_f32{};
 
@@ -285,9 +290,11 @@ public:
     Id shared_memory_u32_type{};
     Id shared_memory_u64_type{};
 
+    Id bary_coord{};
     Id bary_coord_smooth{};
     Id bary_coord_smooth_centroid{};
     Id bary_coord_smooth_sample{};
+    Id bary_coord_pull_model{};
     Id bary_coord_nopersp{};
     Id bary_coord_nopersp_sample{};
 
@@ -400,8 +407,8 @@ private:
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
                                     bool output, bool loaded = false, bool array = false);
 
-    BufferSpv DefineBuffer(bool is_storage, bool is_written, u32 elem_shift, BufferType buffer_type,
-                           Id data_type);
+    BufferSpv DefineBuffer(bool is_written, bool is_coherent, u32 elem_shift,
+                           BufferType buffer_type, Id data_type);
 
     Id DefineFloat32ToUfloatM5(u32 mantissa_bits, std::string_view name);
     Id DefineUfloatM5ToFloat32(u32 mantissa_bits, std::string_view name);

@@ -16,6 +16,7 @@ namespace Libraries::Kernel {
 void ErrSceToPosix(s32 result);
 s32 ErrnoToSceKernelError(s32 e);
 void SetPosixErrno(s32 e);
+s32 NativeToPosixErrno(s32 const e);
 s32* PS4_SYSV_ABI __Error();
 const char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord();
 

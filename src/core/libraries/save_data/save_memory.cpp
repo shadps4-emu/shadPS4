@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "save_memory.h"
@@ -139,13 +139,15 @@ void SetIcon(u32 slot_id, void* buf, size_t buf_size) {
     const auto& data = g_attached_slots[slot_id];
     const auto icon_path = data.folder_path / sce_sys / "icon0.png";
     if (buf == nullptr) {
-        const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
         if (fs::exists(icon_path)) {
             fs::remove(icon_path);
         }
-        if (fs::exists(src_icon)) {
+        // Read the source through the mount stack so archive-backed base
+        // games can seed save-slot icons too.
+        if (auto bytes = g_mnt->ReadFile("/app0/sce_sys/save_data.png")) {
             fs::create_directories(icon_path.parent_path());
-            fs::copy_file(src_icon, icon_path);
+            IOFile dst(icon_path, Common::FS::FileAccessMode::Create);
+            dst.WriteRaw<u8>(bytes->data(), bytes->size());
         }
     } else {
         IOFile file(icon_path, Common::FS::FileAccessMode::Create);

@@ -865,6 +865,7 @@ void LogFontOpenParams(const Libraries::Font::OrbisFontOpenParams* params);
 std::filesystem::path ResolveGuestPath(const char* guest_path);
 bool LoadGuestFileBytes(const std::filesystem::path& host_path,
                         std::vector<unsigned char>& out_bytes);
+bool LoadGuestPathBytes(const char* guest_path, std::vector<unsigned char>& out_bytes);
 FaceMetrics LoadFaceMetrics(FT_Face face);
 void PopulateStateMetrics(FontState& st, const FaceMetrics& m);
 float ComputeSysfontScaleFactor(FT_Face face, int units_per_em);

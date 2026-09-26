@@ -8,17 +8,21 @@
 #include "common/logging/formatter.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "common/singleton.h"
 #include "common/string_util.h"
 #include "common/thread.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
 #include "core/devtools/widget/module_list.h"
 #include "core/emulator_settings.h"
+#include "core/file_sys/backends/host_fs.h"
+#include "core/file_sys/fs.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/sysmodule/sysmodule.h"
+#include "core/libraries/sysmodule/sysmodule_internal.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
@@ -89,23 +93,20 @@ void Linker::Execute(const std::vector<std::string>& args) {
     // Relocate all modules
     RelocateAllImports();
 
-    // If we're running LLE libSceLibcInternal,
-    // we need to find the _malloc_init function and run it manually.
-    // This is something libkernel runs during initialization.
+    // libkernel entry is responsible for initializing malloc-related elements of libSceLibcInternal
+    // this is done through calling _malloc_init, and sceLibcInternalMemoryMutexEnable.
     static PS4_SYSV_ABI s32 (*malloc_init)() = nullptr;
+    static PS4_SYSV_ABI void (*sceLibcInternalMemoryMutexEnable)() = nullptr;
 
     if (has_libcinternal) {
         for (const auto& m : m_modules) {
             const auto& mod = m.get();
             if (mod->name.contains("libSceLibcInternal.sprx")) {
-                // Found libSceLibcInternal, now search through function exports.
-                // Looking for _malloc_init to init libSceLibcInternal properly
-                // and for all the memory allocating functions, so we can initialize our heap API
-                for (const auto& sym : mod->export_sym.GetSymbols()) {
-                    if (sym.nid_name.compare("_malloc_init") == 0) {
-                        malloc_init = reinterpret_cast<PS4_SYSV_ABI s32 (*)()>(sym.virtual_address);
-                    }
-                }
+                malloc_init =
+                    reinterpret_cast<PS4_SYSV_ABI s32 (*)()>(mod->FindByName("_malloc_init"));
+                sceLibcInternalMemoryMutexEnable = reinterpret_cast<PS4_SYSV_ABI void (*)()>(
+                    mod->FindByName("sceLibcInternalMemoryMutexEnable"));
+                break;
             }
         }
     }
@@ -147,7 +148,6 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
     main_thread.Run([this, module, &args, has_libcinternal](std::stop_token) {
         Common::SetCurrentThreadName("Game:Main");
-        std::set_terminate(Common::Log::Terminate);
 
 #ifndef _WIN32 // Clear any existing signal mask for game threads.
         sigset_t emptyset;
@@ -162,10 +162,11 @@ void Linker::Execute(const std::vector<std::string>& args) {
         if (has_libcinternal) {
             LoadLibcInternal();
 
-            if (malloc_init != nullptr) {
+            if (malloc_init && sceLibcInternalMemoryMutexEnable) {
                 // Call _malloc_init
                 s32 ret = malloc_init();
                 ASSERT_MSG(ret == 0, "malloc_init failed");
+                sceLibcInternalMemoryMutexEnable();
             }
         }
 
@@ -218,24 +219,39 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
 s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
     std::scoped_lock lk{mutex};
-
-    if (!std::filesystem::exists(elf_name)) {
-        LOG_ERROR(Core_Linker, "Provided file {} does not exist", elf_name.string());
-        return -1;
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    const std::string as_guest = elf_name.generic_string();
+    std::unique_ptr<Core::FileSys::IFile> handle;
+    if (!as_guest.empty() && as_guest.front() == '/') {
+        handle = mnt->Open(as_guest, /*writable=*/false);
+    }
+    if (!handle) {
+        if (!std::filesystem::exists(elf_name)) {
+            LOG_ERROR(Core_Linker, "Provided file {} does not exist", elf_name.string());
+            return -1;
+        }
+        auto host = std::make_unique<Core::FileSys::HostFile>(
+            elf_name, Common::FS::FileAccessMode::Read, /*read_only=*/true);
+        if (!host->IsOpen()) {
+            LOG_ERROR(Core_Linker, "Provided file {} could not be opened", elf_name.string());
+            return -1;
+        }
+        handle = std::move(host);
     }
 
-    auto module = std::make_unique<Module>(memory, elf_name, max_tls_index);
-    if (!module->IsValid()) {
-        LOG_ERROR(Core_Linker, "Provided file {} is not valid ELF file", elf_name.string());
-        return -1;
-    }
+    s32 mod_id = m_modules.size();
+    auto module =
+        std::make_unique<Module>(memory, elf_name, std::move(handle), max_tls_index, mod_id);
+    ASSERT_MSG(module->IsValid(),
+               "Provided file {} is not valid ELF file. This usually indicated a corrupted dump.",
+               elf_name.string());
 
     num_static_modules += !is_dynamic;
     m_modules.emplace_back(std::move(module));
 
     Core::Devtools::Widget::ModuleList::AddModule(elf_name.filename().string(), elf_name);
 
-    return m_modules.size() - 1;
+    return mod_id;
 }
 
 s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, const void* argp,
@@ -357,7 +373,7 @@ void Linker::Relocate(Module* module) {
             }
             rel_is_resolved = (symbol_virtual_addr != 0);
             rel_value = (rel_is_resolved ? symbol_virtual_addr + addend : 0);
-            rel_name = symrec.name;
+            rel_name = symrec.symbol.name;
             break;
         }
         default:
@@ -375,15 +391,22 @@ void Linker::Relocate(Module* module) {
 bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Module* m,
                      Loader::SymbolRecord* return_info) {
     const auto ids = Common::SplitString(name, '#');
-    if (ids.size() != 3) {
-        return_info->virtual_address = 0;
-        return_info->name = name;
-        LOG_ERROR(Core_Linker, "Not Resolved {}", name);
-        return false;
-    }
-
     const LibraryInfo* library = m->FindLibrary(ids[1]);
     const ModuleInfo* module = m->FindModule(ids[2]);
+    if (ids.size() != 3 && sym_type != Loader::SymbolType::NoType) {
+        return_info->virtual_address = 0;
+        return_info->symbol.name = ids.at(0);
+        LOG_ERROR(Core_Linker, "Not Resolved {}", name);
+        return false;
+    } else if (ids.size() == 1 && sym_type == Loader::SymbolType::NoType) {
+        LOG_DEBUG(Core_Linker, "NoType export {}", name);
+        library = m->FindLibrary("");
+        module = m->FindModule("");
+    } else {
+        library = m->FindLibrary(ids[1]);
+        module = m->FindModule(ids[2]);
+    }
+
     ASSERT_MSG(library && module, "Unable to find library and module");
 
     Loader::SymbolResolver sr{};
@@ -418,18 +441,25 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
 
     const auto aeronid = AeroLib::FindByNid(sr.name.c_str());
     if (sym_type == Loader::SymbolType::Object) {
-        return_info->name = aeronid ? aeronid->name : "Unknown object";
+        return_info->symbol.nidName = aeronid ? aeronid->name : "Unknown object";
         return_info->virtual_address = 0;
     } else if (aeronid) {
-        return_info->name = aeronid->name;
+        return_info->symbol.nidName = aeronid->name;
         return_info->virtual_address = AeroLib::GetStub(aeronid->nid);
     } else {
         return_info->virtual_address = AeroLib::GetStub(sr.name.c_str());
-        return_info->name = "Unknown !!!";
+        return_info->symbol.nidName = "Unknown !!!";
     }
     if (library->name != "libc" && library->name != "libSceFios2") {
         LOG_WARNING(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
-                    return_info->name, library->name, module->name);
+                    return_info->symbol.nidName, library->name, module->name);
+    } else {
+        if (library->name == "libc" && return_info->symbol.nidName == "Need_sceLibc") {
+            Libraries::SysModule::g_need_scelibc = true;
+        }
+        if (library->name == "libSceFios2" && return_info->symbol.nidName == "sceFiosInitialize") {
+            Libraries::SysModule::g_need_scelibc = true;
+        }
     }
     return false;
 }

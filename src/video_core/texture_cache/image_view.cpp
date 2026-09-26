@@ -60,10 +60,11 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     }
 
     range.base.level = image.base_level;
-    range.base.layer = image.base_array;
+    range.base.layer = std::min<u32>(image.base_array, image.NumLayers() - 1);
     range.extent.levels = image.NumViewLevels(desc.is_array);
     range.extent.layers = image.NumViewLayers(desc.is_array);
     type = image.GetViewType(desc.is_array);
+    min_lod = static_cast<u32>(image.min_lod);
 
     if (!is_storage) {
         mapping = Vulkan::LiverpoolToVK::ComponentMapping(image.DstSelect());
@@ -95,6 +96,13 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     if (!info.is_storage) {
         usage_ci.usage &= ~vk::ImageUsageFlagBits::eStorage;
     }
+    vk::ImageViewMinLodCreateInfoEXT min_lod_ci{};
+    if (info.min_lod != 0 && instance.IsImageViewMinLodSupported()) {
+        const float last_level =
+            static_cast<float>(info.range.base.level + info.range.extent.levels - 1);
+        min_lod_ci.minLod = std::min(static_cast<float>(info.min_lod) / 256.f, last_level);
+        usage_ci.pNext = &min_lod_ci;
+    }
     // When sampling D32/D16 texture from shader, the T# specifies R32/R16 format so adjust it.
     vk::Format format = info.format;
     vk::ImageAspectFlags aspect = image.aspect_mask;
@@ -109,7 +117,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
         aspect = vk::ImageAspectFlagBits::eStencil;
     }
 
-    const vk::ImageViewCreateInfo image_view_ci = {
+    vk::ImageViewCreateInfo image_view_ci = {
         .pNext = &usage_ci,
         .image = image.GetImage(),
         .viewType = ConvertImageViewType(info.type),
@@ -126,6 +134,8 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     if (!IsViewTypeCompatible(info.type, image.info.type)) {
         LOG_ERROR(Render_Vulkan, "image view type {} is incompatible with image type {}",
                   magic_enum::enum_name(info.type), magic_enum::enum_name(image.info.type));
+        info.type = image.info.type;
+        image_view_ci.viewType = ConvertImageViewType(info.type);
     }
 
     auto [view_result, view] = instance.GetDevice().createImageViewUnique(image_view_ci);

@@ -5,9 +5,12 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <span>
 #include <vector>
 #include <CLI/CLI.hpp>
 #include <SDL3/SDL_messagebox.h>
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "common/arch.h"
 #include "common/key_manager.h"
@@ -55,6 +58,7 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> overrideRoot;
     std::optional<int> waitPid;
     bool waitForDebugger = false;
+    bool userfaultfd = false;
 
     std::optional<std::string> fullscreenStr;
     bool ignoreGamePatch = false;
@@ -62,48 +66,56 @@ int main(int argc, char* argv[]) {
     bool configClean = false;
     bool configGlobal = false;
     bool bigPicture = false;
+    bool sameProcess = false;
+    bool append_log{};
 
     std::optional<std::filesystem::path> addGameFolder;
     std::optional<std::filesystem::path> setAddonFolder;
     std::optional<std::string> patchFile;
 
+    std::vector<std::pair<std::filesystem::path, std::string>> mounts;
+    static std::vector<std::string> env_vars;
+
     // ---- Options ----
+    app.add_option("guest_arg", gamePath, "Game path or ID"); // positional
     app.add_option("-g,--game", gamePath, "Game path or ID");
     app.add_option("-p,--patch", patchFile, "Patch file to apply");
     app.add_flag("-i,--ignore-game-patch", ignoreGamePatch,
                  "Disable automatic loading of game patches");
 
     app.add_flag("-b,--big-picture", bigPicture, "Start in Big Picture Mode");
+    app.add_flag("--same-process", sameProcess,
+                 "Launch the game in the same process when using Big Picture Mode");
 
-    // FULLSCREEN: behavior-identical
     app.add_option("-f,--fullscreen", fullscreenStr, "Fullscreen mode (true|false)");
 
     app.add_option("--override-root", overrideRoot)->check(CLI::ExistingDirectory);
 
     app.add_flag("--wait-for-debugger", waitForDebugger);
     app.add_option("--wait-for-pid", waitPid);
+#ifdef __linux__
+    app.add_flag("--userfaultfd", userfaultfd,
+                 "Enable userfaultfd for tracking memory (Linux only)");
+#endif
 
     app.add_flag("--show-fps", showFps);
     app.add_flag("--config-clean", configClean);
     app.add_flag("--config-global", configGlobal);
-    app.add_flag("--log-append", Common::Log::g_should_append);
+    app.add_flag("--log-append", append_log);
 
     app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
     app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
+    app.add_option("--mount", mounts, "Mount source to destination");
+    app.add_option("-e,--env", env_vars, "Environment variables to pass to the guest");
 
     // ---- Capture args after `--` verbatim ----
     app.allow_extras();
-    app.parse_complete_callback([&]() {
-        const auto& extras = app.remaining();
-        if (!extras.empty()) {
-            gameArgs = extras;
-        }
-    });
 
     // ---- No-args behavior ----
     if (argc == 1) {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadPS4",
-                                 "This is a CLI application. Please use the QTLauncher for a GUI:\n"
+                                 "This is a CLI application. Please use the '-b' flag for Big "
+                                 "Picture mode, or QTLauncher for a standalone GUI:\n"
                                  "https://github.com/shadps4-emu/shadps4-qtlauncher/releases",
                                  nullptr);
         std::cout << app.help();
@@ -111,7 +123,24 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        app.parse(argc, argv);
+        bool double_dash_found = false;
+        int double_dash_index;
+        for (int i = 0; i < argc; i++) {
+            if (double_dash_found) {
+                gameArgs.emplace_back(argv[i]);
+            }
+            if (!double_dash_found && std::string(argv[i]) == "--") {
+                double_dash_found = true;
+                double_dash_index = i;
+            }
+        }
+
+        // If the -- arg is present, only parse args before it
+        if (double_dash_found) {
+            app.parse(double_dash_index, argv);
+        } else {
+            app.parse(argc, argv);
+        }
     } catch (const CLI::ParseError& e) {
         return app.exit(e);
     }
@@ -122,28 +151,19 @@ int main(int argc, char* argv[]) {
     // Initialize main log with default config
     Common::Log::Setup("shadps4.log");
 
-    LOG_INFO(Debug, "Run: {}", std::span(argv, argc));
+    LOG_INFO(Debug, "Run: {}", fmt::join(std::span(argv, argc), ""));
 
     IPC::Instance().Init();
 
-    auto emu_state = std::make_shared<EmulatorState>();
-    EmulatorState::SetInstance(emu_state);
-    UserSettings.Load();
-
     // Initialize key manager
-    auto key_manager = KeyManager::GetInstance();
-    key_manager->LoadFromFile();
+    KeyManager::GetInstance()->LoadFromFile();
 
     // Load configurations
-    std::shared_ptr<EmulatorSettingsImpl> emu_settings = std::make_shared<EmulatorSettingsImpl>();
-    EmulatorSettingsImpl::SetInstance(emu_settings);
-    emu_settings->Load();
-
-    // Configure logger appropriately
-    Common::Log::g_should_append |= EmulatorSettings.IsLogAppend();
+    EmulatorSettings.Load();
+    UserSettings.Load();
 
     if (bigPicture) {
-        BigPictureMode::Launch(argv[0]);
+        BigPictureMode::Launch(argv[0], sameProcess);
         return 0;
     }
 
@@ -168,14 +188,6 @@ int main(int argc, char* argv[]) {
             gameArgs.erase(gameArgs.begin());
         } else {
             LOG_ERROR(Debug, "Please provide a game path or ID.");
-            return 1;
-        }
-    }
-    if (!gameArgs.empty()) {
-        if (gameArgs.front() == "--") {
-            gameArgs.erase(gameArgs.begin());
-        } else {
-            LOG_ERROR(Debug, "unhandled flags");
             return 1;
         }
     }
@@ -207,9 +219,23 @@ int main(int argc, char* argv[]) {
     if (configGlobal)
         EmulatorSettings.SetConfigMode(ConfigMode::Global);
 
+    if (userfaultfd) {
+        EmulatorSettings.SetUserfaultfdTracking(true);
+    }
+
     // ---- Resolve game path or ID ----
     std::filesystem::path ebootPath(*gamePath);
-    if (!std::filesystem::exists(ebootPath)) {
+    const auto archive_component_exists = [](const std::filesystem::path& p) -> bool {
+        std::filesystem::path accum;
+        for (const auto& comp : p) {
+            accum /= comp;
+            if (comp.extension() == ".zar") {
+                return std::filesystem::is_regular_file(accum);
+            }
+        }
+        return false;
+    };
+    if (!std::filesystem::exists(ebootPath) && !archive_component_exists(ebootPath)) {
         bool found = false;
         constexpr int maxDepth = 5;
         for (const auto& installDir : EmulatorSettings.GetGameInstallDirs()) {
@@ -228,7 +254,7 @@ int main(int argc, char* argv[]) {
     auto* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
     emulator->waitForDebuggerBeforeRun = waitForDebugger;
-    emulator->Run(ebootPath, gameArgs, overrideRoot);
+    emulator->Run(ebootPath, gameArgs, overrideRoot, mounts, env_vars, append_log);
 
     return 0;
 }

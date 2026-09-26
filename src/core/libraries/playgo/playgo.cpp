@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
@@ -170,8 +170,7 @@ s32 PS4_SYSV_ABI scePlayGoGetLocus(OrbisPlayGoHandle handle, const OrbisPlayGoCh
 
 s32 PS4_SYSV_ABI scePlayGoGetProgress(OrbisPlayGoHandle handle, const OrbisPlayGoChunkId* chunkIds,
                                       uint32_t numberOfEntries, OrbisPlayGoProgress* outProgress) {
-    LOG_DEBUG(Lib_PlayGo, "called handle = {}, chunkIds = {}, numberOfEntries = {}", handle,
-              *chunkIds, numberOfEntries);
+    LOG_DEBUG(Lib_PlayGo, "called handle = {}, numberOfEntries = {}", handle, numberOfEntries);
 
     if (handle != PlaygoHandle) {
         return ORBIS_PLAYGO_ERROR_BAD_HANDLE;
@@ -228,7 +227,7 @@ s32 PS4_SYSV_ABI scePlayGoGetToDoList(OrbisPlayGoHandle handle, OrbisPlayGoToDo*
     return ORBIS_OK;
 }
 
-int scePlayGoConvertLanguage(int systemLang) {
+u64 scePlayGoConvertLanguage(u64 systemLang) {
     if (systemLang >= 0 && systemLang < 48) {
         return (1 << (64 - systemLang - 1));
     } else {
@@ -253,8 +252,11 @@ s32 PS4_SYSV_ABI scePlayGoInitialize(OrbisPlayGoInitParams* param) {
     playgo = std::make_unique<PlaygoFile>();
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto file_path = mnt->GetHostPath("/app0/sce_sys/playgo-chunk.dat");
-    if (!playgo->Open(file_path)) {
+    if (auto bytes = mnt->ReadFile("/app0/sce_sys/playgo-chunk.dat")) {
+        if (!playgo->Open(std::span<const u8>{*bytes})) {
+            LOG_WARNING(Lib_PlayGo, "Could not parse PlayGo file");
+        }
+    } else {
         LOG_WARNING(Lib_PlayGo, "Could not open PlayGo file");
     }
 

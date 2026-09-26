@@ -52,6 +52,24 @@ Id SharedAtomicU64IncDec(EmitContext& ctx, Id offset,
     return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics);
 }
 
+Id SharedAtomicU32CmpSwap(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
+    const Id shift_id{ctx.ConstU32(2U)};
+    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
+    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return ctx.OpAtomicCompareExchange(ctx.U32[1], pointer, scope, semantics, semantics, value,
+                                       cmp_value);
+}
+
+Id SharedAtomicU64CmpSwap(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
+    const Id shift_id{ctx.ConstU32(3U)};
+    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
+    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return ctx.OpAtomicCompareExchange(ctx.U64, pointer, scope, semantics, semantics, value,
+                                       cmp_value);
+}
+
 template <bool is_float = false>
 Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
@@ -199,6 +217,14 @@ Id EmitSharedAtomicISub32(EmitContext& ctx, Id offset, Id value) {
 
 Id EmitSharedAtomicISub64(EmitContext& ctx, Id offset, Id value) {
     return SharedAtomicU64(ctx, offset, value, &Sirit::Module::OpAtomicISub);
+}
+
+Id EmitSharedAtomicCmpSwap32(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
+    return SharedAtomicU32CmpSwap(ctx, offset, value, cmp_value);
+}
+
+Id EmitSharedAtomicCmpSwap64(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
+    return SharedAtomicU64CmpSwap(ctx, offset, value, cmp_value);
 }
 
 Id EmitSharedAtomicInc32(EmitContext& ctx, Id offset) {
@@ -434,11 +460,11 @@ Id EmitImageAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coo
                                  &Sirit::Module::OpAtomicCompareExchange);
 }
 
-Id EmitDataAppend(EmitContext& ctx, u32 gds_addr, u32 binding) {
+Id EmitDataAppend(EmitContext& ctx, Id gds_dw_offset, Id exec) {
     UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
-Id EmitDataConsume(EmitContext& ctx, u32 gds_addr, u32 binding) {
+Id EmitDataConsume(EmitContext& ctx, Id gds_dw_offset, Id exec) {
     UNREACHABLE_MSG("SPIR-V Instruction");
 }
 

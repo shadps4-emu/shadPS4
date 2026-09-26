@@ -130,6 +130,14 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                 return left_is_discrete;
             }
 
+            // Software renderers advertise system memory as device local, so they
+            // would win the memory comparison below against real hardware.
+            const bool left_is_cpu = left_prop.deviceType == vk::PhysicalDeviceType::eCpu;
+            const bool right_is_cpu = right_prop.deviceType == vk::PhysicalDeviceType::eCpu;
+            if (left_is_cpu != right_is_cpu) {
+                return right_is_cpu;
+            }
+
             constexpr auto get_mem = [](const vk::PhysicalDeviceMemoryProperties& mem) -> size_t {
                 size_t max = 0;
                 for (u32 i = 0; i < mem.memoryHeapCount; i++) {
@@ -194,16 +202,15 @@ std::string Instance::GetDriverVersionName() {
 }
 
 bool Instance::CreateDevice() {
-    const vk::StructureChain feature_chain =
-        physical_device
-            .getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features,
-                          vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
-                          vk::PhysicalDeviceRobustness2FeaturesEXT,
-                          vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
-                          vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
-                          vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
-                          vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
-                          vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
+    const vk::StructureChain feature_chain = physical_device.getFeatures2<
+        vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan11Features,
+        vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
+        vk::PhysicalDeviceRobustness2FeaturesEXT,
+        vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
+        vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
+        vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
+        vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
+        vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -257,6 +264,7 @@ bool Instance::CreateDevice() {
                "Required Vulkan feature unavailable: nullDescriptor");
 
     // Optional
+    maintenance_5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
     maintenance_8 = add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
     attachment_feedback_loop = add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_EXTENSION_NAME);
     if (attachment_feedback_loop) {
@@ -334,7 +342,14 @@ bool Instance::CreateDevice() {
         LOG_INFO(Render_Vulkan, "- sampler2DViewOf3D: {}",
                  image_2d_view_of_3d_features.sampler2DViewOf3D);
     }
+    image_view_min_lod = add_extension(VK_EXT_IMAGE_VIEW_MIN_LOD_EXTENSION_NAME);
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+    shader_clock = add_extension(VK_KHR_SHADER_CLOCK_EXTENSION_NAME);
+    if (shader_clock) {
+        shader_clock_features = feature_chain.get<vk::PhysicalDeviceShaderClockFeaturesKHR>();
+        LOG_INFO(Render_Vulkan, "- shaderSubgroupClock: {}",
+                 shader_clock_features.shaderSubgroupClock);
+    }
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
 
@@ -402,18 +417,18 @@ bool Instance::CreateDevice() {
                 .shaderFloat64 = features.shaderFloat64,
                 .shaderInt64 = features.shaderInt64,
                 .shaderInt16 = features.shaderInt16,
+                .sparseBinding = features.sparseBinding,
+                .sparseResidencyBuffer = features.sparseResidencyBuffer,
             },
         },
         vk::PhysicalDeviceVulkan11Features{
             .storageBuffer16BitAccess = vk11_features.storageBuffer16BitAccess,
-            .uniformAndStorageBuffer16BitAccess = vk11_features.uniformAndStorageBuffer16BitAccess,
             .shaderDrawParameters = vk11_features.shaderDrawParameters,
         },
         vk::PhysicalDeviceVulkan12Features{
             .samplerMirrorClampToEdge = vk12_features.samplerMirrorClampToEdge,
             .drawIndirectCount = vk12_features.drawIndirectCount,
             .storageBuffer8BitAccess = vk12_features.storageBuffer8BitAccess,
-            .uniformAndStorageBuffer8BitAccess = vk12_features.uniformAndStorageBuffer8BitAccess,
             .shaderBufferInt64Atomics = vk12_features.shaderBufferInt64Atomics,
             .shaderSharedInt64Atomics = vk12_features.shaderSharedInt64Atomics,
             .shaderFloat16 = vk12_features.shaderFloat16,
@@ -471,6 +486,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceVertexAttributeDivisorFeatures{
             .vertexAttributeInstanceRateDivisor = true,
         },
+        vk::PhysicalDeviceMaintenance5FeaturesKHR{
+            .maintenance5 = true,
+        },
         vk::PhysicalDeviceMaintenance8FeaturesKHR{
             .maintenance8 = true,
         },
@@ -499,6 +517,12 @@ bool Instance::CreateDevice() {
             .image2DViewOf3D = image_2d_view_of_3d_features.image2DViewOf3D,
             .sampler2DViewOf3D = image_2d_view_of_3d_features.sampler2DViewOf3D,
         },
+        vk::PhysicalDeviceImageViewMinLodFeaturesEXT{
+            .minLod = true,
+        },
+        vk::PhysicalDeviceShaderClockFeaturesKHR{
+            .shaderSubgroupClock = shader_clock_features.shaderSubgroupClock,
+        },
     };
 
     if (!custom_border_color) {
@@ -525,6 +549,9 @@ bool Instance::CreateDevice() {
     if (!provoking_vertex) {
         device_chain.unlink<vk::PhysicalDeviceProvokingVertexFeaturesEXT>();
     }
+    if (!maintenance_5) {
+        device_chain.unlink<vk::PhysicalDeviceMaintenance5FeaturesKHR>();
+    }
     if (!maintenance_8) {
         device_chain.unlink<vk::PhysicalDeviceMaintenance8FeaturesKHR>();
     }
@@ -540,6 +567,12 @@ bool Instance::CreateDevice() {
     }
     if (!image_2d_view_of_3d) {
         device_chain.unlink<vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT>();
+    }
+    if (!image_view_min_lod) {
+        device_chain.unlink<vk::PhysicalDeviceImageViewMinLodFeaturesEXT>();
+    }
+    if (!shader_clock) {
+        device_chain.unlink<vk::PhysicalDeviceShaderClockFeaturesKHR>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
@@ -781,6 +814,11 @@ vk::Format Instance::GetSupportedFormat(const vk::Format format,
         case vk::Format::eR8Srgb:
             if (IsFormatSupported(vk::Format::eR8Unorm, flags)) {
                 return vk::Format::eR8Unorm;
+            }
+            break;
+        case vk::Format::eR8G8Srgb:
+            if (IsFormatSupported(vk::Format::eR8G8Unorm, flags)) {
+                return vk::Format::eR8G8Unorm;
             }
             break;
         default:

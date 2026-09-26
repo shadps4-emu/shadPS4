@@ -4,6 +4,7 @@
 #include <fmt/core.h>
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "core/file_sys/backends/host_fs.h"
 #include "core/loader/elf.h"
 
 namespace Core::Loader {
@@ -179,7 +180,19 @@ static std::string_view GetMachine(e_machine_es machine) {
 Elf::~Elf() = default;
 
 void Elf::Open(const std::filesystem::path& file_name) {
-    m_f.Open(file_name, FileAccessMode::Read);
+    auto handle = std::make_unique<Core::FileSys::HostFile>(
+        file_name, Common::FS::FileAccessMode::Read, /*read_only=*/true);
+    if (!handle->IsOpen()) {
+        return;
+    }
+    Open(std::move(handle));
+}
+
+void Elf::Open(std::unique_ptr<Core::FileSys::IFile> handle) {
+    m_f.Reset(std::move(handle));
+    if (!m_f.IsOpen()) {
+        return;
+    }
     if (!m_f.ReadObject(m_self)) {
         LOG_ERROR(Loader, "Unable to read self header!");
         return;

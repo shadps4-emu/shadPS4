@@ -18,6 +18,7 @@
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "widget/frame_dump.h"
 #include "widget/frame_graph.h"
+#include "widget/gpu_memory.h"
 #include "widget/memory_map.h"
 #include "widget/module_list.h"
 #include "widget/shader_list.h"
@@ -30,6 +31,7 @@ using L = ::Core::Devtools::Layer;
 
 static bool show_simple_fps = false;
 static bool visibility_toggled = false;
+static float fps_anchor_width = FLT_MAX;
 static bool show_quit_window = false;
 
 static bool show_volume = false;
@@ -48,6 +50,7 @@ static bool just_opened_options = false;
 static Widget::MemoryMapViewer memory_map;
 static Widget::ShaderList shader_list;
 static Widget::ModuleList module_list;
+static Widget::GpuMemoryViewer gpu_memory;
 
 // clang-format off
 static std::string help_text =
@@ -78,6 +81,7 @@ void L::DrawMenuBar() {
         if (BeginMenu("GPU Tools")) {
             MenuItem("Show frame info", nullptr, &frame_graph.is_open);
             MenuItem("Show loaded shaders", nullptr, &shader_list.open);
+            MenuItem("Show GPU memory usage", nullptr, &gpu_memory.open);
             if (BeginMenu("Dump frames")) {
                 SliderInt("Count", &dump_frame_count, 1, 5);
                 if (MenuItem("Dump", "Ctrl+Alt+F9", nullptr, !DebugState.DumpingCurrentFrame())) {
@@ -269,6 +273,9 @@ void L::DrawAdvanced() {
     if (module_list.open) {
         module_list.Draw();
     }
+    if (gpu_memory.open) {
+        gpu_memory.Draw();
+    }
 }
 
 void L::DrawSimple() {
@@ -309,6 +316,10 @@ static void LoadSettings(const char* line) {
     }
     if (sscanf(line, "show_module_list=%d", &i) == 1) {
         module_list.open = i != 0;
+        return;
+    }
+    if (sscanf(line, "show_gpu_memory=%d", &i) == 1) {
+        gpu_memory.open = i != 0;
         return;
     }
     if (sscanf(line, "dump_frame_count=%d", &i) == 1) {
@@ -355,6 +366,7 @@ void L::SetupSettings() {
         buf->appendf("show_shader_list=%d\n", shader_list.open);
         buf->appendf("show_memory_map=%d\n", memory_map.open);
         buf->appendf("show_module_list=%d\n", module_list.open);
+        buf->appendf("show_gpu_memory=%d\n", gpu_memory.open);
         buf->appendf("dump_frame_count=%d\n", dump_frame_count);
         buf->append("\n");
         buf->appendf("[%s][CmdList]\n", handler->TypeName);
@@ -371,6 +383,10 @@ void L::SetupSettings() {
     DockBuilderSetNodePos(dock_id, ImVec2{450.0, 150.0});
     DockBuilderSetNodeSize(dock_id, ImVec2{400.0, 500.0});
     DockBuilderFinish(dock_id);
+}
+
+bool L::ShouldKeepDrawing() {
+    return DebugState.IsShowingDebugMenuBar();
 }
 
 void L::Draw() {
@@ -407,6 +423,11 @@ void L::Draw() {
         if (Begin("Video Info", nullptr,
                   ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
                       ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
+            if (const float width = GetIO().DisplaySize.x; width != fps_anchor_width) {
+                visibility_toggled |= GetWindowPos().x + GetCurrentWindowRead()->SizeFull.x >=
+                                      fps_anchor_width - 1.0f;
+                fps_anchor_width = width;
+            }
             // Set window position to top left if it was toggled on
             if (visibility_toggled) {
                 SetWindowPos("Video Info", {999999.0f, 0.0f}, ImGuiCond_Always);

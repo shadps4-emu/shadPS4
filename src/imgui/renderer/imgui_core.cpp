@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <atomic>
+#include <bit>
 #include <cstdint>
 #include <SDL3/SDL_events.h>
 #include <imgui.h>
@@ -102,7 +104,12 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     FontStack::AddPrimaryUiFont(ImGui::GetIO().Fonts, 64.0f, EmulatorSettings.GetConsoleLanguage(),
                                 font_cfg, true);
 
-    io.Fonts->Build();
+    // Let the atlas size grow to the largest image the device can create,
+    // floored to the power of two the packer requires.
+    const u32 max_dim = instance.GetPhysicalDevice().getProperties().limits.maxImageDimension2D;
+    const int atlas_max = static_cast<int>(std::bit_floor(std::max<u32>(max_dim, 512u)));
+    io.Fonts->TexMaxWidth = atlas_max;
+    io.Fonts->TexMaxHeight = atlas_max;
 
     io.FontGlobalScale = 0.5f;
 
@@ -230,6 +237,7 @@ ImGuiID NewFrame(bool is_reusing_frame) {
 
     Sdl::NewFrame(is_reusing_frame);
     ImGui::NewFrame();
+    SetKeyOwner(ImGuiKey_GamepadFaceUp, ImHashStr("shadps4/pad"));
 
     ImGuiWindowFlags flags =
         ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_AutoHideTabBar;
@@ -249,6 +257,8 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
             const vk::Extent2D& extent) {
     ImGui::Render();
     ImDrawData* draw_data = GetDrawData();
+    // Font atlas uploads are recorded ahead of the render pass that samples them.
+    Vulkan::UpdateTextures(*draw_data, cmdbuf);
     if (draw_data->CmdListsCount == 0) {
         return;
     }
@@ -284,7 +294,8 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
 }
 
 bool MustKeepDrawing() {
-    return layers.size() > 1 || change_layers.size() > 1 || DebugState.IsShowingDebugMenuBar();
+    return std::ranges::any_of(layers, [](Layer* layer) { return layer->ShouldKeepDrawing(); }) ||
+           change_layers.size() > 1;
 }
 
 } // namespace Core

@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <tsl/robin_map.h>
-
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 

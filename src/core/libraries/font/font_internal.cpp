@@ -943,6 +943,26 @@ bool LoadGuestFileBytes(const std::filesystem::path& host_path,
     return true;
 }
 
+bool LoadGuestPathBytes(const char* guest_path, std::vector<unsigned char>& out_bytes) {
+    if (!guest_path) {
+        return false;
+    }
+    if (guest_path[0] == '/') {
+        if (!g_mnt) {
+            g_mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+        }
+        if (g_mnt) {
+            if (auto bytes = g_mnt->ReadFile(guest_path)) {
+                out_bytes = std::move(*bytes);
+                return true;
+            }
+        }
+        return false;
+    }
+    // Non-guest path: treat as a host path (builtin/system fonts).
+    return LoadGuestFileBytes(std::filesystem::path(guest_path), out_bytes);
+}
+
 FaceMetrics LoadFaceMetrics(FT_Face face) {
     FaceMetrics m{};
     if (!face) {

@@ -71,6 +71,7 @@ You can configure the emulator by editing the `config.json` file found in the `u
     - Examples:
       - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad:Critical` to only log critical-level messages.
       - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `*:Off Render.Vulkan:Info` (if you want critical at least `*:Critical Render.Vulkan:Info`)
+  - `flush_level`: Sets the log level for which logs at or above will be flushed.
   - `skip_duplicate`: Skip same lines with a `Skipped N duplicate messages..` message (`true`/`false`)
     - By default, the emulator will skip same lines for `maxSkipDuration` milliseconds.
   - `append`: Append log to the existing file (`true`/`false`)
@@ -130,7 +131,7 @@ This section will provide some preliminary steps to take and tips on what to do 
     - **Logs aren't always accurate in determining the reason for a crash.**\
       Some log entries are reported as errors but may not be fatal for the execution to stop. `Critical` entries are most likely to be the cause for crashes.
 
-    - Pinpoint the area of the emulator where the crash occured\
+    - Pinpoint the area of the emulator where the crash occurred\
       If the stack trace ends with functions that are relevant to rendering, it is safe to assume that the issue is with **rendering**.\
       Similarly, if a crash is in a library responsible for playing videos, your issue can be narrowed down to the scope of video playback in the emulator.
 

@@ -52,6 +52,10 @@ std::string NowHMS() {
 class ShadNetNotificationsUI final : public ImGui::Layer {
 public:
     void Draw() override;
+    bool ShouldKeepDrawing() override {
+        std::lock_guard lock(g_mutex);
+        return !g_toasts.empty();
+    }
 };
 
 ShadNetNotificationsUI g_layer;

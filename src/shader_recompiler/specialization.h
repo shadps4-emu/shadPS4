@@ -23,7 +23,6 @@ struct VsAttribSpecialization {
 
 struct BufferSpecialization {
     u32 stride : 14;
-    u32 is_storage : 1;
     u32 is_formatted : 1;
     u32 swizzle_enable : 1;
     u32 data_format : 6;
@@ -34,8 +33,8 @@ struct BufferSpecialization {
     AmdGpu::NumberConversion num_conversion{};
 
     bool operator==(const BufferSpecialization& other) const {
-        return stride == other.stride && is_storage == other.is_storage &&
-               is_formatted == other.is_formatted && swizzle_enable == other.swizzle_enable &&
+        return stride == other.stride && is_formatted == other.is_formatted &&
+               swizzle_enable == other.swizzle_enable &&
                (!is_formatted ||
                 (data_format == other.data_format && num_format == other.num_format &&
                  dst_select == other.dst_select && num_conversion == other.num_conversion)) &&
@@ -97,7 +96,7 @@ struct StageSpecialization {
                         Backend::Bindings start_)
         : info{&info_}, runtime_info{runtime_info_}, start{start_} {
         fetch_shader_data = Gcn::ParseFetchShader(info_);
-        if (info_.stage == Stage::Vertex && fetch_shader_data) {
+        if (info_.sw_stage == SwStage::Vertex && fetch_shader_data) {
             // Specialize shader on VS input number types to follow spec.
             ForEachSharp(vs_attribs, fetch_shader_data->attributes,
                          [this](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
@@ -105,9 +104,9 @@ struct StageSpecialization {
                              if (const auto step_rate = desc.GetStepRate();
                                  step_rate != InstanceIdType::None) {
                                  spec.divisor = step_rate == InstanceIdType::OverStepRate0
-                                                    ? runtime_info.vs_info.step_rate_0
+                                                    ? runtime_info.sw.vs.step_rate_0
                                                     : (step_rate == InstanceIdType::OverStepRate1
-                                                           ? runtime_info.vs_info.step_rate_1
+                                                           ? runtime_info.sw.vs.step_rate_1
                                                            : 1);
                              }
                              spec.num_class = AmdGpu::GetNumberClass(sharp.GetNumberFmt());
@@ -118,7 +117,6 @@ struct StageSpecialization {
         ForEachSharp(binding, buffers, info->buffers,
                      [](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                          spec.stride = sharp.GetStride();
-                         spec.is_storage = desc.IsStorage(sharp);
                          spec.is_formatted = desc.is_formatted;
                          spec.swizzle_enable = sharp.swizzle_enable;
                          if (spec.is_formatted) {
@@ -158,8 +156,8 @@ struct StageSpecialization {
                      });
 
         // Initialize runtime_info fields that rely on analysis in tessellation passes
-        if (info->l_stage == LogicalStage::TessellationControl ||
-            info->l_stage == LogicalStage::TessellationEval) {
+        if (info->sw_stage == SwStage::TessellationControl ||
+            info->sw_stage == SwStage::TessellationEval) {
             TessellationDataConstantBuffer tess_constants{};
             info->ReadTessConstantBuffer(tess_constants);
             runtime_info.InitFromTessConstants(tess_constants);

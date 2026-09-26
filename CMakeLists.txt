@@ -213,7 +213,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "16")
+set(EMULATOR_VERSION_MINOR "18")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/dist/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -256,9 +256,11 @@ if (ENABLE_SYSTEM_LIBRARIES)
     find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
     find_package(xbyak 7.07 CONFIG)
     find_package(xxHash 0.8.2 MODULE)
+    find_package(ZArchive 0.1.2 MODULE)
     find_package(ZLIB 1.3 MODULE)
     find_package(Zydis 5.0.0 MODULE)
     find_package(pugixml 1.14 CONFIG)
+    find_package(absl 20250512.1 CONFIG)
     if (APPLE)
         find_package(date 3.0.1 CONFIG)
         find_package(epoll-shim 3.14 CONFIG)
@@ -327,6 +329,7 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/threads/event_flag.cpp
                src/core/libraries/kernel/threads/exception.cpp
                src/core/libraries/kernel/threads/exception.h
+               src/core/libraries/kernel/threads/exception_codes.h
                src/core/libraries/kernel/threads/mutex.cpp
                src/core/libraries/kernel/threads/pthread_attr.cpp
                src/core/libraries/kernel/threads/pthread_clean.cpp
@@ -404,6 +407,8 @@ set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
                  src/core/libraries/avplayer/avplayer_common.h
                  src/core/libraries/avplayer/avplayer_file_streamer.cpp
                  src/core/libraries/avplayer/avplayer_file_streamer.h
+                 src/core/libraries/avplayer/avplayer_handle_streamer.cpp
+                 src/core/libraries/avplayer/avplayer_handle_streamer.h
                  src/core/libraries/avplayer/avplayer_impl.cpp
                  src/core/libraries/avplayer/avplayer_impl.h
                  src/core/libraries/avplayer/avplayer_source.cpp
@@ -614,11 +619,14 @@ set(FIBER_LIB src/core/libraries/fiber/fiber_context.cpp
               src/core/libraries/fiber/fiber_error.h
 )
 
-set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
+set(VDEC_LIB src/core/libraries/videodec/video_utils.cpp
+             src/core/libraries/videodec/video_utils.h
+             src/core/libraries/videodec/vdecsw.cpp
+             src/core/libraries/videodec/vdecsw.h
+             src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h
              src/core/libraries/videodec/videodec2.cpp
              src/core/libraries/videodec/videodec2.h
-             src/core/libraries/videodec/videodec2_avc.h
              src/core/libraries/videodec/videodec.cpp
              src/core/libraries/videodec/videodec.h
              src/core/libraries/videodec/videodec_error.h
@@ -628,7 +636,7 @@ set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
 
 set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_common.cpp
-            src/core/libraries/np/np_common.h  
+            src/core/libraries/np/np_common.h
             src/core/libraries/np/np_manager.cpp
             src/core/libraries/np/np_manager.h
             src/core/libraries/np/np_matching2/np_matching2.cpp
@@ -642,8 +650,6 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_types2.h
             src/core/libraries/np/np_trophy.cpp
             src/core/libraries/np/np_trophy.h
-            src/core/libraries/np/np_tus.cpp
-            src/core/libraries/np/np_tus.h
             src/core/libraries/np/trophy_ui.cpp
             src/core/libraries/np/trophy_ui.h
             src/core/libraries/np/np_party.cpp
@@ -688,6 +694,12 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_web_api2/np_web_api2_context.h
             src/core/libraries/np/np_web_api2/np_web_api2_push_event.cpp
             src/core/libraries/np/np_web_api2/np_web_api2_push_event.h
+            src/core/libraries/np/np_tus/np_tus.cpp
+            src/core/libraries/np/np_tus/np_tus.h
+            src/core/libraries/np/np_tus/np_tus_ctx.h
+            src/core/libraries/np/np_utility/np_utility.cpp
+            src/core/libraries/np/np_utility/np_utility.h
+            src/core/libraries/np/np_utility/np_utility_ctx.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
@@ -742,6 +754,8 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/frame_dump.h
               src/core/devtools/widget/frame_graph.cpp
               src/core/devtools/widget/frame_graph.h
+              src/core/devtools/widget/gpu_memory.cpp
+              src/core/devtools/widget/gpu_memory.h
               src/core/devtools/widget/imgui_memory_editor.h
               src/core/devtools/widget/memory_map.cpp
               src/core/devtools/widget/memory_map.h
@@ -757,7 +771,8 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/text_editor.h
 )
 
-set(COMMON src/common/logging/classes.h
+set(COMMON src/common/logging/classes.cpp
+           src/common/logging/classes.h
            src/common/logging/formatter.h
            src/common/logging/log.cpp
            src/common/logging/log.h
@@ -767,7 +782,6 @@ set(COMMON src/common/logging/classes.h
            src/common/arch.h
            src/common/assert.cpp
            src/common/assert.h
-           src/common/bit_array.h
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
@@ -779,6 +793,7 @@ set(COMMON src/common/logging/classes.h
            src/common/endian.h
            src/common/enum.h
            src/common/incremental_id.h
+           src/common/interval_set.h
            src/common/io_file.cpp
            src/common/io_file.h
            src/common/lru_cache.h
@@ -792,7 +807,6 @@ set(COMMON src/common/logging/classes.h
            src/common/path_util.h
            src/common/object_pool.h
            src/common/polyfill_thread.h
-           src/common/range_lock.h
            src/common/rdtsc.cpp
            src/common/rdtsc.h
            src/common/recursive_lock.cpp
@@ -805,6 +819,7 @@ set(COMMON src/common/logging/classes.h
            src/common/signal_context.cpp
            src/common/singleton.h
            src/common/slab_heap.h
+           src/common/small_vector.h
            src/common/slot_vector.h
            src/common/spin_lock.cpp
            src/common/spin_lock.h
@@ -849,8 +864,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_sys/devices/nop_device.h
          src/core/file_sys/devices/console_device.cpp
          src/core/file_sys/devices/console_device.h
-         src/core/file_sys/devices/deci_tty6_device.cpp
-         src/core/file_sys/devices/deci_tty6_device.h
+         src/core/file_sys/devices/deci_tty_device.cpp
+         src/core/file_sys/devices/deci_tty_device.h
          src/core/file_sys/devices/random_device.cpp
          src/core/file_sys/devices/random_device.h
          src/core/file_sys/devices/rng_device.cpp
@@ -859,6 +874,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_sys/devices/urandom_device.h
          src/core/file_sys/devices/srandom_device.cpp
          src/core/file_sys/devices/srandom_device.h
+         src/core/file_sys/devices/zero_device.cpp
+         src/core/file_sys/devices/zero_device.h
          src/core/file_sys/directories/base_directory.cpp
          src/core/file_sys/directories/base_directory.h
          src/core/file_sys/directories/normal_directory.cpp
@@ -870,12 +887,20 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/psf.h
          src/core/file_format/playgo_chunk.cpp
          src/core/file_format/playgo_chunk.h
+         src/core/file_format/rif.cpp
+         src/core/file_format/rif.h
          src/core/file_format/trp.cpp
          src/core/file_format/trp.h
          src/core/file_format/npbind.cpp
          src/core/file_format/npbind.h
          src/core/file_sys/fs.cpp
          src/core/file_sys/fs.h
+         src/core/file_sys/ifile.cpp
+         src/core/file_sys/ifile.h
+         src/core/file_sys/backends/host_fs.cpp
+         src/core/file_sys/backends/host_fs.h
+         src/core/file_sys/backends/zarchive_fs.cpp
+         src/core/file_sys/backends/zarchive_fs.h
          src/core/ipc/ipc.cpp
          src/core/ipc/ipc.h
          src/core/loader/dwarf.cpp
@@ -962,6 +987,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/backend/spirv/emit_spirv_composite.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_convert.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_discard_frag.cpp
+                      src/shader_recompiler/backend/spirv/emit_spirv_discard_frag.h
                       src/shader_recompiler/backend/spirv/emit_spirv_floating_point.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_image.cpp
                       src/shader_recompiler/backend/spirv/emit_spirv_instructions.h
@@ -1002,20 +1029,29 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/frontend/structured_control_flow.h
                       src/shader_recompiler/ir/passes/constant_propagation_pass.cpp
                       src/shader_recompiler/ir/passes/dead_code_elimination_pass.cpp
+                      src/shader_recompiler/ir/passes/expression_elimination.h
                       src/shader_recompiler/ir/passes/flatten_extended_userdata_pass.cpp
                       src/shader_recompiler/ir/passes/hull_shader_transform.cpp
-                      src/shader_recompiler/ir/passes/identity_removal_pass.cpp
                       src/shader_recompiler/ir/passes/inject_clip_distance_attributes.cpp
+                      src/shader_recompiler/ir/passes/inverse_ballot_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/ir_passes.h
                       src/shader_recompiler/ir/passes/lower_buffer_format_to_raw.cpp
                       src/shader_recompiler/ir/passes/lower_fp64_to_fp32.cpp
+                      src/shader_recompiler/ir/passes/lower_hardware_intrinsics.cpp
+                      src/shader_recompiler/ir/passes/lower_user_clip_planes.cpp
+                      src/shader_recompiler/ir/passes/lower_wave64_pass.cpp
+                      src/shader_recompiler/ir/passes/phi_simplification_pass.cpp
                       src/shader_recompiler/ir/passes/readlane_elimination_pass.cpp
-                      src/shader_recompiler/ir/passes/resource_tracking_pass.cpp
+                      src/shader_recompiler/ir/passes/resource_discover_pass.cpp
+                      src/shader_recompiler/ir/passes/resource_pass.h
+                      src/shader_recompiler/ir/passes/resource_patching_pass.cpp
                       src/shader_recompiler/ir/passes/ring_access_elimination.cpp
                       src/shader_recompiler/ir/passes/shader_info_collection_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_barrier_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_simplify_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_to_storage_pass.cpp
+                      src/shader_recompiler/ir/passes/lower_phis_to_regs_pass.cpp
+                      src/shader_recompiler/ir/passes/ssa_repair_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.h
@@ -1025,9 +1061,12 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/basic_block.h
                       src/shader_recompiler/ir/breadth_first_search.h
                       src/shader_recompiler/ir/condition.h
+                      src/shader_recompiler/ir/dominance.cpp
+                      src/shader_recompiler/ir/dominance.h
                       src/shader_recompiler/ir/ir_emitter.cpp
                       src/shader_recompiler/ir/ir_emitter.h
                       src/shader_recompiler/ir/microinstruction.cpp
+                      src/shader_recompiler/ir/microinstruction.h
                       src/shader_recompiler/ir/opcodes.cpp
                       src/shader_recompiler/ir/opcodes.h
                       src/shader_recompiler/ir/opcodes.inc
@@ -1040,6 +1079,8 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/program.cpp
                       src/shader_recompiler/ir/program.h
                       src/shader_recompiler/ir/reinterpret.h
+                      src/shader_recompiler/ir/srt_gvn_table.h
+                      src/shader_recompiler/ir/ssa.h
                       src/shader_recompiler/ir/reg.h
                       src/shader_recompiler/ir/type.cpp
                       src/shader_recompiler/ir/type.h
@@ -1077,6 +1118,8 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/buffer_cache/region_manager.h
                src/video_core/renderer_vulkan/liverpool_to_vk.cpp
                src/video_core/renderer_vulkan/liverpool_to_vk.h
+               src/video_core/renderer_vulkan/vk_barrier_tracker.cpp
+               src/video_core/renderer_vulkan/vk_barrier_tracker.h
                src/video_core/renderer_vulkan/vk_common.cpp
                src/video_core/renderer_vulkan/vk_common.h
                src/video_core/renderer_vulkan/vk_compute_pipeline.cpp
@@ -1085,8 +1128,6 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/vk_graphics_pipeline.h
                src/video_core/renderer_vulkan/vk_instance.cpp
                src/video_core/renderer_vulkan/vk_instance.h
-               src/video_core/renderer_vulkan/vk_master_semaphore.cpp
-               src/video_core/renderer_vulkan/vk_master_semaphore.h
                src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
                src/video_core/renderer_vulkan/vk_pipeline_cache.h
                src/video_core/renderer_vulkan/vk_pipeline_common.cpp
@@ -1101,12 +1142,18 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/vk_rasterizer.h
                src/video_core/renderer_vulkan/vk_resource_pool.cpp
                src/video_core/renderer_vulkan/vk_resource_pool.h
+               src/video_core/renderer_vulkan/vk_runtime.cpp
+               src/video_core/renderer_vulkan/vk_runtime.h
                src/video_core/renderer_vulkan/vk_scheduler.cpp
                src/video_core/renderer_vulkan/vk_scheduler.h
+               src/video_core/renderer_vulkan/vk_semaphore.cpp
+               src/video_core/renderer_vulkan/vk_semaphore.h
                src/video_core/renderer_vulkan/vk_shader_hle.cpp
                src/video_core/renderer_vulkan/vk_shader_hle.h
                src/video_core/renderer_vulkan/vk_shader_util.cpp
                src/video_core/renderer_vulkan/vk_shader_util.h
+               src/video_core/renderer_vulkan/vk_staging_buffer_pool.cpp
+               src/video_core/renderer_vulkan/vk_staging_buffer_pool.h
                src/video_core/renderer_vulkan/vk_swapchain.cpp
                src/video_core/renderer_vulkan/vk_swapchain.h
                src/video_core/renderer_vulkan/host_passes/fsr_pass.cpp
@@ -1179,6 +1226,7 @@ set(IMGUI src/imgui/imgui_config.h
 
 set(INPUT src/input/controller.cpp
           src/input/controller.h
+          src/input/controller_state.cpp
           src/input/input_handler.cpp
           src/input/input_handler.h
           src/input/input_mouse.cpp
@@ -1241,10 +1289,11 @@ create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE spdlog::spdlog)
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui ImGuiFileDialog gcn half::half ZLIB::ZLIB PNG::PNG minimp3)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis SDL3::SDL3 pugixml::pugixml)
 target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib miniupnpc::miniupnpc)
 target_link_libraries(shadps4 PRIVATE Freetype::Freetype)
 target_link_libraries(shadps4 PRIVATE libprotobuf)
+target_link_libraries(shadps4 PRIVATE ZArchive::zarchive)
 target_include_directories(shadps4 PRIVATE "${SHADNET_PROTO_OUT}")
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
@@ -1262,11 +1311,6 @@ if (ENABLE_DISCORD_RPC)
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    # Optional due to https://github.com/shadps4-emu/shadPS4/issues/1704
-    if (ENABLE_USERFAULTFD)
-        target_compile_definitions(shadps4 PRIVATE ENABLE_USERFAULTFD)
-    endif()
-
     target_link_libraries(shadps4 PRIVATE uuid)
 endif()
 
@@ -1358,6 +1402,10 @@ endif()
 
 if (WIN32)
     target_sources(shadps4 PRIVATE src/dist/shadps4.rc)
+endif()
+
+if (NOT MSVC)
+    target_compile_options(shadps4 PRIVATE -Wno-invalid-offsetof)
 endif()
 
 add_compile_definitions(BOOST_ASIO_STANDALONE)

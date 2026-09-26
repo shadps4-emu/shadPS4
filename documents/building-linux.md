@@ -63,7 +63,7 @@ nix build .?submodules=1#debug
 nix build .?submodules=1#release
 ```
 ```bash
-nix build .?submodules=1#releaseWithDebugInfo
+nix build .?submodules=1#releaseWithDebInfo
 ```
 #### Other Linux distributions
 

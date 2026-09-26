@@ -84,9 +84,7 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
 
 static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
     auto* controller = reinterpret_cast<Input::GameController*>(userdata);
-    controller->UpdateAxisSmoothing();
-    controller->Gyro(0);
-    controller->Acceleration(0);
+    controller->PollState();
     return interval;
 }
 
@@ -106,9 +104,13 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         UNREACHABLE_MSG("Failed to initialize SDL video subsystem: {}", SDL_GetError());
     }
+    // On macOS, the future Intel compatibility environment does not include camera frameworks.
+    // Just skip initializing it entirely, no point in splitting old vs new OS versions here.
+#ifndef __APPLE__
     if (!SDL_Init(SDL_INIT_CAMERA)) {
         LOG_ERROR(Input, "Failed to initialize SDL camera subsystem: {}", SDL_GetError());
     }
+#endif
     SDL_InitSubSystem(SDL_INIT_AUDIO);
 
     SDL_PropertiesID props = SDL_CreateProperties();
@@ -120,6 +122,11 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
     SDL_SetNumberProperty(props, "flags", SDL_WINDOW_VULKAN);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, true);
+    // Creating the window directly in fullscreen avoids a visible windowed -> fullscreen
+    // transition on startup. SDL sizes the window to the display and keeps the requested
+    // width/height as the windowed size to restore when leaving fullscreen.
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_FULLSCREEN_BOOLEAN,
+                           EmulatorSettings.IsFullScreen());
     window = SDL_CreateWindowWithProperties(props);
     SDL_DestroyProperties(props);
     if (window == nullptr) {
@@ -130,7 +137,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
 
     bool error = false;
     const SDL_DisplayID displayIndex = SDL_GetDisplayForWindow(window);
-    if (displayIndex < 0) {
+    if (displayIndex == 0) {
         LOG_ERROR(Frontend, "Error getting display index: {}", SDL_GetError());
         error = true;
     }
@@ -145,6 +152,9 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     }
     SDL_SetWindowFullscreen(window, EmulatorSettings.IsFullScreen());
     SDL_SyncWindow(window);
+    // The window geometry is only final once the fullscreen transition has settled; refresh
+    // the cached size so the first swapchain and the splashscreen use the real drawable size.
+    SDL_GetWindowSizeInPixels(window, &width, &height);
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
 
@@ -174,7 +184,6 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     // input handler init-s
     Input::ControllerOutput::LinkJoystickAxes();
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
-    controllers.TryOpenSDLControllers();
 
     if (EmulatorSettings.IsBackgroundControllerInput()) {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
@@ -183,34 +192,13 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
 
 WindowSDL::~WindowSDL() = default;
 
-void WindowSDL::SetIcon(const std::filesystem::path& path) {
-    if (!std::filesystem::exists(path)) {
-        LOG_WARNING(Core, "Could not find icon file '{}', using default icon.",
-                    fmt::UTF(path.u8string()));
+void WindowSDL::SetIcon(std::span<const u8> png_data) {
+    if (png_data.empty()) {
+        LOG_WARNING(Core, "No window icon data available, using default icon.");
         SetDefaultWindowIcon(window);
         return;
     }
-
-    Common::FS::IOFile file{path, Common::FS::FileAccessMode::Read,
-                            Common::FS::FileType::BinaryFile,
-                            Common::FS::FileShareFlag::ShareReadWrite};
-    if (!file.IsOpen()) {
-        LOG_ERROR(Core, "Failed to open window icon file '{}'.", fmt::UTF(path.u8string()));
-        SetDefaultWindowIcon(window);
-        return;
-    }
-
-    const u64 fileSize = file.GetSize();
-    std::vector<u8> buf(fileSize);
-    const size_t bytesRead = file.ReadRaw<u8>(buf.data(), fileSize);
-    file.Close();
-    if (bytesRead < fileSize) {
-        LOG_ERROR(Core, "Failed to read window icon file '{}'.", fmt::UTF(path.u8string()));
-        SetDefaultWindowIcon(window);
-        return;
-    }
-
-    SetWindowIcon(window, buf);
+    SetWindowIcon(window, std::vector<u8>(png_data.begin(), png_data.end()));
 }
 
 void WindowSDL::WaitEvent() {
@@ -233,6 +221,8 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_WINDOW_RESIZED:
     case SDL_EVENT_WINDOW_MAXIMIZED:
     case SDL_EVENT_WINDOW_RESTORED:
+    case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
+    case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
         OnResize();
         break;
     case SDL_EVENT_WINDOW_MINIMIZED:
