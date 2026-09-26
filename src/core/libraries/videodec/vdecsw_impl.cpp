@@ -17,8 +17,7 @@ namespace Libraries::Vdecsw {
 VdecDecoder::VdecDecoder(const OrbisVdecswDecoderConfigInfo& config_info,
                          const OrbisVdecswDecoderMemoryInfo& memory_info)
     : m_is_avc(config_info.codec_type == OrbisVdecswCodecType::Avc) {
-    const AVCodec* codec =
-        avcodec_find_decoder(m_is_avc ? AV_CODEC_ID_H264 : AV_CODEC_ID_HEVC);
+    const AVCodec* codec = avcodec_find_decoder(m_is_avc ? AV_CODEC_ID_H264 : AV_CODEC_ID_HEVC);
     ASSERT(codec);
 
     m_codec_context = avcodec_alloc_context3(codec);
@@ -29,15 +28,14 @@ VdecDecoder::VdecDecoder(const OrbisVdecswDecoderConfigInfo& config_info,
 
     avcodec_open2(m_codec_context, codec, nullptr);
 
-    m_worker_thread = std::jthread(
-        [this](std::stop_token stop_token) { WorkerLoop(std::move(stop_token)); });
+    m_worker_thread.Run([this](std::stop_token stop_token) { WorkerLoop(std::move(stop_token)); });
 }
 
 VdecDecoder::~VdecDecoder() {
-    m_worker_thread.request_stop();
+    m_worker_thread.Stop();
     m_input_cv.notify_all();
     m_output_cv.notify_all();
-    m_worker_thread.join();
+    m_worker_thread.Join();
 
     ClearFrameQueue();
     avcodec_free_context(&m_codec_context);
@@ -56,19 +54,14 @@ s32 VdecDecoder::SetDecodeInput(const OrbisVdecswInputData& input_data) {
 
     // The access unit data is copied because the game is allowed to reuse the
     // buffer as soon as this call returns.
-    QueueItem item{};
-    item.type = QueueItem::Type::Input;
-    item.au_data.assign((const u8*)input_data.au_data,
-                        (const u8*)input_data.au_data + input_data.au_size);
-    item.original_au_data = input_data.au_data;
-    item.pts_data = input_data.pts_data;
-    item.dts_data = input_data.dts_data;
-    item.attached_data = input_data.attached_data;
+    VdecSwCommand command{};
+    command.type = VdecSwCommand::Type::Input;
+    command.input = input_data;
 
     {
         std::scoped_lock lock{m_mutex};
-        m_queue.push_back(std::move(item));
-        ++m_unsynced_inputs;
+        m_command_queue.push_back(std::move(command));
+        ++m_inflight_inputs;
     }
     m_input_cv.notify_one();
     return ORBIS_OK;
@@ -77,8 +70,8 @@ s32 VdecDecoder::SetDecodeInput(const OrbisVdecswInputData& input_data) {
 s32 VdecDecoder::SyncDecodeInput(OrbisVdecswInputResult& input_result) {
     std::unique_lock lock{m_mutex};
     m_input_cv.wait(lock, [&] {
-        return !m_completed_inputs.empty() || m_unsynced_inputs == 0 ||
-               m_worker_thread.get_stop_token().stop_requested();
+        return !m_completed_inputs.empty() || m_inflight_inputs == 0 ||
+               m_worker_thread.GetStopToken().stop_requested();
     });
 
     if (m_completed_inputs.empty()) {
@@ -88,7 +81,7 @@ s32 VdecDecoder::SyncDecodeInput(OrbisVdecswInputResult& input_result) {
 
     const CompletedInput entry = std::move(m_completed_inputs.front());
     m_completed_inputs.pop_front();
-    --m_unsynced_inputs;
+    --m_inflight_inputs;
 
     input_result.decoded_au = entry.au_data;
     input_result.output_frame_count = entry.output_frame_count;
@@ -99,7 +92,7 @@ s32 VdecDecoder::SyncDecodeInput(OrbisVdecswInputResult& input_result) {
 s32 VdecDecoder::TrySyncDecodeInput(OrbisVdecswInputResult& input_result) {
     std::scoped_lock lock{m_mutex};
     if (m_completed_inputs.empty()) {
-        if (m_unsynced_inputs == 0) {
+        if (m_inflight_inputs == 0) {
             LOG_ERROR(Lib_Vdecsw, "ORBIS_VDECSW_ERROR_INPUT_QUEUE_EMPTY");
             return ORBIS_VDECSW_ERROR_INPUT_QUEUE_EMPTY;
         }
@@ -109,7 +102,7 @@ s32 VdecDecoder::TrySyncDecodeInput(OrbisVdecswInputResult& input_result) {
 
     const CompletedInput entry = std::move(m_completed_inputs.front());
     m_completed_inputs.pop_front();
-    --m_unsynced_inputs;
+    --m_inflight_inputs;
 
     input_result.decoded_au = entry.au_data;
     input_result.output_frame_count = entry.output_frame_count;
@@ -155,7 +148,7 @@ s32 VdecDecoder::SyncDecodeOutput(OrbisVdecswOutputInfo& output_info) {
 
     m_output_cv.wait(lock, [&] {
         return !m_frame_queue.empty() || m_finalized ||
-               m_worker_thread.get_stop_token().stop_requested();
+               m_worker_thread.GetStopToken().stop_requested();
     });
 
     if (m_frame_queue.empty()) {
@@ -210,23 +203,23 @@ s32 VdecDecoder::TrySyncDecodeOutput(OrbisVdecswOutputInfo& output_info) {
 }
 
 s32 VdecDecoder::FinalizeDecodeSequence() {
-    QueueItem item{};
-    item.type = QueueItem::Type::Flush;
+    VdecSwCommand command{};
+    command.type = VdecSwCommand::Type::Flush;
     {
         std::scoped_lock lock{m_mutex};
-        m_queue.push_back(std::move(item));
+        m_command_queue.push_back(std::move(command));
     }
     m_input_cv.notify_one();
     return ORBIS_OK;
 }
 
 s32 VdecDecoder::Reset() {
-    QueueItem item{};
-    item.type = QueueItem::Type::Reset;
+    VdecSwCommand command{};
+    command.type = VdecSwCommand::Type::Reset;
     {
         std::scoped_lock lock{m_mutex};
         m_pending_output.reset();
-        m_queue.push_back(std::move(item));
+        m_command_queue.push_back(std::move(command));
     }
     m_input_cv.notify_one();
     return ORBIS_OK;
@@ -237,23 +230,23 @@ void VdecDecoder::WorkerLoop(std::stop_token stop_token) {
 
     std::unique_lock lock{m_mutex};
     while (!stop_token.stop_requested()) {
-        m_input_cv.wait(lock, stop_token, [&] { return !m_queue.empty(); });
-        if (stop_token.stop_requested() && m_queue.empty()) {
+        m_input_cv.wait(lock, stop_token, [&] { return !m_command_queue.empty(); });
+        if (stop_token.stop_requested() && m_command_queue.empty()) {
             break;
         }
 
-        QueueItem item = std::move(m_queue.front());
-        m_queue.pop_front();
+        VdecSwCommand command = std::move(m_command_queue.front());
+        m_command_queue.pop_front();
         lock.unlock();
 
-        switch (item.type) {
-        case QueueItem::Type::Input:
-            ProcessInput(item);
+        switch (command.type) {
+        case VdecSwCommand::Type::Input:
+            ProcessInput(command.input);
             break;
-        case QueueItem::Type::Flush:
+        case VdecSwCommand::Type::Flush:
             ProcessFlush();
             break;
-        case QueueItem::Type::Reset:
+        case VdecSwCommand::Type::Reset:
             ProcessReset();
             break;
         default:
@@ -264,19 +257,19 @@ void VdecDecoder::WorkerLoop(std::stop_token stop_token) {
     }
 }
 
-void VdecDecoder::ProcessInput(QueueItem& item) {
+void VdecDecoder::ProcessInput(OrbisVdecswInputData& input) {
     AVPacket* packet = av_packet_alloc();
     if (!packet) {
         LOG_ERROR(Lib_Vdecsw, "Failed to allocate packet");
-        CompleteInput(item.original_au_data, 0, ORBIS_VDECSW_ERROR_API_FAIL);
+        CompleteInput(input.au_data, 0, ORBIS_VDECSW_ERROR_API_FAIL);
         return;
     }
 
-    packet->data = item.au_data.data();
-    packet->size = (int)item.au_data.size();
-    packet->pts = item.pts_data;
-    packet->dts = item.dts_data;
-    packet->opaque = reinterpret_cast<void*>(item.attached_data);
+    packet->data = reinterpret_cast<u8*>(input.au_data);
+    packet->size = (int)input.au_size;
+    packet->pts = input.pts_data;
+    packet->dts = input.dts_data;
+    packet->opaque = reinterpret_cast<void*>(input.attached_data);
 
     int ret = avcodec_send_packet(m_codec_context, packet);
     if (ret == AVERROR_EOF) {
@@ -287,12 +280,12 @@ void VdecDecoder::ProcessInput(QueueItem& item) {
     av_packet_free(&packet);
     if (ret < 0) {
         LOG_ERROR(Lib_Vdecsw, "Error sending packet to decoder: {}", ret);
-        CompleteInput(item.original_au_data, 0, ORBIS_VDECSW_ERROR_API_FAIL);
+        CompleteInput(input.au_data, 0, ORBIS_VDECSW_ERROR_API_FAIL);
         return;
     }
 
     const u32 frame_count = ReceiveFrames();
-    CompleteInput(item.original_au_data, frame_count, ORBIS_OK);
+    CompleteInput(input.au_data, frame_count, ORBIS_OK);
 }
 
 void VdecDecoder::ProcessFlush() {
@@ -312,7 +305,7 @@ void VdecDecoder::ProcessReset() {
     avcodec_flush_buffers(m_codec_context);
 
     std::scoped_lock lock{m_mutex};
-    m_unsynced_inputs -= (s32)m_completed_inputs.size();
+    m_inflight_inputs -= (s32)m_completed_inputs.size();
     m_completed_inputs.clear();
     ClearFrameQueue();
     m_finalized = false;

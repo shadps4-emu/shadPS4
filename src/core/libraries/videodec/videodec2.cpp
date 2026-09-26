@@ -353,8 +353,6 @@ s32 PS4_SYSV_ABI sceVideodec2Flush(OrbisVideodec2Decoder decoder,
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
 
-    // Drain the frames that are still held for reordering purposes and
-    // return the next one.
     decoder->FinalizeDecodeSequence();
 
     s32 ret = decoder->SetDecodeOutput(ConvertFrameBuffer(*frame_buffer));
