@@ -104,6 +104,10 @@ public:
         return nullptr;
     }
 
+    std::stop_token GetStopToken() const {
+        return stop.get_token();
+    }
+
 private:
     PthreadT thread{};
     std::function<void(std::stop_token)> func;
