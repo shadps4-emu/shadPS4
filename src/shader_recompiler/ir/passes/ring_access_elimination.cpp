@@ -92,18 +92,6 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         const auto& gs_info = runtime_info.hw.gs;
         info.gs_copy_data = Shader::ParseCopyShader(gs_info.vs_copy);
 
-        u32 output_vertices = gs_info.output_vertices;
-        if (info.gs_copy_data.output_vertices &&
-            info.gs_copy_data.output_vertices != output_vertices) {
-            ASSERT_MSG(output_vertices > info.gs_copy_data.output_vertices &&
-                           gs_info.mode == AmdGpu::GsScenario::ScenarioG,
-                       "Invalid geometry shader vertex configuration scenario = {}, max_vert_out = "
-                       "{}, output_vertices = {}",
-                       u32(gs_info.mode), output_vertices, info.gs_copy_data.output_vertices);
-            LOG_WARNING(Render_Vulkan, "MAX_VERT_OUT {} is larger than actual output vertices {}",
-                        output_vertices, info.gs_copy_data.output_vertices);
-            output_vertices = info.gs_copy_data.output_vertices;
-        }
         u32 dwords_per_vertex = gs_info.out_vertex_data_size;
         if (info.gs_copy_data.num_comps && info.gs_copy_data.num_comps > dwords_per_vertex) {
             LOG_WARNING(Render_Vulkan,
@@ -145,8 +133,8 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
 
                 const auto offset = inst.Flags<IR::BufferInstInfo>().inst_offset.Value();
                 const auto data = ir.BitCast<IR::F32>(IR::U32{inst.Arg(2)});
-                const auto comp_ofs = output_vertices * 4u;
-                const auto output_size = comp_ofs * dwords_per_vertex;
+                const auto comp_ofs = info.gs_copy_data.output_vertices * sizeof(u32);
+                const auto output_size = gs_info.output_vertices * dwords_per_vertex * sizeof(u32);
 
                 const auto vc_read_ofs = (((offset / comp_ofs) * comp_ofs) % output_size) * 16u;
                 const auto& it = info.gs_copy_data.attr_map.find(vc_read_ofs);

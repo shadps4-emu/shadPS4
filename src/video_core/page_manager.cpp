@@ -287,7 +287,7 @@ public:
         reg.range.len = size;
         reg.mode = UFFDIO_REGISTER_MODE_WP;
         const int ret = ioctl(uffd, UFFDIO_REGISTER, &reg);
-        ASSERT_MSG(ret != -1, "Uffdio register failed");
+        ASSERT_MSG(ret != -1, "Uffdio register failed with error: {}", Common::GetLastErrorMsg());
     }
 
     void OnUnmap(VAddr address, size_t size) override {
@@ -295,7 +295,7 @@ public:
         range.start = address;
         range.len = size;
         const int ret = ioctl(uffd, UFFDIO_UNREGISTER, &range);
-        ASSERT_MSG(ret != -1, "Uffdio unregister failed");
+        ASSERT_MSG(ret != -1, "Uffdio unregister failed with error: {}", Common::GetLastErrorMsg());
     }
 
     void Protect(VAddr address, size_t size, Core::MemoryPermission perms) override {
@@ -310,6 +310,14 @@ public:
     }
 
     void UffdHandler(std::stop_token token) {
+        Common::SetCurrentThreadName("shadPS4:Uffd");
+
+        auto regions = Core::Memory::Instance()->GetAddressSpace().GetUsableRegions();
+        for (auto& region : regions) {
+            OnMap(region.lower(), region.upper());
+        }
+        LOG_INFO(Common_Memory, "registered reserved memory with userfaultfd");
+
         while (!token.stop_requested()) {
             pollfd pollfd;
             pollfd.fd = uffd;
@@ -354,11 +362,12 @@ public:
 
             // Notify rasterizer about the fault.
             const VAddr addr = msg.arg.pagefault.address;
-            rasterizer->InvalidateMemory(addr, 1);
+            const auto ptid = msg.arg.pagefault.feat.ptid;
+            rasterizer->InvalidateMemory(addr, 1,
+                                         ptid == rasterizer->GetGpuCommandProcessorThreadId());
 
             // Some calls to InvalidateMemory never reach the UFFDIO_WRITEPROTECT ioctl in
             // ::Protect, therefore we use MODE_DONTWAKE and wake the thread with UFFDIO_WAKE here
-            const auto ptid = msg.arg.pagefault.feat.ptid;
             uffdio_range wake;
             wake.start = msg.arg.pagefault.address;
             wake.len = PM_PAGE_SIZE;
@@ -391,10 +400,12 @@ struct SignalImpl : public PageManager::Impl {
 
     static bool GuestFaultSignalHandler(void* context, void* fault_address) {
         const auto addr = reinterpret_cast<VAddr>(fault_address);
+        const auto is_gpu_thread =
+            std::this_thread::get_id() == rasterizer->GetGpuCommandProcessorThread();
         if (Common::IsWriteError(context)) {
-            return rasterizer->InvalidateMemory(addr, 8);
+            return rasterizer->InvalidateMemory(addr, 8, is_gpu_thread);
         } else {
-            return rasterizer->ReadMemory(addr, 8);
+            return rasterizer->ReadMemory(addr, 8, is_gpu_thread);
         }
         return false;
     }
