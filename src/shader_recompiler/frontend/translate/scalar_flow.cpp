@@ -16,6 +16,8 @@ void Translator::EmitFlowControl(const GcnInst& inst) {
     case Opcode::S_SETPRIO:
         LOG_WARNING(Render_Vulkan, "S_SETPRIO instruction!");
         return;
+    case Opcode::S_SETVSKIP:
+        return S_SETVSKIP(inst);
     case Opcode::S_TRAP:
         LOG_WARNING(Render_Vulkan, "S_TRAP instruction!");
         return;
@@ -49,6 +51,22 @@ void Translator::S_GETPC_B64(const GcnInst& inst) {
     const IR::ScalarReg dst{inst.dst[0].code};
     ir.SetScalarReg(dst, ir.GetPcLo(ir.Imm32(pc)));
     ir.SetScalarReg(dst + 1, ir.Imm32(0));
+}
+
+void Translator::S_SETVSKIP(const GcnInst& inst) {
+    // VSKIP = (SSRC0 & (1 << (SSRC1 & 31))) != 0 (AMD GCN3/Vega ISA, SOPC
+    // instructions). When set, real hardware skips vector ALU/memory/export/LDS/GDS
+    // instructions for the whole wave until the next S_SETVSKIP, as a fast
+    // alternative to branching. CFG::SplitDivergenceScopes recognizes the
+    // open/close S_SETVSKIP pair around such guarded code and wraps it in a
+    // divergence block keyed on Condition::Vskipz, so here we only need to keep
+    // the tracked VSKIP value itself up to date; we don't need to (and can't,
+    // since it's not a real per-lane mask) skip anything directly.
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 bitpos{ir.BitwiseAnd(src1, ir.Imm32(0x1FU))};
+    const IR::U32 bit{ir.BitwiseAnd(ir.ShiftRightLogical(src0, bitpos), ir.Imm32(1U))};
+    ir.SetVskip(ir.INotEqual(bit, ir.Imm32(0U)));
 }
 
 void Translator::S_SENDMSG(const GcnInst& inst) {
