@@ -155,6 +155,7 @@ set(GCN_TEST_SOURCES
     stubs/core_stub.cpp
     stubs/signals_stub.cpp
     stubs/file_sys_stub.cpp
+    stubs/pm4_stub.cpp
 
     gcn/gcn_test_runner.hpp
     gcn/gcn_test_runner.cpp
@@ -163,6 +164,7 @@ set(GCN_TEST_SOURCES
 
     # Tests
     gcn/test_gcn_instructions.cpp
+    gcn/test_pm4_cmds.cpp
 )
 
 add_executable(shadps4_settings_test ${SETTINGS_TEST_SOURCES})
