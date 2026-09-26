@@ -1135,27 +1135,26 @@ template void Translator::SetDstPk<IR::F32, false>(const InstOperand& operand,
 void Translator::EmitFetch(const GcnInst& inst) {
     const auto code_sgpr_base = inst.src[0].code;
 
-#if 0
-    // Translate fetch shader inline using regular buffer bindings; useful for debugging.
-    const auto* code = GetFetchShaderCode(info, code_sgpr_base);
-    GcnCodeSlice slice(code, code + std::numeric_limits<u32>::max());
-    GcnDecodeContext decoder;
+    if (EmulatorSettings.IsInlineFetchShader()) {
+        // Translate fetch shader inline using regular buffer bindings; useful for debugging.
+        const auto* code = GetFetchShaderCode(info, code_sgpr_base);
+        GcnCodeSlice slice(code, code + std::numeric_limits<u32>::max());
+        GcnDecodeContext decoder;
 
-    // Decode and save instructions
-    while (!slice.atEnd()) {
-        const auto sub_inst = decoder.decodeInstruction(slice);
-        if (sub_inst.opcode == Opcode::S_SETPC_B64) {
-            // Assume we're swapping back to the main shader.
-            break;
+        // Decode and save instructions
+        while (!slice.atEnd()) {
+            const auto sub_inst = decoder.decodeInstruction(slice);
+            if (sub_inst.opcode == Opcode::S_SETPC_B64) {
+                // Assume we're swapping back to the main shader.
+                break;
+            }
+            TranslateInstruction(sub_inst);
         }
-        TranslateInstruction(sub_inst);
+        return;
     }
-    return;
-#endif
 
     info.has_fetch_shader = true;
     info.fetch_shader_sgpr_base = code_sgpr_base;
-    LOG_WARNING(Render, "Hash {:#x}", info.pgm_hash);
     ASSERT(ParseFetchShader(info, fetch_data));
 
     if (EmulatorSettings.IsDumpShaders()) {

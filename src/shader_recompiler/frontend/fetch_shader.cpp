@@ -39,7 +39,7 @@ const u32* GetFetchShaderCode(const Info& info, u32 sgpr_base) {
     std::memcpy(&code, &info.user_data[sgpr_base], sizeof(code));
     return code;
 }
-#pragma clang optimize off
+
 bool ParseFetchShader(const Shader::Info& info, FetchShaderData& out_fetch_data) {
     if (!info.has_fetch_shader) {
         return false;
