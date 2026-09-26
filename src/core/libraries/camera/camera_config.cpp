@@ -307,11 +307,6 @@ s32 PS4_SYSV_ABI sceCameraGetWhiteBalance(s32 handle, OrbisCameraChannel channel
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceCameraSetAppModuleFocus() {
-    LOG_ERROR(Lib_Camera, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI sceCameraSetAttribute(s32 handle, OrbisCameraAttribute* attribute) {
     LOG_DEBUG(Lib_Camera, "called");
     if (handle < 1 || attribute == nullptr || attribute->sizeThis != sizeof(OrbisCameraAttribute) ||
