@@ -291,24 +291,20 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(nproc)
 
     - name: Package and Upload Linux(ubuntu64) SDL artifact
-      run: |
-        ls -la ${{ github.workspace }}/build/shadps4
-
-    - uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v7
       with:
         name: shadps4-ubuntu64-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: ${{ github.workspace }}/build/shadps4
 
     - name: Run AppImage packaging script
-      run:  ./.github/workflows/scripts/linux-appimage-sdl.sh
-
-    - name: Package and Upload Linux SDL artifact
       run: |
-        tar cf shadps4-linux-sdl.tar.gz -C ${{github.workspace}}/build shadps4
+        ./.github/workflows/scripts/linux-appimage-sdl.sh
+        cp Shadps4-sdl.AppImage shadps4-linux-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}.AppImage
+
     - uses: actions/upload-artifact@v7
       with:
-        name: shadps4-linux-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
-        path: Shadps4-sdl.AppImage
+        path: shadps4-linux-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}.AppImage
+        archive: false
 
   linux-sdl-gcc:
     runs-on: ubuntu-24.04
@@ -359,10 +355,8 @@ jobs:
       with:
         path: ./artifacts
 
-    - name: Make SDL artifacts executable
-      run: |
-        chmod -R a+x ./artifacts/shadps4-linux-sdl-*
-        chmod -R a+x ./artifacts/shadps4-macos-sdl-*
+    - name: Make macOS SDL artifacts executable
+      run: chmod -R a+x ./artifacts/shadps4-macos-sdl-*
 
     - name: Compress individual directories (without parent directory)
       run: |
