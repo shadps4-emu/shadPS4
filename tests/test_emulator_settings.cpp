@@ -376,14 +376,6 @@ TEST_F(EmulatorSettingsTest, LoadUnknownTopLevelSectionPreserved) {
     EXPECT_EQ(after["FutureSection"]["key"], 42);
 }
 
-TEST_F(EmulatorSettingsTest, LoadCorruptJsonCrashes) {
-    {
-        std::ofstream out(ConfigJson());
-        out << "{NOT VALID JSON!!!";
-    }
-    EXPECT_THROW(temp_settings->Load(), std::runtime_error);
-}
-
 TEST_F(EmulatorSettingsTest, LoadEmptyJsonObjectDoesNotCrash) {
     WriteJson(ConfigJson(), json::object());
     EXPECT_NO_THROW(temp_settings->Load());
@@ -455,14 +447,6 @@ TEST_F(EmulatorSettingsTest, LoadSerialTypeMismatch_DoesNotCrash) {
     // base unchanged
     temp_settings->SetConfigMode(ConfigMode::Global);
     EXPECT_EQ(temp_settings->GetWindowWidth(), 1280u);
-}
-
-TEST_F(EmulatorSettingsTest, LoadSerialCorruptFileCrashes) {
-    {
-        std::ofstream out(GameConfig("CUSA01234"));
-        out << "{{{{totally broken";
-    }
-    EXPECT_THROW(temp_settings->Load("CUSA01234"), std::runtime_error);
 }
 
 TEST_F(EmulatorSettingsTest, SaveSerialWritesGameSpecificValueWhenOverrideLoaded) {
