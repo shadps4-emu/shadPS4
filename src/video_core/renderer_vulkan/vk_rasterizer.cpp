@@ -728,7 +728,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             if (desc.buffer_type == Shader::BufferType::GdsBuffer) {
                 const auto* gds_buf = buffer_cache.GetGdsBuffer();
                 buffer_infos.emplace_back(gds_buf->Handle(), 0, gds_buf->SizeBytes());
-                needs_barrier |= runtime.IsBufferAccessed(gds_buf, 0, gds_buf->SizeBytes());
+                bound_buffers.emplace_back(gds_buf, 0, gds_buf->SizeBytes(), desc.is_written);
             } else if (desc.buffer_type == Shader::BufferType::Flatbuf) {
                 auto& vk_buffer = buffer_cache.GetStreamBuffer();
                 const u32 ubo_size = stage.flattened_ud_buf.size() * sizeof(u32);
@@ -907,7 +907,8 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                 } else {
                     needs_barrier |= runtime.Transit(
                         &image, vk::ImageLayout::eGeneral, vk::PipelineStageFlagBits2::eAllCommands,
-                        vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite);
+                        vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite,
+                        desc.view_info.range);
                 }
             } else {
                 if (is_storage) {
