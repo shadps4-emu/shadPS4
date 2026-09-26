@@ -5,6 +5,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <thread>
 #include <unordered_set>
 #include <boost/container/small_vector.hpp>
@@ -182,6 +183,31 @@ public:
         HTile,
     };
 
+    struct MetaDataInfo {
+        MetaType type;
+        ImageId owner_id{};
+        u64 owner_uid{};
+        u32 num_samples = 1;
+        s32 clear_mask = -1;
+    };
+
+    /// Returns metadata information if the specified address belongs to a live image.
+    std::optional<MetaDataInfo> GetMetaInfo(VAddr address) const {
+        const auto it = surface_metas.find(address);
+        if (it == surface_metas.end()) {
+            return std::nullopt;
+        }
+        const auto& meta = it->second;
+        if (!meta.owner_id || !slot_images.is_allocated(meta.owner_id)) {
+            return std::nullopt;
+        }
+        const auto& owner = slot_images[meta.owner_id];
+        if (owner.image_uid != meta.owner_uid || False(owner.flags & ImageFlagBits::Registered)) {
+            return std::nullopt;
+        }
+        return meta;
+    }
+
     /// Returns meta type if the specified address is a metadata surface.
     std::optional<MetaType> IsMeta(VAddr address) const {
         auto it = surface_metas.find(address);
@@ -312,6 +338,9 @@ private:
 
     void MarkAsMaybeDirty(ImageId image_id, Image& image);
 
+    void RegisterMeta(VAddr address, MetaDataInfo info);
+    void UnregisterMeta(VAddr address, u64 owner_uid);
+
     /// Removes the image and any views/surface metas that reference it.
     void DeleteImage(ImageId image_id);
 
@@ -356,10 +385,6 @@ private:
     std::mutex mutex;
     std::mutex samplers_mutex;
     std::mutex download_images_mutex;
-    struct MetaDataInfo {
-        MetaType type;
-        s32 clear_mask = -1;
-    };
     tsl::robin_map<VAddr, MetaDataInfo> surface_metas;
 };
 
