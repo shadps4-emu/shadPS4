@@ -86,6 +86,28 @@ std::optional<std::filesystem::path> ResolveGameRoot(const std::filesystem::path
     return std::nullopt;
 }
 
+std::shared_ptr<IBackend> MntPoints::CreateBackend(const std::filesystem::path& host_path,
+                                                   bool read_only) {
+    if (std::filesystem::is_directory(host_path)) {
+        return std::make_shared<HostFsBackend>(host_path, read_only);
+    }
+    const auto try_zar = [](const std::filesystem::path& zar) -> std::shared_ptr<IBackend> {
+        if (std::filesystem::is_regular_file(zar) && zar.extension() == ".zar") {
+            auto backend = std::make_shared<ZArchiveBackend>(zar);
+            if (backend->IsOpen()) {
+                return backend;
+            }
+        }
+        return nullptr;
+    };
+    if (auto b = try_zar(host_path)) {
+        return b;
+    }
+    std::filesystem::path with_ext = host_path;
+    with_ext += ".zar";
+    return try_zar(with_ext);
+}
+
 void MntPoints::Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
                       bool read_only) {
     std::scoped_lock lock{m_mutex};
@@ -94,32 +116,10 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
     std::vector<std::shared_ptr<IBackend>> stack;
     const bool eligible_for_overlays =
         guest_folder_sanitized == "/app0" || guest_folder_sanitized == "/hostapp";
-    const auto make_backend = [](const std::filesystem::path& p,
-                                 bool ro) -> std::shared_ptr<IBackend> {
-        if (std::filesystem::is_directory(p)) {
-            return std::make_shared<HostFsBackend>(p, ro);
-        }
-        const auto try_zar = [ro](const std::filesystem::path& zar) -> std::shared_ptr<IBackend> {
-            if (std::filesystem::is_regular_file(zar) && zar.extension() == ".zar") {
-                auto backend = std::make_shared<ZArchiveBackend>(zar);
-                if (backend->IsOpen()) {
-                    return backend;
-                }
-            }
-            return nullptr;
-        };
-        if (auto b = try_zar(p)) {
-            return b;
-        }
-        std::filesystem::path with_ext = p;
-        with_ext += ".zar";
-        return try_zar(with_ext);
-    };
 
-    const auto probe_overlay =
-        [&make_backend](const std::filesystem::path& base,
-                        std::string_view suffix) -> std::shared_ptr<IBackend> {
-        return make_backend(OverlayPath(base, suffix), /*ro=*/true);
+    const auto probe_overlay = [this](const std::filesystem::path& base,
+                                      std::string_view suffix) -> std::shared_ptr<IBackend> {
+        return CreateBackend(OverlayPath(base, suffix), /*ro=*/true);
     };
     // check for mods , updates,patch
     if (eligible_for_overlays) {
@@ -137,14 +137,14 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
         }
     }
 
-    std::shared_ptr<IBackend> base = make_backend(host_folder, read_only);
+    std::shared_ptr<IBackend> base = CreateBackend(host_folder, read_only);
     ASSERT_MSG(base, "Mount: base path does not resolve to a backend: {}", host_folder.string());
     stack.push_back(std::move(base));
 
     m_mnt_pairs.emplace_back(host_folder, guest_folder_sanitized, read_only, std::move(stack));
 }
 
-void MntPoints::Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder) {
+void MntPoints::Unmount(const std::string& guest_folder) {
     std::scoped_lock lock{m_mutex};
     const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
     auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(), [&](const MntPair& pair) {

@@ -269,12 +269,16 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGSEGV:
     case SIGBUS: {
         const bool is_write = Common::IsWriteError(raw_context);
+        const bool is_exec = Common::IsExecuteError(raw_context);
         if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
             if (thread && thread->DispatchSignal(NativeToOrbisSignal(sig), info_p, context_p)) {
                 return;
             }
             UNREACHABLE_MSG("Unhandled access violation at code address {}: {} address {}",
-                            fmt::ptr(code_address), is_write ? "Write to" : "Read from",
+                            fmt::ptr(code_address),
+                            is_write  ? "Write to"
+                            : is_exec ? "Executed from"
+                                      : "Read from",
                             fmt::ptr(info->si_addr));
         }
         break;
