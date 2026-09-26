@@ -1,16 +1,20 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
-#include <core/libraries/system/userservice.h>
 #include "common/types.h"
+#include "core/libraries/camera/camera_error.h"
+#include "core/libraries/system/userservice.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
 }
 
 namespace Libraries::Camera {
+
+extern bool g_library_opened;
+extern s32 g_firmware_version;
 
 constexpr s32 ORBIS_CAMERA_MAX_DEVICE_NUM = 2;
 constexpr s32 ORBIS_CAMERA_MAX_FORMAT_LEVEL_NUM = 4;
@@ -218,6 +222,8 @@ constexpr OrbisCameraConfigExtention camera_config_types[5][ORBIS_CAMERA_MAX_DEV
             .framerate = ORBIS_CAMERA_FRAMERATE_60,
         },
     }};
+
+extern OrbisCameraConfigExtention output_config0, output_config1;
 
 enum OrbisCameraAecAgcTarget {
     ORBIS_CAMERA_ATTRIBUTE_AECAGC_TARGET_DEF = 0x00,

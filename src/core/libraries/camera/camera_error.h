@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "core/libraries/error_codes.h"
+
 #pragma once
 
 constexpr int ORBIS_CAMERA_ERROR_PARAM = 0x802E0000;
