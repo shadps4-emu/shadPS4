@@ -96,10 +96,16 @@ void BufferCache::TickFrame() {
     DebugState.num_batches_per_frame = std::exchange(num_flushes_per_frame, 0u);
 }
 
-void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool assume_locks) {
-    memory_tracker->InvalidateRegion(device_addr, size, [this, device_addr, size, assume_locks] {
-        ReadMemory(device_addr, size, true, assume_locks);
-    });
+void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool download, bool assume_locks) {
+    if (download) {
+        memory_tracker->InvalidateRegion(device_addr, size,
+                                         [this, device_addr, size, assume_locks] {
+                                             ReadMemory(device_addr, size, true, assume_locks);
+                                         });
+    } else {
+        memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, true);
+        gpu_modified_ranges.Subtract(device_addr, size);
+    }
 }
 
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool assume_locks) {
@@ -169,9 +175,13 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
 }
 
 std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 size,
-                                                        bool is_written, bool is_texel_buffer) {
+                                                        ObtainBufferFlags flags) {
+    const bool is_written = True(flags & ObtainBufferFlags::IsWritten);
+    const bool is_texel_buffer = True(flags & ObtainBufferFlags::IsTexelBuffer);
+    const bool skip_stream_buffer = True(flags & ObtainBufferFlags::IgnoreStreamBuffer);
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
-    if (!is_written && size <= STREAM_THRESHOLD && !IsRegionGpuModified(device_addr, size)) {
+    if (!is_written && !skip_stream_buffer && size <= STREAM_THRESHOLD &&
+        !IsRegionGpuModified(device_addr, size)) {
         const auto [data, offset] = stream_buffer.Map(size, instance.UniformMinAlignment());
         memory->CopySparseMemory(device_addr, data, size);
         stream_buffer.Commit();
@@ -187,13 +197,14 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     }
     if (is_written) {
         gpu_modified_ranges.Add(device_addr, size);
+        texture_cache.MarkAsMaybeReused(device_addr, size);
     }
     return {arena, arena->Offset(device_addr)};
 }
 
 std::pair<const Buffer*, u64> BufferCache::ObtainBufferForImage(VAddr device_addr, u32 size) {
     if (IsRegionGpuModified(device_addr, size)) {
-        return ObtainBuffer(device_addr, size, false);
+        return ObtainBuffer(device_addr, size);
     }
     const auto staging = staging_pool.Request(size, VideoCore::MemoryType::HostUncached,
                                               instance.StorageMinAlignment());
@@ -215,6 +226,65 @@ bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
         }
     }
     return false;
+}
+
+void BufferCache::MarkRegionAsGpuModified(VAddr addr, size_t size) {
+    sync_batch.Add(addr, addr + size, true);
+    gpu_modified_ranges.Add(addr, size);
+    texture_cache.MarkAsMaybeReused(addr, size);
+}
+
+void BufferCache::ReadEdgeImagePages(const Image& image) {
+    // May happen that after downloading the image and invalidating region,
+    // that there were GPU modified ranges that are lost due to CPU reuploading.
+    // This doesn't change tracker state and it is spected to call DownloadImageMemory after this.
+    if (image.info.guest_address == 0x50158c8000) {
+        LOG_CRITICAL(Render_Vulkan, "test test test");
+    }
+    const VAddr image_addr = image.info.guest_address;
+    const u64 image_size = image.info.guest_size;
+    const VAddr image_end = image_addr + image_size;
+    const VAddr page_start = PageManager::GetPageAddr(image_addr);
+    const VAddr page_end = PageManager::GetNextPageAddr(image_end - 1);
+    boost::container::small_vector<vk::BufferCopy, 2> copies;
+    u64 total_size_bytes = 0;
+    const auto [buffer, offset] = ObtainBuffer(page_start, page_end - page_start);
+    const auto add_download = [&](VAddr start, VAddr end) {
+        const u64 new_offset = start - buffer->CpuAddr();
+        const u64 new_size = end - start;
+        copies.push_back(vk::BufferCopy{
+            .srcOffset = new_offset,
+            .dstOffset = total_size_bytes,
+            .size = new_size,
+        });
+        // Align up to avoid cache conflicts
+        constexpr u64 align = 64ULL;
+        constexpr u64 mask = ~(align - 1ULL);
+        total_size_bytes += (new_size + align - 1) & mask;
+    };
+    gpu_modified_ranges.ForEachInRange(page_start, image_addr - page_start, add_download);
+    gpu_modified_ranges.ForEachInRange(image_end, page_end - image_end, add_download);
+    gpu_modified_ranges.Subtract(page_start, page_end - page_start);
+    if (total_size_bytes == 0) {
+        return;
+    }
+    const auto download = staging_pool.Request(total_size_bytes, VideoCore::MemoryType::HostCached, 16, true);
+    for (auto& copy : copies) {
+        // Modify copies to have the staging offset in mind
+        copy.dstOffset += download.offset;
+    }
+    scheduler.EndRendering();
+    runtime.CopyBuffer(buffer, download.buffer, copies);
+    scheduler.DeferOperation([this, base = buffer->CpuAddr(), download, copies = std::move(copies)]() {
+        auto* memory = Core::Memory::Instance();
+        for (const auto& copy : copies) {
+            const VAddr copy_device_addr = base + copy.srcOffset;
+            const u64 dst_offset = copy.dstOffset - download.offset;
+            memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download.mapped + dst_offset,
+                                    copy.size);
+        }
+        staging_pool.FreeDeferred(download);
+    });
 }
 
 void BufferCache::SynchronizeDmaBuffers() {
