@@ -1155,6 +1155,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
 
     info.has_fetch_shader = true;
     info.fetch_shader_sgpr_base = code_sgpr_base;
+    LOG_WARNING(Render, "Hash {:#x}", info.pgm_hash);
     ASSERT(ParseFetchShader(info, fetch_data));
 
     if (EmulatorSettings.IsDumpShaders()) {

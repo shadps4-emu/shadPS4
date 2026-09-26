@@ -39,7 +39,7 @@ const u32* GetFetchShaderCode(const Info& info, u32 sgpr_base) {
     std::memcpy(&code, &info.user_data[sgpr_base], sizeof(code));
     return code;
 }
-
+#pragma clang optimize off
 bool ParseFetchShader(const Shader::Info& info, FetchShaderData& out_fetch_data) {
     if (!info.has_fetch_shader) {
         return false;
@@ -120,12 +120,18 @@ bool ParseFetchShader(const Shader::Info& info, FetchShaderData& out_fetch_data)
         } else if (encoding == InstEncoding::SOPP) {
             const auto opcode = OpcodeSOPP((word0 >> 16) & 0x7f);
             ASSERT(opcode == OpcodeSOPP::S_WAITCNT);
+        } else if (encoding == InstEncoding::VOP1) {
+            const auto opcode = OpcodeVOP1((word0 >> 9) & 0xff);
+            const u32 src0 = word0 & 0x1ff;
+            const u32 vdst = (word0 >> 17) & 0xff;
+            ASSERT(opcode == OpcodeVOP1::V_MOV_B32 && src0 == 242);
+            LOG_WARNING(Render_Recompiler, "Fetch shader has V{} = 1.0 which is ignored", vdst);
         } else {
             UNREACHABLE_MSG("Unexpected instruction encoding in fetch shader {}", u32(encoding));
         }
     }
 
-    out_fetch_data.size = ptr - code;
+    out_fetch_data.size = (ptr - code) * sizeof(u32);
     return true;
 }
 
