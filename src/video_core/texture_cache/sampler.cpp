@@ -23,6 +23,10 @@ Sampler::Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sample
         LOG_WARNING(Render_Vulkan, "Custom border color is not supported, falling back to black");
         border_color = vk::BorderColor::eFloatOpaqueBlack;
     }
+    if (border_color == vk::BorderColor::eFloatCustomEXT && border_color_base.Address() == 0) {
+        LOG_WARNING(Render_Vulkan, "Border color table address is not set, falling back to black");
+        border_color = vk::BorderColor::eFloatOpaqueBlack;
+    }
 
     const auto custom_color = [&]() -> std::optional<vk::SamplerCustomBorderColorCreateInfoEXT> {
         if (border_color == vk::BorderColor::eFloatCustomEXT) {
