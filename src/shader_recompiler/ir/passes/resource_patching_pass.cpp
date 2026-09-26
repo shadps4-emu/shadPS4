@@ -201,8 +201,8 @@ SharpFetch<T> ConstructSharpFetch(const SharpReference& sharp) {
                 return sharp_fetch;
             }
         }
+        sharp_fetch.summary = Summary::SingleLoad;
     }
-    sharp_fetch.summary = Summary::SingleLoad;
     return sharp_fetch;
 }
 
