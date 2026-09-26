@@ -28,20 +28,16 @@ struct StubEntry {
 static std::vector<StubEntry> g_stub_entries;
 static std::mutex g_stub_mutex;
 
-static u64 PS4_SYSV_ABI CommonStub(u64 index, void* addr) {
+static u64 PS4_SYSV_ABI CommonStub(u64 index) {
     const auto& e = g_stub_entries[index];
     if (e.nid) {
         LOG_ERROR(Core, "Stub: {} (nid: {}) called, returning zero to {}", e.nid->name, e.nid->nid,
-                  addr);
+                  __builtin_return_address(0));
     } else {
         LOG_ERROR(Core, "Stub: Unknown (nid: {}) called, returning zero to {}", e.nid_unknown,
-                  addr);
+                  __builtin_return_address(0));
     }
     return 0;
-}
-
-static u64 PS4_SYSV_ABI CommonStubTrampoline(u64 index) {
-    return CommonStub(index, __builtin_return_address(0));
 }
 
 u64 GetStub(const char* nid) {
@@ -67,7 +63,7 @@ u64 GetStub(const char* nid) {
 
     e.code = std::make_unique<Xbyak::CodeGenerator>(32, Xbyak::AutoGrow);
     e.code->mov(e.code->rdi, index);
-    e.code->mov(e.code->rax, reinterpret_cast<u64>(&CommonStubTrampoline));
+    e.code->mov(e.code->rax, reinterpret_cast<u64>(&CommonStub));
     e.code->jmp(e.code->rax);
     e.code->readyRE();
 
