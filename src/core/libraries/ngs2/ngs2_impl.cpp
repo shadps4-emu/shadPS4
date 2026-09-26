@@ -116,7 +116,7 @@ s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo*
     SystemInternal setupResult;
     void* systemList = NULL;
     size_t requiredBufferSize = 0;
-    u32 result = ORBIS_NGS2_ERROR_INVALID_BUFFER_SIZE;
+    s32 result = ORBIS_NGS2_ERROR_INVALID_BUFFER_SIZE;
 
     if (option) {
         if (option->size != 64) {
