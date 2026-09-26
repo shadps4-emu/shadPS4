@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "common/types.h"
 #include <SDL3/SDL_events.h>
+#include "common/types.h"
 
 namespace Core::Loader {
 class SymbolsResolver;

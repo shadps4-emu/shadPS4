@@ -7,8 +7,8 @@
 #include "core/libraries/libs.h"
 
 #include "SDL3/SDL_keyboard.h"
-#include "keyboard.h"
 #include "core/emulator_settings.h"
+#include "keyboard.h"
 
 namespace Libraries::Keyboard {
 
