@@ -231,11 +231,6 @@ int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
     bool waitAll = (flags & ORBIS_NET_MSG_WAITALL) != 0;
     bool dontWait = (flags & ORBIS_NET_MSG_DONTWAIT) != 0;
 
-    // stream socket with multiple buffers
-    bool use_wsamsg =
-        (socket_type == ORBIS_NET_SOCK_STREAM || socket_type == ORBIS_NET_SOCK_STREAM_P2P) &&
-        msg->msg_iovlen > 1;
-
     for (int i = 0; i < msg->msg_iovlen; ++i) {
         char* buf = (char*)msg->msg_iov[i].iov_base;
         size_t remaining = msg->msg_iov[i].iov_len;
@@ -247,30 +242,9 @@ int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
                     return ready;
             }
 
-            int sent = 0;
-            if (use_wsamsg) {
-                // only call WSASendMsg if we have multiple buffers
-                LPFN_WSASENDMSG wsasendmsg = nullptr;
-                GUID guid = WSAID_WSASENDMSG;
-                DWORD bytes = 0;
-                if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid),
-                             &wsasendmsg, sizeof(wsasendmsg), &bytes, nullptr, nullptr) != 0) {
-                    // fallback to send()
-                    sent = ::send(sock, buf, remaining, 0);
-                } else {
-                    DWORD bytesSent = 0;
-                    int res = wsasendmsg(
-                        sock, reinterpret_cast<LPWSAMSG>(const_cast<OrbisNetMsghdr*>(msg)), 0,
-                        &bytesSent, nullptr, nullptr);
-                    if (res == SOCKET_ERROR)
-                        return ConvertReturnErrorCode(WSAGetLastError());
-                    sent = bytesSent;
-                }
-            } else {
-                sent = ::send(sock, buf, remaining, 0);
-                if (sent == SOCKET_ERROR)
-                    return ConvertReturnErrorCode(WSAGetLastError());
-            }
+            const int sent = ::send(sock, buf, remaining, 0);
+            if (sent == SOCKET_ERROR)
+                return ConvertReturnErrorCode(WSAGetLastError());
 
             totalSent += sent;
             remaining -= sent;
