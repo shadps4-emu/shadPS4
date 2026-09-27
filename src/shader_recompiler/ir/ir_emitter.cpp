@@ -2178,8 +2178,20 @@ void IREmitter::ImageWrite(const Value& handle, const Value& coords, const U32& 
     Inst(Opcode::ImageWrite, Flags{info}, handle, coords, lod, multisampling, color);
 }
 
-[[nodiscard]] F32 IREmitter::CubeFaceIndex(const Value& cube_coords) {
-    return Inst<F32>(Opcode::CubeFaceIndex, cube_coords);
+[[nodiscard]] F32 IREmitter::CubeFaceIndex(const Value& x, const Value& y, const Value& z) {
+    return Inst<F32>(Opcode::CubeFaceIndex, x, y, z);
+}
+
+[[nodiscard]] F32 IREmitter::CubeFaceCoordS(const Value& x, const Value& y, const Value& z) {
+    return Inst<F32>(Opcode::CubeFaceCoordS, x, y, z);
+}
+
+[[nodiscard]] F32 IREmitter::CubeFaceCoordT(const Value& x, const Value& y, const Value& z) {
+    return Inst<F32>(Opcode::CubeFaceCoordT, x, y, z);
+}
+
+[[nodiscard]] F32 IREmitter::CubeFaceMajorAxis(const Value& x, const Value& y, const Value& z) {
+    return Inst<F32>(Opcode::CubeFaceMajorAxis, x, y, z);
 }
 
 // Debug print maps to SPIRV's NonSemantic DebugPrintf instruction

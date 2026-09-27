@@ -348,12 +348,60 @@ void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id 
     ctx.OpImageWrite(image, fixed_coords, texel, operands.mask, operands.operands);
 }
 
-Id EmitCubeFaceIndex(EmitContext& ctx, IR::Inst* inst, Id cube_coords) {
+static Id SelectCubeResult(EmitContext& ctx, Id x, Id y, Id z, Id x_res, Id y_res, Id z_res) {
+    const auto abs_x = ctx.OpFAbs(ctx.F32[1], x);
+    const auto abs_y = ctx.OpFAbs(ctx.F32[1], y);
+    const auto abs_z = ctx.OpFAbs(ctx.F32[1], z);
+
+    const auto z_face_cond{ctx.OpLogicalAnd(ctx.U1[1],
+                                            ctx.OpFOrdGreaterThanEqual(ctx.U1[1], abs_z, abs_x),
+                                            ctx.OpFOrdGreaterThanEqual(ctx.U1[1], abs_z, abs_y))};
+    const auto y_face_cond{ctx.OpFOrdGreaterThanEqual(ctx.U1[1], abs_y, abs_x)};
+
+    return ctx.OpSelect(ctx.F32[1], z_face_cond, z_res,
+                        ctx.OpSelect(ctx.F32[1], y_face_cond, y_res, x_res));
+}
+
+Id EmitCubeFaceIndex(EmitContext& ctx, IR::Inst* inst, Id x, Id y, Id z) {
     if (ctx.profile.supports_native_cube_calc) {
-        return ctx.OpCubeFaceIndexAMD(ctx.F32[1], cube_coords);
-    } else {
-        UNREACHABLE_MSG("SPIR-V Instruction");
+        return ctx.OpCubeFaceIndexAMD(ctx.F32[1], ctx.OpCompositeConstruct(x, y, z));
     }
+
+    const auto x_neg_cond{ctx.OpFOrdLessThan(ctx.U1[1], x, ctx.f32_zero_value)};
+    const auto y_neg_cond{ctx.OpFOrdLessThan(ctx.U1[1], y, ctx.f32_zero_value)};
+    const auto z_neg_cond{ctx.OpFOrdLessThan(ctx.U1[1], z, ctx.f32_zero_value)};
+    const auto x_face{ctx.OpSelect(ctx.F32[1], x_neg_cond, ctx.ConstF32(1.f), ctx.ConstF32(0.f))};
+    const auto y_face{ctx.OpSelect(ctx.F32[1], y_neg_cond, ctx.ConstF32(3.f), ctx.ConstF32(2.f))};
+    const auto z_face{ctx.OpSelect(ctx.F32[1], z_neg_cond, ctx.ConstF32(5.f), ctx.ConstF32(4.f))};
+
+    return SelectCubeResult(ctx, x, y, z, x_face, y_face, z_face);
+}
+
+Id EmitCubeFaceCoordS(EmitContext& ctx, IR::Inst* inst, Id x, Id y, Id z) {
+    const auto x_neg_cond{ctx.OpFOrdLessThan(ctx.U1[1], x, ctx.f32_zero_value)};
+    const auto z_neg_cond{ctx.OpFOrdLessThan(ctx.U1[1], z, ctx.f32_zero_value)};
+    const auto x_sc{ctx.OpSelect(ctx.F32[1], x_neg_cond, z, ctx.OpFNegate(ctx.F32[1], z))};
+    const auto y_sc{x};
+    const auto z_sc{ctx.OpSelect(ctx.F32[1], z_neg_cond, ctx.OpFNegate(ctx.F32[1], x), x)};
+
+    return SelectCubeResult(ctx, x, y, z, x_sc, y_sc, z_sc);
+}
+
+Id EmitCubeFaceCoordT(EmitContext& ctx, IR::Inst* inst, Id x, Id y, Id z) {
+    const auto y_neg_cond{ctx.OpFOrdLessThan(ctx.U1[1], y, ctx.f32_zero_value)};
+    const auto x_z_tc{ctx.OpFNegate(ctx.F32[1], y)};
+    const auto y_tc{ctx.OpSelect(ctx.F32[1], y_neg_cond, ctx.OpFNegate(ctx.F32[1], z), z)};
+
+    return SelectCubeResult(ctx, x, y, z, x_z_tc, y_tc, x_z_tc);
+}
+
+Id EmitCubeFaceMajorAxis(EmitContext& ctx, IR::Inst* inst, Id x, Id y, Id z) {
+    const auto two{ctx.ConstF32(2.f)};
+    const auto x_major_axis{ctx.OpFMul(ctx.F32[1], x, two)};
+    const auto y_major_axis{ctx.OpFMul(ctx.F32[1], y, two)};
+    const auto z_major_axis{ctx.OpFMul(ctx.F32[1], z, two)};
+
+    return SelectCubeResult(ctx, x, y, z, x_major_axis, y_major_axis, z_major_axis);
 }
 
 } // namespace Shader::Backend::SPIRV
