@@ -4,15 +4,14 @@
 #include <limits>
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
-#include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/passes/resource_pass.h"
-#include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reinterpret.h"
 #include "shader_recompiler/profile.h"
+#include "shader_recompiler/resource.h"
 #include "video_core/amdgpu/resource.h"
 
 namespace Shader::Optimization {
@@ -181,6 +180,7 @@ SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
 
 template <typename T>
 SharpFetch<T> ConstructSharpFetch(const SharpReference& sharp) {
+    using Summary = SharpFetch<T>::Summary;
     SharpFetch<T> sharp_fetch{};
     for (u32 i = 0; i < sharp.num_dwords; i++) {
         auto dword = sharp.dwords[i];
@@ -189,7 +189,19 @@ SharpFetch<T> ConstructSharpFetch(const SharpReference& sharp) {
         } else {
             sharp_fetch.offsets[i] = SharpLocationFromSource(dword.Inst());
             sharp_fetch.load_mask |= (1 << i);
+            if (sharp_fetch.offsets[i] == UNKNOWN_LOCATION) {
+                sharp_fetch.summary = Summary::Invalid;
+            }
         }
+    }
+    if (sharp_fetch.summary != Summary::Invalid) {
+        const u32 base = sharp_fetch.offsets[0];
+        for (u32 i = 1; i < sharp.num_dwords; ++i) {
+            if (sharp_fetch.offsets[i] - base != i) {
+                return sharp_fetch;
+            }
+        }
+        sharp_fetch.summary = Summary::SingleLoad;
     }
     return sharp_fetch;
 }

@@ -218,7 +218,8 @@ std::pair<const Buffer*, u64> TileManager::DetileImage(const VideoCore::Buffer* 
         .range = sizeof(params),
     };
 
-    const auto staging = runtime.GetStagingPool().Request(info.guest_size, MemoryType::DeviceLocal);
+    const auto staging = runtime.GetStagingPool().Request(info.guest_size, MemoryType::DeviceLocal,
+                                                          256, false, true);
 
     scheduler.EndRendering();
     runtime.FlushBarriers();
@@ -306,7 +307,8 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
         .range = sizeof(params),
     };
 
-    const auto staging = runtime.GetStagingPool().Request(info.guest_size, MemoryType::DeviceLocal);
+    const auto staging = runtime.GetStagingPool().Request(info.guest_size, MemoryType::DeviceLocal,
+                                                          256, false, true);
     for (auto& copy : buffer_copies) {
         copy.bufferOffset += staging.offset;
     }

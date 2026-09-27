@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <chrono>
+#include <fstream>
 #include <system_error>
 
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)

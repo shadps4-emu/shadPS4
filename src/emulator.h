@@ -29,7 +29,7 @@ public:
     void Run(std::filesystem::path file, std::vector<std::string> args = {},
              std::optional<std::filesystem::path> game_folder = {},
              std::vector<std::pair<std::filesystem::path, std::string>> mounts = {},
-             std::vector<std::string> const& env_vars = {});
+             std::vector<std::string> const& env_vars = {}, bool append_log = false);
     void UpdatePlayTime(const std::string_view serial);
     void Shutdown();
 

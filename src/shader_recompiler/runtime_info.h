@@ -152,9 +152,9 @@ struct HwGeometryRuntimeInfo {
     u64 vs_copy_hash;
 
     bool operator==(const HwGeometryRuntimeInfo& other) const {
-        return num_outputs == other.num_outputs && outputs == other.outputs && num_invocations &&
-               other.num_invocations && output_vertices == other.output_vertices &&
-               in_primitive == other.in_primitive &&
+        return num_outputs == other.num_outputs && outputs == other.outputs &&
+               num_invocations == other.num_invocations &&
+               output_vertices == other.output_vertices && in_primitive == other.in_primitive &&
                std::ranges::equal(out_primitive, other.out_primitive) &&
                vs_copy_hash == other.vs_copy_hash;
     }
@@ -191,6 +191,10 @@ struct HwFragmentRuntimeInfo {
 
         bool IsDefault() const {
             return is_default && !is_flat;
+        }
+
+        bool IsPassthrough() const {
+            return is_default && is_flat;
         }
 
         bool operator==(const PsInput&) const noexcept = default;

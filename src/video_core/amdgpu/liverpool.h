@@ -140,6 +140,10 @@ public:
     };
     Common::SlotVector<AscQueueInfo> asc_queues{};
 
+    std::thread::id GetGpuCommandProcessorThread() {
+        return gpu_id;
+    }
+
 #ifdef __linux__
     u32 GetGpuCommandProcessorThreadId() {
         return gpu_tid;

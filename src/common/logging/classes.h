@@ -4,117 +4,126 @@
 #pragma once
 
 #include <array>
+#include <string_view>
 
-namespace Common::Log::Class {
-// clang-format off
-/// Listing all log classes, if you add here, dont forget ALL_LOGGERS
-constexpr auto Common = "Common";                                   ///< Library routines
-constexpr auto Common_Filesystem = "Common.Filesystem";             ///< Filesystem interface library
-constexpr auto Common_Memory = "Common.Memory";                     ///< Memory mapping and management functions
-constexpr auto Config = "Config";                                   ///< Emulator configuration (including commandline)
-constexpr auto Core = "Core";                                       ///< LLE emulation core
-constexpr auto Core_Devices = "Core.Devices";                       ///< Devices emulation
-constexpr auto Core_Linker = "Core.Linker";                         ///< The module linker
-constexpr auto Debug = "Debug";                                     ///< Debugging tools
-constexpr auto Frontend = "Frontend";                               ///< Emulator UI
-constexpr auto IPC = "IPC";                                         ///< IPC
-constexpr auto ImGui = "ImGui";                                     ///< ImGui
-constexpr auto Input = "Input";                                     ///< Input emulation
-constexpr auto Kernel = "Kernel";                                   ///< The HLE implementation of the PS4 kernel.
-constexpr auto Kernel_Event = "Kernel.Event";                       ///< The event management implementation of the kernel.
-constexpr auto Kernel_Fs = "Kernel.Fs";                             ///< The filesystem implementation of the kernel.
-constexpr auto Kernel_Pthread = "Kernel.Pthread";                   ///< The pthread implementation of the kernel.
-constexpr auto Kernel_Sce = "Kernel.Sce";                           ///< The Sony-specific interfaces provided by the kernel.
-constexpr auto Kernel_Vmm = "Kernel.Vmm";                           ///< The virtual memory implementation of the kernel.
-constexpr auto KeyManager = "KeyManager";                           ///< Key management system
-constexpr auto Lib = "Lib";                                         ///< HLE implementation of system library. Each major library  should have its own subclass.
-constexpr auto Lib_Ajm = "Lib.Ajm";                                 ///< The LibSceAjm implementation.
-constexpr auto Lib_AppContent = "Lib.AppContent";                   ///< The LibSceAppContent implementation.
-constexpr auto Lib_Audio3d = "Lib.Audio3d";                         ///< The LibSceAudio3d implementation.
-constexpr auto Lib_AudioIn = "Lib.AudioIn";                         ///< The LibSceAudioIn implementation.
-constexpr auto Lib_AudioOut = "Lib.AudioOut";                       ///< The LibSceAudioOut implementation.
-constexpr auto Lib_AvPlayer = "Lib.AvPlayer";                       ///< The LibSceAvPlayer implementation.
-constexpr auto Lib_Camera = "Lib.Camera";                           ///< The LibSceCamera implementation.
-constexpr auto Lib_CommonDlg = "Lib.CommonDlg";                     ///< The LibSceCommonDialog implementation.
-constexpr auto Lib_CompanionHttpd = "Lib.CompanionHttpd";           ///< The LibSceCompanionHttpd implementation.
-constexpr auto Lib_CompanionUtil = "Lib.CompanionUtil";             ///< The LibSceCompanionUtil implementation.
-constexpr auto Lib_ContentExport = "Lib.ContentExport";             ///< The LibSceContentExport implementation.
-constexpr auto Lib_DiscMap = "Lib.DiscMap";                         ///< The LibSceDiscMap implementation.
-constexpr auto Lib_ErrorDialog = "Lib.ErrorDialog";                 ///< The LibSceErrorDialog implementation.
-constexpr auto Lib_Fiber = "Lib.Fiber";                             ///< The LibSceFiber implementation.
-constexpr auto Lib_Font = "Lib.Font";                               ///< The libSceFont implementation.
-constexpr auto Lib_FontFt = "Lib.FontFt";                           ///< The libSceFontFt implementation.
-constexpr auto Lib_GameLiveStreaming = "Lib.GameLiveStreaming";     ///< The LibSceGameLiveStreaming implementation
-constexpr auto Lib_GnmDriver = "Lib.GnmDriver";                     ///< The LibSceGnmDriver implementation.
-constexpr auto Lib_Hmd = "Lib.Hmd";                                 ///< The LibSceHmd implementation.
-constexpr auto Lib_HmdSetupDialog = "Lib.HmdSetupDialog";           ///< The LibSceHmdSetupDialog implementation.
-constexpr auto Lib_Http = "Lib.Http";                               ///< The LibSceHttp implementation.
-constexpr auto Lib_Http2 = "Lib.Http2";                             ///< The LibSceHttp2 implementation.
-constexpr auto Lib_Ime = "Lib.Ime";                                 ///< The LibSceIme implementation
-constexpr auto Lib_ImeDialog = "Lib.ImeDialog";                     ///< The LibSceImeDialog implementation.
-constexpr auto Lib_InvitationDialog="Lib.InvitationDialog";         ///< The LibSceInvitationDialog implementation.
-constexpr auto Lib_Jpeg = "Lib.Jpeg";                               ///< The LibSceJpeg implementation.
-constexpr auto Lib_Kernel = "Lib.Kernel";                           ///< The LibKernel implementation.
-constexpr auto Lib_LibcInternal = "Lib.LibcInternal";               ///< The LibSceLibcInternal implementation.
-constexpr auto Lib_Mouse = "Lib.Mouse";                             ///< The LibSceMouse implementation
-constexpr auto Lib_Move = "Lib.Move";                               ///< The LibSceMove implementation.
-constexpr auto Lib_MsgDlg = "Lib.MsgDlg";                           ///< The LibSceMsgDialog implementation.
-constexpr auto Lib_Net = "Lib.Net";                                 ///< The LibSceNet implementation.
-constexpr auto Lib_NetCtl = "Lib.NetCtl";                           ///< The LibSceNetCtl implementation.
-constexpr auto Lib_Ngs2 = "Lib.Ngs2";                               ///< The LibSceNgs2 implementation.
-constexpr auto Lib_NpAuth = "Lib.NpAuth";                           ///< The LibSceNpAuth implementation
-constexpr auto Lib_NpCommerce = "Lib.NpCommerce";                   ///< The LibSceNpCommerce implementation
-constexpr auto Lib_NpCommon = "Lib.NpCommon";                       ///< The LibSceNpCommon implementation
-constexpr auto Lib_NpManager = "Lib.NpManager";                     ///< The LibSceNpManager implementation
-constexpr auto Lib_NpMatching2 = "Lib.NpMatching2";                 ///< The LibSceNpMatching2 implementation
-constexpr auto Lib_NpSignaling = "Lib.NpSignaling";                 ///< The LibSceNpSignaling implementation
-constexpr auto Lib_NpPartner = "Lib.NpPartner";                     ///< The LibSceNpPartner implementation
-constexpr auto Lib_NpParty = "Lib.NpParty";                         ///< The LibSceNpParty implementation
-constexpr auto Lib_NpProfileDialog = "Lib.NpProfileDialog";         ///< The LibSceNpProfileDialog implementation
-constexpr auto Lib_NpScore = "Lib.NpScore";                         ///< The LibSceNpScore implementation
-constexpr auto Lib_NpSnsFacebookDialog = "Lib.NpSnsFacebookDialog"; ///< The LibSceNpSnsFacebookDialog implementation
-constexpr auto Lib_NpTrophy = "Lib.NpTrophy";                       ///< The LibSceNpTrophy implementation
-constexpr auto Lib_NpTus = "Lib.NpTus";                             ///< The LibSceNpTus implementation
-constexpr auto Lib_NpUtility = "Lib.NpUtility";                     ///< The LibSceNpUtility implementation
-constexpr auto Lib_NpWebApi = "Lib.NpWebApi";                       ///< The LibSceWebApi implementation
-constexpr auto Lib_NpWebApi2 = "Lib.NpWebApi2";                     ///< The LibSceWebApi2 implementation
-constexpr auto Lib_Pad = "Lib.Pad";                                 ///< The LibScePad implementation.
-constexpr auto Lib_PlayGo = "Lib.PlayGo";                           ///< The LibScePlayGo implementation.
-constexpr auto Lib_PlayGoDialog = "Lib.PlayGoDialog";               ///< The LibScePlayGoDialog implementation.
-constexpr auto Lib_Png = "Lib.Png";                                 ///< The LibScePng implementation.
-constexpr auto Lib_Random = "Lib.Random";                           ///< The LibSceRandom implementation.
-constexpr auto Lib_RazorCpu = "Lib.RazorCpu";                       ///< The LibRazorCpu implementation.
-constexpr auto Lib_Remoteplay = "Lib.Remoteplay";                   ///< The LibSceRemotePlay implementation
-constexpr auto Lib_Rtc = "Lib.Rtc";                                 ///< The LibSceRtc implementation.
-constexpr auto Lib_Rudp = "Lib.Rudp";                               ///< The LibSceRudp implementation.
-constexpr auto Lib_SaveData = "Lib.SaveData";                       ///< The LibSceSaveData implementation.
-constexpr auto Lib_SaveDataDialog = "Lib.SaveDataDialog";           ///< The LibSceSaveDataDialog implementation.
-constexpr auto Lib_Screenshot = "Lib.Screenshot";                   ///< The LibSceScreenshot implementation
-constexpr auto Lib_SharePlay = "Lib.SharePlay";                     ///< The LibSceSharePlay implemenation
-constexpr auto Lib_SigninDialog = "Lib.SigninDialog";               ///< The LibSigninDialog implementation.
-constexpr auto Lib_Ssl = "Lib.Ssl";                                 ///< The LibSceSsl implementation.
-constexpr auto Lib_Ssl2 = "Lib.Ssl2";                               ///< The LibSceSsl2 implementation.
-constexpr auto Lib_SysModule = "Lib.SysModule";                     ///< The LibSceSysModule implementation
-constexpr auto Lib_SystemGesture = "Lib.SystemGesture";             ///< The LibSceSystemGesture implementation.
-constexpr auto Lib_SystemService = "Lib.SystemService";             ///< The LibSceSystemService implementation.
-constexpr auto Lib_Usbd = "Lib.Usbd";                               ///< The LibSceUsbd implementation.
-constexpr auto Lib_UserService = "Lib.UserService";                 ///< The LibSceUserService implementation.
-constexpr auto Lib_Vdec2 = "Lib.Vdec2";                             ///< The LibSceVideodec2 implementation.
-constexpr auto Lib_Vdecsw = "Lib.Vdecsw";                           ///< The LibSceVdecsw implementation.
-constexpr auto Lib_VideoOut = "Lib.VideoOut";                       ///< The LibSceVideoOut implementation.
-constexpr auto Lib_Videodec = "Lib.Videodec";                       ///< The LibSceVideodec implementation.
-constexpr auto Lib_VideoRecording = "Lib.VideoRecording";           ///< The LibSceVideoRecording implementation.
-constexpr auto Lib_Voice = "Lib.Voice";                             ///< The LibSceVoice implementation.
-constexpr auto Lib_VrTracker = "Lib.VrTracker";                     ///< The LibSceVrTracker implementation.
-constexpr auto Lib_WebBrowserDialog = "Lib.WebBrowserDialog";       ///< The LibSceWebBrowserDialog implementation
-constexpr auto Lib_Zlib = "Lib.Zlib";                               ///< The LibSceZlib implementation.
-constexpr auto Loader = "Loader";                                   ///< ROM loader
-constexpr auto Log = "Log";                                         ///< Messages about the log system itself
-constexpr auto NpHandler = "NpHandler";                             ///< NpHandler shadNet manager
-constexpr auto Render = "Render";                                   ///< Video Core
-constexpr auto Render_Recompiler = "Render.Recompiler";             ///< Shader recompiler
-constexpr auto Render_Vulkan = "Render.Vulkan";                     ///< Vulkan backend
-constexpr auto ShadNet = "ShadNet";                                 ///< shadNet binary protocol client
-constexpr auto Tty = "Tty";                                         ///< Debug output from emu
-// clang-format on
-} // namespace Common::Log::Class
+namespace Common::Log {
+
+/**
+ * Specifies the sub-system that generated the log message.
+ */
+enum class Class {
+    Log,               ///< Messages about the log system itself
+    Common,            ///< Library routines
+    Common_Filesystem, ///< Filesystem interface library
+    Common_Memory,     ///< Memory mapping and management functions
+    KeyManager,        ///< Key management system
+    Core,              ///< LLE emulation core
+    Core_Linker,       ///< The module linker
+    Core_Devices,      ///< Devices emulation
+    Config,            ///< Emulator configuration (including commandline)
+    Debug,             ///< Debugging tools
+    Kernel,            ///< The HLE implementation of the PS4 kernel.
+    Kernel_Pthread,    ///< The pthread implementation of the kernel.
+    Kernel_Fs,         ///< The filesystem implementation of the kernel.
+    Kernel_Vmm,        ///< The virtual memory implementation of the kernel.
+    Kernel_Event,      ///< The event management implementation of the kernel.
+    Kernel_Sce,        ///< The Sony-specific interfaces provided by the kernel.
+    Lib, ///< HLE implementation of system library. Each major library should have its own subclass.
+    Lib_LibcInternal,        ///< The LibcInternal implementation.
+    Lib_Kernel,              ///< The LibKernel implementation.
+    Lib_Pad,                 ///< The LibScePad implementation.
+    Lib_SystemGesture,       ///< The LibSceSystemGesture implementation.
+    Lib_GnmDriver,           ///< The LibSceGnmDriver implementation.
+    Lib_SystemService,       ///< The LibSceSystemService implementation.
+    Lib_UserService,         ///< The LibSceUserService implementation.
+    Lib_VideoOut,            ///< The LibSceVideoOut implementation.
+    Lib_CommonDlg,           ///< The LibSceCommonDialog implementation.
+    Lib_MsgDlg,              ///< The LibSceMsgDialog implementation.
+    Lib_AudioOut,            ///< The LibSceAudioOut implementation.
+    Lib_AudioIn,             ///< The LibSceAudioIn implementation.
+    Lib_Move,                ///< The LibSceMove implementation.
+    Lib_Net,                 ///< The LibSceNet implementation.
+    Lib_NetCtl,              ///< The LibSceNetCtl implementation.
+    Lib_SaveData,            ///< The LibSceSaveData implementation.
+    Lib_SaveDataDialog,      ///< The LibSceSaveDataDialog implementation.
+    Lib_Ssl,                 ///< The LibSceSsl implementation.
+    Lib_Ssl2,                ///< The LibSceSsl2 implementation.
+    Lib_Http,                ///< The LibSceHttp implementation.
+    Lib_Http2,               ///< The LibSceHttp2 implementation.
+    Lib_SysModule,           ///< The LibSceSysModule implementation
+    Lib_NpCommon,            ///< The LibSceNpCommon implementation
+    Lib_NpCommerce,          ///< The LibSceNpCommerce implementation
+    Lib_NpAuth,              ///< The LibSceNpAuth implementation
+    Lib_NpManager,           ///< The LibSceNpManager implementation
+    Lib_NpMatching2,         ///< The LibSceNpMatching2 implementation
+    Lib_NpSignaling,         ///< The LibSceNpSignaling implementation
+    Lib_NpScore,             ///< The LibSceNpScore implementation
+    Lib_NpTrophy,            ///< The LibSceNpTrophy implementation
+    Lib_NpTus,               ///< The LibSceNpTus implementation
+    Lib_NpUtility,           ///< The LibSceNpUtility implementation
+    Lib_NpWebApi,            ///< The LibSceWebApi implementation
+    Lib_NpWebApi2,           ///< The LibSceWebApi2 implementation
+    Lib_NpProfileDialog,     ///< The LibSceNpProfileDialog implementation
+    Lib_NpSnsFacebookDialog, ///< The LibSceNpSnsFacebookDialog implementation
+    Lib_Screenshot,          ///< The LibSceScreenshot implementation
+    Lib_AppContent,          ///< The LibSceAppContent implementation.
+    Lib_Rtc,                 ///< The LibSceRtc implementation.
+    Lib_Rudp,                ///< The LibSceRudp implementation.
+    Lib_DiscMap,             ///< The LibSceDiscMap implementation.
+    Lib_Png,                 ///< The LibScePng implementation.
+    Lib_Jpeg,                ///< The LibSceJpeg implementation.
+    Lib_PlayGo,              ///< The LibScePlayGo implementation.
+    Lib_PlayGoDialog,        ///< The LibScePlayGoDialog implementation.
+    Lib_Random,              ///< The LibSceRandom implementation.
+    Lib_Usbd,                ///< The LibSceUsbd implementation.
+    Lib_Ajm,                 ///< The LibSceAjm implementation.
+    Lib_ErrorDialog,         ///< The LibSceErrorDialog implementation.
+    Lib_ImeDialog,           ///< The LibSceImeDialog implementation.
+    Lib_InvitationDialog,    ///< The LibSceInvitationDialog implementation.
+    Lib_AvPlayer,            ///< The LibSceAvPlayer implementation.
+    Lib_Ngs2,                ///< The LibSceNgs2 implementation.
+    Lib_Audio3d,             ///< The LibSceAudio3d implementation.
+    Lib_Ime,                 ///< The LibSceIme implementation
+    Lib_GameLiveStreaming,   ///< The LibSceGameLiveStreaming implementation
+    Lib_Remoteplay,          ///< The LibSceRemotePlay implementation
+    Lib_SharePlay,           ///< The LibSceSharePlay implemenation
+    Lib_Fiber,               ///< The LibSceFiber implementation.
+    Lib_Vdec2,               ///< The LibSceVideodec2 implementation.
+    Lib_Vdecsw,              ///< The LibSceVdecsw implementation.
+    Lib_Videodec,            ///< The LibSceVideodec implementation.
+    Lib_VideoRecording,      ///< The LibSceVideoRecording implementation.
+    Lib_Voice,               ///< The LibSceVoice implementation.
+    Lib_RazorCpu,            ///< The LibRazorCpu implementation.
+    Lib_Mouse,               ///< The LibSceMouse implementation
+    Lib_Keyboard,            ///< The LibSceKeyboard implementation
+    Lib_WebBrowserDialog,    ///< The LibSceWebBrowserDialog implementation
+    Lib_NpParty,             ///< The LibSceNpParty implementation
+    Lib_NpPartner,           ///< The LibSceNpPartner implementation
+    Lib_Zlib,                ///< The LibSceZlib implementation.
+    Lib_Hmd,                 ///< The LibSceHmd implementation.
+    Lib_HmdSetupDialog,      ///< The LibSceHmdSetupDialog implementation.
+    Lib_SigninDialog,        ///< The LibSigninDialog implementation.
+    Lib_Camera,              ///< The LibCamera implementation.
+    Lib_CompanionHttpd,      ///< The LibCompanionHttpd implementation.
+    Lib_CompanionUtil,       ///< The LibCompanionUtil implementation.
+    Lib_ContentExport,       ///< The LibSceContentExport implementation.
+    Lib_VrTracker,           ///< The LibSceVrTracker implementation.
+    Lib_Font,                ///< The libSceFont implementation.
+    Lib_FontFt,              ///< The libSceFontFt implementation.
+    Frontend,                ///< Emulator UI
+    NpHandler,               ///< NpHandler shadNet manager
+    Render,                  ///< Video Core
+    Render_Vulkan,           ///< Vulkan backend
+    Render_Recompiler,       ///< Shader recompiler
+    ShadNet,                 ///< shadNet binary protocol client
+    ImGui,                   ///< ImGui
+    Loader,                  ///< ROM loader
+    Input,                   ///< Input emulation
+    Tty,                     ///< Debug output from emu
+    Count                    ///< Total number of logging classes
+};
+static constexpr int NUM_LOG_CLASSES = static_cast<int>(Class::Count);
+
+std::string_view NameOf(Class log_class);
+
+} // namespace Common::Log

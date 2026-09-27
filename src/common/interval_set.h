@@ -8,6 +8,7 @@
 #include <iterator>
 #include <vector>
 
+#include "common/small_vector.h"
 #include "common/types.h"
 
 struct Interval {
@@ -87,11 +88,10 @@ public:
 
     /// Returns immutable iterator to an interval that contains provided address.
     const_iterator Find(u64 addr) const {
-        auto it = std::ranges::upper_bound(intervals, addr, {}, &IV::start);
-        if (it == intervals.begin()) {
+        auto it = std::ranges::upper_bound(intervals, addr, {}, &IV::end);
+        if (it == intervals.end()) {
             return intervals.end();
         }
-        --it;
         return (it->start <= addr && addr < it->end) ? it : intervals.end();
     }
 
@@ -202,4 +202,64 @@ protected:
     }
 
     List intervals;
+};
+
+template <class IV>
+concept IsDomInterval = IsInterval<IV> && requires(const IV& a, const IV& b) {
+    { a.Dominant(b) } -> std::same_as<bool>;
+};
+
+template <class IV = Interval>
+    requires IsDomInterval<IV>
+struct DomIntervalList : public IntervalList<IV> {
+    void Add(auto&&... args) {
+        Add(IV{args...});
+    }
+
+    void Add(IV value) {
+        auto [first, last] = this->OverlapRun(value.start, value.end);
+        SmallVector<IV, 8> out;
+        if (first != last && first->start < value.start) {
+            out.emplace_back(first->SubRange(first->start, value.start));
+        }
+        u64 cur = value.start;
+        for (auto it = first; it != last; ++it) {
+            if (!it->Dominant(value)) {
+                continue;
+            }
+            const u64 a = std::max(it->start, value.start);
+            const u64 b = std::min(it->end, value.end);
+            if (a >= b) {
+                continue;
+            }
+            if (cur < a) {
+                out.emplace_back(value.SubRange(cur, a));
+            }
+            out.emplace_back(it->SubRange(a, b));
+            cur = b;
+        }
+        if (cur < value.end) {
+            out.emplace_back(value.SubRange(cur, value.end));
+        }
+        if (first != last) {
+            auto prev = std::prev(last);
+            if (prev->end > value.end) {
+                out.emplace_back(prev->SubRange(value.end, prev->end));
+            }
+        }
+        std::size_t w = 0;
+        for (std::size_t r = 1; r < out.size(); ++r) {
+            if (out[w].end == out[r].start && out[w].CanMergeWith(out[r])) {
+                out[w].end = out[r].end;
+            } else {
+                out[++w] = out[r];
+            }
+        }
+        if (!out.empty()) {
+            out.resize(w + 1);
+        }
+        const auto at = std::distance(this->intervals.begin(), first);
+        this->Splice(first, last, out.data(), out.size());
+        this->Coalesce(at, out.size());
+    }
 };

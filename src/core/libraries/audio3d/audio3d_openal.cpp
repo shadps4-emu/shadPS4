@@ -11,7 +11,9 @@
 #include <AL/alc.h>
 #include <alext.h>
 #include <efx.h>
+#include <fmt/format.h>
 #include <magic_enum/magic_enum.hpp>
+
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"

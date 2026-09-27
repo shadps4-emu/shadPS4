@@ -123,6 +123,7 @@
             , lib
             , cmake
             , ninja
+            , python3
             , pkg-config
             , libX11
             , libxrandr
@@ -176,6 +177,7 @@
                 cmake
                 ninja
                 pkg-config
+                python3
               ];
               buildInputs = [
                 boost

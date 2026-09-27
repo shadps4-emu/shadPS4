@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <unordered_map>
+#include <utility>
 
 #include <gtest/gtest.h>
 #include <half.hpp>
@@ -162,6 +163,33 @@ TEST_F(GcnTest, amd_barycentrics_use_native_pull_model) {
     EXPECT_EQ(info.frag_coord_count, 0U);
     EXPECT_EQ(info.bary_coord_khr_count, 0U);
     EXPECT_EQ(info.fmul_count, 0U);
+}
+
+TEST_F(GcnTest, interp_mov_selects_p10_p20_and_p0) {
+    const auto p10 = TranslateFragmentInterpMovSelector(0, false, false);
+    EXPECT_EQ(p10.attribute_indices, (std::vector<u32>{1U, 0U}));
+    EXPECT_EQ(p10.fsub_count, 1U);
+
+    const auto p20 = TranslateFragmentInterpMovSelector(1, false, false);
+    EXPECT_EQ(p20.attribute_indices, (std::vector<u32>{2U, 0U}));
+    EXPECT_EQ(p20.fsub_count, 1U);
+
+    const auto p0 = TranslateFragmentInterpMovSelector(2, false, false);
+    EXPECT_EQ(p0.attribute_indices, (std::vector<u32>{0U}));
+    EXPECT_EQ(p0.fsub_count, 0U);
+}
+
+TEST_F(GcnTest, interp_mov_uses_vertex_values_only_for_passthrough_inputs) {
+    for (const auto [flat_shade, offset5] :
+         {std::pair{false, false}, std::pair{true, false}, std::pair{false, true}}) {
+        const auto p10 = TranslateFragmentInterpMovSelector(0, flat_shade, offset5);
+        EXPECT_EQ(p10.attribute_indices, (std::vector<u32>{1U, 0U}));
+        EXPECT_EQ(p10.fsub_count, 1U);
+    }
+
+    const auto p10 = TranslateFragmentInterpMovSelector(0, true, true);
+    EXPECT_EQ(p10.attribute_indices, (std::vector<u32>{1U}));
+    EXPECT_EQ(p10.fsub_count, 0U);
 }
 
 // Example

@@ -190,6 +190,18 @@ int PS4_SYSV_ABI sys_setsockopt(OrbisNetId s, int level, int optname, const void
 }
 
 int PS4_SYSV_ABI sys_shutdown(OrbisNetId s, int how) {
+    auto file = FDTable::Instance()->GetSocket(s);
+    if (!file) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
+        LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
+        return -1;
+    }
+    LOG_DEBUG(Lib_Net, "s = {} ({}), how = {}", s, file->m_guest_name, how);
+    int returncode = file->socket->Shutdown(how);
+    if (returncode >= 0) {
+        return returncode;
+    }
+    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
     return -1;
 }
 

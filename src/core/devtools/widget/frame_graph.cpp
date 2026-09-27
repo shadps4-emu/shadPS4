@@ -98,6 +98,7 @@ void FrameGraph::Draw() {
              DebugState.gnm_frame_count.load());
         Text("Draw calls: %.0f   Dispatches: %.0f", DebugState.GetDrawCallsAvg(),
              DebugState.GetDispatchesAvg());
+        Text("Upload batches: %d", DebugState.num_batches_per_frame);
         Text("Game Res: %dx%d", DebugState.game_resolution.first,
              DebugState.game_resolution.second);
         Text("Output Res: %dx%d", DebugState.output_resolution.first,
