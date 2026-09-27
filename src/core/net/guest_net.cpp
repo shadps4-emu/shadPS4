@@ -840,7 +840,7 @@ NetResult SocketSendTo(s32 id, const void* buf, size_t len, int host_flags, bool
         // dropped, and ENOBUFS is not reported. A preserved
         // send abort still applies (sceNetSocketAbort).
         if (ConsumePendingAbort(*s, Side::Send)) {
-            return NetResult::Fail(kAbortedError);
+            return NetResult::Fail(AbortedError);
         }
         if (IsLimitedBroadcast(addr, addr_len) && !BroadcastAllowed(s->native)) {
             // FreeBSD's ip_output: EACCES without SO_BROADCAST. Hosts without a route for
