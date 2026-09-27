@@ -145,14 +145,39 @@ void MemoryManager::SetPrtArea(u32 id, VAddr address, u64 size) {
 }
 
 void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
+    constexpr u64 PageSize = 16_KB;
+    constexpr u64 PageMask = PageSize - 1;
     const auto& backing_pages = impl.BackingPages();
     while (size) {
         const u64 page = virtual_addr >> 14;
-        const u64 offset_in_page = virtual_addr % 16_KB;
-        const u64 copy_size = std::min<u64>(16_KB - offset_in_page, size);
+        const u64 offset_in_page = virtual_addr & PageMask;
+        u64 copy_size = std::min<u64>(PageSize - offset_in_page, size);
         if (auto* entry = backing_pages.find(page); entry && *entry) {
-            std::memcpy(dest, *entry + offset_in_page, copy_size);
+            const u8* source = *entry + offset_in_page;
+            u64 next_page = page + 1;
+            while (copy_size < size) {
+                const auto* next_entry = backing_pages.find(next_page);
+                if (!next_entry || !*next_entry ||
+                    *next_entry != source + copy_size) {
+                    break;
+                }
+                const u64 contiguous_size = std::min<u64>(PageSize, size - copy_size);
+                copy_size += contiguous_size;
+                ++next_page;
+            }
+            std::memcpy(dest, source, copy_size);
         } else {
+            u64 zero_size = copy_size;
+            u64 next_page = page + 1;
+            while (zero_size < size) {
+                const auto* next_entry = backing_pages.find(next_page);
+                if (next_entry && *next_entry) {
+                    break;
+                }
+                zero_size += std::min<u64>(PageSize, size - zero_size);
+                ++next_page;
+            }
+            copy_size = zero_size;
             std::memset(dest, 0, copy_size);
         }
         size -= copy_size;
