@@ -300,7 +300,9 @@ public:
     }
 
     s32 GetConfiguration(libusb_device_handle* dev, s32* config) override {
-        config = nullptr;
+        if (config) {
+            *config = 0;
+        }
         return LIBUSB_SUCCESS;
     }
 
@@ -340,17 +342,17 @@ public:
         return 0;
     }
     s32 GetMaxPacketSize(libusb_device* dev, u8 endpoint) override {
-        libusb_device_descriptor* desc = nullptr;
+        libusb_device_descriptor desc{};
 
-        int r = GetDeviceDescriptor(dev, desc);
+        int r = GetDeviceDescriptor(dev, &desc);
         if (r < LIBUSB_SUCCESS) {
             return LIBUSB_ERROR_OTHER;
         }
-        return desc->bMaxPacketSize0;
+        return desc.bMaxPacketSize0;
     }
 
     s32 OpenDevice(libusb_device* dev, libusb_device_handle** dev_handle) override {
-        auto* _dev_handle = static_cast<UsbDeviceHandle*>(calloc(1, sizeof(libusb_device_handle*)));
+        auto* _dev_handle = static_cast<UsbDeviceHandle*>(calloc(1, sizeof(UsbDeviceHandle)));
         if (!_dev_handle) {
             return LIBUSB_ERROR_NO_MEM;
         }
