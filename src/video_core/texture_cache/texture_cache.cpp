@@ -114,10 +114,11 @@ void TextureCache::DownloadImageMemory(ImageId image_id, DownloadMemoryFlags fla
     ASSERT(copy_size <= image.info.guest_size);
     const auto download =
         runtime.GetStagingPool().Request(copy_size, MemoryType::HostCached, 16, !is_sync);
-    
+
     tile_manager.TileImage(image, buffer_copies, download.buffer, download.offset);
 
-    const auto write_data = [this, image_addr, copy_size, download, invalidate_buffer_cache, is_sync] {
+    const auto write_data = [this, image_addr, copy_size, download, invalidate_buffer_cache,
+                             is_sync] {
         Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(image_addr), download.mapped,
                                                   copy_size);
         if (invalidate_buffer_cache) {

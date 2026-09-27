@@ -184,8 +184,9 @@ void ImageInfo::UpdateSize() {
             if (macro) {
                 ASSERT(!props.is_block);
                 bool downgrade_to_micro;
-                std::tie(mip_info.pitch, mip_info.height, mip_info.size, downgrade_to_micro) = ImageSizeMacroTiled(
-                    mip_w, mip_h, thickness, num_bits, num_samples, tile_mode, mip, alt_tile);
+                std::tie(mip_info.pitch, mip_info.height, mip_info.size, downgrade_to_micro) =
+                    ImageSizeMacroTiled(mip_w, mip_h, thickness, num_bits, num_samples, tile_mode,
+                                        mip, alt_tile);
                 if (downgrade_to_micro) {
                     micro_tiled_mips |= 1u << mip;
                 }

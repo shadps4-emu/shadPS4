@@ -343,7 +343,8 @@ constexpr std::tuple<u32, u32, size_t, bool> ImageSizeMacroTiled(u32 pitch, u32 
     }
 
     if (downgrade_to_micro) {
-        const auto [pitch_aligned, height_aligned, log_sz] = ImageSizeMicroTiled(pitch, height, thickness, bpp, num_samples);
+        const auto [pitch_aligned, height_aligned, log_sz] =
+            ImageSizeMicroTiled(pitch, height, thickness, bpp, num_samples);
         return {pitch_aligned, height_aligned, log_sz, downgrade_to_micro};
     }
 
