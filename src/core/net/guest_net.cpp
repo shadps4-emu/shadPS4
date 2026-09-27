@@ -635,7 +635,33 @@ s32 ToOrbisReturn(NetResult result) {
 }
 
 // Sockets
+namespace {
+
+bool IsLimitedBroadcast(const sockaddr* addr, socklen_t len) {
+    if (addr == nullptr || addr->sa_family != AF_INET || len < sizeof(sockaddr_in)) {
+        return false;
+    }
+    return reinterpret_cast<const sockaddr_in*>(addr)->sin_addr.s_addr == htonl(INADDR_BROADCAST);
+}
+
+bool BroadcastAllowed(Host::NativeSocket s) {
+    int on = 0;
+    socklen_t len = sizeof(on);
+    // Windows may write a 1-byte BOOL; `on` starts at 0, so either size reads right.
+    return getsockopt(s, SOL_SOCKET, SO_BROADCAST, reinterpret_cast<char*>(&on), &len) == 0 &&
+           on != 0;
+}
+
+} // namespace
+
 NetResult SocketCreate(int family, int type, int protocol) {
+    // A protocol that does not go with the type: EPROTONOSUPPORT, as FreeBSD's socreate()
+    // says. Hosts disagree (macOS answers EPROTOTYPE), so this is decided here.
+    if ((family == AF_INET || family == AF_INET6) && protocol != 0 &&
+        ((type == SOCK_STREAM && protocol != IPPROTO_TCP) ||
+         (type == SOCK_DGRAM && protocol != IPPROTO_UDP))) {
+        return NetResult::Fail(Error::ProtoNoSupport);
+    }
     Error e;
     const Host::NativeSocket native = Host::CreateSocket(family, type, protocol, &e);
     if (native == Host::InvalidSocket) {
@@ -811,10 +837,15 @@ NetResult SocketSendTo(s32 id, const void* buf, size_t len, int host_flags, bool
     }
     if (s->type != SOCK_STREAM) {
         // UDP and RAW never wait on the PS4: with the host buffer full the datagram is
-        // dropped, and ENOBUFS is not reported (Net Library Overview, section 5). A preserved
+        // dropped, and ENOBUFS is not reported. A preserved
         // send abort still applies (sceNetSocketAbort).
         if (ConsumePendingAbort(*s, Side::Send)) {
-            return NetResult::Fail(AbortedError);
+            return NetResult::Fail(kAbortedError);
+        }
+        if (IsLimitedBroadcast(addr, addr_len) && !BroadcastAllowed(s->native)) {
+            // FreeBSD's ip_output: EACCES without SO_BROADCAST. Hosts without a route for
+            // 255.255.255.255 (macOS, for one) fail earlier with EHOSTUNREACH instead.
+            return NetResult::Fail(Error::Acces);
         }
         const auto io = Host::SendTo(s->native, buf, len, host_flags, addr, addr_len);
         if (io.error == Error::WouldBlock || io.error == Error::NoBufs) {
@@ -822,7 +853,7 @@ NetResult SocketSendTo(s32 id, const void* buf, size_t len, int host_flags, bool
         }
         if (io.error == Error::NotConn && addr == nullptr) {
             // No destination on an unconnected datagram socket: EDESTADDRREQ as on BSD and
-            // Linux; Windows says ENOTCONN.
+            // Linux,Windows says ENOTCONN.
             return NetResult::Fail(Error::DestAddrReq);
         }
         return io.error == Error::Ok ? NetResult::Ok(io.value) : NetResult::Fail(io.error);
