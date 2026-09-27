@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <mutex>
 #include <SDL3/SDL_init.h>
 #include <cmrc/cmrc.hpp>
-#include <fmt/format.h>
 #include <imgui.h>
 #include <imgui/imgui_std.h>
 #include <queue>
@@ -41,7 +41,7 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
         trophy_icon = RefCountedTexture::DecodePngFile(trophyIconPath);
     } else {
         LOG_ERROR(Lib_NpTrophy, "Couldnt load trophy icon at {}",
-                  fmt::UTF(trophyIconPath.u8string()));
+                  FormatterDetail::UTF(trophyIconPath.u8string()));
     }
 
     std::string pathString = "src/resources/";

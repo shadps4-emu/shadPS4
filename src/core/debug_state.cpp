@@ -136,7 +136,7 @@ void DebugStateImpl::PushQueueDump(QueueDump dump) {
                 waiting_reg_dumps.emplace(addr, &frame);
                 waiting_reg_dumps_dbg.emplace(
                     addr,
-                    fmt::format("#{} h({}) queue {} {} {}",
+                    std::format("#{} h({}) queue {} {} {}",
                                 frame_dump_list.size() - gnm_frame_dump_request_count, addr,
                                 magic_enum::enum_name(dump.type), dump.submit_num, dump.num2));
             }

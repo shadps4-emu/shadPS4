@@ -4,9 +4,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <ctime>
+#include <format>
 #include <string>
 #include <thread>
-#include <fmt/format.h>
 
 #include "core/libraries/fiber/fiber.h"
 #include "core/libraries/kernel/threads/pthread.h"
@@ -255,7 +255,7 @@ std::string GetCurrentThreadName() {
     using namespace Libraries::Kernel;
     if (g_curthread && !g_curthread->name.empty()) {
         if (g_curthread->tcb->tcb_fiber) {
-            return fmt::format("{}@@{}", g_curthread->name,
+            return std::format("{}@@{}", g_curthread->name,
                                g_curthread->tcb->tcb_fiber->current_fiber->name);
         }
         return g_curthread->name;

@@ -4,12 +4,11 @@
 #include <algorithm>
 #include <ctime>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <set>
 #include <sstream>
-#include <fmt/core.h>
-#include <fmt/xchar.h>
 #include <hwinfo/hwinfo.h>
 
 #include "common/debug.h"
@@ -564,23 +563,23 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     game_info.trophy_index_map =
         ExtractTrophies("/app0/sce_sys/npbind.dat", "/app0/sce_sys/trophy");
 
-    std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
+    std::string game_title = std::format("{} - {} <{}>", id, title, app_version);
     std::string window_title = "";
     std::string remote_url(Common::g_scm_remote_url);
     std::string remote_host = Common::GetRemoteNameFromLink();
     if (Common::g_is_release) {
         if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
-            window_title = fmt::format("shadPS4 v{} | {}", Common::g_version, game_title);
+            window_title = std::format("shadPS4 v{} | {}", Common::g_version, game_title);
         } else {
             window_title =
-                fmt::format("shadPS4 {}/v{} | {}", remote_host, Common::g_version, game_title);
+                std::format("shadPS4 {}/v{} | {}", remote_host, Common::g_version, game_title);
         }
     } else {
         if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
-            window_title = fmt::format("shadPS4 v{} {} {} | {}", Common::g_version,
+            window_title = std::format("shadPS4 v{} {} {} | {}", Common::g_version,
                                        Common::g_scm_branch, Common::g_scm_desc, game_title);
         } else {
-            window_title = fmt::format("shadPS4 v{} {}/{} {} | {}", Common::g_version, remote_host,
+            window_title = std::format("shadPS4 v{} {}/{} {} | {}", Common::g_version, remote_host,
                                        Common::g_scm_branch, Common::g_scm_desc, game_title);
         }
     }
@@ -769,7 +768,7 @@ void Emulator::Restart(std::filesystem::path eboot_path,
     const auto guest_args = std::find(args.begin(), args.end(), "--");
     args.insert(guest_args, {"--wait-for-pid", std::to_string(Debugger::GetCurrentPid())});
 
-    LOG_INFO(Common, "Relaunching the emulator with args: {}", fmt::join(args, " "));
+    LOG_INFO(Common, "Relaunching the emulator with args: {}", std::join(args, " "));
     Common::Log::Shutdown();
 
     auto& ipc = IPC::Instance();
@@ -877,7 +876,7 @@ void Emulator::UpdatePlayTime(const std::string_view serial) {
     int minutes = (accumulated_seconds % 3600) / 60;
     int seconds = accumulated_seconds % 60;
 
-    std::string playTimeSaved = fmt::format("{:d}:{:02d}:{:02d}", hours, minutes, seconds);
+    std::string playTimeSaved = std::format("{:d}:{:02d}:{:02d}", hours, minutes, seconds);
 
     const std::time_t last_time_played = std::time(nullptr);
 
@@ -887,7 +886,7 @@ void Emulator::UpdatePlayTime(const std::string_view serial) {
         std::istringstream iss(l);
         std::string s;
         if (iss >> s && s == serial) {
-            outfile << fmt::format("{} {} {}\n", serial, playTimeSaved, last_time_played);
+            outfile << std::format("{} {} {}\n", serial, playTimeSaved, last_time_played);
             lineUpdated = true;
         } else {
             outfile << l << "\n";
@@ -895,7 +894,7 @@ void Emulator::UpdatePlayTime(const std::string_view serial) {
     }
 
     if (!lineUpdated) {
-        outfile << fmt::format("{} {} {}\n", serial, playTimeSaved, last_time_played);
+        outfile << std::format("{} {} {}\n", serial, playTimeSaved, last_time_played);
     }
 
     LOG_INFO(Loader, "Playing time for {}: {} {}", serial, playTimeSaved, last_time_played);

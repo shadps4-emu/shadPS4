@@ -224,7 +224,7 @@ RegView::RegView() {
 void RegView::SetData(DebugStateType::RegDump _data, const std::string& base_title, u32 batch_id) {
     this->data = std::move(_data);
     this->batch_id = batch_id;
-    this->title = fmt::format("{}/Batch {}", base_title, batch_id);
+    this->title = std::format("{}/Batch {}", base_title, batch_id);
     // clear cache
     shader_decomp.clear();
     if (data.is_compute) {

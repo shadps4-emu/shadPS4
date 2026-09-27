@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <stop_token>
 #include <thread>
-#include <fmt/format.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
@@ -164,7 +164,8 @@ void AdjustVol() {
 
 static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_token& stop) {
     {
-        const auto thread_name = fmt::format("shadPS4:AudioOutputThread:{}", fmt::ptr(port.get()));
+        const auto thread_name =
+            std::format("shadPS4:AudioOutputThread:{}", static_cast<const void*>(port.get()));
         Common::SetCurrentThreadName(thread_name.c_str());
     }
 
@@ -526,13 +527,14 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
     LOG_DEBUG(Lib_AudioOut,
               "called, handle={:#x}, state={}, output={}, channel={}, volume={}, "
               "rerouteCounter={}, flag={}",
-              handle, fmt::ptr(state), state->output, state->channel, state->volume,
+              handle, static_cast<const void*>(state), state->output, state->channel, state->volume,
               state->rerouteCounter, state->flag);
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
-    LOG_TRACE(Lib_AudioOut, "(STUBBED) called, handle={:#x}, ptr={}", handle, fmt::ptr(ptr));
+    LOG_TRACE(Lib_AudioOut, "(STUBBED) called, handle={:#x}, ptr={}", handle,
+              static_cast<const void*>(ptr));
 
     if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
@@ -591,10 +593,11 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
 
 s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
     if (param) {
-        LOG_TRACE(Lib_AudioOut, "(STUBBED) called, param={}, num={}", fmt::ptr(param), num);
+        LOG_TRACE(Lib_AudioOut, "(STUBBED) called, param={}, num={}",
+                  static_cast<const void*>(param), num);
         for (u32 i = 0; i < num; i++) {
             LOG_TRACE(Lib_AudioOut, "  [{}] handle={:#x}, ptr={}", i, param[i].handle,
-                      fmt::ptr(param[i].ptr));
+                      static_cast<const void*>(param[i].ptr));
         }
     } else {
         LOG_TRACE(Lib_AudioOut, "(STUBBED) called, param=nullptr, num={}", num);

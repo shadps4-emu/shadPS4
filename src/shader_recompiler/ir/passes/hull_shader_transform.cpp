@@ -240,7 +240,7 @@ private:
                 u32 counter = inst->Flags<u32>();
                 inst->SetFlags<u32>(counter + inc);
                 ASSERT_MSG(!propagateError, "LDS instruction {} accesses ambiguous attribute type",
-                           fmt::ptr(use.user));
+                           static_cast<const void*>(use.user));
                 // Stop here
                 return;
             }
@@ -476,7 +476,7 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                     } else {
                         ASSERT(output_kind == AttributeRegion::PatchConst);
                         ASSERT_MSG(addr.IsImmediate(), "patch addr non imm, inst {}",
-                                   fmt::ptr(addr.Inst()));
+                                   static_cast<const void*>(addr.Inst()));
                         ir.SetPatch(IR::PatchGeneric((addr.U32() >> 2) + off_dw), data_component);
                     }
                 };

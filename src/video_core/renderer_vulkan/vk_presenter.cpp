@@ -201,7 +201,7 @@ static std::vector<std::filesystem::path> BuildScreenshotPaths(const ScreenshotK
     paths.reserve(count);
     const auto stamp_str = stamp.str();
     for (u32 i = 0; i < count; ++i) {
-        paths.emplace_back(screenshots_dir / fmt::format("{}_{}_{}_{:06}.png", game_id, stamp_str,
+        paths.emplace_back(screenshots_dir / std::format("{}_{}_{}_{:06}.png", game_id, stamp_str,
                                                          suffix, first_sequence + i));
     }
 

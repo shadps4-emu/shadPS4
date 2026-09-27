@@ -3,7 +3,7 @@
 
 #include <chrono>
 #include <cstring>
-#include <fmt/format.h>
+#include <format>
 #include "common/alignment.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
@@ -472,10 +472,10 @@ static void DispatchThreadMain() {
                      SignalingEventName(dispatch.event_type), dispatch.delay_ms);
             LOG_DEBUG(Lib_NpSignaling,
                       "INVOKE signaling_cb={} ctxId={} connId={} event={}({}) errorCode={} arg={}",
-                      fmt::ptr(reinterpret_cast<void*>(dispatch.callback)), dispatch.ctx_id,
-                      dispatch.conn_id, dispatch.event_type,
+                      static_cast<const void*>(reinterpret_cast<void*>(dispatch.callback)),
+                      dispatch.ctx_id, dispatch.conn_id, dispatch.event_type,
                       SignalingEventName(dispatch.event_type), dispatch.error_code,
-                      fmt::ptr(dispatch.callback_arg));
+                      static_cast<const void*>(dispatch.callback_arg));
             dispatch.callback(static_cast<u32>(dispatch.ctx_id), static_cast<u32>(dispatch.conn_id),
                               dispatch.event_type, dispatch.error_code, dispatch.callback_arg);
         }

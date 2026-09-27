@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/format.h>
+#include <format>
 #include "common/io_file.h"
 #include "common/string_util.h"
 #include "common/types.h"
@@ -49,7 +49,7 @@ void SymbolsResolver::DebugDump(const std::filesystem::path& file_name) {
         const auto id = symbol.symbol;
         const auto aeronid = AeroLib::FindByNid(id.name.c_str());
         const auto nid_name = aeronid ? aeronid->name : "UNK";
-        f.WriteString(fmt::format("0x{:<20x} {:<16} {:<60} {:<30} {:<2} {:<30} {:<10}\n",
+        f.WriteString(std::format("0x{:<20x} {:<16} {:<60} {:<30} {:<2} {:<30} {:<10}\n",
                                   symbol.virtual_address, id.name, nid_name, id.library,
                                   id.library_version, id.module, SymbolTypeToS(id.type)));
     }

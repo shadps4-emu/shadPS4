@@ -91,7 +91,7 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
         // Mount the content so we can check its param.sfo
         mnt->Mount(entry.path(), mount_point->data, true);
 
-        auto psf_path = fmt::format("{}/sce_sys/param.sfo", mount_point->data);
+        auto psf_path = std::format("{}/sce_sys/param.sfo", mount_point->data);
         auto psf_handle = mnt->Open(psf_path, false);
         if (psf_handle == nullptr) {
             // This content doesn't have a param.sfo

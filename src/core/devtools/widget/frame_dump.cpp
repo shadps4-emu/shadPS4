@@ -3,7 +3,7 @@
 
 #include <cstdio>
 #include <ctime>
-#include <fmt/chrono.h>
+#include <format>
 #include <imgui.h>
 #include <magic_enum/magic_enum.hpp>
 
@@ -53,7 +53,7 @@ FrameDumpViewer::FrameDumpViewer(const FrameDump& _frame_dump)
         if (!cmd.data.empty()) {
             has_queue_type[static_cast<s32>(cmd.type)] = true;
         }
-        const auto fname = fmt::format("F{} {}_{:02}_{:02}", frame_dump->frame_id,
+        const auto fname = std::format("F{} {}_{:02}_{:02}", frame_dump->frame_id,
                                        magic_enum::enum_name(cmd.type), cmd.submit_num, cmd.num2);
         cmd_list_viewer.emplace_back(frame_dump.get(), cmd.data, cmd.base_addr, fname);
         if (cmd.type == QueueType::dcb && cmd.submit_num == 0 && cmd.num2 == 0) {
@@ -120,16 +120,16 @@ void FrameDumpViewer::Draw() {
         if (SmallButton("Dump cmd")) {
             auto time = std::time(nullptr);
             auto now_time = *std::localtime(&time);
-            const auto fname = fmt::format("{:%F %H-%M-%S} {}_{}_{}.bin", now_time,
+            const auto fname = std::format("{:%F %H-%M-%S} {}_{}_{}.bin", now_time,
                                            magic_enum::enum_name(selected_queue_type),
                                            selected_submit_num, selected_queue_num2);
             Common::FS::IOFile file(fname, Common::FS::FileAccessMode::Create);
             const auto& data = frame_dump->queues[selected_cmd].data;
             if (file.IsOpen()) {
-                DebugState.ShowDebugMessage(fmt::format("Dumping cmd as {}", fname));
+                DebugState.ShowDebugMessage(std::format("Dumping cmd as {}", fname));
                 file.Write(data);
             } else {
-                DebugState.ShowDebugMessage(fmt::format("Failed to save {}", fname));
+                DebugState.ShowDebugMessage(std::format("Failed to save {}", fname));
                 LOG_ERROR(Core, "Failed to open file {}", fname);
             }
         }

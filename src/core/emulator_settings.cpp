@@ -477,9 +477,10 @@ bool EmulatorSettingsImpl::TransferSettings() {
         std::ifstream ifs;
         ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ifs.open(path, std::ios_base::binary);
-        og_data = toml::parse(ifs, std::string{fmt::UTF(path.filename().u8string()).data});
+        og_data =
+            toml::parse(ifs, std::string{FormatterDetail::UTF(path.filename().u8string()).data});
     } catch (std::exception& ex) {
-        fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
+        std::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return false;
     }
     auto setFromToml = [&]<typename T>(Setting<T>& n, toml::value const& t, std::string k) {

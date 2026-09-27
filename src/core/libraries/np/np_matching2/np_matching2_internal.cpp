@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <format>
 #include <utility>
-#include <fmt/format.h>
 
 #include "common/logging/log.h"
 #include "common/thread.h"
@@ -1326,7 +1326,7 @@ void FireEvent(const PendingEvent& ev) {
             LOG_DEBUG(Lib_NpMatching2,
                       "callback REQUEST ctx={} reqId={} event={:#x} err={:#x} data={}", ev.ctx_id,
                       ev.req_id, static_cast<u16>(ev.req_event), ev.error_code,
-                      fmt::ptr(ev.request_data));
+                      static_cast<const void*>(ev.request_data));
             ev.request_cb(ev.ctx_id, ev.req_id, ev.req_event, ev.error_code, ev.request_data,
                           ev.request_cb_arg);
         } else {
@@ -1353,7 +1353,7 @@ void FireEvent(const PendingEvent& ev) {
         if (ctx->room_event_callback) {
             LOG_DEBUG(Lib_NpMatching2, "callback ROOM_EVENT ctx={} room={} event={:#x} data={}",
                       ev.ctx_id, ev.room_id, static_cast<u16>(ev.room_event),
-                      fmt::ptr(ev.room_event_data));
+                      static_cast<const void*>(ev.room_event_data));
             ctx->room_event_callback(ev.ctx_id, ev.room_id, ev.room_event, ev.room_event_data,
                                      ctx->room_event_callback_arg);
         } else {
@@ -1366,7 +1366,7 @@ void FireEvent(const PendingEvent& ev) {
         if (ctx->lobby_event_callback) {
             LOG_DEBUG(Lib_NpMatching2, "callback LOBBY_EVENT ctx={} lobby={} event={:#x} data={}",
                       ev.ctx_id, ev.lobby_id, static_cast<u16>(ev.lobby_event),
-                      fmt::ptr(ev.lobby_event_data));
+                      static_cast<const void*>(ev.lobby_event_data));
             ctx->lobby_event_callback(ev.ctx_id, ev.lobby_id, ev.lobby_event, ev.lobby_event_data,
                                       ctx->lobby_event_callback_arg);
         } else {

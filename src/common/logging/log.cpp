@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdlib>
+#include <format>
 #include <iostream>
+#include <iterator>
 #include <string>
-#include <fmt/std.h>
 #include <spdlog/sinks/async_sink.h>
 #include <spdlog/sinks/dup_filter_sink.h>
 
@@ -57,13 +58,13 @@ static Level FromSpdlog(spdlog::level l) {
 }
 
 void VLog(Class log_class, Level level, const char* file, int line, const char* func,
-          fmt::string_view format, fmt::format_args args) {
+          std::string_view format, std::format_args args) {
     const auto& logger = ALL_LOGGERS[static_cast<size_t>(log_class)];
     if (!logger) {
         return;
     }
-    fmt::memory_buffer msg;
-    fmt::vformat_to(fmt::appender(msg), format, args);
+    std::string msg;
+    std::vformat_to(std::back_inserter(msg), format, args);
     const std::string_view fn = std::string_view(func) == "operator()" ? "lambda" : func;
     logger->log(ToSpdlog(level), "[{}] <{}> ({}) {}:{} {}: {}", NameOf(log_class),
                 NameOf(ToSpdlog(level)), Common::GetCurrentThreadName(),

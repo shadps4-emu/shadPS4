@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/format.h>
+#include <format>
 #include "common/arch.h"
 #include "common/assert.h"
 #include "common/decoder.h"
@@ -275,11 +275,11 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
                 return;
             }
             UNREACHABLE_MSG("Unhandled access violation at code address {}: {} address {}",
-                            fmt::ptr(code_address),
+                            static_cast<const void*>(code_address),
                             is_write  ? "Write to"
                             : is_exec ? "Executed from"
                                       : "Read from",
-                            fmt::ptr(info->si_addr));
+                            static_cast<const void*>(info->si_addr));
         }
         break;
     }
@@ -294,7 +294,8 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
             return;
         }
 
-        UNREACHABLE_MSG("Unhandled signal {} at code address {}", sig, fmt::ptr(code_address));
+        UNREACHABLE_MSG("Unhandled signal {} at code address {}", sig,
+                        static_cast<const void*>(code_address));
     }
     case SIGSLEEP: {
         // Sleep thread until signal is received again
@@ -310,7 +311,8 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         }
         break;
     default:
-        UNREACHABLE_MSG("Unhandled signal {} at code address {}", sig, fmt::ptr(code_address));
+        UNREACHABLE_MSG("Unhandled signal {} at code address {}", sig,
+                        static_cast<const void*>(code_address));
     }
 }
 

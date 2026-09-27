@@ -5,10 +5,10 @@
 
 #include <condition_variable>
 #include <filesystem>
+#include <format>
 #include <mutex>
 #include <thread>
 #include <utility>
-#include <fmt/format.h>
 
 #include "boost/icl/concept/interval.hpp"
 #include "common/elf_info.h"

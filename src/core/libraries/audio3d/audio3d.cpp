@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <format>
 #include <vector>
-#include <fmt/format.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
@@ -463,7 +463,7 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
                                                const OrbisAudio3dAttribute* attribute_array) {
     LOG_DEBUG(Lib_Audio3d,
               "called, port_id = {}, object_id = {}, num_attributes = {}, attribute_array = {}",
-              port_id, object_id, num_attributes, fmt::ptr(attribute_array));
+              port_id, object_id, num_attributes, static_cast<const void*>(attribute_array));
 
     if (!state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");

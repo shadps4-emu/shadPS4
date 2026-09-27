@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include <boost/container/static_vector.hpp>
-#include <fmt/format.h>
-#include <fmt/ranges.h>
 
 #include "common/assert.h"
 #include "common/debug.h"
@@ -82,7 +81,7 @@ std::unordered_map<vk::Format, vk::FormatProperties3> GetFormatProperties(
 }
 
 std::string GetReadableVersion(u32 version) {
-    return fmt::format("{}.{}.{}", VK_VERSION_MAJOR(version), VK_VERSION_MINOR(version),
+    return std::format("{}.{}.{}", VK_VERSION_MAJOR(version), VK_VERSION_MINOR(version),
                        VK_VERSION_PATCH(version));
 }
 
@@ -191,12 +190,12 @@ std::string Instance::GetDriverVersionName() {
         const u32 minor = (version >> 14) & 0x0ff;
         const u32 secondary = (version >> 6) & 0x0ff;
         const u32 tertiary = version & 0x003f;
-        return fmt::format("{}.{}.{}.{}", major, minor, secondary, tertiary);
+        return std::format("{}.{}.{}.{}", major, minor, secondary, tertiary);
     }
     if (driver_id == vk::DriverId::eIntelProprietaryWindows) {
         const u32 major = version >> 14;
         const u32 minor = version & 0x3fff;
-        return fmt::format("{}.{}", major, minor);
+        return std::format("{}.{}", major, minor);
     }
     return GetReadableVersion(version);
 }
@@ -656,9 +655,9 @@ void Instance::CollectDeviceParameters() {
 
     const std::string model_name{GetModelName()};
     const std::string driver_version = GetDriverVersionName();
-    const std::string driver_name = fmt::format("{} {}", vendor_name, driver_version);
+    const std::string driver_name = std::format("{} {}", vendor_name, driver_version);
     const std::string api_version = GetReadableVersion(properties.apiVersion);
-    const std::string extensions = fmt::format("{}", fmt::join(available_extensions, ", "));
+    const std::string extensions = std::format("{}", std::join(available_extensions, ", "));
 
     LOG_INFO(Render_Vulkan, "GPU_Vendor: {}", vendor_name);
     LOG_INFO(Render_Vulkan, "GPU_Model: {}", model_name);

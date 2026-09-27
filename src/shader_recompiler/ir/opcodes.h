@@ -5,7 +5,7 @@
 
 #include <algorithm>
 #include <array>
-#include <fmt/format.h>
+#include <format>
 #include <magic_enum/magic_enum.hpp>
 #include "common/types.h"
 #include "shader_recompiler/ir/type.h"
@@ -99,13 +99,13 @@ constexpr u8 NUM_ARGS[]{
 } // namespace Shader::IR
 
 template <>
-struct fmt::formatter<Shader::IR::Opcode> {
+struct std::formatter<Shader::IR::Opcode> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     template <typename FormatContext>
     auto format(const Shader::IR::Opcode op, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "{}", Shader::IR::NameOf(op));
+        return std::format_to(ctx.out(), "{}", Shader::IR::NameOf(op));
     }
 };
 

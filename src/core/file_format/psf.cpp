@@ -88,16 +88,16 @@ bool PSF::Open(const std::vector<u8>& psf_buffer) {
         const u8* data = psf_data + header.data_table_offset + raw_entry.data_offset;
 
         switch (entry.param_fmt) {
-        case PSFEntryFmt::Binary: {
+        case PSFEntrystd::Binary: {
             std::vector<u8> value(raw_entry.param_len);
             std::memcpy(value.data(), data, raw_entry.param_len);
             map_binaries.emplace(i, std::move(value));
         } break;
-        case PSFEntryFmt::Text: {
+        case PSFEntrystd::Text: {
             std::string c_str{reinterpret_cast<const char*>(data)};
             map_strings.emplace(i, std::move(c_str));
         } break;
-        case PSFEntryFmt::Integer: {
+        case PSFEntrystd::Integer: {
             ASSERT_MSG(raw_entry.param_len == sizeof(s32), "PSF integer entry size mismatch");
             s32 integer = *(s32*)data;
             map_integers.emplace(i, integer);
@@ -168,20 +168,20 @@ void PSF::Encode(std::vector<u8>& psf_buffer) const {
         s32 additional_padding = s32(raw_entry.param_max_len);
 
         switch (entry.param_fmt) {
-        case PSFEntryFmt::Binary: {
+        case PSFEntrystd::Binary: {
             const auto& value = map_binaries.at(i);
             raw_entry.param_len = value.size();
             additional_padding -= s32(raw_entry.param_len);
             std::ranges::copy(value, std::back_inserter(psf_buffer));
         } break;
-        case PSFEntryFmt::Text: {
+        case PSFEntrystd::Text: {
             const auto& value = map_strings.at(i);
             raw_entry.param_len = value.size() + 1;
             additional_padding -= s32(raw_entry.param_len);
             std::ranges::copy(value, std::back_inserter(psf_buffer));
             psf_buffer.push_back(0); // NULL terminator
         } break;
-        case PSFEntryFmt::Integer: {
+        case PSFEntrystd::Integer: {
             const auto& value = map_integers.at(i);
             raw_entry.param_len = sizeof(s32);
             additional_padding -= s32(raw_entry.param_len);
@@ -202,7 +202,7 @@ std::optional<std::span<const u8>> PSF::GetBinary(std::string_view key) const {
     if (it == entry_list.end()) {
         return {};
     }
-    ASSERT(it->param_fmt == PSFEntryFmt::Binary);
+    ASSERT(it->param_fmt == PSFEntrystd::Binary);
     return std::span{map_binaries.at(index)};
 }
 
@@ -211,7 +211,7 @@ std::optional<std::string_view> PSF::GetString(std::string_view key) const {
     if (it == entry_list.end()) {
         return {};
     }
-    ASSERT(it->param_fmt == PSFEntryFmt::Text);
+    ASSERT(it->param_fmt == PSFEntrystd::Text);
     return std::string_view{map_strings.at(index)};
 }
 
@@ -220,7 +220,7 @@ std::optional<s32> PSF::GetInteger(std::string_view key) const {
     if (it == entry_list.end()) {
         return {};
     }
-    ASSERT(it->param_fmt == PSFEntryFmt::Integer);
+    ASSERT(it->param_fmt == PSFEntrystd::Integer);
     return map_integers.at(index);
 }
 
@@ -232,7 +232,7 @@ void PSF::AddBinary(std::string key, std::vector<u8> value, bool update) {
         return;
     }
     if (exist) {
-        ASSERT_MSG(it->param_fmt == PSFEntryFmt::Binary, "PSF: Change format is not supported");
+        ASSERT_MSG(it->param_fmt == PSFEntrystd::Binary, "PSF: Change format is not supported");
         it->max_len = get_max_size(key, value.size());
         map_binaries.at(index) = std::move(value);
         return;
@@ -240,7 +240,7 @@ void PSF::AddBinary(std::string key, std::vector<u8> value, bool update) {
     Entry& entry = entry_list.emplace_back();
     entry.max_len = get_max_size(key, value.size());
     entry.key = std::move(key);
-    entry.param_fmt = PSFEntryFmt::Binary;
+    entry.param_fmt = PSFEntrystd::Binary;
     map_binaries.emplace(entry_list.size() - 1, std::move(value));
 }
 
@@ -258,7 +258,7 @@ void PSF::AddString(std::string key, std::string value, bool update) {
         return;
     }
     if (exist) {
-        ASSERT_MSG(it->param_fmt == PSFEntryFmt::Text, "PSF: Change format is not supported");
+        ASSERT_MSG(it->param_fmt == PSFEntrystd::Text, "PSF: Change format is not supported");
         it->max_len = get_max_size(key, value.size() + 1);
         map_strings.at(index) = std::move(value);
         return;
@@ -266,7 +266,7 @@ void PSF::AddString(std::string key, std::string value, bool update) {
     Entry& entry = entry_list.emplace_back();
     entry.max_len = get_max_size(key, value.size() + 1);
     entry.key = std::move(key);
-    entry.param_fmt = PSFEntryFmt::Text;
+    entry.param_fmt = PSFEntrystd::Text;
     map_strings.emplace(entry_list.size() - 1, std::move(value));
 }
 
@@ -278,14 +278,14 @@ void PSF::AddInteger(std::string key, s32 value, bool update) {
         return;
     }
     if (exist) {
-        ASSERT_MSG(it->param_fmt == PSFEntryFmt::Integer, "PSF: Change format is not supported");
+        ASSERT_MSG(it->param_fmt == PSFEntrystd::Integer, "PSF: Change format is not supported");
         it->max_len = sizeof(s32);
         map_integers.at(index) = value;
         return;
     }
     Entry& entry = entry_list.emplace_back();
     entry.key = std::move(key);
-    entry.param_fmt = PSFEntryFmt::Integer;
+    entry.param_fmt = PSFEntrystd::Integer;
     entry.max_len = sizeof(s32);
     map_integers.emplace(entry_list.size() - 1, value);
 }

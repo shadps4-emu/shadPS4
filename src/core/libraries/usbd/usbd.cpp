@@ -6,7 +6,7 @@
 #include "core/libraries/libs.h"
 #include "usbd.h"
 
-#include <fmt/format.h>
+#include <format>
 #include <libusb.h>
 
 #include "core/emulator_settings.h"

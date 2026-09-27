@@ -126,7 +126,8 @@ void SetOutputDir(const std::filesystem::path& path, const std::string& prefix) 
         return;
     }
     LOG_WARNING(Common, "RenderDoc capture path: {}", (path / prefix).string());
-    rdoc_api->SetCaptureFilePathTemplate(fmt::UTF((path / prefix).u8string()).data.data());
+    rdoc_api->SetCaptureFilePathTemplate(
+        FormatterDetail::UTF((path / prefix).u8string()).data.data());
 }
 
 bool IsRenderDocLoaded() {

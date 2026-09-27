@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
-#include <fmt/format.h>
+#include <format>
 #include <httplib.h>
 #include "common/elf_info.h"
 #include "common/logging/log.h"
@@ -118,7 +118,7 @@ void NpHandler::Initialize() {
                             host, port, probe.server_version, ShadNet::SHAD_PROTOCOL_VERSION);
                 ImGui::ShadNetNotify::Push(
                     ImGui::ShadNetNotify::Kind::Info,
-                    fmt::format("shadNet protocol version mismatch (server v{}, emulator v{}). "
+                    std::format("shadNet protocol version mismatch (server v{}, emulator v{}). "
                                 "Please update shadPS4. Online features are disabled for this "
                                 "session.",
                                 probe.server_version, ShadNet::SHAD_PROTOCOL_VERSION));
@@ -130,7 +130,7 @@ void NpHandler::Initialize() {
                             host, port);
                 ImGui::ShadNetNotify::Push(
                     ImGui::ShadNetNotify::Kind::Info,
-                    fmt::format("shadNet server ({}:{}) uses an incompatible protocol. Online "
+                    std::format("shadNet server ({}:{}) uses an incompatible protocol. Online "
                                 "features are disabled for this session.",
                                 host, port));
                 break;
@@ -141,7 +141,7 @@ void NpHandler::Initialize() {
                             host, port);
                 ImGui::ShadNetNotify::Push(
                     ImGui::ShadNetNotify::Kind::Info,
-                    fmt::format("shadNet server ({}:{}) is offline. Online features are disabled "
+                    std::format("shadNet server ({}:{}) is offline. Online features are disabled "
                                 "for this session.",
                                 host, port));
                 break;
@@ -247,7 +247,7 @@ bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, cons
                       server_ver, ShadNet::SHAD_PROTOCOL_VERSION);
             ImGui::ShadNetNotify::Push(
                 ImGui::ShadNetNotify::Kind::Info,
-                fmt::format("shadNet protocol version mismatch (server v{}, emulator v{}). "
+                std::format("shadNet protocol version mismatch (server v{}, emulator v{}). "
                             "Please update shadPS4. Online features are disabled for this "
                             "session.",
                             server_ver, ShadNet::SHAD_PROTOCOL_VERSION));

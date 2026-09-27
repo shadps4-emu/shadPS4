@@ -104,7 +104,7 @@ public:
         return *this != InputID();
     }
     std::string ToString() {
-        return fmt::format("({}. {}: {:x})", gamepad_id, input_type_names[(u8)type], sdl_id);
+        return std::format("({}. {}: {:x})", gamepad_id, input_type_names[(u8)type], sdl_id);
     }
 };
 
@@ -428,11 +428,11 @@ public:
     std::string ToString() {
         switch (KeyCount()) {
         case 1:
-            return fmt::format("({})", keys[0].ToString());
+            return std::format("({})", keys[0].ToString());
         case 2:
-            return fmt::format("({}, {})", keys[0].ToString(), keys[1].ToString());
+            return std::format("({}, {})", keys[0].ToString(), keys[1].ToString());
         case 3:
-            return fmt::format("({}, {}, {})", keys[0].ToString(), keys[1].ToString(),
+            return std::format("({}, {}, {})", keys[0].ToString(), keys[1].ToString(),
                                keys[2].ToString());
         default:
             return "Empty";
@@ -480,7 +480,7 @@ public:
         return button != o.button || axis != o.axis;
     }
     std::string ToString() const {
-        return fmt::format("({}, {}, {})", (s32)button, (int)axis, old_param);
+        return std::format("({}, {}, {})", (s32)button, (int)axis, old_param);
     }
     inline bool IsButton() const {
         return axis == SDL_GAMEPAD_AXIS_INVALID && button != SDL_GAMEPAD_BUTTON_INVALID;

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <fmt/format.h>
+#include <format>
 
 #include "common/assert.h"
 #include "common/logging/log.h"
@@ -46,7 +46,7 @@ void SetObjectName(vk::Device device, const HandleType& handle, std::string_view
 template <VulkanHandleType HandleType, typename... Args>
 void SetObjectName(vk::Device device, const HandleType& handle, const char* format,
                    const Args&... args) {
-    const std::string debug_name = fmt::vformat(format, fmt::make_format_args(args...));
+    const std::string debug_name = std::vformat(format, std::make_format_args(args...));
     SetObjectName(device, handle, debug_name);
 }
 

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include <shared_mutex>
-#include <fmt/format.h>
 #include "audioin_backend.h"
 #include "audioin_error.h"
 #include "common/logging/log.h"
@@ -191,7 +191,7 @@ int PS4_SYSV_ABI sceAudioInClose(s32 handle) {
 }
 
 int PS4_SYSV_ABI sceAudioInInput(s32 handle, void* dest) {
-    LOG_TRACE(Lib_AudioIn, "called, handle={:#x}, dest={}", handle, fmt::ptr(dest));
+    LOG_TRACE(Lib_AudioIn, "called, handle={:#x}, dest={}", handle, static_cast<const void*>(dest));
 
     int port_id = GetPortId(handle);
     if (port_id < 0) {

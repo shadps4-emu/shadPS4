@@ -21,7 +21,7 @@ std::string NameOf(Patch patch) {
         return "TessellationLodInteriorV";
     default:
         const u32 index = u32(patch) - u32(Patch::Component0);
-        return fmt::format("Component{}", index);
+        return std::format("Component{}", index);
     }
 }
 

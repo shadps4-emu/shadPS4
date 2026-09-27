@@ -1087,7 +1087,7 @@ CmdListViewer::CmdListViewer(DebugStateType::FrameDump* _frame_dump,
     cmdb_addr = (uintptr_t)cmd_list.data();
     cmdb_size = cmd_list.size() * sizeof(u32);
 
-    cmdb_view_name = fmt::format("[GFX] Command buffer {}###cmdview_hex_{}", this->name, cmdb_addr);
+    cmdb_view_name = std::format("[GFX] Command buffer {}###cmdview_hex_{}", this->name, cmdb_addr);
     cmdb_view.Open = false;
     cmdb_view.ReadOnly = true;
 

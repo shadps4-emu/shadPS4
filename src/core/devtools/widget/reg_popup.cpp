@@ -145,7 +145,7 @@ RegPopup::RegPopup() {
 void RegPopup::SetData(const std::string& base_title, AmdGpu::ColorBuffer color_buffer, u32 cb_id) {
     this->type = DataType::Color;
     this->color = color_buffer;
-    this->title = fmt::format("{}/CB #{}", base_title, cb_id);
+    this->title = std::format("{}/CB #{}", base_title, cb_id);
 }
 
 void RegPopup::SetData(const std::string& base_title, AmdGpu::DepthBuffer depth_buffer,
@@ -153,7 +153,7 @@ void RegPopup::SetData(const std::string& base_title, AmdGpu::DepthBuffer depth_
     this->type = DataType::Depth;
     this->depth.buffer = depth_buffer;
     this->depth.control = depth_control;
-    this->title = fmt::format("{}/Depth", base_title);
+    this->title = std::format("{}/Depth", base_title);
 }
 
 void RegPopup::SetPos(ImVec2 pos, bool auto_resize) {

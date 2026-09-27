@@ -167,7 +167,7 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
         .pData = spec_data.data(),
     };
 
-    const auto module_name = fmt::format("{}_{} {}", magic_enum::enum_name(info.tile_mode),
+    const auto module_name = std::format("{}_{} {}", magic_enum::enum_name(info.tile_mode),
                                          info.num_bits, is_tiler ? "tiler" : "detiler");
     LOG_INFO(Render_Vulkan, "Creating tiling pipeline {}", module_name);
     Vulkan::SetObjectName(device, module, module_name);

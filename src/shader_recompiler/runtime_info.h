@@ -326,12 +326,12 @@ struct RuntimeInfo {
 } // namespace Shader
 
 template <>
-struct fmt::formatter<Shader::HwStage> {
+struct std::formatter<Shader::HwStage> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     auto format(const Shader::HwStage stage, format_context& ctx) const {
         constexpr static std::array names = {"fs", "vs", "gs", "es", "hs", "ls", "cs"};
-        return fmt::format_to(ctx.out(), "{}", names[static_cast<size_t>(stage)]);
+        return std::format_to(ctx.out(), "{}", names[static_cast<size_t>(stage)]);
     }
 };

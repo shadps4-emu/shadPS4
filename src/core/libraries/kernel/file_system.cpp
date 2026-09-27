@@ -1296,7 +1296,8 @@ static void FD_ZERO_POSIX(fd_set_posix* set) {
 s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* writefds,
                               fd_set_posix* exceptfds, OrbisKernelTimeval* timeout) {
     LOG_DEBUG(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
-              nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
+              nfds, static_cast<const void*>(readfds), static_cast<const void*>(writefds),
+              static_cast<const void*>(exceptfds), static_cast<const void*>(timeout));
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
 
@@ -1465,7 +1466,8 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
 s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
                               OrbisKernelTimeval* timeout) {
     LOG_DEBUG(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
-              nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
+              nfds, static_cast<const void*>(readfds), static_cast<const void*>(writefds),
+              static_cast<const void*>(exceptfds), static_cast<const void*>(timeout));
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     fd_set read_host, write_host, except_host;

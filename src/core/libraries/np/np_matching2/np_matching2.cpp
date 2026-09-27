@@ -3,8 +3,8 @@
 
 #include <chrono>
 #include <cstring>
+#include <format>
 #include <memory>
-#include <fmt/format.h>
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
@@ -114,7 +114,8 @@ int PS4_SYSV_ABI sceNpMatching2CreateJoinRoomA(OrbisNpMatching2ContextId ctxId,
                                                OrbisNpMatching2CreateJoinRoomRequestA* request,
                                                OrbisNpMatching2RequestOptParam* requestOpt,
                                                OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -345,7 +346,7 @@ int PS4_SYSV_ABI sceNpMatching2GetWorldInfoList(OrbisNpMatching2ContextId ctxId,
                                                 OrbisNpMatching2RequestOptParam* requestOpt,
                                                 OrbisNpMatching2RequestId* requestId) {
     LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, request.serverId = {}, requestOpt = {}", ctxId,
-             request ? request->serverId : 0xFFFF, fmt::ptr(requestOpt));
+             request ? request->serverId : 0xFFFF, static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -373,7 +374,8 @@ int PS4_SYSV_ABI sceNpMatching2LeaveRoom(OrbisNpMatching2ContextId ctxId,
                                          OrbisNpMatching2LeaveRoomRequest* request,
                                          OrbisNpMatching2RequestOptParam* requestOpt,
                                          OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -400,7 +402,8 @@ int PS4_SYSV_ABI sceNpMatching2SearchRoom(OrbisNpMatching2ContextId ctxId,
                                           OrbisNpMatching2SearchRoomRequest* request,
                                           OrbisNpMatching2RequestOptParam* requestOpt,
                                           OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -428,7 +431,8 @@ int PS4_SYSV_ABI sceNpMatching2SetUserInfo(OrbisNpMatching2ContextId ctxId,
                                            OrbisNpMatching2SetUserInfoRequest* request,
                                            OrbisNpMatching2RequestOptParam* requestOpt,
                                            OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -455,7 +459,8 @@ int PS4_SYSV_ABI sceNpMatching2SetUserInfo(OrbisNpMatching2ContextId ctxId,
 int PS4_SYSV_ABI sceNpMatching2SendRoomMessage(OrbisNpMatching2ContextId ctxId, void* request,
                                                OrbisNpMatching2RequestOptParam* requestOpt,
                                                OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -482,7 +487,8 @@ int PS4_SYSV_ABI sceNpMatching2SendRoomMessage(OrbisNpMatching2ContextId ctxId, 
 int PS4_SYSV_ABI sceNpMatching2SetRoomDataExternal(
     OrbisNpMatching2ContextId ctxId, OrbisNpMatching2SetRoomDataExternalRequest* request,
     OrbisNpMatching2RequestOptParam* requestOpt, OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -509,7 +515,8 @@ int PS4_SYSV_ABI sceNpMatching2SetRoomDataExternal(
 int PS4_SYSV_ABI sceNpMatching2SetRoomDataInternal(
     OrbisNpMatching2ContextId ctxId, OrbisNpMatching2SetRoomDataInternalRequest* request,
     OrbisNpMatching2RequestOptParam* requestOpt, OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -698,7 +705,8 @@ int PS4_SYSV_ABI sceNpMatching2GetLobbyMemberDataInternalList() {
 int PS4_SYSV_ABI sceNpMatching2GetRoomDataExternalList(
     OrbisNpMatching2ContextId ctxId, OrbisNpMatching2GetRoomDataExternalListRequest* request,
     OrbisNpMatching2RequestOptParam* requestOpt, OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -725,7 +733,8 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomDataExternalList(
 int PS4_SYSV_ABI sceNpMatching2GetRoomDataInternal(
     OrbisNpMatching2ContextId ctxId, OrbisNpMatching2GetRoomDataInternalRequest* request,
     OrbisNpMatching2RequestOptParam* requestOpt, OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -766,7 +775,8 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomDataInternal(
 int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataExternalList(
     OrbisNpMatching2ContextId ctxId, OrbisNpMatching2GetRoomMemberDataExternalListRequest* request,
     OrbisNpMatching2RequestOptParam* requestOpt, OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -799,7 +809,8 @@ int PS4_SYSV_ABI sceNpMatching2GetUserInfoListA(OrbisNpMatching2ContextId ctxId,
                                                 OrbisNpMatching2GetUserInfoListRequest* request,
                                                 OrbisNpMatching2RequestOptParam* requestOpt,
                                                 OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -827,7 +838,8 @@ int PS4_SYSV_ABI sceNpMatching2GetUserInfoList(OrbisNpMatching2ContextId ctxId,
                                                OrbisNpMatching2GetUserInfoListRequest* request,
                                                OrbisNpMatching2RequestOptParam* requestOpt,
                                                OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -867,7 +879,8 @@ int PS4_SYSV_ABI sceNpMatching2JoinRoomA(OrbisNpMatching2ContextId ctxId,
                                          OrbisNpMatching2JoinRoomRequestA* request,
                                          OrbisNpMatching2RequestOptParam* requestOpt,
                                          OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
@@ -893,7 +906,8 @@ int PS4_SYSV_ABI sceNpMatching2KickoutRoomMember(OrbisNpMatching2ContextId ctxId
                                                  OrbisNpMatching2KickoutRoomMemberRequest* request,
                                                  OrbisNpMatching2RequestOptParam* requestOpt,
                                                  OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId,
+             static_cast<const void*>(requestOpt));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");

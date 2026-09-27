@@ -492,29 +492,29 @@ template <RegT Reg>
 } // namespace Shader::IR
 
 template <>
-struct fmt::formatter<Shader::IR::ScalarReg> {
+struct std::formatter<Shader::IR::ScalarReg> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     auto format(Shader::IR::ScalarReg reg, format_context& ctx) const {
-        return fmt::format_to(ctx.out(), "SGPR{}", static_cast<u32>(reg));
+        return std::format_to(ctx.out(), "SGPR{}", static_cast<u32>(reg));
     }
 };
 template <>
-struct fmt::formatter<Shader::IR::VectorReg> {
+struct std::formatter<Shader::IR::VectorReg> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     auto format(Shader::IR::VectorReg reg, format_context& ctx) const {
-        return fmt::format_to(ctx.out(), "VGPR{}", static_cast<u32>(reg));
+        return std::format_to(ctx.out(), "VGPR{}", static_cast<u32>(reg));
     }
 };
 template <>
-struct fmt::formatter<Shader::IR::VirtualReg> {
+struct std::formatter<Shader::IR::VirtualReg> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     auto format(Shader::IR::VirtualReg reg, format_context& ctx) const {
-        return fmt::format_to(ctx.out(), "REG{}_{}", reg.index, reg.type);
+        return std::format_to(ctx.out(), "REG{}_{}", reg.index, reg.type);
     }
 };

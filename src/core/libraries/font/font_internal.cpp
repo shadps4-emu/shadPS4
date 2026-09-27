@@ -49,12 +49,12 @@ std::uint8_t g_external_fonts_ctx_stub{};
 u32 g_device_cache_stub{};
 
 std::string FormatNamedParams(std::initializer_list<NamedParam> params) {
-    fmt::memory_buffer buffer;
-    fmt::format_to(std::back_inserter(buffer), "params:\n");
+    std::string buffer;
+    std::format_to(std::back_inserter(buffer), "params:\n");
     for (const auto& p : params) {
-        fmt::format_to(std::back_inserter(buffer), "{}: {}\n", p.name, p.value);
+        std::format_to(std::back_inserter(buffer), "{}: {}\n", p.name, p.value);
     }
-    return fmt::to_string(buffer);
+    return std::to_string(buffer);
 }
 
 bool HasSfntTables(const std::vector<unsigned char>& bytes);
@@ -2365,7 +2365,7 @@ std::string ReportSystemFaceRequest(FontState& st, Libraries::Font::OrbisFontHan
     if (!st.system_requested) {
         st.system_requested = true;
         const auto configured = EmulatorSettings.GetFontsDir();
-        return fmt::format("SystemFace: handle={} requested internal font but fontsPath ('{}') "
+        return std::format("SystemFace: handle={} requested internal font but fontsPath ('{}') "
                            "could not be loaded",
                            static_cast<const void*>(handle), configured.string());
     }

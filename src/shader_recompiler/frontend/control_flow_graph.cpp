@@ -384,22 +384,22 @@ void CFG::RemoveUnreachableBlocks() {
 std::string CFG::Dot() const {
     int node_uid{0};
 
-    const auto name_of = [](const Block& block) { return fmt::format("\"{:#x}\"", block.begin); };
+    const auto name_of = [](const Block& block) { return std::format("\"{:#x}\"", block.begin); };
 
     std::string dot{"digraph shader {\n"};
-    dot += fmt::format("\tsubgraph cluster_{} {{\n", 0);
-    dot += fmt::format("\t\tnode [style=filled];\n");
+    dot += std::format("\tsubgraph cluster_{} {{\n", 0);
+    dot += std::format("\t\tnode [style=filled];\n");
     for (const Block& block : blocks) {
         const std::string name{name_of(block)};
         const auto add_branch = [&](Block* branch, bool add_label) {
-            dot += fmt::format("\t\t{}->{}", name, name_of(*branch));
+            dot += std::format("\t\t{}->{}", name, name_of(*branch));
             if (add_label && block.cond != IR::Condition::True &&
                 block.cond != IR::Condition::False) {
-                dot += fmt::format(" [label=\"{}\"]", block.cond);
+                dot += std::format(" [label=\"{}\"]", block.cond);
             }
             dot += '\n';
         };
-        dot += fmt::format("\t\t{};\n", name);
+        dot += std::format("\t\t{};\n", name);
         switch (block.end_class) {
         case EndClass::Branch:
             if (block.cond != IR::Condition::False) {
@@ -410,9 +410,9 @@ std::string CFG::Dot() const {
             }
             break;
         case EndClass::Exit:
-            dot += fmt::format("\t\t{}->N{};\n", name, node_uid);
+            dot += std::format("\t\t{}->N{};\n", name, node_uid);
             dot +=
-                fmt::format("\t\tN{} [label=\"Exit\"][shape=square][style=stripped];\n", node_uid);
+                std::format("\t\tN{} [label=\"Exit\"][shape=square][style=stripped];\n", node_uid);
             ++node_uid;
             break;
         }
@@ -421,9 +421,9 @@ std::string CFG::Dot() const {
     if (blocks.empty()) {
         dot += "Start;\n";
     } else {
-        dot += fmt::format("\tStart -> {};\n", name_of(*blocks.begin()));
+        dot += std::format("\tStart -> {};\n", name_of(*blocks.begin()));
     }
-    dot += fmt::format("\tStart [shape=diamond];\n");
+    dot += std::format("\tStart [shape=diamond];\n");
     dot += "}\n";
     return dot;
 }

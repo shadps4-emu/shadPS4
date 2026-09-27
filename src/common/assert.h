@@ -24,17 +24,17 @@ namespace Common::Detail {
 
 template <typename... Args>
 SHAD_NO_INLINE void AssertFail(const char* file, int line, const char* func,
-                               fmt::format_string<Args...> format, Args... args) {
+                               std::format_string<Args...> format, Args... args) {
     Common::Log::VLog(Common::Log::Class::Debug, Common::Log::Level::Critical, file, line, func,
-                      format, fmt::make_format_args(args...));
+                      format, std::make_format_args(args...));
     assert_fail_impl();
 }
 
 template <typename... Args>
 [[noreturn]] SHAD_NO_INLINE void UnreachableFail(const char* file, int line, const char* func,
-                                                 fmt::format_string<Args...> format, Args... args) {
+                                                 std::format_string<Args...> format, Args... args) {
     Common::Log::VLog(Common::Log::Class::Debug, Common::Log::Level::Critical, file, line, func,
-                      format, fmt::make_format_args(args...));
+                      format, std::make_format_args(args...));
     unreachable_impl();
 }
 

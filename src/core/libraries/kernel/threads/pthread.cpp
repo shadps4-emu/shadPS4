@@ -86,7 +86,7 @@ void PS4_SYSV_ABI posix_pthread_exit(void* status) {
 
     /* Check if this thread is already in the process of exiting: */
     ASSERT_MSG(!curthread->cancelling, "Thread {} has called pthread_exit from a destructor",
-               fmt::ptr(curthread));
+               static_cast<const void*>(curthread));
 
     /* Flag this thread as exiting. */
     curthread->cancelling = true;
@@ -336,7 +336,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     if (name && memory->IsValidMapping(reinterpret_cast<VAddr>(name))) {
         new_thread->name = name;
     } else {
-        new_thread->name = fmt::format("Thread{}", new_thread->tid.load());
+        new_thread->name = std::format("Thread{}", new_thread->tid.load());
     }
 
     ASSERT(new_thread->attr.suspend == 0);

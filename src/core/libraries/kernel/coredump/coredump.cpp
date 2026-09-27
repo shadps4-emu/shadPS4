@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/format.h>
+#include <format>
 
 #include "common/logging/log.h"
 #include "core/libraries/kernel/coredump/coredump.h"
@@ -18,7 +18,7 @@ s32 g_sdk_ver{};
 s32 PS4_SYSV_ABI sceCoredumpRegisterCoredumpHandler(OrbisCoredumpHandler handler, u64 stack_size,
                                                     void* common) {
     LOG_WARNING(Lib_Kernel, "(STUBBED) called, handler = {}, stack_size = {:#x}, common = {}",
-                fmt::ptr(handler), stack_size, fmt::ptr(common));
+                static_cast<const void*>(handler), stack_size, static_cast<const void*>(common));
     if (g_coredump_handler) {
         LOG_ERROR(Lib_Kernel, "Coredump handler is already registered");
         return ORBIS_COREDUMP_ERROR_ALREADY_REGISTERED;

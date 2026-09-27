@@ -40,7 +40,8 @@ static void CopyShareReadWrite(const std::filesystem::path& from, const std::fil
     Common::FS::IOFile src{from, Common::FS::FileAccessMode::Read, Common::FS::FileType::BinaryFile,
                            Common::FS::FileShareFlag::ShareReadWrite};
     if (!src.IsOpen()) {
-        LOG_ERROR(Lib_SaveData, "Backup: failed to open source {}", fmt::UTF(from.u8string()));
+        LOG_ERROR(Lib_SaveData, "Backup: failed to open source {}",
+                  FormatterDetail::UTF(from.u8string()));
         return;
     }
     const u64 size = src.GetSize();
@@ -53,7 +54,8 @@ static void CopyShareReadWrite(const std::filesystem::path& from, const std::fil
     Common::FS::IOFile dst{to, Common::FS::FileAccessMode::Create, Common::FS::FileType::BinaryFile,
                            Common::FS::FileShareFlag::ShareReadWrite};
     if (!dst.IsOpen()) {
-        LOG_ERROR(Lib_SaveData, "Backup: failed to open destination {}", fmt::UTF(to.u8string()));
+        LOG_ERROR(Lib_SaveData, "Backup: failed to open destination {}",
+                  FormatterDetail::UTF(to.u8string()));
         return;
     }
     if (size > 0) {
@@ -146,15 +148,15 @@ static void BackupThreadBody() {
         g_backup_status = WorkerStatus::Running;
 
         LOG_INFO(Lib_SaveData, "Backing up the following directory: {}",
-                 fmt::UTF(req.save_path.u8string()));
+                 FormatterDetail::UTF(req.save_path.u8string()));
         try {
             backup(req.save_path);
         } catch (const std::filesystem::filesystem_error& err) {
-            LOG_ERROR(Lib_SaveData, "Failed to backup {}: {}", fmt::UTF(req.save_path.u8string()),
-                      err.what());
+            LOG_ERROR(Lib_SaveData, "Failed to backup {}: {}",
+                      FormatterDetail::UTF(req.save_path.u8string()), err.what());
         }
         LOG_DEBUG(Lib_SaveData, "Backing up the following directory: {} finished",
-                  fmt::UTF(req.save_path.u8string()));
+                  FormatterDetail::UTF(req.save_path.u8string()));
         {
             std::scoped_lock lk{g_backup_queue_mutex};
             g_backup_queue.front().done = true;
@@ -205,7 +207,8 @@ bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::str
 
     if (g_backup_status != WorkerStatus::Waiting && g_backup_status != WorkerStatus::Running) {
         LOG_ERROR(Lib_SaveData, "Called backup while status is {}. Backup request to {} ignored",
-                  magic_enum::enum_name(g_backup_status.load()), fmt::UTF(save_path.u8string()));
+                  magic_enum::enum_name(g_backup_status.load()),
+                  FormatterDetail::UTF(save_path.u8string()));
         return false;
     }
     {
@@ -229,7 +232,7 @@ bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::str
 }
 
 bool Restore(const std::filesystem::path& save_path) {
-    LOG_INFO(Lib_SaveData, "Restoring backup for {}", fmt::UTF(save_path.u8string()));
+    LOG_INFO(Lib_SaveData, "Restoring backup for {}", FormatterDetail::UTF(save_path.u8string()));
     std::unique_lock lk{g_backup_running_mutex};
     if (!fs::exists(save_path) || !fs::exists(save_path / backup_dir)) {
         return false;

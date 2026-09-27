@@ -101,7 +101,8 @@ public:
     const MntPair* GetMountFromHostPath(const std::string& host_path) {
         std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
-            return host_path.starts_with(std::string{fmt::UTF(mount.host_path.u8string()).data});
+            return host_path.starts_with(
+                std::string{FormatterDetail::UTF(mount.host_path.u8string()).data});
         });
         return it == m_mnt_pairs.end() ? nullptr : &*it;
     }

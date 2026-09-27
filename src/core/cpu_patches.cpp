@@ -6,6 +6,7 @@
 #include <bitset>
 #include <climits>
 #include <cstring>
+#include <format>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -14,7 +15,6 @@
 #include <unordered_set>
 #include <vector>
 #include <Zydis/Zydis.h>
-#include <fmt/format.h>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
 #include "common/alignment.h"
@@ -588,7 +588,7 @@ static bool HandleTrampolineError(PatchModule* module, const Xbyak::Error& error
     }
     if (!module->trampoline_exhausted) {
         LOG_WARNING(Core, "Patch trampoline space exhausted for module at {}",
-                    fmt::ptr(module->start));
+                    static_cast<const void*>(module->start));
         module->trampoline_exhausted = true;
     }
     return true;
@@ -670,14 +670,15 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
                     ASSERT_MSG(instruction.length >= patch_size,
                                "Instruction {} with length {} is too short to replace at: {}",
                                ZydisMnemonicGetString(instruction.mnemonic), instruction.length,
-                               fmt::ptr(code));
+                               static_cast<const void*>(code));
 
                     // Fill remaining space with nops.
                     patch_gen.nop(instruction.length - patch_size);
 
                     module->patched.insert(code);
                     LOG_DEBUG(Core, "Patched instruction '{}' at: {}",
-                              ZydisMnemonicGetString(instruction.mnemonic), fmt::ptr(code));
+                              ZydisMnemonicGetString(instruction.mnemonic),
+                              static_cast<const void*>(code));
                     return std::make_pair(true, instruction.length);
                 }
             }
@@ -778,7 +779,7 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
         const auto status =
             Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
         LOG_ERROR(Core, "Unhandled illegal instruction at code address {}: {}",
-                  fmt::ptr(code_address),
+                  static_cast<const void*>(code_address),
                   ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
                                        : "Failed to decode");
         return false;
@@ -825,7 +826,7 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
             LOG_TRACE(Core,
                       "extrq at {} with length {} and index {} is bigger than 64, "
                       "undefined behavior",
-                      fmt::ptr(code_address), length, index);
+                      static_cast<const void*>(code_address), length, index);
         }
 
         lowQWordDst >>= index;
@@ -865,7 +866,7 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
             LOG_TRACE(Core,
                       "insertq at {} with length {} and index {} is bigger than 64, "
                       "undefined behavior",
-                      fmt::ptr(code_address), length, index);
+                      static_cast<const void*>(code_address), length, index);
         }
 
         lowQWordSrc &= mask;

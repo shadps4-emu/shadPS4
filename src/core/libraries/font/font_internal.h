@@ -30,7 +30,7 @@
 #include <utility>
 #include <vector>
 
-#include <fmt/format.h>
+#include <format>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -60,17 +60,17 @@ std::string DescribeValue(const T& value) {
     if constexpr (std::is_same_v<Clean, bool>) {
         return value ? "true" : "false";
     } else if constexpr (std::is_pointer_v<Clean>) {
-        return fmt::format("{}", reinterpret_cast<const void*>(value));
+        return std::format("{}", reinterpret_cast<const void*>(value));
     } else if constexpr (std::is_floating_point_v<Clean>) {
-        return fmt::format("{:.6g}", value);
+        return std::format("{:.6g}", value);
     } else if constexpr (std::is_enum_v<Clean>) {
         using Underlying = std::underlying_type_t<Clean>;
         return DescribeValue(static_cast<Underlying>(value));
     } else if constexpr (std::is_same_v<Clean, std::string> ||
                          std::is_same_v<Clean, std::string_view>) {
-        return fmt::format("\"{}\"", value);
+        return std::format("\"{}\"", value);
     } else {
-        return fmt::format("{}", value);
+        return std::format("{}", value);
     }
 }
 
@@ -158,18 +158,18 @@ ParamRecord MakeParamRecord(std::string name, T&& value) {
 }
 
 inline std::string FormatParamRecords(const std::vector<ParamRecord>& records) {
-    fmt::memory_buffer buffer;
-    fmt::format_to(std::back_inserter(buffer), "params:\n");
+    std::string buffer;
+    std::format_to(std::back_inserter(buffer), "params:\n");
     for (const auto& entry : records) {
         const bool changed = entry.initial != entry.current;
         if (changed) {
-            fmt::format_to(std::back_inserter(buffer), "{}: {} -> {}\n", entry.name, entry.initial,
+            std::format_to(std::back_inserter(buffer), "{}: {} -> {}\n", entry.name, entry.initial,
                            entry.current);
         } else {
-            fmt::format_to(std::back_inserter(buffer), "{}: {}\n", entry.name, entry.initial);
+            std::format_to(std::back_inserter(buffer), "{}: {}\n", entry.name, entry.initial);
         }
     }
-    return fmt::to_string(buffer);
+    return std::to_string(buffer);
 }
 
 template <typename... Args>
@@ -181,7 +181,7 @@ std::string formatParamsImpl(const char* arg_names, Args&&... args) {
     auto append_record = [&](auto&& value) {
         std::string name = (index < names.size() && !names[index].empty())
                                ? std::move(names[index])
-                               : fmt::format("arg{}", index);
+                               : std::format("arg{}", index);
         ++index;
         records.push_back(MakeParamRecord(std::move(name), std::forward<decltype(value)>(value)));
     };

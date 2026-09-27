@@ -183,10 +183,10 @@ void Linker::Execute(const std::vector<std::string>& args) {
         for (const auto& entry : std::filesystem::directory_iterator(custom_mod_directory)) {
             if (entry.is_regular_file()) {
                 LOG_INFO(Core_Linker, "Loading custom module: {}",
-                         fmt::UTF(entry.path().u8string()));
+                         FormatterDetail::UTF(entry.path().u8string()));
                 if (LoadAndStartModule(entry.path(), 0, nullptr, nullptr) == -1) {
                     LOG_ERROR(Core_Linker, "Failed to load custom module: {}",
-                              fmt::UTF(entry.path().u8string()));
+                              FormatterDetail::UTF(entry.path().u8string()));
                 }
             }
         }

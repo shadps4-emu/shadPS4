@@ -15,7 +15,6 @@
 
     in
     {
-      formatter.x86_64-linux = pkgsLinux.nixpkgs-fmt;
       devShells.x86_64-linux.default =
         let
           shell =
@@ -136,7 +135,6 @@
             , boost
             , cli11
             , ffmpeg
-            , fmt
             , freetype
             , glslang
             , magic-enum
@@ -183,7 +181,6 @@
                 boost
                 cli11
                 ffmpeg
-                fmt
                 freetype
                 glslang
                 magic-enum

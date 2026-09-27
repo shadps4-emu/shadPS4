@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/chrono.h>
+#include <format>
 #include <imgui.h>
 #include <magic_enum/magic_enum.hpp>
 
@@ -33,13 +33,13 @@ static ::Core::FileSys::MntPoints* g_mnt =
 static std::string SpaceSizeToString(size_t size) {
     std::string size_str;
     if (size > 1024 * 1024 * 1024) { // > 1GB
-        size_str = fmt::format("{:.2f} GB", double(size / 1024 / 1024) / 1024.0f);
+        size_str = std::format("{:.2f} GB", double(size / 1024 / 1024) / 1024.0f);
     } else if (size > 1024 * 1024) { // > 1MB
-        size_str = fmt::format("{:.2f} MB", double(size / 1024) / 1024.0f);
+        size_str = std::format("{:.2f} MB", double(size / 1024) / 1024.0f);
     } else if (size > 1024) { // > 1KB
-        size_str = fmt::format("{:.2f} KB", double(size) / 1024.0f);
+        size_str = std::format("{:.2f} KB", double(size) / 1024.0f);
     } else {
-        size_str = fmt::format("{} B", size);
+        size_str = std::format("{} B", size);
     }
     return size_str;
 }
@@ -99,7 +99,7 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             param_sfo.Open(param_sfo_path);
 
             auto last_write = std::chrono::system_clock::to_time_t(param_sfo.GetLastWrite());
-            std::string date_str = fmt::format("{:%d %b, %Y %R}", *std::localtime(&last_write));
+            std::string date_str = std::format("{:%d %b, %Y %R}", *std::localtime(&last_write));
 
             size_t size = Common::FS::GetDirectorySize(dir_path);
             std::string size_str = SpaceSizeToString(size);
@@ -215,7 +215,7 @@ SaveDialogState::SystemState::SystemState(const SaveDialogState& state,
         break;
     case SystemMessageType::NOSPACE:
         return_cancel = true;
-        M(fmt::format(
+        M(std::format(
               "There is not enough space to save the data. To continue {} free space is required.",
               SpaceSizeToString(sys.value * OrbisSaveDataBlockSize)),
           "##UNKNOWN##", "##UNKNOWN##");
@@ -235,7 +235,7 @@ SaveDialogState::SystemState::SystemState(const SaveDialogState& state,
         break;
     case SystemMessageType::NOSPACE_CONTINUABLE:
         return_cancel = true;
-        M(fmt::format("There is not enough space to save the data. {} free space is required.",
+        M(std::format("There is not enough space to save the data. {} free space is required.",
                       SpaceSizeToString(sys.value * OrbisSaveDataBlockSize)),
           "##UNKNOWN##", "##UNKNOWN##");
         break;
@@ -261,7 +261,7 @@ SaveDialogState::SystemState::SystemState(const SaveDialogState& state,
         M("Cannot create more saved data", "##UNKNOWN##", "##UNKNOWN##");
         break;
     default:
-        msg = fmt::format("Unknown message type: {}", magic_enum::enum_name(sys.msgType));
+        msg = std::format("Unknown message type: {}", magic_enum::enum_name(sys.msgType));
         break;
     }
 
@@ -280,7 +280,7 @@ SaveDialogState::ErrorCodeState::ErrorCodeState(const OrbisSaveDataDialogParam& 
         this->error_msg = "The data is corrupted.";
         break;
     default:
-        this->error_msg = fmt::format("An error has occurred. ({:X})", err.errorCode);
+        this->error_msg = std::format("An error has occurred. ({:X})", err.errorCode);
         break;
     }
 }

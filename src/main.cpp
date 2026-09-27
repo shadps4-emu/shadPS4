@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
+#include <format>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -9,8 +10,6 @@
 #include <vector>
 #include <CLI/CLI.hpp>
 #include <SDL3/SDL_messagebox.h>
-#include <fmt/format.h>
-#include <fmt/ranges.h>
 
 #include "common/arch.h"
 #include "common/key_manager.h"
@@ -151,7 +150,7 @@ int main(int argc, char* argv[]) {
     // Initialize main log with default config
     Common::Log::Setup("shadps4.log");
 
-    LOG_INFO(Debug, "Run: {}", fmt::join(std::span(argv, argc), ""));
+    LOG_INFO(Debug, "Run: {}", std::join(std::span(argv, argc), ""));
 
     IPC::Instance().Init();
 

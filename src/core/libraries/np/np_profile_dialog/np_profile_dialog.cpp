@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
-#include <fmt/format.h>
+#include <format>
 #include <magic_enum/magic_enum.hpp>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -32,7 +32,7 @@ Libraries::CommonDialog::Error sceNpProfileDialogOpen(OrbisNpProfileDialogParam*
     LOG_DEBUG(Lib_NpProfileDialog,
               "param details: mode={}, userId={}, targetOnlineId='{}', userData={}",
               static_cast<int>(param->mode), param->userId, param->targetOnlineId.data,
-              fmt::ptr(param->userData));
+              static_cast<const void*>(param->userData));
 
     NpProfileDialogState state{};
     state.onlineId = std::string(param->targetOnlineId.data);
@@ -86,7 +86,8 @@ sceNpProfileDialogGetResult(OrbisNpProfileDialogResult* result) {
     *result = g_result;
 
     LOG_DEBUG(Lib_NpProfileDialog, "result details: resultCode={}, userAction={}, userData={}",
-              g_result.result, static_cast<int>(g_result.userAction), fmt::ptr(g_result.userData));
+              g_result.result, static_cast<int>(g_result.userAction),
+              static_cast<const void*>(g_result.userData));
     return Libraries::CommonDialog::Error::OK;
 }
 
@@ -131,7 +132,7 @@ sceNpProfileDialogOpenA(OrbisNpProfileDialogParamA* param) {
     LOG_DEBUG(Lib_NpProfileDialog,
               "param details: mode={}, userId={}, targetAccountId='{}', userData={}",
               static_cast<int>(param->mode), param->userId, param->targetAccountId,
-              fmt::ptr(param->userData));
+              static_cast<const void*>(param->userData));
     LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
 
     NpProfileDialogState state{};

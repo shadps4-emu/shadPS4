@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <limits>
 #include <memory>
@@ -25,7 +26,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <fmt/format.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_TRUETYPE_TABLES_H
@@ -5700,12 +5700,13 @@ s32 PS4_SYSV_ABI sceFontRenderSurfaceSetStyleFrame(OrbisFontRenderSurface* rende
         auto* memory = Core::Memory::Instance();
         if (memory && !memory->IsValidMapping(reinterpret_cast<VAddr>(renderSurface),
                                               sizeof(OrbisFontRenderSurface))) {
-            LOG_ERROR(Lib_Font, "INVALID_ADDR renderSurface={}", fmt::ptr(renderSurface));
+            LOG_ERROR(Lib_Font, "INVALID_ADDR renderSurface={}",
+                      static_cast<const void*>(renderSurface));
             return ORBIS_FONT_ERROR_INVALID_PARAMETER;
         }
         if (styleFrame && !memory->IsValidMapping(reinterpret_cast<VAddr>(styleFrame),
                                                   sizeof(OrbisFontStyleFrame))) {
-            LOG_ERROR(Lib_Font, "INVALID_ADDR styleFrame={}", fmt::ptr(styleFrame));
+            LOG_ERROR(Lib_Font, "INVALID_ADDR styleFrame={}", static_cast<const void*>(styleFrame));
             return ORBIS_FONT_ERROR_INVALID_PARAMETER;
         }
     }

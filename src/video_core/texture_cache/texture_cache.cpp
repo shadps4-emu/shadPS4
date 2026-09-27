@@ -695,7 +695,7 @@ void TextureCache::RefreshImage(Image& image) {
     }
 
     RENDERER_TRACE;
-    TRACE_HINT(fmt::format("{:x}:{:x}", image.info.guest_address, image.info.guest_size));
+    TRACE_HINT(std::format("{:x}:{:x}", image.info.guest_address, image.info.guest_size));
 
     if (True(image.flags & ImageFlagBits::MaybeCpuDirty) &&
         False(image.flags & ImageFlagBits::CpuDirty)) {

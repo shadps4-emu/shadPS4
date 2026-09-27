@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
-#include <fmt/format.h>
+#include <format>
 
 #include "common/assert.h"
 #include "core/libraries/kernel/kernel.h"
@@ -36,7 +36,7 @@ static int CondInit(PthreadCondT* cond, const PthreadCondAttrT* cond_attr, const
         cvp->name = name;
     } else {
         static std::atomic<int> CondId{0};
-        cvp->name = fmt::format("Cond{}", CondId.fetch_add(1));
+        cvp->name = std::format("Cond{}", CondId.fetch_add(1));
     }
 
     if (cond_attr == nullptr || *cond_attr == nullptr) {

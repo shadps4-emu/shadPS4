@@ -35,7 +35,7 @@ void RegisterPipelineData(const ComputePipelineKey& key,
     sdata.Serialize(ar);
 
     Storage::DataBase::Instance().Save(Storage::BlobType::PipelineKey,
-                                       fmt::format("c_{:#018x}", key.value), ar.TakeOff());
+                                       std::format("c_{:#018x}", key.value), ar.TakeOff());
 }
 
 void RegisterPipelineData(const GraphicsPipelineKey& key, u64 hash,
@@ -54,7 +54,7 @@ void RegisterPipelineData(const GraphicsPipelineKey& key, u64 hash,
     sdata.Serialize(ar);
 
     Storage::DataBase::Instance().Save(Storage::BlobType::PipelineKey,
-                                       fmt::format("g_{:#018x}", hash), ar.TakeOff());
+                                       std::format("g_{:#018x}", hash), ar.TakeOff());
 }
 
 void RegisterShaderMeta(const Shader::Info& info,
@@ -78,7 +78,7 @@ void RegisterShaderMeta(const Shader::Info& info,
     info.Serialize(ar);
 
     Storage::DataBase::Instance().Save(Storage::BlobType::ShaderMeta,
-                                       fmt::format("{:#018x}", perm_hash), ar.TakeOff());
+                                       std::format("{:#018x}", perm_hash), ar.TakeOff());
 }
 
 void RegisterShaderBinary(std::vector<u32>&& spv, u64 pgm_hash, size_t perm_idx) {
@@ -87,7 +87,7 @@ void RegisterShaderBinary(std::vector<u32>&& spv, u64 pgm_hash, size_t perm_idx)
     }
 
     Storage::DataBase::Instance().Save(Storage::BlobType::ShaderBinary,
-                                       fmt::format("{:#018x}_{}", pgm_hash, perm_idx),
+                                       std::format("{:#018x}_{}", pgm_hash, perm_idx),
                                        std::move(spv));
 }
 
@@ -145,7 +145,7 @@ bool PipelineCache::LoadComputePipeline(Serialization::Archive& ar) {
 
     std::vector<u8> meta_blob;
     Storage::DataBase::Instance().Load(Storage::BlobType::ShaderMeta,
-                                       fmt::format("{:#018x}", compute_key.value), meta_blob);
+                                       std::format("{:#018x}", compute_key.value), meta_blob);
     if (meta_blob.empty()) {
         return false;
     }
@@ -219,7 +219,7 @@ bool PipelineCache::LoadGraphicsPipeline(Serialization::Archive& ar) {
 
         std::vector<u8> meta_blob;
         Storage::DataBase::Instance().Load(Storage::BlobType::ShaderMeta,
-                                           fmt::format("{:#018x}", hash), meta_blob);
+                                           std::format("{:#018x}", hash), meta_blob);
         if (meta_blob.empty()) {
             return false;
         }
@@ -256,7 +256,7 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
 
     std::vector<u32> spv{};
     Storage::DataBase::Instance().Load(Storage::BlobType::ShaderBinary,
-                                       fmt::format("{:#018x}_{}", program->info.pgm_hash, perm_idx),
+                                       std::format("{:#018x}_{}", program->info.pgm_hash, perm_idx),
                                        spv);
     if (spv.empty()) {
         return false;

@@ -13,8 +13,8 @@
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
 
+#include <format>
 #include <vector>
-#include <fmt/ranges.h>
 
 #include "common/assert.h"
 #include "common/logging/log.h"
@@ -296,8 +296,8 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
         .apiVersion = available_version,
     };
 
-    const std::string extensions_string = fmt::format("{}", fmt::join(extensions, ", "));
-    const std::string layers_string = fmt::format("{}", fmt::join(layers, ", "));
+    const std::string extensions_string = std::format("{}", std::join(extensions, ", "));
+    const std::string layers_string = std::format("{}", std::join(layers, ", "));
     LOG_INFO(Render_Vulkan, "Enabled instance extensions: {}", extensions_string);
     LOG_INFO(Render_Vulkan, "Enabled instance layers: {}", layers_string);
 

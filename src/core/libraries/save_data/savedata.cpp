@@ -619,7 +619,8 @@ Error PS4_SYSV_ABI sceSaveDataCheckBackupData(const OrbisSaveDataCheckBackupData
     if (check->param != nullptr) {
         PSF sfo;
         if (!sfo.Open(backup_path / "sce_sys" / "param.sfo")) {
-            LOG_ERROR(Lib_SaveData, "Failed to read SFO at {}", fmt::UTF(backup_path.u8string()));
+            LOG_ERROR(Lib_SaveData, "Failed to read SFO at {}",
+                      FormatterDetail::UTF(backup_path.u8string()));
             return Error::INTERNAL;
         }
         check->param->FromSFO(sfo);
@@ -830,7 +831,8 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
         const auto sfo_path = SaveInstance::GetParamSFOPath(dir_path);
         PSF sfo;
         if (!sfo.Open(sfo_path)) {
-            LOG_ERROR(Lib_SaveData, "Failed to read SFO: {}", fmt::UTF(sfo_path.u8string()));
+            LOG_ERROR(Lib_SaveData, "Failed to read SFO: {}",
+                      FormatterDetail::UTF(sfo_path.u8string()));
             ASSERT_MSG(false, "Failed to read SFO");
         }
 

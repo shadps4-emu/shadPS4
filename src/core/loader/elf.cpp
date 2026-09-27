@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/core.h>
+#include <format>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/file_sys/backends/host_fs.h"
@@ -341,73 +341,73 @@ bool Elf::IsElfFile() const {
 }
 
 std::string Elf::SElfHeaderStr() {
-    std::string header = fmt::format("======= SELF HEADER =========\n", m_self.magic);
-    header += fmt::format("magic ..............: 0x{:X}\n", m_self.magic);
-    header += fmt::format("version ............: {}\n", m_self.version);
-    header += fmt::format("mode ...............: {:#04x}\n", m_self.mode);
-    header += fmt::format("endian .............: {}\n", m_self.endian);
-    header += fmt::format("attributes .........: {:#04x}\n", m_self.attributes);
-    header += fmt::format("category ...........: {:#04x}\n", m_self.category);
-    header += fmt::format("program_type........: {:#04x}\n", m_self.program_type);
-    header += fmt::format("padding1 ...........: {:#06x}\n", m_self.padding1);
-    header += fmt::format("header size ........: {}\n", m_self.header_size);
-    header += fmt::format("meta size ..........: {}\n", m_self.meta_size);
-    header += fmt::format("file size ..........: {}\n", m_self.file_size);
-    header += fmt::format("padding2 ...........: {:#010x}\n", m_self.padding2);
-    header += fmt::format("segment count ......: {}\n", m_self.segment_count);
-    header += fmt::format("unknown 1A .........: {:#06x}\n", m_self.unknown1A);
-    header += fmt::format("padding3 ...........: {:#010x}\n", m_self.padding3);
+    std::string header = std::format("======= SELF HEADER =========\n", m_self.magic);
+    header += std::format("magic ..............: 0x{:X}\n", m_self.magic);
+    header += std::format("version ............: {}\n", m_self.version);
+    header += std::format("mode ...............: {:#04x}\n", m_self.mode);
+    header += std::format("endian .............: {}\n", m_self.endian);
+    header += std::format("attributes .........: {:#04x}\n", m_self.attributes);
+    header += std::format("category ...........: {:#04x}\n", m_self.category);
+    header += std::format("program_type........: {:#04x}\n", m_self.program_type);
+    header += std::format("padding1 ...........: {:#06x}\n", m_self.padding1);
+    header += std::format("header size ........: {}\n", m_self.header_size);
+    header += std::format("meta size ..........: {}\n", m_self.meta_size);
+    header += std::format("file size ..........: {}\n", m_self.file_size);
+    header += std::format("padding2 ...........: {:#010x}\n", m_self.padding2);
+    header += std::format("segment count ......: {}\n", m_self.segment_count);
+    header += std::format("unknown 1A .........: {:#06x}\n", m_self.unknown1A);
+    header += std::format("padding3 ...........: {:#010x}\n", m_self.padding3);
     return header;
 }
 
 std::string Elf::SELFSegHeader(u16 no) {
     const auto segment_header = m_self_segments[no];
-    std::string header = fmt::format("====== SEGMENT HEADER {} ========\n", no);
-    header += fmt::format("flags ............: {:#018x}\n", segment_header.flags);
-    header += fmt::format("file offset ......: {:#018x}\n", segment_header.file_offset);
-    header += fmt::format("file size ........: {}\n", segment_header.file_size);
-    header += fmt::format("memory size ......: {}\n", segment_header.memory_size);
+    std::string header = std::format("====== SEGMENT HEADER {} ========\n", no);
+    header += std::format("flags ............: {:#018x}\n", segment_header.flags);
+    header += std::format("file offset ......: {:#018x}\n", segment_header.file_offset);
+    header += std::format("file size ........: {}\n", segment_header.file_size);
+    header += std::format("memory size ......: {}\n", segment_header.memory_size);
     return header;
 }
 
 std::string Elf::ElfHeaderStr() {
-    std::string header = fmt::format("======= Elf header ===========\n");
-    header += fmt::format("ident ............: 0x");
+    std::string header = std::format("======= Elf header ===========\n");
+    header += std::format("ident ............: 0x");
     for (auto i : m_elf_header.e_ident.magic) {
-        header += fmt::format("{:02X}", i);
+        header += std::format("{:02X}", i);
     }
-    header += fmt::format("\n");
+    header += std::format("\n");
 
     header +=
-        fmt::format("ident class.......: {}\n", GetIdentClassName(m_elf_header.e_ident.ei_class));
+        std::format("ident class.......: {}\n", GetIdentClassName(m_elf_header.e_ident.ei_class));
     header +=
-        fmt::format("ident data .......: {}\n", GetIdentEndianName(m_elf_header.e_ident.ei_data));
-    header += fmt::format("ident version.....: {}\n",
+        std::format("ident data .......: {}\n", GetIdentEndianName(m_elf_header.e_ident.ei_data));
+    header += std::format("ident version.....: {}\n",
                           GetIdentVersionName(m_elf_header.e_ident.ei_version));
     header +=
-        fmt::format("ident osabi  .....: {}\n", GetIdentOsabiName(m_elf_header.e_ident.ei_osabi));
-    header += fmt::format("ident abiversion..: {}\n",
+        std::format("ident osabi  .....: {}\n", GetIdentOsabiName(m_elf_header.e_ident.ei_osabi));
+    header += std::format("ident abiversion..: {}\n",
                           GetIdentAbiversionName(m_elf_header.e_ident.ei_abiversion));
 
-    header += fmt::format("ident UNK ........: 0x");
+    header += std::format("ident UNK ........: 0x");
     for (auto i : m_elf_header.e_ident.pad) {
-        header += fmt::format("{:02X}", i);
+        header += std::format("{:02X}", i);
     }
-    header += fmt::format("\n");
+    header += std::format("\n");
 
-    header += fmt::format("type  ............: {}\n", GetType(m_elf_header.e_type));
-    header += fmt::format("machine ..........: {}\n", GetMachine(m_elf_header.e_machine));
-    header += fmt::format("version ..........: {}\n", GetVersion(m_elf_header.e_version));
-    header += fmt::format("entry ............: {:#018x}\n", m_elf_header.e_entry);
-    header += fmt::format("phoff ............: {:#018x}\n", m_elf_header.e_phoff);
-    header += fmt::format("shoff ............: {:#018x}\n", m_elf_header.e_shoff);
-    header += fmt::format("flags ............: {:#010x}\n", m_elf_header.e_flags);
-    header += fmt::format("ehsize ...........: {}\n", m_elf_header.e_ehsize);
-    header += fmt::format("phentsize ........: {}\n", m_elf_header.e_phentsize);
-    header += fmt::format("phnum ............: {}\n", m_elf_header.e_phnum);
-    header += fmt::format("shentsize ........: {}\n", m_elf_header.e_shentsize);
-    header += fmt::format("shnum ............: {}\n", m_elf_header.e_shnum);
-    header += fmt::format("shstrndx .........: {}\n", m_elf_header.e_shstrndx);
+    header += std::format("type  ............: {}\n", GetType(m_elf_header.e_type));
+    header += std::format("machine ..........: {}\n", GetMachine(m_elf_header.e_machine));
+    header += std::format("version ..........: {}\n", GetVersion(m_elf_header.e_version));
+    header += std::format("entry ............: {:#018x}\n", m_elf_header.e_entry);
+    header += std::format("phoff ............: {:#018x}\n", m_elf_header.e_phoff);
+    header += std::format("shoff ............: {:#018x}\n", m_elf_header.e_shoff);
+    header += std::format("flags ............: {:#010x}\n", m_elf_header.e_flags);
+    header += std::format("ehsize ...........: {}\n", m_elf_header.e_ehsize);
+    header += std::format("phentsize ........: {}\n", m_elf_header.e_phentsize);
+    header += std::format("phnum ............: {}\n", m_elf_header.e_phnum);
+    header += std::format("shentsize ........: {}\n", m_elf_header.e_shentsize);
+    header += std::format("shnum ............: {}\n", m_elf_header.e_shnum);
+    header += std::format("shstrndx .........: {}\n", m_elf_header.e_shstrndx);
     return header;
 }
 
@@ -466,15 +466,15 @@ std::string Elf::ElfPheaderFlagsStr(u32 flags) {
 }
 
 std::string Elf::ElfPHeaderStr(u16 no) {
-    std::string header = fmt::format("====== PROGRAM HEADER {} ========\n", no);
-    header += fmt::format("p_type ....: {}\n", ElfPheaderTypeStr(m_elf_phdr[no].p_type));
-    header += fmt::format("p_flags ...: {:#010x}\n", static_cast<u32>(m_elf_phdr[no].p_flags));
-    header += fmt::format("p_offset ..: {:#018x}\n", m_elf_phdr[no].p_offset);
-    header += fmt::format("p_vaddr ...: {:#018x}\n", m_elf_phdr[no].p_vaddr);
-    header += fmt::format("p_paddr ...: {:#018x}\n", m_elf_phdr[no].p_paddr);
-    header += fmt::format("p_filesz ..: {:#018x}\n", m_elf_phdr[no].p_filesz);
-    header += fmt::format("p_memsz ...: {:#018x}\n", m_elf_phdr[no].p_memsz);
-    header += fmt::format("p_align ...: {:#018x}\n", m_elf_phdr[no].p_align);
+    std::string header = std::format("====== PROGRAM HEADER {} ========\n", no);
+    header += std::format("p_type ....: {}\n", ElfPheaderTypeStr(m_elf_phdr[no].p_type));
+    header += std::format("p_flags ...: {:#010x}\n", static_cast<u32>(m_elf_phdr[no].p_flags));
+    header += std::format("p_offset ..: {:#018x}\n", m_elf_phdr[no].p_offset);
+    header += std::format("p_vaddr ...: {:#018x}\n", m_elf_phdr[no].p_vaddr);
+    header += std::format("p_paddr ...: {:#018x}\n", m_elf_phdr[no].p_paddr);
+    header += std::format("p_filesz ..: {:#018x}\n", m_elf_phdr[no].p_filesz);
+    header += std::format("p_memsz ...: {:#018x}\n", m_elf_phdr[no].p_memsz);
+    header += std::format("p_align ...: {:#018x}\n", m_elf_phdr[no].p_align);
     return header;
 }
 

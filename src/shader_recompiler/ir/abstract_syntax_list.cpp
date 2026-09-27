@@ -10,26 +10,26 @@ std::string DumpASLNode(const AbstractSyntaxNode& node,
                         const std::map<const Inst*, size_t>& inst_to_index) {
     switch (node.type) {
     case AbstractSyntaxNode::Type::Block:
-        return fmt::format("Block: ${}", block_to_index.at(node.data.block));
+        return std::format("Block: ${}", block_to_index.at(node.data.block));
     case AbstractSyntaxNode::Type::If:
-        return fmt::format("If: cond = %{}, body = ${}, merge = ${}",
+        return std::format("If: cond = %{}, body = ${}, merge = ${}",
                            inst_to_index.at(node.data.if_node.cond.Inst()),
                            block_to_index.at(node.data.if_node.body),
                            block_to_index.at(node.data.if_node.merge));
     case AbstractSyntaxNode::Type::EndIf:
-        return fmt::format("EndIf: merge = ${}", block_to_index.at(node.data.end_if.merge));
+        return std::format("EndIf: merge = ${}", block_to_index.at(node.data.end_if.merge));
     case AbstractSyntaxNode::Type::Loop:
-        return fmt::format("Loop: body = ${}, continue = ${}, merge = ${}",
+        return std::format("Loop: body = ${}, continue = ${}, merge = ${}",
                            block_to_index.at(node.data.loop.body),
                            block_to_index.at(node.data.loop.continue_block),
                            block_to_index.at(node.data.loop.merge));
     case AbstractSyntaxNode::Type::Repeat:
-        return fmt::format("Repeat: cond = %{}, header = ${}, merge = ${}",
+        return std::format("Repeat: cond = %{}, header = ${}, merge = ${}",
                            inst_to_index.at(node.data.repeat.cond.Inst()),
                            block_to_index.at(node.data.repeat.loop_header),
                            block_to_index.at(node.data.repeat.merge));
     case AbstractSyntaxNode::Type::Break:
-        return fmt::format("Break: cond = %{}, merge = ${}, skip = ${}",
+        return std::format("Break: cond = %{}, merge = ${}, skip = ${}",
                            inst_to_index.at(node.data.break_node.cond.Inst()),
                            block_to_index.at(node.data.break_node.merge),
                            block_to_index.at(node.data.break_node.skip));

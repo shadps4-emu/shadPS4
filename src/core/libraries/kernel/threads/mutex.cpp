@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include <thread>
-#include <fmt/format.h>
 
 #include "common/arch.h"
 #include "common/assert.h"
@@ -68,7 +68,7 @@ static s32 MutexInit(PthreadMutexT* mutex, const PthreadMutexAttr* mutex_attr, c
         pmutex->name = name;
     } else {
         static std::atomic<s32> MutexId{0};
-        pmutex->name = fmt::format("Mutex{}", MutexId.fetch_add(1));
+        pmutex->name = std::format("Mutex{}", MutexId.fetch_add(1));
     }
 
     pmutex->m_flags = PthreadMutexFlags(attr->m_type);

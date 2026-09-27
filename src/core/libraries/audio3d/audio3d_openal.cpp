@@ -5,13 +5,13 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <format>
 #include <thread>
 #include <vector>
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <alext.h>
 #include <efx.h>
-#include <fmt/format.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
@@ -1204,7 +1204,7 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
                                                const OrbisAudio3dAttribute* attribute_array) {
     LOG_DEBUG(Lib_Audio3d,
               "called, port_id = {}, object_id = {}, num_attributes = {}, attribute_array = {}",
-              port_id, object_id, num_attributes, fmt::ptr(attribute_array));
+              port_id, object_id, num_attributes, static_cast<const void*>(attribute_array));
 
     if (!state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");

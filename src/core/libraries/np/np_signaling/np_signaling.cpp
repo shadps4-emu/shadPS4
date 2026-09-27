@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
+#include <format>
 #include <vector>
-#include <fmt/format.h>
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/libraries/error_codes.h"
@@ -175,8 +175,8 @@ s32 PS4_SYSV_ABI sceNpSignalingCreateContext(const void* npId, void* callback, v
         *outContextId = ctx_id;
 
         LOG_INFO(Lib_NpSignaling, "ctxId={} owner='{}' callback={} arg={} sdk={:#x} p2p_port={}",
-                 ctx_id, OnlineIdToString(owner_online_id), fmt::ptr(callback),
-                 fmt::ptr(callbackArg), ctx.compiled_sdk_version, ctx.bound_port);
+                 ctx_id, OnlineIdToString(owner_online_id), static_cast<const void*>(callback),
+                 static_cast<const void*>(callbackArg), ctx.compiled_sdk_version, ctx.bound_port);
     }
 
     if (transport_ready) {
@@ -280,7 +280,7 @@ s32 PS4_SYSV_ABI sceNpSignalingActivateConnection(OrbisNpSignalingContextId ctxI
                                                   const void* peerNpId,
                                                   OrbisNpSignalingConnectionId* outConnId) {
     LOG_INFO(Lib_NpSignaling, "t={} ctxId={} peerNpId={:p} connId={:p}", NowMs(), ctxId, peerNpId,
-             fmt::ptr(outConnId));
+             static_cast<const void*>(outConnId));
 
     {
         SignalingMutexGuard lock;

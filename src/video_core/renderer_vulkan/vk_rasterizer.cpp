@@ -175,7 +175,7 @@ void Rasterizer::EliminateFastClear() {
     auto& image = texture_cache.GetImage(image_id);
     const auto clear_value = LiverpoolToVK::ColorBufferClearValue(col_buf);
 
-    ScopeMarkerBegin(fmt::format("EliminateFastClear:MRT={:#x}:M={:#x}", col_buf.Address(),
+    ScopeMarkerBegin(std::format("EliminateFastClear:MRT={:#x}:M={:#x}", col_buf.Address(),
                                  col_buf.CmaskAddress()));
     runtime.ClearImage(&image, desc.view_info.range, clear_value);
     ScopeMarkerEnd();
@@ -1110,7 +1110,7 @@ void Rasterizer::Resolve() {
     auto& mrt0_image = texture_cache.GetImage(texture_cache.FindImage(mrt0_desc, true));
     auto& mrt1_image = texture_cache.GetImage(texture_cache.FindImage(mrt1_desc, true));
 
-    ScopeMarkerBegin(fmt::format("Resolve:MRT0={:#x}:MRT1={:#x}",
+    ScopeMarkerBegin(std::format("Resolve:MRT0={:#x}:MRT1={:#x}",
                                  liverpool->regs.color_buffers[0].Address(),
                                  liverpool->regs.color_buffers[1].Address()));
     runtime.ResolveImage(&mrt0_image, &mrt1_image, mrt0_desc.view_info.range,
@@ -1135,7 +1135,7 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
     sub_range.base.layer = liverpool->regs.depth_view.slice_start;
     sub_range.extent.layers = liverpool->regs.depth_view.NumSlices() - sub_range.base.layer;
 
-    ScopeMarkerBegin(fmt::format(
+    ScopeMarkerBegin(std::format(
         "DepthStencilCopy:DR={:#x}:SR={:#x}:DW={:#x}:SW={:#x}", regs.depth_buffer.DepthAddress(),
         regs.depth_buffer.StencilAddress(), regs.depth_buffer.DepthWriteAddress(),
         regs.depth_buffer.StencilWriteAddress()));

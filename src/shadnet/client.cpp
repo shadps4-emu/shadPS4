@@ -4,8 +4,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <format>
 #include <thread>
-#include <fmt/format.h>
 
 #include "client.h"
 #include "common/elf_info.h"
@@ -554,12 +554,12 @@ std::string ShadNetClient::BuildVersionString() {
     const bool official = (remote_host == "shadps4-emu" || remote_url.empty());
 
     if (Common::g_is_release) {
-        return official ? fmt::format("shadPS4 v{}", Common::g_version)
-                        : fmt::format("shadPS4 {}/v{}", remote_host, Common::g_version);
+        return official ? std::format("shadPS4 v{}", Common::g_version)
+                        : std::format("shadPS4 {}/v{}", remote_host, Common::g_version);
     }
-    return official ? fmt::format("shadPS4 v{} {} {}", Common::g_version, Common::g_scm_branch,
+    return official ? std::format("shadPS4 v{} {} {}", Common::g_version, Common::g_scm_branch,
                                   Common::g_scm_desc)
-                    : fmt::format("shadPS4 v{} {}/{} {}", Common::g_version, remote_host,
+                    : std::format("shadPS4 v{} {}/{} {}", Common::g_version, remote_host,
                                   Common::g_scm_branch, Common::g_scm_desc);
 }
 

@@ -499,11 +499,11 @@ struct Sampler {
 } // namespace AmdGpu
 
 template <>
-struct fmt::formatter<AmdGpu::ImageType> {
+struct std::formatter<AmdGpu::ImageType> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     auto format(AmdGpu::ImageType type, format_context& ctx) const {
-        return fmt::format_to(ctx.out(), "{}", AmdGpu::NameOf(type));
+        return std::format_to(ctx.out(), "{}", AmdGpu::NameOf(type));
     }
 };

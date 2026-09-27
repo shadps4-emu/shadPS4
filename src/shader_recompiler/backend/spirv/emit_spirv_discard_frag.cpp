@@ -70,7 +70,7 @@ struct DiscardShaderEmitter : public Sirit::Module {
             locations_id_len++;
             locations_id[i] = AddGlobalVariable(ptr_id, spv::StorageClass::Input);
             Decorate(locations_id[i], spv::Decoration::Location, locations_v[i]);
-            Name(locations_id[i], fmt::format("ccdist{}_in", i));
+            Name(locations_id[i], std::format("ccdist{}_in", i));
         }
 
         AddEntryPoint(spv::ExecutionModel::Fragment, main, "main",
@@ -81,12 +81,12 @@ struct DiscardShaderEmitter : public Sirit::Module {
         for (auto i = 0; i < locations_id_len; ++i) {
             auto loc_vec = OpLoad(vec4_id, locations_id[i]);
             loc_vec_id[locations_v[i]] = loc_vec;
-            Name(loc_vec, fmt::format("ccdist{}", i));
+            Name(loc_vec, std::format("ccdist{}", i));
         }
 
         for (auto& [loc, elem] : clip_locations) {
             auto plane = OpCompositeExtract(float_id, loc_vec_id[loc], elem);
-            Name(plane, fmt::format("plane{}", loc * 4 + elem));
+            Name(plane, std::format("plane{}", loc * 4 + elem));
 
             auto clipped = OpFOrdLessThan(bool_id, plane, float_zero);
             const Id kill_label{OpLabel()};

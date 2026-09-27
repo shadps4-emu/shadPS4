@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
-#include <fmt/format.h>
+#include <format>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/logging/log.h"
@@ -20,7 +20,7 @@ static DialogState g_state;
 
 s32 PS4_SYSV_ABI sceInvitationDialogGetResultA(OrbisInvitationDialogResultA* result) {
     LOG_DEBUG(Lib_InvitationDialog, "Getting invitation dialog result (async), result ptr={}",
-              fmt::ptr(result));
+              static_cast<const void*>(result));
 
     if (g_status == Libraries::CommonDialog::Status::NONE) {
         return static_cast<s32>(Libraries::CommonDialog::Error::NOT_INITIALIZED);
@@ -71,7 +71,7 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI
 sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) {
     LOG_DEBUG(Lib_InvitationDialog, "sceInvitationDialogOpenA() called (async version)");
     LOG_INFO(Lib_InvitationDialog, "Opening invitation dialog asynchronously, param ptr={}",
-             fmt::ptr(param));
+             static_cast<const void*>(param));
 
     if (!param) {
         LOG_ERROR(Lib_InvitationDialog, "Parameter is NULL");
@@ -91,12 +91,15 @@ sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) {
     }
 
     LOG_INFO(Lib_InvitationDialog, "ParamA userId={:#x}", param->userId);
-    LOG_INFO(Lib_InvitationDialog, "ParamA callbackArg={}", fmt::ptr(param->callbackArg));
-    LOG_INFO(Lib_InvitationDialog, "ParamA dataParam={}", fmt::ptr(param->dataParam));
+    LOG_INFO(Lib_InvitationDialog, "ParamA callbackArg={}",
+             static_cast<const void*>(param->callbackArg));
+    LOG_INFO(Lib_InvitationDialog, "ParamA dataParam={}",
+             static_cast<const void*>(param->dataParam));
 
     // Log data parameters if present
     if (param->dataParam) {
-        LOG_INFO(Lib_InvitationDialog, "DataParamA pointer: {}", fmt::ptr(param->dataParam));
+        LOG_INFO(Lib_InvitationDialog, "DataParamA pointer: {}",
+                 static_cast<const void*>(param->dataParam));
         if (param->mode == ORBIS_INVITATION_DIALOG_MODE_SEND) {
             LOG_INFO(Lib_InvitationDialog, "SendInfo:");
             if (param->dataParam->SendInfo.userMessage) {
@@ -114,7 +117,8 @@ sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) {
             if (addressParam.addressType == ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_USERDISABLE) {
                 LOG_INFO(Lib_InvitationDialog, "  UserSelectDisableAddress:");
                 LOG_INFO(Lib_InvitationDialog, "    accountIds={}",
-                         fmt::ptr(addressParam.addressInfo.UserSelectDisableAddress.accountIds));
+                         static_cast<const void*>(
+                             addressParam.addressInfo.UserSelectDisableAddress.accountIds));
                 LOG_INFO(Lib_InvitationDialog, "    accountIdsCount={}",
                          addressParam.addressInfo.UserSelectDisableAddress.accountIdsCount);
             } else if (addressParam.addressType ==
@@ -187,7 +191,8 @@ sceInvitationDialogOpenA(const OrbisInvitationDialogParamA* param) {
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI
 sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
-    LOG_DEBUG(Lib_InvitationDialog, "Opening invitation dialog, param ptr={}", fmt::ptr(param));
+    LOG_DEBUG(Lib_InvitationDialog, "Opening invitation dialog, param ptr={}",
+              static_cast<const void*>(param));
 
     if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
         g_status != Libraries::CommonDialog::Status::FINISHED) {
@@ -202,7 +207,8 @@ sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
 
     LOG_INFO(Lib_InvitationDialog,
              "size={:#x} mode={} userId={} Param callbackArg={} Param dataParam={}", param->size,
-             param->mode, param->userId, fmt::ptr(param->callbackArg), fmt::ptr(param->dataParam));
+             param->mode, param->userId, static_cast<const void*>(param->callbackArg),
+             static_cast<const void*>(param->dataParam));
 
     // Validate mode
     if (param->mode != ORBIS_INVITATION_DIALOG_MODE_SEND &&
@@ -215,7 +221,8 @@ sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
 
     // Log data parameters if present
     if (param->dataParam) {
-        LOG_INFO(Lib_InvitationDialog, "DataParam pointer: {}", fmt::ptr(param->dataParam));
+        LOG_INFO(Lib_InvitationDialog, "DataParam pointer: {}",
+                 static_cast<const void*>(param->dataParam));
         if (param->mode == ORBIS_INVITATION_DIALOG_MODE_SEND) {
             LOG_INFO(Lib_InvitationDialog, "SendInfo:");
             if (param->dataParam->SendInfo.userMessage) {
@@ -233,7 +240,8 @@ sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
             if (addressParam.addressType == ORBIS_INVITATION_DIALOG_ADDRESS_TYPE_USERDISABLE) {
                 LOG_INFO(Lib_InvitationDialog, "  UserSelectDisableAddress:");
                 LOG_INFO(Lib_InvitationDialog, "    onlineIds={}",
-                         fmt::ptr(addressParam.addressInfo.UserSelectDisableAddress.onlineIds));
+                         static_cast<const void*>(
+                             addressParam.addressInfo.UserSelectDisableAddress.onlineIds));
                 LOG_INFO(Lib_InvitationDialog, "    onlineIdsCount={}",
                          addressParam.addressInfo.UserSelectDisableAddress.onlineIdsCount);
             } else if (addressParam.addressType ==
@@ -298,7 +306,7 @@ sceInvitationDialogOpen(const OrbisInvitationDialogParam* param) {
 
 s32 PS4_SYSV_ABI sceInvitationDialogGetResult(OrbisInvitationDialogResult* result) {
     LOG_DEBUG(Lib_InvitationDialog, "Getting invitation dialog result, result ptr={}",
-              fmt::ptr(result));
+              static_cast<const void*>(result));
 
     if (g_status == Libraries::CommonDialog::Status::NONE) {
         return static_cast<s32>(Libraries::CommonDialog::Error::NOT_INITIALIZED);
@@ -317,7 +325,8 @@ s32 PS4_SYSV_ABI sceInvitationDialogGetResult(OrbisInvitationDialogResult* resul
 
     // Log result fields if they contain data
     if (result->callbackArg) {
-        LOG_INFO(Lib_InvitationDialog, "Result callbackArg={}", fmt::ptr(result->callbackArg));
+        LOG_INFO(Lib_InvitationDialog, "Result callbackArg={}",
+                 static_cast<const void*>(result->callbackArg));
     }
     LOG_INFO(Lib_InvitationDialog, "Result errorCode={:#x}", result->errorCode);
     LOG_INFO(Lib_InvitationDialog, "Result status={}", magic_enum::enum_name(result->result));

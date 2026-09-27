@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -9,7 +10,6 @@
 #include <utility>
 #include <vector>
 #include <boost/intrusive/list.hpp>
-#include <fmt/format.h>
 #include "shader_recompiler/frontend/structured_control_flow.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/ir_emitter.h"
@@ -129,13 +129,13 @@ struct Statement : ListBaseHook {
 std::string DumpExpr(const Statement* stmt) {
     switch (stmt->type) {
     case StatementType::Identity:
-        return fmt::format("{}", stmt->guest_cond);
+        return std::format("{}", stmt->guest_cond);
     case StatementType::Not:
-        return fmt::format("!{}", DumpExpr(stmt->op));
+        return std::format("!{}", DumpExpr(stmt->op));
     case StatementType::Or:
-        return fmt::format("{} || {}", DumpExpr(stmt->op_a), DumpExpr(stmt->op_b));
+        return std::format("{} || {}", DumpExpr(stmt->op_a), DumpExpr(stmt->op_b));
     case StatementType::Variable:
-        return fmt::format("goto_L{}", stmt->id);
+        return std::format("goto_L{}", stmt->id);
     default:
         return "<invalid type>";
     }
@@ -147,38 +147,38 @@ std::string DumpExpr(const Statement* stmt) {
     for (const auto& stmt : tree) {
         switch (stmt.type) {
         case StatementType::Code:
-            ret += fmt::format("{}    Block {:04x} -> {:04x} (0x{:016x});\n", indent,
+            ret += std::format("{}    Block {:04x} -> {:04x} (0x{:016x});\n", indent,
                                stmt.block->begin, stmt.block->end,
                                reinterpret_cast<uintptr_t>(stmt.block));
             break;
         case StatementType::Goto:
-            ret += fmt::format("{}    if ({}) goto L{};\n", indent, DumpExpr(stmt.cond),
+            ret += std::format("{}    if ({}) goto L{};\n", indent, DumpExpr(stmt.cond),
                                stmt.label->id);
             break;
         case StatementType::Label:
-            ret += fmt::format("{}L{}:\n", indent, stmt.id);
+            ret += std::format("{}L{}:\n", indent, stmt.id);
             break;
         case StatementType::If:
-            ret += fmt::format("{}    if ({}) {{\n", indent, DumpExpr(stmt.cond));
+            ret += std::format("{}    if ({}) {{\n", indent, DumpExpr(stmt.cond));
             ret += DumpTree(stmt.children, indentation + 4);
-            ret += fmt::format("{}    }}\n", indent);
+            ret += std::format("{}    }}\n", indent);
             break;
         case StatementType::Loop:
-            ret += fmt::format("{}    do {{\n", indent);
+            ret += std::format("{}    do {{\n", indent);
             ret += DumpTree(stmt.children, indentation + 4);
-            ret += fmt::format("{}    }} while ({});\n", indent, DumpExpr(stmt.cond));
+            ret += std::format("{}    }} while ({});\n", indent, DumpExpr(stmt.cond));
             break;
         case StatementType::Break:
-            ret += fmt::format("{}    if ({}) break;\n", indent, DumpExpr(stmt.cond));
+            ret += std::format("{}    if ({}) break;\n", indent, DumpExpr(stmt.cond));
             break;
         case StatementType::Return:
-            ret += fmt::format("{}    return;\n", indent);
+            ret += std::format("{}    return;\n", indent);
             break;
         case StatementType::Unreachable:
-            ret += fmt::format("{}    unreachable;\n", indent);
+            ret += std::format("{}    unreachable;\n", indent);
             break;
         case StatementType::SetVariable:
-            ret += fmt::format("{}    goto_L{} = {};\n", indent, stmt.id, DumpExpr(stmt.op));
+            ret += std::format("{}    goto_L{} = {};\n", indent, stmt.id, DumpExpr(stmt.op));
             break;
         case StatementType::Function:
         case StatementType::Identity:

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include <map>
-#include <fmt/format.h>
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
@@ -686,13 +686,14 @@ struct AddressSpace::Impl {
         }
 
         LOG_INFO(Kernel_Vmm, "System managed virtual memory region: {} - {}",
-                 fmt::ptr(system_managed_base),
-                 fmt::ptr(system_managed_base + system_managed_size - 1));
+                 static_cast<const void*>(system_managed_base),
+                 static_cast<const void*>(system_managed_base + system_managed_size - 1));
         LOG_INFO(Kernel_Vmm, "System reserved virtual memory region: {} - {}",
-                 fmt::ptr(system_reserved_base),
-                 fmt::ptr(system_reserved_base + system_reserved_size - 1));
-        LOG_INFO(Kernel_Vmm, "User virtual memory region: {} - {}", fmt::ptr(user_base),
-                 fmt::ptr(user_base + user_size - 1));
+                 static_cast<const void*>(system_reserved_base),
+                 static_cast<const void*>(system_reserved_base + system_reserved_size - 1));
+        LOG_INFO(Kernel_Vmm, "User virtual memory region: {} - {}",
+                 static_cast<const void*>(user_base),
+                 static_cast<const void*>(user_base + user_size - 1));
 
         const VAddr system_managed_addr = reinterpret_cast<VAddr>(system_managed_base);
         const VAddr system_reserved_addr = reinterpret_cast<VAddr>(system_managed_base);
@@ -702,7 +703,7 @@ struct AddressSpace::Impl {
         m_free_regions.insert({user_addr, user_addr + user_size});
 
 #ifdef __APPLE__
-        const auto shm_path = fmt::format("/BackingDmem{}", getpid());
+        const auto shm_path = std::format("/BackingDmem{}", getpid());
         backing_fd = shm_open(shm_path.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
         if (backing_fd < 0) {
             LOG_CRITICAL(Kernel_Vmm, "shm_open failed: {}", strerror(errno));

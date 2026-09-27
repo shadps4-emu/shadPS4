@@ -192,7 +192,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
                 DebugState.ShowDebugMessage(std::string{"Invalid shader stage"});
             } else {
                 std::string cmd =
-                    fmt::format("glslc --target-env=vulkan1.3 --target-spv=spv1.6 "
+                    std::format("glslc --target-env=vulkan1.3 --target-spv=spv1.6 "
                                 "-fshader-stage={} {{src}} -o \"{}\"",
                                 stage->second, Common::U8stringToString(patch_bin_path.u8string()));
                 bool success = false;

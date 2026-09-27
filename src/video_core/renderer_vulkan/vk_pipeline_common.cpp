@@ -54,7 +54,7 @@ std::string Pipeline::GetDebugString() const {
             if (stage_desc.empty()) {
                 stage_desc = shader_name;
             } else {
-                stage_desc = fmt::format("{},{}", stage_desc, shader_name);
+                stage_desc = std::format("{},{}", stage_desc, shader_name);
             }
         }
     }

@@ -53,9 +53,9 @@ public:
     void DispatchDirect();
     void DispatchIndirect(VAddr address, u32 offset, u32 size);
 
-    void ScopeMarker(fmt::string_view fmt, fmt::format_args args, auto&& func) {
+    void ScopeMarker(std::string_view fmt, std::format_args args, auto&& func) {
         if (host_markers_enabled) {
-            ScopeMarkerBegin(fmt::vformat(fmt, args));
+            ScopeMarkerBegin(std::vformat(fmt, args));
             func();
             ScopeMarkerEnd();
         } else {

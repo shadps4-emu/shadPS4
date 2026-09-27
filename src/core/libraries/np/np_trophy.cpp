@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <format>
 #include <thread>
 #include <unordered_map>
-#include <fmt/format.h>
 #include <pugixml.hpp>
 #include "common/elf_info.h"
 #include "common/logging/log.h"
@@ -694,7 +694,7 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyIcon(OrbisNpTrophyContext context, OrbisNpT
     if (!unlocked)
         return ORBIS_NP_TROPHY_ERROR_TROPHY_NOT_UNLOCKED;
 
-    const std::string icon_name = fmt::format("TROP{:03d}.PNG", trophyId);
+    const std::string icon_name = std::format("TROP{:03d}.PNG", trophyId);
     const auto icon_path = ctx.icons_dir / icon_name;
 
     Common::FS::IOFile icon(icon_path, Common::FS::FileAccessMode::Read);
@@ -1074,7 +1074,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
             trophy_name = get_localized_name(current_trophy_id, node);
             trophy_type = current_trophy_type;
 
-            const std::string icon_file = fmt::format("TROP{:03d}.PNG", current_trophy_id);
+            const std::string icon_file = std::format("TROP{:03d}.PNG", current_trophy_id);
             trophy_icon_path = ctx.icons_dir / icon_file;
         }
     }
@@ -1102,7 +1102,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
             platinum_timestamp = trophy_timestamp; // same second is fine
             platinum_name = get_localized_name(platinum_id, platinum_node);
 
-            const std::string plat_icon_file = fmt::format("TROP{:03d}.PNG", platinum_id);
+            const std::string plat_icon_file = std::format("TROP{:03d}.PNG", platinum_id);
             platinum_icon_path = ctx.icons_dir / plat_icon_file;
 
             *platinumId = platinum_id;

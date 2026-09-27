@@ -180,7 +180,6 @@ endforeach()
 
 target_link_libraries(shadps4_settings_test PRIVATE
     GTest::gtest_main
-    fmt::fmt
     nlohmann_json::nlohmann_json
     toml11::toml11
     SDL3::SDL3
@@ -188,7 +187,6 @@ target_link_libraries(shadps4_settings_test PRIVATE
 )
 target_link_libraries(shadps4_ngs2_test PRIVATE
     GTest::gtest_main
-    fmt::fmt
     nlohmann_json::nlohmann_json
     toml11::toml11
     SDL3::SDL3
@@ -196,7 +194,6 @@ target_link_libraries(shadps4_ngs2_test PRIVATE
 )
 target_link_libraries(shadps4_gcn_test PRIVATE
     GTest::gtest_main
-    fmt::fmt
     nlohmann_json::nlohmann_json
     magic_enum::magic_enum
     toml11::toml11
@@ -301,7 +298,6 @@ target_compile_definitions(shadps4_http_test PRIVATE BOOST_ASIO_STANDALONE)
 
 target_link_libraries(shadps4_http_test PRIVATE
     GTest::gtest_main
-    fmt::fmt
     magic_enum::magic_enum
     nlohmann_json::nlohmann_json
     toml11::toml11

@@ -5,7 +5,7 @@
 
 #include <array>
 #include <cstdint>
-#include <fmt/base.h>
+#include <format>
 
 #include "common/logging/classes.h"
 
@@ -36,12 +36,12 @@ void UpdateLogFlushLevel(std::string_view log_flush_level);
 }
 
 void VLog(Class log_class, Level level, const char* file, int line, const char* func,
-          fmt::string_view format, fmt::format_args args);
+          std::string_view format, std::format_args args);
 
 template <typename... Args>
 void Log(Class log_class, Level level, const char* file, int line, const char* func,
-         fmt::format_string<Args...> format, Args&&... args) {
-    VLog(log_class, level, file, line, func, format, fmt::make_format_args(args...));
+         std::format_string<Args...> format, Args&&... args) {
+    VLog(log_class, level, file, line, func, format.get(), std::make_format_args(args...));
 }
 
 } // namespace Common::Log

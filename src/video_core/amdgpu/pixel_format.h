@@ -3,8 +3,8 @@
 
 #pragma once
 
+#include <format>
 #include <string_view>
-#include <fmt/format.h>
 #include "common/assert.h"
 #include "common/types.h"
 
@@ -402,21 +402,21 @@ u32 NumBitsPerElement(DataFormat format);
 } // namespace AmdGpu
 
 template <>
-struct fmt::formatter<AmdGpu::DataFormat> {
+struct std::formatter<AmdGpu::DataFormat> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     auto format(AmdGpu::DataFormat fmt, format_context& ctx) const {
-        return fmt::format_to(ctx.out(), "{}", AmdGpu::NameOf(fmt));
+        return std::format_to(ctx.out(), "{}", AmdGpu::NameOf(fmt));
     }
 };
 
 template <>
-struct fmt::formatter<AmdGpu::NumberFormat> {
+struct std::formatter<AmdGpu::NumberFormat> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     auto format(AmdGpu::NumberFormat fmt, format_context& ctx) const {
-        return fmt::format_to(ctx.out(), "{}", AmdGpu::NameOf(fmt));
+        return std::format_to(ctx.out(), "{}", AmdGpu::NameOf(fmt));
     }
 };

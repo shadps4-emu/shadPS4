@@ -47,7 +47,7 @@ bool KeyManager::TransferTrophyKey() {
         ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ifs.open(path, std::ios_base::binary);
         toml::value og_data =
-            toml::parse(ifs, std::string{fmt::UTF(path.filename().u8string()).data});
+            toml::parse(ifs, std::string{FormatterDetail::UTF(path.filename().u8string()).data});
 
         // Retrieve old trophy key and store it.
         if (og_data.contains("Keys")) {
@@ -64,7 +64,7 @@ bool KeyManager::TransferTrophyKey() {
             }
         }
     } catch (std::exception& ex) {
-        fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
+        std::print("Got exception trying to load config file. Exception: {}\n", ex.what());
     }
     return false;
 }

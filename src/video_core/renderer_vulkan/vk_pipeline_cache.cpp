@@ -733,9 +733,9 @@ std::optional<vk::ShaderModule> PipelineCache::ReplaceShader(vk::ShaderModule mo
 std::string PipelineCache::GetShaderName(Shader::HwStage stage, u64 hash,
                                          std::optional<size_t> perm) {
     if (perm) {
-        return fmt::format("{}_{:#018x}_{}", stage, hash, *perm);
+        return std::format("{}_{:#018x}_{}", stage, hash, *perm);
     }
-    return fmt::format("{}_{:#018x}", stage, hash);
+    return std::format("{}_{:#018x}", stage, hash);
 }
 
 void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::HwStage stage,
@@ -749,7 +749,7 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::HwSt
     if (!std::filesystem::exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
-    const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
+    const auto filename = std::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Create};
     file.WriteSpan(code);
 }
@@ -763,7 +763,7 @@ std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::
     if (!std::filesystem::exists(patch_dir)) {
         std::filesystem::create_directories(patch_dir);
     }
-    const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
+    const auto filename = std::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
     const auto filepath = patch_dir / filename;
     if (!std::filesystem::exists(filepath)) {
         return {};

@@ -9,8 +9,8 @@
 #include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/runtime_info.h"
 
+#include <format>
 #include <boost/container/static_vector.hpp>
-#include <fmt/format.h>
 #include <spirv/unified1/spirv.hpp11>
 
 #include <numbers>
@@ -61,7 +61,7 @@ static constexpr u32 NumVertices(AmdGpu::PrimitiveType type) {
 
 template <typename... Args>
 void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... args) {
-    ctx.Name(object, fmt::format(fmt::runtime(format_str), StageName(ctx.hw_stage),
+    ctx.Name(object, std::format(std::runtime(format_str), StageName(ctx.hw_stage),
                                  std::forward<Args>(args)...)
                          .c_str());
 }
@@ -77,7 +77,7 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
     } else {
         SetMemoryModel(spv::AddressingModel::Logical, spv::MemoryModel::GLSL450);
     }
-    String(fmt::format("{:#x}", info.pgm_hash));
+    String(std::format("{:#x}", info.pgm_hash));
 
     AddCapability(spv::Capability::Shader);
     DefineArithmeticTypes();
@@ -134,15 +134,15 @@ void EmitContext::DefineArithmeticTypes() {
 
     for (u32 i = 2; i <= 4; i++) {
         if (info.uses_fp16) {
-            F16[i] = Name(TypeVector(F16[1], i), fmt::format("f16vec{}_id", i));
+            F16[i] = Name(TypeVector(F16[1], i), std::format("f16vec{}_id", i));
         }
         if (info.uses_fp64) {
-            F64[i] = Name(TypeVector(F64[1], i), fmt::format("f64vec{}_id", i));
+            F64[i] = Name(TypeVector(F64[1], i), std::format("f64vec{}_id", i));
         }
-        F32[i] = Name(TypeVector(F32[1], i), fmt::format("f32vec{}_id", i));
-        S32[i] = Name(TypeVector(S32[1], i), fmt::format("i32vec{}_id", i));
-        U32[i] = Name(TypeVector(U32[1], i), fmt::format("u32vec{}_id", i));
-        U1[i] = Name(TypeVector(U1[1], i), fmt::format("bvec{}_id", i));
+        F32[i] = Name(TypeVector(F32[1], i), std::format("f32vec{}_id", i));
+        S32[i] = Name(TypeVector(S32[1], i), std::format("i32vec{}_id", i));
+        U32[i] = Name(TypeVector(U32[1], i), std::format("u32vec{}_id", i));
+        U1[i] = Name(TypeVector(U1[1], i), std::format("bvec{}_id", i));
     }
 
     true_value = ConstantTrue(U1[1]);
@@ -252,22 +252,22 @@ void EmitContext::DefineBufferProperties() {
         const Id value{OpLoad(U32[1], ptr)};
 
         const Id buf_offset{OpBitFieldUExtract(U32[1], value, ConstU32(offset), ConstU32(8U))};
-        Name(buf_offset, fmt::format("buf{}_off", binding));
+        Name(buf_offset, std::format("buf{}_off", binding));
         buffer.Offset(PointerSize::B8) = buf_offset;
 
         if (True(desc.used_types & IR::Type::U16)) {
             const Id buf_word_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(1U))};
-            Name(buf_word_offset, fmt::format("buf{}_word_off", binding));
+            Name(buf_word_offset, std::format("buf{}_word_off", binding));
             buffer.Offset(PointerSize::B16) = buf_word_offset;
         }
         if (True(desc.used_types & IR::Type::U32)) {
             const Id buf_dword_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(2U))};
-            Name(buf_dword_offset, fmt::format("buf{}_dword_off", binding));
+            Name(buf_dword_offset, std::format("buf{}_dword_off", binding));
             buffer.Offset(PointerSize::B32) = buf_dword_offset;
         }
         if (True(desc.used_types & IR::Type::U64)) {
             const Id buf_qword_offset{OpShiftRightLogical(U32[1], buf_offset, ConstU32(3U))};
-            Name(buf_qword_offset, fmt::format("buf{}_qword_off", binding));
+            Name(buf_qword_offset, std::format("buf{}_qword_off", binding));
             buffer.Offset(PointerSize::B64) = buf_qword_offset;
         }
     }
@@ -343,9 +343,9 @@ void EmitContext::DefineInputs() {
             const Id type{GetAttributeType(*this, sharp.GetNumberFmt())[4]};
             Id id{DefineInput(type, semantic)};
             if (attrib.GetStepRate() != Gcn::VertexAttribute::InstanceIdType::None) {
-                Name(id, fmt::format("vs_instance_attr{}", semantic));
+                Name(id, std::format("vs_instance_attr{}", semantic));
             } else {
-                Name(id, fmt::format("vs_in_attr{}", semantic));
+                Name(id, std::format("vs_in_attr{}", semantic));
             }
             input_params[semantic] = GetAttributeInfo(sharp.GetNumberFmt(), id, 4, false);
         }
@@ -457,9 +457,9 @@ void EmitContext::DefineInputs() {
                 if (primary == Qualifier::PerVertex &&
                     profile.supports_fragment_shader_barycentric) {
                     return Name(DefineInput(TypeArray(type, ConstU32(3U)), bind_location),
-                                fmt::format("fs_in_attr{}_p", i));
+                                std::format("fs_in_attr{}_p", i));
                 }
-                return Name(DefineInput(type, bind_location), fmt::format("fs_in_attr{}", i));
+                return Name(DefineInput(type, bind_location), std::format("fs_in_attr{}", i));
             }();
             if (primary == Qualifier::PerVertex) {
                 Decorate(attr_id, profile.supports_amd_shader_explicit_vertex_parameter
@@ -479,7 +479,7 @@ void EmitContext::DefineInputs() {
 
         if (has_clip_distance_inputs) {
             const auto type = F32[MaxEmulatedClipDistances];
-            const auto attr_id = Name(DefineInput(type, 0), fmt::format("cldist_attr{}", 0));
+            const auto attr_id = Name(DefineInput(type, 0), std::format("cldist_attr{}", 0));
             input_params[num_inputs] = GetAttributeInfo(AmdGpu::NumberFormat::Float, attr_id,
                                                         MaxEmulatedClipDistances, false);
         }
@@ -527,7 +527,7 @@ void EmitContext::DefineInputs() {
         for (int param_id = 0; param_id < num_params; ++param_id) {
             const Id type{TypeArray(F32[4], ConstU32(num_verts_in))};
             const Id id{DefineInput(type, param_id)};
-            Name(id, fmt::format("gs_in_attr{}", param_id));
+            Name(id, std::format("gs_in_attr{}", param_id));
             input_params[param_id] =
                 GetAttributeInfo(AmdGpu::NumberFormat::Float, id, 4, false, false, true);
         }
@@ -572,7 +572,7 @@ void EmitContext::DefineInputs() {
             }
             const Id id{DefineInput(F32[4], patch_base_location + index)};
             Decorate(id, spv::Decoration::Patch);
-            Name(id, fmt::format("patch_in{}", index));
+            Name(id, std::format("patch_in{}", index));
             patches[index] = id;
         }
         break;
@@ -639,7 +639,7 @@ void EmitContext::DefineOutputs() {
                 const u32 num_components = info.stores.NumComponents(param);
                 const Id id{
                     DefineOutput(F32[num_components], i + (needs_clip_distance_emulation ? 1 : 0))};
-                Name(id, fmt::format("out_attr{}", i));
+                Name(id, std::format("out_attr{}", i));
                 output_params[i] =
                     GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, true);
                 ++num_attrs;
@@ -649,7 +649,7 @@ void EmitContext::DefineOutputs() {
                 clip_distances = Id{DefineOutput(F32[MaxEmulatedClipDistances], 0)};
                 output_params[num_attrs] = GetAttributeInfo(
                     AmdGpu::NumberFormat::Float, clip_distances, MaxEmulatedClipDistances, true);
-                Name(clip_distances, fmt::format("cldist_attr{}", 0));
+                Name(clip_distances, std::format("cldist_attr{}", 0));
             }
         }
         break;
@@ -686,7 +686,7 @@ void EmitContext::DefineOutputs() {
             }
             const Id id{DefineOutput(F32[4], patch_base_location + index)};
             Decorate(id, spv::Decoration::Patch);
-            Name(id, fmt::format("patch_out{}", index));
+            Name(id, std::format("patch_out{}", index));
             patches[index] = id;
         }
         break;
@@ -700,7 +700,7 @@ void EmitContext::DefineOutputs() {
             }
             const u32 num_components = info.stores.NumComponents(param);
             const Id id{DefineOutput(F32[num_components], i)};
-            Name(id, fmt::format("out_attr{}", i));
+            Name(id, std::format("out_attr{}", i));
             output_params[i] =
                 GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, true);
         }
@@ -734,7 +734,7 @@ void EmitContext::DefineOutputs() {
             } else {
                 id = DefineOutput(type, i);
             }
-            Name(id, fmt::format("frag_color{}", i));
+            Name(id, std::format("frag_color{}", i));
             frag_outputs[i] = GetAttributeInfo(num_format, id, num_components, true);
             ++num_render_targets;
         }
@@ -749,7 +749,7 @@ void EmitContext::DefineOutputs() {
         DefineVertexBlock();
         for (u32 attr_id = 0; attr_id < info.gs_copy_data.num_attrs; attr_id++) {
             const Id id{DefineOutput(F32[4], attr_id)};
-            Name(id, fmt::format("out_attr{}", attr_id));
+            Name(id, std::format("out_attr{}", attr_id));
             output_params[attr_id] = GetAttributeInfo(AmdGpu::NumberFormat::Float, id, 4, true);
         }
         break;
@@ -842,7 +842,7 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, bool is_cohere
         Name(id, "ssbo_shmem");
         break;
     default:
-        Name(id, fmt::format("ssbo_{}", binding.buffer));
+        Name(id, std::format("ssbo_{}", binding.buffer));
         break;
     }
     interfaces.push_back(id);
@@ -1015,7 +1015,7 @@ void EmitContext::DefineImagesAndSamplers() {
         Decorate(id, spv::Decoration::Binding, binding.unified);
         binding.unified += num_bindings;
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}{}", hw_stage, "img", images.size()));
+        Name(id, std::format("{}_{}{}", hw_stage, "img", images.size()));
         images.push_back({
             .data_types = &data_types,
             .id = id,
@@ -1042,7 +1042,7 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        Name(id, fmt::format("{}_{}{}", hw_stage, "samp", samplers.size()));
+        Name(id, std::format("{}_{}{}", hw_stage, "samp", samplers.size()));
         samplers.push_back(id);
         interfaces.push_back(id);
     }

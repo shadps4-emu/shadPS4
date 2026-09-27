@@ -53,7 +53,7 @@ Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
                                       ctx.push_data_block, ctx.ConstU32(half),
                                       ctx.ConstU32(index & 3))};
     const Id ud_reg{ctx.OpLoad(ctx.U32[1], ud_ptr)};
-    ctx.Name(ud_reg, fmt::format("ud_{}", u32(reg)));
+    ctx.Name(ud_reg, std::format("ud_{}", u32(reg)));
     return ud_reg;
 }
 

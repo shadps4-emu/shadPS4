@@ -2,10 +2,6 @@
 	path = externals/zlib-ng
 	url = https://github.com/shadps4-emu/ext-zlib-ng.git
 	shallow = true
-[submodule "externals/fmt"]
-	path = externals/fmt
-	url = https://github.com/shadps4-emu/ext-fmt.git
-	shallow = true
 [submodule "externals/vulkan-headers"]
 	path = externals/vulkan-headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
