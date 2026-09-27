@@ -20,7 +20,7 @@ void EmitBarrier(EmitContext& ctx) {
     const auto execution{spv::Scope::Workgroup};
     spv::Scope memory;
     spv::MemorySemanticsMask memory_semantics;
-    if (ctx.l_stage == Shader::LogicalStage::TessellationControl) {
+    if (ctx.sw_stage == Shader::SwStage::TessellationControl) {
         memory = spv::Scope::Invocation;
         memory_semantics = spv::MemorySemanticsMask::MaskNone;
     } else {

@@ -62,13 +62,14 @@ struct InfoPersistent {
     };
     UserDataMask ud_mask{};
     u32 fetch_shader_sgpr_base{};
+    u32 shared_memory_scratch_size{};
 
     u64 pgm_hash{};
 
     s32 tess_consts_dword_offset = -1;
     IR::ScalarReg tess_consts_ptr_base = IR::ScalarReg::Max;
-    Stage stage;
-    LogicalStage l_stage;
+    HwStage hw_stage;
+    SwStage sw_stage;
 
     u8 mrt_mask{};
     bool has_fetch_shader{};
@@ -76,8 +77,8 @@ struct InfoPersistent {
     bool uses_dma{};
 
     InfoPersistent() = default;
-    InfoPersistent(Stage stage_, LogicalStage l_stage_, u64 pgm_hash_)
-        : stage{stage_}, l_stage{l_stage_}, pgm_hash{pgm_hash_} {}
+    InfoPersistent(HwStage hw_stage_, SwStage sw_stage_, u64 pgm_hash_)
+        : hw_stage{hw_stage_}, sw_stage{sw_stage_}, pgm_hash{pgm_hash_} {}
 };
 
 struct Info : InfoPersistent {
@@ -138,6 +139,7 @@ struct Info : InfoPersistent {
     bool uses_lane_id{};
     bool uses_shader_clock{};
     bool uses_group_quad{};
+    bool uses_group_shuffle{};
     bool uses_group_ballot{};
     IR::Type shared_types{};
     bool uses_fp16{};
@@ -153,7 +155,7 @@ struct Info : InfoPersistent {
     std::array<Interpolation, IR::NumParams> fs_interpolation{};
 
     Info() = default;
-    Info(Stage stage_, LogicalStage l_stage_, ShaderParams params)
+    Info(HwStage stage_, SwStage l_stage_, ShaderParams params)
         : InfoPersistent(stage_, l_stage_, params.hash), pgm_base{params.Base()},
           user_data{params.user_data} {}
 

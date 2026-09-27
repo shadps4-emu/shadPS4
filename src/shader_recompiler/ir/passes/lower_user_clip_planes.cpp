@@ -18,7 +18,7 @@ static constexpr u32 NumUserClipPlanes = 6;
 // draw, so they are supplied through a per-draw uniform buffer.
 void LowerUserClipPlanes(IR::Program& program, const RuntimeInfo& runtime_info) {
     Info& info = program.info;
-    if (info.stage != Stage::Vertex) {
+    if (info.hw_stage != HwStage::Vertex) {
         return;
     }
 
@@ -28,7 +28,7 @@ void LowerUserClipPlanes(IR::Program& program, const RuntimeInfo& runtime_info) 
         .buffer_type = BufferType::ClipPlanes,
     });
 
-    const u32 enabled_mask = runtime_info.vs_info.user_clip_plane_mask;
+    const u32 enabled_mask = runtime_info.hw.vs.user_clip_plane_mask;
     if (enabled_mask == 0) {
         return;
     }
@@ -37,8 +37,8 @@ void LowerUserClipPlanes(IR::Program& program, const RuntimeInfo& runtime_info) 
     // the eight ClipDistance slots here, and the guest's exports own their indices. Lowering is
     // skipped for such shaders, which restores the previous behavior of clipping by the exported
     // distances alone.
-    for (u32 i = 0; i < runtime_info.vs_info.num_outputs; ++i) {
-        for (const auto output : runtime_info.vs_info.outputs[i]) {
+    for (u32 i = 0; i < runtime_info.hw.vs.num_outputs; ++i) {
+        for (const auto output : runtime_info.hw.vs.outputs[i]) {
             if (output >= Output::ClipDist0 && output <= Output::ClipDist7) {
                 LOG_WARNING(Render_Vulkan,
                             "Skipping user clip plane lowering: shader {:#x} exports its own clip "

@@ -54,11 +54,11 @@ void Translator::ExportRenderTarget(const GcnInst& inst) {
 
     // Dual source blending uses MRT1 for exporting src1
     u32 color_buffer_idx = static_cast<u32>(mrt) - static_cast<u32>(IR::Attribute::RenderTarget0);
-    if (runtime_info.fs_info.dual_source_blending && mrt == IR::Attribute::RenderTarget1) {
+    if (runtime_info.hw.fs.dual_source_blending && mrt == IR::Attribute::RenderTarget1) {
         color_buffer_idx = 0;
     }
 
-    const auto color_buffer = runtime_info.fs_info.color_buffers[color_buffer_idx];
+    const auto color_buffer = runtime_info.hw.fs.color_buffers[color_buffer_idx];
     if (color_buffer.export_format == AmdGpu::ShaderExportFormat::Zero || exp.en == 0) {
         // No export
         return;
@@ -128,7 +128,7 @@ void Translator::ExportDepth(const GcnInst& inst) {
     std::array<IR::F32, 4> components{};
     if (exp.compr) {
         // Components are float16 packed into a VGPR
-        const auto num_format = NumberFormatCompressed(runtime_info.fs_info.z_export_format);
+        const auto num_format = NumberFormatCompressed(runtime_info.hw.fs.z_export_format);
         // Export R, G
         if (exp.en & 1) {
             const IR::Value unpacked_value =
@@ -145,8 +145,8 @@ void Translator::ExportDepth(const GcnInst& inst) {
         }
     } else {
         // Components are float32 into separate VGPRS
-        u32 mask = MaskFromExportFormat(exp.en & runtime_info.fs_info.mrtz_mask,
-                                        runtime_info.fs_info.z_export_format);
+        u32 mask = MaskFromExportFormat(exp.en & runtime_info.hw.fs.mrtz_mask,
+                                        runtime_info.hw.fs.z_export_format);
         for (u32 i = 0; i < 4; i++, mask >>= 1) {
             if ((mask & 1) == 0) {
                 continue;
@@ -166,7 +166,7 @@ void Translator::ExportDepth(const GcnInst& inst) {
 }
 
 void Translator::EmitExport(const GcnInst& inst) {
-    if (info.stage == Stage::Fragment && inst.control.exp.vm) {
+    if (info.hw_stage == HwStage::Fragment && inst.control.exp.vm) {
         ir.Discard(ir.LogicalNot(ir.GetExec()));
     }
 
@@ -180,6 +180,9 @@ void Translator::EmitExport(const GcnInst& inst) {
 
     ASSERT_MSG(!inst.control.exp.compr, "Compressed exports only supported for render targets");
 
+    const bool tess_emulated_primitive =
+        info.sw_stage == SwStage::Vertex && runtime_info.sw.vs.tess_emulated_primitive;
+
     u32 mask = inst.control.exp.en;
     for (u32 i = 0; i < 4; i++, mask >>= 1) {
         if ((mask & 1) == 0) {
@@ -187,7 +190,7 @@ void Translator::EmitExport(const GcnInst& inst) {
         }
         const auto value = ir.GetVectorReg<IR::F32>(IR::VectorReg(inst.src[i].code));
         if (IsPosition(attrib)) {
-            IR::ExportPosition(ir, runtime_info.vs_info, attrib, i, value);
+            IR::ExportPosition(ir, runtime_info.hw.vs, tess_emulated_primitive, attrib, i, value);
         } else {
             ir.SetAttribute(attrib, value, i);
         }

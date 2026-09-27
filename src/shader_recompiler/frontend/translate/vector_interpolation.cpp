@@ -55,7 +55,7 @@ void Translator::V_INTERP_P1_F32(const GcnInst& inst) {
         return;
     }
     const u32 attr_index = inst.control.vintrp.attr;
-    const auto& attr = runtime_info.fs_info.inputs[attr_index];
+    const auto& attr = runtime_info.hw.fs.inputs[attr_index];
     if (attr.IsDefault()) {
         return;
     }
@@ -71,7 +71,7 @@ void Translator::V_INTERP_P1_F32(const GcnInst& inst) {
 void Translator::V_INTERP_P2_F32(const GcnInst& inst) {
     const u32 attr_index = inst.control.vintrp.attr;
     const IR::Attribute attrib = IR::Attribute::Param0 + attr_index;
-    const auto& attr = runtime_info.fs_info.inputs[attr_index];
+    const auto& attr = runtime_info.hw.fs.inputs[attr_index];
     auto& interp = info.fs_interpolation[attr_index];
     if (attr.IsDefault()) {
         SetDst(inst.dst[0],
@@ -96,7 +96,7 @@ void Translator::V_INTERP_P2_F32(const GcnInst& inst) {
 void Translator::V_INTERP_MOV_F32(const GcnInst& inst) {
     const u32 attr_index = inst.control.vintrp.attr;
     const IR::Attribute attrib = IR::Attribute::Param0 + attr_index;
-    const auto& attr = runtime_info.fs_info.inputs[attr_index];
+    const auto& attr = runtime_info.hw.fs.inputs[attr_index];
     auto& interp = info.fs_interpolation[attr_index];
     ASSERT(attr.is_flat || inst.src[0].code == 2);
     if (profile.supports_amd_shader_explicit_vertex_parameter ||

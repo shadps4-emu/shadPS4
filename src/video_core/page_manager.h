@@ -14,6 +14,9 @@ class Rasterizer;
 
 namespace VideoCore {
 
+struct UffdImpl;
+struct SignalImpl;
+
 class PageManager {
 public:
     // Use the same page size as the tracker.
@@ -57,6 +60,8 @@ public:
     }
 
 private:
+    friend struct UffdImpl;
+    friend struct SignalImpl;
     struct Impl;
     std::unique_ptr<Impl> impl;
 };

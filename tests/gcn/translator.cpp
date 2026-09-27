@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "shader_recompiler/runtime_info.h"
 #include "translator.hpp"
 
 #include <iostream>
@@ -46,8 +47,8 @@ std::vector<u32> TranslateToSpirv(std::span<const u64> raw_gcn_insts) {
     Gcn::GcnInst store_inst = decoder.decodeInstruction(second);
 
     Shader::Info info{};
-    info.stage = Stage::Compute;
-    info.l_stage = LogicalStage::Compute;
+    info.hw_stage = HwStage::Compute;
+    info.sw_stage = SwStage::Compute;
     info.flattened_ud_buf.resize(4);
     AmdGpu::Buffer buf = AmdGpu::Buffer::Null();
     std::memcpy(info.flattened_ud_buf.data(), &buf, sizeof(buf));
@@ -70,9 +71,9 @@ std::vector<u32> TranslateToSpirv(std::span<const u64> raw_gcn_insts) {
     profile.subgroup_size = 32;
 
     RuntimeInfo runtime_info{};
-    runtime_info.Initialize(Stage::Compute);
-    runtime_info.num_user_data = 4;
-    runtime_info.cs_info.workgroup_size = {1, 1, 1};
+    runtime_info.Initialize(HwStage::Compute, SwStage::Compute);
+    runtime_info.props.num_user_data = 4;
+    runtime_info.hw.cs.workgroup_size = {1, 1, 1};
 
     Gcn::Translator translator(program.info, runtime_info, profile);
     translator.EmitPrologue(block);

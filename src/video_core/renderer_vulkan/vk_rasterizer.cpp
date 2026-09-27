@@ -15,6 +15,7 @@
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_depth_stencil_state.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_hle.h"
@@ -245,7 +246,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     const bool predicated = liverpool->IsPacketPredicated();
     scheduler.BeginRendering(state);
 
-    const auto& vs_info = pipeline->GetStage(Shader::LogicalStage::Vertex);
+    const auto& vs_info = pipeline->GetStage(Shader::SwStage::Vertex);
     const auto& fetch_shader = pipeline->GetFetchShader();
     const auto [vertex_offset, instance_offset] = GetDrawOffsets(regs, vs_info, fetch_shader);
 
@@ -267,7 +268,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 }
 
 void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u32 stride,
-                              u32 max_count, VAddr count_address) {
+                              u32 max_count, VAddr count_address, u16 vertex_sgpr_offset,
+                              u16 instance_sgpr_offset) {
     RENDERER_TRACE;
 
     scheduler.PopPendingOperations();
@@ -276,7 +278,11 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         return;
     }
 
-    const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
+    const DrawIndirectParams params = {
+        .vertex_sgpr_offset = vertex_sgpr_offset,
+        .instance_sgpr_offset = instance_sgpr_offset,
+    };
+    const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline(params);
     if (!pipeline) {
         return;
     }
@@ -373,7 +379,7 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
-    const auto& cs = pipeline->GetStage(Shader::LogicalStage::Compute);
+    const auto& cs = pipeline->GetStage(Shader::SwStage::Compute);
     if (ExecuteShaderHLE(cs, liverpool->regs, cs_program, *this)) {
         return;
     }
@@ -534,7 +540,7 @@ bool Rasterizer::IsComputeMetaClear(const Pipeline* pipeline) {
     // we can skip the whole dispatch and update the tracked state instead. Also, it is not
     // intended to be consumed and in such rare cases (e.g. HTile introspection, CRAA) we
     // will need its full emulation anyways.
-    const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
+    const auto& info = pipeline->GetStage(Shader::SwStage::Compute);
 
     // Assume if a shader reads metadata, it is a copy shader.
     for (const auto& desc : info.buffers) {
@@ -569,7 +575,7 @@ bool Rasterizer::IsComputeImageCopy(const Pipeline* pipeline) {
 
     // Ensure shader only has 2 bound buffers
     const auto& cs_pgm = liverpool->GetCsRegs();
-    const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
+    const auto& info = pipeline->GetStage(Shader::SwStage::Compute);
     if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() != 2 || !info.images.empty()) {
         return false;
     }
@@ -631,7 +637,7 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
 
     // Ensure shader only has 2 bound buffers
     const auto& cs_pgm = liverpool->GetCsRegs();
-    const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
+    const auto& info = pipeline->GetStage(Shader::SwStage::Compute);
     if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() != 2 || !info.images.empty()) {
         return false;
     }

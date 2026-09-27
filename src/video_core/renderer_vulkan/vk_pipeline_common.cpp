@@ -60,7 +60,7 @@ std::string Pipeline::GetDebugString() const {
     std::string stage_desc;
     for (const auto& stage : stages) {
         if (stage) {
-            const auto shader_name = PipelineCache::GetShaderName(stage->stage, stage->pgm_hash);
+            const auto shader_name = PipelineCache::GetShaderName(stage->hw_stage, stage->pgm_hash);
             if (stage_desc.empty()) {
                 stage_desc = shader_name;
             } else {

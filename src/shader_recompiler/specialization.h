@@ -96,7 +96,7 @@ struct StageSpecialization {
                         Backend::Bindings start_)
         : info{&info_}, runtime_info{runtime_info_}, start{start_} {
         fetch_shader_data = Gcn::ParseFetchShader(info_);
-        if (info_.stage == Stage::Vertex && fetch_shader_data) {
+        if (info_.sw_stage == SwStage::Vertex && fetch_shader_data) {
             // Specialize shader on VS input number types to follow spec.
             ForEachSharp(vs_attribs, fetch_shader_data->attributes,
                          [this](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
@@ -104,9 +104,9 @@ struct StageSpecialization {
                              if (const auto step_rate = desc.GetStepRate();
                                  step_rate != InstanceIdType::None) {
                                  spec.divisor = step_rate == InstanceIdType::OverStepRate0
-                                                    ? runtime_info.vs_info.step_rate_0
+                                                    ? runtime_info.sw.vs.step_rate_0
                                                     : (step_rate == InstanceIdType::OverStepRate1
-                                                           ? runtime_info.vs_info.step_rate_1
+                                                           ? runtime_info.sw.vs.step_rate_1
                                                            : 1);
                              }
                              spec.num_class = AmdGpu::GetNumberClass(sharp.GetNumberFmt());
@@ -156,8 +156,8 @@ struct StageSpecialization {
                      });
 
         // Initialize runtime_info fields that rely on analysis in tessellation passes
-        if (info->l_stage == LogicalStage::TessellationControl ||
-            info->l_stage == LogicalStage::TessellationEval) {
+        if (info->sw_stage == SwStage::TessellationControl ||
+            info->sw_stage == SwStage::TessellationEval) {
             TessellationDataConstantBuffer tess_constants{};
             info->ReadTessConstantBuffer(tess_constants);
             runtime_info.InitFromTessConstants(tess_constants);

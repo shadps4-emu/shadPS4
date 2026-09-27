@@ -9,9 +9,9 @@
 namespace Shader {
 
 void InjectClipDistanceAttributes(IR::Program& program, RuntimeInfo& runtime_info) {
-    auto& info = runtime_info.fs_info;
+    auto& info = runtime_info.hw.fs;
 
-    if (!info.clip_distance_emulation || program.info.l_stage != LogicalStage::Fragment) {
+    if (!info.clip_distance_emulation || program.info.sw_stage != SwStage::Fragment) {
         return;
     }
 

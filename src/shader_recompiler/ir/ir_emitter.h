@@ -106,6 +106,8 @@ public:
     [[nodiscard]] U32U64 SharedAtomicAnd(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicOr(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicXor(const U32& address, const U32U64& data, bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicCmpSwap(const U32& address, const U32U64& value,
+                                             const U32U64& cmp_value, bool is_gds);
 
     template <typename T = U32>
     [[nodiscard]] T SharedAtomicInc(const U32& address, bool is_gds);
@@ -168,11 +170,13 @@ public:
                                              const Value& value, const Value& cmp_value,
                                              BufferInstInfo info);
 
-    [[nodiscard]] U32 DataAppend(const U32& counter);
-    [[nodiscard]] U32 DataConsume(const U32& counter);
+    [[nodiscard]] U32 DataAppend(const U32& gds_dw_offset);
+    [[nodiscard]] U32 DataConsume(const U32& gds_dw_offset);
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WarpId();
-    [[nodiscard]] U32 QuadShuffle(const U32& value, const U32& index);
+    [[nodiscard]] U32 QuadBroadcast(const U32& value, const U32& index);
+    [[nodiscard]] U32 Shuffle(const U32& value, const U32& index);
+    [[nodiscard]] U32 ShuffleXor(const U32& value, const U32& mask);
     [[nodiscard]] U32 ReadFirstLane(const U32& value);
     [[nodiscard]] U32 ReadLane(const U32& value, const U32& lane);
     [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
