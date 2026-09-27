@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <cmath>
+#include <tuple>
 #include "common/assert.h"
 #include "common/types.h"
 
@@ -326,10 +328,11 @@ constexpr std::tuple<u32, u32, size_t> ImageSizeMicroTiled(u32 pitch, u32 height
     return {pitch_aligned, height_aligned, log_sz};
 }
 
-constexpr std::tuple<u32, u32, size_t> ImageSizeMacroTiled(u32 pitch, u32 height, u32 thickness,
-                                                           u32 bpp, u32 num_samples,
-                                                           AmdGpu::TileMode tile_mode, u32 mip_n,
-                                                           bool alt) {
+constexpr std::tuple<u32, u32, size_t, bool> ImageSizeMacroTiled(u32 pitch, u32 height,
+                                                                 u32 thickness, u32 bpp,
+                                                                 u32 num_samples,
+                                                                 AmdGpu::TileMode tile_mode,
+                                                                 u32 mip_n, bool alt) {
     const auto [pitch_align, height_align] = GetMacroTileExtents(tile_mode, bpp, num_samples, alt);
     ASSERT(pitch_align != 0 && height_align != 0);
     bool downgrade_to_micro = false;
@@ -340,13 +343,14 @@ constexpr std::tuple<u32, u32, size_t> ImageSizeMacroTiled(u32 pitch, u32 height
     }
 
     if (downgrade_to_micro) {
-        return ImageSizeMicroTiled(pitch, height, thickness, bpp, num_samples);
+        const auto [pitch_aligned, height_aligned, log_sz] = ImageSizeMicroTiled(pitch, height, thickness, bpp, num_samples);
+        return {pitch_aligned, height_aligned, log_sz, downgrade_to_micro};
     }
 
     const auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
     const auto height_aligned = (height + height_align - 1) & ~(height_align - 1);
     const auto log_sz = pitch_aligned * height_aligned * num_samples;
-    return {pitch_aligned, height_aligned, (log_sz * bpp + 7) / 8};
+    return {pitch_aligned, height_aligned, (log_sz * bpp + 7) / 8, downgrade_to_micro};
 }
 
 } // namespace VideoCore

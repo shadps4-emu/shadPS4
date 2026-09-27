@@ -101,7 +101,7 @@ layout (set = 0, binding = 1, scalar) buffer OutputBuf {
 
 layout (set = 0, binding = 2, scalar) uniform TilingInfo {
     uint bank_swizzle;
-    uint num_slices;
+    uint micro_tiled_mips;
     uint num_mips;
     MipInfo mips[16];
 } info;
@@ -210,7 +210,6 @@ uint32_t ComputePixelIndexWithinMicroTile(uint32_t x, uint32_t y, uint32_t z) {
     return pixel_number;
 }
 
-#if !IS_MACRO_TILED
 uint32_t ComputeSurfaceAddrFromCoordMicroTiled(uint32_t x, uint32_t y, uint32_t slice, uint32_t pitch, uint32_t height, uint32_t sample_index) {
     uint32_t slice_bytes = BITS_TO_BYTES(pitch * height * MICRO_TILE_THICKNESS * BITS_PER_PIXEL * NUM_SAMPLES);
 
@@ -238,7 +237,7 @@ uint32_t ComputeSurfaceAddrFromCoordMicroTiled(uint32_t x, uint32_t y, uint32_t 
     return slice_offset + micro_tile_offset + elem_offset;
 }
 
-#else
+#if IS_MACRO_TILED
 uint32_t ComputePipeFromCoord(uint32_t x, uint32_t y, uint32_t slice) {
     uint32_t p0 = 0;
     uint32_t p1 = 0;
@@ -435,10 +434,13 @@ void main() {
     uint slice = texel / (pitch * height);
 
 #if IS_MACRO_TILED
-    tiled_offset += ComputeSurfaceAddrFromCoordMacroTiled(x, y, slice, pitch, height, 0);
-#else
-    tiled_offset += ComputeSurfaceAddrFromCoordMicroTiled(x, y, slice, pitch, height, 0);
+    if ((info.micro_tiled_mips & (1u << mip)) == 0) {
+        tiled_offset += ComputeSurfaceAddrFromCoordMacroTiled(x, y, slice, pitch, height, 0);
+    } else
 #endif
+    {
+        tiled_offset += ComputeSurfaceAddrFromCoordMicroTiled(x, y, slice, pitch, height, 0);
+    }
 
     if (IS_TILER != 0) {
         tiled_data[tiled_offset / BYTES_PER_PIXEL] = linear_data[gl_GlobalInvocationID.x];

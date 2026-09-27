@@ -157,6 +157,7 @@ void ImageInfo::UpdateSize() {
     const u32 thickness = AmdGpu::GetMicroTileThickness(array_mode);
     const bool macro = AmdGpu::IsMacroTiled(array_mode);
     guest_size = 0;
+    micro_tiled_mips = 0;
     for (s32 mip = 0; mip < resources.levels; ++mip) {
         u32 mip_w = pitch >> mip;
         u32 mip_h = size.height >> mip;
@@ -182,8 +183,12 @@ void ImageInfo::UpdateSize() {
             mip_d += (-mip_d) & (thickness - 1);
             if (macro) {
                 ASSERT(!props.is_block);
-                std::tie(mip_info.pitch, mip_info.height, mip_info.size) = ImageSizeMacroTiled(
+                bool downgrade_to_micro;
+                std::tie(mip_info.pitch, mip_info.height, mip_info.size, downgrade_to_micro) = ImageSizeMacroTiled(
                     mip_w, mip_h, thickness, num_bits, num_samples, tile_mode, mip, alt_tile);
+                if (downgrade_to_micro) {
+                    micro_tiled_mips |= 1u << mip;
+                }
             } else {
                 std::tie(mip_info.pitch, mip_info.height, mip_info.size) =
                     ImageSizeMicroTiled(mip_w, mip_h, thickness, num_bits, num_samples);
