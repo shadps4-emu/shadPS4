@@ -14,7 +14,7 @@ namespace Common::Log {
  * Returns the name of the passed log class as a C-string. Subclasses are separated by periods
  * instead of underscores as in the enumeration.
  */
-const char* GetLogClassName(Class log_class);
+const char* GetLogClassName(LogClass log_class);
 
 /**
  * Returns the name of the passed log level as a C-string.
@@ -35,7 +35,7 @@ public:
     void ResetAll(Level level);
 
     /// Sets the minimum level of `log_class` (and not of its subclasses) to `level`.
-    void SetClassLevel(Class log_class, Level level);
+    void SetClassLevel(LogClass log_class, Level level);
 
     /**
      * Parses a filter string and applies it to this filter.
@@ -54,13 +54,13 @@ public:
     void ParseFilterString(std::string_view filter_view);
 
     /// Matches class/level combination against the filter, returning true if it passed.
-    bool CheckMessage(Class log_class, Level level) const;
+    bool CheckMessage(LogClass log_class, Level level) const;
 
     /// Returns true if any logging classes are set to debug
     bool IsDebug() const;
 
 private:
-    std::array<Level, static_cast<std::size_t>(Class::Count)> class_levels;
+    std::array<Level, static_cast<std::size_t>(LogClass::Count)> class_levels;
 };
 
 } // namespace Common::Log

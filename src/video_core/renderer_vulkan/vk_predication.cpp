@@ -103,9 +103,6 @@ static vk::BufferUsageFlags PredicateBufferUsage(const Instance& instance) {
     vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eStorageBuffer |
                                  vk::BufferUsageFlagBits::eTransferSrc |
                                  vk::BufferUsageFlagBits::eTransferDst;
-    if (instance.IsConditionalRenderingSupported()) {
-        usage |= vk::BufferUsageFlagBits::eConditionalRenderingEXT;
-    }
     return usage;
 }
 
@@ -121,7 +118,6 @@ static u32 GetPredicateSlotSize(const Instance& instance) {
 PredicationManager::PredicationManager(const Instance& instance_, Scheduler& scheduler_,
                                        VideoCore::BufferCache& buffer_cache_)
     : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_},
-      supported{instance_.IsConditionalRenderingSupported()},
       use_64bit_predicate{instance_.IsAmdGpu()},
       predicate_buffer{instance_,
                        scheduler_,

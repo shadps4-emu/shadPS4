@@ -1053,10 +1053,12 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/passes/flatten_extended_userdata_pass.cpp
                       src/shader_recompiler/ir/passes/hull_shader_transform.cpp
                       src/shader_recompiler/ir/passes/inject_clip_distance_attributes.cpp
+                      src/shader_recompiler/ir/passes/inverse_ballot_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/ir_passes.h
                       src/shader_recompiler/ir/passes/lower_buffer_format_to_raw.cpp
                       src/shader_recompiler/ir/passes/lower_fp64_to_fp32.cpp
                       src/shader_recompiler/ir/passes/lower_user_clip_planes.cpp
+                      src/shader_recompiler/ir/passes/phi_simplification_pass.cpp
                       src/shader_recompiler/ir/passes/readlane_elimination_pass.cpp
                       src/shader_recompiler/ir/passes/resource_discover_pass.cpp
                       src/shader_recompiler/ir/passes/resource_pass.h

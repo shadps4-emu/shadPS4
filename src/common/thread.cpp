@@ -2,8 +2,11 @@
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
+#include <algorithm>
+#include <array>
+#include <condition_variable>
 #include <ctime>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -38,6 +41,90 @@
 #endif
 
 namespace Common {
+
+struct InterruptibleTimer::Impl {
+#ifdef _WIN32
+    HANDLE timer{};
+    HANDLE interrupt{};
+#else
+    std::mutex mutex;
+    std::condition_variable cv;
+    bool interrupted{};
+#endif
+};
+
+InterruptibleTimer::InterruptibleTimer() : impl{std::make_unique<Impl>()} {
+#ifdef _WIN32
+    impl->timer = CreateWaitableTimerExW(nullptr, nullptr, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+                                         TIMER_ALL_ACCESS);
+    if (impl->timer == nullptr) {
+        impl->timer = CreateWaitableTimerW(nullptr, TRUE, nullptr);
+    }
+    impl->interrupt = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+#endif
+}
+
+InterruptibleTimer::~InterruptibleTimer() {
+#ifdef _WIN32
+    if (impl->timer != nullptr) {
+        CloseHandle(impl->timer);
+    }
+    if (impl->interrupt != nullptr) {
+        CloseHandle(impl->interrupt);
+    }
+#endif
+}
+
+void InterruptibleTimer::WaitUntil(std::chrono::steady_clock::time_point deadline) {
+    const auto now = std::chrono::steady_clock::now();
+    if (deadline <= now) {
+        return;
+    }
+#ifdef _WIN32
+    if (impl->timer == nullptr || impl->interrupt == nullptr) {
+        std::this_thread::sleep_until(deadline);
+        return;
+    }
+    const auto remaining =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(deadline - now).count();
+    LARGE_INTEGER interval{.QuadPart = -std::max<s64>(1, remaining / 100)};
+    if (!SetWaitableTimer(impl->timer, &interval, 0, nullptr, nullptr, FALSE)) {
+        std::this_thread::sleep_until(deadline);
+        return;
+    }
+    const std::array handles{impl->timer, impl->interrupt};
+    const DWORD result =
+        WaitForMultipleObjects(static_cast<DWORD>(handles.size()), handles.data(), FALSE, INFINITE);
+    if (result == WAIT_FAILED) {
+        std::this_thread::sleep_until(deadline);
+        return;
+    }
+#else
+    std::unique_lock lock{impl->mutex};
+    if (impl->interrupted) {
+        impl->interrupted = false;
+        return;
+    }
+    if (impl->cv.wait_until(lock, deadline, [&] { return impl->interrupted; })) {
+        impl->interrupted = false;
+        return;
+    }
+#endif
+}
+
+void InterruptibleTimer::Notify() {
+#ifdef _WIN32
+    if (impl->interrupt != nullptr) {
+        SetEvent(impl->interrupt);
+    }
+#else
+    {
+        std::scoped_lock lock{impl->mutex};
+        impl->interrupted = true;
+    }
+    impl->cv.notify_one();
+#endif
+}
 
 #ifdef __APPLE__
 
@@ -106,7 +193,7 @@ void SetCurrentThreadPriority(ThreadPriority new_priority) {
         windows_priority = THREAD_PRIORITY_NORMAL;
         break;
     }
-    SetThreadPriority(handle, windows_priority);
+    ::SetThreadPriority(GetCurrentThread(), windows_priority);
 }
 
 bool AccurateSleep(const std::chrono::nanoseconds duration, std::chrono::nanoseconds* remaining,
@@ -131,22 +218,56 @@ bool AccurateSleep(const std::chrono::nanoseconds duration, std::chrono::nanosec
 
 #else
 
-void SetCurrentThreadPriority(ThreadPriority new_priority) {
-    pthread_t this_thread = pthread_self();
+static void ApplyPosixThreadPriority(pthread_t thread, ThreadPriority priority) {
+#ifdef __linux__
+    int sched_policy = SCHED_OTHER;
+    sched_param param{};
+    param.sched_priority = 0;
 
-    const auto scheduling_type = SCHED_OTHER;
-    s32 max_prio = sched_get_priority_max(scheduling_type);
-    s32 min_prio = sched_get_priority_min(scheduling_type);
-    u32 level = std::max(static_cast<u32>(new_priority) + 1, 4U);
-
-    struct sched_param params;
-    if (max_prio > min_prio) {
-        params.sched_priority = min_prio + ((max_prio - min_prio) * level) / 4;
-    } else {
-        params.sched_priority = min_prio - ((min_prio - max_prio) * level) / 4;
+    switch (priority) {
+    case ThreadPriority::Low:
+        param.sched_priority = -5;
+        break;
+    case ThreadPriority::Normal:
+        param.sched_priority = 0;
+        break;
+    case ThreadPriority::High:
+        param.sched_priority = 5;
+        break;
+    case ThreadPriority::VeryHigh:
+        param.sched_priority = 10;
+        break;
+    case ThreadPriority::Critical:
+        sched_policy = SCHED_RR;
+        param.sched_priority = sched_get_priority_max(SCHED_RR);
+        break;
+    default:
+        param.sched_priority = 0;
+        break;
     }
 
-    pthread_setschedparam(this_thread, scheduling_type, &params);
+    pthread_setschedparam(thread, sched_policy, &param);
+#elif defined(__APPLE__)
+    // macOS uses different thread priority mechanisms
+    // For now, we'll skip implementation on macOS
+    (void)thread;
+    (void)priority;
+#else
+    // Other POSIX systems - generic implementation
+    (void)thread;
+    (void)priority;
+#endif
+}
+
+void SetCurrentThreadPriority(ThreadPriority new_priority) {
+    ApplyPosixThreadPriority(pthread_self(), new_priority);
+}
+
+void SetThreadPriority(void* thread_handle, ThreadPriority new_priority) {
+    if (!thread_handle) {
+        return;
+    }
+    ApplyPosixThreadPriority(reinterpret_cast<pthread_t>(thread_handle), new_priority);
 }
 
 bool AccurateSleep(const std::chrono::nanoseconds duration, std::chrono::nanoseconds* remaining,
@@ -273,6 +394,33 @@ std::string GetCurrentThreadName() {
         return "<unknown name>";
     }
     return std::string{name};
+#endif
+}
+
+void SetThreadAffinity(const std::vector<u32>& core_ids) {
+    if (core_ids.empty()) {
+        return;
+    }
+
+#ifdef _WIN32
+    HANDLE thread = GetCurrentThread();
+    DWORD_PTR affinity_mask = 0;
+    for (u32 core_id : core_ids) {
+        affinity_mask |= (1ULL << core_id);
+    }
+    SetThreadAffinityMask(thread, affinity_mask);
+#elif defined(__linux__)
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    for (u32 core_id : core_ids) {
+        CPU_SET(core_id, &cpuset);
+    }
+    pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+#elif defined(__APPLE__)
+    // macOS doesn't have direct thread affinity control
+    // We can use thread_policy_set but it's more complex
+    // For now, we'll skip implementation on macOS
+    LOG_INFO(Common, "Thread affinity not implemented for macOS");
 #endif
 }
 

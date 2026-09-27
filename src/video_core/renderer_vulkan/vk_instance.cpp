@@ -345,14 +345,6 @@ bool Instance::CreateDevice() {
                  image_2d_view_of_3d_features.sampler2DViewOf3D);
     }
     image_view_min_lod = add_extension(VK_EXT_IMAGE_VIEW_MIN_LOD_EXTENSION_NAME);
-    conditional_rendering = add_extension(VK_EXT_CONDITIONAL_RENDERING_EXTENSION_NAME);
-    if (conditional_rendering) {
-        const auto conditional_rendering_features =
-            feature_chain.get<vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
-        conditional_rendering = conditional_rendering_features.conditionalRendering;
-        LOG_INFO(Render_Vulkan, "- conditionalRendering: {}",
-                 conditional_rendering_features.conditionalRendering);
-    }
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
     shader_clock = add_extension(VK_KHR_SHADER_CLOCK_EXTENSION_NAME);
     if (shader_clock) {

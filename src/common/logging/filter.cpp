@@ -21,14 +21,14 @@ Level GetLevelByName(const It begin, const It end) {
 }
 
 template <typename It>
-Class GetClassByName(const It begin, const It end) {
-    for (u8 i = 0; i < static_cast<u8>(Class::Count); ++i) {
-        const char* level_name = GetLogClassName(static_cast<Class>(i));
+LogClass GetClassByName(const It begin, const It end) {
+    for (u8 i = 0; i < static_cast<u8>(LogClass::Count); ++i) {
+        const char* level_name = GetLogClassName(static_cast<LogClass>(i));
         if (std::string_view(begin, end).compare(level_name) == 0) {
-            return static_cast<Class>(i);
+            return static_cast<LogClass>(i);
         }
     }
-    return Class::Count;
+    return LogClass::Count;
 }
 
 template <typename Iterator>
@@ -51,8 +51,8 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
         return true;
     }
 
-    const Class log_class = GetClassByName(begin, level_separator);
-    if (log_class == Class::Count) {
+    const LogClass log_class = GetClassByName(begin, level_separator);
+    if (log_class == LogClass::Count) {
         LOG_ERROR(Log, "Unknown log class in filter: {}", std::string(begin, end));
         return false;
     }
@@ -167,18 +167,18 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     CLS(IPC)
 
 // GetClassName is a macro defined by Windows.h, grrr...
-const char* GetLogClassName(Class log_class) {
+const char* GetLogClassName(LogClass log_class) {
     switch (log_class) {
 #define CLS(x)                                                                                     \
-    case Class::x:                                                                                 \
+    case LogClass::x:                                                                                 \
         return #x;
 #define SUB(x, y)                                                                                  \
-    case Class::x##_##y:                                                                           \
+    case LogClass::x##_##y:                                                                           \
         return #x "." #y;
         ALL_LOG_CLASSES()
 #undef CLS
 #undef SUB
-    case Class::Count:
+    case LogClass::Count:
     default:
         break;
     }
@@ -212,7 +212,7 @@ void Filter::ResetAll(Level level) {
     class_levels.fill(level);
 }
 
-void Filter::SetClassLevel(Class log_class, Level level) {
+void Filter::SetClassLevel(LogClass log_class, Level level) {
     class_levels[static_cast<std::size_t>(log_class)] = level;
 }
 
@@ -234,7 +234,7 @@ void Filter::ParseFilterString(std::string_view filter_view) {
     }
 }
 
-bool Filter::CheckMessage(Class log_class, Level level) const {
+bool Filter::CheckMessage(LogClass log_class, Level level) const {
     return static_cast<u8>(level) >=
            static_cast<u8>(class_levels[static_cast<std::size_t>(log_class)]);
 }

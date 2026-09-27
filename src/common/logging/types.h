@@ -29,7 +29,7 @@ enum class Level : u8 {
  * @note If you add a new entry here, also add a corresponding one to `ALL_LOG_CLASSES` in
  * filter.cpp.
  */
-enum class Class : u8 {
+enum class LogClass : u8 {
     Log,                     ///< Messages about the log system itself
     Common,                  ///< Library routines
     Common_Filesystem,       ///< Filesystem interface library

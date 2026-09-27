@@ -548,7 +548,7 @@ bool PipelineCache::RefreshGraphicsStages() {
     case AmdGpu::ShaderStageEnable::VgtStages::LsHs:
         if (!instance.IsTessellationSupported() ||
             (regs.tess_config.type == AmdGpu::TessellationType::Isoline &&
-             !instance.IsTessellationIsolinesSupported())) {
+             !instance.IsTessellationSupported())) {
             return false;
         }
         if (!bind_stage(Stage::Hull, LogicalStage::TessellationControl)) {
@@ -564,7 +564,7 @@ bool PipelineCache::RefreshGraphicsStages() {
     case AmdGpu::ShaderStageEnable::VgtStages::LsHsEsGs:
         if (!instance.IsTessellationSupported() ||
             (regs.tess_config.type == AmdGpu::TessellationType::Isoline &&
-             !instance.IsTessellationIsolinesSupported())) {
+             !instance.IsTessellationSupported())) {
             return false;
         }
         if (!instance.IsGeometryStageSupported()) {

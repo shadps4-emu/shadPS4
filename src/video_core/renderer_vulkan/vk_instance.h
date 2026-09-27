@@ -96,11 +96,6 @@ public:
         return vk12_features.hostQueryReset;
     }
 
-    /// Returns true when VK_EXT_conditional_rendering is supported
-    bool IsConditionalRenderingSupported() const {
-        return conditional_rendering;
-    }
-
     /// Returns true when the device is AMD (requires 64-bit predicate workaround)
     bool IsAmdGpu() const {
         return driver_id == vk::DriverId::eAmdProprietary ||

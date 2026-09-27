@@ -183,7 +183,7 @@ public:
         color_console_backend.SetEnabled(enabled);
     }
 
-    void PushEntry(Class log_class, Level log_level, const char* filename, unsigned int line_num,
+    void PushEntry(LogClass log_class, Level log_level, const char* filename, unsigned int line_num,
                    const char* function, const char* format, const fmt::format_args& args) {
         if (!filter.CheckMessage(log_class, log_level) || !Config::getLoggingEnabled()) {
             return;
@@ -385,7 +385,7 @@ void SetAppend() {
     Impl::SetAppend();
 }
 
-void FmtLogMessageImpl(Class log_class, Level log_level, const char* filename,
+void FmtLogMessageImpl(LogClass log_class, Level log_level, const char* filename,
                        unsigned int line_num, const char* function, const char* format,
                        const fmt::format_args& args) {
     if (!initialization_in_progress_suppress_logging) [[likely]] {

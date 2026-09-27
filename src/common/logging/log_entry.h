@@ -15,7 +15,7 @@ namespace Common::Log {
  */
 struct Entry {
     std::chrono::microseconds timestamp;
-    Class log_class{};
+    LogClass log_class{};
     Level log_level{};
     const char* filename = nullptr;
     u32 line_num = 0;
