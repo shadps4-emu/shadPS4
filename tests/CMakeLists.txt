@@ -367,6 +367,44 @@ add_executable(shadps4_net_test
     network/test_net_p2p_codec.cpp
 )
 
+foreach(t shadps4_net_test)
+    list(APPEND TEST_TARGETS ${t})
+    target_include_directories(${t} PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}
+    )
+    target_compile_features(${t} PRIVATE cxx_std_23)
+    target_link_libraries(${t} PRIVATE GTest::gtest_main)
+
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+        CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        include(CheckCXXSymbolExists)
+        check_cxx_symbol_exists(_LIBCPP_VERSION version LIBCPP)
+        if (LIBCPP)
+            target_compile_options(${t} PRIVATE -fexperimental-library)
+        endif()
+    endif()
+
+    if (WIN32)
+        target_link_libraries(${t} PRIVATE onecore ws2_32)
+        target_compile_definitions(${t} PRIVATE
+            NOMINMAX
+            WIN32_LEAN_AND_MEAN
+            NTDDI_VERSION=0x0A000006
+            _WIN32_WINNT=0x0A00
+            WINVER=0x0A00
+        )
+        if (MSVC)
+            target_compile_definitions(${t} PRIVATE
+                _CRT_SECURE_NO_WARNINGS
+                _CRT_NONSTDC_NO_DEPRECATE
+                _SCL_SECURE_NO_WARNINGS
+                _TIMESPEC_DEFINED
+            )
+        endif()
+    endif()
+endforeach()
+
 target_link_libraries(shadps4_net_test PRIVATE ${NET_TEST_SSL_LIBS})
 if (WIN32)
     target_link_libraries(shadps4_net_test PRIVATE wepoll)
