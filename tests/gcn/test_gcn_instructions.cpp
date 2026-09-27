@@ -740,3 +740,18 @@ TEST_F(GcnTest, subb_u32_clears_vcc) {
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(*result, 0U);
 }
+
+TEST_F(GcnTest, subb_u32_scc_wrap) {
+    auto runner = gcn_test::Runner::instance().value();
+    const std::array<u64, 4> instructions{
+        SOP2(OpcodeSOP2::S_ADD_U32, SOperand7::S3, SOperand8::S0, SOperand8::S1).Get(),
+        SOP2(OpcodeSOP2::S_SUBB_U32, SOperand7::S3, SOperand8::Const0, SOperand8::S2).Get(),
+        SOP2(OpcodeSOP2::S_CSELECT_B32, SOperand7::S0, SOperand8::Const1, SOperand8::Const0).Get(),
+        VOP1(OpcodeVOP1::V_MOV_B32, VOperand8::V0, SOperand9::S0).Get(),
+    };
+    const auto spirv = TranslateToSpirv(instructions);
+
+    auto result = runner->run<u32>(spirv, std::array{0xffffffffU, 1U, 0xffffffffU, 0U});
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 1U);
+}
