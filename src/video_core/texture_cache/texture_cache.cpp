@@ -535,10 +535,6 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
 ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     const auto& info = desc.info;
 
-    if (info.guest_address == 0x50158c8000) {
-        LOG_CRITICAL(Render_Vulkan, "[gcd] FindImage with size {}, start", info.guest_size);
-    }
-
     ASSERT(info.guest_address != 0);
 
     std::scoped_lock lock{mutex};
@@ -617,11 +613,6 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     }
     if (view_slice > 0) {
         desc.view_info.range.base.layer = view_slice;
-    }
-
-    if (info.guest_address == 0x50158c8000) {
-        LOG_CRITICAL(Render_Vulkan, "[gcd] FindImage with size {}, uid: {}", info.guest_size,
-                     image.image_uid);
     }
 
     return image_id;
