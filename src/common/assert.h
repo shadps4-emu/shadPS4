@@ -26,7 +26,7 @@ template <typename... Args>
 SHAD_NO_INLINE void AssertFail(const char* file, int line, const char* func,
                                std::format_string<Args...> format, Args... args) {
     Common::Log::VLog(Common::Log::Class::Debug, Common::Log::Level::Critical, file, line, func,
-                      format, std::make_format_args(args...));
+                      format.get(), std::make_format_args(args...));
     assert_fail_impl();
 }
 
@@ -34,7 +34,7 @@ template <typename... Args>
 [[noreturn]] SHAD_NO_INLINE void UnreachableFail(const char* file, int line, const char* func,
                                                  std::format_string<Args...> format, Args... args) {
     Common::Log::VLog(Common::Log::Class::Debug, Common::Log::Level::Critical, file, line, func,
-                      format, std::make_format_args(args...));
+                      format.get(), std::make_format_args(args...));
     unreachable_impl();
 }
 

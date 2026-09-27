@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include <map>
+#include <print>
 #include <common/path_util.h>
 #include <common/scm_rev.h>
 #include <toml.hpp>

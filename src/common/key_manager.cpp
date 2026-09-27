@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
+#include <print>
 #include <toml.hpp>
 #include "common/logging/formatter.h"
 #include "common/logging/log.h"
