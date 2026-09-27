@@ -499,6 +499,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/mouse/mouse.cpp
                 src/core/libraries/mouse/mouse.h
                 src/core/libraries/mouse/mouse_error.h
+                src/core/libraries/keyboard/keyboard.cpp
+                src/core/libraries/keyboard/keyboard.h
                 src/core/libraries/mouse/sdl_mouse.cpp
                 src/core/libraries/mouse/sdl_mouse.h
                 src/core/libraries/web_browser_dialog/webbrowserdialog.cpp
@@ -621,8 +623,8 @@ set(VDEC_LIB src/core/libraries/videodec/video_utils.cpp
              src/core/libraries/videodec/video_utils.h
              src/core/libraries/videodec/vdecsw.cpp
              src/core/libraries/videodec/vdecsw.h
-             src/core/libraries/videodec/videodec2_impl.cpp
-             src/core/libraries/videodec/videodec2_impl.h
+             src/core/libraries/videodec/vdecsw_impl.cpp
+             src/core/libraries/videodec/vdecsw_impl.h
              src/core/libraries/videodec/videodec2.cpp
              src/core/libraries/videodec/videodec2.h
              src/core/libraries/videodec/videodec.cpp
@@ -769,7 +771,8 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/text_editor.h
 )
 
-set(COMMON src/common/logging/classes.h
+set(COMMON src/common/logging/classes.cpp
+           src/common/logging/classes.h
            src/common/logging/formatter.h
            src/common/logging/log.cpp
            src/common/logging/log.h
@@ -837,6 +840,7 @@ set(COMMON src/common/logging/classes.h
            src/common/number_utils.cpp
            src/common/memory_patcher.h
            src/common/memory_patcher.cpp
+           src/common/multi_level_page_table.h
            ${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp
            src/common/scm_rev.h
            src/common/key_manager.cpp
@@ -1115,8 +1119,6 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/buffer_cache/region_manager.h
                src/video_core/renderer_vulkan/liverpool_to_vk.cpp
                src/video_core/renderer_vulkan/liverpool_to_vk.h
-               src/video_core/renderer_vulkan/vk_barrier_tracker.cpp
-               src/video_core/renderer_vulkan/vk_barrier_tracker.h
                src/video_core/renderer_vulkan/vk_common.cpp
                src/video_core/renderer_vulkan/vk_common.h
                src/video_core/renderer_vulkan/vk_compute_pipeline.cpp
@@ -1178,7 +1180,6 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/cache_storage.h
                src/video_core/page_manager.cpp
                src/video_core/page_manager.h
-               src/video_core/multi_level_page_table.h
                src/video_core/renderdoc.cpp
                src/video_core/renderdoc.h
 )

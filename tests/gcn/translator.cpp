@@ -188,3 +188,44 @@ std::vector<u32> TranslateFragmentPullModelToSpirv(bool use_amd_barycentrics) {
     Backend::Bindings bindings{};
     return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
 }
+
+FragmentInterpMovInfo TranslateFragmentInterpMovSelector(u32 src_select, bool flat_shade,
+                                                         bool offset5) {
+    Shader::Info info{};
+    info.hw_stage = HwStage::Fragment;
+    info.sw_stage = SwStage::Fragment;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+
+    Profile profile{};
+    profile.supports_fragment_shader_barycentric = true;
+    RuntimeInfo runtime_info{};
+    runtime_info.Initialize(HwStage::Fragment, SwStage::Fragment);
+    runtime_info.hw.fs.inputs[0].is_flat = flat_shade;
+    runtime_info.hw.fs.inputs[0].is_default = offset5;
+
+    Gcn::Translator translator(program.info, runtime_info, profile);
+    translator.EmitPrologue(block);
+
+    Gcn::GcnInst inst{};
+    inst.src[0].code = src_select;
+    inst.dst[0].field = Gcn::OperandField::VectorGPR;
+    inst.dst[0].code = 0;
+    inst.control.vintrp.attr = 0;
+    inst.control.vintrp.chan = 0;
+    translator.V_INTERP_MOV_F32(inst);
+
+    FragmentInterpMovInfo interp_info{};
+    for (const IR::Inst& ir_inst : block->Instructions()) {
+        if (ir_inst.GetOpcode() == IR::Opcode::GetAttribute &&
+            ir_inst.Arg(0).Attribute() == IR::Attribute::Param0) {
+            interp_info.attribute_indices.push_back(ir_inst.Arg(2).U32());
+        } else if (ir_inst.GetOpcode() == IR::Opcode::FPSub32) {
+            ++interp_info.fsub_count;
+        }
+    }
+    return interp_info;
+}

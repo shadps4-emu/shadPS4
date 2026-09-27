@@ -7,6 +7,21 @@
 #include <fmt/std.h>
 #include <spdlog/sinks/async_sink.h>
 #include <spdlog/sinks/dup_filter_sink.h>
+
+#include <spdlog/details/fmt_helper.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
+#ifdef _WIN32
+#include <spdlog/sinks/msvc_sink.h>
+#include <spdlog/sinks/wincolor_sink.h>
+using spdlog_stdout = spdlog::sinks::sink;
+#else
+using spdlog_stdout = spdlog::sinks::stdout_color_sink_mt;
+#endif
+
+#include <spdlog/spdlog.h>
+
 #ifdef _WIN32
 #include <Windows.h>
 #endif
@@ -14,125 +29,47 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/logging/log_file_sink.h"
+#include "common/path_util.h"
+#include "common/thread.h"
 #include "common/types.h"
 #include "core/emulator_settings.h"
 
 namespace Common::Log {
-bool g_should_append = false;
 
 static std::shared_ptr<spdlog_stdout> g_console_sink;
 static std::shared_ptr<LogFileSink> g_shad_file_sink;
+static std::array<std::unique_ptr<spdlog::logger>, NUM_LOG_CLASSES> ALL_LOGGERS{};
 
-std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGERS{
-    {Class::Common, nullptr},
-    {Class::Common_Filesystem, nullptr},
-    {Class::Common_Memory, nullptr},
-    {Class::Config, nullptr},
-    {Class::Core, nullptr},
-    {Class::Core_Devices, nullptr},
-    {Class::Core_Linker, nullptr},
-    {Class::Debug, nullptr},
-    {Class::Frontend, nullptr},
-    {Class::IPC, nullptr},
-    {Class::ImGui, nullptr},
-    {Class::Input, nullptr},
-    {Class::Kernel, nullptr},
-    {Class::Kernel_Event, nullptr},
-    {Class::Kernel_Fs, nullptr},
-    {Class::Kernel_Pthread, nullptr},
-    {Class::Kernel_Sce, nullptr},
-    {Class::Kernel_Vmm, nullptr},
-    {Class::KeyManager, nullptr},
-    {Class::Lib, nullptr},
-    {Class::Lib_Ajm, nullptr},
-    {Class::Lib_AppContent, nullptr},
-    {Class::Lib_Audio3d, nullptr},
-    {Class::Lib_AudioIn, nullptr},
-    {Class::Lib_AudioOut, nullptr},
-    {Class::Lib_AvPlayer, nullptr},
-    {Class::Lib_Camera, nullptr},
-    {Class::Lib_CommonDlg, nullptr},
-    {Class::Lib_CompanionHttpd, nullptr},
-    {Class::Lib_CompanionUtil, nullptr},
-    {Class::Lib_ContentExport, nullptr},
-    {Class::Lib_DiscMap, nullptr},
-    {Class::Lib_ErrorDialog, nullptr},
-    {Class::Lib_Fiber, nullptr},
-    {Class::Lib_Font, nullptr},
-    {Class::Lib_FontFt, nullptr},
-    {Class::Lib_GameLiveStreaming, nullptr},
-    {Class::Lib_GnmDriver, nullptr},
-    {Class::Lib_Hmd, nullptr},
-    {Class::Lib_HmdSetupDialog, nullptr},
-    {Class::Lib_Http, nullptr},
-    {Class::Lib_Http2, nullptr},
-    {Class::Lib_Ime, nullptr},
-    {Class::Lib_ImeDialog, nullptr},
-    {Class::Lib_InvitationDialog, nullptr},
-    {Class::Lib_Jpeg, nullptr},
-    {Class::Lib_Kernel, nullptr},
-    {Class::Lib_LibcInternal, nullptr},
-    {Class::Lib_Mouse, nullptr},
-    {Class::Lib_Move, nullptr},
-    {Class::Lib_MsgDlg, nullptr},
-    {Class::Lib_Net, nullptr},
-    {Class::Lib_NetCtl, nullptr},
-    {Class::Lib_Ngs2, nullptr},
-    {Class::Lib_NpAuth, nullptr},
-    {Class::Lib_NpCommerce, nullptr},
-    {Class::Lib_NpCommon, nullptr},
-    {Class::Lib_NpManager, nullptr},
-    {Class::Lib_NpMatching2, nullptr},
-    {Class::Lib_NpSignaling, nullptr},
-    {Class::Lib_NpPartner, nullptr},
-    {Class::Lib_NpParty, nullptr},
-    {Class::Lib_NpProfileDialog, nullptr},
-    {Class::Lib_NpScore, nullptr},
-    {Class::Lib_NpSnsFacebookDialog, nullptr},
-    {Class::Lib_NpTrophy, nullptr},
-    {Class::Lib_NpTus, nullptr},
-    {Class::Lib_NpUtility, nullptr},
-    {Class::Lib_NpWebApi, nullptr},
-    {Class::Lib_NpWebApi2, nullptr},
-    {Class::Lib_Pad, nullptr},
-    {Class::Lib_PlayGo, nullptr},
-    {Class::Lib_PlayGoDialog, nullptr},
-    {Class::Lib_Png, nullptr},
-    {Class::Lib_Random, nullptr},
-    {Class::Lib_RazorCpu, nullptr},
-    {Class::Lib_Remoteplay, nullptr},
-    {Class::Lib_Rtc, nullptr},
-    {Class::Lib_Rudp, nullptr},
-    {Class::Lib_SaveData, nullptr},
-    {Class::Lib_SaveDataDialog, nullptr},
-    {Class::Lib_Screenshot, nullptr},
-    {Class::Lib_SharePlay, nullptr},
-    {Class::Lib_SigninDialog, nullptr},
-    {Class::Lib_Ssl, nullptr},
-    {Class::Lib_Ssl2, nullptr},
-    {Class::Lib_SysModule, nullptr},
-    {Class::Lib_SystemGesture, nullptr},
-    {Class::Lib_SystemService, nullptr},
-    {Class::Lib_Usbd, nullptr},
-    {Class::Lib_UserService, nullptr},
-    {Class::Lib_Vdec2, nullptr},
-    {Class::Lib_Vdecsw, nullptr},
-    {Class::Lib_VideoOut, nullptr},
-    {Class::Lib_Videodec, nullptr},
-    {Class::Lib_VideoRecording, nullptr},
-    {Class::Lib_Voice, nullptr},
-    {Class::Lib_VrTracker, nullptr},
-    {Class::Lib_WebBrowserDialog, nullptr},
-    {Class::Lib_Zlib, nullptr},
-    {Class::Loader, nullptr},
-    {Class::Log, nullptr},
-    {Class::NpHandler, nullptr},
-    {Class::Render, nullptr},
-    {Class::Render_Recompiler, nullptr},
-    {Class::Render_Vulkan, nullptr},
-    {Class::ShadNet, nullptr},
-    {Class::Tty, nullptr},
-};
+std::array<Level, NUM_LOG_CLASSES> g_class_levels{};
+
+static spdlog::level ToSpdlog(Level l) {
+    return static_cast<spdlog::level>(l);
+}
+
+static Level FromSpdlog(spdlog::level l) {
+    return static_cast<Level>(l);
+}
+
+[[nodiscard]] static constexpr std::string_view NameOf(spdlog::level lvl) noexcept {
+    static constexpr std::array level_string_views{"Trace", "Debug",    "Info", "Warning",
+                                                   "Error", "Critical", "Off"};
+    return level_string_views[level_to_number(lvl)];
+}
+
+void VLog(Class log_class, Level level, const char* file, int line, const char* func,
+          fmt::string_view format, fmt::format_args args) {
+    const auto& logger = ALL_LOGGERS[static_cast<size_t>(log_class)];
+    if (!logger) {
+        return;
+    }
+    fmt::memory_buffer msg;
+    fmt::vformat_to(fmt::appender(msg), format, args);
+    const std::string_view fn = std::string_view(func) == "operator()" ? "lambda" : func;
+    logger->log(ToSpdlog(level), "[{}] <{}> ({}) {}:{} {}: {}", NameOf(log_class),
+                NameOf(ToSpdlog(level)), Common::GetCurrentThreadName(),
+                spdlog::source_loc::basename(file), line, fn,
+                std::string_view(msg.data(), msg.size()));
+}
 
 template <typename T>
 static auto UpdateColorLevels(T sink) {
@@ -178,8 +115,10 @@ void Setup(std::string_view shadps4_filename) {
         std::at_quick_exit(Flush);
     });
 
-    for (auto& [name, logger] : ALL_LOGGERS) {
-        logger = std::make_shared<spdlog::logger>(std::string(name));
+    for (u32 i = 0; i < ALL_LOGGERS.size(); ++i) {
+        const auto log_class = static_cast<Class>(i);
+        auto& logger = ALL_LOGGERS[i];
+        logger = std::make_unique<spdlog::logger>(std::string(NameOf(log_class)));
         logger->set_level(spdlog::level::trace);
     }
 
@@ -208,18 +147,19 @@ void Setup(std::string_view shadps4_filename) {
     UpdateSinks();
 }
 
-void Switch(std::string_view game_filename) {
+void Switch(std::string_view game_filename, bool append_log) {
     UpdateSinks();
     UpdateLogLevels(EmulatorSettings.GetLogFilter());
     UpdateLogFlushLevel(EmulatorSettings.GetLogFlushLevel());
 
     g_shad_file_sink->_size_limit = EmulatorSettings.GetLogSizeLimit();
     g_shad_file_sink->session_file_helper_.open(
-        (GetUserPath(Common::FS::PathType::LogDir) / game_filename).string(), !g_should_append);
+        (GetUserPath(Common::FS::PathType::LogDir) / game_filename).string(),
+        !(append_log || EmulatorSettings.IsLogAppend()));
 }
 
 void Shutdown() {
-    for (auto& logger : ALL_LOGGERS | std::views::values) {
+    for (auto& logger : ALL_LOGGERS) {
         logger.reset();
     }
 
@@ -248,7 +188,7 @@ void UpdateSinks() {
             std::chrono::milliseconds(EmulatorSettings.GetLogMaxSkipDuration()),
             EmulatorSettings.IsLogSync() ? sinks : async_sink)};
 
-    for (auto& [name, logger] : ALL_LOGGERS) {
+    for (auto& logger : ALL_LOGGERS) {
         logger->sinks() = EmulatorSettings.IsLogSkipDuplicate()
                               ? dup_filter
                               : (EmulatorSettings.IsLogSync() ? sinks : async_sink);
@@ -280,23 +220,28 @@ void UpdateLogLevels(std::string_view log_filter) {
         }
     }
 
-    for (auto& [name, logger] : ALL_LOGGERS) {
+    for (u32 i = 0; i < ALL_LOGGERS.size(); ++i) {
+        const auto log_class = static_cast<Class>(i);
+        auto& logger = ALL_LOGGERS[i];
         if (EmulatorSettings.IsLogEnable()) {
-            const auto level_it = log_level_per_class.find(std::string(name));
-
-            logger->set_level(level_it != log_level_per_class.end() ? level_it->second
-                                                                    : default_log_level);
+            const auto level_it = log_level_per_class.find(std::string(NameOf(log_class)));
+            const auto log_level =
+                level_it != log_level_per_class.end() ? level_it->second : default_log_level;
+            logger->set_level(log_level);
+            g_class_levels[i] = FromSpdlog(log_level);
         } else {
             logger->set_level(spdlog::level::off);
+            g_class_levels[i] = Level::Off;
         }
     }
 }
 
 void UpdateLogFlushLevel(std::string_view log_flush_level) {
     if (!log_flush_level.empty()) {
-        for (auto& [name, logger] : ALL_LOGGERS) {
+        for (auto& logger : ALL_LOGGERS) {
             logger->flush_on(spdlog::level_from_str(log_flush_level.data()));
         }
     }
 }
+
 } // namespace Common::Log

@@ -7,7 +7,7 @@
 #include "common/object_pool.h"
 #include "common/spin_lock.h"
 
-namespace VideoCore {
+namespace Common {
 
 template <class Traits>
 class MultiLevelPageTable final {
@@ -87,4 +87,4 @@ private:
     Common::ObjectPool<L1Page> page_alloc;
 };
 
-} // namespace VideoCore
+} // namespace Common

@@ -151,6 +151,11 @@ bool ImageInfo::IsCompatible(const ImageInfo& info) const {
 }
 
 void ImageInfo::UpdateSize() {
+    if (array_mode == AmdGpu::ArrayMode::ArrayLinearGeneral) {
+        UNREACHABLE_MSG("Unhandled array mode: ArrayLinearGeneral");
+    }
+    const u32 thickness = AmdGpu::GetMicroTileThickness(array_mode);
+    const bool macro = AmdGpu::IsMacroTiled(array_mode);
     guest_size = 0;
     for (s32 mip = 0; mip < resources.levels; ++mip) {
         u32 mip_w = pitch >> mip;
@@ -173,15 +178,9 @@ void ImageInfo::UpdateSize() {
         if (array_mode == AmdGpu::ArrayMode::ArrayLinearAligned) {
             std::tie(mip_info.pitch, mip_info.height, mip_info.size) =
                 ImageSizeLinearAligned(mip_w, mip_h, num_bits, num_samples);
-        } else if (array_mode == AmdGpu::ArrayMode::ArrayLinearGeneral) {
-            UNREACHABLE_MSG("Unhandled array mode: ArrayLinearGeneral");
         } else {
-            // Every tiled array mode (1D/2D/3D, thin/thick/xthick, PRT or not) groups
-            // GetMicroTileThickness() consecutive depth slices per tile; round mip_d up
-            // to a full group so it's counted correctly in mip_info.size below.
-            const u32 thickness = AmdGpu::GetMicroTileThickness(array_mode);
             mip_d += (-mip_d) & (thickness - 1);
-            if (AmdGpu::IsMacroTiled(array_mode)) {
+            if (macro) {
                 ASSERT(!props.is_block);
                 std::tie(mip_info.pitch, mip_info.height, mip_info.size) = ImageSizeMacroTiled(
                     mip_w, mip_h, thickness, num_bits, num_samples, tile_mode, mip, alt_tile);

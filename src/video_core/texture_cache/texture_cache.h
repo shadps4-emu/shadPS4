@@ -12,9 +12,9 @@
 #include <tsl/robin_map.h>
 
 #include "common/lru_cache.h"
+#include "common/multi_level_page_table.h"
 #include "common/slot_vector.h"
 #include "shader_recompiler/resource.h"
-#include "video_core/multi_level_page_table.h"
 #include "video_core/texture_cache/blit_helper.h"
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/image_view.h"
@@ -49,7 +49,7 @@ class TextureCache {
         static constexpr size_t PAGE_BITS = 20;
         static constexpr bool NULL_CHECK = true;
     };
-    using PageTable = MultiLevelPageTable<Traits>;
+    using PageTable = Common::MultiLevelPageTable<Traits>;
 
 public:
     enum class BindingType : u32 {
@@ -119,7 +119,7 @@ public:
 
     /// Updates image contents if it was modified by CPU.
     void UpdateImage(ImageId image_id) {
-        std::scoped_lock lock{mutex};
+        std::scoped_lock lk{mutex};
         Image& image = slot_images[image_id];
         TrackImage(image_id);
         TouchImage(image);

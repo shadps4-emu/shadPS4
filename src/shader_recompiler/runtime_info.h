@@ -193,6 +193,10 @@ struct HwFragmentRuntimeInfo {
             return is_default && !is_flat;
         }
 
+        bool IsPassthrough() const {
+            return is_default && is_flat;
+        }
+
         bool operator==(const PsInput&) const noexcept = default;
     };
     AmdGpu::PsInput en_flags;

@@ -7,7 +7,9 @@
 #include "common/debug.h"
 #include "common/div_ceil.h"
 #include "common/error.h"
+#include "common/multi_level_page_table.h"
 #include "common/signal_context.h"
+#include "common/thread.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "core/signals.h"
@@ -105,6 +107,7 @@ struct PageManager::Impl {
     virtual void Protect(VAddr address, size_t size, Core::MemoryPermission perms) = 0;
 
     void EnsurePages(VAddr begin, VAddr end) {
+        end = std::min(end, VAddr{1} << ADDRESS_BITS) - 1;
         const size_t start_page = begin >> PM_PAGE_BITS;
         const size_t end_page = end >> PM_PAGE_BITS;
         cached_pages.reserve(start_page, end_page);
@@ -259,7 +262,7 @@ struct PageManager::Impl {
         static constexpr size_t PAGE_BITS = PM_PAGE_BITS;
         static constexpr bool NULL_CHECK = false;
     };
-    MultiLevelPageTable<PageTraits> cached_pages;
+    Common::MultiLevelPageTable<PageTraits> cached_pages;
     struct MutexTraits {
 #ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
         using Entry = Common::AdaptiveMutex;
@@ -271,7 +274,7 @@ struct PageManager::Impl {
         static constexpr size_t PAGE_BITS = PM_PAGE_BITS;
         static constexpr bool NULL_CHECK = false;
     };
-    MultiLevelPageTable<MutexTraits> locks;
+    Common::MultiLevelPageTable<MutexTraits> locks;
 };
 
 #ifdef __linux__
@@ -310,6 +313,7 @@ public:
     ~UffdImpl() = default;
 
     void OnMap(VAddr address, size_t size) override {
+        PageManager::Impl::OnMap(address, size);
         uffdio_register reg;
         reg.range.start = address;
         reg.range.len = size;

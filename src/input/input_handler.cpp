@@ -758,7 +758,9 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             rightjoystick_halfmode = new_button_state;
             break;
         case HOTKEY_RELOAD_INPUTS:
-            ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+            if (new_button_state) {
+                ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+            }
             break;
         case HOTKEY_FULLSCREEN:
             PushSDLEvent(SDL_EVENT_TOGGLE_FULLSCREEN);
@@ -791,20 +793,26 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             PushSDLEvent(SDL_EVENT_REMOVE_VIRTUAL_USER);
             break;
         case HOTKEY_VOLUME_UP:
-            EmulatorSettings.SetVolumeSlider(
-                std::clamp(EmulatorSettings.GetVolumeSlider() + 10, 0, 500));
-            Overlay::ShowVolume();
+            if (new_button_state) {
+                EmulatorSettings.SetVolumeSlider(
+                    std::clamp(EmulatorSettings.GetVolumeSlider() + 10, 0, 500));
+                Overlay::ShowVolume();
+            }
             break;
         case HOTKEY_VOLUME_DOWN:
-            EmulatorSettings.SetVolumeSlider(
-                std::clamp(EmulatorSettings.GetVolumeSlider() - 10, 0, 500));
-            Overlay::ShowVolume();
+            if (new_button_state) {
+                EmulatorSettings.SetVolumeSlider(
+                    std::clamp(EmulatorSettings.GetVolumeSlider() - 10, 0, 500));
+                Overlay::ShowVolume();
+            }
             break;
         case HOTKEY_QUIT:
             PushSDLEvent(SDL_EVENT_QUIT_DIALOG);
             break;
         case HOTKEY_OPEN_EMULATOR_SETTINGS:
-            ImGuiEmuSettings::OpenInGameSettingsDialog();
+            if (new_button_state) {
+                ImGuiEmuSettings::OpenInGameSettingsDialog();
+            }
             break;
         case HOTKEY_TOGGLE_FRIENDS:
             PushSDLEvent(SDL_EVENT_TOGGLE_FRIENDS);
