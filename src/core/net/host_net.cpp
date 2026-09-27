@@ -47,6 +47,13 @@ bool SetNonBlocking(NativeSocket s) {
 #endif
 }
 
+#ifndef _WIN32
+bool SetCloseOnExec(int fd) {
+    const int flags = fcntl(fd, F_GETFD, 0);
+    return flags >= 0 && fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == 0;
+}
+#endif
+
 // Errors
 Error TranslateNative(int code) {
     // One entry per FreeBSD errno a socket call can produce. Host codes with no equivalent map

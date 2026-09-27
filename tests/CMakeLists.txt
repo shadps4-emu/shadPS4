@@ -351,7 +351,6 @@ set(NET_CORE_SOURCES
     ${CMAKE_SOURCE_DIR}/src/core/net/host_net.cpp
     ${CMAKE_SOURCE_DIR}/src/core/net/p2p_codec.cpp
     ${CMAKE_SOURCE_DIR}/src/core/net/p2p_crypto.cpp
-    ${CMAKE_SOURCE_DIR}/src/core/net/p2p_tcp.cpp
     ${CMAKE_SOURCE_DIR}/src/core/net/p2p_transport.cpp
 )
 
