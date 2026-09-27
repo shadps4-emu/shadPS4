@@ -78,14 +78,14 @@ Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
     const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
     const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
     Id result{ctx.OpLoad(ctx.U32[1], ptr)};
-    if (ctx.stage == Stage::Fragment && ctx.info.pgm_hash == 0x5b8c6e5f && handle == 0) {
+    if (ctx.sw_stage == SwStage::Fragment && ctx.info.pgm_hash == 0x5b8c6e5f && handle == 0) {
         if (MemoryPatcher::g_game_serial == "CUSA14209" ||
             MemoryPatcher::g_game_serial == "CUSA14204") {
             const Id is_six = ctx.OpIEqual(ctx.U1[1], index, ctx.ConstU32(6u));
             result = ctx.OpSelect(ctx.U32[1], is_six, ctx.u32_zero_value, result);
         }
     }
-    if (ctx.stage == Stage::Fragment && ctx.info.pgm_hash == 0xa298398bULL && handle == 0) {
+    if (ctx.sw_stage == SwStage::Fragment && ctx.info.pgm_hash == 0xa298398bULL && handle == 0) {
         const Id logical_index = index;
         if (MemoryPatcher::g_game_serial == "CUSA01968" ||
             MemoryPatcher::g_game_serial == "CUSA01936" ||
@@ -95,7 +95,7 @@ Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
             result = ctx.OpSelect(ctx.U32[1], is_five, ctx.u32_zero_value, result);
         }
     }
-    if (ctx.stage == Stage::Fragment && ctx.info.pgm_hash == 0xffe52ec0369553e4ULL && handle == 0) {
+    if (ctx.sw_stage == SwStage::Fragment && ctx.info.pgm_hash == 0xffe52ec0369553e4ULL && handle == 0) {
         const Id logical_index = index;
         if (MemoryPatcher::g_game_serial == "CUSA14209" ||
             MemoryPatcher::g_game_serial == "CUSA14204") {
@@ -103,7 +103,7 @@ Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
             result = ctx.OpSelect(ctx.U32[1], is_five, ctx.u32_zero_value, result);
         }
     }
-    if (ctx.stage == Stage::Fragment && ctx.info.pgm_hash == 0xe115097cULL && handle == 4) {
+    if (ctx.sw_stage == SwStage::Fragment && ctx.info.pgm_hash == 0xe115097cULL && handle == 4) {
         const Id logical_index = index;
         if (MemoryPatcher::g_game_serial == "CUSA14209" ||
             MemoryPatcher::g_game_serial == "CUSA14204") {

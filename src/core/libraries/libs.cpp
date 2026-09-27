@@ -69,7 +69,6 @@
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/ulobjmgr/ulobjmgr.h"
 #include "core/libraries/usbd/usbd.h"
-#include "core/libraries/video_recording/video_recording.h"
 #include "core/libraries/videodec/vdecsw.h"
 #include "core/libraries/videodec/videodec.h"
 #include "core/libraries/videodec/videodec2.h"

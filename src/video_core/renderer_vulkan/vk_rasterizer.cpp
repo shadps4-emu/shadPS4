@@ -59,7 +59,9 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
       storage_sync_{scheduler, buffer_cache, texture_cache},
       rt_sync_{instance, scheduler, texture_cache}, liverpool{liverpool_},
       predication{instance, scheduler, buffer_cache}, memory{Core::Memory::Instance()},
-      pipeline_cache{instance, scheduler, liverpool} {
+      pipeline_cache{instance, scheduler, liverpool},
+      host_markers_enabled{Config::getVkHostMarkersEnabled()},
+      guest_markers_enabled{Config::getVkGuestMarkersEnabled()} {
     if (!Config::nullGpu()) {
         liverpool->BindRasterizer(this);
     }

@@ -271,7 +271,7 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
     vk::ShaderModule module{};
 
     // Check for patches even when loading from cache
-    auto patch = GetShaderPatch(program->info.pgm_hash, program->info.stage, perm_idx, "spv");
+    auto patch = GetShaderPatch(program->info.pgm_hash, program->info.hw_stage, perm_idx, "spv");
     const bool use_patch = patch && Config::patchShaders();
 
     if (use_patch) {

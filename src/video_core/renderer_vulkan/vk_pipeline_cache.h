@@ -95,7 +95,7 @@ public:
 
     void ReloadAllPatches();
 
-    static std::string GetShaderName(Shader::Stage stage, u64 hash,
+    static std::string GetShaderName(Shader::HwStage stage, u64 hash,
                                      std::optional<size_t> perm = {});
 
     auto& GetProfile() const {

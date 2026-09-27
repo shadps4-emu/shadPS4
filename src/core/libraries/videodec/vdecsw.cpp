@@ -11,7 +11,7 @@
 namespace Libraries::Vdecsw {
 
 s32 PS4_SYSV_ABI sceVdecswQueryComputeMemoryInfo(OrbisVdecswComputeMemoryInfo* compute_mem_info) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
@@ -19,97 +19,97 @@ s32 PS4_SYSV_ABI
 sceVdecswAllocateComputeQueue(const OrbisVdecswComputeConfigInfo* compute_cfg_info_in,
                               const OrbisVdecswComputeMemoryInfo* compute_mem_info_in,
                               OrbisVdecswComputeQueue* compute_queue_out) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswReleaseComputeQueue(OrbisVdecswComputeQueue compute_queue_in) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI
 sceVdecswQueryDecoderMemoryInfo(const OrbisVdecswDecoderConfigInfo* decoder_config_info_in,
                                 OrbisVdecswDecoderMemoryInfo* decoder_memory_info_out) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswCreateDecoder(const OrbisVdecswDecoderConfigInfo* decoder_config_info_in,
                                         const OrbisVdecswDecoderMemoryInfo* decoder_memory_info_in,
                                         OrbisVdecswDecoder* decoder_instance_out) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswDeleteDecoder(OrbisVdecswDecoder decoder_instance_in) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswResetDecoder(OrbisVdecswDecoder decoder_instance_in) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswSetDecodeInput(OrbisVdecswDecoder decoder_instance_in,
                                          const OrbisVdecswInputData* input_data_in) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswSyncDecodeInput(OrbisVdecswDecoder decoder_instance_in,
                                           OrbisVdecswInputResult* input_result_out) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswTrySyncDecodeInput(OrbisVdecswDecoder decoder_instance_in,
                                              OrbisVdecswInputResult* input_result_out) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswSetDecodeOutput(OrbisVdecswDecoder decoder_instance_in,
                                           OrbisVdecswFrameBuffer* frame_buffer_in_out) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswSyncDecodeOutput(OrbisVdecswDecoder decoder_instance_in,
                                            OrbisVdecswOutputInfo* output_info_out) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswTrySyncDecodeOutput(OrbisVdecswDecoder decoder_instance_in,
                                               OrbisVdecswOutputInfo* output_info_out) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswFinalizeDecodeSequence(OrbisVdecswDecoder decoder_instance_in) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswGetPictureInfo(const OrbisVdecswOutputInfo* output_info_in,
                                          void* p_1st_picture_info_out,
                                          void* p_2nd_picture_info_out) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswGetAvcPictureInfo(const OrbisVdecswOutputInfo* output_info_in,
                                             OrbisVdecswAvcPictureInfo* p_1st_picture_info_out,
                                             OrbisVdecswAvcPictureInfo* p_2nd_picture_info_out) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVdecswGetHevcPictureInfo(const OrbisVdecswOutputInfo* output_info_in,
                                              OrbisVdecswHevcPictureInfo* picture_info_out) {
-    LOG_ERROR(Lib_Vdecsw, "(STUBBED) called");
+    LOG_ERROR(Lib_Vdec2, "(STUBBED) called");
     return ORBIS_OK;
 }
 

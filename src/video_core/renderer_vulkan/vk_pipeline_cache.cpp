@@ -640,7 +640,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
              perm_idx != 0 ? "(permutation)" : "");
     DumpShader(code, info.pgm_hash, info.hw_stage, perm_idx, "bin");
 
-    const std::string stage_name = fmt::format("{}", info.stage);
+    const std::string stage_name = fmt::format("{}", info.hw_stage);
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
     DumpShader(spv, info.pgm_hash, info.hw_stage, perm_idx, "spv");
@@ -648,7 +648,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
     vk::ShaderModule module;
 
     auto patch = GetShaderPatch(info.pgm_hash, info.hw_stage, perm_idx, "spv");
-    const bool is_patched = patch && EmulatorSettings.IsPatchShaders();
+    const bool is_patched = patch && Config::patchShaders();
     if (is_patched) {
         LOG_INFO(Loader, "Loaded patch for {} shader {:#x}", info.hw_stage, info.pgm_hash);
         module = CompileSPV(*patch, instance.GetDevice());
@@ -661,7 +661,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
     const auto name = GetShaderName(info.hw_stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
     if (Config::collectShadersForDebug()) {
-        DebugState.CollectShader(name, info.l_stage, module, spv, code,
+        DebugState.CollectShader(name, info.sw_stage, module, spv, code,
                                  patch ? *patch : std::span<const u32>{}, is_patched);
     }
     return module;
@@ -713,7 +713,7 @@ PipelineCache::Result PipelineCache::GetProgram(HwStage hw_stage, SwStage sw_sta
 
         // Check for patches even on cached shaders
         if (Config::patchShaders()) {
-            auto patch = GetShaderPatch(info.pgm_hash, info.stage, perm_idx, "spv");
+            auto patch = GetShaderPatch(info.pgm_hash, info.hw_stage, perm_idx, "spv");
             if (patch) {
                 const auto& d = instance.GetDevice();
                 d.destroyShaderModule(module);
@@ -791,9 +791,9 @@ void PipelineCache::ReloadAllPatches() {
     for (const auto& [hash, program] : program_cache) {
         for (size_t i = 0; i < program->modules.size(); ++i) {
             auto& module = program->modules[i];
-            auto patch = GetShaderPatch(hash, program->info.stage, i, "spv");
+            auto patch = GetShaderPatch(hash, program->info.hw_stage, i, "spv");
             if (patch) {
-                LOG_INFO(Loader, "Reloading patch for cached {} shader {:#x}", program->info.stage,
+                LOG_INFO(Loader, "Reloading patch for cached {} shader {:#x}", program->info.hw_stage,
                          hash);
                 const auto& d = instance.GetDevice();
                 d.destroyShaderModule(module.module);
@@ -824,7 +824,7 @@ void PipelineCache::ReloadAllPatches() {
     }
 }
 
-std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::Stage stage,
+std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::HwStage stage,
                                                               size_t perm_idx,
                                                               std::string_view ext) {
 

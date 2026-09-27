@@ -89,7 +89,7 @@ void Liverpool::RestorePredicatedIndexBase() {
     saved_index_base.reset();
 }
 
-Liverpool::Liverpool() {
+Liverpool::Liverpool() : guest_markers_enabled{Config::getVkGuestMarkersEnabled()} {
     num_counter_pairs = Libraries::Kernel::sceKernelIsNeoMode() ? 16 : 8;
     process_thread = std::jthread{std::bind_front(&Liverpool::Process, this)};
 }
