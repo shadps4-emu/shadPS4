@@ -7,28 +7,16 @@
 #include "core/loader/symbols_resolver.h"
 #include "core/tls.h"
 
+void LinkSymbolImpl(Core::Loader::SymbolsResolver* sym, char const* nid, char const* lib,
+                    u16 libversion, char const* mod, u64 symbol, Core::Loader::SymbolType sym_type);
+
 #define LIB_FUNCTION(nid, lib, libversion, mod, function)                                          \
-    do {                                                                                           \
-        Core::Loader::SymbolResolver sr{};                                                         \
-        sr.name = nid;                                                                             \
-        sr.library = lib;                                                                          \
-        sr.library_version = libversion;                                                           \
-        sr.module = mod;                                                                           \
-        sr.type = Core::Loader::SymbolType::Function;                                              \
-        auto func = reinterpret_cast<u64>(HOST_CALL(function));                                    \
-        sym->AddSymbol(sr, func);                                                                  \
-    } while (0)
+    LinkSymbolImpl(sym, nid, lib, libversion, mod, reinterpret_cast<u64>(HOST_CALL(function)),     \
+                   Core::Loader::SymbolType::Function)
 
 #define LIB_OBJ(nid, lib, libversion, mod, obj)                                                    \
-    do {                                                                                           \
-        Core::Loader::SymbolResolver sr{};                                                         \
-        sr.name = nid;                                                                             \
-        sr.library = lib;                                                                          \
-        sr.library_version = libversion;                                                           \
-        sr.module = mod;                                                                           \
-        sr.type = Core::Loader::SymbolType::Object;                                                \
-        sym->AddSymbol(sr, reinterpret_cast<u64>(obj));                                            \
-    } while (0)
+    LinkSymbolImpl(sym, nid, lib, libversion, mod, reinterpret_cast<u64>(obj),                     \
+                   Core::Loader::SymbolType::Object)
 
 namespace Libraries {
 
