@@ -679,24 +679,21 @@ void Runtime::SetBackingSamples(VideoCore::Image* image, u32 num_samples, bool c
 
 bool Runtime::IsBufferAccessed(const VideoCore::Buffer* handle, u64 offset, u64 size,
                                bool check_read_access) {
-    const AddressRange range = {
-        .resource = reinterpret_cast<u64>(handle),
-        .range_start = offset,
-        .range_end = offset + size - 1,
-    };
-    bool has_access = barrier_tracker.FindRange(range, Access::Write);
+    MakeCurrent(handle);
+    bool has_access = resource->write_ranges.Overlaps(offset, offset + size);
     if (check_read_access && !has_access) {
-        has_access |= barrier_tracker.FindRange(range, Access::Read);
+        has_access |= resource->read_ranges.Overlaps(offset, offset + size);
     }
     return has_access;
 }
 
 void Runtime::AccessBuffer(const VideoCore::Buffer* handle, u64 offset, u64 size,
                            vk::PipelineStageFlags2 src_stage, vk::AccessFlags2 src_access) {
-    const AddressRange range = {
-        .resource = reinterpret_cast<u64>(handle),
-        .range_start = offset,
-        .range_end = offset + size - 1,
+    MakeCurrent(handle);
+
+    const Interval range = {
+        .start = offset,
+        .end = offset + size,
     };
 
     constexpr static vk::AccessFlags2 READ_MASK =
@@ -712,10 +709,10 @@ void Runtime::AccessBuffer(const VideoCore::Buffer* handle, u64 offset, u64 size
         vk::AccessFlagBits2::eMemoryWrite | vk::AccessFlagBits2::eTransformFeedbackWriteEXT;
 
     if (src_access & WRITE_MASK) {
-        barrier_tracker.InsertRange(range, Access::Write);
+        resource->write_ranges.Add(range);
     }
     if (src_access & READ_MASK) {
-        barrier_tracker.InsertRange(range, Access::Read);
+        resource->read_ranges.Add(range);
     }
 
     memory_barrier.srcStageMask |= src_stage;
@@ -746,7 +743,24 @@ void Runtime::FlushBarriers() {
     memory_barrier.srcAccessMask = vk::AccessFlagBits2::eNone;
 
     image_barriers.clear();
-    barrier_tracker.Clear();
+    for (auto& resource : resources) {
+        resource.read_ranges.Clear();
+        resource.write_ranges.Clear();
+    }
+    resources.clear();
+    resource = nullptr;
+}
+
+void Runtime::MakeCurrent(const VideoCore::Buffer* handle) {
+    if (resource && resource->handle == handle) {
+        return;
+    }
+    auto it = std::ranges::find(resources, handle, &BufferBarriers::handle);
+    if (it != resources.end()) {
+        resource = std::addressof(*it);
+        return;
+    }
+    resource = &resources.emplace_back(handle);
 }
 
 } // namespace Vulkan

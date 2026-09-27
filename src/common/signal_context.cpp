@@ -49,13 +49,13 @@ bool IsWriteError(void* ctx) {
 
 bool IsExecuteError(void* ctx) {
 #if defined(_WIN32)
-    return ((EXCEPTION_POINTERS*)ctx)->ExceptionRecord->ExceptionInformation[0] == 1;
+    return ((EXCEPTION_POINTERS*)ctx)->ExceptionRecord->ExceptionInformation[0] == 0xf;
 #elif defined(__APPLE__) && defined(ARCH_X86_64)
-    return ((ucontext_t*)ctx)->uc_mcontext->__es.__err & 0x16;
+    return ((ucontext_t*)ctx)->uc_mcontext->__es.__err & 0x10;
 #elif defined(__FreeBSD__) && defined(ARCH_X86_64)
-    return ((ucontext_t*)ctx)->uc_mcontext.mc_err & 0x16;
+    return ((ucontext_t*)ctx)->uc_mcontext.mc_err & 0x10;
 #elif defined(ARCH_X86_64)
-    return ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_ERR] & 0x16;
+    return ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_ERR] & 0x10;
 #else
 #error "Unsupported architecture"
 #endif

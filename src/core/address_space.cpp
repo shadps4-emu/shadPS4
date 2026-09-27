@@ -828,6 +828,14 @@ AddressSpace::AddressSpace() : impl{std::make_unique<Impl>()} {
 AddressSpace::~AddressSpace() = default;
 
 void* AddressSpace::Map(VAddr virtual_addr, u64 size, PAddr phys_addr, bool is_exec) {
+    const VAddr end_addr = virtual_addr + size - 1;
+    if (phys_addr != -1 && std::bit_width(end_addr) <= Traits::ADDRESS_SPACE_BITS) {
+        const u64 base_page = virtual_addr >> Traits::PAGE_BITS;
+        for (u64 offset = 0; offset < size; offset += 16_KB) {
+            backing_pages[base_page + (offset >> Traits::PAGE_BITS)] =
+                backing_base + phys_addr + offset;
+        }
+    }
 #if ARCH_X86_64
     const auto prot = is_exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE;
 #else
@@ -849,6 +857,13 @@ void* AddressSpace::MapFile(VAddr virtual_addr, u64 size, u64 offset, u32 prot, 
 }
 
 VAddr AddressSpace::Unmap(VAddr virtual_addr, u64* size) {
+    const VAddr end_addr = virtual_addr + *size - 1;
+    if (std::bit_width(end_addr) <= Traits::ADDRESS_SPACE_BITS) {
+        const u64 base_page = virtual_addr >> Traits::PAGE_BITS;
+        for (u64 offset = 0; offset < *size; offset += 16_KB) {
+            backing_pages[base_page + (offset >> Traits::PAGE_BITS)] = nullptr;
+        }
+    }
     return impl->Unmap(virtual_addr, size);
 }
 

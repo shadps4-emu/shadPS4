@@ -145,27 +145,19 @@ void MemoryManager::SetPrtArea(u32 id, VAddr address, u64 size) {
 }
 
 void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
-    std::shared_lock lk{mutex};
-    ASSERT_MSG(IsValidMapping(virtual_addr), "Attempted to access invalid address {:#x}",
-               virtual_addr);
-
-    auto vma = FindVMA(virtual_addr);
+    const auto& backing_pages = impl.BackingPages();
     while (size) {
-        const u64 offset = virtual_addr - vma->first;
-        const u64 copy_size = std::min<u64>(vma->second.size - (virtual_addr - vma->first), size);
-        if (vma->second.IsMapped()) {
-            u8* out = dest;
-            vma->second.ForEachPhysArea(offset, copy_size, [&](PAddr paddr, u32 chunk_size) {
-                std::memcpy(out, impl.BackingBase() + paddr, chunk_size);
-                out += chunk_size;
-            });
+        const u64 page = virtual_addr >> 14;
+        const u64 offset_in_page = virtual_addr % 16_KB;
+        const u64 copy_size = std::min<u64>(16_KB - offset_in_page, size);
+        if (auto* entry = backing_pages.find(page); entry && *entry) {
+            std::memcpy(dest, *entry + offset_in_page, copy_size);
         } else {
             std::memset(dest, 0, copy_size);
         }
         size -= copy_size;
         virtual_addr += copy_size;
         dest += copy_size;
-        ++vma;
     }
 }
 

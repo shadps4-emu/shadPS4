@@ -8,11 +8,12 @@
 namespace Core::Loader {
 class SymbolsResolver;
 }
+namespace Libraries::Vdecsw {
+class VdecDecoder;
+}
 namespace Libraries::Videodec2 {
 
-class VdecDecoder;
-
-using OrbisVideodec2Decoder = VdecDecoder*;
+using OrbisVideodec2Decoder = Vdecsw::VdecDecoder*;
 using OrbisVideodec2ComputeQueue = void*;
 
 enum class OrbisVideodec2CodecType : u32 {
