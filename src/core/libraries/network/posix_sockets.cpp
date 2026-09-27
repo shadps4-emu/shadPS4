@@ -232,52 +232,50 @@ int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
     bool dontWait = (flags & ORBIS_NET_MSG_DONTWAIT) != 0;
 
     // stream socket with multiple buffers
-    bool use_wsamsg =
+    bool use_wsasend =
         (socket_type == ORBIS_NET_SOCK_STREAM || socket_type == ORBIS_NET_SOCK_STREAM_P2P) &&
         msg->msg_iovlen > 1;
 
-    for (int i = 0; i < msg->msg_iovlen; ++i) {
-        char* buf = (char*)msg->msg_iov[i].iov_base;
-        size_t remaining = msg->msg_iov[i].iov_len;
+    if (use_wsasend) {
+        // Only call WSASend if we have multiple buffers.
+        // This previously used WSASendMsg, but it works only with dgram and raw sockets, so it always resulted in WSA error 10022.
 
-        while (remaining > 0) {
-            if (dontWait) {
-                int ready = socket_is_ready(sock, false);
-                if (ready <= 0)
-                    return ready;
-            }
+        // OrbisNetIovec's structure is different from WSABUF, so it needs to be marshalled.
+        std::vector<WSABUF> bufs{};
+        bufs.resize(msg->msg_iovlen);
+        for (int i = 0; i < msg->msg_iovlen; ++i) {
+            bufs[i].len = static_cast<ULONG>(msg->msg_iov[i].iov_len);
+            bufs[i].buf = static_cast<CHAR*>(msg->msg_iov[i].iov_base);
+        }
 
-            int sent = 0;
-            if (use_wsamsg) {
-                // only call WSASendMsg if we have multiple buffers
-                LPFN_WSASENDMSG wsasendmsg = nullptr;
-                GUID guid = WSAID_WSASENDMSG;
-                DWORD bytes = 0;
-                if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid),
-                             &wsasendmsg, sizeof(wsasendmsg), &bytes, nullptr, nullptr) != 0) {
-                    // fallback to send()
-                    sent = ::send(sock, buf, remaining, 0);
-                } else {
-                    DWORD bytesSent = 0;
-                    int res = wsasendmsg(
-                        sock, reinterpret_cast<LPWSAMSG>(const_cast<OrbisNetMsghdr*>(msg)), 0,
-                        &bytesSent, nullptr, nullptr);
-                    if (res == SOCKET_ERROR)
-                        return ConvertReturnErrorCode(WSAGetLastError());
-                    sent = bytesSent;
+        DWORD bytesSent = 0;
+        int res = WSASend(sock, bufs.data(), bufs.size(), &bytesSent, msg->msg_flags, nullptr, nullptr);
+        if (res == SOCKET_ERROR)
+            return ConvertReturnErrorCode(WSAGetLastError());
+        return bytesSent;
+    } else {
+        for (int i = 0; i < msg->msg_iovlen; ++i) {
+            char* buf = (char*)msg->msg_iov[i].iov_base;
+            size_t remaining = msg->msg_iov[i].iov_len;
+
+            while (remaining > 0) {
+                if (dontWait) {
+                    int ready = socket_is_ready(sock, false);
+                    if (ready <= 0)
+                        return ready;
                 }
-            } else {
-                sent = ::send(sock, buf, remaining, 0);
+
+                int sent = ::send(sock, buf, remaining, 0);
                 if (sent == SOCKET_ERROR)
                     return ConvertReturnErrorCode(WSAGetLastError());
+
+                totalSent += sent;
+                remaining -= sent;
+                buf += sent;
+
+                if (!waitAll)
+                    break;
             }
-
-            totalSent += sent;
-            remaining -= sent;
-            buf += sent;
-
-            if (!waitAll)
-                break;
         }
     }
 
