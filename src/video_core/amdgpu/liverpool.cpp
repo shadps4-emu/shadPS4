@@ -271,9 +271,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
 
                 switch (nop->data_block[0]) {
                 case PM4CmdNop::PayloadType::PatchedFlip: {
-                    // There is no evidence that GPU CP drives flip events by parsing
-                    // special NOP packets. For convenience lets assume that it does.
-                    Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
+                    // PatchFlipRequest appends the frame fence after this NOP, so signalling
+                    // here lets the guest see the flip before the fence is written.
+                    // Defer the signal until the rest of this DCB has executed.
+                    flip_signal_armed = true;
                     break;
                 }
                 case PM4CmdNop::PayloadType::DebugMarkerPush: {
@@ -857,6 +858,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             dcb = NextPacket(dcb, header->type3.NumWords() + 1);
             break;
         }
+    }
+
+    if (flip_signal_armed) {
+        flip_signal_armed = false;
+        Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
     }
 
     if (ce_task.handle) {
