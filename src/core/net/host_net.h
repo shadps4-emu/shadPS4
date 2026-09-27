@@ -84,6 +84,9 @@ enum class Error : s32 {
     Internal = 204, // PS4 ORBIS_NET_EINTERNAL
 };
 
+bool Initialize();
+void Shutdown();
+
 /// Non-blocking, close-on-exec, on Windows also SIO_UDP_CONNRESET off for UDP.
 NativeSocket CreateSocket(int family, int type, int protocol, Error* error);
 /// Applies the same configuration to sockets that come from accept().

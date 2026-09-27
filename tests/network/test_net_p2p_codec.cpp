@@ -120,14 +120,14 @@ TEST_F(NetP2PCodec, BroadcastPacketsAreDecodedAndReported) {
     // [FF][valid|broadcast|digest|UDP_SIMPLE][port 0x0E4A][digest][payload]
     const std::vector<u8> broadcast{
         0xFF, 0x80 | 0x40 | 0x20 | 3, 0x0E, 0x4A, 'N', 'P', 'W', 'R', 'x', 'y'};
-    for (int i = 0; i < FramingCodec::kMaxReportedBroadcasts + 5; ++i) {
+    for (int i = 0; i < FramingCodec::MaxReportedBroadcasts + 5; ++i) {
         const auto d = observed.Decode(broadcast, kPeer);
         ASSERT_EQ(d.kind, Codec::Kind::Datagram);
         EXPECT_EQ(d.dst_vport, 0x0E4A);
         EXPECT_EQ(d.src_vport, 0x0E4A); // no source vport on the wire: the same port
         EXPECT_EQ(d.payload, Bytes("xy"));
     }
-    EXPECT_EQ(reported, FramingCodec::kMaxReportedBroadcasts); // only the first few
+    EXPECT_EQ(reported, FramingCodec::MaxReportedBroadcasts); // only the first few
     EXPECT_EQ(seen, broadcast);                                // the whole packet
 
     // Without a digest the payload follows the port.
