@@ -92,6 +92,10 @@ void Emulator::Shutdown() {
     Common::Log::Flush();
     Libraries::SaveData::Backup::StopThread();
     Storage::DataBase::Instance().Close();
+    play_time_thread.request_stop();
+    if (play_time_thread.joinable()) {
+        play_time_thread.join();
+    }
     UpdatePlayTime(Common::Singleton<Common::ElfInfo>::Instance()->GameSerial());
     if (controllers) {
         controllers->ResetLightbarColors();
@@ -688,7 +692,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         play_time_thread = std::jthread([this, id](std::stop_token stop) {
             while (Common::StoppableTimedWait(stop, std::chrono::seconds(60))) {
                 UpdatePlayTime(id);
-                start_time = std::chrono::steady_clock::now();
             }
         });
     }
@@ -834,6 +837,10 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 }
 
 void Emulator::UpdatePlayTime(const std::string_view serial) {
+    if (serial.empty() || start_time == std::chrono::steady_clock::time_point{}) {
+        return;
+    }
+
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     const auto filePath = (user_dir / "play_time.txt").string();
 
@@ -843,9 +850,10 @@ void Emulator::UpdatePlayTime(const std::string_view serial) {
         return;
     }
 
-    auto end_time = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
-    int total_seconds = static_cast<int>(duration.count());
+    const auto end_time = std::chrono::steady_clock::now();
+    const auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+    start_time = end_time;
+    const int total_seconds = static_cast<int>(duration.count());
 
     std::vector<std::string> lines;
     std::string line;
