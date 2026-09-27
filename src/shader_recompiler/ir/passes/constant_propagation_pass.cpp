@@ -308,61 +308,6 @@ void FoldMul(IR::Block& block, IR::Inst& inst) {
     }
 }
 
-void FoldCmpClass(IR::Block& block, IR::Inst& inst) {
-    ASSERT_MSG(inst.Arg(1).IsImmediate(), "Unable to resolve compare operation");
-    const auto class_mask = static_cast<IR::FloatClassFunc>(inst.Arg(1).U32());
-    if ((class_mask & IR::FloatClassFunc::NaN) == IR::FloatClassFunc::NaN) {
-        inst.ReplaceOpcode(IR::Opcode::FPIsNan32);
-    } else if ((class_mask & IR::FloatClassFunc::Infinity) == IR::FloatClassFunc::Infinity) {
-        inst.ReplaceOpcode(IR::Opcode::FPIsInf32);
-    } else if ((class_mask & IR::FloatClassFunc::Finite) == IR::FloatClassFunc::Finite) {
-        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-        const IR::F32 value = IR::F32{inst.Arg(0)};
-        inst.ReplaceUsesWithAndRemove(
-            ir.LogicalNot(ir.LogicalOr(ir.FPIsNan(value), ir.FPIsInf(value))));
-    } else {
-        UNREACHABLE();
-    }
-}
-
-bool FoldPackedAncillary(IR::Block& block, IR::Inst& inst) {
-    if (inst.Arg(0).IsImmediate() || !inst.Arg(1).IsImmediate() || !inst.Arg(2).IsImmediate()) {
-        return false;
-    }
-    IR::Inst* value = inst.Arg(0).Inst();
-    if (value->GetOpcode() != IR::Opcode::GetAttributeU32 ||
-        value->Arg(0).Attribute() != IR::Attribute::PackedAncillary) {
-        return false;
-    }
-    const u32 offset = inst.Arg(1).U32();
-    const u32 bits = inst.Arg(2).U32();
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    if (offset >= 8 && offset + bits <= 12) {
-        const auto sample_index = ir.GetAttributeU32(IR::Attribute::SampleIndex);
-        if (offset == 8 && bits == 4) {
-            inst.ReplaceUsesWithAndRemove(sample_index);
-        } else {
-            inst.ReplaceUsesWithAndRemove(
-                ir.BitFieldExtract(sample_index, ir.Imm32(offset - 8), ir.Imm32(bits)));
-        }
-    } else if (offset >= 16 && offset + bits <= 27) {
-        const auto mrt_index = ir.GetAttributeU32(IR::Attribute::RenderTargetIndex);
-        if (offset == 16 && bits == 11) {
-            inst.ReplaceUsesWithAndRemove(mrt_index);
-        } else {
-            inst.ReplaceUsesWithAndRemove(
-                ir.BitFieldExtract(mrt_index, ir.Imm32(offset - 16), ir.Imm32(bits)));
-        }
-    } else {
-        UNREACHABLE_MSG("Unhandled bitfield extract from ancillary VGPR offset={}, bits={}", offset,
-                        bits);
-    }
-
-    value->ReplaceUsesWithAndRemove(ir.Imm32(0U));
-
-    return true;
-}
-
 void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::IAdd32:
@@ -387,9 +332,6 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
             ASSERT_MSG(b != 0, "Folding UMod32 with modulo 0");
             return a % b;
         });
-        return;
-    case IR::Opcode::FPCmpClass32:
-        FoldCmpClass(block, inst);
         return;
     case IR::Opcode::ShiftLeftLogical32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return static_cast<u32>(a << b); });
@@ -587,9 +529,6 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         FoldWhenAllImmediates(inst, [](u64 a) { return static_cast<u32>(std::popcount(a)); });
         return;
     case IR::Opcode::BitFieldUExtract:
-        if (FoldPackedAncillary(block, inst)) {
-            return;
-        }
         FoldWhenAllImmediates(inst, [](u32 base, u32 shift, u32 count) {
             if (static_cast<size_t>(shift) + static_cast<size_t>(count) > 32) {
                 UNREACHABLE_MSG("Undefined result in {}({}, {}, {})", IR::Opcode::BitFieldUExtract,

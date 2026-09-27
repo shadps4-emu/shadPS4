@@ -382,9 +382,8 @@ static void DeduplicateSccs(std::vector<PhiScc>& sccs) {
                 for (size_t k = 0; k < remove.phis.size(); k++) {
                     IR::Inst* old_phi = remove.phis[k];
                     IR::Inst* new_phi = scc.phis[k];
-                    for (auto it = old_phi->Uses().begin(); it != old_phi->Uses().end();) {
-                        auto [user, operand] = *it;
-                        ++it;
+                    const auto uses = old_phi->Uses();
+                    for (const auto& [user, operand] : uses) {
                         if (user->GetOpcode() == IR::Opcode::Phi) {
                             if (user->scc_index == old_phi->scc_index) {
                                 continue;
@@ -395,8 +394,10 @@ static void DeduplicateSccs(std::vector<PhiScc>& sccs) {
                                 worklist.push_back(&user_group);
                             }
                         }
-                        user->SetArg(operand, IR::Value{new_phi});
-                        RunLocalCSE(user->GetParent());
+                        if (user->GetOpcode() != IR::Opcode::Void) {
+                            user->SetArg(operand, IR::Value{new_phi});
+                            RunLocalCSE(user->GetParent());
+                        }
                     }
                 }
                 remove.dead = true;

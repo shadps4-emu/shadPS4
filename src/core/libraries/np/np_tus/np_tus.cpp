@@ -4,15 +4,16 @@
 #include <algorithm>
 #include <cstring>
 #include <map>
-#include <core/libraries/np/np_error.h>
-#include <core/libraries/np/np_handler.h>
-#include <core/libraries/np/np_types.h>
-#include <core/libraries/system/userservice.h>
+#include <fmt/format.h>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_handler.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_tus/np_tus.h"
+#include "core/libraries/np/np_types.h"
+#include "core/libraries/system/userservice.h"
 #include "np_tus_ctx.h"
 
 namespace Libraries::Np::NpTus {

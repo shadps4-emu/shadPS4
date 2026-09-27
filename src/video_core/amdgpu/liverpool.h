@@ -97,9 +97,6 @@ public:
 
     template <bool wait_done = false>
     void SendCommand(auto&& func) {
-        if (std::this_thread::get_id() == gpu_id) {
-            return func();
-        }
         if constexpr (wait_done) {
             std::binary_semaphore sem{0};
             {
@@ -142,6 +139,16 @@ public:
         u32 tmp_dwords;
     };
     Common::SlotVector<AscQueueInfo> asc_queues{};
+
+    std::thread::id GetGpuCommandProcessorThread() {
+        return gpu_id;
+    }
+
+#ifdef __linux__
+    u32 GetGpuCommandProcessorThreadId() {
+        return gpu_tid;
+    }
+#endif
 
 private:
     struct Task {
@@ -231,6 +238,9 @@ private:
     std::condition_variable_any submit_cv;
     std::queue<Common::UniqueFunction<void>> command_queue{};
     std::thread::id gpu_id;
+#ifdef __linux__
+    u32 gpu_tid;
+#endif
     s32 curr_qid{-1};
 };
 

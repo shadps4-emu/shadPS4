@@ -12,11 +12,13 @@
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/post_order.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/recompiler.h"
+#include "video_core/amdgpu/pixel_format.h"
 
 using namespace Shader;
 
@@ -104,4 +106,126 @@ std::vector<u32> TranslateToSpirv(std::span<const u64> raw_gcn_insts) {
     const auto spirv = Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
 
     return spirv;
+}
+
+std::vector<u32> TranslateFragmentFrontFaceToSpirv(bool front_face_all_bits) {
+    Shader::Info info{};
+    info.hw_stage = HwStage::Fragment;
+    info.sw_stage = SwStage::Fragment;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Block;
+    program.syntax_list.back().data.block = block;
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Return;
+    program.post_order_blocks = IR::PostOrder(block);
+
+    Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    RuntimeInfo runtime_info{};
+    runtime_info.Initialize(HwStage::Fragment, SwStage::Fragment);
+    runtime_info.hw.fs.en_flags.front_face_ena = 1;
+    runtime_info.hw.fs.addr_flags.front_face_ena = 1;
+    runtime_info.hw.fs.front_face_all_bits = front_face_all_bits;
+    runtime_info.hw.fs.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
+
+    Gcn::Translator translator(program.info, runtime_info, profile);
+    translator.EmitPrologue(block);
+
+    IR::IREmitter ir{*block};
+    const IR::U32 front_face = ir.GetVectorReg<IR::U32>(IR::VectorReg::V0);
+    ir.SetAttribute(IR::Attribute::RenderTarget0, ir.BitCast<IR::F32>(front_face));
+    ir.Epilogue();
+
+    Optimization::SsaRewritePass(program);
+    Optimization::ConstantPropagationPass(program.blocks);
+    Optimization::DeadCodeEliminationPass(program);
+    Optimization::CollectShaderInfoPass(program, profile);
+    Backend::Bindings bindings{};
+    return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
+}
+
+std::vector<u32> TranslateFragmentPullModelToSpirv(bool use_amd_barycentrics) {
+    Shader::Info info{};
+    info.hw_stage = HwStage::Fragment;
+    info.sw_stage = SwStage::Fragment;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Block;
+    program.syntax_list.back().data.block = block;
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Return;
+    program.post_order_blocks = IR::PostOrder(block);
+
+    Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    profile.supports_amd_shader_explicit_vertex_parameter = use_amd_barycentrics;
+    profile.supports_fragment_shader_barycentric = !use_amd_barycentrics;
+
+    RuntimeInfo runtime_info{};
+    runtime_info.Initialize(HwStage::Fragment, SwStage::Fragment);
+    runtime_info.hw.fs.addr_flags.persp_pull_model_ena = 1;
+    runtime_info.hw.fs.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
+
+    IR::IREmitter ir{*block};
+    ir.Prologue();
+    IR::F32 sum = ir.Imm32(0.0f);
+    for (u32 comp = 0; comp < 3; ++comp) {
+        sum = ir.FPAdd(sum, ir.GetAttribute(IR::Attribute::BaryCoordPullModel, comp));
+    }
+    ir.SetAttribute(IR::Attribute::RenderTarget0, sum);
+    ir.Epilogue();
+
+    Optimization::CollectShaderInfoPass(program, profile);
+    Backend::Bindings bindings{};
+    return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
+}
+
+FragmentInterpMovInfo TranslateFragmentInterpMovSelector(u32 src_select, bool flat_shade,
+                                                         bool offset5) {
+    Shader::Info info{};
+    info.hw_stage = HwStage::Fragment;
+    info.sw_stage = SwStage::Fragment;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+
+    Profile profile{};
+    profile.supports_fragment_shader_barycentric = true;
+    RuntimeInfo runtime_info{};
+    runtime_info.Initialize(HwStage::Fragment, SwStage::Fragment);
+    runtime_info.hw.fs.inputs[0].is_flat = flat_shade;
+    runtime_info.hw.fs.inputs[0].is_default = offset5;
+
+    Gcn::Translator translator(program.info, runtime_info, profile);
+    translator.EmitPrologue(block);
+
+    Gcn::GcnInst inst{};
+    inst.src[0].code = src_select;
+    inst.dst[0].field = Gcn::OperandField::VectorGPR;
+    inst.dst[0].code = 0;
+    inst.control.vintrp.attr = 0;
+    inst.control.vintrp.chan = 0;
+    translator.V_INTERP_MOV_F32(inst);
+
+    FragmentInterpMovInfo interp_info{};
+    for (const IR::Inst& ir_inst : block->Instructions()) {
+        if (ir_inst.GetOpcode() == IR::Opcode::GetAttribute &&
+            ir_inst.Arg(0).Attribute() == IR::Attribute::Param0) {
+            interp_info.attribute_indices.push_back(ir_inst.Arg(2).U32());
+        } else if (ir_inst.GetOpcode() == IR::Opcode::FPSub32) {
+            ++interp_info.fsub_count;
+        }
+    }
+    return interp_info;
 }

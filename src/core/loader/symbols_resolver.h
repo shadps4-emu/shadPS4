@@ -20,12 +20,6 @@ enum class SymbolType {
     NoType,
 };
 
-struct SymbolRecord {
-    std::string name;
-    std::string nid_name;
-    u64 virtual_address;
-};
-
 struct SymbolResolver {
     std::string name;
     std::string nidName;
@@ -33,6 +27,12 @@ struct SymbolResolver {
     u16 library_version;
     std::string module;
     SymbolType type;
+    bool operator==(SymbolResolver const& o) const;
+};
+
+struct SymbolRecord {
+    SymbolResolver symbol;
+    u64 virtual_address;
 };
 
 class SymbolsResolver {
@@ -53,24 +53,7 @@ public:
         return m_symbols.size();
     }
 
-    static std::string GenerateName(const SymbolResolver& s);
-
-    static std::string_view SymbolTypeToS(SymbolType sym_type) {
-        switch (sym_type) {
-        case SymbolType::Unknown:
-            return "Unknown";
-        case SymbolType::Function:
-            return "Function";
-        case SymbolType::Object:
-            return "Object";
-        case SymbolType::Tls:
-            return "Tls";
-        case SymbolType::NoType:
-            return "NoType";
-        default:
-            UNREACHABLE();
-        }
-    }
+    static std::string_view SymbolTypeToS(SymbolType sym_type);
 
 private:
     std::vector<SymbolRecord> m_symbols;

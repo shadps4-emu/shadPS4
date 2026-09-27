@@ -142,6 +142,9 @@ struct PushEventInput {
     bool hasFrom = false;
     OrbisNpOnlineId toOnlineId{};
     bool hasTo = false;
+    // Account ids for the OrbisNpPeerAddressA pFrom/pTo of extended push callbacks.
+    OrbisNpAccountId fromAccountId = 0;
+    OrbisNpAccountId toAccountId = 0;
     std::vector<std::pair<std::string, std::string>> extdData; // (key,value) for extd push
 };
 void EnqueuePushEvent(const PushEventInput& ev);

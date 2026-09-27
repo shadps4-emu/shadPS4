@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <optional>
 #include <type_traits>
 #include <boost/container/small_vector.hpp>

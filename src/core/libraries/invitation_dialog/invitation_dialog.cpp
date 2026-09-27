@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
+#include <fmt/format.h>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -9,7 +11,6 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_handler.h"
 #include "invitation_dialog_ui.h"
-#include "magic_enum/magic_enum.hpp"
 
 namespace Libraries::InvitationDialog {
 

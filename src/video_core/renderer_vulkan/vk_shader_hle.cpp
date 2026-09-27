@@ -3,7 +3,7 @@
 
 #include "shader_recompiler/info.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
-#include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/renderer_vulkan/vk_runtime.h"
 #include "video_core/renderer_vulkan/vk_shader_hle.h"
 
 extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
@@ -14,7 +14,7 @@ static constexpr u64 COPY_SHADER_HASH = 0xfefebf9f;
 
 static bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::ComputeProgram& cs_program,
                                  Rasterizer& rasterizer) {
-    auto& scheduler = rasterizer.GetScheduler();
+    auto& runtime = rasterizer.GetRuntime();
     auto& buffer_cache = rasterizer.GetBufferCache();
 
     // Copy shader defines three formatted buffers as inputs: control, source, and destination.
@@ -44,20 +44,6 @@ static bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Compute
         const u32 local_size = (end + 1) * buf_stride;
         copies.emplace_back(local_src_offset, local_dst_offset, local_size);
     }
-
-    scheduler.EndRendering();
-
-    static constexpr vk::MemoryBarrier READ_BARRIER{
-        .srcAccessMask = vk::AccessFlagBits::eMemoryWrite,
-        .dstAccessMask = vk::AccessFlagBits::eTransferRead | vk::AccessFlagBits::eTransferWrite,
-    };
-    static constexpr vk::MemoryBarrier WRITE_BARRIER{
-        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
-        .dstAccessMask = vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
-    };
-    scheduler.CommandBuffer().pipelineBarrier(
-        vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eTransfer,
-        vk::DependencyFlagBits::eByRegion, READ_BARRIER, {}, {});
 
     static constexpr vk::DeviceSize MaxDistanceForMerge = 64_MB;
     u32 batch_start = 0;
@@ -109,13 +95,9 @@ static bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Compute
         // Execute buffer copies.
         LOG_TRACE(Render_Vulkan, "HLE buffer copy: src_size = {}, dst_size = {}",
                   src_offset_max - src_offset_min, dst_offset_max - dst_offset_min);
-        scheduler.CommandBuffer().copyBuffer(src_buf->Handle(), dst_buf->Handle(), vk_copies);
+        runtime.CopyBuffer(src_buf, dst_buf, vk_copies);
         batch_start = batch_end;
     }
-
-    scheduler.CommandBuffer().pipelineBarrier(
-        vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eAllCommands,
-        vk::DependencyFlagBits::eByRegion, WRITE_BARRIER, {}, {});
 
     return true;
 }

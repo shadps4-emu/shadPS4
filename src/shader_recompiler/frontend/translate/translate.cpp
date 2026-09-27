@@ -4,6 +4,7 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
+#include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/info.h"
@@ -15,6 +16,7 @@
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 
+#include <algorithm>
 #include <numbers>
 #include <magic_enum/magic_enum.hpp>
 
@@ -111,10 +113,10 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         // v0: vertex ID, always present
         IR::U32 vertex_id = ir.GetAttributeU32(IR::Attribute::VertexId);
         if (base_vertex_sgpr != -1) {
-            if (!fetch_data || fetch_data->vertex_offset_sgpr == -1) {
+            if (!fetch_data.Empty() || fetch_data.vertex_offset_sgpr == -1) {
                 vertex_id = ir.ISub(vertex_id, ir.GetAttributeU32(IR::Attribute::BaseVertex));
             } else {
-                ASSERT_MSG(fetch_data->vertex_offset_sgpr == base_vertex_sgpr,
+                ASSERT_MSG(fetch_data.vertex_offset_sgpr == base_vertex_sgpr,
                            "Fetch shader in indirect draw uses wrong base vertex");
             }
         }
@@ -156,11 +158,11 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         if (runtime_info.props.num_input_vgprs > 2) {
             IR::U32 instance_id = ir.GetAttributeU32(IR::Attribute::InstanceId);
             if (base_instance_sgpr != -1) {
-                if (!fetch_data || fetch_data->instance_offset_sgpr == -1) {
+                if (!fetch_data.Empty() || fetch_data.instance_offset_sgpr == -1) {
                     instance_id =
                         ir.ISub(instance_id, ir.GetAttributeU32(IR::Attribute::BaseInstance));
                 } else {
-                    ASSERT_MSG(fetch_data->instance_offset_sgpr == base_instance_sgpr,
+                    ASSERT_MSG(fetch_data.instance_offset_sgpr == base_instance_sgpr,
                                "Fetch shader in indirect draw uses wrong base instance");
                 }
             }
@@ -209,7 +211,14 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         }
         if (addr_flags.front_face_ena) {
             if (en_flags.front_face_ena) {
-                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::IsFrontFace));
+                const IR::U1 front_face = ir.GetAttributeU1(IR::Attribute::IsFrontFace);
+                if (runtime_info.hw.fs.front_face_all_bits) {
+                    ir.SetVectorReg(dst_vreg++,
+                                    IR::U32{ir.Select(front_face, ir.Imm32(1), ir.Imm32(0))});
+                } else {
+                    ir.SetVectorReg(dst_vreg++, IR::F32{ir.Select(front_face, ir.Imm32(1.0f),
+                                                                  ir.Imm32(-1.0f))});
+                }
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }
@@ -217,6 +226,21 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         if (addr_flags.ancillary_ena) {
             if (en_flags.ancillary_ena) {
                 ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::PackedAncillary));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+            }
+        }
+        if (addr_flags.sample_coverage_ena) {
+            if (en_flags.sample_coverage_ena) {
+                const u32 num_samples = std::clamp<u32>(runtime_info.hw.fs.num_samples, 1U, 16U);
+                IR::U32 coverage = ir.Imm32(1U);
+                if (num_samples > 1) {
+                    const u32 valid_samples = (1U << num_samples) - 1U;
+                    coverage = ir.BitwiseAnd(ir.GetAttributeU32(IR::Attribute::SampleMask),
+                                             ir.Imm32(valid_samples));
+                }
+                const IR::U1 is_helper = ir.GetAttributeU1(IR::Attribute::IsHelperInvocation);
+                ir.SetVectorReg(dst_vreg++, IR::U32{ir.Select(is_helper, ir.Imm32(0U), coverage)});
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }
@@ -1111,29 +1135,27 @@ template void Translator::SetDstPk<IR::F32, false>(const InstOperand& operand,
 void Translator::EmitFetch(const GcnInst& inst) {
     const auto code_sgpr_base = inst.src[0].code;
 
-#if 0
-    // Translate fetch shader inline using regular buffer bindings; useful for debugging.
-    const auto* code = GetFetchShaderCode(info, code_sgpr_base);
-    GcnCodeSlice slice(code, code + std::numeric_limits<u32>::max());
-    GcnDecodeContext decoder;
+    if (EmulatorSettings.IsInlineFetchShader()) {
+        // Translate fetch shader inline using regular buffer bindings; useful for debugging.
+        const auto* code = GetFetchShaderCode(info, code_sgpr_base);
+        GcnCodeSlice slice(code, code + std::numeric_limits<u32>::max());
+        GcnDecodeContext decoder;
 
-    // Decode and save instructions
-    while (!slice.atEnd()) {
-        const auto sub_inst = decoder.decodeInstruction(slice);
-        if (sub_inst.opcode == Opcode::S_SETPC_B64) {
-            // Assume we're swapping back to the main shader.
-            break;
+        // Decode and save instructions
+        while (!slice.atEnd()) {
+            const auto sub_inst = decoder.decodeInstruction(slice);
+            if (sub_inst.opcode == Opcode::S_SETPC_B64) {
+                // Assume we're swapping back to the main shader.
+                break;
+            }
+            TranslateInstruction(sub_inst);
         }
-        TranslateInstruction(sub_inst);
+        return;
     }
-    return;
-#endif
 
     info.has_fetch_shader = true;
     info.fetch_shader_sgpr_base = code_sgpr_base;
-
-    fetch_data = ParseFetchShader(info);
-    ASSERT(fetch_data.has_value());
+    ASSERT(ParseFetchShader(info, fetch_data));
 
     if (EmulatorSettings.IsDumpShaders()) {
         using namespace Common::FS;
@@ -1144,11 +1166,12 @@ void Translator::EmitFetch(const GcnInst& inst) {
         const auto filename = fmt::format("vs_{:#018x}.fetch.bin", info.pgm_hash);
         const auto file = IOFile{dump_dir / filename, FileAccessMode::Create};
         const auto* code = GetFetchShaderCode(info, code_sgpr_base);
-        file.WriteRaw<u8>(code, fetch_data->size);
+        file.WriteRaw<u8>(code, fetch_data.size);
     }
 
-    for (const auto& attrib : fetch_data->attributes) {
-        const IR::Attribute attr{IR::Attribute::Param0 + attrib.semantic};
+    for (u32 semantic = 0; semantic < fetch_data.attributes.size(); ++semantic) {
+        const auto& attrib = fetch_data.attributes[semantic];
+        const IR::Attribute attr{IR::Attribute::Param0 + semantic};
         IR::VectorReg dst_reg{attrib.dest_vgpr};
 
         // Read the V# of the attribute to figure out component number and type.
@@ -1159,7 +1182,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
         const auto converted =
             IR::ApplyReadNumberConversionVec4(ir, values, buffer.GetNumberConversion());
         const auto swizzled = ApplySwizzle(ir, converted, buffer.DstSelect());
-        for (u32 i = 0; i < 4; i++) {
+        for (u32 i = 0; i < attrib.num_elements; i++) {
             ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(swizzled, i)});
         }
     }

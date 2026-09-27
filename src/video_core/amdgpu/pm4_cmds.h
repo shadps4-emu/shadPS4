@@ -848,7 +848,7 @@ struct PM4DumpConstRam {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>((u64(addr_hi) << 32u) | addr_lo);
+        return std::bit_cast<T>((u64(addr_hi) << 32u) | addr_lo);
     }
 
     [[nodiscard]] u32 Offset() const {

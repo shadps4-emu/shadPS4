@@ -78,9 +78,9 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_BCNT_U32_B32:
         return V_BCNT_U32_B32(inst);
     case Opcode::V_MBCNT_LO_U32_B32:
-        return V_MBCNT_U32_B32(true, inst);
-    case Opcode::V_MBCNT_HI_U32_B32:
         return V_MBCNT_U32_B32(false, inst);
+    case Opcode::V_MBCNT_HI_U32_B32:
+        return V_MBCNT_U32_B32(true, inst);
     case Opcode::V_ADD_I32:
         return V_ADD_I32(inst);
     case Opcode::V_SUB_I32:
@@ -153,6 +153,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CVT_F32_UBYTE(2, inst);
     case Opcode::V_CVT_F32_UBYTE3:
         return V_CVT_F32_UBYTE(3, inst);
+    case Opcode::V_TRUNC_F64:
+        return V_TRUNC_F64(inst);
     case Opcode::V_FLOOR_F64:
         return V_FLOOR_F64(inst);
     case Opcode::V_FRACT_F32:
@@ -371,6 +373,24 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_CMPX_TRU_U32:
         return V_CMP_U32(ConditionOp::TRU, false, true, inst);
 
+        //     V_CMP_{OP8}_I64
+    case Opcode::V_CMP_F_I64:
+        return V_CMP_U64(ConditionOp::F, true, false, inst);
+    case Opcode::V_CMP_LT_I64:
+        return V_CMP_U64(ConditionOp::LT, true, false, inst);
+    case Opcode::V_CMP_EQ_I64:
+        return V_CMP_U64(ConditionOp::EQ, true, false, inst);
+    case Opcode::V_CMP_LE_I64:
+        return V_CMP_U64(ConditionOp::LE, true, false, inst);
+    case Opcode::V_CMP_GT_I64:
+        return V_CMP_U64(ConditionOp::GT, true, false, inst);
+    case Opcode::V_CMP_NE_I64:
+        return V_CMP_U64(ConditionOp::LG, true, false, inst);
+    case Opcode::V_CMP_GE_I64:
+        return V_CMP_U64(ConditionOp::GE, true, false, inst);
+    case Opcode::V_CMP_TRU_I64:
+        return V_CMP_U64(ConditionOp::TRU, true, false, inst);
+
         //     V_CMPX_{OP8}_I64
     case Opcode::V_CMPX_EQ_I64:
         return V_CMP_U64(ConditionOp::EQ, true, true, inst);
@@ -461,6 +481,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_ALIGNBYTE_B32(inst);
     case Opcode::V_MUL_F64:
         return V_MUL_F64(inst);
+    case Opcode::V_MIN_F64:
+        return V_MIN_F64(inst);
     case Opcode::V_MAX_F64:
         return V_MAX_F64(inst);
     case Opcode::V_MUL_LO_U32:
@@ -726,10 +748,10 @@ void Translator::V_BCNT_U32_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.IAdd(ir.BitCount(src0), src1));
 }
 
-void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
-    const IR::U32 thread_mask{ir.GetAttributeU32(IR::Attribute::SubgroupLtMask, is_low ? 0 : 1)};
-    SetDst(inst.dst[0], ir.IAdd(ir.BitCount(ir.BitwiseAnd(GetSrc(inst.src[0]), thread_mask)),
-                                GetSrc(inst.src[1])));
+void Translator::V_MBCNT_U32_B32(bool hi, const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    SetDst(inst.dst[0], ir.MaskedBitCount(src0, src1, hi));
 }
 
 void Translator::V_ADD_I32(const GcnInst& inst) {
@@ -781,25 +803,29 @@ void Translator::V_ADDC_U32(const GcnInst& inst) {
 }
 
 void Translator::V_SUBB_U32(const GcnInst& inst) {
-    // Signed or unsigned components
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 carry{GetCarryIn(inst)};
     const IR::U32 result{ir.ISub(ir.ISub(src0, src1), carry)};
     SetDst(inst.dst[0], result);
 
-    // TODO: Carry-out with signed or unsigned components
+    const IR::U1 underflow{ir.IGreaterThan(src1, src0, false)};
+    const IR::U32 difference{ir.ISub(src0, src1)};
+    const IR::U1 borrow_underflow{ir.IGreaterThan(carry, difference, false)};
+    SetCarryOut(inst, ir.LogicalOr(underflow, borrow_underflow));
 }
 
 void Translator::V_SUBBREV_U32(const GcnInst& inst) {
-    // Signed or unsigned components
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 carry{GetCarryIn(inst)};
     const IR::U32 result{ir.ISub(ir.ISub(src1, src0), carry)};
     SetDst(inst.dst[0], result);
 
-    // TODO: Carry-out with signed or unsigned components
+    const IR::U1 underflow{ir.IGreaterThan(src0, src1, false)};
+    const IR::U32 difference{ir.ISub(src1, src0)};
+    const IR::U1 borrow_underflow{ir.IGreaterThan(carry, difference, false)};
+    SetCarryOut(inst, ir.LogicalOr(underflow, borrow_underflow));
 }
 
 void Translator::V_LDEXP_F32(const GcnInst& inst) {
@@ -976,6 +1002,11 @@ void Translator::V_CVT_F32_UBYTE(u32 index, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 byte = ir.BitFieldExtract(src0, ir.Imm32(8 * index), ir.Imm32(8));
     SetDst(inst.dst[0], ir.ConvertUToF(32, 32, byte));
+}
+
+void Translator::V_TRUNC_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    SetDst64(inst.dst[0], ir.FPTrunc(src0));
 }
 
 void Translator::V_FLOOR_F64(const GcnInst& inst) {
@@ -1579,6 +1610,12 @@ void Translator::V_MUL_F64(const GcnInst& inst) {
     const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
     const IR::F64 src1{GetSrc64<IR::F64>(inst.src[1])};
     SetDst64(inst.dst[0], ir.FPMul(src0, src1));
+}
+
+void Translator::V_MIN_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    const IR::F64 src1{GetSrc64<IR::F64>(inst.src[1])};
+    SetDst64(inst.dst[0], ir.FPMin(src0, src1));
 }
 
 void Translator::V_MAX_F64(const GcnInst& inst) {

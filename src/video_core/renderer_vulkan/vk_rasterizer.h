@@ -8,6 +8,7 @@
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
+#include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace AmdGpu {
@@ -20,18 +21,21 @@ class MemoryManager;
 
 namespace Vulkan {
 
-class Scheduler;
-class RenderState;
 class GraphicsPipeline;
+class Runtime;
 
 class Rasterizer {
 public:
-    explicit Rasterizer(const Instance& instance, Scheduler& scheduler,
+    explicit Rasterizer(const Instance& instance, Scheduler& scheduler, Runtime& runtime,
                         AmdGpu::Liverpool* liverpool);
     ~Rasterizer();
 
     [[nodiscard]] Scheduler& GetScheduler() noexcept {
         return scheduler;
+    }
+
+    [[nodiscard]] Runtime& GetRuntime() noexcept {
+        return runtime;
     }
 
     [[nodiscard]] VideoCore::BufferCache& GetBufferCache() noexcept {
@@ -68,17 +72,17 @@ public:
     void FillBuffer(VAddr address, u32 num_bytes, u32 value, bool is_gds);
     void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
     u32 ReadDataFromGds(u32 gsd_offset);
-    bool InvalidateMemory(VAddr addr, u64 size);
-    bool ReadMemory(VAddr addr, u64 size);
-    void ProcessDownloadImages();
+    bool InvalidateMemory(VAddr addr, u64 size, bool assume_locks = false);
+    bool ReadMemory(VAddr addr, u64 size, bool assume_locks = false);
     bool IsMapped(VAddr addr, u64 size);
     void MapMemory(VAddr addr, u64 size);
+    void RegisterMemory(VAddr addr, u64 size);
     void UnmapMemory(VAddr addr, u64 size);
 
-    void CpSync();
     u64 Flush();
     void Finish();
     void OnSubmit();
+    void OnFence();
 
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;
@@ -92,6 +96,11 @@ public:
             func(mapped_range);
         }
     }
+
+    std::thread::id GetGpuCommandProcessorThread();
+#ifdef __linux__
+    u32 GetGpuCommandProcessorThreadId();
+#endif
 
 private:
     void PrepareRenderState(const GraphicsPipeline* pipeline);
@@ -114,12 +123,10 @@ private:
     void BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding);
     bool BindResources(const Pipeline* pipeline);
 
-    void ResetBindings() {
-        for (auto& image_id : bound_images) {
-            texture_cache.GetImage(image_id).binding = {};
-        }
-        bound_images.clear();
-    }
+    void BindVertexBuffers(const GraphicsPipeline* pipeline);
+    void BindIndexBuffer(u32 index_offset = 0);
+
+    void ResetBindings(bool is_compute);
 
     bool IsComputeMetaClear(const Pipeline* pipeline);
     bool IsComputeImageCopy(const Pipeline* pipeline);
@@ -130,6 +137,7 @@ private:
 
     const Instance& instance;
     Scheduler& scheduler;
+    Runtime& runtime;
     VideoCore::PageManager page_manager;
     VideoCore::BufferCache buffer_cache;
     VideoCore::TextureCache texture_cache;
@@ -147,18 +155,22 @@ private:
     boost::container::static_vector<vk::DescriptorImageInfo, Shader::NUM_IMAGES> image_infos;
     boost::container::static_vector<vk::DescriptorBufferInfo, Shader::NUM_BUFFERS> buffer_infos;
     boost::container::static_vector<VideoCore::ImageId, Shader::NUM_IMAGES> bound_images;
+    struct BoundBuffer {
+        const VideoCore::Buffer* buffer;
+        u64 offset;
+        u32 size;
+        bool is_written;
+    };
+    boost::container::static_vector<BoundBuffer, Shader::NUM_BUFFERS> bound_buffers;
 
     u32 set_write_index{};
     Pipeline::DescriptorWrites set_writes;
-    Pipeline::BufferBarriers buffer_barriers;
     Shader::PushData push_data;
 
-    using BufferBindingInfo = std::tuple<VideoCore::BufferId, AmdGpu::Buffer, u64>;
-    boost::container::static_vector<BufferBindingInfo, Shader::NUM_BUFFERS> buffer_bindings;
     using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::ImageDesc>;
     boost::container::static_vector<ImageBindingInfo, Shader::NUM_IMAGES> image_bindings;
-    bool fault_process_pending{};
     bool attachment_feedback_loop{};
+    bool needs_barrier{};
 };
 
 } // namespace Vulkan

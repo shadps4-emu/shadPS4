@@ -214,18 +214,18 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, u32* dcb_gpu_addrs
                                                    u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
                                                    u32* ccb_sizes_in_bytes, u32 vo_handle,
                                                    u32 buf_idx, u32 flip_mode, s64 flip_arg);
-int PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
+s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
     u32 workload, u32 count, u32* dcb_gpu_addrs[], u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
     u32* ccb_sizes_in_bytes, u32 vo_handle, u32 buf_idx, u32 flip_mode, s64 flip_arg);
 s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffers(u32 count, const u32* dcb_gpu_addrs[],
                                             u32* dcb_sizes_in_bytes, const u32* ccb_gpu_addrs[],
                                             u32* ccb_sizes_in_bytes);
-int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
+s32 PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
                                                        const u32* dcb_gpu_addrs[],
                                                        u32* dcb_sizes_in_bytes,
                                                        const u32* ccb_gpu_addrs[],
                                                        u32* ccb_sizes_in_bytes);
-int PS4_SYSV_ABI sceGnmSubmitDone();
+s32 PS4_SYSV_ABI sceGnmSubmitDone();
 int PS4_SYSV_ABI sceGnmUnmapComputeQueue(u32 vqid);
 int PS4_SYSV_ABI sceGnmUnregisterAllResourcesForOwner();
 int PS4_SYSV_ABI sceGnmUnregisterOwnerAndResources();

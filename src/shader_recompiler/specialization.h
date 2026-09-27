@@ -83,22 +83,21 @@ struct StageSpecialization {
     const Info* info{};
     RuntimeInfo runtime_info{};
     std::bitset<MaxStageResources> bitset{};
-    std::optional<Gcn::FetchShaderData> fetch_shader_data{};
-    boost::container::small_vector<VsAttribSpecialization, 32> vs_attribs;
-    boost::container::small_vector<BufferSpecialization, 16> buffers;
-    boost::container::small_vector<ImageSpecialization, 16> images;
-    boost::container::small_vector<FMaskSpecialization, 8> fmasks;
-    boost::container::small_vector<SamplerSpecialization, 16> samplers;
+    Gcn::FetchShaderData fetch_shader_data{};
+    SmallVector<VsAttribSpecialization, 32> vs_attribs;
+    SmallVector<BufferSpecialization, 16> buffers;
+    SmallVector<ImageSpecialization, 16> images;
+    SmallVector<FMaskSpecialization, 8> fmasks;
+    SmallVector<SamplerSpecialization, 16> samplers;
     Backend::Bindings start{};
 
     StageSpecialization() = default;
     StageSpecialization(const Info& info_, RuntimeInfo runtime_info_, const Profile& profile_,
                         Backend::Bindings start_)
         : info{&info_}, runtime_info{runtime_info_}, start{start_} {
-        fetch_shader_data = Gcn::ParseFetchShader(info_);
-        if (info_.sw_stage == SwStage::Vertex && fetch_shader_data) {
+        if (info_.sw_stage == SwStage::Vertex && Gcn::ParseFetchShader(info_, fetch_shader_data)) {
             // Specialize shader on VS input number types to follow spec.
-            ForEachSharp(vs_attribs, fetch_shader_data->attributes,
+            ForEachSharp(vs_attribs, fetch_shader_data.attributes,
                          [this](auto& spec, const auto& desc, AmdGpu::Buffer sharp) {
                              using InstanceIdType = Shader::Gcn::VertexAttribute::InstanceIdType;
                              if (const auto step_rate = desc.GetStepRate();
@@ -183,7 +182,7 @@ struct StageSpecialization {
                 binding++;
                 continue;
             }
-            bitset.set(binding++);
+            bitset[binding++] = true;
             func(spec, desc, sharp);
         }
     }

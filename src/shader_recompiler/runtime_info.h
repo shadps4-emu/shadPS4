@@ -152,9 +152,9 @@ struct HwGeometryRuntimeInfo {
     u64 vs_copy_hash;
 
     bool operator==(const HwGeometryRuntimeInfo& other) const {
-        return num_outputs == other.num_outputs && outputs == other.outputs && num_invocations &&
-               other.num_invocations && output_vertices == other.output_vertices &&
-               in_primitive == other.in_primitive &&
+        return num_outputs == other.num_outputs && outputs == other.outputs &&
+               num_invocations == other.num_invocations &&
+               output_vertices == other.output_vertices && in_primitive == other.in_primitive &&
                std::ranges::equal(out_primitive, other.out_primitive) &&
                vs_copy_hash == other.vs_copy_hash;
     }
@@ -193,6 +193,10 @@ struct HwFragmentRuntimeInfo {
             return is_default && !is_flat;
         }
 
+        bool IsPassthrough() const {
+            return is_default && is_flat;
+        }
+
         bool operator==(const PsInput&) const noexcept = default;
     };
     AmdGpu::PsInput en_flags;
@@ -201,7 +205,9 @@ struct HwFragmentRuntimeInfo {
     std::array<PsInput, 32> inputs;
     std::array<PsColorBuffer, MaxColorBuffers> color_buffers;
     AmdGpu::ShaderExportFormat z_export_format;
+    u8 num_samples{1};
     u8 mrtz_mask{};
+    bool front_face_all_bits{false};
     bool dual_source_blending{false};
     bool clip_distance_emulation{false};
 
@@ -209,7 +215,9 @@ struct HwFragmentRuntimeInfo {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
                en_flags == other.en_flags && addr_flags == other.addr_flags &&
                num_inputs == other.num_inputs && z_export_format == other.z_export_format &&
-               mrtz_mask == other.mrtz_mask && dual_source_blending == other.dual_source_blending &&
+               num_samples == other.num_samples && mrtz_mask == other.mrtz_mask &&
+               front_face_all_bits == other.front_face_all_bits &&
+               dual_source_blending == other.dual_source_blending &&
                clip_distance_emulation == other.clip_distance_emulation &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
@@ -262,6 +270,9 @@ struct RuntimeInfo {
         memset(this, 0, sizeof(*this));
         this->hw_stage = stage;
         this->sw_stage = l_stage;
+        if (stage == HwStage::Fragment) {
+            hw.fs.num_samples = 1;
+        }
     }
 
     bool operator==(const RuntimeInfo& other) const noexcept {

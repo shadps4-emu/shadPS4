@@ -8,7 +8,6 @@
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/runtime_info.h"
-#include "video_core/buffer_cache/buffer_cache.h"
 
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
@@ -313,7 +312,9 @@ void EmitContext::DefineInputs() {
     if (info.uses_lane_id) {
         subgroup_local_invocation_id = DefineVariable(
             U32[1], spv::BuiltIn::SubgroupLocalInvocationId, spv::StorageClass::Input);
-        Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
+        if (sw_stage != SwStage::Vertex) {
+            Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
+        }
     }
     if (info.loads.GetAny(IR::Attribute::SubgroupLtMask)) {
         subgroup_lt_mask =
@@ -333,26 +334,29 @@ void EmitContext::DefineInputs() {
                 DefineVariable(U32[1], spv::BuiltIn::BaseInstance, spv::StorageClass::Input);
         }
 
-        const auto fetch_shader = Gcn::ParseFetchShader(info);
-        if (!fetch_shader) {
+        Shader::Gcn::FetchShaderData fetch_shader;
+        if (!Gcn::ParseFetchShader(info, fetch_shader)) {
             break;
         }
-        for (const auto& attrib : fetch_shader->attributes) {
-            ASSERT(attrib.semantic < IR::NumParams);
+        ASSERT(fetch_shader.attributes.size() <= IR::NumParams);
+        for (u32 semantic = 0; semantic < fetch_shader.attributes.size(); ++semantic) {
+            const auto& attrib = fetch_shader.attributes[semantic];
             const auto sharp = attrib.GetSharp(info);
             const Id type{GetAttributeType(*this, sharp.GetNumberFmt())[4]};
-            Id id{DefineInput(type, attrib.semantic)};
+            Id id{DefineInput(type, semantic)};
             if (attrib.GetStepRate() != Gcn::VertexAttribute::InstanceIdType::None) {
-                Name(id, fmt::format("vs_instance_attr{}", attrib.semantic));
+                Name(id, fmt::format("vs_instance_attr{}", semantic));
             } else {
-                Name(id, fmt::format("vs_in_attr{}", attrib.semantic));
+                Name(id, fmt::format("vs_in_attr{}", semantic));
             }
-            input_params[attrib.semantic] = GetAttributeInfo(sharp.GetNumberFmt(), id, 4, false);
+            input_params[semantic] = GetAttributeInfo(sharp.GetNumberFmt(), id, 4, false);
         }
         break;
     }
     case SwStage::Fragment: {
-        if (info.loads.GetAny(IR::Attribute::FragCoord)) {
+        if (info.loads.GetAny(IR::Attribute::FragCoord) ||
+            (info.loads.GetAny(IR::Attribute::BaryCoordPullModel) &&
+             !profile.supports_amd_shader_explicit_vertex_parameter)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         }
         if (info.loads.Get(IR::Attribute::IsFrontFace)) {
@@ -367,10 +371,27 @@ void EmitContext::DefineInputs() {
             sample_index = DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
             Decorate(sample_index, spv::Decoration::Flat);
         }
+        if (info.loads.Get(IR::Attribute::IsHelperInvocation)) {
+            helper_invocation =
+                DefineVariable(U1[1], spv::BuiltIn::HelperInvocation, spv::StorageClass::Input);
+        }
+        if (info.loads.Get(IR::Attribute::SampleMask)) {
+            sample_mask_in = DefineVariable(TypeArray(U32[1], u32_one_value),
+                                            spv::BuiltIn::SampleMask, spv::StorageClass::Input);
+        }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth)) {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_smooth = DefineVariable(F32[2], spv::BuiltIn::BaryCoordSmoothAMD,
                                                    spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
+                bary_coord =
+                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+            }
+        }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordPullModel)) {
+            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                bary_coord_pull_model = DefineVariable(F32[3], spv::BuiltIn::BaryCoordPullModelAMD,
+                                                       spv::StorageClass::Input);
             } else if (profile.supports_fragment_shader_barycentric && !ValidId(bary_coord)) {
                 bary_coord =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
@@ -1173,9 +1194,9 @@ Id EmitContext::DefineUfloatM5ToFloat32(u32 mantissa_bits, const std::string_vie
 }
 
 Id EmitContext::DefineGetBdaPointer() {
-    const auto caching_pagebits{
-        Constant(U64, static_cast<u64>(VideoCore::BufferCache::CACHING_PAGEBITS))};
-    const auto caching_pagemask{Constant(U64, VideoCore::BufferCache::CACHING_PAGESIZE - 1)};
+    const auto caching_pagebits{Constant(U64, static_cast<u64>(profile.sparse_page_shift))};
+    const auto caching_pagemask{
+        Constant(U64, static_cast<u64>((1u << profile.sparse_page_shift) - 1))};
 
     const auto func_type{TypeFunction(U64, U64)};
     const auto func{OpFunction(U64, spv::FunctionControlMask::MaskNone, func_type)};

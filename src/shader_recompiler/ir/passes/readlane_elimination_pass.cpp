@@ -81,8 +81,10 @@ static IR::Value GetRealValue(PhiMap& phi_map, IR::Inst* inst, u32 lane) {
         // Gather all arguments.
         boost::container::small_vector<IR::Value, 5> phi_args;
         for (size_t arg_index = 0; arg_index < inst->NumArgs(); arg_index++) {
-            IR::Inst* arg_prod = inst->Arg(arg_index).Inst();
-            const IR::Value arg = GetRealValue(phi_map, arg_prod, lane);
+            IR::Value arg = inst->Arg(arg_index);
+            if (!arg.IsImmediate()) {
+                arg = GetRealValue(phi_map, arg.Inst(), lane);
+            }
             phi_args.push_back(arg);
         }
         for (size_t arg_index = 0; arg_index < inst->NumArgs(); arg_index++) {
