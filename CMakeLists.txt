@@ -851,7 +851,9 @@ if (ENABLE_DISCORD_RPC)
     list(APPEND COMMON src/common/discord_rpc_handler.cpp src/common/discord_rpc_handler.h)
 endif()
 
-set(NET_CORE  src/core/net/host_net.cpp
+set(NET_CORE  src/core/net/guest_net.cpp
+              src/core/net/guest_net.h
+              src/core/net/host_net.cpp
               src/core/net/host_net.h
               src/core/net/p2p_codec.cpp
               src/core/net/p2p_codec.h

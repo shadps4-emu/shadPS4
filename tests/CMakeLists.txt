@@ -367,6 +367,8 @@ add_executable(shadps4_net_test
     ${NET_CORE_SOURCES}
     network/test_net_p2p_codec.cpp
     network/test_net_p2p_tcp.cpp
+    network/test_net_host.cpp
+    network/test_net_p2p_guest.cpp
 )
 
 foreach(t shadps4_net_test)
