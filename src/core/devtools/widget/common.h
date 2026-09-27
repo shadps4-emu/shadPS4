@@ -119,7 +119,6 @@ inline std::optional<std::string> exec_cli(const char* cli) {
     std::string output;
     const auto f = popen(cli, "r");
     if (!f) {
-        pclose(f);
         return {};
     }
     while (fgets(buffer.data(), buffer.size(), f)) {
