@@ -362,12 +362,12 @@ void CloseSocket(NativeSocket s) {
 #endif
 }
 
-Error PrepareBind(NativeSocket s, bool reuse_addr) {
+Error PrepareBind(NativeSocket s, bool reuse_addr, bool reuse_port) {
 #ifdef _WIN32
-    // Windows SO_REUSEADDR lets another socket steal a port that is actively in use, unlike BSD.
+    // Windows SO_REUSEADDR lets another socket bind a port that is actively in use, like BSD's
+    // SO_REUSEPORT (and BSD's SO_REUSEADDR for multicast receivers, which games use it for).
     // BSD "no reuse" is closest to SO_EXCLUSIVEADDRUSE.
-    // TODO : multicast receivers that share a port need SO_REUSEADDR even without guest reuse.
-    const int opt = reuse_addr ? SO_REUSEADDR : SO_EXCLUSIVEADDRUSE;
+    const int opt = (reuse_addr || reuse_port) ? SO_REUSEADDR : SO_EXCLUSIVEADDRUSE;
     BOOL on = TRUE;
     if (setsockopt(s, SOL_SOCKET, opt, reinterpret_cast<const char*>(&on), sizeof(on)) != 0) {
         return LastError();
@@ -377,8 +377,37 @@ Error PrepareBind(NativeSocket s, bool reuse_addr) {
     if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) != 0) {
         return LastError();
     }
+#ifdef SO_REUSEPORT
+    on = reuse_port ? 1 : 0;
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on)) != 0) {
+        return LastError();
+    }
+#endif
 #endif
     return Error::Ok;
+}
+
+void PrepareClose(NativeSocket s, bool guest_blocking) {
+    linger value{};
+    socklen_t len = sizeof(value);
+    if (getsockopt(s, SOL_SOCKET, SO_LINGER, reinterpret_cast<char*>(&value), &len) != 0 ||
+        value.l_onoff == 0 || value.l_linger <= 0) {
+        return; // no linger, or linger 0 (reset on close): the same in every mode
+    }
+    if (guest_blocking) {
+#ifdef _WIN32
+        u_long off = 0;
+        ioctlsocket(s, FIONBIO, &off);
+#else
+        const int flags = fcntl(s, F_GETFL, 0);
+        if (flags >= 0) {
+            fcntl(s, F_SETFL, flags & ~O_NONBLOCK);
+        }
+#endif
+        return;
+    }
+    value.l_onoff = 0;
+    setsockopt(s, SOL_SOCKET, SO_LINGER, reinterpret_cast<const char*>(&value), sizeof(value));
 }
 
 Error Bind(NativeSocket s, const sockaddr* addr, socklen_t len) {

@@ -119,8 +119,10 @@ void CloseSocket(NativeSocket s);
 // there a loopback TCP connection stands in (stream sockets only).
 Error CreateSocketPair(int family, int type, int protocol, NativeSocket out[2]);
 
-// Call right before bind. Maps SO_REUSEADDR semantics onto the host.
-Error PrepareBind(NativeSocket s, bool reuse_addr);
+/// Call right before bind.
+Error PrepareBind(NativeSocket s, bool reuse_addr, bool reuse_port);
+/// Call right before CloseSocket on a stream socket.
+void PrepareClose(NativeSocket s, bool guest_blocking);
 Error Bind(NativeSocket s, const sockaddr* addr, socklen_t len);
 Error Listen(NativeSocket s, int backlog);
 // how: 0 = receive, 1 = send, 2 = both (same values as SHUT_* and SD_*).
