@@ -265,23 +265,25 @@ void BufferCache::ReadEdgeImagePages(const Image& image) {
     if (total_size_bytes == 0) {
         return;
     }
-    const auto download = staging_pool.Request(total_size_bytes, VideoCore::MemoryType::HostCached, 16, true);
+    const auto download =
+        staging_pool.Request(total_size_bytes, VideoCore::MemoryType::HostCached, 16, true);
     for (auto& copy : copies) {
         // Modify copies to have the staging offset in mind
         copy.dstOffset += download.offset;
     }
     scheduler.EndRendering();
     runtime.CopyBuffer(buffer, download.buffer, copies);
-    scheduler.DeferOperation([this, base = buffer->CpuAddr(), download, copies = std::move(copies)]() {
-        auto* memory = Core::Memory::Instance();
-        for (const auto& copy : copies) {
-            const VAddr copy_device_addr = base + copy.srcOffset;
-            const u64 dst_offset = copy.dstOffset - download.offset;
-            memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download.mapped + dst_offset,
-                                    copy.size);
-        }
-        staging_pool.FreeDeferred(download);
-    });
+    scheduler.DeferOperation(
+        [this, base = buffer->CpuAddr(), download, copies = std::move(copies)]() {
+            auto* memory = Core::Memory::Instance();
+            for (const auto& copy : copies) {
+                const VAddr copy_device_addr = base + copy.srcOffset;
+                const u64 dst_offset = copy.dstOffset - download.offset;
+                memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr),
+                                        download.mapped + dst_offset, copy.size);
+            }
+            staging_pool.FreeDeferred(download);
+        });
 }
 
 void BufferCache::SynchronizeDmaBuffers() {
