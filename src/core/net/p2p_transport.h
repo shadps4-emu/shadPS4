@@ -3,16 +3,6 @@
 
 // P2P transport: one shared UDP socket carrying DGRAM_P2P datagrams (demultiplexed by vport),
 // STREAM_P2P TCP segments (demultiplexed by connection) and signaling.
-//
-// Threading: a single transport thread blocks on {UDP socket, kick handle} with a timeout equal
-// to the earliest TCP timer, so it receives packets and runs retransmission, delayed-ACK,
-// persist and TIME-WAIT timers without polling. All state is guarded by one transport mutex;
-// guest calls hold it briefly. Readiness is published through per-socket ReadinessFlags, which
-// are pollable handles the guest layer waits on and registers in its HostEpoll - so P2P sockets
-// wake blocking calls and sceNetEpollWait exactly like native sockets.
-//
-// Wire framing (P2P header, communication ID, crypto/signature) is delegated to a Codec, so
-// the existing, reverse-engineered framing code plugs in unchanged.
 
 #pragma once
 
@@ -70,8 +60,217 @@ public:
                                            std::span<const u8> payload, const Endpoint& to,
                                            Protection protection) = 0;
     virtual std::vector<u8> EncodeSignaling(std::span<const u8> data, const Endpoint& to) = 0;
-    /// Addresses for the TCP checksum pseudo-header when talking to `peer`.
+    /// Addresses for the TCP checksum pseudo-header when talking to peer.
     virtual PseudoHeader StreamPseudoHeader(const Endpoint& peer) = 0;
+};
+
+struct TransportConfig {
+    TcpConfig tcp;
+    size_t datagram_queue_bytes = 40 * 1024; // per bound vport: the PS4's UDPP2P SO_RCVBUF
+    size_t signaling_queue_packets = 256;    // per channel
+    size_t signaling_channels = 1;
+    std::function<size_t(std::span<const u8>)> classify_signaling;
+    int max_backlog = 64;
+    // TDOD: NAT rewrites the addresses the TCP pseudo-header covers, so the peer's checksum
+    // may not verify against our view of the addresses. Off until checked.
+    bool verify_stream_checksum = false;
+};
+
+/// A level-triggered, pollable readiness bit. Set/Clear must be called with the transport
+/// mutex held,any thread may poll PollHandle() without it.
+class ReadinessFlag {
+public:
+    bool Valid() const {
+        return wake_.Valid();
+    }
+    void Set(bool ready);
+    Host::NativeSocket PollHandle() const {
+        return wake_.PollHandle();
+    }
+
+private:
+    Host::WakeHandle wake_;
+    bool ready_ = false;
+};
+
+struct Readiness {
+    ReadinessFlag readable; // data, EOF, error, pending accept
+    ReadinessFlag writable; // send space, or error (so a waiting connect wakes)
+};
+
+struct IoResult {
+    size_t bytes;
+    Error error;
+};
+
+/// Identifies a stream connection: remote UDP endpoint, remote vport, local vport.
+struct ConnectionKey {
+    Endpoint peer;
+    u16 peer_vport;
+    u16 local_vport;
+    bool operator<(const ConnectionKey& other) const;
+};
+
+class Transport;
+struct DatagramBinding;
+struct Connection;
+struct ListenerState;
+
+class DatagramSocket {
+public:
+    ~DatagramSocket();
+
+    Error Bind(u16 vport); // 0 picks a free vport
+    /// "connect": default destination and receive filter.
+    Error SetPeer(const Endpoint& peer, u16 vport);
+    void SetProtection(Protection protection);
+    /// to == nullptr sends to the peer set with SetPeer. extra adds per-message protection
+    /// (MSG_USECRYPTO / MSG_USESIGNATURE) to the socket's own.
+    IoResult SendTo(std::span<const u8> data, const Endpoint* to, u16 to_vport,
+                    Protection extra = {});
+    IoResult RecvFrom(std::span<u8> out, bool peek, Endpoint* from, u16* from_vport);
+    u32 Events() const; // Host::EventBits
+    const Readiness& Handles() const {
+        return *readiness_;
+    }
+    u16 BoundVport() const;
+    u16 TransportPort() const;
+    bool GetPeer(Endpoint* peer, u16* peer_vport) const;
+    Protection GetProtection() const;
+    void Close();
+
+private:
+    friend class Transport;
+    explicit DatagramSocket(std::shared_ptr<Transport> transport);
+    Error BindLocked(u16 vport); // transport mutex held
+
+    std::shared_ptr<Transport> transport_;
+    std::shared_ptr<Readiness> readiness_;
+    std::shared_ptr<DatagramBinding> binding_;
+    Protection protection_;
+    std::optional<std::pair<Endpoint, u16>> peer_;
+};
+
+class StreamSocket {
+public:
+    ~StreamSocket();
+
+    void SetProtection(Protection protection);
+    Error Bind(u16 vport);
+    Error Listen(int backlog);
+    /// Starts the handshake and returns InProgress,completion shows up as writability.
+    Error Connect(const Endpoint& peer, u16 peer_vport);
+    /// Completion check for a pending connect: Ok, InProgress or the failure.
+    Error ConnectResult() const;
+    std::shared_ptr<StreamSocket> Accept(Endpoint* peer, u16* peer_vport, Error* error);
+    IoResult Send(std::span<const u8> data);
+    IoResult Recv(std::span<u8> out, bool peek);
+    Error Shutdown(int how); // 0 = read, 1 = write, 2 = both
+    /// Graceful close; the connection finishes (FIN, TIME-WAIT) inside the transport.
+    void Close();
+    void Abort();
+
+    u32 Events() const; // Host::EventBits
+    const Readiness& Handles() const {
+        return *readiness_;
+    }
+    std::optional<TcpState> State() const;
+    bool GetPeer(Endpoint* peer, u16* peer_vport) const;
+    u16 BoundVport() const;
+    u16 TransportPort() const;
+    Protection GetProtection() const;
+
+private:
+    friend class Transport;
+    StreamSocket(std::shared_ptr<Transport> transport, std::shared_ptr<Readiness> readiness);
+    Error BindLocked(u16 vport); // transport mutex held
+
+    std::shared_ptr<Transport> transport_;
+    std::shared_ptr<Readiness> readiness_;
+    Protection protection_;
+    u16 bound_vport_ = 0;
+    bool owns_vport_ = false;
+    bool read_shutdown_ = false;
+    bool closed_ = false;
+    std::shared_ptr<ListenerState> listener_;
+    std::shared_ptr<Connection> connection_;
+};
+
+class Transport : public std::enable_shared_from_this<Transport> {
+public:
+    static std::shared_ptr<Transport> Create(int family, const Endpoint& bind_address,
+                                             std::unique_ptr<Codec> codec,
+                                             const TransportConfig& config, Error* error);
+    ~Transport();
+
+    u16 BoundPort() const {
+        return bound_port_;
+    }
+    int Family() const {
+        return family_;
+    }
+
+    std::shared_ptr<DatagramSocket> CreateDatagram();
+    std::shared_ptr<StreamSocket> CreateStream();
+
+    Error SendSignaling(std::span<const u8> data, const Endpoint& to);
+    /// Pops the oldest packet of channel
+    bool RecvSignaling(size_t channel, std::vector<u8>* data, Endpoint* from);
+
+    /// Test/diagnostic hook: drop outgoing packets with this probability.
+    void SetOutgoingLossForTesting(double probability);
+
+private:
+    friend class DatagramSocket;
+    friend class StreamSocket;
+
+    Transport(int family, std::unique_ptr<Codec> codec, const TransportConfig& config);
+
+    void ThreadMain();
+    void HandlePacket(std::span<const u8> packet, const Endpoint& from, Clock::time_point now);
+    void HandleStreamSegment(std::span<const u8> bytes, const Endpoint& from,
+                             Clock::time_point now);
+    void HandleDatagram(Codec::Decoded& decoded, const Endpoint& from);
+    void RunTimers(Clock::time_point now);
+    std::optional<Clock::time_point> EarliestDeadline() const;
+
+    std::shared_ptr<Connection> NewConnection(const ConnectionKey& key, Protection protection,
+                                              std::shared_ptr<Readiness> readiness);
+    /// Republishes readiness, promotes established connections to their listener's accept
+    /// queue and forgets connections that are finished. Transport mutex held.
+    void Update(const std::shared_ptr<Connection>& connection);
+    /// Wakes the transport thread if `connection` now has an earlier timer than it sleeps to.
+    void Reschedule(const Connection& connection);
+    Error SendPacket(std::span<const u8> packet, const Endpoint& to);
+    u16 AllocateVport(bool stream);
+    u32 NewIss();
+
+    const int family_;
+    std::unique_ptr<Codec> codec_;
+    const TransportConfig config_;
+    Host::NativeSocket socket_ = Host::InvalidSocket;
+    u16 bound_port_ = 0;
+
+    mutable std::mutex mutex_;
+    std::map<u16, std::shared_ptr<DatagramBinding>> datagram_bindings_;
+    std::map<u16, std::shared_ptr<ListenerState>> listeners_;
+    std::map<ConnectionKey, std::shared_ptr<Connection>> connections_;
+    std::map<u16, int> stream_vports_in_use_;
+    std::vector<std::deque<std::pair<std::vector<u8>, Endpoint>>> signaling_; // per channel
+    // Ephemeral ranges
+    u16 next_stream_port_ = 49152;    // TCP over UDPP2P ports: 49152-65535
+    u16 next_datagram_vport_ = 32768; // UDPP2P virtual ports: 32768-49999
+    u64 iss_state_;
+    double loss_for_testing_ = 0.0;
+    u64 loss_rng_ = 0x9e3779b97f4a7c15ull;
+
+    std::thread thread_;
+    std::atomic<bool> stop_{false};
+    Host::WakeHandle kick_;
+    // When the transport thread will wake up on its own. min() while it is awake (it
+    // recomputes its deadline before sleeping again). Guarded by mutex_.
+    Clock::time_point sleeping_until_ = Clock::time_point::min();
+    std::vector<u8> receive_buffer_;
 };
 
 } // namespace Core::Net::P2P

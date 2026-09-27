@@ -352,6 +352,7 @@ set(NET_CORE_SOURCES
     ${CMAKE_SOURCE_DIR}/src/core/net/p2p_codec.cpp
     ${CMAKE_SOURCE_DIR}/src/core/net/p2p_crypto.cpp
     ${CMAKE_SOURCE_DIR}/src/core/net/p2p_transport.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/net/p2p_tcp.cpp
 )
 
 # libcrypto for p2p_crypto.cpp:
@@ -365,6 +366,7 @@ endif()
 add_executable(shadps4_net_test
     ${NET_CORE_SOURCES}
     network/test_net_p2p_codec.cpp
+    network/test_net_p2p_tcp.cpp
 )
 
 foreach(t shadps4_net_test)
