@@ -123,8 +123,18 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicUMin64:
         info.uses_buffer_int64_atomics = true;
         break;
+    case IR::Opcode::DataAppend:
+    case IR::Opcode::DataConsume:
+    case IR::Opcode::Ballot:
+    case IR::Opcode::InverseBallot:
+    case IR::Opcode::BallotFindLsb:
+        info.uses_group_ballot = true;
+        [[fallthrough]];
     case IR::Opcode::LaneId:
         info.uses_lane_id = true;
+        break;
+    case IR::Opcode::Memtime:
+        info.uses_shader_clock = true;
         break;
     case IR::Opcode::ReadConst:
         if (!info.has_readconst) {

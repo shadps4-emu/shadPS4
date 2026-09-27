@@ -143,6 +143,14 @@ bool Inst::AreAllArgsImmediates() const {
 }
 
 IR::Type Inst::Type() const {
+    if (op == Opcode::Phi) {
+        // The type of a phi node is stored in its flags
+        return Flags<IR::Type>();
+    }
+    if (op == Opcode::GetVirtualRegister) {
+        // The type of a virtual register load depends on the register id
+        return Arg(0).VirtualReg().type;
+    }
     return TypeOf(op);
 }
 

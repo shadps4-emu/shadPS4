@@ -278,14 +278,10 @@ public:
         return features.tessellationShader;
     }
 
-    /// Returns true when tessellation isolines are supported by the device
-    bool IsTessellationIsolinesSupported() const {
-        return !portability_subset || portability_features.tessellationIsolines;
-    }
-
-    /// Returns true when tessellation point mode is supported by the device
-    bool IsTessellationPointModeSupported() const {
-        return !portability_subset || portability_features.tessellationPointMode;
+    /// Returns true when the shaderSubgroupClock feature of
+    /// VK_KHR_shader_clock is supported.
+    bool IsShaderSubgroupClockSupported() const {
+        return shader_clock && shader_clock_features.shaderSubgroupClock;
     }
 
     /// Returns the vendor ID of the physical device
@@ -498,6 +494,7 @@ private:
         workgroup_memory_explicit_layout_features;
     vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT image_2d_view_of_3d_features;
     vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT list_restart_features;
+    vk::PhysicalDeviceShaderClockFeaturesKHR shader_clock_features;
     vk::DriverIdKHR driver_id;
     vk::UniqueDebugUtilsMessengerEXT debug_callback{};
     std::string vendor_name;
@@ -533,7 +530,7 @@ private:
     bool attachment_feedback_loop{};
     bool image_2d_view_of_3d{};
     bool image_view_min_lod{};
-    bool conditional_rendering{};
+    bool shader_clock{};
     bool supports_memory_budget{};
     bool supports_block_texel_view{};
     bool manage_imgui{true};

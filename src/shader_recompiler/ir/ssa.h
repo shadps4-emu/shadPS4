@@ -12,16 +12,13 @@ namespace Shader::IR {
 enum class RegType {
     ScalarReg,
     VectorReg = ScalarReg + NumScalarRegs,
-    ThreadBitReg = VectorReg + NumVectorRegs,
-    Scc = ThreadBitReg + NumScalarRegs,
+    Scc = VectorReg + NumVectorRegs,
     Exec,
-    Vcc,
     VccLo,
     VccHi,
     M0,
     IntrusiveEnd,
     GotoVariable,
-    MaskLaneVariable,
     VirtualReg,
     None,
 };
@@ -36,16 +33,6 @@ struct SsaState {
     }
 };
 
-struct MaskLaneReg {
-    IR::VectorReg vreg;
-    u32 lane;
-
-    u32 Key() const {
-        return (RegIndex(vreg) << 6) | lane;
-    }
-};
-
-/// Unique identier for guest registers participating in SSA passes
 struct RegTag {
     RegType type{RegType::None};
     union {
@@ -53,14 +40,11 @@ struct RegTag {
         IR::ScalarReg sreg;
         IR::VectorReg vreg;
         IR::VirtualReg reg;
-        MaskLaneReg lane_reg;
     };
 
     RegTag() = default;
-    RegTag(IR::ScalarReg reg, bool is_sbit = false)
-        : type{is_sbit ? RegType::ThreadBitReg : RegType::ScalarReg}, sreg{reg} {}
+    RegTag(IR::ScalarReg reg) : type{RegType::ScalarReg}, sreg{reg} {}
     RegTag(IR::VectorReg reg) : type{RegType::VectorReg}, vreg{reg} {}
-    RegTag(IR::VectorReg reg, u32 lane) : type{RegType::MaskLaneVariable}, lane_reg{reg, lane} {}
     RegTag(IR::VirtualReg reg_) : type{RegType::VirtualReg}, reg{reg_} {}
     RegTag(RegType type_, u32 index_ = 0) : type{type_}, index{index_} {}
 

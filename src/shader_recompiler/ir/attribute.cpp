@@ -166,6 +166,8 @@ std::string NameOf(Attribute attribute) {
         return "SampleMask";
     case Attribute::PackedAncillary:
         return "PackedAncillary";
+    case Attribute::SubgroupLtMask:
+        return "SubgroupLtMask";
     default:
         break;
     }

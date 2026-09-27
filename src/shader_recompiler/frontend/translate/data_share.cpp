@@ -91,13 +91,7 @@ void Translator::EmitDataShare(const GcnInst& inst) {
 
 void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
     const IR::U32 value{GetSrc(inst.src[0])};
-
-    if (info.l_stage == LogicalStage::Compute ||
-        info.l_stage == LogicalStage::TessellationControl) {
-        SetDst(inst.dst[0], ir.ReadFirstLane(value));
-    } else {
-        SetDst(inst.dst[0], value);
-    }
+    SetDst(inst.dst[0], ir.ReadFirstLane(value));
 }
 
 void Translator::V_READLANE_B32(const GcnInst& inst) {
@@ -299,7 +293,7 @@ void Translator::DS_APPEND(const GcnInst& inst) {
     const u32 inst_offset = (u32(inst.control.ds.offset1) << 8u) + inst.control.ds.offset0;
     const IR::U32 base = ir.BitFieldExtract(ir.GetM0(), ir.Imm32(16), ir.Imm32(16));
     const IR::U32 gds_offset = ir.IAdd(base, ir.Imm32(inst_offset));
-    const IR::U32 prev = ir.DataAppend(gds_offset);
+    const IR::U32 prev = ir.DataAppend(ir.ShiftRightLogical(gds_offset, ir.Imm32(2u)));
     SetDst(inst.dst[0], prev);
 }
 
@@ -307,7 +301,7 @@ void Translator::DS_CONSUME(const GcnInst& inst) {
     const u32 inst_offset = (u32(inst.control.ds.offset1) << 8u) + inst.control.ds.offset0;
     const IR::U32 base = ir.BitFieldExtract(ir.GetM0(), ir.Imm32(16), ir.Imm32(16));
     const IR::U32 gds_offset = ir.IAdd(base, ir.Imm32(inst_offset));
-    const IR::U32 prev = ir.DataConsume(gds_offset);
+    const IR::U32 prev = ir.DataConsume(ir.ShiftRightLogical(gds_offset, ir.Imm32(2u)));
     SetDst(inst.dst[0], prev);
 }
 

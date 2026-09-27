@@ -5,6 +5,7 @@
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
 #include "common/hash.h"
+#include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
 

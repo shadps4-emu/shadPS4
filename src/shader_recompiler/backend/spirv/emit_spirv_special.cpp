@@ -113,4 +113,12 @@ void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id fmt, Id arg0, Id arg1, 
     ctx.OpDebugPrintf(fmt, fmt_args_span);
 }
 
+Id EmitMemtime(EmitContext& ctx) {
+    if (ctx.profile.supports_shader_subgroup_clock) {
+        return ctx.OpReadClockKHR(ctx.U64, ctx.ConstU32(std::to_underlying(spv::Scope::Subgroup)));
+    } else {
+        return ctx.Constant(ctx.U64, 1U);
+    }
+}
+
 } // namespace Shader::Backend::SPIRV

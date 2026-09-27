@@ -64,6 +64,7 @@ using L = ::Core::Devtools::Layer;
 
 static bool show_simple_fps = false;
 static bool visibility_toggled = false;
+static float fps_anchor_width = FLT_MAX;
 static bool show_pause_status = false;
 static bool show_quit_window = false;
 
@@ -1765,6 +1766,12 @@ void L::Draw() {
         if (Begin("Video Info", nullptr,
                   ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
                       ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
+            if (const float width = GetIO().DisplaySize.x; width != fps_anchor_width) {
+                visibility_toggled |= GetWindowPos().x + GetCurrentWindowRead()->SizeFull.x >=
+                                      fps_anchor_width - 1.0f;
+                fps_anchor_width = width;
+            }
+            // Set window position to top left if it was toggled on
             if (visibility_toggled) {
                 SetWindowPos("Video Info", {999999.0f, 0.0f}, ImGuiCond_Always);
                 visibility_toggled = false;

@@ -436,7 +436,9 @@ static constexpr size_t NumVectorRegs = static_cast<size_t>(VectorReg::Max);
 
 struct VirtualReg {
     explicit VirtualReg() = default;
-    explicit VirtualReg(u32 index_, Type type_) : index{index_}, type{type_} {}
+    explicit VirtualReg(u32 index_, Type type_) : index{index_}, type{type_} {
+        ASSERT(type != IR::Type::Opaque);
+    }
 
     auto operator<=>(const VirtualReg&) const noexcept = default;
 

@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <bit>
+#include <limits>
 #include <optional>
 #include <type_traits>
 #include "common/func_traits.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/ir/opcodes.h"
 
 namespace Shader::Optimization {
 
@@ -134,6 +136,27 @@ void FoldCompositeExtract(IR::Inst& inst, IR::Opcode construct, IR::Opcode inser
     inst.ReplaceUsesWithAndRemove(*result);
 }
 
+void FoldCompositeConstruct(IR::Inst& inst, IR::Opcode extract) {
+    IR::Value result{};
+    for (size_t i = 0; i < inst.NumArgs(); ++i) {
+        const IR::Value value{inst.Arg(i)};
+        if (value.IsImmediate()) {
+            return;
+        }
+        IR::Inst* const inst = value.Inst();
+        if (inst->GetOpcode() != extract || inst->Arg(1).U32() != i) {
+            return;
+        }
+
+        if (result.IsEmpty()) {
+            result = inst->Arg(0);
+        } else if (result != inst->Arg(0)) {
+            return;
+        }
+    }
+    inst.ReplaceUsesWithAndRemove(result);
+}
+
 void FoldConvert(IR::Inst& inst, IR::Opcode opposite) {
     const IR::Value value{inst.Arg(0)};
     if (value.IsImmediate()) {
@@ -163,6 +186,12 @@ void FoldSelect(IR::Inst& inst) {
     const IR::Value cond{inst.Arg(0)};
     if (cond.IsImmediate()) {
         inst.ReplaceUsesWithAndRemove(cond.U1() ? inst.Arg(1) : inst.Arg(2));
+    }
+    if (inst.GetOpcode() == IR::Opcode::SelectU1) {
+        if (inst.Arg(1).IsImmediate() && inst.Arg(1).U1() == true && inst.Arg(2).IsImmediate() &&
+            inst.Arg(2).U1() == false) {
+            inst.ReplaceUsesWithAndRemove(cond);
+        }
     }
 }
 
@@ -203,6 +232,23 @@ void FoldUnpack32x2(IR::Block& block, IR::Inst& inst, IR::Opcode reverse) {
     }
     IR::Inst* const arg_inst{value.Inst()};
     if (arg_inst->GetOpcode() == reverse) {
+        inst.ReplaceUsesWithAndRemove(arg_inst->Arg(0));
+        return;
+    }
+}
+
+void FoldInverseBallot(IR::Inst& inst) {
+    const IR::Value value{inst.Arg(0)};
+    if (value.IsImmediate()) {
+        if (value.U64() == 0ULL) {
+            inst.ReplaceUsesWithAndRemove(IR::Value{false});
+        } else if (value.U64() == std::numeric_limits<u64>::max()) {
+            inst.ReplaceUsesWithAndRemove(IR::Value{true});
+        }
+        return;
+    }
+    IR::Inst* const arg_inst{value.Inst()};
+    if (arg_inst->GetOpcode() == IR::Opcode::Ballot) {
         inst.ReplaceUsesWithAndRemove(arg_inst->Arg(0));
         return;
     }
@@ -358,10 +404,16 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return FoldBitCast<IR::Opcode::BitCastF32U32, f32, u32>(inst, IR::Opcode::BitCastU32F32);
     case IR::Opcode::BitCastU32F32:
         return FoldBitCast<IR::Opcode::BitCastU32F32, u32, f32>(inst, IR::Opcode::BitCastF32U32);
+    case IR::Opcode::PackUint2x32:
+        return FoldInverseFunc(inst, IR::Opcode::UnpackUint2x32);
     case IR::Opcode::UnpackUint2x32:
         return FoldUnpack32x2(block, inst, IR::Opcode::PackUint2x32);
+    case IR::Opcode::PackDouble2x32:
+        return FoldInverseFunc(inst, IR::Opcode::UnpackDouble2x32);
     case IR::Opcode::UnpackDouble2x32:
         return FoldUnpack32x2(block, inst, IR::Opcode::PackDouble2x32);
+    case IR::Opcode::InverseBallot:
+        return FoldInverseBallot(inst);
     // 2x16
     case IR::Opcode::PackUnorm2x16:
         return FoldInverseFunc(inst, IR::Opcode::UnpackUnorm2x16);
@@ -558,13 +610,22 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
             return static_cast<u32>((base << left_shift) >> right_shift);
         });
         return;
-    case IR::Opcode::BitFieldInsert:
+    case IR::Opcode::BitFieldInsert32:
         FoldWhenAllImmediates(inst, [](u32 base, u32 insert, u32 offset, u32 bits) {
             if (bits >= 32 || offset >= 32) {
                 UNREACHABLE_MSG("Undefined result in {}({}, {}, {}, {})",
-                                IR::Opcode::BitFieldInsert, base, insert, offset, bits);
+                                IR::Opcode::BitFieldInsert32, base, insert, offset, bits);
             }
             return (base & ~(~(~0u << bits) << offset)) | (insert << offset);
+        });
+        return;
+    case IR::Opcode::BitFieldInsert64:
+        FoldWhenAllImmediates(inst, [](u64 base, u64 insert, u32 offset, u32 bits) {
+            if (bits >= 64 || offset >= 64) {
+                UNREACHABLE_MSG("Undefined result in {}({}, {}, {}, {})",
+                                IR::Opcode::BitFieldInsert64, base, insert, offset, bits);
+            }
+            return (base & ~(~(~u64{0} << bits) << offset)) | (insert << offset);
         });
         return;
     case IR::Opcode::CompositeExtractU32x2:
@@ -585,6 +646,12 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::CompositeExtractF32x4:
         return FoldCompositeExtract(inst, IR::Opcode::CompositeConstructF32x4,
                                     IR::Opcode::CompositeInsertF32x4);
+    case IR::Opcode::CompositeConstructU32x2:
+        return FoldCompositeConstruct(inst, IR::Opcode::CompositeExtractU32x2);
+    case IR::Opcode::CompositeConstructU32x3:
+        return FoldCompositeConstruct(inst, IR::Opcode::CompositeExtractU32x3);
+    case IR::Opcode::CompositeConstructU32x4:
+        return FoldCompositeConstruct(inst, IR::Opcode::CompositeExtractU32x4);
     case IR::Opcode::ConvertF32F16:
         return FoldConvert(inst, IR::Opcode::ConvertF16F32);
     case IR::Opcode::ConvertF16F32:
