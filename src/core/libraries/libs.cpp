@@ -85,6 +85,18 @@
 
 #include <array>
 
+void LinkSymbolImpl(Core::Loader::SymbolsResolver* sym, char const* nid, char const* lib,
+                    u16 libversion, char const* mod, u64 symbol,
+                    Core::Loader::SymbolType sym_type) {
+    Core::Loader::SymbolResolver sr{};
+    sr.name = nid;
+    sr.library = lib;
+    sr.library_version = libversion;
+    sr.module = mod;
+    sr.type = sym_type;
+    sym->AddSymbol(sr, symbol);
+}
+
 namespace Libraries {
 
 static void RegisterAudio3d(Core::Loader::SymbolsResolver* sym) {
