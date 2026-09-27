@@ -86,14 +86,6 @@ U1 IREmitter::ConditionRef(const U1& value) {
     return Inst<U1>(Opcode::ConditionRef, value);
 }
 
-void IREmitter::Reference(const Value& value) {
-    Inst(Opcode::Reference, value);
-}
-
-void IREmitter::PhiMove(IR::Inst& phi, const Value& value) {
-    Inst(Opcode::PhiMove, Value{&phi}, value);
-}
-
 void IREmitter::Prologue() {
     Inst(Opcode::Prologue);
 }
@@ -244,6 +236,10 @@ F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, u32 index) {
     return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), Imm32(index));
 }
 
+U1 IREmitter::GetAttributeU1(IR::Attribute attribute, u32 comp) {
+    return Inst<U1>(Opcode::GetAttributeU1, attribute, Imm32(comp));
+}
+
 U32 IREmitter::GetAttributeU32(IR::Attribute attribute, u32 comp) {
     return Inst<U32>(Opcode::GetAttributeU32, attribute, Imm32(comp));
 }
@@ -389,6 +385,18 @@ U32U64 IREmitter::SharedAtomicISub(const U32& address, const U32U64& data, bool 
         return Inst<U64>(Opcode::SharedAtomicISub64, Flags{is_gds}, address, data);
     default:
         ThrowInvalidType(data.Type());
+    }
+}
+
+U32U64 IREmitter::SharedAtomicCmpSwap(const U32& address, const U32U64& value,
+                                      const U32U64& cmp_value, bool is_gds) {
+    switch (value.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicCmpSwap32, Flags{is_gds}, address, value, cmp_value);
+    case Type::U64:
+        return Inst<U64>(Opcode::SharedAtomicCmpSwap64, Flags{is_gds}, address, value, cmp_value);
+    default:
+        ThrowInvalidType(value.Type());
     }
 }
 
@@ -1643,6 +1651,10 @@ U32U64 IREmitter::BitwiseNot(const U32U64& value) {
     default:
         ThrowInvalidType(value.Type());
     }
+}
+
+U32 IREmitter::MaskedBitCount(const U32& value, const U32& addend, bool hi) {
+    return Inst<U32>(Opcode::MaskedBitCount32, value, addend, Imm1(hi));
 }
 
 U32 IREmitter::FindSMsb(const U32& value) {

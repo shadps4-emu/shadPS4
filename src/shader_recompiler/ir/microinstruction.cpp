@@ -41,8 +41,6 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::WorkgroupMemoryBarrier:
     case Opcode::DeviceMemoryBarrier:
     case Opcode::ConditionRef:
-    case Opcode::Reference:
-    case Opcode::PhiMove:
     case Opcode::Prologue:
     case Opcode::Epilogue:
     case Opcode::Discard:
@@ -108,6 +106,8 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::SharedAtomicAnd64:
     case Opcode::SharedAtomicOr64:
     case Opcode::SharedAtomicXor64:
+    case Opcode::SharedAtomicCmpSwap32:
+    case Opcode::SharedAtomicCmpSwap64:
     case Opcode::ImageWrite:
     case Opcode::ImageAtomicIAdd32:
     case Opcode::ImageAtomicSMin32:

@@ -277,6 +277,10 @@ vk::LogicOp LogicOp(AmdGpu::ColorControl::LogicOp logic_op) {
         return vk::LogicOp::eAndReverse;
     case LogicOp::Invert:
         return vk::LogicOp::eInvert;
+    case LogicOp::BrushXor:
+        LOG_WARNING(Render_Vulkan, "Unimplemented logic op {:#x}, using closest equivalent",
+                    u32(logic_op));
+        [[fallthrough]];
     case LogicOp::Xor:
         return vk::LogicOp::eXor;
     case LogicOp::Nand:

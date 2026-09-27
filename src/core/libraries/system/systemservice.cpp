@@ -2004,6 +2004,8 @@ s32 PS4_SYSV_ABI sceSystemServiceReceiveEvent(OrbisSystemServiceEvent* event) {
 
     *event = g_event_queue.front();
     g_event_queue.pop();
+    LOG_DEBUG(Lib_SystemService, "delivered event type={:#x} ({} still queued)",
+              static_cast<u32>(event->event_type), g_event_queue.size());
     return ORBIS_OK;
 }
 

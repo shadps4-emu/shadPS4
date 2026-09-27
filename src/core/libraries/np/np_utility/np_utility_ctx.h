@@ -5,7 +5,9 @@
 #include <condition_variable>
 #include <mutex>
 #include <optional>
+
 #include "common/types.h"
+#include "core/libraries/np/np_types.h"
 
 namespace Libraries::Np::NpUtility {
 
@@ -16,6 +18,12 @@ struct LookupTimeouts {
     u32 connTimeout = 0;
     u32 sendTimeout = 0;
     u32 recvTimeout = 0;
+};
+
+struct LookupTitleCtx {
+    s32 userId = -1;
+    OrbisNpId selfNpId{};
+    std::optional<LookupTimeouts> timeouts;
 };
 
 struct LookupRequestCtx {
@@ -51,5 +59,13 @@ struct LookupRequestCtx {
         return *result;
     }
 };
+
+struct WordFilterTitleCtx {
+    s32 userId = -1;
+    OrbisNpId selfNpId{};
+    std::optional<LookupTimeouts> timeouts;
+};
+
+using WordFilterRequestCtx = LookupRequestCtx;
 
 } // namespace Libraries::Np::NpUtility

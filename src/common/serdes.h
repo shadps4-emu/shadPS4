@@ -7,6 +7,8 @@
 #include "common/types.h"
 
 #include <cstddef>
+#include <cstring>
+#include <string>
 #include <vector>
 
 namespace Serialization {

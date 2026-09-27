@@ -8,6 +8,7 @@
 #include <common/path_util.h>
 #include <common/scm_rev.h>
 #include <toml.hpp>
+#include "common/assert.h"
 #include "common/logging/formatter.h"
 #include "common/logging/log.h"
 #include "emulator_settings.h"
@@ -99,10 +100,7 @@ void EmulatorSettingsImpl::PrintChangedSummary(const std::vector<std::string>& c
 // ── Singleton ────────────────────────────────────────────────────────
 EmulatorSettingsImpl::EmulatorSettingsImpl() = default;
 
-EmulatorSettingsImpl::~EmulatorSettingsImpl() {
-    if (m_loaded)
-        Save();
-}
+EmulatorSettingsImpl::~EmulatorSettingsImpl() {}
 
 std::shared_ptr<EmulatorSettingsImpl> EmulatorSettingsImpl::GetInstance() {
     std::lock_guard lock(s_mutex);
@@ -233,37 +231,6 @@ void EmulatorSettingsImpl::ClearGameSpecificOverrides() {
     ClearGroupOverrides(m_windows_guest_red_zone_protection);
     ClearGroupOverrides(m_gpu);
     ClearGroupOverrides(m_vulkan);
-}
-
-void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
-    // Walk every overrideable group until we find the matching key.
-    auto tryGroup = [&key](auto& group) {
-        for (auto& item : group.GetOverrideableFields()) {
-            if (key == item.key) {
-                item.reset_game_specific(&group);
-                return true;
-            }
-        }
-        return false;
-    };
-    if (tryGroup(m_general))
-        return;
-    if (tryGroup(m_log))
-        return;
-    if (tryGroup(m_debug))
-        return;
-    if (tryGroup(m_input))
-        return;
-    if (tryGroup(m_audio))
-        return;
-    // Windows static guest red-zone protection
-    if (tryGroup(m_windows_guest_red_zone_protection))
-        return;
-    if (tryGroup(m_gpu))
-        return;
-    if (tryGroup(m_vulkan))
-        return;
-    LOG_WARNING(Config, "ResetGameSpecificValue: key '{}' not found", key);
 }
 
 bool EmulatorSettingsImpl::Save(const std::string& serial) {
@@ -418,7 +385,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                     SDL_ShowMessageBox(&msg_box, &result);
                     if (result == 0) {
                         if (TransferSettings()) {
-                            m_loaded = true;
                             Save();
                             return true;
                         } else {
@@ -435,7 +401,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             if (GetConfigVersion() != Common::g_scm_rev) {
                 Save();
             }
-            m_loaded = true;
             return true;
         } else {
             // ── Per-game override file ─────────────────────────────────
@@ -487,7 +452,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             return true;
         }
     } catch (const std::exception& e) {
-        LOG_ERROR(Config, "Error loading settings: {}", e.what());
+        UNREACHABLE_MSG("Error loading settings: {}", e.what());
         return false;
     }
 }

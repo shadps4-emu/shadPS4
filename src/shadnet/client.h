@@ -222,6 +222,9 @@ struct NotifyWebApiPushEvent {
     // Optional extended-data (key,value) pairs (e.g. friendlist trigger/additionalTrigger,
     // presence gameStatus/gameData). Empty when the server sends none / is older.
     std::vector<std::pair<std::string, std::string>> extdData;
+    // Optional trailing account ids (server >= push-account-ids). 0 = unknown / not sent.
+    u64 fromAccountId = 0;
+    u64 toAccountId = 0;
 };
 
 struct MatchingBinAttr {

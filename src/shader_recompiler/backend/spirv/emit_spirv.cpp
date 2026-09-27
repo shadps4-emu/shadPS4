@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <mutex>
 #include <span>
 #include <type_traits>
 #include <utility>
@@ -686,10 +687,10 @@ Id EmitConditionRef(EmitContext& ctx, const IR::Value& value) {
     return id;
 }
 
-void EmitReference(EmitContext&) {}
-
-void EmitPhiMove(EmitContext&) {
-    UNREACHABLE_MSG("Unreachable instruction");
+Id EmitGetPcLo(EmitContext& ctx, const IR::Value& value) {
+    const Id id{ctx.Def(value)};
+    ASSERT_MSG(Sirit::ValidId(id), "Forward identity declaration");
+    return id;
 }
 
 void EmitGetScc(EmitContext& ctx) {
@@ -701,10 +702,6 @@ void EmitGetExec(EmitContext& ctx) {
 }
 
 void EmitGetVcc(EmitContext& ctx) {
-    UNREACHABLE_MSG("Unreachable instruction");
-}
-
-void EmitGetSccLo(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 

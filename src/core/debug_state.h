@@ -168,6 +168,7 @@ public:
 
     std::pair<u32, u32> game_resolution{};
     std::pair<u32, u32> output_resolution{};
+    u32 num_batches_per_frame{};
     bool is_using_fsr{};
 
     void ShowDebugMessage(std::string message) {

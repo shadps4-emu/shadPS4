@@ -15,7 +15,7 @@ class FaultManager {
 
 public:
     explicit FaultManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                          BufferCache& buffer_cache, u32 caching_pagebits, u64 caching_num_pages);
+                          BufferCache& buffer_cache, u32 sparse_pagebits, u64 sparse_num_pages);
 
     [[nodiscard]] Buffer* GetFaultBuffer() noexcept {
         return &fault_buffer;
@@ -27,8 +27,8 @@ private:
     Vulkan::Scheduler& scheduler;
     BufferCache& buffer_cache;
     RangeSet fault_ranges;
-    u64 caching_pagesize;
-    u64 caching_num_pages;
+    u64 sparse_pagesize;
+    u64 sparse_num_pages;
     u64 fault_buffer_size;
     Buffer fault_buffer;
     Buffer download_buffer;

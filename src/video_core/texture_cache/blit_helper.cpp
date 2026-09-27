@@ -10,6 +10,7 @@
 #include "video_core/host_shaders/color_to_ms_depth_frag.h"
 #include "video_core/host_shaders/fs_tri_vert.h"
 #include "video_core/host_shaders/ms_image_blit_frag.h"
+#include "video_core/host_shaders/ms_image_blit_msaa_frag.h"
 
 namespace VideoCore {
 
@@ -249,14 +250,10 @@ void BlitHelper::CopyBetweenMsImages(u32 width, u32 height, u32 num_samples,
 
 void BlitHelper::CreateShaders() {
     const auto device = instance.GetDevice();
-    fs_tri_vertex =
-        Vulkan::Compile(HostShaders::FS_TRI_VERT, vk::ShaderStageFlagBits::eVertex, device);
-    color_to_ms_depth_frag = Vulkan::Compile(HostShaders::COLOR_TO_MS_DEPTH_FRAG,
-                                             vk::ShaderStageFlagBits::eFragment, device);
-    src_msaa_copy_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG,
-                                         vk::ShaderStageFlagBits::eFragment, device, {"SRC_MSAA"});
-    src_non_msaa_copy_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG,
-                                             vk::ShaderStageFlagBits::eFragment, device);
+    fs_tri_vertex = Vulkan::CompileSPV(FS_TRI_VERT, device);
+    color_to_ms_depth_frag = Vulkan::CompileSPV(COLOR_TO_MS_DEPTH_FRAG, device);
+    src_msaa_copy_frag = Vulkan::CompileSPV(MS_IMAGE_BLIT_MSAA_FRAG, device);
+    src_non_msaa_copy_frag = Vulkan::CompileSPV(MS_IMAGE_BLIT_FRAG, device);
 }
 
 void BlitHelper::CreatePipelineLayouts() {
