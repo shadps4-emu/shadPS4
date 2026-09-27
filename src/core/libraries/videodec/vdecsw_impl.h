@@ -36,18 +36,15 @@ public:
     s32 Reset();
 
 private:
-    struct QueueItem {
+    struct VdecSwCommand {
         enum class Type {
             Input,
             Flush,
             Reset,
         };
         Type type = Type::Input;
-        std::vector<u8> au_data; ///> Copied access unit data
-        void* original_au_data = nullptr;
-        u64 pts_data = 0;
-        u64 dts_data = 0;
-        u64 attached_data = 0;
+        std::vector<u8> au_data;
+        OrbisVdecswInputData input = {};
     };
 
     struct CompletedInput {
@@ -57,7 +54,7 @@ private:
     };
 
     void WorkerLoop(std::stop_token stop_token);
-    void ProcessInput(QueueItem& item);
+    void ProcessInput(VdecSwCommand& item);
     void ProcessFlush();
     void ProcessReset();
     void CompleteInput(void* au_data, u32 frame_count, s32 result);
@@ -76,7 +73,7 @@ private:
     std::condition_variable_any m_input_cv;
     std::condition_variable_any m_output_cv;
     std::jthread m_worker_thread;
-    std::deque<QueueItem> m_queue;
+    std::deque<VdecSwCommand> m_queue;
     std::deque<CompletedInput> m_completed_inputs;
     s32 m_unsynced_inputs = 0;
     bool m_finalized = false;
