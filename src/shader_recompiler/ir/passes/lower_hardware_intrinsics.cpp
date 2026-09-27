@@ -85,6 +85,16 @@ void LowerHardwareIntrinsics(IR::Program& program) {
             Lower(*block, inst);
         }
     }
+    // The ancillary VGPR can still be live without any bitfield extract left, for example when
+    // the shader reuses the register. Zero it like LowerPackedAncillary does.
+    for (IR::Block* const block : program.blocks) {
+        for (IR::Inst& inst : block->Instructions()) {
+            if (inst.GetOpcode() == IR::Opcode::GetAttributeU32 &&
+                inst.Arg(0).Attribute() == IR::Attribute::PackedAncillary) {
+                inst.ReplaceUsesWithAndRemove(IR::Value{0U});
+            }
+        }
+    }
 }
 
 } // namespace Shader::Optimization
