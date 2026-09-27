@@ -238,7 +238,8 @@ int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
 
     if (use_wsasend) {
         // Only call WSASend if we have multiple buffers.
-        // This previously used WSASendMsg, but it works only with dgram and raw sockets, so it always resulted in WSA error 10022.
+        // This previously used WSASendMsg, but it works only with dgram and raw sockets,
+        // so it always resulted in WSA error 10022.
 
         // OrbisNetIovec's structure is different from WSABUF, so it needs to be marshalled.
         std::vector<WSABUF> bufs{};
@@ -249,7 +250,8 @@ int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
         }
 
         DWORD bytesSent = 0;
-        int res = WSASend(sock, bufs.data(), bufs.size(), &bytesSent, msg->msg_flags, nullptr, nullptr);
+        int res = WSASend(sock, bufs.data(), bufs.size(), &bytesSent,
+            msg->msg_flags, nullptr, nullptr);
         if (res == SOCKET_ERROR)
             return ConvertReturnErrorCode(WSAGetLastError());
         return bytesSent;
