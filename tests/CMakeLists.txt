@@ -342,3 +342,39 @@ gtest_discover_tests(shadps4_http_test
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     DISCOVERY_TIMEOUT 60
 )
+
+# ===========================================================================
+# Core::Net tests (host sockets, guest layer, P2P transport, TCP, wire codec)
+# ===========================================================================
+
+set(NET_CORE_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/core/net/host_net.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/net/p2p_codec.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/net/p2p_crypto.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/net/p2p_tcp.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/net/p2p_transport.cpp
+)
+
+# libcrypto for p2p_crypto.cpp:
+get_directory_property(NET_TEST_SSL_LIBS DIRECTORY ${CMAKE_SOURCE_DIR}/externals
+                       DEFINITION SSL_DEPENDENCIES)
+if (NOT NET_TEST_SSL_LIBS)
+    find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+    set(NET_TEST_SSL_LIBS OpenSSL::Crypto)
+endif()
+
+add_executable(shadps4_net_test
+    ${NET_CORE_SOURCES}
+    network/test_net_p2p_codec.cpp
+)
+
+target_link_libraries(shadps4_net_test PRIVATE ${NET_TEST_SSL_LIBS})
+if (WIN32)
+    target_link_libraries(shadps4_net_test PRIVATE wepoll)
+endif()
+
+gtest_discover_tests(shadps4_net_test
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    DISCOVERY_TIMEOUT 60
+    PROPERTIES TIMEOUT 300
+)

@@ -51,4 +51,27 @@ struct Protection {
     bool signature = false;
 };
 
+/// Framing hook.
+class Codec {
+public:
+    enum class Kind { Invalid, Stream, Datagram, Signaling };
+    struct Decoded {
+        Kind kind = Kind::Invalid;
+        u16 src_vport = 0; // datagrams only
+        u16 dst_vport = 0;
+        std::vector<u8> payload; // TCP segment, datagram payload or signaling data
+    };
+
+    virtual ~Codec() = default;
+    virtual Decoded Decode(std::span<const u8> packet, const Endpoint& from) = 0;
+    virtual std::vector<u8> EncodeStream(std::span<const u8> tcp_segment, const Endpoint& to,
+                                         Protection protection) = 0;
+    virtual std::vector<u8> EncodeDatagram(u16 src_vport, u16 dst_vport,
+                                           std::span<const u8> payload, const Endpoint& to,
+                                           Protection protection) = 0;
+    virtual std::vector<u8> EncodeSignaling(std::span<const u8> data, const Endpoint& to) = 0;
+    /// Addresses for the TCP checksum pseudo-header when talking to `peer`.
+    virtual PseudoHeader StreamPseudoHeader(const Endpoint& peer) = 0;
+};
+
 } // namespace Core::Net::P2P

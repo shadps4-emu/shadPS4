@@ -14,4 +14,13 @@
 
 #include "core/net/host_net.h"
 
-namespace Core::Net::P2P {} // namespace Core::Net::P2P
+namespace Core::Net::P2P {
+
+/// Addresses used in the checksum pseudo-header
+struct PseudoHeader {
+    int family = AF_INET;       // AF_INET or AF_INET6
+    std::array<u8, 16> local{}; // IPv4 uses the first 4 bytes,network byte order
+    std::array<u8, 16> remote{};
+};
+
+} // namespace Core::Net::P2P
