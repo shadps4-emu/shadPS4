@@ -119,6 +119,22 @@ struct HttpResponse {
     std::string all_headers_blob; // Pre-formatted "Name: Value\r\n..." string.
 };
 
+static bool IsSensitiveHeader(std::string_view name) {
+    constexpr std::string_view sensitive_headers[] = {
+        "authorization",
+        "proxy-authorization",
+        "cookie",
+        "set-cookie",
+    };
+    return std::ranges::any_of(sensitive_headers, [name](std::string_view sensitive) {
+        return name.size() == sensitive.size() &&
+               std::equal(name.begin(), name.end(), sensitive.begin(), [](char lhs, char rhs) {
+                   return std::tolower(static_cast<unsigned char>(lhs)) ==
+                          std::tolower(static_cast<unsigned char>(rhs));
+               });
+    });
+}
+
 struct HttpRequest {
     int conn_id = 0;
     int method = 0;
@@ -566,7 +582,8 @@ static void LogSendRequestSettings(const HttpRequest& req, int reqId, u64 body_s
             return;
         }
         for (const auto& [name, value] : h) {
-            LOG_INFO(Lib_Http, "  header[{}] {}: {}", origin, name, value);
+            LOG_INFO(Lib_Http, "  header[{}] {}: {}", origin, name,
+                     IsSensitiveHeader(name) ? "[REDACTED]" : value);
         }
     };
     if (tmpl) {
