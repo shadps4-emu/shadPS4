@@ -437,82 +437,81 @@ void BufferCache::FlushSyncBatch(bool from_scheduler) {
             });
     }
     sync_batch.Clear();
-    if (copies.empty()) {
-        return;
-    }
-    const auto staging = staging_pool.Request(total_size_bytes, MemoryType::HostUncached);
-    for (auto& copy : copies) {
-        memory->CopySparseMemory(copy.dstOffset, staging.mapped + copy.srcOffset, copy.size);
-        copy.srcOffset += staging.offset;
-    }
-    staging.Flush();
+    if (!copies.empty()) {
+        const auto staging = staging_pool.Request(total_size_bytes, MemoryType::HostUncached);
+        for (auto& copy : copies) {
+            memory->CopySparseMemory(copy.dstOffset, staging.mapped + copy.srcOffset, copy.size);
+            copy.srcOffset += staging.offset;
+        }
+        staging.Flush();
 
-    const auto cmdbuf = scheduler.UploadCommandBuffer();
+        const auto cmdbuf = scheduler.UploadCommandBuffer();
 
-    u32 batch_start = 0;
-    u32 batch_end = 0;
+        u32 batch_start = 0;
+        u32 batch_end = 0;
 
-    while (true) {
-        batch_start = batch_end;
-        const auto& copy = copies[batch_start];
-        const auto* arena = address_space[copy.dstOffset >> ARENA_PAGE_BITS];
+        while (true) {
+            batch_start = batch_end;
+            const auto& copy = copies[batch_start];
+            const auto* arena = address_space[copy.dstOffset >> ARENA_PAGE_BITS];
 
-        const auto expand_batch = [&] {
-            const auto& copy = copies[batch_end];
-            const auto end_page = (copy.dstOffset + copy.size - 1) >> ARENA_PAGE_BITS;
-            return address_space[end_page] == arena;
-        };
-        const auto flush_batch = [&] {
-            const auto regions = std::span{copies}.subspan(batch_start, batch_end - batch_start);
-            for (auto& copy : regions) {
-                copy.dstOffset -= arena->cpu_addr;
+            const auto expand_batch = [&] {
+                const auto& copy = copies[batch_end];
+                const auto end_page = (copy.dstOffset + copy.size - 1) >> ARENA_PAGE_BITS;
+                return address_space[end_page] == arena;
+            };
+            const auto flush_batch = [&] {
+                const auto regions =
+                    std::span{copies}.subspan(batch_start, batch_end - batch_start);
+                for (auto& copy : regions) {
+                    copy.dstOffset -= arena->cpu_addr;
+                }
+                cmdbuf.copyBuffer(staging.buffer->Handle(), arena->Handle(), regions);
+            };
+
+            while (batch_end < copies.size() && expand_batch()) {
+                ++batch_end;
             }
-            cmdbuf.copyBuffer(staging.buffer->Handle(), arena->Handle(), regions);
-        };
 
-        while (batch_end < copies.size() && expand_batch()) {
+            // No more copies to examine.
+            if (batch_end == copies.size()) {
+                flush_batch();
+                break;
+            }
+
+            // Next copy does not overlap with the current buffer.
+            auto end_copy = copies[batch_end];
+            const auto* end_arena = address_space[end_copy.dstOffset >> ARENA_PAGE_BITS];
+            if (end_arena != arena) {
+                flush_batch();
+                continue;
+            }
+
+            // Next copy partially overlaps with buffer.
+            const auto copy_size = end_arena->cpu_addr + end_arena->size_bytes - end_copy.dstOffset;
+            copies[batch_end].size = copy_size;
+            end_copy.srcOffset += copy_size;
+            end_copy.dstOffset += copy_size;
+            end_copy.size -= copy_size;
             ++batch_end;
-        }
-
-        // No more copies to examine.
-        if (batch_end == copies.size()) {
             flush_batch();
-            break;
+            --batch_end;
+            copies[batch_end] = end_copy;
         }
 
-        // Next copy does not overlap with the current buffer.
-        auto end_copy = copies[batch_end];
-        const auto* end_arena = address_space[end_copy.dstOffset >> ARENA_PAGE_BITS];
-        if (end_arena != arena) {
-            flush_batch();
-            continue;
-        }
-
-        // Next copy partially overlaps with buffer.
-        const auto copy_size = end_arena->cpu_addr + end_arena->size_bytes - end_copy.dstOffset;
-        copies[batch_end].size = copy_size;
-        end_copy.srcOffset += copy_size;
-        end_copy.dstOffset += copy_size;
-        end_copy.size -= copy_size;
-        ++batch_end;
-        flush_batch();
-        --batch_end;
-        copies[batch_end] = end_copy;
+        const vk::MemoryBarrier2 memory_barrier = {
+            .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+            .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+            .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+        };
+        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+            .memoryBarrierCount = 1u,
+            .pMemoryBarriers = &memory_barrier,
+        });
     }
-
-    const vk::MemoryBarrier2 memory_barrier = {
-        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
-    };
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .memoryBarrierCount = 1u,
-        .pMemoryBarriers = &memory_barrier,
-    });
     num_flushes_per_frame++;
-
     if (!from_scheduler) {
         scheduler.BeginSession();
     }
