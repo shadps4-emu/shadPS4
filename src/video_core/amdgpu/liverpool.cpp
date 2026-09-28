@@ -180,15 +180,8 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         }
         case PM4ItOpcode::DumpConstRam: {
             const auto* dump_const = reinterpret_cast<const PM4DumpConstRam*>(header);
-            const u32 size = dump_const->Size();
-            if (rasterizer) {
-                auto& buffer_cache = rasterizer->GetBufferCache();
-                if (buffer_cache.IsRegionInSyncBatch(dump_const->Address<VAddr>(), size)) {
-                    buffer_cache.FlushSyncBatch();
-                }
-            }
             memcpy(dump_const->Address<void*>(),
-                   cblock.constants_heap.data() + dump_const->Offset(), size);
+                   cblock.constants_heap.data() + dump_const->Offset(), dump_const->Size());
             break;
         }
         case PM4ItOpcode::IncrementCeCounter: {
