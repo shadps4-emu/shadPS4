@@ -72,8 +72,6 @@ void IPC::Init() {
         return;
     }
 
-    EmulatorState::GetInstance()->SetAutoPatchesLoadEnabled(false);
-
     input_thread = std::jthread([this] {
         Common::SetCurrentThreadName("IPC Read thread");
         this->InputLoop();
