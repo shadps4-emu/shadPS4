@@ -36,26 +36,6 @@ bool StorageImageSync::SkipSerial() const {
            serial == "CUSA28863" || serial == "CUSA00093" || serial == "CUSA00003";
 }
 
-bool StorageImageSync::HasAliasAtAddress(VAddr addr, VideoCore::ImageId self_id) const {
-    const u64 page = addr >> VideoCore::TextureCache::Traits::PageBits;
-    const auto& page_table = texture_cache.GetPageTable();
-    const auto page_it = page_table.find(page);
-    if (!page_it) {
-        return false;
-    }
-
-    for (VideoCore::ImageId other_id : *page_it) {
-        if (other_id == self_id) {
-            continue;
-        }
-        auto& other_image = texture_cache.GetImage(other_id);
-        if (other_image.info.guest_address == addr) {
-            return true;
-        }
-    }
-    return false;
-}
-
 void StorageImageSync::ClearRecords() {
     pending_writes_.clear();
     pending_copied_.clear();
@@ -71,30 +51,20 @@ void StorageImageSync::Sync(VideoCore::ImageId image_id) {
         return;
     }
 
-    const auto& serial = Common::ElfInfo::Instance().GameSerial();
-    const bool disable_alias_check =
-        serial == "CUSA01623" || serial == "CUSA01715" || serial == "CUSA01740";
-
-    if (!disable_alias_check && !HasAliasAtAddress(guest_addr, image_id)) {
-        return;
-    }
-
+    // Same as RecordRtWrite: just remember the producer. Consumers pull on bind.
     pending_writes_[guest_addr] = image_id;
     pending_copied_.erase(guest_addr);
 
-    // No registered alias to pull from, but these titles still consume the UAV via guest memory.
-    if (disable_alias_check) {
+    const auto& serial = Common::ElfInfo::Instance().GameSerial();
+    if (serial == "CUSA01623" || serial == "CUSA01715" || serial == "CUSA01740") {
         ScheduleAsyncGuestWrite(image_id);
     }
 }
 
 void StorageImageSync::CopyFromLastWrite(VAddr addr, VideoCore::ImageId tex_id, u32 copy_w,
                                          u32 copy_h) {
-    if (SkipSerial() || !tex_id) {
-        return;
-    }
     auto it = pending_writes_.find(addr);
-    if (it == pending_writes_.end()) {
+    if (it == pending_writes_.end() || !tex_id) {
         return;
     }
 
@@ -121,15 +91,52 @@ void StorageImageSync::CopyFromLastWrite(VAddr addr, VideoCore::ImageId tex_id, 
 }
 
 void StorageImageSync::CopyToAlias(VideoCore::Image& src, VideoCore::Image& dst) {
+    const u32 copy_w = dst.info.size.width;
+    const u32 copy_h = dst.info.size.height;
+
     if (src.info.num_samples != dst.info.num_samples && src.info.num_samples > 1) {
         const VideoCore::SubresourceRange range{
             .base = {.level = 0, .layer = 0},
-            .extent = dst.info.resources,
+            .extent = {1, 1},
         };
         runtime.ResolveImage(&src, &dst, range, range);
+        dst.flags |= VideoCore::ImageFlagBits::GpuModified;
+        dst.flags &= ~VideoCore::ImageFlagBits::Dirty;
         return;
     }
-    runtime.CopyImage(&src, &dst);
+
+    bool needs_flush =
+        runtime.Transit(&src, vk::ImageLayout::eTransferSrcOptimal,
+                        vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferRead);
+    needs_flush |=
+        runtime.Transit(&dst, vk::ImageLayout::eTransferDstOptimal,
+                        vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite);
+    if (needs_flush) {
+        runtime.FlushBarriers();
+    }
+
+    const vk::ImageCopy region = {
+        .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+        .srcOffset = {0, 0, 0},
+        .dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+        .dstOffset = {0, 0, 0},
+        .extent = {copy_w, copy_h, 1},
+    };
+    scheduler.CommandBuffer().copyImage(src.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
+                                        dst.GetImage(), vk::ImageLayout::eTransferDstOptimal,
+                                        region);
+
+    // UAV stays general; sampled alias is ready to read. BindTextures may transit again.
+    runtime.Transit(&src, vk::ImageLayout::eGeneral, vk::PipelineStageFlagBits2::eAllCommands,
+                    vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite);
+    runtime.Transit(&dst, vk::ImageLayout::eShaderReadOnlyOptimal,
+                    vk::PipelineStageFlagBits2::eFragmentShader |
+                        vk::PipelineStageFlagBits2::eComputeShader,
+                    vk::AccessFlagBits2::eShaderRead);
+    runtime.FlushBarriers();
+
+    dst.flags |= VideoCore::ImageFlagBits::GpuModified;
+    dst.flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
 
 void StorageImageSync::ScheduleAsyncGuestWrite(VideoCore::ImageId image_id) {
@@ -172,14 +179,13 @@ void StorageImageSync::ScheduleAsyncGuestWrite(VideoCore::ImageId image_id) {
 
     texture_cache.GetTileManager().TileImage(img, regions, download.buffer, download.offset);
 
-    scheduler.DeferPriorityOperation(
-        [this, guest_addr, write_back_size, download] {
-            download.Invalidate();
-            Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(guest_addr),
-                                                      download.mapped, write_back_size);
-            buffer_cache.MarkRegionAsCpuModified(guest_addr, write_back_size);
-            runtime.GetStagingPool().FreeDeferred(download);
-        });
+    scheduler.DeferPriorityOperation([this, guest_addr, write_back_size, download] {
+        download.Invalidate();
+        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(guest_addr), download.mapped,
+                                                  write_back_size);
+        buffer_cache.MarkRegionAsCpuModified(guest_addr, write_back_size);
+        runtime.GetStagingPool().FreeDeferred(download);
+    });
 }
 
 } // namespace Vulkan

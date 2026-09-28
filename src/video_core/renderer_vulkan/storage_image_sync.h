@@ -21,32 +21,27 @@ namespace Vulkan {
 class Runtime;
 class Scheduler;
 
-/// Syncs compute storage image output to alias VkImages (and, when required, guest memory).
+/// Storage UAV ? sampled-alias sync, matching RenderTargetSync's pull model.
 ///
-/// After a CS dispatch writes a storage image, Sync() only records that write. Consumers pull
-/// GPU copies in BindTextures via CopyFromLastWrite — the same model as RenderTargetSync.
-/// That avoids a CPU/GPU stall (scheduler.Finish) after every storage dispatch.
-///
-/// Titles that disable the alias check still need a guest write-back; that path downloads and
-/// tiles asynchronously after the GPU tick, never Finish() on the emulation thread.
+/// Sync() only records the write (O(1)). CopyFromLastWrite() runs from BindTextures
+/// when a *sampled* texture at that address is bound, and copies a single mip0 slice
+/// the size of the consumer — not a full-image CopyImage of every mip.
 class StorageImageSync {
 public:
     StorageImageSync(Scheduler& scheduler, Runtime& runtime, VideoCore::BufferCache& buffer_cache,
                      VideoCore::TextureCache& texture_cache);
     ~StorageImageSync();
 
-    /// Record a storage-image write. Cheap; no GPU wait.
+    /// Record a storage-image write. No page-table walk, no GPU work.
     void Sync(VideoCore::ImageId image_id);
 
-    /// If a storage image was written at this address, GPU-copy it into tex_id.
+    /// Pull UAV data into a sampled alias. No-ops if this address was not written.
     void CopyFromLastWrite(VAddr addr, VideoCore::ImageId tex_id, u32 copy_w, u32 copy_h);
 
-    /// Drop recorded writes at submit time (mirrors RenderTargetSync).
     void ClearRecords();
 
 private:
     bool SkipSerial() const;
-    bool HasAliasAtAddress(VAddr addr, VideoCore::ImageId self_id) const;
     void CopyToAlias(VideoCore::Image& src, VideoCore::Image& dst);
     void ScheduleAsyncGuestWrite(VideoCore::ImageId image_id);
 

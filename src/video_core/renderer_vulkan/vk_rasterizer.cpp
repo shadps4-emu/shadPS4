@@ -934,8 +934,12 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             if (!ShouldDisableSync()) {
                 rt_sync_.CopyFromLastRt(desc.info.guest_address, image_id, desc.info.size.width,
                                         desc.info.size.height);
-                storage_sync_.CopyFromLastWrite(desc.info.guest_address, image_id,
-                                                desc.info.size.width, desc.info.size.height);
+                // Only sampled aliases need a pull. UAV binds at the same address would copy
+                // into an image that is about to be overwritten.
+                if (!image_desc.is_written) {
+                    storage_sync_.CopyFromLastWrite(desc.info.guest_address, image_id,
+                                                    desc.info.size.width, desc.info.size.height);
+                }
             }
             auto* image = &texture_cache.GetImage(image_id);
             if (auto depth_image_id = texture_cache.GetAssociatedDepth(*image)) {
