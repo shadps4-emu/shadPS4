@@ -980,12 +980,11 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     const u32 sampled = desc.is_written ? 2 : 1;
     switch (type) {
     case AmdGpu::ImageType::Color1D:
-        return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, false, false, sampled, format);
-    case AmdGpu::ImageType::Color1DArray:
-        return ctx.TypeImage(sampled_type, spv::Dim::Dim1D, false, true, false, sampled, format);
     case AmdGpu::ImageType::Color2D:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, false, false, sampled, format);
+    case AmdGpu::ImageType::Color1DArray:
     case AmdGpu::ImageType::Color2DArray:
+    case AmdGpu::ImageType::Cube:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, true, false, sampled, format);
     case AmdGpu::ImageType::Color2DMsaa:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, false, true, sampled, format);

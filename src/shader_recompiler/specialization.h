@@ -47,7 +47,6 @@ struct ImageSpecialization {
     AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
     bool is_integer = false;
     bool is_storage = false;
-    bool is_cube = false;
     bool is_srgb = false;
     AmdGpu::CompMapping dst_select{};
     AmdGpu::NumberConversion num_conversion{};
@@ -134,7 +133,6 @@ struct StageSpecialization {
                          spec.type = sharp.GetViewType(desc.is_array);
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
                          spec.is_storage = desc.is_written;
-                         spec.is_cube = sharp.IsCube();
                          if (spec.is_storage) {
                              spec.dst_select = sharp.DstSelect();
                          } else {

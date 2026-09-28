@@ -410,7 +410,10 @@ public:
     void ImageWrite(const Value& handle, const Value& coords, const U32& lod,
                     const U32& multisampling, const Value& color, TextureInstInfo info);
 
-    [[nodiscard]] F32 CubeFaceIndex(const Value& cube_coords);
+    [[nodiscard]] F32 CubeFaceIndex(const Value& x, const Value& y, const Value& z);
+    [[nodiscard]] F32 CubeFaceCoordS(const Value& x, const Value& y, const Value& z);
+    [[nodiscard]] F32 CubeFaceCoordT(const Value& x, const Value& y, const Value& z);
+    [[nodiscard]] F32 CubeFaceMajorAxis(const Value& x, const Value& y, const Value& z);
 
     void EmitVertex();
     void EmitPrimitive();
