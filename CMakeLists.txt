@@ -865,6 +865,12 @@ set(NET_CORE  src/core/net/guest_net.cpp
               src/core/net/p2p_transport.h
 )
 
+set(NET_LIB   src/core/libraries/net/net_error.h
+              src/core/libraries/net/net_translate.cpp
+              src/core/libraries/net/net_translate.h
+              src/core/libraries/net/net_types.h
+)
+
 set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/stubs.h
          src/core/aerolib/aerolib.cpp
@@ -977,6 +983,7 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/user_settings.cpp
          src/core/user_settings.h
          ${NET_CORE}
+         ${NET_LIB}
 )
 
 if (ARCHITECTURE STREQUAL "x86_64")
