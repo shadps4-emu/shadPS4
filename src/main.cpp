@@ -155,8 +155,9 @@ int main(int argc, char* argv[]) {
 
     IPC::Instance().Init();
 
-    // Initialize key manager
     KeyManager::GetInstance()->LoadFromFile();
+
+    EmulatorState::Load();
 
     // Load configurations
     EmulatorSettings.Load();

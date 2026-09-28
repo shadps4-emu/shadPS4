@@ -13,6 +13,9 @@ public:
 
     static std::shared_ptr<EmulatorState> GetInstance();
     static void SetInstance(std::shared_ptr<EmulatorState> instance);
+    static void Load() {
+        GetInstance(); // make sure the unique_ptr gets populated
+    }
 
     bool IsGameRunning() const;
     void SetGameRunning(bool running);
