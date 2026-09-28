@@ -251,8 +251,7 @@ int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
 
         DWORD bytesSent = 0;
         int flags = convertOrbisFlagsToPosix(socket_type, msg->msg_flags);
-        int res = WSASend(sock, bufs.data(), bufs.size(), &bytesSent,
-            flags, nullptr, nullptr);
+        int res = WSASend(sock, bufs.data(), bufs.size(), &bytesSent, flags, nullptr, nullptr);
         if (res == SOCKET_ERROR)
             return ConvertReturnErrorCode(WSAGetLastError());
         return bytesSent;
