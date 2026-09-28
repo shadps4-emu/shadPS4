@@ -374,6 +374,29 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
         const auto pipeline_hash = std::hash<ComputePipelineKey>{}(compute_key);
+
+        // Vulkan drivers reject pipelines whose LocalSize exceeds the device limits with a generic
+        // error. Guests can request larger groups than host GPUs support (e.g. 2048 threads while
+        // AMD, NVIDIA and Intel cap at 1024), so skip the pipeline instead of crashing. The null
+        // entry stays cached for this key, which avoids retrying and repeating the log every
+        // dispatch.
+        const auto& [size_x, size_y, size_z] =
+            runtime_infos[u32(SwStage::Compute)].hw.cs.workgroup_size;
+        const u64 invocations = u64(size_x) * size_y * size_z;
+        if (size_x > instance.MaxComputeWorkGroupSize(0) ||
+            size_y > instance.MaxComputeWorkGroupSize(1) ||
+            size_z > instance.MaxComputeWorkGroupSize(2) ||
+            invocations > instance.MaxComputeWorkGroupInvocations()) {
+            LOG_ERROR(Render_Vulkan,
+                      "Skipping compute pipeline {:#x}: workgroup size {}x{}x{} exceeds device "
+                      "limits (max invocations {}, max size {}x{}x{})",
+                      pipeline_hash, size_x, size_y, size_z,
+                      instance.MaxComputeWorkGroupInvocations(),
+                      instance.MaxComputeWorkGroupSize(0), instance.MaxComputeWorkGroupSize(1),
+                      instance.MaxComputeWorkGroupSize(2));
+            return nullptr;
+        }
+
         LOG_INFO(Render_Vulkan, "Compiling compute pipeline {:#x}", pipeline_hash);
 
         ComputePipeline::SerializationSupport sdata{};
