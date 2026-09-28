@@ -391,8 +391,8 @@ void Linker::Relocate(Module* module) {
 bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Module* m,
                      Loader::SymbolRecord* return_info) {
     const auto ids = Common::SplitString(name, '#');
-    const LibraryInfo* library = m->FindLibrary(ids[1]);
-    const ModuleInfo* module = m->FindModule(ids[2]);
+    const LibraryInfo* library;
+    const ModuleInfo* module;
     if (ids.size() != 3 && sym_type != Loader::SymbolType::NoType) {
         return_info->virtual_address = 0;
         return_info->symbol.name = ids.at(0);
