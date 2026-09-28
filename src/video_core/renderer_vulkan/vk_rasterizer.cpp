@@ -1082,7 +1082,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
 
         texture_cache.UpdateImage(image_id);
 
-        image->SetBackingSamples(key.color_samples[cb]);
+        runtime.SetBackingSamples(image, key.color_samples[cb]);
 
         const auto& image_view = texture_cache.FindRenderTarget(image_id, desc);
         const auto& serial = Common::ElfInfo::Instance().GameSerial();
@@ -1123,7 +1123,9 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
 
         } else {
 
-            image->Transit(vk::ImageLayout::eColorAttachmentOptimal,
+            runtime.Transit(image, vk::ImageLayout::eColorAttachmentOptimal,
+
+                           vk::PipelineStageFlagBits2::eColorAttachmentOutput,
 
                            vk::AccessFlagBits2::eColorAttachmentWrite |
 
