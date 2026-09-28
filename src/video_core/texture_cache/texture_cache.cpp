@@ -25,11 +25,11 @@ static constexpr u64 PageShift = 12;
 static constexpr u64 NumFramesBeforeRemoval = 32;
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
-                           AmdGpu::Liverpool* liverpool_, BufferCache& buffer_cache_,
-                           PageManager& page_manager_)
-    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
+                           Vulkan::Runtime& runtime_, AmdGpu::Liverpool* liverpool_,
+                           BufferCache& buffer_cache_, PageManager& page_manager_)
+    : instance{instance_}, scheduler{scheduler_}, runtime{runtime_}, liverpool{liverpool_},
       buffer_cache{buffer_cache_}, page_manager{page_manager_}, blit_helper{instance, scheduler},
-      tile_manager{instance, scheduler, buffer_cache.GetUtilityBuffer(MemoryUsage::Stream)},
+      tile_manager{instance, scheduler, runtime, buffer_cache.GetStreamBuffer()},
       readback_linear_images{Config::getReadbackLinearImages()} {
 
     // Set up garbage collection parameters.

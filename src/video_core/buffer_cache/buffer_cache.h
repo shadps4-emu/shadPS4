@@ -93,6 +93,14 @@ public:
     /// Return true when a region is modified from the GPU
     [[nodiscard]] bool IsRegionGpuModified(VAddr addr, size_t size);
 
+    [[nodiscard]] RangeSet& GetGpuModifiedRanges() noexcept {
+        return gpu_modified_ranges;
+    }
+
+    void CommitPendingGpuRanges() {}
+
+    void MarkRegionAsCpuModified(VAddr addr, u64 size);
+
     /// Processes the fault buffer.
     void ProcessFaultBuffer();
 

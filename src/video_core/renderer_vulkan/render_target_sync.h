@@ -17,6 +17,7 @@ class TextureCache;
 namespace Vulkan {
 
 class Instance;
+class Runtime;
 class Scheduler;
 
 /// Manages RT→alias VkImage synchronisation.
@@ -46,7 +47,7 @@ class Scheduler;
 /// Also handles 1×1 render-target readback (force-download so CPU can read the pixel).
 class RenderTargetSync {
 public:
-    RenderTargetSync(const Instance& instance, Scheduler& scheduler,
+    RenderTargetSync(const Instance& instance, Scheduler& scheduler, Runtime& runtime,
                      VideoCore::TextureCache& texture_cache);
     ~RenderTargetSync();
 
@@ -80,6 +81,7 @@ private:
 private:
     const Instance& instance;
     Scheduler& scheduler;
+    Runtime& runtime;
     VideoCore::TextureCache& texture_cache;
 
     tsl::robin_map<VAddr, VideoCore::ImageId> pending_rt_writes_;

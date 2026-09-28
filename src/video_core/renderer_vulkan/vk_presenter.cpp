@@ -450,18 +450,17 @@ static void SavePendingScreenshot(const ScreenshotReadback& readback) {
             }
         }
 
-            LOG_INFO(Render_Vulkan, "Saved screenshot: {}", path.string());
-            if (Config::getScreenshotNotificationsEnabled()) {
-                std::ifstream file(path, std::ios::binary);
-                std::vector<u8> imgdata;
-                if (file) {
-                    imgdata = std::vector<u8>(std::istreambuf_iterator<char>(file),
-                                              std::istreambuf_iterator<char>());
-                }
-                shadNotifications::QueueNotification("Saved screenshot:\n" + path.string(), 3.0f,
-                                                     shadNotifications::position::BottomRight,
-                                                     imgdata);
+        LOG_INFO(Render_Vulkan, "Saved screenshot: {}", path.string());
+        if (Config::getScreenshotNotificationsEnabled()) {
+            std::ifstream file(path, std::ios::binary);
+            std::vector<u8> imgdata;
+            if (file) {
+                imgdata = std::vector<u8>(std::istreambuf_iterator<char>(file),
+                                          std::istreambuf_iterator<char>());
             }
+            shadNotifications::QueueNotification("Saved screenshot:\n" + path.string(), 3.0f,
+                                                 shadNotifications::position::BottomRight,
+                                                 imgdata);
         }
     }
 }

@@ -173,15 +173,15 @@ protected:
             intervals.insert(first, src, src + m);
             return;
         }
-        const auto slots = std::distance(first, last);
-        if (m <= slots) {
+        const auto existing = std::distance(first, last);
+        if (m <= existing) {
             std::copy(src, src + m, first);
-            if (m < slots) {
+            if (m < existing) {
                 intervals.erase(first + m, last);
             }
         } else {
-            std::copy(src, src + slots, first);
-            intervals.insert(last, src + slots, src + m);
+            std::copy(src, src + existing, first);
+            intervals.insert(last, src + existing, src + m);
         }
     }
 

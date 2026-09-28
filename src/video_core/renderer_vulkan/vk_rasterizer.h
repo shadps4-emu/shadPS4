@@ -39,6 +39,10 @@ public:
         return runtime;
     }
 
+    [[nodiscard]] Scheduler& GetScheduler() noexcept {
+        return scheduler;
+    }
+
     [[nodiscard]] const Instance& GetInstance() const noexcept {
         return instance;
     }

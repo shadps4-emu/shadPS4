@@ -119,19 +119,10 @@ PredicationManager::PredicationManager(const Instance& instance_, Scheduler& sch
                                        VideoCore::BufferCache& buffer_cache_)
     : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_},
       use_64bit_predicate{instance_.IsAmdGpu()},
-      predicate_buffer{instance_,
-                       scheduler_,
-                       VideoCore::MemoryUsage::DeviceLocal,
-                       0,
-                       PredicateBufferUsage(instance_),
-                       NumPredicateSlots * GetPredicateSlotSize(instance_)},
-      counter_scratch{instance_,
-                      scheduler_,
-                      VideoCore::MemoryUsage::DeviceLocal,
-                      0,
-                      vk::BufferUsageFlagBits::eStorageBuffer |
-                          vk::BufferUsageFlagBits::eTransferDst,
-                      NumScratchQwords * sizeof(u64)} {
+      predicate_buffer{instance_, 0, NumPredicateSlots * GetPredicateSlotSize(instance_),
+                       VideoCore::MemoryType::DeviceLocal, "Predicate Buffer"},
+      counter_scratch{instance_, 0, NumScratchQwords * sizeof(u64),
+                      VideoCore::MemoryType::DeviceLocal, "Predicate Counter Scratch"} {
     const auto device = instance.GetDevice();
     const vk::QueryPoolCreateInfo query_pool_info = {
         .queryType = vk::QueryType::eOcclusion,
@@ -287,8 +278,7 @@ void PredicationManager::EnableFromBool(VAddr address, bool is_64bit, bool draw_
     // it must be sampled on the GPU timeline rather than at parse time. Obtain the guest
     // buffer before touching the command buffer: the cache lookup may flush the scheduler.
     const u32 width = is_64bit ? sizeof(u64) : sizeof(u32);
-    const auto [buffer, offset] =
-        buffer_cache.ObtainBuffer(address, width, VideoCore::ObtainBufferFlags::None);
+    const auto [buffer, offset] = buffer_cache.ObtainBuffer(address, width, false);
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     const u32 qword = AllocScratchQwords(1);
@@ -303,10 +293,12 @@ void PredicationManager::EnableFromBool(VAddr address, bool is_64bit, bool draw_
                                                       vk::AccessFlagBits2::eTransferWrite,
                                                       qword * sizeof(u64), sizeof(u64)));
     }
-    if (const auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
-                                                vk::PipelineStageFlagBits2::eAllTransfer)) {
-        RecordBufferBarrier(cmdbuf, *barrier);
-    }
+    RecordBufferBarrier(cmdbuf, MakeBufferBarrier(buffer->Handle(),
+                                                  vk::PipelineStageFlagBits2::eAllCommands,
+                                                  vk::AccessFlagBits2::eMemoryWrite,
+                                                  vk::PipelineStageFlagBits2::eAllTransfer,
+                                                  vk::AccessFlagBits2::eTransferRead, offset,
+                                                  width));
     const vk::BufferCopy copy = {
         .srcOffset = offset,
         .dstOffset = qword * sizeof(u64),

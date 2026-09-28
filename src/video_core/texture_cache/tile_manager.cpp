@@ -246,19 +246,17 @@ TileManager::Result TileManager::TileLinearBuffer(vk::Buffer in_buffer, u32 in_o
         .range = sizeof(params),
     };
 
-    const auto [out_buffer, out_allocation] = GetScratchBuffer(info.guest_size);
-    scheduler.DeferOperation([this, out_buffer, out_allocation]() {
-        vmaDestroyBuffer(instance.GetAllocator(), out_buffer, out_allocation);
-    });
+    const auto staging = runtime.GetStagingPool().Request(info.guest_size, MemoryType::DeviceLocal);
 
     scheduler.EndRendering();
+    runtime.FlushBarriers();
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, GetTilingPipeline(info, true));
 
     const vk::DescriptorBufferInfo tiled_buffer_info{
-        .buffer = out_buffer,
-        .offset = 0,
+        .buffer = staging.buffer->Handle(),
+        .offset = staging.offset,
         .range = info.guest_size,
     };
 
@@ -298,7 +296,12 @@ TileManager::Result TileManager::TileLinearBuffer(vk::Buffer in_buffer, u32 in_o
 
     const auto dim_x = (info.guest_size / (info.num_bits / 8)) / 64;
     cmdbuf.dispatch(dim_x, 1, 1);
-    return {out_buffer, 0};
+
+    runtime.AccessBuffer(staging.buffer, staging.offset, info.guest_size,
+                         vk::PipelineStageFlagBits2::eComputeShader,
+                         vk::AccessFlagBits2::eShaderWrite);
+
+    return {staging.buffer->Handle(), staging.offset};
 }
 
 void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buffer_copies,

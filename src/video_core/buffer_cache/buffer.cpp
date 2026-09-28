@@ -52,10 +52,10 @@ std::string_view BufferTypeName(MemoryType type) {
     }
 }
 
-[[nodiscard]] VmaMemoryUsage MemoryUsageVma(MemoryUsage usage) {
-    switch (usage) {
-    case MemoryUsage::DeviceLocal:
-    case MemoryUsage::Stream:
+[[nodiscard]] VmaMemoryUsage MemoryUsageVma(MemoryType type) {
+    switch (type) {
+    case MemoryType::DeviceLocal:
+    case MemoryType::Stream:
         if (Config::getUseHostMemoryFallback()) {
             static bool logged_once = false;
             if (!logged_once) {
@@ -179,9 +179,9 @@ void Buffer::Invalidate(u64 offset, u64 size) {
 constexpr u64 WATCHES_INITIAL_RESERVE = 0x100;
 constexpr u64 WATCHES_RESERVE_CHUNK = 0x100;
 
-StreamBuffer::StreamBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler_,
+StreamBuffer::StreamBuffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                            MemoryType mem_type, u64 size_bytes)
-    : Buffer{instance, 0, size_bytes, mem_type}, scheduler{scheduler_},
+    : Buffer{instance_, 0, size_bytes, mem_type}, instance{instance_}, scheduler{scheduler_},
       non_coherent_atom_size{instance.NonCoherentAtomSize()} {
     ReserveWatches(current_watches, WATCHES_INITIAL_RESERVE);
     ReserveWatches(previous_watches, WATCHES_INITIAL_RESERVE);
@@ -297,8 +297,8 @@ StreamBufferMapping::StreamBufferMapping(StreamBuffer& stream_buffer, u64 size, 
     if (!data) {
         // This happens if the size is too big or no waiting is allowed when it is required
         is_temp_buffer = true;
-        this->buffer = new VideoCore::Buffer(*stream_buffer.instance, *stream_buffer.scheduler,
-                                             stream_buffer.usage, 0, AllFlags, size);
+        this->buffer = new VideoCore::Buffer(stream_buffer.instance, 0, size, stream_buffer.mem_type);
+        this->scheduler = &stream_buffer.scheduler;
         this->data = this->buffer->mapped_data.data();
         this->offset = 0;
         ASSERT_MSG(this->data, "Failed to map temporary buffer");
@@ -313,7 +313,6 @@ StreamBufferMapping::StreamBufferMapping(StreamBuffer& stream_buffer, u64 size, 
 StreamBufferMapping::~StreamBufferMapping() {
     if (is_temp_buffer) {
         ASSERT(buffer);
-        auto scheduler = buffer->scheduler;
         scheduler->DeferOperation([buffer = this->buffer]() mutable { delete buffer; });
     }
 }

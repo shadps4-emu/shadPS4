@@ -149,7 +149,7 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
         memory->TryWriteBacking(dst_addr, download.mapped + (copy.dstOffset - download.offset),
                                 copy.size);
     }
-    memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
+    memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, false);
 }
 
 std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 size,
@@ -189,6 +189,10 @@ bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
 
 bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
     return memory_tracker->IsRegionGpuModified(addr, size);
+}
+
+void BufferCache::MarkRegionAsCpuModified(VAddr addr, u64 size) {
+    memory_tracker->MarkRegionAsCpuModified(addr, size);
 }
 
 void BufferCache::ProcessFaultBuffer() {

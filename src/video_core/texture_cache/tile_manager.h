@@ -20,6 +20,8 @@ class TileManager {
     static constexpr size_t NUM_BPPS = 5;
 
 public:
+    using Result = std::pair<vk::Buffer, u64>;
+
     explicit TileManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
                          Vulkan::Runtime& runtime, StreamBuffer& stream_buffer);
     ~TileManager();

@@ -1125,7 +1125,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             }
             const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
             auto& buffer_cache = rasterizer->GetBufferCache();
-            auto& gpu_modified_ranges_pending = buffer_cache.GetPendingGpuModifiedRanges();
+            auto& gpu_modified_ranges_pending = buffer_cache.GetGpuModifiedRanges();
             const VAddr rewind_addr = reinterpret_cast<VAddr>(acb.data());
             bool must_flush = false;
             gpu_modified_ranges_pending.ForEachInRange(

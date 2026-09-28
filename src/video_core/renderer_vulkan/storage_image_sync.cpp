@@ -8,14 +8,17 @@
 #include "core/memory.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/storage_image_sync.h"
+#include "video_core/renderer_vulkan/vk_runtime.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
-StorageImageSync::StorageImageSync(Scheduler& scheduler_, VideoCore::BufferCache& buffer_cache_,
+StorageImageSync::StorageImageSync(Scheduler& scheduler_, Runtime& runtime_,
+                                   VideoCore::BufferCache& buffer_cache_,
                                    VideoCore::TextureCache& texture_cache_)
-    : scheduler{scheduler_}, buffer_cache{buffer_cache_}, texture_cache{texture_cache_} {}
+    : scheduler{scheduler_}, runtime{runtime_}, buffer_cache{buffer_cache_},
+      texture_cache{texture_cache_} {}
 
 StorageImageSync::~StorageImageSync() = default;
 
@@ -75,22 +78,13 @@ void StorageImageSync::Sync(VideoCore::ImageId image_id) {
               guest_addr, img.info.size.width, img.info.size.height, img.info.resources.layers, bpp,
               row_length, download_size, write_back_size);
 
-    // Transit to transfer-src for the copy.
-    img.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-
-    scheduler.EndRendering();
-    auto cmdbuf = scheduler.CommandBuffer();
-    auto& download_buf = buffer_cache.GetUtilityBuffer(VideoCore::MemoryUsage::Download);
-    const auto [data, offset] = download_buf.Map(write_back_size);
-    if (!data) {
+    const auto download =
+        runtime.GetStagingPool().Request(write_back_size, VideoCore::MemoryType::HostCached);
+    if (!download.mapped) {
         LOG_ERROR(Render_Vulkan,
-                  "[StorageSync] StreamBuffer Map failed for {}B — download SKIPPED, "
+                  "[StorageSync] Staging map failed for {}B — download SKIPPED, "
                   "texture corruption likely",
                   write_back_size);
-        // img was already transitioned to TransferSrcOptimal above; restore it to a
-        // sane layout so later passes don't trip a validation error or stall on a
-        // mismatched layout.
-        img.Transit(vk::ImageLayout::eGeneral, vk::AccessFlagBits2::eShaderWrite, {});
         return;
     }
 
@@ -99,7 +93,7 @@ void StorageImageSync::Sync(VideoCore::ImageId image_id) {
     const u32 layers = img.info.resources.layers;
     for (u32 layer = 0; layer < layers; ++layer) {
         regions.push_back({
-            .bufferOffset = layer * layer_size + offset,
+            .bufferOffset = layer * layer_size + download.offset,
             .bufferRowLength = row_length,
             .bufferImageHeight = 0,
             .imageSubresource{
@@ -112,35 +106,30 @@ void StorageImageSync::Sync(VideoCore::ImageId image_id) {
             .imageExtent = {img.info.size.width, img.info.size.height, 1},
         });
     }
-    download_buf.Commit();
-
-    cmdbuf.copyImageToBuffer(img.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
-                             download_buf.Handle(), regions);
+    runtime.DownloadImage(&img, download.buffer, regions);
 
     // Re-tile: CopyImageToBuffer always produces linear data, but guest memory
     // must hold tiled data so downstream detile works correctly.
     auto& tile_manager = texture_cache.GetTileManager();
     auto [tiled_buffer, tiled_offset] =
-        tile_manager.TileLinearBuffer(download_buf.Handle(), offset, img.info);
-    if (tiled_buffer != download_buf.Handle()) {
-        // Tiler wrote to a scratch buffer; copy back to download buffer.
+        tile_manager.TileLinearBuffer(download.buffer->Handle(),
+                                      static_cast<u32>(download.offset), img.info);
+    if (tiled_buffer != download.buffer->Handle()) {
         const vk::BufferCopy tile_copy = {
             .srcOffset = tiled_offset,
-            .dstOffset = offset,
+            .dstOffset = download.offset,
             .size = write_back_size,
         };
-        scheduler.CommandBuffer().copyBuffer(tiled_buffer, download_buf.Handle(), tile_copy);
+        scheduler.CommandBuffer().copyBuffer(tiled_buffer, download.buffer->Handle(), tile_copy);
     }
 
-    // Submit, wait for GPU, then write to guest memory.
     scheduler.EndRendering();
-    const u64 tick = scheduler.CurrentTick();
-    scheduler.Wait(tick);
+    scheduler.Wait(scheduler.CurrentTick());
+    download.Invalidate();
 
-    // Mark consumers dirty before writing to guest (hash check needs old hash).
     texture_cache.InvalidateMemory(guest_addr, img.info.guest_size,
                                    /*exclude_image_id=*/image_id);
-    Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(guest_addr), data,
+    Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(guest_addr), download.mapped,
                                               write_back_size);
     // Notify buffer cache that guest memory has new data so SynchronizeBuffer picks it up.
     buffer_cache.MarkRegionAsCpuModified(guest_addr, write_back_size);

@@ -177,6 +177,9 @@ private:
     bool WaitPendingOperations(u64 requested_upper_bound, bool allow_wait);
 
 private:
+    friend class StreamBufferMapping;
+
+    const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
     vk::DeviceSize non_coherent_atom_size{};
     u64 offset{};
@@ -200,13 +203,15 @@ public:
     StreamBufferMapping& operator=(const StreamBufferMapping&) = delete;
 
     StreamBufferMapping(StreamBufferMapping&& other)
-        : buffer{std::exchange(other.buffer, nullptr)}, data{std::exchange(other.data, nullptr)},
-          offset{std::exchange(other.offset, 0)},
+        : buffer{std::exchange(other.buffer, nullptr)},
+          scheduler{std::exchange(other.scheduler, nullptr)},
+          data{std::exchange(other.data, nullptr)}, offset{std::exchange(other.offset, 0)},
           is_temp_buffer{std::exchange(other.is_temp_buffer, false)} {}
 
     StreamBufferMapping& operator=(StreamBufferMapping&& other) {
         if (this != &other) {
             buffer = std::exchange(other.buffer, nullptr);
+            scheduler = std::exchange(other.scheduler, nullptr);
             data = std::exchange(other.data, nullptr);
             offset = std::exchange(other.offset, 0);
             is_temp_buffer = std::exchange(other.is_temp_buffer, false);
@@ -232,6 +237,7 @@ public:
 
 private:
     VideoCore::Buffer* buffer;
+    Vulkan::Scheduler* scheduler{};
     u8* data{};
     u64 offset{};
     bool is_temp_buffer{};

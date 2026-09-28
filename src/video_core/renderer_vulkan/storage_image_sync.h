@@ -14,6 +14,7 @@ class TextureCache;
 
 namespace Vulkan {
 
+class Runtime;
 class Scheduler;
 
 /// Syncs compute storage image output to guest memory.
@@ -32,7 +33,7 @@ class Scheduler;
 /// known alias image at that address.
 class StorageImageSync {
 public:
-    StorageImageSync(Scheduler& scheduler, VideoCore::BufferCache& buffer_cache,
+    StorageImageSync(Scheduler& scheduler, Runtime& runtime, VideoCore::BufferCache& buffer_cache,
                      VideoCore::TextureCache& texture_cache);
     ~StorageImageSync();
 
@@ -47,6 +48,7 @@ private:
 
 private:
     Scheduler& scheduler;
+    Runtime& runtime;
     VideoCore::BufferCache& buffer_cache;
     VideoCore::TextureCache& texture_cache;
 };

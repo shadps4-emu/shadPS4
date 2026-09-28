@@ -4,14 +4,16 @@
 #include "common/logging/log.h"
 #include "video_core/renderer_vulkan/render_target_sync.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_runtime.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
 RenderTargetSync::RenderTargetSync(const Instance& instance_, Scheduler& scheduler_,
-                                   VideoCore::TextureCache& texture_cache_)
-    : instance{instance_}, scheduler{scheduler_}, texture_cache{texture_cache_} {}
+                                   Runtime& runtime_, VideoCore::TextureCache& texture_cache_)
+    : instance{instance_}, scheduler{scheduler_}, runtime{runtime_}, texture_cache{texture_cache_} {
+}
 
 RenderTargetSync::~RenderTargetSync() = default;
 
@@ -102,9 +104,6 @@ void RenderTargetSync::CopyRtToAlias(VideoCore::Image& rt_image, VideoCore::Imag
     const u32 copy_h = alias_image.info.size.height;
 
     if (rt_image.info.num_samples != alias_image.info.num_samples) {
-        scheduler.EndRendering();
-        auto cmdbuf = scheduler.CommandBuffer();
-
         VideoCore::UniqueImage temp{instance.GetDevice(), instance.GetAllocator()};
         temp.Create({
             .flags =
@@ -119,8 +118,15 @@ void RenderTargetSync::CopyRtToAlias(VideoCore::Image& rt_image, VideoCore::Imag
             .usage = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst,
         });
 
-        rt_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead,
-                         {});
+        bool needs_flush =
+            runtime.Transit(&rt_image, vk::ImageLayout::eTransferSrcOptimal,
+                            vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferRead);
+        if (needs_flush) {
+            runtime.FlushBarriers();
+        }
+
+        scheduler.EndRendering();
+        auto cmdbuf = scheduler.CommandBuffer();
         {
             const vk::ImageMemoryBarrier2 temp_barrier = {
                 .srcStageMask = vk::PipelineStageFlagBits2::eNone,
@@ -159,8 +165,13 @@ void RenderTargetSync::CopyRtToAlias(VideoCore::Image& rt_image, VideoCore::Imag
             cmdbuf.pipelineBarrier2(vk::DependencyInfo{.imageMemoryBarrierCount = 1,
                                                        .pImageMemoryBarriers = &temp_barrier});
         }
-        alias_image.Transit(vk::ImageLayout::eTransferDstOptimal,
-                            vk::AccessFlagBits2::eTransferWrite, {});
+        needs_flush =
+            runtime.Transit(&alias_image, vk::ImageLayout::eTransferDstOptimal,
+                            vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite);
+        if (needs_flush) {
+            runtime.FlushBarriers();
+        }
+        cmdbuf = scheduler.CommandBuffer();
         const vk::ImageCopy copy_region = {
             .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
             .srcOffset = {0, 0, 0},
@@ -171,18 +182,27 @@ void RenderTargetSync::CopyRtToAlias(VideoCore::Image& rt_image, VideoCore::Imag
         cmdbuf.copyImage(temp, vk::ImageLayout::eTransferSrcOptimal, alias_image.GetImage(),
                          vk::ImageLayout::eTransferDstOptimal, copy_region);
 
-        rt_image.Transit(vk::ImageLayout::eColorAttachmentOptimal,
-                         vk::AccessFlagBits2::eColorAttachmentWrite, {});
-        alias_image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal,
-                            vk::AccessFlagBits2::eShaderRead, {});
+        runtime.Transit(&rt_image, vk::ImageLayout::eColorAttachmentOptimal,
+                        vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                        vk::AccessFlagBits2::eColorAttachmentWrite);
+        runtime.Transit(&alias_image, vk::ImageLayout::eShaderReadOnlyOptimal,
+                        vk::PipelineStageFlagBits2::eFragmentShader |
+                            vk::PipelineStageFlagBits2::eComputeShader,
+                        vk::AccessFlagBits2::eShaderRead);
+        runtime.FlushBarriers();
         scheduler.DeferOperation([temp = std::move(temp)]() mutable { temp.Destroy(); });
         return;
     }
 
-    // Same sample count: direct copyImage.
-    rt_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-    alias_image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,
-                        {});
+    bool needs_flush =
+        runtime.Transit(&rt_image, vk::ImageLayout::eTransferSrcOptimal,
+                        vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferRead);
+    needs_flush |=
+        runtime.Transit(&alias_image, vk::ImageLayout::eTransferDstOptimal,
+                        vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite);
+    if (needs_flush) {
+        runtime.FlushBarriers();
+    }
     const vk::ImageCopy region = {
         .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
         .srcOffset = {0, 0, 0},
@@ -193,10 +213,14 @@ void RenderTargetSync::CopyRtToAlias(VideoCore::Image& rt_image, VideoCore::Imag
     scheduler.CommandBuffer().copyImage(rt_image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
                                         alias_image.GetImage(),
                                         vk::ImageLayout::eTransferDstOptimal, region);
-    rt_image.Transit(vk::ImageLayout::eColorAttachmentOptimal,
-                     vk::AccessFlagBits2::eColorAttachmentWrite, {});
-    alias_image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
-                        {});
+    runtime.Transit(&rt_image, vk::ImageLayout::eColorAttachmentOptimal,
+                    vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                    vk::AccessFlagBits2::eColorAttachmentWrite);
+    runtime.Transit(&alias_image, vk::ImageLayout::eShaderReadOnlyOptimal,
+                    vk::PipelineStageFlagBits2::eFragmentShader |
+                        vk::PipelineStageFlagBits2::eComputeShader,
+                    vk::AccessFlagBits2::eShaderRead);
+    runtime.FlushBarriers();
 }
 
 } // namespace Vulkan

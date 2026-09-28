@@ -52,13 +52,13 @@ static Shader::PushData MakeUserData(const AmdGpu::Regs& regs) {
 
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime& runtime_,
                        AmdGpu::Liverpool* liverpool_)
-    : instance{instance_}, scheduler{scheduler_}, page_manager{this},
-      buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
-      texture_cache{instance, scheduler, liverpool_, buffer_cache, page_manager},
-      storage_sync_{scheduler, buffer_cache, texture_cache},
-      rt_sync_{instance, scheduler, texture_cache}, liverpool{liverpool_},
+    : instance{instance_}, scheduler{scheduler_}, runtime{runtime_}, page_manager{this},
+      buffer_cache{instance, scheduler, runtime, liverpool_, texture_cache, page_manager},
+      texture_cache{instance, scheduler, runtime, liverpool_, buffer_cache, page_manager},
+      storage_sync_{scheduler, runtime, buffer_cache, texture_cache},
+      rt_sync_{instance, scheduler, runtime, texture_cache}, liverpool{liverpool_},
       predication{instance, scheduler, buffer_cache}, memory{Core::Memory::Instance()},
-      pipeline_cache{instance, scheduler, liverpool},
+      pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
       host_markers_enabled{Config::getVkHostMarkersEnabled()},
       guest_markers_enabled{Config::getVkGuestMarkersEnabled()} {
     if (!Config::nullGpu()) {
@@ -298,29 +298,24 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         buffer_cache.ObtainBuffer(arg_address + offset, stride * max_count, false);
     needs_barrier |= runtime.IsBufferAccessed(buffer, base, stride * max_count);
 
-    const VideoCore::Buffer* count_buffer;
-    u64 count_offset;
+    const VideoCore::Buffer* count_buffer = nullptr;
+    u64 count_offset = 0;
     if (count_address != 0) {
         std::tie(count_buffer, count_offset) = buffer_cache.ObtainBuffer(count_address, 4, false);
         needs_barrier |= runtime.IsBufferAccessed(count_buffer, count_offset, 4);
     }
 
+    runtime.AccessBuffer(buffer, base, stride * max_count, vk::PipelineStageFlagBits2::eDrawIndirect,
+                         vk::AccessFlagBits2::eIndirectCommandRead);
+    if (count_buffer) {
+        runtime.AccessBuffer(count_buffer, count_offset, 4, vk::PipelineStageFlagBits2::eDrawIndirect,
+                             vk::AccessFlagBits2::eIndirectCommandRead);
+    }
     if (needs_barrier) {
         runtime.FlushBarriers();
     }
 
-    if (auto barrier = buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
-                                          vk::PipelineStageFlagBits2::eDrawIndirect)) {
-        buffer_barriers.emplace_back(*barrier);
-    }
-    if (count_buffer) {
-        if (auto barrier = count_buffer->GetBarrier(vk::AccessFlagBits2::eIndirectCommandRead,
-                                                    vk::PipelineStageFlagBits2::eDrawIndirect)) {
-            buffer_barriers.emplace_back(*barrier);
-        }
-    }
-
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    pipeline->BindResources(set_writes, push_data);
     UpdateDynamicState(pipeline, is_indexed);
     const auto zpass_query = predication.PrepareDrawQuery();
     const bool predicated = liverpool->IsPacketPredicated();
@@ -431,7 +426,7 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size, bool on_g
             storage_sync_.Sync(storage_image_id);
         }
     }
-    ResetBindings();
+    ResetBindings(true);
 }
 
 u64 Rasterizer::Flush() {
@@ -451,7 +446,6 @@ void Rasterizer::OnSubmit() {
         buffer_cache.ProcessFaultBuffer();
     }
     texture_cache.ProcessDownloadImages();
-    buffer_cache.ProcessPreemptiveDownloads();
 
     if (!ShouldDisableSync()) {
         rt_sync_.ClearRecords();
@@ -464,7 +458,6 @@ void Rasterizer::OnSubmit() {
         const u64 trigger = texture_cache.GetTriggerGcMemory();
         if (used_mem > trigger) {
             texture_cache.RunGarbageCollectorAsync();
-            buffer_cache.RunGarbageCollectorAsync();
         }
     }
 }
@@ -1298,7 +1291,7 @@ bool Rasterizer::InvalidateMemory(VAddr addr, u64 size) {
         // Not GPU mapped memory, can skip invalidation logic entirely.
         return false;
     }
-    buffer_cache.InvalidateMemory(addr, size, true);
+    buffer_cache.InvalidateMemory(addr, size);
     texture_cache.InvalidateMemory(addr, size);
     return true;
 }
@@ -1340,7 +1333,7 @@ void Rasterizer::MapMemory(VAddr addr, u64 size) {
 }
 
 void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
-    buffer_cache.InvalidateMemory(addr, size, true);
+    buffer_cache.InvalidateMemory(addr, size);
     texture_cache.UnmapMemory(addr, size);
     page_manager.OnGpuUnmap(addr, size);
     {
