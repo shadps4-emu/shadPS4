@@ -1045,45 +1045,28 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
 RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
 
     attachment_feedback_loop = false;
-
     const auto& regs = liverpool->regs;
-
     const auto& key = pipeline->GetGraphicsKey();
-
     RenderState state;
-
     state.width = instance.GetMaxFramebufferWidth();
-
     state.height = instance.GetMaxFramebufferHeight();
-
     state.num_layers = std::numeric_limits<u16>::max();
-
     state.num_color_attachments = std::bit_width(key.mrt_mask);
-
     for (auto cb = 0u; cb < state.num_color_attachments; ++cb) {
-
         auto& [image_id, desc] = cb_descs[cb];
-
         if (!image_id) {
-
             state.color_attachments[cb] = {};
-
             continue;
         }
 
         auto* image = &texture_cache.GetImage(image_id);
-
         if (image->binding.needs_rebind) {
-
             image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
-
             image = &texture_cache.GetImage(image_id);
         }
 
         texture_cache.UpdateImage(image_id);
-
-        image->SetBackingSamples(key.color_samples[cb]);
-
+        runtime.SetBackingSamples(image, key.color_samples[cb]);
         const auto& image_view = texture_cache.FindRenderTarget(image_id, desc);
         const auto& serial = Common::ElfInfo::Instance().GameSerial();
         if (!ShouldDisableSync() && serial != "CUSA11227" && serial != "CUSA12982" &&
@@ -1097,17 +1080,12 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         }
 
         const auto slice = image_view.info.range.base.layer;
-
         const auto mip = image_view.info.range.base.level;
         const auto& col_buf = regs.color_buffers[cb];
-
         const bool is_clear = texture_cache.IsMetaCleared(col_buf.CmaskAddress(), slice);
-
         texture_cache.TouchMeta(col_buf.CmaskAddress(), slice, false);
         if (image->binding.is_bound) {
-
             ASSERT_MSG(!image->binding.force_general,
-
                        "Having image both as storage and render target is unsupported");
             runtime.FlushBarriers();
             needs_barrier |=
@@ -1118,82 +1096,53 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
                                 vk::PipelineStageFlagBits2::eColorAttachmentOutput,
                                 vk::AccessFlagBits2::eColorAttachmentWrite |
                                     vk::AccessFlagBits2::eColorAttachmentRead);
-
             attachment_feedback_loop = true;
-
         } else {
-
-            image->Transit(vk::ImageLayout::eColorAttachmentOptimal,
-
-                           vk::AccessFlagBits2::eColorAttachmentWrite |
-
-                               vk::AccessFlagBits2::eColorAttachmentRead,
-
-                           desc.view_info.range);
+            needs_barrier |= runtime.Transit(image, vk::ImageLayout::eColorAttachmentOptimal,
+                                             vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                             vk::AccessFlagBits2::eColorAttachmentWrite |
+                                                 vk::AccessFlagBits2::eColorAttachmentRead,
+                                             desc.view_info.range);
         }
 
         state.width = std::min<u32>(state.width, std::max(image->info.size.width >> mip, 1u));
-
         state.height = std::min<u32>(state.height, std::max(image->info.size.height >> mip, 1u));
-
         state.num_layers = std::min<u32>(state.num_layers, image_view.info.range.extent.layers);
         const auto clear_value =
-
             is_clear ? LiverpoolToVK::ColorBufferClearValue(col_buf) : vk::ClearValue{};
-
         auto& attachment = state.color_attachments[cb];
-
         attachment.image_view = *image_view.image_view;
-
         attachment.image_layout = image->backing->state.layout;
-
         attachment.clear_value = clear_value.color.uint32;
-
         attachment.is_clear = is_clear;
         image->usage.render_target = 1u;
     }
 
     for (u32 cb = state.num_color_attachments; cb < state.color_attachments.size(); ++cb) {
-
         state.color_attachments[cb] = {};
     }
 
     if (auto image_id = db_desc.first; image_id) {
-
         auto& desc = db_desc.second;
-
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
-
         const auto& image_view = texture_cache.FindDepthTarget(image_id, desc);
-
         auto& image = texture_cache.GetImage(image_id);
         const auto slice = image_view.info.range.base.layer;
-
         // Only clear depth if writes are enabled —PS4 hardware ignores clear when
-
         // depth_write_enable is false, otherwise data from a previous pass is lost.
         const bool is_depth_clear =
             (ShouldDisableSync() ? true : regs.depth_control.depth_write_enable) &&
             (regs.depth_render_control.depth_clear_enable ||
              texture_cache.IsMetaCleared(htile_address, slice));
-
         const bool is_stencil_clear = regs.depth_render_control.stencil_clear_enable;
-
         texture_cache.TouchMeta(htile_address, slice, false);
-
         ASSERT(desc.view_info.range.extent.levels == 1 && !image.binding.needs_rebind);
         const bool has_stencil = image.info.props.has_stencil;
-
         // Stencil writes can be enabled while depth writes are off.
-
         const bool stencil_write =
-
             has_stencil && regs.depth_control.stencil_enable && !desc.view_info.is_storage;
-
         const auto new_layout = desc.view_info.is_storage
-
                                     ? has_stencil ? vk::ImageLayout::eDepthStencilAttachmentOptimal
-
                                                   : vk::ImageLayout::eDepthAttachmentOptimal
                                 : stencil_write
                                     ? vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal
@@ -1207,44 +1156,30 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
                                          desc.view_info.range);
 
         state.width = std::min<u32>(state.width, image.info.size.width);
-
         state.height = std::min<u32>(state.height, image.info.size.height);
-
         state.num_layers = std::min<u32>(state.num_layers, image_view.info.range.extent.layers);
         auto& attachment = state.depth_stencil_attachment;
-
         attachment.image_view = *image_view.image_view;
-
         attachment.image_layout = image.backing->state.layout;
-
         attachment.clear_value = {};
         attachment.is_clear = 0;
 
         if (regs.depth_buffer.DepthValid()) {
-
             attachment.clear_value[0] = is_depth_clear ? std::bit_cast<u32>(regs.depth_clear) : 0u;
-
             attachment.has_depth = true;
-
             attachment.depth_clear = is_depth_clear;
         }
 
         if (regs.depth_buffer.StencilValid()) {
-
             attachment.clear_value[1] = is_stencil_clear ? regs.stencil_clear : 0u;
-
             attachment.has_stencil = true;
-
             attachment.stencil_clear = is_stencil_clear;
         }
         image.usage.depth_target = true;
-
     } else {
-
         state.depth_stencil_attachment = {};
     }
     if (state.num_layers == std::numeric_limits<u16>::max()) {
-
         state.num_layers = 1;
     }
     return state;
