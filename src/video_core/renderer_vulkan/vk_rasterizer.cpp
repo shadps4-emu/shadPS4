@@ -454,6 +454,7 @@ void Rasterizer::OnSubmit() {
 
     if (!ShouldDisableSync()) {
         rt_sync_.ClearRecords();
+        storage_sync_.ClearRecords();
     }
 
     static u64 gc_timer = 0;
@@ -933,6 +934,8 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             if (!ShouldDisableSync()) {
                 rt_sync_.CopyFromLastRt(desc.info.guest_address, image_id, desc.info.size.width,
                                         desc.info.size.height);
+                storage_sync_.CopyFromLastWrite(desc.info.guest_address, image_id,
+                                                desc.info.size.width, desc.info.size.height);
             }
             auto* image = &texture_cache.GetImage(image_id);
             if (auto depth_image_id = texture_cache.GetAssociatedDepth(*image)) {

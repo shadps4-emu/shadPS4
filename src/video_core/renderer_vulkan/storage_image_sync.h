@@ -3,6 +3,10 @@
 
 #pragma once
 
+#include <map>
+#include <set>
+#include <tsl/robin_map.h>
+
 #include "common/slot_vector.h"
 #include "common/types.h"
 #include "video_core/texture_cache/image.h"
@@ -17,40 +21,43 @@ namespace Vulkan {
 class Runtime;
 class Scheduler;
 
-/// Syncs compute storage image output to guest memory.
-/// After a CS dispatch writes to a storage VkImage, this copies the image
-/// data to a staging buffer, waits for GPU completion, and writes it back
-/// to guest memory so that downstream texture consumers can read it.
+/// Syncs compute storage image output to alias VkImages (and, when required, guest memory).
 ///
-/// The guest write-back is only useful when something can actually observe it:
-/// either another currently-resident VkImage aliasing the same guest address
-/// (same pull/push philosophy as RenderTargetSync), or genuine CPU consumption.
-/// Forcing a full CPU/GPU pipeline stall (Map + wait-for-GPU + write-back) after
-/// *every* storage-image dispatch — even when nothing aliases that address —
-/// serializes the CPU and GPU and was responsible for large performance
-/// regressions in compute-heavy titles. Sync() now cheaply checks the page
-/// table first and skips the expensive stall entirely when there is no
-/// known alias image at that address.
+/// After a CS dispatch writes a storage image, Sync() only records that write. Consumers pull
+/// GPU copies in BindTextures via CopyFromLastWrite — the same model as RenderTargetSync.
+/// That avoids a CPU/GPU stall (scheduler.Finish) after every storage dispatch.
+///
+/// Titles that disable the alias check still need a guest write-back; that path downloads and
+/// tiles asynchronously after the GPU tick, never Finish() on the emulation thread.
 class StorageImageSync {
 public:
     StorageImageSync(Scheduler& scheduler, Runtime& runtime, VideoCore::BufferCache& buffer_cache,
                      VideoCore::TextureCache& texture_cache);
     ~StorageImageSync();
 
-    /// Copy storage image to staging buffer, wait for GPU, write to guest memory.
-    /// No-ops cheaply if no other image is currently aliasing this guest address.
+    /// Record a storage-image write. Cheap; no GPU wait.
     void Sync(VideoCore::ImageId image_id);
 
+    /// If a storage image was written at this address, GPU-copy it into tex_id.
+    void CopyFromLastWrite(VAddr addr, VideoCore::ImageId tex_id, u32 copy_w, u32 copy_h);
+
+    /// Drop recorded writes at submit time (mirrors RenderTargetSync).
+    void ClearRecords();
+
 private:
-    /// Returns true if some other resident image shares this guest address,
-    /// meaning the guest write-back can actually be observed by something.
+    bool SkipSerial() const;
     bool HasAliasAtAddress(VAddr addr, VideoCore::ImageId self_id) const;
+    void CopyToAlias(VideoCore::Image& src, VideoCore::Image& dst);
+    void ScheduleAsyncGuestWrite(VideoCore::ImageId image_id);
 
 private:
     Scheduler& scheduler;
     Runtime& runtime;
     VideoCore::BufferCache& buffer_cache;
     VideoCore::TextureCache& texture_cache;
+
+    tsl::robin_map<VAddr, VideoCore::ImageId> pending_writes_;
+    std::map<VAddr, std::set<VideoCore::ImageId>> pending_copied_;
 };
 
 } // namespace Vulkan
