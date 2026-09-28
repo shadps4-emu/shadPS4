@@ -61,6 +61,7 @@ struct OrbisNetLinger {
     s32 l_onoff;
     s32 l_linger;
 };
+
 struct Socket {
     explicit Socket(int domain, int type, int protocol) : socket_type(type) {}
     virtual ~Socket() = default;
@@ -83,6 +84,7 @@ struct Socket {
     virtual int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) = 0;
     virtual int fstat(Libraries::Kernel::OrbisKernelStat* stat) = 0;
     virtual std::optional<net_socket> Native() = 0;
+
     std::mutex m_mutex;
     std::mutex receive_mutex;
     int socket_type;
@@ -100,11 +102,14 @@ struct PosixSocket : public Socket {
     int sockopt_ip_maxttl = 0;
     int sockopt_tcp_mss_to_advertise = 0;
     int socket_type;
+
     explicit PosixSocket(int domain, int type, int protocol)
         : Socket(domain, type, protocol), sock(socket(domain, type, protocol)) {
         socket_type = type;
     }
+
     explicit PosixSocket(net_socket sock) : Socket(0, 0, 0), sock(sock) {}
+
     bool IsValid() const override;
     int Close() override;
     int Shutdown(int how) override;
@@ -122,45 +127,18 @@ struct PosixSocket : public Socket {
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
     int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
     int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+
     std::optional<net_socket> Native() override {
         return sock;
     }
 };
 
-struct P2PSocket : public Socket {
-    explicit P2PSocket(int domain, int type, int protocol) : Socket(domain, type, protocol) {}
-    bool IsValid() const override {
-        return true;
-    }
-    int Close() override;
-    int Shutdown(int how) override;
-    int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
-    int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
-    int Bind(const OrbisNetSockaddr* addr, u32 addrlen) override;
-    int Listen(int backlog) override;
-    int SendMessage(const OrbisNetMsghdr* msg, int flags) override;
-    int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
-                   u32 tolen) override;
-    int ReceiveMessage(OrbisNetMsghdr* msg, int flags) override;
-    int ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from, u32* fromlen) override;
-    SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
-    int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
-    int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
-    int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
-    int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
-    std::optional<net_socket> Native() override {
-        return {};
-    }
-};
+class P2PPort;
 
-struct UnixSocket : public Socket {
-    net_socket sock;
-    int socket_type;
-    explicit UnixSocket(int domain, int type, int protocol)
-        : Socket(domain, type, protocol), sock(socket(domain, type, protocol)) {
-        socket_type = type;
-    }
-    explicit UnixSocket(net_socket sock) : Socket(0, 0, 0), sock(sock) {}
+struct P2PSocket : public Socket {
+    explicit P2PSocket(int domain, int type, int protocol);
+    ~P2PSocket() override;
+
     bool IsValid() const override;
     int Close() override;
     int Shutdown(int how) override;
@@ -178,6 +156,62 @@ struct UnixSocket : public Socket {
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
     int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
     int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+
+    std::optional<net_socket> Native() override {
+        return inbox;
+    }
+
+    std::shared_ptr<P2PPort> port;
+    net_socket inbox;
+    sockaddr_in inbox_addr{};
+
+    u32 bound_addr{};
+    u16 bound_port{};
+    u16 bound_vport{};
+    bool bound{};
+
+    u32 peer_addr{};
+    u16 peer_port{};
+    u16 peer_vport{};
+    bool connected{};
+
+    int sockopt_so_nbio{};
+    int sockopt_so_reuseaddr{};
+    int sockopt_so_reuseport{};
+
+private:
+    int EnsureBound();
+};
+
+struct UnixSocket : public Socket {
+    net_socket sock;
+    int socket_type;
+
+    explicit UnixSocket(int domain, int type, int protocol)
+        : Socket(domain, type, protocol), sock(socket(domain, type, protocol)) {
+        socket_type = type;
+    }
+
+    explicit UnixSocket(net_socket sock) : Socket(0, 0, 0), sock(sock) {}
+
+    bool IsValid() const override;
+    int Close() override;
+    int Shutdown(int how) override;
+    int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
+    int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
+    int Bind(const OrbisNetSockaddr* addr, u32 addrlen) override;
+    int Listen(int backlog) override;
+    int SendMessage(const OrbisNetMsghdr* msg, int flags) override;
+    int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
+                   u32 tolen) override;
+    int ReceiveMessage(OrbisNetMsghdr* msg, int flags) override;
+    int ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from, u32* fromlen) override;
+    SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
+    int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
+    int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
+    int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
+    int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+
     std::optional<net_socket> Native() override {
         return sock;
     }

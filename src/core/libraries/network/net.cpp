@@ -806,8 +806,8 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         return ORBIS_NET_ERROR_EBADF;
     }
     auto epoll = file->epoll;
-    LOG_WARNING(Lib_Net, "called, epollid = {} ({}), op = {}, id = {}", epollid, epoll->name,
-                magic_enum::enum_name(op), id);
+    LOG_DEBUG(Lib_Net, "called, epollid = {} ({}), op = {}, id = {}", epollid, epoll->name,
+              magic_enum::enum_name(op), id);
 
     auto find_id = [&](OrbisNetId id) {
         return std::ranges::find_if(epoll->events, [&](auto& el) { return el.first == id; });
@@ -961,7 +961,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
 }
 
 int PS4_SYSV_ABI sceNetEpollCreate(const char* name, int flags) {
-    LOG_INFO(Lib_Net, "called, name = {}, flags = {}", name, flags);
+    LOG_DEBUG(Lib_Net, "called, name = {}, flags = {}", name, flags);
     if (flags != 0) {
         *sceNetErrnoLoc() = ORBIS_NET_EINVAL;
         return ORBIS_NET_ERROR_EINVAL;
