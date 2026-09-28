@@ -34,7 +34,7 @@ public:
 
     /// Tiles linear data from in_buffer into a new scratch buffer.
     /// Returns the scratch buffer; caller must ensure GPU is finished before reading.
-    Result TileLinearBuffer(vk::Buffer in_buffer, u32 in_offset, const ImageInfo& info);
+    Result TileLinearBuffer(vk::Buffer in_buffer, u64 in_offset, const ImageInfo& info);
 
 private:
     vk::Pipeline GetTilingPipeline(const ImageInfo& info, bool is_tiler);

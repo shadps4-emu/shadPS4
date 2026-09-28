@@ -221,7 +221,7 @@ std::pair<const Buffer*, u64> TileManager::DetileImage(const VideoCore::Buffer* 
     return {staging.buffer, staging.offset};
 }
 
-TileManager::Result TileManager::TileLinearBuffer(vk::Buffer in_buffer, u32 in_offset,
+TileManager::Result TileManager::TileLinearBuffer(vk::Buffer in_buffer, u64 in_offset,
                                                   const ImageInfo& info) {
     if (!info.props.is_tiled) {
         return {in_buffer, in_offset};
@@ -246,7 +246,8 @@ TileManager::Result TileManager::TileLinearBuffer(vk::Buffer in_buffer, u32 in_o
         .range = sizeof(params),
     };
 
-    const auto staging = runtime.GetStagingPool().Request(info.guest_size, MemoryType::DeviceLocal);
+    // Host-cached so a later CPU readback can Invalidate+memcpy the tiled result.
+    const auto staging = runtime.GetStagingPool().Request(info.guest_size, MemoryType::HostCached);
 
     scheduler.EndRendering();
     runtime.FlushBarriers();
@@ -300,6 +301,7 @@ TileManager::Result TileManager::TileLinearBuffer(vk::Buffer in_buffer, u32 in_o
     runtime.AccessBuffer(staging.buffer, staging.offset, info.guest_size,
                          vk::PipelineStageFlagBits2::eComputeShader,
                          vk::AccessFlagBits2::eShaderWrite);
+    runtime.FlushBarriers();
 
     return {staging.buffer->Handle(), staging.offset};
 }

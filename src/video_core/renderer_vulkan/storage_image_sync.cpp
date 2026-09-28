@@ -78,8 +78,8 @@ void StorageImageSync::Sync(VideoCore::ImageId image_id) {
               guest_addr, img.info.size.width, img.info.size.height, img.info.resources.layers, bpp,
               row_length, download_size, write_back_size);
 
-    const auto download =
-        runtime.GetStagingPool().Request(write_back_size, VideoCore::MemoryType::HostCached);
+    const auto download = runtime.GetStagingPool().Request(
+        std::max<u64>(write_back_size, img.info.guest_size), VideoCore::MemoryType::HostCached);
     if (!download.mapped) {
         LOG_ERROR(Render_Vulkan,
                   "[StorageSync] Staging map failed for {}B — download SKIPPED, "
@@ -93,7 +93,7 @@ void StorageImageSync::Sync(VideoCore::ImageId image_id) {
     const u32 layers = img.info.resources.layers;
     for (u32 layer = 0; layer < layers; ++layer) {
         regions.push_back({
-            .bufferOffset = layer * layer_size + download.offset,
+            .bufferOffset = layer * layer_size,
             .bufferRowLength = row_length,
             .bufferImageHeight = 0,
             .imageSubresource{
@@ -106,25 +106,12 @@ void StorageImageSync::Sync(VideoCore::ImageId image_id) {
             .imageExtent = {img.info.size.width, img.info.size.height, 1},
         });
     }
-    runtime.DownloadImage(&img, download.buffer, regions);
 
-    // Re-tile: CopyImageToBuffer always produces linear data, but guest memory
-    // must hold tiled data so downstream detile works correctly.
-    auto& tile_manager = texture_cache.GetTileManager();
-    auto [tiled_buffer, tiled_offset] =
-        tile_manager.TileLinearBuffer(download.buffer->Handle(),
-                                      static_cast<u32>(download.offset), img.info);
-    if (tiled_buffer != download.buffer->Handle()) {
-        const vk::BufferCopy tile_copy = {
-            .srcOffset = tiled_offset,
-            .dstOffset = download.offset,
-            .size = write_back_size,
-        };
-        scheduler.CommandBuffer().copyBuffer(tiled_buffer, download.buffer->Handle(), tile_copy);
-    }
+    // TileImage downloads linear data and, when needed, runs the tiler into the host-visible
+    // buffer so guest memory matches what DetileImage later expects.
+    texture_cache.GetTileManager().TileImage(img, regions, download.buffer, download.offset);
 
-    scheduler.EndRendering();
-    scheduler.Wait(scheduler.CurrentTick());
+    scheduler.Finish();
     download.Invalidate();
 
     texture_cache.InvalidateMemory(guest_addr, img.info.guest_size,

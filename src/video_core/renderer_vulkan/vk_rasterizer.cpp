@@ -385,6 +385,11 @@ void Rasterizer::DispatchDirect() {
     predication.EndDraw(cmdbuf, std::nullopt, predicated);
     DebugState.IncDispatch();
 
+    if (!ShouldDisableSync()) {
+        for (const auto& storage_image_id : pending_storage_image_ids_) {
+            storage_sync_.Sync(storage_image_id);
+        }
+    }
     ResetBindings(true);
 }
 
