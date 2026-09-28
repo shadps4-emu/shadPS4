@@ -364,7 +364,7 @@ static Id SelectCubeResult(EmitContext& ctx, Id x, Id y, Id z, Id x_res, Id y_re
 
 Id EmitCubeFaceIndex(EmitContext& ctx, IR::Inst* inst, Id x, Id y, Id z) {
     if (ctx.profile.supports_native_cube_calc) {
-        return ctx.OpCubeFaceIndexAMD(ctx.F32[1], ctx.OpCompositeConstruct(x, y, z));
+        return ctx.OpCubeFaceIndexAMD(ctx.F32[1], ctx.OpCompositeConstruct(ctx.F32[3], x, y, z));
     }
 
     const auto x_neg_cond{ctx.OpFOrdLessThan(ctx.U1[1], x, ctx.f32_zero_value)};
