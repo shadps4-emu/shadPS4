@@ -623,8 +623,8 @@ set(VDEC_LIB src/core/libraries/videodec/video_utils.cpp
              src/core/libraries/videodec/video_utils.h
              src/core/libraries/videodec/vdecsw.cpp
              src/core/libraries/videodec/vdecsw.h
-             src/core/libraries/videodec/videodec2_impl.cpp
-             src/core/libraries/videodec/videodec2_impl.h
+             src/core/libraries/videodec/vdecsw_impl.cpp
+             src/core/libraries/videodec/vdecsw_impl.h
              src/core/libraries/videodec/videodec2.cpp
              src/core/libraries/videodec/videodec2.h
              src/core/libraries/videodec/videodec.cpp

@@ -250,11 +250,14 @@ void Translator::S_SUBB_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 borrow{ir.Select(ir.GetScc(), ir.Imm32(1U), ir.Imm32(0U))};
-    const IR::U32 result{ir.ISub(ir.ISub(src0, src1), borrow)};
+    const IR::U32 difference{ir.ISub(src0, src1)};
+    const IR::U32 result{ir.ISub(difference, borrow)};
     SetDst(inst.dst[0], result);
 
-    const IR::U32 sum_with_borrow{ir.IAdd(src1, borrow)};
-    ir.SetScc(ir.ILessThan(src0, sum_with_borrow, false));
+    // SCC = (S1.u + SCC > S0.u) as a 33-bit compare.
+    const IR::U1 underflow{ir.IGreaterThan(src1, src0, false)};
+    const IR::U1 borrow_underflow{ir.IGreaterThan(borrow, difference, false)};
+    ir.SetScc(ir.LogicalOr(underflow, borrow_underflow));
 }
 
 void Translator::S_ADD_I32(const GcnInst& inst) {
@@ -289,7 +292,14 @@ void Translator::S_ADDC_U32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 carry{ir.Select(ir.GetScc(), ir.Imm32(1U), ir.Imm32(0U))};
-    SetDst(inst.dst[0], ir.IAdd(ir.IAdd(src0, src1), carry));
+    const IR::Value tmp1{ir.IAddCarry(src0, src1)};
+    const IR::U32 result1{ir.CompositeExtract(tmp1, 0)};
+    const IR::U32 carry_out1{ir.CompositeExtract(tmp1, 1)};
+    const IR::Value tmp2{ir.IAddCarry(result1, carry)};
+    const IR::U32 result2{ir.CompositeExtract(tmp2, 0)};
+    const IR::U32 carry_out2{ir.CompositeExtract(tmp2, 1)};
+    SetDst(inst.dst[0], result2);
+    ir.SetScc(ir.INotEqual(ir.BitwiseOr(carry_out1, carry_out2), ir.Imm32(0)));
 }
 
 void Translator::S_MIN_U32(bool is_signed, const GcnInst& inst) {
