@@ -17,13 +17,11 @@ static constexpr size_t MaxPageFaults = 1024;
 static constexpr size_t PageFaultAreaSize = MaxPageFaults * sizeof(u64);
 
 FaultManager::FaultManager(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler_,
-                           BufferCache& buffer_cache_, u32 caching_pagebits, u64 caching_num_pages_)
-    : scheduler{scheduler_}, buffer_cache{buffer_cache_},
-      caching_pagesize{1ULL << caching_pagebits}, caching_num_pages{caching_num_pages_},
-      fault_buffer_size{caching_num_pages_ / 8},
-      fault_buffer{instance, scheduler, MemoryUsage::DeviceLocal, 0, AllFlags, fault_buffer_size},
-      download_buffer{instance, scheduler, MemoryUsage::Download,
-                      0,        AllFlags,  MaxPendingFaults * PageFaultAreaSize} {
+                           BufferCache& buffer_cache_, u32 sparse_pagebits, u64 sparse_num_pages_)
+    : scheduler{scheduler_}, buffer_cache{buffer_cache_}, sparse_pagesize{1ULL << sparse_pagebits},
+      sparse_num_pages{sparse_num_pages_}, fault_buffer_size{sparse_num_pages_ / 8},
+      fault_buffer{instance, 0, fault_buffer_size, MemoryType::DeviceLocal},
+      download_buffer{instance, 0, MaxPendingFaults * PageFaultAreaSize, MemoryType::HostCached} {
     const auto device = instance.GetDevice();
     Vulkan::SetObjectName(device, fault_buffer.Handle(), "Fault Buffer");
 
@@ -49,7 +47,7 @@ FaultManager::FaultManager(const Vulkan::Instance& instance, Vulkan::Scheduler& 
     fault_process_desc_layout =
         Vulkan::Check(device.createDescriptorSetLayoutUnique(desc_layout_ci));
 
-    std::vector<std::string> defines{{fmt::format("CACHING_PAGEBITS={}", caching_pagebits),
+    std::vector<std::string> defines{{fmt::format("CACHING_PAGEBITS={}", sparse_pagebits),
                                       fmt::format("MAX_PAGE_FAULTS={}", MaxPageFaults)}};
     const auto module = Vulkan::Compile(HostShaders::FAULT_BUFFER_PROCESS_COMP,
                                         vk::ShaderStageFlagBits::eCompute, device, defines);
@@ -144,7 +142,7 @@ void FaultManager::ProcessFaultBuffer() {
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *fault_process_pipeline_layout, 0,
                                 writes);
     // 1 bit per page, 32 pages per workgroup
-    const u32 num_threads = caching_num_pages / 32;
+    const u32 num_threads = sparse_num_pages / 32;
     const u32 num_workgroups = Common::DivCeil(num_threads, 64u);
     cmdbuf.dispatch(num_workgroups, 1, 1);
 
@@ -159,13 +157,13 @@ void FaultManager::ProcessFaultBuffer() {
         const u64* fault_buf = std::bit_cast<const u64*>(mapped);
         const u32 fault_count = fault_buf[0];
         for (u32 i = 1; i <= fault_count; ++i) {
-            fault_ranges.Add(fault_buf[i], caching_pagesize);
+            fault_ranges.Add(fault_buf[i], sparse_pagesize);
             LOG_INFO(Render_Vulkan, "Accessed non-GPU cached memory at {:#x}", fault_buf[i]);
         }
         fault_ranges.ForEach([&](VAddr start, VAddr end) {
             ASSERT_MSG((end - start) <= std::numeric_limits<u32>::max(),
                        "Buffer size is too large");
-            buffer_cache.FindBuffer(start, static_cast<u32>(end - start));
+            (void)buffer_cache.ObtainBuffer(start, end - start, false);
         });
         fault_areas[area] = 0;
     });

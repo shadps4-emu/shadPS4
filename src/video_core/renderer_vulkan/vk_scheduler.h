@@ -8,11 +8,12 @@
 #include <thread>
 #include <queue>
 
+#include "common/interval_set.h"
 #include "common/unique_function.h"
 #include "video_core/amdgpu/regs_color.h"
 #include "video_core/amdgpu/regs_primitive.h"
-#include "video_core/renderer_vulkan/vk_master_semaphore.h"
 #include "video_core/renderer_vulkan/vk_resource_pool.h"
+#include "video_core/renderer_vulkan/vk_semaphore.h"
 
 namespace tracy {
 class VkCtxScope;
@@ -53,10 +54,10 @@ struct RenderState {
 static_assert(std::has_unique_object_representations_v<RenderState>);
 
 struct SubmitInfo {
-    std::array<vk::Semaphore, 3> wait_semas;
-    std::array<u64, 3> wait_ticks;
-    std::array<vk::Semaphore, 3> signal_semas;
-    std::array<u64, 3> signal_ticks;
+    std::array<vk::Semaphore, 4> wait_semas;
+    std::array<u64, 4> wait_ticks;
+    std::array<vk::Semaphore, 4> signal_semas;
+    std::array<u64, 4> signal_ticks;
     vk::Fence fence;
     u32 num_wait_semas;
     u32 num_signal_semas;
@@ -345,6 +346,8 @@ struct DynamicState {
     }
 };
 
+using SubmitFunc = Common::UniqueFunction<void, SubmitInfo&>;
+
 class Scheduler {
 public:
     explicit Scheduler(const Instance& instance);
@@ -373,6 +376,11 @@ public:
     /// Ends current rendering scope.
     void EndRendering();
 
+    /// Sets a function to be called on every scheduler submission.
+    void SetSubmitCallback(SubmitFunc&& on_submit) {
+        this->on_submit = std::move(on_submit);
+    }
+
     /// Returns the current render state.
     const RenderState& GetRenderState() const {
         return render_state;
@@ -390,21 +398,21 @@ public:
 
     /// Returns the current command buffer tick.
     [[nodiscard]] u64 CurrentTick() const noexcept {
-        return master_semaphore.CurrentTick();
+        return work_semaphore.CurrentTick();
     }
 
     /// Returns true when a tick has been triggered by the GPU.
     [[nodiscard]] bool IsFree(u64 tick) noexcept {
-        if (master_semaphore.IsFree(tick)) {
+        if (work_semaphore.IsFree(tick)) {
             return true;
         }
-        master_semaphore.Refresh();
-        return master_semaphore.IsFree(tick);
+        work_semaphore.Refresh();
+        return work_semaphore.IsFree(tick);
     }
 
-    /// Returns the master timeline semaphore.
-    [[nodiscard]] MasterSemaphore* GetMasterSemaphore() noexcept {
-        return &master_semaphore;
+    /// Returns the scheduler timeline semaphore.
+    [[nodiscard]] Semaphore* GetWorkSemaphore() noexcept {
+        return &work_semaphore;
     }
 
     /// Defers an operation until the gpu has reached the current cpu tick.
@@ -435,9 +443,10 @@ private:
 
 private:
     const Instance& instance;
-    MasterSemaphore master_semaphore;
+    Semaphore work_semaphore;
     CommandPool command_pool;
     DynamicState dynamic_state;
+    SubmitFunc on_submit{};
     vk::CommandBuffer current_cmdbuf;
     std::condition_variable_any event_cv;
     struct PendingOp {

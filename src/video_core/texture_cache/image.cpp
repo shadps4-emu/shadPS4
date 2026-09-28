@@ -7,6 +7,7 @@
 #include "common/memory_patcher.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
+#include "video_core/renderer_vulkan/vk_runtime.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/blit_helper.h"
 #include "video_core/texture_cache/image.h"
@@ -19,7 +20,7 @@ using namespace Vulkan;
 
 Common::IncrementalIdProvider<u64> Image::global_image_uid{};
 
-static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance* instance,
+static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance& instance,
                                            const ImageInfo& info) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
                                 vk::ImageUsageFlagBits::eTransferDst |
@@ -29,7 +30,7 @@ static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance* instance,
             usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
         } else {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
-            if (instance->IsAttachmentFeedbackLoopLayoutSupported()) {
+            if (instance.IsAttachmentFeedbackLoopLayoutSupported()) {
                 usage |= vk::ImageUsageFlagBits::eAttachmentFeedbackLoopEXT;
             }
             // Always create images with storage flag to avoid needing re-creation in case of e.g
@@ -113,34 +114,33 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
 
     const VkImageCreateInfo image_ci_unsafe = static_cast<VkImageCreateInfo>(image_ci);
     VkImage unsafe_image{};
-    VkResult result = vmaCreateImage(allocator, &image_ci_unsafe, &alloc_info, &unsafe_image,
-                                     &allocation, nullptr);
+    VmaAllocationInfo alloc_info{};
+    VkResult result = vmaCreateImage(allocator, &image_ci_unsafe, &alloc_ci, &unsafe_image,
+                                     &allocation, &alloc_info);
     ASSERT_MSG(result == VK_SUCCESS, "Failed allocating image with error {}",
                vk::to_string(vk::Result{result}));
     image = vk::Image{unsafe_image};
+    size_bytes = alloc_info.size;
 }
 
-Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
-             BlitHelper& blit_helper_, Common::SlotVector<ImageView>& slot_image_views_,
-             const ImageInfo& info_)
-    : instance{&instance_}, scheduler{&scheduler_}, blit_helper{&blit_helper_},
-      slot_image_views{&slot_image_views_}, info{info_} {
+Image::Image(const Vulkan::Instance& instance, Vulkan::Runtime& runtime_,
+             Common::SlotVector<ImageView>& slot_image_views_, const ImageInfo& info_)
+    : runtime{&runtime_}, slot_image_views{&slot_image_views_}, info{info_} {
     if (info.pixel_format == vk::Format::eUndefined) {
         return;
     }
+
     image_uid = global_image_uid.Next();
     mip_hashes.resize(info.resources.levels);
-    // Here we force `eExtendedUsage` as don't know all image usage cases beforehand. In normal case
-    // the texture cache should re-create the resource with the usage requested
     vk::ImageCreateFlags flags{vk::ImageCreateFlagBits::eMutableFormat |
                                vk::ImageCreateFlagBits::eExtendedUsage};
     if (info.props.is_volume) {
         flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
-        if (instance->Is2dViewOf3dSupported()) {
+        if (instance.Is2dViewOf3dSupported()) {
             flags |= vk::ImageCreateFlagBits::e2DViewCompatibleEXT;
         }
     }
-    if (info.props.is_block && instance->IsBlockTexelViewSupported()) {
+    if (info.props.is_block && instance.IsBlockTexelViewSupported()) {
         flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible;
     }
 
@@ -154,7 +154,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     }
 
     constexpr auto tiling = vk::ImageTiling::eOptimal;
-    const auto supported_format = instance->GetSupportedFormat(info.pixel_format, format_features);
+    const auto supported_format = instance.GetSupportedFormat(info.pixel_format, format_features);
     const vk::PhysicalDeviceImageFormatInfo2 format_info{
         .format = supported_format,
         .type = ConvertImageType(info.type),
@@ -163,7 +163,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         .flags = flags,
     };
     const auto image_format_properties =
-        instance->GetPhysicalDevice().getImageFormatProperties2(format_info);
+        instance.GetPhysicalDevice().getImageFormatProperties2(format_info);
     if (image_format_properties.result == vk::Result::eErrorFormatNotSupported) {
         LOG_ERROR(Render_Vulkan, "image format {} type {} is not supported (flags {}, usage {})",
                   vk::to_string(supported_format), vk::to_string(format_info.type),
@@ -192,10 +192,10 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
 
     backing = &backing_images.emplace_back();
     backing->num_samples = info.num_samples;
-    backing->image = UniqueImage{instance->GetDevice(), instance->GetAllocator()};
+    backing->image = UniqueImage{instance.GetDevice(), instance.GetAllocator()};
     backing->image.Create(image_ci);
 
-    Vulkan::SetObjectName(instance->GetDevice(), GetImage(),
+    Vulkan::SetObjectName(instance.GetDevice(), GetImage(),
                           "Image {}x{}x{} {} {} {:#x}:{:#x} L:{} M:{} S:{}", info.size.width,
                           info.size.height, info.size.depth, AmdGpu::NameOf(info.tile_mode),
                           vk::to_string(info.pixel_format), info.guest_address, info.guest_size,
@@ -206,7 +206,7 @@ Image::~Image() = default;
 
 ImageView& Image::FindView(const ImageViewInfo& view_info, bool ensure_guest_samples) {
     if (ensure_guest_samples && backing->num_samples > 1 != info.num_samples > 1) {
-        SetBackingSamples(info.num_samples);
+        runtime->SetBackingSamples(this, info.num_samples);
     }
 
     ImageViewInfo clamped_view_info = view_info;
@@ -224,15 +224,15 @@ ImageView& Image::FindView(const ImageViewInfo& view_info, bool ensure_guest_sam
         const auto view_id = backing->image_view_ids[std::distance(view_infos.begin(), it)];
         return (*slot_image_views)[view_id];
     }
-    const auto view_id = slot_image_views->insert(*instance, clamped_view_info, *this);
-    backing->image_view_infos.emplace_back(clamped_view_info);
+    const auto view_id = slot_image_views->insert(runtime->GetInstance(), view_info, *this);
+    backing->image_view_infos.emplace_back(view_info);
     backing->image_view_ids.emplace_back(view_id);
     return (*slot_image_views)[view_id];
 }
 
-Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
-                                   vk::PipelineStageFlags2 dst_stage,
-                                   std::optional<SubresourceRange> subres_range) {
+void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
+                        vk::PipelineStageFlags2 dst_stage,
+                        std::optional<SubresourceRange> subres_range) {
     auto& last_state = backing->state;
     auto& subresource_states = backing->subresource_states;
 
@@ -250,7 +250,6 @@ Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 
         (subres_range->base != SubresourceBase{} || subres_range->extent != info.resources);
     const bool partially_transited = !subresource_states.empty();
 
-    Barriers barriers;
     if (needs_partial_transition || partially_transited) {
         if (!partially_transited) {
             subresource_states.resize(info.resources.levels * info.resources.layers);
@@ -324,7 +323,7 @@ Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 
                                      vk::AccessFlagBits2::eMemoryWrite;
         const bool is_write = static_cast<bool>(last_state.access_mask & write_flags);
         if (last_state.layout == dst_layout && last_state.access_mask == dst_mask && !is_write) {
-            return {};
+            return;
         }
 
         barriers.emplace_back(vk::ImageMemoryBarrier2{

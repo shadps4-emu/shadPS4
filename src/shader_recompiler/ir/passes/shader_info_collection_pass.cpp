@@ -11,6 +11,7 @@ namespace Shader::Optimization {
 void Visit(Info& info, const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::GetAttribute:
+    case IR::Opcode::GetAttributeU1:
     case IR::Opcode::GetAttributeU32:
         info.loads.Set(inst.Arg(0).Attribute(), inst.Arg(1).U32());
         break;
@@ -91,6 +92,7 @@ void Visit(Info& info, const IR::Inst& inst) {
         info.uses_group_quad = true;
         break;
     case IR::Opcode::Shuffle:
+    case IR::Opcode::ShuffleXor:
         info.uses_group_shuffle = true;
         break;
     case IR::Opcode::ReadLane:

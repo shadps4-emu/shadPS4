@@ -2360,7 +2360,6 @@ s32 PS4_SYSV_ABI sceGnmSubmitDone() {
         submission_lock = true;
     }
     liverpool->SubmitDone();
-    WaitGpuIdle();
     send_init_packet = true;
     ++frames_submitted;
     DebugState.IncGnmFrameNum();

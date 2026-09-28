@@ -12,6 +12,7 @@
 #include "video_core/renderer_vulkan/render_target_sync.h"
 #include "video_core/renderer_vulkan/storage_image_sync.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
+#include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_predication.h"
 #include "video_core/texture_cache/texture_cache.h"
 
@@ -25,18 +26,17 @@ class MemoryManager;
 
 namespace Vulkan {
 
-class Scheduler;
-class RenderState;
 class GraphicsPipeline;
+class Runtime;
 
 class Rasterizer {
 public:
-    explicit Rasterizer(const Instance& instance, Scheduler& scheduler,
+    explicit Rasterizer(const Instance& instance, Scheduler& scheduler, Runtime& runtime,
                         AmdGpu::Liverpool* liverpool);
     ~Rasterizer();
 
-    [[nodiscard]] Scheduler& GetScheduler() noexcept {
-        return scheduler;
+    [[nodiscard]] Runtime& GetRuntime() noexcept {
+        return runtime;
     }
 
     [[nodiscard]] const Instance& GetInstance() const noexcept {
@@ -131,12 +131,10 @@ private:
     void BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding);
     bool BindResources(const Pipeline* pipeline);
 
-    void ResetBindings() {
-        for (auto& image_id : bound_images) {
-            texture_cache.GetImage(image_id).binding = {};
-        }
-        bound_images.clear();
-    }
+    void BindVertexBuffers(const GraphicsPipeline* pipeline);
+    void BindIndexBuffer(u32 index_offset = 0);
+
+    void ResetBindings(bool is_compute);
 
     bool IsComputeMetaClear(const Pipeline* pipeline);
     bool IsComputeImageCopy(const Pipeline* pipeline);
@@ -147,6 +145,7 @@ private:
 
     const Instance& instance;
     Scheduler& scheduler;
+    Runtime& runtime;
     VideoCore::PageManager page_manager;
     VideoCore::BufferCache buffer_cache;
     VideoCore::TextureCache texture_cache;
@@ -171,19 +170,24 @@ private:
     boost::container::static_vector<vk::DescriptorImageInfo, Shader::NUM_IMAGES> image_infos;
     boost::container::static_vector<vk::DescriptorBufferInfo, Shader::NUM_BUFFERS> buffer_infos;
     boost::container::static_vector<VideoCore::ImageId, Shader::NUM_IMAGES> bound_images;
+    struct BoundBuffer {
+        const VideoCore::Buffer* buffer;
+        u64 offset;
+        u32 size;
+        bool is_written;
+    };
+    boost::container::static_vector<BoundBuffer, Shader::NUM_BUFFERS> bound_buffers;
 
     u32 set_write_index{};
     Pipeline::DescriptorWrites set_writes;
-    Pipeline::BufferBarriers buffer_barriers;
     Shader::PushData push_data;
 
-    using BufferBindingInfo = std::tuple<VideoCore::BufferId, AmdGpu::Buffer, u64>;
-    boost::container::static_vector<BufferBindingInfo, Shader::NUM_BUFFERS> buffer_bindings;
     using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::ImageDesc>;
     boost::container::static_vector<ImageBindingInfo, Shader::NUM_IMAGES> image_bindings;
     bool fault_process_pending{};
     bool attachment_feedback_loop{};
     PredicationManager predication;
+    bool needs_barrier{};
 };
 
 } // namespace Vulkan

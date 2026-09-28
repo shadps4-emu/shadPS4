@@ -17,6 +17,7 @@
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/recompiler.h"
+#include "video_core/amdgpu/pixel_format.h"
 
 using namespace Shader;
 
@@ -104,4 +105,45 @@ std::vector<u32> TranslateToSpirv(std::span<const u64> raw_gcn_insts) {
     const auto spirv = Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
 
     return spirv;
+}
+
+std::vector<u32> TranslateFragmentFrontFaceToSpirv(bool front_face_all_bits) {
+    Shader::Info info{};
+    info.hw_stage = HwStage::Fragment;
+    info.sw_stage = SwStage::Fragment;
+
+    IR::Program program{info};
+    Pools pools{};
+    IR::Block* block = pools.block_pool.Create(pools.inst_pool);
+    program.blocks.push_back(block);
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Block;
+    program.syntax_list.back().data.block = block;
+    program.syntax_list.emplace_back();
+    program.syntax_list.back().type = IR::AbstractSyntaxNode::Type::Return;
+    program.post_order_blocks = IR::PostOrder(block);
+
+    Profile profile{};
+    profile.supported_spirv = 0x00010600;
+    RuntimeInfo runtime_info{};
+    runtime_info.Initialize(HwStage::Fragment, SwStage::Fragment);
+    runtime_info.hw.fs.en_flags.front_face_ena = 1;
+    runtime_info.hw.fs.addr_flags.front_face_ena = 1;
+    runtime_info.hw.fs.front_face_all_bits = front_face_all_bits;
+    runtime_info.hw.fs.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
+
+    Gcn::Translator translator(program.info, runtime_info, profile);
+    translator.EmitPrologue(block);
+
+    IR::IREmitter ir{*block};
+    const IR::U32 front_face = ir.GetVectorReg<IR::U32>(IR::VectorReg::V0);
+    ir.SetAttribute(IR::Attribute::RenderTarget0, ir.BitCast<IR::F32>(front_face));
+    ir.Epilogue();
+
+    Optimization::SsaRewritePass(program);
+    Optimization::ConstantPropagationPass(program.blocks);
+    Optimization::DeadCodeEliminationPass(program);
+    Optimization::CollectShaderInfoPass(program, profile);
+    Backend::Bindings bindings{};
+    return Backend::SPIRV::EmitSPIRV(profile, runtime_info, program, bindings);
 }
