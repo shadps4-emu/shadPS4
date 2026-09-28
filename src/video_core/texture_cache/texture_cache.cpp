@@ -311,6 +311,20 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
+        // Size is greater but resources are equal. This can happen when dimensions
+        // (e.g., depth) differ but mip levels and array layers are the same.
+        // Treat as address reuse - delete old if safe, otherwise return merged.
+        if (image_info.type == cache_image.info.type &&
+            image_info.resources == cache_image.info.resources &&
+            (image_info.size.width > cache_image.info.size.width ||
+             image_info.size.height > cache_image.info.size.height ||
+             image_info.size.depth > cache_image.info.size.depth)) {
+            if (safe_to_delete) {
+                FreeImage(cache_image_id);
+            }
+            return {merged_image_id, -1, -1};
+        }
+
         // Size is greater but resources are not, because the tiling mode is different.
         // Likely the address is reused for a image with a different tiling mode.
         if (image_info.tile_mode != cache_image.info.tile_mode) {
