@@ -1159,7 +1159,7 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
     cam_spec.width = c_width;
     cam_spec.framerate_numerator = 60;
     cam_spec.framerate_denominator = 1;
-    sdl_camera = SDL_OpenCamera(devices[EmulatorSettings.GetCameraId()], &cam_spec);
+    sdl_camera = SDL_OpenCamera(devices[Config::GetCameraId()], &cam_spec);
 
     if (!sdl_camera) {
         LOG_ERROR(Lib_Camera, "Failed to open camera: {}", SDL_GetError());
