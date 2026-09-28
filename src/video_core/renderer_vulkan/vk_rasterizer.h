@@ -12,8 +12,8 @@
 #include "video_core/renderer_vulkan/render_target_sync.h"
 #include "video_core/renderer_vulkan/storage_image_sync.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
-#include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_predication.h"
+#include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace AmdGpu {
@@ -161,6 +161,7 @@ private:
     boost::container::static_vector<VideoCore::ImageId, Shader::NUM_IMAGES>
         pending_storage_image_ids_;
     AmdGpu::Liverpool* liverpool;
+    PredicationManager predication;
     Core::MemoryManager* memory;
     boost::icl::interval_set<VAddr> mapped_ranges;
     Common::SharedFirstMutex mapped_ranges_mutex;
@@ -190,7 +191,6 @@ private:
     boost::container::static_vector<ImageBindingInfo, Shader::NUM_IMAGES> image_bindings;
     bool fault_process_pending{};
     bool attachment_feedback_loop{};
-    PredicationManager predication;
     bool needs_barrier{};
 };
 

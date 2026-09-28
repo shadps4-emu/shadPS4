@@ -22,27 +22,38 @@ StorageImageSync::StorageImageSync(Scheduler& scheduler_, Runtime& runtime_,
 
 StorageImageSync::~StorageImageSync() = default;
 
-bool StorageImageSync::SkipSerial() const {
-    const auto& serial = Common::ElfInfo::Instance().GameSerial();
-    return serial == "CUSA11227" || serial == "CUSA12982" || serial == "CUSA00093" ||
-           serial == "CUSA00003" || serial == "CUSA01627" || serial == "CUSA01778" ||
-           serial == "CUSA03173" || serial == "CUSA00900" || serial == "CUSA00208" ||
-           serial == "CUSA01363" || serial == "CUSA01322" || serial == "CUSA003027" ||
-           serial == "CUSA00299" || serial == "CUSA00207" || serial == "CUSA03014" ||
-           serial == "CUSA03023" || serial == "CUSA03014" || serial == "CUSA00900" ||
-           serial == "CUSA03388" || serial == "CUSA01589" || serial == "CUSA01760" ||
-           serial == "CUSA07439" || serial == "CUSA07339" || serial == "CUSA08692" ||
-           serial == "CUSA08495" || serial == "CUSA50617" || serial == "CUSA18723" ||
-           serial == "CUSA28863" || serial == "CUSA00093" || serial == "CUSA00003";
-}
+bool StorageImageSync::HasAliasAtAddress(VAddr addr, VideoCore::ImageId self_id) const {
+    const u64 page = addr >> VideoCore::TextureCache::Traits::PageBits;
+    const auto& page_table = texture_cache.GetPageTable();
+    const auto page_it = page_table.find(page);
+    if (!page_it) {
+        return false;
+    }
 
-void StorageImageSync::ClearRecords() {
-    pending_writes_.clear();
-    pending_copied_.clear();
+    for (VideoCore::ImageId other_id : *page_it) {
+        if (other_id == self_id) {
+            continue;
+        }
+        auto& other_image = texture_cache.GetImage(other_id);
+        if (other_image.info.guest_address == addr) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void StorageImageSync::Sync(VideoCore::ImageId image_id) {
-    if (SkipSerial()) {
+    const auto& serial = Common::ElfInfo::Instance().GameSerial();
+    if (serial == "CUSA11227" || serial == "CUSA12982" || serial == "CUSA00093" ||
+        serial == "CUSA00003" || serial == "CUSA01627" || serial == "CUSA01778" ||
+        serial == "CUSA03173" || serial == "CUSA00900" || serial == "CUSA00208" ||
+        serial == "CUSA01363" || serial == "CUSA01322" || serial == "CUSA003027" ||
+        serial == "CUSA00299" || serial == "CUSA00207" || serial == "CUSA03014" ||
+        serial == "CUSA03023" || serial == "CUSA03014" || serial == "CUSA00900" ||
+        serial == "CUSA03388" || serial == "CUSA01589" || serial == "CUSA01760" ||
+        serial == "CUSA07439" || serial == "CUSA07339" || serial == "CUSA08692" ||
+        serial == "CUSA08495" || serial == "CUSA50617" || serial == "CUSA18723" ||
+        serial == "CUSA28863" || serial == "CUSA00093" || serial == "CUSA00003") {
         return;
     }
     auto& img = texture_cache.GetImage(image_id);
@@ -51,109 +62,31 @@ void StorageImageSync::Sync(VideoCore::ImageId image_id) {
         return;
     }
 
-    // Same as RecordRtWrite: just remember the producer. Consumers pull on bind.
-    pending_writes_[guest_addr] = image_id;
-    pending_copied_.erase(guest_addr);
+    const bool disable_alias_check =
+        serial == "CUSA01623" || serial == "CUSA01715" || serial == "CUSA01740";
 
-    const auto& serial = Common::ElfInfo::Instance().GameSerial();
-    if (serial == "CUSA01623" || serial == "CUSA01715" || serial == "CUSA01740") {
-        ScheduleAsyncGuestWrite(image_id);
-    }
-}
-
-void StorageImageSync::CopyFromLastWrite(VAddr addr, VideoCore::ImageId tex_id, u32 copy_w,
-                                         u32 copy_h) {
-    auto it = pending_writes_.find(addr);
-    if (it == pending_writes_.end() || !tex_id) {
+    if (!disable_alias_check && !HasAliasAtAddress(guest_addr, image_id)) {
         return;
     }
 
-    const VideoCore::ImageId src_id = it->second;
-    if (src_id == tex_id) {
-        return;
-    }
-
-    auto& src_image = texture_cache.GetImage(src_id);
-    if (src_image.info.size.width < copy_w || src_image.info.size.height < copy_h) {
-        return;
-    }
-
-    auto& copied = pending_copied_[addr];
-    if (!copied.insert(tex_id).second) {
-        return;
-    }
-
-    auto& dst_image = texture_cache.GetImage(tex_id);
-    if (dst_image.info.props.is_depth) {
-        return;
-    }
-    CopyToAlias(src_image, dst_image);
-}
-
-void StorageImageSync::CopyToAlias(VideoCore::Image& src, VideoCore::Image& dst) {
-    const u32 copy_w = dst.info.size.width;
-    const u32 copy_h = dst.info.size.height;
-
-    if (src.info.num_samples != dst.info.num_samples && src.info.num_samples > 1) {
-        const VideoCore::SubresourceRange range{
-            .base = {.level = 0, .layer = 0},
-            .extent = {1, 1},
-        };
-        runtime.ResolveImage(&src, &dst, range, range);
-        dst.flags |= VideoCore::ImageFlagBits::GpuModified;
-        dst.flags &= ~VideoCore::ImageFlagBits::Dirty;
-        return;
-    }
-
-    bool needs_flush =
-        runtime.Transit(&src, vk::ImageLayout::eTransferSrcOptimal,
-                        vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferRead);
-    needs_flush |=
-        runtime.Transit(&dst, vk::ImageLayout::eTransferDstOptimal,
-                        vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite);
-    if (needs_flush) {
-        runtime.FlushBarriers();
-    }
-
-    const vk::ImageCopy region = {
-        .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
-        .srcOffset = {0, 0, 0},
-        .dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
-        .dstOffset = {0, 0, 0},
-        .extent = {copy_w, copy_h, 1},
-    };
-    scheduler.CommandBuffer().copyImage(src.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
-                                        dst.GetImage(), vk::ImageLayout::eTransferDstOptimal,
-                                        region);
-
-    // UAV stays general; sampled alias is ready to read. BindTextures may transit again.
-    runtime.Transit(&src, vk::ImageLayout::eGeneral, vk::PipelineStageFlagBits2::eAllCommands,
-                    vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite);
-    runtime.Transit(&dst, vk::ImageLayout::eShaderReadOnlyOptimal,
-                    vk::PipelineStageFlagBits2::eFragmentShader |
-                        vk::PipelineStageFlagBits2::eComputeShader,
-                    vk::AccessFlagBits2::eShaderRead);
-    runtime.FlushBarriers();
-
-    dst.flags |= VideoCore::ImageFlagBits::GpuModified;
-    dst.flags &= ~VideoCore::ImageFlagBits::Dirty;
-}
-
-void StorageImageSync::ScheduleAsyncGuestWrite(VideoCore::ImageId image_id) {
-    auto& img = texture_cache.GetImage(image_id);
-    const VAddr guest_addr = img.info.guest_address;
     const u32 bpp = img.info.num_bits / 8u;
     const u32 row_length = img.info.pitch ? img.info.pitch : img.info.size.width;
     const u32 download_size = row_length * img.info.size.height * img.info.resources.layers * bpp;
     const u32 write_back_size =
         img.info.props.is_tiled ? std::max(download_size, img.info.guest_size) : download_size;
 
+    LOG_DEBUG(Render_Vulkan,
+              "[StorageSync] guest={:#x} {}x{} layers={} bpp={} row_len={} size={} "
+              "write_back_size={}",
+              guest_addr, img.info.size.width, img.info.size.height, img.info.resources.layers, bpp,
+              row_length, download_size, write_back_size);
+
     const auto download = runtime.GetStagingPool().Request(
-        std::max<u64>(write_back_size, img.info.guest_size), VideoCore::MemoryType::HostCached, 16,
-        true);
+        std::max<u64>(write_back_size, img.info.guest_size), VideoCore::MemoryType::HostCached);
     if (!download.mapped) {
         LOG_ERROR(Render_Vulkan,
-                  "[StorageSync] Staging map failed for {}B — async download skipped",
+                  "[StorageSync] Staging map failed for {}B — download SKIPPED, "
+                  "texture corruption likely",
                   write_back_size);
         return;
     }
@@ -179,13 +112,14 @@ void StorageImageSync::ScheduleAsyncGuestWrite(VideoCore::ImageId image_id) {
 
     texture_cache.GetTileManager().TileImage(img, regions, download.buffer, download.offset);
 
-    scheduler.DeferPriorityOperation([this, guest_addr, write_back_size, download] {
-        download.Invalidate();
-        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(guest_addr), download.mapped,
-                                                  write_back_size);
-        buffer_cache.MarkRegionAsCpuModified(guest_addr, write_back_size);
-        runtime.GetStagingPool().FreeDeferred(download);
-    });
+    scheduler.Finish();
+    download.Invalidate();
+
+    texture_cache.InvalidateMemory(guest_addr, img.info.guest_size,
+                                   /*exclude_image_id=*/image_id);
+    Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(guest_addr), download.mapped,
+                                              write_back_size);
+    buffer_cache.MarkRegionAsCpuModified(guest_addr, write_back_size);
 }
 
 } // namespace Vulkan
