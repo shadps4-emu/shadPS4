@@ -34,6 +34,7 @@ IR::BlockList GenerateBlocks(const IR::AbstractSyntaxList& syntax_list) {
 void EmitControlFlowGraph(IR::Program& program, Pools& pools, Gcn::CFG& cfg,
                           RuntimeInfo& runtime_info, const Profile& profile) {
     Gcn::Translator translator{program.info, runtime_info, profile};
+    translator.AnalyzeMovRel(program.ins_list);
     for (auto& block : cfg) {
         const u32 start = block.begin_index;
         const u32 size = block.end_index - start + 1;

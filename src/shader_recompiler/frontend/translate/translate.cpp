@@ -113,7 +113,7 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         // v0: vertex ID, always present
         IR::U32 vertex_id = ir.GetAttributeU32(IR::Attribute::VertexId);
         if (base_vertex_sgpr != -1) {
-            if (!fetch_data.Empty() || fetch_data.vertex_offset_sgpr == -1) {
+            if (fetch_data.Empty() || fetch_data.vertex_offset_sgpr == -1) {
                 vertex_id = ir.ISub(vertex_id, ir.GetAttributeU32(IR::Attribute::BaseVertex));
             } else {
                 ASSERT_MSG(fetch_data.vertex_offset_sgpr == base_vertex_sgpr,
@@ -158,7 +158,7 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         if (runtime_info.props.num_input_vgprs > 2) {
             IR::U32 instance_id = ir.GetAttributeU32(IR::Attribute::InstanceId);
             if (base_instance_sgpr != -1) {
-                if (!fetch_data.Empty() || fetch_data.instance_offset_sgpr == -1) {
+                if (fetch_data.Empty() || fetch_data.instance_offset_sgpr == -1) {
                     instance_id =
                         ir.ISub(instance_id, ir.GetAttributeU32(IR::Attribute::BaseInstance));
                 } else {
