@@ -17,7 +17,6 @@
 
 namespace Libraries::Net {
 
-// Families and socket types
 std::optional<int> ToHostFamily(int orbis_family) {
     switch (orbis_family) {
     case ORBIS_NET_AF_UNIX:
@@ -54,7 +53,7 @@ std::optional<HostSocketKind> ToHostSocketKind(int family, int type, int protoco
         return HostSocketKind{AF_UNIX, type == ORBIS_NET_SOCK_STREAM ? SOCK_STREAM : SOCK_DGRAM, 0,
                               false};
     }
-    // sceNetSocket reports an unsupported family as EPROTONOSUPPORT
+    // PS4 returns EPROTONOSUPPORT here, not EAFNOSUPPORT.
     if (family != ORBIS_NET_AF_INET) {
         *orbis_errno = ORBIS_NET_EPROTONOSUPPORT;
         return std::nullopt;
@@ -105,7 +104,6 @@ int ToOrbisSocketType(int host_type, bool p2p) {
     return ORBIS_NET_SOCK_RAW;
 }
 
-// Addresses
 int ToHostSockaddr(const OrbisNetSockaddr* addr, u32 addrlen, sockaddr_storage* out,
                    socklen_t* out_len) {
     if (addr == nullptr) {
@@ -121,7 +119,7 @@ int ToHostSockaddr(const OrbisNetSockaddr* addr, u32 addrlen, sockaddr_storage* 
             return ORBIS_NET_EINVAL;
         }
         OrbisNetSockaddrIn in;
-        std::memcpy(&in, addr, sizeof(in)); // guest memory: no alignment guarantee
+        std::memcpy(&in, addr, sizeof(in)); // may be unaligned
         auto* host = reinterpret_cast<sockaddr_in*>(out);
         host->sin_family = AF_INET;
         host->sin_port = in.sin_port;
@@ -194,7 +192,7 @@ void ToOrbisSockaddr(const sockaddr* addr, socklen_t len, OrbisNetSockaddr* out,
         in6.sin6_scope_id = host->sin6_scope_id;
         CopyOut(&in6, sizeof(in6), out, addrlen);
     } else if (addr->sa_family == AF_UNIX) {
-        // Unnamed sockets (socketpair, unbound) come back with an empty path.
+        // Unnamed sockets get an empty path.
         const auto* host = reinterpret_cast<const sockaddr_un*>(addr);
         OrbisNetSockaddrUn un{};
         un.sun_len = sizeof(un);
@@ -258,13 +256,12 @@ void ToOrbisP2PAddress(const P2P::Endpoint& endpoint, u16 port, P2PKind kind, Or
     CopyOut(&in, sizeof(in), out, addrlen);
 }
 
-// Message flags
 HostMsgFlags ToHostMsgFlags(int orbis_flags) {
-    constexpr int kNoSignal = 0x20000; // FreeBSD MSG_NOSIGNAL: the host layer always does this
+    constexpr int kNoSignal = 0x20000; // FreeBSD MSG_NOSIGNAL, always implied
     HostMsgFlags out{};
     int rest = orbis_flags;
     if ((rest & ORBIS_NET_MSG_PEEKLEN) == ORBIS_NET_MSG_PEEKLEN) {
-        out.peeklen = true; // the size waiting, without a buffer (see sceNetRecv)
+        out.peeklen = true;
         rest &= ~(ORBIS_NET_MSG_PEEKLEN & ~ORBIS_NET_MSG_PEEK);
     }
     if (rest & ORBIS_NET_MSG_PEEK) {
@@ -273,7 +270,7 @@ HostMsgFlags ToHostMsgFlags(int orbis_flags) {
         rest &= ~ORBIS_NET_MSG_PEEK;
     }
     if (rest & ORBIS_NET_MSG_WAITALL) {
-        out.host |= MSG_WAITALL; // the guest layer loops for it (hosts see a non-blocking socket)
+        out.host |= MSG_WAITALL; // host socket is non-blocking, we loop
         out.waitall = true;
         rest &= ~ORBIS_NET_MSG_WAITALL;
     }
@@ -294,7 +291,6 @@ HostMsgFlags ToHostMsgFlags(int orbis_flags) {
     return out;
 }
 
-// Socket options
 std::optional<HostOption> ToHostOption(int level, int name) {
     switch (level) {
     case ORBIS_NET_SOL_SOCKET:
@@ -313,7 +309,7 @@ std::optional<HostOption> ToHostOption(int level, int name) {
             return std::nullopt;
         }
     case ORBIS_NET_IPPROTO_IP:
-        // Host values differ (Linux: IP_TTL is 2, not 4), so always map by name.
+        // Values differ per host (IP_TTL is 2 on Linux), map by name.
         switch (name) {
         case ORBIS_NET_IP_HDRINCL:
             return HostOption{IPPROTO_IP, IP_HDRINCL, OptionValue::Int};
@@ -350,7 +346,6 @@ std::optional<HostOption> ToHostOption(int level, int name) {
     }
 }
 
-// PS4 limits
 bool IsReservedPort(u16 port) {
     return (port >= 1 && port <= 1023) || port == 5353 || (port >= 8540 && port <= 8579) ||
            (port >= 9293 && port <= 9310) || port >= 40000;
@@ -368,7 +363,6 @@ s32 DefaultReceiveBuffer(int host_type) {
     return host_type == SOCK_STREAM ? 65536 : 40 * 1024;
 }
 
-// Epoll and errors
 u32 ToHostEpollEvents(u32 orbis_events) {
     u32 out = 0;
     out |= (orbis_events & ORBIS_NET_EPOLLIN) ? Host::EvIn : 0u;
@@ -392,7 +386,7 @@ int ToOrbisErrno(Host::Error error) {
     if (error == Host::Error::NotSock) {
         return ORBIS_NET_EBADF;
     }
-    return static_cast<int>(error); // host-layer errors are FreeBSD errno values already
+    return static_cast<int>(error); // already FreeBSD errno values
 }
 
 } // namespace Libraries::Net

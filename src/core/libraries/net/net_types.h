@@ -58,10 +58,10 @@ enum OrbisNetSocketUdpOption : u32 {
     ORBIS_NET_UDP_SND_ON_SUSPEND = 128,
 };
 
-// ORBIS_NET_SO_POLICY and ORBIS_NET_SO_PRIORITY ranges
+// SO_POLICY / SO_PRIORITY ranges
 inline constexpr s32 ORBIS_NET_SOCK_POLICY_NUM_MIN = 0;
 inline constexpr s32 ORBIS_NET_SOCK_POLICY_NUM_MAX = 15;
-inline constexpr s32 ORBIS_NET_SOCK_POLICY_NA = -1; // always not applicable
+inline constexpr s32 ORBIS_NET_SOCK_POLICY_NA = -1; // not applicable
 inline constexpr s32 ORBIS_NET_SOCK_PRIORITY_NUM_USER_MIN = 8;
 inline constexpr s32 ORBIS_NET_SOCK_PRIORITY_NUM_USER_MAX = 23;
 
@@ -182,7 +182,7 @@ inline constexpr u32 ORBIS_NET_IN_AUTOIP_NET = 0xffff0000;
 inline constexpr int ORBIS_NET_INET_ADDRSTRLEN = 16;
 inline constexpr int ORBIS_NET_ETHER_ADDRSTRLEN = 18;
 
-/// ORBIS_NET_UDP_SND_ON_SUSPEND's value (64-bit layout).
+// Option value for ORBIS_NET_UDP_SND_ON_SUSPEND.
 struct OrbisNetUdpSndOnSuspend {
     s32 onoff;
     struct OrbisNetSockaddr* addr;
@@ -208,7 +208,6 @@ struct OrbisNetStatisticsInfo {
     s32 libnet_mem_free_min;
 };
 
-/// AF_UNIX address.
 struct OrbisNetSockaddrUn {
     u8 sun_len;
     u8 sun_family;
@@ -298,7 +297,7 @@ struct OrbisNetSockInfo {
     s32 send_queue_length;
     OrbisNetInAddr local_adr;
     OrbisNetInAddr remote_adr;
-    u16 local_port; // network byte order, like the addresses
+    u16 local_port; // network byte order
     u16 remote_port;
     u16 local_vport;
     u16 remote_vport;

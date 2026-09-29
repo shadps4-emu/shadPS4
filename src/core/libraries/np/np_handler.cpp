@@ -12,6 +12,7 @@
 #include "common/string_util.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
+#include "core/libraries/net/net.h"
 #include "core/libraries/network/net_upnp.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
@@ -192,6 +193,9 @@ void NpHandler::Shutdown() {
 
     if (m_worker_thread.joinable())
         m_worker_thread.join();
+
+    // P2P goes with NP: closes the UDP port and removes its UPnP forwarding.
+    Net::StopP2P();
 
     LOG_INFO(NpHandler, "Shutdown complete");
 }
