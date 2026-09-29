@@ -183,7 +183,6 @@
               preConfigure = ''
                 mkdir -p build/externals
                 ln -sf ${ffmpegZip.path} build/externals/ffmpeg-${ffmpegZip.commit}.zip
-                echo "linked ${ffmpegZip.path} to $(pwd ../build/externals)"
               '';
 
               runtimeDependencies = [
