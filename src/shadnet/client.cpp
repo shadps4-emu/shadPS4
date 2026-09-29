@@ -217,8 +217,17 @@ void ShadNetClient::ConnectThread() {
     LOG_INFO(ShadNet, "Login packet sent for '{}'", m_npid);
 }
 
+namespace {
+thread_local bool t_reader_thread = false;
+}
+
+bool ShadNetClient::OnReaderThread() {
+    return t_reader_thread;
+}
+
 void ShadNetClient::ReaderThread() {
     Common::SetCurrentThreadName("ShadNet:Reader");
+    t_reader_thread = true;
     while (!m_terminate) {
         u8 hdr[SHAD_HEADER_SIZE];
         if (!RecvN(hdr, SHAD_HEADER_SIZE)) {

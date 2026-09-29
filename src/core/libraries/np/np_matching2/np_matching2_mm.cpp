@@ -1197,6 +1197,12 @@ bool RequestSignalingInfos(std::string_view target_online_id, u32* out_addr, u16
     if (!client || !client->IsAuthenticated()) {
         return false;
     }
+    // Room events and replies are handled on the reader thread, which is the one that would
+    // read this reply. Waiting there always times out, so leave it to the handshake thread.
+    if (ShadNet::ShadNetClient::OnReaderThread()) {
+        LOG_DEBUG(Lib_NpMatching2, "'{}': deferred to the handshake thread", target_online_id);
+        return false;
+    }
 
     shadnet::RequestSignalingInfosRequest req;
     req.set_target_npid(std::string(target_online_id));

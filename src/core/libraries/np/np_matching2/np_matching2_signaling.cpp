@@ -163,8 +163,16 @@ bool SendMatching2Handshake(ContextObject& ctx, OrbisNpMatching2RoomId room_id,
     PeerInfo& peer = ctx.peers[member_id];
     peer.member_id = member_id;
     if (!ResolvePeerEndpoint(member_it->second, peer)) {
-        LOG_WARNING(Lib_NpMatching2, "Matching2 signaling: unresolved endpoint room={} member={}",
-                    room_id, member_id);
+        if (!peer.warned_unresolved) {
+            peer.warned_unresolved = true;
+            LOG_WARNING(Lib_NpMatching2,
+                        "Matching2 signaling: unresolved endpoint room={} member={} (still "
+                        "retrying)",
+                        room_id, member_id);
+        } else {
+            LOG_DEBUG(Lib_NpMatching2, "Matching2 signaling: unresolved endpoint room={} member={}",
+                      room_id, member_id);
+        }
         return false;
     }
 

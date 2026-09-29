@@ -1284,6 +1284,55 @@ protected:
     static inline std::shared_ptr<P2P::Transport> remote_;
 };
 
+// shadNet's STUN server is a plain UDP socket. Signaling reaches it as a P2P datagram from and
+// to vport 0xFFFF, and it answers the same way.
+TEST_F(NetLibP2P, SignalingReachesShadNetStunServer) {
+    const OrbisNetId server = sceNetSocket("server", ORBIS_NET_AF_INET, ORBIS_NET_SOCK_DGRAM, 0);
+    ASSERT_GT(server, 0);
+    OrbisNetSockaddrIn addr{};
+    addr.sin_len = sizeof(addr);
+    addr.sin_family = ORBIS_NET_AF_INET;
+    addr.sin_addr = sceNetHtonl(0x7F000001);
+    ASSERT_EQ(sceNetBind(server, Guest(&addr), sizeof(addr)), ORBIS_OK);
+    u32 len = sizeof(addr);
+    ASSERT_EQ(sceNetGetsockname(server, Guest(&addr), &len), ORBIS_OK);
+
+    const std::array<u8, 6> header{0xFF, 0x80 | 3, 0xFF, 0xFF, 0xFF, 0xFF};
+    const std::array<u8, 21> ping{0x01, 'S', 't', 'e', 'p', 'h', 'e', 'n'};
+    ASSERT_EQ(P2PSignalingSendTo(ping.data(), ping.size(), addr.sin_addr, addr.sin_port),
+              static_cast<int>(ping.size()));
+    std::array<u8, 64> got{};
+    OrbisNetSockaddrIn from{};
+    u32 from_len = sizeof(from);
+    ASSERT_EQ(sceNetRecvfrom(server, got.data(), got.size(), 0, Guest(&from), &from_len),
+              static_cast<int>(header.size() + ping.size()));
+    EXPECT_TRUE(std::equal(header.begin(), header.end(), got.begin()));
+    EXPECT_TRUE(std::equal(ping.begin(), ping.end(), got.begin() + header.size()));
+    EXPECT_EQ(sceNetNtohs(from.sin_port), local_port_);
+
+    // STUN echo: header, then [ext ip 4][ext port 2]
+    std::vector<u8> echo(header.begin(), header.end());
+    const std::array<u8, 6> body{
+        0x7F, 0, 0, 1, static_cast<u8>(local_port_ >> 8), static_cast<u8>(local_port_)};
+    echo.insert(echo.end(), body.begin(), body.end());
+    ASSERT_EQ(sceNetSendto(server, echo.data(), echo.size(), 0, Guest(&from), sizeof(from)),
+              static_cast<int>(echo.size()));
+    std::array<u8, 64> reply{};
+    u32 reply_addr = 0;
+    u16 reply_port = 0;
+    int n = -1;
+    for (int i = 0; i < 200 && n < 0; ++i) {
+        n = P2PSignalingRecvFrom(reply.data(), reply.size(), &reply_addr, &reply_port);
+        if (n < 0) {
+            std::this_thread::sleep_for(5ms);
+        }
+    }
+    ASSERT_EQ(n, static_cast<int>(body.size()));
+    EXPECT_TRUE(std::equal(body.begin(), body.end(), reply.begin()));
+    EXPECT_EQ(reply_port, addr.sin_port);
+    sceNetSocketClose(server);
+}
+
 TEST_F(NetLibP2P, DatagramWakesEpollAndReportsVport) {
     const OrbisNetId s = sceNetSocket("p2p", ORBIS_NET_AF_INET, ORBIS_NET_SOCK_DGRAM_P2P, 0);
     ASSERT_GT(s, 0);

@@ -40,6 +40,7 @@ struct PeerInfo {
     bool handshake_started = false;
     bool sent_check = false;
     bool sent_established = false;
+    bool warned_unresolved = false; // warn once, the handshake retries a lot
     u64 nonce = 0;
     u32 ping_us = 0;
     std::chrono::steady_clock::time_point last_send{};
