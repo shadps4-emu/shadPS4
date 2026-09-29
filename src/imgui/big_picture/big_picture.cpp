@@ -91,6 +91,8 @@ void SetGameIcons(std::vector<IconInfo>& gameIcons) {
             if (ImGui::ImageButton(ButtonNameChar, id,
                                    ImVec2(gameImageSize * uiScale, gameImageSize * uiScale))) {
                 done = true;
+                Core::FileSys::MntPoints::ignore_game_patches =
+                    ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl);
                 runEbootPath = gameIcons[i].ebootPath;
             }
         }
