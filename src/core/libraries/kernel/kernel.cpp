@@ -311,11 +311,11 @@ s32 PS4_SYSV_ABI sceKernelTitleWorkaroundIsEnabled(OrbisKernelTitleWorkaround* t
 }
 
 s32 PS4_SYSV_ABI sceKernelGetProcessType(s32 pid) {
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called, pid: {}", pid);
-    if (pid != GLOBAL_PID) {
-        return ORBIS_KERNEL_ERROR_ENOSYS;
+    LOG_DEBUG(Lib_Kernel, "called, pid: {}", pid);
+    if (pid != GLOBAL_PID && pid != -1 && pid != 0) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
     }
-    return 0;
+    return ORBIS_KERNEL_PROCESS_TYPE_BIG_APP;
 }
 
 s32 PS4_SYSV_ABI __sys_regmgr_call(u32 op, u32 key, void* result, void* value, u64 len) {
