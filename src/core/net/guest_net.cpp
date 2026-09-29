@@ -21,23 +21,24 @@ using Host::Error;
 
 namespace {
 
-// A blocking call interrupted by abort or close fails with EINTR
+// Blocking calls cut short by abort or close fail with EINTR.
 constexpr Error AbortedError = Error::Intr;
+
+// Max bytes per host send() on a stream socket, see SocketSendTo.
+constexpr size_t MaxStreamSendChunk = 64 * 1024;
 
 struct GuestEpoll;
 
-// Which abort flag a blocking call answers to.
 enum class Side { Recv = 0, Send = 1 };
 
-// One blocking call in progress. Lives on the caller's stack while it is registered.
+// A blocking call in progress, on the caller's stack.
 struct Waiter {
     const Host::WakeHandle* wake;
     Side side;
-    bool aborted = false; // guarded by the owner's wait_mutex
+    bool aborted = false; // owner's wait_mutex
 };
 
-// One wake handle per guest thread, created on its first blocking call. Blocking calls wait on
-// {socket, this handle}; abort and close signal the handles of the calls they interrupt.
+// Per-thread wake handle. Abort and close signal it to interrupt a blocking call.
 const Host::WakeHandle* ThreadWake() {
     thread_local Host::WakeHandle wake;
     return wake.Valid() ? &wake : nullptr;
@@ -53,8 +54,7 @@ struct GuestSocket {
         : native(Host::InvalidSocket), type(SOCK_STREAM), generation(generation_),
           p2p_stream(std::move(stream)) {}
     ~GuestSocket() {
-        // Runs when the last in-flight call drops its reference. P2P streams close gracefully
-        // (FIN, TIME-WAIT) inside the transport after the guest has let go.
+        // P2P streams still close gracefully (FIN, TIME-WAIT) inside the transport.
         if (p2p_stream) {
             p2p_stream->Close();
         }
@@ -79,36 +79,36 @@ struct GuestSocket {
         return p2p_dgram ? p2p_dgram->Events() : p2p_stream ? p2p_stream->Events() : 0;
     }
 
-    const Host::NativeSocket native; // InvalidSocket for P2P sockets
+    const Host::NativeSocket native; // invalid for P2P
     const int type;
-    const u32 generation; // distinguishes reused ids inside epoll tags
+    const u32 generation; // tells reused ids apart in epoll tags
     const std::shared_ptr<P2P::DatagramSocket> p2p_dgram;
     const std::shared_ptr<P2P::StreamSocket> p2p_stream;
 
     std::atomic<bool> nonblocking{false};
     std::atomic<bool> reuse_addr{false};
     std::atomic<bool> reuse_port{false};
-    std::atomic<s64> rcv_timeout_us{0}; // 0 = infinite (BSD semantics)
+    std::atomic<s64> rcv_timeout_us{0}; // 0 = no timeout
     std::atomic<s64> snd_timeout_us{0};
-    std::atomic<s64> connect_timeout_us{0}; // SO_CONNECTTIMEO, 0 = infinite
-    std::atomic<s64> accept_timeout_us{0};  // SO_ACCEPTTIMEO, 0 = infinite
-    std::atomic<bool> connected{false};     // connect succeeded or started, or accepted
+    std::atomic<s64> connect_timeout_us{0}; // SO_CONNECTTIMEO
+    std::atomic<s64> accept_timeout_us{0};  // SO_ACCEPTTIMEO
+    std::atomic<bool> connected{false};     // also set while connecting
     std::atomic<bool> listening{false};
 
     std::mutex attr_mutex;
-    SocketAttributes attributes; // guarded by attr_mutex
+    SocketAttributes attributes;
 
-    // Blocking calls in progress, and aborts preserved for the next one (see SocketAbort).
+    // Guarded by wait_mutex.
     std::mutex wait_mutex;
-    std::vector<Waiter*> waiters;        // guarded by wait_mutex
-    std::array<bool, 2> pending_abort{}; // guarded by wait_mutex, indexed by Side
-    bool send_again = false;             // guarded by wait_mutex: SND_PRESERVATION_AGAIN hit a send
-    bool closing = false;                // guarded by wait_mutex; set once by close
+    std::vector<Waiter*> waiters;
+    std::array<bool, 2> pending_abort{}; // preserved aborts, by Side
+    bool send_again = false;             // SND_PRESERVATION_AGAIN
+    bool closing = false;
 
-    // Lock order: GuestEpoll::mutex before reg_mutex.
+    // Guarded by reg_mutex. Lock order: GuestEpoll::mutex first.
     std::mutex reg_mutex;
-    bool closed = false;                           // guarded by reg_mutex
-    std::vector<std::weak_ptr<GuestEpoll>> epolls; // guarded by reg_mutex
+    bool closed = false;
+    std::vector<std::weak_ptr<GuestEpoll>> epolls;
 };
 
 struct GuestEpoll {
@@ -117,44 +117,41 @@ struct GuestEpoll {
         u64 data;
         u32 events;
         bool p2p;
-        bool has_writable;     // P2P: writable handle registered (EvOut requested)
-        bool external;         // an ExternalObject: reported once, then its handle is removed
-        bool armed;            // external: its handle is still in the host epoll
-        bool reported = false; // external: its completion has been reported
+        bool has_writable;     // P2P writable handle added
+        bool external;         // ExternalObject
+        bool armed;            // external: handle still in host epoll
+        bool reported = false; // external: completion reported
     };
 
     Host::HostEpoll host;
     std::mutex mutex;
-    std::unordered_map<s32, Registration> regs; // guarded by mutex, keyed by socket id
 
-    // Waits in progress and abort state, guarded by mutex. Abort wakes waits through the host
-    // epoll's wake handle, which is drained once every flagged wait has left.
+    // Everything below is guarded by mutex.
+    std::unordered_map<s32, Registration> regs; // by socket id
     std::vector<Waiter*> waiters;
     int flagged_waiters = 0;
     bool pending_abort = false;
     bool destroyed = false;
-    /// Sockets aborted while this epoll was being waited on, as (id, generation): reported
-    /// once as EvHup. Delivered through the wake handle, like an abort.
+    // (id, generation) of sockets aborted during a wait, reported once as EvHup.
     std::vector<std::pair<s32, u32>> pending_hups;
 
-    /// The wake handle may be drained: no flagged wait and no hangup left to deliver.
+    // Safe to drain the wake handle.
     bool WakeIdle() const {
         return flagged_waiters == 0 && pending_hups.empty() && !destroyed;
     }
 };
 
-// All net objects, keyed by id (see IdAllocator in guest_net.h).
-// An id whose object the library keeps (a resolver). Core::Net only knows when it finishes,
-// so an epoll can report that (ORBIS_NET_EPOLLDESCID).
+// An id owned by the library, e.g. a resolver. We only track when it finishes so an epoll
+// can report it (ORBIS_NET_EPOLLDESCID).
 struct ExternalObject {
     explicit ExternalObject(u32 generation_) : generation(generation_) {}
 
     const u32 generation;
-    P2P::ReadinessFlag done; // set once by SignalExternal
+    P2P::ReadinessFlag done;
     std::atomic<bool> signaled{false};
-    std::atomic<bool> hangup{false}; // finished by an abort: reported with EvHup
+    std::atomic<bool> hangup{false}; // aborted, report EvHup
 
-    std::mutex reg_mutex; // guards the two below, like GuestSocket::reg_mutex
+    std::mutex reg_mutex; // same as GuestSocket::reg_mutex
     bool closed = false;
     std::vector<std::weak_ptr<GuestEpoll>> epolls;
 };
@@ -164,18 +161,18 @@ public:
     using Object = std::variant<std::shared_ptr<GuestSocket>, std::shared_ptr<GuestEpoll>,
                                 std::shared_ptr<ExternalObject>>;
 
-    // Returns the new id, or fails with EMFILE (socket limit) or ENFILE (no id left).
+    // EMFILE at the socket limit, ENFILE when out of ids.
     NetResult Insert(Object object) {
-        // Sockets and resolvers count towards the limit, epolls do not.
+        // Epolls don't count towards the limit.
         const bool counted = !std::holds_alternative<std::shared_ptr<GuestEpoll>>(object);
         {
             std::scoped_lock lock{mutex_};
             if (counted && counted_ >= MaxSockets) {
                 return NetResult::Fail(Error::MFile);
             }
-            counted_ += counted ? 1 : 0; // reserve the slot while the id is allocated
+            counted_ += counted ? 1 : 0; // reserve the slot
         }
-        const s32 id = Allocate(); // hooks run without our lock
+        const s32 id = Allocate(); // not under mutex_, it may call hooks
         std::scoped_lock lock{mutex_};
         if (id < 0) {
             counted_ -= counted ? 1 : 0;
@@ -196,7 +193,6 @@ public:
         return object ? *object : nullptr;
     }
 
-    // Removes `id` if it holds a T.
     template <typename T>
     std::shared_ptr<T> Remove(s32 id) {
         std::shared_ptr<T> removed;
@@ -234,7 +230,6 @@ public:
         }
     }
 
-    /// The ids holding a T, in ascending order.
     template <typename T>
     std::vector<s32> Ids() const {
         std::vector<s32> ids;
@@ -266,7 +261,7 @@ private:
             lock.unlock();
             return allocate();
         }
-        // Default: lowest free id from 1, like a BSD descriptor table.
+        // Lowest free id, like a BSD fd table.
         auto it = std::find(used_.begin() + 1, used_.end(), false);
         if (it == used_.end()) {
             used_.push_back(false);
@@ -288,12 +283,12 @@ private:
     }
 
     mutable std::mutex mutex_;
-    std::unordered_map<s32, Entry> objects_; // guarded by mutex_
-    int counted_ = 0;                        // guarded by mutex_
+    std::unordered_map<s32, Entry> objects_;
+    int counted_ = 0;
 
     std::mutex alloc_mutex_;
-    IdAllocator allocator_;        // guarded by alloc_mutex_
-    std::vector<bool> used_{true}; // default allocator; id 0 is never handed out
+    IdAllocator allocator_;
+    std::vector<bool> used_{true}; // id 0 is never used
 };
 
 ObjectTable g_objects;
@@ -302,8 +297,8 @@ std::atomic<u32> g_next_generation{1};
 std::mutex g_p2p_mutex;
 std::shared_ptr<P2P::Transport> g_p2p_transports[2]; // [0] = IPv4, [1] = IPv6
 
-// Epoll tag: generation in the high 32 bits, socket id in the low 31, and bit 31 marking a
-// P2P socket's writable handle. Ids are positive, so a tag never equals Host::ReservedTag.
+// Epoll tag: generation in bits 32-63, id in bits 0-30, bit 31 set for a P2P writable handle.
+// Ids are positive so a tag can't collide with Host::ReservedTag.
 constexpr u64 WritableHandleBit = 1ull << 31;
 
 u64 MakeTag(s32 id, u32 generation, bool writable_handle = false) {
@@ -315,8 +310,7 @@ NetResult FromError(Error e) {
     return e == Error::Ok ? NetResult::Ok() : NetResult::Fail(e);
 }
 
-// What to poll when waiting for `interest` on `s`: the host socket itself, or for P2P
-// sockets the matching readiness handle (which becomes readable when the condition holds).
+// P2P sockets are waited on through their readiness handles.
 std::pair<Host::NativeSocket, u32> WaitTarget(const GuestSocket& s, u32 interest) {
     if (const auto* handles = s.P2PHandles()) {
         const auto& flag = (interest & Host::Writable) ? handles->writable : handles->readable;
@@ -325,14 +319,12 @@ std::pair<Host::NativeSocket, u32> WaitTarget(const GuestSocket& s, u32 interest
     return {s.native, interest};
 }
 
-// Takes a preserved abort for `side`, if there is one.
 bool ConsumePendingAbort(GuestSocket& s, Side side) {
     std::scoped_lock lock{s.wait_mutex};
     return std::exchange(s.pending_abort[static_cast<size_t>(side)], false);
 }
 
-// Registers a blocking call with its socket for as long as it runs, so abort and close can
-// interrupt it. Entry() consumes a preserved abort.
+// Registers a blocking call so abort and close can interrupt it.
 class WaitScope {
 public:
     WaitScope(GuestSocket& s, Side side) : s_(s) {
@@ -343,7 +335,7 @@ public:
             return;
         }
         std::scoped_lock lock{s_.wait_mutex};
-        waiter_.wake->Drain(); // a signal meant for this thread's previous call
+        waiter_.wake->Drain(); // stale signal from a previous call
         if (s_.closing) {
             entry_error_ = Error::BadF;
         } else if (std::exchange(s_.pending_abort[static_cast<size_t>(side)], false)) {
@@ -380,7 +372,7 @@ private:
     bool registered_ = false;
 };
 
-// Wakes every call blocked on `s` (wait_mutex held). Returns which sides had one.
+// Called with wait_mutex held. Returns which sides had a blocked call.
 std::array<bool, 2> InterruptWaiters(GuestSocket& s) {
     std::array<bool, 2> blocked{};
     for (Waiter* w : s.waiters) {
@@ -391,14 +383,12 @@ std::array<bool, 2> InterruptWaiters(GuestSocket& s) {
     return blocked;
 }
 
-// Core of every blocking guest call: try the non-blocking op; on WouldBlock, wait for
-// readiness, deadline or abort, then retry.
+// Retry a non-blocking op until it succeeds, times out or is aborted.
 template <typename Op>
 NetResult RunBlocking(GuestSocket& s, Side side, u32 interest, Host::Deadline deadline,
                       bool blocking, Op&& op) {
     if (!blocking) {
-        // A preserved abort is for the next call of its kind, blocking or not (Net Library
-        // Reference, sceNetSocketAbort).
+        // A preserved abort also hits non-blocking calls (per SDK docs).
         if (ConsumePendingAbort(s, side)) {
             return NetResult::Fail(AbortedError);
         }
@@ -419,7 +409,7 @@ NetResult RunBlocking(GuestSocket& s, Side side, u32 interest, Host::Deadline de
         }
         switch (Host::WaitOne(handle, handle_interest, scope.Wake(), deadline)) {
         case Host::WaitResult::Ready:
-        case Host::WaitResult::Woken: // top of the loop reports the abort
+        case Host::WaitResult::Woken:
             continue;
         case Host::WaitResult::TimedOut:
             // BSD: an expired SO_RCVTIMEO/SO_SNDTIMEO is EAGAIN, not ETIMEDOUT.
@@ -434,24 +424,23 @@ Host::Deadline SocketDeadline(const std::atomic<s64>& timeout_us) {
     return Host::DeadlineFromSocketTimeout(std::chrono::microseconds{timeout_us.load()});
 }
 
-// Blocking stream sends complete fully (BSD); `send_some` performs one non-blocking attempt.
+// Blocking stream sends send everything, as on BSD.
 template <typename SendSome>
 NetResult SendAll(GuestSocket& s, size_t len, bool blocking, bool stream, SendSome&& send_some) {
-    const auto deadline = SocketDeadline(s.snd_timeout_us); // one deadline for the whole call
+    const auto deadline = SocketDeadline(s.snd_timeout_us);
     size_t sent = 0;
     for (;;) {
         const NetResult r = RunBlocking(s, Side::Send, Host::Writable, deadline, blocking,
                                         [&] { return send_some(sent); });
         if (r.error != Error::Ok) {
             if (r.error == AbortedError) {
-                // SND_PRESERVATION_AGAIN: after an aborted send returned a partial count, the
-                // next send fails with EINTR once.
+                // SND_PRESERVATION_AGAIN: after a partial aborted send, the next send gets EINTR.
                 std::scoped_lock lock{s.wait_mutex};
                 if (std::exchange(s.send_again, false) && sent > 0) {
                     s.pending_abort[static_cast<size_t>(Side::Send)] = true;
                 }
             }
-            // BSD returns the partial count if a blocking send is cut short after progress.
+            // BSD returns the partial count.
             return sent > 0 ? NetResult::Ok(static_cast<s64>(sent)) : r;
         }
         sent += static_cast<size_t>(r.value);
@@ -461,9 +450,8 @@ NetResult SendAll(GuestSocket& s, size_t len, bool blocking, bool stream, SendSo
     }
 }
 
-// MSG_WAITALL on a blocking stream: receive until `len` bytes, FIN or an error; data already
-// received wins over the error (Net Library Reference, sceNetRecv). `recv_some(got)` is one
-// (blocking) receive into the rest of the buffer.
+// MSG_WAITALL: loop until len bytes, FIN or an error. Data already received wins over the
+// error (per SDK docs).
 template <typename RecvSome>
 NetResult ReceiveAll(size_t len, bool waitall, RecvSome&& recv_some) {
     if (!waitall) {
@@ -483,7 +471,7 @@ NetResult ReceiveAll(size_t len, bool waitall, RecvSome&& recv_some) {
     return NetResult::Ok(static_cast<s64>(got));
 }
 
-// --- Epoll registration helpers (GuestEpoll::mutex held) -------------------------------------
+// Epoll helpers, called with GuestEpoll::mutex held.
 
 Error HostRegister(GuestEpoll& ep, s32 id, GuestSocket& s, u32 events, u32 flags,
                    GuestEpoll::Registration& reg) {
@@ -491,10 +479,9 @@ Error HostRegister(GuestEpoll& ep, s32 id, GuestSocket& s, u32 events, u32 flags
         return ep.host.Add(s.native, MakeTag(id, s.generation), events, flags);
     }
     if (flags != 0) {
-        return Error::Inval; // TODO: one-shot not emulated for P2P yet (no guest asks)
+        return Error::Inval; // TODO: one-shot for P2P
     }
-    // The readable handle is always registered: like epoll, errors and hangups are reported
-    // even when not requested, and the readable flag is set for those too.
+    // Always add the readable handle, errors and hangups are reported even if not requested.
     const auto* handles = s.P2PHandles();
     if (const Error e =
             ep.host.Add(handles->readable.PollHandle(), MakeTag(id, s.generation), Host::EvIn, 0);
@@ -565,11 +552,11 @@ std::optional<NetObjectKind> GetObjectKind(s32 id) {
 NetResult CloseObject(s32 id) {
     switch (g_objects.Kind(id).value_or(NetObjectKind::Socket)) {
     case NetObjectKind::Socket:
-        return SocketClose(id); // EBADF when the id is unknown
+        return SocketClose(id); // EBADF for unknown ids
     case NetObjectKind::Epoll:
         return EpollDestroy(id);
     case NetObjectKind::External:
-        break; // released by its owner, which knows what else to clean up
+        break; // released by its owner
     }
     return NetResult::Fail(Error::BadF);
 }
@@ -629,12 +616,10 @@ s32 ToOrbisReturn(NetResult result) {
     if (result.error == Error::Ok) {
         return static_cast<s32>(result.value);
     }
-    // TODO: store static_cast<s32>(result.error) in the guest net errno (what sceNetErrnoLoc
-    // returns) via the existing helper, and reuse the existing ORBIS_NET_ERROR_* constants.
+    // TODO: set the guest errno (sceNetErrnoLoc) and use the ORBIS_NET_ERROR_* constants.
     return static_cast<s32>(0x80410100u | static_cast<u32>(result.error));
 }
 
-// Sockets
 namespace {
 
 bool IsLimitedBroadcast(const sockaddr* addr, socklen_t len) {
@@ -647,7 +632,7 @@ bool IsLimitedBroadcast(const sockaddr* addr, socklen_t len) {
 bool BroadcastAllowed(Host::NativeSocket s) {
     int on = 0;
     socklen_t len = sizeof(on);
-    // Windows may write a 1-byte BOOL; `on` starts at 0, so either size reads right.
+    // Windows may write a 1-byte BOOL, hence on = 0.
     return getsockopt(s, SOL_SOCKET, SO_BROADCAST, reinterpret_cast<char*>(&on), &len) == 0 &&
            on != 0;
 }
@@ -655,8 +640,7 @@ bool BroadcastAllowed(Host::NativeSocket s) {
 } // namespace
 
 NetResult SocketCreate(int family, int type, int protocol) {
-    // A protocol that does not go with the type: EPROTONOSUPPORT, as FreeBSD's socreate()
-    // says. Hosts disagree (macOS answers EPROTOTYPE), so this is decided here.
+    // FreeBSD returns EPROTONOSUPPORT for a mismatched protocol, macOS EPROTOTYPE.
     if ((family == AF_INET || family == AF_INET6) && protocol != 0 &&
         ((type == SOCK_STREAM && protocol != IPPROTO_TCP) ||
          (type == SOCK_DGRAM && protocol != IPPROTO_UDP))) {
@@ -680,7 +664,7 @@ NetResult SocketCreatePair(int family, int type, int protocol, s32 ids[2]) {
     auto second = std::make_shared<GuestSocket>(natives[1], type, g_next_generation.fetch_add(1));
     const NetResult a = g_objects.Insert(std::move(first));
     if (a.error != Error::Ok) {
-        return a; // `second` closes its socket on the way out
+        return a;
     }
     const NetResult b = g_objects.Insert(std::move(second));
     if (b.error != Error::Ok) {
@@ -713,7 +697,7 @@ NetResult SocketListen(s32 id, int backlog) {
         return NetResult::Fail(Error::BadF);
     }
     if (s->p2p_dgram) {
-        return NetResult::Fail(Error::OpNotSupp); // "socket type cannot accept connections"
+        return NetResult::Fail(Error::OpNotSupp);
     }
     const Error e =
         s->p2p_stream ? s->p2p_stream->Listen(backlog) : Host::Listen(s->native, backlog);
@@ -732,7 +716,7 @@ NetResult SocketConnect(s32 id, const sockaddr* addr, socklen_t len) {
         return NetResult::Fail(Error::Inval); // use P2PSocketConnect
     }
     if (s->listening) {
-        return NetResult::Fail(Error::OpNotSupp); // "connection attempted to a listening socket"
+        return NetResult::Fail(Error::OpNotSupp);
     }
     if (s->nonblocking) {
         if (ConsumePendingAbort(*s, Side::Send)) {
@@ -744,7 +728,7 @@ NetResult SocketConnect(s32 id, const sockaddr* addr, socklen_t len) {
         }
         return FromError(e);
     }
-    // Blocking connect: registered first, so a preserved abort stops it before it starts.
+    // Register first so a preserved abort stops it before it starts.
     WaitScope scope(*s, Side::Send);
     if (const Error e = scope.Entry(); e != Error::Ok) {
         return NetResult::Fail(e);
@@ -756,9 +740,8 @@ NetResult SocketConnect(s32 id, const sockaddr* addr, socklen_t len) {
     if (started != Error::InProgress) {
         return FromError(started);
     }
-    // Wait for writability, then read the verdict from SO_ERROR. The 500 ms slices guard
-    // against old WSAPoll builds that never signal a failed connect. SO_CONNECTTIMEO bounds
-    // the wait: EWOULDBLOCK when it passes, the connect going on in the background.
+    // Poll in 500 ms slices, old WSAPoll never signals a failed connect. On SO_CONNECTTIMEO
+    // expiry return EWOULDBLOCK and leave the connect running.
     using namespace std::chrono_literals;
     const auto deadline = SocketDeadline(s->connect_timeout_us);
     for (;;) {
@@ -785,7 +768,6 @@ NetResult SocketConnect(s32 id, const sockaddr* addr, socklen_t len) {
         if (w == Host::WaitResult::Ready) {
             return NetResult::Ok();
         }
-        // Slice expired with no verdict yet: keep waiting.
     }
 }
 
@@ -798,7 +780,7 @@ NetResult SocketAccept(s32 id, sockaddr* addr, socklen_t* len) {
         return NetResult::Fail(Error::Inval); // use P2PSocketAccept
     }
     Host::NativeSocket client = Host::InvalidSocket;
-    // SO_ACCEPTTIMEO bounds the wait (EWOULDBLOCK), not SO_RCVTIMEO.
+    // Accept uses SO_ACCEPTTIMEO, not SO_RCVTIMEO.
     const NetResult r = RunBlocking(
         *s, Side::Recv, Host::Readable, SocketDeadline(s->accept_timeout_us), !s->nonblocking, [&] {
             Error e;
@@ -809,8 +791,7 @@ NetResult SocketAccept(s32 id, sockaddr* addr, socklen_t* len) {
         return r;
     }
     auto c = std::make_shared<GuestSocket>(client, s->type, g_next_generation.fetch_add(1));
-    // FreeBSD gives the accepted socket the listener's O_NONBLOCK (unlike Linux), timeouts and
-    // socket-level flags (sonewconn copies so_options and the buffers' sb_timeo).
+    // FreeBSD inherits O_NONBLOCK, timeouts and socket options from the listener (not Linux).
     c->nonblocking = s->nonblocking.load();
     c->reuse_addr = s->reuse_addr.load();
     c->reuse_port = s->reuse_port.load();
@@ -836,15 +817,12 @@ NetResult SocketSendTo(s32 id, const void* buf, size_t len, int host_flags, bool
         return NetResult::Fail(Error::Inval); // use P2PSocketSendTo
     }
     if (s->type != SOCK_STREAM) {
-        // UDP and RAW never wait on the PS4: with the host buffer full the datagram is
-        // dropped, and ENOBUFS is not reported. A preserved
-        // send abort still applies (sceNetSocketAbort).
+        // UDP/RAW sends never block on PS4. A full buffer silently drops the datagram.
         if (ConsumePendingAbort(*s, Side::Send)) {
             return NetResult::Fail(AbortedError);
         }
         if (IsLimitedBroadcast(addr, addr_len) && !BroadcastAllowed(s->native)) {
-            // FreeBSD's ip_output: EACCES without SO_BROADCAST. Hosts without a route for
-            // 255.255.255.255 (macOS, for one) fail earlier with EHOSTUNREACH instead.
+            // FreeBSD gives EACCES without SO_BROADCAST. macOS would say EHOSTUNREACH.
             return NetResult::Fail(Error::Acces);
         }
         const auto io = Host::SendTo(s->native, buf, len, host_flags, addr, addr_len);
@@ -852,16 +830,17 @@ NetResult SocketSendTo(s32 id, const void* buf, size_t len, int host_flags, bool
             return NetResult::Ok(static_cast<s64>(len));
         }
         if (io.error == Error::NotConn && addr == nullptr) {
-            // No destination on an unconnected datagram socket: EDESTADDRREQ as on BSD and
-            // Linux,Windows says ENOTCONN.
+            // BSD and Linux give EDESTADDRREQ here, Windows ENOTCONN.
             return NetResult::Fail(Error::DestAddrReq);
         }
         return io.error == Error::Ok ? NetResult::Ok(io.value) : NetResult::Fail(io.error);
     }
     const auto* bytes = static_cast<const u8*>(buf);
     return SendAll(*s, len, !dontwait && !s->nonblocking, s->type == SOCK_STREAM, [&](size_t sent) {
-        const auto io =
-            Host::SendTo(s->native, bytes + sent, len - sent, host_flags, addr, addr_len);
+        // Windows accepts a non-blocking send of any size in one go. Chunk it so the host
+        // buffer limit applies, like on PS4.
+        const size_t chunk = std::min(len - sent, MaxStreamSendChunk);
+        const auto io = Host::SendTo(s->native, bytes + sent, chunk, host_flags, addr, addr_len);
         return NetResult{io.value, io.error};
     });
 }
@@ -876,7 +855,7 @@ NetResult SocketRecvFrom(s32 id, void* buf, size_t len, int host_flags, bool don
         return NetResult::Fail(Error::Inval); // use P2PSocketRecvFrom
     }
     const bool blocking = !dontwait && !s->nonblocking;
-    // MSG_WAITALL is done here: the host socket is non-blocking, where it means nothing.
+    // Host socket is non-blocking, so MSG_WAITALL is handled here.
     const bool waitall = (host_flags & MSG_WAITALL) != 0;
     host_flags &= ~MSG_WAITALL;
     const auto deadline = SocketDeadline(s->rcv_timeout_us);
@@ -900,7 +879,7 @@ NetResult SocketShutdown(s32 id, int how) {
         return FromError(s->p2p_stream->Shutdown(how));
     }
     if (s->p2p_dgram) {
-        return NetResult::Ok(); // nothing to shut down on a datagram socket
+        return NetResult::Ok();
     }
     return FromError(Host::ShutdownSocket(s->native, how));
 }
@@ -911,7 +890,7 @@ NetResult SocketGetName(s32 id, sockaddr* addr, socklen_t* len) {
         return NetResult::Fail(Error::BadF);
     }
     if (s->IsP2P()) {
-        return NetResult::Fail(Error::Inval); // DISCUSS: P2P getsockname (address + vport)
+        return NetResult::Fail(Error::Inval); // use P2PSocketGetName
     }
     return FromError(getsockname(s->native, addr, len) == 0 ? Error::Ok : Host::LastError());
 }
@@ -971,7 +950,7 @@ NetResult SocketGetInfo(s32 id, SocketInfo* info) {
     if (s->p2p_stream) {
         const Error e = s->p2p_stream->ConnectResult();
         info->pending_error =
-            e == Error::InProgress || e == Error::NotConn ? Error::Ok : e; // DISCUSS: not cleared
+            e == Error::InProgress || e == Error::NotConn ? Error::Ok : e; // never cleared
     } else if (s->p2p_dgram) {
         info->pending_error = Error::Ok;
     } else {
@@ -1005,7 +984,7 @@ NetResult SocketSetNonBlocking(s32 id, bool enable) {
     if (!s) {
         return NetResult::Fail(Error::BadF);
     }
-    s->nonblocking = enable; // guest state only: the host socket stays non-blocking
+    s->nonblocking = enable; // host socket is always non-blocking
     return NetResult::Ok();
 }
 
@@ -1032,7 +1011,7 @@ NetResult SocketSetRecvTimeout(s32 id, std::chrono::microseconds value) {
     if (!s) {
         return NetResult::Fail(Error::BadF);
     }
-    s->rcv_timeout_us = value.count(); // never set on the host socket
+    s->rcv_timeout_us = value.count();
     return NetResult::Ok();
 }
 
@@ -1068,9 +1047,8 @@ NetResult SocketAbort(s32 id, u32 flags) {
     if (!s) {
         return NetResult::Fail(Error::BadF);
     }
-    // A socket waited on through an epoll is reported there as EvHup (Net Library Reference,
-    // sceNetEpollWait). Lock order: GuestEpoll::mutex before the socket's locks, so the
-    // registrations are copied first.
+    // Epolls currently waiting on this socket report EvHup (per SDK docs). Copy the list
+    // first, GuestEpoll::mutex must be taken before reg_mutex.
     bool hangup = false;
     {
         std::vector<std::weak_ptr<GuestEpoll>> epolls;
@@ -1095,7 +1073,7 @@ NetResult SocketAbort(s32 id, u32 flags) {
         }
     }
 
-    // Queued data is left alone: abort only interrupts waits.
+    // Abort doesn't touch queued data.
     std::scoped_lock lock{s->wait_mutex};
     const auto blocked = InterruptWaiters(*s);
     bool preserved = false;
@@ -1109,11 +1087,10 @@ NetResult SocketAbort(s32 id, u32 flags) {
             s->pending_abort[static_cast<size_t>(Side::Send)] = true;
             preserved = true;
         } else if (send_again) {
-            s->send_again = true; // SendAll decides once it knows whether data went out
+            s->send_again = true; // resolved in SendAll
         }
     }
-    // Nothing interrupted and nothing kept for later: ENOTBLK, "abort process called while
-    // target is not in wait state" (Net Library Reference, error codes).
+    // Nothing to abort: ENOTBLK (PS4 behaviour).
     if (!blocked[0] && !blocked[1] && !preserved && !hangup) {
         return NetResult::Fail(Error::NotBlk);
     }
@@ -1125,9 +1102,8 @@ NetResult SocketClose(s32 id) {
     if (!s) {
         return NetResult::Fail(Error::BadF);
     }
-    // Wake every thread still blocked on this socket. The socket itself is closed by
-    // ~GuestSocket once the last of them returns, never while in use.
-    // DISCUSS: real BSD keeps a recv blocked across a concurrent close; waking is deliberate.
+    // Wake blocked threads. The host socket is closed when the last reference drops.
+    // BSD would leave a recv blocked across close, we wake it on purpose.
     {
         std::scoped_lock lock{s->wait_mutex};
         s->closing = true;
@@ -1137,7 +1113,7 @@ NetResult SocketClose(s32 id) {
     std::vector<std::weak_ptr<GuestEpoll>> epolls;
     {
         std::scoped_lock lock{s->reg_mutex};
-        s->closed = true; // EpollControl(Add) checks this, so no registration can slip in later
+        s->closed = true; // blocks later EpollControl(Add)
         epolls.swap(s->epolls);
     }
     for (const auto& weak : epolls) {
@@ -1155,7 +1131,6 @@ NetResult SocketClose(s32 id) {
     return NetResult::Ok();
 }
 
-// P2P sockets
 void SetP2PTransport(int family, std::shared_ptr<P2P::Transport> transport) {
     std::scoped_lock lock{g_p2p_mutex};
     g_p2p_transports[family == AF_INET6 ? 1 : 0] = std::move(transport);
@@ -1164,7 +1139,7 @@ void SetP2PTransport(int family, std::shared_ptr<P2P::Transport> transport) {
 NetResult P2PSocketCreate(int family, bool stream) {
     const auto transport = P2PTransportFor(family);
     if (!transport) {
-        return NetResult::Fail(Error::NetDown); // TODO: firmware error when P2P is not up
+        return NetResult::Fail(Error::NetDown); // TODO: real error when P2P is down
     }
     const u32 generation = g_next_generation.fetch_add(1);
     auto s = stream ? std::make_shared<GuestSocket>(transport->CreateStream(), generation)
@@ -1235,7 +1210,6 @@ NetResult P2PSocketConnect(s32 id, const P2P::Endpoint& peer, u16 peer_vport) {
         }
         return FromError(e);
     }
-    // Blocking connect: registered first, so a preserved abort stops it before it starts.
     WaitScope scope(*s, Side::Send);
     if (const Error e = scope.Entry(); e != Error::Ok) {
         return NetResult::Fail(e);
@@ -1247,8 +1221,8 @@ NetResult P2PSocketConnect(s32 id, const P2P::Endpoint& peer, u16 peer_vport) {
     if (started != Error::InProgress) {
         return FromError(started);
     }
-    // The writable flag rises on establishment and on failure. An interrupted or timed-out
-    // connect (SO_CONNECTTIMEO: EWOULDBLOCK) keeps going in the background, as on BSD.
+    // Writable is set on success and on failure. A timed out or aborted connect keeps going
+    // in the background, as on BSD.
     const auto handle = s->P2PHandles()->writable.PollHandle();
     const auto deadline = SocketDeadline(s->connect_timeout_us);
     for (;;) {
@@ -1364,7 +1338,6 @@ NetResult P2PSocketGetPeerName(s32 id, P2P::Endpoint* peer, u16* peer_vport) {
     return connected ? NetResult::Ok() : NetResult::Fail(Error::NotConn);
 }
 
-// Epoll
 NetResult EpollCreate() {
     auto ep = std::make_shared<GuestEpoll>();
     if (!ep->host.Valid()) {
@@ -1375,7 +1348,7 @@ NetResult EpollCreate() {
 
 namespace {
 
-/// EpollControl for an ExternalObject: its done flag is watched until reported once.
+// External objects are reported once, then their handle is removed.
 NetResult ExternalEpollControl(GuestEpoll& ep, const std::shared_ptr<GuestEpoll>& ep_ref, s32 id,
                                ExternalObject& x, EpollOp op, u32 events, u64 data) {
     std::scoped_lock ep_lock{ep.mutex};
@@ -1390,8 +1363,7 @@ NetResult ExternalEpollControl(GuestEpoll& ep, const std::shared_ptr<GuestEpoll>
         if (exists) {
             return NetResult::Fail(Error::Exist);
         }
-        // Only a registration with EvIn waits for the lookup (Net Library Reference,
-        // SceNetEpollEvent); EvOut means nothing for a resolver.
+        // Only EvIn waits for the lookup, EvOut is ignored (per SDK docs).
         const bool arm = (events & Host::EvIn) != 0;
         if (arm) {
             const auto tag = MakeTag(id, x.generation);
@@ -1445,7 +1417,7 @@ NetResult ExternalEpollControl(GuestEpoll& ep, const std::shared_ptr<GuestEpoll>
 
 } // namespace
 
-// EpollControl on an epoll object, which need not be in the object table (SocketSelect).
+// Also used by SocketSelect with an epoll that has no id.
 static NetResult EpollControlOn(const std::shared_ptr<GuestEpoll>& ep, EpollOp op, s32 socket_id,
                                 u32 events, u32 flags, u64 data) {
     if (ep) {
@@ -1510,7 +1482,7 @@ NetResult EpollControl(s32 eid, EpollOp op, s32 socket_id, u32 events, u32 flags
     return EpollControlOn(g_objects.Get<GuestEpoll>(eid), op, socket_id, events, flags, data);
 }
 
-/// EpollWait on an epoll object, which need not be in the object table (SocketSelect).
+// Also used by SocketSelect.
 static NetResult EpollWaitOn(const std::shared_ptr<GuestEpoll>& ep, std::span<GuestEpollEvent> out,
                              s64 timeout_us) {
     if (!ep) {
@@ -1525,8 +1497,7 @@ static NetResult EpollWaitOn(const std::shared_ptr<GuestEpoll>& ep, std::span<Gu
     std::array<Host::EpollEvent, 64> buf;
     const auto host_out = std::span{buf}.first(std::min(out.size(), buf.size()));
 
-    // Register the wait so EpollAbort can interrupt it (waits are woken through the host
-    // epoll's wake handle, drained once every interrupted wait has left).
+    // The wake handle is drained once every interrupted wait has left.
     Waiter me{};
     {
         std::scoped_lock lock{ep->mutex};
@@ -1549,15 +1520,14 @@ static NetResult EpollWaitOn(const std::shared_ptr<GuestEpoll>& ep, std::span<Gu
             }
         }
     } unregister{*ep, me};
-    // Adds (ep->mutex held) the hangups of sockets aborted during a wait, merged with any
-    // other event of the same socket.
+    // Called with ep->mutex held.
     const auto add_hangups = [&](size_t n) {
         auto& hups = ep->pending_hups;
         size_t kept = 0;
         for (const auto& [id, generation] : hups) {
             const auto it = ep->regs.find(id);
             if (it == ep->regs.end() || it->second.generation != generation) {
-                continue; // deleted or closed since: dropped
+                continue; // gone since
             }
             const auto existing =
                 std::find_if(out.begin(), out.begin() + n, [&](auto& e) { return e.ident == id; });
@@ -1566,7 +1536,7 @@ static NetResult EpollWaitOn(const std::shared_ptr<GuestEpoll>& ep, std::span<Gu
             } else if (n < out.size()) {
                 out[n++] = {Host::EvHup, id, it->second.data};
             } else {
-                hups[kept++] = {id, generation}; // no room: for the next wait
+                hups[kept++] = {id, generation}; // no room, keep for next wait
             }
         }
         hups.resize(kept);
@@ -1592,8 +1562,6 @@ static NetResult EpollWaitOn(const std::shared_ptr<GuestEpoll>& ep, std::span<Gu
         if (r.error != Error::Ok) {
             return NetResult::Fail(r.error);
         }
-        // A wake meant for another wait on the same epoll is ignored; events in the same
-        // batch are still reported.
         size_t n = 0;
         {
             std::scoped_lock lock{ep->mutex};
@@ -1601,13 +1569,13 @@ static NetResult EpollWaitOn(const std::shared_ptr<GuestEpoll>& ep, std::span<Gu
                 const auto socket_id = static_cast<s32>(host_out[i].tag & 0x7fffffffu);
                 const auto generation = static_cast<u32>(host_out[i].tag >> 32);
                 const auto it = ep->regs.find(socket_id);
-                // Skip events for sockets deleted or closed between the host wait and now.
+                // Removed since the host wait.
                 if (it == ep->regs.end() || it->second.generation != generation) {
                     continue;
                 }
                 u32 events = host_out[i].events;
                 if (it->second.external) {
-                    // Finished: reported once, then no longer watched (the flag stays set).
+                    // Report once, the flag stays set.
                     const auto x = g_objects.Get<ExternalObject>(socket_id);
                     if (!x || x->generation != generation || !it->second.armed) {
                         continue;
@@ -1615,22 +1583,20 @@ static NetResult EpollWaitOn(const std::shared_ptr<GuestEpoll>& ep, std::span<Gu
                     ep->host.Remove(x->done.PollHandle());
                     it->second.armed = false;
                     it->second.reported = true;
-                    // SCE_NET_EPOLLIN comes with SCE_NET_EPOLLDESCID; an aborted lookup also
-                    // reports SCE_NET_EPOLLHUP.
+                    // EPOLLIN | EPOLLDESCID, plus EPOLLHUP if the lookup was aborted.
                     events = Host::EvIn | Host::EvDescId | (x->hangup ? Host::EvHup : 0u);
                 } else if (it->second.p2p) {
-                    // The handle only says "something changed": compute the real state.
-                    // Errors and hangups are always reported, as with epoll.
+                    // The handle only signals a change, recompute the state.
                     const auto s = g_objects.Get<GuestSocket>(socket_id);
                     if (!s || s->generation != generation) {
                         continue;
                     }
                     events = s->P2PEvents() & (it->second.events | Host::EvErr | Host::EvHup);
                     if (events == 0) {
-                        continue; // already consumed by another thread
+                        continue; // another thread got it
                     }
                 }
-                // A P2P socket can fire through both of its handles: report it once.
+                // P2P sockets can fire on both handles.
                 const auto existing = std::find_if(out.begin(), out.begin() + n,
                                                    [&](auto& e) { return e.ident == socket_id; });
                 if (existing != out.begin() + n) {
@@ -1647,9 +1613,8 @@ static NetResult EpollWaitOn(const std::shared_ptr<GuestEpoll>& ep, std::span<Gu
             return NetResult::Ok(static_cast<s64>(n));
         }
         if (r.count == 0 && !r.woken) {
-            return NetResult::Ok(0); // the deadline passed
+            return NetResult::Ok(0); // timed out
         }
-        // Woken, or every event was stale: check for abort and wait out the remaining time.
     }
 }
 
@@ -1659,7 +1624,7 @@ NetResult EpollWait(s32 eid, std::span<GuestEpollEvent> out, s64 timeout_us) {
 
 namespace {
 
-/// Flags every wait on `ep` and wakes them (ep.mutex held). Returns whether there were any.
+// Called with ep.mutex held.
 bool InterruptEpollWaiters(GuestEpoll& ep) {
     for (Waiter* w : ep.waiters) {
         if (!w->aborted) {
@@ -1689,7 +1654,7 @@ NetResult EpollAbort(s32 eid, u32 flags) {
         ep->pending_abort = true;
         return NetResult::Ok();
     }
-    return NetResult::Fail(Error::NotBlk); // nothing waiting, as for SocketAbort
+    return NetResult::Fail(Error::NotBlk);
 }
 
 NetResult EpollDestroy(s32 eid) {
@@ -1697,24 +1662,21 @@ NetResult EpollDestroy(s32 eid) {
     if (!ep) {
         return NetResult::Fail(Error::BadF);
     }
-    // Release any waiter; the host instance is freed when the last one returns. Sockets only
-    // hold weak references, which simply expire.
+    // Waiters hold a reference, so the host epoll is freed after the last one returns.
     std::scoped_lock lock{ep->mutex};
     ep->destroyed = true;
     InterruptEpollWaiters(*ep);
     return NetResult::Ok();
 }
 
-// select()
 NetResult SocketSelect(std::span<SelectEntry> entries, s64 timeout_us) {
     for (auto& e : entries) {
         e.ready = 0;
     }
     if (entries.empty()) {
-        return NetResult::Ok(0); // nothing to wait for: the caller sleeps if it wants to
+        return NetResult::Ok(0);
     }
-    // A private epoll, never in the object table: it takes no id, and each socket is removed
-    // from it again before returning.
+    // Private epoll with no id.
     const auto ep = std::make_shared<GuestEpoll>();
     if (!ep->host.Valid()) {
         return NetResult::Fail(Error::NoBufs);
@@ -1731,7 +1693,7 @@ NetResult SocketSelect(std::span<SelectEntry> entries, s64 timeout_us) {
             unregister_all();
             return NetResult::Fail(Error::BadF);
         }
-        // The same socket may be listed once only; merge duplicates into the first entry.
+        // Merge duplicate entries into the first one.
         const auto first =
             std::find_if(entries.begin(), entries.begin() + i,
                          [&](const SelectEntry& e) { return e.id == entries[i].id; });
@@ -1752,8 +1714,8 @@ NetResult SocketSelect(std::span<SelectEntry> entries, s64 timeout_us) {
         registered.push_back(i);
     }
 
-    // The first wait honours the timeout; the following ones only collect whatever else is
-    // ready (a wait reports at most 64 sockets), each reported socket leaving the epoll.
+    // Only the first wait uses the timeout. Later ones poll for the rest, since one wait
+    // returns at most 64 sockets.
     std::vector<GuestEpollEvent> out(registered.size());
     std::vector<size_t> still;
     s64 wait = timeout_us;
@@ -1768,8 +1730,7 @@ NetResult SocketSelect(std::span<SelectEntry> entries, s64 timeout_us) {
         }
         for (s64 k = 0; k < r.value; ++k) {
             const s32 id = out[k].ident;
-            // Like BSD: an error or hangup makes the socket both readable and writable (the
-            // next call returns the error without blocking).
+            // As on BSD, an error or hangup makes the socket readable and writable.
             u32 ready = out[k].events;
             if (ready & (Host::EvErr | Host::EvHup)) {
                 ready |= Host::EvIn | Host::EvOut;

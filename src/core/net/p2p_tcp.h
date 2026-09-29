@@ -41,10 +41,9 @@ constexpr u8 Psh = 0x08;
 constexpr u8 Ack = 0x10;
 } // namespace TcpFlag
 
-/// Addresses used in the checksum pseudo-header
 struct PseudoHeader {
-    int family = AF_INET;       // AF_INET or AF_INET6
-    std::array<u8, 16> local{}; // IPv4 uses the first 4 bytes, network byte order
+    int family = AF_INET;
+    std::array<u8, 16> local{}; // IPv4 uses first 4 bytes
     std::array<u8, 16> remote{};
 };
 
@@ -59,11 +58,10 @@ struct TcpSegment {
     std::span<const u8> payload;
 };
 
-/// Internet checksum over the pseudo-header and segment. Returns 0 when verifying a segment
-/// whose checksum field is correct.
+// Returns 0 when verifying a segment with a correct checksum.
 u16 TcpChecksum(int family, const u8* src_addr, const u8* dst_addr, std::span<const u8> segment);
 
-/// Parses a raw TCP segment. With pseudo, the checksum is verified too (sender = pseudo.remote).
+// Checksum is verified if pseudo is given. Sender is pseudo.remote.
 std::optional<TcpSegment> ParseTcpSegment(std::span<const u8> bytes,
                                           const PseudoHeader* pseudo = nullptr);
 
@@ -71,19 +69,19 @@ std::vector<u8> BuildTcpSegment(const PseudoHeader& pseudo, u16 src_port, u16 ds
                                 u32 ack, u8 flags, u16 window, std::optional<u16> mss,
                                 std::span<const u8> payload);
 
-/// The RST a port without a connection sends in reply to seg (none if seg is itself a RST).
+// RST reply from a closed port. None if seg is itself a RST.
 std::optional<std::vector<u8>> BuildResetFor(const PseudoHeader& pseudo, const TcpSegment& seg);
 
 struct TcpConfig {
-    // PS4 defaults for TCP over UDPP2P: 32 KiB send, 64 KiB receive.
+    // PS4 defaults for TCP over UDPP2P
     u32 recv_buffer = 65535;
     u32 send_buffer = 32 * 1024;
-    u16 mss = 1200; // what fits in one P2P UDP datagram after encapsulation and crypto overhead
+    u16 mss = 1200; // fits one P2P datagram after overhead
     std::chrono::milliseconds initial_rto{1000};
     std::chrono::milliseconds min_rto{200};
     std::chrono::milliseconds max_rto{60000};
     std::chrono::milliseconds delayed_ack{40};
-    std::chrono::milliseconds time_wait{2000}; // TODO: real 2MSL is 60 s on FreeBSD
+    std::chrono::milliseconds time_wait{2000}; // TODO: FreeBSD 2MSL is 60 s
     int syn_retries = 6;
     int data_retries = 12;
 };
@@ -109,33 +107,27 @@ public:
 
     struct IoResult {
         size_t bytes;
-        Error error; // WouldBlock, NotConn, Pipe, or the connection's failure
+        Error error;
     };
 
     TcpConnection(const TcpConfig& config, const PseudoHeader& pseudo, u16 local_port,
                   u16 remote_port, u32 iss, Emit emit);
 
-    // --- Opening ---
     void Connect(Clock::time_point now);
-    /// Passive open: `syn` is a SYN (without ACK) that arrived on a listening port.
+    // Passive open from a SYN on a listening port.
     void AcceptSyn(const TcpSegment& syn, Clock::time_point now);
 
-    // --- Network side ---
     void OnSegment(const TcpSegment& seg, Clock::time_point now);
     void OnTimer(Clock::time_point now);
     std::optional<Clock::time_point> NextDeadline() const;
 
-    // --- Application side ---
     IoResult Send(std::span<const u8> data, Clock::time_point now);
     IoResult Recv(std::span<u8> out, bool peek, Clock::time_point now);
-    /// Half-close: queue a FIN after the pending data.
     void Shutdown(Clock::time_point now);
-    /// The application released the socket: FIN, or RST if unread data is discarded (BSD).
+    // Sends RST instead of FIN if unread data is discarded (BSD).
     void Close(Clock::time_point now);
-    /// Immediate RST.
     void Abort();
 
-    // --- State ---
     TcpState State() const {
         return state_;
     }
@@ -158,7 +150,6 @@ public:
         return remote_port_;
     }
 
-    // Statistics, used by tests.
     u32 Retransmissions() const {
         return retransmissions_;
     }
@@ -202,8 +193,7 @@ private:
     TcpState state_ = TcpState::Closed;
     Error error_ = Error::Ok;
 
-    // Send side. send_buf_ holds data from sequence number buf_seq_ onwards (acked data is
-    // removed). snd_max_ is the highest sequence sent; snd_nxt_ rewinds to snd_una_ on timeout.
+    // Send side. send_buf_ starts at buf_seq_. snd_nxt_ rewinds to snd_una_ on timeout.
     u32 iss_;
     u32 snd_una_;
     u32 snd_nxt_;
@@ -212,18 +202,17 @@ private:
     u32 snd_wnd_ = 0;
     u32 snd_wl1_ = 0;
     u32 snd_wl2_ = 0;
-    u16 snd_mss_ = 536; // RFC 9293 default when the peer sends no MSS option
+    u16 snd_mss_ = 536; // RFC 9293 default
     std::deque<u8> send_buf_;
     bool fin_queued_ = false;
 
-    // Congestion control.
     u32 cwnd_ = 0;
     u32 ssthresh_ = 0x7fffffff;
     int dupacks_ = 0;
     bool in_recovery_ = false;
     u32 recover_ = 0;
 
-    // Retransmission timer (RFC 6298) and RTT measurement
+    // RTO per RFC 6298
     Clock::duration srtt_{};
     Clock::duration rttvar_{};
     Clock::duration rto_;
@@ -239,11 +228,10 @@ private:
     std::optional<Clock::time_point> delayed_ack_deadline_;
     std::optional<Clock::time_point> time_wait_deadline_;
 
-    // Receive side. Out-of-order segments are keyed by absolute stream offset (u64), which
-    // sorts correctly across sequence-number wraparound.
+    // Receive side. Out-of-order data is keyed by u64 stream offset so it sorts across wrap.
     u32 irs_ = 0;
     u32 rcv_nxt_ = 0;
-    u64 rcv_offset_ = 0; // absolute offset of rcv_nxt_
+    u64 rcv_offset_ = 0; // stream offset of rcv_nxt_
     std::deque<u8> recv_buf_;
     std::map<u64, std::vector<u8>> out_of_order_;
     size_t out_of_order_bytes_ = 0;

@@ -71,7 +71,6 @@ const char* ToString(TcpState state) {
     return "?";
 }
 
-// Wire format
 u16 TcpChecksum(int family, const u8* src_addr, const u8* dst_addr, std::span<const u8> segment) {
     const size_t address_size = family == AF_INET6 ? 16 : 4;
     u64 sum = 0;
@@ -109,10 +108,10 @@ std::optional<TcpSegment> ParseTcpSegment(std::span<const u8> bytes, const Pseud
     seg.window = Read16(b + 14);
     for (size_t i = 20; i < header_size;) {
         const u8 kind = b[i];
-        if (kind == 0) { // end of options
+        if (kind == 0) {
             break;
         }
-        if (kind == 1) { // no-op
+        if (kind == 1) {
             ++i;
             continue;
         }
@@ -126,8 +125,7 @@ std::optional<TcpSegment> ParseTcpSegment(std::span<const u8> bytes, const Pseud
         if (kind == 2 && length == 4) {
             seg.mss = Read16(b + i + 2);
         }
-        // Window scale, SACK-permitted and timestamps are ignored; since we never offer them
-        // in return, the peer must not use them (RFC 7323, RFC 2018).
+        // Other options are ignored. We never offer them, so the peer won't use them.
         i += length;
     }
     seg.payload = bytes.subspan(header_size);
@@ -161,8 +159,7 @@ std::optional<std::vector<u8>> BuildResetFor(const PseudoHeader& pseudo, const T
     if (seg.flags & Rst) {
         return std::nullopt;
     }
-    // RFC 9293 3.10.7.1: if the offending segment has an ACK, the RST takes its sequence number
-    // from it; otherwise the RST acknowledges everything the segment occupied.
+    // RST fields per RFC 9293 3.10.7.1
     if (seg.flags & Ack) {
         return BuildTcpSegment(pseudo, seg.dst_port, seg.src_port, seg.ack, 0, Rst, 0, std::nullopt,
                                {});
@@ -173,7 +170,6 @@ std::optional<std::vector<u8>> BuildResetFor(const PseudoHeader& pseudo, const T
                            std::nullopt, {});
 }
 
-// Connection
 TcpConnection::TcpConnection(const TcpConfig& config, const PseudoHeader& pseudo, u16 local_port,
                              u16 remote_port, u32 iss, Emit emit)
     : config_(config), pseudo_(pseudo), local_port_(local_port), remote_port_(remote_port),
@@ -221,13 +217,11 @@ bool TcpConnection::Readable() const {
 
 bool TcpConnection::Writable() const {
     if (error_ != Error::Ok || state_ == TcpState::Closed) {
-        return true; // so a waiting connect/send wakes up and sees the failure
+        return true; // wake waiters so they see the error
     }
     return (state_ == TcpState::Established || state_ == TcpState::CloseWait) && !fin_queued_ &&
            SendSpace() > 0;
 }
-
-// --- Output ----------------------------------------------------------------------------------
 
 void TcpConnection::EmitSegment(u32 seq, u8 flags, std::span<const u8> payload, bool with_mss) {
     const u16 window = ReceiveWindow();
@@ -244,8 +238,7 @@ void TcpConnection::EmitSegment(u32 seq, u8 flags, std::span<const u8> payload, 
 }
 
 void TcpConnection::SendAck() {
-    // snd_max_, not snd_nxt_: after a timeout snd_nxt_ is rewound, and an ACK carrying that
-    // older sequence number would be discarded by the peer as an old duplicate (as BSD does).
+    // Not snd_nxt_, which is rewound after a timeout. BSD drops ACKs with an old seq.
     EmitSegment(snd_max_, Ack, {});
 }
 
@@ -280,7 +273,7 @@ void TcpConnection::TrySend(Clock::time_point now) {
     }
     for (;;) {
         if (FinSent() && snd_nxt_ == FinSeq() + 1) {
-            return; // everything including FIN is in flight
+            return; // FIN in flight
         }
         const u32 offset = snd_nxt_ - buf_seq_;
         const u32 available =
@@ -300,7 +293,7 @@ void TcpConnection::TrySend(Clock::time_point now) {
                 ArmRetransmit(now);
             } else if (available > 0 && snd_wnd_ == 0 && snd_max_ == snd_una_ &&
                        !persist_deadline_) {
-                // Peer's window is closed and nothing is in flight to elicit a window update.
+                // Zero window and nothing in flight, start probing.
                 persist_interval_ = rto_;
                 persist_deadline_ = now + persist_interval_;
             }
@@ -309,7 +302,7 @@ void TcpConnection::TrySend(Clock::time_point now) {
 
         SendData(snd_nxt_, len);
         if (!rtt_active_ && snd_nxt_ == snd_max_) {
-            rtt_active_ = true; // time only new data
+            rtt_active_ = true; // don't time retransmits
             rtt_seq_ = snd_nxt_;
             rtt_start_ = now;
         }
@@ -332,8 +325,6 @@ void TcpConnection::RetransmitFirst() {
         EmitSegment(FinSeq(), Fin | Ack, {});
     }
 }
-
-// --- Opening ---------------------------------------------------------------------------------
 
 void TcpConnection::Connect(Clock::time_point now) {
     state_ = TcpState::SynSent;
@@ -398,13 +389,11 @@ void TcpConnection::HandleSynSent(const TcpSegment& seg, Clock::time_point now) 
         SendAck();
         TrySend(now);
     } else {
-        // Simultaneous open.
+        // Simultaneous open
         state_ = TcpState::SynReceived;
         EmitSegment(iss_, Syn | Ack, {}, true);
     }
 }
-
-// --- Input -----------------------------------------------------------------------------------
 
 bool TcpConnection::Acceptable(u32 seq, u32 len) const {
     const u32 window = ReceiveWindow();
@@ -426,7 +415,7 @@ void TcpConnection::OnSegment(const TcpSegment& seg, Clock::time_point now) {
         HandleSynSent(seg, now);
         return;
     case TcpState::TimeWait:
-        // RFC 1337: ignore RST in TIME-WAIT. A retransmitted FIN means our last ACK was lost.
+        // RFC 1337: ignore RST in TIME-WAIT. A resent FIN means our ACK was lost.
         if ((seg.flags & Fin) && !(seg.flags & Rst)) {
             SendAck();
             time_wait_deadline_ = now + config_.time_wait;
@@ -436,7 +425,7 @@ void TcpConnection::OnSegment(const TcpSegment& seg, Clock::time_point now) {
         break;
     }
 
-    // Our SYN-ACK was lost and the peer retransmitted its SYN.
+    // Peer resent its SYN, so our SYN-ACK was lost.
     if (state_ == TcpState::SynReceived && (seg.flags & (Syn | Ack | Rst)) == Syn &&
         seg.seq == irs_) {
         ++retransmissions_;
@@ -448,13 +437,12 @@ void TcpConnection::OnSegment(const TcpSegment& seg, Clock::time_point now) {
                        ((seg.flags & Fin) ? 1 : 0);
     bool ack_only = false;
     if (!Acceptable(seg.seq, length)) {
-        // With a closed receive window, still take the ACK and window of in-sequence segments
+        // Zero window: still take the ACK and window of in-sequence segments.
         if (ReceiveWindow() == 0 && seg.seq == rcv_nxt_ && (seg.flags & Ack) &&
             !(seg.flags & (Rst | Syn))) {
             ack_only = true;
         } else {
-            // Old duplicate (our ACK was lost) or outside the window: re-ACK so the peer stops
-            // retransmitting. Also how we answer the peer's zero-window probes.
+            // Old duplicate or out of window. Re-ACK, this also answers window probes.
             if (!(seg.flags & Rst)) {
                 SendAck();
             }
@@ -464,7 +452,6 @@ void TcpConnection::OnSegment(const TcpSegment& seg, Clock::time_point now) {
 
     if (seg.flags & Rst) {
         if (seg.seq == rcv_nxt_) {
-            // In CLOSING/LAST-ACK the application is done with the connection: just close.
             const bool closing = state_ == TcpState::Closing || state_ == TcpState::LastAck;
             Terminate(closing                           ? Error::Ok
                       : state_ == TcpState::SynReceived ? Error::ConnRefused
@@ -497,7 +484,7 @@ void TcpConnection::OnSegment(const TcpSegment& seg, Clock::time_point now) {
         return;
     }
     if (ack_only) {
-        SendAck(); // tell the peer our window is still closed
+        SendAck(); // window still closed
         return;
     }
     ProcessData(seg, now);
@@ -506,7 +493,7 @@ void TcpConnection::OnSegment(const TcpSegment& seg, Clock::time_point now) {
 
 bool TcpConnection::ProcessAck(const TcpSegment& seg, Clock::time_point now) {
     if (SeqGt(seg.ack, snd_max_)) {
-        SendAck(); // acknowledges something we never sent
+        SendAck(); // acks unsent data
         return false;
     }
     if (SeqGt(seg.ack, snd_una_)) {
@@ -564,10 +551,10 @@ void TcpConnection::OnNewAck(u32 ack, Clock::time_point now) {
 
     if (in_recovery_) {
         if (SeqGe(ack, recover_)) {
-            in_recovery_ = false; // full acknowledgment: leave fast recovery
+            in_recovery_ = false;
             cwnd_ = ssthresh_;
         } else {
-            // NewReno partial ACK: the next hole is lost too.
+            // NewReno partial ACK
             RetransmitFirst();
             cwnd_ = cwnd_ > acked ? cwnd_ - acked + snd_mss_ : snd_mss_;
         }
@@ -587,7 +574,7 @@ void TcpConnection::OnNewAck(u32 ack, Clock::time_point now) {
 
 void TcpConnection::OnDuplicateAck() {
     if (in_recovery_) {
-        cwnd_ += snd_mss_; // each dup ACK means a segment left the network
+        cwnd_ += snd_mss_;
         return;
     }
     if (++dupacks_ == 3) {
@@ -603,7 +590,7 @@ void TcpConnection::OnDuplicateAck() {
 void TcpConnection::ProcessData(const TcpSegment& seg, Clock::time_point now) {
     if (state_ != TcpState::Established && state_ != TcpState::FinWait1 &&
         state_ != TcpState::FinWait2) {
-        // The peer already closed its side; anything here is a retransmission.
+        // Peer already sent FIN, this is a retransmission.
         if (seg.flags & Fin) {
             SendAck();
         }
@@ -615,14 +602,14 @@ void TcpConnection::ProcessData(const TcpSegment& seg, Clock::time_point now) {
     if (seg.flags & Fin) {
         peer_fin_seq_ = seg.seq + static_cast<u32>(seg.payload.size());
     }
-    if (SeqLt(seq, rcv_nxt_)) { // drop the part we already have
+    if (SeqLt(seq, rcv_nxt_)) {
         const u32 skip = rcv_nxt_ - seq;
         data = skip >= data.size() ? std::span<const u8>{} : data.subspan(skip);
         seq = rcv_nxt_;
     }
     const u32 window = ReceiveWindow();
     const u32 room = seq - rcv_nxt_ < window ? rcv_nxt_ + window - seq : 0;
-    if (data.size() > room) { // drop what lies beyond our window
+    if (data.size() > room) {
         data = data.first(room);
     }
 
@@ -634,7 +621,7 @@ void TcpConnection::ProcessData(const TcpSegment& seg, Clock::time_point now) {
             rcv_offset_ += data.size();
             if (!out_of_order_.empty()) {
                 PullOutOfOrder();
-                ack_now = true; // filled (part of) a hole: tell the sender at once
+                ack_now = true; // filled a hole
             }
             ++unacked_segments_;
         } else {
@@ -646,7 +633,7 @@ void TcpConnection::ProcessData(const TcpSegment& seg, Clock::time_point now) {
                     slot.assign(data.begin(), data.end());
                 }
             }
-            ack_now = true; // duplicate ACK drives the sender's fast retransmit
+            ack_now = true; // dup ACK for fast retransmit
         }
     }
 
@@ -684,7 +671,7 @@ void TcpConnection::PullOutOfOrder() {
     while (!out_of_order_.empty()) {
         auto it = out_of_order_.begin();
         if (it->first > rcv_offset_) {
-            return; // still a hole
+            return;
         }
         const u64 end = it->first + it->second.size();
         if (end > rcv_offset_) {
@@ -698,8 +685,6 @@ void TcpConnection::PullOutOfOrder() {
         out_of_order_.erase(it);
     }
 }
-
-// --- Timers ----------------------------------------------------------------------------------
 
 std::optional<Clock::time_point> TcpConnection::NextDeadline() const {
     std::optional<Clock::time_point> next;
@@ -726,8 +711,7 @@ void TcpConnection::OnTimer(Clock::time_point now) {
         OnRetransmitTimeout(now);
     }
     if (persist_deadline_ && now >= *persist_deadline_) {
-        // Zero-window probe: an out-of-window empty segment makes the peer re-ACK with its
-        // current window, the same trick keepalives use.
+        // Window probe. An old seq makes the peer re-ACK with its window.
         EmitSegment(snd_una_ - 1, Ack, {});
         persist_interval_ = std::min<Clock::duration>(persist_interval_ * 2, config_.max_rto);
         persist_deadline_ = now + persist_interval_;
@@ -757,7 +741,7 @@ void TcpConnection::OnRetransmitTimeout(Clock::time_point now) {
         cwnd_ = snd_mss_;
         in_recovery_ = false;
         dupacks_ = 0;
-        snd_nxt_ = snd_una_; // go back and resend from the first unacknowledged byte
+        snd_nxt_ = snd_una_;
         TrySend(now);
     }
     retransmit_deadline_ = now + rto_;
@@ -790,7 +774,7 @@ void TcpConnection::Terminate(Error error) {
     send_buf_.clear();
     out_of_order_.clear();
     out_of_order_bytes_ = 0;
-    // Data already received stays readable, as with BSD sockets.
+    // Received data stays readable, like BSD.
 }
 
 void TcpConnection::ClearTimers() {
@@ -799,8 +783,6 @@ void TcpConnection::ClearTimers() {
     delayed_ack_deadline_.reset();
     time_wait_deadline_.reset();
 }
-
-// --- Application side ------------------------------------------------------------------------
 
 TcpConnection::IoResult TcpConnection::Send(std::span<const u8> data, Clock::time_point now) {
     if (error_ != Error::Ok) {
@@ -839,7 +821,7 @@ TcpConnection::IoResult TcpConnection::Recv(std::span<u8> out, bool peek, Clock:
         return {n, Error::Ok};
     }
     if (fin_received_) {
-        return {0, Error::Ok}; // end of stream
+        return {0, Error::Ok}; // EOF
     }
     if (error_ != Error::Ok) {
         return {0, error_};
@@ -854,8 +836,7 @@ void TcpConnection::MaybeSendWindowUpdate() {
     if (!Synchronized() || fin_received_) {
         return;
     }
-    // Tell the peer when reading reopened a meaningful part of the window (avoids both a
-    // stalled sender and silly-window updates).
+    // Only update once the window opened enough to avoid silly window syndrome.
     const u32 threshold = std::min<u32>(config_.recv_buffer / 2, 2u * snd_mss_);
     if (static_cast<s32>(ReceiveWindow()) - static_cast<s32>(last_advertised_window_) >=
         static_cast<s32>(threshold)) {
@@ -872,7 +853,7 @@ void TcpConnection::Shutdown(Clock::time_point now) {
         Terminate(Error::Ok);
         return;
     case TcpState::SynReceived:
-        Abort(); // never handed to the application
+        Abort(); // not accepted yet
         return;
     case TcpState::Established:
         state_ = TcpState::FinWait1;
@@ -889,7 +870,7 @@ void TcpConnection::Shutdown(Clock::time_point now) {
 
 void TcpConnection::Close(Clock::time_point now) {
     if (state_ == TcpState::SynSent || (Synchronized() && !recv_buf_.empty())) {
-        Abort(); // BSD: closing with unread data resets the connection
+        Abort(); // BSD resets on close with unread data
         return;
     }
     Shutdown(now);

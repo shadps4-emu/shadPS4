@@ -1,20 +1,18 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// The PS4 P2P wire format, ported from the reverse-engineered implementation.
+// PS4 P2P wire format. vports are big endian.
 //
-//   Datagram:  [0xFF][flags|kind][src vport (2)][dst vport (2)][digest (4)?][payload]
-//              vports in network byte order (p2p_vport, p2p_sin_vport).
-//   Broadcast: [0xFF][flags|0x40|kind][port (2)][digest (4)?][payload] (datagrams only)
-//   Stream:    [0xFF][flags|kind][digest (4)?][TCP segment]
-//   Signaling: a plain datagram from and to vport 0xFFFF.
+// Datagram:  [0xFF][flags|kind][src vport 2][dst vport 2][digest 4?][payload]
+// Broadcast: [0xFF][flags|0x40|kind][port 2][digest 4?][payload], datagrams only.
+//            Broadcast layout is assumed, not confirmed yet.
+// Stream:    [0xFF][flags|kind][digest 4?][TCP segment]
+// Signaling: plain datagram from and to vport 0xFFFF.
 //
-//   flags (t_p2p_proto_flags): 0x80 P2P_VALID, 0x40 P2P_BROADCAST, 0x20 P2P_DIGEST.
-//   kind:  P2P_UDP_SIMPLE 3, _CRYPTO 4, _SIGNTR 5, _CRYPTO_SIGNTR 6,
-//          P2P_TCP_SIMPLE 7, _CRYPTO 8, _SIGNTR 9, _CRYPTO_SIGNTR 10 (see p2p_crypto.h).
-//   digest: the title's 4-byte tag, HMAC-SHA1 of the 16-byte value NP installs (ioctl 0xd8),
-//           truncated; called the communication ID in this code.
-//
+// flags: 0x80 valid, 0x40 broadcast, 0x20 digest.
+// kind: UDP 3-6, TCP 7-10. Base +1 for crypto, +2 for signature.
+// digest: truncated HMAC-SHA1 of the 16-byte value NP installs (ioctl 0xd8).
+// We call it the communication ID.
 
 #pragma once
 
@@ -29,9 +27,9 @@ namespace Core::Net::P2P {
 
 namespace Wire {
 constexpr u8 Marker = 0xFF;
-constexpr u8 FlagValid = 0x80;     // P2P_VALID
-constexpr u8 FlagBroadcast = 0x40; // P2P_BROADCAST
-constexpr u8 FlagDigest = 0x20;    // P2P_DIGEST: the 4-byte communication ID follows
+constexpr u8 FlagValid = 0x80;
+constexpr u8 FlagBroadcast = 0x40;
+constexpr u8 FlagDigest = 0x20; // communication ID follows
 constexpr u8 KindDatagram = 3;
 constexpr u8 KindStream = 7;
 constexpr u16 SignalingVport = 0xFFFF;
@@ -39,23 +37,20 @@ constexpr u16 SignalingVport = 0xFFFF;
 
 using CommunicationId = std::array<u8, 4>;
 
-/// Keys for protected traffic and the title's communication ID.
 struct KeyEntry {
     P2PKey key;
-    u16 local_port = 0; // network byte order, as the ioctl carries it
+    u16 local_port = 0; // network byte order
     u8 flags = 0;
     u8 id = 0; // groups keys for removal
 };
 
 class Keyring {
 public:
-    /// Installs entry for peer, replacing any other key. When the same key value is
-    /// already installed there, adds a reference instead (NP installs a key once per user).
+    // Replaces the peer's key. The same key again just adds a reference,
+    // since NP installs it once per user.
     void AddPeerKey(const Endpoint& peer, const KeyEntry& entry);
-    /// Drops one reference to the key installed for peer. It goes away with the last one.
-    /// False when no key with that value and id is installed there.
+    // Drops a reference. False if that key and id aren't installed.
     bool ReleasePeerKey(const Endpoint& peer, const P2PKey& key, u8 id);
-    /// Removes every peer key installed with id.
     void RemoveKeysWithId(u8 id);
     void SetPeerKey(const Endpoint& peer, const P2PKey& key);
     void RemovePeerKey(const Endpoint& peer);
@@ -83,9 +78,9 @@ private:
 
 class FramingCodec final : public Codec {
 public:
-    /// Sees a dropped P2P_BROADCAST packet (the whole UDP payload) and its sender.
+    // Gets dropped broadcast packets, for debugging.
     using BroadcastObserver = std::function<void(std::span<const u8>, const Endpoint&)>;
-    static constexpr int MaxReportedBroadcasts = 16; // per codec, so per P2P session
+    static constexpr int MaxReportedBroadcasts = 16; // per session
 
     explicit FramingCodec(std::shared_ptr<Keyring> keyring,
                           BroadcastObserver broadcast_observer = {});
@@ -99,12 +94,12 @@ public:
     PseudoHeader StreamPseudoHeader(const Endpoint& peer) override;
 
 private:
-    /// Applies the requested protection if a key exists,reports the kind offset used.
+    // Sends plain if there is no key. mode gets the kind offset used.
     std::vector<u8> Protect(std::span<const u8> data, const Endpoint& to, Protection protection,
                             u8& mode) const;
 
     std::shared_ptr<Keyring> keyring;
-    BroadcastObserver broadcast_observer; // for debugging broadcasts
+    BroadcastObserver broadcast_observer;
     std::atomic<int> reported_broadcasts{0};
     std::mutex pseudo_mutex;
     std::map<Endpoint, PseudoHeader> pseudo_cache;

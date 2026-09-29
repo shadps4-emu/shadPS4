@@ -71,7 +71,7 @@ bool ProtectPayload(std::span<const u8> data, bool encrypt, bool sign, const P2P
         output.insert(output.end(), iv.begin(), iv.end());
     }
     if (sign) {
-        const auto signature = Sign(body, key); // over the encrypted body
+        const auto signature = Sign(body, key); // signs ciphertext
         output.insert(output.end(), signature.begin(), signature.end());
     }
     output.insert(output.end(), body.begin(), body.end());

@@ -45,7 +45,7 @@ int TimeoutMs(const Deadline& deadline) {
     if (left <= Clock::duration::zero()) {
         return 0;
     }
-    // Round up so we never wake before the deadline, callers still loop on early wakeups.
+    // Round up to avoid waking early. Callers loop anyway.
     const auto ms = std::chrono::ceil<std::chrono::milliseconds>(left).count();
     return static_cast<int>(std::min<s64>(ms, INT_MAX));
 }
@@ -80,8 +80,6 @@ Deadline DeadlineFromSocketTimeout(std::chrono::microseconds timeout) {
 
 // Errors
 Error TranslateNative(int code) {
-    // One entry per FreeBSD errno a socket call can produce. Host codes with no equivalent map
-    // to the PS4's EINTERNAL.
     struct Entry {
         int host;
         Error error;
@@ -117,7 +115,7 @@ Error TranslateNative(int code) {
         {WSAENOBUFS, Error::NoBufs},
         {WSAEISCONN, Error::IsConn},
         {WSAENOTCONN, Error::NotConn},
-        {WSAESHUTDOWN, Error::Pipe}, // BSD reports EPIPE for a send after shutdown
+        {WSAESHUTDOWN, Error::Pipe}, // BSD gives EPIPE after shutdown
         {WSAETOOMANYREFS, Error::TooManyRefs},
         {WSAETIMEDOUT, Error::TimedOut},
         {WSAECONNREFUSED, Error::ConnRefused},
@@ -229,8 +227,8 @@ bool ConfigureSocket(NativeSocket s, int type) {
     }
 #ifdef _WIN32
     if (type == SOCK_DGRAM) {
-        // Without this, an ICMP port-unreachable caused by an earlier sendto() makes the next
-        // recvfrom() fail with WSAECONNRESET. BSD never does that for UDP.
+        // Otherwise an ICMP port-unreachable from an earlier sendto() makes the next
+        // recvfrom() fail with WSAECONNRESET. BSD doesn't do that for UDP.
         BOOL report = FALSE;
         DWORD bytes = 0;
         WSAIoctl(s, SIO_UDP_CONNRESET, &report, sizeof(report), nullptr, 0, &bytes, nullptr,
@@ -240,7 +238,7 @@ bool ConfigureSocket(NativeSocket s, int type) {
     (void)type;
     SetCloseOnExec(s);
 #ifdef SO_NOSIGPIPE
-    // macOS/FreeBSD: a dead peer must not raise SIGPIPE and kill the emulator.
+    // Don't let a dead peer SIGPIPE the emulator.
     int on = 1;
     setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on));
 #endif
@@ -278,8 +276,7 @@ Error CreateSocketPair(int family, int type, int protocol, NativeSocket out[2]) 
     if (type != SOCK_STREAM) {
         return Error::ProtoNoSupport;
     }
-    // Listen on an ephemeral loopback port, connect, accept, and check the accepted socket
-    // really is ours (its peer is our client's local address).
+    // Connect through a loopback listener and make sure we accepted our own client.
     Error e;
     NativeSocket listener = CreateSocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, &e);
     if (listener == InvalidSocket) {
@@ -310,7 +307,6 @@ Error CreateSocketPair(int family, int type, int protocol, NativeSocket out[2]) 
         LastError() != Error::WouldBlock && LastError() != Error::InProgress) {
         return fail(LastError());
     }
-    // Both ends are local, so the handshake completes almost at once.
     WSAPOLLFD poll{listener, POLLRDNORM, 0};
     if (WSAPoll(&poll, 1, 5000) != 1) {
         return fail(Error::TimedOut);
@@ -326,7 +322,7 @@ Error CreateSocketPair(int family, int type, int protocol, NativeSocket out[2]) 
     getsockname(client, reinterpret_cast<sockaddr*>(&client_name), &client_len);
     getpeername(server, reinterpret_cast<sockaddr*>(&server_peer), &peer_len);
     if (client_name.sin_port != server_peer.sin_port) {
-        return fail(Error::ConnAborted); // someone else connected first
+        return fail(Error::ConnAborted); // someone else got in first
     }
     WSAPOLLFD writable{client, POLLWRNORM, 0};
     WSAPoll(&writable, 1, 5000);
@@ -358,15 +354,14 @@ void CloseSocket(NativeSocket s) {
 #ifdef _WIN32
     closesocket(s);
 #else
-    close(s); // never retry on EINTR: the fd may already be released
+    close(s); // don't retry on EINTR, the fd may already be gone
 #endif
 }
 
 Error PrepareBind(NativeSocket s, bool reuse_addr, bool reuse_port) {
 #ifdef _WIN32
-    // Windows SO_REUSEADDR lets another socket bind a port that is actively in use, like BSD's
-    // SO_REUSEPORT (and BSD's SO_REUSEADDR for multicast receivers, which games use it for).
-    // BSD "no reuse" is closest to SO_EXCLUSIVEADDRUSE.
+    // Windows SO_REUSEADDR behaves like BSD SO_REUSEPORT, which is also what games want for
+    // multicast. Without reuse, SO_EXCLUSIVEADDRUSE is the closest match to BSD.
     const int opt = (reuse_addr || reuse_port) ? SO_REUSEADDR : SO_EXCLUSIVEADDRUSE;
     BOOL on = TRUE;
     if (setsockopt(s, SOL_SOCKET, opt, reinterpret_cast<const char*>(&on), sizeof(on)) != 0) {
@@ -392,7 +387,7 @@ void PrepareClose(NativeSocket s, bool guest_blocking) {
     socklen_t len = sizeof(value);
     if (getsockopt(s, SOL_SOCKET, SO_LINGER, reinterpret_cast<char*>(&value), &len) != 0 ||
         value.l_onoff == 0 || value.l_linger <= 0) {
-        return; // no linger, or linger 0 (reset on close): the same in every mode
+        return; // no linger or linger 0, same in every mode
     }
     if (guest_blocking) {
 #ifdef _WIN32
@@ -428,8 +423,7 @@ Error Connect(NativeSocket s, const sockaddr* addr, socklen_t len) {
     }
     const Error e = LastError();
 #ifdef _WIN32
-    // Winsock reports a started non-blocking connect as WSAEWOULDBLOCK,BSD says EINPROGRESS.
-    // A repeat call while pending gives WSAEALREADY
+    // Winsock says WSAEWOULDBLOCK where BSD says EINPROGRESS.
     if (e == Error::WouldBlock) {
         return Error::InProgress;
     }
@@ -461,7 +455,7 @@ NativeSocket Accept(NativeSocket s, sockaddr* addr, socklen_t* len, Error* error
             *error = e;
             return InvalidSocket;
         }
-        // Never rely on inheritance of non-blocking mode: it differs between platforms.
+        // Whether accept() inherits O_NONBLOCK varies by platform.
         if (!ConfigureSocket(c, SOCK_STREAM)) {
             *error = LastError();
             CloseSocket(c);
@@ -475,7 +469,7 @@ NativeSocket Accept(NativeSocket s, sockaddr* addr, socklen_t* len, Error* error
 IoResult SendTo(NativeSocket s, const void* buf, size_t len, int flags, const sockaddr* addr,
                 socklen_t addr_len) {
 #ifdef MSG_NOSIGNAL
-    flags |= MSG_NOSIGNAL; // Linux: no SIGPIPE on a dead peer
+    flags |= MSG_NOSIGNAL;
 #endif
 #ifdef _WIN32
     const int n_len = static_cast<int>(std::min<size_t>(len, INT_MAX));
@@ -508,8 +502,7 @@ IoResult RecvFrom(NativeSocket s, void* buf, size_t len, int flags, sockaddr* ad
     if (n < 0) {
         const Error e = LastError();
 #ifdef _WIN32
-        // Winsock fails a truncated datagram with WSAEMSGSIZE after filling the buffer.
-        // BSD returns the truncated length instead.
+        // Winsock fails truncated datagrams with WSAEMSGSIZE. BSD returns the length read.
         if (e == Error::MsgSize) {
             return {n_len, Error::Ok};
         }
@@ -519,12 +512,11 @@ IoResult RecvFrom(NativeSocket s, void* buf, size_t len, int flags, sockaddr* ad
     return {static_cast<s64>(n), Error::Ok};
 }
 
-// WakeHandle
 WakeHandle::WakeHandle() {
 #if defined(__linux__)
     read_ = write_ = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
 #elif defined(_WIN32)
-    // WSAPoll/wepoll only accept sockets, so the wake object is a connected loopback UDP pair.
+    // WSAPoll and wepoll only take sockets, so use a loopback UDP pair.
     read_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     write_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (read_ == InvalidSocket || write_ == InvalidSocket) {
@@ -541,7 +533,7 @@ WakeHandle::WakeHandle() {
                     getsockname(read_, reinterpret_cast<sockaddr*>(&addr), &addr_len) == 0 &&
                     connect(write_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == 0 &&
                     getsockname(write_, reinterpret_cast<sockaddr*>(&peer), &peer_len) == 0 &&
-                    // Connecting the reader to the writer means it only accepts our own datagrams.
+                    // Only accept datagrams from our writer.
                     connect(read_, reinterpret_cast<sockaddr*>(&peer), sizeof(peer)) == 0 &&
                     ConfigureSocket(read_, SOCK_DGRAM) && ConfigureSocket(write_, SOCK_DGRAM);
     if (!ok) {
@@ -583,7 +575,7 @@ void WakeHandle::Reset() {
 }
 
 void WakeHandle::Signal() const {
-    // Failure means the buffer/counter is already full, i.e. already signalled: harmless.
+    // Fails only when already full, which means already signalled.
 #if defined(__linux__)
     const u64 one = 1;
     [[maybe_unused]] const auto r = write(write_, &one, sizeof(one));
@@ -597,7 +589,7 @@ void WakeHandle::Signal() const {
 }
 
 void WakeHandle::Drain() const {
-    char buf[64]; // >= 8 bytes, as eventfd requires
+    char buf[64]; // eventfd needs at least 8
 #ifdef _WIN32
     while (recv(read_, buf, sizeof(buf), 0) > 0) {
     }
@@ -607,7 +599,6 @@ void WakeHandle::Drain() const {
 #endif
 }
 
-// Primitive 1: WaitOne
 WaitResult WaitOne(NativeSocket s, u32 interest, const WakeHandle& wake, Deadline deadline) {
 #ifdef _WIN32
     WSAPOLLFD fds[2]{};
@@ -636,20 +627,19 @@ WaitResult WaitOne(NativeSocket s, u32 interest, const WakeHandle& wake, Deadlin
             return WaitResult::Failed;
         }
         if (fds[1].revents != 0) {
-            return WaitResult::Woken; // abort wins over readiness
+            return WaitResult::Woken; // abort wins
         }
         if (fds[0].revents != 0) {
-            return WaitResult::Ready; // includes POLLERR/POLLHUP: the retry surfaces the error
+            return WaitResult::Ready; // the retry reports any error
         }
         if (Expired(deadline)) {
             return WaitResult::TimedOut;
         }
-        // Woke early (timer granularity): wait out the remainder.
+        // Woke early, wait again.
     }
 }
 
-// Primitive 2: HostEpoll
-#if HOST_NET_EPOLL // Linux epoll, or wepoll on Windows (same API)
+#if HOST_NET_EPOLL // epoll or wepoll
 
 u32 ToEpoll(u32 events, u32 flags) {
     u32 ev = EPOLLRDHUP;
@@ -677,15 +667,14 @@ u32 FromEpoll(u32 ev) {
         out |= EvErr;
     }
     if (ev & (EPOLLHUP | EPOLLRDHUP)) {
-        out |= EvHup; // DISCUSS: guest may distinguish half-close (RDHUP) from full hangup
+        out |= EvHup; // TODO: guest may need RDHUP kept apart from HUP
     }
     return out;
 }
 
 Error EpollError() {
 #ifdef _WIN32
-    // wepoll reports Win32 codes, not WSA ones. The guest layer pre-validates EEXIST/ENOENT,
-    // so anything that reaches here is unexpected.
+    // wepoll gives Win32 codes, not WSA ones. EEXIST/ENOENT are checked by the guest layer.
     return Error::Internal;
 #else
     return LastError();
@@ -741,7 +730,7 @@ Error HostEpoll::Modify(NativeSocket s, u64 tag, u32 events, u32 flags) {
 }
 
 Error HostEpoll::Remove(NativeSocket s) {
-    epoll_event ev{}; // non-null for pre-2.6.9 Linux compatibility
+    epoll_event ev{}; // must be non-null before Linux 2.6.9
     return epoll_ctl(handle_, EPOLL_CTL_DEL, s, &ev) == 0 ? Error::Ok : EpollError();
 }
 
@@ -789,11 +778,11 @@ u64 UdataToTag(void* udata) {
 Error KqueueApply(int kq, int s, u64 tag, u32 events, u32 flags) {
     u16 arm = EV_ADD | EV_ENABLE | EV_RECEIPT;
     if (flags & OneShot) {
-        arm |= EV_DISPATCH; // like EPOLLONESHOT: disabled until re-armed, not deleted
+        arm |= EV_DISPATCH; // like EPOLLONESHOT
     }
     const u16 disarm = EV_DELETE | EV_RECEIPT;
-    // TODO: with neither EvIn nor EvOut, epoll still reports ERR/HUP but kqueue reports
-    // nothing. Registering EVFILT_READ silently would fix that at the cost of spurious EvIn.
+    // TODO: with no EvIn/EvOut, epoll still reports ERR/HUP but kqueue reports nothing.
+    // A hidden EVFILT_READ would fix it but give spurious EvIn.
     struct kevent changes[2];
     struct kevent results[2];
     EV_SET(&changes[0], s, EVFILT_READ, (events & EvIn) ? arm : disarm, 0, 0, TagToUdata(tag));
@@ -803,8 +792,8 @@ Error KqueueApply(int kq, int s, u64 tag, u32 events, u32 flags) {
         return LastError();
     }
     for (int i = 0; i < n; ++i) {
-        // With EV_RECEIPT every change yields an EV_ERROR entry whose data is 0 on success.
-        // ENOENT just means we deleted a filter that was never added.
+        // EV_RECEIPT returns an EV_ERROR entry per change, data 0 on success. ENOENT is
+        // deleting a filter that was never added.
         if ((results[i].flags & EV_ERROR) && results[i].data != 0 && results[i].data != ENOENT) {
             return TranslateNative(static_cast<int>(results[i].data));
         }
@@ -833,7 +822,7 @@ bool HostEpoll::Valid() const {
     return handle_ >= 0;
 }
 
-// Guest layer enforces EEXIST/ENOENT, so Add and Modify are the same kqueue operation.
+// Guest layer checks EEXIST/ENOENT, so Add and Modify are the same here.
 Error HostEpoll::Add(NativeSocket s, u64 tag, u32 events, u32 flags) {
     return KqueueApply(handle_, s, tag, events, flags);
 }
@@ -880,10 +869,10 @@ EpollWaitResult HostEpoll::Wait(std::span<EpollEvent> out, Deadline deadline) {
             if (buf[i].flags & EV_EOF) {
                 ev |= EvHup;
                 if (buf[i].fflags != 0) {
-                    ev |= EvErr; // fflags carries the socket error on EOF
+                    ev |= EvErr; // fflags holds the socket error
                 }
             }
-            // kqueue reports read and write readiness separately: merge them per socket.
+            // kqueue reports read and write separately, merge them.
             bool merged = false;
             for (s32 j = 0; j < r.count; ++j) {
                 if (out[j].tag == tag) {

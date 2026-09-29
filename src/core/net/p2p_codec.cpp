@@ -9,7 +9,6 @@ namespace Core::Net::P2P {
 
 using namespace Wire;
 
-// Keyring
 void Keyring::AddPeerKey(const Endpoint& peer, const KeyEntry& entry) {
     std::scoped_lock lock{mutex};
     const auto it = peer_keys.find(peer);
@@ -93,7 +92,6 @@ std::optional<CommunicationId> Keyring::GetCommunicationId() const {
     return communication_id;
 }
 
-// FramingCodec
 FramingCodec::FramingCodec(std::shared_ptr<Keyring> keyring, BroadcastObserver broadcast_observer)
     : keyring(std::move(keyring)), broadcast_observer(std::move(broadcast_observer)) {}
 
@@ -113,7 +111,7 @@ Codec::Decoded FramingCodec::Decode(std::span<const u8> packet, const Endpoint& 
     u16 src_vport = 0;
     u16 dst_vport = 0;
     if (flags & FlagBroadcast) {
-        // Not sure about layout so grab a few packets to verify
+        // Layout unconfirmed, report a few so we can check
         if (broadcast_observer &&
             reported_broadcasts.fetch_add(1, std::memory_order_relaxed) < MaxReportedBroadcasts) {
             broadcast_observer(packet, from);
@@ -147,7 +145,7 @@ Codec::Decoded FramingCodec::Decode(std::span<const u8> packet, const Endpoint& 
     }
 
     const bool signaling = !stream && dst_vport == SignalingVport;
-    // TODO should we drop signalling once commID is set?
+    // TODO: drop signaling once the communication ID is set?
     if (!signaling) {
         if (const auto expected = keyring->GetCommunicationId();
             expected && communication_id != expected) {
@@ -160,7 +158,7 @@ Codec::Decoded FramingCodec::Decode(std::span<const u8> packet, const Endpoint& 
     if (mode != 0) {
         const auto key = keyring->Find(from);
         if (!key || !UnprotectPayload(body, (mode & 1) != 0, (mode & 2) != 0, *key, out.payload)) {
-            return out; // no key, bad signature,drop
+            return out; // no key or bad signature
         }
     } else {
         out.payload.assign(body.begin(), body.end());
@@ -184,7 +182,7 @@ std::vector<u8> FramingCodec::Protect(std::span<const u8> data, const Endpoint& 
                 return out;
             }
         }
-        // TODO , should we fall back to plain and drop the segment?
+        // TODO: this sends plain. Should we drop instead?
     }
     return {data.begin(), data.end()};
 }

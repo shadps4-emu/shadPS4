@@ -19,12 +19,11 @@ struct P2PKey {
 bool ProtectPayload(std::span<const u8> data, bool encrypt, bool sign, const P2PKey& key,
                     std::vector<u8>& output);
 
-/// Fails on a short packet, a bad signature, or a cipher error.
+// Fails on short packet, bad signature or cipher error.
 bool UnprotectPayload(std::span<const u8> data, bool encrypt, bool sign, const P2PKey& key,
                       std::vector<u8>& output);
 
-/// The 4-byte communication ID the NP libraries derive from a title's 16-byte value: the first
-/// bytes of HMAC-SHA1 keyed with the value over an empty message.
+// First 4 bytes of HMAC-SHA1 over an empty message, keyed with the title's 16-byte value.
 std::array<u8, 4> DeriveCommunicationId(std::span<const u8, 16> value);
 
 } // namespace Core::Net::P2P

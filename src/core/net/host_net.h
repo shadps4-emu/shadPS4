@@ -36,10 +36,10 @@ inline constexpr NativeSocket InvalidSocket = -1;
 #endif
 
 using Clock = std::chrono::steady_clock;
-/// std::nullopt means "no deadline".
+// nullopt = no deadline
 using Deadline = std::optional<Clock::time_point>;
 
-/// BSD socket-timeout semantics (SO_RCVTIMEO/SO_SNDTIMEO): 0 means "wait forever".
+// BSD SO_RCVTIMEO semantics, 0 = wait forever.
 Deadline DeadlineFromSocketTimeout(std::chrono::microseconds timeout);
 
 enum class Error : s32 {
@@ -52,7 +52,7 @@ enum class Error : s32 {
     NoMem = 12,
     Acces = 13,
     Fault = 14,
-    NotBlk = 15, // abort with nothing waiting
+    NotBlk = 15, // abort with nothing blocked
     Busy = 16,
     Exist = 17,
     NoDev = 19,
@@ -61,7 +61,7 @@ enum class Error : s32 {
     MFile = 24,
     NoSpc = 28,
     Pipe = 32,
-    WouldBlock = 35, // EAGAIN == EWOULDBLOCK on FreeBSD
+    WouldBlock = 35, // also EAGAIN
     InProgress = 36,
     Already = 37,
     NotSock = 38,
@@ -93,11 +93,10 @@ enum class Error : s32 {
     HostUnreach = 65,
     NotEmpty = 66,
     Canceled = 85,
-    Internal = 204, // ORBIS_NET_EINTERNAL: every host error without a FreeBSD equivalent
+    Internal = 204, // host errors with no FreeBSD equivalent
 };
 
 Error TranslateNative(int native_code);
-/// errno or WSAGetLastError() of the calling thread, translated.
 Error LastError();
 
 struct IoResult {
@@ -108,37 +107,34 @@ struct IoResult {
 bool Initialize();
 void Shutdown();
 
-// Sockets. All wrappers are non-blocking and return WouldBlock instead of waiting.
+// Socket wrappers never block, they return WouldBlock.
 
-// Non-blocking, close-on-exec, on Windows also SIO_UDP_CONNRESET off for UDP.
+// Non-blocking and close-on-exec. On Windows, UDP also gets SIO_UDP_CONNRESET off.
 NativeSocket CreateSocket(int family, int type, int protocol, Error* error);
-// Applies the same configuration to sockets that come from accept().
+// Same setup, for accepted sockets.
 bool ConfigureSocket(NativeSocket s, int type);
 void CloseSocket(NativeSocket s);
-// A connected pair, configured like CreateSocket. POSIX socketpair(). Windows has none, so
-// there a loopback TCP connection stands in (stream sockets only).
+// Windows has no socketpair(), so it uses a loopback TCP connection (stream only).
 Error CreateSocketPair(int family, int type, int protocol, NativeSocket out[2]);
 
-/// Call right before bind.
 Error PrepareBind(NativeSocket s, bool reuse_addr, bool reuse_port);
-/// Call right before CloseSocket on a stream socket.
+// Call before closing a stream socket. Sorts out SO_LINGER for the guest's blocking mode.
 void PrepareClose(NativeSocket s, bool guest_blocking);
 Error Bind(NativeSocket s, const sockaddr* addr, socklen_t len);
 Error Listen(NativeSocket s, int backlog);
-// how: 0 = receive, 1 = send, 2 = both (same values as SHUT_* and SD_*).
 Error ShutdownSocket(NativeSocket s, int how);
-// Returns InProgress (never WouldBlock) for a started non-blocking connect.
+// Returns InProgress, never WouldBlock, while connecting.
 Error Connect(NativeSocket s, const sockaddr* addr, socklen_t len);
-// Reads and clears SO_ERROR
+// Reads and clears SO_ERROR.
 Error PendingSocketError(NativeSocket s);
 NativeSocket Accept(NativeSocket s, sockaddr* addr, socklen_t* len, Error* error);
-// addr == nullptr means send()/recv() on a connected socket.
+// addr == nullptr uses send()/recv().
 IoResult SendTo(NativeSocket s, const void* buf, size_t len, int flags, const sockaddr* addr,
                 socklen_t addr_len);
 IoResult RecvFrom(NativeSocket s, void* buf, size_t len, int flags, sockaddr* addr,
                   socklen_t* addr_len);
 
-// Wake handle: a pollable object another thread can signal to interrupt a wait.
+// Pollable object another thread can signal to interrupt a wait.
 class WakeHandle {
 public:
     WakeHandle();
@@ -149,7 +145,7 @@ public:
     bool Valid() const {
         return read_ != InvalidSocket;
     }
-    /// Thread-safe. Level-triggered: stays signalled until Drain().
+    // Thread-safe. Stays signalled until Drain().
     void Signal() const;
     void Drain() const;
     NativeSocket PollHandle() const {
@@ -163,39 +159,37 @@ private:
     NativeSocket write_ = InvalidSocket; // same as read_ for eventfd
 };
 
-// Primitive 1: wait for one socket (used by blocking guest calls).
+// Wait on a single socket, for blocking guest calls.
 enum Interest : u32 {
     Readable = 1u << 0,
     Writable = 1u << 1,
 };
 
 enum class WaitResult {
-    Ready,    // socket has an event (including error/hangup): retry the operation
-    TimedOut, // deadline passed
-    Woken,    // wake handle signalled (abort/close)
-    Failed,   // poll itself failed, see LastError()
+    Ready, // includes error/hangup, retry the operation
+    TimedOut,
+    Woken,  // abort or close
+    Failed, // see LastError()
 };
 
 WaitResult WaitOne(NativeSocket s, u32 interest, const WakeHandle& wake, Deadline deadline);
 
-// Primitive 2: a real host epoll/kqueue instance backing one guest sceNetEpoll.
+// Host epoll/kqueue backing one guest epoll.
 enum EventBits : u32 {
     EvIn = 1u << 0,
     EvOut = 1u << 1,
     EvErr = 1u << 2,
     EvHup = 1u << 3,
-    /// Guest level only, never passed to the host: a non-socket net object (a resolver) has
-    /// finished (ORBIS_NET_EPOLLDESCID).
+    // Guest only. A non-socket object such as a resolver has finished.
     EvDescId = 1u << 4,
 };
 
-/// Registrations are always level-triggered: the PS4's epoll has no edge-triggered mode, and wepoll
-/// would ignore EPOLLET anyway.
+// Always level-triggered. The PS4 has no edge-triggered mode and wepoll ignores EPOLLET.
 enum EpollFlags : u32 {
-    OneShot = 1u << 0, // disabled after one report until Modify() re-arms it
+    OneShot = 1u << 0, // re-arm with Modify()
 };
 
-/// Reserved internally for the wake handle; callers must never use it as a tag.
+// Used for the wake handle, not a valid caller tag.
 inline constexpr u64 ReservedTag = ~0ull;
 
 struct EpollEvent {
@@ -204,8 +198,8 @@ struct EpollEvent {
 };
 
 struct EpollWaitResult {
-    s32 count;  // events written to out
-    bool woken; // Wake() was called (the wake is level-triggered and not drained here)
+    s32 count;
+    bool woken; // not drained, call DrainWake()
     Error error;
 };
 
@@ -222,9 +216,9 @@ public:
     Error Modify(NativeSocket s, u64 tag, u32 events, u32 flags);
     Error Remove(NativeSocket s);
 
-    /// Returns at most min(out.size(), 64) events per call.
+    // At most 64 events per call.
     EpollWaitResult Wait(std::span<EpollEvent> out, Deadline deadline);
-    /// Thread-safe. Level-triggered: stays signalled until DrainWake().
+    // Thread-safe. Stays signalled until DrainWake().
     void Wake();
     void DrainWake();
 
@@ -232,7 +226,7 @@ private:
 #ifdef _WIN32
     void* handle_ = nullptr; // wepoll HANDLE
 #else
-    int handle_ = -1; // epoll or kqueue fd
+    int handle_ = -1;
 #endif
     WakeHandle wake_;
 };

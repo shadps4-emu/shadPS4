@@ -14,7 +14,6 @@
 
 namespace Core::Net::P2P {
 
-// Internal state
 struct DatagramBinding {
     struct Packet {
         std::vector<u8> payload;
@@ -23,7 +22,7 @@ struct DatagramBinding {
     };
     u16 vport = 0;
     std::shared_ptr<Readiness> readiness;
-    std::optional<std::pair<Endpoint, u16>> peer; // receive filter set by SetPeer
+    std::optional<std::pair<Endpoint, u16>> peer; // set by SetPeer
     std::deque<Packet> queue;
     size_t bytes = 0;
 };
@@ -33,9 +32,9 @@ struct Connection {
     Protection protection;
     std::unique_ptr<TcpConnection> tcp;
     std::shared_ptr<Readiness> readiness;
-    std::weak_ptr<ListenerState> listener; // set while the handshake is in progress
-    bool pending_accept = false;           // passive open not yet in the accept queue
-    bool released = true;                  // no application socket owns it
+    std::weak_ptr<ListenerState> listener; // during handshake
+    bool pending_accept = false;           // not in accept queue yet
+    bool released = true;                  // no socket owns it
 };
 
 struct ListenerState {
@@ -48,7 +47,6 @@ struct ListenerState {
     bool closed = false;
 };
 
-// Endpoint
 namespace {
 
 auto Canonical(const Endpoint& e) {
@@ -120,7 +118,6 @@ void ReadinessFlag::Set(bool ready) {
     }
 }
 
-// Transport
 Transport::Transport(int family, std::unique_ptr<Codec> codec, const TransportConfig& config)
     : family_(family), codec_(std::move(codec)), config_(config),
       signaling_(std::max<size_t>(config.signaling_channels, 1)),
@@ -140,14 +137,13 @@ std::shared_ptr<Transport> Transport::Create(int family, const Endpoint& bind_ad
     if (t->socket_ == Host::InvalidSocket) {
         return nullptr;
     }
-    // Exclusive port: no SO_REUSEPORT (two instances would split the traffic) and, on
-    // Windows, SO_EXCLUSIVEADDRUSE so no other process can take the advertised port.
+    // Exclusive port. Nobody else should get the port we advertise.
     if ((*error = Host::PrepareBind(t->socket_, false, false)) != Error::Ok ||
         (*error = Host::Bind(t->socket_, bind_address.Sockaddr(), bind_address.Length())) !=
             Error::Ok) {
         return nullptr;
     }
-    const int buffer = 1 << 20; // absorb bursts while the thread is busy
+    const int buffer = 1 << 20; // absorb bursts
     setsockopt(t->socket_, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&buffer),
                sizeof(buffer));
     sockaddr_storage actual{};
@@ -166,7 +162,7 @@ Transport::~Transport() {
     if (thread_.joinable()) {
         thread_.join();
     }
-    Host::CloseSocket(socket_); // only after the thread can no longer touch it
+    Host::CloseSocket(socket_); // thread is stopped by now
 }
 
 void Transport::SetOutgoingLossForTesting(double probability) {
@@ -199,8 +195,6 @@ bool Transport::RecvSignaling(size_t channel, std::vector<u8>* data, Endpoint* f
     return true;
 }
 
-// --- Thread ----------------------------------------------------------------------------------
-
 void Transport::ThreadMain() {
     while (!stop_.load()) {
         std::optional<Clock::time_point> deadline;
@@ -209,7 +203,7 @@ void Transport::ThreadMain() {
             deadline = EarliestDeadline();
             sleeping_until_ = deadline.value_or(Clock::time_point::max());
         }
-        // Sleeps until a packet arrives, a guest call kicks us, or the next TCP timer.
+        // Wake on a packet, a kick or the next TCP timer.
         const auto result = Host::WaitOne(socket_, Host::Readable, kick_, deadline);
         if (stop_.load()) {
             return;
@@ -221,7 +215,7 @@ void Transport::ThreadMain() {
         std::scoped_lock lock{mutex_};
         sleeping_until_ = Clock::time_point::min();
         const auto now = Clock::now();
-        for (int i = 0; i < 1024; ++i) { // bounded so timers still run under a flood
+        for (int i = 0; i < 1024; ++i) { // don't starve timers
             sockaddr_storage from{};
             socklen_t from_len = sizeof(from);
             const auto r = Host::RecvFrom(socket_, receive_buffer_.data(), receive_buffer_.size(),
@@ -283,7 +277,7 @@ Error Transport::SendPacket(std::span<const u8> packet, const Endpoint& to) {
 }
 
 u32 Transport::NewIss() {
-    // RFC 6528 in spirit: a clock component plus an unpredictable offset.
+    // Roughly RFC 6528.
     iss_state_ += 0x9e3779b97f4a7c15ull;
     u64 z = iss_state_;
     z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
@@ -313,8 +307,6 @@ u16 Transport::AllocateVport(bool stream) {
     return 0;
 }
 
-// --- Receive path ----------------------------------------------------------------------------
-
 void Transport::HandlePacket(std::span<const u8> packet, const Endpoint& from,
                              Clock::time_point now) {
     Codec::Decoded decoded = codec_->Decode(packet, from);
@@ -340,7 +332,6 @@ void Transport::HandlePacket(std::span<const u8> packet, const Endpoint& from,
 }
 
 void Transport::HandleDatagram(Codec::Decoded& decoded, const Endpoint& from) {
-    // Nothing bound on the vport: drop (never create queues on behalf of remote peers).
     const auto it = datagram_bindings_.find(decoded.dst_vport);
     if (it == datagram_bindings_.end()) {
         return;
@@ -348,10 +339,10 @@ void Transport::HandleDatagram(Codec::Decoded& decoded, const Endpoint& from) {
     DatagramBinding& binding = *it->second;
     if (binding.peer &&
         !(binding.peer->first == from && binding.peer->second == decoded.src_vport)) {
-        return; // connected socket: only its peer may deliver
+        return; // not from the connected peer
     }
     if (binding.bytes + decoded.payload.size() > config_.datagram_queue_bytes) {
-        return; // receive buffer full: drop, as UDP does
+        return; // queue full, drop like UDP
     }
     binding.bytes += decoded.payload.size();
     binding.queue.push_back({std::move(decoded.payload), from, decoded.src_vport});
@@ -360,8 +351,7 @@ void Transport::HandleDatagram(Codec::Decoded& decoded, const Endpoint& from) {
 
 void Transport::HandleStreamSegment(std::span<const u8> bytes, const Endpoint& from,
                                     Clock::time_point now) {
-    // The pseudo-header can be costly for a codec to produce (local address lookup), so it
-    // is only computed when verifying checksums or answering with a RST.
+    // Pseudo-header needs a local address lookup, only get it when needed.
     std::optional<PseudoHeader> pseudo;
     if (config_.verify_stream_checksum) {
         pseudo = codec_->StreamPseudoHeader(from);
@@ -379,7 +369,7 @@ void Transport::HandleStreamSegment(std::span<const u8> bytes, const Endpoint& f
             return;
         }
         if (connection->released) {
-            connections_.erase(it); // stale; a new SYN may reuse the key below
+            connections_.erase(it); // stale, a new SYN may reuse the key
         }
     }
 
@@ -391,7 +381,7 @@ void Transport::HandleStreamSegment(std::span<const u8> bytes, const Endpoint& f
             const auto listener = lit->second;
             if (static_cast<int>(listener->accept_queue.size()) + listener->half_open >=
                 listener->backlog) {
-                return; // backlog full: drop the SYN so the peer retries (BSD behaviour)
+                return; // backlog full, peer will retry
             }
             const auto connection =
                 NewConnection(key, listener->protection, std::make_shared<Readiness>());
@@ -403,7 +393,7 @@ void Transport::HandleStreamSegment(std::span<const u8> bytes, const Endpoint& f
             return;
         }
     }
-    // No connection and no listener: reset, so the peer fails fast instead of timing out.
+    // Nobody listening, RST so the peer fails fast.
     if (!pseudo) {
         pseudo = codec_->StreamPseudoHeader(from);
     }
@@ -436,7 +426,7 @@ void Transport::Update(const std::shared_ptr<Connection>& connection) {
         const TcpState state = tcp.State();
         if (!listener || listener->closed) {
             connection->pending_accept = false;
-            tcp.Abort(); // the listening socket went away
+            tcp.Abort(); // listener is gone
         } else if (state != TcpState::SynReceived) {
             connection->pending_accept = false;
             --listener->half_open;
@@ -457,7 +447,6 @@ void Transport::Update(const std::shared_ptr<Connection>& connection) {
     }
 }
 
-// DatagramSocket
 DatagramSocket::DatagramSocket(std::shared_ptr<Transport> transport)
     : transport_(std::move(transport)), readiness_(std::make_shared<Readiness>()) {
     readiness_->writable.Set(true); // UDP is always writable
@@ -479,8 +468,8 @@ Error DatagramSocket::BindLocked(u16 vport) {
     if (vport == 0 && (vport = transport_->AllocateVport(false)) == 0) {
         return Error::AddrNotAvail;
     }
-    // TODO: the old implementation let several sockets share a vport (refcounted
-    // binding). BSD semantics say EADDRINUSE. switch back if a game depends on sharing.
+    // TODO: old code let sockets share a vport. BSD says EADDRINUSE. Revisit if a game
+    // needs sharing.
     if (transport_->datagram_bindings_.contains(vport)) {
         return Error::AddrInUse;
     }
@@ -512,7 +501,7 @@ void DatagramSocket::SetProtection(Protection protection) {
 IoResult DatagramSocket::SendTo(std::span<const u8> data, const Endpoint* to, u16 to_vport,
                                 Protection extra) {
     std::scoped_lock lock{transport_->mutex_};
-    if (!binding_ && BindLocked(0) != Error::Ok) { // implicit bind, as BSD sendto does
+    if (!binding_ && BindLocked(0) != Error::Ok) { // implicit bind
         return {0, Error::AddrNotAvail};
     }
     if (to == nullptr) {
@@ -531,7 +520,7 @@ IoResult DatagramSocket::SendTo(std::span<const u8> data, const Endpoint* to, u1
         transport_->codec_->EncodeDatagram(binding_->vport, to_vport, data, *to, protection);
     const Error e = transport_->SendPacket(packet, *to);
     if (e == Error::WouldBlock || e == Error::NoBufs) {
-        // The PS4 drops the datagram rather than report ENOBUFS
+        // PS4 drops instead of returning ENOBUFS
         return {data.size(), Error::Ok};
     }
     return e == Error::Ok ? IoResult{data.size(), Error::Ok} : IoResult{0, e};
@@ -543,7 +532,7 @@ IoResult DatagramSocket::RecvFrom(std::span<u8> out, bool peek, Endpoint* from, 
         return {0, Error::WouldBlock};
     }
     auto& packet = binding_->queue.front();
-    const size_t n = std::min(out.size(), packet.payload.size()); // excess is discarded (BSD)
+    const size_t n = std::min(out.size(), packet.payload.size()); // rest is discarded
     std::copy_n(packet.payload.begin(), n, out.begin());
     if (from) {
         *from = packet.from;
@@ -602,7 +591,6 @@ void DatagramSocket::Close() {
     binding_.reset();
 }
 
-// StreamSocket
 StreamSocket::StreamSocket(std::shared_ptr<Transport> transport,
                            std::shared_ptr<Readiness> readiness)
     : transport_(std::move(transport)),
@@ -678,7 +666,7 @@ Error StreamSocket::Connect(const Endpoint& peer, u16 peer_vport) {
     }
     const ConnectionKey key{peer, peer_vport, bound_vport_};
     if (transport_->connections_.contains(key)) {
-        return Error::AddrInUse; // e.g. the previous connection is still in TIME-WAIT
+        return Error::AddrInUse; // e.g. old connection in TIME-WAIT
     }
     connection_ = transport_->NewConnection(key, protection_, readiness_);
     connection_->released = false;
@@ -726,7 +714,7 @@ std::shared_ptr<StreamSocket> StreamSocket::Accept(Endpoint* peer, u16* peer_vpo
     connection->released = false;
     std::shared_ptr<StreamSocket> accepted(new StreamSocket(transport_, connection->readiness));
     accepted->protection_ = connection->protection;
-    accepted->bound_vport_ = connection->key.local_vport; // the listener owns the vport
+    accepted->bound_vport_ = connection->key.local_vport; // listener owns the vport
     accepted->connection_ = connection;
     if (peer) {
         *peer = connection->key.peer;
@@ -773,7 +761,7 @@ Error StreamSocket::Shutdown(int how) {
     }
     if (how != 1) {
         read_shutdown_ = true;
-        readiness_->readable.Set(true); // reads now return end-of-stream immediately
+        readiness_->readable.Set(true); // reads return EOF now
     }
     if (how != 0) {
         connection_->tcp->Shutdown(Clock::now());
@@ -796,7 +784,7 @@ void StreamSocket::Close() {
             transport_->listeners_.erase(it);
         }
         for (const auto& pending : listener_->accept_queue) {
-            pending->tcp->Abort(); // BSD: closing a listener resets unaccepted connections
+            pending->tcp->Abort(); // reset unaccepted, like BSD
             transport_->Update(pending);
         }
         listener_->accept_queue.clear();
@@ -804,7 +792,7 @@ void StreamSocket::Close() {
     }
     if (connection_) {
         connection_->released = true;
-        connection_->tcp->Close(Clock::now()); // FIN (or RST with unread data), then lingers
+        connection_->tcp->Close(Clock::now()); // FIN, or RST if data is unread
         transport_->Update(connection_);
         transport_->Reschedule(*connection_);
         connection_.reset();
