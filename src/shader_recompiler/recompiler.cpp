@@ -8,6 +8,7 @@
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/post_order.h"
+#include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/recompiler.h"
 
@@ -115,6 +116,7 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     Shader::Optimization::LowerUserClipPlanes(program, runtime_info);
     Shader::Optimization::PhiSimplificationPass(program);
     Shader::Optimization::InverseBallotEliminationPass(program);
+    Shader::Optimization::LowerHardwareIntrinsics(program);
     Shader::IR::DumpProgram(program, info, "pre-lower-phi.");
 
     // Prepare for structurization by clearing flow graph and lowering phis

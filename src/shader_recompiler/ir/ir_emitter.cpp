@@ -86,14 +86,6 @@ U1 IREmitter::ConditionRef(const U1& value) {
     return Inst<U1>(Opcode::ConditionRef, value);
 }
 
-void IREmitter::Reference(const Value& value) {
-    Inst(Opcode::Reference, value);
-}
-
-void IREmitter::PhiMove(IR::Inst& phi, const Value& value) {
-    Inst(Opcode::PhiMove, Value{&phi}, value);
-}
-
 void IREmitter::Prologue() {
     Inst(Opcode::Prologue);
 }
@@ -1659,6 +1651,10 @@ U32U64 IREmitter::BitwiseNot(const U32U64& value) {
     default:
         ThrowInvalidType(value.Type());
     }
+}
+
+U32 IREmitter::MaskedBitCount(const U32& value, const U32& addend, bool hi) {
+    return Inst<U32>(Opcode::MaskedBitCount32, value, addend, Imm1(hi));
 }
 
 U32 IREmitter::FindSMsb(const U32& value) {

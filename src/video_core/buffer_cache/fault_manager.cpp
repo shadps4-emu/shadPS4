@@ -47,16 +47,25 @@ FaultManager::FaultManager(const Vulkan::Instance& instance, Vulkan::Scheduler& 
     fault_process_desc_layout =
         Vulkan::Check(device.createDescriptorSetLayoutUnique(desc_layout_ci));
 
-    std::vector<std::string> defines{{fmt::format("CACHING_PAGEBITS={}", sparse_pagebits),
-                                      fmt::format("MAX_PAGE_FAULTS={}", MaxPageFaults)}};
-    const auto module = Vulkan::Compile(HostShaders::FAULT_BUFFER_PROCESS_COMP,
-                                        vk::ShaderStageFlagBits::eCompute, device, defines);
+    const std::array<u32, 2> spec_data{sparse_pagebits, MaxPageFaults};
+    const std::array<vk::SpecializationMapEntry, 2> spec_entries{{
+        {0, 0, sizeof(u32)},
+        {1, sizeof(u32), sizeof(u32)},
+    }};
+    const vk::SpecializationInfo specialization{
+        .mapEntryCount = static_cast<u32>(spec_entries.size()),
+        .pMapEntries = spec_entries.data(),
+        .dataSize = sizeof(spec_data),
+        .pData = spec_data.data(),
+    };
+    const auto module = Vulkan::CompileSPV(FAULT_BUFFER_PROCESS_COMP, device);
     Vulkan::SetObjectName(device, module, "Fault Buffer Parser");
 
     const vk::PipelineShaderStageCreateInfo shader_ci = {
         .stage = vk::ShaderStageFlagBits::eCompute,
         .module = module,
         .pName = "main",
+        .pSpecializationInfo = &specialization,
     };
 
     const vk::PipelineLayoutCreateInfo layout_info = {

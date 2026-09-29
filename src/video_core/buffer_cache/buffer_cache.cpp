@@ -86,13 +86,14 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 
 BufferCache::~BufferCache() = default;
 
-void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
-    memory_tracker->InvalidateRegion(
-        device_addr, size, [this, device_addr, size] { ReadMemory(device_addr, size, true); });
+void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool assume_locks) {
+    memory_tracker->InvalidateRegion(device_addr, size, [this, device_addr, size, assume_locks] {
+        ReadMemory(device_addr, size, true, assume_locks);
+    });
 }
 
-void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write) {
-    liverpool->SendCommand<true>([this, device_addr, size, is_write] {
+void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool assume_locks) {
+    const auto flush_request = [this, device_addr, size, is_write] {
         const u32 first_block = device_addr >> block_shift;
         const u32 last_block = (device_addr + size - 1) >> block_shift;
         const auto* arena = GetArena(first_block, last_block);
@@ -109,7 +110,12 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write) {
         if (is_write) {
             memory_tracker->MarkRegionAsCpuModified(device_addr, size);
         }
-    });
+    };
+    if (assume_locks) {
+        flush_request();
+    } else {
+        liverpool->SendCommand<true>(std::move(flush_request));
+    }
 }
 
 void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size) {

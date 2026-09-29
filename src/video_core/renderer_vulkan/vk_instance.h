@@ -526,6 +526,7 @@ private:
     bool shader_atomic_float2{};
     bool workgroup_memory_explicit_layout{};
     bool portability_subset{};
+    bool maintenance_5{};
     bool maintenance_8{};
     bool attachment_feedback_loop{};
     bool image_2d_view_of_3d{};
