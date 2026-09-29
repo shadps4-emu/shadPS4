@@ -10,6 +10,7 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "core/cpu_patches.h"
 #include "core/devtools/layer.h"
 #include "imgui/imgui_std.h"
 #include "settings_dialog_imgui.h"
@@ -81,15 +82,7 @@ void SettingsWindow::LoadSettings(std::string profile) {
         readbacksModeSetting = EmulatorSettings.GetReadbacksMode();
         readbackLinearImagesSetting = EmulatorSettings.IsReadbackLinearImagesEnabled();
         directMemoryAccessSetting = EmulatorSettings.IsDirectMemoryAccessEnabled();
-        // Windows static guest red-zone protection
-        windowsGuestRedZoneProtectionModeSetting =
-            static_cast<int>(EmulatorSettings.GetWindowsGuestRedZoneProtectionMode());
-        if (windowsGuestRedZoneProtectionModeSetting < 0 ||
-            windowsGuestRedZoneProtectionModeSetting >=
-                static_cast<int>(windowsGuestRedZoneProtectionModeOptions.size())) {
-            windowsGuestRedZoneProtectionModeSetting =
-                static_cast<int>(WindowsGuestRedZoneProtectionMode::Disabled);
-        }
+        windowsGuestRedZoneProtectionModeSetting = EmulatorSettings.IsRedZonePatchingEnabled();
         devkitConsoleSetting = EmulatorSettings.IsDevKit();
         neoModeSetting = EmulatorSettings.IsNeo();
         shadnetEnabledSetting = EmulatorSettings.IsShadNetEnabledSetting();
@@ -146,10 +139,7 @@ void SettingsWindow::SaveSettings(std::string profile) {
         EmulatorSettings.SetReadbackLinearImagesEnabled(readbackLinearImagesSetting, true);
         EmulatorSettings.SetDirectMemoryAccessEnabled(directMemoryAccessSetting, true);
         // Windows static guest red-zone protection
-        EmulatorSettings.SetWindowsGuestRedZoneProtectionMode(
-            static_cast<WindowsGuestRedZoneProtectionMode>(
-                windowsGuestRedZoneProtectionModeSetting),
-            true);
+        EmulatorSettings.SetRedZonePatchingEnabled(windowsGuestRedZoneProtectionModeSetting, true);
         EmulatorSettings.SetDevKit(devkitConsoleSetting, true);
         EmulatorSettings.SetNeo(neoModeSetting, true);
         EmulatorSettings.SetShadNetEnabled(shadnetEnabledSetting, true);
@@ -769,9 +759,8 @@ void SettingsWindow::DrawSettingsTable(SettingsCategory category) {
             AddSettingCheckbox("Enable Direct Memory Access", directMemoryAccessSetting);
 #ifdef _WIN32
             // Windows static guest red-zone protection
-            AddSettingCombo("Windows Guest Red Zone Protection (Requires Restart)",
-                            windowsGuestRedZoneProtectionModeSetting,
-                            windowsGuestRedZoneProtectionModeOptions);
+            AddSettingCheckbox("Windows Guest Red Zone Protection (Requires Restart)",
+                               windowsGuestRedZoneProtectionModeSetting);
 #endif
             AddSettingCheckbox("Enable Devkit Console Mode", devkitConsoleSetting);
             AddSettingCheckbox("Enable PS4 Neo Mode", neoModeSetting);
