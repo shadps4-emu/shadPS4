@@ -13,37 +13,38 @@
 namespace Libraries::Videodec {
 
 void CopyNV12Data(u8* dst, u64 max_size, const AVFrame& src) {
-    const auto dst_pitch = Common::AlignUp<u32>(src.width, 64);
-    const auto dst_height = Common::AlignUp<u32>(src.height, 16);
+    ASSERT(src.format == AV_PIX_FMT_NV12);
 
-    ASSERT(((dst_pitch * dst_height * 3) / 2) <= max_size);
+    const u32 width = src.width;
+    const u32 height = src.height;
+    const u32 dst_pitch = Common::AlignUp<u32>(width, 64);
+    const u32 dst_height = Common::AlignUp<u32>(height, 16);
+    const u32 chroma_h = (height + 1) / 2;
 
-    const auto luma_dst = dst;
-    const auto chroma_dst = dst + dst_pitch * dst_height;
+    ASSERT(u64(dst_pitch) * dst_height * 3 / 2 <= max_size);
 
-    if (src.width != dst_pitch) {
-        for (u32 y = 0; y < src.height; ++y) {
-            std::memcpy(luma_dst + y * dst_pitch, src.data[0] + y * src.linesize[0], src.width);
-        }
-        for (u32 y = 0; y < src.height / 2; ++y) {
-            std::memcpy(chroma_dst + y * dst_pitch, src.data[1] + y * src.linesize[1], src.width);
-        }
+    u8* const luma_dst = dst;
+    u8* const chroma_dst = dst + u64(dst_pitch) * dst_height;
+
+    const bool packed = src.linesize[0] == int(dst_pitch) && src.linesize[1] == int(dst_pitch);
+    if (packed) {
+        std::memcpy(luma_dst, src.data[0], u64(dst_pitch) * height);
+        std::memcpy(chroma_dst, src.data[1], u64(dst_pitch) * chroma_h);
     } else {
-        std::memcpy(luma_dst, src.data[0], src.width * src.height);
-        std::memcpy(chroma_dst, src.data[1], (src.width * src.height) / 2);
+        for (u32 y = 0; y < height; ++y)
+            std::memcpy(luma_dst + u64(y) * dst_pitch, src.data[0] + u64(y) * src.linesize[0],
+                        width);
+        for (u32 y = 0; y < chroma_h; ++y)
+            std::memcpy(chroma_dst + u64(y) * dst_pitch, src.data[1] + u64(y) * src.linesize[1],
+                        width);
     }
 
-    if (src.height != dst_height) {
-        // Extend the data vertically to the crop space
-        const auto ly = src.height - 1;
-        for (u32 y = src.height; y < dst_height; ++y) {
-            std::memcpy(luma_dst + y * dst_pitch, src.data[0] + ly * src.linesize[0], src.width);
-        }
-        const auto cy = (src.height / 2) - 1;
-        for (u32 y = src.height / 2; y < dst_height / 2; ++y) {
-            std::memcpy(chroma_dst + y * dst_pitch, src.data[1] + cy * src.linesize[1], src.width);
-        }
-    }
+    // Replicate the last row into the alignment padding
+    for (u32 y = height; y < dst_height; ++y)
+        std::memcpy(luma_dst + u64(y) * dst_pitch, luma_dst + u64(height - 1) * dst_pitch, width);
+    for (u32 y = chroma_h; y < dst_height / 2; ++y)
+        std::memcpy(chroma_dst + u64(y) * dst_pitch, chroma_dst + u64(chroma_h - 1) * dst_pitch,
+                    width);
 }
 
 } // namespace Libraries::Videodec
