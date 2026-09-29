@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <chrono>
+
 #include "common/elf_info.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/posix_error.h"
@@ -142,6 +144,28 @@ int PS4_SYSV_ABI posix_pthread_rwlock_timedrdlock(PthreadRwlockT* rwlock,
     PthreadRwlockT prwlock{};
     CHECK_AND_INIT_RWLOCK
     return prwlock->Rdlock(abstime);
+}
+
+static OrbisKernelTimespec AbsTimeAfter(u32 usec) {
+    using namespace std::chrono;
+    const auto ns =
+        duration_cast<nanoseconds>((system_clock::now() + microseconds{usec}).time_since_epoch())
+            .count();
+    return OrbisKernelTimespec{ns / 1000000000, ns % 1000000000};
+}
+
+int PS4_SYSV_ABI scePthreadRwlockTimedrdlock(PthreadRwlockT* rwlock, u32 usec) {
+    PthreadRwlockT prwlock{};
+    CHECK_AND_INIT_RWLOCK
+    const auto abstime = AbsTimeAfter(usec);
+    return prwlock->Rdlock(&abstime);
+}
+
+int PS4_SYSV_ABI scePthreadRwlockTimedwrlock(PthreadRwlockT* rwlock, u32 usec) {
+    PthreadRwlockT prwlock{};
+    CHECK_AND_INIT_RWLOCK
+    const auto abstime = AbsTimeAfter(usec);
+    return prwlock->Wrlock(&abstime);
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_tryrdlock(PthreadRwlockT* rwlock) {
@@ -316,10 +340,8 @@ void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("BB+kb08Tl9A", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_destroy));
     LIB_FUNCTION("6ULAa0fq4jA", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_init));
     LIB_FUNCTION("Ox9i0c7L5w0", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_rdlock));
-    LIB_FUNCTION("iPtZRWICjrM", "libkernel", 1, "libkernel",
-                 ORBIS(posix_pthread_rwlock_timedrdlock));
-    LIB_FUNCTION("adh--6nIqTk", "libkernel", 1, "libkernel",
-                 ORBIS(posix_pthread_rwlock_timedwrlock));
+    LIB_FUNCTION("iPtZRWICjrM", "libkernel", 1, "libkernel", ORBIS(scePthreadRwlockTimedrdlock));
+    LIB_FUNCTION("adh--6nIqTk", "libkernel", 1, "libkernel", ORBIS(scePthreadRwlockTimedwrlock));
     LIB_FUNCTION("XD3mDeybCnk", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_tryrdlock));
     LIB_FUNCTION("bIHoZCTomsI", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_trywrlock));
     LIB_FUNCTION("+L98PIbGttk", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_unlock));
