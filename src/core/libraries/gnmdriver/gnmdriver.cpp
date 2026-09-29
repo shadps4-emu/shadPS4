@@ -1592,15 +1592,15 @@ s32 PS4_SYSV_ABI sceGnmSetEsShader(u32* cmdbuf, u32 size, const u32* es_regs, u3
 }
 
 s32 PS4_SYSV_ABI sceGnmSetGsRingSizes(u32 esgs_ring_size, u32 gsvs_ring_size) {
-    LOG_DEBUG(Lib_GnmDriver, "esgs_ring_size = {:#x}, gsvs_ring_size = {:#x}", esgs_ring_size,
+    LOG_TRACE(Lib_GnmDriver, "esgs_ring_size = {:#x}, gsvs_ring_size = {:#x}", esgs_ring_size,
               gsvs_ring_size);
     // Sony libSceGnmDriver validates 1 MB alignment and [4 MB, 8 MB] range.
     constexpr u32 MinRingSize = 0x400000;   // 4 MB
     constexpr u32 MaxRingSize = 0x800000;   // 8 MB
     constexpr u32 RingAlignment = 0x100000; // 1 MB
     if (esgs_ring_size < MinRingSize || esgs_ring_size > MaxRingSize ||
-        (esgs_ring_size % RingAlignment) != 0 || gsvs_ring_size < MinRingSize ||
-        gsvs_ring_size > MaxRingSize || (gsvs_ring_size % RingAlignment) != 0) {
+        ((esgs_ring_size & (RingAlignment - 1)) != 0) || gsvs_ring_size < MinRingSize ||
+        gsvs_ring_size > MaxRingSize || ((gsvs_ring_size & (RingAlignment - 1)) != 0)) {
         return 0x08000000;
     }
     if (liverpool) {
@@ -1800,8 +1800,24 @@ int PS4_SYSV_ABI sceGnmSetSpiEnableSqCountersForUnitInstance() {
     return ORBIS_GNM_ERROR_FAILURE;
 }
 
-int PS4_SYSV_ABI sceGnmSetupMipStatsReport() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceGnmSetupMipStatsReport(void* output_buffer, u32 size_in_bytes,
+                                           u8 intervals_between_reports,
+                                           u8 num_reports_before_reset, u32 mip_stats_reset_force) {
+    LOG_DEBUG(
+        Lib_GnmDriver,
+        "(STUBBED) output_buffer = {}, size_in_bytes = {:#x}, intervals = {}, num_reports = {}, "
+        "force_reset = {}",
+        output_buffer, size_in_bytes, intervals_between_reports, num_reports_before_reset,
+        mip_stats_reset_force);
+    if (!output_buffer ||
+        (reinterpret_cast<uintptr_t>(output_buffer) & 0xffffff000000003fULL) != 0) {
+        return 0x80000001;
+    }
+    if (size_in_bytes < 0x1040 || (size_in_bytes & 0x7ff) != 0x40) {
+        return 0x80000002;
+    }
+    std::memset(output_buffer, 0, size_in_bytes);
+    *static_cast<u32*>(output_buffer) = 0x40u;
     return ORBIS_OK;
 }
 
