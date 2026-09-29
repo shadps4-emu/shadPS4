@@ -307,6 +307,10 @@ void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("xFebsA4YsFI", "libkernel", 1, "libkernel", posix_pthread_rwlockattr_init);
     LIB_FUNCTION("OuKg+kRDD7U", "libkernel", 1, "libkernel", posix_pthread_rwlockattr_setpshared);
     LIB_FUNCTION("8NuOHiTr1Vw", "libkernel", 1, "libkernel", posix_pthread_rwlockattr_settype_np);
+    LIB_FUNCTION("dYv-+If2GPk", "libkernel", 1, "libkernel",
+                 posix_pthread_rwlock_reltimedrdlock_np);
+    LIB_FUNCTION("RRnSj8h8VR4", "libkernel", 1, "libkernel",
+                 posix_pthread_rwlock_reltimedwrlock_np);
 
     // Posix
     LIB_FUNCTION("1471ajPzxh0", "libScePosix", 1, "libkernel", posix_pthread_rwlock_destroy);
@@ -324,6 +328,10 @@ void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("xFebsA4YsFI", "libScePosix", 1, "libkernel", posix_pthread_rwlockattr_init);
     LIB_FUNCTION("OuKg+kRDD7U", "libScePosix", 1, "libkernel", posix_pthread_rwlockattr_setpshared);
     LIB_FUNCTION("8NuOHiTr1Vw", "libScePosix", 1, "libkernel", posix_pthread_rwlockattr_settype_np);
+    LIB_FUNCTION("dYv-+If2GPk", "libScePosix", 1, "libkernel",
+                 posix_pthread_rwlock_reltimedrdlock_np);
+    LIB_FUNCTION("RRnSj8h8VR4", "libScePosix", 1, "libkernel",
+                 posix_pthread_rwlock_reltimedwrlock_np);
 
     // Orbis
     LIB_FUNCTION("i2ifZ3fS2fo", "libkernel", 1, "libkernel",
