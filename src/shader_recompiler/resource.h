@@ -219,14 +219,12 @@ struct PushData {
     static constexpr u32 YOffsetIndex = 1;
     static constexpr u32 XScaleIndex = 2;
     static constexpr u32 YScaleIndex = 3;
-    static constexpr u32 UdRegsIndex = 4;
-    static constexpr u32 BufOffsetIndex = UdRegsIndex + NUM_USER_DATA_REGS / 4;
+    static constexpr u32 BufOffsetIndex = 4;
 
     float xoffset;
     float yoffset;
     float xscale;
     float yscale;
-    std::array<u32, NUM_USER_DATA_REGS> ud_regs;
     std::array<u8, NUM_BUFFERS> buf_offsets;
 
     void AddOffset(u32 binding, u32 offset) {

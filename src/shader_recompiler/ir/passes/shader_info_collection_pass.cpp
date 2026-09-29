@@ -8,6 +8,16 @@
 
 namespace Shader::Optimization {
 
+static void AddFlatbuf(Info& info) {
+    if (!info.has_flatbuf) {
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            .buffer_type = BufferType::Flatbuf,
+        });
+        info.has_flatbuf = true;
+    }
+}
+
 void Visit(Info& info, const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::GetAttribute:
@@ -19,7 +29,7 @@ void Visit(Info& info, const IR::Inst& inst) {
         info.stores.Set(inst.Arg(0).Attribute(), inst.Arg(2).U32());
         break;
     case IR::Opcode::GetUserData:
-        info.ud_mask.Set(inst.Arg(0).ScalarReg());
+        AddFlatbuf(info);
         break;
     case IR::Opcode::SetPatch: {
         const auto patch = inst.Arg(0).Patch();
@@ -144,13 +154,7 @@ void Visit(Info& info, const IR::Inst& inst) {
         info.uses_shader_clock = true;
         break;
     case IR::Opcode::ReadConst:
-        if (!info.has_readconst) {
-            info.buffers.push_back({
-                .used_types = IR::Type::U32,
-                .buffer_type = BufferType::Flatbuf,
-            });
-            info.has_readconst = true;
-        }
+        AddFlatbuf(info);
         if (inst.Flags<u32>() == 0) {
             info.readconst_types |= Info::ReadConstType::Immediate;
             info.readconst_types |= Info::ReadConstType::Dynamic;
