@@ -44,23 +44,6 @@ struct InfoPersistent {
     SamplerResourceList samplers;
     FMaskResourceList fmasks;
 
-    struct UserDataMask {
-        void Set(IR::ScalarReg reg) noexcept {
-            mask |= 1 << static_cast<u32>(reg);
-        }
-
-        u32 Index(IR::ScalarReg reg) const noexcept {
-            const u32 reg_mask = (1 << static_cast<u32>(reg)) - 1;
-            return std::popcount(mask & reg_mask);
-        }
-
-        u32 NumRegs() const noexcept {
-            return std::popcount(mask);
-        }
-
-        u32 mask;
-    };
-    UserDataMask ud_mask{};
     u32 fetch_shader_sgpr_base{};
     u32 shared_memory_scratch_size{};
 
@@ -133,7 +116,7 @@ struct Info : InfoPersistent {
     bool has_discard{};
     bool has_image_gather{};
     bool has_image_query{};
-    bool has_readconst{};
+    bool has_flatbuf{};
     bool uses_buffer_atomic_float_min_max{};
     bool uses_image_atomic_float_min_max{};
     bool uses_lane_id{};
@@ -176,20 +159,9 @@ struct Info : InfoPersistent {
         return data;
     }
 
-    void PushUd(Backend::Bindings& bnd, PushData& push) const {
-        u32 mask = ud_mask.mask;
-        while (mask) {
-            const u32 index = std::countr_zero(mask);
-            ASSERT(bnd.user_data < NUM_USER_DATA_REGS && index < NUM_USER_DATA_REGS);
-            mask &= ~(1U << index);
-            push.ud_regs[bnd.user_data++] = user_data[index];
-        }
-    }
-
     void AddBindings(Backend::Bindings& bnd) const {
         bnd.buffer += buffers.size();
         bnd.unified += buffers.size() + images.size() + samplers.size();
-        bnd.user_data += ud_mask.NumRegs();
     }
 
     void RefreshFlatBuf() {
