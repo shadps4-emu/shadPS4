@@ -755,3 +755,58 @@ TEST_F(GcnTest, subb_u32_scc_wrap) {
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(*result, 1U);
 }
+
+TEST_F(GcnTest, addc_u32_clears_scc) {
+    auto runner = gcn_test::Runner::instance().value();
+    const std::array<u64, 4> instructions{
+        SOP2(OpcodeSOP2::S_ADD_U32, SOperand7::S3, SOperand8::S0, SOperand8::S1).Get(),
+        SOP2(OpcodeSOP2::S_ADDC_U32, SOperand7::S3, SOperand8::Const0, SOperand8::Const0).Get(),
+        SOP2(OpcodeSOP2::S_CSELECT_B32, SOperand7::S0, SOperand8::Const1, SOperand8::Const0).Get(),
+        VOP1(OpcodeVOP1::V_MOV_B32, VOperand8::V0, SOperand9::S0).Get(),
+    };
+    const auto spirv = TranslateToSpirv(instructions);
+
+    auto result = runner->run<u32>(spirv, std::array{0xffffffffU, 1U, 0U, 0U});
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0U);
+}
+
+TEST_F(GcnTest, addc_u32_result_uses_scc) {
+    auto runner = gcn_test::Runner::instance().value();
+    const std::array<u64, 3> instructions{
+        SOP2(OpcodeSOP2::S_ADD_U32, SOperand7::S1, SOperand8::S0, SOperand8::S1).Get(),
+        SOP2(OpcodeSOP2::S_ADDC_U32, SOperand7::S0, SOperand8::S2, SOperand8::S3).Get(),
+        VOP1(OpcodeVOP1::V_MOV_B32, VOperand8::V0, SOperand9::S0).Get(),
+    };
+    const auto spirv = TranslateToSpirv(instructions);
+
+    auto overflow = runner->run<u32>(spirv, std::array{0xffffffffU, 1U, 7U, 0U});
+    ASSERT_TRUE(overflow.has_value());
+    EXPECT_EQ(*overflow, 8U);
+
+    auto no_overflow = runner->run<u32>(spirv, std::array{2U, 1U, 7U, 0U});
+    ASSERT_TRUE(no_overflow.has_value());
+    EXPECT_EQ(*no_overflow, 7U);
+}
+
+TEST_F(GcnTest, floor_f64_literal_is_high_dword) {
+    auto runner = gcn_test::Runner::instance().value();
+    if (!runner->supports_float64()) {
+        GTEST_SKIP() << "shaderFloat64 is not supported";
+    }
+    const u64 floor_literal =
+        VOP1(OpcodeVOP1::V_FLOOR_F64, VOperand8::V0, SOperand9::LiteralConstant).Get() |
+        (u64{0xc0040000U} << 32);
+    const std::array<u64, 1> low{floor_literal};
+    const std::array<u64, 2> high{
+        floor_literal,
+        VOP1(OpcodeVOP1::V_MOV_B32, VOperand8::V0, SOperand9::V1).Get(),
+    };
+
+    auto result_lo = runner->run<u32>(TranslateToSpirv(low), std::array{0U, 0U, 0U, 0U});
+    auto result_hi = runner->run<u32>(TranslateToSpirv(high), std::array{0U, 0U, 0U, 0U});
+    ASSERT_TRUE(result_lo.has_value());
+    ASSERT_TRUE(result_hi.has_value());
+    EXPECT_EQ(*result_lo, 0U);
+    EXPECT_EQ(*result_hi, 0xc0080000U);
+}

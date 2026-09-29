@@ -96,6 +96,7 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     }
     Shader::Optimization::SsaRewritePass(program);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
+    Shader::Optimization::ReadLaneEliminationPass(program);
     if (info.sw_stage == SwStage::TessellationControl) {
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
         Shader::Optimization::HullShaderTransform(program, runtime_info);
@@ -104,7 +105,6 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
         Shader::Optimization::DomainShaderTransform(program, runtime_info);
     }
     Shader::Optimization::RingAccessElimination(program, runtime_info);
-    Shader::Optimization::ReadLaneEliminationPass(program);
     Shader::IR::DumpProgram(program, info, "pre-res-discover.");
     auto resources = Shader::Optimization::ResourceDiscoverPass(program, profile);
     Shader::Optimization::FlattenExtendedUserdataPass(program);

@@ -53,10 +53,10 @@ static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
     switch (type) {
     case AmdGpu::ImageType::Color1D:
     case AmdGpu::ImageType::Color1DArray:
-        return vk::ImageType::e1D;
     case AmdGpu::ImageType::Color2D:
     case AmdGpu::ImageType::Color2DMsaa:
     case AmdGpu::ImageType::Color2DArray:
+    case AmdGpu::ImageType::Cube:
         return vk::ImageType::e2D;
     case AmdGpu::ImageType::Color3D:
         return vk::ImageType::e3D;

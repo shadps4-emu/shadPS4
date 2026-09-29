@@ -92,6 +92,10 @@ void Emulator::Shutdown() {
     Common::Log::Flush();
     Libraries::SaveData::Backup::StopThread();
     Storage::DataBase::Instance().Close();
+    play_time_thread.request_stop();
+    if (play_time_thread.joinable()) {
+        play_time_thread.join();
+    }
     UpdatePlayTime(Common::Singleton<Common::ElfInfo>::Instance()->GameSerial());
     if (controllers) {
         controllers->ResetLightbarColors();
@@ -429,21 +433,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     EmulatorSettings.Load(id);
-    // Windows static guest red-zone protection
-    WindowsGuestRedZoneProtection::SetActiveMode(
-        EmulatorSettings.GetWindowsGuestRedZoneProtectionMode());
     // Switch to configured log
     Common::Log::Switch((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
                                                                           : "shad_log.txt",
                         append_log);
-#ifdef _WIN32
-    // Windows static guest red-zone protection
-    if (WindowsGuestRedZoneProtection::IsStaticPatchingEnabled()) {
-        LOG_INFO(Core,
-                 "Windows guest red-zone static protection uses module EH metadata and cannot "
-                 "cover code without function entries");
-    }
-#endif
 
     auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
 
@@ -481,6 +474,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings.IsDevKit());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", EmulatorSettings.IsConnectedToNetwork());
     LOG_INFO(Config, "General isShadNetEnabled: {}", EmulatorSettings.IsShadNetEnabled());
+#ifdef _WIN32
+    LOG_INFO(Config, "General isRedZonePatchingEnabled: {}",
+             EmulatorSettings.IsRedZonePatchingEnabled());
+#endif
     LOG_INFO(Config, "Log sync: {}", EmulatorSettings.IsLogSync());
     LOG_INFO(Config, "Log skipDuplicate: {}", EmulatorSettings.IsLogSkipDuplicate());
 #ifdef _WIN32
@@ -494,6 +491,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", EmulatorSettings.IsDumpShaders());
     LOG_INFO(Config, "GPU vblankFrequency: {}", EmulatorSettings.GetVblankFrequency());
     LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}", EmulatorSettings.IsCopyGpuBuffers());
+#ifdef __linux__
+    LOG_INFO(Config, "GPU userfaultfdTracking: {}", EmulatorSettings.IsUserfaultfdTracking());
+#endif
+    LOG_INFO(Config, "GPU inlineFetchShader: {}", EmulatorSettings.IsInlineFetchShader());
     LOG_INFO(Config, "Vulkan gpuId: {}", EmulatorSettings.GetGpuId());
     LOG_INFO(Config, "Vulkan vkValidation: {}", EmulatorSettings.IsVkValidationEnabled());
     LOG_INFO(Config, "Vulkan vkValidationCore: {}", EmulatorSettings.IsVkValidationCoreEnabled());
@@ -543,6 +544,14 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     if (std::filesystem::exists(mods_folder) && !std::filesystem::is_empty(mods_folder)) {
         LOG_INFO(Loader, "Files found in game mods folder");
     }
+
+#ifdef _WIN32
+    // Enable red-zone patching if the setting is enabled
+    if (EmulatorSettings.IsRedZonePatchingEnabled()) {
+        WindowsGuestRedZoneProtection::SetActiveMode(
+            WindowsGuestRedZoneProtectionMode::StaticPatching);
+    }
+#endif
 
     // Create stdin/stdout/stderr
     Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
@@ -688,7 +697,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         play_time_thread = std::jthread([this, id](std::stop_token stop) {
             while (Common::StoppableTimedWait(stop, std::chrono::seconds(60))) {
                 UpdatePlayTime(id);
-                start_time = std::chrono::steady_clock::now();
             }
         });
     }
@@ -834,6 +842,10 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 }
 
 void Emulator::UpdatePlayTime(const std::string_view serial) {
+    if (serial.empty() || start_time == std::chrono::steady_clock::time_point{}) {
+        return;
+    }
+
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     const auto filePath = (user_dir / "play_time.txt").string();
 
@@ -843,9 +855,10 @@ void Emulator::UpdatePlayTime(const std::string_view serial) {
         return;
     }
 
-    auto end_time = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
-    int total_seconds = static_cast<int>(duration.count());
+    const auto end_time = std::chrono::steady_clock::now();
+    const auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+    start_time = end_time;
+    const int total_seconds = static_cast<int>(duration.count());
 
     std::vector<std::string> lines;
     std::string line;

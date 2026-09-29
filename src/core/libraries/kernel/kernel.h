@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -38,7 +38,7 @@ struct OrbisWrapperImpl<f> {
 
 #define ORBIS(func) (Libraries::Kernel::OrbisWrapperImpl<func>::wrap)
 
-#define CURRENT_FIRMWARE_VERSION 0x13520001
+#define CURRENT_FIRMWARE_VERSION 0x14008001
 
 s32* PS4_SYSV_ABI __Error();
 
@@ -49,6 +49,15 @@ struct SwVersionStruct {
 };
 
 s32 PS4_SYSV_ABI sceKernelGetSystemSwVersion(SwVersionStruct* ret);
+
+enum OrbisKernelProcessType : s32 {
+    ORBIS_KERNEL_PROCESS_TYPE_BIG_APP = 0,
+    ORBIS_KERNEL_PROCESS_TYPE_MINI_APP = 1,
+    ORBIS_KERNEL_PROCESS_TYPE_SYSTEM = 2,
+    ORBIS_KERNEL_PROCESS_TYPE_NONGAME_MINI_APP = 3,
+};
+
+s32 PS4_SYSV_ABI sceKernelGetProcessType(s32 pid);
 
 struct AuthInfoData {
     u64 paid;
