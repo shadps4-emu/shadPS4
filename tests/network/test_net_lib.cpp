@@ -1457,11 +1457,11 @@ TEST_F(NetLibP2P, AddressesAreCheckedStrictly) {
     EXPECT_EQ(sceNetConnect(dgram, Guest(&to), sizeof(to)), ORBIS_NET_ERROR_EISCONN);
     sceNetSocketClose(dgram);
 
-    // Streams: listen and connect need a bind; the UDP port is 0 or the P2P port.
+    // Streams: listen needs a bind (connect binds implicitly, see
+    // StreamConnectBindsImplicitly); the UDP port is 0 or the P2P port.
     const OrbisNetId stream = sceNetSocket("p2ps", ORBIS_NET_AF_INET, ORBIS_NET_SOCK_STREAM_P2P, 0);
     EXPECT_EQ(sceNetListen(stream, 4), ORBIS_NET_ERROR_EINVAL);
     auto peer = Loopback(5000, remote_->BoundPort());
-    EXPECT_EQ(sceNetConnect(stream, Guest(&peer), sizeof(peer)), ORBIS_NET_ERROR_EINVAL);
     auto odd_udp_port = Loopback(30100, 1234);
     EXPECT_EQ(sceNetBind(stream, Guest(&odd_udp_port), sizeof(odd_udp_port)),
               ORBIS_NET_ERROR_EINVAL);
@@ -1597,6 +1597,49 @@ TEST_F(NetLibP2P, NpChannelsAreKeptApart) {
     EXPECT_TRUE(EnsureP2PTransport());
     EXPECT_EQ(GetP2PConfiguredPort(), 0); // what the test configured
     EXPECT_EQ(GetP2PAdvertisedAddr(), 0u);
+}
+
+TEST_F(NetLibP2P, StreamConnectBindsImplicitly) {
+    auto listener = remote_->CreateStream();
+    ASSERT_EQ(listener->Bind(5100), Host::Error::Ok);
+    ASSERT_EQ(listener->Listen(4), Host::Error::Ok);
+
+    const OrbisNetId s = sceNetSocket("p2ps", ORBIS_NET_AF_INET, ORBIS_NET_SOCK_STREAM_P2P, 0);
+    ASSERT_GT(s, 0);
+    auto to = Loopback(5100, remote_->BoundPort());
+    ASSERT_EQ(sceNetConnect(s, Guest(&to), sizeof(to)), ORBIS_OK); // no bind first
+
+    OrbisNetSockaddrIn self{};
+    u32 len = sizeof(self);
+    ASSERT_EQ(sceNetGetsockname(s, Guest(&self), &len), ORBIS_OK);
+    EXPECT_GE(sceNetNtohs(self.sin_port), 49152); // ephemeral, as with an explicit bind to 0
+    EXPECT_EQ(sceNetNtohs(self.sin_vport), local_port_);
+
+    std::shared_ptr<P2P::StreamSocket> server;
+    Host::Error error;
+    for (int i = 0; i < 400 && !server; ++i) {
+        server = listener->Accept(nullptr, nullptr, &error);
+        std::this_thread::sleep_for(5ms);
+    }
+    ASSERT_TRUE(server);
+    ASSERT_EQ(sceNetSend(s, "jojo", 4, 0), 4);
+    std::array<u8, 8> got{};
+    size_t n = 0;
+    for (int i = 0; i < 400 && n == 0; ++i) {
+        n = server->Recv(std::span<u8>(got), false).bytes;
+        if (n == 0) {
+            std::this_thread::sleep_for(5ms);
+        }
+    }
+    EXPECT_EQ(n, 4u);
+    EXPECT_EQ(std::memcmp(got.data(), "jojo", 4), 0);
+    sceNetSocketClose(s);
+
+    // Datagram P2P sockets still have to be bound first.
+    const OrbisNetId dgram = sceNetSocket("p2p", ORBIS_NET_AF_INET, ORBIS_NET_SOCK_DGRAM_P2P, 0);
+    auto dgram_to = Loopback(remote_->BoundPort(), 4300);
+    EXPECT_EQ(sceNetConnect(dgram, Guest(&dgram_to), sizeof(dgram_to)), ORBIS_NET_ERROR_EINVAL);
+    sceNetSocketClose(dgram);
 }
 
 TEST_F(NetLibP2P, LingerIsKeptWholeOnP2PStreams) {

@@ -1040,11 +1040,11 @@ s32 PS4_SYSV_ABI sceNetConnect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 a
         return Return(r);
     }
     if (info.p2p) {
-        // As on the PS4: bind before connect, and datagram sockets connect only once.
-        if (!IsP2PBound(s)) {
+        const P2PKind kind = KindOf(info);
+        const bool bound = IsP2PBound(s);
+        if (!bound && kind == P2PKind::Datagram) {
             return SetErrno(ORBIS_NET_EINVAL);
         }
-        const P2PKind kind = KindOf(info);
         P2P::Endpoint peer;
         u16 port = 0;
         if (const int e = ToP2PAddress(addr, addrlen, kind, &peer, &port); e != 0) {
@@ -1062,6 +1062,12 @@ s32 PS4_SYSV_ABI sceNetConnect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 a
             Core::Net::SocketGetAttributes(s, &attributes);
             if (attributes.p2p_tcp_port_bound) {
                 return SetErrno(ORBIS_NET_EPROTO);
+            }
+            if (!bound) {
+                if (const auto r = Core::Net::P2PSocketBind(s, 0); r.error != Error::Ok) {
+                    return Return(r);
+                }
+                LOG_DEBUG(Lib_Net, "s = {}: connect on an unbound P2P stream, bound implicitly", s);
             }
         }
         if (kind == P2PKind::Datagram) {
