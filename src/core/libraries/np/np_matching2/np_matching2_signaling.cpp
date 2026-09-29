@@ -13,8 +13,7 @@
 #include <thread>
 
 #include "common/logging/log.h"
-#include "core/libraries/network/net.h"
-#include "core/libraries/network/sockets.h"
+#include "core/libraries/net/net.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_matching2/np_matching2_internal.h"
 #include "core/libraries/np/np_matching2/np_matching2_mm.h"
@@ -176,9 +175,7 @@ bool SendMatching2Handshake(ContextObject& ctx, OrbisNpMatching2RoomId room_id,
     pkt.to_member_id = member_id;
     std::memcpy(pkt.online_id_from, ctx.online_id.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
     pkt.mapped_addr = Net::GetP2PAdvertisedAddr();
-    pkt.mapped_port = Net::GetP2PConfiguredPort() != 0
-                          ? Libraries::Net::sceNetHtons(Net::GetP2PConfiguredPort())
-                          : 0;
+    pkt.mapped_port = Libraries::Net::sceNetHtons(Net::GetP2PAdvertisedPort());
     pkt.nonce = nonce;
 
     const int rc = Net::P2PMatching2SendTo(&pkt, sizeof(pkt), peer.addr, peer.port);

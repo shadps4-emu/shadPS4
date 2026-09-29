@@ -40,6 +40,12 @@ public:
     void AddMapping(u16 port);
     void RemoveMapping(u16 port);
 
+    // Forwards `port` once discovery has finished (waiting up to 10 s for it), on a background
+    // thread so the caller never waits for the router. Replaces an earlier request's mapping.
+    void MapPortAsync(u16 port);
+    // Removes what MapPortAsync forwarded, if it is `port`.
+    void UnmapPort(u16 port);
+
 private:
     UPnPClient() = default;
     ~UPnPClient();
@@ -54,6 +60,7 @@ private:
     std::atomic<bool> m_available{false};
     std::atomic<u32> m_external_ip_nbo{0};
     std::atomic<u16> m_external_port{0};
+    std::atomic<u16> m_mapped_port{0}; // forwarded by MapPortAsync, removed on exit
     char m_external_ip_str[16]{};
 
     char m_lan_addr[64]{};
@@ -63,6 +70,8 @@ private:
     std::mutex m_mutex;
     std::condition_variable m_cv;
     std::thread m_thread;
+    std::mutex m_map_mutex; // serializes MapPortAsync / UnmapPort
+    std::thread m_map_thread;
 };
 
 } // namespace Libraries::Net

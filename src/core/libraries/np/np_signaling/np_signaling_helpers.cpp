@@ -10,7 +10,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
-#include "core/libraries/network/net.h"
+#include "core/libraries/net/net.h"
 #include "core/libraries/network/net_util.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_error.h"
@@ -156,12 +156,21 @@ s32 StartEchoRuntime(s32 thread_priority, s32 cpu_affinity_mask) {
     LOG_DEBUG(Lib_NpSignaling, "thread_priority={} cpu_affinity_mask={}", thread_priority,
               cpu_affinity_mask);
 
-    auto sock = Libraries::Net::sceNetSocket("SceNpSignalingIoctl", 2, 6, 0);
+    // A DGRAM_P2P socket, which also starts the P2P transport.
+    auto sock =
+        Libraries::Net::sceNetSocket("SceNpSignalingIoctl", Libraries::Net::ORBIS_NET_AF_INET,
+                                     Libraries::Net::ORBIS_NET_SOCK_DGRAM_P2P, 0);
     if (sock < 0) {
-        return sock;
+        // Only an emulator-side problem (the P2P UDP port is taken): signaling itself still
+        // works without the echo probe, so carry on as the console would.
+        LOG_WARNING(Lib_NpSignaling, "P2P socket for the echo probe failed: {:#x}",
+                    static_cast<u32>(sock));
+        return ORBIS_OK;
     }
 
-    const s32 ioctl_rc = Libraries::Net::sceNetIoctl();
+    // DISCUSS: the real probe's ioctl is unknown; the P2P no-op command stands in for it.
+    constexpr u64 kP2PIoctlNop = 0x200050c8;
+    const s32 ioctl_rc = Libraries::Net::sceNetIoctl(sock, kP2PIoctlNop, nullptr);
     Libraries::Net::sceNetSocketClose(sock);
 
     g_echo_probe_word2 = 0;

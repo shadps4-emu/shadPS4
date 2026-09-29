@@ -13,9 +13,8 @@
 #include <fmt/format.h>
 
 #include "common/logging/log.h"
-#include "core/libraries/network/net.h"
+#include "core/libraries/net/net.h"
 #include "core/libraries/network/net_upnp.h"
-#include "core/libraries/network/sockets.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_matching2/np_matching2_internal.h"
 #include "core/libraries/np/np_matching2/np_matching2_mm.h"
@@ -690,7 +689,7 @@ void SetMmShadNetClient(std::shared_ptr<ShadNet::ShadNetClient> client,
         .control_send = Net::P2PControlSendTo,
         .control_recv = Net::P2PControlRecvFrom,
         .transport_ready = Net::P2PTransportIsReady,
-        .configured_port = Net::GetP2PConfiguredPort,
+        .configured_port = Net::GetP2PAdvertisedPort, // the bound port once running
         .advertised_addr = Net::GetP2PAdvertisedAddr,
         .ensure_transport = Net::EnsureP2PTransport,
     });
