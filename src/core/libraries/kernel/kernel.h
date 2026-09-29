@@ -50,6 +50,15 @@ struct SwVersionStruct {
 
 s32 PS4_SYSV_ABI sceKernelGetSystemSwVersion(SwVersionStruct* ret);
 
+enum OrbisKernelProcessType : s32 {
+    ORBIS_KERNEL_PROCESS_TYPE_BIG_APP = 0,
+    ORBIS_KERNEL_PROCESS_TYPE_MINI_APP = 1,
+    ORBIS_KERNEL_PROCESS_TYPE_SYSTEM = 2,
+    ORBIS_KERNEL_PROCESS_TYPE_NONGAME_MINI_APP = 3,
+};
+
+s32 PS4_SYSV_ABI sceKernelGetProcessType(s32 pid);
+
 struct AuthInfoData {
     u64 paid;
     u64 caps[4];
