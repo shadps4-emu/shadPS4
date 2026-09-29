@@ -2944,6 +2944,8 @@ struct P2PState {
     u32 advertised_addr = 0;    // network order
     // No retry before this after a failed start. NP code polls constantly.
     std::chrono::steady_clock::time_point retry_after{};
+    // Last start failure, so the retries don't flood the log.
+    std::pair<u16, Error> last_failure{0, Error::Ok};
 };
 
 P2PState& P2PStateInstance() {
@@ -2975,27 +2977,54 @@ void LogBroadcast(std::span<const u8> packet, const P2P::Endpoint& from) {
                 address, from.Port(), packet.size(), hex, packet.size() > shown ? " ..." : "");
 }
 
+// Ports tried after the configured one when it's taken, e.g. by another instance on this PC.
+constexpr u16 P2PPortFallbacks = 16;
+
 // State mutex held. Returns the bound port, or 0.
-u16 StartLocked(P2PState& state, u16 udp_port) {
+u16 StartLocked(P2PState& state, u16 udp_port, bool allow_fallback) {
     if (!Host::Initialize()) {
         return 0;
     }
     P2P::TransportConfig config;
     config.signaling_channels = ChannelCount;
     config.classify_signaling = ClassifySignaling;
+    const auto try_port = [&](u16 port, Error* error) {
+        auto codec = std::make_unique<P2P::FramingCodec>(state.keyring, LogBroadcast);
+        return P2P::Transport::Create(AF_INET, P2P::Endpoint::IPv4("0.0.0.0", port),
+                                      std::move(codec), config, error);
+    };
     Error error;
-    auto codec = std::make_unique<P2P::FramingCodec>(state.keyring, LogBroadcast);
-    auto transport = P2P::Transport::Create(AF_INET, P2P::Endpoint::IPv4("0.0.0.0", udp_port),
-                                            std::move(codec), config, &error);
+    auto transport = try_port(udp_port, &error);
+    // Peers learn the bound port through signaling, so another one works as long as the game
+    // doesn't hardcode 3658 for its peers.
+    for (u16 i = 1; !transport && allow_fallback && error == Error::AddrInUse && udp_port != 0 &&
+                    i <= P2PPortFallbacks && udp_port + i <= 0xffff;
+         ++i) {
+        transport = try_port(static_cast<u16>(udp_port + i), &error);
+    }
     if (!transport) {
-        LOG_ERROR(Lib_Net, "cannot start P2P on UDP port {}: error {}", udp_port,
-                  static_cast<int>(error));
+        if (state.last_failure != std::pair{udp_port, error}) {
+            state.last_failure = {udp_port, error};
+            LOG_ERROR(Lib_Net, "cannot start P2P on UDP port {}: {}", udp_port,
+                      ErrnoName(static_cast<int>(error)));
+        } else {
+            LOG_DEBUG(Lib_Net, "cannot start P2P on UDP port {}: {}", udp_port,
+                      ErrnoName(static_cast<int>(error)));
+        }
         return 0;
     }
+    state.last_failure = {0, Error::Ok};
     const u16 port = transport->BoundPort();
     state.transport = transport;
     Core::Net::SetP2PTransport(AF_INET, std::move(transport));
-    LOG_INFO(Lib_Net, "P2P transport on UDP port {}", port);
+    if (udp_port != 0 && port != udp_port) {
+        LOG_WARNING(Lib_Net,
+                    "UDP port {} is in use (another instance?), P2P transport on UDP port {} "
+                    "instead. Set p2p_port to choose one.",
+                    udp_port, port);
+    } else {
+        LOG_INFO(Lib_Net, "P2P transport on UDP port {}", port);
+    }
     return port;
 }
 
@@ -3013,7 +3042,7 @@ std::shared_ptr<P2P::Transport> RunningTransport() {
         std::scoped_lock lock{state.mutex};
         const auto now = std::chrono::steady_clock::now();
         if (!state.transport && now >= state.retry_after) {
-            started = StartLocked(state, PortToBind(state, hooks));
+            started = StartLocked(state, PortToBind(state, hooks), true);
             if (started == 0) {
                 state.retry_after = now + std::chrono::seconds{2};
             }
@@ -3081,7 +3110,7 @@ u16 StartP2P(u16 udp_port) {
     u16 started = 0;
     {
         std::scoped_lock lock{state.mutex};
-        started = StartLocked(state, udp_port);
+        started = StartLocked(state, udp_port, false);
         state.retry_after = {};
     }
     const auto hooks = GetSystemHooks();

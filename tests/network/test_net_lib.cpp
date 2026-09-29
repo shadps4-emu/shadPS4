@@ -1207,22 +1207,36 @@ TEST_F(NetLib, P2PTransportLifecycleHooks) {
     EXPECT_FALSE(P2PTransportIsReady());
     EXPECT_EQ(GetP2PAdvertisedPort(), 0); // not running: the configured port
 
-    // A port that is taken: the start fails, and is not retried for 2 seconds.
+    // A port that is taken, e.g. by another instance on the same PC: the transport moves to a
+    // nearby free port, and that is the one advertised and forwarded.
     const OrbisNetId blocker = sceNetSocket("blocker", ORBIS_NET_AF_INET, ORBIS_NET_SOCK_DGRAM, 0);
-    OrbisNetSockaddrIn any{};
-    any.sin_len = sizeof(any);
-    any.sin_family = ORBIS_NET_AF_INET;
-    ASSERT_EQ(sceNetBind(blocker, Guest(&any), sizeof(any)), ORBIS_OK);
-    u32 len = sizeof(any);
-    sceNetGetsockname(blocker, Guest(&any), &len);
-    port_setting = sceNetNtohs(any.sin_port);
-    EXPECT_FALSE(EnsureP2PTransport());
-    sceNetSocketClose(blocker);
-    EXPECT_FALSE(EnsureP2PTransport()); // free now, but within the retry delay
-    std::this_thread::sleep_for(2100ms);
+    OrbisNetSockaddrIn at{};
+    at.sin_len = sizeof(at);
+    at.sin_family = ORBIS_NET_AF_INET;
+    bool bound = false;
+    for (u16 port = 20000; port < 30000 && !bound; port += 97) {
+        at.sin_port = sceNetHtons(port);
+        bound = sceNetBind(blocker, Guest(&at), sizeof(at)) == ORBIS_OK;
+    }
+    ASSERT_TRUE(bound);
+    port_setting = sceNetNtohs(at.sin_port);
     ASSERT_TRUE(EnsureP2PTransport());
-    EXPECT_EQ(GetP2PBoundPort(), port_setting);
+    EXPECT_NE(GetP2PBoundPort(), port_setting);
+    EXPECT_GT(GetP2PBoundPort(), port_setting);
+    EXPECT_LE(GetP2PBoundPort(), port_setting + 16);
+    EXPECT_EQ(started, GetP2PBoundPort());
+    EXPECT_EQ(GetP2PAdvertisedPort(), started);
     EXPECT_EQ(starts, 2);
+    sceNetSocketClose(blocker);
+
+    // An explicit StartP2P gets exactly the port it asks for, or nothing.
+    StopP2P();
+    const OrbisNetId blocker2 =
+        sceNetSocket("blocker2", ORBIS_NET_AF_INET, ORBIS_NET_SOCK_DGRAM, 0);
+    ASSERT_EQ(sceNetBind(blocker2, Guest(&at), sizeof(at)), ORBIS_OK);
+    EXPECT_EQ(StartP2P(port_setting), 0);
+    sceNetSocketClose(blocker2);
+    EXPECT_EQ(StartP2P(port_setting), port_setting);
 
     StopP2P();
     SetSystemHooks({});
