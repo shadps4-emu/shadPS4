@@ -102,7 +102,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     FontStack::AddPrimaryUiFont(io.Fonts, 128.0f, console_language, font_cfg, false);
 
     // Big Picture
-    FontStack::AddPrimaryUiFont(ImGui::GetIO().Fonts, 64.0f, Config::GetConsoleLanguage(),
+    FontStack::AddPrimaryUiFont(ImGui::GetIO().Fonts, 64.0f, Config::GetLanguage(),
                                 font_cfg, true);
 
     // Let the atlas size grow to the largest image the device can create,
