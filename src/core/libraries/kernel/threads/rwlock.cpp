@@ -154,14 +154,14 @@ static OrbisKernelTimespec AbsTimeAfter(u32 usec) {
     return OrbisKernelTimespec{ns / 1000000000, ns % 1000000000};
 }
 
-int PS4_SYSV_ABI scePthreadRwlockTimedrdlock(PthreadRwlockT* rwlock, u32 usec) {
+int PS4_SYSV_ABI posix_pthread_rwlock_reltimedrdlock_np(PthreadRwlockT* rwlock, u32 usec) {
     PthreadRwlockT prwlock{};
     CHECK_AND_INIT_RWLOCK
     const auto abstime = AbsTimeAfter(usec);
     return prwlock->Rdlock(&abstime);
 }
 
-int PS4_SYSV_ABI scePthreadRwlockTimedwrlock(PthreadRwlockT* rwlock, u32 usec) {
+int PS4_SYSV_ABI posix_pthread_rwlock_reltimedwrlock_np(PthreadRwlockT* rwlock, u32 usec) {
     PthreadRwlockT prwlock{};
     CHECK_AND_INIT_RWLOCK
     const auto abstime = AbsTimeAfter(usec);
@@ -340,8 +340,10 @@ void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("BB+kb08Tl9A", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_destroy));
     LIB_FUNCTION("6ULAa0fq4jA", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_init));
     LIB_FUNCTION("Ox9i0c7L5w0", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_rdlock));
-    LIB_FUNCTION("iPtZRWICjrM", "libkernel", 1, "libkernel", ORBIS(scePthreadRwlockTimedrdlock));
-    LIB_FUNCTION("adh--6nIqTk", "libkernel", 1, "libkernel", ORBIS(scePthreadRwlockTimedwrlock));
+    LIB_FUNCTION("iPtZRWICjrM", "libkernel", 1, "libkernel",
+                 ORBIS(posix_pthread_rwlock_reltimedrdlock_np));
+    LIB_FUNCTION("adh--6nIqTk", "libkernel", 1, "libkernel",
+                 ORBIS(posix_pthread_rwlock_reltimedwrlock_np));
     LIB_FUNCTION("XD3mDeybCnk", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_tryrdlock));
     LIB_FUNCTION("bIHoZCTomsI", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_trywrlock));
     LIB_FUNCTION("+L98PIbGttk", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_unlock));
