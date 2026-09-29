@@ -187,6 +187,7 @@ struct DepthBuffer {
     enum class ZFormat : u32 {
         Invalid = 0,
         Z16 = 1,
+        Z24 = 2,
         Z32Float = 3,
     };
 
@@ -269,7 +270,16 @@ struct DepthBuffer {
     }
 
     u32 NumBits() const {
-        return z_info.format == ZFormat::Z32Float ? 32 : 16;
+        switch (z_info.format) {
+        case ZFormat::Z16:
+            return 16;
+        case ZFormat::Z24:
+            return 24;
+        case ZFormat::Z32Float:
+            return 32;
+        default:
+            return 0;
+        }
     }
 
     u32 GetDepthSliceSize() const {
