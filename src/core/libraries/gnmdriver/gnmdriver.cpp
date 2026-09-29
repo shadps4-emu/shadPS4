@@ -1591,8 +1591,22 @@ s32 PS4_SYSV_ABI sceGnmSetEsShader(u32* cmdbuf, u32 size, const u32* es_regs, u3
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmSetGsRingSizes() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceGnmSetGsRingSizes(u32 esgs_ring_size, u32 gsvs_ring_size) {
+    LOG_DEBUG(Lib_GnmDriver, "esgs_ring_size = {:#x}, gsvs_ring_size = {:#x}", esgs_ring_size,
+              gsvs_ring_size);
+    // Sony libSceGnmDriver validates 1 MB alignment and [4 MB, 8 MB] range.
+    constexpr u32 MinRingSize = 0x400000;   // 4 MB
+    constexpr u32 MaxRingSize = 0x800000;   // 8 MB
+    constexpr u32 RingAlignment = 0x100000; // 1 MB
+    if (esgs_ring_size < MinRingSize || esgs_ring_size > MaxRingSize ||
+        (esgs_ring_size % RingAlignment) != 0 || gsvs_ring_size < MinRingSize ||
+        gsvs_ring_size > MaxRingSize || (gsvs_ring_size % RingAlignment) != 0) {
+        return 0x08000000;
+    }
+    if (liverpool) {
+        liverpool->regs.vgt_esgs_ring_size = esgs_ring_size >> 8;
+        liverpool->regs.vgt_gsvs_ring_size = gsvs_ring_size >> 8;
+    }
     return ORBIS_OK;
 }
 
