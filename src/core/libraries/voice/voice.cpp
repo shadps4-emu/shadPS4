@@ -3,17 +3,65 @@
 
 #include <algorithm>
 #include <array>
+#include <cstring>
+#include <deque>
 #include <mutex>
 
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
+#include "core/libraries/audio/audioin.h"
+#include "core/libraries/audio/audioin_backend.h"
+#include "core/libraries/audio/audioout.h"
+#include "core/libraries/audio/audioout_backend.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/voice/voice.h"
 #include "core/libraries/voice/voice_error.h"
 
+// Real hardware runs captured/received audio through libSceAjm (confirmed via disassembly: this
+// module imports it, alongside libSceAudioIn/libSceAudioOut) to produce/consume Sony's CELP-like
+// compressed bitstream. Re-implementing that codec is out of scope here, so this file instead
+// routes *uncompressed* interleaved s16 PCM between ports. Practically that means:
+//  - A port that captures from or plays to the host device (mic / speaker) is fully real: it
+//    goes through the same backends sceAudioIn/sceAudioOut already use in this codebase.
+//  - Two ports connected to each other exchange real audio between the local device and
+//    whatever the game does with sceVoiceReadFromOPort/sceVoiceWriteToIPort.
+//  - The bytes exchanged are NOT Sony's real encoded format, so this cannot interoperate with a
+//    real PS4 (or a different emulator) over the network -- only with another instance of this
+//    codebase talking to itself. Games are expected to move those bytes over their own network
+//    transport; sceVoice never touches the network itself on retail hardware either.
+// Device ports are never opened just because a port was created: only once something actually
+// tries to pull/push audio through the graph, so that merely calling sceVoiceCreatePort does not
+// by itself start capturing from the host microphone.
+
 namespace Libraries::Voice {
 
 namespace {
+
+constexpr u32 kSampleRate = 16000; // Matches a rate the retail module validates for its ports.
+constexpr u32 kFrameSamples = 320; // 20 ms at 16 kHz.
+constexpr u32 kFrameBytes = kFrameSamples * sizeof(s16);
+constexpr size_t kMaxQueuedSamples = kFrameSamples * 8; // ~160 ms of headroom.
+
+std::unique_ptr<AudioOut::PortBackend> OpenPlaybackDevice() {
+    AudioOut::PortOut port_out{};
+    port_out.type = AudioOut::OrbisAudioOutPort::Voice;
+    // Mirrors AudioOut's own S16Mono table entry (see GetFormatInfo() in audioout.cpp).
+    port_out.format_info = AudioOut::AudioFormatInfo{.is_float = false,
+                                                     .sample_size = sizeof(s16),
+                                                     .num_channels = 1,
+                                                     .channel_layout = {0},
+                                                     .is_std = false};
+    port_out.sample_rate = kSampleRate;
+    port_out.buffer_frames = kFrameSamples;
+    port_out.volume.fill(AudioOut::ORBIS_AUDIO_OUT_VOLUME_0DB);
+    if (EmulatorSettings.GetAudioBackend() == AudioBackend::OpenAL) {
+        AudioOut::OpenALAudioOut backend;
+        return backend.Open(port_out);
+    }
+    AudioOut::SDLAudioOut backend;
+    return backend.Open(port_out);
+}
 
 struct Port {
     bool allocated = false;
@@ -23,6 +71,22 @@ struct Port {
     float volume = 1.0f;
     u32 bitrate = 48000;
     s32 connected_to = -1; // For an "in" port, the "out" port it is routed to, if any.
+
+    // Real local device I/O, opened lazily (see file header comment). AudioIn::PortInBackend
+    // keeps a reference to the config it was opened with (see sdl_audio_in.cpp), so that config
+    // must be kept alive (and at a stable address) for as long as the backend is -- hence the
+    // separate heap allocation rather than a plain member.
+    std::unique_ptr<AudioIn::PortIn> capture_config{};
+    std::unique_ptr<AudioIn::PortInBackend> audio_in{};
+    std::unique_ptr<AudioOut::PortBackend> audio_out{};
+    bool audio_in_open_tried = false;
+    bool audio_out_open_tried = false;
+
+    // Set once sceVoiceWriteToIPort is called on this port: distinguishes an app-fed port
+    // (network/PCM input) from one this module should instead capture from the microphone for,
+    // since the real port-type value's numeric encoding was not confirmed (see voice.h).
+    bool app_fed = false;
+    std::deque<s16> queue;
 };
 
 // The retail module keeps a single global instance, protected by an internal mutex, allocated
@@ -37,6 +101,52 @@ struct VoiceManager {
 };
 
 VoiceManager g_voice_manager;
+
+// Requires g_voice_manager.mutex to already be held.
+void ClosePortDevices(Port& port) {
+    port.audio_in.reset();
+    port.capture_config.reset();
+    port.audio_out.reset();
+    port.audio_in_open_tried = false;
+    port.audio_out_open_tried = false;
+    port.app_fed = false;
+    port.queue.clear();
+}
+
+// Requires g_voice_manager.mutex to already be held. Returns null if no capture device is
+// available (e.g. no microphone on the host) rather than treating that as a hard error, so a
+// title that creates a mic port but never ends up in an online session is unaffected.
+AudioIn::PortInBackend* GetOrOpenCapture(Port& port) {
+    if (!port.audio_in_open_tried) {
+        port.audio_in_open_tried = true;
+        port.capture_config = std::make_unique<AudioIn::PortIn>();
+        auto& cfg = *port.capture_config;
+        cfg.type = AudioIn::OrbisAudioInType::VoiceChat;
+        cfg.format = AudioIn::OrbisAudioInParamFormat::S16Mono;
+        cfg.samples_num = kFrameSamples;
+        cfg.freq = kSampleRate;
+        cfg.channels_num = 1;
+        cfg.sample_size = sizeof(s16);
+        AudioIn::SDLAudioIn backend;
+        port.audio_in = backend.Open(cfg);
+        if (!port.audio_in) {
+            port.capture_config.reset();
+            LOG_WARNING(Lib_Voice, "No capture device available for a voice port");
+        }
+    }
+    return port.audio_in.get();
+}
+
+AudioOut::PortBackend* GetOrOpenPlayback(Port& port) {
+    if (!port.audio_out_open_tried) {
+        port.audio_out_open_tried = true;
+        port.audio_out = OpenPlaybackDevice();
+        if (!port.audio_out) {
+            LOG_WARNING(Lib_Voice, "No playback device available for a voice port");
+        }
+    }
+    return port.audio_out.get();
+}
 
 } // namespace
 
@@ -71,10 +181,9 @@ s32 PS4_SYSV_ABI sceVoiceCreatePort(s32* port_id, const OrbisVoicePortParam* par
     if (it == g_voice_manager.ports.end()) {
         return ORBIS_VOICE_ERROR_NOT_ACTIVE;
     }
-    *it = Port{
-        .allocated = true,
-        .param = *param,
-    };
+    *it = Port{};
+    it->allocated = true;
+    it->param = *param;
     *port_id = static_cast<s32>(std::distance(g_voice_manager.ports.begin(), it));
     return ORBIS_OK;
 }
@@ -239,8 +348,8 @@ s32 PS4_SYSV_ABI sceVoiceGetPortInfo(u32 port_id, OrbisVoicePortInfo* info) {
     info->port_type = port.param.type;
     info->state = port.paused ? 1 : 0;
     info->edge = nullptr;
-    info->byte_count = 0;
-    info->frame_size = 1;
+    info->byte_count = static_cast<u32>(port.queue.size() * sizeof(s16));
+    info->frame_size = kFrameBytes;
     info->edge_count = 0;
     info->reserved = 0;
     return ORBIS_OK;
@@ -344,11 +453,44 @@ s32 PS4_SYSV_ABI sceVoiceReadFromOPort(u32 port_id, void* data, u32* size) {
         return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
     }
     std::scoped_lock lock{g_voice_manager.mutex};
-    if (!g_voice_manager.ports[port_id].allocated) {
+    auto& out_port = g_voice_manager.ports[port_id];
+    if (!out_port.allocated) {
         return ORBIS_VOICE_ERROR_NOT_ACTIVE;
     }
-    // No audio backend is wired up yet: report no data available rather than fabricating audio.
+    const u32 requested = *size;
     *size = 0;
+    if (out_port.paused || out_port.muted || requested == 0) {
+        return ORBIS_OK;
+    }
+    // Find whichever port is routed into this one (see sceVoiceConnectIPortToOPort).
+    const auto it = std::find_if(
+        g_voice_manager.ports.begin(), g_voice_manager.ports.end(),
+        [port_id](const Port& p) { return p.connected_to == static_cast<s32>(port_id); });
+    if (it == g_voice_manager.ports.end() || !it->allocated || it->paused || it->muted) {
+        return ORBIS_OK;
+    }
+    Port& in_port = *it;
+    if (in_port.app_fed) {
+        // Fed by a previous sceVoiceWriteToIPort call: drain from the queue.
+        const u32 available_bytes = static_cast<u32>(in_port.queue.size() * sizeof(s16));
+        const u32 to_copy = std::min(requested, available_bytes);
+        std::copy_n(in_port.queue.begin(), to_copy / sizeof(s16), static_cast<s16*>(data));
+        in_port.queue.erase(in_port.queue.begin(), in_port.queue.begin() + to_copy / sizeof(s16));
+        *size = to_copy;
+        return ORBIS_OK;
+    }
+    // Not app-fed: treat this as a microphone-backed port and capture a live frame.
+    auto* capture = GetOrOpenCapture(in_port);
+    if (capture == nullptr) {
+        return ORBIS_OK;
+    }
+    std::array<s16, kFrameSamples> frame{};
+    if (capture->Read(frame.data()) < 0) {
+        return ORBIS_OK;
+    }
+    const u32 to_copy = std::min(requested, kFrameBytes);
+    std::memcpy(data, frame.data(), to_copy);
+    *size = to_copy;
     return ORBIS_OK;
 }
 
@@ -366,7 +508,9 @@ s32 PS4_SYSV_ABI sceVoiceResetPort(u32 port_id) {
         return ORBIS_VOICE_ERROR_NOT_ACTIVE;
     }
     const auto param = port.param;
-    port = Port{.allocated = true, .param = param};
+    port = Port{};
+    port.allocated = true;
+    port.param = param;
     return ORBIS_OK;
 }
 
@@ -499,6 +643,11 @@ s32 PS4_SYSV_ABI sceVoiceStop() {
     }
     std::scoped_lock lock{g_voice_manager.mutex};
     g_voice_manager.started = false;
+    for (auto& port : g_voice_manager.ports) {
+        if (port.allocated) {
+            ClosePortDevices(port);
+        }
+    }
     return ORBIS_OK;
 }
 
@@ -553,11 +702,39 @@ s32 PS4_SYSV_ABI sceVoiceWriteToIPort(u32 port_id, const void* data, u32* size) 
         return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
     }
     std::scoped_lock lock{g_voice_manager.mutex};
-    if (!g_voice_manager.ports[port_id].allocated) {
+    auto& in_port = g_voice_manager.ports[port_id];
+    if (!in_port.allocated) {
         return ORBIS_VOICE_ERROR_NOT_ACTIVE;
     }
-    // No audio backend is wired up yet: report every supplied byte as consumed so callers do
-    // not spin retrying, without fabricating an encode/network path.
+    in_port.app_fed = true;
+    if (in_port.paused || in_port.muted || *size == 0) {
+        return ORBIS_OK;
+    }
+    const u32 sample_count = *size / sizeof(s16);
+    const auto* samples = static_cast<const s16*>(data);
+    // If this feeds a device output port directly, play it back immediately when the caller
+    // handed us exactly one of our fixed-size frames; otherwise just queue it (a mismatched size
+    // means we cannot safely hand it to the playback backend, which expects a fixed buffer).
+    if (in_port.connected_to >= 0) {
+        Port& out_port = g_voice_manager.ports[in_port.connected_to];
+        if (out_port.allocated && !out_port.paused && !out_port.muted && *size == kFrameBytes) {
+            auto* playback = GetOrOpenPlayback(out_port);
+            if (playback != nullptr) {
+                std::array<s16, kFrameSamples> scaled{};
+                const float gain = std::clamp(in_port.volume * out_port.volume, 0.0f, 4.0f);
+                for (u32 i = 0; i < kFrameSamples; ++i) {
+                    scaled[i] =
+                        static_cast<s16>(std::clamp(samples[i] * gain, -32768.0f, 32767.0f));
+                }
+                playback->Output(scaled.data());
+                return ORBIS_OK;
+            }
+        }
+    }
+    in_port.queue.insert(in_port.queue.end(), samples, samples + sample_count);
+    if (in_port.queue.size() > kMaxQueuedSamples) {
+        in_port.queue.erase(in_port.queue.begin(), in_port.queue.end() - kMaxQueuedSamples);
+    }
     return ORBIS_OK;
 }
 
