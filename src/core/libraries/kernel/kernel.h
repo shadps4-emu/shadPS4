@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -38,7 +38,7 @@ struct OrbisWrapperImpl<f> {
 
 #define ORBIS(func) (Libraries::Kernel::OrbisWrapperImpl<func>::wrap)
 
-#define CURRENT_FIRMWARE_VERSION 0x13520001
+#define CURRENT_FIRMWARE_VERSION 0x14008001
 
 s32* PS4_SYSV_ABI __Error();
 
