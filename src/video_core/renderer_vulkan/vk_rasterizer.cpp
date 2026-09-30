@@ -724,6 +724,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             if (desc.buffer_type == Shader::BufferType::GdsBuffer) {
                 const auto* gds_buf = buffer_cache.GetGdsBuffer();
                 buffer_infos.emplace_back(gds_buf->Handle(), 0, gds_buf->SizeBytes());
+                needs_barrier |=
+                    runtime.IsBufferAccessed(gds_buf, 0, gds_buf->SizeBytes(), desc.is_written);
                 bound_buffers.emplace_back(gds_buf, 0, gds_buf->SizeBytes(), desc.is_written);
             } else if (desc.buffer_type == Shader::BufferType::Flatbuf) {
                 auto& vk_buffer = buffer_cache.GetStreamBuffer();

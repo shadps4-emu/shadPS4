@@ -16,6 +16,7 @@ namespace MemoryPatcher {
 
 extern EXPORT uintptr_t g_eboot_address;
 extern uint64_t g_eboot_image_size;
+extern std::string g_eboot_name;
 extern std::string g_game_serial;
 extern std::string patch_file;
 
