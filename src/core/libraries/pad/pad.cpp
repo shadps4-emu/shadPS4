@@ -576,7 +576,7 @@ int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pPar
                   pParam->b);
 
         if (pParam->r < 0xD && pParam->g < 0xD && pParam->b < 0xD) {
-            LOG_INFO(Lib_Pad, "Invalid lightbar setting");
+            LOG_TRACE(Lib_Pad, "Invalid lightbar setting");
             return ORBIS_PAD_ERROR_INVALID_LIGHTBAR_SETTING;
         }
 
