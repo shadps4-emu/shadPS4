@@ -1095,6 +1095,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/passes/lower_phis_to_regs_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_repair_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
+                      src/shader_recompiler/ir/passes/workgroup_size_clamp_pass.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.h
                       src/shader_recompiler/ir/attribute.cpp
