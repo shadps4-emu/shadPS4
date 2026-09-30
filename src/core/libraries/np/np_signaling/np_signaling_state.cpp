@@ -14,7 +14,7 @@
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/net/net.h"
-#include "core/libraries/network/net_util.h"
+#include "core/libraries/net/net_util.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_signaling/np_signaling_state.h"
 #include "core/libraries/np/np_signaling/np_signaling_stubs.h"

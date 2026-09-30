@@ -14,7 +14,7 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/net/net.h"
-#include "core/libraries/network/net_upnp.h"
+#include "core/libraries/net/net_upnp.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_matching2/np_matching2_internal.h"
 #include "core/libraries/np/np_matching2/np_matching2_mm.h"

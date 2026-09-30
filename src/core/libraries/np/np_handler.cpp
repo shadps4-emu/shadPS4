@@ -13,7 +13,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/net/net.h"
-#include "core/libraries/network/net_upnp.h"
+#include "core/libraries/net/net_upnp.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_matching2/np_matching2_mm.h"

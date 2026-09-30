@@ -9,7 +9,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/net/net.h"
-#include "core/libraries/network/net_util.h"
+#include "core/libraries/net/net_util.h"
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_handler.h"

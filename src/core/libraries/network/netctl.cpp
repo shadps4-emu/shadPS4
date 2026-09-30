@@ -19,7 +19,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/network/net_ctl_codes.h"
 #include "core/libraries/network/netctl.h"
-#include "net_util.h"
+#include "core/libraries/net/net_util.h"
 
 namespace Libraries::NetCtl {
 

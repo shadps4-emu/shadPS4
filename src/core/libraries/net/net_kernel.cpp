@@ -17,8 +17,8 @@
 #include "core/libraries/net/net_log.h"
 #include "core/libraries/net/net_resolver.h"
 #include "core/libraries/net/net_translate.h"
-#include "core/libraries/network/net_upnp.h"
-#include "core/libraries/network/net_util.h"
+#include "core/libraries/net/net_upnp.h"
+#include "core/libraries/net/net_util.h"
 #include "core/net/guest_net.h"
 
 namespace Libraries::Net {
