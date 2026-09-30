@@ -304,7 +304,7 @@ std::optional<HostOption> ToHostOption(int level, int name) {
         case ORBIS_NET_SO_RCVBUF:
             return HostOption{SOL_SOCKET, SO_RCVBUF, OptionValue::Int};
         case ORBIS_NET_SO_LINGER:
-            return HostOption{SOL_SOCKET, SO_LINGER, OptionValue::Linger};
+            return HostOption{SOL_SOCKET, Core::Net::Host::LingerOption, OptionValue::Linger};
         default:
             return std::nullopt;
         }

@@ -385,7 +385,7 @@ Error PrepareBind(NativeSocket s, bool reuse_addr, bool reuse_port) {
 void PrepareClose(NativeSocket s, bool guest_blocking) {
     linger value{};
     socklen_t len = sizeof(value);
-    if (getsockopt(s, SOL_SOCKET, SO_LINGER, reinterpret_cast<char*>(&value), &len) != 0 ||
+    if (getsockopt(s, SOL_SOCKET, LingerOption, reinterpret_cast<char*>(&value), &len) != 0 ||
         value.l_onoff == 0 || value.l_linger <= 0) {
         return; // no linger or linger 0, same in every mode
     }
@@ -402,7 +402,7 @@ void PrepareClose(NativeSocket s, bool guest_blocking) {
         return;
     }
     value.l_onoff = 0;
-    setsockopt(s, SOL_SOCKET, SO_LINGER, reinterpret_cast<const char*>(&value), sizeof(value));
+    setsockopt(s, SOL_SOCKET, LingerOption, reinterpret_cast<const char*>(&value), sizeof(value));
 }
 
 Error Bind(NativeSocket s, const sockaddr* addr, socklen_t len) {

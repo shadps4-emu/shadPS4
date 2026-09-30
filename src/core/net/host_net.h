@@ -118,6 +118,13 @@ void CloseSocket(NativeSocket s);
 Error CreateSocketPair(int family, int type, int protocol, NativeSocket out[2]);
 
 Error PrepareBind(NativeSocket s, bool reuse_addr, bool reuse_port);
+// SO_LINGER in seconds. Darwin's SO_LINGER counts clock ticks, SO_LINGER_SEC is the BSD one.
+#ifdef __APPLE__
+inline constexpr int LingerOption = SO_LINGER_SEC;
+#else
+inline constexpr int LingerOption = SO_LINGER;
+#endif
+
 // Call before closing a stream socket. Sorts out SO_LINGER for the guest's blocking mode.
 void PrepareClose(NativeSocket s, bool guest_blocking);
 Error Bind(NativeSocket s, const sockaddr* addr, socklen_t len);
