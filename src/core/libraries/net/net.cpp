@@ -1057,7 +1057,6 @@ s32 PS4_SYSV_ABI sceNetConnect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 a
             return SetErrno(ORBIS_NET_EOPNOTSUPP);
         }
         if (kind == P2PKind::Stream) {
-            // Per SDK docs, clients must bind TCP port 0.
             Core::Net::SocketAttributes attributes;
             Core::Net::SocketGetAttributes(s, &attributes);
             if (attributes.p2p_tcp_port_bound) {
