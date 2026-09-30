@@ -433,21 +433,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     EmulatorSettings.Load(id);
-    // Windows static guest red-zone protection
-    WindowsGuestRedZoneProtection::SetActiveMode(
-        EmulatorSettings.GetWindowsGuestRedZoneProtectionMode());
     // Switch to configured log
     Common::Log::Switch((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
                                                                           : "shad_log.txt",
                         append_log);
-#ifdef _WIN32
-    // Windows static guest red-zone protection
-    if (WindowsGuestRedZoneProtection::IsStaticPatchingEnabled()) {
-        LOG_INFO(Core,
-                 "Windows guest red-zone static protection uses module EH metadata and cannot "
-                 "cover code without function entries");
-    }
-#endif
 
     auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
 
@@ -485,6 +474,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings.IsDevKit());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", EmulatorSettings.IsConnectedToNetwork());
     LOG_INFO(Config, "General isShadNetEnabled: {}", EmulatorSettings.IsShadNetEnabled());
+#ifdef _WIN32
+    LOG_INFO(Config, "General isRedZonePatchingEnabled: {}",
+             EmulatorSettings.IsRedZonePatchingEnabled());
+#endif
     LOG_INFO(Config, "Log sync: {}", EmulatorSettings.IsLogSync());
     LOG_INFO(Config, "Log skipDuplicate: {}", EmulatorSettings.IsLogSkipDuplicate());
 #ifdef _WIN32
@@ -498,6 +491,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", EmulatorSettings.IsDumpShaders());
     LOG_INFO(Config, "GPU vblankFrequency: {}", EmulatorSettings.GetVblankFrequency());
     LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}", EmulatorSettings.IsCopyGpuBuffers());
+#ifdef __linux__
+    LOG_INFO(Config, "GPU userfaultfdTracking: {}", EmulatorSettings.IsUserfaultfdTracking());
+#endif
+    LOG_INFO(Config, "GPU inlineFetchShader: {}", EmulatorSettings.IsInlineFetchShader());
     LOG_INFO(Config, "Vulkan gpuId: {}", EmulatorSettings.GetGpuId());
     LOG_INFO(Config, "Vulkan vkValidation: {}", EmulatorSettings.IsVkValidationEnabled());
     LOG_INFO(Config, "Vulkan vkValidationCore: {}", EmulatorSettings.IsVkValidationCoreEnabled());
@@ -547,6 +544,14 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     if (std::filesystem::exists(mods_folder) && !std::filesystem::is_empty(mods_folder)) {
         LOG_INFO(Loader, "Files found in game mods folder");
     }
+
+#ifdef _WIN32
+    // Enable red-zone patching if the setting is enabled
+    if (EmulatorSettings.IsRedZonePatchingEnabled()) {
+        WindowsGuestRedZoneProtection::SetActiveMode(
+            WindowsGuestRedZoneProtectionMode::StaticPatching);
+    }
+#endif
 
     // Create stdin/stdout/stderr
     Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();

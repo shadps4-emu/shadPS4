@@ -116,7 +116,7 @@ public:
     }
 
     bool is_allocated(SlotId id) const {
-        return ReadStorageBit(id.index);
+        return (id.index / 64) < stored_bitset.size() && ReadStorageBit(id.index);
     }
 
     template <typename... Args>
