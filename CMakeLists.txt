@@ -1261,6 +1261,9 @@ set(SHADNET src/shadnet/client.cpp
             src/shadnet/server_probe.cpp
             src/shadnet/server_probe.h
             "${SHADNET_PROTO_OUT}/shadnet.pb.cc"
+        src/core/libraries/voice/voice_errors.h
+        src/core/libraries/voice/voice_errors.h
+        src/core/libraries/voice/voice_errors.h
 )
 if (APPLE)
     list(APPEND EMULATOR src/sdl_window_apple.mm)
@@ -1283,6 +1286,7 @@ add_executable(shadps4
     src/emulator.h
     src/sdl_window.h
     src/sdl_window.cpp
+        src/core/libraries/voice/voice_errors.h
 )
 
 create_target_directory_groups(shadps4)
