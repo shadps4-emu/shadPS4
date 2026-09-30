@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <array>
 #include "common/types.h"
 
 namespace Shader {
@@ -11,6 +12,8 @@ struct Profile {
     u32 max_viewport_width{};
     u32 max_viewport_height{};
     u32 max_shared_memory_size{};
+    u32 max_compute_workgroup_invocations{};
+    std::array<u32, 3> max_compute_workgroup_size{};
     u32 supported_spirv{0x00010000};
     u32 subgroup_size{};
     u32 sparse_page_shift{};
