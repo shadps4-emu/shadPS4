@@ -760,6 +760,8 @@ struct AddressSpace::Impl {
     }
 
     VAddr Unmap(VAddr virtual_addr, u64* size) {
+        ASSERT_MSG(size != nullptr && *size > 0, "Invalid unmap size");
+
         // Check to see if we are adjacent to any regions.
         VAddr start_address = virtual_addr;
         VAddr end_address = start_address + *size;
@@ -774,16 +776,19 @@ struct AddressSpace::Impl {
             end_address = std::max(end_address, it->upper());
         }
 
-        // Free the relevant region.
+        // Free the relevant region in tracking structure.
         m_free_regions.insert({start_address, end_address});
 
-        // Return the adjusted pointers.
-        void* ret = mmap(reinterpret_cast<void*>(start_address), end_address - start_address,
-                         PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+        // Unmap strictly the requested range on host OS across all platforms.
+        // Already-free adjacent memory is already PROT_NONE and must not be re-mmapped.
+        int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED;
+#if !defined(__FreeBSD__)
+        map_flags |= MAP_NORESERVE;
+#endif
+        void* ret = mmap(reinterpret_cast<void*>(virtual_addr), *size, PROT_NONE, map_flags, -1, 0);
         ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
 
-        *size = end_address - start_address;
-        return reinterpret_cast<VAddr>(ret);
+        return virtual_addr;
     }
 
     void Protect(VAddr virtual_addr, u64 size, bool read, bool write, bool execute) {
