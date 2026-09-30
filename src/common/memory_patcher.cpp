@@ -19,6 +19,7 @@ namespace MemoryPatcher {
 
 EXPORT uintptr_t g_eboot_address;
 uint64_t g_eboot_image_size;
+std::string g_eboot_name;
 std::string g_game_serial;
 std::string patch_file;
 bool patches_applied = false;
@@ -144,7 +145,11 @@ void ApplyPatchesFromXML(std::filesystem::path path) {
                 if (std::string(it->attribute("isEnabled").value()) == "true") {
                     std::string currentPatchName = it->attribute("Name").value();
                     std::string metadataAppVer = it->attribute("AppVer").value();
+                    std::string metadataAppElf = it->attribute("AppElf").value();
                     bool versionMatches = metadataAppVer == app_version;
+
+                    if (metadataAppElf != g_eboot_name)
+                        continue;
 
                     auto patchList = it->first_child();
                     for (pugi::xml_node_iterator patchLineIt = patchList.children().begin();
