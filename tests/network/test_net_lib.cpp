@@ -682,13 +682,23 @@ TEST_F(NetLib, LingerOnCloseFollowsTheGuestMode) {
         *receiver = sceNetAccept(*listener, nullptr, nullptr);
         ASSERT_GT(*receiver, 0);
         SetInt(*sender, ORBIS_NET_SOL_SOCKET, ORBIS_NET_SO_NBIO, 1);
+        // Fill until the socket stays full across a pause. One EWOULDBLOCK is not enough:
+        // macOS keeps growing the receive buffer and drains the send queue right after.
         std::vector<char> chunk(64 * 1024, 'x');
-        for (int i = 0; i < 4096; ++i) {
-            if (sceNetSend(*sender, chunk.data(), chunk.size(), 0) < 0) {
-                break; // EWOULDBLOCK: both buffers are full
+        bool stuck = false;
+        for (int round = 0; round < 200 && !stuck; ++round) {
+            bool progressed = false;
+            for (int i = 0; i < 4096; ++i) {
+                if (sceNetSend(*sender, chunk.data(), chunk.size(), 0) < 0) {
+                    break;
+                }
+                progressed = true;
             }
+            ASSERT_EQ(*sceNetErrnoLoc(), ORBIS_NET_EWOULDBLOCK);
+            stuck = !progressed && round > 0;
+            std::this_thread::sleep_for(20ms);
         }
-        ASSERT_EQ(*sceNetErrnoLoc(), ORBIS_NET_EWOULDBLOCK);
+        ASSERT_TRUE(stuck) << "the receiver kept taking data";
     };
     const OrbisNetLinger linger{1, 1};
 
@@ -1599,6 +1609,8 @@ TEST_F(NetLibP2P, NpChannelsAreKeptApart) {
     EXPECT_EQ(GetP2PAdvertisedAddr(), 0u);
 }
 
+// JoJo: Eyes of Heaven connects STREAM_P2P sockets without binding them, which works on the
+// PS4. Connect binds them to a free port, as BSD TCP does.
 TEST_F(NetLibP2P, StreamConnectBindsImplicitly) {
     auto listener = remote_->CreateStream();
     ASSERT_EQ(listener->Bind(5100), Host::Error::Ok);
