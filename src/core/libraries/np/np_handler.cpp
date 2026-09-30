@@ -700,6 +700,7 @@ bool NpHandler::AcceptSessionInvitation(s32 user_id, const std::string& invitati
     // emulator's system-UI equivalent).
     PostSessionInvitationEvent(user_id, inv.session_id, invitation_id, inv.to_npid, inv.from_npid,
                                inv.from_account_id);
+#if 0
     // Consume it server-side (PUT usedFlag=true).
     const std::string base_url = EmulatorSettings.GetShadNetWebApiServer();
     const std::string token = GetBearerToken(user_id);
@@ -720,6 +721,9 @@ bool NpHandler::AcceptSessionInvitation(s32 user_id, const std::string& invitati
         return false;
     }
     LOG_INFO(NpHandler, "AcceptSessionInvitation: consumed '{}' session='{}'", invitation_id,
+             inv.session_id);
+#endif
+    LOG_INFO(NpHandler, "AcceptSessionInvitation: accepted '{}' session='{}'", invitation_id,
              inv.session_id);
     return true;
 }
