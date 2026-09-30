@@ -326,23 +326,20 @@ constexpr std::tuple<u32, u32, size_t> ImageSizeMicroTiled(u32 pitch, u32 height
     return {pitch_aligned, height_aligned, log_sz};
 }
 
-constexpr std::tuple<u32, u32, size_t> ImageSizeMacroTiled(u32 pitch, u32 height, u32 thickness,
-                                                           u32 bpp, u32 num_samples,
-                                                           AmdGpu::TileMode tile_mode, u32 mip_n,
-                                                           bool alt) {
+constexpr bool IsMacroTiledMip(u32 pitch, u32 height, u32 bpp, u32 num_samples,
+                               AmdGpu::TileMode tile_mode, u32 mip_n, bool alt) {
+    if (mip_n == 0) {
+        return true;
+    }
+    const auto [pitch_align, height_align] = GetMacroTileExtents(tile_mode, bpp, num_samples, alt);
+    return pitch >= pitch_align && height >= height_align;
+}
+
+constexpr std::tuple<u32, u32, size_t> ImageSizeMacroTiled(u32 pitch, u32 height, u32 bpp,
+                                                           u32 num_samples,
+                                                           AmdGpu::TileMode tile_mode, bool alt) {
     const auto [pitch_align, height_align] = GetMacroTileExtents(tile_mode, bpp, num_samples, alt);
     ASSERT(pitch_align != 0 && height_align != 0);
-    bool downgrade_to_micro = false;
-    if (mip_n > 0) {
-        const bool is_less_than_tile = pitch < pitch_align || height < height_align;
-        // TODO: threshold check
-        downgrade_to_micro = is_less_than_tile;
-    }
-
-    if (downgrade_to_micro) {
-        return ImageSizeMicroTiled(pitch, height, thickness, bpp, num_samples);
-    }
-
     const auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
     const auto height_aligned = (height + height_align - 1) & ~(height_align - 1);
     const auto log_sz = pitch_aligned * height_aligned * num_samples;
