@@ -4,9 +4,10 @@
 #pragma once
 
 #include <string_view>
+
 #include "common/types.h"
 
-namespace Libraries::Np::NpSignaling::Stubs {
+namespace Libraries::Np::NpSignaling::Transport {
 
 struct TransportHooks {
     int (*signaling_send)(const void* data, u32 len, u32 dest_addr, u16 dest_port) = nullptr;
@@ -39,4 +40,4 @@ bool Matching2Enabled();
 u32 MmServerAddr();
 u16 MmServerUdpPort();
 
-} // namespace Libraries::Np::NpSignaling::Stubs
+} // namespace Libraries::Np::NpSignaling::Transport
