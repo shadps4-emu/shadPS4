@@ -683,12 +683,10 @@ static bool IsReadConstSource(const IR::Value base) {
 
 void SimplifyReadConstAddressAdd(IR::Inst& inst) {
     // This handles the following pattern by combining the addition with the offset
-    // %82 = IAdd32 %65, #28816
-    // %83 = ULessThan32 %82, %65
-    // %84 = SelectU32 %83, #1, #0
-    // %85 = IAdd32 %66, %84
-    // %86 = CompositeConstructU32x2 %82, %85
-    // %87 = ReadConst (flags=0x0)  %86, #0
+    // s_add_u32    s12, s2, <offset>
+    // s_addc_u32   s13, s3, 0
+    // s_load_dword s16, s[12:13], 0x0
+
     if (inst.GetOpcode() != IR::Opcode::ReadConst) {
         return;
     }
