@@ -3,7 +3,6 @@
 
 #pragma once
 
-
 // Voice library
 constexpr int SCE_VOICE_ERROR_LIBVOICE_NOT_INIT = 0x804e0801;
 constexpr int SCE_VOICE_ERROR_LIBVOICE_INITIALIZED = 0x804e0802;

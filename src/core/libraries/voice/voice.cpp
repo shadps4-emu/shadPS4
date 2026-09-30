@@ -7,7 +7,6 @@
 #include "core/libraries/voice/voice.h"
 #include "voice_errors.h"
 
-
 namespace Libraries::Voice {
 
 s32 PS4_SYSV_ABI sceVoiceConnectIPortToOPort() {
