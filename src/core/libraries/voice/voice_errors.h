@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "core/libraries/error_codes.h"
 
 // Voice library
 constexpr int SCE_VOICE_ERROR_LIBVOICE_NOT_INIT = 0x804e0801;
