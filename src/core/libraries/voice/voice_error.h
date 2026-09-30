@@ -13,8 +13,7 @@ constexpr int ORBIS_VOICE_ERROR_NOT_INIT = 0x804E0801;
 constexpr int ORBIS_VOICE_ERROR_ALREADY_INIT = 0x804E0802;
 constexpr int ORBIS_VOICE_ERROR_INVALID_PORT_ID = 0x804E0804;
 constexpr int ORBIS_VOICE_ERROR_ARGUMENT_INVALID = 0x804E0805;
-constexpr int ORBIS_VOICE_ERROR_NOT_ACTIVE =
-    0x804E0807; // port_id in range but not created
+constexpr int ORBIS_VOICE_ERROR_NOT_ACTIVE = 0x804E0807; // port_id in range but not created
 // Observed only (internal codec/format negotiation paths not exercised by the
 // public API below).
 constexpr int ORBIS_VOICE_ERROR_GENERAL = 0x804E0803;
