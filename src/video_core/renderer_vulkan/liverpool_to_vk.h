@@ -35,6 +35,9 @@ bool IsDualSourceBlendFactor(AmdGpu::BlendControl::BlendFactor factor);
 
 vk::BlendOp BlendOp(AmdGpu::BlendControl::BlendFunc func);
 
+void NormalizeMinMaxBlend(vk::BlendOp& op, vk::BlendFactor& src, vk::BlendFactor& dst,
+                          AmdGpu::NumberFormat format);
+
 vk::LogicOp LogicOp(AmdGpu::ColorControl::LogicOp logic_op);
 
 vk::SamplerAddressMode ClampMode(AmdGpu::ClampMode mode);
