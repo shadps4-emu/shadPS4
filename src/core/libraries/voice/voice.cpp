@@ -3,6 +3,7 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "voice_errors.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/voice/voice.h"
 
@@ -93,7 +94,7 @@ s32 PS4_SYSV_ABI sceVoicePausePortAll() {
 
 s32 PS4_SYSV_ABI sceVoiceReadFromOPort() {
     LOG_ERROR(Lib_Voice, "(STUBBED) called");
-    return ORBIS_OK;
+    return SCE_VOICE_ERROR_GENERAL;
 }
 
 s32 PS4_SYSV_ABI sceVoiceResetPort() {
