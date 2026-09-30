@@ -544,8 +544,8 @@ add_net_lib_test(shadps4_net_lib_test
 add_net_lib_test(shadps4_net_kernel_test
     ${NET_LIB_TEST_SOURCES}
     ${CMAKE_SOURCE_DIR}/src/core/libraries/net/net_kernel.cpp
-    ${CMAKE_SOURCE_DIR}/src/core/libraries/network/net_upnp.cpp
-    ${CMAKE_SOURCE_DIR}/src/core/libraries/network/net_util.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/net/net_upnp.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/net/net_util.cpp
     stubs/net_kernel_stub.cpp
     network/test_net_kernel.cpp
 )
