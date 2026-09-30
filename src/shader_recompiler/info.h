@@ -46,6 +46,10 @@ struct InfoPersistent {
 
     u32 fetch_shader_sgpr_base{};
     u32 shared_memory_scratch_size{};
+    // Number of real Vulkan dispatches needed in the X dimension to reproduce a guest workgroup
+    // size that exceeds what the host device can run as a single workgroup. Set by
+    // Optimization::WorkgroupSizeClampPass; 1 when no splitting was needed or possible.
+    u32 workgroup_split_factor{1};
 
     u64 pgm_hash{};
 
