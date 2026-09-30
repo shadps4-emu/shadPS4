@@ -648,6 +648,8 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/object_manager.h
             src/core/libraries/np/np_handler.cpp
             src/core/libraries/np/np_handler.h
+            src/core/libraries/np/signaling_handler.cpp
+            src/core/libraries/np/signaling_handler.h
             src/core/libraries/np/np_commerce/np_commerce.cpp
             src/core/libraries/np/np_commerce/np_commerce.h
             src/core/libraries/np/np_commerce/np_commerce_ui.cpp
@@ -665,8 +667,8 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_signaling/np_signaling_state.h
             src/core/libraries/np/np_signaling/np_signaling_helpers.cpp
             src/core/libraries/np/np_signaling/np_signaling_helpers.h
-            src/core/libraries/np/np_signaling/np_signaling_stubs.cpp
-            src/core/libraries/np/np_signaling/np_signaling_stubs.h
+            src/core/libraries/np/np_signaling/np_signaling_transport.cpp
+            src/core/libraries/np/np_signaling/np_signaling_transport.h
             src/core/libraries/np/np_web_api/np_web_api.cpp
             src/core/libraries/np/np_web_api/np_web_api.h
             src/core/libraries/np/np_web_api/np_web_api_internal.cpp

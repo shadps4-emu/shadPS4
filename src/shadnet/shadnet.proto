@@ -374,6 +374,16 @@ message SetRoomDataInternalRequest {
     uint64 passwd_slot_mask = 7;
 }
 
+message SetRoomMemberDataInternalRequest {
+    uint32 req_id      = 1;
+    uint64 room_id     = 2;
+    uint32 member_id   = 3;
+    uint32 team_id     = 4;
+    uint32 flag_filter = 5;
+    uint32 flag_attr   = 6;
+    repeated MatchingBinAttr bin_attrs = 7;
+}
+
 message SetRoomDataExternalRequest {
     uint32 req_id  = 1;
     uint64 room_id = 2;
@@ -510,6 +520,7 @@ message RequestSignalingInfosReply {
 
 message LeaveRoomReply            { uint64 room_id = 1; }
 message SetRoomDataInternalReply  { uint64 room_id = 1; }
+message SetRoomMemberDataInternalReply { uint64 room_id = 1; }
 message SetRoomDataExternalReply  { uint64 room_id = 1; }
 message KickoutRoomMemberReply    { uint64 room_id = 1; }
 

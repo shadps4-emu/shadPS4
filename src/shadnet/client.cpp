@@ -941,6 +941,7 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
     case NotificationType::RoomMessage: {
         shadnet::NotifyRoomMessage pb;
         if (!pb.ParseFromString(blob)) {
+            LOG_WARNING(ShadNet, "RoomMessage parse error");
             break;
         }
         NotifyRoomMessage n;
@@ -956,6 +957,8 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
         n.src_account_id = pb.src_account_id();
         n.src_platform = pb.src_platform();
         n.msg.assign(pb.msg().begin(), pb.msg().end());
+        LOG_DEBUG(ShadNet, "RoomMessage room_id={} src={} event={:#x} bytes={}", n.room_id,
+                  n.src_member_id, n.event, n.msg.size());
         if (onRoomMessage)
             onRoomMessage(n);
         break;

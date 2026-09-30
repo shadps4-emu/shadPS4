@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "core/libraries/np/np_signaling/np_signaling_stubs.h"
+#include "core/libraries/np/np_signaling/np_signaling_transport.h"
 
-namespace Libraries::Np::NpSignaling::Stubs {
+namespace Libraries::Np::NpSignaling::Transport {
 
 namespace {
 TransportHooks g_transport{};
@@ -81,4 +81,4 @@ u16 MmServerUdpPort() {
     return g_mm_server_udp_port;
 }
 
-} // namespace Libraries::Np::NpSignaling::Stubs
+} // namespace Libraries::Np::NpSignaling::Transport
