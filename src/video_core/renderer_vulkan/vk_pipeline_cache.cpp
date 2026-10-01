@@ -646,13 +646,8 @@ bool PipelineCache::RefreshComputeKey() {
     std::tie(infos[0], modules[0], compute_key.value) =
         GetProgram(HwStage::Compute, SwStage::Compute, cs_params, binding);
 
-    // Vulkan drivers reject pipelines whose LocalSize exceeds the device limits with a generic
-    // error. Guests can request larger groups than host GPUs support (e.g. 2048 threads while
-    // AMD, NVIDIA and Intel cap at 1024). Optimization::WorkgroupSizeClampPass already ran as part
-    // of compiling this shader above and rewrites it to a smaller, valid size when it recognizes a
-    // safe way to do so (see Info::workgroup_split_factor); if it couldn't find one, skip the
-    // pipeline here instead of crashing, the same way RefreshGraphicsStages skips shader stages
-    // the host can't run.
+    // WorkgroupSizeClampPass already ran above and shrinks the workgroup when it can; if it
+    // couldn't, skip the pipeline instead of crashing (same pattern as RefreshGraphicsStages).
     const std::array<u32, 3> guest_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
                                            cs_pgm.num_thread_z.full};
     const u64 guest_invocations = u64(guest_size[0]) * guest_size[1] * guest_size[2];

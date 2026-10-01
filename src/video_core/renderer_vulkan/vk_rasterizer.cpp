@@ -344,8 +344,7 @@ void Rasterizer::DispatchDirect() {
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
-    // WorkgroupSizeClampPass may have shrunk the guest's workgroup size to fit the device's
-    // limits; when it did, it grows the dispatch by the same factor to compensate.
+    // Compensate for any workgroup split done by WorkgroupSizeClampPass.
     cmdbuf.dispatch(cs_program.dim_x * cs.workgroup_split_factor, cs_program.dim_y,
                     cs_program.dim_z);
     DebugState.IncDispatch();
@@ -366,10 +365,7 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 
     const auto& cs = pipeline->GetStage(Shader::SwStage::Compute);
     if (cs.workgroup_split_factor > 1) {
-        // WorkgroupSizeClampPass shrank this shader's workgroup and expects the dispatch's group
-        // count to grow to compensate. The group count for an indirect dispatch lives in GPU
-        // memory we don't inspect here, so we can't safely apply that factor; skip rather than
-        // run an incomplete dispatch.
+        // Indirect dispatch group counts live in GPU memory, so we can't apply the split here.
         LOG_ERROR(Render_Vulkan,
                   "Skipping indirect dispatch of compute pipeline {:#x}: its workgroup size was "
                   "split to fit device limits, which DispatchIndirect doesn't support yet",
