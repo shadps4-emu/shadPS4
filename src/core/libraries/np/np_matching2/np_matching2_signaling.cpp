@@ -75,10 +75,9 @@ void QueueMatching2SignalingEvent(ContextObject& ctx, OrbisNpMatching2RoomId roo
                                   OrbisNpMatching2RoomMemberId member_id,
                                   OrbisNpMatching2Event event, s32 error_code) {
     if (!ctx.signaling_callback) {
-        LOG_ERROR(
-            Lib_NpMatching2,
-            "Event skipped: ctx={} room={} member={} event={:#x} no callback",
-            ctx.ctx_id, room_id, member_id, static_cast<u16>(event));
+        LOG_ERROR(Lib_NpMatching2,
+                  "Event skipped: ctx={} room={} member={} event={:#x} no callback", ctx.ctx_id,
+                  room_id, member_id, static_cast<u16>(event));
         return;
     }
 

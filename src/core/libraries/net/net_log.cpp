@@ -149,8 +149,6 @@ constexpr ErrnoEntry ErrnoNames[] = {
 
 enum class Severity { Routine, Network, Suspicious };
 
-// Routine: expected with non-blocking or aborted I/O. Network: refused by the network or peer.
-// Suspicious: bad call, or something we don't emulate.
 Severity SeverityOf(int e) {
     switch (e) {
     case ORBIS_NET_EWOULDBLOCK:
@@ -178,12 +176,10 @@ Severity SeverityOf(int e) {
     case ORBIS_NET_ESHUTDOWN:
         return Severity::Network;
     default:
-        // Resolver errors (no host, no DNS) count as network failures.
         return e >= 0xdc && e <= 0xec ? Severity::Network : Severity::Suspicious;
     }
 }
 
-// "s32 Libraries::Net::sceNetBind(...)" -> "sceNetBind"
 std::string_view ShortName(std::string_view signature) {
     const size_t paren = signature.find('(');
     std::string_view head = signature.substr(0, paren);
