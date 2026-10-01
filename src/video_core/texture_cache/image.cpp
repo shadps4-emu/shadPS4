@@ -131,7 +131,6 @@ Image::Image(const Vulkan::Instance& instance, Vulkan::Runtime& runtime_,
     }
 
     image_uid = global_image_uid.Next();
-    mip_hashes.resize(info.resources.levels);
     vk::ImageCreateFlags flags{vk::ImageCreateFlagBits::eMutableFormat |
                                vk::ImageCreateFlagBits::eExtendedUsage};
     if (info.props.is_volume) {

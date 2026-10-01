@@ -5,6 +5,7 @@
 
 #include "common/enum.h"
 #include "common/incremental_id.h"
+#include "common/small_vector.h"
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/image_info.h"
@@ -12,8 +13,6 @@
 
 #include <deque>
 #include <optional>
-#include <boost/container/small_vector.hpp>
-#include <boost/container/static_vector.hpp>
 
 namespace Vulkan {
 class Instance;
@@ -90,11 +89,8 @@ struct Image {
     Image(Image&&) = default;
     Image& operator=(Image&&) = default;
 
-    bool Overlaps(VAddr overlap_cpu_addr, size_t overlap_size) const noexcept {
-        const VAddr overlap_end = overlap_cpu_addr + overlap_size;
-        const auto image_addr = info.guest_address;
-        const auto image_end = info.guest_address + info.guest_size;
-        return image_addr < overlap_end && overlap_cpu_addr < image_end;
+    bool Overlaps(VAddr addr, size_t size) const noexcept {
+        return info.guest_address < (addr + size) && addr < (info.guest_address + info.guest_size);
     }
 
     vk::Image GetImage() const {
@@ -110,7 +106,7 @@ struct Image {
     }
 
     bool SafeToDownload() const {
-        return True(flags & ImageFlagBits::GpuModified) && False(flags & (ImageFlagBits::Dirty));
+        return True(flags & ImageFlagBits::GpuModified) && False(flags & ImageFlagBits::Dirty);
     }
 
     void AssociateDepth(ImageId depth_image_id, u64 depth_image_uid) {
@@ -125,7 +121,7 @@ struct Image {
 
     ImageView& FindView(const ImageViewInfo& view_info, bool ensure_guest_samples = true);
 
-    using Barriers = boost::container::small_vector<vk::ImageMemoryBarrier2, 32>;
+    using Barriers = SmallVector<vk::ImageMemoryBarrier2, 32>;
     void GetBarriers(Barriers& out_barriers, vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
                      vk::PipelineStageFlags2 dst_stage,
                      std::optional<SubresourceRange> subres_range = {});
@@ -153,13 +149,12 @@ public:
         UniqueImage image;
         State state;
         std::vector<State> subresource_states;
-        boost::container::small_vector<ImageViewInfo, 4> image_view_infos;
-        boost::container::small_vector<ImageViewId, 4> image_view_ids;
+        SmallVector<ImageViewInfo, 4> image_view_infos;
+        SmallVector<ImageViewId, 4> image_view_ids;
         u32 num_samples;
     };
     std::deque<BackingImage> backing_images;
     BackingImage* backing{};
-    boost::container::static_vector<u64, 16> mip_hashes{};
     u64 image_uid{};
     u64 lru_id{};
     u64 tick_accessed_last{};

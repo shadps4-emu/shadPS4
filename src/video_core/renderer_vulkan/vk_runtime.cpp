@@ -243,7 +243,7 @@ void Runtime::CopyImage(VideoCore::Image* src, VideoCore::Image* dst) {
     SetBackingSamples(dst, dst->info.num_samples, false);
     SetBackingSamples(src, src->info.num_samples);
 
-    boost::container::small_vector<vk::ImageCopy, 8> regions;
+    SmallVector<vk::ImageCopy, 8> regions;
 
     const vk::ImageAspectFlags src_aspect = src->aspect_mask & ~vk::ImageAspectFlagBits::eStencil;
     const vk::ImageAspectFlags dst_aspect = dst->aspect_mask & ~vk::ImageAspectFlagBits::eStencil;

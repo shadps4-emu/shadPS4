@@ -5,7 +5,6 @@
 
 #include <mutex>
 #include <unordered_set>
-#include <boost/container/small_vector.hpp>
 #include <tsl/robin_map.h>
 
 #include "common/lru_cache.h"
@@ -37,7 +36,7 @@ class TextureCache {
     static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 3_GB;
     static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
 
-    using ImageIds = boost::container::small_vector<ImageId, 16>;
+    using ImageIds = SmallVector<ImageId, 16>;
 
     struct Traits {
         using Entry = ImageIds;
