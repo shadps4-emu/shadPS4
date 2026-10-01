@@ -284,12 +284,6 @@ private:
     /// Copies image memory back to CPU.
     void DownloadImageMemory(ImageId image_id, bool sync = false);
 
-    /// Thread function for copying downloaded images out to CPU memory.
-    void DownloadedImagesThread(const std::stop_token& token);
-
-    /// Create an image from the given parameters
-    [[nodiscard]] ImageId InsertImage(const ImageInfo& info, VAddr cpu_addr);
-
     /// Register image in the page table
     void RegisterImage(ImageId image);
 
