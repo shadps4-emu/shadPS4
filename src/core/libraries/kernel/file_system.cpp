@@ -921,28 +921,37 @@ s32 PS4_SYSV_ABI posix_truncate(const char* path, s64 length) {
         *__Error() = POSIX_EFAULT;
         return -1;
     }
+    if (strlen(path) > 255) {
+        *__Error() = POSIX_ENAMETOOLONG;
+        return -1;
+    }
     if (length < 0) {
         *__Error() = POSIX_EINVAL;
         return -1;
     }
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    bool ro = false;
-    const auto host_path = mnt->GetHostPath(path, &ro);
-    std::error_code ec;
-    if (host_path.empty() || !fs::exists(host_path, ec) || ec) {
+    if (!mnt->Exists(path)) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
-    if (ro) {
-        *__Error() = POSIX_EROFS;
-        return -1;
-    }
-    if (fs::is_directory(host_path, ec)) {
+    if (mnt->IsDirectory(path)) {
         *__Error() = POSIX_EISDIR;
         return -1;
     }
 
+    bool ro = false;
+    const auto host_path = mnt->GetHostPath(path, &ro);
+    if (ro) {
+        *__Error() = POSIX_EROFS;
+        return -1;
+    }
+    if (host_path.empty()) {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
+
+    std::error_code ec;
     fs::resize_file(host_path, static_cast<u64>(length), ec);
     if (ec) {
         *__Error() = NativeToPosixErrno(ec.value());
@@ -966,20 +975,29 @@ s32 PS4_SYSV_ABI posix_chmod(const char* path, u32 mode) {
         *__Error() = POSIX_EFAULT;
         return -1;
     }
+    if (strlen(path) > 255) {
+        *__Error() = POSIX_ENAMETOOLONG;
+        return -1;
+    }
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    bool ro = false;
-    const auto host_path = mnt->GetHostPath(path, &ro);
-    std::error_code ec;
-    if (host_path.empty() || !fs::exists(host_path, ec) || ec) {
+    if (!mnt->Exists(path)) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
+
+    bool ro = false;
+    const auto host_path = mnt->GetHostPath(path, &ro);
     if (ro) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
+    if (host_path.empty()) {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
 
+    std::error_code ec;
     fs::permissions(host_path, static_cast<fs::perms>(mode & 07777), ec);
     if (ec) {
         *__Error() = NativeToPosixErrno(ec.value());
@@ -1006,15 +1024,15 @@ s32 PS4_SYSV_ABI posix_fchmod(s32 fd, u32 mode) {
         return -1;
     }
 
-    if (file->type == Core::FileSys::FileType::Socket ||
-        file->type == Core::FileSys::FileType::Epoll ||
-        file->type == Core::FileSys::FileType::Resolver ||
-        file->type == Core::FileSys::FileType::Device) {
+    if (file->type != Core::FileSys::FileType::Regular &&
+        file->type != Core::FileSys::FileType::Directory) {
         *__Error() = POSIX_EINVAL;
         return -1;
     }
 
-    if (file->handle && file->handle->IsReadOnly()) {
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    const auto* mount = mnt->GetMount(file->m_guest_name);
+    if ((file->handle && file->handle->IsReadOnly()) || (mount && mount->read_only)) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
@@ -1030,6 +1048,7 @@ s32 PS4_SYSV_ABI posix_fchmod(s32 fd, u32 mode) {
         *__Error() = NativeToPosixErrno(ec.value());
         return -1;
     }
+
     return 0;
 }
 
@@ -1047,6 +1066,10 @@ s32 PS4_SYSV_ABI posix_utimes(const char* path, const OrbisKernelTimeval* times)
         *__Error() = POSIX_EFAULT;
         return -1;
     }
+    if (strlen(path) > 255) {
+        *__Error() = POSIX_ENAMETOOLONG;
+        return -1;
+    }
 
     if (times) {
         if (times[0].tv_usec < 0 || times[0].tv_usec >= 1'000'000 || times[1].tv_usec < 0 ||
@@ -1057,15 +1080,19 @@ s32 PS4_SYSV_ABI posix_utimes(const char* path, const OrbisKernelTimeval* times)
     }
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    bool ro = false;
-    const auto host_path = mnt->GetHostPath(path, &ro);
-    std::error_code ec;
-    if (host_path.empty() || !fs::exists(host_path, ec) || ec) {
+    if (!mnt->Exists(path)) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
+
+    bool ro = false;
+    const auto host_path = mnt->GetHostPath(path, &ro);
     if (ro) {
         *__Error() = POSIX_EROFS;
+        return -1;
+    }
+    if (host_path.empty()) {
+        *__Error() = POSIX_ENOENT;
         return -1;
     }
 
@@ -1131,15 +1158,15 @@ s32 PS4_SYSV_ABI posix_futimes(s32 fd, const OrbisKernelTimeval* times) {
         return -1;
     }
 
-    if (file->type == Core::FileSys::FileType::Socket ||
-        file->type == Core::FileSys::FileType::Epoll ||
-        file->type == Core::FileSys::FileType::Resolver ||
-        file->type == Core::FileSys::FileType::Device) {
+    if (file->type != Core::FileSys::FileType::Regular &&
+        file->type != Core::FileSys::FileType::Directory) {
         *__Error() = POSIX_EINVAL;
         return -1;
     }
 
-    if (file->handle && file->handle->IsReadOnly()) {
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    const auto* mount = mnt->GetMount(file->m_guest_name);
+    if ((file->handle && file->handle->IsReadOnly()) || (mount && mount->read_only)) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
