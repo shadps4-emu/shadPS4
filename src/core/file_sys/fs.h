@@ -98,6 +98,9 @@ public:
     /// when the file does not exist or is unreadable.
     std::optional<std::vector<u8>> ReadFile(std::string_view guest_path);
 
+    /// Normalizes and validates a guest path (resolves dot and dot-dot components).
+    static std::optional<std::string> SanitizeGuestPath(std::string_view path);
+
     const MntPair* GetMountFromHostPath(const std::string& host_path) {
         std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
@@ -106,7 +109,13 @@ public:
         return it == m_mnt_pairs.end() ? nullptr : &*it;
     }
 
-    const MntPair* GetMount(const std::string& guest_path) {
+    const MntPair* GetMount(std::string_view guest_path) {
+        std::string normalized;
+        if (guest_path.find("..") != std::string_view::npos ||
+            guest_path.find("//") != std::string_view::npos) {
+            normalized = std::filesystem::path(guest_path).lexically_normal().generic_string();
+            guest_path = normalized;
+        }
         std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const auto& mount) {
             // When doing starts-with check, add a trailing slash to make sure we don't match
