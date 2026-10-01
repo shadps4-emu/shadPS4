@@ -18,27 +18,16 @@
 #include "core/libraries/voice/voice.h"
 #include "core/libraries/voice/voice_error.h"
 
-// Real hardware runs captured/received audio through libSceAjm (confirmed via disassembly: this
-// module imports it, alongside libSceAudioIn/libSceAudioOut) to produce/consume Sony's CELP-like
-// compressed bitstream. Re-implementing that codec is out of scope here, so this file instead
-// routes *uncompressed* interleaved s16 PCM between ports. Practically that means:
-//  - A port that captures from or plays to the host device (mic / speaker) is fully real: it
-//    goes through the same backends sceAudioIn/sceAudioOut already use in this codebase.
-//  - Two ports connected to each other exchange real audio between the local device and
-//    whatever the game does with sceVoiceReadFromOPort/sceVoiceWriteToIPort.
-//  - The bytes exchanged are NOT Sony's real encoded format, so this cannot interoperate with a
-//    real PS4 (or a different emulator) over the network -- only with another instance of this
-//    codebase talking to itself. Games are expected to move those bytes over their own network
-//    transport; sceVoice never touches the network itself on retail hardware either.
-// Device ports are never opened just because a port was created: only once something actually
-// tries to pull/push audio through the graph, so that merely calling sceVoiceCreatePort does not
-// by itself start capturing from the host microphone.
+// Real hardware encodes/decodes through libSceAjm; this instead exchanges raw s16 PCM between
+// ports, so it only interoperates between two instances of this codebase, not real hardware.
+// sceVoice never touches the network itself either way -- games move the bytes themselves.
+// Device ports (mic/speaker) open lazily on first real use, not at sceVoiceCreatePort.
 
 namespace Libraries::Voice {
 
 namespace {
 
-constexpr u32 kSampleRate = 16000; // Matches a rate the retail module validates for its ports.
+constexpr u32 kSampleRate = 16000; // Rate the retail module validates for its ports.
 constexpr u32 kFrameSamples = 320; // 20 ms at 16 kHz.
 constexpr u32 kFrameBytes = kFrameSamples * sizeof(s16);
 constexpr size_t kMaxQueuedSamples = kFrameSamples * 8; // ~160 ms of headroom.
@@ -72,27 +61,19 @@ struct Port {
     u32 bitrate = 48000;
     s32 connected_to = -1; // For an "in" port, the "out" port it is routed to, if any.
 
-    // Real local device I/O, opened lazily (see file header comment). AudioIn::PortInBackend
-    // keeps a reference to the config it was opened with (see sdl_audio_in.cpp), so that config
-    // must be kept alive (and at a stable address) for as long as the backend is -- hence the
-    // separate heap allocation rather than a plain member.
+    // capture_config must outlive audio_in: AudioIn::PortInBackend stores a reference to it,
+    // not a copy.
     std::unique_ptr<AudioIn::PortIn> capture_config{};
     std::unique_ptr<AudioIn::PortInBackend> audio_in{};
     std::unique_ptr<AudioOut::PortBackend> audio_out{};
     bool audio_in_open_tried = false;
     bool audio_out_open_tried = false;
 
-    // Set once sceVoiceWriteToIPort is called on this port: distinguishes an app-fed port
-    // (network/PCM input) from one this module should instead capture from the microphone for,
-    // since the real port-type value's numeric encoding was not confirmed (see voice.h).
+    // Set by sceVoiceWriteToIPort; distinguishes an app-fed port from a mic-backed one.
     bool app_fed = false;
     std::deque<s16> queue;
 };
 
-// The retail module keeps a single global instance, protected by an internal mutex, allocated
-// the first time sceVoiceInit succeeds; every entry point rejects calls made before Init or
-// after End. We mirror that with a static instance instead of matching its exact allocation
-// strategy, since only the external contract (not the allocator) is observable from HLE.
 struct VoiceManager {
     std::mutex mutex;
     bool initialized = false;
@@ -114,8 +95,7 @@ void ClosePortDevices(Port& port) {
 }
 
 // Requires g_voice_manager.mutex to already be held. Returns null if no capture device is
-// available (e.g. no microphone on the host) rather than treating that as a hard error, so a
-// title that creates a mic port but never ends up in an online session is unaffected.
+// available (e.g. no microphone on the host); that's not a hard error.
 AudioIn::PortInBackend* GetOrOpenCapture(Port& port) {
     if (!port.audio_in_open_tried) {
         port.audio_in_open_tried = true;
@@ -285,8 +265,7 @@ s32 PS4_SYSV_ABI sceVoiceGetPortAttr(u32 port_id, s32 attr_id, void* value, u32 
     if (value == nullptr) {
         return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
     }
-    // The retail module validates `size` against a fixed per-attribute contract before touching
-    // `value`; the table below (id -> required size) is confirmed via disassembly.
+    // Required size per id, confirmed via disassembly (see voice.h).
     u32 expected_size;
     switch (attr_id) {
     case ORBIS_VOICE_ATTR_1000:
@@ -312,9 +291,7 @@ s32 PS4_SYSV_ABI sceVoiceGetPortAttr(u32 port_id, s32 attr_id, void* value, u32 
     if (!g_voice_manager.ports[port_id].allocated) {
         return ORBIS_VOICE_ERROR_NOT_ACTIVE;
     }
-    // The real meaning of each attribute id could not be identified (no public reference for
-    // this table was found); report a stable, benign default so titles that poll this function
-    // every frame (observed behavior) see consistent values instead of garbage.
+    // Attribute meaning is unknown; report a stable default instead of garbage.
     switch (expected_size) {
     case 1:
         *static_cast<u8*>(value) = 0;
@@ -462,7 +439,7 @@ s32 PS4_SYSV_ABI sceVoiceReadFromOPort(u32 port_id, void* data, u32* size) {
     if (out_port.paused || out_port.muted || requested == 0) {
         return ORBIS_OK;
     }
-    // Find whichever port is routed into this one (see sceVoiceConnectIPortToOPort).
+    // Find the port connected into this one.
     const auto it = std::find_if(
         g_voice_manager.ports.begin(), g_voice_manager.ports.end(),
         [port_id](const Port& p) { return p.connected_to == static_cast<s32>(port_id); });
@@ -471,7 +448,7 @@ s32 PS4_SYSV_ABI sceVoiceReadFromOPort(u32 port_id, void* data, u32* size) {
     }
     Port& in_port = *it;
     if (in_port.app_fed) {
-        // Fed by a previous sceVoiceWriteToIPort call: drain from the queue.
+        // Drain data queued by a prior WriteToIPort.
         const u32 available_bytes = static_cast<u32>(in_port.queue.size() * sizeof(s16));
         const u32 to_copy = std::min(requested, available_bytes);
         std::copy_n(in_port.queue.begin(), to_copy / sizeof(s16), static_cast<s16*>(data));
@@ -479,7 +456,7 @@ s32 PS4_SYSV_ABI sceVoiceReadFromOPort(u32 port_id, void* data, u32* size) {
         *size = to_copy;
         return ORBIS_OK;
     }
-    // Not app-fed: treat this as a microphone-backed port and capture a live frame.
+    // Otherwise treat it as mic-backed and capture a live frame.
     auto* capture = GetOrOpenCapture(in_port);
     if (capture == nullptr) {
         return ORBIS_OK;
@@ -626,8 +603,6 @@ s32 PS4_SYSV_ABI sceVoiceStart(const OrbisVoiceStartParam* param) {
     if (!g_voice_manager.initialized) {
         return ORBIS_VOICE_ERROR_NOT_INIT;
     }
-    // Confirmed via disassembly: the retail module additionally requires the first 8 bytes of
-    // this struct to be non-zero.
     if (param == nullptr || param->container == 0) {
         return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
     }
@@ -712,9 +687,8 @@ s32 PS4_SYSV_ABI sceVoiceWriteToIPort(u32 port_id, const void* data, u32* size) 
     }
     const u32 sample_count = *size / sizeof(s16);
     const auto* samples = static_cast<const s16*>(data);
-    // If this feeds a device output port directly, play it back immediately when the caller
-    // handed us exactly one of our fixed-size frames; otherwise just queue it (a mismatched size
-    // means we cannot safely hand it to the playback backend, which expects a fixed buffer).
+    // Play back immediately if connected to a device port and the size matches our fixed
+    // frame; otherwise just queue it.
     if (in_port.connected_to >= 0) {
         Port& out_port = g_voice_manager.ports[in_port.connected_to];
         if (out_port.allocated && !out_port.paused && !out_port.muted && *size == kFrameBytes) {

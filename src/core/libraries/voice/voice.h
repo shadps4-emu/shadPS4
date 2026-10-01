@@ -11,9 +11,7 @@ class SymbolsResolver;
 
 namespace Libraries::Voice {
 
-// Valid port ids are 0-63 inclusive on retail hardware: every entry point below rejects a
-// port id above this bound before it is ever looked up, confirmed via static disassembly of
-// the retail libSceVoice.sprx module.
+// Retail hardware rejects any port id above this (confirmed via disassembly).
 constexpr u32 ORBIS_VOICE_MAX_PORT = 64;
 
 struct OrbisVoicePortInfo {
@@ -26,11 +24,7 @@ struct OrbisVoicePortInfo {
     u16 reserved;
 };
 
-// Size confirmed via disassembly: sceVoiceCreatePort copies exactly 0x18 (24) bytes of this
-// struct into its internal port record. Field-level layout beyond `type` is a best-effort
-// reconstruction (the retail binary never re-reads these bytes through code reachable from the
-// entry points implemented here), and should be revisited if a title is found to depend on a
-// specific offset.
+// Size confirmed via disassembly; field layout beyond `type` is best-effort.
 struct OrbisVoicePortParam {
     s32 type;
     s32 reserved0;
@@ -39,8 +33,7 @@ struct OrbisVoicePortParam {
 };
 static_assert(sizeof(OrbisVoicePortParam) == 0x18);
 
-// Size confirmed via disassembly: sceVoiceInit copies 0x28 (40) bytes of this struct into its
-// global state. Field-level layout beyond the first 8 bytes is unconfirmed.
+// Size confirmed via disassembly; field layout beyond `app_type` is best-effort.
 struct OrbisVoiceInitParam {
     u64 app_type;
     u64 reserved0;
@@ -50,8 +43,7 @@ struct OrbisVoiceInitParam {
 };
 static_assert(sizeof(OrbisVoiceInitParam) == 0x28);
 
-// Size confirmed via disassembly: sceVoiceStart copies 0x20 (32) bytes and requires the first
-// 8 bytes to be non-zero, else ORBIS_VOICE_ERROR_ARGUMENT_INVALID is returned.
+// Size confirmed via disassembly; `container` must be non-zero.
 struct OrbisVoiceStartParam {
     u64 container;
     u64 reserved0;
@@ -60,10 +52,8 @@ struct OrbisVoiceStartParam {
 };
 static_assert(sizeof(OrbisVoiceStartParam) == 0x20);
 
-// sceVoiceGetPortAttr validates the caller-supplied `size` against a fixed table before writing
-// through `value`; the id -> size pairs below are confirmed via disassembly. Human-readable
-// meaning of each id is not confirmed (no public reference for this table was found), so they
-// are named by id rather than guessed intent.
+// Required `size` per id for sceVoiceGetPortAttr, confirmed via disassembly. Meaning of each id
+// is unknown, so they're named by id.
 enum OrbisVoicePortAttr : s32 {
     ORBIS_VOICE_ATTR_1000 = 1000, // size = 1
     ORBIS_VOICE_ATTR_1001 = 1001, // size = 1
