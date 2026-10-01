@@ -1186,29 +1186,30 @@ void* BuildGetRoomMemberDataInternalPayload(
         }
     }
 
-    const auto requested_attr = [&request](OrbisNpMatching2AttributeId id) {
-        if (request.attrIdNum == 0) {
-            return true;
+    std::vector<OrbisNpMatching2AttributeId> ids;
+    if (request.attrIdNum == 0) {
+        for (const auto& entry : member.bins) {
+            ids.push_back(entry.first);
         }
-        return std::find(request.attrId, request.attrId + request.attrIdNum, id) !=
-               request.attrId + request.attrIdNum;
-    };
-    size_t attr_count = 0;
-    for (const auto& entry : member.bins) {
-        attr_count += requested_attr(entry.first);
+    } else {
+        ids.assign(request.attrId, request.attrId + request.attrIdNum);
     }
-    p.member_bin_attrs.reserve(attr_count);
-    p.bin_buffers.reserve(attr_count);
-    for (const auto& [id, attr] : member.bins) {
-        if (!requested_attr(id)) {
-            continue;
-        }
-        p.bin_buffers.push_back(attr.data);
-        auto& data = p.bin_buffers.back();
+    p.member_bin_attrs.reserve(ids.size());
+    p.bin_buffers.reserve(ids.size());
+    for (const OrbisNpMatching2AttributeId id : ids) {
+        const auto bin_it = member.bins.find(id);
         auto& dst = p.member_bin_attrs.emplace_back();
         dst = {};
-        dst.lastUpdate.tick = attr.update_date;
-        dst.binAttr.id = attr.id;
+        dst.binAttr.id = id;
+        if (bin_it == member.bins.end()) {
+            p.bin_buffers.emplace_back(64, u8{0});
+            dst.binAttr.data = p.bin_buffers.back().data();
+            dst.binAttr.dataSize = 0;
+            continue;
+        }
+        p.bin_buffers.push_back(bin_it->second.data);
+        auto& data = p.bin_buffers.back();
+        dst.lastUpdate.tick = bin_it->second.update_date;
         dst.binAttr.data = data.empty() ? nullptr : data.data();
         dst.binAttr.dataSize = data.size();
     }
