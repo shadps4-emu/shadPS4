@@ -786,19 +786,16 @@ void Translator::V_SUBREV_I32(const GcnInst& inst) {
 }
 
 void Translator::V_ADDC_U32(const GcnInst& inst) {
-    // Unsigned components
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 carry{GetCarryIn(inst)};
-    const IR::Value tmp1{ir.IAddCarry(src0, src1)};
-    const IR::U32 result1{ir.CompositeExtract(tmp1, 0)};
-    const IR::U32 carry_out1{ir.CompositeExtract(tmp1, 1)};
-    const IR::Value tmp2{ir.IAddCarry(result1, carry)};
-    const IR::U32 result2{ir.CompositeExtract(tmp2, 0)};
-    const IR::U32 carry_out2{ir.CompositeExtract(tmp2, 1)};
+    const IR::U32 result1{ir.IAdd(src0, src1)};
+    const IR::U32 result2{ir.IAdd(result1, carry)};
+    const IR::U1 carry_out1{ir.ILessThan(result1, src0, false)};
+    const IR::U1 carry_out2{ir.ILessThan(result2, result1, false)};
     SetDst(inst.dst[0], result2);
 
-    const IR::U1 did_overflow{ir.INotEqual(ir.BitwiseOr(carry_out1, carry_out2), ir.Imm32(0))};
+    const IR::U1 did_overflow{ir.LogicalOr(carry_out1, carry_out2)};
     SetCarryOut(inst, did_overflow);
 }
 
