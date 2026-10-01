@@ -436,7 +436,7 @@ static void RemoveAppendBufferLaneOffset(IR::Inst& vx) {
         ASSERT(!vy.IsEmpty() && !vy.IsImmediate());
         auto zero_const = IsMbcntWithExec(vy, true, exec);
         ASSERT(!zero_const.IsEmpty() && zero_const.IsImmediate() && zero_const.U32() == 0u);
-        vz.Inst()->ReplaceUsesWithAndRemove(IR::Value{u32{0u}});
+        user->SetArg(1 - operand, IR::Value{u32{0u}});
     }
 }
 
