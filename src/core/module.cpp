@@ -185,6 +185,10 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         WindowsGuestRedZoneProtection::IsStaticPatchingEnabled();
     std::vector<std::pair<VAddr, u64>> executable_segments;
     std::vector<uintptr_t> function_starts;
+#elif defined(ARCH_X86_64) && defined(__APPLE__)
+    // CPU patches are applied ahead of time to the functions of the executable segments.
+    std::vector<std::pair<VAddr, u64>> executable_segments;
+    std::vector<uintptr_t> function_starts;
 #endif
     for (u16 i = 0; i < elf_header.e_phnum; i++) {
         const auto header_type = elf.ElfPheaderTypeStr(elf_pheader[i].p_type);
@@ -215,6 +219,8 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
                 if (use_static_windows_guest_red_zone_protection) {
                     executable_segments.emplace_back(segment_addr, segment_file_size);
                 }
+#elif defined(__APPLE__)
+                executable_segments.emplace_back(segment_addr, segment_file_size);
 #endif
             }
 #endif
@@ -262,6 +268,10 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
                 // Windows static guest red-zone protection
                 if (use_static_windows_guest_red_zone_protection &&
                     !Dwarf::DecodeEHHdrTable(hdr_info, eh_hdr_end, function_starts)) {
+                    LOG_ERROR(Core_Linker, "Failed to decode EH frame search table for {}", name);
+                }
+#elif defined(ARCH_X86_64) && defined(__APPLE__)
+                if (!Dwarf::DecodeEHHdrTable(hdr_info, eh_hdr_end, function_starts)) {
                     LOG_ERROR(Core_Linker, "Failed to decode EH frame search table for {}", name);
                 }
 #endif
@@ -348,6 +358,35 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             MemoryPatcher::OnGameLoaded();
         }
     }
+
+#if defined(ARCH_X86_64) && defined(__APPLE__)
+    // The game's memory patches are applied first, so that the code decoded here is the code
+    // that executes.
+    RedZonePatchResult total{};
+    for (const auto& [segment_addr, segment_size] : executable_segments) {
+        const auto result =
+            PatchCpuInstructionsStatically(segment_addr, segment_size, function_starts);
+        total.function_count += result.function_count;
+        total.inplace_cpu_patch_instruction_count += result.inplace_cpu_patch_instruction_count;
+        total.cpu_patch_instruction_count += result.cpu_patch_instruction_count;
+        total.patched_cpu_patch_instruction_count += result.patched_cpu_patch_instruction_count;
+        total.unsupported_cpu_patch_instruction_count +=
+            result.unsupported_cpu_patch_instruction_count;
+    }
+    if (total.function_count != 0) {
+        LOG_INFO(Core_Linker,
+                 "Static CPU patching for {}: {} functions, {} instructions patched in place, "
+                 "{}/{} short instructions relocated ({} left to the exception handler)",
+                 name, total.function_count, total.inplace_cpu_patch_instruction_count,
+                 total.patched_cpu_patch_instruction_count, total.cpu_patch_instruction_count,
+                 total.unsupported_cpu_patch_instruction_count);
+    } else if (!executable_segments.empty()) {
+        LOG_WARNING(Core_Linker,
+                    "Static CPU patching could not find function boundaries for {}; its "
+                    "instructions are patched as they trap",
+                    name);
+    }
+#endif
 }
 
 void Module::LoadDynamicInfo() {

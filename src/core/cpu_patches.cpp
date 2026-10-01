@@ -944,7 +944,8 @@ bool IsStaticPatchingEnabled() noexcept {
 
 } // namespace WindowsGuestRedZoneProtection
 
-#if defined(_WIN32)
+// macOS shares the function decoder and relocator to apply its CPU patches ahead of time.
+#if defined(_WIN32) || defined(__APPLE__)
 
 namespace {
 
@@ -1596,8 +1597,11 @@ const PatchInfo* FindMatchingPatch(const DecodedCodeInstruction& decoded) {
 
 } // namespace
 
-RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_size,
-                                                  std::span<const uintptr_t> function_starts) {
+/// Applies the CPU patches to every function of the segment. If red_zone_protection is true,
+/// the red-zone accesses of those functions are protected as well.
+static RedZonePatchResult PatchSegmentStatically(u64 segment_addr, u64 segment_size,
+                                                 std::span<const uintptr_t> function_starts,
+                                                 bool red_zone_protection) {
     RedZonePatchResult result{};
     auto* module = GetContainingModule(reinterpret_cast<void*>(segment_addr));
     if (module == nullptr || function_starts.empty()) {
@@ -1627,7 +1631,9 @@ RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_
 
         ++result.function_count;
         auto function = DecodeFunction(function_start, function_end, segment_addr, segment_end);
-        AnalyzeRedZoneLiveness(function);
+        if (red_zone_protection) {
+            AnalyzeRedZoneLiveness(function);
+        }
         result.instruction_count += function.instructions.size();
 
         std::map<uintptr_t, InstructionRewrite> rewrite_sites;
@@ -1638,6 +1644,7 @@ RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_
         for (auto& [address, decoded] : function.instructions) {
             const PatchInfo* matching_patch = FindMatchingPatch(decoded);
             const auto [patched, _] = TryPatch(reinterpret_cast<u8*>(address), module);
+            result.inplace_cpu_patch_instruction_count += patched;
             if (IsInPlaceMemoryPatch(decoded.instruction.mnemonic)) {
                 const RedZoneMask red_zone_live = decoded.red_zone_live;
                 decoded = DecodeCodeInstruction(address, function_end);
@@ -1651,7 +1658,7 @@ RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_
             }
         }
 
-        if (function.uses_red_zone) {
+        if (red_zone_protection && function.uses_red_zone) {
             ++result.red_zone_function_count;
             result.indirect_red_zone_function_count += function.has_indirect_branch;
             for (const auto& [address, decoded] : function.instructions) {
@@ -2117,9 +2124,23 @@ RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_
     return result;
 }
 
+RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_size,
+                                                  std::span<const uintptr_t> function_starts) {
+    return PatchSegmentStatically(segment_addr, segment_size, function_starts, true);
+}
+
+RedZonePatchResult PatchCpuInstructionsStatically(u64 segment_addr, u64 segment_size,
+                                                  std::span<const uintptr_t> function_starts) {
+    return PatchSegmentStatically(segment_addr, segment_size, function_starts, false);
+}
+
 #else
 
 RedZonePatchResult PatchRedZoneMemoryInstructions(u64, u64, std::span<const uintptr_t>) {
+    return {};
+}
+
+RedZonePatchResult PatchCpuInstructionsStatically(u64, u64, std::span<const uintptr_t>) {
     return {};
 }
 
