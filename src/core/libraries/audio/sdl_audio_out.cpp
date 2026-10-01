@@ -264,9 +264,20 @@ private:
             return false;
         }
 
+        // Detect the physical device's channel count BEFORE opening any stream. dev_id is
+        // either a concrete physical device or the SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK handle,
+        // and SDL_GetAudioDeviceFormat resolves both to the real hardware device. Querying
+        // the logical device of an already-opened stream instead returns the app-facing
+        // format we just requested, so a stereo device could never be detected and the
+        // downmix below never ran, leaving multichannel ports on a multichannel stream.
+        SDL_AudioSpec dev_spec{};
+        const bool stereo_physical =
+            num_channels >= 6 && SDL_GetAudioDeviceFormat(dev_id, &dev_spec, nullptr) &&
+            dev_spec.channels >= 1 && dev_spec.channels <= 2;
+
         const SDL_AudioSpec fmt = {
             .format = SDL_AUDIO_F32LE,
-            .channels = static_cast<u8>(num_channels),
+            .channels = static_cast<u8>(stereo_physical ? 2u : num_channels),
             .freq = static_cast<int>(sample_rate),
         };
 
@@ -277,30 +288,12 @@ private:
             return false;
         }
 
-        SDL_AudioSpec dev_spec{};
-        if (num_channels >= 6 &&
-            SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(stream), &dev_spec, nullptr) &&
-            dev_spec.channels >= 1 && dev_spec.channels <= 2) {
+        if (stereo_physical) {
             ps4_downmix = true;
             internal_buffer_size = buffer_frames * sizeof(float) * 2;
             LOG_INFO(Lib_AudioOut, "Stereo device: using PS4-accurate {}ch->stereo downmix",
                      num_channels);
-
-            SDL_DestroyAudioStream(stream);
-            const SDL_AudioSpec stereo_fmt = {
-                .format = SDL_AUDIO_F32LE,
-                .channels = 2,
-                .freq = static_cast<int>(sample_rate),
-            };
-            stream = SDL_OpenAudioDeviceStream(dev_id, &stereo_fmt, nullptr, nullptr);
-            if (!stream) {
-                LOG_ERROR(Lib_AudioOut, "Failed to recreate SDL audio stream: {}", SDL_GetError());
-                return false;
-            }
-        }
-
-        // Configure channel mapping (input is already stereo when folding)
-        if (!ps4_downmix && !ConfigureChannelMap()) {
+        } else if (!ConfigureChannelMap()) {
             SDL_DestroyAudioStream(stream);
             stream = nullptr;
             return false;
@@ -430,10 +423,37 @@ private:
                 DOWNMIX_FRONT * s[o + FR] + center + DOWNMIX_SURROUND * (s[o + 5] + s[o + 7]);
         }
     }
+    static void DownmixS16_6CHToStereoPS4(const void* src, void* dst, u32 frames, const float*) {
+        constexpr float INV = 1.0f / 32768.0f;
+        const s16* s = static_cast<const s16*>(src);
+        float* d = static_cast<float*>(dst);
+        for (u32 i = 0; i < frames; i++) {
+            const u32 o = i * 6;
+            const float center = DOWNMIX_CENTER * s[o + FC];
+            d[i * 2 + 0] =
+                (DOWNMIX_FRONT * s[o + FL] + center + DOWNMIX_SURROUND * s[o + 4]) * INV;
+            d[i * 2 + 1] =
+                (DOWNMIX_FRONT * s[o + FR] + center + DOWNMIX_SURROUND * s[o + 5]) * INV;
+        }
+    }
+    static void DownmixF32_6CHToStereoPS4(const void* src, void* dst, u32 frames, const float*) {
+        const float* s = static_cast<const float*>(src);
+        float* d = static_cast<float*>(dst);
+        for (u32 i = 0; i < frames; i++) {
+            const u32 o = i * 6;
+            const float center = DOWNMIX_CENTER * s[o + FC];
+            d[i * 2 + 0] = DOWNMIX_FRONT * s[o + FL] + center + DOWNMIX_SURROUND * s[o + 4];
+            d[i * 2 + 1] = DOWNMIX_FRONT * s[o + FR] + center + DOWNMIX_SURROUND * s[o + 5];
+        }
+    }
 
     bool SelectConverter() {
         if (ps4_downmix) {
-            convert = is_float ? &DownmixF32_8CHToStereoPS4 : &DownmixS16_8CHToStereoPS4;
+            if (num_channels == 8) {
+                convert = is_float ? &DownmixF32_8CHToStereoPS4 : &DownmixS16_8CHToStereoPS4;
+            } else {
+                convert = is_float ? &DownmixF32_6CHToStereoPS4 : &DownmixS16_6CHToStereoPS4;
+            }
             return true;
         }
 
