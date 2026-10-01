@@ -120,7 +120,13 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         LOG_WARNING(Kernel_Fs, "flags {:#x} not fully handled", flags);
     }
 
-    std::string_view path{raw_path};
+    const auto sanitized_path = Core::FileSys::MntPoints::SanitizeGuestPath(raw_path);
+    if (!sanitized_path) {
+        *__Error() = POSIX_EINVAL;
+        LOG_ERROR(Kernel_Fs, "Opening path {} failed, invalid path", raw_path);
+        return -1;
+    }
+    const std::string& path = *sanitized_path;
     u32 handle = h->CreateHandle();
     auto* file = h->GetFile(handle);
 
@@ -784,6 +790,9 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     std::string_view guest_path{path};
+    if (guest_path == "/") {
+        return ORBIS_OK;
+    }
     for (const auto& prefix : available_device | std::views::keys) {
         if (guest_path.starts_with(prefix)) {
             return ORBIS_OK;
