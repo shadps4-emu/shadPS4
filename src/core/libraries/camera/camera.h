@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "common/types.h"
-#include "camera_error.h"
 #include "camera_config_types.h"
+#include "camera_error.h"
+#include "common/types.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Core::Loader {
@@ -33,7 +33,6 @@ struct OrbisCameraOpenParameter {
     u32 reserved2;
     u32 reserved3;
 };
-
 
 enum OrbisCameraCalibrationDataFunctionType {
     ORBIS_CAMERA_CALIBRATION_DATA_FUNCTION_TYPE_IMAGE_RECTIFICATION = 0,
