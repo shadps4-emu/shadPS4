@@ -8,7 +8,9 @@
 #include <string>
 
 #include "common/logging/log.h"
+#include "common/singleton.h"
 #include "core/libraries/net/net.h"
+#include "core/libraries/net/net_util.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_handler.h"
 #include "core/libraries/np/np_matching2/np_matching2_internal.h"
@@ -181,6 +183,16 @@ void* BuildSignalingGetPingInfoPayload(ContextObject& ctx, CallbackPayload& p,
     return p.request_data;
 }
 
+// Our own address combined with the external IP from the STUN echo plus our P2P port
+static void FillMappedAddr(OrbisNpMatching2SignalingConnectionInfoAddr& out) {
+    u32 addr = Common::Singleton<NetUtil::NetUtilInternal>::Instance()->GetExternalIp();
+    if (addr == 0) {
+        addr = Net::GetP2PAdvertisedAddr();
+    }
+    out.addr = addr;
+    out.port = Net::sceNetHtons(Net::GetP2PAdvertisedPort());
+}
+
 s32 FillMatching2ConnectionInfo(const ContextObject& ctx, OrbisNpMatching2RoomId roomId,
                                 OrbisNpMatching2RoomMemberId memberId, u32 infoType, void* connInfo,
                                 bool a_variant) {
@@ -217,8 +229,10 @@ s32 FillMatching2ConnectionInfo(const ContextObject& ctx, OrbisNpMatching2RoomId
         case ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_BANDWIDTH:
             out->bandwidth = 0;
             break;
-        case ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_PEER_ADDR:
         case ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_MAPPED_ADDR:
+            FillMappedAddr(out->address);
+            break;
+        case ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_PEER_ADDR:
             if (peer) {
                 out->address.addr = peer->addr;
                 out->address.port = peer->port;
@@ -256,8 +270,10 @@ s32 FillMatching2ConnectionInfo(const ContextObject& ctx, OrbisNpMatching2RoomId
                 out->npId = member->np_id;
             }
             break;
-        case ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_PEER_ADDR:
         case ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_MAPPED_ADDR:
+            FillMappedAddr(out->address);
+            break;
+        case ORBIS_NP_MATCHING2_SIGNALING_CONN_INFO_PEER_ADDR:
             if (peer) {
                 out->address.addr = peer->addr;
                 out->address.port = peer->port;
