@@ -342,7 +342,6 @@ private:
     const bool readback_linear_images;
     PageTable page_table;
     std::mutex mutex;
-    std::mutex samplers_mutex;
     std::mutex download_images_mutex;
     struct MetaDataInfo {
         MetaType type;

@@ -780,16 +780,13 @@ vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler,
                                      const bool is_depth) {
     // Compare and plain uses of one S# need separate samplers.
     const u64 hash = HashCombine(XXH3_64bits(&sampler, sizeof(sampler)), is_depth);
-
-    std::scoped_lock lock{samplers_mutex};
     const auto [it, new_sampler] =
         samplers.try_emplace(hash, instance, sampler, border_color_base, is_depth);
     if (new_sampler) {
-        samplers.at(hash).lru_id = sampler_lru_cache.Insert(hash, gc_tick);
+        it.value().lru_id = sampler_lru_cache.Insert(hash, gc_tick);
     } else {
         sampler_lru_cache.Touch(it->second.lru_id, gc_tick);
     }
-
     return it->second.Handle();
 }
 
@@ -967,7 +964,6 @@ void TextureCache::GarbageCollectSamplers() {
     if (total_used_samplers < trigger_gc_samplers) {
         return;
     }
-    std::scoped_lock lock{samplers_mutex};
     bool pressured = false;
     bool aggresive = false;
     u64 ticks_to_destroy = 0;
