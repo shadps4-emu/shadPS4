@@ -668,7 +668,6 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
     // If there is a stencil attachment, link depth and stencil.
     if (desc.info.stencil_addr != 0) {
         ImageId stencil_id{};
-        bool has_color_image = false;
         ForEachImageInRegion(
             desc.info.stencil_addr, desc.info.stencil_size, [&](ImageId image_id, Image& image) {
                 if (image.info.guest_address != desc.info.stencil_addr) {
@@ -677,11 +676,9 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
                 if (image.info.pixel_format == vk::Format::eUndefined ||
                     Vulkan::LiverpoolToVK::IsFormatStencilCompatible(image.info.pixel_format)) {
                     stencil_id = image_id;
-                } else {
-                    has_color_image = true;
                 }
             });
-        if (!stencil_id && !has_color_image) {
+        if (!stencil_id) {
             ImageInfo info{};
             info.guest_address = desc.info.stencil_addr;
             info.guest_size = desc.info.stencil_size;
@@ -689,11 +686,9 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
             stencil_id = slot_images.insert(instance, runtime, slot_image_views, info);
             RegisterImage(stencil_id);
         }
-        if (stencil_id) {
-            Image& stencil_image = slot_images[stencil_id];
-            TouchImage(stencil_image);
-            stencil_image.AssociateDepth(image_id, image.image_uid);
-        }
+        Image& stencil_image = slot_images[stencil_id];
+        TouchImage(stencil_image);
+        stencil_image.AssociateDepth(image_id, image.image_uid);
     }
 
     return image.FindView(desc.view_info, false);
