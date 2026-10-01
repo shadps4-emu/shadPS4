@@ -292,8 +292,6 @@ private:
 
     /// Track CPU reads and writes for image
     void TrackImage(ImageId image_id);
-    void TrackImageHead(ImageId image_id);
-    void TrackImageTail(ImageId image_id);
 
     /// Stop tracking CPU reads and writes for image
     void UntrackImage(ImageId image_id);
