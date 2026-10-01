@@ -115,7 +115,6 @@ public:
 
     /// Updates image contents if it was modified by CPU.
     void UpdateImage(ImageId image_id) {
-        std::scoped_lock lk{mutex};
         Image& image = slot_images[image_id];
         TrackImage(image_id);
         TouchImage(image);
@@ -227,8 +226,8 @@ public:
     void ForEachImageInRegion(VAddr cpu_addr, size_t size, Func&& func) {
         using FuncReturn = typename std::invoke_result<Func, ImageId, Image&>::type;
         static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
-        ImageIds images;
-        ForEachPage(cpu_addr, size, [this, &images, cpu_addr, size, func](u64 page) {
+        const u64 first_page = cpu_addr >> Traits::PAGE_BITS;
+        ForEachPage(cpu_addr, size, [this, first_page, cpu_addr, size, func](u64 page) {
             const auto it = page_table.find(page);
             if (it == nullptr) {
                 if constexpr (BOOL_BREAK) {
@@ -239,14 +238,13 @@ public:
             }
             for (const ImageId image_id : *it) {
                 Image& image = slot_images[image_id];
-                if (image.flags & ImageFlagBits::Picked) {
+                const u64 base_page = image.info.guest_address >> Traits::PAGE_BITS;
+                if (page != std::max(first_page, base_page)) {
                     continue;
                 }
                 if (!image.Overlaps(cpu_addr, size)) {
                     continue;
                 }
-                image.flags |= ImageFlagBits::Picked;
-                images.push_back(image_id);
                 if constexpr (BOOL_BREAK) {
                     if (func(image_id, image)) {
                         return true;
@@ -259,9 +257,6 @@ public:
                 return false;
             }
         });
-        for (const ImageId image_id : images) {
-            slot_images[image_id].flags &= ~ImageFlagBits::Picked;
-        }
     }
 
 private:
@@ -341,7 +336,6 @@ private:
     Common::LeastRecentlyUsedCache<u64, u64> sampler_lru_cache;
     const bool readback_linear_images;
     PageTable page_table;
-    std::mutex mutex;
     std::mutex download_images_mutex;
     struct MetaDataInfo {
         MetaType type;

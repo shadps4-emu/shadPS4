@@ -3,6 +3,10 @@
 
 #pragma once
 
+#include <deque>
+#include <optional>
+#include <mutex>
+
 #include "common/enum.h"
 #include "common/incremental_id.h"
 #include "common/small_vector.h"
@@ -10,9 +14,6 @@
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/image_view.h"
-
-#include <deque>
-#include <optional>
 
 namespace Vulkan {
 class Instance;
@@ -32,7 +33,6 @@ enum ImageFlagBits : u32 {
     Dirty = MaybeCpuDirty | CpuDirty | GpuDirty,
     GpuModified = 1 << 3, ///< Contents have been modified from the GPU
     Registered = 1 << 6,  ///< True when the image is registered
-    Picked = 1 << 7,      ///< Temporary flag to mark the image as picked
 };
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 
@@ -86,8 +86,8 @@ struct Image {
     Image(const Image&) = delete;
     Image& operator=(const Image&) = delete;
 
-    Image(Image&&) = default;
-    Image& operator=(Image&&) = default;
+    Image(Image&&) = delete;
+    Image& operator=(Image&&) = delete;
 
     bool Overlaps(VAddr addr, size_t size) const noexcept {
         return info.guest_address < (addr + size) && addr < (info.guest_address + info.guest_size);
@@ -97,12 +97,8 @@ struct Image {
         return backing->image.image;
     }
 
-    vk::DeviceSize GetHostImageSize() const {
-        return backing->image.size_bytes;
-    }
-
-    bool IsTracked() {
-        return track_addr != 0 && track_addr_end != 0;
+    bool IsUntracked() {
+        return track_addr == 0 || track_addr_end == 0;
     }
 
     bool SafeToDownload() const {
@@ -129,6 +125,7 @@ struct Image {
 public:
     Vulkan::Runtime* runtime;
     Common::SlotVector<ImageView>* slot_image_views;
+    std::mutex mutex;
     ImageInfo info;
     vk::ImageAspectFlags aspect_mask = vk::ImageAspectFlagBits::eColor;
     vk::SampleCountFlags supported_samples = vk::SampleCountFlagBits::e1;
