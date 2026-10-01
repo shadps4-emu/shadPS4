@@ -7,6 +7,8 @@
 #include <cstring>
 #include <map>
 #include <mutex>
+#include <set>
+#include <string>
 #include <utility>
 
 #include <fmt/format.h>
@@ -246,6 +248,7 @@ struct Traffic {
     u64 sent_calls = 0;
     u64 received_bytes = 0;
     u64 received_calls = 0;
+    std::set<std::string> peers;
 };
 
 std::mutex g_traffic_mutex;
@@ -263,6 +266,28 @@ void CountTraffic(OrbisNetId s, bool sent, s64 bytes) {
         t.received_bytes += static_cast<u64>(bytes);
         ++t.received_calls;
     }
+}
+
+void NoteP2PPeer(OrbisNetId s, bool sent, const OrbisNetSockaddr* addr, u32 len) {
+    if (addr == nullptr || addr->sa_family != ORBIS_NET_AF_INET ||
+        len < sizeof(OrbisNetSockaddrIn)) {
+        return;
+    }
+    OrbisNetSockaddrIn in;
+    std::memcpy(&in, addr, sizeof(in));
+    if (in.sin_vport == 0) {
+        return; // not P2P
+    }
+    constexpr size_t MaxPeers = 16;
+    const std::string text = FormatSockaddr(addr, len);
+    {
+        std::scoped_lock lock{g_traffic_mutex};
+        auto& peers = g_traffic[s].peers;
+        if (peers.size() >= MaxPeers || !peers.insert((sent ? "> " : "< ") + text).second) {
+            return;
+        }
+    }
+    LOG_INFO(Lib_Net, "socket {}: first P2P packet {} {}", s, sent ? "to" : "from", text);
 }
 
 void LogSocketClosed(OrbisNetId s) {

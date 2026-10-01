@@ -28,5 +28,6 @@ void* BuildSignalingGetPingInfoPayload(ContextObject& ctx, CallbackPayload& payl
 s32 FillMatching2ConnectionInfo(const ContextObject& ctx, OrbisNpMatching2RoomId roomId,
                                 OrbisNpMatching2RoomMemberId memberId, u32 infoType, void* connInfo,
                                 bool a_variant);
+s32 FillMatching2LocalNetInfo(void* info);
 
 } // namespace Libraries::Np::NpMatching2

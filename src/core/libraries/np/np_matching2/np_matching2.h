@@ -146,8 +146,7 @@ int PS4_SYSV_ABI sceNpMatching2SignalingGetConnectionInfo(OrbisNpMatching2Contex
                                                           OrbisNpMatching2RoomId roomId,
                                                           OrbisNpMatching2RoomMemberId memberId,
                                                           u32 infoType, void* connInfo);
-int PS4_SYSV_ABI sceNpMatching2SignalingGetLocalNetInfo(OrbisNpMatching2ContextId ctxId,
-                                                        void* info);
+int PS4_SYSV_ABI sceNpMatching2SignalingGetLocalNetInfo(void* info);
 int PS4_SYSV_ABI sceNpMatching2SignalingGetPeerNetInfoResult();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);

@@ -11,11 +11,13 @@
 #include "common/singleton.h"
 #include "core/libraries/net/net.h"
 #include "core/libraries/net/net_util.h"
+#include "core/libraries/network/netctl.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_handler.h"
 #include "core/libraries/np/np_matching2/np_matching2_internal.h"
 #include "core/libraries/np/np_matching2/np_matching2_mm.h"
 #include "core/libraries/np/np_matching2/np_matching2_signaling.h"
+#include "core/libraries/np/np_signaling/np_signaling_state.h"
 #include "core/libraries/np/np_signaling/np_signaling_transport.h"
 #include "core/libraries/np/signaling_handler.h"
 
@@ -294,6 +296,34 @@ s32 FillMatching2ConnectionInfo(const ContextObject& ctx, OrbisNpMatching2RoomId
     LOG_INFO(Lib_NpMatching2, "connection info{}: ctx={} room={} member={} type={} rtt={}",
              a_variant ? "A" : "", ctx.ctx_id, roomId, memberId, infoType,
              peer ? peer->ping_us : 0);
+    return ORBIS_OK;
+}
+
+s32 FillMatching2LocalNetInfo(void* info) {
+    auto* out = static_cast<NpSignaling::OrbisNpSignalingNetInfo*>(info);
+    if (!out || out->size != sizeof(NpSignaling::OrbisNpSignalingNetInfo)) {
+        LOG_ERROR(Lib_NpMatching2, "bad net info (size {})", out ? out->size : 0);
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
+    out->localAddr = NpSignaling::ParseIpv4Nbo(netinfo->GetIp());
+    out->mappedAddr = 0;
+    out->natStatus = 0;
+    NetCtl::OrbisNetCtlNatInfo nat_info{};
+    nat_info.size = sizeof(nat_info);
+    if (NetCtl::sceNetCtlGetNatInfo(&nat_info) >= 0) {
+        out->mappedAddr = nat_info.mapped_addr;
+        out->natStatus = nat_info.nat_type;
+    }
+    if (out->mappedAddr == 0) {
+        const u32 external = netinfo->GetExternalIp();
+        out->mappedAddr = external != 0 ? external : out->localAddr;
+    }
+    out->_pad_14 = 0;
+
+    LOG_INFO(Lib_NpMatching2, "localAddr={:#x} mappedAddr={:#x} natStatus={}", out->localAddr,
+             out->mappedAddr, out->natStatus);
     return ORBIS_OK;
 }
 

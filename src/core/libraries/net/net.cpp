@@ -1954,6 +1954,9 @@ s32 PS4_SYSV_ABI sceNetRecvfrom(OrbisNetId s, void* buf, u64 len, s32 flags, Orb
     const s32 r = sceNetRecvfromImpl(s, buf, len, flags, addr, paddrlen);
     if (r > 0) {
         CountTraffic(s, false, r);
+        if (addr != nullptr && paddrlen != nullptr) {
+            NoteP2PPeer(s, false, addr, *paddrlen);
+        }
     }
     LOG_TRACE(Lib_Net, "s = {}, len = {}, flags = {:#x} -> {}{}", s, len, flags,
               r >= 0 ? std::to_string(r) : ErrorCodeName(r),
@@ -2214,6 +2217,7 @@ s32 PS4_SYSV_ABI sceNetSendto(OrbisNetId s, const void* buf, u64 len, s32 flags,
     const s32 r = sceNetSendtoImpl(s, buf, len, flags, addr, addrlen);
     if (r > 0) {
         CountTraffic(s, true, r);
+        NoteP2PPeer(s, true, addr, addrlen);
     }
     LOG_TRACE(Lib_Net, "s = {}, len = {}, flags = {:#x}, to = {} -> {}", s, len, flags,
               addr != nullptr ? FormatSockaddr(addr, addrlen) : "connected peer",

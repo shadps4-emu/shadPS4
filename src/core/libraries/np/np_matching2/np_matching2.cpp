@@ -1147,10 +1147,13 @@ int PS4_SYSV_ABI sceNpMatching2SignalingGetConnectionInfo(OrbisNpMatching2Contex
     return FillMatching2ConnectionInfo(*ctx, roomId, memberId, infoType, connInfo, false);
 }
 
-int PS4_SYSV_ABI sceNpMatching2SignalingGetLocalNetInfo(OrbisNpMatching2ContextId ctxId,
-                                                        void* info) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}", ctxId);
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNpMatching2SignalingGetLocalNetInfo(void* info) {
+    LOG_INFO(Lib_NpMatching2, "called");
+    if (!IsInitialized()) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    return FillMatching2LocalNetInfo(info);
 }
 
 int PS4_SYSV_ABI sceNpMatching2SignalingGetPeerNetInfoResult() {

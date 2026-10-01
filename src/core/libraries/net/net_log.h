@@ -26,6 +26,8 @@ std::string OptionName(s32 level, s32 name);
 std::string EpollEventsName(u32 events);
 
 void CountTraffic(OrbisNetId s, bool sent, s64 bytes);
+// Logs the first packet to or from each P2P address on a socket.
+void NoteP2PPeer(OrbisNetId s, bool sent, const OrbisNetSockaddr* addr, u32 len);
 // Logs the traffic summary and drops it.
 void LogSocketClosed(OrbisNetId s);
 
