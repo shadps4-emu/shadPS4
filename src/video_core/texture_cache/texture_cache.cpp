@@ -178,7 +178,7 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
 }
 
 void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
-    ImageIds deleted_images;
+    SmallVector<ImageId, 16> deleted_images;
     ForEachImageInRegion(cpu_addr, size, [&](ImageId id, Image&) { deleted_images.push_back(id); });
     for (const ImageId id : deleted_images) {
         // TODO: Download image data back to host.
@@ -510,7 +510,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     const auto& info = desc.info;
     ASSERT(info.guest_address != 0);
 
-    ImageIds image_ids;
+    SmallVector<ImageId, 8> image_ids;
     ForEachImageInRegion(info.guest_address, info.guest_size,
                          [&](ImageId image_id, Image& image) { image_ids.push_back(image_id); });
 
@@ -591,7 +591,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
 }
 
 ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure_valid) {
-    ImageIds image_ids;
+    SmallVector<ImageId, 4> image_ids;
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
         if (image.info.guest_address != address) {
             return;
@@ -799,8 +799,15 @@ void TextureCache::RegisterImage(ImageId image_id) {
     image.flags |= ImageFlagBits::Registered;
     total_used_memory += Common::AlignUp(image.info.guest_size, 1024);
     image.lru_id = lru_cache.Insert(image_id, gc_tick);
-    ForEachPage(image.info.guest_address, image.info.guest_size,
-                [this, image_id](u64 page) { page_table[page].push_back(image_id); });
+    const auto& info = image.info;
+    ASSERT_MSG((info.guest_address & 0xff) == 0, "Trying to register an unaligned image");
+    ForEachPage(info.guest_address, info.guest_size,
+                [this, image_id, info](u64 page) { page_table[page].entries.emplace_back(BucketEntry{
+                    .key = u32(info.guest_address >> 8),
+                    .size = info.guest_size,
+                    .id = image_id,
+                });
+    });
 }
 
 void TextureCache::UnregisterImage(ImageId image_id) {
@@ -813,11 +820,11 @@ void TextureCache::UnregisterImage(ImageId image_id) {
     ForEachPage(image.info.guest_address, image.info.guest_size, [this, image_id](u64 page) {
         const auto page_it = page_table.find(page);
         ASSERT_MSG(page_it, "Unregistering unregistered page={:#x}", page << Traits::PAGE_BITS);
-        auto& image_ids = *page_it;
-        const auto vector_it = std::ranges::find(image_ids, image_id);
-        ASSERT_MSG(vector_it != image_ids.end(), "Unregistering unregistered image in page={:#x}",
+        auto& entries = page_it->entries;
+        const auto vector_it = std::ranges::find(entries, image_id, &BucketEntry::id);
+        ASSERT_MSG(vector_it != entries.end(), "Unregistering unregistered image in page={:#x}",
                    page << Traits::PAGE_BITS);
-        image_ids.erase(vector_it);
+        entries.erase(vector_it);
     });
 }
 

@@ -31,18 +31,35 @@ class BufferCache;
 class PageManager;
 
 class TextureCache {
-    // Default values for garbage collection
     static constexpr s64 DEFAULT_PRESSURE_GC_MEMORY = 1_GB + 512_MB;
     static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 3_GB;
     static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
 
-    using ImageIds = SmallVector<ImageId, 16>;
+    struct BucketEntry {
+        u32 key;
+        u32 size;
+        ImageId id;
+
+        bool Overlaps(VAddr addr, size_t size) const noexcept {
+            const VAddr base = Address();
+            return base < (addr + size) && addr < (base + this->size);
+        }
+
+        VAddr Address() const noexcept {
+            return VAddr(key) << 8;
+        }
+    };
+
+    struct alignas(64) Bucket {
+        SmallVector<BucketEntry, 4, u32> entries;
+    };
+    static_assert(sizeof(Bucket) == 64);
 
     struct Traits {
-        using Entry = ImageIds;
+        using Entry = Bucket;
         static constexpr size_t ADDRESS_SPACE_BITS = 40;
         static constexpr size_t L1_BITS = 10;
-        static constexpr size_t PAGE_BITS = 20;
+        static constexpr size_t PAGE_BITS = 18;
         static constexpr bool NULL_CHECK = true;
     };
     using PageTable = Common::MultiLevelPageTable<Traits>;
@@ -236,21 +253,21 @@ public:
                     return;
                 }
             }
-            for (const ImageId image_id : *it) {
-                Image& image = slot_images[image_id];
-                const u64 base_page = image.info.guest_address >> Traits::PAGE_BITS;
+            for (const auto& entry : it->entries) {
+                const u64 base_page = entry.Address() >> Traits::PAGE_BITS;
                 if (page != std::max(first_page, base_page)) {
                     continue;
                 }
-                if (!image.Overlaps(cpu_addr, size)) {
+                if (!entry.Overlaps(cpu_addr, size)) {
                     continue;
                 }
+                Image& image = slot_images[entry.id];
                 if constexpr (BOOL_BREAK) {
-                    if (func(image_id, image)) {
+                    if (func(entry.id, image)) {
                         return true;
                     }
                 } else {
-                    func(image_id, image);
+                    func(entry.id, image);
                 }
             }
             if constexpr (BOOL_BREAK) {
@@ -302,7 +319,10 @@ private:
     void TouchImage(const Image& image);
 
     void FreeImage(ImageId image_id) {
-        UntrackImage(image_id);
+        {
+            std::scoped_lock lk{slot_images[image_id].mutex};
+            UntrackImage(image_id);
+        }
         UnregisterImage(image_id);
         DeleteImage(image_id);
     }
