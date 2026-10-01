@@ -23,12 +23,12 @@ template <typename T>
 }
 
 template <typename T>
-[[nodiscard]] constexpr T AlignUpPow2(T value, T size) {
+[[nodiscard]] constexpr T AlignUpPow2(T value, std::size_t size) {
     return static_cast<T>(value + (size - 1) & ~(size - 1));
 }
 
 template <typename T>
-[[nodiscard]] constexpr T AlignDownPow2(T value, T size) {
+[[nodiscard]] constexpr T AlignDownPow2(T value, std::size_t size) {
     return static_cast<T>(value & ~(size - 1));
 }
 
