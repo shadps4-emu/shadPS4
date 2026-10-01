@@ -141,11 +141,11 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
         frame_data->pFramePointerList[0][0] = raw16_buffer1;
         break;
     case ORBIS_CAMERA_FORMAT_RAW16:
-        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer1, c_width, c_height);
+        ConvertYUY2ToRAW16((u8*)frame->pixels, raw16_buffer1, c_width, c_height);
         frame_data->pFramePointerList[0][0] = raw16_buffer1;
         break;
     case ORBIS_CAMERA_FORMAT_RAW8:
-        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer1, c_width, c_height);
+        ConvertYUY2ToRAW8((u8*)frame->pixels, raw8_buffer1, c_width, c_height);
         frame_data->pFramePointerList[0][0] = raw8_buffer1;
         break;
     default:
@@ -157,11 +157,11 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
         frame_data->pFramePointerList[1][0] = raw16_buffer2;
         break;
     case ORBIS_CAMERA_FORMAT_RAW16:
-        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer2, c_width, c_height);
+        ConvertYUY2ToRAW16((u8*)frame->pixels, raw16_buffer2, c_width, c_height);
         frame_data->pFramePointerList[1][0] = raw16_buffer2;
         break;
     case ORBIS_CAMERA_FORMAT_RAW8:
-        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer2, c_width, c_height);
+        ConvertYUY2ToRAW8((u8*)frame->pixels, raw8_buffer2, c_width, c_height);
         frame_data->pFramePointerList[1][0] = raw8_buffer2;
         break;
     default:
@@ -309,22 +309,7 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
         return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
     }
     SDL_CameraSpec cam_spec{};
-    switch (output_config0.format.formatLevel0) {
-    case ORBIS_CAMERA_FORMAT_YUV422:
-        cam_spec.format = SDL_PIXELFORMAT_YUY2;
-        break;
-    case ORBIS_CAMERA_FORMAT_RAW8:
-        cam_spec.format = SDL_PIXELFORMAT_RGBA8888; // to be swizzled
-        break;
-    case ORBIS_CAMERA_FORMAT_RAW16:
-        cam_spec.format = SDL_PIXELFORMAT_RGBA8888; // to be swizzled
-        break;
-
-    default:
-        LOG_ERROR(Lib_Camera, "Invalid format {}",
-                  std::to_underlying(output_config0.format.formatLevel0));
-        break;
-    }
+    cam_spec.format = SDL_PIXELFORMAT_YUY2; // to be swizzled
     cam_spec.height = c_height;
     cam_spec.width = c_width;
     cam_spec.framerate_numerator = 60;

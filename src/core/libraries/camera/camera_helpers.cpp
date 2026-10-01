@@ -108,6 +108,72 @@ void ConvertYUY2ToY16(const u8* src, u16* dst, int width, int height) {
     }
 }
 
+static inline void YuvToRgb(u8 y, u8 u, u8 v, u8& r, u8& g, u8& b) {
+    const int c = static_cast<int>(y) - 16;
+    const int d = static_cast<int>(u) - 128;
+    const int e = static_cast<int>(v) - 128;
+
+    r = ClampU8((298 * c + 409 * e + 128) >> 8);
+    g = ClampU8((298 * c - 100 * d - 208 * e + 128) >> 8);
+    b = ClampU8((298 * c + 516 * d + 128) >> 8);
+}
+
+void ConvertYUY2ToRAW8(const u8* src, u8* dst, int width, int height) {
+    for (int y = 0; y < height; ++y) {
+        const u8* row = src + static_cast<u64>(y) * width * 2;
+        u8* outRow = dst + static_cast<u64>(y) * width;
+        const bool evenRow = (y & 1) == 0;
+
+        for (int x = 0; x < width; x += 2) {
+            const u8 y0 = row[x * 2 + 0];
+            const u8 u = row[x * 2 + 1];
+            const u8 y1 = row[x * 2 + 2];
+            const u8 v = row[x * 2 + 3];
+
+            u8 r0, g0, b0;
+            u8 r1, g1, b1;
+            YuvToRgb(y0, u, v, r0, g0, b0);
+            YuvToRgb(y1, u, v, r1, g1, b1);
+
+            if (evenRow) {
+                outRow[x] = b0;
+                outRow[x + 1] = g1;
+            } else {
+                outRow[x] = g0;
+                outRow[x + 1] = r1;
+            }
+        }
+    }
+}
+
+void ConvertYUY2ToRAW16(const u8* src, u16* dst, int width, int height) {
+    for (int y = 0; y < height; ++y) {
+        const u8* row = src + static_cast<u64>(y) * width * 2;
+        u16* outRow = dst + static_cast<u64>(y) * width;
+        const bool evenRow = (y & 1) == 0;
+
+        for (int x = 0; x < width; x += 2) {
+            const u8 y0 = row[x * 2 + 0];
+            const u8 u = row[x * 2 + 1];
+            const u8 y1 = row[x * 2 + 2];
+            const u8 v = row[x * 2 + 3];
+
+            u8 r0, g0, b0;
+            u8 r1, g1, b1;
+            YuvToRgb(y0, u, v, r0, g0, b0);
+            YuvToRgb(y1, u, v, r1, g1, b1);
+
+            if (evenRow) {
+                outRow[x] = static_cast<u16>(b0) << 4;
+                outRow[x + 1] = static_cast<u16>(g1) << 4;
+            } else {
+                outRow[x] = static_cast<u16>(g0) << 4;
+                outRow[x + 1] = static_cast<u16>(r1) << 4;
+            }
+        }
+    }
+}
+
 s32 SizeOfBaseFormat(OrbisCameraBaseFormat f) {
     switch (f) {
     case ORBIS_CAMERA_FORMAT_YUV422:
