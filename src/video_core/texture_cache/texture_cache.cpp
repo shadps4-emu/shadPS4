@@ -1016,15 +1016,9 @@ void TextureCache::GarbageCollectSamplers() {
     }
 }
 
-extern u32 num_calls;
-extern u32 num_fast_path;
-
 void TextureCache::RunGarbageCollector() {
     GarbageCollectImages();
     GarbageCollectSamplers();
-    // LOG_WARNING(Render, "Num UpdateSize calls {} num fast path {}", num_calls, num_fast_path);
-    num_calls = 0;
-    num_fast_path = 0;
     ++gc_tick;
 }
 

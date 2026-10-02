@@ -164,9 +164,6 @@ bool ImageInfo::IsCompatible(const ImageInfo& info) const {
            num_samples == info.num_samples && num_bits == info.num_bits;
 }
 
-u32 num_calls = 0;
-u32 num_fast_path = 0;
-
 void ImageInfo::UpdateSize() noexcept {
     ASSERT_MSG(array_mode != AmdGpu::ArrayMode::ArrayLinearGeneral,
                "Unhandled array mode: ArrayLinearGeneral");
