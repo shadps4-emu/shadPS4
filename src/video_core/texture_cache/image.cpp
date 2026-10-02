@@ -214,7 +214,7 @@ ImageView& Image::FindView(const ImageViewInfo& view_info, bool ensure_guest_sam
         const auto view_id = backing->image_view_ids[std::distance(view_infos.begin(), it)];
         return (*slot_image_views)[view_id];
     }
-    const auto view_id = slot_image_views->insert(runtime->GetInstance(), view_info, *this);
+    const auto view_id = slot_image_views->Insert(runtime->GetInstance(), view_info, *this);
     backing->image_view_infos.emplace_back(view_info);
     backing->image_view_ids.emplace_back(view_id);
     return (*slot_image_views)[view_id];
@@ -259,7 +259,11 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                 ASSERT(subres_idx < subresource_states.size());
                 auto& state = subresource_states[subres_idx];
 
-                if (state.layout != dst_layout || state.access_mask != dst_mask) {
+                constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
+                                             vk::AccessFlagBits2::eShaderWrite |
+                                             vk::AccessFlagBits2::eMemoryWrite;
+                const bool is_write = static_cast<bool>(state.access_mask & write_flags);
+                if (state.layout != dst_layout || state.access_mask != dst_mask || is_write) {
                     barriers.emplace_back(vk::ImageMemoryBarrier2{
                         .srcStageMask = state.pl_stage,
                         .srcAccessMask = state.access_mask,
@@ -289,7 +293,11 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
             subresource_states.clear();
         }
     } else { // Full resource transition
-        if (last_state.layout == dst_layout && last_state.access_mask == dst_mask) {
+        constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
+                                     vk::AccessFlagBits2::eShaderWrite |
+                                     vk::AccessFlagBits2::eMemoryWrite;
+        const bool is_write = static_cast<bool>(last_state.access_mask & write_flags);
+        if (last_state.layout == dst_layout && last_state.access_mask == dst_mask && !is_write) {
             return;
         }
         barriers.emplace_back(vk::ImageMemoryBarrier2{

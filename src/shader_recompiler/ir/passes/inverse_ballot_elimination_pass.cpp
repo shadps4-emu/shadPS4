@@ -86,8 +86,8 @@ void InverseBallotEliminationPass(IR::Program& program) {
             } else if (value.U64() == std::numeric_limits<u64>::max()) {
                 inst->ReplaceUsesWithAndRemove(IR::Value{true});
             } else {
-                UNREACHABLE_MSG("Unexpected immediate argument for InverseBallot {:#x}",
-                                value.U64());
+                LOG_WARNING(Render_Recompiler,
+                            "Unhandled immediate argument {:#x} for InverseBallot", value.U64());
             }
             continue;
         }

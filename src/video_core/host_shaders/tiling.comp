@@ -101,12 +101,12 @@ layout (set = 0, binding = 1, scalar) buffer OutputBuf {
 
 layout (set = 0, binding = 2, scalar) uniform TilingInfo {
     uint bank_swizzle;
-    uint num_slices;
+    uint micro_tiled_mips;
     uint num_mips;
     MipInfo mips[16];
 } info;
 
-uint32_t ComputePixelIndexWithinMicroTile(uint32_t x, uint32_t y, uint32_t z) {
+uint32_t ComputePixelIndexWithinMicroTile(uint32_t x, uint32_t y, uint32_t z, uint32_t thickness) {
     uint32_t p0 = 0;
     uint32_t p1 = 0;
     uint32_t p2 = 0;
@@ -157,11 +157,11 @@ uint32_t ComputePixelIndexWithinMicroTile(uint32_t x, uint32_t y, uint32_t z) {
         p4 = y1;
         p5 = y2;
 #elif BITS_PER_PIXEL == 128
-        p0 = y0;
-        p1 = x0;
+        p0 = x0;
+        p1 = y0;
         p2 = x1;
-        p3 = x2;
-        p4 = y1;
+        p3 = y1;
+        p4 = x2;
         p5 = y2;
 #endif
     } else if (MICRO_TILE_MODE == ADDR_SURF_THIN_MICRO_TILING ||
@@ -198,7 +198,7 @@ uint32_t ComputePixelIndexWithinMicroTile(uint32_t x, uint32_t y, uint32_t z) {
         p6 = x2;
         p7 = y2;
 
-        if (MICRO_TILE_THICKNESS == 8) {
+        if (thickness == 8) {
             p8 = z2;
         }
     }
@@ -210,19 +210,19 @@ uint32_t ComputePixelIndexWithinMicroTile(uint32_t x, uint32_t y, uint32_t z) {
     return pixel_number;
 }
 
-#if !IS_MACRO_TILED
-uint32_t ComputeSurfaceAddrFromCoordMicroTiled(uint32_t x, uint32_t y, uint32_t slice, uint32_t pitch, uint32_t height, uint32_t sample_index) {
-    uint32_t slice_bytes = BITS_TO_BYTES(pitch * height * MICRO_TILE_THICKNESS * BITS_PER_PIXEL * NUM_SAMPLES);
+uint32_t ComputeSurfaceAddrFromCoordMicroTiled(uint32_t x, uint32_t y, uint32_t slice, uint32_t pitch, uint32_t height, uint32_t thickness, uint32_t sample_index) {
+    uint32_t micro_tile_bytes = MICRO_TILE_PIXELS * thickness * BITS_PER_PIXEL * NUM_SAMPLES / 8;
+    uint32_t slice_bytes = BITS_TO_BYTES(pitch * height * thickness * BITS_PER_PIXEL * NUM_SAMPLES);
 
     uint32_t micro_tiles_per_row = pitch / MICRO_TILE_WIDTH;
     uint32_t micro_tile_index_x = x / MICRO_TILE_WIDTH;
     uint32_t micro_tile_index_y = y / MICRO_TILE_HEIGHT;
-    uint32_t micro_tile_index_z = slice / MICRO_TILE_THICKNESS;
+    uint32_t micro_tile_index_z = slice / thickness;
 
     uint32_t slice_offset = micro_tile_index_z * slice_bytes;
-    uint32_t micro_tile_offset = (micro_tile_index_y * micro_tiles_per_row + micro_tile_index_x) * MICRO_TILE_BYTES;
+    uint32_t micro_tile_offset = (micro_tile_index_y * micro_tiles_per_row + micro_tile_index_x) * micro_tile_bytes;
 
-    uint32_t pixel_index = ComputePixelIndexWithinMicroTile(x, y, slice);
+    uint32_t pixel_index = ComputePixelIndexWithinMicroTile(x, y, slice, thickness);
 
     uint32_t sample_offset;
     uint32_t pixel_offset;
@@ -230,7 +230,7 @@ uint32_t ComputeSurfaceAddrFromCoordMicroTiled(uint32_t x, uint32_t y, uint32_t 
         sample_offset = sample_index * BITS_PER_PIXEL;
         pixel_offset = pixel_index * BITS_PER_PIXEL * NUM_SAMPLES;
     } else {
-        sample_offset = sample_index * (MICRO_TILE_BYTES * 8 / NUM_SAMPLES);
+        sample_offset = sample_index * (micro_tile_bytes * 8 / NUM_SAMPLES);
         pixel_offset = pixel_index * BITS_PER_PIXEL;
     }
 
@@ -238,7 +238,7 @@ uint32_t ComputeSurfaceAddrFromCoordMicroTiled(uint32_t x, uint32_t y, uint32_t 
     return slice_offset + micro_tile_offset + elem_offset;
 }
 
-#else
+#if IS_MACRO_TILED
 uint32_t ComputePipeFromCoord(uint32_t x, uint32_t y, uint32_t slice) {
     uint32_t p0 = 0;
     uint32_t p1 = 0;
@@ -336,7 +336,7 @@ uint32_t ComputeBankFromCoord(uint32_t x, uint32_t y, uint32_t slice, uint32_t t
 }
 
 uint32_t ComputeSurfaceAddrFromCoordMacroTiled(uint32_t x, uint32_t y, uint32_t slice, uint32_t pitch, uint32_t height, uint32_t sample_index) {
-    uint32_t pixel_index = ComputePixelIndexWithinMicroTile(x, y, slice);
+    uint32_t pixel_index = ComputePixelIndexWithinMicroTile(x, y, slice, MICRO_TILE_THICKNESS);
 
     uint32_t sample_offset;
     uint32_t pixel_offset;
@@ -435,9 +435,13 @@ void main() {
     uint slice = texel / (pitch * height);
 
 #if IS_MACRO_TILED
-    tiled_offset += ComputeSurfaceAddrFromCoordMacroTiled(x, y, slice, pitch, height, 0);
+    if ((info.micro_tiled_mips & (1u << mip)) != 0) {
+        tiled_offset += ComputeSurfaceAddrFromCoordMicroTiled(x, y, slice, pitch, height, min(MICRO_TILE_THICKNESS, 4u), 0);
+    } else {
+        tiled_offset += ComputeSurfaceAddrFromCoordMacroTiled(x, y, slice, pitch, height, 0);
+    }
 #else
-    tiled_offset += ComputeSurfaceAddrFromCoordMicroTiled(x, y, slice, pitch, height, 0);
+    tiled_offset += ComputeSurfaceAddrFromCoordMicroTiled(x, y, slice, pitch, height, MICRO_TILE_THICKNESS, 0);
 #endif
 
     if (IS_TILER != 0) {
