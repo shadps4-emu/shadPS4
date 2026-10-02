@@ -6,6 +6,7 @@
 // P2P runs over the real wire format against a second transport standing in for another
 // console.
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstring>
@@ -838,10 +839,15 @@ TEST_F(NetLib, EpollErrorCodesMatchThePS4) {
     OrbisNetEpollEvent ev{};
     ev.events = ORBIS_NET_EPOLLIN;
 
-    // Not registered: EBADF, where Linux would say ENOENT.
-    EXPECT_EQ(sceNetEpollControl(ep, ORBIS_NET_EPOLL_CTL_MOD, s, &ev), ORBIS_NET_ERROR_EBADF);
+    // DEL of an unregistered id: EBADF, where Linux would say ENOENT.
     EXPECT_EQ(sceNetEpollControl(ep, ORBIS_NET_EPOLL_CTL_DEL, s, nullptr), ORBIS_NET_ERROR_EBADF);
     EXPECT_EQ(*sceNetErrnoLoc(), ORBIS_NET_EBADF);
+    // MOD of an unregistered id registers it
+    EXPECT_EQ(sceNetEpollControl(ep, ORBIS_NET_EPOLL_CTL_MOD, s, &ev), ORBIS_OK);
+    EXPECT_EQ(sceNetEpollControl(ep, ORBIS_NET_EPOLL_CTL_DEL, s, nullptr), ORBIS_OK);
+    // ADD/MOD need event bits.
+    OrbisNetEpollEvent none{};
+    EXPECT_EQ(sceNetEpollControl(ep, ORBIS_NET_EPOLL_CTL_ADD, s, &none), ORBIS_NET_ERROR_EINVAL);
 
     // Delete takes no event.
     ASSERT_EQ(sceNetEpollControl(ep, ORBIS_NET_EPOLL_CTL_ADD, s, &ev), ORBIS_OK);
@@ -887,9 +893,9 @@ TEST_F(NetLib, EpollIdKindsNamesAndAbortFlags) {
     std::this_thread::sleep_for(20ms);
     EXPECT_EQ(sceNetEpollAbort(ep, 1), ORBIS_OK);
     EXPECT_EQ(sceNetEpollWait(ep, out, 2, 0), ORBIS_NET_ERROR_EINTR);
-    // No ORBIS_NET_EPOLLOUT for a UDP socket, even though it was asked for.
+    // A UDP socket reports OUT too, it is always writable.
     ASSERT_EQ(sceNetEpollWait(ep, out, 2, 1'000'000), 1);
-    EXPECT_EQ(out[0].events, ORBIS_NET_EPOLLIN);
+    EXPECT_EQ(out[0].events, ORBIS_NET_EPOLLIN | ORBIS_NET_EPOLLOUT);
 
     sceNetEpollDestroy(other);
     sceNetEpollDestroy(ep);
@@ -1097,13 +1103,30 @@ TEST_F(NetLib, ResolverLooksUpNames) {
     EXPECT_EQ(addr.inaddr_addr, sceNetHtonl(0x7F000003));
     EXPECT_EQ(sceNetResolverGetError(rid, nullptr), ORBIS_NET_ERROR_EINVAL);
 
-    // Offline, lookups fail with ENODNS and the status says so.
+    // Offline, names fail with ENODNS and the status says so. Addresses, "localhost" and a
+    // trailing dot are handled locally, unless DISABLE_IPADDRESS sends an address to DNS.
     SetSystemHooks({.is_online = [] { return false; }});
-    EXPECT_EQ(sceNetResolverStartNtoa(rid, "127.0.0.1", &addr, 0, 0, 0),
+    EXPECT_EQ(sceNetResolverStartNtoa(rid, "example.com", &addr, 0, 0, 0),
               ORBIS_NET_ERROR_RESOLVER_ENODNS);
     EXPECT_EQ(*sceNetErrnoLoc(), ORBIS_NET_RESOLVER_ENODNS);
     sceNetResolverGetError(rid, &status);
     EXPECT_EQ(status, ORBIS_NET_ERROR_RESOLVER_ENODNS);
+    ASSERT_EQ(sceNetResolverStartNtoa(rid, "10.1.2.3", &addr, 0, 0, 0), ORBIS_OK);
+    EXPECT_EQ(addr.inaddr_addr, sceNetHtonl(0x0A010203));
+    ASSERT_EQ(sceNetResolverStartNtoa(rid, "localhost.", &addr, 0, 0, 0), ORBIS_OK);
+    EXPECT_EQ(addr.inaddr_addr, sceNetHtonl(ORBIS_NET_INADDR_LOOPBACK));
+    EXPECT_EQ(sceNetResolverStartNtoa(rid, "10.1.2.3", &addr, 0, 0,
+                                      ORBIS_NET_RESOLVER_START_NTOA_DISABLE_IPADDRESS),
+              ORBIS_NET_ERROR_RESOLVER_ENODNS);
+    EXPECT_EQ(sceNetResolverStartNtoa(rid, "", &addr, 0, 0, 0), ORBIS_NET_ERROR_EINVAL);
+    OrbisNetResolverInfo records{};
+    EXPECT_EQ(sceNetResolverStartNtoaMultipleRecordsEx(rid, "10.1.2.3", &records, 0, 0, 0x2000000),
+              ORBIS_OK);
+    EXPECT_EQ(records.records, 1u);
+    EXPECT_EQ(sceNetResolverStartNtoaMultipleRecordsEx(rid, "10.1.2.3", &records, 0, 0, 0x1000000),
+              ORBIS_NET_ERROR_RESOLVER_ENORECORD);
+    EXPECT_EQ(sceNetResolverStartNtoaMultipleRecordsEx(rid, "10.1.2.3", &records, 0, 0, 0x4),
+              ORBIS_NET_ERROR_EINVAL);
     SetSystemHooks({});
 
     // Destroying removes it from the epoll and frees the id.
@@ -1143,6 +1166,132 @@ TEST_F(NetLib, EtherPoolsAndStatistics) {
     EXPECT_GT(info.libnet_mem_free_size, 0);
 }
 
+TEST_F(NetLib, EpollReportsPeerCloseAsReadable) {
+    OrbisNetId listener = 0;
+    const u16 port = Listen(&listener);
+    OrbisNetId accepted = -1;
+    std::thread server([&] { accepted = sceNetAccept(listener, nullptr, nullptr); });
+    const OrbisNetId client = sceNetSocket("client", ORBIS_NET_AF_INET, ORBIS_NET_SOCK_STREAM, 0);
+    auto to = Loopback(port);
+    ASSERT_EQ(sceNetConnect(client, Guest(&to), sizeof(to)), ORBIS_OK);
+    server.join();
+    ASSERT_GT(accepted, 0);
+
+    const OrbisNetId ep = sceNetEpollCreate("ep", 0);
+    OrbisNetEpollEvent ev{};
+    ev.events = ORBIS_NET_EPOLLIN;
+    ASSERT_EQ(sceNetEpollControl(ep, ORBIS_NET_EPOLL_CTL_ADD, accepted, &ev), ORBIS_OK);
+
+    // The PS4 epoll is kqueue read/write filters: the peer closing shows up as IN only, and
+    // the read returns the end of stream.
+    sceNetSocketClose(client);
+    OrbisNetEpollEvent out[2]{};
+    ASSERT_EQ(sceNetEpollWait(ep, out, 2, 2'000'000), 1);
+    EXPECT_EQ(out[0].events, ORBIS_NET_EPOLLIN);
+    char buf[4];
+    EXPECT_EQ(sceNetRecv(accepted, buf, sizeof(buf), 0), 0);
+
+    sceNetEpollDestroy(ep);
+    sceNetSocketClose(accepted);
+    sceNetSocketClose(listener);
+}
+
+TEST_F(NetLib, SmallHelpers) {
+    u32 random = 0;
+    EXPECT_EQ(sceNetGetRandom(&random), ORBIS_OK);
+    EXPECT_EQ(sceNetGetRandom(nullptr), ORBIS_NET_ERROR_EINVAL);
+
+    u64 t1 = 0;
+    u64 t2 = 0;
+    sceNetGetSystemTime(&t1);
+    std::this_thread::sleep_for(2ms);
+    sceNetGetSystemTime(&t2);
+    EXPECT_GT(t2, t1);
+    sceNetGetSystemTime(nullptr); // ignored
+
+    EXPECT_STREQ(sceNetGetIfName(0), "lo0");
+    EXPECT_STREQ(sceNetGetIfName(1), "eth0");
+    EXPECT_STREQ(sceNetGetIfName(10), "");
+    EXPECT_EQ(*sceNetErrnoLoc(), ORBIS_NET_EINVAL);
+
+    EXPECT_EQ(sceNetMemoryAllocate(0, 0), nullptr);
+    auto* zeroed = static_cast<u8*>(sceNetMemoryAllocate(64, 2));
+    ASSERT_NE(zeroed, nullptr);
+    EXPECT_EQ(std::count(zeroed, zeroed + 64, u8{0}), 64);
+    sceNetMemoryFree(zeroed);
+
+    EXPECT_EQ(sceNetUsleep(-1), ORBIS_NET_ERROR_EINVAL);
+    EXPECT_EQ(sceNetUsleep(10), ORBIS_OK);
+}
+
+TEST_F(NetLib, IoctlAndAddressEdgeCasesOnNativeSockets) {
+    const OrbisNetId udp = sceNetSocket("udp", ORBIS_NET_AF_INET, ORBIS_NET_SOCK_DGRAM, 0);
+    auto any = Loopback(0);
+    ASSERT_EQ(sceNetBind(udp, Guest(&any), sizeof(any)), ORBIS_OK);
+    OrbisNetSockaddrIn self{};
+    u32 len = sizeof(self);
+    sceNetGetsockname(udp, Guest(&self), &len);
+
+    // FIONBIO and FIONREAD reach the socket like they would the kernel.
+    s32 on = 1;
+    ASSERT_EQ(sceNetIoctl(udp, 0x8004667e, &on), ORBIS_OK);
+    EXPECT_EQ(GetInt(udp, ORBIS_NET_SOL_SOCKET, ORBIS_NET_SO_NBIO), 1);
+    s32 ready = -1;
+    ASSERT_EQ(sceNetIoctl(udp, 0x4004667f, &ready), ORBIS_OK);
+    EXPECT_EQ(ready, 0);
+    sceNetSendto(udp, "12345", 5, 0, Guest(&self), sizeof(self));
+    std::this_thread::sleep_for(20ms);
+    ASSERT_EQ(sceNetIoctl(udp, 0x4004667f, &ready), ORBIS_OK);
+    EXPECT_GE(ready, 5);
+    EXPECT_EQ(sceNetIoctl(udp, 0x12345678, &ready), ORBIS_NET_ERROR_EINVAL);
+
+    // An address buffer without a length pointer is ignored, not EFAULT.
+    char buf[8];
+    OrbisNetSockaddrIn from{};
+    EXPECT_EQ(sceNetRecvfrom(udp, buf, sizeof(buf), 0, Guest(&from), nullptr), 5);
+    sceNetSocketClose(udp);
+
+    // A connected stream ignores a destination address.
+    OrbisNetId listener = 0;
+    const u16 port = Listen(&listener);
+    OrbisNetId accepted = -1;
+    std::thread server([&] { accepted = sceNetAccept(listener, nullptr, nullptr); });
+    const OrbisNetId client = sceNetSocket("client", ORBIS_NET_AF_INET, ORBIS_NET_SOCK_STREAM, 0);
+    auto to = Loopback(port);
+    ASSERT_EQ(sceNetConnect(client, Guest(&to), sizeof(to)), ORBIS_OK);
+    server.join();
+    ASSERT_GT(accepted, 0);
+    EXPECT_EQ(sceNetSendto(client, "hi", 2, 0, Guest(&to), sizeof(to)), 2);
+    EXPECT_EQ(sceNetRecv(accepted, buf, sizeof(buf), 0), 2);
+    sceNetSocketClose(client);
+    sceNetSocketClose(accepted);
+    sceNetSocketClose(listener);
+}
+
+TEST_F(NetLib, DnsInfoOverride) {
+    std::array<u32, 2> dns{};
+    EXPECT_EQ(sceNetGetDnsInfo(nullptr, 0), ORBIS_NET_ERROR_EINVAL);
+    EXPECT_EQ(sceNetGetDnsInfo(dns.data(), 1), ORBIS_NET_ERROR_EINVAL);
+
+    const std::array<u32, 2> mine{sceNetHtonl(0x0A000001), 0};
+    EXPECT_EQ(sceNetSetDnsInfo(mine.data(), 0), ORBIS_OK);
+    EXPECT_EQ(sceNetGetDnsInfo(dns.data(), 0), 1); // the count
+    EXPECT_EQ(dns, mine);
+    const std::array<u32, 2> no_primary{0, sceNetHtonl(0x0A000001)};
+    EXPECT_EQ(sceNetSetDnsInfo(no_primary.data(), 0), ORBIS_NET_ERROR_EINVAL);
+    EXPECT_EQ(sceNetSetDnsInfo(nullptr, 0), ORBIS_OK); // clears it
+
+    std::array<u8, 32> dns6{};
+    std::array<u8, 32> mine6{};
+    mine6[0] = 0x20;
+    mine6[15] = 1;
+    EXPECT_EQ(sceNetGetDns6Info(dns6.data(), 0), 0);
+    EXPECT_EQ(sceNetSetDns6Info(mine6.data(), 0), ORBIS_OK);
+    EXPECT_EQ(sceNetGetDns6Info(dns6.data(), 0), 1);
+    EXPECT_EQ(dns6, mine6);
+    EXPECT_EQ(sceNetSetDns6Info(nullptr, 0), ORBIS_OK);
+}
+
 TEST_F(NetLib, ResolverReverseLookupAndPreservedAbort) {
     const OrbisNetId rid = sceNetResolverCreate("aton", 0, 0);
     ASSERT_GT(rid, 0);
@@ -1154,16 +1303,12 @@ TEST_F(NetLib, ResolverReverseLookupAndPreservedAbort) {
     char name[256]{};
     EXPECT_EQ(sceNetResolverStartAton(rid, &loopback, name, sizeof(name), 0, 0, 0),
               ORBIS_NET_ERROR_EINTR);
-    // Then the reverse lookup works (the host's own name for 127.0.0.1).
-    const s32 r = sceNetResolverStartAton(rid, &loopback, name, sizeof(name), 0, 0, 0);
-    if (r == ORBIS_OK) {
-        EXPECT_GT(std::strlen(name), 0u);
-        char tiny[2]{};
-        EXPECT_EQ(sceNetResolverStartAton(rid, &loopback, tiny, sizeof(tiny), 0, 0, 0),
-                  ORBIS_NET_ERROR_ENOSPC);
-    } else {
-        EXPECT_EQ(r, ORBIS_NET_ERROR_RESOLVER_ENOHOST); // a host without a name for it
-    }
+    // Then the reverse lookup works: 127.0.0.1 is "localhost", answered locally.
+    ASSERT_EQ(sceNetResolverStartAton(rid, &loopback, name, sizeof(name), 0, 0, 0), ORBIS_OK);
+    EXPECT_STREQ(name, "localhost");
+    char tiny[2]{};
+    EXPECT_EQ(sceNetResolverStartAton(rid, &loopback, tiny, sizeof(tiny), 0, 0, 0),
+              ORBIS_NET_ERROR_RESOLVER_ENOSPACE);
     // Host names longer than 255 characters are refused.
     const std::string long_name(256, 'a');
     EXPECT_EQ(sceNetResolverStartNtoa(rid, long_name.c_str(), &addr, 0, 0, 0),

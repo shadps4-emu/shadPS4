@@ -20,14 +20,6 @@ class Keyring;
 
 namespace Libraries::Net {
 
-s32 PS4_SYSV_ABI in6addr_any();
-s32 PS4_SYSV_ABI in6addr_loopback();
-s32 PS4_SYSV_ABI sce_net_dummy();
-s32 PS4_SYSV_ABI sce_net_in6addr_any();
-s32 PS4_SYSV_ABI sce_net_in6addr_linklocal_allnodes();
-s32 PS4_SYSV_ABI sce_net_in6addr_linklocal_allrouters();
-s32 PS4_SYSV_ABI sce_net_in6addr_loopback();
-s32 PS4_SYSV_ABI sce_net_in6addr_nodelocal_allnodes();
 OrbisNetId PS4_SYSV_ABI sceNetAccept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen);
 s32 PS4_SYSV_ABI sceNetAddrConfig6GetInfo();
 s32 PS4_SYSV_ABI sceNetAddrConfig6Start();
@@ -140,17 +132,17 @@ s32 PS4_SYSV_ABI sceNetEventCallbackGetError();
 s32 PS4_SYSV_ABI sceNetEventCallbackWaitCB();
 s32 PS4_SYSV_ABI sceNetFreeAllRouteInfo();
 s32 PS4_SYSV_ABI sceNetGetArpInfo();
-s32 PS4_SYSV_ABI sceNetGetDns6Info();
-s32 PS4_SYSV_ABI sceNetGetDnsInfo();
+s32 PS4_SYSV_ABI sceNetGetDns6Info(u8* info, s32 flags);
+s32 PS4_SYSV_ABI sceNetGetDnsInfo(u32* info, s32 flags);
 s32 PS4_SYSV_ABI sceNetGetIfList();
 s32 PS4_SYSV_ABI sceNetGetIfListOnce();
-s32 PS4_SYSV_ABI sceNetGetIfName();
+const char* PS4_SYSV_ABI sceNetGetIfName(u32 index);
 s32 PS4_SYSV_ABI sceNetGetIfnameNumList();
 s32 PS4_SYSV_ABI sceNetGetMacAddress(OrbisNetEtherAddr* addr, s32 flags);
 s32 PS4_SYSV_ABI sceNetGetMemoryPoolStats(s32 memid, OrbisNetMemoryPoolStats* stat);
 s32 PS4_SYSV_ABI sceNetGetNameToIndex();
 s32 PS4_SYSV_ABI sceNetGetpeername(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen);
-s32 PS4_SYSV_ABI sceNetGetRandom();
+s32 PS4_SYSV_ABI sceNetGetRandom(u32* out);
 s32 PS4_SYSV_ABI sceNetGetRouteInfo();
 s32 PS4_SYSV_ABI sceNetGetSockInfo(OrbisNetId s, OrbisNetSockInfo* info, s32 n, s32 flags);
 s32 PS4_SYSV_ABI sceNetGetSockInfo6();
@@ -158,7 +150,7 @@ s32 PS4_SYSV_ABI sceNetGetsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* pa
 s32 PS4_SYSV_ABI sceNetGetsockopt(OrbisNetId s, s32 level, s32 optname, void* optval, u32* optlen);
 s32 PS4_SYSV_ABI sceNetGetStatisticsInfo(OrbisNetStatisticsInfo* info, s32 flags);
 s32 PS4_SYSV_ABI sceNetGetStatisticsInfoInternal();
-s32 PS4_SYSV_ABI sceNetGetSystemTime();
+void PS4_SYSV_ABI sceNetGetSystemTime(u64* out);
 u32 PS4_SYSV_ABI sceNetHtonl(u32 host32);
 u64 PS4_SYSV_ABI sceNetHtonll(u64 host64);
 u16 PS4_SYSV_ABI sceNetHtons(u16 host16);
@@ -173,8 +165,8 @@ s32 PS4_SYSV_ABI sceNetInit();
 s32 PS4_SYSV_ABI sceNetInitParam();
 s32 PS4_SYSV_ABI sceNetIoctl(OrbisNetId s, u64 cmd, void* data);
 s32 PS4_SYSV_ABI sceNetListen(OrbisNetId s, s32 backlog);
-s32 PS4_SYSV_ABI sceNetMemoryAllocate();
-s32 PS4_SYSV_ABI sceNetMemoryFree();
+void* PS4_SYSV_ABI sceNetMemoryAllocate(s64 size, s32 flags);
+void PS4_SYSV_ABI sceNetMemoryFree(void* ptr);
 u32 PS4_SYSV_ABI sceNetNtohl(u32 net32);
 u64 PS4_SYSV_ABI sceNetNtohll(u64 net64);
 u16 PS4_SYSV_ABI sceNetNtohs(u16 net16);
@@ -203,14 +195,16 @@ s32 PS4_SYSV_ABI sceNetResolverStartNtoa6();
 s32 PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords(OrbisNetId rid, const char* hostname,
                                                         OrbisNetResolverInfo* info, s32 timeout,
                                                         s32 retry, s32 flags);
-s32 PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecordsEx();
+s32 PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecordsEx(OrbisNetId rid, const char* hostname,
+                                                          OrbisNetResolverInfo* info, s32 timeout,
+                                                          s32 retry, s32 flags);
 s32 PS4_SYSV_ABI sceNetSend(OrbisNetId s, const void* buf, u64 len, s32 flags);
 s32 PS4_SYSV_ABI sceNetSendmsg(OrbisNetId s, const OrbisNetMsghdr* msg, s32 flags);
 s32 PS4_SYSV_ABI sceNetSendto(OrbisNetId s, const void* buf, u64 len, s32 flags,
                               const OrbisNetSockaddr* addr, u32 addrlen);
-s32 PS4_SYSV_ABI sceNetSetDns6Info();
+s32 PS4_SYSV_ABI sceNetSetDns6Info(const u8* info, s32 flags);
 s32 PS4_SYSV_ABI sceNetSetDns6InfoToKernel();
-s32 PS4_SYSV_ABI sceNetSetDnsInfo();
+s32 PS4_SYSV_ABI sceNetSetDnsInfo(const u32* info, s32 flags);
 s32 PS4_SYSV_ABI sceNetSetDnsInfoToKernel();
 s32 PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, s32 level, s32 optname, const void* optval,
                                   u32 optlen);
@@ -241,10 +235,8 @@ s32 PS4_SYSV_ABI sceNetSyncSignal();
 s32 PS4_SYSV_ABI sceNetSyncWait();
 s32 PS4_SYSV_ABI sceNetSysctl();
 s32 PS4_SYSV_ABI sceNetTerm();
-s32 PS4_SYSV_ABI sceNetThreadCreate();
-s32 PS4_SYSV_ABI sceNetThreadExit();
-s32 PS4_SYSV_ABI sceNetThreadJoin();
-s32 PS4_SYSV_ABI sceNetUsleep();
+void PS4_SYSV_ABI sceNetThreadExit();
+s32 PS4_SYSV_ABI sceNetUsleep(s32 microseconds);
 s32 PS4_SYSV_ABI Func_0E707A589F751C68();
 s32 PS4_SYSV_ABI sceNetEmulationGet();
 s32 PS4_SYSV_ABI sceNetEmulationSet();

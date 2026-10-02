@@ -134,6 +134,8 @@ Error ShutdownSocket(NativeSocket s, int how);
 Error Connect(NativeSocket s, const sockaddr* addr, socklen_t len);
 // Reads and clears SO_ERROR.
 Error PendingSocketError(NativeSocket s);
+// Bytes ready to read (FIONREAD).
+IoResult BytesReadable(NativeSocket s);
 NativeSocket Accept(NativeSocket s, sockaddr* addr, socklen_t* len, Error* error);
 // addr == nullptr uses send()/recv().
 IoResult SendTo(NativeSocket s, const void* buf, size_t len, int flags, const sockaddr* addr,

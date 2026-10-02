@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <poll.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 #ifdef __linux__
 #include <sys/epoll.h>
@@ -438,6 +439,21 @@ Error PendingSocketError(NativeSocket s) {
         return LastError();
     }
     return TranslateNative(value);
+}
+
+IoResult BytesReadable(NativeSocket s) {
+#ifdef _WIN32
+    u_long n = 0;
+    if (ioctlsocket(s, FIONREAD, &n) != 0) {
+        return {0, LastError()};
+    }
+#else
+    int n = 0;
+    if (ioctl(s, FIONREAD, &n) != 0) {
+        return {0, LastError()};
+    }
+#endif
+    return {static_cast<s64>(n), Error::Ok};
 }
 
 NativeSocket Accept(NativeSocket s, sockaddr* addr, socklen_t* len, Error* error) {

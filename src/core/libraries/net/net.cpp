@@ -12,11 +12,14 @@
 #include <chrono>
 #include <climits>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iterator>
 #include <mutex>
 #include <optional>
+#include <random>
 #include <source_location>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -24,6 +27,10 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/threads.h"
+#include "core/libraries/kernel/threads/pthread.h"
+#include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/net/net.h"
 #include "core/libraries/net/net_error.h"
@@ -509,45 +516,23 @@ constexpr T ToBigEndian(T value) {
 
 } // namespace
 
-s32 PS4_SYSV_ABI in6addr_any() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI in6addr_loopback() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sce_net_dummy() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sce_net_in6addr_any() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sce_net_in6addr_linklocal_allnodes() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sce_net_in6addr_linklocal_allrouters() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sce_net_in6addr_loopback() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sce_net_in6addr_nodelocal_allnodes() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
+namespace {
+using In6Addr = std::array<u8, 16>;
+constexpr In6Addr In6Any{};
+constexpr In6Addr In6Loopback{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+constexpr In6Addr In6NodeLocalAllNodes{0xff, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+constexpr In6Addr In6LinkLocalAllNodes{0xff, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+constexpr In6Addr In6LinkLocalAllRouters{0xff, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2};
+// Guests may hold non-const pointers, so give each export its own writable copy.
+In6Addr g_in6addr_any = In6Any;
+In6Addr g_in6addr_loopback = In6Loopback;
+In6Addr g_sce_net_in6addr_any = In6Any;
+In6Addr g_sce_net_in6addr_loopback = In6Loopback;
+In6Addr g_sce_net_in6addr_nodelocal_allnodes = In6NodeLocalAllNodes;
+In6Addr g_sce_net_in6addr_linklocal_allnodes = In6LinkLocalAllNodes;
+In6Addr g_sce_net_in6addr_linklocal_allrouters = In6LinkLocalAllRouters;
+u32 g_sce_net_dummy = 0;
+} // namespace
 
 static OrbisNetId sceNetAcceptImpl(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
     if (addr != nullptr && paddrlen == nullptr) {
@@ -1209,18 +1194,20 @@ s32 PS4_SYSV_ABI sceNetEpollControl(OrbisNetId eid, s32 op, OrbisNetId id,
     if (*kind == Core::Net::NetObjectKind::Epoll) {
         return SetErrno(ORBIS_NET_EPERM);
     }
-    u32 events = event != nullptr ? ToHostEpollEvents(event->events) : 0;
-    if (*kind == Core::Net::NetObjectKind::Socket && (events & Host::EvOut) != 0) {
-        // No EPOLLOUT for UDP/RAW, it would always be set.
-        Core::Net::SocketInfo info{};
-        if (Core::Net::SocketGetInfo(id, &info).error == Error::Ok && info.type != SOCK_STREAM) {
-            events &= ~static_cast<u32>(Host::EvOut);
-        }
+    if (event != nullptr && event->events == 0) {
+        return SetErrno(ORBIS_NET_EINVAL);
     }
+    const u32 events =
+        event != nullptr
+            ? ToHostEpollEvents(event->events & (ORBIS_NET_EPOLLIN | ORBIS_NET_EPOLLOUT))
+            : 0;
     const u64 data = event != nullptr ? event->data.data_u64 : 0;
-    const auto r = Core::Net::EpollControl(eid, guest_op, id, events, 0, data);
+    auto r = Core::Net::EpollControl(eid, guest_op, id, events, 0, data);
+    if (r.error == Error::NoEnt && guest_op == Core::Net::EpollOp::Modify) {
+        r = Core::Net::EpollControl(eid, Core::Net::EpollOp::Add, id, events, 0, data);
+    }
     if (r.error == Error::NoEnt) {
-        // PS4 returns EBADF here, not ENOENT.
+        // DEL of an unregistered id: EBADF, not ENOENT.
         return SetErrno(ORBIS_NET_EBADF);
     }
     return Return(r);
@@ -1358,13 +1345,73 @@ s32 PS4_SYSV_ABI sceNetGetArpInfo() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNetGetDns6Info() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+namespace {
+// Servers set with sceNetSetDnsInfo/sceNetSetDns6Info override what the system reports.
+std::mutex g_dns_mutex;
+std::array<u32, 2> g_dns_override{};
+std::array<u8, 32> g_dns6_override{};
+
+bool IsZero(std::span<const u8> bytes) {
+    return std::all_of(bytes.begin(), bytes.end(), [](u8 b) { return b == 0; });
+}
+} // namespace
+
+// Returns the number of servers, 0 to 2.
+s32 PS4_SYSV_ABI sceNetGetDnsInfo(u32* info, s32 flags) {
+    if (info == nullptr || flags != 0) {
+        return SetErrno(ORBIS_NET_EINVAL);
+    }
+    std::array<u32, 2> servers{};
+    {
+        std::scoped_lock lock{g_dns_mutex};
+        servers = g_dns_override;
+    }
+    if (servers[0] == 0) {
+        // What sceNetCtlGetInfo reports, while online.
+        const auto hooks = GetSystemHooks();
+        if (!hooks.is_online || hooks.is_online()) {
+            const u32 cloudflare = ToBigEndian(0x01010101u);
+            servers = {cloudflare, cloudflare};
+        }
+    }
+    info[0] = servers[0];
+    info[1] = servers[1];
+    return servers[0] == 0 ? 0 : servers[1] == 0 ? 1 : 2;
+}
+
+s32 PS4_SYSV_ABI sceNetGetDns6Info(u8* info, s32 flags) {
+    if (info == nullptr || flags != 0) {
+        return SetErrno(ORBIS_NET_EINVAL);
+    }
+    std::array<u8, 32> servers{};
+    {
+        std::scoped_lock lock{g_dns_mutex};
+        servers = g_dns6_override; // no IPv6 servers otherwise
+    }
+    std::memcpy(info, servers.data(), servers.size());
+    const std::span<const u8> view{servers};
+    return IsZero(view.first(16)) ? 0 : IsZero(view.last(16)) ? 1 : 2;
+}
+
+// A null info clears the override.
+s32 PS4_SYSV_ABI sceNetSetDnsInfo(const u32* info, s32 flags) {
+    if (flags != 0 || (info != nullptr && info[0] == 0)) {
+        return SetErrno(ORBIS_NET_EINVAL);
+    }
+    std::scoped_lock lock{g_dns_mutex};
+    g_dns_override = info != nullptr ? std::array<u32, 2>{info[0], info[1]} : std::array<u32, 2>{};
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNetGetDnsInfo() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNetSetDns6Info(const u8* info, s32 flags) {
+    if (flags != 0 || (info != nullptr && IsZero({info, 16}))) {
+        return SetErrno(ORBIS_NET_EINVAL);
+    }
+    std::scoped_lock lock{g_dns_mutex};
+    g_dns6_override = {};
+    if (info != nullptr) {
+        std::memcpy(g_dns6_override.data(), info, g_dns6_override.size());
+    }
     return ORBIS_OK;
 }
 
@@ -1378,9 +1425,14 @@ s32 PS4_SYSV_ABI sceNetGetIfListOnce() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNetGetIfName() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+const char* PS4_SYSV_ABI sceNetGetIfName(u32 index) {
+    static constexpr std::array<const char*, 10> Names = {
+        "lo0", "eth0", "eth1", "dbg0", "wlan0", "wlan1", "gbe0", "bt0", "phone0", "pppoe0"};
+    if (index >= Names.size()) {
+        g_net_errno = ORBIS_NET_EINVAL;
+        return "";
+    }
+    return Names[index];
 }
 
 s32 PS4_SYSV_ABI sceNetGetIfnameNumList() {
@@ -1448,8 +1500,14 @@ s32 PS4_SYSV_ABI sceNetGetpeername(OrbisNetId s, OrbisNetSockaddr* addr, u32* pa
     return Return(r);
 }
 
-s32 PS4_SYSV_ABI sceNetGetRandom() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNetGetRandom(u32* out) {
+    if (out == nullptr) {
+        return SetErrno(ORBIS_NET_EINVAL);
+    }
+    static std::mutex mutex;
+    static std::mt19937 rng{std::random_device{}()};
+    std::scoped_lock lock{mutex};
+    *out = static_cast<u32>(rng());
     return ORBIS_OK;
 }
 
@@ -1502,7 +1560,7 @@ s32 PS4_SYSV_ABI sceNetGetsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* pa
         u16 vport = 0;
         const auto r = Core::Net::P2PSocketGetName(s, &udp_port, &vport);
         if (r.error == Error::Ok) {
-            // TODO: reports INADDR_ANY. Firmware may report the advertised (NAT) address.
+            // TODO: reports INADDR_ANY. maybe need to  report the advertised (NAT) address.
             ToOrbisP2PAddress(P2P::Endpoint::IPv4("0.0.0.0", udp_port), vport, KindOf(info), addr,
                               paddrlen);
         }
@@ -1715,9 +1773,11 @@ s32 PS4_SYSV_ABI sceNetGetStatisticsInfoInternal() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNetGetSystemTime() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+// Process time in microseconds. No return value, a null pointer is ignored.
+void PS4_SYSV_ABI sceNetGetSystemTime(u64* out) {
+    if (out != nullptr) {
+        *out = Kernel::sceKernelGetProcessTime();
+    }
 }
 
 u32 PS4_SYSV_ABI sceNetHtonl(u32 host32) {
@@ -1812,9 +1872,29 @@ s32 PS4_SYSV_ABI sceNetIoctl(OrbisNetId s, u64 cmd, void* data) {
         return Return(r);
     }
     if (!info.p2p) {
-        // TODO: FIONREAD/FIONBIO etc. on native sockets.
-        LOG_WARNING(Lib_Net, "unsupported ioctl {:#x} on a non-P2P socket", cmd);
-        return SetErrno(ORBIS_NET_EINVAL);
+        constexpr u32 Fionbio = 0x8004667e;
+        constexpr u32 Fionread = 0x4004667f;
+        switch (static_cast<u32>(cmd)) {
+        case Fionbio:
+            if (data == nullptr) {
+                return SetErrno(ORBIS_NET_EFAULT);
+            }
+            return Return(Core::Net::SocketSetNonBlocking(s, *static_cast<const s32*>(data) != 0));
+        case Fionread: {
+            if (data == nullptr) {
+                return SetErrno(ORBIS_NET_EFAULT);
+            }
+            const auto r = Core::Net::SocketBytesReadable(s);
+            if (r.error != Error::Ok) {
+                return Return(r);
+            }
+            *static_cast<s32*>(data) = static_cast<s32>(r.value);
+            return ORBIS_OK;
+        }
+        default:
+            LOG_WARNING(Lib_Net, "unsupported ioctl {:#x} on a non-P2P socket", cmd);
+            return SetErrno(ORBIS_NET_EINVAL);
+        }
     }
     const u16 np_port = sceNetHtons(GetP2PBoundPort());
     if (const int e = P2PKeyIoctl(*GetP2PKeyring(), np_port, cmd, data); e != 0) {
@@ -1836,14 +1916,17 @@ s32 PS4_SYSV_ABI sceNetListen(OrbisNetId s, s32 backlog) {
     return Return(Core::Net::SocketListen(s, backlog));
 }
 
-s32 PS4_SYSV_ABI sceNetMemoryAllocate() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+void* PS4_SYSV_ABI sceNetMemoryAllocate(s64 size, s32 flags) {
+    if (size <= 0) {
+        return nullptr;
+    }
+    constexpr s32 ZeroFill = 2;
+    return (flags & ZeroFill) != 0 ? std::calloc(1, static_cast<size_t>(size))
+                                   : std::malloc(static_cast<size_t>(size));
 }
 
-s32 PS4_SYSV_ABI sceNetMemoryFree() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceNetMemoryFree(void* ptr) {
+    std::free(ptr);
 }
 
 u32 PS4_SYSV_ABI sceNetNtohl(u32 net32) {
@@ -1917,8 +2000,11 @@ static s32 sceNetRecvfromImpl(OrbisNetId s, void* buf, u64 len, s32 flags, Orbis
                               (flags & ~ORBIS_NET_MSG_PEEKLEN) | ORBIS_NET_MSG_PEEK, addr,
                               paddrlen);
     }
-    if ((buf == nullptr && len != 0) || (addr != nullptr && paddrlen == nullptr)) {
+    if (buf == nullptr && len != 0) {
         return SetErrno(ORBIS_NET_EFAULT);
+    }
+    if (paddrlen == nullptr) {
+        addr = nullptr; // FreeBSD: no length, no address, not an error
     }
     if (msg.unsupported != 0) {
         LOG_WARNING(Lib_Net, "ignoring flags {:#x}", msg.unsupported);
@@ -2013,24 +2099,28 @@ s32 PS4_SYSV_ABI sceNetResolverAbort(OrbisNetId rid, s32 flags) {
     return e == 0 ? ORBIS_OK : SetErrno(e);
 }
 
+// Not implemented. Fail rather than report success with nothing written.
 s32 PS4_SYSV_ABI sceNetResolverConnect() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    return ResolverReturn(ORBIS_NET_ERROR_RESOLVER_ENOSUPPORT);
 }
 
+// Not implemented. Fail rather than report success with nothing written.
 s32 PS4_SYSV_ABI sceNetResolverConnectAbort() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    return ResolverReturn(ORBIS_NET_ERROR_RESOLVER_ENOSUPPORT);
 }
 
+// Not implemented. Fail rather than report success with nothing written.
 s32 PS4_SYSV_ABI sceNetResolverConnectCreate() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    return ResolverReturn(ORBIS_NET_ERROR_RESOLVER_ENOSUPPORT);
 }
 
+// Not implemented. Fail rather than report success with nothing written.
 s32 PS4_SYSV_ABI sceNetResolverConnectDestroy() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    return ResolverReturn(ORBIS_NET_ERROR_RESOLVER_ENOSUPPORT);
 }
 
 OrbisNetId PS4_SYSV_ABI sceNetResolverCreate(const char* name, s32 poolid, s32 flags) {
@@ -2086,9 +2176,10 @@ s32 PS4_SYSV_ABI sceNetResolverStartAton(OrbisNetId rid, const OrbisNetInAddr* a
         ResolverStartAton(rid, addr, hostname, len, (flags & ORBIS_NET_RESOLVER_ASYNC) != 0));
 }
 
+// Not implemented. Fail rather than report success with nothing written.
 s32 PS4_SYSV_ABI sceNetResolverStartAton6() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    return ResolverReturn(ORBIS_NET_ERROR_RESOLVER_ENOSUPPORT);
 }
 
 s32 PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId rid, const char* hostname, OrbisNetInAddr* addr,
@@ -2096,12 +2187,14 @@ s32 PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId rid, const char* hostname, O
     LOG_INFO(Lib_Net, "rid = {}, hostname = {}, timeout = {}, retry = {}, flags = {:#x}", rid,
              hostname != nullptr ? hostname : "", timeout, retry, flags);
     return ResolverReturn(
-        ResolverStartNtoa(rid, hostname, {addr, nullptr}, (flags & ORBIS_NET_RESOLVER_ASYNC) != 0));
+        ResolverStartNtoa(rid, hostname, {addr, nullptr}, (flags & ORBIS_NET_RESOLVER_ASYNC) != 0,
+                          (flags & ORBIS_NET_RESOLVER_START_NTOA_DISABLE_IPADDRESS) != 0));
 }
 
+// Not implemented. Fail rather than report success with nothing written.
 s32 PS4_SYSV_ABI sceNetResolverStartNtoa6() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+    return ResolverReturn(ORBIS_NET_ERROR_RESOLVER_ENOSUPPORT);
 }
 
 s32 PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords(OrbisNetId rid, const char* hostname,
@@ -2110,12 +2203,30 @@ s32 PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecords(OrbisNetId rid, const ch
     LOG_INFO(Lib_Net, "rid = {}, hostname = {}, timeout = {}, retry = {}, flags = {:#x}", rid,
              hostname != nullptr ? hostname : "", timeout, retry, flags);
     return ResolverReturn(
-        ResolverStartNtoa(rid, hostname, {nullptr, info}, (flags & ORBIS_NET_RESOLVER_ASYNC) != 0));
+        ResolverStartNtoa(rid, hostname, {nullptr, info}, (flags & ORBIS_NET_RESOLVER_ASYNC) != 0,
+                          (flags & ORBIS_NET_RESOLVER_START_NTOA_DISABLE_IPADDRESS) != 0));
 }
 
-s32 PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecordsEx() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+// Flags 0x1000000 ask for AAAA records and 0x2000000 for A and AAAA. Only IPv4 is looked up,
+// so AAAA-only has no records and A+AAAA returns the A records.
+s32 PS4_SYSV_ABI sceNetResolverStartNtoaMultipleRecordsEx(OrbisNetId rid, const char* hostname,
+                                                          OrbisNetResolverInfo* info, s32 timeout,
+                                                          s32 retry, s32 flags) {
+    LOG_INFO(Lib_Net, "rid = {}, hostname = {}, timeout = {}, retry = {}, flags = {:#x}", rid,
+             hostname != nullptr ? hostname : "", timeout, retry, flags);
+    constexpr u32 Aaaa = 0x1000000;
+    constexpr u32 AAndAaaa = 0x2000000;
+    if ((static_cast<u32>(flags) & 0xfccefffeu) != 0) {
+        return ResolverReturn(ORBIS_NET_ERROR_EINVAL);
+    }
+    if ((flags & Aaaa) != 0 && (flags & AAndAaaa) == 0) {
+        LOG_WARNING(Lib_Net, "AAAA lookup of {} not supported",
+                    hostname != nullptr ? hostname : "");
+        return ResolverReturn(ORBIS_NET_ERROR_RESOLVER_ENORECORD);
+    }
+    return ResolverReturn(
+        ResolverStartNtoa(rid, hostname, {nullptr, info}, (flags & ORBIS_NET_RESOLVER_ASYNC) != 0,
+                          (flags & ORBIS_NET_RESOLVER_START_NTOA_DISABLE_IPADDRESS) != 0));
 }
 
 s32 PS4_SYSV_ABI sceNetSend(OrbisNetId s, const void* buf, u64 len, s32 flags) {
@@ -2179,7 +2290,12 @@ static s32 sceNetSendtoImpl(OrbisNetId s, const void* buf, u64 len, s32 flags,
         }
     }
     if (addr != nullptr && info.connected) {
-        return SetErrno(ORBIS_NET_EISCONN); // FreeBSD behaviour
+        // FreeBSD: EISCONN for datagram sockets, a connected stream ignores the address.
+        if (info.type != SOCK_STREAM) {
+            return SetErrno(ORBIS_NET_EISCONN);
+        }
+        addr = nullptr;
+        addrlen = 0;
     }
     if (info.p2p) {
         P2P::Endpoint to;
@@ -2225,17 +2341,7 @@ s32 PS4_SYSV_ABI sceNetSendto(OrbisNetId s, const void* buf, u64 len, s32 flags,
     return r;
 }
 
-s32 PS4_SYSV_ABI sceNetSetDns6Info() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI sceNetSetDns6InfoToKernel() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNetSetDnsInfo() {
     LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -2652,24 +2758,66 @@ s32 PS4_SYSV_ABI sceNetTerm() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNetThreadCreate() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+namespace {
+struct OrbisNetThreadParam {
+    void(PS4_SYSV_ABI* entry)(void* arg);
+    void* arg;
+    u64 reserved;
+    u32 flags; // bit 0: exit the thread after entry returns
+};
+
+void* PS4_SYSV_ABI NetThreadEntry(void* p) {
+    const auto* param = static_cast<const OrbisNetThreadParam*>(p);
+    param->entry(param->arg);
+    if ((param->flags & 1) != 0) {
+        Kernel::posix_pthread_exit(nullptr);
+    }
+    return nullptr;
+}
+
+// Kernel errors: errno is the low byte for net codes, 0xcd otherwise.
+s32 ThreadReturn(s32 code) {
+    if (code < 0) {
+        g_net_errno = (static_cast<u32>(code) & 0xff00) == 0x100
+                          ? static_cast<s32>(static_cast<u32>(code) & 0xff)
+                          : 0xcd;
+    }
+    return code;
+}
+} // namespace
+
+// param points at an OrbisNetThreadParam, which must outlive the thread.
+s32 PS4_SYSV_ABI sceNetThreadCreate(Kernel::PthreadT* thread, void* param, const char* name) {
+    if (param == nullptr) {
+        return SetErrno(ORBIS_NET_EINVAL);
+    }
+    Kernel::PthreadT created = nullptr;
+    const int e =
+        Kernel::posix_pthread_create_name_np(&created, nullptr, NetThreadEntry, param, name);
+    if (e != 0) {
+        LOG_ERROR(Lib_Net, "thread '{}' not created: {}", name != nullptr ? name : "", e);
+        return ThreadReturn(ORBIS_KERNEL_ERROR_UNKNOWN + e);
+    }
+    if (thread != nullptr) {
+        *thread = created;
+    }
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNetThreadExit() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceNetThreadExit() {
+    Kernel::posix_pthread_exit(nullptr);
 }
 
-s32 PS4_SYSV_ABI sceNetThreadJoin() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNetThreadJoin(Kernel::PthreadT thread) {
+    const int e = Kernel::posix_pthread_join(thread, nullptr);
+    return e == 0 ? ORBIS_OK : ThreadReturn(ORBIS_KERNEL_ERROR_UNKNOWN + e);
 }
 
-s32 PS4_SYSV_ABI sceNetUsleep() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNetUsleep(s32 microseconds) {
+    if (microseconds < 0) {
+        return SetErrno(ORBIS_NET_EINVAL);
+    }
+    return Kernel::sceKernelUsleep(static_cast<u32>(microseconds));
 }
 
 s32 PS4_SYSV_ABI Func_0E707A589F751C68() {
@@ -2696,14 +2844,14 @@ void SetSystemHooks(SystemHooks hooks) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("ZRAJo-A-ukc", "libSceNet", 1, "libSceNet", in6addr_any);
-    LIB_FUNCTION("XCuA-GqjA-k", "libSceNet", 1, "libSceNet", in6addr_loopback);
-    LIB_FUNCTION("VZgoeBxPXUQ", "libSceNet", 1, "libSceNet", sce_net_dummy);
-    LIB_FUNCTION("GAtITrgxKDE", "libSceNet", 1, "libSceNet", sce_net_in6addr_any);
-    LIB_FUNCTION("84MgU4MMTLQ", "libSceNet", 1, "libSceNet", sce_net_in6addr_linklocal_allnodes);
-    LIB_FUNCTION("2uSWyOKYc1M", "libSceNet", 1, "libSceNet", sce_net_in6addr_linklocal_allrouters);
-    LIB_FUNCTION("P3AeWBvPrkg", "libSceNet", 1, "libSceNet", sce_net_in6addr_loopback);
-    LIB_FUNCTION("PgNI+j4zxzM", "libSceNet", 1, "libSceNet", sce_net_in6addr_nodelocal_allnodes);
+    LIB_OBJ("ZRAJo-A-ukc", "libSceNet", 1, "libSceNet", &g_in6addr_any);
+    LIB_OBJ("XCuA-GqjA-k", "libSceNet", 1, "libSceNet", &g_in6addr_loopback);
+    LIB_OBJ("VZgoeBxPXUQ", "libSceNet", 1, "libSceNet", &g_sce_net_dummy);
+    LIB_OBJ("GAtITrgxKDE", "libSceNet", 1, "libSceNet", &g_sce_net_in6addr_any);
+    LIB_OBJ("84MgU4MMTLQ", "libSceNet", 1, "libSceNet", &g_sce_net_in6addr_linklocal_allnodes);
+    LIB_OBJ("2uSWyOKYc1M", "libSceNet", 1, "libSceNet", &g_sce_net_in6addr_linklocal_allrouters);
+    LIB_OBJ("P3AeWBvPrkg", "libSceNet", 1, "libSceNet", &g_sce_net_in6addr_loopback);
+    LIB_OBJ("PgNI+j4zxzM", "libSceNet", 1, "libSceNet", &g_sce_net_in6addr_nodelocal_allnodes);
     LIB_FUNCTION("PIWqhn9oSxc", "libSceNet", 1, "libSceNet", sceNetAccept);
     LIB_FUNCTION("BTUvkWzrP68", "libSceNet", 1, "libSceNet", sceNetAddrConfig6GetInfo);
     LIB_FUNCTION("3qG7UJy2Fq8", "libSceNet", 1, "libSceNet", sceNetAddrConfig6Start);

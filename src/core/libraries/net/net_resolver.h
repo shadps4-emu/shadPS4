@@ -34,7 +34,10 @@ struct ResolverOutput {
 
 // Sync returns 0 or an ORBIS_NET_ERROR_RESOLVER_* code. Async returns 0, or RESOLVER_EBUSY if
 // a lookup is already running, and the result comes through ResolverGetError and epoll.
-s32 ResolverStartNtoa(s32 id, const char* hostname, ResolverOutput output, bool async);
+// disable_ipaddress: ORBIS_NET_RESOLVER_START_NTOA_DISABLE_IPADDRESS, numeric addresses go
+// to DNS instead of resolving to themselves.
+s32 ResolverStartNtoa(s32 id, const char* hostname, ResolverOutput output, bool async,
+                      bool disable_ipaddress);
 
 // len includes the terminator. ENOSPC if the name doesn't fit.
 s32 ResolverStartAton(s32 id, const OrbisNetInAddr* addr, char* hostname, s32 len, bool async);

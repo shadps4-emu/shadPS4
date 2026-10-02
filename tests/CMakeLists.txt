@@ -471,6 +471,7 @@ set(NET_LIB_TEST_SOURCES
     stubs/core_stub.cpp
     stubs/signals_stub.cpp
     stubs/file_sys_stub.cpp
+    stubs/net_lib_kernel_stub.cpp
 )
 
 # Both targets below share this setup.

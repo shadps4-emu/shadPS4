@@ -979,6 +979,18 @@ NetResult SocketUpdateAttributes(s32 id, const std::function<void(SocketAttribut
     return NetResult::Ok();
 }
 
+NetResult SocketBytesReadable(s32 id) {
+    const auto s = g_objects.Get<GuestSocket>(id);
+    if (!s) {
+        return NetResult::Fail(Error::BadF);
+    }
+    if (s->IsP2P()) {
+        return NetResult::Fail(Error::Inval);
+    }
+    const auto r = Host::BytesReadable(s->native);
+    return r.error == Error::Ok ? NetResult::Ok(r.value) : NetResult::Fail(r.error);
+}
+
 NetResult SocketSetNonBlocking(s32 id, bool enable) {
     const auto s = g_objects.Get<GuestSocket>(id);
     if (!s) {
@@ -1592,9 +1604,13 @@ static NetResult EpollWaitOn(const std::shared_ptr<GuestEpoll>& ep, std::span<Gu
                         continue;
                     }
                     events = s->P2PEvents() & (it->second.events | Host::EvErr | Host::EvHup);
-                    if (events == 0) {
-                        continue; // another thread got it
-                    }
+                }
+                if (!it->second.external && (events & (Host::EvErr | Host::EvHup)) != 0) {
+                    events = (events & ~static_cast<u32>(Host::EvErr | Host::EvHup)) |
+                             (it->second.events & (Host::EvIn | Host::EvOut));
+                }
+                if (events == 0) {
+                    continue; // another thread got it, or nothing registered fired
                 }
                 // P2P sockets can fire on both handles.
                 const auto existing = std::find_if(out.begin(), out.begin() + n,

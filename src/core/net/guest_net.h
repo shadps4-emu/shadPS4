@@ -110,6 +110,8 @@ NetResult SocketUpdateAttributes(s32 id, const std::function<void(SocketAttribut
 
 // Options handled here instead of on the host socket. Reuse flags take effect at bind.
 NetResult SocketSetNonBlocking(s32 id, bool enable);
+// FIONREAD. Native sockets only.
+NetResult SocketBytesReadable(s32 id);
 NetResult SocketSetReuseAddr(s32 id, bool enable);
 NetResult SocketSetReusePort(s32 id, bool enable);
 NetResult SocketSetRecvTimeout(s32 id, std::chrono::microseconds value);

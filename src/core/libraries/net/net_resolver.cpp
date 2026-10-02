@@ -64,7 +64,21 @@ bool IsOnline() {
 }
 
 // IPv4 only, at most 10 records.
-s32 Lookup(const std::string& hostname, std::vector<u32>* addrs) {
+s32 Lookup(std::string hostname, bool allow_literal, std::vector<u32>* addrs) {
+    if (!hostname.empty() && hostname.back() == '.') {
+        hostname.pop_back();
+    }
+    if (hostname.compare(0, 9, "localhost") == 0) {
+        addrs->push_back(htonl(INADDR_LOOPBACK));
+        return 0;
+    }
+    if (allow_literal) {
+        in_addr literal{};
+        if (inet_pton(AF_INET, hostname.c_str(), &literal) == 1) {
+            addrs->push_back(literal.s_addr);
+            return 0;
+        }
+    }
     if (!IsOnline()) {
         return ORBIS_NET_ERROR_RESOLVER_ENODNS;
     }
@@ -230,6 +244,10 @@ s32 RunLookup(s32 id, LookupKind kind, bool async, Work work, Deliver deliver) {
 }
 
 s32 ReverseLookup(u32 addr, std::string* name) {
+    if (addr == htonl(INADDR_LOOPBACK)) {
+        *name = "localhost";
+        return 0;
+    }
     if (!IsOnline()) {
         return ORBIS_NET_ERROR_RESOLVER_ENODNS;
     }
@@ -256,22 +274,23 @@ s32 ReverseLookup(u32 addr, std::string* name) {
 
 } // namespace
 
-s32 ResolverStartNtoa(s32 id, const char* hostname, ResolverOutput output, bool async) {
+s32 ResolverStartNtoa(s32 id, const char* hostname, ResolverOutput output, bool async,
+                      bool disable_ipaddress) {
     if (!Find(id)) {
         return ORBIS_NET_ERROR_EBADF;
     }
-    if (hostname == nullptr || (output.addr == nullptr && output.info == nullptr) ||
-        strnlen(hostname, ORBIS_NET_RESOLVER_HOSTNAME_LEN_MAX + 1) >
-            static_cast<size_t>(ORBIS_NET_RESOLVER_HOSTNAME_LEN_MAX)) {
+    if (hostname == nullptr || (output.addr == nullptr && output.info == nullptr)) {
         return ORBIS_NET_ERROR_EINVAL;
     }
-    // TODO: ORBIS_NET_RESOLVER_START_NTOA_DISABLE_IPADDRESS is ignored. Numeric addresses
-    // always resolve to themselves.
+    const size_t length = strnlen(hostname, ORBIS_NET_RESOLVER_HOSTNAME_LEN_MAX + 1);
+    if (length == 0 || length > static_cast<size_t>(ORBIS_NET_RESOLVER_HOSTNAME_LEN_MAX)) {
+        return ORBIS_NET_ERROR_EINVAL;
+    }
     return RunLookup(
         id, LookupKind::Ntoa, async,
-        [host = std::string{hostname}] {
+        [host = std::string{hostname}, allow_literal = !disable_ipaddress] {
             std::vector<u32> addrs;
-            const s32 status = Lookup(host, &addrs);
+            const s32 status = Lookup(host, allow_literal, &addrs);
             if (status == 0) {
                 std::string list;
                 for (const u32 a : addrs) {
@@ -310,7 +329,7 @@ s32 ResolverStartAton(s32 id, const OrbisNetInAddr* addr, char* hostname, s32 le
         },
         [hostname, len](const std::string& name) {
             if (name.size() + 1 > static_cast<size_t>(len)) {
-                return s32{ORBIS_NET_ERROR_ENOSPC};
+                return s32{ORBIS_NET_ERROR_RESOLVER_ENOSPACE};
             }
             std::memcpy(hostname, name.c_str(), name.size() + 1);
             return s32{0};
