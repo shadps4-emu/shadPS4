@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <array>
+#include <span>
 #include "common/types.h"
 #include "shader_recompiler/ir/type.h"
 #include "video_core/amdgpu/resource.h"
@@ -10,6 +12,87 @@
 #include <boost/container/static_vector.hpp>
 
 namespace Shader {
+
+enum class GuardOp : u8 {
+    Unknown,
+    False,
+    True,
+    Flatbuf,
+    ImmU32,
+    ImmF32,
+    AsU32,
+    AsF32,
+    Not,
+    And,
+    Or,
+    Xor,
+    Select,
+    BitAnd,
+    BitOr,
+    BitXor,
+    Shr,
+    UExtract,
+    IEq,
+    INe,
+    SLt,
+    SLe,
+    ULt,
+    ULe,
+    FAdd,
+    FSub,
+    FNeg,
+    FAbs,
+    FMin,
+    FMax,
+    FMed3,
+    FClamp,
+    FEq,
+    FNe,
+    FLt,
+    FLe,
+    FIsNanOrInf,
+};
+
+struct GuardNode {
+    GuardOp op{};
+    u8 a{};
+    u8 b{};
+    u8 c{};
+    u32 imm{};
+
+    bool operator==(const GuardNode&) const = default;
+};
+
+struct ResourceGuards {
+    static constexpr u32 MaxNodes = 128;
+    static constexpr u32 MaxConds = 16;
+    static constexpr u32 MaxGroups = 32;
+    static constexpr u32 MaxTerms = 4;
+
+    struct Group {
+        std::array<u16, MaxTerms> terms{};
+        u8 num_terms{};
+
+        bool operator==(const Group&) const = default;
+    };
+
+    std::array<GuardNode, MaxNodes> nodes{};
+    std::array<u8, MaxConds> conds{};
+    std::array<Group, MaxGroups> groups{};
+    u8 num_nodes{};
+    u8 num_conds{};
+    u8 num_groups{};
+
+    bool operator==(const ResourceGuards&) const = default;
+
+    u32 EvaluateDead(std::span<const u32> flatbuf) const;
+};
+
+constexpr u8 NO_GUARD = 0xFF;
+
+constexpr bool IsGuardDead(u8 guard, u32 dead_guards) {
+    return guard != NO_GUARD && ((dead_guards >> guard) & 1) != 0;
+}
 
 static constexpr u32 NUM_USER_DATA_REGS = 16;
 static constexpr u32 NUM_IMAGES = 64;
@@ -130,10 +213,12 @@ struct ImageResource {
     u8 constant_mip_index{};
     MipStorageFallbackMode mip_fallback_mode{};
     SharpFetchPostOp post_op{};
+    u8 guard{NO_GUARD};
 
     constexpr AmdGpu::Image GetSharp(const auto& info) const noexcept {
         AmdGpu::Image image{};
-        if (!Fetch(info.flattened_ud_buf.data(), &image)) {
+        if (IsGuardDead(guard, info.dead_resource_guards) ||
+            !Fetch(info.flattened_ud_buf.data(), &image)) {
             return AmdGpu::Image::Null(is_depth);
         }
         if (post_op == SharpFetchPostOp::ConvertCubeTo2DArray) {
@@ -179,9 +264,13 @@ struct SamplerResource {
     SharpFetchPostOp post_op{};
     SharpLocation post_op_tsharp_dw3_off{};
     bool is_depth{};
+    u8 guard{NO_GUARD};
 
     constexpr AmdGpu::Sampler GetSharp(const auto& info) const noexcept {
         AmdGpu::Sampler sampler{};
+        if (IsGuardDead(guard, info.dead_resource_guards)) {
+            return sampler;
+        }
         sharp_fetch.Fetch(info.flattened_ud_buf.data(), &sampler);
         if (post_op == SharpFetchPostOp::DisableAnisoIfSingleLod) {
             const u32 tsharp_dw3 = info.flattened_ud_buf[post_op_tsharp_dw3_off];
@@ -207,8 +296,12 @@ using SamplerResourceList = boost::container::static_vector<SamplerResource, NUM
 
 struct FMaskResource {
     SharpLocation sharp_idx;
+    u8 guard{NO_GUARD};
 
     constexpr AmdGpu::Image GetSharp(const auto& info) const noexcept {
+        if (IsGuardDead(guard, info.dead_resource_guards)) {
+            return AmdGpu::Image::Null(false);
+        }
         return info.template ReadUdSharp<AmdGpu::Image>(sharp_idx);
     }
 };
