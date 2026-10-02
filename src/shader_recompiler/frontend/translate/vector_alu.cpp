@@ -1546,7 +1546,8 @@ void Translator::V_ALIGNBIT_B32(const GcnInst& inst) {
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 src2{ir.BitwiseAnd(GetSrc(inst.src[2]), ir.Imm32(0x1F))};
     const IR::U32 lo{ir.ShiftRightLogical(src1, src2)};
-    const IR::U32 hi{ir.ShiftLeftLogical(src0, ir.ISub(ir.Imm32(32), src2))};
+    const IR::U32 hi{
+        ir.ShiftLeftLogical(ir.ShiftLeftLogical(src0, ir.Imm32(1)), ir.ISub(ir.Imm32(31), src2))};
     SetDst(inst.dst[0], ir.BitwiseOr(lo, hi));
 }
 
@@ -1556,7 +1557,8 @@ void Translator::V_ALIGNBYTE_B32(const GcnInst& inst) {
     const IR::U32 src2{ir.BitwiseAnd(GetSrc(inst.src[2]), ir.Imm32(0x3))};
     const IR::U32 shift{ir.ShiftLeftLogical(src2, ir.Imm32(3))};
     const IR::U32 lo{ir.ShiftRightLogical(src1, shift)};
-    const IR::U32 hi{ir.ShiftLeftLogical(src0, ir.ISub(ir.Imm32(32), shift))};
+    const IR::U32 hi{
+        ir.ShiftLeftLogical(ir.ShiftLeftLogical(src0, ir.Imm32(1)), ir.ISub(ir.Imm32(31), shift))};
     SetDst(inst.dst[0], ir.BitwiseOr(lo, hi));
 }
 
