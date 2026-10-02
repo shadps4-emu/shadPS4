@@ -83,6 +83,7 @@ enum class Class {
     Lib_AvPlayer,            ///< The LibSceAvPlayer implementation.
     Lib_Ngs2,                ///< The LibSceNgs2 implementation.
     Lib_Audio3d,             ///< The LibSceAudio3d implementation.
+    Lib_AudiodecCpu,         ///< The LibSceAudiodecCpu implementation
     Lib_Ime,                 ///< The LibSceIme implementation
     Lib_GameLiveStreaming,   ///< The LibSceGameLiveStreaming implementation
     Lib_Remoteplay,          ///< The LibSceRemotePlay implementation
