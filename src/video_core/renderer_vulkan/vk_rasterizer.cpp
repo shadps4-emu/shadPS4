@@ -19,6 +19,7 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
+#include "video_core/bruno_diag.h"
 #include "video_core/renderer_vulkan/vk_runtime.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_hle.h"
@@ -369,6 +370,15 @@ void Rasterizer::DispatchDirect() {
     }
 
     scheduler.EndRendering();
+    if (!pending_storage_image_ids_.empty() && BrunoDiag::On()) {
+        std::string ids;
+        for (const auto& sid : pending_storage_image_ids_) {
+            const auto& si = texture_cache.GetImage(sid);
+            ids += fmt::format(" id={}:{:#x}:{}x{}", sid.index, si.info.guest_address,
+                               si.info.size.width, si.info.size.height);
+        }
+        LOG_INFO(Render_Vulkan, "[BRUNO-EV] DISPATCH storage:{}", ids);
+    }
     pipeline->BindResources(set_writes, push_data);
 
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -434,6 +444,9 @@ void Rasterizer::Finish() {
 }
 
 void Rasterizer::OnSubmit() {
+    if (BrunoDiag::On()) {
+        LOG_INFO(Render_Vulkan, "[BRUNO-EV] ---- SUBMIT ----");
+    }
     if (fault_process_pending) {
         fault_process_pending = false;
         buffer_cache.ProcessFaultBuffer();

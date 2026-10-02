@@ -4,6 +4,7 @@
 #include <xxhash.h>
 
 #include "common/assert.h"
+#include "video_core/bruno_diag.h"
 #include "common/config.h"
 #include "common/debug.h"
 #include "common/div_ceil.h"
@@ -582,6 +583,14 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     if (!image_id) {
         image_id = slot_images.insert(instance, runtime, slot_image_views, info);
         RegisterImage(image_id);
+        if (info.size.width >= 960 && info.num_bits == 32 && BrunoDiag::On()) {
+            LOG_INFO(Render_Vulkan,
+                     "[BRUNO-EV] NEW_IMAGE addr={:#x} id={} {}x{} s={} fmt={} binding={} "
+                     "guest_size={}",
+                     info.guest_address, image_id.index, info.size.width, info.size.height,
+                     info.num_samples, vk::to_string(info.pixel_format), u32(desc.type),
+                     info.guest_size);
+        }
     }
 
     Image& image = slot_images[image_id];
@@ -778,6 +787,15 @@ void TextureCache::RefreshImage(Image& image) {
     }
 
     scheduler.EndRendering();
+
+    if (image.info.size.width >= 960 && image.info.num_bits == 32 && BrunoDiag::On()) {
+        LOG_INFO(Render_Vulkan,
+                 "[BRUNO-EV] UPLOAD_FROM_GUEST addr={:#x} {}x{} s={} fmt={} flags={:#x} "
+                 "gpu_modified={} gpu_dirty={}",
+                 image.info.guest_address, image.info.size.width, image.info.size.height,
+                 image.info.num_samples, vk::to_string(image.info.pixel_format), u32(image.flags),
+                 is_gpu_modified, is_gpu_dirty);
+    }
 
     const auto [in_buffer, in_offset] =
         buffer_cache.ObtainBufferForImage(image.info.guest_address, image.info.guest_size);
