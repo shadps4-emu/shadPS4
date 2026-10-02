@@ -154,55 +154,9 @@ void ImageInfo::UpdateSize() {
     if (array_mode == AmdGpu::ArrayMode::ArrayLinearGeneral) {
         UNREACHABLE_MSG("Unhandled array mode: ArrayLinearGeneral");
     }
-    const u32 thickness = AmdGpu::GetMicroTileThickness(array_mode);
-    const bool macro = AmdGpu::IsMacroTiled(array_mode);
-    guest_size = 0;
-    micro_tiled_mips = 0;
-    for (s32 mip = 0; mip < resources.levels; ++mip) {
-        u32 mip_w = pitch >> mip;
-        u32 mip_h = size.height >> mip;
-        if (props.is_block) {
-            mip_w = (mip_w + 3) / 4;
-            mip_h = (mip_h + 3) / 4;
-        }
-        mip_w = std::max(mip_w, 1u);
-        mip_h = std::max(mip_h, 1u);
-        u32 mip_d = std::max(size.depth >> mip, 1u);
-
-        if (props.is_pow2) {
-            mip_w = std::bit_ceil(mip_w);
-            mip_h = std::bit_ceil(mip_h);
-            mip_d = std::bit_ceil(mip_d);
-        }
-
-        auto& mip_info = mips_layout[mip];
-        u32 mip_thickness = 1;
-        if (array_mode == AmdGpu::ArrayMode::ArrayLinearAligned) {
-            std::tie(mip_info.pitch, mip_info.height, mip_info.size) =
-                ImageSizeLinearAligned(mip_w, mip_h, num_bits, num_samples);
-        } else if (macro &&
-                   IsMacroTiledMip(mip_w, mip_h, num_bits, num_samples, tile_mode, mip, alt_tile)) {
-            mip_thickness = thickness;
-            std::tie(mip_info.pitch, mip_info.height, mip_info.size) =
-                ImageSizeMacroTiled(mip_w, mip_h, num_bits, num_samples, tile_mode, alt_tile);
-        } else {
-            mip_thickness = std::min(thickness, 4u);
-            std::tie(mip_info.pitch, mip_info.height, mip_info.size) =
-                ImageSizeMicroTiled(mip_w, mip_h, mip_thickness, num_bits, num_samples);
-            if (macro) {
-                micro_tiled_mips |= 1u << mip;
-            }
-        }
-        if (props.is_block) {
-            mip_info.pitch = std::max(mip_info.pitch * 4, 32u);
-            mip_info.height = std::max(mip_info.height * 4, 32u);
-        }
-        u32 num_slices = mip_d * resources.layers;
-        num_slices += (-num_slices) & (mip_thickness - 1);
-        mip_info.size *= num_slices;
-        mip_info.offset = guest_size;
-        guest_size += mip_info.size;
-    }
+    ComputeImageSize(pitch, size.height, size.depth, resources.levels, resources.layers, num_bits,
+                     num_samples, props.is_block, props.is_pow2, alt_tile, tile_mode, array_mode,
+                     &guest_size, &micro_tiled_mips, mips_layout.data());
 }
 
 s32 ImageInfo::MipOf(const ImageInfo& info) const {

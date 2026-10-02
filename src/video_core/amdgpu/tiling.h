@@ -5,6 +5,7 @@
 
 #include <string_view>
 
+#include "common/assert.h"
 #include "common/types.h"
 
 namespace AmdGpu {
@@ -108,6 +109,57 @@ enum class TileMode : u32 {
     DisplayLinearGeneral = 31,
 };
 
+constexpr bool IsMacroTiled(ArrayMode array_mode) {
+    switch (array_mode) {
+    case ArrayMode::ArrayLinearGeneral:
+    case ArrayMode::ArrayLinearAligned:
+    case ArrayMode::Array1DTiledThin1:
+    case ArrayMode::Array1DTiledThick:
+        return false;
+    case ArrayMode::Array2DTiledThin1:
+    case ArrayMode::ArrayPrtTiledThin1:
+    case ArrayMode::ArrayPrt2DTiledThin1:
+    case ArrayMode::Array2DTiledThick:
+    case ArrayMode::Array2DTiledXThick:
+    case ArrayMode::ArrayPrtTiledThick:
+    case ArrayMode::ArrayPrt2DTiledThick:
+    case ArrayMode::ArrayPrt3DTiledThin1:
+    case ArrayMode::Array3DTiledThin1:
+    case ArrayMode::Array3DTiledThick:
+    case ArrayMode::Array3DTiledXThick:
+    case ArrayMode::ArrayPrt3DTiledThick:
+        return true;
+    default:
+        UNREACHABLE_MSG("Unknown array mode = {}", u32(array_mode));
+    }
+}
+
+constexpr u32 GetMicroTileThickness(ArrayMode array_mode) {
+    switch (array_mode) {
+    case ArrayMode::ArrayLinearGeneral:
+    case ArrayMode::ArrayLinearAligned:
+    case ArrayMode::Array1DTiledThin1:
+    case ArrayMode::Array2DTiledThin1:
+    case ArrayMode::ArrayPrtTiledThin1:
+    case ArrayMode::ArrayPrt2DTiledThin1:
+    case ArrayMode::ArrayPrt3DTiledThin1:
+    case ArrayMode::Array3DTiledThin1:
+        return 1;
+    case ArrayMode::Array1DTiledThick:
+    case ArrayMode::Array2DTiledThick:
+    case ArrayMode::Array3DTiledThick:
+    case ArrayMode::ArrayPrtTiledThick:
+    case ArrayMode::ArrayPrt2DTiledThick:
+    case ArrayMode::ArrayPrt3DTiledThick:
+        return 4;
+    case ArrayMode::Array2DTiledXThick:
+    case ArrayMode::Array3DTiledXThick:
+        return 8;
+    default:
+        UNREACHABLE_MSG("Unknown array mode = {}", u32(array_mode));
+    }
+}
+
 std::string_view NameOf(TileMode tile_mode);
 
 ArrayMode GetArrayMode(TileMode tile_mode);
@@ -136,11 +188,7 @@ u32 GetAltNumBanks(MacroTileMode mode);
 
 u32 GetAltMacrotileAspect(MacroTileMode mode);
 
-bool IsMacroTiled(ArrayMode array_mode);
-
 bool IsPrt(ArrayMode array_mode);
-
-u32 GetMicroTileThickness(ArrayMode array_mode);
 
 u32 GetPipeCount(PipeConfig pipe_cfg);
 

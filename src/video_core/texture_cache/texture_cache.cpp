@@ -133,7 +133,8 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
     const auto pages_end = PageManager::GetNextPageAddr(addr + size - 1);
 
     SmallVector<ImageId, 8> image_ids;
-    ForEachImageInRegion(pages_start, pages_end - pages_start, [&](ImageId image_id, Image&) { image_ids.push_back(image_id); });
+    ForEachImageInRegion(pages_start, pages_end - pages_start,
+                         [&](ImageId image_id, Image&) { image_ids.push_back(image_id); });
 
     for (const auto image_id : image_ids) {
         Image& image = slot_images[image_id];
@@ -801,12 +802,12 @@ void TextureCache::RegisterImage(ImageId image_id) {
     image.lru_id = lru_cache.Insert(image_id, gc_tick);
     const auto& info = image.info;
     ASSERT_MSG((info.guest_address & 0xff) == 0, "Trying to register an unaligned image");
-    ForEachPage(info.guest_address, info.guest_size,
-                [this, image_id, info](u64 page) { page_table[page].entries.emplace_back(BucketEntry{
-                    .key = u32(info.guest_address >> 8),
-                    .size = info.guest_size,
-                    .id = image_id,
-                });
+    ForEachPage(info.guest_address, info.guest_size, [this, image_id, info](u64 page) {
+        page_table[page].entries.emplace_back(BucketEntry{
+            .key = u32(info.guest_address >> 8),
+            .size = info.guest_size,
+            .id = image_id,
+        });
     });
 }
 
@@ -847,7 +848,8 @@ void TextureCache::TrackImage(ImageId image_id) {
             tracker.UpdatePageWatchers(image_begin, image.track_addr - image_begin, PageOp::Track);
         }
         if (image.track_addr_end < image_end) {
-            tracker.UpdatePageWatchers(image.track_addr_end, image_end - image.track_addr_end, PageOp::Track);
+            tracker.UpdatePageWatchers(image.track_addr_end, image_end - image.track_addr_end,
+                                       PageOp::Track);
         }
     }
     image.track_addr = image_begin;

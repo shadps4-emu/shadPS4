@@ -4,8 +4,8 @@
 #pragma once
 
 #include <deque>
-#include <optional>
 #include <mutex>
+#include <optional>
 
 #include "common/enum.h"
 #include "common/incremental_id.h"

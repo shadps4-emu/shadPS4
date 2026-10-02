@@ -7,6 +7,7 @@
 #include "video_core/amdgpu/cb_db_extent.h"
 #include "video_core/amdgpu/tiling.h"
 #include "video_core/renderer_vulkan/vk_common.h"
+#include "video_core/texture_cache/tile.h"
 #include "video_core/texture_cache/types.h"
 
 namespace AmdGpu {
@@ -75,13 +76,7 @@ struct ImageInfo {
     u32 pitch{};
     AmdGpu::TileMode tile_mode = AmdGpu::TileMode::DisplayLinearAligned;
     AmdGpu::ArrayMode array_mode = AmdGpu::ArrayMode::ArrayLinearAligned;
-    struct MipInfo {
-        u32 size;
-        u32 pitch;
-        u32 height;
-        u32 offset;
-    };
-    std::array<MipInfo, 16> mips_layout;
+    std::array<MipInfo, MAX_MIPS> mips_layout;
     u32 micro_tiled_mips{};
     VAddr guest_address{};
     u32 guest_size{};

@@ -1,11 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/assert.h"
-#include "video_core/amdgpu/tiling.h"
-
 #include <bit>
 #include <magic_enum/magic_enum.hpp>
+#include "video_core/amdgpu/tiling.h"
 
 namespace AmdGpu {
 
@@ -440,31 +438,6 @@ u32 GetAltMacrotileAspect(MacroTileMode mode) {
     }
 }
 
-bool IsMacroTiled(ArrayMode array_mode) {
-    switch (array_mode) {
-    case ArrayMode::ArrayLinearGeneral:
-    case ArrayMode::ArrayLinearAligned:
-    case ArrayMode::Array1DTiledThin1:
-    case ArrayMode::Array1DTiledThick:
-        return false;
-    case ArrayMode::Array2DTiledThin1:
-    case ArrayMode::ArrayPrtTiledThin1:
-    case ArrayMode::ArrayPrt2DTiledThin1:
-    case ArrayMode::Array2DTiledThick:
-    case ArrayMode::Array2DTiledXThick:
-    case ArrayMode::ArrayPrtTiledThick:
-    case ArrayMode::ArrayPrt2DTiledThick:
-    case ArrayMode::ArrayPrt3DTiledThin1:
-    case ArrayMode::Array3DTiledThin1:
-    case ArrayMode::Array3DTiledThick:
-    case ArrayMode::Array3DTiledXThick:
-    case ArrayMode::ArrayPrt3DTiledThick:
-        return true;
-    default:
-        UNREACHABLE_MSG("Unknown array mode = {}", u32(array_mode));
-    }
-}
-
 bool IsPrt(ArrayMode array_mode) {
     switch (array_mode) {
     case ArrayMode::ArrayPrtTiledThin1:
@@ -485,32 +458,6 @@ bool IsPrt(ArrayMode array_mode) {
     case ArrayMode::Array3DTiledThick:
     case ArrayMode::Array3DTiledXThick:
         return false;
-    default:
-        UNREACHABLE_MSG("Unknown array mode = {}", u32(array_mode));
-    }
-}
-
-u32 GetMicroTileThickness(ArrayMode array_mode) {
-    switch (array_mode) {
-    case ArrayMode::ArrayLinearGeneral:
-    case ArrayMode::ArrayLinearAligned:
-    case ArrayMode::Array1DTiledThin1:
-    case ArrayMode::Array2DTiledThin1:
-    case ArrayMode::ArrayPrtTiledThin1:
-    case ArrayMode::ArrayPrt2DTiledThin1:
-    case ArrayMode::ArrayPrt3DTiledThin1:
-    case ArrayMode::Array3DTiledThin1:
-        return 1;
-    case ArrayMode::Array1DTiledThick:
-    case ArrayMode::Array2DTiledThick:
-    case ArrayMode::Array3DTiledThick:
-    case ArrayMode::ArrayPrtTiledThick:
-    case ArrayMode::ArrayPrt2DTiledThick:
-    case ArrayMode::ArrayPrt3DTiledThick:
-        return 4;
-    case ArrayMode::Array2DTiledXThick:
-    case ArrayMode::Array3DTiledXThick:
-        return 8;
     default:
         UNREACHABLE_MSG("Unknown array mode = {}", u32(array_mode));
     }
