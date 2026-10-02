@@ -103,7 +103,7 @@
             , pugixml
             , libuuid
             , libx11
-            , releaseMode ? "RelWithDebInfo"
+            , releaseMode
             , dontStrip ? true
             , enableDiscordRpc ? false
             ,
@@ -191,11 +191,11 @@
               autoPatchelfIgnoreMissingDeps = [ "*" ];
             });
 
-          defaultBuild = pkgsLinux.callPackage build { releaseMode = "relWithDebInfo"; dontStrip = true; };
+          defaultBuild = pkgsLinux.callPackage build { releaseMode = "RelWithDebInfo"; dontStrip = true; };
         in
         {
-          debug = pkgsLinux.callPackage build { releaseMode = "debug"; dontStrip = true; };
-          release = pkgsLinux.callPackage build { releaseMode = "release"; dontStrip = false; };
+          debug = pkgsLinux.callPackage build { releaseMode = "Debug"; dontStrip = true; };
+          release = pkgsLinux.callPackage build { releaseMode = "Release"; dontStrip = false; };
           releaseWithDebInfo = (defaultBuild);
           default = (defaultBuild);
         };
