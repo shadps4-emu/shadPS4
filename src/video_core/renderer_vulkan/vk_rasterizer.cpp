@@ -1,6 +1,7 @@
 ﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <unordered_set>
 #include <algorithm>
 
 #include "common/config.h"
@@ -258,6 +259,24 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     }
     DebugState.IncDrawCall();
 
+    // BRUNO debug: dump images right after the game's MSAA depth resolve shader ran.
+    {
+        static BrunoDiag::FileFlag dump_resolve{"bruno_dump_resolve"};
+        if (dump_resolve.Get()) {
+            bool is_resolve = false;
+            for (const auto* stage : pipeline->GetStages()) {
+                is_resolve |= stage && stage->pgm_hash == 0x782d705bc1c01219ULL;
+            }
+            if (is_resolve) {
+                std::error_code ec;
+                std::filesystem::remove("bruno_dump_resolve", ec);
+                dump_resolve.value.store(false);
+                scheduler.EndRendering();
+                texture_cache.BrunoDumpImages(true, "bruno_dumps_resolve");
+            }
+        }
+    }
+
     ResetBindings(false);
 }
 
@@ -369,6 +388,23 @@ void Rasterizer::DispatchDirect() {
         runtime.FlushBarriers();
     }
 
+    // BRUNO experiment: skip compute passes that write a full-width 32bpp tiled storage view
+    // (the 1920xH post-process view aliasing the scene colour buffer in God of War III).
+    {
+        static BrunoDiag::FileFlag skip_aa{"bruno_skip_aa"};
+        if (skip_aa.Get()) {
+            for (const auto& sid : pending_storage_image_ids_) {
+                const auto& si = texture_cache.GetImage(sid);
+                if (si.info.size.width >= 1280 && si.info.num_bits == 32 &&
+                    si.info.props.is_tiled) {
+                    pending_storage_image_ids_.clear();
+                    ResetBindings(true);
+                    return;
+                }
+            }
+        }
+    }
+
     scheduler.EndRendering();
     if (!pending_storage_image_ids_.empty() && BrunoDiag::On()) {
         std::string ids;
@@ -452,6 +488,7 @@ void Rasterizer::OnSubmit() {
         buffer_cache.ProcessFaultBuffer();
     }
     texture_cache.ProcessDownloadImages();
+    texture_cache.BrunoDumpImages();
 
     if (!ShouldDisableSync()) {
         rt_sync_.ClearRecords();
@@ -731,6 +768,22 @@ bool Rasterizer::IsComputeImageCopy(const Pipeline* pipeline) {
     // Perform image copy
     VideoCore::Image& src_image = desc0.is_written ? image1 : image0;
     VideoCore::Image& dst_image = desc0.is_written ? image0 : image1;
+    if (BrunoDiag::On()) {
+        const auto d = [](const VideoCore::Image& i) {
+            return fmt::format("addr={:#x} {}x{} s={} fmt={} depth={} bits={} tile={} pitch={} "
+                               "gsize={} flags={:#x}",
+                               i.info.guest_address, i.info.size.width, i.info.size.height,
+                               i.info.num_samples, vk::to_string(i.info.pixel_format),
+                               u32(i.info.props.is_depth), i.info.num_bits, u32(i.info.tile_mode),
+                               i.info.pitch, i.info.guest_size, u32(i.flags));
+        };
+        LOG_INFO(Render_Vulkan, "[BRUNO-EV] HLE_IMAGE_COPY src[{}] -> dst[{}]", d(src_image),
+                 d(dst_image));
+    }
+    static BrunoDiag::FileFlag skip_copy{"bruno_skip_hle_copy"};
+    if (skip_copy.Get()) {
+        return true;
+    }
     runtime.CopyColorAndDepth(&src_image, &dst_image);
     return true;
 }
@@ -938,6 +991,29 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                                         desc.info.size.height);
             }
             auto* image = &texture_cache.GetImage(image_id);
+            {
+                const auto f = image->info.pixel_format;
+                const bool depthish =
+                    image->info.props.is_depth || desc.info.props.is_depth ||
+                    f == vk::Format::eR32Sfloat || f == vk::Format::eR16Unorm ||
+                    f == vk::Format::eR32Uint;
+                if (depthish && image->info.size.width >= 960) {
+                    static std::string last;
+                    std::string line = fmt::format(
+                        "TEX_BIND addr={:#x} id={} img({}x{} s={} fmt={} depth={} flags={:#x} "
+                        "tile={}) req({}x{} s={} fmt={} depth={} tile={} type={})",
+                        desc.info.guest_address, image_id.index, image->info.size.width,
+                        image->info.size.height, image->info.num_samples, vk::to_string(f),
+                        u32(image->info.props.is_depth), u32(image->flags),
+                        u32(image->info.tile_mode), desc.info.size.width, desc.info.size.height,
+                        desc.info.num_samples, vk::to_string(desc.info.pixel_format),
+                        u32(desc.info.props.is_depth), u32(desc.info.tile_mode), u32(desc.type));
+                    if (line != last && BrunoDiag::On()) {
+                        LOG_INFO(Render_Vulkan, "[BRUNO-EV] {}", line);
+                        last = std::move(line);
+                    }
+                }
+            }
             if (auto depth_image_id = texture_cache.GetAssociatedDepth(*image)) {
                 // If this image has an associated depth image, it's a stencil attachment.
                 // Redirect the access to the actual depth-stencil buffer.
@@ -993,7 +1069,12 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                         vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite,
                         desc.view_info.range);
                 } else {
-                    const auto new_layout = image.info.props.is_depth
+                    // BRUNO experiment A: sample depth through eShaderReadOnlyOptimal so the
+                    // driver must fully decompress it (AMD keeps HiZ/compressed tiles under
+                    // the depth read-only attachment layouts).
+                    static BrunoDiag::FileFlag depth_sro{"bruno_depth_sro"};
+                    const bool force_sro = depth_sro.Get() && !image.binding.is_target;
+                    const auto new_layout = image.info.props.is_depth && !force_sro
                                                 ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
                                                 : vk::ImageLayout::eShaderReadOnlyOptimal;
                     needs_barrier |= runtime.Transit(
@@ -1149,7 +1230,10 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         // Stencil writes can be enabled while depth writes are off.
         const bool stencil_write =
             has_stencil && regs.depth_control.stencil_enable && !desc.view_info.is_storage;
-        const auto new_layout = desc.view_info.is_storage
+        // BRUNO experiment B: always use the writable attachment layout for depth targets.
+        static BrunoDiag::FileFlag depth_att{"bruno_depth_att"};
+        const bool force_att = depth_att.Get() && !image.binding.is_bound;
+        const auto new_layout = (desc.view_info.is_storage || force_att)
                                     ? has_stencil ? vk::ImageLayout::eDepthStencilAttachmentOptimal
                                                   : vk::ImageLayout::eDepthAttachmentOptimal
                                 : stencil_write
@@ -1184,6 +1268,37 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
             attachment.stencil_clear = is_stencil_clear;
         }
         image.usage.depth_target = true;
+
+        // BRUNO-DIAG: sample-count combination of this render pass (logged once per combo).
+        {
+            static std::unordered_set<u64> seen;
+            u32 c0_img = 0, c0_back = 0;
+            if (auto c0 = cb_descs[0].first; c0 && state.num_color_attachments > 0) {
+                const auto& ci = texture_cache.GetImage(c0);
+                c0_img = ci.info.num_samples;
+                c0_back = ci.backing ? ci.backing->num_samples : 0;
+            }
+            const u32 dc_raw = std::bit_cast<u32>(regs.depth_control);
+            const u64 combo = (u64(dc_raw & 0xFFFFu) << 56) ^ (u64(is_depth_clear) << 55) ^
+                              (u64(is_stencil_clear) << 54) ^
+                              u64(key.num_samples) | (u64(key.depth_samples) << 8) |
+                              (u64(key.color_samples[0]) << 16) |
+                              (u64(image.info.num_samples) << 24) | (u64(c0_img) << 32) |
+                              (u64(c0_back) << 40) | (u64(state.num_color_attachments) << 48) |
+                              (u64(image.backing ? image.backing->num_samples : 0) << 52);
+            if (seen.insert(combo).second) {
+                LOG_INFO(Render_Vulkan,
+                         "[BRUNO] SAMPLES raster={} key_depth={} key_color0={} | depth_img={} "
+                         "depth_backing={} color0_img={} color0_backing={} num_color={} "
+                         "depth_addr={:#x} depth_write={} depth_control={:#x} depth_clear={} "
+                         "clear_value={} stencil_clear={} htile_cleared={}",
+                         key.num_samples, key.depth_samples, key.color_samples[0],
+                         image.info.num_samples, image.backing ? image.backing->num_samples : 0,
+                         c0_img, c0_back, state.num_color_attachments, image.info.guest_address,
+                         u32(desc.view_info.is_storage), dc_raw, is_depth_clear, regs.depth_clear,
+                         is_stencil_clear, regs.depth_render_control.depth_clear_enable ? 0 : 1);
+            }
+        }
     } else {
         state.depth_stencil_attachment = {};
     }

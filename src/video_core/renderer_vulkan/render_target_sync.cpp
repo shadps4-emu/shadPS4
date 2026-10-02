@@ -89,6 +89,10 @@ void RenderTargetSync::CopyFromLastRt(VAddr addr, VideoCore::ImageId tex_id, u32
     const bool is_new_alias = is_row_prefix_view &&
                               (tex_image.flags & VideoCore::ImageFlagBits::Dirty) ==
                                   VideoCore::ImageFlagBits::Dirty;
+    if (BrunoDiag::On()) {
+        LOG_INFO(Render_Vulkan, "[BRUNO-EV]   fix1: row_prefix={} new_alias={} applied={}",
+                 is_row_prefix_view, is_new_alias, is_new_alias && !keep_stale_upload);
+    }
     CopyRtToAlias(rt_image, tex_image);
     if (is_new_alias && !keep_stale_upload) {
         tex_image.flags &= ~VideoCore::ImageFlagBits::Dirty;

@@ -58,6 +58,72 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
 
 TextureCache::~TextureCache() = default;
 
+void TextureCache::BrunoDumpImages(bool force, const char* dir) {
+    static BrunoDiag::FileFlag flag{"bruno_dump"};
+    std::error_code ec;
+    if (!force) {
+        if (!flag.Get()) {
+            return;
+        }
+        std::filesystem::remove("bruno_dump", ec);
+        flag.value.store(false);
+    }
+    std::filesystem::create_directories(dir, ec);
+
+    std::scoped_lock lock{mutex};
+    u32 count = 0;
+    u32 index = 0;
+    for (Image& image : slot_images) {
+        ++index;
+        const auto& info = image.info;
+        if (False(image.flags & ImageFlagBits::Registered) || !image.backing ||
+            info.size.width < 960 || info.num_bits > 64 || info.size.depth != 1 || info.resources.layers != 1 ||
+            info.props.is_block) {
+            continue;
+        }
+        if (image.backing->num_samples > 1) {
+            LOG_INFO(Render_Vulkan, "[BRUNO-DUMP] skip MSAA id={} addr={:#x} {}x{} s={} fmt={}",
+                     index, info.guest_address, info.size.width, info.size.height,
+                     image.backing->num_samples, vk::to_string(info.pixel_format));
+            continue;
+        }
+        const bool is_depth = info.props.is_depth;
+        const u32 bpp = is_depth ? 4 : info.num_bits / 8;
+        const u64 size = u64(info.size.width) * info.size.height * bpp;
+        const auto staging = runtime.GetStagingPool().Request(size, MemoryType::HostCached);
+        if (!staging.mapped) {
+            continue;
+        }
+        const vk::BufferImageCopy copy = {
+            .bufferOffset = staging.offset,
+            .bufferRowLength = info.size.width,
+            .bufferImageHeight = info.size.height,
+            .imageSubresource =
+                {
+                    .aspectMask = is_depth ? vk::ImageAspectFlagBits::eDepth
+                                           : vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+                },
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {info.size.width, info.size.height, 1},
+        };
+        runtime.DownloadImage(&image, staging.buffer, std::span{&copy, 1});
+        scheduler.Finish();
+        staging.Invalidate();
+        const auto name = fmt::format("{}/id{}_{:x}_{}x{}_{}_{}bpp_fl{:x}.raw", dir, index,
+                                      info.guest_address, info.size.width, info.size.height,
+                                      vk::to_string(info.pixel_format), bpp * 8, u32(image.flags));
+        if (FILE* f = std::fopen(name.c_str(), "wb")) {
+            std::fwrite(staging.mapped, 1, size, f);
+            std::fclose(f);
+            ++count;
+        }
+    }
+    LOG_INFO(Render_Vulkan, "[BRUNO-DUMP] wrote {} images", count);
+}
+
 void TextureCache::ProcessDownloadImages() {
     std::unique_lock lk{download_images_mutex};
     for (const ImageId image_id : download_images) {
@@ -679,6 +745,22 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
 
 ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
+    {
+        static u64 last_key = 0;
+        const u64 key = (u64(image_id.index) << 32) ^ u64(image.flags) ^
+                        (u64(desc.info.meta_info.htile_addr) << 8);
+        if (key != last_key && BrunoDiag::On()) {
+            last_key = key;
+            LOG_INFO(Render_Vulkan,
+                     "[BRUNO-EV] DEPTH_TARGET addr={:#x} id={} {}x{} s={} fmt={} flags={:#x} "
+                     "tile={} htile={:#x} stencil_addr={:#x} guest_size={}",
+                     image.info.guest_address, image_id.index, image.info.size.width,
+                     image.info.size.height, image.info.num_samples,
+                     vk::to_string(image.info.pixel_format), u32(image.flags),
+                     u32(image.info.tile_mode), desc.info.meta_info.htile_addr,
+                     desc.info.stencil_addr, image.info.guest_size);
+        }
+    }
     image.flags |= ImageFlagBits::GpuModified;
     image.usage.depth_target = 1u;
     UpdateImage(image_id);
