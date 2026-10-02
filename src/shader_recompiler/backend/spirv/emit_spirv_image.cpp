@@ -8,69 +8,6 @@
 
 namespace Shader::Backend::SPIRV {
 
-struct ImageOperands {
-    void Add(spv::ImageOperandsMask new_mask, Id value) {
-        if (!Sirit::ValidId(value)) {
-            return;
-        }
-        mask = static_cast<spv::ImageOperandsMask>(static_cast<u32>(mask) |
-                                                   static_cast<u32>(new_mask));
-        operands.push_back(value);
-    }
-    void Add(spv::ImageOperandsMask new_mask, Id value1, Id value2) {
-        mask = static_cast<spv::ImageOperandsMask>(static_cast<u32>(mask) |
-                                                   static_cast<u32>(new_mask));
-        operands.push_back(value1);
-        operands.push_back(value2);
-    }
-
-    void AddOffset(EmitContext& ctx, const IR::Value& offset,
-                   bool can_use_runtime_offsets = false) {
-        if (offset.IsEmpty()) {
-            return;
-        }
-        if (offset.IsImmediate()) {
-            const s32 operand = offset.U32();
-            Add(spv::ImageOperandsMask::ConstOffset, ctx.ConstS32(operand));
-            return;
-        }
-        IR::Inst* const inst{offset.Inst()};
-        if (inst->AreAllArgsImmediates()) {
-            switch (inst->GetOpcode()) {
-            case IR::Opcode::CompositeConstructU32x2:
-                Add(spv::ImageOperandsMask::ConstOffset,
-                    ctx.ConstS32(static_cast<s32>(inst->Arg(0).U32()),
-                                 static_cast<s32>(inst->Arg(1).U32())));
-                return;
-            case IR::Opcode::CompositeConstructU32x3:
-                Add(spv::ImageOperandsMask::ConstOffset,
-                    ctx.ConstS32(static_cast<s32>(inst->Arg(0).U32()),
-                                 static_cast<s32>(inst->Arg(1).U32()),
-                                 static_cast<s32>(inst->Arg(2).U32())));
-                return;
-            default:
-                break;
-            }
-        }
-        if (can_use_runtime_offsets) {
-            Add(spv::ImageOperandsMask::Offset, ctx.Def(offset));
-        } else {
-            LOG_WARNING(Render_Vulkan,
-                        "Runtime offset provided to unsupported image sample instruction");
-        }
-    }
-
-    void AddDerivatives(EmitContext& ctx, Id derivatives_dx, Id derivatives_dy) {
-        if (!Sirit::ValidId(derivatives_dx) || !Sirit::ValidId(derivatives_dy)) {
-            return;
-        }
-        Add(spv::ImageOperandsMask::Grad, derivatives_dx, derivatives_dy);
-    }
-
-    spv::ImageOperandsMask mask{};
-    boost::container::static_vector<Id, 4> operands;
-};
-
 template <bool is_float>
 static Id FixImageCoords(EmitContext& ctx, Id coords, AmdGpu::ImageType image_type) {
     const auto coord_type = is_float ? ctx.F32 : ctx.U32;
@@ -113,6 +50,91 @@ static Id FixImageCoords(EmitContext& ctx, Id coords, AmdGpu::ImageType image_ty
     }
 }
 
+template <bool is_float>
+static Id PadImageOperand(EmitContext& ctx, Id operand, AmdGpu::ImageType image_type) {
+    if (image_type == AmdGpu::ImageType::Color1D || image_type == AmdGpu::ImageType::Color1DArray) {
+        const auto coord_type = is_float ? ctx.F32 : ctx.U32;
+        const auto zero = is_float ? ctx.f32_zero_value : ctx.u32_zero_value;
+        return ctx.OpCompositeConstruct(coord_type[2], operand, zero);
+    }
+    return operand;
+}
+
+struct ImageOperands {
+    void Add(spv::ImageOperandsMask new_mask, Id value) {
+        if (!Sirit::ValidId(value)) {
+            return;
+        }
+        mask = static_cast<spv::ImageOperandsMask>(static_cast<u32>(mask) |
+                                                   static_cast<u32>(new_mask));
+        operands.push_back(value);
+    }
+    void Add(spv::ImageOperandsMask new_mask, Id value1, Id value2) {
+        mask = static_cast<spv::ImageOperandsMask>(static_cast<u32>(mask) |
+                                                   static_cast<u32>(new_mask));
+        operands.push_back(value1);
+        operands.push_back(value2);
+    }
+
+    void AddOffset(EmitContext& ctx, AmdGpu::ImageType image_type, const IR::Value& offset,
+                   bool can_use_runtime_offsets = false) {
+        if (offset.IsEmpty()) {
+            return;
+        }
+        spv::ImageOperandsMask op_mask{};
+        Id value{};
+        if (offset.IsImmediate()) {
+            op_mask = spv::ImageOperandsMask::ConstOffset;
+            value = ctx.ConstS32(static_cast<s32>(offset.U32()));
+        } else {
+            IR::Inst* const inst{offset.Inst()};
+            if (inst->AreAllArgsImmediates()) {
+                switch (inst->GetOpcode()) {
+                case IR::Opcode::CompositeConstructU32x2:
+                    op_mask = spv::ImageOperandsMask::ConstOffset;
+                    value = ctx.ConstS32(static_cast<s32>(inst->Arg(0).U32()),
+                                         static_cast<s32>(inst->Arg(1).U32()));
+                    break;
+                case IR::Opcode::CompositeConstructU32x3:
+                    op_mask = spv::ImageOperandsMask::ConstOffset;
+                    value = ctx.ConstS32(static_cast<s32>(inst->Arg(0).U32()),
+                                         static_cast<s32>(inst->Arg(1).U32()),
+                                         static_cast<s32>(inst->Arg(2).U32()));
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+
+        if (op_mask != spv::ImageOperandsMask::ConstOffset) {
+            if (!can_use_runtime_offsets) {
+                LOG_WARNING(Render_Vulkan,
+                            "Runtime offset provided to unsupported image sample instruction");
+                return;
+            }
+            op_mask = spv::ImageOperandsMask::Offset;
+            value = ctx.Def(offset);
+        }
+
+        value = PadImageOperand<false>(ctx, value, image_type);
+        Add(op_mask, value);
+    }
+
+    void AddDerivatives(EmitContext& ctx, AmdGpu::ImageType image_type, Id derivatives_dx,
+                        Id derivatives_dy) {
+        if (!Sirit::ValidId(derivatives_dx) || !Sirit::ValidId(derivatives_dy)) {
+            return;
+        }
+        derivatives_dx = PadImageOperand<true>(ctx, derivatives_dx, image_type);
+        derivatives_dy = PadImageOperand<true>(ctx, derivatives_dy, image_type);
+        Add(spv::ImageOperandsMask::Grad, derivatives_dx, derivatives_dy);
+    }
+
+    spv::ImageOperandsMask mask{};
+    boost::container::static_vector<Id, 4> operands;
+};
+
 Id EmitImageHandle(EmitContext& ctx, Id, Id) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
@@ -132,7 +154,7 @@ Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id c
     const Id fixed_coords = FixImageCoords<true>(ctx, coords, texture.view_type);
     ImageOperands operands;
     operands.Add(spv::ImageOperandsMask::Bias, bias);
-    operands.AddOffset(ctx, offset);
+    operands.AddOffset(ctx, texture.view_type, offset);
     const Id sample = ctx.OpImageSampleImplicitLod(result_type, sampled_image, fixed_coords,
                                                    operands.mask, operands.operands);
     return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;
@@ -148,7 +170,7 @@ Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id c
     const Id fixed_coords = FixImageCoords<true>(ctx, coords, texture.view_type);
     ImageOperands operands;
     operands.Add(spv::ImageOperandsMask::Lod, lod);
-    operands.AddOffset(ctx, offset);
+    operands.AddOffset(ctx, texture.view_type, offset);
     const Id sample = ctx.OpImageSampleExplicitLod(result_type, sampled_image, fixed_coords,
                                                    operands.mask, operands.operands);
     return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;
@@ -164,7 +186,7 @@ Id EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, 
     const Id fixed_coords = FixImageCoords<true>(ctx, coords, texture.view_type);
     ImageOperands operands;
     operands.Add(spv::ImageOperandsMask::Bias, bias);
-    operands.AddOffset(ctx, offset);
+    operands.AddOffset(ctx, texture.view_type, offset);
     const Id sample = ctx.OpImageSampleDrefImplicitLod(result_type, sampled_image, fixed_coords,
                                                        dref, operands.mask, operands.operands);
     const Id sample_typed = texture.is_integer ? ctx.OpBitcast(ctx.F32[1], sample) : sample;
@@ -182,7 +204,7 @@ Id EmitImageSampleDrefExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, 
     const Id fixed_coords = FixImageCoords<true>(ctx, coords, texture.view_type);
     ImageOperands operands;
     operands.Add(spv::ImageOperandsMask::Lod, lod);
-    operands.AddOffset(ctx, offset);
+    operands.AddOffset(ctx, texture.view_type, offset);
     const Id sample = ctx.OpImageSampleDrefExplicitLod(result_type, sampled_image, fixed_coords,
                                                        dref, operands.mask, operands.operands);
     const Id sample_typed = texture.is_integer ? ctx.OpBitcast(ctx.F32[1], sample) : sample;
@@ -200,7 +222,7 @@ Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
     const Id fixed_coords = FixImageCoords<true>(ctx, coords, texture.view_type);
     const u32 comp = inst->Flags<IR::TextureInstInfo>().gather_comp.Value();
     ImageOperands operands;
-    operands.AddOffset(ctx, offset, true);
+    operands.AddOffset(ctx, texture.view_type, offset, true);
     const Id texels = ctx.OpImageGather(result_type, sampled_image, fixed_coords,
                                         ctx.ConstU32(comp), operands.mask, operands.operands);
     return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], texels) : texels;
@@ -215,7 +237,7 @@ Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
     const Id fixed_coords = FixImageCoords<true>(ctx, coords, texture.view_type);
     ImageOperands operands;
-    operands.AddOffset(ctx, offset, true);
+    operands.AddOffset(ctx, texture.view_type, offset, true);
     const Id texels = ctx.OpImageDrefGather(result_type, sampled_image, fixed_coords, dref,
                                             operands.mask, operands.operands);
     return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], texels) : texels;
@@ -272,8 +294,8 @@ Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id
     const Id sampled_image = ctx.OpSampledImage(texture.sampled_type, image, sampler);
     const Id fixed_coords = FixImageCoords<true>(ctx, coords, texture.view_type);
     ImageOperands operands;
-    operands.AddDerivatives(ctx, derivatives_dx, derivatives_dy);
-    operands.AddOffset(ctx, offset);
+    operands.AddDerivatives(ctx, texture.view_type, derivatives_dx, derivatives_dy);
+    operands.AddOffset(ctx, texture.view_type, offset);
     const Id sample = ctx.OpImageSampleExplicitLod(result_type, sampled_image, fixed_coords,
                                                    operands.mask, operands.operands);
     return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;

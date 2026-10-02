@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <boost/container/small_vector.hpp>
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/program.h"
 
@@ -23,39 +24,40 @@ static void LowerCmpClass(IR::Block& block, IR::Inst& inst) {
     }
 }
 
-static void LowerPackedAncillary(IR::Block& block, IR::Inst& inst) {
-    if (inst.Arg(0).IsImmediate() || !inst.Arg(1).IsImmediate() || !inst.Arg(2).IsImmediate()) {
-        return;
-    }
-    IR::Inst* value = inst.Arg(0).Inst();
-    if (value->GetOpcode() != IR::Opcode::GetAttributeU32 ||
-        value->Arg(0).Attribute() != IR::Attribute::PackedAncillary) {
-        return;
-    }
-    const u32 offset = inst.Arg(1).U32();
-    const u32 bits = inst.Arg(2).U32();
-    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    if (offset >= 8 && offset + bits <= 12) {
-        const auto sample_index = ir.GetAttributeU32(IR::Attribute::SampleIndex);
-        if (offset == 8 && bits == 4) {
-            inst.ReplaceUsesWithAndRemove(sample_index);
-        } else {
-            inst.ReplaceUsesWithAndRemove(
-                ir.BitFieldExtract(sample_index, ir.Imm32(offset - 8), ir.Imm32(bits)));
+static void LowerPackedAncillary(IR::Inst& value) {
+    boost::container::small_vector<IR::Inst*, 4> extracts;
+    for (const auto& [user, operand] : value.Uses()) {
+        if (user->GetOpcode() == IR::Opcode::BitFieldUExtract && operand == 0 &&
+            user->Arg(1).IsImmediate() && user->Arg(2).IsImmediate()) {
+            extracts.push_back(user);
         }
-    } else if (offset >= 16 && offset + bits <= 27) {
-        const auto mrt_index = ir.GetAttributeU32(IR::Attribute::RenderTargetIndex);
-        if (offset == 16 && bits == 11) {
-            inst.ReplaceUsesWithAndRemove(mrt_index);
-        } else {
-            inst.ReplaceUsesWithAndRemove(
-                ir.BitFieldExtract(mrt_index, ir.Imm32(offset - 16), ir.Imm32(bits)));
-        }
-    } else {
-        UNREACHABLE_MSG("Unhandled bitfield extract from ancillary VGPR offset={}, bits={}", offset,
-                        bits);
     }
-    value->ReplaceUsesWithAndRemove(ir.Imm32(0U));
+    for (IR::Inst* const inst : extracts) {
+        const u32 offset = inst->Arg(1).U32();
+        const u32 bits = inst->Arg(2).U32();
+        IR::IREmitter ir{*inst->GetParent(), IR::Block::InstructionList::s_iterator_to(*inst)};
+        if (offset >= 8 && offset + bits <= 12) {
+            const auto sample_index = ir.GetAttributeU32(IR::Attribute::SampleIndex);
+            if (offset == 8 && bits == 4) {
+                inst->ReplaceUsesWithAndRemove(sample_index);
+            } else {
+                inst->ReplaceUsesWithAndRemove(
+                    ir.BitFieldExtract(sample_index, ir.Imm32(offset - 8), ir.Imm32(bits)));
+            }
+        } else if (offset >= 16 && offset + bits <= 27) {
+            const auto mrt_index = ir.GetAttributeU32(IR::Attribute::RenderTargetIndex);
+            if (offset == 16 && bits == 11) {
+                inst->ReplaceUsesWithAndRemove(mrt_index);
+            } else {
+                inst->ReplaceUsesWithAndRemove(
+                    ir.BitFieldExtract(mrt_index, ir.Imm32(offset - 16), ir.Imm32(bits)));
+            }
+        } else {
+            UNREACHABLE_MSG("Unhandled bitfield extract from ancillary VGPR offset={}, bits={}",
+                            offset, bits);
+        }
+    }
+    value.ReplaceUsesWithAndRemove(IR::Value{0U});
 }
 
 static void LowerMaskedBitCount(IR::Block& block, IR::Inst& inst) {
@@ -70,8 +72,11 @@ static void Lower(IR::Block& block, IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::FPCmpClass32:
         return LowerCmpClass(block, inst);
-    case IR::Opcode::BitFieldUExtract:
-        return LowerPackedAncillary(block, inst);
+    case IR::Opcode::GetAttributeU32:
+        if (inst.Arg(0).Attribute() == IR::Attribute::PackedAncillary) {
+            LowerPackedAncillary(inst);
+        }
+        break;
     case IR::Opcode::MaskedBitCount32:
         return LowerMaskedBitCount(block, inst);
     default:

@@ -138,7 +138,7 @@ public:
         std::array<u32, Pm4BufferSize> tmp_packet;
         u32 tmp_dwords;
     };
-    Common::SlotVector<AscQueueInfo> asc_queues{};
+    Common::SlotVector<AscQueueInfo> asc_queues{64};
 
     std::thread::id GetGpuCommandProcessorThread() {
         return gpu_id;
