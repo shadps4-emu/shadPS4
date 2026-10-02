@@ -46,6 +46,8 @@ struct RedZonePatchResult {
     u64 patched_cpu_patch_instruction_count{};
     u64 unsupported_cpu_patch_instruction_count{};
     u64 inplace_cpu_patch_instruction_count{};
+    u64 uncovered_inplace_cpu_patch_instruction_count{};
+    u64 uncovered_unsupported_cpu_patch_instruction_count{};
 };
 
 /// Registers a module for patching, providing an area to generate trampoline code.
@@ -61,7 +63,8 @@ RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_
                                                   std::span<const uintptr_t> function_starts);
 
 /// Applies CPU patches ahead of time to the functions listed in the EH frame search table. A patch
-/// site too short for a jump is relocated together with its neighboring instructions.
+/// site too short for a jump is relocated together with its neighboring instructions. Between
+/// those functions, only the SSE4a instructions long enough for a jump are patched.
 RedZonePatchResult PatchCpuInstructionsStatically(u64 segment_addr, u64 segment_size,
                                                   std::span<const uintptr_t> function_starts);
 

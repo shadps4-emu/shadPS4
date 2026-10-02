@@ -364,14 +364,21 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         total.patched_cpu_patch_instruction_count += result.patched_cpu_patch_instruction_count;
         total.unsupported_cpu_patch_instruction_count +=
             result.unsupported_cpu_patch_instruction_count;
+        total.uncovered_inplace_cpu_patch_instruction_count +=
+            result.uncovered_inplace_cpu_patch_instruction_count;
+        total.uncovered_unsupported_cpu_patch_instruction_count +=
+            result.uncovered_unsupported_cpu_patch_instruction_count;
     }
     if (total.function_count != 0) {
         LOG_INFO(Core_Linker,
                  "Static CPU patching for {}: {} functions, {} instructions patched in place, "
-                 "{}/{} short instructions relocated ({} left to the exception handler)",
+                 "{}/{} short instructions relocated ({} left to the exception handler); outside "
+                 "functions: {} patched in place, {} left to the exception handler",
                  name, total.function_count, total.inplace_cpu_patch_instruction_count,
                  total.patched_cpu_patch_instruction_count, total.cpu_patch_instruction_count,
-                 total.unsupported_cpu_patch_instruction_count);
+                 total.unsupported_cpu_patch_instruction_count,
+                 total.uncovered_inplace_cpu_patch_instruction_count,
+                 total.uncovered_unsupported_cpu_patch_instruction_count);
     } else if (!executable_segments.empty()) {
         LOG_WARNING(Core_Linker,
                     "Static CPU patching could not find function boundaries for {}; its "
