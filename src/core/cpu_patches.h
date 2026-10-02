@@ -48,6 +48,28 @@ struct RedZonePatchResult {
     u64 inplace_cpu_patch_instruction_count{};
     u64 uncovered_inplace_cpu_patch_instruction_count{};
     u64 uncovered_unsupported_cpu_patch_instruction_count{};
+
+    RedZonePatchResult& operator+=(const RedZonePatchResult& other) {
+        function_count += other.function_count;
+        instruction_count += other.instruction_count;
+        red_zone_function_count += other.red_zone_function_count;
+        memory_instruction_count += other.memory_instruction_count;
+        short_memory_instruction_count += other.short_memory_instruction_count;
+        patched_memory_instruction_count += other.patched_memory_instruction_count;
+        stack_dependent_memory_instruction_count += other.stack_dependent_memory_instruction_count;
+        control_flow_memory_instruction_count += other.control_flow_memory_instruction_count;
+        unrelocatable_memory_instruction_count += other.unrelocatable_memory_instruction_count;
+        indirect_red_zone_function_count += other.indirect_red_zone_function_count;
+        cpu_patch_instruction_count += other.cpu_patch_instruction_count;
+        patched_cpu_patch_instruction_count += other.patched_cpu_patch_instruction_count;
+        unsupported_cpu_patch_instruction_count += other.unsupported_cpu_patch_instruction_count;
+        inplace_cpu_patch_instruction_count += other.inplace_cpu_patch_instruction_count;
+        uncovered_inplace_cpu_patch_instruction_count +=
+            other.uncovered_inplace_cpu_patch_instruction_count;
+        uncovered_unsupported_cpu_patch_instruction_count +=
+            other.uncovered_unsupported_cpu_patch_instruction_count;
+        return *this;
+    }
 };
 
 /// Registers a module for patching, providing an area to generate trampoline code.

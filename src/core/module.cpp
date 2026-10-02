@@ -281,60 +281,6 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         }
     }
 
-#if defined(ARCH_X86_64) && defined(_WIN32)
-    // Windows static guest red-zone protection
-    if (use_static_patching) {
-        u64 analyzed_function_count{};
-        u64 stack_dependent_instruction_count{};
-        u64 control_flow_instruction_count{};
-        u64 unrelocatable_instruction_count{};
-        u64 unsupported_cpu_patch_instruction_count{};
-        for (const auto& [segment_addr, segment_size] : executable_segments) {
-            // Windows static guest red-zone protection
-            const auto result =
-                PatchRedZoneMemoryInstructions(segment_addr, segment_size, function_starts);
-            analyzed_function_count += result.function_count;
-            stack_dependent_instruction_count += result.stack_dependent_memory_instruction_count;
-            control_flow_instruction_count += result.control_flow_memory_instruction_count;
-            unrelocatable_instruction_count += result.unrelocatable_memory_instruction_count;
-            unsupported_cpu_patch_instruction_count +=
-                result.unsupported_cpu_patch_instruction_count;
-            LOG_DEBUG(
-                Core_Linker,
-                "Windows guest red-zone static patching for {}: {} functions, {} instructions, "
-                "{} red-zone functions, {}/{} memory instructions patched "
-                "({} short, {} stack-dependent, {} control-flow, {} unrelocatable), "
-                "{}/{} short CPU patches applied ({} unsupported), {} indirect red-zone "
-                "functions",
-                name, result.function_count, result.instruction_count,
-                result.red_zone_function_count, result.patched_memory_instruction_count,
-                result.memory_instruction_count, result.short_memory_instruction_count,
-                result.stack_dependent_memory_instruction_count,
-                result.control_flow_memory_instruction_count,
-                result.unrelocatable_memory_instruction_count,
-                result.patched_cpu_patch_instruction_count, result.cpu_patch_instruction_count,
-                result.unsupported_cpu_patch_instruction_count,
-                result.indirect_red_zone_function_count);
-        }
-        if (!executable_segments.empty() && analyzed_function_count == 0) {
-            LOG_WARNING(Core_Linker,
-                        "Windows guest red-zone static patching could not find function "
-                        "boundaries for {}; protection was not applied",
-                        name);
-        } else if (stack_dependent_instruction_count != 0 || control_flow_instruction_count != 0 ||
-                   unrelocatable_instruction_count != 0 ||
-                   unsupported_cpu_patch_instruction_count != 0) {
-            LOG_WARNING(
-                Core_Linker,
-                "Windows guest red-zone static patching for {} is partial: {} stack-dependent, "
-                "{} control-flow, and {} unrelocatable memory instructions were not protected; "
-                "{} CPU patch instructions were unsupported",
-                name, stack_dependent_instruction_count, control_flow_instruction_count,
-                unrelocatable_instruction_count, unsupported_cpu_patch_instruction_count);
-        }
-    }
-#endif
-
     const VAddr entry_addr = base_virtual_addr + elf.GetElfEntry();
     LOG_INFO(Core_Linker, "program entry addr ..........: {:#018x}", entry_addr);
 
@@ -351,39 +297,67 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         }
     }
 
-#if defined(ARCH_X86_64) && defined(__APPLE__)
+#ifdef ARCH_X86_64
     // The game's memory patches are applied first, so that the code decoded here is the code
     // that executes.
-    RedZonePatchResult total{};
-    for (const auto& [segment_addr, segment_size] : executable_segments) {
-        const auto result =
-            PatchCpuInstructionsStatically(segment_addr, segment_size, function_starts);
-        total.function_count += result.function_count;
-        total.inplace_cpu_patch_instruction_count += result.inplace_cpu_patch_instruction_count;
-        total.cpu_patch_instruction_count += result.cpu_patch_instruction_count;
-        total.patched_cpu_patch_instruction_count += result.patched_cpu_patch_instruction_count;
-        total.unsupported_cpu_patch_instruction_count +=
-            result.unsupported_cpu_patch_instruction_count;
-        total.uncovered_inplace_cpu_patch_instruction_count +=
-            result.uncovered_inplace_cpu_patch_instruction_count;
-        total.uncovered_unsupported_cpu_patch_instruction_count +=
-            result.uncovered_unsupported_cpu_patch_instruction_count;
-    }
-    if (total.function_count != 0) {
-        LOG_INFO(Core_Linker,
-                 "Static CPU patching for {}: {} functions, {} instructions patched in place, "
-                 "{}/{} short instructions relocated ({} left to the exception handler); outside "
-                 "functions: {} patched in place, {} left to the exception handler",
-                 name, total.function_count, total.inplace_cpu_patch_instruction_count,
-                 total.patched_cpu_patch_instruction_count, total.cpu_patch_instruction_count,
-                 total.unsupported_cpu_patch_instruction_count,
-                 total.uncovered_inplace_cpu_patch_instruction_count,
-                 total.uncovered_unsupported_cpu_patch_instruction_count);
-    } else if (!executable_segments.empty()) {
-        LOG_WARNING(Core_Linker,
-                    "Static CPU patching could not find function boundaries for {}; its "
-                    "instructions are patched as they trap",
-                    name);
+    if (use_static_patching) {
+        const bool red_zone_protection = WindowsGuestRedZoneProtection::IsStaticPatchingEnabled();
+        RedZonePatchResult total{};
+        for (const auto& [segment_addr, segment_size] : executable_segments) {
+            total +=
+                red_zone_protection
+                    ? PatchRedZoneMemoryInstructions(segment_addr, segment_size, function_starts)
+                    : PatchCpuInstructionsStatically(segment_addr, segment_size, function_starts);
+        }
+        if (total.function_count == 0) {
+            if (!executable_segments.empty()) {
+                LOG_WARNING(Core_Linker,
+                            "Static patching could not find function boundaries for {}; it was "
+                            "not applied",
+                            name);
+            }
+        } else if (red_zone_protection) {
+            LOG_DEBUG(
+                Core_Linker,
+                "Windows guest red-zone static patching for {}: {} functions, {} instructions, "
+                "{} red-zone functions, {}/{} memory instructions patched "
+                "({} short, {} stack-dependent, {} control-flow, {} unrelocatable), "
+                "{}/{} short CPU patches applied ({} unsupported), {} indirect red-zone "
+                "functions",
+                name, total.function_count, total.instruction_count, total.red_zone_function_count,
+                total.patched_memory_instruction_count, total.memory_instruction_count,
+                total.short_memory_instruction_count,
+                total.stack_dependent_memory_instruction_count,
+                total.control_flow_memory_instruction_count,
+                total.unrelocatable_memory_instruction_count,
+                total.patched_cpu_patch_instruction_count, total.cpu_patch_instruction_count,
+                total.unsupported_cpu_patch_instruction_count,
+                total.indirect_red_zone_function_count);
+            if (total.stack_dependent_memory_instruction_count != 0 ||
+                total.control_flow_memory_instruction_count != 0 ||
+                total.unrelocatable_memory_instruction_count != 0 ||
+                total.unsupported_cpu_patch_instruction_count != 0) {
+                LOG_WARNING(
+                    Core_Linker,
+                    "Windows guest red-zone static patching for {} is partial: {} "
+                    "stack-dependent, {} control-flow, and {} unrelocatable memory instructions "
+                    "were not protected; {} CPU patch instructions were unsupported",
+                    name, total.stack_dependent_memory_instruction_count,
+                    total.control_flow_memory_instruction_count,
+                    total.unrelocatable_memory_instruction_count,
+                    total.unsupported_cpu_patch_instruction_count);
+            }
+        } else {
+            LOG_INFO(Core_Linker,
+                     "Static CPU patching for {}: {} functions, {} instructions patched in place, "
+                     "{}/{} short instructions relocated ({} left to the exception handler); "
+                     "outside functions: {} patched in place, {} left to the exception handler",
+                     name, total.function_count, total.inplace_cpu_patch_instruction_count,
+                     total.patched_cpu_patch_instruction_count, total.cpu_patch_instruction_count,
+                     total.unsupported_cpu_patch_instruction_count,
+                     total.uncovered_inplace_cpu_patch_instruction_count,
+                     total.uncovered_unsupported_cpu_patch_instruction_count);
+        }
     }
 #endif
 }
