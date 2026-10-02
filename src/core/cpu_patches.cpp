@@ -944,7 +944,8 @@ bool IsStaticPatchingEnabled() noexcept {
 
 } // namespace WindowsGuestRedZoneProtection
 
-#if defined(_WIN32)
+// macOS shares the function decoder and relocator to apply its CPU patches ahead of time.
+#if defined(_WIN32) || defined(__APPLE__)
 
 namespace {
 
@@ -1596,8 +1597,15 @@ const PatchInfo* FindMatchingPatch(const DecodedCodeInstruction& decoded) {
 
 } // namespace
 
-RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_size,
-                                                  std::span<const uintptr_t> function_starts) {
+using AddressRanges = std::vector<std::pair<uintptr_t, uintptr_t>>;
+
+/// Applies the CPU patches to every function of the segment. If red_zone_protection is true,
+/// the red-zone accesses of those functions are protected as well. If covered_ranges is not
+/// null, it receives the sorted address ranges of the decoded instructions.
+static RedZonePatchResult PatchSegmentStatically(u64 segment_addr, u64 segment_size,
+                                                 std::span<const uintptr_t> function_starts,
+                                                 bool red_zone_protection,
+                                                 AddressRanges* covered_ranges) {
     RedZonePatchResult result{};
     auto* module = GetContainingModule(reinterpret_cast<void*>(segment_addr));
     if (module == nullptr || function_starts.empty()) {
@@ -1627,8 +1635,21 @@ RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_
 
         ++result.function_count;
         auto function = DecodeFunction(function_start, function_end, segment_addr, segment_end);
-        AnalyzeRedZoneLiveness(function);
+        if (red_zone_protection) {
+            AnalyzeRedZoneLiveness(function);
+        }
         result.instruction_count += function.instructions.size();
+        if (covered_ranges != nullptr) {
+            // Functions and their instructions are visited in address order.
+            for (const auto& [address, decoded] : function.instructions) {
+                const uintptr_t end = address + decoded.instruction.length;
+                if (!covered_ranges->empty() && address <= covered_ranges->back().second) {
+                    covered_ranges->back().second = std::max(covered_ranges->back().second, end);
+                } else {
+                    covered_ranges->emplace_back(address, end);
+                }
+            }
+        }
 
         std::map<uintptr_t, InstructionRewrite> rewrite_sites;
 
@@ -1638,6 +1659,7 @@ RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_
         for (auto& [address, decoded] : function.instructions) {
             const PatchInfo* matching_patch = FindMatchingPatch(decoded);
             const auto [patched, _] = TryPatch(reinterpret_cast<u8*>(address), module);
+            result.inplace_cpu_patch_instruction_count += patched;
             if (IsInPlaceMemoryPatch(decoded.instruction.mnemonic)) {
                 const RedZoneMask red_zone_live = decoded.red_zone_live;
                 decoded = DecodeCodeInstruction(address, function_end);
@@ -1651,7 +1673,7 @@ RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_
             }
         }
 
-        if (function.uses_red_zone) {
+        if (red_zone_protection && function.uses_red_zone) {
             ++result.red_zone_function_count;
             result.indirect_red_zone_function_count += function.has_indirect_branch;
             for (const auto& [address, decoded] : function.instructions) {
@@ -2117,9 +2139,85 @@ RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_
     return result;
 }
 
+/// Returns the start of the SSE4a instruction whose opcode is at the given address, or null if
+/// the bytes before it are not the prefixes of one.
+static u8* FindSSE4aInstructionStart(u8* opcode, const u8* lower_bound) {
+    if (opcode[0] != 0x0F || (opcode[1] != 0x78 && opcode[1] != 0x79 && opcode[1] != 0x2B)) {
+        return nullptr;
+    }
+    u8* start = opcode - 1;
+    if (start >= lower_bound && (*start & 0xF0) == 0x40) {
+        // REX prefix
+        --start;
+    }
+    if (start < lower_bound || (*start != 0x66 && *start != 0xF2 && *start != 0xF3)) {
+        return nullptr;
+    }
+    return start;
+}
+
+/// Patches the SSE4a instructions between covered_ranges in place, without relocating any.
+/// The bytes after the last range are skipped, as they hold read-only data.
+static void PatchUncoveredSSE4aInstructions(u64 segment_addr, const AddressRanges& covered_ranges,
+                                            RedZonePatchResult& result) {
+    auto* module = GetContainingModule(reinterpret_cast<void*>(segment_addr));
+    if (module == nullptr) {
+        return;
+    }
+    std::unique_lock lock{module->mutex};
+
+    const auto patch_gap = [&](uintptr_t gap_start, uintptr_t gap_end) {
+        auto* const lower_bound = reinterpret_cast<u8*>(gap_start);
+        for (uintptr_t address = gap_start; address + 2 <= gap_end; ++address) {
+            u8* const start =
+                FindSSE4aInstructionStart(reinterpret_cast<u8*>(address), lower_bound);
+            if (start == nullptr) {
+                continue;
+            }
+            const auto decoded = DecodeCodeInstruction(reinterpret_cast<uintptr_t>(start), gap_end);
+            if (decoded.instruction.length == 0 || FindMatchingPatch(decoded) == nullptr) {
+                continue;
+            }
+            if (TryPatch(start, module).first) {
+                ++result.uncovered_inplace_cpu_patch_instruction_count;
+            } else if (!IsInPlaceMemoryPatch(decoded.instruction.mnemonic)) {
+                ++result.uncovered_unsupported_cpu_patch_instruction_count;
+            }
+            address = decoded.address + decoded.instruction.length - 1;
+        }
+    };
+
+    uintptr_t cursor = segment_addr;
+    for (const auto& [range_start, range_end] : covered_ranges) {
+        if (range_start > cursor) {
+            patch_gap(cursor, range_start);
+        }
+        cursor = std::max(cursor, range_end);
+    }
+}
+
+RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_size,
+                                                  std::span<const uintptr_t> function_starts) {
+    return PatchSegmentStatically(segment_addr, segment_size, function_starts, true, nullptr);
+}
+
+RedZonePatchResult PatchCpuInstructionsStatically(u64 segment_addr, u64 segment_size,
+                                                  std::span<const uintptr_t> function_starts) {
+    AddressRanges covered_ranges;
+    auto result =
+        PatchSegmentStatically(segment_addr, segment_size, function_starts, false, &covered_ranges);
+    // The EH frame search table does not list every function of every module.
+    PatchUncoveredSSE4aInstructions(segment_addr, covered_ranges, result);
+    return result;
+}
+
 #else
 
 RedZonePatchResult PatchRedZoneMemoryInstructions(u64, u64, std::span<const uintptr_t>) {
+    return {};
+}
+
+RedZonePatchResult PatchCpuInstructionsStatically(u64, u64, std::span<const uintptr_t>) {
     return {};
 }
 
