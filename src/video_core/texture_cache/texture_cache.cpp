@@ -23,7 +23,10 @@
 namespace VideoCore {
 
 static constexpr u32 MAX_IMAGES = std::numeric_limits<u16>::max();
-static constexpr u32 MAX_IMAGE_VIEWS = std::numeric_limits<u16>::max();
+/* TODO: Some games may use large numbers of image views (e.g. loading compressed textures with
+ * block texel view looks at each individual level/layer). We could garbage collect on stale image
+ * views to reduce this. */
+static constexpr u32 MAX_IMAGE_VIEWS = (1u << 20u);
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                            Vulkan::Runtime& runtime_, AmdGpu::Liverpool* liverpool_,
