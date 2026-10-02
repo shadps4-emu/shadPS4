@@ -6,7 +6,6 @@
 #include "video_core/host_shaders/fsr_easu_comp.h"
 #include "video_core/host_shaders/fsr_rcas_comp.h"
 #include "common/config.h"
-#include "video_core/host_shaders/fsr_comp.h"
 #include "video_core/renderer_vulkan/host_passes/fsr_pass.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"

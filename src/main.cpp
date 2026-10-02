@@ -93,7 +93,6 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> gameFolder;
     std::optional<std::filesystem::path> modsFolder;
     std::optional<int> waitPid;
-    bool waitForDebugger = false;
     bool userfaultfd = false;
 
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
