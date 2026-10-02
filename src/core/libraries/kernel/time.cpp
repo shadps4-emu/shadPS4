@@ -29,6 +29,8 @@
 namespace Libraries::Kernel {
 
 static u64 initial_ptc;
+static std::chrono::system_clock::time_point network_boottime;
+static std::chrono::steady_clock::time_point initial_uptime;
 static std::unique_ptr<Common::NativeClock> clock;
 
 u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
@@ -129,8 +131,15 @@ s32 PS4_SYSV_ABI posix_clock_gettime(u32 clock_id, OrbisKernelTimespec* ts) {
     }
     if (clock_id == ORBIS_CLOCK_EXT_NETWORK || clock_id == ORBIS_CLOCK_EXT_DEBUG_NETWORK ||
         clock_id == ORBIS_CLOCK_EXT_AD_NETWORK || clock_id == ORBIS_CLOCK_EXT_RAW_NETWORK) {
-        LOG_ERROR(Lib_Kernel, "Unsupported clock type {}, using CLOCK_MONOTONIC", clock_id);
-        clock_id = ORBIS_CLOCK_MONOTONIC;
+        const auto current_time =
+            network_boottime + (std::chrono::steady_clock::now() - initial_uptime);
+        const auto epoch_ns =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(current_time.time_since_epoch())
+                .count();
+
+        ts->tv_sec = epoch_ns / 1'000'000'000;
+        ts->tv_nsec = epoch_ns % 1'000'000'000;
+        return 0;
     }
 
 #ifdef _WIN32
@@ -300,8 +309,9 @@ s32 PS4_SYSV_ABI posix_clock_getres(u32 clock_id, OrbisKernelTimespec* res) {
 
     if (clock_id == ORBIS_CLOCK_EXT_NETWORK || clock_id == ORBIS_CLOCK_EXT_DEBUG_NETWORK ||
         clock_id == ORBIS_CLOCK_EXT_AD_NETWORK || clock_id == ORBIS_CLOCK_EXT_RAW_NETWORK) {
-        LOG_ERROR(Lib_Kernel, "Unsupported clock type {}, using CLOCK_MONOTONIC", clock_id);
-        clock_id = ORBIS_CLOCK_MONOTONIC;
+        res->tv_sec = 0;
+        res->tv_nsec = 1;
+        return 0;
     }
 
 #ifdef _WIN32
@@ -546,6 +556,8 @@ s32 PS4_SYSV_ABI sceKernelSettimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimez
 void RegisterTime(Core::Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();
     initial_ptc = clock->GetUptime();
+    network_boottime = std::chrono::system_clock::now();
+    initial_uptime = std::chrono::steady_clock::now();
 
     // POSIX
     LIB_FUNCTION("NhpspxdjEKU", "libkernel", 1, "libkernel", posix_nanosleep);
