@@ -38,14 +38,18 @@ static vk::Format ConvertPixelFormat(const VideoOutFormat format) {
 ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
                      VAddr cpu_address) noexcept {
     const auto& attrib = group.attrib;
-    props.is_tiled = attrib.tiling_mode == TilingMode::Tile;
+    props = ImageProperties{
+        .is_tiled = attrib.tiling_mode == TilingMode::Tile,
+    };
     tile_mode =
         props.is_tiled ? AmdGpu::TileMode::Display2DThin : AmdGpu::TileMode::DisplayLinearAligned;
     array_mode = AmdGpu::GetArrayMode(tile_mode);
     pixel_format = ConvertPixelFormat(attrib.pixel_format);
+    num_samples = 1;
     type = AmdGpu::ImageType::Color2D;
     size.width = attrib.width;
     size.height = attrib.height;
+    size.depth = 1;
     pitch = attrib.tiling_mode == TilingMode::Linear ? size.width : (size.width + 127) & (~127);
     num_bits = attrib.pixel_format != VideoOutFormat::A16R16G16B16Float ? 32 : 64;
     ASSERT(num_bits == 32);
@@ -55,7 +59,9 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
 }
 
 ImageInfo::ImageInfo(const AmdGpu::ColorBuffer& buffer, AmdGpu::CbDbExtent hint) noexcept {
-    props.is_tiled = buffer.IsTiled();
+    props = ImageProperties{
+        .is_tiled = buffer.IsTiled(),
+    };
     tile_mode = buffer.GetTileMode();
     array_mode = AmdGpu::GetArrayMode(tile_mode);
     pixel_format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt());
@@ -89,9 +95,11 @@ ImageInfo::ImageInfo(const AmdGpu::DepthBuffer& buffer, u32 num_slices, VAddr ht
     array_mode = AmdGpu::GetArrayMode(tile_mode);
     pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
     type = AmdGpu::ImageType::Color2D;
-    props.is_tiled = buffer.IsTiled();
-    props.is_depth = true;
-    props.has_stencil = buffer.stencil_info.format != AmdGpu::DepthBuffer::StencilFormat::Invalid;
+    props = ImageProperties{
+        .is_tiled = buffer.IsTiled(),
+        .is_depth = true,
+        .has_stencil = buffer.stencil_info.format != AmdGpu::DepthBuffer::StencilFormat::Invalid,
+    };
     num_samples = buffer.NumSamples();
     num_bits = buffer.NumBits();
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
@@ -116,20 +124,24 @@ ImageInfo::ImageInfo(const AmdGpu::DepthBuffer& buffer, u32 num_slices, VAddr ht
     }
 }
 
-ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept {
+ImageInfo::ImageInfo(const AmdGpu::Image& sharp, const Shader::ImageResource& desc) noexcept {
+    const bool is_depth = desc.is_depth;
+    const auto image = sharp;
     const auto data_fmt = image.GetDataFmt();
     tile_mode = image.GetTileMode();
     array_mode = AmdGpu::GetArrayMode(tile_mode);
     pixel_format = LiverpoolToVK::SurfaceFormat(data_fmt, image.GetNumberFmt());
-    if (desc.is_depth) {
+    if (is_depth) {
         pixel_format = LiverpoolToVK::PromoteFormatToDepth(pixel_format);
-        props.is_depth = true;
     }
     type = image.GetBaseType();
-    props.is_tiled = image.IsTiled();
-    props.is_volume = type == AmdGpu::ImageType::Color3D;
-    props.is_pow2 = image.pow2pad;
-    props.is_block = AmdGpu::IsBlockCoded(data_fmt);
+    props = ImageProperties{
+        .is_volume = type == AmdGpu::ImageType::Color3D,
+        .is_tiled = image.IsTiled(),
+        .is_pow2 = image.pow2pad,
+        .is_block = AmdGpu::IsBlockCoded(data_fmt),
+        .is_depth = is_depth,
+    };
     size.width = image.width + 1;
     size.height = image.height + 1;
     size.depth = props.is_volume ? image.depth + 1 : 1;
@@ -138,11 +150,11 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     resources.layers = image.NumLayers();
     num_samples = image.NumSamples();
     num_bits = NumBitsPerBlock(data_fmt);
-    bank_swizzle = image.GetBankSwizzle();
-
     guest_address = image.Address();
-
-    alt_tile = Libraries::Kernel::sceKernelIsNeoMode() && image.alt_tile_mode;
+    if (image.alt_tile_mode) {
+        bank_swizzle = sharp.GetBankSwizzle();
+        alt_tile = Libraries::Kernel::sceKernelIsNeoMode();
+    }
     UpdateSize();
 }
 
@@ -155,7 +167,7 @@ bool ImageInfo::IsCompatible(const ImageInfo& info) const {
 u32 num_calls = 0;
 u32 num_fast_path = 0;
 
-void ImageInfo::UpdateSize() {
+void ImageInfo::UpdateSize() noexcept {
     ASSERT_MSG(array_mode != AmdGpu::ArrayMode::ArrayLinearGeneral,
                "Unhandled array mode: ArrayLinearGeneral");
     if (std::has_single_bit(pitch) && pitch <= 1024 && pitch == size.height && size.depth == 1 &&

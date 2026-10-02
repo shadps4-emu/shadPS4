@@ -3,12 +3,12 @@
 
 #pragma once
 
-#include <deque>
 #include <mutex>
 #include <optional>
 
 #include "common/enum.h"
 #include "common/incremental_id.h"
+#include "common/lru_cache.h"
 #include "common/small_vector.h"
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
@@ -78,7 +78,7 @@ public:
     vk::DeviceSize size_bytes{};
 };
 
-struct Image {
+struct Image : public Common::LRUNode<> {
     explicit Image(const Vulkan::Instance& instance, Vulkan::Runtime& runtime,
                    Common::SlotVector<ImageView>& slot_image_views, const ImageInfo& info);
     ~Image();

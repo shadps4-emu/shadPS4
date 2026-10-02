@@ -10,6 +10,7 @@ namespace VideoCore {
 
 using ImageId = Common::SlotId;
 using ImageViewId = Common::SlotId;
+using SamplerId = Common::SlotId;
 
 struct Offset2D {
     s32 x;

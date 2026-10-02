@@ -4,8 +4,8 @@
 #pragma once
 
 #include <mutex>
-#include <unordered_set>
-#include <tsl/robin_map.h>
+#include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
 
 #include "common/lru_cache.h"
 #include "common/multi_level_page_table.h"
@@ -134,8 +134,8 @@ public:
     /// Updates image contents if it was modified by CPU.
     void UpdateImage(ImageId image_id) {
         Image& image = slot_images[image_id];
-        TrackImage(image_id);
         TouchImage(image);
+        TrackImage(image_id);
         RefreshImage(image);
     }
 
@@ -208,7 +208,7 @@ public:
     bool IsMetaCleared(VAddr address, u32 slice) const {
         const auto& it = surface_metas.find(address);
         if (it != surface_metas.end()) {
-            return it.value().clear_mask & (1u << slice);
+            return it->second.clear_mask & (1u << slice);
         }
         return false;
     }
@@ -217,7 +217,7 @@ public:
     bool ClearMeta(VAddr address) {
         auto it = surface_metas.find(address);
         if (it != surface_metas.end()) {
-            it.value().clear_mask = u32(-1);
+            it->second.clear_mask = u32(-1);
             return true;
         }
         return false;
@@ -228,9 +228,9 @@ public:
         auto it = surface_metas.find(address);
         if (it != surface_metas.end()) {
             if (is_clear) {
-                it.value().clear_mask |= 1u << slice;
+                it->second.clear_mask |= 1u << slice;
             } else {
-                it.value().clear_mask &= ~(1u << slice);
+                it->second.clear_mask &= ~(1u << slice);
             }
             return true;
         }
@@ -317,8 +317,11 @@ private:
     void DeleteImage(ImageId image_id);
 
     /// Touch the image in the LRU cache.
-    void TouchImage(const Image& image);
+    void TouchImage(Image& image) {
+        image_lru_cache.Touch(image, gc_tick);
+    }
 
+    /// Removes image from the cache and schedules it for deletion.
     void FreeImage(ImageId image_id) {
         {
             std::scoped_lock lk{slot_images[image_id].mutex};
@@ -338,12 +341,14 @@ private:
     AmdGpu::Liverpool* liverpool;
     BufferCache& buffer_cache;
     PageManager& tracker;
+    PageTable page_table;
     Common::SlotVector<Image> slot_images;
     Common::SlotVector<ImageView> slot_image_views;
+    Common::SlotVector<Sampler> slot_samplers;
     BlitHelper blit_helper;
     TileManager tile_manager;
-    tsl::robin_map<u64, Sampler> samplers;
-    std::unordered_set<ImageId> download_images;
+    absl::flat_hash_map<u64, SamplerId> samplers;
+    absl::flat_hash_set<ImageId> download_images;
     u64 total_used_memory = 0;
     u64 trigger_gc_memory = 0;
     u64 pressure_gc_memory = 0;
@@ -353,16 +358,15 @@ private:
     u64 pressure_gc_samplers = 0;
     u64 critical_gc_samplers = 0;
     u64 gc_tick = 0;
-    Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
-    Common::LeastRecentlyUsedCache<u64, u64> sampler_lru_cache;
+    Common::LRUCache<Image> image_lru_cache;
+    Common::LRUCache<Sampler> sampler_lru_cache;
     const bool readback_linear_images;
-    PageTable page_table;
     std::mutex download_images_mutex;
     struct MetaDataInfo {
         MetaType type;
         s32 clear_mask = -1;
     };
-    tsl::robin_map<VAddr, MetaDataInfo> surface_metas;
+    absl::flat_hash_map<VAddr, MetaDataInfo> surface_metas;
 };
 
 } // namespace VideoCore
