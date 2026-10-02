@@ -180,6 +180,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, s32 numEn
                                     s32* numEntriesOut, s32 flags);
 
 s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, u64 len, const char* name);
+s32 PS4_SYSV_ABI sceKernelClearVirtualRangeName(const void* addr, u64 len);
 
 s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, u64 len, u64 alignment,
                                            u64* physAddrOut);
