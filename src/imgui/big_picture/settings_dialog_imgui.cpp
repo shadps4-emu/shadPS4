@@ -601,6 +601,8 @@ void SettingsWindow::DrawGameFolderManager() {
         ImGui::SetNextWindowSize(viewport->Size);
     }
 
+    float buttonWidth = ImGui::GetItemRectSize().x;
+    ImGui::PushItemWidth(buttonWidth);
     if (ImGui::SliderInt("Folder Scan Depth", &scanDepthSetting, 0, 5)) {
         std::string profile;
         const bool isGlobal = currentProfile == "Global";
@@ -620,6 +622,7 @@ void SettingsWindow::DrawGameFolderManager() {
             GetProfileInfo();
         }
     }
+    ImGui::PopItemWidth();
 
     if (ImGuiFileDialog::Instance()->Display("OpenFolder", child_flags | ImGuiWindowFlags_NoMove)) {
         if (ImGuiFileDialog::Instance()->IsOk()) {
