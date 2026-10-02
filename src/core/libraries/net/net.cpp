@@ -78,9 +78,13 @@ bool IsEpoll(OrbisNetId id) {
     return Core::Net::GetObjectKind(id) == Core::Net::NetObjectKind::Epoll;
 }
 
-// Sets errno and returns the matching ORBIS_NET_ERROR_* code. Logs the failure.
+std::atomic<void (*)(int)> g_kernel_errno_hook{nullptr};
+
 s32 SetErrno(int orbis_errno, const std::source_location where = std::source_location::current()) {
     g_net_errno = orbis_errno;
+    if (const auto hook = g_kernel_errno_hook.load(std::memory_order_relaxed)) {
+        hook(orbis_errno);
+    }
     LogFailure(orbis_errno, where);
     return ORBIS_NET_ERROR_BASE | orbis_errno;
 }
@@ -2835,6 +2839,10 @@ s32 PS4_SYSV_ABI sceNetEmulationGet() {
 s32 PS4_SYSV_ABI sceNetEmulationSet() {
     LOG_WARNING(Lib_Net, "network emulation is not available on retail units");
     return SetErrno(ORBIS_NET_EOPNOTSUPP);
+}
+
+void SetKernelErrnoHook(void (*hook)(int orbis_errno)) {
+    g_kernel_errno_hook.store(hook);
 }
 
 void SetSystemHooks(SystemHooks hooks) {

@@ -257,6 +257,7 @@ struct SystemHooks {
     std::function<u32()> public_addr; // network byte order
 };
 void SetSystemHooks(SystemHooks hooks);
+void SetKernelErrnoHook(void (*hook)(int orbis_errno));
 
 // P2P runs over one shared UDP socket, started lazily on first use.
 

@@ -80,6 +80,7 @@ void InstallKernelIntegration() {
             },
         .release = [](s32 fd) { FDTable::Instance()->DeleteHandle(fd); },
     });
+    SetKernelErrnoHook([](int orbis_errno) { *Libraries::Kernel::__Error() = orbis_errno; });
     SetSystemHooks({
         .is_online = [] { return EmulatorSettings.IsConnectedToNetwork(); },
         .mac_address =
