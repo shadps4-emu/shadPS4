@@ -169,7 +169,8 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, s32 flags, u
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     if (alignment != 0) {
-        if ((!std::has_single_bit(alignment) && !Common::Is16KBAligned(alignment))) {
+        if (!std::has_single_bit(alignment) || !Common::Is16KBAligned(alignment) ||
+            alignment > 0x8000'0000ULL) {
             LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
             return ORBIS_KERNEL_ERROR_EINVAL;
         }
@@ -559,6 +560,12 @@ s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, u64 len, const c
 
     auto* memory = Core::Memory::Instance();
     memory->NameVirtualRange(std::bit_cast<VAddr>(addr), len, name);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelClearVirtualRangeName(const void* addr, u64 len) {
+    auto* memory = Core::Memory::Instance();
+    memory->NameVirtualRange(std::bit_cast<VAddr>(addr), len, "");
     return ORBIS_OK;
 }
 
@@ -1011,6 +1018,7 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("2SKEx6bSq-4", "libkernel", 1, "libkernel", sceKernelBatchMap);
     LIB_FUNCTION("kBJzF8x4SyE", "libkernel", 1, "libkernel", sceKernelBatchMap2);
     LIB_FUNCTION("DGMG3JshrZU", "libkernel", 1, "libkernel", sceKernelSetVirtualRangeName);
+    LIB_FUNCTION("mkgXxsoxWHg", "libkernel", 1, "libkernel", sceKernelClearVirtualRangeName);
     LIB_FUNCTION("n1-v6FgU7MQ", "libkernel", 1, "libkernel", sceKernelConfiguredFlexibleMemorySize);
 
     LIB_FUNCTION("vSMAm3cxYTY", "libkernel", 1, "libkernel", sceKernelMprotect);

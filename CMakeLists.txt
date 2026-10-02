@@ -213,14 +213,14 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "18")
-set(EMULATOR_VERSION_PATCH "1")
+set(EMULATOR_VERSION_MINOR "19")
+set(EMULATOR_VERSION_PATCH "0")
 
 set_source_files_properties(src/dist/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
 
 set(APP_VERSION_NUM "${EMULATOR_VERSION_MAJOR}.${EMULATOR_VERSION_MINOR}.${EMULATOR_VERSION_PATCH}")
-set(APP_VERSION "${APP_VERSION_NUM} WIP")
-set(APP_IS_RELEASE false)
+set(APP_VERSION "${APP_VERSION_NUM}")
+set(APP_IS_RELEASE true)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp" @ONLY)
 
 message("-- end git things, remote: ${GIT_REMOTE_NAME}, branch: ${GIT_BRANCH}, link: ${GIT_REMOTE_URL}")
@@ -822,6 +822,7 @@ set(COMMON src/common/logging/classes.cpp
            src/common/singleton.h
            src/common/slab_heap.h
            src/common/small_vector.h
+           src/common/slot_vector.cpp
            src/common/slot_vector.h
            src/common/spin_lock.cpp
            src/common/spin_lock.h
