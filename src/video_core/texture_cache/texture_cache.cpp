@@ -22,14 +22,15 @@
 
 namespace VideoCore {
 
-static constexpr u64 PageShift = 12;
-static constexpr u64 NumFramesBeforeRemoval = 32;
+static constexpr u32 MAX_IMAGES = std::numeric_limits<u16>::max();
+static constexpr u32 MAX_IMAGE_VIEWS = std::numeric_limits<u16>::max();
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                            Vulkan::Runtime& runtime_, AmdGpu::Liverpool* liverpool_,
                            BufferCache& buffer_cache_, PageManager& tracker_)
     : instance{instance_}, scheduler{scheduler_}, runtime{runtime_}, liverpool{liverpool_},
-      buffer_cache{buffer_cache_}, tracker{tracker_}, blit_helper{instance, scheduler},
+      buffer_cache{buffer_cache_}, tracker{tracker_}, slot_images{MAX_IMAGES},
+      slot_image_views{MAX_IMAGE_VIEWS}, blit_helper{instance, scheduler},
       tile_manager{instance, scheduler, runtime, buffer_cache.GetStreamBuffer()},
       readback_linear_images{EmulatorSettings.IsReadbackLinearImagesEnabled()} {
 
@@ -231,7 +232,7 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
         auto new_info = requested_info;
         new_info.resources = std::max(requested_info.resources, cache_image.info.resources);
         new_info.UpdateSize();
-        const auto new_image_id = slot_images.insert(instance, runtime, slot_image_views, new_info);
+        const auto new_image_id = slot_images.Insert(instance, runtime, slot_image_views, new_info);
         RegisterImage(new_image_id);
 
         // Inherit image usage
@@ -255,9 +256,11 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                                                            BindingType binding,
                                                            ImageId cache_image_id,
                                                            ImageId merged_image_id) {
+    static constexpr u64 NUM_FRAMES_BEFORE_REMOVAL = 32;
+
     auto& cache_image = slot_images[cache_image_id];
     const bool safe_to_delete =
-        scheduler.CurrentTick() - cache_image.tick_accessed_last > NumFramesBeforeRemoval;
+        scheduler.CurrentTick() - cache_image.tick_accessed_last > NUM_FRAMES_BEFORE_REMOVAL;
 
     // Equal address
     if (image_info.guest_address == cache_image.info.guest_address) {
@@ -482,7 +485,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
-    const auto new_image_id = slot_images.insert(instance, runtime, slot_image_views, info);
+    const auto new_image_id = slot_images.Insert(instance, runtime, slot_image_views, info);
     RegisterImage(new_image_id);
 
     auto& src_image = slot_images[image_id];
@@ -566,7 +569,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     }
     // Create and register a new image
     if (!image_id) {
-        image_id = slot_images.insert(instance, runtime, slot_image_views, info);
+        image_id = slot_images.Insert(instance, runtime, slot_image_views, info);
         RegisterImage(image_id);
     }
 
@@ -687,7 +690,7 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
             info.guest_address = desc.info.stencil_addr;
             info.guest_size = desc.info.stencil_size;
             info.size = desc.info.size;
-            stencil_id = slot_images.insert(instance, runtime, slot_image_views, info);
+            stencil_id = slot_images.Insert(instance, runtime, slot_image_views, info);
             RegisterImage(stencil_id);
         }
         Image& stencil_image = slot_images[stencil_id];
@@ -821,16 +824,11 @@ void TextureCache::UnregisterImage(ImageId image_id) {
     total_used_memory -= Common::AlignUp(image.info.guest_size, 1024);
     ForEachPage(image.info.guest_address, image.info.guest_size, [this, image_id](u64 page) {
         const auto page_it = page_table.find(page);
-        if (page_it == nullptr) {
-            UNREACHABLE_MSG("Unregistering unregistered page=0x{:x}", page << PageShift);
-            return;
-        }
+        ASSERT_MSG(page_it, "Unregistering unregistered page={:#x}", page << Traits::PAGE_BITS);
         auto& image_ids = *page_it;
         const auto vector_it = std::ranges::find(image_ids, image_id);
-        if (vector_it == image_ids.end()) {
-            ASSERT_MSG(false, "Unregistering unregistered image in page=0x{:x}", page << PageShift);
-            return;
-        }
+        ASSERT_MSG(vector_it != image_ids.end(), "Unregistering unregistered image in page={:#x}",
+                   page << Traits::PAGE_BITS);
         image_ids.erase(vector_it);
     });
 }
@@ -1089,10 +1087,10 @@ void TextureCache::DeleteImage(ImageId image_id) {
         Image& image = slot_images[image_id];
         for (auto& backing : image.backing_images) {
             for (const ImageViewId image_view_id : backing.image_view_ids) {
-                slot_image_views.erase(image_view_id);
+                slot_image_views.Erase(image_view_id);
             }
         }
-        slot_images.erase(image_id);
+        slot_images.Erase(image_id);
     });
 }
 
