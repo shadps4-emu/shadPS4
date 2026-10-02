@@ -179,14 +179,16 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         }
     };
 
-#if defined(ARCH_X86_64) && defined(_WIN32)
-    // Windows static guest red-zone protection
-    const bool use_static_windows_guest_red_zone_protection =
-        WindowsGuestRedZoneProtection::IsStaticPatchingEnabled();
-    std::vector<std::pair<VAddr, u64>> executable_segments;
-    std::vector<uintptr_t> function_starts;
-#elif defined(ARCH_X86_64) && defined(__APPLE__)
-    // CPU patches are applied ahead of time to the functions of the executable segments.
+#ifdef ARCH_X86_64
+    // Static patching rewrites the functions of the executable segments ahead of time. Windows
+    // uses it for guest red-zone protection, macOS to apply its CPU patches.
+#if defined(_WIN32)
+    const bool use_static_patching = WindowsGuestRedZoneProtection::IsStaticPatchingEnabled();
+#elif defined(__APPLE__)
+    constexpr bool use_static_patching = true;
+#else
+    constexpr bool use_static_patching = false;
+#endif
     std::vector<std::pair<VAddr, u64>> executable_segments;
     std::vector<uintptr_t> function_starts;
 #endif
@@ -214,14 +216,9 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 #ifdef ARCH_X86_64
             if (elf_pheader[i].p_flags & PF_EXEC) {
                 PrePatchInstructions(segment_addr, segment_file_size);
-#ifdef _WIN32
-                // Windows static guest red-zone protection
-                if (use_static_windows_guest_red_zone_protection) {
+                if (use_static_patching) {
                     executable_segments.emplace_back(segment_addr, segment_file_size);
                 }
-#elif defined(__APPLE__)
-                executable_segments.emplace_back(segment_addr, segment_file_size);
-#endif
             }
 #endif
             break;
@@ -264,14 +261,9 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             const VAddr eh_hdr_end = eh_hdr_start + eh_frame_hdr_size;
             Dwarf::EHHeaderInfo hdr_info;
             if (Dwarf::DecodeEHHdr(eh_hdr_start, eh_hdr_end, hdr_info)) {
-#if defined(ARCH_X86_64) && defined(_WIN32)
-                // Windows static guest red-zone protection
-                if (use_static_windows_guest_red_zone_protection &&
+#ifdef ARCH_X86_64
+                if (use_static_patching &&
                     !Dwarf::DecodeEHHdrTable(hdr_info, eh_hdr_end, function_starts)) {
-                    LOG_ERROR(Core_Linker, "Failed to decode EH frame search table for {}", name);
-                }
-#elif defined(ARCH_X86_64) && defined(__APPLE__)
-                if (!Dwarf::DecodeEHHdrTable(hdr_info, eh_hdr_end, function_starts)) {
                     LOG_ERROR(Core_Linker, "Failed to decode EH frame search table for {}", name);
                 }
 #endif
@@ -291,7 +283,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 
 #if defined(ARCH_X86_64) && defined(_WIN32)
     // Windows static guest red-zone protection
-    if (use_static_windows_guest_red_zone_protection) {
+    if (use_static_patching) {
         u64 analyzed_function_count{};
         u64 stack_dependent_instruction_count{};
         u64 control_flow_instruction_count{};
