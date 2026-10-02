@@ -681,6 +681,10 @@ U1 IREmitter::InverseBallot(const U64& mask) {
     return Inst<U1>(Opcode::InverseBallot, mask);
 }
 
+U32 IREmitter::GroupUMin(const U32& value) {
+    return Inst<U32>(Opcode::GroupUMin, value);
+}
+
 U1 IREmitter::GroupAny(const U1& bit) {
     return Inst<U1>(Opcode::GroupAny, bit);
 }
