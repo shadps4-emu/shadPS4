@@ -302,7 +302,7 @@ constexpr std::pair<u32, u32> GetMacroTileExtents(AmdGpu::TileMode tile_mode, u3
     return (alt ? macro_tile_extents_alt : macro_tile_extents)[samples_log][row + column];
 }
 
-constexpr std::tuple<u32, u32, size_t> ImageSizeLinearAligned(u32 pitch, u32 height, u32 bpp,
+constexpr std::tuple<u16, u16, size_t> ImageSizeLinearAligned(u32 pitch, u32 height, u32 bpp,
                                                               u32 num_samples) {
     const auto pitch_align = std::max(8u, 64u / ((bpp + 7) / 8));
     auto pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
@@ -316,7 +316,7 @@ constexpr std::tuple<u32, u32, size_t> ImageSizeLinearAligned(u32 pitch, u32 hei
     return {pitch_aligned, height_aligned, (log_sz * bpp + 7) / 8};
 }
 
-constexpr std::tuple<u32, u32, size_t> ImageSizeMicroTiled(u32 pitch, u32 height, u32 thickness,
+constexpr std::tuple<u16, u16, size_t> ImageSizeMicroTiled(u32 pitch, u32 height, u32 thickness,
                                                            u32 bpp, u32 num_samples) {
     constexpr auto pitch_align = micro_tile_extent.first;
     constexpr auto height_align = micro_tile_extent.second;
@@ -339,7 +339,7 @@ constexpr bool IsMacroTiledMip(u32 pitch, u32 height, u32 bpp, u32 num_samples,
     return pitch >= pitch_align && height >= height_align;
 }
 
-constexpr std::tuple<u32, u32, size_t> ImageSizeMacroTiled(u32 pitch, u32 height, u32 bpp,
+constexpr std::tuple<u16, u16, size_t> ImageSizeMacroTiled(u32 pitch, u32 height, u32 bpp,
                                                            u32 num_samples,
                                                            AmdGpu::TileMode tile_mode, bool alt) {
     const auto [pitch_align, height_align] = GetMacroTileExtents(tile_mode, bpp, num_samples, alt);
@@ -352,8 +352,8 @@ constexpr std::tuple<u32, u32, size_t> ImageSizeMacroTiled(u32 pitch, u32 height
 
 struct MipInfo {
     u32 size;
-    u32 pitch;
-    u32 height;
+    u16 pitch;
+    u16 height;
     u32 offset;
 };
 
@@ -404,8 +404,8 @@ constexpr void ComputeImageSize(u32 pitch, u32 height, u32 depth, u32 levels, u3
             }
         }
         if (is_block) {
-            mip_info.pitch = std::max(mip_info.pitch * 4, 32u);
-            mip_info.height = std::max(mip_info.height * 4, 32u);
+            mip_info.pitch = std::max<u16>(mip_info.pitch * 4, 32u);
+            mip_info.height = std::max<u16>(mip_info.height * 4, 32u);
         }
         u32 num_slices = mip_d * layers;
         num_slices += (-num_slices) & (mip_thickness - 1);
@@ -414,5 +414,37 @@ constexpr void ComputeImageSize(u32 pitch, u32 height, u32 depth, u32 levels, u3
         *out_size += mip_info.size;
     }
 }
+
+struct TableEntry {
+    u32 guest_size;
+    u32 micro_tiled_mips;
+    std::array<MipInfo, MAX_MIPS> mips_layout;
+};
+
+constexpr auto Pow2Bcn64ImageTable = [] {
+    static constexpr u32 MAX_DIM_LOG2 = 11;
+    std::array<TableEntry, MAX_DIM_LOG2> entry{};
+    for (u32 i = 0; i < MAX_DIM_LOG2; ++i) {
+        const u32 pitch = 1 << i;
+        ComputeImageSize(pitch, pitch, 1, std::bit_width(pitch), 1, 64, 1, true, true, false,
+                         AmdGpu::TileMode::Thin1DThin, AmdGpu::ArrayMode::Array1DTiledThin1,
+                         &entry[i].guest_size, &entry[i].micro_tiled_mips,
+                         entry[i].mips_layout.data());
+    }
+    return entry;
+}();
+
+constexpr auto Pow2Bcn128ImageTable = [] {
+    static constexpr u32 MAX_DIM_LOG2 = 11;
+    std::array<TableEntry, MAX_DIM_LOG2> entry{};
+    for (u32 i = 0; i < MAX_DIM_LOG2; ++i) {
+        const u32 pitch = 1 << i;
+        ComputeImageSize(pitch, pitch, 1, std::bit_width(pitch), 1, 128, 1, true, true, false,
+                         AmdGpu::TileMode::Thin1DThin, AmdGpu::ArrayMode::Array1DTiledThin1,
+                         &entry[i].guest_size, &entry[i].micro_tiled_mips,
+                         entry[i].mips_layout.data());
+    }
+    return entry;
+}();
 
 } // namespace VideoCore

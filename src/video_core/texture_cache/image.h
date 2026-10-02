@@ -146,11 +146,11 @@ public:
         UniqueImage image;
         State state;
         std::vector<State> subresource_states;
-        SmallVector<ImageViewInfo, 4> image_view_infos;
-        SmallVector<ImageViewId, 4> image_view_ids;
+        SmallVector<ImageViewInfo, 2> image_view_infos;
+        SmallVector<ImageViewId, 2> image_view_ids;
         u32 num_samples;
     };
-    std::deque<BackingImage> backing_images;
+    SmallVector<BackingImage, 2> backing_images;
     BackingImage* backing{};
     u64 image_uid{};
     u64 lru_id{};

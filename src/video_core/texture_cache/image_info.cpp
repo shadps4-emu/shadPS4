@@ -5,6 +5,7 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/videoout/buffer.h"
 #include "shader_recompiler/resource.h"
+#include "video_core/amdgpu/tiling.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/texture_cache/host_compatibility.h"
 #include "video_core/texture_cache/image_info.h"
@@ -116,9 +117,10 @@ ImageInfo::ImageInfo(const AmdGpu::DepthBuffer& buffer, u32 num_slices, VAddr ht
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept {
+    const auto data_fmt = image.GetDataFmt();
     tile_mode = image.GetTileMode();
     array_mode = AmdGpu::GetArrayMode(tile_mode);
-    pixel_format = LiverpoolToVK::SurfaceFormat(image.GetDataFmt(), image.GetNumberFmt());
+    pixel_format = LiverpoolToVK::SurfaceFormat(data_fmt, image.GetNumberFmt());
     if (desc.is_depth) {
         pixel_format = LiverpoolToVK::PromoteFormatToDepth(pixel_format);
         props.is_depth = true;
@@ -127,7 +129,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     props.is_tiled = image.IsTiled();
     props.is_volume = type == AmdGpu::ImageType::Color3D;
     props.is_pow2 = image.pow2pad;
-    props.is_block = AmdGpu::IsBlockCoded(image.GetDataFmt());
+    props.is_block = AmdGpu::IsBlockCoded(data_fmt);
     size.width = image.width + 1;
     size.height = image.height + 1;
     size.depth = props.is_volume ? image.depth + 1 : 1;
@@ -135,7 +137,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& de
     resources.levels = image.NumLevels();
     resources.layers = image.NumLayers();
     num_samples = image.NumSamples();
-    num_bits = NumBitsPerBlock(image.GetDataFmt());
+    num_bits = NumBitsPerBlock(data_fmt);
     bank_swizzle = image.GetBankSwizzle();
 
     guest_address = image.Address();
@@ -150,9 +152,28 @@ bool ImageInfo::IsCompatible(const ImageInfo& info) const {
            num_samples == info.num_samples && num_bits == info.num_bits;
 }
 
+u32 num_calls = 0;
+u32 num_fast_path = 0;
+
 void ImageInfo::UpdateSize() {
-    if (array_mode == AmdGpu::ArrayMode::ArrayLinearGeneral) {
-        UNREACHABLE_MSG("Unhandled array mode: ArrayLinearGeneral");
+    ASSERT_MSG(array_mode != AmdGpu::ArrayMode::ArrayLinearGeneral,
+               "Unhandled array mode: ArrayLinearGeneral");
+    if (std::has_single_bit(pitch) && pitch <= 1024 && pitch == size.height && size.depth == 1 &&
+        resources.levels == std::bit_width(pitch) && resources.layers == 1 && num_samples == 1 &&
+        props.is_block && props.is_pow2 && !alt_tile && tile_mode == AmdGpu::TileMode::Thin1DThin) {
+        if (num_bits == 128) {
+            const auto& entry = Pow2Bcn128ImageTable[std::bit_width(pitch) - 1];
+            mips_layout = entry.mips_layout;
+            guest_size = entry.guest_size;
+            micro_tiled_mips = entry.micro_tiled_mips;
+            return;
+        } else if (num_bits == 64) {
+            const auto& entry = Pow2Bcn64ImageTable[std::bit_width(pitch) - 1];
+            mips_layout = entry.mips_layout;
+            guest_size = entry.guest_size;
+            micro_tiled_mips = entry.micro_tiled_mips;
+            return;
+        }
     }
     ComputeImageSize(pitch, size.height, size.depth, resources.levels, resources.layers, num_bits,
                      num_samples, props.is_block, props.is_pow2, alt_tile, tile_mode, array_mode,
@@ -233,7 +254,7 @@ s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
     const auto info_dim = info.props.is_block ? 2 : 0;
     const auto mip_w = std::max(info.size.width >> (mip + info_dim), 1u);
     const auto mip_h = std::max(info.size.height >> (mip + info_dim), 1u);
-    const auto mip_p = std::max(info.mips_layout[mip].pitch >> info_dim, 1u);
+    const auto mip_p = std::max<u32>(info.mips_layout[mip].pitch >> info_dim, 1u);
 
     const auto this_dim = props.is_block ? 2 : 0;
     const auto this_w = std::max(size.width >> this_dim, 1u);

@@ -53,15 +53,15 @@ struct SubresourceLayers {
 };
 
 struct SubresourceBase {
-    u32 level = 0;
-    u32 layer = 0;
+    u16 level = 0;
+    u16 layer = 0;
 
     auto operator<=>(const SubresourceBase&) const = default;
 };
 
 struct SubresourceExtent {
-    u32 levels = 1;
-    u32 layers = 1;
+    u16 levels = 1;
+    u16 layers = 1;
 
     auto operator<=>(const SubresourceExtent&) const = default;
 };
@@ -70,7 +70,7 @@ struct SubresourceRange {
     SubresourceBase base;
     SubresourceExtent extent;
 
-    auto operator<=>(const SubresourceRange&) const = default;
+    bool operator==(const SubresourceRange&) const = default;
 };
 
 struct ImageCopy {

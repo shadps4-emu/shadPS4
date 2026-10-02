@@ -744,8 +744,8 @@ void TextureCache::RefreshImage(Image& image) {
         const u32 depth =
             image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
         const auto [mip_size, mip_pitch, mip_height, mip_offset] = image.info.mips_layout[m];
-        const u32 extent_width = mip_pitch ? std::min(mip_pitch, width) : width;
-        const u32 extent_height = mip_height ? std::min(mip_height, height) : height;
+        const u32 extent_width = mip_pitch ? std::min<u32>(mip_pitch, width) : width;
+        const u32 extent_height = mip_height ? std::min<u32>(mip_height, height) : height;
         image_copies.push_back({
             .bufferOffset = mip_offset,
             .bufferRowLength = mip_pitch,
@@ -1010,6 +1010,9 @@ void TextureCache::GarbageCollectSamplers() {
     }
 }
 
+extern u32 num_calls;
+extern u32 num_fast_path;
+
 void TextureCache::RunGarbageCollector() {
     SCOPE_EXIT {
         ++gc_tick;
@@ -1017,6 +1020,9 @@ void TextureCache::RunGarbageCollector() {
 
     GarbageCollectImages();
     GarbageCollectSamplers();
+    // LOG_WARNING(Render, "Num UpdateSize calls {} num fast path {}", num_calls, num_fast_path);
+    num_calls = 0;
+    num_fast_path = 0;
 }
 
 void TextureCache::TouchImage(const Image& image) {
