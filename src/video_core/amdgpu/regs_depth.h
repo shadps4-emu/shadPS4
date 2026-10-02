@@ -5,6 +5,7 @@
 
 #include "common/assert.h"
 #include "common/types.h"
+#include "video_core/amdgpu/msaa_override.h"
 #include "video_core/amdgpu/tiling.h"
 
 namespace AmdGpu {
@@ -264,8 +265,14 @@ struct DepthBuffer {
         return u64(stencil_write_base) << 8;
     }
 
-    u32 NumSamples() const {
+    /// Sample count as laid out in guest memory.
+    u32 GuestNumSamples() const {
         return 1u << z_info.num_samples; // spec doesn't say it is a log2
+    }
+
+    /// Sample count used by the host renderer.
+    u32 NumSamples() const {
+        return g_force_no_msaa ? 1 : GuestNumSamples();
     }
 
     u32 NumBits() const {

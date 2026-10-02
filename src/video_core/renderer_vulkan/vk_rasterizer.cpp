@@ -63,6 +63,16 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
       pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
       host_markers_enabled{Config::getVkHostMarkersEnabled()},
       guest_markers_enabled{Config::getVkGuestMarkersEnabled()} {
+    // God of War III Remastered: render without host MSAA (see msaa_override.h).
+    // BRUNO_NO_MSAA=1/0 in the environment forces it on/off for any game.
+    {
+        const auto& serial = Common::ElfInfo::Instance().GameSerial();
+        const bool is_gow3 = serial == "CUSA01623" || serial == "CUSA01715";
+        const char* env = std::getenv("BRUNO_NO_MSAA");
+        AmdGpu::g_force_no_msaa = env ? env[0] == '1' : is_gow3;
+        LOG_INFO(Render_Vulkan, "[BRUNO] host MSAA override: force_no_msaa={} (serial {})",
+                 AmdGpu::g_force_no_msaa, serial);
+    }
     if (!Config::nullGpu()) {
         liverpool->BindRasterizer(this);
     }

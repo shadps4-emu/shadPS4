@@ -4,6 +4,7 @@
 #pragma once
 
 #include "video_core/amdgpu/pixel_format.h"
+#include "video_core/amdgpu/msaa_override.h"
 #include "video_core/amdgpu/tiling.h"
 
 namespace AmdGpu {
@@ -220,8 +221,14 @@ struct ColorBuffer {
         return VAddr(fmask_base_address) << 8;
     }
 
-    u32 NumSamples() const {
+    /// Sample count as laid out in guest memory.
+    u32 GuestNumSamples() const {
         return 1 << attrib.num_fragments_log2;
+    }
+
+    /// Sample count used by the host renderer.
+    u32 NumSamples() const {
+        return g_force_no_msaa ? 1 : GuestNumSamples();
     }
 
     u32 BaseSlice() const {

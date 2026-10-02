@@ -7,6 +7,7 @@
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "video_core/amdgpu/pixel_format.h"
+#include "video_core/amdgpu/msaa_override.h"
 #include "video_core/amdgpu/tiling.h"
 
 namespace AmdGpu {
@@ -246,6 +247,9 @@ struct Image {
     }
 
     u32 NumSamples() const {
+        if (g_force_no_msaa) {
+            return 1;
+        }
         if (GetType() == ImageType::Color2DMsaa || GetType() == ImageType::Color2DMsaaArray) {
             return 1u << last_level;
         }
@@ -319,6 +323,15 @@ struct Image {
         }
         if (base_type == ImageType::Color2DArray && !is_array) {
             return ImageType::Color2D;
+        }
+        if (g_force_no_msaa) {
+            // Multisampled textures are bound as plain 2D textures on the host.
+            if (base_type == ImageType::Color2DMsaa) {
+                return ImageType::Color2D;
+            }
+            if (base_type == ImageType::Color2DMsaaArray) {
+                return is_array ? ImageType::Color2DArray : ImageType::Color2D;
+            }
         }
         if (base_type == ImageType::Color2DMsaaArray && !is_array) {
             return ImageType::Color2DMsaa;
