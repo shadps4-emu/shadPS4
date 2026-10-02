@@ -163,7 +163,7 @@ SDL_Texture* LoadSdlTextureDataFromFile(std::filesystem::path filePath) {
 }
 
 void scanFolder(std::vector<IconInfo>& icons, std::filesystem::path folderPath, int depth) {
-    if (depth > 2) {
+    if (depth > EmulatorSettings.GetBigPictureFolderDepth()) {
         return;
     }
 

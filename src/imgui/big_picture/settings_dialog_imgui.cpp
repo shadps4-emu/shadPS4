@@ -32,10 +32,10 @@ int SettingsWindow::GetComboIndex(std::string selection, std::vector<std::string
 }
 
 void SettingsWindow::LoadSettings(std::string profile) {
-    const bool isSpecific = currentProfile != "Global";
-    isSpecific ? EmulatorSettings.Load(profile) : EmulatorSettings.Load();
+    // Global-only settings
+    EmulatorSettings.Load();
+    scanDepthSetting = EmulatorSettings.GetBigPictureFolderDepth();
 
-    /////////// General Tab
     int languageIndex = EmulatorSettings.GetConsoleLanguage();
     std::string language;
     for (const auto& [key, value] : languageMap) {
@@ -44,6 +44,12 @@ void SettingsWindow::LoadSettings(std::string profile) {
         }
     }
 
+    const bool isSpecific = currentProfile != "Global";
+    if (isSpecific) {
+        EmulatorSettings.Load(profile);
+    }
+
+    /////////// General Tab
     consoleLanguageSetting = GetComboIndex(language, languageOptions);
     volumeSetting = EmulatorSettings.GetVolumeSlider();
     showSplashSetting = EmulatorSettings.IsShowSplash();
@@ -593,6 +599,26 @@ void SettingsWindow::DrawGameFolderManager() {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->Pos);
         ImGui::SetNextWindowSize(viewport->Size);
+    }
+
+    if (ImGui::SliderInt("Folder Scan Depth", &scanDepthSetting, 0, 5)) {
+        std::string profile;
+        const bool isGlobal = currentProfile == "Global";
+        if (!isGlobal) {
+            profile = currentProfile.substr(0, 9);
+            EmulatorSettings.Load();
+        }
+
+        EmulatorSettings.SetBigPictureFolderDepth(scanDepthSetting);
+        EmulatorSettings.Save();
+
+        if (!isGlobal) {
+            EmulatorSettings.Load(profile);
+        }
+
+        if (!isGameRunning) {
+            GetProfileInfo();
+        }
     }
 
     if (ImGuiFileDialog::Instance()->Display("OpenFolder", child_flags | ImGuiWindowFlags_NoMove)) {
