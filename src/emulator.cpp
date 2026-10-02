@@ -474,7 +474,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings.IsDevKit());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", EmulatorSettings.IsConnectedToNetwork());
     LOG_INFO(Config, "General isShadNetEnabled: {}", EmulatorSettings.IsShadNetEnabled());
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
     LOG_INFO(Config, "General isRedZonePatchingEnabled: {}",
              EmulatorSettings.IsRedZonePatchingEnabled());
 #endif
