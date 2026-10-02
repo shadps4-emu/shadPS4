@@ -462,7 +462,8 @@ s32 PS4_SYSV_ABI sceVoiceReadFromOPort(u32 port_id, void* data, u32* size) {
         return ORBIS_OK;
     }
     std::array<s16, kFrameSamples> frame{};
-    if (capture->Read(frame.data()) < 0) {
+    if (capture->TryRead(frame.data()) <= 0) {
+        // No data ready yet; never block the caller waiting for the microphone.
         return ORBIS_OK;
     }
     const u32 to_copy = std::min(requested, kFrameBytes);
