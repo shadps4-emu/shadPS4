@@ -822,6 +822,7 @@ set(COMMON src/common/logging/classes.cpp
            src/common/singleton.h
            src/common/slab_heap.h
            src/common/small_vector.h
+           src/common/slot_vector.cpp
            src/common/slot_vector.h
            src/common/spin_lock.cpp
            src/common/spin_lock.h

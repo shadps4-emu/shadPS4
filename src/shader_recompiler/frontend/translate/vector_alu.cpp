@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/opcodes.h"
@@ -720,10 +720,10 @@ void Translator::V_OR_B32(bool is_xor, const GcnInst& inst) {
 }
 
 void Translator::V_BFM_B32(const GcnInst& inst) {
-    // bitmask width
-    const IR::U32 src0{ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(4))};
-    // bitmask offset
-    const IR::U32 src1{ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(4))};
+    // bitmask width, S0[4:0]
+    const IR::U32 src0{ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(5))};
+    // bitmask offset, S1[4:0]
+    const IR::U32 src1{ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(5))};
     const IR::U32 ones = ir.ISub(ir.ShiftLeftLogical(ir.Imm32(1), src0), ir.Imm32(1));
     SetDst(inst.dst[0], ir.ShiftLeftLogical(ones, src1));
 }
@@ -786,19 +786,16 @@ void Translator::V_SUBREV_I32(const GcnInst& inst) {
 }
 
 void Translator::V_ADDC_U32(const GcnInst& inst) {
-    // Unsigned components
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 carry{GetCarryIn(inst)};
-    const IR::Value tmp1{ir.IAddCarry(src0, src1)};
-    const IR::U32 result1{ir.CompositeExtract(tmp1, 0)};
-    const IR::U32 carry_out1{ir.CompositeExtract(tmp1, 1)};
-    const IR::Value tmp2{ir.IAddCarry(result1, carry)};
-    const IR::U32 result2{ir.CompositeExtract(tmp2, 0)};
-    const IR::U32 carry_out2{ir.CompositeExtract(tmp2, 1)};
+    const IR::U32 result1{ir.IAdd(src0, src1)};
+    const IR::U32 result2{ir.IAdd(result1, carry)};
+    const IR::U1 carry_out1{ir.ILessThan(result1, src0, false)};
+    const IR::U1 carry_out2{ir.ILessThan(result2, result1, false)};
     SetDst(inst.dst[0], result2);
 
-    const IR::U1 did_overflow{ir.INotEqual(ir.BitwiseOr(carry_out1, carry_out2), ir.Imm32(0))};
+    const IR::U1 did_overflow{ir.LogicalOr(carry_out1, carry_out2)};
     SetCarryOut(inst, did_overflow);
 }
 
@@ -1519,8 +1516,10 @@ void Translator::V_CVT_PK_U8_F32(const GcnInst& inst) {
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 src2{GetSrc(inst.src[2])};
 
-    const IR::U32 value_uint = ir.ConvertFToU(32, src0);
-    const IR::U32 offset = ir.ShiftLeftLogical(src1, ir.Imm32(3));
+    const IR::F32 clamped{ir.FPClamp(ir.FPRoundEven(src0), ir.Imm32(0.0f), ir.Imm32(255.0f))};
+    const IR::F32 value{ir.Select(ir.FPIsNan(src0), ir.Imm32(0.0f), clamped)};
+    const IR::U32 value_uint{ir.ConvertFToU(32, value)};
+    const IR::U32 offset{ir.ShiftLeftLogical(ir.BitwiseAnd(src1, ir.Imm32(3)), ir.Imm32(3))};
     SetDst(inst.dst[0], ir.BitFieldInsert(src2, value_uint, offset, ir.Imm32(8)));
 }
 
@@ -1547,7 +1546,8 @@ void Translator::V_ALIGNBIT_B32(const GcnInst& inst) {
     const IR::U32 src1{GetSrc(inst.src[1])};
     const IR::U32 src2{ir.BitwiseAnd(GetSrc(inst.src[2]), ir.Imm32(0x1F))};
     const IR::U32 lo{ir.ShiftRightLogical(src1, src2)};
-    const IR::U32 hi{ir.ShiftLeftLogical(src0, ir.ISub(ir.Imm32(32), src2))};
+    const IR::U32 hi{
+        ir.ShiftLeftLogical(ir.ShiftLeftLogical(src0, ir.Imm32(1)), ir.ISub(ir.Imm32(31), src2))};
     SetDst(inst.dst[0], ir.BitwiseOr(lo, hi));
 }
 
@@ -1557,7 +1557,8 @@ void Translator::V_ALIGNBYTE_B32(const GcnInst& inst) {
     const IR::U32 src2{ir.BitwiseAnd(GetSrc(inst.src[2]), ir.Imm32(0x3))};
     const IR::U32 shift{ir.ShiftLeftLogical(src2, ir.Imm32(3))};
     const IR::U32 lo{ir.ShiftRightLogical(src1, shift)};
-    const IR::U32 hi{ir.ShiftLeftLogical(src0, ir.ISub(ir.Imm32(32), shift))};
+    const IR::U32 hi{
+        ir.ShiftLeftLogical(ir.ShiftLeftLogical(src0, ir.Imm32(1)), ir.ISub(ir.Imm32(31), shift))};
     SetDst(inst.dst[0], ir.BitwiseOr(lo, hi));
 }
 

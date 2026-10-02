@@ -422,7 +422,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         }
         set_writes.resize(set_writes.size() + stage->buffers.size() + stage->images.size() +
                           stage->samplers.size());
-        stage->PushUd(binding, push_data);
         BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
         uses_dma |= stage->uses_dma;
@@ -768,6 +767,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             if (desc.buffer_type == Shader::BufferType::GdsBuffer) {
                 const auto* gds_buf = buffer_cache.GetGdsBuffer();
                 buffer_infos.emplace_back(gds_buf->Handle(), 0, gds_buf->SizeBytes());
+                needs_barrier |=
+                    runtime.IsBufferAccessed(gds_buf, 0, gds_buf->SizeBytes(), desc.is_written);
                 bound_buffers.emplace_back(gds_buf, 0, gds_buf->SizeBytes(), desc.is_written);
             } else if (desc.buffer_type == Shader::BufferType::Flatbuf) {
                 auto& vk_buffer = buffer_cache.GetStreamBuffer();
@@ -994,6 +995,18 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
 
     for (const auto& sampler : stage.samplers) {
         auto ssharp = sampler.GetSharp(stage);
+        if (!ssharp.Valid() || (ssharp.border_color_type.Value() == AmdGpu::BorderColor::Custom &&
+                                liverpool->regs.ta_bc_base.Address() == 0)) {
+            LOG_WARNING(Render_Vulkan,
+                        "Rejecting invalid S# max_aniso={}, filter_mode={}, mip_filter={}, "
+                        "border_color_type={}, border_color_base={:#x}",
+                        static_cast<u32>(ssharp.max_aniso.Value()),
+                        static_cast<u32>(ssharp.filter_mode.Value()),
+                        static_cast<u32>(ssharp.mip_filter.Value()),
+                        static_cast<u32>(ssharp.border_color_type.Value()),
+                        liverpool->regs.ta_bc_base.Address());
+            ssharp = AmdGpu::Sampler{};
+        }
         const auto vk_sampler =
             texture_cache.GetSampler(ssharp, liverpool->regs.ta_bc_base, sampler.is_depth);
         image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
