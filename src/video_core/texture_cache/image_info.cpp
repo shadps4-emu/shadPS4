@@ -138,7 +138,7 @@ ImageInfo::ImageInfo(const AmdGpu::Image& sharp, const Shader::ImageResource& de
     props = ImageProperties{
         .is_volume = type == AmdGpu::ImageType::Color3D,
         .is_tiled = image.IsTiled(),
-        .is_pow2 = image.pow2pad,
+        .is_pow2 = static_cast<u32>(image.pow2pad),
         .is_block = AmdGpu::IsBlockCoded(data_fmt),
         .is_depth = is_depth,
     };
