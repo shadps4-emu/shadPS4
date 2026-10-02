@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
-#include "video_core/bruno_diag.h"
 #include "video_core/renderer_vulkan/render_target_sync.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_runtime.h"
@@ -19,13 +18,6 @@ RenderTargetSync::RenderTargetSync(const Instance& instance_, Scheduler& schedul
 RenderTargetSync::~RenderTargetSync() = default;
 
 void RenderTargetSync::RecordRtWrite(VAddr addr, VideoCore::ImageId id) {
-    if (auto it = pending_rt_writes_.find(addr);
-        (it == pending_rt_writes_.end() || it->second != id) && BrunoDiag::On()) {
-        const auto& i = texture_cache.GetImage(id);
-        LOG_INFO(Render_Vulkan, "[BRUNO-EV] RT_WRITE addr={:#x} id={} {}x{} s={} fmt={}", addr,
-                 id.index, i.info.size.width, i.info.size.height, i.info.num_samples,
-                 vk::to_string(i.info.pixel_format));
-    }
     pending_rt_writes_[addr] = id;
     // New RT content at this address — old dedup is stale.
     pending_rt_copied_.erase(addr);
@@ -57,46 +49,7 @@ void RenderTargetSync::CopyFromLastRt(VAddr addr, VideoCore::ImageId tex_id, u32
         return;
 
     auto& tex_image = texture_cache.GetImage(tex_id);
-    if (BrunoDiag::On()) {
-        LOG_INFO(Render_Vulkan,
-                 "[BRUNO-EV] RT_TO_ALIAS addr={:#x} rt={} ({}x{} s={}) -> tex={} ({}x{} s={} "
-                 "fmt={} flags={:#x}) copy={}x{} tile rt={} tex={} pitch rt={} tex={}",
-                 addr, rt_id.index, rt_image.info.size.width, rt_image.info.size.height,
-                 rt_image.info.num_samples, tex_id.index, tex_image.info.size.width,
-                 tex_image.info.size.height, tex_image.info.num_samples,
-                 vk::to_string(tex_image.info.pixel_format), u32(tex_image.flags), copy_w, copy_h,
-                 u32(rt_image.info.tile_mode), u32(tex_image.info.tile_mode), rt_image.info.pitch,
-                 tex_image.info.pitch);
-    }
-    // A freshly created alias has every dirty bit set, so the next RefreshImage would upload
-    // guest memory over the render target contents we are about to copy. Guest memory never
-    // received those contents (the RT lives on the host GPU), so that upload replaces the
-    // current frame with stale data. God of War III re-creates its post-process input view
-    // almost every frame (its height changes), which made the artifact come and go.
-    // The RT copy is the authoritative data for such an image, so drop its dirty state.
-    // An alias that is only CpuDirty was written through guest memory after the RT
-    // (e.g. by StorageImageSync) and must still be refreshed from there.
-    static const bool keep_stale_upload = BrunoDiag::Flag("BRUNO_NOFIX1");
-    // Only for a row-prefix view of the RT: same layout (width, pitch, tiling, bpp, samples)
-    // and no more rows than the RT. Smaller aliases with a different width are unrelated
-    // images that merely share the address; their real contents are in guest memory.
-    const auto& ri = rt_image.info;
-    const auto& ti = tex_image.info;
-    const bool is_row_prefix_view =
-        ti.size.width == ri.size.width && ti.pitch == ri.pitch && ti.tile_mode == ri.tile_mode &&
-        ti.num_bits == ri.num_bits && ti.num_samples == ri.num_samples &&
-        ti.size.height <= ri.size.height && ti.resources.levels == 1 && ri.resources.levels == 1;
-    const bool is_new_alias = is_row_prefix_view &&
-                              (tex_image.flags & VideoCore::ImageFlagBits::Dirty) ==
-                                  VideoCore::ImageFlagBits::Dirty;
-    if (BrunoDiag::On()) {
-        LOG_INFO(Render_Vulkan, "[BRUNO-EV]   fix1: row_prefix={} new_alias={} applied={}",
-                 is_row_prefix_view, is_new_alias, is_new_alias && !keep_stale_upload);
-    }
     CopyRtToAlias(rt_image, tex_image);
-    if (is_new_alias && !keep_stale_upload) {
-        tex_image.flags &= ~VideoCore::ImageFlagBits::Dirty;
-    }
 }
 
 void RenderTargetSync::PushPendingRtAliases() {

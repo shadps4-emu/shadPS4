@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include <unordered_set>
 
 #include "common/elf_info.h"
 #include "common/logging/log.h"
-#include "video_core/bruno_diag.h"
 #include "core/memory.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/storage_image_sync.h"
@@ -82,50 +80,6 @@ void StorageImageSync::Sync(VideoCore::ImageId image_id) {
               "write_back_size={}",
               guest_addr, img.info.size.width, img.info.size.height, img.info.resources.layers, bpp,
               row_length, download_size, write_back_size);
-
-    if (img.info.size.width >= 960 && img.info.num_bits == 32 && BrunoDiag::On()) {
-        LOG_INFO(Render_Vulkan,
-                 "[BRUNO-EV] STORAGE_SYNC addr={:#x} id={} {}x{} tiled={} fmt={} write_back={} "
-                 "guest_size={}",
-                 guest_addr, image_id.index, img.info.size.width, img.info.size.height,
-                 u32(img.info.props.is_tiled), vk::to_string(img.info.pixel_format),
-                 write_back_size, img.info.guest_size);
-    }
-
-    // BRUNO-DIAG: describe each distinct synced image (and its aliases) once.
-    {
-        static std::unordered_set<u64> seen;
-        const auto describe = [](const char* tag, const VideoCore::Image& i) {
-            const auto& m = i.info.mips_layout[0];
-            LOG_INFO(Render_Vulkan,
-                     "[BRUNO] {} guest={:#x} {}x{}x{} fmt={} bits={} samples={} tiled={} "
-                     "tile_mode={} array_mode={} pitch={} guest_size={} mips={} layers={} "
-                     "mip0(size={} pitch={} height={} off={}) flags={:#x}",
-                     tag, i.info.guest_address, i.info.size.width, i.info.size.height,
-                     i.info.size.depth, vk::to_string(i.info.pixel_format), i.info.num_bits,
-                     i.info.num_samples, u32(i.info.props.is_tiled), u32(i.info.tile_mode),
-                     u32(i.info.array_mode), i.info.pitch, i.info.guest_size,
-                     i.info.resources.levels, i.info.resources.layers, m.size, m.pitch, m.height,
-                     m.offset, u32(i.flags));
-        };
-        const u64 key = guest_addr ^ (u64(img.info.size.width) << 40) ^
-                        (u64(img.info.size.height) << 52) ^ (u64(img.info.tile_mode) << 34);
-        if (seen.insert(key).second) {
-            describe("SYNC ", img);
-            const u64 page = guest_addr >> VideoCore::TextureCache::Traits::PageBits;
-            if (const auto page_it = texture_cache.GetPageTable().find(page); page_it) {
-                for (VideoCore::ImageId other_id : *page_it) {
-                    if (other_id == image_id) {
-                        continue;
-                    }
-                    auto& other = texture_cache.GetImage(other_id);
-                    if (other.info.guest_address == guest_addr) {
-                        describe("ALIAS", other);
-                    }
-                }
-            }
-        }
-    }
 
     const auto download = runtime.GetStagingPool().Request(
         std::max<u64>(write_back_size, img.info.guest_size), VideoCore::MemoryType::HostCached);

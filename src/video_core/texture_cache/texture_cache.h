@@ -114,10 +114,6 @@ public:
     /// Schedules a copy of pending images for download back to CPU memory.
     void ProcessDownloadImages();
 
-    /// BRUNO debug: dump every single-sample image of at least 960 px wide to raw files
-    /// when a file named "bruno_dump" exists in the working directory.
-    void BrunoDumpImages(bool force = false, const char* dir = "bruno_dumps");
-
     /// Add an image to the download queue for guest memory writeback on next submit.
     void AddDownload(ImageId image_id) {
         download_images.emplace(image_id);
