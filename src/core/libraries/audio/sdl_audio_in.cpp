@@ -108,6 +108,26 @@ public:
         }
     }
 
+    int TryRead(void* out_buffer) override {
+        const int bytesToRead = port.samples_num * port.sample_size * port.channels_num;
+
+        if (stream) {
+            if (SDL_GetAudioStreamAvailable(stream) < bytesToRead) {
+                return 0;
+            }
+            const int bytesRead = SDL_GetAudioStreamData(stream, out_buffer, bytesToRead);
+            if (bytesRead < 0) {
+                LOG_ERROR(Lib_AudioIn, "Audio input read error: {}", SDL_GetError());
+                return 0;
+            }
+            return bytesRead / (port.sample_size * port.channels_num);
+        } else if (internal_buffer) {
+            std::memcpy(out_buffer, internal_buffer, bytesToRead);
+            return port.samples_num;
+        }
+        return 0;
+    }
+
     void Clear() override {
         if (stream) {
             SDL_ClearAudioStream(stream);
