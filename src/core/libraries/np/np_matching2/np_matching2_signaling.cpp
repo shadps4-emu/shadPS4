@@ -308,7 +308,14 @@ s32 FillMatching2LocalNetInfo(void* info) {
     }
 
     auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
+    // GetIp() is empty until something asks for it. RetrieveIp() connects out, so only once.
+    if (netinfo->GetIp().empty()) {
+        netinfo->RetrieveIp();
+    }
     out->localAddr = NpSignaling::ParseIpv4Nbo(netinfo->GetIp());
+    if (out->localAddr == 0) {
+        out->localAddr = NpSignaling::ParseIpv4Nbo("127.0.0.1");
+    }
     out->mappedAddr = 0;
     out->natStatus = 0;
     NetCtl::OrbisNetCtlNatInfo nat_info{};

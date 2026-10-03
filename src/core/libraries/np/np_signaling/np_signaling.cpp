@@ -644,7 +644,14 @@ s32 PS4_SYSV_ABI sceNpSignalingGetLocalNetInfo(OrbisNpSignalingContextId ctxId,
     }
 
     auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
+    // GetIp() is empty until something asks for it. RetrieveIp() connects out, so only once.
+    if (netinfo->GetIp().empty()) {
+        netinfo->RetrieveIp();
+    }
     info->localAddr = ParseIpv4Nbo(netinfo->GetIp());
+    if (info->localAddr == 0) {
+        info->localAddr = ParseIpv4Nbo("127.0.0.1");
+    }
 
     NetCtl::OrbisNetCtlNatInfo nat_info{};
     nat_info.size = sizeof(nat_info);
