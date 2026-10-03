@@ -167,15 +167,46 @@ void scanFolder(std::vector<IconInfo>& icons, std::filesystem::path folderPath, 
         return;
     }
 
-    for (const auto& entry : std::filesystem::directory_iterator(folderPath)) {
-        if (std::filesystem::is_directory(entry) &&
-            !std::filesystem::exists(entry.path() / "eboot.bin")) {
+    std::error_code ec;
+    std::filesystem::directory_iterator it(folderPath, std::filesystem::directory_options::none,
+                                           ec);
+    std::filesystem::directory_iterator end;
+
+    if (ec) {
+        LOG_ERROR(ImGui, "Cannot open folder: {} due to filesystem error: {}", folderPath.string(),
+                  ec.message());
+        return;
+    }
+
+    while (it != end) {
+        // For access errors getting it.path may not be safe, so log parent folder
+        if (ec) {
+            LOG_ERROR(ImGui, "Cannot access item inside folder {} due to error: {}",
+                      folderPath.string(), ec.message());
+            ec.clear();
+            it.increment(ec);
+            continue;
+        }
+
+        const auto& entry = *it;
+        bool isEntryDir = std::filesystem::is_directory(entry, ec);
+
+        if (ec) {
+            LOG_ERROR(ImGui, "Skipping file/subfolder {} due to filesystem error: {}",
+                      entry.path().string(), ec.message());
+            ec.clear();
+            it.increment(ec);
+            continue;
+        }
+
+        if (isEntryDir && !std::filesystem::exists(entry.path() / "eboot.bin", ec)) {
             scanFolder(icons, entry.path(), depth + 1);
         }
 
         std::string pathstring = entry.path().filename().string();
         if (pathstring.ends_with("-UPDATE") || pathstring.ends_with("-patch") ||
-            (!entry.is_directory() && !Core::FileSys::IsZArchiveFile(entry))) {
+            (!isEntryDir && !Core::FileSys::IsZArchiveFile(entry))) {
+            it.increment(ec);
             continue;
         }
 
@@ -187,6 +218,7 @@ void scanFolder(std::vector<IconInfo>& icons, std::filesystem::path folderPath, 
             }
 
             if (pathstring.ends_with("-UPDATE.zar") || pathstring.ends_with("-patch.zar")) {
+                it.increment(ec);
                 continue;
             }
         }
@@ -196,7 +228,7 @@ void scanFolder(std::vector<IconInfo>& icons, std::filesystem::path folderPath, 
         const std::string sfoFileName = "param.sfo";
         std::filesystem::path sfoPath = UpdateChecker(sfoFileName, entry.path());
 
-        if (std::filesystem::exists(sfoPath) && psf.Open(sfoPath)) {
+        if (std::filesystem::exists(sfoPath, ec) && psf.Open(sfoPath)) {
             if (const auto title = psf.GetString("TITLE"); title.has_value()) {
                 icon.title = *title;
             }
@@ -205,6 +237,7 @@ void scanFolder(std::vector<IconInfo>& icons, std::filesystem::path folderPath, 
                 icon.serial = *title_id;
             }
         } else {
+            it.increment(ec);
             continue;
         }
 
@@ -221,6 +254,7 @@ void scanFolder(std::vector<IconInfo>& icons, std::filesystem::path folderPath, 
 
         icon.focusState = false;
         icons.push_back(icon);
+        it.increment(ec);
     }
 }
 
