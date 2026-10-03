@@ -277,8 +277,6 @@ public:
         });
     }
 
-    /// Iterates over all images whose guest address is exactly cpu_addr. Every image is
-    /// registered in the bucket of its first page, so only that bucket needs to be visited.
     template <typename Func>
     void ForEachImageWithAddress(VAddr cpu_addr, Func&& func) {
         const auto it = page_table.find(cpu_addr >> Traits::PAGE_BITS);
@@ -287,12 +285,8 @@ public:
         }
         const u32 key = u32(cpu_addr >> 8);
         for (const auto& entry : it->entries) {
-            if (entry.key != key) {
-                continue;
-            }
-            Image& image = slot_images[entry.id];
-            if (image.info.guest_address == cpu_addr) {
-                func(entry.id, image);
+            if (entry.key == key) {
+                func(entry.id, slot_images[entry.id]);
             }
         }
     }
