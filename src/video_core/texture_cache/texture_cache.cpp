@@ -595,7 +595,9 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
 
 ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure_valid) {
     SmallVector<ImageId, 4> image_ids;
-    ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
+    // Only images starting at address are accepted and those are always registered in its page,
+    // so scanning the first byte finds the same candidates as scanning the whole range.
+    ForEachImageInRegion(address, std::min<size_t>(size, 1), [&](ImageId image_id, Image& image) {
         if (image.info.guest_address != address) {
             return;
         }
