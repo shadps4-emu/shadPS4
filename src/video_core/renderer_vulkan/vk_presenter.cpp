@@ -705,7 +705,15 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
     auto& image = texture_cache.GetImage(image_id);
     auto image_view = *image.FindView(view_info).image_view;
     const vk::Extent2D image_size = {image.info.size.width, image.info.size.height};
-    expected_ratio = static_cast<float>(image_size.width) / static_cast<float>(image_size.height);
+    vk::Extent2D visible_size = image_size;
+    const vk::Extent2D requested_size = {attribute.attrib.width, attribute.attrib.height};
+    if (image.info.guest_address == cpu_address && image_size.width > requested_size.width &&
+        image_size.height > requested_size.height &&
+        static_cast<u64>(image_size.width) * requested_size.height ==
+            static_cast<u64>(requested_size.width) * image_size.height) {
+        visible_size = requested_size;
+    }
+    expected_ratio = static_cast<float>(visible_size.width) / static_cast<float>(visible_size.height);
 
     const u32 capture_game_only_count = VideoCore::ConsumeGameOnlyScreenshotRequests();
     std::optional<ScreenshotReadback> pending_screenshot;
@@ -740,8 +748,8 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
                     vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderRead);
     runtime.FlushBarriers();
 
-    image_view = fsr_pass.Render(cmdbuf, image_view, image_size, {frame->width, frame->height},
-                                 fsr_settings, frame->is_hdr);
+    image_view = fsr_pass.Render(cmdbuf, image_view, visible_size, image_size,
+                                 {frame->width, frame->height}, fsr_settings, frame->is_hdr);
 
     // Vulkan has no sRGB variant of the 10-bit format, so an A2R10G10B10Srgb buffer reaches
     // the post process pass still sRGB encoded and has to be decoded there instead.
@@ -749,7 +757,7 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
         attribute.attrib.pixel_format == Libraries::VideoOut::PixelFormat::A2R10G10B10Srgb;
     pp_pass.Render(cmdbuf, image_view, image_size, *frame, pp_settings);
 
-    DebugState.game_resolution = {image_size.width, image_size.height};
+    DebugState.game_resolution = {visible_size.width, visible_size.height};
     DebugState.output_resolution = {frame->width, frame->height};
 
     if (pending_screenshot) {
