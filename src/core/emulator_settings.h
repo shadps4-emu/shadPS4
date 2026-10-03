@@ -205,6 +205,8 @@ struct GeneralSettings {
     Setting<std::string> signaling_info{};
     Setting<bool> enable_upnp{true};
     Setting<bool> redzone_patches{false};
+    Setting<int> p2p_port{3658}; // 0 is any free port, 3658 is the default PS4 port. With UPnP
+                                 // enabled it is forwarded on the router.
 
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
@@ -232,7 +234,8 @@ struct GeneralSettings {
                                            &GeneralSettings::shadnet_webapi_server),
             make_override<GeneralSettings>("signaling_info", &GeneralSettings::signaling_info),
             make_override<GeneralSettings>("enable_upnp", &GeneralSettings::enable_upnp),
-            make_override<GeneralSettings>("redzone_patches", &GeneralSettings::redzone_patches)};
+            make_override<GeneralSettings>("redzone_patches", &GeneralSettings::redzone_patches),
+            make_override<GeneralSettings>("p2p_port", &GeneralSettings::p2p_port)};
     }
 };
 
@@ -244,7 +247,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    discord_rpc_enabled, show_fps_counter, console_language,
                                    big_picture_scale, big_picture_folder_depth, shadnet_server,
                                    shadnet_webapi_server, signaling_info, enable_upnp,
-                                   redzone_patches)
+                                   redzone_patches, p2p_port)
 
 // -------------------------------
 // Log settings
@@ -667,6 +670,7 @@ public:
     SETTING_FORWARD(m_general, SignalingInfo, signaling_info)
     SETTING_FORWARD_BOOL(m_general, UPnPEnabled, enable_upnp)
     SETTING_FORWARD_BOOL(m_general, RedZonePatchingEnabled, redzone_patches)
+    SETTING_FORWARD(m_general, P2PPort, p2p_port)
 
     // Log settings
     SETTING_FORWARD_BOOL(m_log, LogAppend, append)

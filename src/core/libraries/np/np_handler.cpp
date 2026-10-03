@@ -12,9 +12,12 @@
 #include "common/string_util.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
-#include "core/libraries/network/net_upnp.h"
+#include "core/libraries/net/net.h"
+#include "core/libraries/net/net_p2p.h"
+#include "core/libraries/net/net_upnp.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
+#include "core/libraries/np/np_matching2/np_matching2_internal.h"
 #include "core/libraries/np/np_matching2/np_matching2_mm.h"
 #include "core/libraries/np/np_score/np_score.h"
 #include "core/libraries/np/np_web_api/np_web_api.h"
@@ -28,9 +31,48 @@
 
 namespace Libraries::Np {
 
+NpHandler::NpHandler()
+    : m_matching2_contexts(
+          std::unique_ptr<NpMatching2::ContextManager>(new NpMatching2::ContextManager())),
+      m_matching2_state(std::make_unique<NpMatching2::NpMatching2State>()) {}
+
+NpHandler::~NpHandler() = default;
+
 NpHandler& NpHandler::GetInstance() {
     static NpHandler s_instance;
     return s_instance;
+}
+
+NpMatching2::ContextManager& NpHandler::GetMatching2ContextManager() {
+    return *m_matching2_contexts;
+}
+
+NpMatching2::NpMatching2State& NpHandler::GetMatching2State() {
+    return *m_matching2_state;
+}
+
+NpHandler::Matching2CacheGuard NpHandler::LockMatching2Cache(
+    NpMatching2::OrbisNpMatching2ContextId ctx_id) {
+    std::shared_ptr<NpMatching2::Matching2ContextCache> cache;
+    {
+        std::lock_guard lock(m_mutex_matching2_cache);
+        auto& entry = m_matching2_cache[ctx_id];
+        if (!entry) {
+            entry = std::make_shared<NpMatching2::Matching2ContextCache>();
+        }
+        cache = entry;
+    }
+    return Matching2CacheGuard(std::move(cache));
+}
+
+void NpHandler::ResetMatching2Cache(NpMatching2::OrbisNpMatching2ContextId ctx_id) {
+    std::lock_guard lock(m_mutex_matching2_cache);
+    m_matching2_cache.erase(ctx_id);
+}
+
+void NpHandler::ResetMatching2Caches() {
+    std::lock_guard lock(m_mutex_matching2_cache);
+    m_matching2_cache.clear();
 }
 
 std::pair<std::string, u16> NpHandler::ParseServerAddress() const {
@@ -192,6 +234,9 @@ void NpHandler::Shutdown() {
 
     if (m_worker_thread.joinable())
         m_worker_thread.join();
+
+    // P2P goes with NP: closes the UDP port and removes its UPnP forwarding.
+    Net::StopP2P();
 
     LOG_INFO(NpHandler, "Shutdown complete");
 }
@@ -696,26 +741,7 @@ bool NpHandler::AcceptSessionInvitation(s32 user_id, const std::string& invitati
     // emulator's system-UI equivalent).
     PostSessionInvitationEvent(user_id, inv.session_id, invitation_id, inv.to_npid, inv.from_npid,
                                inv.from_account_id);
-    // Consume it server-side (PUT usedFlag=true).
-    const std::string base_url = EmulatorSettings.GetShadNetWebApiServer();
-    const std::string token = GetBearerToken(user_id);
-    if (base_url.empty() || token.empty()) {
-        LOG_ERROR(NpHandler, "AcceptSessionInvitation: no WebAPI server/token for user_id={}",
-                  user_id);
-        return false;
-    }
-    httplib::Client cli(base_url);
-    cli.set_connection_timeout(5);
-    cli.set_read_timeout(10);
-    const httplib::Headers headers = {{"Authorization", "Bearer " + token}};
-    const std::string path = "/v1/users/me/invitations/" + invitation_id;
-    const auto res = cli.Put(path.c_str(), headers, "{\"usedFlag\":true}", "application/json");
-    if (!res || (res->status != 200 && res->status != 204)) {
-        LOG_ERROR(NpHandler, "AcceptSessionInvitation: PUT {} failed ({})", path,
-                  res ? res->status : 0);
-        return false;
-    }
-    LOG_INFO(NpHandler, "AcceptSessionInvitation: consumed '{}' session='{}'", invitation_id,
+    LOG_INFO(NpHandler, "AcceptSessionInvitation: accepted '{}' session='{}'", invitation_id,
              inv.session_id);
     return true;
 }
