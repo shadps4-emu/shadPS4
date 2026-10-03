@@ -80,7 +80,7 @@ void TextureCache::DownloadImageMemory(ImageId image_id, DownloadMemoryFlags fla
     const auto image_mips = image.info.resources.levels;
     const auto is_sync = True(flags & DownloadMemoryFlags::Sync);
     const auto is_priority = True(flags & DownloadMemoryFlags::Priority);
-    const auto invalidate_buffer_cache = True(flags & DownloadMemoryFlags::InvalidateBufferCache);
+    const auto discard_buffer_cache = True(flags & DownloadMemoryFlags::DiscardBufferCache);
     ASSERT(!(is_sync && is_priority));
 
     u32 copy_size = 0;
@@ -117,14 +117,13 @@ void TextureCache::DownloadImageMemory(ImageId image_id, DownloadMemoryFlags fla
 
     tile_manager.TileImage(image, buffer_copies, download.buffer, download.offset);
 
-    const auto write_data = [this, image_addr, copy_size, download, invalidate_buffer_cache,
-                             is_sync] {
+    const auto write_data = [this, image_addr, copy_size, download, discard_buffer_cache, is_sync] {
+        download.Invalidate();
         Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(image_addr), download.mapped,
                                                   copy_size);
-        if (invalidate_buffer_cache) {
-            buffer_cache.InvalidateMemory(image_addr, copy_size, false);
+        if (discard_buffer_cache) {
+            buffer_cache.UnmarkRegionAsGpuModified(image_addr, copy_size, true);
         }
-
         if (!is_sync) {
             runtime.GetStagingPool().FreeDeferred(download);
         }
@@ -141,10 +140,10 @@ void TextureCache::DownloadImageMemory(ImageId image_id, DownloadMemoryFlags fla
 }
 
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
-    if (image.hash == 0) {
+    if (image.cpu_hash == 0) {
         // Initialize hash
         const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
-        image.hash = XXH3_64bits(addr, image.info.guest_size);
+        image.cpu_hash = XXH3_64bits(addr, image.info.guest_size);
     }
     image.flags |= ImageFlagBits::MaybeCpuDirty;
     UntrackImage(image_id);
@@ -194,10 +193,16 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
     });
 }
 
-void TextureCache::MarkAsMaybeReused(VAddr addr, size_t size) {
+void TextureCache::MarkAsMaybeGpuDirty(VAddr addr, size_t size) {
     std::scoped_lock lock{mutex};
     ForEachImageInRegion(addr, size, [&](ImageId image_id, Image& image) {
-        image.flags |= ImageFlagBits::MaybeReused;
+        if (image.gpu_hash == 0) {
+            // Read backing pages directly, without faulting through the guest readback path.
+            // An unavailable baseline keeps the conservative GC behavior.
+            const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
+            image.gpu_hash = XXH3_64bits(addr, image.info.guest_size);
+        }
+        image.flags |= ImageFlagBits::MaybeGpuDirty;
     });
 }
 
@@ -752,11 +757,11 @@ void TextureCache::RefreshImage(Image& image) {
         const u32 s_h = image.info.props.is_block ? Common::DivCeil(h, 4u) : h;
         const u32 size = s_w * s_h * (image.info.num_bits / 8);
         const u64 hash = XXH3_64bits(addr, size);
-        if (image.hash == hash) {
+        if (image.cpu_hash == hash) {
             image.flags &= ~ImageFlagBits::MaybeCpuDirty;
             return;
         }
-        image.hash = hash;
+        image.cpu_hash = hash;
     }
 
     const u32 num_layers = image.info.resources.layers;
@@ -988,7 +993,8 @@ void TextureCache::GarbageCollectImages() {
     bool aggresive = false;
     u64 ticks_to_destroy = 0;
     size_t num_deletions = 0;
-    boost::container::small_vector<ImageId, 8> download_pending;
+    boost::container::small_vector<ImageId, 8> download_queue;
+    boost::container::small_vector<ImageId, 8> maybe_download;
 
     const auto configure = [&](bool allow_aggressive) {
         pressured = total_used_memory >= pressure_gc_memory;
@@ -1003,16 +1009,20 @@ void TextureCache::GarbageCollectImages() {
         }
         --num_deletions;
         auto& image = slot_images[image_id];
-        const bool download =
-            image.SafeToDownload() && False(image.flags & ImageFlagBits::MaybeReused);
+        bool download = image.SafeToDownload();
         if (download && !pressured) {
             return false;
         }
         if (download) {
-            download_pending.push_back(image_id);
-            buffer_cache.ReadEdgeImagePages(image);
             UntrackImage(image_id);
             UnregisterImage(image_id);
+            if (True(image.flags & ImageFlagBits::MaybeGpuDirty)) {
+                buffer_cache.ReadMemory(image.info.guest_address, image.info.guest_size, false,
+                                        true, true);
+                maybe_download.push_back(image_id);
+            } else {
+                download_queue.push_back(image_id);
+            }
         } else {
             FreeImage(image_id);
         }
@@ -1040,11 +1050,31 @@ void TextureCache::GarbageCollectImages() {
         lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
     }
 
-    for (const auto& image_id : download_pending) {
-        DownloadImageMemory(image_id, DownloadMemoryFlags::InvalidateBufferCache);
+    if (!maybe_download.empty()) {
+        // wait for memory reads to finish
+        scheduler.Finish();
+        scheduler.PopPendingOperations();
+
+        for (const auto& image_id : maybe_download) {
+            const auto& image = slot_images[image_id];
+            const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
+            const u64 hash = XXH3_64bits(addr, image.info.guest_size);
+            if (image.gpu_hash == hash) {
+                download_queue.push_back(image_id);
+            } else {
+                DeleteImage(image_id);
+            }
+        }
     }
 
-    if (!download_pending.empty()) {
+    for (const auto& image_id : download_queue) {
+        buffer_cache.ReadEdgeImagePages(slot_images[image_id]);
+    }
+    for (const auto& image_id : download_queue) {
+        DownloadImageMemory(image_id, DownloadMemoryFlags::DiscardBufferCache);
+    }
+
+    if (!download_queue.empty()) {
         // We need to make downloads synchronous. It is possible that the contents
         // of the image are requested before they are downloaded in which case
         // outdated buffer cache contents are used instead.
@@ -1052,7 +1082,7 @@ void TextureCache::GarbageCollectImages() {
         scheduler.PopPendingOperations();
     }
 
-    for (const auto& image_id : download_pending) {
+    for (const auto& image_id : download_queue) {
         DeleteImage(image_id);
     }
 }
@@ -1110,7 +1140,8 @@ void TextureCache::TouchImage(Image& image) {
     lru_cache.Touch(image.lru_id, gc_tick);
 
     // Image is still valid
-    image.flags &= ~ImageFlagBits::MaybeReused;
+    image.flags &= ~ImageFlagBits::MaybeGpuDirty;
+    image.gpu_hash = 0;
 }
 
 void TextureCache::DeleteImage(ImageId image_id) {

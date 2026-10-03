@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <magic_enum/magic_enum.hpp>
+#include <xxhash.h>
 
 #include "common/alignment.h"
 #include "core/debug_state.h"
@@ -96,20 +97,20 @@ void BufferCache::TickFrame() {
     DebugState.num_batches_per_frame = std::exchange(num_flushes_per_frame, 0u);
 }
 
-void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool download, bool assume_locks) {
-    if (download) {
-        memory_tracker->InvalidateRegion(device_addr, size,
-                                         [this, device_addr, size, assume_locks] {
-                                             ReadMemory(device_addr, size, true, assume_locks);
-                                         });
-    } else {
-        memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, true);
-        gpu_modified_ranges.Subtract(device_addr, size);
-    }
+void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool assume_locks) {
+    memory_tracker->InvalidateRegion(device_addr, size, [this, device_addr, size, assume_locks] {
+        ReadMemory(device_addr, size, true, false, assume_locks);
+    });
 }
 
-void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool assume_locks) {
-    const auto flush_request = [this, device_addr, size, is_write] {
+void BufferCache::UnmarkRegionAsGpuModified(VAddr device_addr, u64 size, bool is_write) {
+    memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, is_write);
+    gpu_modified_ranges.Subtract(device_addr, size);
+}
+
+void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool async,
+                             bool assume_locks) {
+    const auto flush_request = [this, device_addr, size, is_write, async] {
         const u32 first_block = device_addr >> block_shift;
         const u32 last_block = (device_addr + size - 1) >> block_shift;
         const auto* arena = GetArena(first_block, last_block);
@@ -122,10 +123,7 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
             std::max<VAddr>(Common::AlignDown(device_addr, WindowSize), arena->cpu_addr);
         const VAddr window_end = std::min<VAddr>(
             std::max<VAddr>(window_start + WindowSize, device_addr + size), arena_end);
-        DownloadMemory(arena, window_start, window_end - window_start);
-        if (is_write) {
-            memory_tracker->MarkRegionAsCpuModified(device_addr, size);
-        }
+        DownloadMemory(arena, window_start, window_end - window_start, is_write, async);
     };
     if (assume_locks) {
         flush_request();
@@ -134,7 +132,8 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
     }
 }
 
-void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size) {
+void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool is_write,
+                                 bool async) {
     boost::container::small_vector<vk::BufferCopy, 1> copies;
     u64 total_size_bytes = 0;
     const VAddr arena_base = arena->cpu_addr;
@@ -158,20 +157,37 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
     if (total_size_bytes == 0) {
         return;
     }
-    const auto download = staging_pool.Request(total_size_bytes, VideoCore::MemoryType::HostCached);
+    const auto download =
+        staging_pool.Request(total_size_bytes, VideoCore::MemoryType::HostCached, 16, async);
     for (auto& copy : copies) {
         copy.dstOffset += download.offset;
     }
     runtime.CopyBuffer(arena, download.buffer, copies);
-    scheduler.Finish();
 
-    download.buffer->Invalidate(download.offset, download.size);
-    for (const auto& copy : copies) {
-        auto* dst_addr = std::bit_cast<u8*>(arena_base + copy.srcOffset);
-        memory->TryWriteBacking(dst_addr, download.mapped + (copy.dstOffset - download.offset),
-                                copy.size);
+    const auto write_data = [this, arena_base, device_addr, size, download, is_write, async,
+                             copies = std::move(copies)] {
+        download.Invalidate();
+        for (const auto& copy : copies) {
+            auto* dst_addr = std::bit_cast<u8*>(arena_base + copy.srcOffset);
+            memory->TryWriteBacking(dst_addr, download.mapped + (copy.dstOffset - download.offset),
+                                    copy.size);
+        }
+        memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, false);
+        if (is_write) {
+            memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+        }
+
+        if (async) {
+            staging_pool.FreeDeferred(download);
+        }
+    };
+
+    if (async) {
+        scheduler.DeferOperation(std::move(write_data));
+    } else {
+        scheduler.Finish();
+        write_data();
     }
-    memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, false);
 }
 
 std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 size,
@@ -191,13 +207,15 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     const u64 last_block = (device_addr + size - 1) >> block_shift;
     const auto* arena = GetArena(first_block, last_block);
     EnsureResident(arena, first_block, last_block);
+    if (is_written) {
+        texture_cache.MarkAsMaybeGpuDirty(device_addr, size);
+    }
     sync_batch.Add(device_addr, device_addr + size, is_written);
     if (is_texel_buffer && !is_written) {
         SynchronizeMemoryFromImage(arena, device_addr, size);
     }
     if (is_written) {
         gpu_modified_ranges.Add(device_addr, size);
-        texture_cache.MarkAsMaybeReused(device_addr, size);
     }
     return {arena, arena->Offset(device_addr)};
 }
@@ -229,9 +247,9 @@ bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
 }
 
 void BufferCache::MarkRegionAsGpuModified(VAddr addr, size_t size) {
+    texture_cache.MarkAsMaybeGpuDirty(addr, size);
     sync_batch.Add(addr, addr + size, true);
     gpu_modified_ranges.Add(addr, size);
-    texture_cache.MarkAsMaybeReused(addr, size);
 }
 
 void BufferCache::ReadEdgeImagePages(const Image& image) {
@@ -275,6 +293,7 @@ void BufferCache::ReadEdgeImagePages(const Image& image) {
     runtime.CopyBuffer(buffer, download.buffer, copies);
     scheduler.DeferOperation(
         [this, base = buffer->CpuAddr(), download, copies = std::move(copies)]() {
+            download.Invalidate();
             auto* memory = Core::Memory::Instance();
             for (const auto& copy : copies) {
                 const VAddr copy_device_addr = base + copy.srcOffset;

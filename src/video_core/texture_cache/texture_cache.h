@@ -62,7 +62,7 @@ public:
         None = 0,
         Sync = 1 << 0,
         Priority = 1 << 1,
-        InvalidateBufferCache = 1 << 2,
+        DiscardBufferCache = 1 << 2,
     };
 
     struct ImageDesc {
@@ -101,8 +101,8 @@ public:
     /// Marks an image as dirty if it exists at the provided address.
     void InvalidateMemoryFromGPU(VAddr address, size_t max_size);
 
-    /// Marks an image as maybe reused if it exists within the provided range.
-    void MarkAsMaybeReused(VAddr addr, size_t size);
+    /// Marks all images as maybe GPU dirty within the provided range.
+    void MarkAsMaybeGpuDirty(VAddr addr, size_t size);
 
     /// Evicts any images that overlap the unmapped range.
     void UnmapMemory(VAddr cpu_addr, size_t size);

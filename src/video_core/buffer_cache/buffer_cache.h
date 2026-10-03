@@ -28,6 +28,7 @@ class GraphicsPipeline;
 struct SubmitInfo;
 class Runtime;
 class StagingBufferPool;
+struct StagingBufferRef;
 } // namespace Vulkan
 
 namespace VideoCore {
@@ -92,10 +93,14 @@ public:
     void TickFrame();
 
     /// Invalidates any buffer in the logical page range.
-    void InvalidateMemory(VAddr device_addr, u64 size, bool download, bool assume_locks = false);
+    void InvalidateMemory(VAddr device_addr, u64 size, bool assume_locks = false);
+
+    /// Unmark a region as modified from the GPU.
+    void UnmarkRegionAsGpuModified(VAddr device_addr, u64 size, bool is_write = false);
 
     /// Flushes any GPU modified buffer in the logical page range back to CPU memory.
-    void ReadMemory(VAddr device_addr, u64 size, bool is_write = false, bool assume_locks = false);
+    void ReadMemory(VAddr device_addr, u64 size, bool is_write = false, bool async = false,
+                    bool assume_locks = false);
 
     /// Flushes GPU modified ranges of the uncovered part of the edge pages of an image.
     void ReadEdgeImagePages(const Image& image);
@@ -143,7 +148,8 @@ private:
 
     void EnsureResident(const Buffer* arena, u64 first_block, u64 last_block);
 
-    void DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size);
+    void DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool is_write,
+                        bool async);
 
     bool SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size);
 
