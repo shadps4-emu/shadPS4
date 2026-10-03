@@ -39,6 +39,7 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
       texture_cache{instance, scheduler, runtime, liverpool_, buffer_cache, page_manager},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
+      indirect_dispatch_fixup{instance},
       host_markers_enabled{EmulatorSettings.IsVkHostMarkersEnabled()},
       guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()} {
     if (!EmulatorSettings.IsNullGPU()) {
@@ -359,14 +360,6 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     }
 
     const auto& cs = pipeline->GetStage(Shader::SwStage::Compute);
-    if (cs.workgroup_split_factor > 1) {
-        // Indirect dispatch group counts live in GPU memory, so we can't apply the split here.
-        LOG_ERROR(Render_Vulkan,
-                  "Skipping indirect dispatch of compute pipeline {:#x}: its workgroup size was "
-                  "split to fit device limits, which DispatchIndirect doesn't support yet",
-                  cs.pgm_hash);
-        return;
-    }
 
     if (!BindResources(pipeline)) {
         return;
@@ -380,11 +373,19 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     }
 
     scheduler.EndRendering();
-    pipeline->BindResources(set_writes, push_data);
 
     const auto cmdbuf = scheduler.CommandBuffer();
+    vk::Buffer dispatch_buffer = buffer->Handle();
+    u32 dispatch_offset = base;
+    if (cs.workgroup_split_factor > 1) {
+        // Must run before pipeline->BindResources, which pushes the real descriptors last.
+        std::tie(dispatch_buffer, dispatch_offset) = indirect_dispatch_fixup.Patch(
+            cmdbuf, buffer_cache, buffer->Handle(), base, cs.workgroup_split_factor);
+    }
+
+    pipeline->BindResources(set_writes, push_data);
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
-    cmdbuf.dispatchIndirect(buffer->Handle(), base);
+    cmdbuf.dispatchIndirect(dispatch_buffer, dispatch_offset);
     DebugState.IncDispatch();
 
     ResetBindings(true);
