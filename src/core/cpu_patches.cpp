@@ -109,12 +109,17 @@ static Xbyak::Reg ZydisToXbyakRegisterOperand(const ZydisDecodedOperand& operand
     return ZydisToXbyakRegister(operand.reg.value);
 }
 
-static Xbyak::Address ZydisToXbyakMemoryOperand(const ZydisDecodedOperand& operand) {
+static Xbyak::Address ZydisToXbyakMemoryOperand(void* address,
+                                                const ZydisDecodedInstruction& instruction,
+                                                const ZydisDecodedOperand& operand) {
     ASSERT_MSG(operand.type == ZYDIS_OPERAND_TYPE_MEMORY, "Expected memory operand, got type: {}",
                static_cast<u32>(operand.type));
 
-    if (operand.mem.base == ZYDIS_REGISTER_RIP) {
-        return ptr[rip + operand.mem.disp.value];
+    if (operand.mem.base == ZYDIS_REGISTER_RIP || operand.mem.base == ZYDIS_REGISTER_EIP) {
+        ZyanU64 target{};
+        ASSERT(ZYAN_SUCCESS(ZydisCalcAbsoluteAddress(&instruction, &operand,
+                                                     reinterpret_cast<ZyanU64>(address), &target)));
+        return ptr[rip + reinterpret_cast<const void*>(target)];
     }
 
     Xbyak::RegExp expression{};
@@ -175,14 +180,14 @@ static void RetrieveTcbPointer(Xbyak::Reg dst, Xbyak::CodeGenerator& c, ZyanI64 
 }
 #endif
 
-static void GenerateTcbAccess(void* /* address */, const ZydisDecodedInstruction&,
+static void GenerateTcbAccess(void* address, const ZydisDecodedInstruction& instruction,
                               const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
 #if defined(_WIN32)
     RetrieveTcbPointer(dst, c, operands[1].mem.disp.value);
 #else
-    const auto src = ZydisToXbyakMemoryOperand(operands[1]);
+    const auto src = ZydisToXbyakMemoryOperand(address, instruction, operands[1]);
 
     // Replace fs read with gs read.
     c.putSeg(gs);
@@ -190,7 +195,7 @@ static void GenerateTcbAccess(void* /* address */, const ZydisDecodedInstruction
 #endif
 }
 
-static void GenerateTcbCompare(void* /* address */, const ZydisDecodedInstruction&,
+static void GenerateTcbCompare(void* address, const ZydisDecodedInstruction& instruction,
                                const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
@@ -214,7 +219,7 @@ static void GenerateTcbCompare(void* /* address */, const ZydisDecodedInstructio
     c.popfq();
     c.lea(rsp, ptr[rsp + 128]);
 #else
-    const auto src = ZydisToXbyakMemoryOperand(operands[1]);
+    const auto src = ZydisToXbyakMemoryOperand(address, instruction, operands[1]);
 
     // Replace fs compare with gs compare.
     c.putSeg(gs);
@@ -222,7 +227,7 @@ static void GenerateTcbCompare(void* /* address */, const ZydisDecodedInstructio
 #endif
 }
 
-static void GenerateTcbExclusiveOr(void* /* address */, const ZydisDecodedInstruction&,
+static void GenerateTcbExclusiveOr(void* address, const ZydisDecodedInstruction& instruction,
                                    const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
@@ -246,7 +251,7 @@ static void GenerateTcbExclusiveOr(void* /* address */, const ZydisDecodedInstru
     c.popfq();
     c.lea(rsp, ptr[rsp + 128]);
 #else
-    const auto src = ZydisToXbyakMemoryOperand(operands[1]);
+    const auto src = ZydisToXbyakMemoryOperand(address, instruction, operands[1]);
 
     // Replace fs xor with gs xor.
     c.putSeg(gs);
@@ -335,7 +340,7 @@ static void GenerateReciprocalInstruction(void* address, const ZydisDecodedInstr
                 operand.mem.disp.size = 32;
                 operand.mem.disp.value += rsp_disp + 8 * 3; // Account for what we pushed
             }
-            Xbyak::Address mem = ZydisToXbyakMemoryOperand(operand);
+            Xbyak::Address mem = ZydisToXbyakMemoryOperand(address, instruction, operand);
             c.vmovups(src_storage, mem);
         }
         src_reg = src_storage;
@@ -711,6 +716,40 @@ static void ReplaceMOVNTSD(void* address, const ZydisDecodedInstruction&,
     ReplaceMOVNT(address, 0xF2);
 }
 
+#if defined(__APPLE__)
+// Rosetta 2 mistranslates VCMPSS with NEQ, NLT or NLE: if the destination is then reloaded by a
+// full width VEX load, later scalar reads of it still return the compare mask.
+static bool FilterNegatedScalarCompare(const ZydisDecodedOperand* operands) {
+    // NEQ, NLT and NLE are 4 to 6, and 20 to 22 are the same predicates with bit 4 set.
+    const u64 predicate = operands[3].imm.value.u & ~0x10ULL;
+    return predicate >= 4 && predicate <= 6;
+}
+
+// Compares with the non-negated predicate and flips lane 0, which gives the same bits.
+static void GenerateNegatedScalarCompare(void* address, const ZydisDecodedInstruction& instruction,
+                                         const ZydisDecodedOperand* operands,
+                                         Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+    const auto src1 = ZydisToXbyakRegisterOperand(operands[1]);
+    const auto& xmm_dst = *reinterpret_cast<const Xbyak::Xmm*>(&dst);
+    const auto& xmm_src1 = *reinterpret_cast<const Xbyak::Xmm*>(&src1);
+    const u8 predicate = operands[3].imm.value.u & 3;
+    if (operands[2].type == ZYDIS_OPERAND_TYPE_REGISTER) {
+        c.vcmpss(xmm_dst, xmm_src1, ZydisToXbyakRegisterOperand(operands[2]), predicate);
+    } else {
+        c.vcmpss(xmm_dst, xmm_src1, ZydisToXbyakMemoryOperand(address, instruction, operands[2]),
+                 predicate);
+    }
+    Xbyak::Label lane0_mask, done;
+    c.vxorps(xmm_dst, xmm_dst, ptr[rip + lane0_mask]);
+    c.jmp(done);
+    c.L(lane0_mask);
+    c.dq(0xFFFFFFFF);
+    c.dq(0);
+    c.L(done);
+}
+#endif
+
 using PatchFilter = bool (*)(const ZydisDecodedOperand*);
 using InstructionGenerator = void (*)(void*, const ZydisDecodedInstruction&,
                                       const ZydisDecodedOperand*, Xbyak::CodeGenerator&);
@@ -744,7 +783,10 @@ static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches =
     {ZYDIS_MNEMONIC_RCPPS, {{FilterIntelCPU, GenerateRCPPS, true}}},
     {ZYDIS_MNEMONIC_VRCPPS, {{FilterIntelCPU, GenerateVRCPPS, true}}},
 
-#if !defined(__APPLE__)
+#if defined(__APPLE__)
+    // Rosetta 2
+    {ZYDIS_MNEMONIC_VCMPSS, {{FilterNegatedScalarCompare, GenerateNegatedScalarCompare, true}}},
+#else
     // FS segment patches
     // For most of these, Windows needs a trampoline while other platforms do not.
     {ZYDIS_MNEMONIC_XOR, {{FilterTcbAccess, GenerateTcbExclusiveOr, need_tcb_trampoline}}},
