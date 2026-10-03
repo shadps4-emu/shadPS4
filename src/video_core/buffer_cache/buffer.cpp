@@ -125,9 +125,13 @@ Buffer::Buffer(const Vulkan::Instance& instance, VAddr cpu_addr_, u64 size_bytes
     : cpu_addr{cpu_addr_}, size_bytes{size_bytes_}, mem_type{mem_type_},
       buffer{instance.GetDevice(), instance.GetAllocator()} {
 
+    vk::BufferUsageFlags usage = AllFlags;
+    if (instance.IsConditionalRenderingSupported()) {
+        usage |= vk::BufferUsageFlagBits::eConditionalRenderingEXT;
+    }
     vk::BufferCreateInfo buffer_ci = {
         .size = size_bytes,
-        .usage = AllFlags,
+        .usage = usage,
         .sharingMode = vk::SharingMode::eExclusive,
     };
     VmaAllocationInfo alloc_info{};
