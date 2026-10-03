@@ -58,7 +58,8 @@ void ReleaseGamepadInputCapture() {
 }
 
 bool IsGamepadInputCaptured() {
-    return force_gamepad_input_capture_count.load(std::memory_order_relaxed) > 0;
+    return Overlay::IsQuitInputCaptured() ||
+           force_gamepad_input_capture_count.load(std::memory_order_relaxed) > 0;
 }
 
 void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& window,
