@@ -2417,10 +2417,30 @@ static u8* FindSSE4aInstructionStart(u8* opcode, const u8* lower_bound) {
     return start;
 }
 
-/// Patches the SSE4a instructions between covered_ranges in place, without relocating any.
+#if defined(__APPLE__)
+/// Returns the start of the VEX encoded VCMPSS whose opcode is at the given address, or null if
+/// the bytes before it are not its VEX prefix.
+static u8* FindScalarCompareInstructionStart(u8* opcode, const u8* lower_bound) {
+    if (opcode[0] != 0xC2) {
+        return nullptr;
+    }
+    // Two byte VEX with L = 0 and the F3 implied prefix.
+    if (opcode - 2 >= lower_bound && opcode[-2] == 0xC5 && (opcode[-1] & 0x7) == 0x2) {
+        return opcode - 2;
+    }
+    // Three byte VEX in the 0F map with L = 0 and the F3 implied prefix.
+    if (opcode - 3 >= lower_bound && opcode[-3] == 0xC4 && (opcode[-2] & 0x1F) == 0x1 &&
+        (opcode[-1] & 0x7) == 0x2) {
+        return opcode - 3;
+    }
+    return nullptr;
+}
+#endif
+
+/// Patches the CPU instructions between covered_ranges in place, without relocating any.
 /// The bytes after the last range are skipped, as they hold read-only data.
-static void PatchUncoveredSSE4aInstructions(u64 segment_addr, const AddressRanges& covered_ranges,
-                                            RedZonePatchResult& result) {
+static void PatchUncoveredCpuInstructions(u64 segment_addr, const AddressRanges& covered_ranges,
+                                          RedZonePatchResult& result) {
     auto* module = GetContainingModule(reinterpret_cast<void*>(segment_addr));
     if (module == nullptr) {
         return;
@@ -2430,8 +2450,13 @@ static void PatchUncoveredSSE4aInstructions(u64 segment_addr, const AddressRange
     const auto patch_gap = [&](uintptr_t gap_start, uintptr_t gap_end) {
         auto* const lower_bound = reinterpret_cast<u8*>(gap_start);
         for (uintptr_t address = gap_start; address + 2 <= gap_end; ++address) {
-            u8* const start =
-                FindSSE4aInstructionStart(reinterpret_cast<u8*>(address), lower_bound);
+            u8* start = FindSSE4aInstructionStart(reinterpret_cast<u8*>(address), lower_bound);
+#if defined(__APPLE__)
+            if (start == nullptr) {
+                start =
+                    FindScalarCompareInstructionStart(reinterpret_cast<u8*>(address), lower_bound);
+            }
+#endif
             if (start == nullptr) {
                 continue;
             }
@@ -2468,7 +2493,7 @@ RedZonePatchResult PatchCpuInstructionsStatically(u64 segment_addr, u64 segment_
     auto result =
         PatchSegmentStatically(segment_addr, segment_size, function_starts, false, &covered_ranges);
     // The EH frame search table does not list every function of every module.
-    PatchUncoveredSSE4aInstructions(segment_addr, covered_ranges, result);
+    PatchUncoveredCpuInstructions(segment_addr, covered_ranges, result);
     return result;
 }
 
