@@ -258,35 +258,53 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
         pass.WriteVariable(IR::RegTag{RegType::M0}, block, inst.Arg(0));
         break;
     case IR::Opcode::GetScalarRegister:
-        inst.ReplaceUsesWithAndRemove(
-            pass.ReadVariable(IR::RegTag{inst.Arg(0).ScalarReg()}, block));
-        break;
     case IR::Opcode::GetVectorRegister:
-        inst.ReplaceUsesWithAndRemove(
-            pass.ReadVariable(IR::RegTag{inst.Arg(0).VectorReg()}, block));
-        break;
     case IR::Opcode::GetVirtualRegister:
-        inst.ReplaceUsesWithAndRemove(
-            pass.ReadVariable(IR::RegTag{inst.Arg(0).VirtualReg()}, block));
-        break;
     case IR::Opcode::GetGotoVariable:
-        inst.ReplaceUsesWithAndRemove(
-            pass.ReadVariable(IR::RegTag{RegType::GotoVariable, inst.Arg(0).U32()}, block));
-        break;
     case IR::Opcode::GetExec:
-        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::Exec}, block));
-        break;
     case IR::Opcode::GetScc:
-        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::Scc}, block));
-        break;
     case IR::Opcode::GetVccLo:
-        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::VccLo}, block));
-        break;
     case IR::Opcode::GetVccHi:
-        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::VccHi}, block));
-        break;
     case IR::Opcode::GetM0:
-        inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::M0}, block));
+        if (!inst.HasUses()) {
+            inst.Invalidate();
+            break;
+        }
+        switch (opcode) {
+        case IR::Opcode::GetScalarRegister:
+            inst.ReplaceUsesWithAndRemove(
+                pass.ReadVariable(IR::RegTag{inst.Arg(0).ScalarReg()}, block));
+            break;
+        case IR::Opcode::GetVectorRegister:
+            inst.ReplaceUsesWithAndRemove(
+                pass.ReadVariable(IR::RegTag{inst.Arg(0).VectorReg()}, block));
+            break;
+        case IR::Opcode::GetVirtualRegister:
+            inst.ReplaceUsesWithAndRemove(
+                pass.ReadVariable(IR::RegTag{inst.Arg(0).VirtualReg()}, block));
+            break;
+        case IR::Opcode::GetGotoVariable:
+            inst.ReplaceUsesWithAndRemove(
+                pass.ReadVariable(IR::RegTag{RegType::GotoVariable, inst.Arg(0).U32()}, block));
+            break;
+        case IR::Opcode::GetExec:
+            inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::Exec}, block));
+            break;
+        case IR::Opcode::GetScc:
+            inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::Scc}, block));
+            break;
+        case IR::Opcode::GetVccLo:
+            inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::VccLo}, block));
+            break;
+        case IR::Opcode::GetVccHi:
+            inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::VccHi}, block));
+            break;
+        case IR::Opcode::GetM0:
+            inst.ReplaceUsesWithAndRemove(pass.ReadVariable(IR::RegTag{RegType::M0}, block));
+            break;
+        default:
+            break;
+        }
         break;
     default:
         break;
