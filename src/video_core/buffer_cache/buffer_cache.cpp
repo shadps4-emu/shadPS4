@@ -55,11 +55,15 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       stream_buffer{instance, scheduler, MemoryType::Stream, STREAM_BUFFER_SIZE},
       gds_buffer{instance, 0, GDS_BUFFER_SIZE, MemoryType::Stream, "GDS Buffer"},
       memory_semaphore{instance} {
+    auto arena_usage = ARENA_USAGE;
+    if (instance.IsConditionalRenderingSupported()) {
+        arena_usage |= vk::BufferUsageFlagBits::eConditionalRenderingEXT;
+    }
     const vk::BufferCreateInfo probe_ci = {
         .flags =
             vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency,
         .size = ARENA_PAGE_SIZE,
-        .usage = ARENA_USAGE,
+        .usage = arena_usage,
         .sharingMode = vk::SharingMode::eExclusive,
     };
     const vk::DeviceBufferMemoryRequirements req_info = {

@@ -32,6 +32,61 @@ static Shader::PushData MakeUserData(const AmdGpu::Regs& regs) {
     return push_data;
 }
 
+class ConditionalRenderingScope {
+public:
+    explicit ConditionalRenderingScope(const Instance& instance, AmdGpu::Liverpool* liverpool,
+                                       VideoCore::BufferCache& buffer_cache, Runtime& runtime,
+                                       bool& needs_barrier) {
+        if (!instance.IsConditionalRenderingSupported() || !liverpool ||
+            !liverpool->IsDrawPredicated()) {
+            return;
+        }
+        pred_address = liverpool->GetPredicationAddress();
+        std::tie(buffer, offset) = buffer_cache.ObtainBuffer(pred_address, sizeof(u32), false);
+        if (buffer) {
+            needs_barrier |= runtime.IsBufferAccessed(buffer, offset, sizeof(u32));
+            // Map hardware draw_op to Vulkan conditional rendering inverted flag (e.g. Detroit)
+            inverted = liverpool->IsPredicationInverted();
+            active = true;
+        } else {
+            LOG_WARNING(Render_Vulkan, "Predication active at {:#x}, but buffer not found in cache",
+                        pred_address);
+        }
+    }
+
+    void Begin(vk::CommandBuffer cmdbuf) const {
+        if (active && buffer) {
+            LOG_INFO(Render_Vulkan,
+                     "beginConditionalRenderingEXT: addr = {:#x}, offset = {:#x}, inverted = {}",
+                     pred_address, offset, inverted);
+            const vk::ConditionalRenderingBeginInfoEXT cr_info = {
+                .buffer = buffer->Handle(),
+                .offset = offset,
+                .flags = inverted ? vk::ConditionalRenderingFlagBitsEXT::eInverted
+                                  : vk::ConditionalRenderingFlagsEXT{},
+            };
+            cmdbuf.beginConditionalRenderingEXT(cr_info);
+        }
+    }
+
+    void End(vk::CommandBuffer cmdbuf, Runtime& runtime) {
+        if (active && buffer) {
+            cmdbuf.endConditionalRenderingEXT();
+            runtime.AccessBuffer(buffer, offset, sizeof(u32),
+                                 vk::PipelineStageFlagBits2::eConditionalRenderingEXT,
+                                 vk::AccessFlagBits2::eConditionalRenderingReadEXT);
+            active = false;
+        }
+    }
+
+private:
+    VAddr pred_address{0};
+    const VideoCore::Buffer* buffer{nullptr};
+    u64 offset{0};
+    bool inverted{false};
+    bool active{false};
+};
+
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime& runtime_,
                        AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, runtime{runtime_}, page_manager{this},
@@ -205,6 +260,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         BindIndexBuffer(index_offset);
     }
 
+    ConditionalRenderingScope cr_scope{instance, liverpool, buffer_cache, runtime, needs_barrier};
+
     if (needs_barrier) {
         runtime.FlushBarriers();
     }
@@ -220,6 +277,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
 
+    cr_scope.Begin(cmdbuf);
+
     if (is_indexed) {
         cmdbuf.drawIndexed(regs.num_indices, regs.num_instances.NumInstances(), 0,
                            s32(vertex_offset), instance_offset);
@@ -227,6 +286,9 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         cmdbuf.draw(regs.num_indices, regs.num_instances.NumInstances(), vertex_offset,
                     instance_offset);
     }
+
+    cr_scope.End(cmdbuf, runtime);
+
     DebugState.IncDrawCall();
 
     ResetBindings(false);
@@ -274,6 +336,8 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         needs_barrier |= runtime.IsBufferAccessed(count_buffer, count_offset, 4);
     }
 
+    ConditionalRenderingScope cr_scope{instance, liverpool, buffer_cache, runtime, needs_barrier};
+
     if (needs_barrier) {
         runtime.FlushBarriers();
     }
@@ -284,6 +348,8 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
+
+    cr_scope.Begin(cmdbuf);
 
     if (is_indexed) {
         ASSERT(sizeof(VkDrawIndexedIndirectCommand) == stride);
@@ -306,6 +372,8 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         }
         DebugState.IncDrawCall();
     }
+
+    cr_scope.End(cmdbuf, runtime);
 
     ResetBindings(false);
 }
@@ -330,6 +398,8 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
+    ConditionalRenderingScope cr_scope{instance, liverpool, buffer_cache, runtime, needs_barrier};
+
     if (needs_barrier) {
         runtime.FlushBarriers();
     }
@@ -339,7 +409,11 @@ void Rasterizer::DispatchDirect() {
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+
+    cr_scope.Begin(cmdbuf);
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
+    cr_scope.End(cmdbuf, runtime);
+
     DebugState.IncDispatch();
 
     ResetBindings(true);
@@ -363,6 +437,8 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
     needs_barrier |= runtime.IsBufferAccessed(buffer, base, size);
 
+    ConditionalRenderingScope cr_scope{instance, liverpool, buffer_cache, runtime, needs_barrier};
+
     if (needs_barrier) {
         runtime.FlushBarriers();
     }
@@ -372,7 +448,11 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+
+    cr_scope.Begin(cmdbuf);
     cmdbuf.dispatchIndirect(buffer->Handle(), base);
+    cr_scope.End(cmdbuf, runtime);
+
     DebugState.IncDispatch();
 
     ResetBindings(true);
