@@ -620,7 +620,8 @@ static void AtomicStore16(u8* address, u16 value) {
 /// Replaces the instruction at `code` with a near jump to `target` (padded with nops) so that a
 /// thread executing the same code concurrently never fetches a half-written jump. Patches are
 /// applied at runtime from fault handlers while other guest threads may run the same function.
-static void WriteNearJumpSafely(u8* code, const void* target, u64 length) {
+/// Ahead-of-time patching passes concurrent = false, as nothing runs the code yet.
+static void WriteNearJumpSafely(u8* code, const void* target, u64 length, bool concurrent) {
     std::array<u8, ZYDIS_MAX_INSTRUCTION_LENGTH> bytes;
     bytes.fill(0x90);
     const auto rel = reinterpret_cast<s64>(target) - reinterpret_cast<s64>(code + NearJumpSize);
@@ -628,6 +629,13 @@ static void WriteNearJumpSafely(u8* code, const void* target, u64 length) {
     const auto rel32 = static_cast<s32>(rel);
     bytes[0] = 0xE9;
     std::memcpy(&bytes[1], &rel32, sizeof(rel32));
+
+    if (!concurrent) {
+        // Plain copy: the locked stores below become split locks when the jump crosses a cache
+        // line, which Linux reports and slows down (or kills with split_lock_detect=fatal).
+        std::memcpy(code, bytes.data(), length);
+        return;
+    }
 
     // 1. Park any thread reaching the instruction on a 2-byte "jmp $".
     AtomicStore16(code, 0xFEEB);
@@ -642,7 +650,7 @@ static void WriteNearJumpSafely(u8* code, const void* target, u64 length) {
 
 /// Returns a boolean indicating whether the instruction was patched, and the offset to advance past
 /// whatever is at the current code pointer.
-static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
+static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module, bool concurrent = false) {
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
     const auto status = Common::Decoder::Instance()->decodeInstruction(instruction, operands, code,
@@ -691,7 +699,7 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
                     }
 
                     // Replace instruction with near jump to the trampoline.
-                    WriteNearJumpSafely(code, trampoline_ptr, instruction.length);
+                    WriteNearJumpSafely(code, trampoline_ptr, instruction.length, concurrent);
                     module->patched.insert(code);
                     LOG_DEBUG(Core, "Patched instruction '{}' at: {}",
                               ZydisMnemonicGetString(instruction.mnemonic), fmt::ptr(code));
@@ -936,7 +944,7 @@ static bool TryPatchJit(void* code_address) {
         return true;
     }
 
-    return TryPatch(code, module).first;
+    return TryPatch(code, module, true).first;
 }
 
 static void TryPatchAot(void* code_address, u64 code_size) {
