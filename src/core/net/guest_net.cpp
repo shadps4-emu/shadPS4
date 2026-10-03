@@ -23,7 +23,6 @@ namespace {
 
 // Blocking calls cut short by abort or close fail with EINTR.
 constexpr Error AbortedError = Error::Intr;
-
 // Max bytes per host send() on a stream socket, see SocketSendTo.
 constexpr size_t MaxStreamSendChunk = 64 * 1024;
 
@@ -117,41 +116,34 @@ struct GuestEpoll {
         u64 data;
         u32 events;
         bool p2p;
-        bool has_writable;     // P2P writable handle added
-        bool external;         // ExternalObject
-        bool armed;            // external: handle still in host epoll
-        bool reported = false; // external: completion reported
+        bool has_writable;
+        bool external;
+        bool armed;
+        bool reported = false;
     };
 
     Host::HostEpoll host;
     std::mutex mutex;
-
-    // Everything below is guarded by mutex.
-    std::unordered_map<s32, Registration> regs; // by socket id
+    std::unordered_map<s32, Registration> regs;
     std::vector<Waiter*> waiters;
     int flagged_waiters = 0;
     bool pending_abort = false;
     bool destroyed = false;
-    // (id, generation) of sockets aborted during a wait, reported once as EvHup.
     std::vector<std::pair<s32, u32>> pending_hups;
-
-    // Safe to drain the wake handle.
     bool WakeIdle() const {
         return flagged_waiters == 0 && pending_hups.empty() && !destroyed;
     }
 };
 
-// An id owned by the library, e.g. a resolver. We only track when it finishes so an epoll
-// can report it (ORBIS_NET_EPOLLDESCID).
 struct ExternalObject {
     explicit ExternalObject(u32 generation_) : generation(generation_) {}
 
     const u32 generation;
     P2P::ReadinessFlag done;
     std::atomic<bool> signaled{false};
-    std::atomic<bool> hangup{false}; // aborted, report EvHup
+    std::atomic<bool> hangup{false};
 
-    std::mutex reg_mutex; // same as GuestSocket::reg_mutex
+    std::mutex reg_mutex;
     bool closed = false;
     std::vector<std::weak_ptr<GuestEpoll>> epolls;
 };
@@ -161,7 +153,6 @@ public:
     using Object = std::variant<std::shared_ptr<GuestSocket>, std::shared_ptr<GuestEpoll>,
                                 std::shared_ptr<ExternalObject>>;
 
-    // EMFILE at the socket limit, ENFILE when out of ids.
     NetResult Insert(Object object) {
         // Epolls don't count towards the limit.
         const bool counted = !std::holds_alternative<std::shared_ptr<GuestEpoll>>(object);
@@ -172,7 +163,7 @@ public:
             }
             counted_ += counted ? 1 : 0; // reserve the slot
         }
-        const s32 id = Allocate(); // not under mutex_, it may call hooks
+        const s32 id = Allocate();
         std::scoped_lock lock{mutex_};
         if (id < 0) {
             counted_ -= counted ? 1 : 0;
@@ -261,7 +252,6 @@ private:
             lock.unlock();
             return allocate();
         }
-        // Lowest free id, like a BSD fd table.
         auto it = std::find(used_.begin() + 1, used_.end(), false);
         if (it == used_.end()) {
             used_.push_back(false);
@@ -295,10 +285,7 @@ ObjectTable g_objects;
 std::atomic<u32> g_next_generation{1};
 
 std::mutex g_p2p_mutex;
-std::shared_ptr<P2P::Transport> g_p2p_transports[2]; // [0] = IPv4, [1] = IPv6
-
-// Epoll tag: generation in bits 32-63, id in bits 0-30, bit 31 set for a P2P writable handle.
-// Ids are positive so a tag can't collide with Host::ReservedTag.
+std::shared_ptr<P2P::Transport> g_p2p_transports[2];
 constexpr u64 WritableHandleBit = 1ull << 31;
 
 u64 MakeTag(s32 id, u32 generation, bool writable_handle = false) {
@@ -310,7 +297,6 @@ NetResult FromError(Error e) {
     return e == Error::Ok ? NetResult::Ok() : NetResult::Fail(e);
 }
 
-// P2P sockets are waited on through their readiness handles.
 std::pair<Host::NativeSocket, u32> WaitTarget(const GuestSocket& s, u32 interest) {
     if (const auto* handles = s.P2PHandles()) {
         const auto& flag = (interest & Host::Writable) ? handles->writable : handles->readable;
@@ -324,7 +310,6 @@ bool ConsumePendingAbort(GuestSocket& s, Side side) {
     return std::exchange(s.pending_abort[static_cast<size_t>(side)], false);
 }
 
-// Registers a blocking call so abort and close can interrupt it.
 class WaitScope {
 public:
     WaitScope(GuestSocket& s, Side side) : s_(s) {
@@ -383,12 +368,10 @@ std::array<bool, 2> InterruptWaiters(GuestSocket& s) {
     return blocked;
 }
 
-// Retry a non-blocking op until it succeeds, times out or is aborted.
 template <typename Op>
 NetResult RunBlocking(GuestSocket& s, Side side, u32 interest, Host::Deadline deadline,
                       bool blocking, Op&& op) {
     if (!blocking) {
-        // A preserved abort also hits non-blocking calls (per SDK docs).
         if (ConsumePendingAbort(s, side)) {
             return NetResult::Fail(AbortedError);
         }
@@ -424,7 +407,6 @@ Host::Deadline SocketDeadline(const std::atomic<s64>& timeout_us) {
     return Host::DeadlineFromSocketTimeout(std::chrono::microseconds{timeout_us.load()});
 }
 
-// Blocking stream sends send everything, as on BSD.
 template <typename SendSome>
 NetResult SendAll(GuestSocket& s, size_t len, bool blocking, bool stream, SendSome&& send_some) {
     const auto deadline = SocketDeadline(s.snd_timeout_us);
@@ -434,13 +416,11 @@ NetResult SendAll(GuestSocket& s, size_t len, bool blocking, bool stream, SendSo
                                         [&] { return send_some(sent); });
         if (r.error != Error::Ok) {
             if (r.error == AbortedError) {
-                // SND_PRESERVATION_AGAIN: after a partial aborted send, the next send gets EINTR.
                 std::scoped_lock lock{s.wait_mutex};
                 if (std::exchange(s.send_again, false) && sent > 0) {
                     s.pending_abort[static_cast<size_t>(Side::Send)] = true;
                 }
             }
-            // BSD returns the partial count.
             return sent > 0 ? NetResult::Ok(static_cast<s64>(sent)) : r;
         }
         sent += static_cast<size_t>(r.value);
@@ -450,8 +430,6 @@ NetResult SendAll(GuestSocket& s, size_t len, bool blocking, bool stream, SendSo
     }
 }
 
-// MSG_WAITALL: loop until len bytes, FIN or an error. Data already received wins over the
-// error (per SDK docs).
 template <typename RecvSome>
 NetResult ReceiveAll(size_t len, bool waitall, RecvSome&& recv_some) {
     if (!waitall) {
@@ -471,8 +449,6 @@ NetResult ReceiveAll(size_t len, bool waitall, RecvSome&& recv_some) {
     return NetResult::Ok(static_cast<s64>(got));
 }
 
-// Epoll helpers, called with GuestEpoll::mutex held.
-
 Error HostRegister(GuestEpoll& ep, s32 id, GuestSocket& s, u32 events, u32 flags,
                    GuestEpoll::Registration& reg) {
     if (!s.IsP2P()) {
@@ -481,7 +457,6 @@ Error HostRegister(GuestEpoll& ep, s32 id, GuestSocket& s, u32 events, u32 flags
     if (flags != 0) {
         return Error::Inval; // TODO: one-shot for P2P
     }
-    // Always add the readable handle, errors and hangups are reported even if not requested.
     const auto* handles = s.P2PHandles();
     if (const Error e =
             ep.host.Add(handles->readable.PollHandle(), MakeTag(id, s.generation), Host::EvIn, 0);
@@ -837,8 +812,6 @@ NetResult SocketSendTo(s32 id, const void* buf, size_t len, int host_flags, bool
     }
     const auto* bytes = static_cast<const u8*>(buf);
     return SendAll(*s, len, !dontwait && !s->nonblocking, s->type == SOCK_STREAM, [&](size_t sent) {
-        // Windows accepts a non-blocking send of any size in one go. Chunk it so the host
-        // buffer limit applies, like on PS4.
         const size_t chunk = std::min(len - sent, MaxStreamSendChunk);
         const auto io = Host::SendTo(s->native, bytes + sent, chunk, host_flags, addr, addr_len);
         return NetResult{io.value, io.error};
@@ -1059,8 +1032,6 @@ NetResult SocketAbort(s32 id, u32 flags) {
     if (!s) {
         return NetResult::Fail(Error::BadF);
     }
-    // Epolls currently waiting on this socket report EvHup (per SDK docs). Copy the list
-    // first, GuestEpoll::mutex must be taken before reg_mutex.
     bool hangup = false;
     {
         std::vector<std::weak_ptr<GuestEpoll>> epolls;
@@ -1360,7 +1331,6 @@ NetResult EpollCreate() {
 
 namespace {
 
-// External objects are reported once, then their handle is removed.
 NetResult ExternalEpollControl(GuestEpoll& ep, const std::shared_ptr<GuestEpoll>& ep_ref, s32 id,
                                ExternalObject& x, EpollOp op, u32 events, u64 data) {
     std::scoped_lock ep_lock{ep.mutex};
@@ -1375,7 +1345,6 @@ NetResult ExternalEpollControl(GuestEpoll& ep, const std::shared_ptr<GuestEpoll>
         if (exists) {
             return NetResult::Fail(Error::Exist);
         }
-        // Only EvIn waits for the lookup, EvOut is ignored (per SDK docs).
         const bool arm = (events & Host::EvIn) != 0;
         if (arm) {
             const auto tag = MakeTag(id, x.generation);
@@ -1730,8 +1699,6 @@ NetResult SocketSelect(std::span<SelectEntry> entries, s64 timeout_us) {
         registered.push_back(i);
     }
 
-    // Only the first wait uses the timeout. Later ones poll for the rest, since one wait
-    // returns at most 64 sockets.
     std::vector<GuestEpollEvent> out(registered.size());
     std::vector<size_t> still;
     s64 wait = timeout_us;

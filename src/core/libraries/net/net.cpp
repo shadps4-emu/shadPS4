@@ -153,8 +153,6 @@ u8 KindBit(const Core::Net::SocketInfo& info) {
     }
 }
 
-// BSD SO_SNDTIMEO/SO_RCVTIMEO take a timeval (libkernel calls). The ORBIS_NET_ versions
-// (0x1105/0x1106) take an int in microseconds.
 constexpr s32 BsdSndTimeo = 0x1005;
 constexpr s32 BsdRcvTimeo = 0x1006;
 constexpr s32 IpDontFrag = ORBIS_NET_IP_DONTFRAG;
@@ -320,8 +318,6 @@ bool IsBound(OrbisNetId s) {
     return true;
 }
 
-// BSD allows joining a multicast group before bind, Windows doesn't. If the host refuses,
-// the join is kept and applied after bind.
 s32 SetMembership(OrbisNetId s, bool add, const HostOption& option, const void* optval,
                   u32 optlen) {
     std::array<u8, 8> request{};

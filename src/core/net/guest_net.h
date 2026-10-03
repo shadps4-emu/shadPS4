@@ -95,7 +95,7 @@ struct SocketAttributes {
     s32 snd_buf = 0;             // 0 = PS4 default
     s32 rcv_buf = 0;
     s32 policy = 0;    // 0-15
-    s32 priority = 16; // TODO: default guessed from SDK netstat samples
+    s32 priority = 16; // TODO: find real value
     // Stored for getsockopt only, keyed by (level, name).
     std::map<std::pair<s32, s32>, s32> stored_options;
     // A STREAM_P2P socket bound to a non-zero TCP port can listen, but connect gives EPROTO.
@@ -126,22 +126,14 @@ NetResult SocketSetAcceptTimeout(s32 id, std::chrono::microseconds value);
 // reports EvHup for it once, which also counts as an abort.
 inline constexpr u32 kSocketAbortPreserveRecv = 0x1;
 inline constexpr u32 kSocketAbortPreserveSend = 0x2;
-// Like PreserveSend, and the send after a partial aborted send also fails once with EINTR.
 inline constexpr u32 kSocketAbortPreserveSendAgain = 0x4;
 NetResult SocketAbort(s32 id, u32 flags);
 NetResult SocketClose(s32 id);
-
-// P2P sockets. A peer address is its UDP endpoint plus a vport. For streams the vport is the
-// TCP port inside the encapsulation.
-
-// Set at net init. Shared by all P2P sockets of that family.
 void SetP2PTransport(int family, std::shared_ptr<P2P::Transport> transport);
-
 NetResult P2PSocketCreate(int family, bool stream);
 NetResult P2PSocketSetProtection(s32 id, bool crypto, bool signature);
 NetResult P2PSocketGetProtection(s32 id, bool* crypto, bool* signature);
 NetResult P2PSocketBind(s32 id, u16 vport); // 0 = any free vport
-// Stream: does the TCP handshake. Datagram: sets the default peer and filters on it.
 NetResult P2PSocketConnect(s32 id, const P2P::Endpoint& peer, u16 peer_vport);
 NetResult P2PSocketAccept(s32 id, P2P::Endpoint* peer, u16* peer_vport);
 // MSG_USECRYPTO / MSG_USESIGNATURE, on top of the socket's own. Datagrams only, stream
@@ -150,12 +142,9 @@ struct P2PSendProtection {
     bool crypto = false;
     bool signature = false;
 };
-
-// peer == nullptr sends to the connected peer.
 NetResult P2PSocketSendTo(s32 id, const void* buf, size_t len, bool dontwait,
                           const P2P::Endpoint* peer, u16 peer_vport,
                           P2PSendProtection protection = {});
-// waitall is MSG_WAITALL, streams only.
 NetResult P2PSocketRecvFrom(s32 id, void* buf, size_t len, bool peek, bool dontwait,
                             P2P::Endpoint* from, u16* from_vport, bool waitall = false);
 // Transport's local UDP port and the bound vport (0 if unbound).
@@ -171,11 +160,8 @@ struct GuestEpollEvent {
 };
 
 NetResult EpollCreate();
-// events: Host::EventBits, flags: Host::EpollFlags.
 NetResult EpollControl(s32 eid, EpollOp op, s32 socket_id, u32 events, u32 flags, u64 data);
-// timeout_us < 0 waits forever, 0 polls. Returns the number of events written.
 NetResult EpollWait(s32 eid, std::span<GuestEpollEvent> out, s64 timeout_us);
-// Same semantics as SocketAbort.
 inline constexpr u32 kEpollAbortPreserve = 0x1;
 NetResult EpollAbort(s32 eid, u32 flags);
 NetResult EpollDestroy(s32 eid);
@@ -186,8 +172,6 @@ struct SelectEntry {
     u32 interest;
     u32 ready;
 };
-// Works like select() for native and P2P sockets. timeout_us < 0 waits forever, 0 polls.
-// Returns the number of ready (socket, direction) pairs. EBADF if an id isn't a socket.
 NetResult SocketSelect(std::span<SelectEntry> entries, s64 timeout_us);
 
 } // namespace Core::Net
