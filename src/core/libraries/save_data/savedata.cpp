@@ -15,6 +15,7 @@
 #include "common/enum.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "common/scope_exit.h"
 #include "common/string_util.h"
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
@@ -314,6 +315,7 @@ struct OrbisSaveDataEvent {
 static std::recursive_mutex g_event_callback_mutex;
 static OrbisSaveDataEventCallback g_event_callback{};
 static void* g_event_userdata{};
+static thread_local bool g_in_backup_callback = false;
 
 void DispatchBackupEvent(const Backup::BackupRequest& request) {
     std::scoped_lock lock{g_event_callback_mutex};
@@ -328,6 +330,9 @@ void DispatchBackupEvent(const Backup::BackupRequest& request) {
     event.dirName.data.FromString(request.dir_name);
     LOG_INFO(Lib_SaveData, "Delivering backup event: type={}, error={}, dir={}",
              static_cast<u32>(event.type), event.errorCode, request.dir_name);
+    const bool was_in_callback = g_in_backup_callback;
+    g_in_backup_callback = true;
+    SCOPE_EXIT { g_in_backup_callback = was_in_callback; };
     g_event_callback(&event, g_event_userdata);
 }
 
@@ -1696,6 +1701,10 @@ Error PS4_SYSV_ABI sceSaveDataSyncSaveDataMemory(OrbisSaveDataMemorySync* syncPa
 
 Error PS4_SYSV_ABI sceSaveDataTerminate() {
     LOG_DEBUG(Lib_SaveData, "called");
+    // Termination joins the backup worker; its callback cannot join its own thread.
+    if (g_in_backup_callback) {
+        return Error::BUSY;
+    }
     if (!g_initialized) {
         return setNotInitializedError();
     }
