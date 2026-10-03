@@ -8,8 +8,11 @@
 #include "core/libraries/system/userservice_error.h"
 #include "core/user_settings.h"
 
-// Replace the user store and logger only. The public HLE entry point is the
-// production translation unit, including its argument and lookup validation.
+namespace Libraries::UserService {
+#include "userservice_user_color.inc"
+}
+
+// Replace the user store and logger only; the function is extracted from userservice.cpp.
 namespace {
 User* lookup_result{};
 int lookup_calls{};
