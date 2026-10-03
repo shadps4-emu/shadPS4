@@ -32,7 +32,7 @@ struct TilingInfo {
     u32 bank_swizzle;
     u32 micro_tiled_mips;
     u32 num_mips;
-    std::array<ImageInfo::MipInfo, 16> mips;
+    std::array<MipInfo, MAX_MIPS> mips;
 };
 
 TileManager::TileManager(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
@@ -207,8 +207,8 @@ std::pair<const Buffer*, u64> TileManager::DetileImage(const VideoCore::Buffer* 
         auto& mip_info = params.mips[mip];
         mip_info = info.mips_layout[mip];
         if (info.props.is_block) {
-            mip_info.pitch = std::max((mip_info.pitch + 3) / 4, 1U);
-            mip_info.height = std::max((mip_info.height + 3) / 4, 1U);
+            mip_info.pitch = std::max<u16>((mip_info.pitch + 3) / 4, 1U);
+            mip_info.height = std::max<u16>((mip_info.height + 3) / 4, 1U);
         }
     }
 
@@ -296,8 +296,8 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
         auto& mip_info = params.mips[mip];
         mip_info = info.mips_layout[mip];
         if (info.props.is_block) {
-            mip_info.pitch = std::max((mip_info.pitch + 3) / 4, 1U);
-            mip_info.height = std::max((mip_info.height + 3) / 4, 1U);
+            mip_info.pitch = std::max<u16>((mip_info.pitch + 3) / 4, 1U);
+            mip_info.height = std::max<u16>((mip_info.height + 3) / 4, 1U);
         }
     }
 
