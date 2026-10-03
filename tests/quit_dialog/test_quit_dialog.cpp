@@ -85,12 +85,10 @@ static void Key(SDL_Keycode key, SDL_Scancode scan, bool down, bool repeat = fal
     event.key.repeat = repeat;
     Send(event);
 }
-static void Open(SDL_JoystickID id = 11) {
-    Button(id, SDL_GAMEPAD_BUTTON_GUIDE, true);
-    Check(quit_dialog.IsVisible(), "Guide must open without waiting for an ImGui frame");
+static void Open() {
+    Overlay::ToggleQuitWindow();
+    Check(quit_dialog.IsVisible(), "The quit hotkey must open without waiting for an ImGui frame");
     Check(ImGui::Core::IsGamepadInputCaptured(), "open prompt must intercept guest pad reads");
-    Button(id, SDL_GAMEPAD_BUTTON_GUIDE, false);
-    Check(quit_dialog.IsVisible(), "Guide release must not close the prompt");
 }
 
 int main(int argc, char** argv) {
@@ -99,13 +97,13 @@ int main(int argc, char** argv) {
     if (name == "second_controller") {
         // Neither slot zero nor ImGui polling/focus participates in this sequence.
         imgui_wants_event = true;
-        Open(11);
+        Open();
         Button(11, SDL_GAMEPAD_BUTTON_SOUTH, true);
         Button(11, SDL_GAMEPAD_BUTTON_SOUTH, true);
         Button(11, SDL_GAMEPAD_BUTTON_SOUTH, false);
         Check(quit_events == 1, "second controller must confirm exactly once");
         Check(raw_events == 0 && imgui_events == 0 && guest_events == 0,
-              "Guide and confirmation must never reach a competing input consumer");
+              "Confirmation must never reach a competing input consumer");
         Check(ImGui::Core::IsGamepadInputCaptured(), "confirmation stays intercepted until exit");
     } else if (name == "unfocused_confirm") {
         Overlay::ToggleQuitWindow();
@@ -131,8 +129,7 @@ int main(int argc, char** argv) {
         Check(guest_events == 3, "fresh Cross press after cancel must reach the game");
         Open();
         ImGui::Core::force_gamepad_input_capture_count = 1;
-        Button(11, SDL_GAMEPAD_BUTTON_GUIDE, true);
-        Button(11, SDL_GAMEPAD_BUTTON_GUIDE, false);
+        Overlay::ToggleQuitWindow();
         Check(!quit_dialog.IsVisible() && ImGui::Core::IsGamepadInputCaptured(),
               "closing quit must preserve an independent OSK capture");
         ImGui::Core::force_gamepad_input_capture_count = 0;
@@ -162,7 +159,7 @@ int main(int argc, char** argv) {
         Key(SDLK_KP_ENTER, SDL_SCANCODE_KP_ENTER, false);
         Check(quit_events == 1 && guest_events == 2, "keypad Enter confirms once without leakage");
     } else if (name == "hotplug") {
-        Open(11);
+        Open();
         Button(11, SDL_GAMEPAD_BUTTON_EAST, true);
         SDL_Event removed{};
         removed.type = SDL_EVENT_GAMEPAD_REMOVED;
@@ -170,9 +167,24 @@ int main(int argc, char** argv) {
         Send(removed);
         Check(!ImGui::Core::IsGamepadInputCaptured(), "disconnect clears a held cancel capture");
         Check(guest_events == 1, "disconnect must continue to controller housekeeping");
-        Open(12);
+        Open();
         Button(12, SDL_GAMEPAD_BUTTON_SOUTH, true);
         Check(quit_events == 1, "replacement controller must confirm without cached SDL handles");
+    } else if (name == "guide_passthrough") {
+        Button(11, SDL_GAMEPAD_BUTTON_GUIDE, true);
+        Button(11, SDL_GAMEPAD_BUTTON_GUIDE, false);
+        Check(!quit_dialog.IsVisible() && !ImGui::Core::IsGamepadInputCaptured(),
+              "Guide must not open the quit dialog or capture input");
+        Check(guest_events == 2 && imgui_events == 2 && raw_events == 4,
+              "Unbound Guide input must reach the existing input handlers");
+        Open();
+        Button(11, SDL_GAMEPAD_BUTTON_GUIDE, true);
+        Button(11, SDL_GAMEPAD_BUTTON_GUIDE, false);
+        Check(quit_dialog.IsVisible() && quit_events == 0 && guest_events == 4,
+              "Guide must not confirm or cancel a visible quit dialog");
+        Overlay::ToggleQuitWindow();
+        Check(!quit_dialog.IsVisible() && !ImGui::Core::IsGamepadInputCaptured(),
+              "The existing quit toggle must still close the dialog");
     } else {
         Check(false, "unknown test case");
     }

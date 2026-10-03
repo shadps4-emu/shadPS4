@@ -39,10 +39,6 @@ public:
                 return {true};
             }
             const auto button = event.gbutton.button;
-            if (button == SDL_GAMEPAD_BUTTON_GUIDE) {
-                buttons.insert(key);
-                return {true, Toggle()};
-            }
             if (IsVisible() &&
                 (button == SDL_GAMEPAD_BUTTON_SOUTH || button == SDL_GAMEPAD_BUTTON_EAST)) {
                 buttons.insert(key);
@@ -54,9 +50,6 @@ public:
         case SDL_EVENT_GAMEPAD_BUTTON_UP:
             if (buttons.erase({event.gbutton.which, event.gbutton.button})) {
                 UpdateCapture();
-                return {true};
-            }
-            if (event.gbutton.button == SDL_GAMEPAD_BUTTON_GUIDE) {
                 return {true};
             }
             break;
@@ -106,7 +99,7 @@ private:
     }
 
     void UpdateCapture() {
-        // Keep the cancel/guide button intercepted until its release, too.
+        // Keep the cancel button intercepted until its release, too.
         capture.store(IsVisible() || !buttons.empty() || !keys.empty(), std::memory_order_relaxed);
     }
 
