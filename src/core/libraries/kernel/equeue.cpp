@@ -4,6 +4,13 @@
 #include <thread>
 #include <magic_enum/magic_enum.hpp>
 
+#ifdef _WIN32
+#include <winsock2.h>
+#else
+#include <poll.h>
+#include <sys/ioctl.h>
+#endif
+
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/logging/log.h"
@@ -15,6 +22,7 @@
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/network/sockets.h"
 
 namespace Libraries::Kernel {
 
@@ -88,8 +96,12 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
             return true;
         }
 
-        // Clear input data from event.
-        event.event.data = 0;
+        // Clear input data from event for non-I/O filters.
+        if (event.event.filter != OrbisKernelEvent::Filter::Read &&
+            event.event.filter != OrbisKernelEvent::Filter::Write &&
+            event.event.filter != OrbisKernelEvent::Filter::Vnode) {
+            event.event.data = 0;
+        }
 
         // Remove add flag from event
         event.event.flags &= ~OrbisKernelEvent::Flags::Add;
@@ -99,11 +111,19 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
             event.event.flags |= OrbisKernelEvent::Flags::Clear;
         }
 
+        // For I/O filters, evaluate initial readiness immediately.
+        CheckIoEvent(event);
+
+        const bool is_triggered = event.IsTriggered();
         const auto& it = std::ranges::find(m_events, event);
         if (it != m_events.cend()) {
             *it = std::move(event);
         } else {
             m_events.emplace_back(std::move(event));
+        }
+
+        if (is_triggered) {
+            m_cond.notify_one();
         }
     }
 
@@ -195,11 +215,29 @@ int EqueueInternal::WaitForEvents(OrbisKernelEvent* ev, int num, const OrbisKern
     if (micros == 0) {
         // Wait indefinitely for events
         std::unique_lock lock{m_mutex};
-        m_cond.wait(lock, predicate);
+        if (HasPendingIoEvents()) {
+            while (!predicate()) {
+                m_cond.wait_for(lock, std::chrono::milliseconds(10), predicate);
+            }
+        } else {
+            m_cond.wait(lock, predicate);
+        }
     } else {
         // Wait up until the timeout value
         std::unique_lock lock{m_mutex};
-        m_cond.wait_for(lock, std::chrono::microseconds(micros), predicate);
+        if (HasPendingIoEvents()) {
+            const auto deadline =
+                std::chrono::steady_clock::now() + std::chrono::microseconds(micros);
+            while (!predicate() && std::chrono::steady_clock::now() < deadline) {
+                const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    deadline - std::chrono::steady_clock::now());
+                const auto slice = std::clamp(remaining, std::chrono::milliseconds(1),
+                                              std::chrono::milliseconds(10));
+                m_cond.wait_for(lock, slice, predicate);
+            }
+        } else {
+            m_cond.wait_for(lock, std::chrono::microseconds(micros), predicate);
+        }
     }
 
     return count;
@@ -232,6 +270,8 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
 int EqueueInternal::GetTriggeredEvents(OrbisKernelEvent* ev, int num) {
     int count = 0;
     for (auto it = m_events.begin(); it != m_events.end();) {
+        CheckIoEvent(*it);
+
         if (it->IsTriggered()) {
             ev[count++] = it->event;
             if (it->event.flags & OrbisKernelEvent::Flags::Clear) {
@@ -252,6 +292,99 @@ int EqueueInternal::GetTriggeredEvents(OrbisKernelEvent* ev, int num) {
     }
 
     return count;
+}
+
+bool EqueueInternal::CheckIoEvent(EqueueEvent& ev) {
+    const auto filter = ev.event.filter;
+    if (filter != OrbisKernelEvent::Filter::Read && filter != OrbisKernelEvent::Filter::Write &&
+        filter != OrbisKernelEvent::Filter::Vnode) {
+        return ev.IsTriggered();
+    }
+
+    auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = handles->GetFile(static_cast<s32>(ev.event.ident));
+    if (!file) {
+        ev.TriggerIo(ORBIS_KERNEL_ERROR_EBADF, 0, OrbisKernelEvent::Flags::Error);
+        return true;
+    }
+
+    if (filter == OrbisKernelEvent::Filter::Read) {
+        if (file->type == Core::FileSys::FileType::Regular) {
+            if (file->handle) {
+                const u64 file_size = file->handle->Size();
+                const u64 current_pos = file->handle->Tell();
+                if (current_pos < file_size) {
+                    ev.TriggerIo(file_size - current_pos);
+                } else {
+                    ev.TriggerIo(0, 0, OrbisKernelEvent::Flags::Eof);
+                }
+                return true;
+            }
+        } else if (file->type == Core::FileSys::FileType::Socket) {
+            if (file->socket) {
+                auto native_sock = file->socket->Native();
+                if (native_sock) {
+#ifdef _WIN32
+                    u_long bytes = 0;
+                    if (ioctlsocket(*native_sock, FIONREAD, &bytes) == 0 && bytes > 0) {
+                        ev.TriggerIo(bytes);
+                        return true;
+                    }
+#else
+                    int bytes = 0;
+                    if (ioctl(*native_sock, FIONREAD, &bytes) == 0 && bytes > 0) {
+                        ev.TriggerIo(bytes);
+                        return true;
+                    }
+                    struct pollfd pfd = {.fd = *native_sock, .events = POLLIN, .revents = 0};
+                    if (poll(&pfd, 1, 0) > 0) {
+                        if (pfd.revents & (POLLHUP | POLLERR)) {
+                            ev.TriggerIo(0, 0, OrbisKernelEvent::Flags::Eof);
+                            return true;
+                        }
+                        if (pfd.revents & POLLIN) {
+                            ev.TriggerIo(bytes);
+                            return true;
+                        }
+                    }
+#endif
+                }
+            }
+        }
+    } else if (filter == OrbisKernelEvent::Filter::Write) {
+        if (file->type == Core::FileSys::FileType::Regular) {
+            ev.TriggerIo(0);
+            return true;
+        } else if (file->type == Core::FileSys::FileType::Socket) {
+            if (file->socket && file->socket->Native()) {
+#ifndef _WIN32
+                struct pollfd pfd = {
+                    .fd = *file->socket->Native(), .events = POLLOUT, .revents = 0};
+                if (poll(&pfd, 1, 0) > 0 && (pfd.revents & POLLOUT)) {
+                    ev.TriggerIo(0);
+                    return true;
+                }
+#else
+                ev.TriggerIo(0);
+                return true;
+#endif
+            }
+        }
+    } else if (filter == OrbisKernelEvent::Filter::Vnode) {
+        if (file->type == Core::FileSys::FileType::Regular) {
+            ev.TriggerIo(0, ev.event.fflags);
+            return true;
+        }
+    }
+
+    return ev.IsTriggered();
+}
+
+bool EqueueInternal::HasPendingIoEvents() {
+    return std::ranges::any_of(m_events, [](const auto& e) {
+        return (e.event.filter == OrbisKernelEvent::Filter::Read ||
+                e.event.filter == OrbisKernelEvent::Filter::Write);
+    });
 }
 
 bool EqueueInternal::AddSmallTimer(EqueueEvent& ev) {
@@ -341,7 +474,9 @@ bool SupportedEqueueFilter(OrbisKernelEvent::Filter filter) {
     return filter == OrbisKernelEvent::Filter::GraphicsCore ||
            filter == OrbisKernelEvent::Filter::HrTimer ||
            filter == OrbisKernelEvent::Filter::Timer || filter == OrbisKernelEvent::Filter::User ||
-           filter == OrbisKernelEvent::Filter::VideoOut;
+           filter == OrbisKernelEvent::Filter::VideoOut ||
+           filter == OrbisKernelEvent::Filter::Read || filter == OrbisKernelEvent::Filter::Write ||
+           filter == OrbisKernelEvent::Filter::Vnode;
 }
 
 s32 PS4_SYSV_ABI posix_kevent(s32 handle, OrbisKernelEvent* changelist, u64 nchanges,
@@ -393,7 +528,9 @@ s32 PS4_SYSV_ABI posix_kevent(s32 handle, OrbisKernelEvent* changelist, u64 ncha
                 *__Error() = POSIX_ENOENT;
                 return ORBIS_FAIL;
             }
-        } else if (event.fflags != 0) {
+        } else if (event.fflags != 0 && event.filter != OrbisKernelEvent::Filter::Vnode &&
+                   event.filter != OrbisKernelEvent::Filter::Read &&
+                   event.filter != OrbisKernelEvent::Filter::Write) {
             // The title is using filter-specific flags. Right now, these are unhandled.
             LOG_ERROR(Kernel_Event, "Unhandled fflags {:#x} for event filter {}", event.fflags,
                       magic_enum::enum_name(event.filter));
@@ -639,7 +776,109 @@ int PS4_SYSV_ABI sceKernelGetEventFilter(const OrbisKernelEvent* ev) {
 }
 
 u64 PS4_SYSV_ABI sceKernelGetEventData(const OrbisKernelEvent* ev) {
+    ASSERT(ev);
     return ev->data;
+}
+
+u32 PS4_SYSV_ABI sceKernelGetEventFflags(const OrbisKernelEvent* ev) {
+    ASSERT(ev);
+    return ev->fflags;
+}
+
+int PS4_SYSV_ABI sceKernelGetEventError(const OrbisKernelEvent* ev) {
+    ASSERT(ev);
+    return ev->fflags != 0 ? static_cast<int>(0x80020000 | ev->fflags) : 0;
+}
+
+int PS4_SYSV_ABI sceKernelAddReadEvent(OrbisKernelEqueue eq, int fd, size_t size, void* udata) {
+    LOG_DEBUG(Kernel_Event, "called, eq = {}, fd = {}, size = {}, udata = {}", eq, fd, size, udata);
+    if (!kqueues.contains(eq) || fd < 0) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    EqueueEvent event{};
+    event.event.ident = static_cast<u64>(fd);
+    event.event.filter = OrbisKernelEvent::Filter::Read;
+    event.event.udata = udata;
+    event.event.flags = OrbisKernelEvent::Flags::Add;
+    event.event.fflags = (size != 0) ? 1 : 0;
+    event.event.data = size;
+
+    return kqueues[eq]->AddEvent(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
+}
+
+int PS4_SYSV_ABI sceKernelDeleteReadEvent(OrbisKernelEqueue eq, int fd) {
+    LOG_DEBUG(Kernel_Event, "called, eq = {}, fd = {}", eq, fd);
+    if (!kqueues.contains(eq) || fd < 0) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    if (!kqueues[eq]->RemoveEvent(static_cast<u64>(fd), OrbisKernelEvent::Filter::Read)) {
+        return ORBIS_KERNEL_ERROR_ENOENT;
+    }
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceKernelAddWriteEvent(OrbisKernelEqueue eq, int fd, size_t size, void* udata) {
+    LOG_DEBUG(Kernel_Event, "called, eq = {}, fd = {}, size = {}, udata = {}", eq, fd, size, udata);
+    if (!kqueues.contains(eq) || fd < 0) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    EqueueEvent event{};
+    event.event.ident = static_cast<u64>(fd);
+    event.event.filter = OrbisKernelEvent::Filter::Write;
+    event.event.udata = udata;
+    event.event.flags = OrbisKernelEvent::Flags::Add;
+    event.event.fflags = (size != 0) ? 1 : 0;
+    event.event.data = size;
+
+    return kqueues[eq]->AddEvent(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
+}
+
+int PS4_SYSV_ABI sceKernelDeleteWriteEvent(OrbisKernelEqueue eq, int fd) {
+    LOG_DEBUG(Kernel_Event, "called, eq = {}, fd = {}", eq, fd);
+    if (!kqueues.contains(eq) || fd < 0) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    if (!kqueues[eq]->RemoveEvent(static_cast<u64>(fd), OrbisKernelEvent::Filter::Write)) {
+        return ORBIS_KERNEL_ERROR_ENOENT;
+    }
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceKernelAddFileEvent(OrbisKernelEqueue eq, int fd, u32 fflags, void* udata) {
+    LOG_DEBUG(Kernel_Event, "called, eq = {}, fd = {}, fflags = {:#x}, udata = {}", eq, fd, fflags,
+              udata);
+    if (!kqueues.contains(eq) || fd < 0) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+    if (fflags & 0xffffff90) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    EqueueEvent event{};
+    event.event.ident = static_cast<u64>(fd);
+    event.event.filter = OrbisKernelEvent::Filter::Vnode;
+    event.event.udata = udata;
+    event.event.flags = OrbisKernelEvent::Flags::Add;
+    event.event.fflags = fflags;
+    event.event.data = 0;
+
+    return kqueues[eq]->AddEvent(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
+}
+
+int PS4_SYSV_ABI sceKernelDeleteFileEvent(OrbisKernelEqueue eq, int fd) {
+    LOG_DEBUG(Kernel_Event, "called, eq = {}, fd = {}", eq, fd);
+    if (!kqueues.contains(eq) || fd < 0) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    if (!kqueues[eq]->RemoveEvent(static_cast<u64>(fd), OrbisKernelEvent::Filter::Vnode)) {
+        return ORBIS_KERNEL_ERROR_ENOENT;
+    }
+    return ORBIS_OK;
 }
 
 void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
@@ -657,9 +896,17 @@ void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("YWQFUyXIVdU", "libkernel", 1, "libkernel", sceKernelDeleteTimerEvent);
     LIB_FUNCTION("F6e0kwo4cnk", "libkernel", 1, "libkernel", sceKernelTriggerUserEvent);
     LIB_FUNCTION("LJDwdSNTnDg", "libkernel", 1, "libkernel", sceKernelDeleteUserEvent);
+    LIB_FUNCTION("VHCS3rCd0PM", "libkernel", 1, "libkernel", sceKernelAddReadEvent);
+    LIB_FUNCTION("JxJ4tfgKlXA", "libkernel", 1, "libkernel", sceKernelDeleteReadEvent);
+    LIB_FUNCTION("R-tyYMpYaxY", "libkernel", 1, "libkernel", sceKernelAddWriteEvent);
+    LIB_FUNCTION("cBGTk8S92XM", "libkernel", 1, "libkernel", sceKernelDeleteWriteEvent);
+    LIB_FUNCTION("cG3t15OK4Ow", "libkernel", 1, "libkernel", sceKernelAddFileEvent);
+    LIB_FUNCTION("UmXngHKB6is", "libkernel", 1, "libkernel", sceKernelDeleteFileEvent);
     LIB_FUNCTION("mJ7aghmgvfc", "libkernel", 1, "libkernel", sceKernelGetEventId);
     LIB_FUNCTION("23CPPI1tyBY", "libkernel", 1, "libkernel", sceKernelGetEventFilter);
     LIB_FUNCTION("kwGyyjohI50", "libkernel", 1, "libkernel", sceKernelGetEventData);
+    LIB_FUNCTION("Q0qr9AyqJSk", "libkernel", 1, "libkernel", sceKernelGetEventFflags);
+    LIB_FUNCTION("Uu-iDFC9aUc", "libkernel", 1, "libkernel", sceKernelGetEventError);
 }
 
 } // namespace Libraries::Kernel
