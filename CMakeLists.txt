@@ -448,6 +448,7 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/system/systemservice.h
                 src/core/libraries/system/systemservice_error.h
                 src/core/libraries/system/userservice.cpp
+                src/core/libraries/system/userservice_user_color.cpp
                 src/core/libraries/system/userservice.h
                 src/core/libraries/system/userservice_error.h
                 src/core/libraries/app_content/app_content.cpp
