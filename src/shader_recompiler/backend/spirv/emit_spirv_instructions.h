@@ -313,7 +313,6 @@ Id EmitFPIsInf32(EmitContext& ctx, Id value);
 Id EmitFPIsInf64(EmitContext& ctx, Id value);
 Id EmitIAdd32(EmitContext& ctx, IR::Inst* inst, Id a, Id b);
 Id EmitIAdd64(EmitContext& ctx, Id a, Id b);
-Id EmitIAddCarry32(EmitContext& ctx, Id a, Id b);
 Id EmitISub32(EmitContext& ctx, Id a, Id b);
 Id EmitISub64(EmitContext& ctx, Id a, Id b);
 Id EmitSMulHi(EmitContext& ctx, Id a, Id b);
@@ -469,7 +468,10 @@ Id EmitImageAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
 Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
 Id EmitImageAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                             Id cmp_value);
-Id EmitCubeFaceIndex(EmitContext& ctx, IR::Inst* inst, Id cube_coords);
+Id EmitCubeFaceIndex(EmitContext& ctx, IR::Inst* inst, Id x, Id y, Id z);
+Id EmitCubeFaceCoordS(EmitContext& ctx, IR::Inst* inst, Id x, Id y, Id z);
+Id EmitCubeFaceCoordT(EmitContext& ctx, IR::Inst* inst, Id x, Id y, Id z);
+Id EmitCubeFaceMajorAxis(EmitContext& ctx, IR::Inst* inst, Id x, Id y, Id z);
 Id EmitLaneId(EmitContext& ctx);
 Id EmitWarpId(EmitContext& ctx);
 Id EmitQuadBroadcast(EmitContext& ctx, Id value, Id index);

@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
     // Initialize main log with default config
     Common::Log::Setup("shadps4.log");
 
-    LOG_INFO(Debug, "Run: {}", fmt::join(std::span(argv, argc), ""));
+    LOG_INFO(Debug, "Run: {}", fmt::join(std::span(argv, argc), " "));
 
     IPC::Instance().Init();
 

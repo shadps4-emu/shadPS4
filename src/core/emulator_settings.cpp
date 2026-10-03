@@ -227,8 +227,6 @@ void EmulatorSettingsImpl::ClearGameSpecificOverrides() {
     ClearGroupOverrides(m_debug);
     ClearGroupOverrides(m_input);
     ClearGroupOverrides(m_audio);
-    // Windows static guest red-zone protection
-    ClearGroupOverrides(m_windows_guest_red_zone_protection);
     ClearGroupOverrides(m_gpu);
     ClearGroupOverrides(m_vulkan);
 }
@@ -261,12 +259,6 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
             json audioObj = json::object();
             SaveGroupGameSpecific(m_audio, audioObj);
             j["Audio"] = audioObj;
-
-            // Windows static guest red-zone protection
-            json windowsGuestRedZoneProtectionObj = json::object();
-            SaveGroupGameSpecific(m_windows_guest_red_zone_protection,
-                                  windowsGuestRedZoneProtectionObj);
-            j["WindowsGuestRedZoneProtection"] = windowsGuestRedZoneProtectionObj;
 
             json gpuObj = json::object();
             SaveGroupGameSpecific(m_gpu, gpuObj);
@@ -336,7 +328,7 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
 
 bool EmulatorSettingsImpl::Load(const std::string& serial) {
     // A newly loaded profile replaces, rather than extends, the previous profile.
-    ClearGameSpecificOverrides(); // Windows static guest red-zone protection
+    ClearGameSpecificOverrides();
 
     try {
         if (serial.empty()) {
@@ -424,10 +416,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
 
             std::vector<std::string> changed;
 
-            // ApplyGroupOverrides now correctly stores values as
-            // game_specific_value (see make_override in the header).
-            // ConfigMode::Default will then resolve them at getter call
-            // time without ever touching the base values.
             if (gj.contains("General"))
                 ApplyGroupOverrides(m_general, gj.at("General"), changed);
             if (gj.contains("Log"))
@@ -438,14 +426,19 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 ApplyGroupOverrides(m_input, gj.at("Input"), changed);
             if (gj.contains("Audio"))
                 ApplyGroupOverrides(m_audio, gj.at("Audio"), changed);
-            // Windows static guest red-zone protection
-            if (gj.contains("WindowsGuestRedZoneProtection"))
-                ApplyGroupOverrides(m_windows_guest_red_zone_protection,
-                                    gj.at("WindowsGuestRedZoneProtection"), changed);
             if (gj.contains("GPU"))
                 ApplyGroupOverrides(m_gpu, gj.at("GPU"), changed);
             if (gj.contains("Vulkan"))
                 ApplyGroupOverrides(m_vulkan, gj.at("Vulkan"), changed);
+
+            // Backwards compat for red-zone setting
+            if (gj.contains("WindowsGuestRedZoneProtection") &&
+                gj["WindowsGuestRedZoneProtection"].contains(
+                    "windows_guest_red_zone_protection_mode")) {
+                m_general.redzone_patches = static_cast<bool>(
+                    gj["WindowsGuestRedZoneProtection"]["windows_guest_red_zone_protection_mode"] ==
+                    "StaticPatching");
+            }
 
             PrintChangedSummary(changed);
             EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(true);
@@ -463,8 +456,6 @@ void EmulatorSettingsImpl::SetDefaultValues() {
     m_debug = DebugSettings{};
     m_input = InputSettings{};
     m_audio = AudioSettings{};
-    // Windows static guest red-zone protection
-    m_windows_guest_red_zone_protection = WindowsGuestRedZoneProtectionSettings{};
     m_gpu = GPUSettings{};
     m_vulkan = VulkanSettings{};
 }
@@ -723,8 +714,6 @@ std::vector<std::string> EmulatorSettingsImpl::GetAllOverrideableKeys() const {
     addGroup(m_debug.GetOverrideableFields());
     addGroup(m_input.GetOverrideableFields());
     addGroup(m_audio.GetOverrideableFields());
-    // Windows static guest red-zone protection
-    addGroup(m_windows_guest_red_zone_protection.GetOverrideableFields());
     addGroup(m_gpu.GetOverrideableFields());
     addGroup(m_vulkan.GetOverrideableFields());
     return keys;

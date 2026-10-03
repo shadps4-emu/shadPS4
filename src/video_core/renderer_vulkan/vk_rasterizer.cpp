@@ -46,8 +46,6 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     }
     memory->SetRasterizer(this);
 
-    scheduler.SetSessionCallback([this] { buffer_cache.FlushSyncBatch(true); });
-
     scheduler.SetSubmitCallback([this](Vulkan::SubmitInfo& info) {
         runtime.FlushBarriers();
         buffer_cache.SubmitPendingArenaBinds(info);
@@ -399,7 +397,6 @@ void Rasterizer::OnSubmit() {
 
 void Rasterizer::OnFence() {
     texture_cache.ProcessDownloadImages();
-    buffer_cache.FlushSyncBatch();
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
@@ -424,7 +421,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         }
         set_writes.resize(set_writes.size() + stage->buffers.size() + stage->images.size() +
                           stage->samplers.size());
-        stage->PushUd(binding, push_data);
         BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
         uses_dma |= stage->uses_dma;
@@ -725,6 +721,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             if (desc.buffer_type == Shader::BufferType::GdsBuffer) {
                 const auto* gds_buf = buffer_cache.GetGdsBuffer();
                 buffer_infos.emplace_back(gds_buf->Handle(), 0, gds_buf->SizeBytes());
+                needs_barrier |=
+                    runtime.IsBufferAccessed(gds_buf, 0, gds_buf->SizeBytes(), desc.is_written);
                 bound_buffers.emplace_back(gds_buf, 0, gds_buf->SizeBytes(), desc.is_written);
             } else if (desc.buffer_type == Shader::BufferType::Flatbuf) {
                 auto& vk_buffer = buffer_cache.GetStreamBuffer();
@@ -816,21 +814,17 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
 }
 
 void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding) {
-    image_bindings.clear();
     const u32 first_image_idx = image_infos.size();
     // To emulate storing to explicit mip levels, build a descriptor array with each mip level.
     boost::container::small_vector<u32, 8> image_descriptor_array_sizes;
 
+    u32 num_images{};
     for (const auto& image_desc : stage.images) {
         const auto tsharp = image_desc.GetSharp(stage);
-        if (texture_cache.IsMeta(tsharp.Address())) {
-            LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a shader (texture)");
-        }
-
         const auto data_fmt = tsharp.GetDataFmt();
         const auto num_fmt = tsharp.GetNumberFmt();
         if (tsharp.Address() == 0 || data_fmt == AmdGpu::DataFormat::FormatInvalid) {
-            image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            image_bindings[num_images++].image_id = {};
             image_descriptor_array_sizes.push_back(1);
             continue;
         }
@@ -842,7 +836,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                         "data_format={}, num_format={}",
                         tsharp.Address(), tsharp.pitch, tsharp.width, static_cast<u32>(data_fmt),
                         static_cast<u32>(num_fmt));
-            image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            image_bindings[num_images++].image_id = {};
             image_descriptor_array_sizes.push_back(1);
             continue;
         }
@@ -851,8 +845,8 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         const u32 num_bindings = image_desc.NumBindings(stage);
 
         for (auto i = 0; i < num_bindings; i++) {
-            auto& [image_id, desc] = image_bindings.emplace_back(
-                std::piecewise_construct, std::tuple{}, std::tuple{tsharp, image_desc});
+            auto& [image_id, desc] = image_bindings[num_images++];
+            std::construct_at(&desc, tsharp, image_desc);
 
             if (mip_fallback_mode == Shader::MipStorageFallbackMode::ConstantIndex) {
                 ASSERT(num_bindings == 1);
@@ -883,7 +877,8 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
     }
 
     // Second pass to re-bind images that were updated after binding
-    for (auto& [image_id, desc] : image_bindings) {
+    for (u32 i = 0; i < num_images; ++i) {
+        auto& [image_id, desc] = image_bindings[i];
         bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
         if (!image_id) {
             image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
@@ -958,6 +953,18 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
 
     for (const auto& sampler : stage.samplers) {
         auto ssharp = sampler.GetSharp(stage);
+        if (!ssharp.Valid() || (ssharp.border_color_type.Value() == AmdGpu::BorderColor::Custom &&
+                                liverpool->regs.ta_bc_base.Address() == 0)) {
+            LOG_WARNING(Render_Vulkan,
+                        "Rejecting invalid S# max_aniso={}, filter_mode={}, mip_filter={}, "
+                        "border_color_type={}, border_color_base={:#x}",
+                        static_cast<u32>(ssharp.max_aniso.Value()),
+                        static_cast<u32>(ssharp.filter_mode.Value()),
+                        static_cast<u32>(ssharp.mip_filter.Value()),
+                        static_cast<u32>(ssharp.border_color_type.Value()),
+                        liverpool->regs.ta_bc_base.Address());
+            ssharp = AmdGpu::Sampler{};
+        }
         const auto vk_sampler =
             texture_cache.GetSampler(ssharp, liverpool->regs.ta_bc_base, sampler.is_depth);
         image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
@@ -1171,8 +1178,7 @@ void Rasterizer::FillBuffer(VAddr address, u32 num_bytes, u32 value, bool is_gds
 }
 
 void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {
-    if (!dst_gds && !buffer_cache.IsRegionGpuModified(dst, num_bytes) &&
-        !buffer_cache.IsRegionInSyncBatch(dst, num_bytes)) {
+    if (!dst_gds && !buffer_cache.IsRegionGpuModified(dst, num_bytes)) {
         if (!src_gds && !buffer_cache.IsRegionGpuModified(src, num_bytes) &&
             !texture_cache.FindImageFromRange(src, num_bytes)) {
             // Both buffers were not transferred to GPU yet. Can safely copy in host memory.

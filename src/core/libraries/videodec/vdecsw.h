@@ -43,6 +43,27 @@ struct OrbisVdecswDecoderConfigInfo {
 };
 static_assert(sizeof(OrbisVdecswDecoderConfigInfo) == 0x50);
 
+struct OrbisVdecswDecoderConfigInfoV1 {
+    u64 this_size;
+    u32 resource_type;
+    OrbisVdecswCodecType codec_type;
+    u32 profile;
+    u32 max_level;
+    s32 max_frame_width;
+    s32 max_frame_height;
+    s32 max_dpb_frame_count;
+    u32 decode_pipeline_depth;
+    OrbisVdecswComputeQueue compute_queue;
+    u64 cpu_affinity_mask;
+    s32 cpu_thread_priority;
+    bool optimize_progressive_video;
+    bool check_memory_type;
+    u8 reserved0;
+    s8 extra_dpb_frame_count;
+    void* extra_config_info;
+};
+static_assert(sizeof(OrbisVdecswDecoderConfigInfoV1) == 0x48);
+
 struct OrbisVdecswDecoderMemoryInfo {
     u64 this_size;
     u64 cpu_memory_size;

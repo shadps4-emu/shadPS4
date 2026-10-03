@@ -10,6 +10,7 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "core/cpu_patches.h"
 #include "core/devtools/layer.h"
 #include "imgui/imgui_std.h"
 #include "settings_dialog_imgui.h"
@@ -31,8 +32,14 @@ int SettingsWindow::GetComboIndex(std::string selection, std::vector<std::string
 }
 
 void SettingsWindow::LoadSettings(std::string profile) {
+    // Global-only settings
+    EmulatorSettings.Load();
+    scanDepthSetting = EmulatorSettings.GetBigPictureFolderDepth();
+
     const bool isSpecific = currentProfile != "Global";
-    isSpecific ? EmulatorSettings.Load(profile) : EmulatorSettings.Load();
+    if (isSpecific) {
+        EmulatorSettings.Load(profile);
+    }
 
     /////////// General Tab
     int languageIndex = EmulatorSettings.GetConsoleLanguage();
@@ -42,7 +49,6 @@ void SettingsWindow::LoadSettings(std::string profile) {
             language = key;
         }
     }
-
     consoleLanguageSetting = GetComboIndex(language, languageOptions);
     volumeSetting = EmulatorSettings.GetVolumeSlider();
     showSplashSetting = EmulatorSettings.IsShowSplash();
@@ -81,15 +87,7 @@ void SettingsWindow::LoadSettings(std::string profile) {
         readbacksModeSetting = EmulatorSettings.GetReadbacksMode();
         readbackLinearImagesSetting = EmulatorSettings.IsReadbackLinearImagesEnabled();
         directMemoryAccessSetting = EmulatorSettings.IsDirectMemoryAccessEnabled();
-        // Windows static guest red-zone protection
-        windowsGuestRedZoneProtectionModeSetting =
-            static_cast<int>(EmulatorSettings.GetWindowsGuestRedZoneProtectionMode());
-        if (windowsGuestRedZoneProtectionModeSetting < 0 ||
-            windowsGuestRedZoneProtectionModeSetting >=
-                static_cast<int>(windowsGuestRedZoneProtectionModeOptions.size())) {
-            windowsGuestRedZoneProtectionModeSetting =
-                static_cast<int>(WindowsGuestRedZoneProtectionMode::Disabled);
-        }
+        windowsGuestRedZoneProtectionModeSetting = EmulatorSettings.IsRedZonePatchingEnabled();
         devkitConsoleSetting = EmulatorSettings.IsDevKit();
         neoModeSetting = EmulatorSettings.IsNeo();
         shadnetEnabledSetting = EmulatorSettings.IsShadNetEnabledSetting();
@@ -146,10 +144,7 @@ void SettingsWindow::SaveSettings(std::string profile) {
         EmulatorSettings.SetReadbackLinearImagesEnabled(readbackLinearImagesSetting, true);
         EmulatorSettings.SetDirectMemoryAccessEnabled(directMemoryAccessSetting, true);
         // Windows static guest red-zone protection
-        EmulatorSettings.SetWindowsGuestRedZoneProtectionMode(
-            static_cast<WindowsGuestRedZoneProtectionMode>(
-                windowsGuestRedZoneProtectionModeSetting),
-            true);
+        EmulatorSettings.SetRedZonePatchingEnabled(windowsGuestRedZoneProtectionModeSetting, true);
         EmulatorSettings.SetDevKit(devkitConsoleSetting, true);
         EmulatorSettings.SetNeo(neoModeSetting, true);
         EmulatorSettings.SetShadNetEnabled(shadnetEnabledSetting, true);
@@ -523,8 +518,10 @@ void SettingsWindow::DrawProfileSelector() {
             }
 
             ImGui::TableNextColumn();
-            std::string profileLabel =
-                i == 0 ? "Global" : profileIcons[i].serial + " - " + profileIcons[i].title;
+            std::string profileLabel = i == 0
+                                           ? "Global"
+                                           : profileIcons[i].serial + " - " +
+                                                 profileIcons[i].title + "##" + std::to_string(i);
             if (ImGui::Button(profileLabel.c_str(),
                               ImVec2(ImGui::GetContentRegionAvail().x, 0.0f))) {
 
@@ -604,6 +601,29 @@ void SettingsWindow::DrawGameFolderManager() {
         ImGui::SetNextWindowPos(viewport->Pos);
         ImGui::SetNextWindowSize(viewport->Size);
     }
+
+    float buttonWidth = ImGui::GetItemRectSize().x;
+    ImGui::PushItemWidth(buttonWidth);
+    if (ImGui::SliderInt("Folder Scan Depth", &scanDepthSetting, 0, 5)) {
+        std::string profile;
+        const bool isGlobal = currentProfile == "Global";
+        if (!isGlobal) {
+            profile = currentProfile.substr(0, 9);
+            EmulatorSettings.Load();
+        }
+
+        EmulatorSettings.SetBigPictureFolderDepth(scanDepthSetting);
+        EmulatorSettings.Save();
+
+        if (!isGlobal) {
+            EmulatorSettings.Load(profile);
+        }
+
+        if (!isGameRunning) {
+            GetProfileInfo();
+        }
+    }
+    ImGui::PopItemWidth();
 
     if (ImGuiFileDialog::Instance()->Display("OpenFolder", child_flags | ImGuiWindowFlags_NoMove)) {
         if (ImGuiFileDialog::Instance()->IsOk()) {
@@ -769,9 +789,8 @@ void SettingsWindow::DrawSettingsTable(SettingsCategory category) {
             AddSettingCheckbox("Enable Direct Memory Access", directMemoryAccessSetting);
 #ifdef _WIN32
             // Windows static guest red-zone protection
-            AddSettingCombo("Windows Guest Red Zone Protection (Requires Restart)",
-                            windowsGuestRedZoneProtectionModeSetting,
-                            windowsGuestRedZoneProtectionModeOptions);
+            AddSettingCheckbox("Windows Guest Red Zone Protection (Requires Restart)",
+                               windowsGuestRedZoneProtectionModeSetting);
 #endif
             AddSettingCheckbox("Enable Devkit Console Mode", devkitConsoleSetting);
             AddSettingCheckbox("Enable PS4 Neo Mode", neoModeSetting);

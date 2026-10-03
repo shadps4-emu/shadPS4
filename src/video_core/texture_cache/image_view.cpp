@@ -3,10 +3,12 @@
 
 #include "common/logging/log.h"
 #include "shader_recompiler/resource.h"
+#include "video_core/amdgpu/pixel_format.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/image_view.h"
+#include "vulkan/vulkan.hpp"
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -15,13 +17,12 @@ namespace VideoCore {
 vk::ImageViewType ConvertImageViewType(AmdGpu::ImageType type) {
     switch (type) {
     case AmdGpu::ImageType::Color1D:
-        return vk::ImageViewType::e1D;
-    case AmdGpu::ImageType::Color1DArray:
-        return vk::ImageViewType::e1DArray;
     case AmdGpu::ImageType::Color2D:
     case AmdGpu::ImageType::Color2DMsaa:
         return vk::ImageViewType::e2D;
+    case AmdGpu::ImageType::Color1DArray:
     case AmdGpu::ImageType::Color2DArray:
+    case AmdGpu::ImageType::Cube:
         return vk::ImageViewType::e2DArray;
     case AmdGpu::ImageType::Color3D:
         return vk::ImageViewType::e3D;
@@ -34,12 +35,13 @@ bool IsViewTypeCompatible(AmdGpu::ImageType view_type, AmdGpu::ImageType image_t
     switch (view_type) {
     case AmdGpu::ImageType::Color1D:
     case AmdGpu::ImageType::Color1DArray:
-        return image_type == AmdGpu::ImageType::Color1D;
     case AmdGpu::ImageType::Color2D:
     case AmdGpu::ImageType::Color2DArray:
     case AmdGpu::ImageType::Color2DMsaa:
     case AmdGpu::ImageType::Color2DMsaaArray:
-        return image_type == AmdGpu::ImageType::Color2D || image_type == AmdGpu::ImageType::Color3D;
+    case AmdGpu::ImageType::Cube:
+        return image_type == AmdGpu::ImageType::Color1D ||
+               image_type == AmdGpu::ImageType::Color2D || image_type == AmdGpu::ImageType::Color3D;
     case AmdGpu::ImageType::Color3D:
         return image_type == AmdGpu::ImageType::Color3D;
     default:
@@ -65,9 +67,8 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     range.extent.layers = image.NumViewLayers(desc.is_array);
     type = image.GetViewType(desc.is_array);
     min_lod = static_cast<u32>(image.min_lod);
-
     if (!is_storage) {
-        mapping = Vulkan::LiverpoolToVK::ComponentMapping(image.DstSelect());
+        mapping = image.DstSelect();
     }
 }
 
@@ -117,12 +118,16 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
         aspect = vk::ImageAspectFlagBits::eStencil;
     }
 
-    vk::ImageViewCreateInfo image_view_ci = {
+    const auto components = info.mapping == AmdGpu::IdentityMapping
+                                ? vk::ComponentMapping{}
+                                : Vulkan::LiverpoolToVK::ComponentMapping(info.mapping);
+
+    const vk::ImageViewCreateInfo image_view_ci = {
         .pNext = &usage_ci,
         .image = image.GetImage(),
         .viewType = ConvertImageViewType(info.type),
         .format = instance.GetSupportedFormat(format, image.format_features),
-        .components = info.mapping,
+        .components = components,
         .subresourceRange{
             .aspectMask = aspect,
             .baseMipLevel = info.range.base.level,
@@ -134,8 +139,6 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
     if (!IsViewTypeCompatible(info.type, image.info.type)) {
         LOG_ERROR(Render_Vulkan, "image view type {} is incompatible with image type {}",
                   magic_enum::enum_name(info.type), magic_enum::enum_name(image.info.type));
-        info.type = image.info.type;
-        image_view_ci.viewType = ConvertImageViewType(info.type);
     }
 
     auto [view_result, view] = instance.GetDevice().createImageViewUnique(image_view_ci);

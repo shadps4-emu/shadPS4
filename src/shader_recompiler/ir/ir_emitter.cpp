@@ -1452,18 +1452,6 @@ U32U64 IREmitter::IAdd(const U32U64& a, const U32U64& b) {
     }
 }
 
-Value IREmitter::IAddCarry(const U32& a, const U32& b) {
-    if (a.Type() != b.Type()) {
-        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
-    }
-    switch (a.Type()) {
-    case Type::U32:
-        return Inst(Opcode::IAddCarry32, a, b);
-    default:
-        ThrowInvalidType(a.Type());
-    }
-}
-
 U32U64 IREmitter::ISub(const U32U64& a, const U32U64& b) {
     if (a.Type() != b.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
@@ -2178,8 +2166,20 @@ void IREmitter::ImageWrite(const Value& handle, const Value& coords, const U32& 
     Inst(Opcode::ImageWrite, Flags{info}, handle, coords, lod, multisampling, color);
 }
 
-[[nodiscard]] F32 IREmitter::CubeFaceIndex(const Value& cube_coords) {
-    return Inst<F32>(Opcode::CubeFaceIndex, cube_coords);
+[[nodiscard]] F32 IREmitter::CubeFaceIndex(const Value& x, const Value& y, const Value& z) {
+    return Inst<F32>(Opcode::CubeFaceIndex, x, y, z);
+}
+
+[[nodiscard]] F32 IREmitter::CubeFaceCoordS(const Value& x, const Value& y, const Value& z) {
+    return Inst<F32>(Opcode::CubeFaceCoordS, x, y, z);
+}
+
+[[nodiscard]] F32 IREmitter::CubeFaceCoordT(const Value& x, const Value& y, const Value& z) {
+    return Inst<F32>(Opcode::CubeFaceCoordT, x, y, z);
+}
+
+[[nodiscard]] F32 IREmitter::CubeFaceMajorAxis(const Value& x, const Value& y, const Value& z) {
+    return Inst<F32>(Opcode::CubeFaceMajorAxis, x, y, z);
 }
 
 // Debug print maps to SPIRV's NonSemantic DebugPrintf instruction

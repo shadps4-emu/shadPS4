@@ -17,10 +17,10 @@ static vk::ImageType ConvertImageType(AmdGpu::ImageType type) noexcept {
     switch (type) {
     case AmdGpu::ImageType::Color1D:
     case AmdGpu::ImageType::Color1DArray:
-        return vk::ImageType::e1D;
     case AmdGpu::ImageType::Color2D:
     case AmdGpu::ImageType::Color2DMsaa:
     case AmdGpu::ImageType::Color2DArray:
+    case AmdGpu::ImageType::Cube:
         return vk::ImageType::e2D;
     case AmdGpu::ImageType::Color3D:
         return vk::ImageType::e3D;
@@ -243,7 +243,7 @@ void Runtime::CopyImage(VideoCore::Image* src, VideoCore::Image* dst) {
     SetBackingSamples(dst, dst->info.num_samples, false);
     SetBackingSamples(src, src->info.num_samples);
 
-    boost::container::small_vector<vk::ImageCopy, 8> regions;
+    SmallVector<vk::ImageCopy, 8> regions;
 
     const vk::ImageAspectFlags src_aspect = src->aspect_mask & ~vk::ImageAspectFlagBits::eStencil;
     const vk::ImageAspectFlags dst_aspect = dst->aspect_mask & ~vk::ImageAspectFlagBits::eStencil;
@@ -385,7 +385,7 @@ void Runtime::CopyMip(VideoCore::Image* src, VideoCore::Image* dst, u32 mip, u32
     const auto dst_dim = dst->info.props.is_block ? 2 : 0;
     const auto mip_block_w = std::max(dst->info.size.width >> (mip + dst_dim), 1u);
     const auto mip_block_h = std::max(dst->info.size.height >> (mip + dst_dim), 1u);
-    const auto mip_block_p = std::max(dst->info.mips_layout[mip].pitch >> dst_dim, 1u);
+    const auto mip_block_p = std::max<u32>(dst->info.mips_layout[mip].pitch >> dst_dim, 1u);
 
     const auto src_dim = src->info.props.is_block ? 2 : 0;
     ASSERT(mip_block_w == (src->info.size.width >> src_dim));

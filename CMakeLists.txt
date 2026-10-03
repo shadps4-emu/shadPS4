@@ -213,7 +213,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "18")
+set(EMULATOR_VERSION_MINOR "19")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/dist/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -623,6 +623,8 @@ set(VDEC_LIB src/core/libraries/videodec/video_utils.cpp
              src/core/libraries/videodec/video_utils.h
              src/core/libraries/videodec/vdecsw.cpp
              src/core/libraries/videodec/vdecsw.h
+             src/core/libraries/videodec/vdecsw_impl.cpp
+             src/core/libraries/videodec/vdecsw_impl.h
              src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h
              src/core/libraries/videodec/videodec2.cpp
@@ -730,6 +732,13 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
 
 set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp
                  src/core/libraries/camera/camera.h
+                 src/core/libraries/camera/camera_helpers.h
+                 src/core/libraries/camera/camera_helpers.cpp
+                 src/core/libraries/camera/camera_audio.cpp
+                 src/core/libraries/camera/camera_calibration.cpp
+                 src/core/libraries/camera/camera_config.cpp
+                 src/core/libraries/camera/camera_config_types.h
+                 src/core/libraries/camera/camera_device.cpp
                  src/core/libraries/camera/camera_error.h
 )
 
@@ -820,6 +829,7 @@ set(COMMON src/common/logging/classes.cpp
            src/common/singleton.h
            src/common/slab_heap.h
            src/common/small_vector.h
+           src/common/slot_vector.cpp
            src/common/slot_vector.h
            src/common/spin_lock.cpp
            src/common/spin_lock.h

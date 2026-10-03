@@ -290,6 +290,17 @@ void FoldAdd(IR::Block& block, IR::Inst& inst) {
     }
 }
 
+void FoldSub(IR::Block& block, IR::Inst& inst) {
+    if (FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a - b; })) {
+        return;
+    }
+    const IR::Value rhs{inst.Arg(1)};
+    if (rhs.IsImmediate() && rhs.U32() == 0) {
+        inst.ReplaceUsesWithAndRemove(inst.Arg(0));
+        return;
+    }
+}
+
 template <typename T>
 void FoldMul(IR::Block& block, IR::Inst& inst) {
     if (!FoldCommutative<T>(inst, [](T a, T b) { return a * b; })) {
@@ -313,8 +324,7 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::IAdd32:
         return FoldAdd<u32>(block, inst);
     case IR::Opcode::ISub32:
-        FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a - b; });
-        return;
+        return FoldSub(block, inst);
     case IR::Opcode::ConvertF32U32:
         FoldWhenAllImmediates(inst, [](u32 a) { return static_cast<float>(a); });
         return;

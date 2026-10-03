@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <utility>
 #include "common/adaptive_mutex.h"
 #include "common/assert.h"
@@ -107,6 +108,7 @@ struct PageManager::Impl {
     virtual void Protect(VAddr address, size_t size, Core::MemoryPermission perms) = 0;
 
     void EnsurePages(VAddr begin, VAddr end) {
+        end = std::min(end, VAddr{1} << ADDRESS_BITS) - 1;
         const size_t start_page = begin >> PM_PAGE_BITS;
         const size_t end_page = end >> PM_PAGE_BITS;
         cached_pages.reserve(start_page, end_page);
@@ -312,6 +314,7 @@ public:
     ~UffdImpl() = default;
 
     void OnMap(VAddr address, size_t size) override {
+        PageManager::Impl::OnMap(address, size);
         uffdio_register reg;
         reg.range.start = address;
         reg.range.len = size;
@@ -430,12 +433,13 @@ struct SignalImpl : public PageManager::Impl {
 
     static bool GuestFaultSignalHandler(void* context, void* fault_address) {
         const auto addr = reinterpret_cast<VAddr>(fault_address);
+        const auto size = std::min<u64>(8, PageManager::GetNextPageAddr(addr) - addr);
         const auto is_gpu_thread =
             std::this_thread::get_id() == rasterizer->GetGpuCommandProcessorThread();
         if (Common::IsWriteError(context)) {
-            return rasterizer->InvalidateMemory(addr, 8, is_gpu_thread);
+            return rasterizer->InvalidateMemory(addr, size, is_gpu_thread);
         } else {
-            return rasterizer->ReadMemory(addr, 8, is_gpu_thread);
+            return rasterizer->ReadMemory(addr, size, is_gpu_thread);
         }
         return false;
     }

@@ -80,11 +80,6 @@ public:
         return stream_buffer;
     }
 
-    /// Return true when a region has a pending synchronization request.
-    [[nodiscard]] bool IsRegionInSyncBatch(VAddr addr, size_t size) const noexcept {
-        return sync_batch.Overlaps(addr, addr + size);
-    }
-
     /// Returns minimum granularity of a sparse memory bind.
     u32 GetSparsePageShift() const noexcept {
         return block_shift;
@@ -127,9 +122,6 @@ public:
     /// Commits pending sparse buffer memory binds. Must be called before every scheduler submit.
     void SubmitPendingArenaBinds(Vulkan::SubmitInfo& info);
 
-    /// Flushes pending synchronization requests
-    void FlushSyncBatch(bool from_scheduler = false);
-
 private:
     struct ArenaBinds {
         const Buffer* arena;
@@ -150,6 +142,9 @@ private:
 
     void DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool is_write,
                         bool async);
+
+    bool SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size, bool is_written,
+                           bool is_texel_buffer);
 
     bool SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size);
 
@@ -186,21 +181,6 @@ private:
         }
     };
     IntervalList<Backing> resident_ranges;
-
-    struct SyncRange : Interval {
-        bool written;
-        constexpr bool CanMergeWith(const SyncRange& o) const noexcept {
-            return written == o.written;
-        }
-        constexpr SyncRange SubRange(u64 a, u64 b) const noexcept {
-            return {{a, b}, written};
-        }
-        constexpr bool Dominant(const SyncRange& o) const noexcept {
-            return written && !o.written;
-        }
-    };
-    DomIntervalList<SyncRange> sync_batch{};
-    u32 num_flushes_per_frame{};
 
     u32 arena_memory_type_index{};
     u32 block_size{};
