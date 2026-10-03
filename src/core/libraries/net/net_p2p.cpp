@@ -1,9 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// The shared P2P transport and the private channels the NP libraries use on it. Not part of
-// the guest-facing libSceNet API.
-
 #include <algorithm>
 #include <chrono>
 #include <cstring>

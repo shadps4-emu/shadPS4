@@ -1,9 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// libSceNet on top of Core::Net. Sockets, epoll, socket options and address helpers work,
-// the rest are stubs. Blocking, timeouts, abort, epoll and P2P are handled in core/net.
-
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -51,9 +48,6 @@ using Host::Error;
 
 thread_local s32 g_net_errno = 0;
 
-// Memory pools (sceNetPoolCreate). Host sockets don't allocate from them, so only ids, sizes
-// and users are tracked. At most 31 pools, ids from 3000 as in the SDK's ifconfig sample.
-// TODO: the id range is a guess from that sample.
 constexpr s32 FirstPoolId = 3000;
 constexpr size_t MaxPools = 31;
 constexpr s32 MinPoolSize = 4 * 1024;
@@ -104,8 +98,6 @@ OrbisNetSockaddrIn AsP2PSockaddr(const OrbisNetSockaddr& addr) {
     return in;
 }
 
-// P2P bind rules: no multicast address. A datagram socket must name the UDP port, a stream
-// socket no UDP port or the P2P one.
 int CheckP2PBindAddress(const OrbisNetSockaddr& addr, P2PKind kind) {
     const OrbisNetSockaddrIn in = AsP2PSockaddr(addr);
     if ((ntohl(in.sin_addr) & 0xf0000000u) == 0xe0000000u) {
@@ -233,12 +225,10 @@ const OptionRule* FindOptionRule(s32 level, s32 name) {
     return nullptr;
 }
 
-// The table has every option from the SDK headers, anything else is ENOPROTOOPT.
 bool IsLenientOptionLevel(s32) {
     return false;
 }
 
-// Stored value, or the SDK default.
 s32 StoredOption(OrbisNetId s, s32 level, s32 name, const Core::Net::SocketInfo& info) {
     Core::Net::SocketAttributes attributes;
     Core::Net::SocketGetAttributes(s, &attributes);
@@ -370,7 +360,7 @@ void ApplyPendingMemberships(OrbisNetId s) {
     }
 }
 
-constexpr s32 MaxRawSend = 8192; // per SDK docs
+constexpr s32 MaxRawSend = 8192;
 constexpr u64 MaxPeekLen = 512 * 1024;
 
 // UDP_SND_ON_SUSPEND sends a datagram when the game is suspended. The emulator never
@@ -398,8 +388,6 @@ s32 SetSendOnSuspend(OrbisNetId s, const Core::Net::SocketInfo& info, const void
     }));
 }
 
-// Reserved ports fail with EACCES or EINVAL per SDK docs.
-// TODO: which one when. Using EACCES, like BSD privileged ports.
 constexpr int ReservedPortErrno = ORBIS_NET_EACCES;
 
 P2PKind KindOf(const Core::Net::SocketInfo& info) {
@@ -1852,7 +1840,6 @@ s32 PS4_SYSV_ABI sceNetInfoDumpStop() {
 
 s32 PS4_SYSV_ABI sceNetInit() {
     LOG_INFO(Lib_Net, "called");
-    // The system initializes the library. Always succeeds per SDK docs.
     static const bool host_ready = Host::Initialize();
     if (!host_ready) {
         LOG_ERROR(Lib_Net, "host networking could not be initialized");
@@ -2056,9 +2043,7 @@ static s32 sceNetRecvmsgImpl(OrbisNetId s, OrbisNetMsghdr* msg, s32 flags) {
     if (msg == nullptr) {
         return SetErrno(ORBIS_NET_EFAULT);
     }
-    // Receive into one buffer and scatter, so datagram boundaries hold. msg_control and
-    // msg_flags are unused per SDK docs.
-    if ((flags & ORBIS_NET_MSG_PEEKLEN) == ORBIS_NET_MSG_PEEKLEN) {
+    .if ((flags & ORBIS_NET_MSG_PEEKLEN) == ORBIS_NET_MSG_PEEKLEN) {
         return SetErrno(ORBIS_NET_EINVAL);
     }
     std::vector<u8> buffer;
@@ -2401,7 +2386,7 @@ s32 PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, s32 level, s32 optname, const vo
         if (!rule->others_ignored) {
             return SetErrno(ORBIS_NET_EPROCUNAVAIL);
         }
-        return has_int ? store(value) : ORBIS_OK; // ignored per SDK docs
+        return has_int ? store(value) : ORBIS_OK;
     }
 
     if (level == ORBIS_NET_SOL_SOCKET) {
@@ -2466,9 +2451,7 @@ s32 PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, s32 level, s32 optname, const vo
             if (!has_int || value <= 0) {
                 return SetErrno(ORBIS_NET_EINVAL);
             }
-            // Capped at 512 KiB, which the SDK allows. Stored so getsockopt reports the PS4 value.
-            // P2P sockets use the transport's buffers.
-            value = std::min(value, MaxSocketBuffer);
+            .value = std::min(value, MaxSocketBuffer);
             Core::Net::SocketUpdateAttributes(s, [&](Core::Net::SocketAttributes& a) {
                 (optname == ORBIS_NET_SO_SNDBUF ? a.snd_buf : a.rcv_buf) = value;
             });
@@ -2754,7 +2737,6 @@ s32 PS4_SYSV_ABI sceNetSysctl() {
 
 s32 PS4_SYSV_ABI sceNetTerm() {
     LOG_INFO(Lib_Net, "called");
-    // Always succeeds per SDK docs, the system keeps using the library.
     return ORBIS_OK;
 }
 
