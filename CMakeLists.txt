@@ -732,6 +732,13 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
 
 set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp
                  src/core/libraries/camera/camera.h
+                 src/core/libraries/camera/camera_helpers.h
+                 src/core/libraries/camera/camera_helpers.cpp
+                 src/core/libraries/camera/camera_audio.cpp
+                 src/core/libraries/camera/camera_calibration.cpp
+                 src/core/libraries/camera/camera_config.cpp
+                 src/core/libraries/camera/camera_config_types.h
+                 src/core/libraries/camera/camera_device.cpp
                  src/core/libraries/camera/camera_error.h
 )
 
