@@ -72,6 +72,16 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset);
 s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, u64 nbytes, s64 offset);
+s32 PS4_SYSV_ABI posix_truncate(const char* path, s64 length);
+s32 PS4_SYSV_ABI sceKernelTruncate(const char* path, s64 length);
+s32 PS4_SYSV_ABI posix_chmod(const char* path, u32 mode);
+s32 PS4_SYSV_ABI sceKernelChmod(const char* path, u32 mode);
+s32 PS4_SYSV_ABI posix_fchmod(s32 fd, u32 mode);
+s32 PS4_SYSV_ABI sceKernelFchmod(s32 fd, u32 mode);
+s32 PS4_SYSV_ABI posix_utimes(const char* path, const OrbisKernelTimeval* times);
+s32 PS4_SYSV_ABI sceKernelUtimes(const char* path, const OrbisKernelTimeval* times);
+s32 PS4_SYSV_ABI posix_futimes(s32 fd, const OrbisKernelTimeval* times);
+s32 PS4_SYSV_ABI sceKernelFutimes(s32 fd, const OrbisKernelTimeval* times);
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel
