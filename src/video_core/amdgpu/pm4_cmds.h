@@ -768,7 +768,11 @@ struct PM4CmdWriteData {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>(addr64);
+        if constexpr (std::is_pointer_v<T>) {
+            return reinterpret_cast<T>(addr64);
+        } else {
+            return static_cast<T>(addr64);
+        }
     }
 };
 
@@ -1240,9 +1244,39 @@ struct PM4CmdCondExec {
                                          ///< if bool pointed to is zero
     };
 
-    bool* Address() const {
-        return std::bit_cast<bool*>(u64(bool_addr_hi.Value()) << 32 | u64(bool_addr_lo.Value())
-                                                                          << 2);
+    template <typename T = VAddr>
+    [[nodiscard]] T Address() const {
+        return std::bit_cast<T>((u64(bool_addr_hi.Value()) << 32) |
+                                (u64(bool_addr_lo.Value()) << 2));
+    }
+};
+
+struct PM4CmdSetPredication {
+    enum class PredOp : u32 {
+        Disable = 0u,
+        Zpass = 1u,
+        PrimCount = 2u,
+        Bool64 = 3u,
+        Bool32 = 4u,
+    };
+
+    PM4Type3Header header;
+    union {
+        u32 dw1;
+        BitField<4, 28, u32> addr_lo;
+    };
+    union {
+        u32 dw2;
+        BitField<0, 8, u32> addr_hi;
+        BitField<8, 1, u32> draw_op;
+        BitField<12, 1, u32> hint;
+        BitField<16, 3, PredOp> pred_op;
+        BitField<31, 1, u32> continue_bit;
+    };
+
+    template <typename T = VAddr>
+    [[nodiscard]] T Address() const {
+        return std::bit_cast<T>((u64(addr_hi.Value()) << 32) | (u64(addr_lo.Value()) << 4));
     }
 };
 
