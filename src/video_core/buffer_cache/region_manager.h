@@ -107,6 +107,16 @@ public:
 
     template <Type type, StateOp cpu_op, StateOp gpu_op, bool locked = true>
     void ForEachModifiedRange(u64 offset, s64 size, auto&& func) {
+        constexpr StateOp type_op = type == Type::CPU ? cpu_op : gpu_op;
+        constexpr StateOp other_op = type == Type::CPU ? gpu_op : cpu_op;
+        if constexpr (type_op != StateOp::Set && other_op == StateOp::None) {
+            // Without modified pages there is nothing to report and no state to change, so skip
+            // the lock. Bits are only set under the lock before the page is unprotected, the same
+            // lockless check IsRegionCpuModified/IsRegionGpuModified already rely on.
+            if (!IsRegionModified<type>(offset, size)) {
+                return;
+            }
+        }
         auto& state = GetRegionBits<type>();
         RegionBits write_prot;
         RegionBits read_prot;
