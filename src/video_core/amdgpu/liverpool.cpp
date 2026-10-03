@@ -160,6 +160,10 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
 
         const auto* header = reinterpret_cast<const PM4Header*>(ccb.data());
         const u32 type = header->type;
+        if (type == 2) {
+            ccb = NextPacket(ccb, 1);
+            continue;
+        }
         if (type != 3) {
             // No other types of packets were spotted so far
             UNREACHABLE_MSG("Invalid PM4 type {}", type);
