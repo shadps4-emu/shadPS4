@@ -64,6 +64,15 @@ enum OrbisVoicePortAttr : s32 {
     ORBIS_VOICE_ATTR_2002 = 2002, // size = 1
 };
 
+// Layout (4 u16 fields, in this order) confirmed via disassembly; field meaning is not.
+struct OrbisVoiceResourceInfo {
+    u16 field_0;
+    u16 field_2;
+    u16 field_4;
+    u16 field_6;
+};
+static_assert(sizeof(OrbisVoiceResourceInfo) == 8);
+
 s32 PS4_SYSV_ABI sceVoiceConnectIPortToOPort(u32 in_port_id, u32 out_port_id);
 s32 PS4_SYSV_ABI sceVoiceCreatePort(s32* port_id, const OrbisVoicePortParam* param);
 s32 PS4_SYSV_ABI sceVoiceDeletePort(u32 port_id);
@@ -73,7 +82,7 @@ s32 PS4_SYSV_ABI sceVoiceGetBitRate(u32 port_id, u32* bitrate);
 s32 PS4_SYSV_ABI sceVoiceGetMuteFlag(u32 port_id, bool* mute);
 s32 PS4_SYSV_ABI sceVoiceGetPortAttr(u32 port_id, s32 attr_id, void* value, u32 size);
 s32 PS4_SYSV_ABI sceVoiceGetPortInfo(u32 port_id, OrbisVoicePortInfo* info);
-s32 PS4_SYSV_ABI sceVoiceGetResourceInfo(void* info);
+s32 PS4_SYSV_ABI sceVoiceGetResourceInfo(OrbisVoiceResourceInfo* info);
 s32 PS4_SYSV_ABI sceVoiceGetVolume(u32 port_id, float* volume);
 s32 PS4_SYSV_ABI sceVoiceInit(const OrbisVoiceInitParam* param, s32 container);
 s32 PS4_SYSV_ABI sceVoiceInitHQ(const OrbisVoiceInitParam* param, s32 container);
@@ -91,9 +100,10 @@ s32 PS4_SYSV_ABI sceVoiceSetVolume(u32 port_id, float volume);
 s32 PS4_SYSV_ABI sceVoiceStart(const OrbisVoiceStartParam* param);
 s32 PS4_SYSV_ABI sceVoiceStop();
 s32 PS4_SYSV_ABI sceVoiceUpdatePort(u32 port_id, const OrbisVoicePortParam* param);
-s32 PS4_SYSV_ABI sceVoiceVADAdjustment(u32 port_id, s32 value);
-s32 PS4_SYSV_ABI sceVoiceVADSetVersion(u32 version);
-s32 PS4_SYSV_ABI sceVoiceWriteToIPort(u32 port_id, const void* data, u32* size);
+s32 PS4_SYSV_ABI sceVoiceVADAdjustment(float param1, float param2);
+s32 PS4_SYSV_ABI sceVoiceVADSetVersion(s32 version);
+// `unk`: confirmed present in the real signature; its meaning is not.
+s32 PS4_SYSV_ABI sceVoiceWriteToIPort(u32 port_id, const void* data, u32* size, s16 unk);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Voice
