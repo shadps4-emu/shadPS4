@@ -73,7 +73,6 @@
           build =
             { clangStdenv
             , lib
-            , autoPatchelfHook
             , fetchurl
             , cmake
             , ninja
@@ -97,15 +96,42 @@
             , wayland
             , wayland-protocols
             , wayland-scanner
-            , vulkan-loader
             , libxkbcommon
             , systemdMinimal
-            , pugixml
             , libuuid
             , libx11
+            , sdl3
+              # System Libraries:
+            , boost
+            , cli11
+            , ffmpeg
+            , fmt
+            , freetype
+            , glslang
+            , half
+            , magic-enum
+            , miniupnpc
+            , miniz
+            , nlohmann_json
+            , openal
+            , libressl
+            , renderdoc
+            , stb
+            , toml11
+            , robin-map
+            , vulkan-headers
+            , vulkan-memory-allocator
+            , xbyak
+            , xxhash
+            , zarchive
+            , zlib
+            , zydis
+            , pugixml
+              # Parameters:
+            , dontStrip
             , releaseMode
-            , dontStrip ? true
             , enableDiscordRpc ? false
+            , enableSystemLibraries ? false
             ,
             }:
             let
@@ -144,7 +170,6 @@
                 pkg-config
                 python3
                 wayland-scanner
-                autoPatchelfHook
               ];
               buildInputs = [
                 libuuid
@@ -157,38 +182,69 @@
                 libdrm
                 libgbm
                 libpulseaudio
-              ] ++ x11Libs;
+                (sdl3.overrideAttrs
+                  (
+                    finalAttrs: baseAttrs: { src = if enableSystemLibraries then ./externals/sdl3 else baseAttrs.src; }
+                  ))
+              ] ++ x11Libs
+              ++ lib.optionals enableSystemLibraries [
+                boost
+                cli11
+                ffmpeg
+                fmt
+                freetype
+                glslang
+                half
+                magic-enum
+                miniupnpc
+                miniz
+                nlohmann_json
+                openal
+                libressl
+                renderdoc
+                stb
+                toml11
+                robin-map
+                vulkan-headers
+                vulkan-memory-allocator
+                xbyak
+                xxhash
+                zarchive
+                zlib
+                zydis
+                pugixml
+              ];
 
               cmakeFlags = [
                 (lib.cmakeFeature "CMAKE_BUILD_TYPE" releaseMode)
                 (lib.cmakeBool "ENABLE_DISCORD_RPC" enableDiscordRpc)
+                (lib.cmakeBool "ENABLE_SYSTEM_LIBRARIES" enableSystemLibraries)
                 (lib.cmakeBool "ENABLE_TESTS" false)
-                (lib.cmakeBool "CMAKE_CXX_SCAN_FOR_MODULES" false)
+              ] ++ lib.optionals (!enableSystemLibraries) [
                 (lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_FMT" "${self}/externals/fmt")
+                (lib.cmakeBool "CMAKE_CXX_SCAN_FOR_MODULES" false)
               ];
 
               inherit dontStrip;
 
-              patchPhase = '' 
+              patchPhase = ''
+                # Pevents GIT-NOTFOUND in titlebar.
+                substituteInPlace src/common/scm_rev.cpp.in \
+                  --replace-fail '@GIT_BRANCH@' '${self.shortRev or "Dirty"}'
+                substituteInPlace src/common/scm_rev.cpp.in \
+                  --replace-fail '@GIT_DESC@' ' '
+              ''
+              + lib.optionalString (!enableSystemLibraries) ''
                 substituteInPlace externals/ffmpeg-core/CMakeLists.txt \
-                  --replace-fail 'set(FFMPEG_ZIP_PATH "''${CMAKE_BINARY_DIR}/externals/ffmpeg-''${FFMPEG_GIT_SHA}.zip")' 'set(FFMPEG_ZIP_PATH "''${CMAKE_BINARY_DIR}/externals/ffmpeg-${ffmpegZip.commit}.zip")'
-                
-                substituteInPlace src/common/scm_rev.cpp.in \
-                  --replace-fail "@GIT_BRANCH@" "${self.shortRev or "Dirty"}"
-                
-                substituteInPlace src/common/scm_rev.cpp.in \
-                  --replace-fail "@GIT_DESC@" ""
+                  --replace-fail \
+                  'set(FFMPEG_ZIP_PATH "''${CMAKE_BINARY_DIR}/externals/ffmpeg-''${FFMPEG_GIT_SHA}.zip")' \
+                  'set(FFMPEG_ZIP_PATH "''${CMAKE_BINARY_DIR}/externals/ffmpeg-${ffmpegZip.commit}.zip")'
               '';
 
-              preConfigure = ''
+              preConfigure = lib.optionalString (!enableSystemLibraries) ''
                 mkdir -p build/externals
                 ln -sf ${ffmpegZip.path} build/externals/ffmpeg-${ffmpegZip.commit}.zip
               '';
-
-              runtimeDependencies = [
-                vulkan-loader
-              ];
-              autoPatchelfIgnoreMissingDeps = [ "*" ];
             });
 
           defaultBuild = pkgsLinux.callPackage build { releaseMode = "RelWithDebInfo"; dontStrip = true; };
