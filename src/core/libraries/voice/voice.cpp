@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstring>
 #include <deque>
 #include <mutex>
@@ -332,7 +333,7 @@ s32 PS4_SYSV_ABI sceVoiceGetPortInfo(u32 port_id, OrbisVoicePortInfo* info) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceVoiceGetResourceInfo(void* info) {
+s32 PS4_SYSV_ABI sceVoiceGetResourceInfo(OrbisVoiceResourceInfo* info) {
     LOG_INFO(Lib_Voice, "called");
     if (!g_voice_manager.initialized) {
         return ORBIS_VOICE_ERROR_NOT_INIT;
@@ -340,6 +341,8 @@ s32 PS4_SYSV_ABI sceVoiceGetResourceInfo(void* info) {
     if (info == nullptr) {
         return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
     }
+    // Field meaning is unconfirmed; zero instead of leaving the caller's memory uninitialized.
+    *info = {};
     return ORBIS_OK;
 }
 
@@ -595,7 +598,8 @@ s32 PS4_SYSV_ABI sceVoiceSetVolume(u32 port_id, float volume) {
     if (!port.allocated) {
         return ORBIS_VOICE_ERROR_NOT_ACTIVE;
     }
-    port.volume = volume;
+    // Retail hardware clamps a non-finite value to 0 instead of rejecting it.
+    port.volume = std::isfinite(volume) ? volume : 0.0f;
     return ORBIS_OK;
 }
 
@@ -647,27 +651,23 @@ s32 PS4_SYSV_ABI sceVoiceUpdatePort(u32 port_id, const OrbisVoicePortParam* para
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceVoiceVADAdjustment(u32 port_id, s32 value) {
-    LOG_INFO(Lib_Voice, "port_id = {}, value = {}", port_id, value);
-    if (!g_voice_manager.initialized) {
-        return ORBIS_VOICE_ERROR_NOT_INIT;
-    }
-    if (port_id >= ORBIS_VOICE_MAX_PORT) {
-        return ORBIS_VOICE_ERROR_INVALID_PORT_ID;
-    }
+s32 PS4_SYSV_ABI sceVoiceVADAdjustment(float param1, float param2) {
+    // Retail hardware just stores these globally, unconditionally; nothing reads them here.
+    LOG_INFO(Lib_Voice, "param1 = {}, param2 = {}", param1, param2);
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceVoiceVADSetVersion(u32 version) {
+s32 PS4_SYSV_ABI sceVoiceVADSetVersion(s32 version) {
     LOG_INFO(Lib_Voice, "version = {}", version);
-    if (!g_voice_manager.initialized) {
-        return ORBIS_VOICE_ERROR_NOT_INIT;
+    // Only 0 or 1 is accepted on retail hardware; there's no init check either.
+    if (version != 0 && version != 1) {
+        return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
     }
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceVoiceWriteToIPort(u32 port_id, const void* data, u32* size) {
-    LOG_TRACE(Lib_Voice, "port_id = {}", port_id);
+s32 PS4_SYSV_ABI sceVoiceWriteToIPort(u32 port_id, const void* data, u32* size, s16 unk) {
+    LOG_TRACE(Lib_Voice, "port_id = {}, unk = {}", port_id, unk);
     if (!g_voice_manager.initialized) {
         return ORBIS_VOICE_ERROR_NOT_INIT;
     }
