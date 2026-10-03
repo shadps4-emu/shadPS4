@@ -14,9 +14,9 @@ namespace Shader::Optimization {
 // shaders build a linear thread index as `WorkgroupId * group_size + LocalInvocationId` (the
 // multiply often compiled to a shift). When we find exactly that pattern, with no shared/LDS
 // memory in use, we shrink the workgroup and grow the dispatch to compensate, patching the one
-// constant that assumed the original size. DispatchDirect applies the resulting
-// Info::workgroup_split_factor. Anything else falls back to GetComputePipeline skipping the
-// pipeline, as before this pass existed.
+// constant that assumed the original size. DispatchDirect and DispatchIndirect apply the
+// resulting Info::workgroup_split_factor. Anything else falls back to RefreshComputeKey skipping
+// the pipeline, as before this pass existed.
 
 namespace {
 

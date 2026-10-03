@@ -1,0 +1,28 @@
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#version 450
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(push_constant) uniform PushConstants {
+    uint split_factor;
+};
+
+layout(std430, binding = 0) readonly buffer src_buf {
+    uint src_x;
+    uint src_y;
+    uint src_z;
+};
+
+layout(std430, binding = 1) writeonly buffer dst_buf {
+    uint dst_x;
+    uint dst_y;
+    uint dst_z;
+};
+
+void main() {
+    dst_x = src_x * split_factor;
+    dst_y = src_y;
+    dst_z = src_z;
+}
