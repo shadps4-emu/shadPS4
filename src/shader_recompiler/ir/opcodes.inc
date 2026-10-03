@@ -222,6 +222,14 @@ OPCODE(UnpackSint4x8,                                       F32x4,          U32,
 
 OPCODE(PackUfloat10_11_11,                                  U32,            F32x3,                                                                          )
 OPCODE(UnpackUfloat10_11_11,                                F32x3,          U32,                                                                            )
+OPCODE(PackUnorm10_11_11,                                   U32,            F32x3,                                                                          )
+OPCODE(UnpackUnorm10_11_11,                                 F32x3,          U32,                                                                            )
+OPCODE(PackSnorm10_11_11,                                   U32,            F32x3,                                                                          )
+OPCODE(UnpackSnorm10_11_11,                                 F32x3,          U32,                                                                            )
+OPCODE(PackUint10_11_11,                                    U32,            F32x3,                                                                          )
+OPCODE(UnpackUint10_11_11,                                  F32x3,          U32,                                                                            )
+OPCODE(PackSint10_11_11,                                    U32,            F32x3,                                                                          )
+OPCODE(UnpackSint10_11_11,                                  F32x3,          U32,                                                                            )
 
 OPCODE(PackUnorm2_10_10_10,                                 U32,            F32x4,                                                                          )
 OPCODE(UnpackUnorm2_10_10_10,                               F32x4,          U32,                                                                            )
