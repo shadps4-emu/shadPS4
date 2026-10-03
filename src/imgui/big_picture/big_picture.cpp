@@ -162,62 +162,108 @@ SDL_Texture* LoadSdlTextureDataFromFile(std::filesystem::path filePath) {
     return LoadSdlTextureData(data);
 }
 
+void scanFolder(std::vector<IconInfo>& icons, std::filesystem::path folderPath, int depth) {
+    if (depth > EmulatorSettings.GetBigPictureFolderDepth()) {
+        return;
+    }
+
+    std::error_code ec;
+    std::filesystem::directory_iterator it(folderPath, std::filesystem::directory_options::none,
+                                           ec);
+    std::filesystem::directory_iterator end;
+
+    if (ec) {
+        LOG_ERROR(ImGui, "Cannot open folder: {} due to filesystem error: {}", folderPath.string(),
+                  ec.message());
+        return;
+    }
+
+    while (it != end) {
+        // For access errors getting it.path may not be safe, so log parent folder
+        if (ec) {
+            LOG_ERROR(ImGui, "Cannot access item inside folder {} due to error: {}",
+                      folderPath.string(), ec.message());
+            ec.clear();
+            it.increment(ec);
+            continue;
+        }
+
+        const auto& entry = *it;
+        bool isEntryDir = std::filesystem::is_directory(entry, ec);
+
+        if (ec) {
+            LOG_ERROR(ImGui, "Skipping file/subfolder {} due to filesystem error: {}",
+                      entry.path().string(), ec.message());
+            ec.clear();
+            it.increment(ec);
+            continue;
+        }
+
+        if (isEntryDir && !std::filesystem::exists(entry.path() / "eboot.bin", ec)) {
+            scanFolder(icons, entry.path(), depth + 1);
+        }
+
+        std::string pathstring = entry.path().filename().string();
+        if (pathstring.ends_with("-UPDATE") || pathstring.ends_with("-patch") ||
+            (!isEntryDir && !Core::FileSys::IsZArchiveFile(entry))) {
+            it.increment(ec);
+            continue;
+        }
+
+        if (Core::FileSys::IsZArchiveFile(entry)) {
+            size_t start = pathstring.length() - 3;
+            for (size_t i = start; i < pathstring.length(); ++i) {
+                pathstring[i] =
+                    static_cast<char>(std::tolower(static_cast<unsigned char>(pathstring[i])));
+            }
+
+            if (pathstring.ends_with("-UPDATE.zar") || pathstring.ends_with("-patch.zar")) {
+                it.increment(ec);
+                continue;
+            }
+        }
+
+        IconInfo icon;
+        PSF psf;
+        const std::string sfoFileName = "param.sfo";
+        std::filesystem::path sfoPath = UpdateChecker(sfoFileName, entry.path());
+
+        if (std::filesystem::exists(sfoPath, ec) && psf.Open(sfoPath)) {
+            if (const auto title = psf.GetString("TITLE"); title.has_value()) {
+                icon.title = *title;
+            }
+
+            if (const auto title_id = psf.GetString("TITLE_ID"); title_id.has_value()) {
+                icon.serial = *title_id;
+            }
+        } else {
+            it.increment(ec);
+            continue;
+        }
+
+        const std::string iconFileName = "icon0.png";
+        std::filesystem::path iconPath = UpdateChecker(iconFileName, entry.path());
+
+        SDL_Texture* texture = LoadSdlTextureDataFromFile(iconPath);
+        icon.textureId = ImTextureID(texture);
+
+        icon.ebootPath = entry.path() / "eboot.bin";
+        if (Core::FileSys::IsZArchiveFile(entry.path())) {
+            icon.ebootPath = entry.path();
+        }
+
+        icon.focusState = false;
+        icons.push_back(icon);
+        it.increment(ec);
+    }
+}
+
 void GetGameIconInfo(std::vector<IconInfo>& icons) {
     icons.clear();
 
     for (const auto& installLoc : EmulatorSettings.GetAllGameInstallDirs()) {
         if (installLoc.enabled && std::filesystem::exists(installLoc.path)) {
-            for (const auto& entry : std::filesystem::directory_iterator(installLoc.path)) {
-
-                std::string pathstring = entry.path().filename().string();
-                if (pathstring.ends_with("-UPDATE") || pathstring.ends_with("-patch") ||
-                    (!entry.is_directory() && !Core::FileSys::IsZArchiveFile(entry))) {
-                    continue;
-                }
-
-                if (Core::FileSys::IsZArchiveFile(entry)) {
-                    size_t start = pathstring.length() - 3;
-                    for (size_t i = start; i < pathstring.length(); ++i) {
-                        pathstring[i] = static_cast<char>(
-                            std::tolower(static_cast<unsigned char>(pathstring[i])));
-                    }
-
-                    if (pathstring.ends_with("-UPDATE.zar") || pathstring.ends_with("-patch.zar")) {
-                        continue;
-                    }
-                }
-
-                IconInfo icon;
-                PSF psf;
-                const std::string sfoFileName = "param.sfo";
-                std::filesystem::path sfoPath = UpdateChecker(sfoFileName, entry.path());
-
-                if (std::filesystem::exists(sfoPath) && psf.Open(sfoPath)) {
-                    if (const auto title = psf.GetString("TITLE"); title.has_value()) {
-                        icon.title = *title;
-                    }
-
-                    if (const auto title_id = psf.GetString("TITLE_ID"); title_id.has_value()) {
-                        icon.serial = *title_id;
-                    }
-                } else {
-                    continue;
-                }
-
-                const std::string iconFileName = "icon0.png";
-                std::filesystem::path iconPath = UpdateChecker(iconFileName, entry.path());
-
-                SDL_Texture* texture = LoadSdlTextureDataFromFile(iconPath);
-                icon.textureId = ImTextureID(texture);
-
-                icon.ebootPath = entry.path() / "eboot.bin";
-                if (Core::FileSys::IsZArchiveFile(entry.path())) {
-                    icon.ebootPath = entry.path();
-                }
-
-                icon.focusState = false;
-                icons.push_back(icon);
-            }
+            scanFolder(icons, installLoc.path, 0);
         }
     }
 
