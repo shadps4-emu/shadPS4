@@ -341,6 +341,16 @@ public:
         return properties.limits.maxComputeSharedMemorySize;
     }
 
+    /// Returns the maximum total number of compute shader invocations in a single workgroup.
+    u32 MaxComputeWorkGroupInvocations() const {
+        return properties.limits.maxComputeWorkGroupInvocations;
+    }
+
+    /// Returns the maximum size of a compute workgroup in the given dimension (0, 1 or 2).
+    u32 MaxComputeWorkGroupSize(size_t dimension) const {
+        return properties.limits.maxComputeWorkGroupSize[dimension];
+    }
+
     /// Returns the maximum sampler LOD bias.
     float MaxSamplerLodBias() const {
         return properties.limits.maxSamplerLodBias;

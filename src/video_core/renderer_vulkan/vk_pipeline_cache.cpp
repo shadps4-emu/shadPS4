@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
 #include <ranges>
 
 #include "common/hash.h"
@@ -274,6 +275,10 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .max_viewport_width = instance.GetMaxViewportWidth(),
         .max_viewport_height = instance.GetMaxViewportHeight(),
         .max_shared_memory_size = instance.MaxComputeSharedMemorySize(),
+        .max_compute_workgroup_invocations = instance.MaxComputeWorkGroupInvocations(),
+        .max_compute_workgroup_size = {instance.MaxComputeWorkGroupSize(0),
+                                       instance.MaxComputeWorkGroupSize(1),
+                                       instance.MaxComputeWorkGroupSize(2)},
         .supported_spirv = SpirvVersion1_6,
         .subgroup_size = instance.SubgroupSize(),
         .sparse_page_shift = sparse_page_shift,
@@ -371,6 +376,29 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
         const auto pipeline_hash = std::hash<ComputePipelineKey>{}(compute_key);
+
+        // Vulkan drivers reject pipelines whose LocalSize exceeds the device limits with a generic
+        // error. Guests can request larger groups than host GPUs support (e.g. 2048 threads while
+        // AMD, NVIDIA and Intel cap at 1024), so skip the pipeline instead of crashing. The null
+        // entry stays cached for this key, which avoids retrying and repeating the log every
+        // dispatch.
+        const auto& [size_x, size_y, size_z] =
+            runtime_infos[u32(SwStage::Compute)].hw.cs.workgroup_size;
+        const u64 invocations = u64(size_x) * size_y * size_z;
+        if (size_x > instance.MaxComputeWorkGroupSize(0) ||
+            size_y > instance.MaxComputeWorkGroupSize(1) ||
+            size_z > instance.MaxComputeWorkGroupSize(2) ||
+            invocations > instance.MaxComputeWorkGroupInvocations()) {
+            LOG_ERROR(Render_Vulkan,
+                      "Skipping compute pipeline {:#x}: workgroup size {}x{}x{} exceeds device "
+                      "limits (max invocations {}, max size {}x{}x{})",
+                      pipeline_hash, size_x, size_y, size_z,
+                      instance.MaxComputeWorkGroupInvocations(),
+                      instance.MaxComputeWorkGroupSize(0), instance.MaxComputeWorkGroupSize(1),
+                      instance.MaxComputeWorkGroupSize(2));
+            return nullptr;
+        }
+
         LOG_INFO(Render_Vulkan, "Compiling compute pipeline {:#x}", pipeline_hash);
 
         ComputePipeline::SerializationSupport sdata{};
@@ -614,6 +642,25 @@ bool PipelineCache::RefreshComputeKey() {
     const auto cs_params = AmdGpu::GetParams(cs_pgm);
     std::tie(infos[0], modules[0], compute_key.value) =
         GetProgram(HwStage::Compute, SwStage::Compute, cs_params, binding);
+
+    // WorkgroupSizeClampPass already ran above and shrinks the workgroup when it can; if it
+    // couldn't, skip the pipeline instead of crashing (same pattern as RefreshGraphicsStages).
+    const std::array<u32, 3> guest_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
+                                           cs_pgm.num_thread_z.full};
+    const u64 guest_invocations = u64(guest_size[0]) * guest_size[1] * guest_size[2];
+    const bool exceeds_limits = guest_size[0] > instance.MaxComputeWorkGroupSize(0) ||
+                                guest_size[1] > instance.MaxComputeWorkGroupSize(1) ||
+                                guest_size[2] > instance.MaxComputeWorkGroupSize(2) ||
+                                guest_invocations > instance.MaxComputeWorkGroupInvocations();
+    if (exceeds_limits && infos[0]->workgroup_split_factor <= 1) {
+        LOG_ERROR(Render_Vulkan,
+                  "Skipping compute shader {:#x}: workgroup size {}x{}x{} exceeds device limits "
+                  "(max invocations {}, max size {}x{}x{})",
+                  compute_key.value, guest_size[0], guest_size[1], guest_size[2],
+                  instance.MaxComputeWorkGroupInvocations(), instance.MaxComputeWorkGroupSize(0),
+                  instance.MaxComputeWorkGroupSize(1), instance.MaxComputeWorkGroupSize(2));
+        return false;
+    }
     return true;
 }
 
