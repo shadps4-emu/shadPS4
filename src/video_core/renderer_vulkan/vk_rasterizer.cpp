@@ -810,21 +810,17 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
 }
 
 void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding) {
-    image_bindings.clear();
     const u32 first_image_idx = image_infos.size();
     // To emulate storing to explicit mip levels, build a descriptor array with each mip level.
     boost::container::small_vector<u32, 8> image_descriptor_array_sizes;
 
+    u32 num_images{};
     for (const auto& image_desc : stage.images) {
         const auto tsharp = image_desc.GetSharp(stage);
-        if (texture_cache.IsMeta(tsharp.Address())) {
-            LOG_WARNING(Render_Vulkan, "Unexpected metadata read by a shader (texture)");
-        }
-
         const auto data_fmt = tsharp.GetDataFmt();
         const auto num_fmt = tsharp.GetNumberFmt();
         if (tsharp.Address() == 0 || data_fmt == AmdGpu::DataFormat::FormatInvalid) {
-            image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            image_bindings[num_images++].image_id = {};
             image_descriptor_array_sizes.push_back(1);
             continue;
         }
@@ -836,7 +832,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                         "data_format={}, num_format={}",
                         tsharp.Address(), tsharp.pitch, tsharp.width, static_cast<u32>(data_fmt),
                         static_cast<u32>(num_fmt));
-            image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            image_bindings[num_images++].image_id = {};
             image_descriptor_array_sizes.push_back(1);
             continue;
         }
@@ -845,8 +841,8 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         const u32 num_bindings = image_desc.NumBindings(stage);
 
         for (auto i = 0; i < num_bindings; i++) {
-            auto& [image_id, desc] = image_bindings.emplace_back(
-                std::piecewise_construct, std::tuple{}, std::tuple{tsharp, image_desc});
+            auto& [image_id, desc] = image_bindings[num_images++];
+            std::construct_at(&desc, tsharp, image_desc);
 
             if (mip_fallback_mode == Shader::MipStorageFallbackMode::ConstantIndex) {
                 ASSERT(num_bindings == 1);
@@ -877,7 +873,8 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
     }
 
     // Second pass to re-bind images that were updated after binding
-    for (auto& [image_id, desc] : image_bindings) {
+    for (u32 i = 0; i < num_images; ++i) {
+        auto& [image_id, desc] = image_bindings[i];
         bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
         if (!image_id) {
             image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);

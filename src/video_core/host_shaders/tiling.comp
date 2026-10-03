@@ -86,8 +86,8 @@ const uint NUM_PIPE_BITS = PIPE_CONFIG == 0 ? 1 : 3;
 
 struct MipInfo {
     uint size;
-    uint pitch;
-    uint height;
+    uint16_t pitch;
+    uint16_t height;
     uint offset;
 };
 

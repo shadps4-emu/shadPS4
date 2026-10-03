@@ -3,10 +3,12 @@
 
 #include "common/logging/log.h"
 #include "shader_recompiler/resource.h"
+#include "video_core/amdgpu/pixel_format.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/image_view.h"
+#include "vulkan/vulkan.hpp"
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -65,9 +67,8 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     range.extent.layers = image.NumViewLayers(desc.is_array);
     type = image.GetViewType(desc.is_array);
     min_lod = static_cast<u32>(image.min_lod);
-
     if (!is_storage) {
-        mapping = Vulkan::LiverpoolToVK::ComponentMapping(image.DstSelect());
+        mapping = image.DstSelect();
     }
 }
 
@@ -117,12 +118,16 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
         aspect = vk::ImageAspectFlagBits::eStencil;
     }
 
-    vk::ImageViewCreateInfo image_view_ci = {
+    const auto components = info.mapping == AmdGpu::IdentityMapping
+                                ? vk::ComponentMapping{}
+                                : Vulkan::LiverpoolToVK::ComponentMapping(info.mapping);
+
+    const vk::ImageViewCreateInfo image_view_ci = {
         .pNext = &usage_ci,
         .image = image.GetImage(),
         .viewType = ConvertImageViewType(info.type),
         .format = instance.GetSupportedFormat(format, image.format_features),
-        .components = info.mapping,
+        .components = components,
         .subresourceRange{
             .aspectMask = aspect,
             .baseMipLevel = info.range.base.level,
