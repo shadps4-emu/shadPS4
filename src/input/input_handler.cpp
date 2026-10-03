@@ -722,8 +722,6 @@ void ControllerOutput::AddUpdate(InputEvent event) {
 
 // Slides a virtual finger across the touchpad so controllers without one can trigger swipe
 // gestures (#2627). Runs on its own thread; a new swipe is ignored while one is in progress.
-// Uses touch index 1 so mouse-to-touchpad and the touchpad_left/center/right taps (index 0)
-// cannot cancel it mid-swipe.
 static void SimulateTouchpadSwipe(GameController* controller, u32 button) {
     static std::atomic_bool swiping{false};
     if (swiping.exchange(true)) {
@@ -748,10 +746,10 @@ static void SimulateTouchpadSwipe(GameController* controller, u32 button) {
         constexpr int steps = 10;
         for (int i = 0; i <= steps; i++) {
             const float t = static_cast<float>(i) / steps;
-            controller->SetTouchpadState(1, true, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t);
+            controller->SetTouchpadState(0, true, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t);
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
-        controller->SetTouchpadState(1, false, x1, y1);
+        controller->SetTouchpadState(0, false, x1, y1);
         swiping = false;
     }).detach();
 }
