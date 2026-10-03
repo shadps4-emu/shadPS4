@@ -860,6 +860,8 @@ set(NET_LIB   src/core/libraries/net/net.cpp
               src/core/libraries/net/net_kernel.h
               src/core/libraries/net/net_log.cpp
               src/core/libraries/net/net_log.h
+              src/core/libraries/net/net_p2p.cpp
+              src/core/libraries/net/net_p2p.h
               src/core/libraries/net/net_p2p_ioctl.cpp
               src/core/libraries/net/net_p2p_ioctl.h
               src/core/libraries/net/net_resolver.cpp

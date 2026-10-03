@@ -16,6 +16,7 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/net/net.h"
+#include "core/libraries/net/net_p2p.h"
 #include "core/libraries/net/net_upnp.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_handler.h"

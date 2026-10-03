@@ -13,6 +13,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/net/net.h"
+#include "core/libraries/net/net_p2p.h"
 #include "core/libraries/net/net_upnp.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
@@ -740,29 +741,6 @@ bool NpHandler::AcceptSessionInvitation(s32 user_id, const std::string& invitati
     // emulator's system-UI equivalent).
     PostSessionInvitationEvent(user_id, inv.session_id, invitation_id, inv.to_npid, inv.from_npid,
                                inv.from_account_id);
-#if 0
-    // Consume it server-side (PUT usedFlag=true).
-    const std::string base_url = EmulatorSettings.GetShadNetWebApiServer();
-    const std::string token = GetBearerToken(user_id);
-    if (base_url.empty() || token.empty()) {
-        LOG_ERROR(NpHandler, "AcceptSessionInvitation: no WebAPI server/token for user_id={}",
-                  user_id);
-        return false;
-    }
-    httplib::Client cli(base_url);
-    cli.set_connection_timeout(5);
-    cli.set_read_timeout(10);
-    const httplib::Headers headers = {{"Authorization", "Bearer " + token}};
-    const std::string path = "/v1/users/me/invitations/" + invitation_id;
-    const auto res = cli.Put(path.c_str(), headers, "{\"usedFlag\":true}", "application/json");
-    if (!res || (res->status != 200 && res->status != 204)) {
-        LOG_ERROR(NpHandler, "AcceptSessionInvitation: PUT {} failed ({})", path,
-                  res ? res->status : 0);
-        return false;
-    }
-    LOG_INFO(NpHandler, "AcceptSessionInvitation: consumed '{}' session='{}'", invitation_id,
-             inv.session_id);
-#endif
     LOG_INFO(NpHandler, "AcceptSessionInvitation: accepted '{}' session='{}'", invitation_id,
              inv.session_id);
     return true;

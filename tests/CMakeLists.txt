@@ -449,6 +449,7 @@ set(NET_LIB_TEST_SOURCES
     ${NET_CORE_SOURCES}
     ${CMAKE_SOURCE_DIR}/src/core/libraries/net/net.cpp
     ${CMAKE_SOURCE_DIR}/src/core/libraries/net/net_log.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/net/net_p2p.cpp
     ${CMAKE_SOURCE_DIR}/src/core/libraries/net/net_p2p_ioctl.cpp
     ${CMAKE_SOURCE_DIR}/src/core/libraries/net/net_resolver.cpp
     ${CMAKE_SOURCE_DIR}/src/core/libraries/net/net_translate.cpp

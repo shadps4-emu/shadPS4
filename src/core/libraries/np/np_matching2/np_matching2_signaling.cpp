@@ -10,6 +10,7 @@
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/libraries/net/net.h"
+#include "core/libraries/net/net_p2p.h"
 #include "core/libraries/net/net_util.h"
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/np/np_error.h"
