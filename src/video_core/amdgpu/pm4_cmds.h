@@ -276,13 +276,23 @@ struct PM4CmdStrmoutBufferUpdate {
     template <typename T = u64>
     T DstAddress() const {
         ASSERT(update_memory.Value() == 1);
-        return reinterpret_cast<T>(dst_address_lo.Value() | u64(dst_address_hi & 0xFFFF) << 32);
+        const u64 addr = (u64(dst_address_lo.Value()) << 2) | (u64(dst_address_hi & 0xFFFF) << 32);
+        if constexpr (std::is_pointer_v<T>) {
+            return reinterpret_cast<T>(addr);
+        } else {
+            return static_cast<T>(addr);
+        }
     }
 
     template <typename T = u64>
     T SrcAddress() const {
         ASSERT(source_select.Value() == SourceSelect::SrcAddress);
-        return reinterpret_cast<T>(src_address_lo.Value() | u64(src_address_hi & 0xFFFF) << 32);
+        const u64 addr = (u64(src_address_lo.Value()) << 2) | (u64(src_address_hi & 0xFFFF) << 32);
+        if constexpr (std::is_pointer_v<T>) {
+            return reinterpret_cast<T>(addr);
+        } else {
+            return static_cast<T>(addr);
+        }
     }
 };
 
