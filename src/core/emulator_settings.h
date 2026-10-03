@@ -247,7 +247,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    discord_rpc_enabled, show_fps_counter, console_language,
                                    big_picture_scale, big_picture_folder_depth, shadnet_server,
                                    shadnet_webapi_server, signaling_info, enable_upnp,
-                                   redzone_patches,p2p_port)
+                                   redzone_patches, p2p_port)
 
 // -------------------------------
 // Log settings
