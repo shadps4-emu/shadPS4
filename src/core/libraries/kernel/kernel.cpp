@@ -131,6 +131,10 @@ s32 NativeToPosixErrno(s32 const e) {
     case EFAULT:
         return POSIX_EFAULT;
         break;
+    case ENAMETOOLONG:
+        return POSIX_ENAMETOOLONG;
+    case ELOOP:
+        return POSIX_ELOOP;
     case EINVAL:
         return POSIX_EINVAL;
         break;

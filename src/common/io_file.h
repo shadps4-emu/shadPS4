@@ -121,7 +121,9 @@ public:
              FileShareFlag flag = FileShareFlag::ShareReadOnly);
     void Close();
 
-    void Unlink();
+    // Returns zero on success or a native errno value on failure. Capture the
+    // result before logging or closing the file can change the host errno.
+    [[nodiscard]] int Unlink();
 
     bool Flush() const;
     bool Commit() const;
