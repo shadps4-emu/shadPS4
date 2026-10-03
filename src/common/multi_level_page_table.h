@@ -22,8 +22,7 @@ class MultiLevelPageTable final {
 
 public:
     explicit MultiLevelPageTable(size_t chunk_size = 64)
-        : top_level{1ULL << L1_BITS, nullptr}, top_locks{NULL_CHECK ? (1ULL << L1_BITS) : 0ULL},
-          page_alloc{chunk_size} {}
+        : top_level{1ULL << L1_BITS, nullptr}, page_alloc{chunk_size} {}
 
     ~MultiLevelPageTable() noexcept = default;
 
@@ -59,11 +58,11 @@ public:
         const size_t l1_page = page >> L2_BITS;
         const size_t l2_page = page & (NUM_L1_ENTRIES - 1);
         if (NULL_CHECK && !top_level[l1_page]) [[unlikely]] {
-            top_locks[l1_page].lock();
+            top_lock.lock();
             if (!top_level[l1_page]) {
                 top_level[l1_page] = page_alloc.Create();
             }
-            top_locks[l1_page].unlock();
+            top_lock.unlock();
         }
         return (*top_level[l1_page])[l2_page];
     }
@@ -72,18 +71,18 @@ public:
         const size_t l1_page = page >> L2_BITS;
         const size_t l2_page = page & (NUM_L1_ENTRIES - 1);
         if (NULL_CHECK && !top_level[l1_page]) [[unlikely]] {
-            top_locks[l1_page].lock();
+            top_lock.lock();
             if (!top_level[l1_page]) {
                 top_level[l1_page] = page_alloc.Create();
             }
-            top_locks[l1_page].unlock();
+            top_lock.unlock();
         }
         return (*top_level[l1_page])[l2_page];
     }
 
 private:
     std::vector<L1Page*> top_level{};
-    mutable std::vector<Common::SpinLock> top_locks{};
+    mutable Common::SpinLock top_lock{};
     Common::ObjectPool<L1Page> page_alloc;
 };
 

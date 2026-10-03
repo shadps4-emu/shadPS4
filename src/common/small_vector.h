@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <utility>
 
-template <class T, std::size_t N>
+template <class T, std::size_t N, typename size_type_ = std::size_t>
 class SmallVector {
     static_assert(N > 0, "SmallVector inline capacity must be > 0");
     static constexpr bool triv_reloc =
@@ -16,7 +16,7 @@ class SmallVector {
 
 public:
     using value_type = T;
-    using size_type = std::size_t;
+    using size_type = size_type_;
     using reference = T&;
     using const_reference = const T&;
     using pointer = T*;

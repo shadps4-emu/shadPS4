@@ -111,7 +111,7 @@ std::string_view NameOf(NumberFormat fmt) {
     }
 }
 
-static constexpr std::array NUM_COMPONENTS = {
+constexpr std::array<s32, NUM_ENTRIES> NUM_COMPONENTS = {
     0, //  0 FormatInvalid
     1, //  1 Format8
     1, //  2 Format16
@@ -156,13 +156,7 @@ static constexpr std::array NUM_COMPONENTS = {
     4, // 41 FormatBc7
 };
 
-u32 NumComponents(DataFormat format) {
-    const u32 index = static_cast<u32>(format);
-    ASSERT_MSG(index < NUM_COMPONENTS.size(), "Invalid data format = {}", format);
-    return NUM_COMPONENTS[index];
-}
-
-static constexpr std::array BITS_PER_BLOCK = {
+constexpr std::array<s32, NUM_ENTRIES> BITS_PER_BLOCK = {
     0,   //  0 FormatInvalid
     8,   //  1 Format8
     16,  //  2 Format16
@@ -207,13 +201,7 @@ static constexpr std::array BITS_PER_BLOCK = {
     128, // 41 FormatBc7
 };
 
-u32 NumBitsPerBlock(DataFormat format) {
-    const u32 index = static_cast<u32>(format);
-    ASSERT_MSG(index < BITS_PER_BLOCK.size(), "Invalid data format = {}", format);
-    return BITS_PER_BLOCK[index];
-}
-
-static constexpr std::array BITS_PER_ELEMENT = {
+constexpr std::array<s32, NUM_ENTRIES> BITS_PER_ELEMENT = {
     0,   //  0 FormatInvalid
     8,   //  1 Format8
     16,  //  2 Format16
@@ -257,11 +245,5 @@ static constexpr std::array BITS_PER_ELEMENT = {
     8,   // 40 FormatBc6
     8,   // 41 FormatBc7
 };
-
-u32 NumBitsPerElement(DataFormat format) {
-    const u32 index = static_cast<u32>(format);
-    ASSERT_MSG(index < BITS_PER_ELEMENT.size(), "Invalid data format = {}", format);
-    return BITS_PER_ELEMENT[index];
-}
 
 } // namespace AmdGpu
