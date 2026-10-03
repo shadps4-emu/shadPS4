@@ -363,9 +363,11 @@ bool Instance::CreateDevice() {
     }
 
     bool graphics_queue_found = false;
+    bool sparse_queue_found = false;
     for (std::size_t i = 0; i < family_properties.size(); i++) {
         const u32 index = static_cast<u32>(i);
-        if (family_properties[i].queueFlags & vk::QueueFlagBits::eGraphics) {
+        const auto flags = family_properties[i].queueFlags;
+        if (flags & vk::QueueFlagBits::eGraphics) {
             queue_family_index = index;
             graphics_queue_found = true;
         }
@@ -376,20 +378,51 @@ bool Instance::CreateDevice() {
         return false;
     }
 
+    // Prefer the graphics family when it supports sparse binding. Otherwise use a
+    // dedicated sparse-capable family. vkQueueBindSparse requires eSparseBinding.
+    if (family_properties[queue_family_index].queueFlags & vk::QueueFlagBits::eSparseBinding) {
+        sparse_queue_family_index = queue_family_index;
+        sparse_queue_found = true;
+    } else {
+        for (std::size_t i = 0; i < family_properties.size(); i++) {
+            if (family_properties[i].queueFlags & vk::QueueFlagBits::eSparseBinding) {
+                sparse_queue_family_index = static_cast<u32>(i);
+                sparse_queue_found = true;
+                break;
+            }
+        }
+    }
+
+    if (!sparse_queue_found) {
+        LOG_CRITICAL(Render_Vulkan, "Unable to find a sparse-binding queue.");
+        return false;
+    }
+
+    LOG_INFO(Render_Vulkan, "Graphics queue family: {}, sparse queue family: {}",
+             queue_family_index, sparse_queue_family_index);
+
     static constexpr std::array queue_priorities = {1.0f};
-    const vk::DeviceQueueCreateInfo queue_info = {
+    boost::container::static_vector<vk::DeviceQueueCreateInfo, 2> queue_infos;
+    queue_infos.push_back(vk::DeviceQueueCreateInfo{
         .queueFamilyIndex = queue_family_index,
         .queueCount = static_cast<u32>(queue_priorities.size()),
         .pQueuePriorities = queue_priorities.data(),
-    };
+    });
+    if (sparse_queue_family_index != queue_family_index) {
+        queue_infos.push_back(vk::DeviceQueueCreateInfo{
+            .queueFamilyIndex = sparse_queue_family_index,
+            .queueCount = static_cast<u32>(queue_priorities.size()),
+            .pQueuePriorities = queue_priorities.data(),
+        });
+    }
 
     const auto vk11_features = feature_chain.get<vk::PhysicalDeviceVulkan11Features>();
     vk12_features = feature_chain.get<vk::PhysicalDeviceVulkan12Features>();
     vk13_features = feature_chain.get<vk::PhysicalDeviceVulkan13Features>();
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
-            .queueCreateInfoCount = 1u,
-            .pQueueCreateInfos = &queue_info,
+            .queueCreateInfoCount = static_cast<u32>(queue_infos.size()),
+            .pQueueCreateInfos = queue_infos.data(),
             .enabledExtensionCount = static_cast<u32>(enabled_extensions.size()),
             .ppEnabledExtensionNames = enabled_extensions.data(),
         },
@@ -589,6 +622,7 @@ bool Instance::CreateDevice() {
 
     graphics_queue = device->getQueue(queue_family_index, 0);
     present_queue = device->getQueue(queue_family_index, 0);
+    sparse_queue = device->getQueue(sparse_queue_family_index, 0);
 
     if (calibrated_timestamps) {
         const auto [time_domains_result, time_domains] =
