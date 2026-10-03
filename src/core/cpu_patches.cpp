@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <bitset>
@@ -14,15 +15,20 @@
 #include <unordered_set>
 #include <vector>
 #include <Zydis/Zydis.h>
+#include <cmrc/cmrc.hpp>
 #include <fmt/format.h>
+#include <immintrin.h>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
+#include <zstd.h>
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
 #include "common/decoder.h"
+#include "common/elf_info.h"
 #include "common/signal_context.h"
 #include "common/types.h"
+#include "core/emulator_settings.h"
 #include "core/signals.h"
 #include "core/tls.h"
 #include "cpu_patches.h"
@@ -37,9 +43,61 @@
 #include <sys/ucontext.h>
 #endif
 
+CMRC_DECLARE(res);
+
 using namespace Xbyak::util;
 
 namespace Core {
+
+static bool rcp_index_table_disabled = false;
+static bool rcp_index_table_initialized = false;
+static std::array<u8, 1u << 21> rcp_index_table{};
+
+static bool InitializeRcpIndexTable() {
+    if (rcp_index_table_disabled) {
+        return false;
+    }
+    if (rcp_index_table_initialized) {
+        return true;
+    }
+    const auto file =
+        cmrc::res::get_filesystem().open("src/resources/amd_rcp_index_table.bin.zstd");
+    const size_t size =
+        ZSTD_decompress(rcp_index_table.data(), rcp_index_table.size(), file.begin(), file.size());
+    if (ZSTD_isError(size) || size != rcp_index_table.size()) {
+        LOG_WARNING(Core, "Failed to decompress AMD RCP index table");
+        rcp_index_table_disabled = true;
+        return false;
+    }
+    rcp_index_table_initialized = true;
+    return true;
+}
+
+static void ApplyRcpFixup(u32* result_values, u32* input_values, int count) {
+    // amd_rcp_index_table.bin.zstd is a 1170 byte file that expands to a 2 MB table of
+    // indices into the xor value table below. This is a technique described in
+    // https://robert.ocallahan.org/2021/09/emulating-amd-rsqrtss-etc-on-intel.html
+    // for emulating AMD RCP/RSQRT on Intel. We calculate RCP for all 2^32 inputs on AMD
+    // and Intel, and XOR them together. As the author finds out, there's only 17 distinct values
+    // for RCP, so each of the 2^32 input values can be calculated by XORing with one of these
+    // values Additionally, since the RCP result depends only on the 2^21 top bits, our index table
+    // only needs 2^21 entries of a byte each, which is 2 MiB.
+    constexpr static std::array xor_values = {
+        0x00000000, 0x00001000, 0x00000800, 0x00001800, 0x00003000, 0x00007000,
+        0x00003800, 0x00007800, 0x0000f800, 0x0000f000, 0x0007f800, 0x0003f800,
+        0x000ff000, 0x0001f000, 0x001ff800, 0x0001f800, 0x000ff800};
+
+    if (!rcp_index_table_initialized) {
+        return;
+    }
+
+    for (int i = 0; i < count; i++) {
+        u8 index =
+            rcp_index_table[input_values[i] >> 11]; // only top 21 bits matter, as mentioned above
+        ASSERT(index < xor_values.size());
+        result_values[i] ^= xor_values[index];
+    }
+}
 
 static Xbyak::Reg ZydisToXbyakRegister(const ZydisRegister reg) {
     if (reg >= ZYDIS_REGISTER_EAX && reg <= ZYDIS_REGISTER_R15D) {
@@ -212,6 +270,30 @@ static void GenerateTcbExclusiveOr(void* /* address */, const ZydisDecodedOperan
 static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
     Cpu cpu;
     return !cpu.has(Cpu::tSSE4a);
+}
+
+static bool IsRcpFixupEnabled() {
+    static constexpr std::array<std::string_view, 2> known_serials = {// Dark Souls Remastered (EU)
+                                                                      "CUSA08495",
+                                                                      // Dark Souls Remastered (US)
+                                                                      "CUSA08692"};
+    const auto serial = Common::ElfInfo::Instance().GameSerial();
+    return EmulatorSettings.IsIntelRcpFixupEnabled() ||
+           std::ranges::find(known_serials, serial) != known_serials.end();
+}
+
+static bool FilterRcpFixupEnabled(const ZydisDecodedOperand*) {
+#if defined(__APPLE__)
+    // This fixup wouldn't be correct on Rosetta, unless if they emulate
+    // the Intel RCP behavior perfectly
+    return false;
+#endif
+    if (!IsRcpFixupEnabled()) {
+        return false;
+    }
+
+    Cpu cpu;
+    return cpu.has(Cpu::tINTEL);
 }
 
 static void GenerateEXTRQ(void* /* address */, const ZydisDecodedOperand* operands,
@@ -514,6 +596,20 @@ static void ReplaceMOVNTSD(void* address, const ZydisDecodedOperand*, Xbyak::Cod
     ReplaceMOVNT(address, 0xF2);
 }
 
+static void ReplaceVRCPPSWithUD2(void* address, const ZydisDecodedOperand* operands,
+                                 Xbyak::CodeGenerator&) {
+    // Patch only reg/reg for now
+    if (operands[1].type != ZYDIS_OPERAND_TYPE_MEMORY) {
+        u8* bytes = (u8*)address;
+        if (bytes[0] == 0xC5 && (bytes[1] == 0xF8 || bytes[1] == 0xFC) && bytes[2] == 0x53) {
+            if (InitializeRcpIndexTable()) {
+                // Replace instruction with INTO and handle it in signal handler
+                bytes[0] = 0xCE;
+            }
+        }
+    }
+}
+
 using PatchFilter = bool (*)(const ZydisDecodedOperand*);
 using InstructionGenerator = void (*)(void*, const ZydisDecodedOperand*, Xbyak::CodeGenerator&);
 struct PatchInfo {
@@ -541,6 +637,7 @@ static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches =
     {ZYDIS_MNEMONIC_INSERTQ, {{FilterNoSSE4a, GenerateINSERTQ, true}}},
     {ZYDIS_MNEMONIC_MOVNTSS, {{FilterNoSSE4a, ReplaceMOVNTSS, false}}},
     {ZYDIS_MNEMONIC_MOVNTSD, {{FilterNoSSE4a, ReplaceMOVNTSD, false}}},
+    {ZYDIS_MNEMONIC_VRCPPS, {{FilterRcpFixupEnabled, ReplaceVRCPPSWithUD2, false}}},
 
 #if !defined(__APPLE__)
     // FS segment patches
@@ -687,12 +784,14 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
     return std::make_pair(false, instruction.length);
 }
 
-static bool Is4ByteExtrqOrInsertq(void* code_address) {
+static bool Is4ByteIllegalInstruction(void* code_address) {
     u8* bytes = (u8*)code_address;
     if (bytes[0] == 0x66 && bytes[1] == 0x0F && bytes[2] == 0x79) {
         return true; // extrq
     } else if (bytes[0] == 0xF2 && bytes[1] == 0x0F && bytes[2] == 0x79) {
         return true; // insertq
+    } else if (bytes[0] == 0xCE && (bytes[1] == 0xF8 || bytes[1] == 0xFC) && bytes[2] == 0x53) {
+        return true; // vrcpps, patched to into
     } else {
         return false;
     }
@@ -747,6 +846,40 @@ static void* GetXmmPointer(void* ctx, u8 index) {
 #undef CASE
 }
 
+static void* GetYmmhPointer(void* ctx) {
+#if defined(_WIN32)
+    CONTEXT* context = ((EXCEPTION_POINTERS*)ctx)->ContextRecord;
+    if ((context->ContextFlags & CONTEXT_XSTATE) != CONTEXT_XSTATE) {
+        return nullptr;
+    }
+    DWORD length = 0;
+    auto* ymmh = (M128A*)LocateXStateFeature(context, XSTATE_AVX, &length);
+    if (ymmh == nullptr || length < 16 * sizeof(M128A)) {
+        return nullptr;
+    }
+    return ymmh;
+#elif defined(__linux__)
+    constexpr u64 avx_bit = 1ULL << 2;
+    static const u32 xsave_ymmh_offset = [] {
+        u32 data[4];
+        Cpu::getCpuidEx(0xD, 2, data);
+        return data[1];
+    }();
+    u8* fpregs = (u8*)((ucontext_t*)ctx)->uc_mcontext.fpregs;
+    if (fpregs == nullptr) {
+        return nullptr;
+    }
+    const auto* sw_bytes = reinterpret_cast<const _fpx_sw_bytes*>(fpregs + sizeof(_libc_fpstate) -
+                                                                  sizeof(_fpx_sw_bytes));
+    if (sw_bytes->magic1 != FP_XSTATE_MAGIC1 || (sw_bytes->xstate_bv & avx_bit) == 0) {
+        return nullptr;
+    }
+    return fpregs + xsave_ymmh_offset;
+#else
+    return nullptr;
+#endif
+}
+
 static void IncrementRip(void* ctx, u64 length) {
 #if defined(_WIN32)
     ((EXCEPTION_POINTERS*)ctx)->ContextRecord->Rip += length;
@@ -769,9 +902,14 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
     ZydisMnemonic mnemonic;
     u8* bytes = (u8*)code_address;
     if (bytes[0] == 0x66) {
+        ASSERT(bytes[1] == 0x0F && bytes[2] == 0x79);
         mnemonic = ZYDIS_MNEMONIC_EXTRQ;
     } else if (bytes[0] == 0xF2) {
+        ASSERT(bytes[1] == 0x0F && bytes[2] == 0x79);
         mnemonic = ZYDIS_MNEMONIC_INSERTQ;
+    } else if (bytes[0] == 0xCE && (bytes[1] == 0xF8 || bytes[1] == 0xFC) && bytes[2] == 0x53) {
+        // CE == INTO which we patch VRCPPS into to capture it
+        mnemonic = ZYDIS_MNEMONIC_VRCPPS;
     } else {
         ZydisDecodedInstruction instruction;
         ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
@@ -784,10 +922,8 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
         return false;
     }
 
-    ASSERT(bytes[1] == 0x0F && bytes[2] == 0x79);
-
     // Note: It's guaranteed that there's no REX prefix in these instructions checked by
-    // Is4ByteExtrqOrInsertq
+    // Is4ByteIllegalInstruction
     u8 modrm = bytes[3];
     u8 rm = modrm & 0b111;
     u8 reg = (modrm >> 3) & 0b111;
@@ -799,6 +935,39 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
     int srcIndex = rm;
 
     switch (mnemonic) {
+    case ZYDIS_MNEMONIC_VRCPPS: {
+        // We handle only the 4-byte encoding here. In this form, it's guaranteed there's no
+        // prefixes and that the second byte is either F8 or FC, with FC being for YMMs.
+        bool is_ymms = bytes[1] == 0xFC;
+        auto ymmh = GetYmmhPointer(ctx);
+        if (!ymmh) {
+            // Somehow we failed to get high YMM state... Unpatch and return
+            bytes[0] = 0xC5;
+            return true;
+        }
+
+        void* dst_lo = GetXmmPointer(ctx, dstIndex);
+        void* dst_hi = (u8*)ymmh + 16 * dstIndex;
+        const void* src_lo = GetXmmPointer(ctx, srcIndex);
+        const void* src_hi = (u8*)ymmh + 16 * srcIndex;
+        __m256 src;
+        u32 src_buffer[8];
+        memcpy(&src_buffer, src_lo, sizeof(__m128));
+        memcpy(&src_buffer[4], src_hi, sizeof(__m128));
+        memcpy(&src, src_buffer, sizeof(src_buffer));
+        __m256 result = _mm256_rcp_ps(src);
+        u32 dst_buffer[8];
+        memcpy(dst_buffer, &result, sizeof(dst_buffer));
+        ApplyRcpFixup(dst_buffer, src_buffer, is_ymms ? 8 : 4);
+        memcpy(dst_lo, dst_buffer, sizeof(__m128));
+        if (!is_ymms) {
+            memset(dst_hi, 0, sizeof(__m128));
+        } else {
+            memcpy(dst_hi, &dst_buffer[4], sizeof(__m128));
+        }
+        IncrementRip(ctx, 4);
+        return true;
+    }
     case ZYDIS_MNEMONIC_EXTRQ: {
         const auto dst = GetXmmPointer(ctx, dstIndex);
         const auto src = GetXmmPointer(ctx, srcIndex);
@@ -2242,7 +2411,7 @@ static bool PatchesIllegalInstructionHandler(void* context) {
     constexpr bool inspect_short_cpu_patch = true;
 #endif
     if (inspect_short_cpu_patch && // Windows static guest red-zone protection
-        Is4ByteExtrqOrInsertq(code_address)) {
+        Is4ByteIllegalInstruction(code_address)) {
         // The instruction is not big enough for a relative jump, don't try to patch it and pass it
         // to our illegal instruction interpreter directly
         return TryExecuteIllegalInstruction(context, code_address);
