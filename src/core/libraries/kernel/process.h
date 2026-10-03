@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -29,6 +29,9 @@ s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver);
 
 s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
                                                  OrbisModuleInfoForUnwind* info);
+
+s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, const void* argp,
+                                          u32 flags, const void* pOpt, s32* pRes);
 
 void RegisterProcess(Core::Loader::SymbolsResolver* sym);
 
