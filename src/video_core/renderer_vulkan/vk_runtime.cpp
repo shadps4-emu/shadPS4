@@ -482,28 +482,72 @@ void Runtime::CopyDepthStencil(VideoCore::Image* src, VideoCore::Image* dst,
     }
 
     const auto aspect_mask = src->aspect_mask & dst->aspect_mask;
-
-    const vk::ImageCopy region = {
-        .srcSubresource{
-            .aspectMask = aspect_mask,
-            .mipLevel = 0,
-            .baseArrayLayer = sub_range.base.layer,
-            .layerCount = sub_range.extent.layers,
-        },
-        .srcOffset = {0, 0, 0},
-        .dstSubresource{
-            .aspectMask = aspect_mask,
-            .mipLevel = 0,
-            .baseArrayLayer = sub_range.base.layer,
-            .layerCount = sub_range.extent.layers,
-        },
-        .dstOffset = {0, 0, 0},
-        .extent = {dst->info.size.width, dst->info.size.height, 1},
+    const auto make_region = [&](vk::ImageAspectFlags aspect) {
+        return vk::ImageCopy{
+            .srcSubresource{
+                .aspectMask = aspect,
+                .mipLevel = 0,
+                .baseArrayLayer = sub_range.base.layer,
+                .layerCount = sub_range.extent.layers,
+            },
+            .srcOffset = {0, 0, 0},
+            .dstSubresource{
+                .aspectMask = aspect,
+                .mipLevel = 0,
+                .baseArrayLayer = sub_range.base.layer,
+                .layerCount = sub_range.extent.layers,
+            },
+            .dstOffset = {0, 0, 0},
+            .extent = {dst->info.size.width, dst->info.size.height, 1},
+        };
     };
 
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.copyImage(src->GetImage(), vk::ImageLayout::eTransferSrcOptimal, dst->GetImage(),
-                     vk::ImageLayout::eTransferDstOptimal, region);
+    if (instance.GetDriverID() != vk::DriverId::eMesaKosmickrisp) {
+        cmdbuf.copyImage(src->GetImage(), vk::ImageLayout::eTransferSrcOptimal, dst->GetImage(),
+                         vk::ImageLayout::eTransferDstOptimal, make_region(aspect_mask));
+    } else {
+        // FIXME: KosmicKrisp drops depth in image to image copies, so it goes through a buffer.
+        if (aspect_mask & vk::ImageAspectFlagBits::eStencil) {
+            cmdbuf.copyImage(src->GetImage(), vk::ImageLayout::eTransferSrcOptimal, dst->GetImage(),
+                             vk::ImageLayout::eTransferDstOptimal,
+                             make_region(vk::ImageAspectFlagBits::eStencil));
+        }
+        if (aspect_mask & vk::ImageAspectFlagBits::eDepth) {
+            vk::BufferImageCopy buffer_copy = {
+                .bufferRowLength = 0,
+                .bufferImageHeight = 0,
+                .imageSubresource{
+                    .aspectMask = vk::ImageAspectFlagBits::eDepth,
+                    .mipLevel = 0,
+                    .baseArrayLayer = sub_range.base.layer,
+                    .layerCount = sub_range.extent.layers,
+                },
+                .imageOffset = {0, 0, 0},
+                .imageExtent = {dst->info.size.width, dst->info.size.height, 1},
+            };
+            const auto copy_size =
+                BufferImageCopySize(buffer_copy, src->backing->image.image_ci.format);
+            const auto copy_ref =
+                staging_pool.Request(copy_size, VideoCore::MemoryType::DeviceLocal);
+            buffer_copy.bufferOffset = copy_ref.offset;
+            cmdbuf.copyImageToBuffer(src->GetImage(), vk::ImageLayout::eTransferSrcOptimal,
+                                     copy_ref.buffer->Handle(), buffer_copy);
+            const vk::MemoryBarrier2 post_copy_barrier = {
+                .srcStageMask = vk::PipelineStageFlagBits2::eCopy,
+                .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+                .dstStageMask = vk::PipelineStageFlagBits2::eCopy,
+                .dstAccessMask = vk::AccessFlagBits2::eTransferRead,
+            };
+            cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+                .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+                .memoryBarrierCount = 1u,
+                .pMemoryBarriers = &post_copy_barrier,
+            });
+            cmdbuf.copyBufferToImage(copy_ref.buffer->Handle(), dst->GetImage(),
+                                     vk::ImageLayout::eTransferDstOptimal, buffer_copy);
+        }
+    }
 
     dst->flags |= VideoCore::ImageFlagBits::GpuModified;
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
