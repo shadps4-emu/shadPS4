@@ -12,8 +12,8 @@
 
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
-static constexpr u32 ShaderBinaryVersion = 6u;
-static constexpr u32 ShaderMetaVersion = 6u;
+static constexpr u32 ShaderBinaryVersion = 7u;
+static constexpr u32 ShaderMetaVersion = 7u;
 static constexpr u32 PipelineKeyVersion = 3u;
 } // namespace Serialization
 
@@ -253,6 +253,10 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
     if (!LoadShaderMeta(ar, program->info, spec, perm_idx)) {
         return false;
     }
+    if (program->info.skip_resource_guards !=
+        SkipResourceGuards(program->info.pgm_hash, program->info.hw_stage)) {
+        return false;
+    }
 
     std::vector<u32> spv{};
     Storage::DataBase::Instance().Load(Storage::BlobType::ShaderBinary,
@@ -398,6 +402,7 @@ bool Info::Deserialize(Serialization::Archive& ar) {
 
     info.Read(this, sizeof(Shader::InfoPersistent));
     info.Read(flattened_ud_buf);
+    RefreshResourceGuards();
 
     return srt_info.Deserialize(ar);
 }
@@ -450,6 +455,7 @@ void StageSpecialization::Serialize(Serialization::Archive& ar) const {
 
     spec.Write(start);
     spec.Write(runtime_info);
+    spec.Write(dead_resource_guards);
 
     spec.Write(bitset.to_string());
 
@@ -472,6 +478,7 @@ bool StageSpecialization::Deserialize(Serialization::Archive& ar) {
 
     spec.Read(start);
     spec.Read(runtime_info);
+    spec.Read(dead_resource_guards);
 
     std::string bits{};
     spec.Read(bits);

@@ -27,6 +27,7 @@ void ConstantPropagationPass(IR::BlockList& program);
 void FlattenExtendedUserdataPass(IR::Program& program);
 void ReadLaneEliminationPass(IR::Program& program);
 ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& profile);
+void ResourceGuardPass(IR::Program& program, ResourceDiscoveryList& resources);
 void ResourcePatchingPass(Shader::Info& info, const ResourceDiscoveryList& sharp_usages,
                           const Profile& profile);
 void CollectShaderInfoPass(IR::Program& program, const Profile& profile);
