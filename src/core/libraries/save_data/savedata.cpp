@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
+#include <mutex>
 #include <span>
 #include <thread>
 #include <vector>
@@ -309,6 +310,26 @@ struct OrbisSaveDataEvent {
     OrbisSaveDataDirName dirName;
     std::array<u8, 40> _reserved;
 };
+
+static std::recursive_mutex g_event_callback_mutex;
+static OrbisSaveDataEventCallback g_event_callback{};
+static void* g_event_userdata{};
+
+void DispatchBackupEvent(const Backup::BackupRequest& request) {
+    std::scoped_lock lock{g_event_callback_mutex};
+    if (!g_event_callback) {
+        return;
+    }
+    OrbisSaveDataEvent event{};
+    event.type = request.origin;
+    event.errorCode = request.error_code;
+    event.userId = request.user_id;
+    event.titleId.data.FromString(request.title_id);
+    event.dirName.data.FromString(request.dir_name);
+    LOG_INFO(Lib_SaveData, "Delivering backup event: type={}, error={}, dir={}",
+             static_cast<u32>(event.type), event.errorCode, request.dir_name);
+    g_event_callback(&event, g_event_userdata);
+}
 
 static bool g_initialized = false;
 static std::string g_game_serial;
@@ -974,7 +995,7 @@ Error PS4_SYSV_ABI sceSaveDataGetEventResult(const OrbisSaveDataEventParam*,
     }
 
     event->type = last_event->origin;
-    event->errorCode = 0;
+    event->errorCode = last_event->error_code;
     event->userId = last_event->user_id;
     event->titleId.data.FromString(last_event->title_id);
     event->dirName.data.FromString(last_event->dir_name);
@@ -1314,9 +1335,19 @@ int PS4_SYSV_ABI sceSaveDataRebuildDatabase() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSaveDataRegisterEventCallback() {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceSaveDataRegisterEventCallback(OrbisSaveDataEventCallback callback,
+                                                    void* userdata) {
+    if (!g_initialized) {
+        return setNotInitializedError();
+    }
+    if (!callback) {
+        return Error::PARAMETER;
+    }
+    std::scoped_lock lock{g_event_callback_mutex};
+    g_event_callback = callback;
+    g_event_userdata = userdata;
+    LOG_INFO(Lib_SaveData, "Registered save event callback");
+    return Error::OK;
 }
 
 Error PS4_SYSV_ABI sceSaveDataRestoreBackupData(const OrbisSaveDataRestoreBackupData* restore) {
@@ -1677,6 +1708,7 @@ Error PS4_SYSV_ABI sceSaveDataTerminate() {
             instance.reset();
         }
     }
+    sceSaveDataUnregisterEventCallback();
     g_initialized = false;
     Backup::StopThread();
     return Error::OK;
@@ -1717,9 +1749,11 @@ Error PS4_SYSV_ABI sceSaveDataUmountWithBackup(const OrbisSaveDataMountPoint* mo
     return Umount(mountPoint, true);
 }
 
-int PS4_SYSV_ABI sceSaveDataUnregisterEventCallback() {
-    LOG_ERROR(Lib_SaveData, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceSaveDataUnregisterEventCallback() {
+    std::scoped_lock lock{g_event_callback_mutex};
+    g_event_callback = nullptr;
+    g_event_userdata = nullptr;
+    return Error::OK;
 }
 
 int PS4_SYSV_ABI sceSaveDataUpload() {
