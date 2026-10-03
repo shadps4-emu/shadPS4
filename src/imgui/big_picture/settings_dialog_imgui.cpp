@@ -36,6 +36,12 @@ void SettingsWindow::LoadSettings(std::string profile) {
     EmulatorSettings.Load();
     scanDepthSetting = EmulatorSettings.GetBigPictureFolderDepth();
 
+    const bool isSpecific = currentProfile != "Global";
+    if (isSpecific) {
+        EmulatorSettings.Load(profile);
+    }
+
+    /////////// General Tab
     int languageIndex = EmulatorSettings.GetConsoleLanguage();
     std::string language;
     for (const auto& [key, value] : languageMap) {
@@ -43,13 +49,6 @@ void SettingsWindow::LoadSettings(std::string profile) {
             language = key;
         }
     }
-
-    const bool isSpecific = currentProfile != "Global";
-    if (isSpecific) {
-        EmulatorSettings.Load(profile);
-    }
-
-    /////////// General Tab
     consoleLanguageSetting = GetComboIndex(language, languageOptions);
     volumeSetting = EmulatorSettings.GetVolumeSlider();
     showSplashSetting = EmulatorSettings.IsShowSplash();
@@ -519,8 +518,10 @@ void SettingsWindow::DrawProfileSelector() {
             }
 
             ImGui::TableNextColumn();
-            std::string profileLabel =
-                i == 0 ? "Global" : profileIcons[i].serial + " - " + profileIcons[i].title;
+            std::string profileLabel = i == 0
+                                           ? "Global"
+                                           : profileIcons[i].serial + " - " +
+                                                 profileIcons[i].title + "##" + std::to_string(i);
             if (ImGui::Button(profileLabel.c_str(),
                               ImVec2(ImGui::GetContentRegionAvail().x, 0.0f))) {
 
