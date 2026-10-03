@@ -397,9 +397,11 @@ constexpr bool IsFmask(DataFormat format) {
 std::string_view NameOf(DataFormat fmt);
 std::string_view NameOf(NumberFormat fmt);
 
-extern const std::array<s32, 42> NUM_COMPONENTS;
-extern const std::array<s32, 42> BITS_PER_BLOCK;
-extern const std::array<s32, 42> BITS_PER_ELEMENT;
+constexpr u32 NUM_ENTRIES = 42;
+
+extern const std::array<s32, NUM_ENTRIES> NUM_COMPONENTS;
+extern const std::array<s32, NUM_ENTRIES> BITS_PER_BLOCK;
+extern const std::array<s32, NUM_ENTRIES> BITS_PER_ELEMENT;
 
 constexpr u32 NumComponents(DataFormat format) noexcept {
     const u32 index = static_cast<u32>(format);

@@ -111,7 +111,7 @@ std::string_view NameOf(NumberFormat fmt) {
     }
 }
 
-constexpr std::array NUM_COMPONENTS = {
+constexpr std::array<s32, NUM_ENTRIES> NUM_COMPONENTS = {
     0, //  0 FormatInvalid
     1, //  1 Format8
     1, //  2 Format16
@@ -156,7 +156,7 @@ constexpr std::array NUM_COMPONENTS = {
     4, // 41 FormatBc7
 };
 
-constexpr std::array BITS_PER_BLOCK = {
+constexpr std::array<s32, NUM_ENTRIES> BITS_PER_BLOCK = {
     0,   //  0 FormatInvalid
     8,   //  1 Format8
     16,  //  2 Format16
@@ -201,7 +201,7 @@ constexpr std::array BITS_PER_BLOCK = {
     128, // 41 FormatBc7
 };
 
-constexpr std::array BITS_PER_ELEMENT = {
+constexpr std::array<s32, NUM_ENTRIES> BITS_PER_ELEMENT = {
     0,   //  0 FormatInvalid
     8,   //  1 Format8
     16,  //  2 Format16
