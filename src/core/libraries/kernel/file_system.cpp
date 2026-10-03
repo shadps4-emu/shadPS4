@@ -1220,12 +1220,12 @@ s64 PS4_SYSV_ABI sceKernelPwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcn
 }
 
 s32 PS4_SYSV_ABI posix_unlink(const char* path) {
-    if (strlen(path) > 255) {
-        *__Error() = POSIX_ENAMETOOLONG;
+    if (path == nullptr) {
+        *__Error() = POSIX_EFAULT;
         return -1;
     }
-    if (path == nullptr) {
-        *__Error() = POSIX_EINVAL;
+    if (strlen(path) > ORBIS_MAX_PATH) {
+        *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
 
@@ -1244,18 +1244,39 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
         return -1;
     }
 
-    if (fs::is_directory(host_path)) {
+    std::error_code ec;
+    if (fs::is_directory(host_path, ec)) {
         *__Error() = POSIX_EPERM;
+        return -1;
+    }
+    if (ec) {
+        const auto condition = ec.default_error_condition();
+        SetPosixErrno(condition.category() == std::generic_category() ? condition.value() : EIO);
+        LOG_INFO(Kernel_Fs, "Unlink {} failed, error = {}", path, *__Error());
         return -1;
     }
 
     auto* file = h->GetFile(host_path);
+    int error = 0;
     if (file == nullptr) {
         // File to unlink hasn't been opened, manually open and unlink it.
-        Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::ReadWrite);
-        file.Unlink();
+        Common::FS::IOFile temporary;
+        error = temporary.Open(host_path, Common::FS::FileAccessMode::ReadWrite);
+        if (error == 0) {
+            error = temporary.Unlink();
+        }
     } else if (auto* host = file->GetHostFile()) {
-        host->Unlink();
+        error = host->Unlink();
+    } else {
+        // Archive-backed files have no writable host handle.
+        error = EROFS;
+    }
+    if (error != 0) {
+        // The temporary IOFile has already closed; use the saved error rather
+        // than errno, which fclose/logging may have overwritten.
+        SetPosixErrno(error);
+        LOG_INFO(Kernel_Fs, "Unlink {} failed, error = {}", path, *__Error());
+        return -1;
     }
 
     LOG_INFO(Kernel_Fs, "Unlinked {}", path);
