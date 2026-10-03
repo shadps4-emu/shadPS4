@@ -2043,7 +2043,7 @@ static s32 sceNetRecvmsgImpl(OrbisNetId s, OrbisNetMsghdr* msg, s32 flags) {
     if (msg == nullptr) {
         return SetErrno(ORBIS_NET_EFAULT);
     }
-    .if ((flags & ORBIS_NET_MSG_PEEKLEN) == ORBIS_NET_MSG_PEEKLEN) {
+    if ((flags & ORBIS_NET_MSG_PEEKLEN) == ORBIS_NET_MSG_PEEKLEN) {
         return SetErrno(ORBIS_NET_EINVAL);
     }
     std::vector<u8> buffer;
@@ -2451,7 +2451,7 @@ s32 PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, s32 level, s32 optname, const vo
             if (!has_int || value <= 0) {
                 return SetErrno(ORBIS_NET_EINVAL);
             }
-            .value = std::min(value, MaxSocketBuffer);
+            value = std::min(value, MaxSocketBuffer);
             Core::Net::SocketUpdateAttributes(s, [&](Core::Net::SocketAttributes& a) {
                 (optname == ORBIS_NET_SO_SNDBUF ? a.snd_buf : a.rcv_buf) = value;
             });
