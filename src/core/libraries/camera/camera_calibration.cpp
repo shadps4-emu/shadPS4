@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
-#include "core/libraries/camera/camera.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/camera/camera.h"
 
 namespace Libraries::Camera {
 
