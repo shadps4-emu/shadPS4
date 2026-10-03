@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+cmake_minimum_required(VERSION 3.22)
+project(image_transfer_regression LANGUAGES CXX)
+enable_testing()
+set(TEXTURE_CACHE_SOURCE "${CMAKE_CURRENT_LIST_DIR}/../../src/video_core/texture_cache/texture_cache.cpp")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${TEXTURE_CACHE_SOURCE}")
+file(READ "${TEXTURE_CACHE_SOURCE}" TEXTURE_CACHE_TEXT)
+string(FIND "${TEXTURE_CACHE_TEXT}" "ImageId TextureCache::ResolveDepthOverlap(" DEPTH_BEGIN)
+string(FIND "${TEXTURE_CACHE_TEXT}" "std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(" DEPTH_END)
+if(DEPTH_BEGIN LESS 0 OR DEPTH_END LESS DEPTH_BEGIN)
+    message(FATAL_ERROR "Cannot locate production ResolveDepthOverlap for the regression fixture")
+endif()
+math(EXPR DEPTH_LENGTH "${DEPTH_END} - ${DEPTH_BEGIN}")
+string(SUBSTRING "${TEXTURE_CACHE_TEXT}" ${DEPTH_BEGIN} ${DEPTH_LENGTH} DEPTH_BODY)
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/depth_overlap_body.inc" "${DEPTH_BODY}")
+add_executable(depth_overlap_test test_depth_overlap.cpp)
+target_compile_features(depth_overlap_test PRIVATE cxx_std_23)
+target_include_directories(depth_overlap_test PRIVATE "${CMAKE_CURRENT_BINARY_DIR}"
+    "${CMAKE_CURRENT_LIST_DIR}/../../src")
+add_test(NAME image_transfer_depth_growth COMMAND depth_overlap_test)
