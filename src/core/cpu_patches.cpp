@@ -609,6 +609,37 @@ static PatchModule* GetContainingModule(const void* ptr) {
     return module != nullptr && address < module->end ? module : nullptr;
 }
 
+static void AtomicStore16(u8* address, u16 value) {
+#ifdef _MSC_VER
+    _InterlockedExchange16(reinterpret_cast<volatile short*>(address), static_cast<short>(value));
+#else
+    __atomic_exchange_n(reinterpret_cast<u16*>(address), value, __ATOMIC_SEQ_CST);
+#endif
+}
+
+/// Replaces the instruction at `code` with a near jump to `target` (padded with nops) so that a
+/// thread executing the same code concurrently never fetches a half-written jump. Patches are
+/// applied at runtime from fault handlers while other guest threads may run the same function.
+static void WriteNearJumpSafely(u8* code, const void* target, u64 length) {
+    std::array<u8, ZYDIS_MAX_INSTRUCTION_LENGTH> bytes;
+    bytes.fill(0x90);
+    const auto rel = reinterpret_cast<s64>(target) - reinterpret_cast<s64>(code + NearJumpSize);
+    ASSERT_MSG(rel >= INT32_MIN && rel <= INT32_MAX, "Trampoline out of near jump range");
+    const auto rel32 = static_cast<s32>(rel);
+    bytes[0] = 0xE9;
+    std::memcpy(&bytes[1], &rel32, sizeof(rel32));
+
+    // 1. Park any thread reaching the instruction on a 2-byte "jmp $".
+    AtomicStore16(code, 0xFEEB);
+    // 2. Write the tail; nobody can execute it while the head spins.
+    std::memcpy(code + 2, bytes.data() + 2, length - 2);
+    std::atomic_thread_fence(std::memory_order_seq_cst);
+    // 3. Publish the head, turning the spin into the final jump.
+    u16 head;
+    std::memcpy(&head, bytes.data(), sizeof(head));
+    AtomicStore16(code, head);
+}
+
 /// Returns a boolean indicating whether the instruction was patched, and the offset to advance past
 /// whatever is at the current code pointer.
 static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
@@ -660,7 +691,11 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
                     }
 
                     // Replace instruction with near jump to the trampoline.
-                    patch_gen.jmp(trampoline_ptr, Xbyak::CodeGenerator::LabelType::T_NEAR);
+                    WriteNearJumpSafely(code, trampoline_ptr, instruction.length);
+                    module->patched.insert(code);
+                    LOG_DEBUG(Core, "Patched instruction '{}' at: {}",
+                              ZydisMnemonicGetString(instruction.mnemonic), fmt::ptr(code));
+                    return std::make_pair(true, instruction.length);
                 } else {
                     patch_info.generator(code, operands, patch_gen);
                 }
