@@ -3,10 +3,12 @@
 
 #include "layer.h"
 
+#include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
 #include <imgui.h>
 
 #include "SDL3/SDL_log.h"
+#include "common/logging/log.h"
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/debug_state.h"
@@ -15,6 +17,7 @@
 #include "imgui/imgui_std.h"
 #include "imgui_internal.h"
 #include "options.h"
+#include "quit_dialog.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "widget/frame_dump.h"
 #include "widget/frame_graph.h"
@@ -32,7 +35,7 @@ using L = ::Core::Devtools::Layer;
 static bool show_simple_fps = false;
 static bool visibility_toggled = false;
 static float fps_anchor_width = FLT_MAX;
-static bool show_quit_window = false;
+static QuitDialog quit_dialog;
 
 static bool show_volume = false;
 static float volume_start_time;
@@ -386,7 +389,7 @@ void L::SetupSettings() {
 }
 
 bool L::ShouldKeepDrawing() {
-    return DebugState.IsShowingDebugMenuBar();
+    return quit_dialog.IsVisible() || DebugState.IsShowingDebugMenuBar();
 }
 
 void L::Draw() {
@@ -460,7 +463,7 @@ void L::Draw() {
         PopFont();
     }
 
-    if (show_quit_window) {
+    if (quit_dialog.IsVisible()) {
         ImVec2 center = ImGui::GetMainViewport()->GetCenter();
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
@@ -472,19 +475,6 @@ void L::Draw() {
             NewLine();
             Text("Press Escape or Circle/B button to cancel");
             Text("Press Enter or Cross/A button to quit");
-
-            if (IsKeyPressed(ImGuiKey_Escape, false) ||
-                (IsKeyPressed(ImGuiKey_GamepadFaceRight, false))) {
-                show_quit_window = false;
-            }
-
-            if (IsKeyPressed(ImGuiKey_Enter, false) ||
-                (IsKeyPressed(ImGuiKey_GamepadFaceDown, false))) {
-                SDL_Event event;
-                SDL_memset(&event, 0, sizeof(event));
-                event.type = SDL_EVENT_QUIT;
-                SDL_PushEvent(&event);
-            }
         }
         End();
     }
@@ -534,8 +524,44 @@ void SetSimpleFps(bool enabled) {
     visibility_toggled = true;
 }
 
+static void ApplyQuitAction(QuitDialog::Action action) {
+    switch (action) {
+    case QuitDialog::Action::Opened:
+        LOG_INFO(Input, "HOST_QUIT action=opened gamepad-intercepted=1");
+        break;
+    case QuitDialog::Action::Cancelled:
+        LOG_INFO(Input, "HOST_QUIT action=cancelled");
+        break;
+    case QuitDialog::Action::Confirmed: {
+        LOG_INFO(Input, "HOST_QUIT action=confirmed gamepad-intercepted=1");
+        SDL_Event event{};
+        event.type = SDL_EVENT_QUIT;
+        if (!SDL_PushEvent(&event)) {
+            LOG_ERROR(Input, "HOST_QUIT action=queue-failed error={}", SDL_GetError());
+        }
+        break;
+    }
+    case QuitDialog::Action::None:
+        break;
+    }
+}
+
 void ToggleQuitWindow() {
-    show_quit_window = !show_quit_window;
+    ApplyQuitAction(quit_dialog.Toggle());
+}
+
+bool ProcessQuitEvent(const SDL_Event& event) {
+    const auto result = quit_dialog.ProcessEvent(event);
+    if (result.action != QuitDialog::Action::None && event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
+        LOG_INFO(Input, "HOST_QUIT source=gamepad device={} button={} consumed=1",
+                 event.gbutton.which, event.gbutton.button);
+    }
+    ApplyQuitAction(result.action);
+    return result.consumed;
+}
+
+bool IsQuitInputCaptured() {
+    return quit_dialog.CapturesGamepad();
 }
 
 void ShowVolume() {
