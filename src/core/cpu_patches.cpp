@@ -611,7 +611,7 @@ static PatchModule* GetContainingModule(const void* ptr) {
 
 /// Returns a boolean indicating whether the instruction was patched, and the offset to advance past
 /// whatever is at the current code pointer.
-static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
+static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module, bool allow_trampoline = true) {
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
     const auto status = Common::Decoder::Instance()->decodeInstruction(instruction, operands, code,
@@ -634,7 +634,7 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
                     return std::make_pair(false, instruction.length);
                 }
 
-                if (needs_trampoline && module->trampoline_exhausted) {
+                if (needs_trampoline && (!allow_trampoline || module->trampoline_exhausted)) {
                     return std::make_pair(false, instruction.length);
                 }
 
@@ -915,7 +915,7 @@ static void TryPatchAot(void* code_address, u64 code_size) {
 
     const auto* end = code + code_size;
     while (code < end) {
-        code += TryPatch(code, module).second;
+        code += TryPatch(code, module, false).second;
     }
 }
 
@@ -943,9 +943,6 @@ bool IsStaticPatchingEnabled() noexcept {
 }
 
 } // namespace WindowsGuestRedZoneProtection
-
-// macOS shares the function decoder and relocator to apply its CPU patches ahead of time.
-#if defined(_WIN32) || defined(__APPLE__)
 
 namespace {
 
@@ -1108,7 +1105,7 @@ DecodedCodeInstruction DecodeCodeInstruction(uintptr_t address, uintptr_t end) {
         const s64 access_start = operand.mem.disp.value;
         const s64 access_size = std::max<s64>(operand.size / 8, 1);
         const s64 range_start = std::max(access_start, -static_cast<s64>(GuestRedZoneSize));
-        const s64 range_end = std::min(access_start + access_size, 0LL);
+        const s64 range_end = std::min(access_start + access_size, static_cast<s64>(0));
         for (s64 offset = range_start; offset < range_end; ++offset) {
             const size_t bit = static_cast<size_t>(offset + static_cast<s64>(GuestRedZoneSize));
             if ((operand.actions & ZYDIS_OPERAND_ACTION_MASK_READ) != 0) {
@@ -2210,18 +2207,6 @@ RedZonePatchResult PatchCpuInstructionsStatically(u64 segment_addr, u64 segment_
     PatchUncoveredSSE4aInstructions(segment_addr, covered_ranges, result);
     return result;
 }
-
-#else
-
-RedZonePatchResult PatchRedZoneMemoryInstructions(u64, u64, std::span<const uintptr_t>) {
-    return {};
-}
-
-RedZonePatchResult PatchCpuInstructionsStatically(u64, u64, std::span<const uintptr_t>) {
-    return {};
-}
-
-#endif
 
 // ============================================================================
 // End Windows static guest red-zone protection
