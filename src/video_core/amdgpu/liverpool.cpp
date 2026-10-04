@@ -219,16 +219,18 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
     FIBER_EXIT;
 }
 
-Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb) {
+Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<const u32> ccb,
+                                           Task* inherited_ce_task) {
     FIBER_ENTER(dcb_task_name);
 
-    cblock.Reset();
+    Task local_ce_task{};
+    Task& ce_task = inherited_ce_task ? *inherited_ce_task : local_ce_task;
+    const bool owns_ce_task = inherited_ce_task == nullptr;
+    if (owns_ce_task) {
+        cblock.Reset();
+    }
 
-    // TODO: potentially, ASCs also can depend on CE and in this case the
-    // CE task should be moved into more global scope
-    Task ce_task{};
-
-    if (!ccb.empty()) {
+    if (owns_ce_task && !ccb.empty()) {
         // In case of CCB provided kick off CE asap to have the constant heap ready to use
         ce_task = ProcessCeUpdate(ccb);
         RESUME_GFX(ce_task);
@@ -819,7 +821,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::IndirectBuffer: {
                 const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
                 auto task = ProcessGraphics(
-                    {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, {});
+                    {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, {},
+                    &ce_task);
                 RESUME_GFX(task);
 
                 while (!task.handle.done()) {
@@ -878,7 +881,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         }
     }
 
-    if (ce_task.handle) {
+    if (owns_ce_task && ce_task.handle) {
         while (!ce_task.handle.done()) {
             RESUME_GFX(ce_task);
         }

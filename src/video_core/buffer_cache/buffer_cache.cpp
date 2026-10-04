@@ -151,11 +151,25 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
     }
 }
 
-void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size) {
+void BufferCache::ReadMemoryRange(VAddr device_addr, u64 size) {
+    if (!gpu_modified_ranges.Intersects(device_addr, size)) {
+        return;
+    }
+    const u64 first_block = device_addr >> block_shift;
+    const u64 last_block = (device_addr + size - 1) >> block_shift;
+    DownloadMemory(GetArena(first_block, last_block), device_addr, size, true);
+}
+
+void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool exact) {
     boost::container::small_vector<vk::BufferCopy, 1> copies;
     u64 total_size_bytes = 0;
     const VAddr arena_base = arena->cpu_addr;
-    memory_tracker->ForEachDownloadRange<false>(device_addr, size, [&](u64 address, u64 size) {
+    memory_tracker->ForEachDownloadRange<false>(device_addr, size, [&](u64 address, u64 len) {
+        if (exact) {
+            const VAddr end = std::min(address + len, device_addr + size);
+            address = std::max(address, device_addr);
+            len = end - address;
+        }
         const auto add_download = [&](VAddr start, VAddr end) {
             const u64 new_offset = start - arena_base;
             const u64 new_size = end - start;
@@ -169,8 +183,8 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
             constexpr u64 mask = ~(align - 1ULL);
             total_size_bytes += (new_size + align - 1) & mask;
         };
-        gpu_modified_ranges.ForEachInRange(address, size, add_download);
-        gpu_modified_ranges.Subtract(address, size);
+        gpu_modified_ranges.ForEachInRange(address, len, add_download);
+        gpu_modified_ranges.Subtract(address, len);
     });
     if (total_size_bytes == 0) {
         return;
@@ -188,7 +202,16 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
         memory->TryWriteBacking(dst_addr, download.mapped + (copy.dstOffset - download.offset),
                                 copy.size);
     }
-    memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, false);
+    if (exact) {
+        for (VAddr page = Common::AlignDown(device_addr, BYTES_PER_PAGE); page < device_addr + size;
+             page += BYTES_PER_PAGE) {
+            if (!gpu_modified_ranges.Intersects(page, BYTES_PER_PAGE)) {
+                memory_tracker->UnmarkRegionAsGpuModified(page, BYTES_PER_PAGE, false);
+            }
+        }
+    } else {
+        memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, false);
+    }
 }
 
 std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 size,
