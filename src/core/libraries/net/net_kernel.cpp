@@ -176,18 +176,7 @@ s32 KernelFstat(s32 fd, Libraries::Kernel::OrbisKernelStat* sb) {
     sb->st_blksize = 4096;
     sb->st_size = 0;
 #ifndef _WIN32
-    if (*kind == Core::Net::NetObjectKind::Socket) {
-        const auto host_fd = Core::Net::GetNativeSocket(fd);
-        if (host_fd >= 0) {
-            struct stat st{};
-            if (::fstat(host_fd, &st) == 0) {
-                sb->st_blocks = st.st_blocks;
-                if (st.st_blksize != 0) {
-                    sb->st_blksize = st.st_blksize;
-                }
-            }
-        }
-    }
+    sb->st_blocks = 0;
 #endif
     return 0;
 }
