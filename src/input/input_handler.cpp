@@ -727,6 +727,8 @@ static void SimulateTouchpadSwipe(GameController* controller, u32 button) {
     if (swiping.exchange(true)) {
         return;
     }
+    // The pad is about twice as wide as it is tall, so vertical swipes use nearly the full
+    // height to travel a physical distance similar to horizontal ones.
     float x0 = 0.5f, y0 = 0.5f, x1 = 0.5f, y1 = 0.5f;
     switch (button) {
     case SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_LEFT:
@@ -736,10 +738,10 @@ static void SimulateTouchpadSwipe(GameController* controller, u32 button) {
         x0 = 0.2f, x1 = 0.8f;
         break;
     case SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_UP:
-        y0 = 0.8f, y1 = 0.2f;
+        y0 = 0.95f, y1 = 0.05f;
         break;
     case SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_DOWN:
-        y0 = 0.2f, y1 = 0.8f;
+        y0 = 0.05f, y1 = 0.95f;
         break;
     }
     std::thread([=] {
