@@ -131,7 +131,7 @@ void Translator::DS_OP(const GcnInst& inst, AtomicOp op, bool rtn) {
         if (op == AtomicOp::Inc || op == AtomicOp::Dec) {
             return T{};
         }
-        if constexpr (std::is_same_v<T, IR::U32> || std::is_same_v<T, IR::F32>) {
+        if constexpr (std::is_same_v<T, IR::U32>) {
             return GetSrc(inst.src[1]);
         } else {
             return GetSrc64(inst.src[1]);
@@ -173,7 +173,7 @@ void Translator::DS_OP(const GcnInst& inst, AtomicOp op, bool rtn) {
         }
     }();
     if (rtn) {
-        if constexpr (std::is_same_v<T, IR::U32> || std::is_same_v<T, IR::F32>) {
+        if constexpr (std::is_same_v<T, IR::U32>) {
             SetDst(inst.dst[0], original_val);
         } else {
             SetDst64(inst.dst[0], original_val);
