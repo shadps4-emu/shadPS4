@@ -167,7 +167,7 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
     memory_tracker->ForEachDownloadRange<false>(device_addr, size, [&](u64 address, u64 len) {
         if (exact) {
             const VAddr end = std::min(address + len, device_addr + size);
-            address = std::max(address, device_addr);
+            address = std::max<u64>(address, device_addr);
             len = end - address;
         }
         const auto add_download = [&](VAddr start, VAddr end) {
