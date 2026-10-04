@@ -243,13 +243,15 @@ struct RuntimeInfo {
     SwStage sw_stage;
     HwStage hw_stage;
     struct Properties {
-        AmdGpu::FpDenormMode fp_denorm_mode32;
-        AmdGpu::FpDenormMode fp_denorm_mode16_64;
-        AmdGpu::FpRoundMode fp_round_mode32;
-        AmdGpu::FpRoundMode fp_round_mode16_64;
-        u32 num_user_data;
-        u32 num_input_vgprs;
-        u32 num_allocated_vgprs;
+        AmdGpu::FpDenormMode fp_denorm_mode32 : 2;
+        AmdGpu::FpDenormMode fp_denorm_mode16_64 : 2;
+        AmdGpu::FpRoundMode fp_round_mode32 : 2;
+        AmdGpu::FpRoundMode fp_round_mode16_64 : 2;
+        u32 num_allocated_vgprs : 8;
+        u32 num_user_data : 5;
+        u32 num_input_vgprs : 2;
+        u32 dx10_clamp : 1;
+        u32 reserved : 8;
         bool operator==(const Properties&) const noexcept = default;
     } props;
     union SwInfo {
