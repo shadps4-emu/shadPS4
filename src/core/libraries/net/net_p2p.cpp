@@ -29,7 +29,6 @@ using Host::Error;
 
 enum SignalingChannel : size_t { Signaling = 0, Control = 1, Matching2 = 2, ChannelCount };
 
-// Routes emulator packets by their "SHAD" type byte, see net_p2p.h.
 size_t ClassifySignaling(std::span<const u8> packet) {
     if (packet.size() < 5 || std::memcmp(packet.data(), "SHAD", 4) != 0) {
         return Signaling;
@@ -83,7 +82,6 @@ void LogBroadcast(std::span<const u8> packet, const P2P::Endpoint& from) {
 
 constexpr u16 P2PPortFallbacks = 16;
 
-// State mutex held. Returns the bound port, or 0.
 u16 StartLocked(P2PState& state, u16 udp_port, bool allow_fallback) {
     if (!Host::Initialize()) {
         return 0;
@@ -133,7 +131,6 @@ u16 PortToBind(const P2PState& state, const SystemHooks& hooks) {
     return hooks.p2p_port ? hooks.p2p_port() : state.configured_port;
 }
 
-// Starts the transport on first use. Hooks run after the lock is released.
 std::shared_ptr<P2P::Transport> RunningTransport() {
     auto& state = P2PStateInstance();
     const auto hooks = GetSystemHooks();

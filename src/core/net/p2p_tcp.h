@@ -65,8 +65,6 @@ std::optional<TcpSegment> ParseTcpSegment(std::span<const u8> bytes,
 std::vector<u8> BuildTcpSegment(const PseudoHeader& pseudo, u16 src_port, u16 dst_port, u32 seq,
                                 u32 ack, u8 flags, u16 window, std::optional<u16> mss,
                                 std::span<const u8> payload);
-
-// RST reply from a closed port. None if seg is itself a RST.
 std::optional<std::vector<u8>> BuildResetFor(const PseudoHeader& pseudo, const TcpSegment& seg);
 
 struct TcpConfig {
@@ -187,7 +185,6 @@ private:
     TcpState state_ = TcpState::Closed;
     Error error_ = Error::Ok;
 
-    // Send side. send_buf_ starts at buf_seq_. snd_nxt_ rewinds to snd_una_ on timeout.
     u32 iss_;
     u32 snd_una_;
     u32 snd_nxt_;
@@ -196,7 +193,7 @@ private:
     u32 snd_wnd_ = 0;
     u32 snd_wl1_ = 0;
     u32 snd_wl2_ = 0;
-    u16 snd_mss_ = 536; // RFC 9293 default
+    u16 snd_mss_ = 536;
     std::deque<u8> send_buf_;
     bool fin_queued_ = false;
 
@@ -205,8 +202,6 @@ private:
     int dupacks_ = 0;
     bool in_recovery_ = false;
     u32 recover_ = 0;
-
-    // RTO per RFC 6298
     Clock::duration srtt_{};
     Clock::duration rttvar_{};
     Clock::duration rto_;
@@ -221,8 +216,6 @@ private:
     std::optional<Clock::time_point> persist_deadline_;
     std::optional<Clock::time_point> delayed_ack_deadline_;
     std::optional<Clock::time_point> time_wait_deadline_;
-
-    // Receive side. Out-of-order data is keyed by u64 stream offset so it sorts across wrap.
     u32 irs_ = 0;
     u32 rcv_nxt_ = 0;
     u64 rcv_offset_ = 0; // stream offset of rcv_nxt_

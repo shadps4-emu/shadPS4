@@ -285,7 +285,6 @@ s32 PS4_SYSV_ABI close(s32 fd) {
         return -1;
     }
     if (file->type == Core::FileSys::FileType::Socket) {
-        // Net objects free their descriptor themselves (Libraries::Net::KernelClose).
         return Libraries::Net::KernelClose(fd);
     }
     if (file->type == Core::FileSys::FileType::Regular) {
@@ -320,8 +319,6 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
     }
 
     if (file->type == Core::FileSys::FileType::Socket) {
-        // Not under the file mutex: a blocking send must not hold it while close() frees the
-        // entry. Sets errno itself.
         return Libraries::Net::KernelWrite(fd, buf, nbytes);
     }
     std::scoped_lock lk{file->m_mutex};
@@ -542,7 +539,6 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
     }
 
     if (file->type == Core::FileSys::FileType::Socket) {
-        // See write(): not under the file mutex; sets errno itself.
         return Libraries::Net::KernelRead(fd, buf, nbytes);
     }
     std::scoped_lock lk{file->m_mutex};
@@ -850,7 +846,7 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         return result;
     }
     case Core::FileSys::FileType::Socket: {
-        return Libraries::Net::KernelFstat(fd, sb); // sets errno itself
+        return Libraries::Net::KernelFstat(fd, sb);
     }
     case Core::FileSys::FileType::Equeue: {
         LOG_ERROR(Kernel_Fs, "(STUBBED) file type {}", magic_enum::enum_name(file->type.load()));
@@ -1280,8 +1276,6 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
 
 namespace {
 
-/// FreeBSD's fd_set as the guest lays it out on every host: FD_SETSIZE (1024) bits in 64-bit
-/// words.
 struct GuestFdSet {
     u64 bits[1024 / 64];
 };
@@ -1297,9 +1291,6 @@ void GuestFdSetBit(GuestFdSet* set, s32 fd) {
 
 } // namespace
 
-// select() on guest descriptors. Sockets (native and P2P alike) are waited on by the net
-// library; files and devices are always ready, as on FreeBSD, except that stdin is never
-// readable. Exceptional conditions (out-of-band data) are never reported.
 s32 PS4_SYSV_ABI posix_select(s32 nfds, GuestFdSet* readfds, GuestFdSet* writefds,
                               GuestFdSet* exceptfds, OrbisKernelTimeval* timeout) {
     LOG_DEBUG(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
@@ -1355,7 +1346,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, GuestFdSet* readfds, GuestFdSet* writefd
     }
 
     if (ready > 0) {
-        timeout_us = 0; // something is ready already: only look at the sockets
+        timeout_us = 0;
     }
     if (!sockets.empty()) {
         const s64 n = Libraries::Net::KernelSelect(sockets, timeout_us);
