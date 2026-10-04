@@ -914,7 +914,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
             },
             vk::ImageMemoryBarrier{
                 .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-                .dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead,
+                .dstAccessMask = vk::AccessFlagBits::eShaderRead,
                 .oldLayout = vk::ImageLayout::eGeneral,
                 .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -933,8 +933,9 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
         bool swapchain_copied_for_screenshot = false;
 
         cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                               vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                               vk::DependencyFlagBits::eByRegion, {}, {}, pre_barriers);
+                               vk::PipelineStageFlagBits::eColorAttachmentOutput |
+                                   vk::PipelineStageFlagBits::eFragmentShader,
+                               {}, {}, {}, pre_barriers);
 
         { // Draw the game
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0.0f});
