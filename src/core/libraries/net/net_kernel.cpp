@@ -164,13 +164,31 @@ s64 KernelWrite(s32 fd, const void* buf, u64 nbytes) {
 }
 
 s32 KernelFstat(s32 fd, Libraries::Kernel::OrbisKernelStat* sb) {
+    if (!sb) {
+        return PosixError(ORBIS_NET_EFAULT);
+    }
     if (!IsNetObject(fd)) {
         return PosixError(ORBIS_NET_EBADF);
     }
-    // S_IFSOCK | 0777 like FreeBSD, for epolls and resolvers too.
-    // TODO: sizes and block counts are left 0.
     std::memset(sb, 0, sizeof(*sb));
     sb->st_mode = 0140000u | 0777u;
+    sb->st_nlink = 1;
+    sb->st_blksize = 4096;
+    sb->st_size = 0;
+#ifndef _WIN32
+    if (*kind == Core::Net::NetObjectKind::Socket) {
+        const auto host_fd = Core::Net::GetNativeSocket(fd);
+        if (host_fd >= 0) {
+            struct stat st{};
+            if (::fstat(host_fd, &st) == 0) {
+                sb->st_blocks = st.st_blocks;
+                if (st.st_blksize != 0) {
+                    sb->st_blksize = st.st_blksize;
+                }
+            }
+        }
+    }
+#endif
     return 0;
 }
 
