@@ -56,23 +56,14 @@ Id EmitFPMin64(EmitContext& ctx, Id a, Id b) {
 }
 
 Id EmitFPMinTri32(EmitContext& ctx, Id a, Id b, Id c) {
-    if (ctx.profile.supports_trinary_minmax) {
-        return ctx.OpFMin3AMD(ctx.F32[1], a, b, c);
-    }
     return ctx.OpNMin(ctx.F32[1], a, ctx.OpNMin(ctx.F32[1], b, c));
 }
 
 Id EmitFPMaxTri32(EmitContext& ctx, Id a, Id b, Id c) {
-    if (ctx.profile.supports_trinary_minmax) {
-        return ctx.OpFMax3AMD(ctx.F32[1], a, b, c);
-    }
     return ctx.OpNMax(ctx.F32[1], a, ctx.OpNMax(ctx.F32[1], b, c));
 }
 
 Id EmitFPMedTri32(EmitContext& ctx, Id a, Id b, Id c) {
-    if (ctx.profile.supports_trinary_minmax) {
-        return ctx.OpFMid3AMD(ctx.F32[1], a, b, c);
-    }
     const Id is_nan{ctx.OpLogicalOr(
         ctx.U1[1], ctx.OpIsNan(ctx.U1[1], a),
         ctx.OpLogicalOr(ctx.U1[1], ctx.OpIsNan(ctx.U1[1], b), ctx.OpIsNan(ctx.U1[1], c)))};
