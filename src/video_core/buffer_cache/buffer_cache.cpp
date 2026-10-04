@@ -285,7 +285,11 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
         return;
     }
 
+    const vk::MemoryAllocateFlagsInfo alloc_flags = {
+        .flags = vk::MemoryAllocateFlagBits::eDeviceAddress,
+    };
     const vk::MemoryAllocateInfo alloc_info = {
+        .pNext = &alloc_flags,
         .allocationSize = resident_blocks << block_shift,
         .memoryTypeIndex = arena_memory_type_index,
     };
