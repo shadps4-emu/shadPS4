@@ -35,6 +35,7 @@ path = [
     "src/resources/shadps4.png",
     "src/resources/silver.png",
     "src/resources/trophy.wav",
+    "AGENTS.md",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "shadPS4 Emulator Project"
