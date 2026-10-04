@@ -104,6 +104,8 @@ public:
     /// Flushes GPU modified ranges of the uncovered part of the edge pages of an image.
     void ReadEdgeImagePages(const Image& image);
 
+    void ReadMemoryRange(VAddr device_addr, u64 size);
+
     /// Finds a buffer for the specified region.
     [[nodiscard]] std::pair<const Buffer*, u64> ObtainBuffer(
         VAddr device_addr, u32 size, ObtainBufferFlags flags = ObtainBufferFlags::None);
