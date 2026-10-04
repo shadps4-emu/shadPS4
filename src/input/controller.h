@@ -105,6 +105,10 @@ public:
     void PollLightColour();
     bool SetVibration(u8 smallMotor, u8 largeMotor);
     void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
+    // Synthetic motion for controllers without motion sensors. While active, it overrides the
+    // gyro and accelerometer readings. direction: +1 tilts left, -1 tilts right.
+    void SetMotionTilt(int direction, bool active);
+    void SetMotionShake(bool active);
 
     float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, 9.81f, 0.0f};
     s32 user_id = Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID;
@@ -114,10 +118,17 @@ private:
     // m_state_mutex must be held by the caller.
     void PushStateLocked(u64 timestamp = 0);
     void UpdateOrientationLocked(u64 timestamp);
+    void ApplySyntheticMotionLocked(u64 timestamp);
 
     u8 m_next_touch_id{1};
     u64 m_touch_down_timestamp{};
     u64 m_last_orientation_update{};
+    bool m_tilt_left{};
+    bool m_tilt_right{};
+    bool m_shake_held{};
+    u64 m_shake_start{};
+    float m_synthetic_roll{};
+    float m_synthetic_pitch{};
     Colour colour;
     std::optional<Colour> override_colour{};
 
