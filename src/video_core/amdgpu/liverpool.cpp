@@ -205,7 +205,6 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
                 YIELD_CE();
                 RESUME_CE(task);
             }
-            // Nested tasks stop at final_suspend; nothing else frees their frames.
             task.handle.destroy();
             break;
         }
@@ -803,7 +802,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     YIELD_GFX();
                     RESUME_GFX(task);
                 }
-                // Nested tasks stop at final_suspend; nothing else frees their frames.
                 task.handle.destroy();
                 break;
             }
@@ -939,7 +937,6 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
                 YIELD_ASC(vqid);
                 RESUME_ASC(task, vqid);
             }
-            // Nested tasks stop at final_suspend; nothing else frees their frames.
             task.handle.destroy();
             break;
         }
