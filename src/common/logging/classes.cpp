@@ -210,9 +210,9 @@ std::string_view NameOf(Class log_class) {
     case Class::Render:
         return "Render";
     case Class::Render_Vulkan:
-        return "Render_Vulkan";
+        return "Render.Vulkan";
     case Class::Render_Recompiler:
-        return "Render_Recompiler";
+        return "Render.Recompiler";
     case Class::ShadNet:
         return "ShadNet";
     case Class::ImGui:
