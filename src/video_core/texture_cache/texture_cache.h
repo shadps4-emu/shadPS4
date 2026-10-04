@@ -277,6 +277,20 @@ public:
         });
     }
 
+    template <typename Func>
+    void ForEachImageWithAddress(VAddr cpu_addr, Func&& func) {
+        const auto it = page_table.find(cpu_addr >> Traits::PAGE_BITS);
+        if (it == nullptr) {
+            return;
+        }
+        const u32 key = u32(cpu_addr >> 8);
+        for (const auto& entry : it->entries) {
+            if (entry.key == key) {
+                func(entry.id, slot_images[entry.id]);
+            }
+        }
+    }
+
 private:
     /// Iterate over all page indices in a range
     template <typename Func>
