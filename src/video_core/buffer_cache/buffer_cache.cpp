@@ -158,11 +158,20 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
     }
 }
 
+void BufferCache::ReadMemoryRange(VAddr device_addr, u64 size) {
+    ReadMemory(device_addr, size);
+}
+
 void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool async) {
     boost::container::small_vector<vk::BufferCopy, 1> copies;
     u64 total_size_bytes = 0;
     const VAddr arena_base = arena->cpu_addr;
-    memory_tracker->ForEachDownloadRange<false>(device_addr, size, [&](u64 address, u64 size) {
+    memory_tracker->ForEachDownloadRange<false>(device_addr, size, [&](u64 address, u64 len) {
+        if (exact) {
+            const VAddr end = std::min(address + len, device_addr + size);
+            address = std::max(address, device_addr);
+            len = end - address;
+        }
         const auto add_download = [&](VAddr start, VAddr end) {
             const u64 new_offset = start - arena_base;
             const u64 new_size = end - start;
@@ -176,8 +185,8 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
             constexpr u64 mask = ~(align - 1ULL);
             total_size_bytes += (new_size + align - 1) & mask;
         };
-        gpu_modified_ranges.ForEachInRange(address, size, add_download);
-        gpu_modified_ranges.Subtract(address, size);
+        gpu_modified_ranges.ForEachInRange(address, len, add_download);
+        gpu_modified_ranges.Subtract(address, len);
     });
     if (total_size_bytes == 0) {
         return;
