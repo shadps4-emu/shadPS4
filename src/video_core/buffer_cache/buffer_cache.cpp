@@ -285,8 +285,6 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
         return;
     }
 
-    // Sparse arena buffers use shader device addresses, so their backing allocations must
-    // explicitly allow device-address use as well.
     const vk::MemoryAllocateFlagsInfo alloc_flags = {
         .flags = vk::MemoryAllocateFlagBits::eDeviceAddress,
     };
