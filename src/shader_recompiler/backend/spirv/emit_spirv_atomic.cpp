@@ -208,10 +208,10 @@ Id EmitSharedAtomicFMax32(EmitContext& ctx, Id offset, Id value) {
         ctx.u32_zero_value);
 
     // FIXME this needs control flow because it currently executes both atomics
-    const auto result = ctx.OpSelect(
-        ctx.F32[1], sign_bit_set,
-        EmitBitCastF32U32(ctx, EmitSharedAtomicUMin32(ctx, offset, u32_value)),
-        EmitBitCastF32U32(ctx, EmitSharedAtomicSMax32(ctx, offset, u32_value)));
+    const auto result =
+        ctx.OpSelect(ctx.F32[1], sign_bit_set,
+                     EmitBitCastF32U32(ctx, EmitSharedAtomicUMin32(ctx, offset, u32_value)),
+                     EmitBitCastF32U32(ctx, EmitSharedAtomicSMax32(ctx, offset, u32_value)));
 
     return result;
 }
@@ -245,10 +245,10 @@ Id EmitSharedAtomicFMin32(EmitContext& ctx, Id offset, Id value) {
         ctx.u32_zero_value);
 
     // FIXME this needs control flow because it currently executes both atomics
-    const auto result = ctx.OpSelect(
-        ctx.F32[1], sign_bit_set,
-        EmitBitCastF32U32(ctx, EmitSharedAtomicUMax32(ctx, offset, u32_value)),
-        EmitBitCastF32U32(ctx, EmitSharedAtomicSMin32(ctx, offset, u32_value)));
+    const auto result =
+        ctx.OpSelect(ctx.F32[1], sign_bit_set,
+                     EmitBitCastF32U32(ctx, EmitSharedAtomicUMax32(ctx, offset, u32_value)),
+                     EmitBitCastF32U32(ctx, EmitSharedAtomicSMin32(ctx, offset, u32_value)));
 
     return result;
 }

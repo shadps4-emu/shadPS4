@@ -223,7 +223,8 @@ public:
     }
 
     bool IsShaderAtomicFloatShared32MinMaxSupported() const {
-        return shader_atomic_float2 && shader_atomic_float2_features.shaderSharedFloat32AtomicMinMax;
+        return shader_atomic_float2 &&
+               shader_atomic_float2_features.shaderSharedFloat32AtomicMinMax;
     }
 
     /// Returns true if 64-bit integer atomic operations can be used on buffers
