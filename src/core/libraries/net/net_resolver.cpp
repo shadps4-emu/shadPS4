@@ -45,8 +45,8 @@ struct Resolver {
 };
 
 std::mutex g_mutex;
-std::unordered_map<s32, std::shared_ptr<Resolver>> g_resolvers; // guarded by g_mutex
-std::function<bool()> g_is_online;                              // guarded by g_mutex
+std::unordered_map<s32, std::shared_ptr<Resolver>> g_resolvers;
+std::function<bool()> g_is_online;
 
 std::shared_ptr<Resolver> Find(s32 id) {
     std::scoped_lock lock{g_mutex};
@@ -170,13 +170,12 @@ int AbortResolver(s32 id, u32 flags) {
     if (!resolver) {
         return ORBIS_NET_EBADF;
     }
-    // Signal under the resolver lock, like completion does, so the id can't be reused under us.
     std::scoped_lock lock{resolver->mutex};
     if (resolver->running) {
         ++resolver->lookup; // orphan the running thread
         resolver->running = false;
         resolver->status = ORBIS_NET_ERROR_EINTR;
-        Core::Net::SignalExternal(id, true); // epoll sees ORBIS_NET_EPOLLHUP
+        Core::Net::SignalExternal(id, true);
         LOG_DEBUG(Lib_Net, "resolver {}: running lookup aborted", id);
         return 0;
     }
@@ -192,8 +191,6 @@ int AbortResolver(s32 id, u32 flags) {
 
 namespace {
 
-// work() does the host call. deliver() writes the guest output under the resolver lock, only
-// if the lookup is still current, and may change the status (e.g. ENOSPC).
 template <typename Work, typename Deliver>
 s32 RunLookup(s32 id, LookupKind kind, bool async, Work work, Deliver deliver) {
     const auto resolver = Find(id);
@@ -226,7 +223,6 @@ s32 RunLookup(s32 id, LookupKind kind, bool async, Work work, Deliver deliver) {
         resolver->status = status;
         return status;
     }
-    // Detached. Holds its own ref and never touches g_resolvers.
     std::thread([resolver, id, lookup, work = std::move(work), deliver = std::move(deliver)] {
         auto [status, result] = work();
         std::scoped_lock lock{resolver->mutex};

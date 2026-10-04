@@ -114,7 +114,6 @@ int CheckP2PBindAddress(const OrbisNetSockaddr& addr, P2PKind kind) {
     return ok ? 0 : ORBIS_NET_EINVAL;
 }
 
-// Usable P2P peer address. A stream's UDP port may be 0, meaning the P2P port.
 bool IsCompleteP2PAddress(const OrbisNetSockaddr& addr, P2PKind kind) {
     const OrbisNetSockaddrIn in = AsP2PSockaddr(addr);
     return in.sin_addr != 0 && in.sin_port != 0 && (kind == P2PKind::Stream || in.sin_vport != 0);
@@ -359,9 +358,6 @@ void ApplyPendingMemberships(OrbisNetId s) {
 constexpr s32 MaxRawSend = 8192;
 constexpr u64 MaxPeekLen = 512 * 1024;
 
-// UDP_SND_ON_SUSPEND sends a datagram when the game is suspended. The emulator never
-// suspends, so it is only validated and stored.
-// TODO: maybe send it when the emulator exits.
 s32 SetSendOnSuspend(OrbisNetId s, const Core::Net::SocketInfo& info, const void* optval,
                      u32 optlen) {
     if (optval == nullptr || optlen < sizeof(OrbisNetUdpSndOnSuspend)) {
@@ -393,7 +389,6 @@ P2PKind KindOf(const Core::Net::SocketInfo& info) {
 std::mutex g_hooks_mutex;
 SystemHooks g_hooks;
 
-// Resolver errors also set errno to the code's low byte.
 s32 ResolverReturn(s32 code) {
     if (code < 0) {
         g_net_errno = static_cast<s32>(static_cast<u32>(code) & 0xff);
@@ -422,7 +417,6 @@ int GatherSize(const OrbisNetMsghdr& msg, std::vector<u8>* buffer) {
     return 0;
 }
 
-// Returns false if id is not a socket.
 bool FillSockInfo(OrbisNetId id, OrbisNetSockInfo* out) {
     Core::Net::SocketInfo info{};
     if (Core::Net::SocketGetInfo(id, &info).error != Error::Ok) {
@@ -1211,9 +1205,6 @@ OrbisNetId PS4_SYSV_ABI sceNetEpollCreate(const char* name, s32 flags) {
 
 s32 PS4_SYSV_ABI sceNetEpollDestroy(OrbisNetId eid) {
     LOG_DEBUG(Lib_Net, "eid = {}", eid);
-    // Other net objects are EPERM, unknown ids EBADF.
-    // TODO: the PS4 doesn't wake a pending EpollWait on destroy. We return EBADF so no
-    // thread hangs forever.
     const auto kind = Core::Net::GetObjectKind(eid);
     if (kind && *kind != Core::Net::NetObjectKind::Epoll) {
         return SetErrno(ORBIS_NET_EPERM);
@@ -1229,7 +1220,6 @@ static s32 sceNetEpollWaitImpl(OrbisNetId eid, OrbisNetEpollEvent* events, s32 m
     if (events == nullptr || maxevents <= 0) {
         return SetErrno(ORBIS_NET_EINVAL);
     }
-    // Cap the buffer, the host layer returns at most 64 events per wait anyway.
     std::vector<Core::Net::GuestEpollEvent> ready(std::min(maxevents, 256));
     const auto r = Core::Net::EpollWait(eid, ready, timeout_us < 0 ? -1 : timeout_us);
     if (r.error != Error::Ok) {
@@ -1277,7 +1267,6 @@ s32 PS4_SYSV_ABI sceNetEtherStrton(const char* str, OrbisNetEtherAddr* n) {
     if (str == nullptr || n == nullptr) {
         return SetErrno(ORBIS_NET_EFAULT);
     }
-    // xx:xx:xx:xx:xx:xx, '-' also accepted.
     OrbisNetEtherAddr out{};
     const char* p = str;
     for (int i = 0; i < 6; ++i) {
@@ -1330,7 +1319,6 @@ s32 PS4_SYSV_ABI sceNetGetArpInfo() {
 }
 
 namespace {
-// Servers set with sceNetSetDnsInfo/sceNetSetDns6Info override what the system reports.
 std::mutex g_dns_mutex;
 std::array<u32, 2> g_dns_override{};
 std::array<u8, 32> g_dns6_override{};
@@ -1447,7 +1435,6 @@ s32 PS4_SYSV_ABI sceNetGetMemoryPoolStats(s32 memid, OrbisNetMemoryPoolStats* st
     if (stat == nullptr) {
         return SetErrno(ORBIS_NET_EINVAL);
     }
-    // Nothing is allocated from guest pools, so it's all free.
     *stat = {};
     stat->pool_size = static_cast<u64>(pool->size);
     return ORBIS_OK;
@@ -1660,8 +1647,6 @@ static s32 sceNetGetsockoptImpl(OrbisNetId s, s32 level, s32 optname, void* optv
         *optlen = sizeof(value);
         return ORBIS_OK;
     }
-
-    // P2P sockets and options with no host equivalent are stored here.
     const auto option = ToHostOption(level, optname);
     if (level == ORBIS_NET_SOL_SOCKET && optname == ORBIS_NET_SO_LINGER && info.p2p) {
         if (*optlen < sizeof(OrbisNetLinger)) {
@@ -2259,8 +2244,6 @@ static s32 sceNetSendtoImpl(OrbisNetId s, const void* buf, u64 len, s32 flags,
         return Return(r);
     }
     if (info.type != SOCK_STREAM) {
-        // FreeBSD fails datagrams larger than the send buffer (9216 by default for UDP and
-        // UDPP2P) with EMSGSIZE. RAW sockets take at most 8192 bytes.
         Core::Net::SocketAttributes attributes;
         Core::Net::SocketGetAttributes(s, &attributes);
         const s32 limit = info.type == SOCK_RAW     ? MaxRawSend
@@ -2271,7 +2254,6 @@ static s32 sceNetSendtoImpl(OrbisNetId s, const void* buf, u64 len, s32 flags,
         }
     }
     if (addr != nullptr && info.connected) {
-        // FreeBSD: EISCONN for datagram sockets, a connected stream ignores the address.
         if (info.type != SOCK_STREAM) {
             return SetErrno(ORBIS_NET_EISCONN);
         }
@@ -2412,7 +2394,6 @@ s32 PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, s32 level, s32 optname, const vo
         }
         case BsdRcvTimeo:
         case BsdSndTimeo: {
-            // BSD setsockopt from libkernel/libScePosix, takes a timeval.
             const auto timeout = ReadTimeval(optval, optlen);
             if (!timeout) {
                 return SetErrno(ORBIS_NET_EINVAL);
@@ -2428,7 +2409,7 @@ s32 PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, s32 level, s32 optname, const vo
                 return SetErrno(ORBIS_NET_EINVAL);
             }
             if (!info.p2p) {
-                Core::Net::SocketSetReusePort(s, value != 0); // applied at bind
+                Core::Net::SocketSetReusePort(s, value != 0);
             }
             return store(value);
         case ORBIS_NET_SO_USECRYPTO:
@@ -2457,7 +2438,6 @@ s32 PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, s32 level, s32 optname, const vo
             break;
         }
         case ORBIS_NET_SO_POLICY:
-            // Emulation policy is a devkit feature, only stored.
             if (!has_int ||
                 (value != ORBIS_NET_SOCK_POLICY_NA && (value < ORBIS_NET_SOCK_POLICY_NUM_MIN ||
                                                        value > ORBIS_NET_SOCK_POLICY_NUM_MAX))) {
@@ -2741,7 +2721,7 @@ struct OrbisNetThreadParam {
     void(PS4_SYSV_ABI* entry)(void* arg);
     void* arg;
     u64 reserved;
-    u32 flags; // bit 0: exit the thread after entry returns
+    u32 flags;
 };
 
 void* PS4_SYSV_ABI NetThreadEntry(void* p) {
@@ -2753,7 +2733,6 @@ void* PS4_SYSV_ABI NetThreadEntry(void* p) {
     return nullptr;
 }
 
-// Kernel errors: errno is the low byte for net codes, 0xcd otherwise.
 s32 ThreadReturn(s32 code) {
     if (code < 0) {
         g_net_errno = (static_cast<u32>(code) & 0xff00) == 0x100
@@ -2764,7 +2743,6 @@ s32 ThreadReturn(s32 code) {
 }
 } // namespace
 
-// param points at an OrbisNetThreadParam, which must outlive the thread.
 s32 PS4_SYSV_ABI sceNetThreadCreate(Kernel::PthreadT* thread, void* param, const char* name) {
     if (param == nullptr) {
         return SetErrno(ORBIS_NET_EINVAL);
@@ -2803,8 +2781,6 @@ s32 PS4_SYSV_ABI Func_0E707A589F751C68() {
     return ORBIS_OK;
 }
 
-// Network emulation is devkit only and not on retail units, which is what we emulate.
-// TODO: error code on retail is unknown.
 s32 PS4_SYSV_ABI sceNetEmulationGet() {
     LOG_WARNING(Lib_Net, "network emulation is not available on retail units");
     return SetErrno(ORBIS_NET_EOPNOTSUPP);

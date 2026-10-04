@@ -1,11 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// On the PS4, socket, epoll and resolver ids are kernel fds, and libkernel/libScePosix expose
-// the BSD socket calls on them. Net ids here are FileType::Socket entries in the kernel's file
-// table so close(), read(), write(), fstat() and select() work on them.
-// Not built for unit tests, needs the kernel and file system.
-
 #pragma once
 
 #include <span>
@@ -22,10 +17,6 @@ namespace Libraries::Net {
 
 // Called from the kernel's RegisterLib, before any net object exists.
 void InstallKernelIntegration();
-
-// Kernel file ops on net fds. Return -1 and set the kernel errno on failure.
-
-// The file entry is gone after this returns.
 s32 KernelClose(s32 fd);
 s64 KernelRead(s32 fd, void* buf, u64 nbytes);
 s64 KernelWrite(s32 fd, const void* buf, u64 nbytes);

@@ -203,7 +203,6 @@ void Transport::ThreadMain() {
             deadline = EarliestDeadline();
             sleeping_until_ = deadline.value_or(Clock::time_point::max());
         }
-        // Wake on a packet, a kick or the next TCP timer.
         const auto result = Host::WaitOne(socket_, Host::Readable, kick_, deadline);
         if (stop_.load()) {
             return;
@@ -277,7 +276,6 @@ Error Transport::SendPacket(std::span<const u8> packet, const Endpoint& to) {
 }
 
 u32 Transport::NewIss() {
-    // Roughly RFC 6528.
     iss_state_ += 0x9e3779b97f4a7c15ull;
     u64 z = iss_state_;
     z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
@@ -351,7 +349,6 @@ void Transport::HandleDatagram(Codec::Decoded& decoded, const Endpoint& from) {
 
 void Transport::HandleStreamSegment(std::span<const u8> bytes, const Endpoint& from,
                                     Clock::time_point now) {
-    // Pseudo-header needs a local address lookup, only get it when needed.
     std::optional<PseudoHeader> pseudo;
     if (config_.verify_stream_checksum) {
         pseudo = codec_->StreamPseudoHeader(from);
@@ -369,7 +366,7 @@ void Transport::HandleStreamSegment(std::span<const u8> bytes, const Endpoint& f
             return;
         }
         if (connection->released) {
-            connections_.erase(it); // stale, a new SYN may reuse the key
+            connections_.erase(it);
         }
     }
 

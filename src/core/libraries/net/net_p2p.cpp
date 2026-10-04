@@ -50,9 +50,7 @@ struct P2PState {
     std::shared_ptr<P2P::Keyring> keyring = std::make_shared<P2P::Keyring>();
     u16 configured_port = 3658; // host order
     u32 advertised_addr = 0;    // network order
-    // No retry before this after a failed start. NP code polls constantly.
     std::chrono::steady_clock::time_point retry_after{};
-    // Last start failure, so the retries don't flood the log.
     std::pair<u16, Error> last_failure{0, Error::Ok};
 };
 
@@ -61,8 +59,6 @@ P2PState& P2PStateInstance() {
     return state;
 }
 
-// P2P_BROADCAST layout is a guess (see p2p_codec.h). The first few are logged in full so
-// LAN play testers can send samples.
 void LogBroadcast(std::span<const u8> packet, const P2P::Endpoint& from) {
     char address[INET6_ADDRSTRLEN] = "?";
     const auto* sa = from.Sockaddr();
@@ -85,7 +81,6 @@ void LogBroadcast(std::span<const u8> packet, const P2P::Endpoint& from) {
                 address, from.Port(), packet.size(), hex, packet.size() > shown ? " ..." : "");
 }
 
-// Ports tried after the configured one when it's taken, e.g. by another instance on this PC.
 constexpr u16 P2PPortFallbacks = 16;
 
 // State mutex held. Returns the bound port, or 0.
@@ -103,8 +98,6 @@ u16 StartLocked(P2PState& state, u16 udp_port, bool allow_fallback) {
     };
     Error error;
     auto transport = try_port(udp_port, &error);
-    // Peers learn the bound port through signaling, so another one works as long as the game
-    // doesn't hardcode 3658 for its peers.
     for (u16 i = 1; !transport && allow_fallback && error == Error::AddrInUse && udp_port != 0 &&
                     i <= P2PPortFallbacks && udp_port + i <= 0xffff;
          ++i) {

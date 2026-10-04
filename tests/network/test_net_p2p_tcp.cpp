@@ -212,9 +212,6 @@ struct TransferResult {
     bool b_created;
 };
 
-/// A connects to B; both send `bytes` to each other, then close. B stalls reading for
-/// `reader_stall` at the start to force a zero window. Segments reaching a closed connection
-/// get a RST, as the transport does.
 TransferResult RunTransfer(u64 seed, LinkParams link, size_t bytes, Clock::duration reader_stall,
                            std::string* log) {
     Sim sim(seed, link);

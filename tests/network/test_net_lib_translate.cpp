@@ -164,8 +164,6 @@ TEST(NetLibTranslate, SockaddrErrorsAndTruncation) {
     auto unknown = guest;
     unknown.sin_family = 99;
     EXPECT_EQ(ToHostSockaddr(AsGuest(&unknown), 16, &host, &len), ORBIS_NET_EAFNOSUPPORT);
-
-    // BSD: a short output buffer is filled partially; the full length is still reported.
     sockaddr_in in{};
     in.sin_family = AF_INET;
     in.sin_port = htons(0x1234);

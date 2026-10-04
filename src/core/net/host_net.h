@@ -106,12 +106,7 @@ struct IoResult {
 
 bool Initialize();
 void Shutdown();
-
-// Socket wrappers never block, they return WouldBlock.
-
-// Non-blocking and close-on-exec. On Windows, UDP also gets SIO_UDP_CONNRESET off.
 NativeSocket CreateSocket(int family, int type, int protocol, Error* error);
-// Same setup, for accepted sockets.
 bool ConfigureSocket(NativeSocket s, int type);
 void CloseSocket(NativeSocket s);
 // Windows has no socketpair(), so it uses a loopback TCP connection (stream only).

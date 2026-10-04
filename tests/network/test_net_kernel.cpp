@@ -15,9 +15,9 @@
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/net/net.h"
-#include "core/libraries/net/net_p2p.h"
 #include "core/libraries/net/net_error.h"
 #include "core/libraries/net/net_kernel.h"
+#include "core/libraries/net/net_p2p.h"
 #include "core/net/guest_net.h"
 
 using namespace Libraries::Net;
@@ -73,7 +73,6 @@ TEST_F(NetKernel, SocketsAreFileDescriptors) {
     ASSERT_EQ(KernelFstat(fd, &st), 0);
     EXPECT_EQ(st.st_mode & 0170000, 0140000); // S_IFSOCK
 
-    // close() frees the descriptor; the id is gone for the net library too.
     ASSERT_EQ(KernelClose(fd), 0);
     EXPECT_EQ(FDTable::Instance()->GetFile(fd), nullptr);
     EXPECT_FALSE(Core::Net::GetObjectKind(fd));
@@ -92,7 +91,6 @@ TEST_F(NetKernel, DescriptorsAreReused) {
 }
 
 TEST_F(NetKernel, PosixErrorsUseTheKernelErrno) {
-    // BSD calls report in errno and leave sce_net_errno alone (Net Library Reference).
     *sceNetErrnoLoc() = 1234;
     *Libraries::Kernel::__Error() = 0;
     EXPECT_EQ(sys_listen(1234, 1), -1);

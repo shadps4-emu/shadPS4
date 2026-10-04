@@ -1,26 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// A port of the "net_test" homebrew from ps4emulation/integration_tests PR #14 ("Socket
-// testing"), run against the new libSceNet through its exports, as the homebrew calls them.
-//
-// A server and a client thread talk over loopback TCP (blocking sockets, then an epoll with a
-// zero and an infinite timeout) and log every return value. The pair runs four times: without
-// logging, then with three loggers that are socket servers themselves:
-//   - BIOStreamLogger: one blocking connection per message;
-//   - NBIOStreamLogger (sync): non-blocking accept, connect and send, with epolls;
-//   - NBIOStreamLogger (async): the same, several messages in flight at once.
-//
-// Expected results are what the homebrew logged on a real PS4 (PR description): every call's
-// return value, and each logger delivering the round's 23 lines. Instead of printing, the
-// loggers collect the lines they receive; the test compares them with the PS4 log, socket ids
-// masked (the PS4's are kernel descriptors; any id > 0 is right).
-//
-// One deliberate difference: the homebrew destroys a logger right after the last message, and
-// a message the logger server has not accepted yet is then dropped (the PS4 log's fourth round
-// lost its last two lines that way). Here the test waits until every message has arrived before
-// destroying the logger, so the comparison is exact.
-
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -63,12 +43,6 @@ std::string Format(const char* fmt, u64 value) {
     return buf;
 }
 
-// ---------------------------------------------------------------------------------------------
-// Loggers
-// ---------------------------------------------------------------------------------------------
-
-/// What every logger shares: the lines sent, the lines its server received, and anything the
-/// homebrew would have printf'd as an error.
 class Logger {
 public:
     virtual ~Logger() = default;
@@ -351,8 +325,6 @@ private:
             }
             EXPECT_EQ(epoll_ev_out.data.fd, log_sock);
 
-            // The accepted socket inherits the listener's non-blocking mode (FreeBSD): read
-            // until EWOULDBLOCK or the client's close.
             std::string text;
             char log_buf[0x1000];
             for (;;) {
@@ -461,10 +433,6 @@ private:
     std::thread server_;
     std::vector<std::thread> clients_;
 };
-
-// ---------------------------------------------------------------------------------------------
-// The server and client threads (the homebrew's test.cpp)
-// ---------------------------------------------------------------------------------------------
 
 std::atomic<bool> g_server_ready{false};
 std::atomic<bool> g_cond{false};
@@ -623,11 +591,6 @@ void RunRound() {
     client.join();
 }
 
-// ---------------------------------------------------------------------------------------------
-// Expected results: one round as the PS4 logged it (second round of the PR's log), socket,
-// accept and epoll ids masked.
-// ---------------------------------------------------------------------------------------------
-
 constexpr const char* Ps4Round[] = {
     "Server: socket(AF_INET, SOCK_STREAM, 0) returns <id>\n",
     "Server: setsockopt(SOL_SOCKET, SO_REUSEADDR) returns 0x00000000\n",
@@ -654,8 +617,6 @@ constexpr const char* Ps4Round[] = {
     "Server: socket_close returns 0x00000000\n",
 };
 
-/// Replaces the value of an id line ("... returns 0x0000000f") with "<id>", after checking it
-/// is a valid (positive) id.
 std::string MaskId(const std::string& line) {
     static constexpr const char* IdLines[] = {"socket(AF_INET", "accept returns",
                                               "epoll_create returns"};
@@ -696,14 +657,12 @@ void CheckLogger(Logger& logger, const char* name, bool ordered) {
     }
     const std::vector<std::string> ps4(std::begin(Ps4Round), std::end(Ps4Round));
 
-    // Each thread logs its lines in the PS4's order; how the two threads interleave is timing.
     for (const char* prefix : {"Server:", "Client:"}) {
         EXPECT_EQ(Thread(sent, prefix), Thread(ps4, prefix)) << prefix;
         if (ordered) {
             EXPECT_EQ(Thread(received, prefix), Thread(ps4, prefix)) << prefix;
         }
     }
-    // Every line arrived once, whole (the async logger may deliver out of order).
     std::sort(received.begin(), received.end());
     auto expected = ps4;
     std::sort(expected.begin(), expected.end());

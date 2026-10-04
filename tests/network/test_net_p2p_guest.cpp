@@ -1,12 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// P2P end to end. Two transports on loopback stand in for two consoles: "local" serves the
-// guest's calls through Core::Net's guest layer, "remote" is driven directly through the P2P
-// classes. Covers the failure modes of the earlier P2P implementation: epoll waits hanging on
-// P2P data, P2P calls that never block, abort discarding data instead of waking waiters, plus
-// bulk stream transfer under loss and mixed native/P2P epoll sets.
-
 #include <atomic>
 #include <chrono>
 #include <cstring>
@@ -26,8 +20,6 @@ using Host::Error;
 
 namespace {
 
-/// Minimal framing, [kind][src vport][dst vport][payload], so these tests exercise the
-/// transport and guest layer independently of FramingCodec (tested separately and below).
 class TestCodec final : public Codec {
 public:
     Decoded Decode(std::span<const u8> packet, const Endpoint&) override {

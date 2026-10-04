@@ -1,13 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// Conformance: our STREAM_P2P TCP against the Linux kernel's TCP stack, through a TUN device.
-// The kernel side uses ordinary sockets; our side sees raw IPv4 packets on the TUN, which is
-// exactly where a P2P stream sits after decapsulation. Since the PS4 runs FreeBSD's TCP inside
-// P2P, agreeing with a mature kernel stack is the best available proxy for talking to real
-// consoles. The bridge can drop packets in both directions.
-//
-// Linux only; needs root or CAP_NET_ADMIN, otherwise every test is skipped.
+// Linux only needs root or CAP_NET_ADMIN, otherwise every test is skipped.
 
 #include <gtest/gtest.h>
 

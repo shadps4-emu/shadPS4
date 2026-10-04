@@ -125,7 +125,6 @@ std::optional<TcpSegment> ParseTcpSegment(std::span<const u8> bytes, const Pseud
         if (kind == 2 && length == 4) {
             seg.mss = Read16(b + i + 2);
         }
-        // Other options are ignored. We never offer them, so the peer won't use them.
         i += length;
     }
     seg.payload = bytes.subspan(header_size);
@@ -159,7 +158,6 @@ std::optional<std::vector<u8>> BuildResetFor(const PseudoHeader& pseudo, const T
     if (seg.flags & Rst) {
         return std::nullopt;
     }
-    // RST fields per RFC 9293 3.10.7.1
     if (seg.flags & Ack) {
         return BuildTcpSegment(pseudo, seg.dst_port, seg.src_port, seg.ack, 0, Rst, 0, std::nullopt,
                                {});
@@ -293,7 +291,6 @@ void TcpConnection::TrySend(Clock::time_point now) {
                 ArmRetransmit(now);
             } else if (available > 0 && snd_wnd_ == 0 && snd_max_ == snd_una_ &&
                        !persist_deadline_) {
-                // Zero window and nothing in flight, start probing.
                 persist_interval_ = rto_;
                 persist_deadline_ = now + persist_interval_;
             }
@@ -389,7 +386,6 @@ void TcpConnection::HandleSynSent(const TcpSegment& seg, Clock::time_point now) 
         SendAck();
         TrySend(now);
     } else {
-        // Simultaneous open
         state_ = TcpState::SynReceived;
         EmitSegment(iss_, Syn | Ack, {}, true);
     }
@@ -415,7 +411,6 @@ void TcpConnection::OnSegment(const TcpSegment& seg, Clock::time_point now) {
         HandleSynSent(seg, now);
         return;
     case TcpState::TimeWait:
-        // RFC 1337: ignore RST in TIME-WAIT. A resent FIN means our ACK was lost.
         if ((seg.flags & Fin) && !(seg.flags & Rst)) {
             SendAck();
             time_wait_deadline_ = now + config_.time_wait;
@@ -437,12 +432,10 @@ void TcpConnection::OnSegment(const TcpSegment& seg, Clock::time_point now) {
                        ((seg.flags & Fin) ? 1 : 0);
     bool ack_only = false;
     if (!Acceptable(seg.seq, length)) {
-        // Zero window: still take the ACK and window of in-sequence segments.
         if (ReceiveWindow() == 0 && seg.seq == rcv_nxt_ && (seg.flags & Ack) &&
             !(seg.flags & (Rst | Syn))) {
             ack_only = true;
         } else {
-            // Old duplicate or out of window. Re-ACK, this also answers window probes.
             if (!(seg.flags & Rst)) {
                 SendAck();
             }
@@ -457,12 +450,12 @@ void TcpConnection::OnSegment(const TcpSegment& seg, Clock::time_point now) {
                       : state_ == TcpState::SynReceived ? Error::ConnRefused
                                                         : Error::ConnReset);
         } else {
-            SendAck(); // RFC 5961 challenge ACK
+            SendAck();
         }
         return;
     }
     if (seg.flags & Syn) {
-        SendAck(); // RFC 5961 challenge ACK
+        SendAck();
         return;
     }
     if (!(seg.flags & Ack)) {
@@ -711,7 +704,6 @@ void TcpConnection::OnTimer(Clock::time_point now) {
         OnRetransmitTimeout(now);
     }
     if (persist_deadline_ && now >= *persist_deadline_) {
-        // Window probe. An old seq makes the peer re-ACK with its window.
         EmitSegment(snd_una_ - 1, Ack, {});
         persist_interval_ = std::min<Clock::duration>(persist_interval_ * 2, config_.max_rto);
         persist_deadline_ = now + persist_interval_;

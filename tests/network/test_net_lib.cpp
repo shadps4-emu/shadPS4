@@ -140,7 +140,6 @@ TEST_F(NetLib, LogFormatting) {
 }
 
 TEST_F(NetLib, InitAndTerm) {
-    // Kept for compatibility: both always succeed, in any order (SDK 12.00).
     EXPECT_EQ(sceNetInit(), ORBIS_OK);
     EXPECT_EQ(sceNetTerm(), ORBIS_OK);
     EXPECT_EQ(sceNetTerm(), ORBIS_OK);
@@ -152,8 +151,6 @@ TEST_F(NetLib, InitAndTerm) {
 }
 
 TEST_F(NetLib, ErrorTableValues) {
-    // As the SDK's net/errno.h defines them (the Net Library Reference's table has 0x80410157
-    // for ECANCELED; the header, which games are built with, has FreeBSD's 85).
     EXPECT_EQ(ORBIS_NET_ERROR_ECANCELED, static_cast<int>(0x80410155));
     EXPECT_EQ(ORBIS_NET_ECANCELED, 85);
     EXPECT_EQ(ToOrbisErrno(Host::Error::Canceled), 85);

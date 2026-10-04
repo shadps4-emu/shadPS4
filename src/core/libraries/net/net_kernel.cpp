@@ -28,7 +28,6 @@ namespace {
 using FDTable = Common::Singleton<Core::FileSys::HandleTable>;
 using Core::Net::Host::Error;
 
-// Net and kernel errno are both FreeBSD values, so copy it over as is.
 s64 Posix(s64 result) {
     if (result < 0) {
         *Libraries::Kernel::__Error() = *sceNetErrnoLoc();
@@ -37,8 +36,6 @@ s64 Posix(s64 result) {
     return result;
 }
 
-// sce_net_errno is only meant to change on sceNet* calls, so the BSD calls restore it.
-// Must be declared before the call so it outlives Posix().
 class KeepNetErrno {
 public:
     KeepNetErrno() : saved_{*sceNetErrnoLoc()} {}

@@ -58,10 +58,7 @@ struct TcpSegment {
     std::span<const u8> payload;
 };
 
-// Returns 0 when verifying a segment with a correct checksum.
 u16 TcpChecksum(int family, const u8* src_addr, const u8* dst_addr, std::span<const u8> segment);
-
-// Checksum is verified if pseudo is given. Sender is pseudo.remote.
 std::optional<TcpSegment> ParseTcpSegment(std::span<const u8> bytes,
                                           const PseudoHeader* pseudo = nullptr);
 
@@ -114,9 +111,7 @@ public:
                   u16 remote_port, u32 iss, Emit emit);
 
     void Connect(Clock::time_point now);
-    // Passive open from a SYN on a listening port.
     void AcceptSyn(const TcpSegment& syn, Clock::time_point now);
-
     void OnSegment(const TcpSegment& seg, Clock::time_point now);
     void OnTimer(Clock::time_point now);
     std::optional<Clock::time_point> NextDeadline() const;
@@ -124,7 +119,6 @@ public:
     IoResult Send(std::span<const u8> data, Clock::time_point now);
     IoResult Recv(std::span<u8> out, bool peek, Clock::time_point now);
     void Shutdown(Clock::time_point now);
-    // Sends RST instead of FIN if unread data is discarded (BSD).
     void Close(Clock::time_point now);
     void Abort();
 

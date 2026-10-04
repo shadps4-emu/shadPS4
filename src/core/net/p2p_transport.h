@@ -57,7 +57,6 @@ public:
                                            std::span<const u8> payload, const Endpoint& to,
                                            Protection protection) = 0;
     virtual std::vector<u8> EncodeSignaling(std::span<const u8> data, const Endpoint& to) = 0;
-    // For the TCP checksum.
     virtual PseudoHeader StreamPseudoHeader(const Endpoint& peer) = 0;
 };
 
@@ -73,7 +72,6 @@ struct TransportConfig {
     bool verify_stream_checksum = false;
 };
 
-// Pollable level-triggered flag. Set() needs the transport mutex, polling doesn't.
 class ReadinessFlag {
 public:
     bool Valid() const {
@@ -116,7 +114,6 @@ public:
     ~DatagramSocket();
 
     Error Bind(u16 vport); // 0 = any free vport
-    // Like connect(): default destination and receive filter.
     Error SetPeer(const Endpoint& peer, u16 vport);
     void SetProtection(Protection protection);
     // to == nullptr sends to the SetPeer peer. extra is per-message protection.
@@ -136,7 +133,7 @@ public:
 private:
     friend class Transport;
     explicit DatagramSocket(std::shared_ptr<Transport> transport);
-    Error BindLocked(u16 vport); // transport mutex held
+    Error BindLocked(u16 vport);
 
     std::shared_ptr<Transport> transport_;
     std::shared_ptr<Readiness> readiness_;
@@ -152,19 +149,16 @@ public:
     void SetProtection(Protection protection);
     Error Bind(u16 vport);
     Error Listen(int backlog);
-    // Returns InProgress. Socket turns writable when done.
     Error Connect(const Endpoint& peer, u16 peer_vport);
-    // Ok, InProgress or the error.
     Error ConnectResult() const;
     std::shared_ptr<StreamSocket> Accept(Endpoint* peer, u16* peer_vport, Error* error);
     IoResult Send(std::span<const u8> data);
     IoResult Recv(std::span<u8> out, bool peek);
     Error Shutdown(int how); // 0 = read, 1 = write, 2 = both
-    // Graceful. The transport handles FIN and TIME-WAIT.
     void Close();
     void Abort();
 
-    u32 Events() const; // Host::EventBits
+    u32 Events() const;
     const Readiness& Handles() const {
         return *readiness_;
     }
@@ -228,10 +222,7 @@ private:
 
     std::shared_ptr<Connection> NewConnection(const ConnectionKey& key, Protection protection,
                                               std::shared_ptr<Readiness> readiness);
-    // Updates readiness, moves established connections to the accept queue and drops
-    // finished ones. Needs mutex_.
     void Update(const std::shared_ptr<Connection>& connection);
-    // Kicks the thread if connection has an earlier timer.
     void Reschedule(const Connection& connection);
     Error SendPacket(std::span<const u8> packet, const Endpoint& to);
     u16 AllocateVport(bool stream);
@@ -258,7 +249,6 @@ private:
     std::thread thread_;
     std::atomic<bool> stop_{false};
     Host::WakeHandle kick_;
-    // Thread wake time, min() while awake. Guarded by mutex_.
     Clock::time_point sleeping_until_ = Clock::time_point::min();
     std::vector<u8> receive_buffer_;
 };
