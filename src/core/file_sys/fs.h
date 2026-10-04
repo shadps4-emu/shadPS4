@@ -124,9 +124,7 @@ enum class FileType {
     Regular, // standard file
     Directory,
     Device,
-    Socket,   // any net object (socket, epoll, resolver): Libraries::Net keeps it by descriptor
-    Epoll,    // unused since the net library moved to src/core/libraries/net
-    Resolver, // unused, likewise
+    Socket,
     Equeue
 };
 
@@ -187,8 +185,6 @@ public:
     File* GetFile(int d);
     File* GetSocket(int d);
     std::vector<int> GetSocketHandles();
-    File* GetEpoll(int d);
-    File* GetResolver(int d);
     File* GetFile(const std::filesystem::path& host_name);
     int GetFileDescriptor(File* file);
 
