@@ -722,9 +722,9 @@ void ControllerOutput::AddUpdate(InputEvent event) {
 
 // Slides a virtual finger across the touchpad so controllers without one can trigger swipe
 // gestures (#2627). Runs on its own thread; a new swipe is ignored while one is in progress.
+static std::atomic_bool touchpad_swiping{false};
 static void SimulateTouchpadSwipe(GameController* controller, u32 button) {
-    static std::atomic_bool swiping{false};
-    if (swiping.exchange(true)) {
+    if (touchpad_swiping.exchange(true)) {
         return;
     }
     // The pad is about twice as wide as it is tall, so vertical swipes use nearly the full
@@ -752,8 +752,22 @@ static void SimulateTouchpadSwipe(GameController* controller, u32 button) {
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
         controller->SetTouchpadState(0, false, x1, y1);
-        swiping = false;
+        touchpad_swiping = false;
     }).detach();
+}
+
+// Tap for touchpad_left/center/right. While a simulated swipe runs it owns the finger: a tap
+// pressed then is usually the swipe's own modifier key coming back (e.g. "back, pad_up" next to
+// "touchpad_center = back" when pad_up is let go first) and would pull the finger to the tap
+// point mid-gesture, so it is ignored. A release still lets go of the TouchPad button.
+static void SimulateTouchpadTap(GameController* controller, u32 button, bool pressed, float x) {
+    const bool swiping = touchpad_swiping;
+    if (!swiping) {
+        controller->SetTouchpadState(0, pressed, x, 0.5f);
+    }
+    if (!swiping || !pressed) {
+        controller->Button(SDLGamepadToOrbisButton(button), pressed);
+    }
 }
 
 void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
@@ -779,16 +793,13 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
     if (button != SDL_GAMEPAD_BUTTON_INVALID) {
         switch (button) {
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT:
-            controller->SetTouchpadState(0, new_button_state, 0.25f, 0.5f);
-            controller->Button(SDLGamepadToOrbisButton(button), new_button_state);
+            SimulateTouchpadTap(controller, button, new_button_state, 0.25f);
             break;
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER:
-            controller->SetTouchpadState(0, new_button_state, 0.50f, 0.5f);
-            controller->Button(SDLGamepadToOrbisButton(button), new_button_state);
+            SimulateTouchpadTap(controller, button, new_button_state, 0.50f);
             break;
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT:
-            controller->SetTouchpadState(0, new_button_state, 0.75f, 0.5f);
-            controller->Button(SDLGamepadToOrbisButton(button), new_button_state);
+            SimulateTouchpadTap(controller, button, new_button_state, 0.75f);
             break;
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_LEFT:
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_RIGHT:
