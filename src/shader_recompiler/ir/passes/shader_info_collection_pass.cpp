@@ -33,14 +33,15 @@ void Visit(Info& info, const IR::Inst& inst) {
         break;
     case IR::Opcode::SetPatch: {
         const auto patch = inst.Arg(0).Patch();
-        if (patch <= IR::Patch::TessellationLodBottom) {
-            info.stores_tess_level_outer = true;
-        } else if (patch <= IR::Patch::TessellationLodInteriorV) {
-            info.stores_tess_level_inner = true;
-        } else {
-            info.uses_patches |= 1U << IR::GenericPatchIndex(patch);
-        }
+        info.uses_patches |= 1U << IR::GenericPatchIndex(patch);
         break;
+    }
+    case IR::Opcode::SetTessFactor: {
+        const auto factor_idx = inst.Arg(1);
+        info.stores_tess_factors = true;
+        if (!factor_idx.IsImmediate()) {
+            info.dynamically_accesses_tess_factors = true;
+        }
     }
     case IR::Opcode::GetPatch: {
         const auto patch = inst.Arg(0).Patch();
@@ -179,6 +180,12 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
             Visit(info, inst);
         }
     }
+
+#if 0 // TODO delete
+    if (info.sw_stage == SwStage::TessellationControl) {
+        info.dynamically_accesses_tess_factors = true;
+    }
+#endif
 
     if (!EmulatorSettings.IsDirectMemoryAccessEnabled()) {
         info.uses_dma = false;

@@ -85,6 +85,7 @@ public:
 
     [[nodiscard]] F32 ReadTcsGenericOuputAttribute(const U32& vertex_index, const U32& attr_index,
                                                    const U32& comp_index);
+    void SetTessFactor(const F32& value, const U32& factor_idx);
 
     [[nodiscard]] U32 GetPcLo(const U32& pc);
 

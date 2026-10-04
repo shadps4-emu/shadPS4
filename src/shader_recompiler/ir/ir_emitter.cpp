@@ -264,6 +264,10 @@ F32 IREmitter::ReadTcsGenericOuputAttribute(const U32& vertex_index, const U32& 
                      comp_index);
 }
 
+void IREmitter::SetTessFactor(const F32& value, const U32& factor_idx) {
+    Inst(Opcode::SetTessFactor, value, factor_idx);
+}
+
 U32 IREmitter::GetPcLo(const U32& pc) {
     return Inst<U32>(IR::Opcode::GetPcLo, pc);
 }
