@@ -28,6 +28,10 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_OP(inst, AtomicOp::Umin, false);
     case Opcode::DS_MAX_U32:
         return DS_OP(inst, AtomicOp::Umax, false);
+    case Opcode::DS_MAX_F32:
+        return DS_OP(inst, AtomicOp::Fmax, false);
+    case Opcode::DS_MIN_F32:
+        return DS_OP(inst, AtomicOp::Fmin, false);
     case Opcode::DS_AND_B32:
         return DS_OP(inst, AtomicOp::And, false);
     case Opcode::DS_OR_B32:
@@ -127,7 +131,7 @@ void Translator::DS_OP(const GcnInst& inst, AtomicOp op, bool rtn) {
         if (op == AtomicOp::Inc || op == AtomicOp::Dec) {
             return T{};
         }
-        if constexpr (std::is_same_v<T, IR::U32>) {
+        if constexpr (std::is_same_v<T, IR::U32> || std::is_same_v<T, IR::F32>) {
             return GetSrc(inst.src[1]);
         } else {
             return GetSrc64(inst.src[1]);
@@ -148,6 +152,10 @@ void Translator::DS_OP(const GcnInst& inst, AtomicOp op, bool rtn) {
             return ir.SharedAtomicIMax(addr_offset, data, false, is_gds);
         case AtomicOp::Smax:
             return ir.SharedAtomicIMax(addr_offset, data, true, is_gds);
+        case AtomicOp::Fmax:
+            return ir.SharedAtomicFMax(addr_offset, data, is_gds);
+        case AtomicOp::Fmin:
+            return ir.SharedAtomicFMin(addr_offset, data, is_gds);
         case AtomicOp::And:
             return ir.SharedAtomicAnd(addr_offset, data, is_gds);
         case AtomicOp::Or:
@@ -165,7 +173,7 @@ void Translator::DS_OP(const GcnInst& inst, AtomicOp op, bool rtn) {
         }
     }();
     if (rtn) {
-        if constexpr (std::is_same_v<T, IR::U32>) {
+        if constexpr (std::is_same_v<T, IR::U32> || std::is_same_v<T, IR::F32>) {
             SetDst(inst.dst[0], original_val);
         } else {
             SetDst64(inst.dst[0], original_val);
