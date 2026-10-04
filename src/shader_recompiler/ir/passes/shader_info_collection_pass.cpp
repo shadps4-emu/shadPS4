@@ -41,6 +41,7 @@ void Visit(Info& info, const IR::Inst& inst) {
         info.stores_tess_factors = true;
         if (!factor_idx.IsImmediate()) {
             info.dynamically_accesses_tess_factors = true;
+            LOG_WARNING(Render_Recompiler, "Shader dynamically indexes tess factors");
         }
     }
     case IR::Opcode::GetPatch: {
