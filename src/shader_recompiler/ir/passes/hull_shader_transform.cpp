@@ -215,19 +215,11 @@ public:
         }
 
         for (IR::Use use : read_const_buffer->Uses()) {
-            WalkUsersOfTessConstantHelper(use, inc, false);
+            WalkUsersOfTessConstantHelper(use, inc);
         }
-
-        ++seq_num;
     }
 
-private:
-    struct PhiInfo {
-        u32 seq_num;
-        u32 unique_edge;
-    };
-
-    void WalkUsersOfTessConstantHelper(IR::Use use, u32 inc, bool propagateError) {
+    void WalkUsersOfTessConstantHelper(IR::Use use, u32 inc) {
         IR::Inst* inst = use.user;
 
         switch (use.user->GetOpcode()) {
@@ -239,47 +231,21 @@ private:
             if (is_addr_operand) {
                 u32 counter = inst->Flags<u32>();
                 inst->SetFlags<u32>(counter + inc);
-                ASSERT_MSG(!propagateError, "LDS instruction {} accesses ambiguous attribute type",
-                           fmt::ptr(use.user));
                 // Stop here
                 return;
             }
             break;
         }
-        case IR::Opcode::Phi: {
-            auto it = phi_infos.find(use.user);
-            // the point of seq_num is to tell us if we've already traversed this
-            // phi on the current walk to handle phi cycles
-            if (it == phi_infos.end()) {
-                // First time we've encountered this phi
-                // Mark the phi as having been traversed originally through this edge
-                phi_infos[inst] = {.seq_num = seq_num,
-                                   .unique_edge = static_cast<u16>(use.operand)};
-            } else if (it->second.seq_num < seq_num) {
-                it->second.seq_num = seq_num;
-                // For now, assume we are visiting this phi via the same edge
-                // as on other walks. If not, some dataflow analysis might be necessary
-                if (it->second.unique_edge != use.operand) {
-                    propagateError = true;
-                }
-            } else {
-                ASSERT(it->second.seq_num == seq_num);
-                // there's a cycle, and we've already been here on this walk
-                return;
-            }
-            break;
-        }
+        case IR::Opcode::Phi:
+            UNREACHABLE_MSG("ambiguous use (phi) of a tess constant");
         default:
             break;
         }
 
         for (IR::Use use : inst->Uses()) {
-            WalkUsersOfTessConstantHelper(use, inc, propagateError);
+            WalkUsersOfTessConstantHelper(use, inc);
         }
     }
-
-    std::unordered_map<const IR::Inst*, PhiInfo> phi_infos;
-    u32 seq_num{1u};
 };
 
 enum class AttributeRegion : u32 { InputCP, OutputCP, PatchConst };
