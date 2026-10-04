@@ -175,9 +175,6 @@ s32 KernelFstat(s32 fd, Libraries::Kernel::OrbisKernelStat* sb) {
     sb->st_nlink = 1;
     sb->st_blksize = 4096;
     sb->st_size = 0;
-#ifndef _WIN32
-    sb->st_blocks = 0;
-#endif
     return 0;
 }
 
