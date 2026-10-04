@@ -24,7 +24,7 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_SUBREV_F32:
         return V_SUBREV_F32(inst);
     case Opcode::V_MAC_LEGACY_F32:
-        return V_MAC_F32(inst);
+        return V_MAC_LEGACY_F32(inst);
     case Opcode::V_MUL_LEGACY_F32:
         return V_MUL_LEGACY_F32(inst);
     case Opcode::V_MUL_F32:
@@ -416,7 +416,7 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
 
         // VOP3a
     case Opcode::V_MAD_LEGACY_F32:
-        return V_MAD_F32(inst);
+        return V_MAD_LEGACY_F32(inst);
     case Opcode::V_MAD_F32:
         return V_MAD_F32(inst);
     case Opcode::V_MAD_I32_I24:
@@ -608,16 +608,23 @@ void Translator::V_MUL_F32(const GcnInst& inst) {
 }
 
 void Translator::V_MUL_LEGACY_F32(const GcnInst& inst) {
-    // GCN V_MUL_LEGACY_F32: if either source is zero, the result is +0.0
-    // regardless of the other operand (even if NaN or Inf).
-    // Standard IEEE multiply would produce NaN for 0 * Inf.
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
-    const IR::F32 zero{ir.Imm32(0.0f)};
-    const IR::U1 src0_zero{ir.FPEqual(src0, zero)};
-    const IR::U1 src1_zero{ir.FPEqual(src1, zero)};
-    const IR::U1 either_zero{ir.LogicalOr(src0_zero, src1_zero)};
-    SetDst(inst.dst[0], IR::F32{ir.Select(either_zero, zero, ir.FPMul(src0, src1))});
+    SetDst(inst.dst[0], LegacyMul(src0, src1));
+}
+
+void Translator::V_MAC_LEGACY_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
+    const IR::F32 dst0{GetSrc<IR::F32>(inst.dst[0])};
+    SetDst(inst.dst[0], ir.FPAdd(LegacyMul(src0, src1), dst0));
+}
+
+void Translator::V_MAD_LEGACY_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
+    const IR::F32 src2{GetSrc<IR::F32>(inst.src[2])};
+    SetDst(inst.dst[0], ir.FPAdd(LegacyMul(src0, src1), src2));
 }
 
 void Translator::V_MUL_I32_I24(const GcnInst& inst, bool is_signed) {
@@ -1948,6 +1955,13 @@ void Translator::SetCarryOut(const GcnInst& inst, const IR::U1& carry) {
         ir.SetVccLo(lo);
         ir.SetVccHi(hi);
     }
+}
+
+IR::F32 Translator::LegacyMul(const IR::F32& a, const IR::F32& b) {
+    // DX9 rules, 0.0 * x = 0.0
+    const IR::F32 zero{ir.Imm32(0.0f)};
+    const IR::U1 either_zero{ir.LogicalOr(ir.FPEqual(a, zero), ir.FPEqual(b, zero))};
+    return IR::F32{ir.Select(either_zero, zero, ir.FPMul(a, b))};
 }
 
 // TODO: add range analysis pass to hopefully put an upper bound on m0, and only select one of
