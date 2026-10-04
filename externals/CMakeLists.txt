@@ -401,8 +401,7 @@ set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
 endif()
 add_subdirectory(protobuf EXCLUDE_FROM_ALL)
 
-# ZArchive (.zar archive support)
-if (NOT TARGET ZArchive::zarchive)
+if (NOT TARGET libzstd_static)
     # zstd (dependency of ZArchive)
     set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
     set(ZSTD_BUILD_SHARED OFF CACHE BOOL "" FORCE)
@@ -411,7 +410,10 @@ if (NOT TARGET ZArchive::zarchive)
     set(ZSTD_LEGACY_SUPPORT OFF CACHE BOOL "" FORCE)
     set(ZSTD_MULTITHREAD_SUPPORT OFF CACHE BOOL "" FORCE)
     add_subdirectory(zstd/build/cmake)
+endif()
 
+# ZArchive (.zar archive support)
+if (NOT TARGET ZArchive::zarchive)
     add_library(zarchive STATIC
         zarchive/src/zarchivereader.cpp
         zarchive/src/zarchivewriter.cpp
