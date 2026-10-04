@@ -196,11 +196,24 @@ Id EmitSharedAtomicSMax64(EmitContext& ctx, Id offset, Id value) {
 }
 
 Id EmitSharedAtomicFMax32(EmitContext& ctx, Id offset, Id value) {
-    return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicFMax);
-}
+    if (ctx.profile.supports_shared_fp32_atomic_min_max) {
+        return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicFMax);
+    }
 
-Id EmitSharedAtomicFMax64(EmitContext& ctx, Id offset, Id value) {
-    return SharedAtomicU64(ctx, offset, value, &Sirit::Module::OpAtomicFMax);
+    const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
+    // OpSelect requires a bool condition; produce one by comparing the sign bit to 0.
+    const auto sign_bit_set = ctx.OpINotEqual(
+        ctx.U1[1],
+        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u)),
+        ctx.u32_zero_value);
+
+    // FIXME this needs control flow because it currently executes both atomics
+    const auto result = ctx.OpSelect(
+        ctx.F32[1], sign_bit_set,
+        EmitBitCastF32U32(ctx, EmitSharedAtomicUMin32(ctx, offset, u32_value)),
+        EmitBitCastF32U32(ctx, EmitSharedAtomicSMax32(ctx, offset, u32_value)));
+
+    return result;
 }
 
 Id EmitSharedAtomicUMin32(EmitContext& ctx, Id offset, Id value) {
@@ -220,7 +233,24 @@ Id EmitSharedAtomicSMin64(EmitContext& ctx, Id offset, Id value) {
 }
 
 Id EmitSharedAtomicFMin32(EmitContext& ctx, Id offset, Id value) {
-    return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicFMin);
+    if (ctx.profile.supports_shared_fp32_atomic_min_max) {
+        return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicFMax);
+    }
+
+    const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
+    // OpSelect requires a bool condition; produce one by comparing the sign bit to 0.
+    const auto sign_bit_set = ctx.OpINotEqual(
+        ctx.U1[1],
+        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u)),
+        ctx.u32_zero_value);
+
+    // FIXME this needs control flow because it currently executes both atomics
+    const auto result = ctx.OpSelect(
+        ctx.F32[1], sign_bit_set,
+        EmitBitCastF32U32(ctx, EmitSharedAtomicUMax32(ctx, offset, u32_value)),
+        EmitBitCastF32U32(ctx, EmitSharedAtomicSMin32(ctx, offset, u32_value)));
+
+    return result;
 }
 
 Id EmitSharedAtomicFMin64(EmitContext& ctx, Id offset, Id value) {

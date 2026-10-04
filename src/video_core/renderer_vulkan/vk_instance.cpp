@@ -326,6 +326,8 @@ bool Instance::CreateDevice() {
                  shader_atomic_float2_features.shaderBufferFloat32AtomicMinMax);
         LOG_INFO(Render_Vulkan, "- shaderImageFloat32AtomicMinMax: {}",
                  shader_atomic_float2_features.shaderImageFloat32AtomicMinMax);
+        LOG_INFO(Render_Vulkan, "- shaderSharedFloat32AtomicMinMax: {}",
+                 shader_atomic_float2_features.shaderSharedFloat32AtomicMinMax);
     }
     workgroup_memory_explicit_layout =
         add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);

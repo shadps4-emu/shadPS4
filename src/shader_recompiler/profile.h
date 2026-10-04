@@ -38,6 +38,7 @@ struct Profile {
     bool supports_trinary_minmax{};
     bool supports_buffer_fp32_atomic_min_max{};
     bool supports_image_fp32_atomic_min_max{};
+    bool supports_shared_fp32_atomic_min_max{};
     bool supports_buffer_int64_atomics{};
     bool supports_shared_int64_atomics{};
     bool supports_workgroup_explicit_memory_layout{};
