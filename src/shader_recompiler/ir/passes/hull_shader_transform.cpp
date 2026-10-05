@@ -237,7 +237,7 @@ public:
             break;
         }
         case IR::Opcode::Phi:
-            UNREACHABLE_MSG("ambiguous use (phi) of a tess constant");
+            UNREACHABLE_MSG("ambiguous use (phi) of a tess constant: {}", fmt::ptr(inst));
         default:
             break;
         }
