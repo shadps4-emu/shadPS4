@@ -222,10 +222,6 @@ const OptionRule* FindOptionRule(s32 level, s32 name) {
     return nullptr;
 }
 
-bool IsLenientOptionLevel(s32) {
-    return false;
-}
-
 s32 StoredOption(OrbisNetId s, s32 level, s32 name, const Core::Net::SocketInfo& info) {
     Core::Net::SocketAttributes attributes;
     Core::Net::SocketGetAttributes(s, &attributes);
@@ -1565,15 +1561,7 @@ static s32 sceNetGetsockoptImpl(OrbisNetId s, s32 level, s32 optname, void* optv
     };
 
     const OptionRule* rule = FindOptionRule(level, optname);
-    if (rule == nullptr) {
-        if (!IsLenientOptionLevel(level)) {
-            return SetErrno(ORBIS_NET_ENOPROTOOPT);
-        }
-        LOG_WARNING(Lib_Net, "unknown option level = {:#x}, optname = {:#x} reads as 0", level,
-                    optname);
-        return write_int(0);
-    }
-    if (!rule->get) {
+    if (rule == nullptr || !rule->get) {
         return SetErrno(ORBIS_NET_ENOPROTOOPT);
     }
     if (!(rule->valid_for & KindBit(info))) {
@@ -2333,15 +2321,7 @@ s32 PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, s32 level, s32 optname, const vo
     }
 
     const OptionRule* rule = FindOptionRule(level, optname);
-    if (rule == nullptr) {
-        if (!IsLenientOptionLevel(level)) {
-            return SetErrno(ORBIS_NET_ENOPROTOOPT);
-        }
-        LOG_WARNING(Lib_Net, "unknown option level = {:#x}, optname = {:#x} ignored", level,
-                    optname);
-        return ORBIS_OK;
-    }
-    if (!rule->set) {
+    if (rule == nullptr || !rule->set) {
         return SetErrno(ORBIS_NET_ENOPROTOOPT);
     }
 
