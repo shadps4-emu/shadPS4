@@ -173,9 +173,6 @@ struct PsColorBuffer {
     AmdGpu::NumberFormat num_format : 4;
     AmdGpu::NumberConversion num_conversion : 3;
     AmdGpu::ShaderExportFormat export_format : 4;
-    // GCN applies blend factors to min/max ops while Vulkan ignores them. For the self-scaled
-    // pattern min/max(src*src, dst*dst) the shader squares its color output instead, keeping
-    // the attachment in the squared domain end to end.
     u32 blend_self_scale : 1;
     AmdGpu::CompMapping swizzle;
 
@@ -184,10 +181,11 @@ struct PsColorBuffer {
 
 struct HwFragmentRuntimeInfo {
     struct PsInput {
-        u8 param_index;
-        bool is_default;
-        bool is_flat;
-        u8 default_value;
+        u16 param_index : 5;
+        u16 is_default : 1;
+        u16 is_flat : 1;
+        u16 default_value : 2;
+        u16 : 7;
 
         bool IsDefault() const {
             return is_default && !is_flat;
@@ -204,12 +202,14 @@ struct HwFragmentRuntimeInfo {
     u32 num_inputs;
     std::array<PsInput, 32> inputs;
     std::array<PsColorBuffer, MaxColorBuffers> color_buffers;
-    AmdGpu::ShaderExportFormat z_export_format;
-    u8 num_samples{1};
-    u8 mrtz_mask{};
-    bool front_face_all_bits{false};
-    bool dual_source_blending{false};
-    bool clip_distance_emulation{false};
+    AmdGpu::ShaderExportFormat z_export_format : 4;
+    u32 num_samples : 8;
+    u32 mrtz_mask : 4;
+    u32 front_face_all_bits : 1;
+    u32 dual_source_blending : 1;
+    u32 clip_distance_emulation : 1;
+    u32 depth_before_shader : 1;
+    u32 : 12;
 
     bool operator==(const HwFragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
@@ -219,6 +219,7 @@ struct HwFragmentRuntimeInfo {
                front_face_all_bits == other.front_face_all_bits &&
                dual_source_blending == other.dual_source_blending &&
                clip_distance_emulation == other.clip_distance_emulation &&
+               depth_before_shader == other.depth_before_shader &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
     }
