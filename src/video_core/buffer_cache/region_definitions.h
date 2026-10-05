@@ -58,6 +58,8 @@ constexpr Bounds MIN_BOUNDS = {
 struct alignas(64) RegionBits {
     constexpr void Fill(bool bit) {
         const u64 value = bit ? ~u64{0} : u64{0};
+        set_summary = value;
+        clear_summary = ~value;
         data.fill(value);
     }
 
@@ -73,7 +75,8 @@ struct alignas(64) RegionBits {
         return data[index];
     }
 
-private:
+    u64 set_summary;
+    u64 clear_summary;
     std::array<u64, NUM_REGION_WORDS> data;
 };
 

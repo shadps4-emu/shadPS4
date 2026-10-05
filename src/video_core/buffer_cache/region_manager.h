@@ -237,33 +237,67 @@ private:
         const u64 summary_bit = u64{1} << index;
         if constexpr (cpu_op != StateOp::None) {
             cpu[index] = Apply<cpu_op>(cpu[index], mask);
+            cpu.set_summary =
+                cpu[index] ? (cpu.set_summary | summary_bit) : (cpu.set_summary & ~summary_bit);
+            cpu.clear_summary = cpu[index] != ~u64{0} ? (cpu.clear_summary | summary_bit)
+                                                      : (cpu.clear_summary & ~summary_bit);
         }
         if constexpr (gpu_op != StateOp::None) {
             gpu[index] = Apply<gpu_op>(gpu[index], mask);
+            gpu.set_summary =
+                gpu[index] ? (gpu.set_summary | summary_bit) : (gpu.set_summary & ~summary_bit);
+            gpu.clear_summary = gpu[index] != ~u64{0} ? (gpu.clear_summary | summary_bit)
+                                                      : (gpu.clear_summary & ~summary_bit);
         }
     }
 
-    template <StateOp cpu_op, StateOp gpu_op, Type type = Type::None>
+    template <StateOp cpu_op, StateOp gpu_op, Type iter_type = Type::None>
     constexpr bool HasEffect(const Bounds& bounds) const noexcept {
-        bool has_effect{};
-        IterateWords(bounds, [&](u64 index, u64 mask) {
-            if constexpr (type == Type::CPU) {
-                has_effect |= cpu[index] & mask;
-            } else if constexpr (type == Type::GPU) {
-                has_effect |= gpu[index] & mask;
+        const auto [start_mask, end_mask] = GetMasks(bounds.start_page, bounds.end_page);
+        const u64 interior_mask = (u64{1} << bounds.end_word) - (u64{2} << bounds.start_word);
+
+        const auto any_set = [&](const RegionBits& state) -> bool {
+            if (bounds.start_word == bounds.end_word) {
+                const u64 mask = start_mask & end_mask;
+                return state[bounds.start_word] & mask;
             }
-            if constexpr (cpu_op != StateOp::None) {
-                const u64 prev = cpu[index];
-                const u64 next = Apply<cpu_op>(prev, mask);
-                has_effect |= (next ^ prev) & mask;
+            return (state[bounds.start_word] & start_mask) || (state[bounds.end_word] & end_mask) ||
+                   (state.set_summary & interior_mask);
+        };
+
+        const auto any_clear = [&](const RegionBits& state) -> bool {
+            if (bounds.start_word == bounds.end_word) {
+                const u64 mask = start_mask & end_mask;
+                return (state[bounds.start_word] & mask) != mask;
             }
-            if constexpr (gpu_op != StateOp::None) {
-                const u64 prev = gpu[index];
-                const u64 next = Apply<gpu_op>(prev, mask);
-                has_effect |= (next ^ prev) & mask;
+            return (state[bounds.start_word] & start_mask) != start_mask ||
+                   (state[bounds.end_word] & end_mask) != end_mask ||
+                   (state.clear_summary & interior_mask);
+        };
+
+        if constexpr (iter_type == Type::CPU) {
+            if (any_set(cpu)) {
+                return true;
             }
-        });
-        return has_effect;
+        } else if constexpr (cpu_op == StateOp::Set) {
+            if (any_clear(cpu)) {
+                return true;
+            }
+        } else if constexpr (cpu_op == StateOp::Clear) {
+            if (any_set(cpu)) {
+                return true;
+            }
+        }
+
+        if constexpr (iter_type == Type::GPU) {
+            return any_set(gpu);
+        } else if constexpr (gpu_op == StateOp::Set) {
+            return any_clear(gpu);
+        } else if constexpr (gpu_op == StateOp::Clear) {
+            return any_set(gpu);
+        } else {
+            return false;
+        }
     }
 
     template <Type type>
