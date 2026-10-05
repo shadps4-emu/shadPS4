@@ -1278,7 +1278,7 @@ void* BuildRoomMessagePayload(CallbackPayload& p, bool a_variant, OrbisNpMatchin
     void* msg_ptr = p.room_message_data.empty() ? nullptr : p.room_message_data.data();
 
     LOG_INFO(Lib_NpMatching2,
-             "BuildRoomMessagePayload: variant={} cast={} dstN={} srcMember={} srcMid={} "
+             "variant={} cast={} dstN={} srcMember={} srcMid={} "
              "srcAccount={} srcPlatform={} msg={} msgLen={} preview=[{}]",
              a_variant ? "A" : "regular", castType, dstMembers.size(), fmt::ptr(srcMember),
              srcMember ? srcMember->member_id : 0, srcMember ? srcMember->account_id : 0,
@@ -1301,7 +1301,7 @@ void* BuildRoomMessagePayload(CallbackPayload& p, bool a_variant, OrbisNpMatchin
         info.msgLen = p.room_message_data.size();
         p.room_message_callback_data = p.room_message_info_a.get();
         LOG_INFO(Lib_NpMatching2,
-                 "BuildRoomMessagePayloadA: info={} dst={} srcMember={} msg={} "
+                 "RoomMessageInfoA: info={} dst={} srcMember={} msg={} "
                  "msgLen={} account={} platform={} onlineId='{}'",
                  fmt::ptr(&info), fmt::ptr(info.dst), fmt::ptr(&info.srcMember), fmt::ptr(info.msg),
                  info.msgLen, info.srcMember.accountId, static_cast<s32>(info.srcMember.platform),
@@ -1606,8 +1606,8 @@ void LogMemberJoinedCallbackPayload(const PendingEvent& ev) {
 void FireEvent(const PendingEvent& ev) {
     const auto& ctx = ev.context_owner;
     if (!ctx) {
-        LOG_WARNING(Lib_NpMatching2, "FireEvent type={} dropped: ctx={} not found",
-                    static_cast<int>(ev.type), ev.ctx_id);
+        LOG_WARNING(Lib_NpMatching2, "type={} dropped: ctx={} not found", static_cast<int>(ev.type),
+                    ev.ctx_id);
         return;
     }
     switch (ev.type) {
@@ -1802,8 +1802,8 @@ void TermEventDispatcher() {
 
 void ScheduleEvent(PendingEvent ev) {
     if (!ev.context_owner) {
-        LOG_WARNING(Lib_NpMatching2, "ScheduleEvent type={} dropped: ctx={} not found",
-                    static_cast<int>(ev.type), ev.ctx_id);
+        LOG_WARNING(Lib_NpMatching2, "type={} dropped: ctx={} not found", static_cast<int>(ev.type),
+                    ev.ctx_id);
         return;
     }
     auto& state = NpHandler::GetInstance().GetMatching2State();

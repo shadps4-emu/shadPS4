@@ -338,9 +338,8 @@ int PS4_SYSV_ABI sceNpMatching2SetDefaultRequestOptParam(
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
 
-    LOG_INFO(Lib_NpMatching2,
-             "SetDefaultRequestOptParam: ctx={} opt={} callback={:#x} arg={} timeout={} appId={}",
-             ctxId, fmt::ptr(requestOpt), reinterpret_cast<std::uintptr_t>(requestOpt->callback),
+    LOG_INFO(Lib_NpMatching2, "ctx={} opt={} callback={:#x} arg={} timeout={} appId={}", ctxId,
+             fmt::ptr(requestOpt), reinterpret_cast<std::uintptr_t>(requestOpt->callback),
              fmt::ptr(requestOpt->arg), requestOpt->timeout, requestOpt->appId);
 
     ctx->default_request_callback = requestOpt->callback;
