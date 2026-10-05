@@ -261,10 +261,11 @@ static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
 
 static bool FilterIntelCPU(const ZydisDecodedOperand*) {
 #if defined(__APPLE__)
-    // This fixup wouldn't be correct on Rosetta, unless if they emulate
-    // the Intel RCP behavior perfectly
-    return false;
+    // Rosetta seems to emulate the reciprocal instructions with exact Intel results
+    // so we enable our reciprocal translation there too
+    return true;
 #endif
+
     Cpu cpu;
     return cpu.has(Cpu::tINTEL);
 }
