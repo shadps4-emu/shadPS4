@@ -33,6 +33,16 @@ void EmitBarrier(EmitContext& ctx) {
                          ctx.ConstU32(static_cast<u32>(memory_semantics)));
 }
 
+void EmitSubgroupBarrier(EmitContext& ctx) {
+    // A memory barrier is enough to keep shared memory accesses in order, because the
+    // guest code expects invocations of the same wave to run in lockstep. It also works in
+    // divergent code.
+    const auto semantics{static_cast<u32>(spv::MemorySemanticsMask::AcquireRelease |
+                                          spv::MemorySemanticsMask::WorkgroupMemory)};
+    ctx.OpMemoryBarrier(ctx.ConstU32(static_cast<u32>(spv::Scope::Subgroup)),
+                        ctx.ConstU32(semantics));
+}
+
 void EmitWorkgroupMemoryBarrier(EmitContext& ctx) {
     MemoryBarrier(ctx, spv::Scope::Workgroup);
 }
