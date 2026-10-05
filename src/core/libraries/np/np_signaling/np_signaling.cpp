@@ -281,7 +281,7 @@ s32 PS4_SYSV_ABI sceNpSignalingActivateConnection(OrbisNpSignalingContextId ctxI
         SignalingMutexGuard lock;
         if (!NpHandler::GetInstance().GetSignalingState().initialized) {
             LOG_INFO(Lib_NpSignaling,
-                     "sceNpSignalingActivateConnection result: t={} ctxId={} peer='<unresolved>' "
+                     "result: t={} ctxId={} peer='<unresolved>' "
                      "rc={:#x}",
                      call_time, ctxId, ORBIS_NP_SIGNALING_ERROR_NOT_INITIALIZED);
             return ORBIS_NP_SIGNALING_ERROR_NOT_INITIALIZED;
@@ -289,7 +289,7 @@ s32 PS4_SYSV_ABI sceNpSignalingActivateConnection(OrbisNpSignalingContextId ctxI
     }
     if (!peerNpId || !outConnId) {
         LOG_INFO(Lib_NpSignaling,
-                 "sceNpSignalingActivateConnection result: t={} ctxId={} peer='<unresolved>' "
+                 "result: t={} ctxId={} peer='<unresolved>' "
                  "rc={:#x}",
                  call_time, ctxId, ORBIS_NP_SIGNALING_ERROR_INVALID_ARGUMENT);
         return ORBIS_NP_SIGNALING_ERROR_INVALID_ARGUMENT;
@@ -301,7 +301,7 @@ s32 PS4_SYSV_ABI sceNpSignalingActivateConnection(OrbisNpSignalingContextId ctxI
     if (normalize_rc != ORBIS_OK) {
         Helpers::LogInvalidActivationContext(call_time, peerNpId, outConnId, caller, frame);
         LOG_INFO(Lib_NpSignaling,
-                 "sceNpSignalingActivateConnection result: t={} ctxId={} peer='<invalid>' "
+                 "result: t={} ctxId={} peer='<invalid>' "
                  "rc={:#x}",
                  call_time, ctxId, normalize_rc);
         return normalize_rc;
@@ -311,13 +311,12 @@ s32 PS4_SYSV_ABI sceNpSignalingActivateConnection(OrbisNpSignalingContextId ctxI
     const s32 rc = SignalingHandler::ActivateSig1(ctxId, peer_npid, peer_online_id, outConnId);
     if (rc == ORBIS_OK) {
         LOG_INFO(Lib_NpSignaling,
-                 "sceNpSignalingActivateConnection result: t={} ctxId={} peer='{}' rc={:#x} "
+                 "result: t={} ctxId={} peer='{}' rc={:#x} "
                  "connId={}",
                  call_time, ctxId, peer_online_id_str, rc, *outConnId);
     } else {
-        LOG_INFO(Lib_NpSignaling,
-                 "sceNpSignalingActivateConnection result: t={} ctxId={} peer='{}' rc={:#x}",
-                 call_time, ctxId, peer_online_id_str, rc);
+        LOG_INFO(Lib_NpSignaling, "result: t={} ctxId={} peer='{}' rc={:#x}", call_time, ctxId,
+                 peer_online_id_str, rc);
     }
     return rc;
 }

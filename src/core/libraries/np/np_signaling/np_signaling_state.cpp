@@ -125,7 +125,7 @@ s32 NormalizeNpId(const void* np_id, OrbisNpId* out_npid, OrbisNpOnlineId* out_o
     if (!IsValidNpId(*out_npid)) {
         const OrbisNpOnlineId& handle = out_npid->handle;
         LOG_INFO(Lib_NpSignaling,
-                 "NormalizeNpId rejected: reason={} handle_ascii='{}' handle_hex={} term={:#04x} "
+                 "rejected: reason={} handle_ascii='{}' handle_hex={} term={:#04x} "
                  "dummy_hex={} opt_hex={} reserved_hex={} raw_hex={}",
                  OnlineIdValidationFailure(handle), PrintableOnlineId(handle),
                  HexBytes(handle.data, sizeof(handle.data)), static_cast<u8>(handle.term),

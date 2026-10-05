@@ -932,20 +932,19 @@ s32 MmSubmitRequest(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId 
         client = g_mm.client;
     }
     if (!client || !client->IsAuthenticated()) {
-        LOG_ERROR(Lib_NpMatching2, "MmSubmitRequest({}): not connected", static_cast<u16>(cmd));
+        LOG_ERROR(Lib_NpMatching2, "cmd={} not connected", static_cast<u16>(cmd));
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
 
     auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctx_id);
     if (!ctx) {
-        LOG_ERROR(Lib_NpMatching2, "MmSubmitRequest({}): invalid ctx={}", static_cast<u16>(cmd),
-                  ctx_id);
+        LOG_ERROR(Lib_NpMatching2, "cmd={} invalid ctx={}", static_cast<u16>(cmd), ctx_id);
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
     const RequestCallbackInfo request_cb = ConsumeRequestCallback(ctx);
     if (IsMatching2BackendDisabled() && !IsContextLifecycleEvent(req_event)) {
         LOG_INFO(Lib_NpMatching2,
-                 "MmSubmitRequest: matching2 backend disabled; failing ctx={} reqId={} "
+                 "matching2 backend disabled; failing ctx={} reqId={} "
                  "event={:#x} cmd={}",
                  ctx_id, req_id, static_cast<u16>(req_event), static_cast<u16>(cmd));
 
@@ -953,8 +952,7 @@ s32 MmSubmitRequest(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId 
         void* request_data = nullptr;
         std::shared_ptr<CallbackPayload> request_payload_owner;
         if (req_event == ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_WORLD_INFO_LIST) {
-            LOG_INFO(Lib_NpMatching2,
-                     "MmSubmitRequest: matching2 backend disabled; returning empty world");
+            LOG_INFO(Lib_NpMatching2, "matching2 backend disabled; returning empty world");
             shadnet::GetWorldInfoListReply reply;
             auto* world = reply.add_worlds();
             world->set_world_id(1);
@@ -985,7 +983,7 @@ s32 MmSubmitRequest(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId 
     }
 
     LOG_INFO(Lib_NpMatching2,
-             "MmSubmitRequest: ctx={} reqId={} event={:#x} cmd={} aVariant={} callback={:#x} "
+             "ctx={} reqId={} event={:#x} cmd={} aVariant={} callback={:#x} "
              "arg={}",
              ctx_id, req_id, static_cast<u16>(req_event), static_cast<u16>(cmd), a_variant,
              reinterpret_cast<std::uintptr_t>(request_cb.callback), fmt::ptr(request_cb.arg));
@@ -1015,7 +1013,7 @@ s32 MmCreateJoinRoom(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestId
     req.set_blocked_user_count(static_cast<u32>(request.blockedUsers));
     req.set_internal_bin_attr_count(static_cast<u32>(request.internalBinAttrs));
     LOG_INFO(Lib_NpMatching2,
-             "CreateJoinRoom request: ctx={} reqId={} maxSlot={} world={} lobby={} flags={:#x} "
+             "ctx={} reqId={} maxSlot={} world={} lobby={} flags={:#x} "
              "internalBin={} searchInt={} searchBin={} extBin={} memberBin={}",
              ctx_id, req_id, request.maxSlot, request.worldId, request.lobbyId, request.flags,
              request.internalBinAttrs, request.externalSearchIntAttrs,
@@ -1079,7 +1077,7 @@ s32 MmCreateJoinRoomA(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2RequestI
     req.set_blocked_user_count(static_cast<u32>(request.blockedUsers));
     req.set_internal_bin_attr_count(static_cast<u32>(request.internalBinAttrs));
     LOG_INFO(Lib_NpMatching2,
-             "CreateJoinRoomA request: ctx={} reqId={} maxSlot={} world={} lobby={} flags={:#x} "
+             "ctx={} reqId={} maxSlot={} world={} lobby={} flags={:#x} "
              "internalBin={} searchInt={} searchBin={} extBin={} memberBin={}",
              ctx_id, req_id, request.maxSlot, request.worldId, request.lobbyId, request.flags,
              request.internalBinAttrs, request.externalSearchIntAttrs,
@@ -1336,7 +1334,7 @@ s32 MmSetRoomDataInternal(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2Requ
     req.set_flag_filter(request.flagFilter);
     req.set_flag_attr(request.flagAttr);
     LOG_INFO(Lib_NpMatching2,
-             "SetRoomDataInternal request: ctx={} reqId={} room={} flags={:#x}/{:#x} binAttrs={} "
+             "ctx={} reqId={} room={} flags={:#x}/{:#x} binAttrs={} "
              "passwdMask={}",
              ctx_id, req_id, request.roomId, request.flagFilter, request.flagAttr,
              request.roomBinAttrInternalNum, fmt::ptr(request.passwordSlotMask));
@@ -1362,7 +1360,7 @@ s32 MmSetRoomMemberDataInternal(OrbisNpMatching2ContextId ctx_id, OrbisNpMatchin
     req.set_flag_filter(request.flagFilter);
     req.set_flag_attr(request.flagAttr);
     LOG_INFO(Lib_NpMatching2,
-             "SetRoomMemberDataInternal request: ctx={} reqId={} room={} member={} team={} "
+             "ctx={} reqId={} room={} member={} team={} "
              "flags={:#x}/{:#x} binAttrs={}",
              ctx_id, req_id, request.roomId, request.memberId, request.teamId, request.flagFilter,
              request.flagAttr, request.roomMemberBinAttrInternalNum);
@@ -1381,7 +1379,7 @@ s32 MmSetRoomDataExternal(OrbisNpMatching2ContextId ctx_id, OrbisNpMatching2Requ
     req.set_req_id(req_id);
     req.set_room_id(request.roomId);
     LOG_INFO(Lib_NpMatching2,
-             "SetRoomDataExternal request: ctx={} reqId={} room={} searchInt={} searchBin={} "
+             "ctx={} reqId={} room={} searchInt={} searchBin={} "
              "extBin={}",
              ctx_id, req_id, request.roomId, request.roomSearchableIntAttrExternalNum,
              request.roomSearchableBinAttrExternalNum, request.roomBinAttrExternalNum);
@@ -1481,10 +1479,8 @@ bool RequestSignalingInfos(std::string_view target_online_id, u32* out_addr, u16
     }
     *out_addr = addr_nbo;
     *out_port = Libraries::Net::sceNetHtons(port_host);
-    LOG_INFO(
-        Lib_NpMatching2,
-        "RequestSignalingInfos: received peer='{}' ip={} port={} addr_nbo={:#x} port_nbo={:#x}",
-        target_online_id, addr_str, port_host, addr_nbo, *out_port);
+    LOG_INFO(Lib_NpMatching2, "received peer='{}' ip={} port={} addr_nbo={:#x} port_nbo={:#x}",
+             target_online_id, addr_str, port_host, addr_nbo, *out_port);
     return true;
 }
 
