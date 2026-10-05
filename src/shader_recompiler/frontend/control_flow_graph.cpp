@@ -192,7 +192,7 @@ void CFG::SplitDivergenceScopes() {
             if ((is_close || index == blk->end_index) && curr_begin != -1) {
                 // If there are no instructions inside scope don't do anything.
                 if (index - curr_begin == 1 && is_close) {
-                    curr_begin = -1;
+                    curr_begin = is_open_scope(inst) ? static_cast<s32>(index) : -1;
                     continue;
                 }
                 // If all instructions in the scope ignore exec masking, we shouldn't insert a
