@@ -572,8 +572,10 @@ void Translator::V_CNDMASK_B32(const GcnInst& inst) {
     } else {
         mask = GetSrc64(inst.src[2]);
     }
-    const IR::Value result = ir.Select(ir.InverseBallot(mask), GetSrc<IR::F32>(inst.src[1]),
-                                       GetSrc<IR::F32>(inst.src[0]));
+    // V_CNDMASK_B32 works with raw bits. If we use F32, small integer values like 1
+    // become denormal floats and can be flushed to zero by DenormFlushToZero.
+    const IR::Value result = ir.Select(ir.InverseBallot(mask), GetSrc<IR::U32>(inst.src[1]),
+                                       GetSrc<IR::U32>(inst.src[0]));
     SetDst(inst.dst[0], IR::U32F32{result});
 }
 
