@@ -124,7 +124,8 @@ TEST_F(NetKernel, SocketPair) {
 
 TEST_F(NetKernel, EpollsAndResolversCloseToo) {
     const int ep = sceNetEpollCreate("ep", 0);
-    const int rid = sceNetResolverCreate("rid", 0, 0);
+    const s32 pool = sceNetPoolCreate("pool", 16 * 1024, 0);
+    const int rid = sceNetResolverCreate("rid", pool, 0);
     ASSERT_GE(ep, 3);
     ASSERT_GE(rid, 3);
     EXPECT_NE(FDTable::Instance()->GetFile(ep), nullptr);
@@ -141,6 +142,7 @@ TEST_F(NetKernel, EpollsAndResolversCloseToo) {
     EXPECT_EQ(FDTable::Instance()->GetFile(ep), nullptr);
     EXPECT_EQ(FDTable::Instance()->GetFile(rid), nullptr);
     EXPECT_EQ(sceNetResolverDestroy(rid), ORBIS_NET_ERROR_EBADF);
+    EXPECT_EQ(sceNetPoolDestroy(pool), ORBIS_OK); // close() gave the pool back
 }
 
 TEST_F(NetKernel, P2PPortComesFromTheSettings) {

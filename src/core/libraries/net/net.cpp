@@ -69,6 +69,18 @@ Pool* FindPool(s32 memid) {
     return &g_pools[index];
 }
 
+s32 CheckPoolId(s32 memid, const std::source_location where = std::source_location::current()) {
+    if (memid == 0) {
+        return ORBIS_NET_EINVAL;
+    }
+    std::scoped_lock lock{g_pools_mutex};
+    if (FindPool(memid) == nullptr) {
+        LOG_ERROR(Lib_Net, "{}: unknown memory pool id {}", where.function_name(), memid);
+        return ORBIS_NET_EBADF;
+    }
+    return 0;
+}
+
 bool IsEpoll(OrbisNetId id) {
     return Core::Net::GetObjectKind(id) == Core::Net::NetObjectKind::Epoll;
 }
@@ -2077,23 +2089,39 @@ s32 PS4_SYSV_ABI sceNetResolverConnectDestroy() {
     return ResolverReturn(ORBIS_NET_ERROR_RESOLVER_ENOSUPPORT);
 }
 
+void ReleaseResolverPool(OrbisNetId rid) {
+    std::scoped_lock lock{g_pools_mutex};
+    if (const auto it = g_resolver_pools.find(rid); it != g_resolver_pools.end()) {
+        if (Pool* pool = FindPool(it->second)) {
+            --pool->users;
+        }
+        g_resolver_pools.erase(it);
+    }
+}
+
 OrbisNetId PS4_SYSV_ABI sceNetResolverCreate(const char* name, s32 poolid, s32 flags) {
     LOG_INFO(Lib_Net, "name = {}, poolid = {}, flags = {:#x}", name != nullptr ? name : "", poolid,
              flags);
     if (flags != 0) {
         return SetErrno(ORBIS_NET_EINVAL);
     }
+    if (name != nullptr &&
+        strnlen(name, ORBIS_NET_DEBUG_NAME_LEN_MAX + 1) > ORBIS_NET_DEBUG_NAME_LEN_MAX) {
+        return SetErrno(ORBIS_NET_ENAMETOOLONG);
+    }
+    std::scoped_lock lock{g_pools_mutex};
+    Pool* pool = FindPool(poolid);
+    if (pool == nullptr) {
+        LOG_ERROR(Lib_Net, "unknown memory pool id {}", poolid);
+        return SetErrno(ORBIS_NET_EBADF);
+    }
     const s32 id = CreateResolver(name != nullptr ? name : "");
     if (id < 0) {
         return SetErrno(-id);
     }
     // The resolver holds its pool until destroyed.
-    // TODO: unknown memory ids are accepted instead of rejected.
-    std::scoped_lock lock{g_pools_mutex};
-    if (Pool* pool = FindPool(poolid)) {
-        ++pool->users;
-        g_resolver_pools[id] = poolid;
-    }
+    ++pool->users;
+    g_resolver_pools[id] = poolid;
     return id;
 }
 
@@ -2103,13 +2131,7 @@ s32 PS4_SYSV_ABI sceNetResolverDestroy(OrbisNetId rid) {
     if (e != 0) {
         return SetErrno(e);
     }
-    std::scoped_lock lock{g_pools_mutex};
-    if (const auto it = g_resolver_pools.find(rid); it != g_resolver_pools.end()) {
-        if (Pool* pool = FindPool(it->second)) {
-            --pool->users;
-        }
-        g_resolver_pools.erase(it);
-    }
+    ReleaseResolverPool(rid);
     return ORBIS_OK;
 }
 
@@ -2538,8 +2560,11 @@ s32 PS4_SYSV_ABI sceNetShowIfconfigForBuffer() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNetShowIfconfigWithMemory() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNetShowIfconfigWithMemory(s32 memid) {
+    if (const s32 e = CheckPoolId(memid); e != 0) {
+        return SetErrno(e);
+    }
+    LOG_ERROR(Lib_Net, "(STUBBED) called, memid = {}", memid);
     return ORBIS_OK;
 }
 
@@ -2563,8 +2588,11 @@ s32 PS4_SYSV_ABI sceNetShowNetstatForBuffer() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNetShowNetstatWithMemory() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNetShowNetstatWithMemory(s32 memid) {
+    if (const s32 e = CheckPoolId(memid); e != 0) {
+        return SetErrno(e);
+    }
+    LOG_ERROR(Lib_Net, "(STUBBED) called, memid = {}", memid);
     return ORBIS_OK;
 }
 
@@ -2573,8 +2601,11 @@ s32 PS4_SYSV_ABI sceNetShowPolicy() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNetShowPolicyWithMemory() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNetShowPolicyWithMemory(s32 memid) {
+    if (const s32 e = CheckPoolId(memid); e != 0) {
+        return SetErrno(e);
+    }
+    LOG_ERROR(Lib_Net, "(STUBBED) called, memid = {}", memid);
     return ORBIS_OK;
 }
 
@@ -2593,8 +2624,11 @@ s32 PS4_SYSV_ABI sceNetShowRoute6ForBuffer() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNetShowRoute6WithMemory() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNetShowRoute6WithMemory(s32 memid) {
+    if (const s32 e = CheckPoolId(memid); e != 0) {
+        return SetErrno(e);
+    }
+    LOG_ERROR(Lib_Net, "(STUBBED) called, memid = {}", memid);
     return ORBIS_OK;
 }
 
@@ -2603,8 +2637,11 @@ s32 PS4_SYSV_ABI sceNetShowRouteForBuffer() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNetShowRouteWithMemory() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNetShowRouteWithMemory(s32 memid) {
+    if (const s32 e = CheckPoolId(memid); e != 0) {
+        return SetErrno(e);
+    }
+    LOG_ERROR(Lib_Net, "(STUBBED) called, memid = {}", memid);
     return ORBIS_OK;
 }
 

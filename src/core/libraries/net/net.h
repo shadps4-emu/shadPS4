@@ -206,20 +206,20 @@ s32 PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, s32 level, s32 optname, const vo
                                   u32 optlen);
 s32 PS4_SYSV_ABI sceNetShowIfconfig();
 s32 PS4_SYSV_ABI sceNetShowIfconfigForBuffer();
-s32 PS4_SYSV_ABI sceNetShowIfconfigWithMemory();
+s32 PS4_SYSV_ABI sceNetShowIfconfigWithMemory(s32 memid);
 s32 PS4_SYSV_ABI sceNetShowNetstat();
 s32 PS4_SYSV_ABI sceNetShowNetstatEx();
 s32 PS4_SYSV_ABI sceNetShowNetstatExForBuffer();
 s32 PS4_SYSV_ABI sceNetShowNetstatForBuffer();
-s32 PS4_SYSV_ABI sceNetShowNetstatWithMemory();
+s32 PS4_SYSV_ABI sceNetShowNetstatWithMemory(s32 memid);
 s32 PS4_SYSV_ABI sceNetShowPolicy();
-s32 PS4_SYSV_ABI sceNetShowPolicyWithMemory();
+s32 PS4_SYSV_ABI sceNetShowPolicyWithMemory(s32 memid);
 s32 PS4_SYSV_ABI sceNetShowRoute();
 s32 PS4_SYSV_ABI sceNetShowRoute6();
 s32 PS4_SYSV_ABI sceNetShowRoute6ForBuffer();
-s32 PS4_SYSV_ABI sceNetShowRoute6WithMemory();
+s32 PS4_SYSV_ABI sceNetShowRoute6WithMemory(s32 memid);
 s32 PS4_SYSV_ABI sceNetShowRouteForBuffer();
-s32 PS4_SYSV_ABI sceNetShowRouteWithMemory();
+s32 PS4_SYSV_ABI sceNetShowRouteWithMemory(s32 memid);
 s32 PS4_SYSV_ABI sceNetShutdown(OrbisNetId s, s32 how);
 OrbisNetId PS4_SYSV_ABI sceNetSocket(const char* name, s32 family, s32 type, s32 protocol);
 s32 PS4_SYSV_ABI sceNetSocketAbort(OrbisNetId s, s32 flags);
@@ -242,15 +242,14 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym);
 struct SystemHooks {
     std::function<bool()> is_online;
     std::function<bool(std::array<u8, 6>* mac)> mac_address;
-
-    // P2P hooks are called with no lock held, so they may call back into this library.
-    std::function<u16()> p2p_port;                   // read on each start, overrides ConfigureP2P
-    std::function<void(u16 bound_port)> p2p_started; // e.g. UPnP port forward
+    std::function<u16()> p2p_port;
+    std::function<void(u16 bound_port)> p2p_started;
     std::function<void(u16 bound_port)> p2p_stopped;
-    std::function<u32()> public_addr; // network byte order
+    std::function<u32()> public_addr;
 };
 void SetSystemHooks(SystemHooks hooks);
 SystemHooks GetSystemHooks();
 void SetKernelErrnoHook(void (*hook)(int orbis_errno));
+void ReleaseResolverPool(OrbisNetId rid);
 
 } // namespace Libraries::Net

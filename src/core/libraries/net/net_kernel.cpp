@@ -138,7 +138,11 @@ s32 KernelClose(s32 fd) {
     }
     if (*kind == Core::Net::NetObjectKind::External) {
         const int e = DestroyResolver(fd);
-        return e == 0 ? 0 : PosixError(e);
+        if (e != 0) {
+            return PosixError(e);
+        }
+        ReleaseResolverPool(fd);
+        return 0;
     }
     const auto r = Core::Net::CloseObject(fd);
     if (r.error == Error::Ok && *kind == Core::Net::NetObjectKind::Socket) {

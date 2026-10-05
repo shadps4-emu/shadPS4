@@ -89,6 +89,12 @@ protected:
     static s32 SetInt(OrbisNetId s, s32 level, s32 name, s32 value) {
         return sceNetSetsockopt(s, level, name, &value, sizeof(value));
     }
+    struct ScopedPool {
+        s32 id = sceNetPoolCreate("pool", 16 * 1024, 0);
+        ~ScopedPool() {
+            EXPECT_EQ(sceNetPoolDestroy(id), ORBIS_OK);
+        }
+    };
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -933,7 +939,8 @@ TEST_F(NetLib, EpollReportsAbortedSocketsAsHangup) {
 }
 
 TEST_F(NetLib, ResolverNeedsEpollInToBeReported) {
-    const OrbisNetId rid = sceNetResolverCreate("resolver", 0, 0);
+    ScopedPool pool;
+    const OrbisNetId rid = sceNetResolverCreate("resolver", pool.id, 0);
     const OrbisNetId ep = sceNetEpollCreate("ep", 0);
     OrbisNetEpollEvent ev{};
     ev.events = ORBIS_NET_EPOLLOUT; // ignored for a resolver: nothing is waited for
@@ -1066,9 +1073,17 @@ TEST_F(NetLib, SockInfoDescribesSockets) {
 }
 
 TEST_F(NetLib, ResolverLooksUpNames) {
-    const OrbisNetId rid = sceNetResolverCreate("resolver", 0, 0);
+    ScopedPool pool;
+    const OrbisNetId rid = sceNetResolverCreate("resolver", pool.id, 0);
     ASSERT_GT(rid, 0);
-    EXPECT_EQ(sceNetResolverCreate("bad", 0, 1), ORBIS_NET_ERROR_EINVAL);
+    EXPECT_EQ(sceNetResolverCreate("bad", pool.id, 1), ORBIS_NET_ERROR_EINVAL);
+    EXPECT_EQ(sceNetResolverCreate("bad", 0, 0), ORBIS_NET_ERROR_EBADF);
+    EXPECT_EQ(sceNetResolverCreate("bad", 3099, 0), ORBIS_NET_ERROR_EBADF);
+    EXPECT_EQ(sceNetResolverCreate("0123456789abcdef0123456789abcdef", pool.id, 0),
+              ORBIS_NET_ERROR_ENAMETOOLONG);
+    EXPECT_EQ(sceNetShowRouteWithMemory(0), ORBIS_NET_ERROR_EINVAL);
+    EXPECT_EQ(sceNetShowRouteWithMemory(3099), ORBIS_NET_ERROR_EBADF);
+    EXPECT_EQ(sceNetShowRouteWithMemory(pool.id), ORBIS_OK);
 
     // Synchronous: a numeric address needs no DNS.
     OrbisNetInAddr addr{};
@@ -1291,7 +1306,8 @@ TEST_F(NetLib, DnsInfoOverride) {
 }
 
 TEST_F(NetLib, ResolverReverseLookupAndPreservedAbort) {
-    const OrbisNetId rid = sceNetResolverCreate("aton", 0, 0);
+    ScopedPool pool;
+    const OrbisNetId rid = sceNetResolverCreate("aton", pool.id, 0);
     ASSERT_GT(rid, 0);
     // A preserved abort fails the next lookup of its kind only.
     EXPECT_EQ(sceNetResolverAbort(rid, ORBIS_NET_RESOLVER_ABORT_FLAG_ATON_PRESERVATION), ORBIS_OK);
