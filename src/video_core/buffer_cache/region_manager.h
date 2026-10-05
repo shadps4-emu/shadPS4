@@ -28,8 +28,8 @@ public:
     explicit RegionManager(PageManager* tracker_, VAddr cpu_addr_)
         : tracker{tracker_}, cpu_addr{cpu_addr_},
           readbacks_mode{EmulatorSettings.GetReadbacksMode()} {
-        cpu.Fill(~0ULL);
-        gpu.Fill(0ULL);
+        cpu.Fill(true);
+        gpu.Fill(false);
     }
     explicit RegionManager() = default;
 
@@ -82,24 +82,30 @@ public:
 
     template <StateOp cpu_op, StateOp gpu_op, bool locked = true>
     void ChangeRegionState(u64 offset, u64 size) {
+        auto bounds = GetBounds(offset, size);
+        if (!HasEffect<cpu_op, gpu_op>(bounds)) {
+            return;
+        }
+        bool update_watchers{};
         RegionBits write_prot;
         RegionBits read_prot;
-        auto bounds = GetBounds(offset, size);
-        Bounds watcher_bounds;
+        Bounds watcher_bounds = MIN_BOUNDS;
         if constexpr (locked) {
             mutex.lock();
         }
         IterateWords(bounds, [&](u64 index, u64 mask) {
-            UpdateStateAndProtection<cpu_op, gpu_op>(write_prot, read_prot, index, mask);
+            update_watchers |= UpdateProtection<cpu_op, gpu_op>(write_prot, read_prot,
+                                                                watcher_bounds, index, mask);
         });
         const auto write_op = GetPageOp<Type::CPU>(cpu_op);
         const auto read_op = GetPageOp<Type::GPU>(gpu_op);
-        const bool update_watchers = write_op != PageOp::None || read_op != PageOp::None;
-        if (update_watchers &&
-            GetWatcherBounds<cpu_op, gpu_op>(bounds, write_prot, read_prot, watcher_bounds)) {
+        update_watchers &= write_op != PageOp::None || read_op != PageOp::None;
+        if (update_watchers) {
             tracker->UpdatePageWatchersForRegion(cpu_addr, watcher_bounds, write_prot, read_prot,
                                                  write_op, read_op);
         }
+        IterateWords(bounds,
+                     [&](u64 index, u64 mask) { UpdateState<cpu_op, gpu_op>(index, mask); });
         if constexpr (locked) {
             mutex.unlock();
         }
@@ -107,20 +113,25 @@ public:
 
     template <Type type, StateOp cpu_op, StateOp gpu_op, bool locked = true>
     void ForEachModifiedRange(u64 offset, s64 size, auto&& func) {
+        auto bounds = GetBounds(offset, size);
+        if (!HasEffect<cpu_op, gpu_op, type>(bounds)) {
+            return;
+        }
         auto& state = GetRegionBits<type>();
+        bool update_watchers{};
         RegionBits write_prot;
         RegionBits read_prot;
         u64 start_page{};
         u64 end_page{};
-        auto bounds = GetBounds(offset, size);
-        Bounds watcher_bounds;
+        Bounds watcher_bounds = MIN_BOUNDS;
         if constexpr (locked) {
             mutex.lock();
         }
         IterateWords(bounds, [&](u64 index, u64 mask) {
             const u64 base_page = index * PAGES_PER_WORD;
             const u64 word = state[index] & mask;
-            UpdateStateAndProtection<cpu_op, gpu_op>(write_prot, read_prot, index, mask);
+            update_watchers |= UpdateProtection<cpu_op, gpu_op>(write_prot, read_prot,
+                                                                watcher_bounds, index, mask);
             IteratePages(word, [&](u64 pages_offset, u64 pages_size) {
                 if (end_page == base_page + pages_offset) {
                     end_page += pages_size;
@@ -139,12 +150,13 @@ public:
         }
         const auto write_op = GetPageOp<Type::CPU>(cpu_op);
         const auto read_op = GetPageOp<Type::GPU>(gpu_op);
-        const bool update_watchers = write_op != PageOp::None || read_op != PageOp::None;
-        if (update_watchers &&
-            GetWatcherBounds<cpu_op, gpu_op>(bounds, write_prot, read_prot, watcher_bounds)) {
+        update_watchers &= write_op != PageOp::None || read_op != PageOp::None;
+        if (update_watchers) {
             tracker->UpdatePageWatchersForRegion(cpu_addr, watcher_bounds, write_prot, read_prot,
                                                  write_op, read_op);
         }
+        IterateWords(bounds,
+                     [&](u64 index, u64 mask) { UpdateState<cpu_op, gpu_op>(index, mask); });
         if constexpr (locked) {
             mutex.unlock();
         }
@@ -152,7 +164,7 @@ public:
 
     template <Type type>
     bool IsRegionModified(u64 offset, u64 size) noexcept {
-        auto& state = GetRegionBits<type>();
+        const auto& state = GetRegionBits<type>();
         const auto [start_word, start_page, end_word, end_page] = GetBounds(offset, size);
         const auto [start_mask, end_mask] = GetMasks(start_page, end_page);
         if (start_word == end_word) [[likely]] {
@@ -179,62 +191,113 @@ public:
     }
 
 private:
-    template <StateOp cpu_op, StateOp gpu_op>
-    void UpdateStateAndProtection(RegionBits& write_prot, RegionBits& read_prot, u64 index,
-                                  u64 mask) {
-        if constexpr (cpu_op != StateOp::None) {
-            const u64 prev = cpu[index];
-            if constexpr (cpu_op == StateOp::Clear) {
-                cpu[index] &= ~mask;
-            } else {
-                cpu[index] |= mask;
-            }
-            write_prot[index] = (cpu[index] ^ prev) & mask;
-        }
-        if constexpr (gpu_op != StateOp::None) {
-            const u64 prev = gpu[index];
-            if constexpr (gpu_op == StateOp::Clear) {
-                gpu[index] &= ~mask;
-            } else {
-                gpu[index] |= mask;
-            }
-            read_prot[index] = (gpu[index] ^ prev) & mask;
+    template <StateOp op>
+    constexpr static u64 Apply(u64 word, u64 mask) {
+        if constexpr (op == StateOp::Clear) {
+            return word &= ~mask;
+        } else if constexpr (op == StateOp::Set) {
+            return word |= mask;
+        } else {
+            static_assert(false);
         }
     }
 
     template <StateOp cpu_op, StateOp gpu_op>
-    static bool GetWatcherBounds(const Bounds& bounds, RegionBits& write_prot,
-                                 RegionBits& read_prot, Bounds& watcher_bounds) {
-        const auto prot = [&](u64 index) {
-            u64 word{};
-            if constexpr (cpu_op != StateOp::None) {
-                word |= write_prot[index];
-            }
-            if constexpr (gpu_op != StateOp::None) {
-                word |= read_prot[index];
-            }
-            return word;
-        };
-        u64 start_word = bounds.start_word;
-        while (prot(start_word) == 0) {
-            if (start_word == bounds.end_word) {
-                return false;
-            }
-            ++start_word;
+    constexpr bool UpdateProtection(RegionBits& write_prot, RegionBits& read_prot, Bounds& bounds,
+                                    u64 index, u64 mask) {
+        u64 prot_word = 0;
+        if constexpr (cpu_op != StateOp::None) {
+            const u64 prev = cpu[index];
+            const u64 next = Apply<cpu_op>(prev, mask);
+            write_prot[index] = (next ^ prev) & mask;
+            prot_word |= write_prot[index];
         }
-        u64 end_word = bounds.end_word;
-        while (prot(end_word) == 0) {
-            --end_word;
+        if constexpr (gpu_op != StateOp::None) {
+            const u64 prev = gpu[index];
+            const u64 next = Apply<gpu_op>(prev, mask);
+            read_prot[index] = (next ^ prev) & mask;
+            prot_word |= read_prot[index];
         }
-        const u64 start_prot = prot(start_word);
-        const u64 end_prot = prot(end_word);
-        watcher_bounds = Bounds{
-            .start_word = start_word,
-            .start_page = static_cast<u64>(std::countr_zero(start_prot)),
-            .end_word = end_word,
-            .end_page = PAGES_PER_WORD - std::countl_zero(end_prot) - 1,
+        if (prot_word) {
+            if (index <= bounds.start_word) {
+                bounds.start_word = index;
+                bounds.start_page = std::countr_zero(prot_word);
+            }
+            if (index >= bounds.end_word) {
+                bounds.end_word = index;
+                bounds.end_page = PAGES_PER_WORD - std::countl_zero(prot_word) - 1;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    template <StateOp cpu_op, StateOp gpu_op>
+    constexpr void UpdateState(u64 index, u64 mask) {
+        const u64 summary_bit = u64{1} << index;
+        if constexpr (cpu_op != StateOp::None) {
+            cpu[index] = Apply<cpu_op>(cpu[index], mask);
+            cpu.set_summary =
+                cpu[index] ? (cpu.set_summary | summary_bit) : (cpu.set_summary & ~summary_bit);
+            cpu.clear_summary = cpu[index] != ~u64{0} ? (cpu.clear_summary | summary_bit)
+                                                      : (cpu.clear_summary & ~summary_bit);
+        }
+        if constexpr (gpu_op != StateOp::None) {
+            gpu[index] = Apply<gpu_op>(gpu[index], mask);
+            gpu.set_summary =
+                gpu[index] ? (gpu.set_summary | summary_bit) : (gpu.set_summary & ~summary_bit);
+            gpu.clear_summary = gpu[index] != ~u64{0} ? (gpu.clear_summary | summary_bit)
+                                                      : (gpu.clear_summary & ~summary_bit);
+        }
+    }
+
+    template <StateOp cpu_op, StateOp gpu_op, Type iter_type = Type::None>
+    constexpr bool HasEffect(const Bounds& bounds) const noexcept {
+        const auto [start_mask, end_mask] = GetMasks(bounds.start_page, bounds.end_page);
+        const u64 interior_mask = (u64{1} << bounds.end_word) - (u64{2} << bounds.start_word);
+
+        const auto any_set = [&](const RegionBits& state) -> bool {
+            if (bounds.start_word == bounds.end_word) {
+                const u64 mask = start_mask & end_mask;
+                return state[bounds.start_word] & mask;
+            }
+            return (state[bounds.start_word] & start_mask) || (state[bounds.end_word] & end_mask) ||
+                   (state.set_summary & interior_mask);
         };
-        return true;
+
+        const auto any_clear = [&](const RegionBits& state) -> bool {
+            if (bounds.start_word == bounds.end_word) {
+                const u64 mask = start_mask & end_mask;
+                return (state[bounds.start_word] & mask) != mask;
+            }
+            return (state[bounds.start_word] & start_mask) != start_mask ||
+                   (state[bounds.end_word] & end_mask) != end_mask ||
+                   (state.clear_summary & interior_mask);
+        };
+
+        if constexpr (iter_type == Type::CPU) {
+            if (any_set(cpu)) {
+                return true;
+            }
+        } else if constexpr (cpu_op == StateOp::Set) {
+            if (any_clear(cpu)) {
+                return true;
+            }
+        } else if constexpr (cpu_op == StateOp::Clear) {
+            if (any_set(cpu)) {
+                return true;
+            }
+        }
+
+        if constexpr (iter_type == Type::GPU) {
+            return any_set(gpu);
+        } else if constexpr (gpu_op == StateOp::Set) {
+            return any_clear(gpu);
+        } else if constexpr (gpu_op == StateOp::Clear) {
+            return any_set(gpu);
+        } else {
+            return false;
+        }
     }
 
     template <Type type>

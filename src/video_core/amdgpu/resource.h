@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/bit_field.h"
