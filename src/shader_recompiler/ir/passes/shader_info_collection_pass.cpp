@@ -43,6 +43,7 @@ void Visit(Info& info, const IR::Inst& inst) {
             info.dynamically_accesses_tess_factors = true;
             LOG_WARNING(Render_Recompiler, "Shader dynamically indexes tess factors");
         }
+        break;
     }
     case IR::Opcode::GetPatch: {
         const auto patch = inst.Arg(0).Patch();
