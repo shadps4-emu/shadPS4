@@ -212,6 +212,17 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
             task.handle.destroy();
             break;
         }
+        case PM4ItOpcode::Rewind: {
+            if (!rasterizer) {
+                break;
+            }
+            LOG_TRACE(Render, "CE Rewind packet encountered");
+            const auto* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
+            while (!rewind->Valid()) {
+                YIELD_CE();
+            }
+            break;
+        }
         default:
             const u32 count = header->type3.NumWords();
             UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
