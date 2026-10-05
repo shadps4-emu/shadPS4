@@ -222,10 +222,6 @@ const OptionRule* FindOptionRule(s32 level, s32 name) {
     return nullptr;
 }
 
-bool IsLenientOptionLevel(s32) {
-    return false;
-}
-
 s32 StoredOption(OrbisNetId s, s32 level, s32 name, const Core::Net::SocketInfo& info) {
     Core::Net::SocketAttributes attributes;
     Core::Net::SocketGetAttributes(s, &attributes);
@@ -1566,9 +1562,6 @@ static s32 sceNetGetsockoptImpl(OrbisNetId s, s32 level, s32 optname, void* optv
 
     const OptionRule* rule = FindOptionRule(level, optname);
     if (rule == nullptr) {
-        if (!IsLenientOptionLevel(level)) {
-            return SetErrno(ORBIS_NET_ENOPROTOOPT);
-        }
         LOG_WARNING(Lib_Net, "unknown option level = {:#x}, optname = {:#x} reads as 0", level,
                     optname);
         return write_int(0);
@@ -1909,7 +1902,6 @@ u16 PS4_SYSV_ABI sceNetNtohs(u16 net16) {
     return ToBigEndian(net16);
 }
 
-// Pool create/destroy return error codes without setting errno.
 s32 PS4_SYSV_ABI sceNetPoolCreate(const char* name, s32 size, s32 flags) {
     LOG_INFO(Lib_Net, "name = {}, size = {}, flags = {:#x}", name != nullptr ? name : "", size,
              flags);

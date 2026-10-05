@@ -1,13 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// Resolver ids share the net id space, so they count toward the 128 socket limit and can be
-// closed with close(). A finished async lookup shows up in epoll as ORBIS_NET_EPOLLDESCID.
-//
-// Lookups use host getaddrinfo (IPv4 only). It can't be cancelled or timed out, so async
-// lookups get their own thread and an abort just discards the result.
-// TODO: guest timeout and retry counts are ignored.
-
 #pragma once
 
 #include <functional>

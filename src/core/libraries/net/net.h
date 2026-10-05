@@ -239,9 +239,6 @@ s32 PS4_SYSV_ABI sceNetEmulationSet();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 
-// Emulator-side setup, not exported. Net ids are kernel fds on the PS4, see net_kernel.h.
-
-// Unset hooks fall back to defaults (online, zero MAC). The unit tests rely on that.
 struct SystemHooks {
     std::function<bool()> is_online;
     std::function<bool(std::array<u8, 6>* mac)> mac_address;

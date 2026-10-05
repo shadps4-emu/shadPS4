@@ -755,7 +755,6 @@ NetResult SocketAccept(s32 id, sockaddr* addr, socklen_t* len) {
         return NetResult::Fail(Error::Inval); // use P2PSocketAccept
     }
     Host::NativeSocket client = Host::InvalidSocket;
-    // Accept uses SO_ACCEPTTIMEO, not SO_RCVTIMEO.
     const NetResult r = RunBlocking(
         *s, Side::Recv, Host::Readable, SocketDeadline(s->accept_timeout_us), !s->nonblocking, [&] {
             Error e;
@@ -766,7 +765,6 @@ NetResult SocketAccept(s32 id, sockaddr* addr, socklen_t* len) {
         return r;
     }
     auto c = std::make_shared<GuestSocket>(client, s->type, g_next_generation.fetch_add(1));
-    // FreeBSD inherits O_NONBLOCK, timeouts and socket options from the listener (not Linux).
     c->nonblocking = s->nonblocking.load();
     c->reuse_addr = s->reuse_addr.load();
     c->reuse_port = s->reuse_port.load();
