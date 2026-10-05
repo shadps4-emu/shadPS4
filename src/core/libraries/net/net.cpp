@@ -2326,9 +2326,6 @@ s32 PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, s32 level, s32 optname, const vo
 
     const OptionRule* rule = FindOptionRule(level, optname);
     if (rule == nullptr) {
-        if (!IsLenientOptionLevel(level)) {
-            return SetErrno(ORBIS_NET_ENOPROTOOPT);
-        }
         LOG_WARNING(Lib_Net, "unknown option level = {:#x}, optname = {:#x} ignored", level,
                     optname);
         return ORBIS_OK;
