@@ -245,7 +245,6 @@ s32 StoredOption(OrbisNetId s, s32 level, s32 name, const Core::Net::SocketInfo&
     return 0;
 }
 
-// FreeBSD timeval on the PS4: two 8-byte fields.
 struct OrbisTimeval {
     s64 tv_sec;
     s64 tv_usec;
@@ -273,7 +272,6 @@ s32 WriteTimeval(s64 microseconds, void* optval, u32* optlen) {
     return ORBIS_OK;
 }
 
-// Each host OS spells IP_DONTFRAG differently. Returns 0 or the guest errno.
 int SetHostDontFragment(OrbisNetId s, bool enable) {
 #if defined(_WIN32)
     const DWORD value = enable ? 1 : 0;
@@ -295,7 +293,6 @@ int SetHostDontFragment(OrbisNetId s, bool enable) {
     return r.error == Error::Ok ? 0 : ToOrbisErrno(r.error);
 }
 
-// P2P SO_LINGER: on/off is stored under the option, seconds under this key.
 constexpr s32 LingerSecondsKey = -ORBIS_NET_SO_LINGER;
 
 bool IsBound(OrbisNetId s) {
@@ -1562,9 +1559,7 @@ static s32 sceNetGetsockoptImpl(OrbisNetId s, s32 level, s32 optname, void* optv
 
     const OptionRule* rule = FindOptionRule(level, optname);
     if (rule == nullptr) {
-        LOG_WARNING(Lib_Net, "unknown option level = {:#x}, optname = {:#x} reads as 0", level,
-                    optname);
-        return write_int(0);
+        LOG_ERROR(Lib_Net, "unknown option level = {:#x}, optname = {:#x}", level, optname);
     }
     if (!rule->get) {
         return SetErrno(ORBIS_NET_ENOPROTOOPT);
@@ -2326,15 +2321,11 @@ s32 PS4_SYSV_ABI sceNetSetsockopt(OrbisNetId s, s32 level, s32 optname, const vo
 
     const OptionRule* rule = FindOptionRule(level, optname);
     if (rule == nullptr) {
-        LOG_WARNING(Lib_Net, "unknown option level = {:#x}, optname = {:#x} ignored", level,
-                    optname);
-        return ORBIS_OK;
+        LOG_ERROR(Lib_Net, "unknown option level = {:#x}, optname = {:#x}", level, optname);
     }
     if (!rule->set) {
         return SetErrno(ORBIS_NET_ENOPROTOOPT);
     }
-
-    // Multicast TTL/loop also accept a single byte.
     s32 value = 0;
     bool has_int = false;
     if (optval != nullptr && optlen >= sizeof(s32)) {
