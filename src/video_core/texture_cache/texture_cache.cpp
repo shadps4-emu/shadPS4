@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <bit>
 #include <limits>
 #include <xxhash.h>
 
@@ -496,7 +498,23 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
-    const auto new_image_id = slot_images.Insert(instance, runtime, slot_image_views, info);
+    ImageInfo expanded_info = info;
+    const auto& cache_info = slot_images[image_id].info;
+    const u32 max_levels = static_cast<u32>(
+        std::bit_width(std::max({info.size.width, info.size.height,
+                                 info.type == AmdGpu::ImageType::Color3D ? info.size.depth : 1u})));
+    expanded_info.resources.levels = static_cast<u16>(std::min<u32>(
+        std::max<u32>(info.resources.levels, cache_info.resources.levels), max_levels));
+    if (info.type == cache_info.type && info.type != AmdGpu::ImageType::Color3D) {
+        expanded_info.resources.layers =
+            std::max(info.resources.layers, cache_info.resources.layers);
+    }
+    if (expanded_info.resources != info.resources) {
+        expanded_info.UpdateSize();
+    }
+
+    const auto new_image_id =
+        slot_images.Insert(instance, runtime, slot_image_views, expanded_info);
     RegisterImage(new_image_id);
 
     auto& src_image = slot_images[image_id];
