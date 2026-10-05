@@ -13,7 +13,7 @@ extern bool g_need_scelibc, g_need_fios2;
 s32 getModuleHandle(s32 id, s32* handle);
 bool shouldHideName(const char* module_name);
 bool isDebugModule(s32 id);
-bool validateModuleId(s32 id);
+u32 validateModuleId(s32 id);
 s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out);
 s32 loadModule(s32 id, s32 argc, const void* argv, s32* res_out);
 s32 unloadModule(s32 id, s32 argc, const void* argv, s32* res_out, bool is_internal);
