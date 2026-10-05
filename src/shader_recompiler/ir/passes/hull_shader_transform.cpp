@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <set>
 #include <unordered_map>
 #include "common/assert.h"
 #include "shader_recompiler/info.h"
@@ -215,11 +216,11 @@ public:
         }
 
         for (IR::Use use : read_const_buffer->Uses()) {
-            WalkUsersOfTessConstantHelper(use, inc);
+            WalkUsersOfTessConstantHelper(use, inc, false);
         }
     }
 
-    void WalkUsersOfTessConstantHelper(IR::Use use, u32 inc) {
+    void WalkUsersOfTessConstantHelper(IR::Use use, u32 inc, bool uses_phi) {
         IR::Inst* inst = use.user;
 
         switch (use.user->GetOpcode()) {
@@ -229,6 +230,8 @@ public:
         case IR::Opcode::WriteSharedU64: {
             bool is_addr_operand = use.operand == 0;
             if (is_addr_operand) {
+                ASSERT_MSG(!uses_phi, "LDS instruction {} accesses ambiguous attribute type",
+                           fmt::ptr(use.user));
                 u32 counter = inst->Flags<u32>();
                 inst->SetFlags<u32>(counter + inc);
                 // Stop here
@@ -236,16 +239,27 @@ public:
             }
             break;
         }
-        case IR::Opcode::Phi:
-            UNREACHABLE_MSG("ambiguous use (phi) of a tess constant: {}", fmt::ptr(inst));
+        case IR::Opcode::Phi: {
+            // Only track phis in order to assert if they contribute to some address, we assume this
+            // doesn't happen for now
+            auto [_, is_new] = phis.insert(inst);
+            if (!is_new) {
+                // cycle/previously visited
+                return;
+            }
+            uses_phi = true;
+            break;
+        }
         default:
             break;
         }
 
         for (IR::Use use : inst->Uses()) {
-            WalkUsersOfTessConstantHelper(use, inc);
+            WalkUsersOfTessConstantHelper(use, inc, uses_phi);
         }
     }
+
+    std::set<IR::Inst*> phis;
 };
 
 enum class AttributeRegion : u32 { InputCP, OutputCP, PatchConst };
