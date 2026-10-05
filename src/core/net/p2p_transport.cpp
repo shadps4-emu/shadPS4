@@ -465,8 +465,6 @@ Error DatagramSocket::BindLocked(u16 vport) {
     if (vport == 0 && (vport = transport_->AllocateVport(false)) == 0) {
         return Error::AddrNotAvail;
     }
-    // TODO: old code let sockets share a vport. BSD says EADDRINUSE. Revisit if a game
-    // needs sharing.
     if (transport_->datagram_bindings_.contains(vport)) {
         return Error::AddrInUse;
     }
