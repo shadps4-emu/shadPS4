@@ -163,39 +163,35 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
 
 bool MemoryManager::TryWriteBacking(void* address, const void* data, u64 size) {
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
-    std::shared_lock lk{mutex};
-    ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
-               virtual_addr);
-
-    u64 remaining_size = size;
-    bool has_physical_backing = false;
-    auto current_vma = FindVMA(virtual_addr);
-    while (current_vma->second.Overlaps(virtual_addr, size)) {
-        const auto& vma = current_vma->second;
-        if (!HasPhysicalBacking(vma)) {
-            break;
-        }
-        has_physical_backing = true;
-        auto start_in_vma = std::max<VAddr>(virtual_addr, vma.base) - vma.base;
-        auto phys_handle = std::prev(vma.phys_areas.upper_bound(start_in_vma));
-        for (; phys_handle != vma.phys_areas.end(); phys_handle++) {
-            if (!remaining_size) {
-                break;
-            }
-            const u64 start_in_dma =
-                std::max<u64>(start_in_vma, phys_handle->first) - phys_handle->first;
-            u8* backing = impl.BackingBase() + phys_handle->second.base + start_in_dma;
-            u64 copy_size = std::min<u64>(remaining_size, phys_handle->second.size - start_in_dma);
-            memcpy(backing, data, copy_size);
-            remaining_size -= copy_size;
-        }
-        if (!remaining_size) {
-            break;
-        }
-        ++current_vma;
+    constexpr u64 AddressSpaceSize = 1ULL << AddressSpace::Traits::ADDRESS_SPACE_BITS;
+    if (!size || virtual_addr >= AddressSpaceSize || size > AddressSpaceSize - virtual_addr) {
+        return false;
     }
 
-    return has_physical_backing;
+    // Mapping changes can clear or reuse backing while a copy is in progress.
+    std::shared_lock lk{mutex};
+    const auto& backing_pages = impl.BackingPages();
+    const auto* source = static_cast<const u8*>(data);
+    const auto* entry = backing_pages.find(virtual_addr >> AddressSpace::Traits::PAGE_BITS);
+    u64 copied = 0;
+    while (copied < size && entry && *entry) {
+        const u64 offset_in_page = (virtual_addr + copied) % 16_KB;
+        auto* backing = *entry + offset_in_page;
+        u64 copy_end = copied + std::min<u64>(16_KB - offset_in_page, size - copied);
+        // Copy contiguous backing in one call; retain the first non-contiguous entry.
+        while (copy_end < size) {
+            entry =
+                backing_pages.find((virtual_addr + copy_end) >> AddressSpace::Traits::PAGE_BITS);
+            if (!entry || *entry != backing + (copy_end - copied)) {
+                break;
+            }
+            copy_end += std::min<u64>(16_KB, size - copy_end);
+        }
+        std::memcpy(backing, source + copied, copy_end - copied);
+        copied = copy_end;
+    }
+
+    return copied != 0;
 }
 
 PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, u64 size, u64 alignment) {

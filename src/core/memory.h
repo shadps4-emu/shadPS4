@@ -254,6 +254,8 @@ public:
 
     void CopySparseMemory(VAddr source, u8* dest, u64 size);
 
+    /// Writes the physically backed prefix, stopping at the first unbacked page.
+    /// Returns true if at least one byte was written, including partial writes.
     bool TryWriteBacking(void* address, const void* data, u64 size);
 
     void SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1, bool use_extended_mem2);
