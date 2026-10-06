@@ -45,6 +45,7 @@ public:
     void Barrier();
     void WorkgroupMemoryBarrier();
     void DeviceMemoryBarrier();
+    void SubgroupBarrier();
 
     [[nodiscard]] U32 GetUserData(IR::ScalarReg reg);
 
