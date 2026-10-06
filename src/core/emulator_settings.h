@@ -250,10 +250,10 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    shadnet_webapi_server, signaling_info, enable_upnp,
                                    redzone_patches, p2p_port, disable_https)
 
-    // -------------------------------
-    // Log settings
-    // -------------------------------
-    struct LogSettings {
+// -------------------------------
+// Log settings
+// -------------------------------
+struct LogSettings {
     Setting<bool> append{false}; // specific
     Setting<bool> enable{true};  // specific
     Setting<std::string> filter{""};
