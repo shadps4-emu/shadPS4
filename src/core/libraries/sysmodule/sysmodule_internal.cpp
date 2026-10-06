@@ -89,7 +89,7 @@ bool isDebugModule(s32 id) {
     return false;
 }
 
-bool validateModuleId(s32 id) {
+u32 validateModuleId(s32 id) {
     if ((id & 0x7fffffff) == 0) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }

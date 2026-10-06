@@ -155,7 +155,7 @@ private:
     };
     std::array<ImageBinding, Shader::NUM_IMAGES> image_bindings;
     std::array<ImageBinding, AmdGpu::NUM_COLOR_BUFFERS> cb_descs;
-    std::pair<VideoCore::ImageId, VideoCore::TextureCache::ImageDesc> db_desc;
+    ImageBinding db_desc;
 
     boost::container::static_vector<vk::DescriptorImageInfo, Shader::NUM_IMAGES> image_infos;
     boost::container::static_vector<vk::DescriptorBufferInfo, Shader::NUM_BUFFERS> buffer_infos;
@@ -164,10 +164,10 @@ private:
         const VideoCore::Buffer* buffer;
         u64 offset;
         u32 size;
-        bool is_written;
+        vk::AccessFlags2 src_access;
     };
-    boost::container::static_vector<BoundBuffer, Shader::NUM_BUFFERS> bound_buffers;
-    boost::container::static_vector<VideoCore::ImageId, Shader::NUM_IMAGES> bound_images;
+    std::vector<BoundBuffer> bound_buffers;
+    std::vector<VideoCore::ImageId> bound_images;
 
     u32 set_write_index{};
     Pipeline::DescriptorWrites set_writes;

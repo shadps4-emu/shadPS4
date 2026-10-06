@@ -97,6 +97,7 @@ enum class CommandType : u16 {
     GetUserInfoList = 113,
     GetRoomMemberDataExternalList = 114,
     SendRoomMessage = 115,
+    SetRoomMemberDataInternal = 116,
     // Title User Storage (TUS)
     TusSetData = 201,
     TusGetData = 202,
@@ -304,6 +305,8 @@ public:
     u32 GetAddrLocal() const;
     u32 GetAddrServer() const;
     bool IsMatching2Enabled() const;
+    // True on the thread that reads replies. Code running there must not wait for a reply.
+    static bool OnReaderThread();
     bool IsTrophiesEnabled() const;
     u64 ReportClientVersion();
     static std::string BuildVersionString();
