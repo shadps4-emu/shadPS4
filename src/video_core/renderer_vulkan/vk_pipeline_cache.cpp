@@ -36,6 +36,17 @@ constexpr static std::array DescriptorHeapSizes = {
     vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1024},
 };
 
+static bool IsDualSourceBlending(const AmdGpu::BlendControl& blend) {
+    if (!blend.enable) {
+        return false;
+    }
+    return LiverpoolToVK::IsDualSourceBlendFactor(blend.color_dst_factor) ||
+           LiverpoolToVK::IsDualSourceBlendFactor(blend.color_src_factor) ||
+           (blend.separate_alpha_blend &&
+            (LiverpoolToVK::IsDualSourceBlendFactor(blend.alpha_dst_factor) ||
+             LiverpoolToVK::IsDualSourceBlendFactor(blend.alpha_src_factor)));
+}
+
 static u32 MapOutputs(std::span<Shader::OutputMap, 3> outputs, const AmdGpu::VsOutputControl& ctl) {
     u32 num_outputs = 0;
 
@@ -182,19 +193,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
                                (stencil_ref_export_enable << 1) |
                                (regs.depth_shader_control.mask_export_enable << 2) |
                                (regs.depth_shader_control.coverage_to_mask_enable << 3);
-        const auto& cb0_blend = regs.blend_control[0];
-        if (cb0_blend.enable) {
-            info.hw.fs.dual_source_blending =
-                LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.color_dst_factor) ||
-                LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.color_src_factor);
-            if (cb0_blend.separate_alpha_blend) {
-                info.hw.fs.dual_source_blending |=
-                    LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.alpha_dst_factor) ||
-                    LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.alpha_src_factor);
-            }
-        } else {
-            info.hw.fs.dual_source_blending = false;
-        }
+        info.hw.fs.dual_source_blending = IsDualSourceBlending(regs.blend_control[0]);
         const auto& ps_inputs = regs.ps_inputs;
         for (u32 i = 0; i < regs.num_interp; i++) {
             info.hw.fs.inputs[i] = {
@@ -207,6 +206,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
             info.hw.fs.color_buffers[i] = graphics_key.color_buffers[i];
         }
+        info.hw.fs.cb_shader_mask =
+            !info.hw.fs.dual_source_blending && regs.color_shader_mask.HasExportHoles()
+                ? regs.color_shader_mask.raw
+                : 0;
         // Lowered user clip planes ride the same emulation path as guest-exported distances, so
         // the fragment side arms whenever the hardware vertex stage lowers them, keeping its input
         // locations in sync with the shifted vertex outputs.
@@ -432,7 +435,15 @@ bool PipelineCache::RefreshGraphicsKey() {
         color_buffer.data_format = col_buf.GetDataFmt();
         color_buffer.num_format = col_buf.GetNumberFmt();
         color_buffer.num_conversion = col_buf.GetNumberConversion();
-        color_buffer.export_format = regs.color_export_format.GetFormat(cb);
+        const auto& shader_mask = regs.color_shader_mask;
+        if (IsDualSourceBlending(regs.blend_control[0]) || !shader_mask.HasExportHoles()) {
+            color_buffer.export_format = regs.color_export_format.GetFormat(cb);
+        } else if (shader_mask.GetMask(cb) != 0) {
+            color_buffer.export_format =
+                regs.color_export_format.GetFormat(shader_mask.ExportIndex(cb));
+        } else {
+            color_buffer.export_format = AmdGpu::ShaderExportFormat::Zero;
+        }
         color_buffer.swizzle = col_buf.Swizzle();
 
         const auto& bc = regs.blend_control[cb];
