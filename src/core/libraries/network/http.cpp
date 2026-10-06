@@ -2583,6 +2583,9 @@ int PS4_SYSV_ABI sceHttpsDisableOptionPrivate(int id, u32 sslFlags) {
 
 int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags) {
     LOG_INFO(Lib_Http, "called id={}, sslFlags={:#x}", id, sslFlags);
+    if (EmulatorSettings.IsForcedHttpsDisabled()) {
+        return sceHttpsDisableOption(id, sslFlags);
+    }
     std::lock_guard<std::mutex> lock(g_state.m_mutex);
     if (!g_state.inited) {
         LOG_ERROR(Lib_Http, "Not initialized");

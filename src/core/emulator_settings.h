@@ -207,7 +207,7 @@ struct GeneralSettings {
     Setting<bool> redzone_patches{false};
     Setting<int> p2p_port{3658}; // 0 is any free port, 3658 is the default PS4 port. With UPnP
                                  // enabled it is forwarded on the router.
-
+    Setting<bool> disable_https{false};
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -235,7 +235,8 @@ struct GeneralSettings {
             make_override<GeneralSettings>("signaling_info", &GeneralSettings::signaling_info),
             make_override<GeneralSettings>("enable_upnp", &GeneralSettings::enable_upnp),
             make_override<GeneralSettings>("redzone_patches", &GeneralSettings::redzone_patches),
-            make_override<GeneralSettings>("p2p_port", &GeneralSettings::p2p_port)};
+            make_override<GeneralSettings>("p2p_port", &GeneralSettings::p2p_port),
+            make_override<GeneralSettings>("disable_https", &GeneralSettings::disable_https)};
     }
 };
 
@@ -247,12 +248,12 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    discord_rpc_enabled, show_fps_counter, console_language,
                                    big_picture_scale, big_picture_folder_depth, shadnet_server,
                                    shadnet_webapi_server, signaling_info, enable_upnp,
-                                   redzone_patches, p2p_port)
+                                   redzone_patches, p2p_port, disable_https)
 
-// -------------------------------
-// Log settings
-// -------------------------------
-struct LogSettings {
+    // -------------------------------
+    // Log settings
+    // -------------------------------
+    struct LogSettings {
     Setting<bool> append{false}; // specific
     Setting<bool> enable{true};  // specific
     Setting<std::string> filter{""};
@@ -671,6 +672,7 @@ public:
     SETTING_FORWARD_BOOL(m_general, UPnPEnabled, enable_upnp)
     SETTING_FORWARD_BOOL(m_general, RedZonePatchingEnabled, redzone_patches)
     SETTING_FORWARD(m_general, P2PPort, p2p_port)
+    SETTING_FORWARD_BOOL(m_general, ForcedHttpsDisabled, disable_https)
 
     // Log settings
     SETTING_FORWARD_BOOL(m_log, LogAppend, append)
