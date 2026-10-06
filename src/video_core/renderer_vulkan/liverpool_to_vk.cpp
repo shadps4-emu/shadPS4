@@ -262,6 +262,26 @@ vk::BlendOp BlendOp(AmdGpu::BlendControl::BlendFunc func) {
     }
 }
 
+void NormalizeMinMaxBlend(vk::BlendOp& op, vk::BlendFactor& src, vk::BlendFactor& dst,
+                          AmdGpu::NumberFormat format) {
+    if (format != AmdGpu::NumberFormat::Unorm && format != AmdGpu::NumberFormat::Srgb) {
+        return;
+    }
+    if (op != vk::BlendOp::eMin && op != vk::BlendOp::eMax) {
+        return;
+    }
+    if ((src != vk::BlendFactor::eZero && src != vk::BlendFactor::eOne) ||
+        (dst != vk::BlendFactor::eZero && dst != vk::BlendFactor::eOne) ||
+        (src != vk::BlendFactor::eZero && dst != vk::BlendFactor::eZero)) {
+        return;
+    }
+    if (op == vk::BlendOp::eMin) {
+        src = vk::BlendFactor::eZero;
+        dst = vk::BlendFactor::eZero;
+    }
+    op = vk::BlendOp::eAdd;
+}
+
 vk::LogicOp LogicOp(AmdGpu::ColorControl::LogicOp logic_op) {
     using LogicOp = AmdGpu::ColorControl::LogicOp;
     switch (logic_op) {

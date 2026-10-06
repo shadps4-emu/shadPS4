@@ -111,6 +111,8 @@ void NotifyNpStateFromUserServiceEvent(Libraries::UserService::OrbisUserServiceE
 
 s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId user_id,
                               OrbisNpId* np_id);
+s32 PS4_SYSV_ABI sceNpGetAccountIdA(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                    u64* account_id);
 s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId user_id,
                                   OrbisNpOnlineId* online_id);
 s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
