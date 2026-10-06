@@ -203,6 +203,8 @@ std::string_view NameOf(Class log_class) {
         return "Lib.Font";
     case Class::Lib_FontFt:
         return "Lib.FontFt";
+    case Class::Lib_Ipmi:
+        return "Lib.Ipmi";
     case Class::Frontend:
         return "Frontend";
     case Class::NpHandler:

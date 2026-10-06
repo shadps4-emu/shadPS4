@@ -508,6 +508,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/invitation_dialog/invitation_dialog.h
                 src/core/libraries/invitation_dialog/invitation_dialog_ui.cpp
                 src/core/libraries/invitation_dialog/invitation_dialog_ui.h
+                src/core/libraries/ipmi/ipmi.cpp
+                src/core/libraries/ipmi/ipmi.h
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
