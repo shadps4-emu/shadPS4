@@ -1909,7 +1909,6 @@ u16 PS4_SYSV_ABI sceNetNtohs(u16 net16) {
     return ToBigEndian(net16);
 }
 
-// Pool create/destroy return error codes without setting errno.
 s32 PS4_SYSV_ABI sceNetPoolCreate(const char* name, s32 size, s32 flags) {
     LOG_INFO(Lib_Net, "name = {}, size = {}, flags = {:#x}", name != nullptr ? name : "", size,
              flags);
