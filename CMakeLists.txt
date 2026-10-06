@@ -259,6 +259,7 @@ if (ENABLE_SYSTEM_LIBRARIES)
     find_package(ZArchive 0.1.2 MODULE)
     find_package(ZLIB 1.3 MODULE)
     find_package(Zydis 5.0.0 MODULE)
+    find_package(zstd 1.5.6 CONFIG)
     find_package(pugixml 1.14 CONFIG)
     find_package(absl 20250512.1 CONFIG)
     if (APPLE)
@@ -1302,6 +1303,7 @@ target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohma
 target_link_libraries(shadps4 PRIVATE Freetype::Freetype)
 target_link_libraries(shadps4 PRIVATE libprotobuf)
 target_link_libraries(shadps4 PRIVATE ZArchive::zarchive)
+target_link_libraries(shadps4 PRIVATE zstd::libzstd)
 target_include_directories(shadps4 PRIVATE "${SHADNET_PROTO_OUT}")
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
@@ -1446,7 +1448,9 @@ cmrc_add_resource_library(embedded-resources
         src/resources/platinum.png
         src/resources/shadps4.png
         src/resources/silver.png
-        src/resources/trophy.wav)
+        src/resources/trophy.wav
+        src/resources/amd_rcp_index_table.bin.zstd
+        src/resources/amd_rsqrt_index_table.bin.zstd)
 target_link_libraries(shadps4 PRIVATE res::embedded)
 
 # ImGui resources
