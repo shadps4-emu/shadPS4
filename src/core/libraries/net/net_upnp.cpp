@@ -25,6 +25,11 @@ UPnPClient& UPnPClient::Instance() {
 UPnPClient::~UPnPClient() {
     if (m_thread.joinable())
         m_thread.join();
+    if (m_map_thread.joinable())
+        m_map_thread.join();
+    // Mappings have no lease time: leave nothing behind on the router.
+    if (const u16 port = m_mapped_port.exchange(0); port != 0)
+        RemoveMapping(port);
     if (m_available.load())
         FreeUPNPUrls(&m_urls);
 }
@@ -134,6 +139,31 @@ void UPnPClient::AddMapping(u16 port) {
         m_external_port.store(port);
         LOG_WARNING(Lib_Net, "UPNP: failed to map port {} ({})", port, strupnperror(ret));
     }
+}
+
+void UPnPClient::MapPortAsync(u16 port) {
+    std::scoped_lock lock{m_map_mutex};
+    if (m_map_thread.joinable())
+        m_map_thread.join();
+    m_map_thread = std::thread([this, port] {
+        if (!WaitReady(10'000)) {
+            LOG_INFO(Lib_Net, "UPNP: no IGD, UDP port {} is not forwarded", port);
+            return;
+        }
+        const u16 previous = m_mapped_port.exchange(port);
+        if (previous != 0 && previous != port)
+            RemoveMapping(previous);
+        AddMapping(port);
+    });
+}
+
+void UPnPClient::UnmapPort(u16 port) {
+    std::scoped_lock lock{m_map_mutex};
+    if (m_map_thread.joinable())
+        m_map_thread.join();
+    u16 expected = port;
+    if (m_mapped_port.compare_exchange_strong(expected, 0))
+        RemoveMapping(port);
 }
 
 void UPnPClient::RemoveMapping(u16 port) {

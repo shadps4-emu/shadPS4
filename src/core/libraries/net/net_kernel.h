@@ -1,12 +1,30 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
+#include <span>
+
 #include "common/types.h"
-#include "net.h"
+#include "core/libraries/net/net_types.h"
+#include "core/net/guest_net.h"
+
+namespace Libraries::Kernel {
+struct OrbisKernelStat;
+}
 
 namespace Libraries::Net {
+
+// Called from the kernel's RegisterLib, before any net object exists.
+void InstallKernelIntegration();
+s32 KernelClose(s32 fd);
+s64 KernelRead(s32 fd, void* buf, u64 nbytes);
+s64 KernelWrite(s32 fd, const void* buf, u64 nbytes);
+s32 KernelFstat(s32 fd, Libraries::Kernel::OrbisKernelStat* sb);
+// Returns the number of ready (fd, direction) pairs. Epolls and resolvers are never ready.
+s64 KernelSelect(std::span<Core::Net::SelectEntry> entries, s64 timeout_us);
+
+// libkernel / libScePosix socket calls
 
 int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen);
 int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrlen);

@@ -39,8 +39,8 @@ typedef int net_socket;
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
-#include "net.h"
-#include "net_error.h"
+#include "core/libraries/net/net_error.h"
+#include "core/libraries/net/net_types.h"
 #include "net_util.h"
 
 namespace NetUtil {

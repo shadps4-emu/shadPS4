@@ -376,32 +376,15 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/http_error.h
                  src/core/libraries/network/http2.cpp
                  src/core/libraries/network/http2.h
-                 src/core/libraries/network/net.cpp
                  src/core/libraries/network/netctl.cpp
                  src/core/libraries/network/netctl.h
                  src/core/libraries/network/net_ctl_obj.cpp
                  src/core/libraries/network/net_ctl_obj.h
                  src/core/libraries/network/net_ctl_codes.h
-                 src/core/libraries/network/net_util.cpp
-                 src/core/libraries/network/net_util.h
-                 src/core/libraries/network/net_epoll.cpp
-                 src/core/libraries/network/net_epoll.h
-                 src/core/libraries/network/net_resolver.cpp
-                 src/core/libraries/network/net_resolver.h
-                 src/core/libraries/network/net_upnp.cpp
-                 src/core/libraries/network/net_upnp.h
-                 src/core/libraries/network/net_error.h
-                 src/core/libraries/network/net.h
                  src/core/libraries/network/ssl.cpp
                  src/core/libraries/network/ssl.h
                  src/core/libraries/network/ssl2.cpp
                  src/core/libraries/network/ssl2.h
-                 src/core/libraries/network/sys_net.cpp
-                 src/core/libraries/network/sys_net.h
-                 src/core/libraries/network/posix_sockets.cpp
-                 src/core/libraries/network/p2p_sockets.cpp
-                 src/core/libraries/network/unix_sockets.cpp
-                 src/core/libraries/network/sockets.h
 )
 
 set(AVPLAYER_LIB src/core/libraries/avplayer/avplayer_common.cpp
@@ -666,6 +649,8 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/object_manager.h
             src/core/libraries/np/np_handler.cpp
             src/core/libraries/np/np_handler.h
+            src/core/libraries/np/signaling_handler.cpp
+            src/core/libraries/np/signaling_handler.h
             src/core/libraries/np/np_commerce/np_commerce.cpp
             src/core/libraries/np/np_commerce/np_commerce.h
             src/core/libraries/np/np_commerce/np_commerce_ui.cpp
@@ -683,8 +668,8 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_signaling/np_signaling_state.h
             src/core/libraries/np/np_signaling/np_signaling_helpers.cpp
             src/core/libraries/np/np_signaling/np_signaling_helpers.h
-            src/core/libraries/np/np_signaling/np_signaling_stubs.cpp
-            src/core/libraries/np/np_signaling/np_signaling_stubs.h
+            src/core/libraries/np/np_signaling/np_signaling_transport.cpp
+            src/core/libraries/np/np_signaling/np_signaling_transport.h
             src/core/libraries/np/np_web_api/np_web_api.cpp
             src/core/libraries/np/np_web_api/np_web_api.h
             src/core/libraries/np/np_web_api/np_web_api_internal.cpp
@@ -862,6 +847,42 @@ if (ENABLE_DISCORD_RPC)
     list(APPEND COMMON src/common/discord_rpc_handler.cpp src/common/discord_rpc_handler.h)
 endif()
 
+set(NET_CORE  src/core/net/guest_net.cpp
+              src/core/net/guest_net.h
+              src/core/net/host_net.cpp
+              src/core/net/host_net.h
+              src/core/net/p2p_codec.cpp
+              src/core/net/p2p_codec.h
+              src/core/net/p2p_crypto.cpp
+              src/core/net/p2p_crypto.h
+              src/core/net/p2p_tcp.cpp
+              src/core/net/p2p_tcp.h
+              src/core/net/p2p_transport.cpp
+              src/core/net/p2p_transport.h
+)
+
+set(NET_LIB   src/core/libraries/net/net.cpp
+              src/core/libraries/net/net.h
+              src/core/libraries/net/net_error.h
+              src/core/libraries/net/net_kernel.cpp
+              src/core/libraries/net/net_kernel.h
+              src/core/libraries/net/net_log.cpp
+              src/core/libraries/net/net_log.h
+              src/core/libraries/net/net_p2p.cpp
+              src/core/libraries/net/net_p2p.h
+              src/core/libraries/net/net_p2p_ioctl.cpp
+              src/core/libraries/net/net_p2p_ioctl.h
+              src/core/libraries/net/net_resolver.cpp
+              src/core/libraries/net/net_resolver.h
+              src/core/libraries/net/net_translate.cpp
+              src/core/libraries/net/net_translate.h
+              src/core/libraries/net/net_types.h
+              src/core/libraries/net/net_util.cpp
+              src/core/libraries/net/net_util.h
+              src/core/libraries/net/net_upnp.cpp
+              src/core/libraries/net/net_upnp.h
+)
+
 set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/stubs.h
          src/core/aerolib/aerolib.cpp
@@ -973,6 +994,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/user_manager.h
          src/core/user_settings.cpp
          src/core/user_settings.h
+         ${NET_CORE}
+         ${NET_LIB}
 )
 
 if (ARCHITECTURE STREQUAL "x86_64")
