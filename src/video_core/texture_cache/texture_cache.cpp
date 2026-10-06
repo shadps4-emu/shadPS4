@@ -495,6 +495,29 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
     return {merged_image_id, -1, -1};
 }
 
+ImageId TextureCache::GetDepthAsColorImage(ImageId depth_id, vk::Format format) {
+    Image& depth_image = slot_images[depth_id];
+    const auto key = std::make_pair(depth_image.image_uid, format);
+    auto it = depth_as_color_images.find(key);
+    if (it == depth_as_color_images.end() || !slot_images.IsAllocated(it->second.image_id)) {
+        ImageInfo info = depth_image.info;
+        info.pixel_format = format;
+        info.props.is_depth = 0;
+        info.props.has_stencil = 0;
+        info.meta_info = {};
+        const ImageId color_id = slot_images.Insert(instance, runtime, slot_image_views, info);
+        slot_images[color_id].flags &= ~ImageFlagBits::Dirty;
+        it = depth_as_color_images.insert_or_assign(key, DepthAsColor{color_id, ~0ULL}).first;
+    }
+    // Refresh the copy only when the depth image contents may have changed.
+    Image& depth = slot_images[depth_id];
+    if (it->second.version != depth.version) {
+        runtime.CopyColorAndDepth(&depth, &slot_images[it->second.image_id]);
+        it->second.version = depth.version;
+    }
+    return it->second.image_id;
+}
+
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     const auto new_image_id = slot_images.Insert(instance, runtime, slot_image_views, info);
     RegisterImage(new_image_id);
@@ -629,6 +652,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
+        ++image.version;
         if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8) &&
             image.info.guest_address != 0) {
             std::unique_lock lk{download_images_mutex};
@@ -642,6 +666,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
+    ++image.version;
     if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8)) {
         std::unique_lock lk{download_images_mutex};
         download_images.emplace(image_id);
@@ -668,6 +693,7 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
 ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
+    ++image.version;
     image.usage.depth_target = 1u;
     UpdateImage(image_id);
 
@@ -780,6 +806,7 @@ void TextureCache::RefreshImage(Image& image) {
     }
 
     runtime.UploadImage(&image, buffer, image_copies);
+    ++image.version;
 }
 
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sharp,
@@ -1028,6 +1055,19 @@ void TextureCache::DeleteImage(ImageId image_id) {
     Image& image = slot_images[image_id];
     ASSERT_MSG(image.IsUntracked(), "Image was not untracked");
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered), "Image was not unregistered");
+
+    // Delete any color copies created from this depth image.
+    if (image.info.props.is_depth && !depth_as_color_images.empty()) {
+        const u64 uid = image.image_uid;
+        auto it = depth_as_color_images.lower_bound(std::make_pair(uid, vk::Format{}));
+        while (it != depth_as_color_images.end() && it->first.first == uid) {
+            const ImageId color_id = it->second.image_id;
+            it = depth_as_color_images.erase(it);
+            if (slot_images.IsAllocated(color_id)) {
+                DeleteImage(color_id);
+            }
+        }
+    }
 
     // Remove any registered meta areas.
     const auto& meta_info = image.info.meta_info;

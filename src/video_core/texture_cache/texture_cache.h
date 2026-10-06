@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <map>
 #include <mutex>
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
@@ -171,6 +172,12 @@ public:
     [[nodiscard]] ImageView& GetImageView(ImageId id) {
         return slot_image_views[id];
     }
+
+    /**
+     * Returns a color image with a copy of the depth contents, used when a shader reads
+     * depth memory with a non depth-compatible color format, like R16_UINT on D16.
+     */
+    ImageId GetDepthAsColorImage(ImageId depth_id, vk::Format format);
 
     /// Get the associated depth stencil image if it is still valid.
     ImageId GetAssociatedDepth(Image& image) {
@@ -356,6 +363,11 @@ private:
     BufferCache& buffer_cache;
     PageManager& tracker;
     PageTable page_table;
+    struct DepthAsColor {
+        ImageId image_id;
+        u64 version;
+    };
+    std::map<std::pair<u64, vk::Format>, DepthAsColor> depth_as_color_images;
     Common::SlotVector<Image> slot_images;
     Common::SlotVector<ImageView> slot_image_views;
     Common::SlotVector<Sampler> slot_samplers;

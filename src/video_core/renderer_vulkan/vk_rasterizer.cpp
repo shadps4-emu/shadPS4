@@ -878,6 +878,15 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                 image_id = depth_image_id;
                 image = &texture_cache.GetImage(image_id);
             }
+            if (image->info.props.is_depth && !image_desc.is_written &&
+                !LiverpoolToVK::IsFormatDepthCompatible(desc.info.pixel_format) &&
+                !LiverpoolToVK::IsFormatStencilCompatible(desc.info.pixel_format)) {
+                // Depth memory can be read using an incompatible color format, like R16_UINT on
+                // D16. Vulkan can't use this format directly on a depth image, so use a color copy
+                // instead.
+                image_id = texture_cache.GetDepthAsColorImage(image_id, desc.info.pixel_format);
+                image = &texture_cache.GetImage(image_id);
+            }
             if (image->binding.is_bound) {
                 // The image is already bound. In case if it is about to be used as storage we
                 // need to force general layout on it.

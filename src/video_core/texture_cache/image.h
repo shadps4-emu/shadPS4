@@ -155,6 +155,11 @@ public:
     u64 image_uid{};
     u64 lru_id{};
     u64 tick_accessed_last{};
+    /**
+     * Incremented whenever the image contents may have changed, including GPU writes
+     * and uploads from guest memory.
+     */
+    u64 version{};
     u64 hash{};
 
     struct {
