@@ -73,6 +73,11 @@ public:
         VideoOut,
     };
 
+    enum class ImageRange {
+        MatchAddress,
+        Contained,
+    };
+
     struct ImageDesc {
         ImageInfo info;
         ImageViewInfo view_info;
@@ -121,6 +126,10 @@ public:
 
     /// Retrieves image whose address matches provided
     [[nodiscard]] ImageId FindImageFromRange(VAddr address, size_t size, bool ensure_valid = true);
+
+    [[nodiscard]] SmallVector<ImageId, 4> FindImagesFromRange(
+        VAddr address, size_t size, ImageRange range = ImageRange::MatchAddress,
+        bool ensure_valid = true);
 
     /// Retrieves an image view with the properties of the specified image id.
     [[nodiscard]] ImageView& FindTexture(ImageId image_id, const ImageDesc& desc);
