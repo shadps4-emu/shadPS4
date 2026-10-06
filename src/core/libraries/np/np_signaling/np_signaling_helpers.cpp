@@ -1,8 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <array>
+#include <cctype>
 #include <chrono>
 #include <cstring>
+#include <string>
+#include <string_view>
 #include <fmt/format.h>
 #include "common/alignment.h"
 #include "common/logging/log.h"
@@ -10,19 +15,26 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
-#include "core/libraries/network/net.h"
-#include "core/libraries/network/net_util.h"
+#include "core/libraries/libs.h"
+#include "core/libraries/net/net.h"
+#include "core/libraries/net/net_util.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_signaling/np_signaling.h"
 #include "core/libraries/np/np_signaling/np_signaling_helpers.h"
 #include "core/libraries/np/np_signaling/np_signaling_state.h"
-#include "core/libraries/np/np_signaling/np_signaling_stubs.h"
+#include "core/libraries/np/np_signaling/np_signaling_transport.h"
+#include "core/libraries/np/signaling_handler.h"
+#include "core/memory.h"
 
 namespace Libraries::Np::NpSignaling::Helpers {
 
 namespace {
 
 constexpr s32 InferredNpAppType = 0;
+constexpr uintptr_t kHostPageSize = 0x1000;
+constexpr size_t kDumpRowSize = 32;
 
 bool g_signaling_heap_initialized = false;
 void* g_signaling_heap_base = nullptr;
@@ -50,7 +62,83 @@ s16 GetAppTypeStateGate() {
 void SetAppTypeMarker(u16 marker) {
     LOG_DEBUG(Lib_NpSignaling, "marker={:#x}", marker);
 }
+
+std::string HexDumpRow(const u8* bytes, size_t size) {
+    static constexpr char kHex[] = "0123456789abcdef";
+    std::string result;
+    result.reserve(size * 3);
+    for (size_t i = 0; i < size; ++i) {
+        if (i != 0) {
+            result.push_back(' ');
+        }
+        result.push_back(kHex[bytes[i] >> 4]);
+        result.push_back(kHex[bytes[i] & 0xf]);
+    }
+    return result;
+}
+
+std::string AsciiDumpRow(const u8* bytes, size_t size) {
+    std::string result;
+    result.reserve(size);
+    for (size_t i = 0; i < size; ++i) {
+        result.push_back(std::isprint(bytes[i]) ? static_cast<char>(bytes[i]) : '.');
+    }
+    return result;
+}
+
+void LogMemoryWindow(std::string_view label, const void* focus, size_t focus_size, size_t before,
+                     size_t after) {
+    if (!focus) {
+        LOG_INFO(Lib_NpSignaling, "Invalid activation dump {}: unavailable (null focus)", label);
+        return;
+    }
+
+    const uintptr_t focus_addr = reinterpret_cast<uintptr_t>(focus);
+    const uintptr_t page_start = focus_addr & ~(kHostPageSize - 1);
+    const uintptr_t page_end = page_start + kHostPageSize;
+    const uintptr_t start = std::max(page_start, focus_addr - std::min(before, focus_addr));
+    const uintptr_t requested_end = focus_addr + focus_size + after;
+    const uintptr_t end = std::min(page_end, requested_end);
+    const size_t size = end > start ? end - start : 0;
+
+    auto* memory = Core::Memory::Instance();
+    if (size == 0 || !memory || !memory->IsValidMapping(start, size)) {
+        LOG_INFO(Lib_NpSignaling,
+                 "Invalid activation dump {}: unavailable start={:#x} size={:#x} focus={:#x}",
+                 label, start, size, focus_addr);
+        return;
+    }
+
+    LOG_INFO(Lib_NpSignaling,
+             "Invalid activation dump {}: start={:#x} size={:#x} focus={:#x} focus_offset={:#x} "
+             "focus_size={:#x}",
+             label, start, size, focus_addr, focus_addr - start, focus_size);
+    const auto* bytes = reinterpret_cast<const u8*>(start);
+    for (size_t offset = 0; offset < size; offset += kDumpRowSize) {
+        const size_t row_size = std::min(kDumpRowSize, size - offset);
+        LOG_INFO(Lib_NpSignaling, "Invalid activation dump {} {:#x} +{:#05x}: {} |{}|", label,
+                 start + offset, offset, HexDumpRow(bytes + offset, row_size),
+                 AsciiDumpRow(bytes + offset, row_size));
+    }
+}
+
 } // namespace
+
+void LogInvalidActivationContext(s64 call_time, const void* peer_npid, const void* out_conn_id,
+                                 const void* caller, const void* frame) {
+    LOG_INFO(Lib_NpSignaling,
+             "Invalid activation context: t={} caller={:p} frame={:p} peerNpId={:p} "
+             "outConnId={:p} peer_to_out_delta={}",
+             call_time, caller, frame, peer_npid, out_conn_id,
+             reinterpret_cast<intptr_t>(out_conn_id) - reinterpret_cast<intptr_t>(peer_npid));
+
+    // Keep each read within the focus address's host page so diagnostics cannot cross into an
+    // unmapped guard page. The peer window is intentionally large enough to include adjacent room
+    // member/scratch records and, for the observed title, the nearby output connection ID.
+    LogMemoryWindow("peer", peer_npid, sizeof(OrbisNpId), 0x100, 0x200);
+    LogMemoryWindow("stack", frame, sizeof(uintptr_t) * 2, 0x100, 0x100);
+    LogMemoryWindow("caller_code", caller, 1, 0x40, 0x40);
+}
 
 void SetRuntimeHooks(const SignalingRuntimeHooks& hooks) {
     g_runtime_hooks = hooks;
@@ -142,13 +230,6 @@ s32 StartMainRuntime(s32 thread_priority, s32 cpu_affinity_mask, s64 thread_stac
     if (g_runtime_hooks.start_dispatch != nullptr) {
         g_runtime_hooks.start_dispatch(priority, affinity, stack_size);
     }
-    if (g_runtime_hooks.start_receive != nullptr) {
-        g_runtime_hooks.start_receive(priority, affinity, stack_size);
-    }
-    if (g_runtime_hooks.start_ping != nullptr) {
-        g_runtime_hooks.start_ping(priority, affinity, stack_size);
-    }
-
     return ORBIS_OK;
 }
 
@@ -156,16 +237,28 @@ s32 StartEchoRuntime(s32 thread_priority, s32 cpu_affinity_mask) {
     LOG_DEBUG(Lib_NpSignaling, "thread_priority={} cpu_affinity_mask={}", thread_priority,
               cpu_affinity_mask);
 
-    auto sock = Libraries::Net::sceNetSocket("SceNpSignalingIoctl", 2, 6, 0);
+    // A DGRAM_P2P socket, which also starts the P2P transport.
+    auto sock =
+        Libraries::Net::sceNetSocket("SceNpSignalingIoctl", Libraries::Net::ORBIS_NET_AF_INET,
+                                     Libraries::Net::ORBIS_NET_SOCK_DGRAM_P2P, 0);
     if (sock < 0) {
-        return sock;
+        // Only an emulator-side problem (the P2P UDP port is taken): signaling itself still
+        // works without the echo probe, so carry on as the console would.
+        LOG_WARNING(Lib_NpSignaling, "P2P socket for the echo probe failed: {:#x}",
+                    static_cast<u32>(sock));
+        return ORBIS_OK;
     }
 
-    const s32 ioctl_rc = Libraries::Net::sceNetIoctl();
+    std::array<u8, 36> ioctl_data{};
+    const s32 ioctl_rc = Libraries::Net::sceNetIoctl(sock, 0xc02450ca, ioctl_data.data());
     Libraries::Net::sceNetSocketClose(sock);
 
     g_echo_probe_word2 = 0;
     g_echo_probe_word3 = 0;
+    if (ioctl_rc >= 0) {
+        std::memcpy(&g_echo_probe_word2, ioctl_data.data() + 16, sizeof(g_echo_probe_word2));
+        std::memcpy(&g_echo_probe_word3, ioctl_data.data() + 24, sizeof(g_echo_probe_word3));
+    }
     g_echo_thread_handle = static_cast<u64>(-1);
     g_echo_thread_status = -1;
     return ioctl_rc;
@@ -180,12 +273,6 @@ void ShutdownRuntime() {
         return;
     }
 
-    if (g_runtime_hooks.stop_ping != nullptr) {
-        g_runtime_hooks.stop_ping();
-    }
-    if (g_runtime_hooks.stop_receive != nullptr) {
-        g_runtime_hooks.stop_receive();
-    }
     if (g_runtime_hooks.stop_dispatch != nullptr) {
         g_runtime_hooks.stop_dispatch();
     }
@@ -200,268 +287,30 @@ void ShutdownRuntime() {
 
 namespace Libraries::Np::NpSignaling {
 
-using Libraries::Net::sceNetNtohs;
-
-static Kernel::PthreadT g_dispatch_thread{};
-static Kernel::PthreadT g_receive_thread{};
-static bool g_receive_stop = false;
-static Kernel::PthreadT g_ping_thread{};
-static bool g_ping_stop = false;
-
-static void HandleStunEcho(s32 ctx_id, const StunEcho& echo) {
-    SignalingMutexGuard lock;
-    const auto it = g_contexts.find(ctx_id);
-    if (it == g_contexts.end() || !it->second.active) {
-        return;
-    }
-    NpSignalingContext& ctx = it->second;
-    ctx.ext_addr.store(echo.ext_ip);
-    ctx.ext_port.store(echo.ext_port);
-
-    LOG_DEBUG(Lib_NpSignaling, "STUN echo: ctxId={} ext_addr={:#x} ext_port={}", ctx_id,
-              echo.ext_ip, sceNetNtohs(echo.ext_port));
-
-    auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
-    netinfo->SetExternalIp(echo.ext_ip);
-
-    ctx.stun_cv.notify_all();
-}
-
-static bool HasSignalingMagic(const u8* buf, size_t nbytes) {
-    return nbytes >= 5 && std::memcmp(buf, kSignalingMagic, sizeof(kSignalingMagic)) == 0;
-}
-
-static void DrainControlPackets() {
-    static constexpr u32 kBufSize = 256;
-    u8 buf[kBufSize];
-    for (;;) {
-        u32 from_addr = 0;
-        u16 from_port = 0;
-        const int rc = Stubs::ControlRecvFrom(buf, kBufSize, &from_addr, &from_port);
-        if (rc <= 0) {
-            break;
-        }
-        const auto nbytes = static_cast<size_t>(rc);
-        if (nbytes == sizeof(SignalingControl) && HasSignalingMagic(buf, nbytes) &&
-            buf[4] == static_cast<u8>(SignalingPacketType::Control)) {
-            SignalingControl ctrl{};
-            std::memcpy(&ctrl, buf, sizeof(ctrl));
-            HandleControlPacket(from_addr, from_port, ctrl);
-        } else {
-            LOG_WARNING(Lib_NpSignaling, "ReceiveThread: bad control packet (size={})", nbytes);
-        }
-    }
-}
-
-static void ReceiveThreadMain() {
-    static constexpr u32 kBufSize = 256;
-    u8 buf[kBufSize];
-
-    while (!g_receive_stop) {
-        DrainControlPackets();
-
-        u32 from_addr = 0;
-        u16 from_port = 0;
-
-        const int rc = Stubs::SignalingRecvFrom(buf, kBufSize, &from_addr, &from_port);
-        if (rc <= 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
-            continue;
-        }
-
-        const auto nbytes = static_cast<size_t>(rc);
-
-        if (nbytes != sizeof(StunEcho)) {
-            LOG_DEBUG(
-                Lib_NpSignaling,
-                "ReceiveThread DATA from {:#x}:{} size={} b0-4={:02x},{:02x},{:02x},{:02x},{:02x}",
-                from_addr, sceNetNtohs(from_port), nbytes, buf[0], buf[1], buf[2], buf[3],
-                nbytes >= 5 ? buf[4] : 0);
-        }
-
-        if (nbytes == sizeof(StunEcho)) {
-            s32 ctx_id = 0;
-            {
-                SignalingMutexGuard lock;
-                for (const auto& [cid, ctx] : g_contexts) {
-                    if (ctx.active) {
-                        ctx_id = cid;
-                        break;
-                    }
-                }
-            }
-            if (ctx_id == 0) {
-                continue;
-            }
-            StunEcho echo{};
-            std::memcpy(&echo, buf, sizeof(echo));
-            HandleStunEcho(ctx_id, echo);
-            continue;
-        }
-
-        if (!HasSignalingMagic(buf, nbytes)) {
-            LOG_WARNING(Lib_NpSignaling, "ReceiveThread: dropping non-SHAD packet (size={})",
-                        nbytes);
-            continue;
-        }
-        const u8 type = buf[4];
-
-        if (nbytes == sizeof(SignalingEchoPing) &&
-            type == static_cast<u8>(SignalingPacketType::EchoPing)) {
-            SignalingEchoPing ping{};
-            std::memcpy(&ping, buf, sizeof(ping));
-            SignalingEchoPong pong{};
-            pong.conn_id = ping.conn_id;
-            pong.orig_ts_us = ping.send_ts_us;
-            Stubs::SignalingSendTo(&pong, sizeof(pong), from_addr, from_port);
-            continue;
-        }
-        if (nbytes == sizeof(SignalingEchoPong) &&
-            type == static_cast<u8>(SignalingPacketType::EchoPong)) {
-            SignalingEchoPong pong{};
-            std::memcpy(&pong, buf, sizeof(pong));
-            const s64 now = NowUs();
-            s32 rtt_us = static_cast<s32>(now - static_cast<s64>(pong.orig_ts_us));
-            if (rtt_us < 0) {
-                rtt_us = 0;
-            }
-            {
-                SignalingMutexGuard lock;
-                RecordRttSampleLocked(static_cast<s32>(pong.conn_id), rtt_us);
-            }
-            continue;
-        }
-        if (nbytes == sizeof(SignalingHandshake) &&
-            type == static_cast<u8>(SignalingPacketType::Handshake)) {
-            SignalingHandshake hs{};
-            std::memcpy(&hs, buf, sizeof(hs));
-            HandleHandshakePacket(from_addr, from_port, hs);
-            continue;
-        }
-
-        LOG_WARNING(Lib_NpSignaling, "ReceiveThread: unexpected SHAD packet type={} size={}", type,
-                    nbytes);
-    }
-}
-
-static PS4_SYSV_ABI void* ReceiveThreadFunc(void*) {
-    ReceiveThreadMain();
-    return nullptr;
-}
-
-static void StartReceiveThread(s32 priority, u64 affinity_mask, u64 stack_size) {
-    g_receive_stop = false;
-    if (!g_receive_thread) {
-        NpCommon::sceNpCreateThread(&g_receive_thread, ReceiveThreadFunc, nullptr, priority,
-                                    stack_size, affinity_mask, "SceNpSignalingRecv");
-    }
-}
-
-static void StopReceiveThread() {
-    {
-        SignalingMutexGuard lock;
-        g_receive_stop = true;
-    }
-    if (g_receive_thread) {
-        NpCommon::sceNpJoinThread(g_receive_thread, nullptr);
-        g_receive_thread = {};
-    }
-}
-
-static void PingThreadMain() {
-    while (!g_ping_stop) {
-        if (!Stubs::EnsureTransport()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(kSigRetryMs));
-            continue;
-        }
-
-        struct CtxSnapshot {
-            s32 ctx_id;
-            OrbisNpOnlineId online_id{};
-            bool resolved;
-        };
-        std::vector<CtxSnapshot> contexts;
-        {
-            SignalingMutexGuard lock;
-            for (const auto& [ctx_id, ctx] : g_contexts) {
-                if (ctx.active) {
-                    contexts.push_back({ctx_id, ctx.owner_online_id, ctx.ext_addr.load() != 0});
-                }
-            }
-        }
-
-        if (Stubs::Matching2Enabled()) {
-            const u32 server_addr = Stubs::MmServerAddr();
-            const u16 server_port = Stubs::MmServerUdpPort();
-
-            for (const auto& cs : contexts) {
-                if (server_addr == 0 || server_port == 0) {
-                    break;
-                }
-                StunPing ping{};
-                ping.cmd = 0x01;
-                std::memcpy(ping.online_id, cs.online_id.data, ORBIS_NP_ONLINEID_MAX_LENGTH);
-                ping.local_ip = Stubs::AdvertisedAddr();
-
-                Stubs::SignalingSendTo(&ping, sizeof(ping), server_addr, server_port);
-            }
-        }
-
-        SendEchoPings();
-
-        const bool any_unresolved = std::any_of(contexts.begin(), contexts.end(),
-                                                [](const auto& cs) { return !cs.resolved; });
-        const u32 sleep_ms = any_unresolved ? kSigRetryMs : kSigPingMs;
-        std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
-    }
-}
-
-static PS4_SYSV_ABI void* PingThreadFunc(void*) {
-    PingThreadMain();
-    return nullptr;
-}
-
-static void StartPingThread(s32 priority, u64 affinity_mask, u64 stack_size) {
-    g_ping_stop = false;
-    if (!g_ping_thread) {
-        NpCommon::sceNpCreateThread(&g_ping_thread, PingThreadFunc, nullptr, priority, stack_size,
-                                    affinity_mask, "SceNpSignalingPing");
-    }
-}
-
-static void StopPingThread() {
-    g_ping_stop = true;
-    if (g_ping_thread) {
-        NpCommon::sceNpJoinThread(g_ping_thread, nullptr);
-        g_ping_thread = {};
-    }
-}
-
 static void DispatchThreadMain() {
+    auto& state = NpHandler::GetInstance().GetSignalingState();
     for (;;) {
-        ProcessPendingActivations();
-
         QueuedDispatch dispatch;
         {
-            std::unique_lock<std::mutex> lock(g_dispatch_mutex);
+            std::unique_lock<std::mutex> lock(state.dispatch_mutex);
             for (;;) {
-                if (g_dispatch_stop) {
+                if (state.dispatch_stop) {
                     return;
                 }
-                if (g_dispatch_queue.empty()) {
-                    g_dispatch_cv.wait_for(lock, std::chrono::seconds(1), [] {
-                        return g_dispatch_stop || !g_dispatch_queue.empty();
+                if (state.dispatch_queue.empty()) {
+                    state.dispatch_cv.wait_for(lock, std::chrono::seconds(1), [&state] {
+                        return state.dispatch_stop || !state.dispatch_queue.empty();
                     });
                     break;
                 }
-                const auto it = g_dispatch_queue.begin();
+                const auto it = state.dispatch_queue.begin();
                 const auto now = std::chrono::steady_clock::now();
                 if (it->first > now) {
-                    g_dispatch_cv.wait_until(lock, it->first);
+                    state.dispatch_cv.wait_until(lock, it->first);
                     break;
                 }
                 dispatch = std::move(it->second);
-                g_dispatch_queue.erase(it);
+                state.dispatch_queue.erase(it);
                 break;
             }
         }
@@ -488,36 +337,85 @@ static PS4_SYSV_ABI void* DispatchThreadFunc(void*) {
 }
 
 static void StartDispatchThread(s32 priority, u64 affinity_mask, u64 stack_size) {
-    std::lock_guard<std::mutex> lock(g_dispatch_mutex);
-    g_dispatch_stop = false;
-    if (!g_dispatch_thread) {
-        NpCommon::sceNpCreateThread(&g_dispatch_thread, DispatchThreadFunc, nullptr, priority,
+    auto& state = NpHandler::GetInstance().GetSignalingState();
+    std::lock_guard<std::mutex> lock(state.dispatch_mutex);
+    state.dispatch_stop = false;
+    if (!state.dispatch_thread) {
+        NpCommon::sceNpCreateThread(&state.dispatch_thread, DispatchThreadFunc, nullptr, priority,
                                     stack_size, affinity_mask, "SceNpSignalingMain");
     }
 }
 
 static void StopDispatchThread() {
+    auto& state = NpHandler::GetInstance().GetSignalingState();
     {
-        std::lock_guard<std::mutex> lock(g_dispatch_mutex);
-        g_dispatch_stop = true;
-        g_dispatch_queue.clear();
+        std::lock_guard<std::mutex> lock(state.dispatch_mutex);
+        state.dispatch_stop = true;
+        state.dispatch_queue.clear();
     }
-    g_dispatch_cv.notify_all();
-    if (g_dispatch_thread) {
-        NpCommon::sceNpJoinThread(g_dispatch_thread, nullptr);
-        g_dispatch_thread = {};
+    state.dispatch_cv.notify_all();
+    if (state.dispatch_thread) {
+        NpCommon::sceNpJoinThread(state.dispatch_thread, nullptr);
+        state.dispatch_thread = {};
     }
 }
 
 void RegisterRuntimeHooks() {
     Helpers::SetRuntimeHooks({
         .start_dispatch = StartDispatchThread,
-        .start_receive = StartReceiveThread,
-        .start_ping = StartPingThread,
-        .stop_ping = StopPingThread,
-        .stop_receive = StopReceiveThread,
         .stop_dispatch = StopDispatchThread,
     });
+}
+
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("0UvTFeomAUM", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingActivateConnection);
+    LIB_FUNCTION("ZPLavCKqAB0", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingActivateConnectionA);
+    LIB_FUNCTION("X1G4kkN2R-8", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingCancelPeerNetInfo);
+    LIB_FUNCTION("5yYjEdd4t8Y", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingCreateContext);
+    LIB_FUNCTION("dDLNFdY8dws", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingCreateContextA);
+    LIB_FUNCTION("6UEembipgrM", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingDeactivateConnection);
+    LIB_FUNCTION("hx+LIg-1koI", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingDeleteContext);
+    LIB_FUNCTION("GQ0hqmzj0F4", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetConnectionFromNpId);
+    LIB_FUNCTION("CkPxQjSm018", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetConnectionFromPeerAddress);
+    LIB_FUNCTION("B7cT9aVby7A", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetConnectionFromPeerAddressA);
+    LIB_FUNCTION("AN3h0EBSX7A", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetConnectionInfo);
+    LIB_FUNCTION("rcylknsUDwg", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetConnectionInfoA);
+    LIB_FUNCTION("C6ZNCDTj00Y", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetConnectionStatistics);
+    LIB_FUNCTION("bD-JizUb3JM", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetConnectionStatus);
+    LIB_FUNCTION("npU5V56id34", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetContextOption);
+    LIB_FUNCTION("U8AQMlOFBc8", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetLocalNetInfo);
+    LIB_FUNCTION("tOpqyDyMje4", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetMemoryInfo);
+    LIB_FUNCTION("zFgFHId7vAE", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetPeerNetInfo);
+    LIB_FUNCTION("Shr7bZq8QHY", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetPeerNetInfoA);
+    LIB_FUNCTION("2HajCEGgG4s", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingGetPeerNetInfoResult);
+    LIB_FUNCTION("3KOuC4RmZZU", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingInitialize);
+    LIB_FUNCTION("IHRDvZodPYY", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingSetContextOption);
+    LIB_FUNCTION("NPhw0UXaNrk", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingTerminate);
+    LIB_FUNCTION("b4qaXPzMJxo", "libSceNpSignaling", 1, "libSceNpSignaling",
+                 sceNpSignalingTerminateConnection);
 }
 
 } // namespace Libraries::Np::NpSignaling

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/file_sys/backends/host_fs.h"

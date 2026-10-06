@@ -9,14 +9,12 @@ namespace Libraries::Np::NpSignaling::Helpers {
 
 struct SignalingRuntimeHooks {
     void (*start_dispatch)(s32 priority, u64 affinity_mask, u64 stack_size);
-    void (*start_receive)(s32 priority, u64 affinity_mask, u64 stack_size);
-    void (*start_ping)(s32 priority, u64 affinity_mask, u64 stack_size);
-    void (*stop_ping)();
-    void (*stop_receive)();
     void (*stop_dispatch)();
 };
 
 void SetRuntimeHooks(const SignalingRuntimeHooks& hooks);
+void LogInvalidActivationContext(s64 call_time, const void* peer_npid, const void* out_conn_id,
+                                 const void* caller, const void* frame);
 s32 CheckInitializeAppType(u32* is_app_type_4);
 s32 InitSignalingHeap(s64 pool_size);
 void ShutdownSignalingHeap();

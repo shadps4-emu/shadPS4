@@ -152,7 +152,8 @@ void EmitContext::DefineArithmeticTypes() {
     u16_zero_value = Constant(U16, 0U);
     u32_one_value = ConstU32(1U);
     u32_zero_value = ConstU32(0U);
-    f32_zero_value = ConstF32(0.0f);
+    f32_one_value = ConstF32(1.f);
+    f32_zero_value = ConstF32(0.f);
     u64_one_value = Constant(U64, 1ULL);
     u64_zero_value = Constant(U64, 0ULL);
 

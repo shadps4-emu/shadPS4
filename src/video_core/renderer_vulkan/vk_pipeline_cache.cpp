@@ -91,13 +91,14 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
     auto& info = runtime_infos[u32(l_stage)];
     const auto& regs = liverpool->regs;
     const auto BuildCommon = [&](const auto& program) {
-        info.props.num_user_data = program.settings.num_user_regs;
-        info.props.num_input_vgprs = program.settings.vgpr_comp_cnt;
-        info.props.num_allocated_vgprs = program.NumVgprs();
         info.props.fp_denorm_mode32 = program.settings.fp_denorm_mode32;
         info.props.fp_denorm_mode16_64 = program.settings.fp_denorm_mode64;
         info.props.fp_round_mode32 = program.settings.fp_round_mode32;
         info.props.fp_round_mode16_64 = program.settings.fp_round_mode64;
+        info.props.num_allocated_vgprs = program.NumVgprs();
+        info.props.num_user_data = program.settings.num_user_regs;
+        info.props.num_input_vgprs = program.settings.vgpr_comp_cnt;
+        info.props.dx10_clamp = program.settings.dx10_clamp;
     };
     info.Initialize(stage, l_stage);
     switch (stage) {
@@ -169,6 +170,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         info.hw.fs.addr_flags = regs.ps_input_addr;
         info.hw.fs.num_inputs = regs.num_interp;
         info.hw.fs.front_face_all_bits = regs.barycentric_control.front_face_all_bits;
+        info.hw.fs.depth_before_shader = regs.depth_shader_control.depth_before_shader;
         info.hw.fs.num_samples =
             regs.ps_input_addr.sample_coverage_ena && regs.ps_input_ena.sample_coverage_ena
                 ? regs.aa_config.NumSamples()
@@ -196,10 +198,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         const auto& ps_inputs = regs.ps_inputs;
         for (u32 i = 0; i < regs.num_interp; i++) {
             info.hw.fs.inputs[i] = {
-                .param_index = u8(ps_inputs[i].input_offset),
-                .is_default = bool(ps_inputs[i].use_default),
-                .is_flat = bool(ps_inputs[i].flat_shade),
-                .default_value = u8(ps_inputs[i].default_value),
+                .param_index = u16(ps_inputs[i].input_offset),
+                .is_default = u16(ps_inputs[i].use_default),
+                .is_flat = u16(ps_inputs[i].flat_shade),
+                .default_value = u16(ps_inputs[i].default_value),
             };
         }
         for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
@@ -226,6 +228,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         info.props.fp_denorm_mode16_64 = cs_pgm.settings.fp_denorm_mode64;
         info.props.fp_round_mode32 = cs_pgm.settings.fp_round_mode32;
         info.props.fp_round_mode16_64 = cs_pgm.settings.fp_round_mode64;
+        info.props.dx10_clamp = cs_pgm.settings.dx10_clamp;
         info.hw.cs.workgroup_size = {cs_pgm.num_thread_x.full, cs_pgm.num_thread_y.full,
                                      cs_pgm.num_thread_z.full};
         info.hw.cs.tgid_enable = {cs_pgm.IsTgidEnabled(0), cs_pgm.IsTgidEnabled(1),

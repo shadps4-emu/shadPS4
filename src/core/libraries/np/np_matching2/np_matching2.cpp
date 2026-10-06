@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <chrono>
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <fmt/format.h>
@@ -9,7 +10,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/network/net.h"
+#include "core/libraries/net/net.h"
 #include "core/libraries/np/np_handler.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_matching2/np_matching2.h"
@@ -17,6 +18,7 @@
 #include "core/libraries/np/np_matching2/np_matching2_mm.h"
 #include "core/libraries/np/np_matching2/np_matching2_signaling.h"
 #include "core/libraries/np/np_types.h"
+#include "core/libraries/np/signaling_handler.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Libraries::Np::NpMatching2 {
@@ -35,7 +37,12 @@ int PS4_SYSV_ABI sceNpMatching2CreateContext(const OrbisNpMatching2CreateContext
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    return ContextManager::Instance().CreateContext(param->npId, param->serviceLabel, ctxId);
+    const int rc = NpHandler::GetInstance().GetMatching2ContextManager().CreateContext(
+        param->npId, param->serviceLabel, ctxId);
+    if (rc == ORBIS_OK) {
+        SignalingHandler::AddContextRef();
+    }
+    return rc;
 }
 
 int PS4_SYSV_ABI sceNpMatching2CreateContextA(const OrbisNpMatching2CreateContextParameterA* param,
@@ -55,7 +62,12 @@ int PS4_SYSV_ABI sceNpMatching2CreateContextA(const OrbisNpMatching2CreateContex
     const Libraries::Np::OrbisNpId np_id =
         Libraries::Np::NpHandler::GetInstance().GetNpId(param->userId);
 
-    return ContextManager::Instance().CreateContext(&np_id, param->serviceLabel, ctxId, true);
+    const int rc = NpHandler::GetInstance().GetMatching2ContextManager().CreateContext(
+        &np_id, param->serviceLabel, ctxId, true);
+    if (rc == ORBIS_OK) {
+        SignalingHandler::AddContextRef();
+    }
+    return rc;
 }
 
 int PS4_SYSV_ABI sceNpMatching2CreateJoinRoom(OrbisNpMatching2ContextId ctxId,
@@ -71,7 +83,7 @@ int PS4_SYSV_ABI sceNpMatching2CreateJoinRoom(OrbisNpMatching2ContextId ctxId,
         LOG_ERROR(Lib_NpMatching2, "request or requestId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -97,7 +109,7 @@ int PS4_SYSV_ABI sceNpMatching2JoinRoom(OrbisNpMatching2ContextId ctxId,
         LOG_ERROR(Lib_NpMatching2, "request or requestId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -125,7 +137,7 @@ int PS4_SYSV_ABI sceNpMatching2CreateJoinRoomA(OrbisNpMatching2ContextId ctxId,
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -147,7 +159,7 @@ int PS4_SYSV_ABI sceNpMatching2RegisterContextCallback(OrbisNpMatching2ContextCa
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
 
-    ContextManager::Instance().ApplyContextCallback(callback, userdata);
+    NpHandler::GetInstance().GetMatching2ContextManager().ApplyContextCallback(callback, userdata);
     return ORBIS_OK;
 }
 
@@ -159,7 +171,7 @@ int PS4_SYSV_ABI sceNpMatching2RegisterLobbyEventCallback(
         LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -179,7 +191,7 @@ int PS4_SYSV_ABI sceNpMatching2RegisterRoomEventCallback(OrbisNpMatching2Context
         LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -199,7 +211,7 @@ int PS4_SYSV_ABI sceNpMatching2RegisterSignalingCallback(OrbisNpMatching2Context
         LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -207,6 +219,7 @@ int PS4_SYSV_ABI sceNpMatching2RegisterSignalingCallback(OrbisNpMatching2Context
 
     ctx->signaling_callback = callback;
     ctx->signaling_callback_arg = userdata;
+    SignalingHandler::StartMatching2(*ctx);
     return ORBIS_OK;
 }
 
@@ -224,7 +237,7 @@ int PS4_SYSV_ABI sceNpMatching2ContextStart(OrbisNpMatching2ContextId ctxId, u64
         return ORBIS_NET_ERROR_RESOLVER_ETIMEDOUT;
     }
 
-    const s32 rc = ContextManager::Instance().Start(ctxId);
+    const s32 rc = NpHandler::GetInstance().GetMatching2ContextManager().Start(ctxId);
     if (rc != ORBIS_OK) {
         return rc;
     }
@@ -241,14 +254,19 @@ int PS4_SYSV_ABI sceNpMatching2ContextStop(OrbisNpMatching2ContextId ctxId) {
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
 
-    const s32 rc = ContextManager::Instance().Stop(ctxId);
+    const s32 rc = NpHandler::GetInstance().GetMatching2ContextManager().Stop(ctxId);
     if (rc != ORBIS_OK) {
         return rc;
+    }
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
+    if (ctx && ctx->signaling_callback) {
+        SignalingHandler::StopMatching2(*ctx,
+                                        ORBIS_NP_MATCHING2_SIGNALING_ERROR_TERMINATED_BY_MYSELF);
     }
 
     const s32 submit_rc = MmContextStop(ctxId);
     if (submit_rc != ORBIS_OK) {
-        ContextManager::Instance().CompleteStop(ctxId);
+        NpHandler::GetInstance().GetMatching2ContextManager().CompleteStop(ctxId, ctx);
         return submit_rc;
     }
     return ORBIS_OK;
@@ -276,7 +294,6 @@ int PS4_SYSV_ABI sceNpMatching2Initialize(OrbisNpMatching2InitializeParameter* p
     InitEventDispatcher();
 
     SetInitialized(true);
-    g_state.initialized.store(true);
 
     return ORBIS_OK;
 }
@@ -290,10 +307,15 @@ int PS4_SYSV_ABI sceNpMatching2Terminate() {
     }
 
     SetInitialized(false);
-    g_state.initialized.store(false);
 
     TermEventDispatcher();
-    ContextManager::Instance().Reset();
+    NpHandler::GetInstance().GetMatching2ContextManager().Reset();
+    {
+        auto& state = NpHandler::GetInstance().GetMatching2State();
+        std::lock_guard lock(state.mutex);
+        state.next_request_id = 1;
+    }
+    SignalingHandler::ReleaseContextRef();
 
     return ORBIS_OK;
 }
@@ -310,11 +332,15 @@ int PS4_SYSV_ABI sceNpMatching2SetDefaultRequestOptParam(
         LOG_ERROR(Lib_NpMatching2, "requestOpt null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
+
+    LOG_INFO(Lib_NpMatching2, "ctx={} opt={} callback={:#x} arg={} timeout={} appId={}", ctxId,
+             fmt::ptr(requestOpt), reinterpret_cast<std::uintptr_t>(requestOpt->callback),
+             fmt::ptr(requestOpt->arg), requestOpt->timeout, requestOpt->appId);
 
     ctx->default_request_callback = requestOpt->callback;
     ctx->default_request_callback_arg = requestOpt->arg;
@@ -333,6 +359,11 @@ int PS4_SYSV_ABI sceNpMatching2GetServerId(OrbisNpMatching2ContextId ctxId,
     if (!serverId) {
         LOG_ERROR(Lib_NpMatching2, "serverId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
 
     *serverId = 1;
@@ -356,7 +387,7 @@ int PS4_SYSV_ABI sceNpMatching2GetWorldInfoList(OrbisNpMatching2ContextId ctxId,
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -383,7 +414,7 @@ int PS4_SYSV_ABI sceNpMatching2LeaveRoom(OrbisNpMatching2ContextId ctxId,
         LOG_ERROR(Lib_NpMatching2, "request or requestId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -411,7 +442,7 @@ int PS4_SYSV_ABI sceNpMatching2SearchRoom(OrbisNpMatching2ContextId ctxId,
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -439,7 +470,7 @@ int PS4_SYSV_ABI sceNpMatching2SetUserInfo(OrbisNpMatching2ContextId ctxId,
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -466,7 +497,7 @@ int PS4_SYSV_ABI sceNpMatching2SendRoomMessage(OrbisNpMatching2ContextId ctxId, 
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -482,7 +513,8 @@ int PS4_SYSV_ABI sceNpMatching2SendRoomMessage(OrbisNpMatching2ContextId ctxId, 
 int PS4_SYSV_ABI sceNpMatching2SetRoomDataExternal(
     OrbisNpMatching2ContextId ctxId, OrbisNpMatching2SetRoomDataExternalRequest* request,
     OrbisNpMatching2RequestOptParam* requestOpt, OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, request = {}, requestOpt = {}, caller = {}",
+             ctxId, fmt::ptr(request), fmt::ptr(requestOpt), fmt::ptr(__builtin_return_address(0)));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -493,7 +525,7 @@ int PS4_SYSV_ABI sceNpMatching2SetRoomDataExternal(
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -509,7 +541,8 @@ int PS4_SYSV_ABI sceNpMatching2SetRoomDataExternal(
 int PS4_SYSV_ABI sceNpMatching2SetRoomDataInternal(
     OrbisNpMatching2ContextId ctxId, OrbisNpMatching2SetRoomDataInternalRequest* request,
     OrbisNpMatching2RequestOptParam* requestOpt, OrbisNpMatching2RequestId* requestId) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, request = {}, requestOpt = {}, caller = {}",
+             ctxId, fmt::ptr(request), fmt::ptr(requestOpt), fmt::ptr(__builtin_return_address(0)));
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
@@ -520,7 +553,7 @@ int PS4_SYSV_ABI sceNpMatching2SetRoomDataInternal(
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -546,7 +579,7 @@ s32 PS4_SYSV_ABI sceNpMatching2SignalingGetConnectionStatus(OrbisNpMatching2Cont
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -555,8 +588,9 @@ s32 PS4_SYSV_ABI sceNpMatching2SignalingGetConnectionStatus(OrbisNpMatching2Cont
     constexpr s32 kInactive = 0;
     constexpr s32 kPending = 1;
     constexpr s32 kActive = 2;
-    const auto room_it = ctx->room_cache.find(roomId);
-    const bool in_room = room_it != ctx->room_cache.end() &&
+    auto cache = NpHandler::GetInstance().LockMatching2Cache(ctx->ctx_id);
+    const auto room_it = cache->rooms.find(roomId);
+    const bool in_room = room_it != cache->rooms.end() &&
                          room_it->second.members.find(memberId) != room_it->second.members.end();
 
     if (!in_room) {
@@ -567,8 +601,8 @@ s32 PS4_SYSV_ABI sceNpMatching2SignalingGetConnectionStatus(OrbisNpMatching2Cont
         return ORBIS_OK;
     }
 
-    auto peer_it = ctx->peers.find(memberId);
-    if (peer_it == ctx->peers.end()) {
+    auto peer_it = cache->peers.find(memberId);
+    if (peer_it == cache->peers.end()) {
         PeerInfo pi{};
         pi.member_id = memberId;
         pi.status = kPending;
@@ -578,7 +612,7 @@ s32 PS4_SYSV_ABI sceNpMatching2SignalingGetConnectionStatus(OrbisNpMatching2Cont
             pi.port = member_it->second.port;
             pi.online_id = member_it->second.np_id.handle;
         }
-        peer_it = ctx->peers.emplace(memberId, pi).first;
+        peer_it = cache->peers.emplace(memberId, pi).first;
     }
 
     const s32 status = peer_it->second.status == kActive ? kActive : kPending;
@@ -609,10 +643,11 @@ int PS4_SYSV_ABI sceNpMatching2DestroyContext(OrbisNpMatching2ContextId ctxId) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
-    if (!ContextManager::Instance().Destroy(ctxId)) {
+    if (!NpHandler::GetInstance().GetMatching2ContextManager().Destroy(ctxId)) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
     }
+    SignalingHandler::ReleaseContextRef();
     return ORBIS_OK;
 }
 
@@ -625,7 +660,7 @@ int PS4_SYSV_ABI sceNpMatching2RegisterLobbyMessageCallback(
         LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -638,13 +673,14 @@ int PS4_SYSV_ABI sceNpMatching2RegisterLobbyMessageCallback(
 
 int PS4_SYSV_ABI sceNpMatching2RegisterRoomMessageCallback(
     OrbisNpMatching2ContextId ctxId, OrbisNpMatching2RoomMessageCallback callback, void* userdata) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, userdata = {}", ctxId, userdata);
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, callback = {}, userdata = {}", ctxId,
+             fmt::ptr(callback), userdata);
 
     if (!IsInitialized()) {
         LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -709,7 +745,7 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomDataExternalList(
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -736,7 +772,7 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomDataInternal(
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -746,11 +782,14 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomDataInternal(
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
 
-    void* request_data = BuildGetRoomDataInternalPayload(*ctx, request->roomId);
+    auto request_payload_owner = std::make_shared<CallbackPayload>();
+    void* request_data =
+        BuildGetRoomDataInternalPayload(*ctx, *request_payload_owner, request->roomId);
 
     PendingEvent ev{};
     ev.type = PendingEvent::REQUEST_CB;
     ev.ctx_id = ctxId;
+    ev.context_owner = ctx;
     ev.fire_at = std::chrono::steady_clock::now();
     ev.req_id = reqId;
     ev.req_event = ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_DATA_INTERNAL;
@@ -759,6 +798,7 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomDataInternal(
     ev.request_cb = request_cb.callback;
     ev.request_cb_arg = request_cb.arg;
     ev.request_data = request_data;
+    ev.payload_owner = std::move(request_payload_owner);
     ScheduleEvent(std::move(ev));
     return ORBIS_OK;
 }
@@ -777,7 +817,7 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataExternalList(
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -790,8 +830,49 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataExternalList(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataInternal() {
-    LOG_INFO(Lib_NpMatching2, "called");
+int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataInternal(
+    OrbisNpMatching2ContextId ctxId,
+    const OrbisNpMatching2GetRoomMemberDataInternalRequest* request,
+    const OrbisNpMatching2RequestOptParam* requestOpt, OrbisNpMatching2RequestId* requestId) {
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+
+    if (!IsInitialized()) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    if (!request || !requestId || (request->attrIdNum > 0 && !request->attrId)) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
+
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+
+    auto request_payload_owner = std::make_shared<CallbackPayload>();
+    void* request_data =
+        BuildGetRoomMemberDataInternalPayload(*ctx, *request_payload_owner, *request);
+
+    PendingEvent ev{};
+    ev.type = PendingEvent::REQUEST_CB;
+    ev.ctx_id = ctxId;
+    ev.context_owner = ctx;
+    ev.fire_at = std::chrono::steady_clock::now();
+    ev.req_id = reqId;
+    ev.req_event = ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_INTERNAL_A;
+    ev.error_code = 0;
+    const RequestCallbackInfo request_cb = ConsumeRequestCallback(ctx);
+    ev.request_cb = request_cb.callback;
+    ev.request_cb_arg = request_cb.arg;
+    ev.request_data = request_data;
+    ev.payload_owner = std::move(request_payload_owner);
+    ScheduleEvent(std::move(ev));
     return ORBIS_OK;
 }
 
@@ -810,7 +891,7 @@ int PS4_SYSV_ABI sceNpMatching2GetUserInfoListA(OrbisNpMatching2ContextId ctxId,
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -838,7 +919,7 @@ int PS4_SYSV_ABI sceNpMatching2GetUserInfoList(OrbisNpMatching2ContextId ctxId,
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -876,7 +957,7 @@ int PS4_SYSV_ABI sceNpMatching2JoinRoomA(OrbisNpMatching2ContextId ctxId,
         LOG_ERROR(Lib_NpMatching2, "request or requestId null");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -904,7 +985,7 @@ int PS4_SYSV_ABI sceNpMatching2KickoutRoomMember(OrbisNpMatching2ContextId ctxId
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -938,8 +1019,32 @@ int PS4_SYSV_ABI sceNpMatching2SetLobbyMemberDataInternal() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpMatching2SetRoomMemberDataInternal() {
-    LOG_INFO(Lib_NpMatching2, "called");
+int PS4_SYSV_ABI sceNpMatching2SetRoomMemberDataInternal(
+    OrbisNpMatching2ContextId ctxId,
+    const OrbisNpMatching2SetRoomMemberDataInternalRequest* request,
+    const OrbisNpMatching2RequestOptParam* requestOpt, OrbisNpMatching2RequestId* requestId) {
+    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}, requestOpt = {}", ctxId, fmt::ptr(requestOpt));
+
+    if (!IsInitialized()) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    if (!request || !requestId ||
+        (request->roomMemberBinAttrInternalNum > 0 && !request->roomMemberBinAttrInternal)) {
+        LOG_ERROR(Lib_NpMatching2, "request or requestId null");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
+    }
+
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
+    if (!ctx) {
+        LOG_ERROR(Lib_NpMatching2, "invalid context id");
+        return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
+    }
+
+    StoreRequestCallback(ctx, requestOpt);
+    const OrbisNpMatching2RequestId reqId = AllocRequestId();
+    *requestId = reqId;
+    MmSetRoomMemberDataInternal(ctxId, reqId, *request);
     return ORBIS_OK;
 }
 
@@ -966,7 +1071,7 @@ int PS4_SYSV_ABI sceNpMatching2SignalingGetPingInfo(OrbisNpMatching2ContextId ct
         return ORBIS_NP_MATCHING2_ERROR_INVALID_ARGUMENT;
     }
 
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -978,13 +1083,13 @@ int PS4_SYSV_ABI sceNpMatching2SignalingGetPingInfo(OrbisNpMatching2ContextId ct
     *reqId = request_id;
 
     auto request_payload_owner = std::make_shared<CallbackPayload>();
-    ctx->request_payload_override = request_payload_owner.get();
-    void* request_data = BuildSignalingGetPingInfoPayload(*ctx, request->roomId);
-    ctx->request_payload_override = nullptr;
+    void* request_data =
+        BuildSignalingGetPingInfoPayload(*ctx, *request_payload_owner, request->roomId);
 
     PendingEvent ev{};
     ev.type = PendingEvent::REQUEST_CB;
     ev.ctx_id = ctxId;
+    ev.context_owner = ctx;
     ev.fire_at = std::chrono::steady_clock::now();
     ev.req_id = request_id;
     ev.req_event = ORBIS_NP_MATCHING2_REQUEST_EVENT_SIGNALING_GET_PING_INFO;
@@ -993,7 +1098,7 @@ int PS4_SYSV_ABI sceNpMatching2SignalingGetPingInfo(OrbisNpMatching2ContextId ct
     ev.request_cb = request_cb.callback;
     ev.request_cb_arg = request_cb.arg;
     ev.request_data = request_data;
-    ev.request_payload_owner = std::move(request_payload_owner);
+    ev.payload_owner = std::move(request_payload_owner);
     ScheduleEvent(std::move(ev));
     return ORBIS_OK;
 }
@@ -1013,7 +1118,7 @@ int PS4_SYSV_ABI sceNpMatching2SignalingGetConnectionInfoA(OrbisNpMatching2Conte
         LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -1032,7 +1137,7 @@ int PS4_SYSV_ABI sceNpMatching2SignalingGetConnectionInfo(OrbisNpMatching2Contex
         LOG_ERROR(Lib_NpMatching2, "not initialized");
         return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
     }
-    ContextObject* ctx = ContextManager::Instance().Get(ctxId);
+    auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(ctxId);
     if (!ctx) {
         LOG_ERROR(Lib_NpMatching2, "invalid context id");
         return ORBIS_NP_MATCHING2_ERROR_INVALID_CONTEXT_ID;
@@ -1041,10 +1146,13 @@ int PS4_SYSV_ABI sceNpMatching2SignalingGetConnectionInfo(OrbisNpMatching2Contex
     return FillMatching2ConnectionInfo(*ctx, roomId, memberId, infoType, connInfo, false);
 }
 
-int PS4_SYSV_ABI sceNpMatching2SignalingGetLocalNetInfo(OrbisNpMatching2ContextId ctxId,
-                                                        void* info) {
-    LOG_INFO(Lib_NpMatching2, "called, ctxId = {}", ctxId);
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNpMatching2SignalingGetLocalNetInfo(void* info) {
+    LOG_INFO(Lib_NpMatching2, "called");
+    if (!IsInitialized()) {
+        LOG_ERROR(Lib_NpMatching2, "not initialized");
+        return ORBIS_NP_MATCHING2_ERROR_NOT_INITIALIZED;
+    }
+    return FillMatching2LocalNetInfo(info);
 }
 
 int PS4_SYSV_ABI sceNpMatching2SignalingGetPeerNetInfoResult() {
