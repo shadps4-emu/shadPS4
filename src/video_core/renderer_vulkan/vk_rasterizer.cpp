@@ -558,8 +558,7 @@ void Rasterizer::BindIndexBuffer(u32 index_offset, bool is_indirect) {
     vk::Buffer index_buffer{};
     u64 buffer_offset{};
     if (index_buffer_size != 0) {
-        const auto [buffer, offset] =
-            buffer_cache.ObtainBuffer(index_address, index_buffer_size);
+        const auto [buffer, offset] = buffer_cache.ObtainBuffer(index_address, index_buffer_size);
         needs_barrier |= runtime.IsBufferAccessed(buffer, offset, index_buffer_size);
         bound_buffers.emplace_back(buffer, offset, index_buffer_size,
                                    vk::AccessFlagBits2::eIndexRead);
