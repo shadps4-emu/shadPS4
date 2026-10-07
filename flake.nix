@@ -121,6 +121,7 @@
             , robin-map
             , vulkan-headers
             , vulkan-memory-allocator
+            , vulkan-loader
             , xbyak
             , xxhash
             , zarchive
@@ -182,10 +183,7 @@
                 libdrm
                 libgbm
                 libpulseaudio
-                (sdl3.overrideAttrs
-                  (
-                    finalAttrs: baseAttrs: { src = if enableSystemLibraries then ./externals/sdl3 else baseAttrs.src; }
-                  ))
+                vulkan-loader
               ] ++ x11Libs
               ++ lib.optionals enableSystemLibraries [
                 boost
@@ -213,6 +211,7 @@
                 zlib
                 zydis
                 pugixml
+                sdl3
               ];
 
               cmakeFlags = [
@@ -220,6 +219,9 @@
                 (lib.cmakeBool "ENABLE_DISCORD_RPC" enableDiscordRpc)
                 (lib.cmakeBool "ENABLE_SYSTEM_LIBRARIES" enableSystemLibraries)
                 (lib.cmakeBool "ENABLE_TESTS" false)
+                (lib.cmakeBool "SDL_VULKAN" true)
+                (lib.cmakeBool "SDL_WAYLAND" true)
+                (lib.cmakeBool "SDL_X11" true)
               ] ++ lib.optionals (!enableSystemLibraries) [
                 (lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_FMT" "${self}/externals/fmt")
                 (lib.cmakeBool "CMAKE_CXX_SCAN_FOR_MODULES" false)
@@ -227,7 +229,7 @@
 
               inherit dontStrip;
 
-              patchPhase = ''
+              postPatch = ''
                 # Pevents GIT-NOTFOUND in titlebar.
                 substituteInPlace src/common/scm_rev.cpp.in \
                   --replace-fail '@GIT_BRANCH@' '${self.shortRev or "Dirty"}'
@@ -235,10 +237,17 @@
                   --replace-fail '@GIT_DESC@' ' '
               ''
               + lib.optionalString (!enableSystemLibraries) ''
+                # Pass the commit sha to the ffmpeg-core pulled before the build.
                 substituteInPlace externals/ffmpeg-core/CMakeLists.txt \
                   --replace-fail \
                   'set(FFMPEG_ZIP_PATH "''${CMAKE_BINARY_DIR}/externals/ffmpeg-''${FFMPEG_GIT_SHA}.zip")' \
                   'set(FFMPEG_ZIP_PATH "''${CMAKE_BINARY_DIR}/externals/ffmpeg-${ffmpegZip.commit}.zip")'
+                
+                # SDL3 calls dlopen for libvulkan.so, replace with the Nix Path.
+                substituteInPlace externals/sdl3/src/video/wayland/SDL_waylandvulkan.c \
+                                  externals/sdl3/src/video/x11/SDL_x11vulkan.c \
+                                  externals/sdl3/src/video/offscreen/SDL_offscreenvulkan.c \
+                --replace-fail 'libvulkan.so' '${lib.getLib vulkan-loader}/lib/libvulkan.so'
               '';
 
               preConfigure = lib.optionalString (!enableSystemLibraries) ''
