@@ -230,7 +230,6 @@ std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& gam
     }
 
     if (is_different_game_root) {
-        LOG_DEBUG(Loader, "is_different_game_root");
         return std::nullopt;
     } else {
         if (auto found = boot_path_for(dir / game_id)) {
