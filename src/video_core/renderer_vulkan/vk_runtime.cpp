@@ -433,6 +433,41 @@ void Runtime::CopyMip(VideoCore::Image* src, VideoCore::Image* dst, u32 mip, u32
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
 
+void Runtime::CopyRegion(VideoCore::Image* src, VideoCore::Image* dst) {
+    const vk::ImageCopy image_copy{
+        .srcSubresource{
+            .aspectMask = src->aspect_mask,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+        .dstSubresource{
+            .aspectMask = dst->aspect_mask,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+        .extent = {std::min(src->info.size.width, dst->info.size.width),
+                   std::min(src->info.size.height, dst->info.size.height), 1},
+    };
+    SetBackingSamples(dst, dst->info.num_samples);
+    SetBackingSamples(src, src->info.num_samples);
+    scheduler.EndRendering();
+    bool needs_flush =
+        Transit(src, vk::ImageLayout::eTransferSrcOptimal, vk::PipelineStageFlagBits2::eCopy,
+                vk::AccessFlagBits2::eTransferRead);
+    needs_flush |= Transit(dst, vk::ImageLayout::eTransferDstOptimal,
+                           vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite);
+    if (needs_flush) {
+        FlushBarriers();
+    }
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.copyImage(src->GetImage(), vk::ImageLayout::eTransferSrcOptimal, dst->GetImage(),
+                     vk::ImageLayout::eTransferDstOptimal, image_copy);
+    dst->flags |= (src->flags & VideoCore::ImageFlagBits::GpuModified);
+    dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
+}
+
 void Runtime::CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst) {
     if (src->info.num_samples == 1 && dst->info.num_samples == 1) {
         if ((instance.IsMaintenance8Supported() ||
