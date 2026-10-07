@@ -3,7 +3,6 @@
 
 #include <bit>
 #include <cerrno>
-#include <utility>
 #include "core/cpu_affinity.h"
 #include "core/libraries/kernel/posix_error.h"
 
@@ -131,10 +130,6 @@ int CurrentHostCpu() {
 
 } // namespace
 
-CpuAffinity::CpuAffinity(const std::vector<int>& allowed) {
-    Remap(allowed);
-}
-
 void CpuAffinity::Remap(const std::vector<int>& allowed) {
     host_cpus.clear();
     for (const int cpu : allowed) {
@@ -145,30 +140,6 @@ void CpuAffinity::Remap(const std::vector<int>& allowed) {
     }
 }
 
-int CpuAffinity::Refresh(uintptr_t thread) {
-    std::vector<int> effective;
-    const int ret = ReadHostAffinity(thread, effective);
-    if (ret != 0) {
-        return ret;
-    }
-    if (host_cpus.empty() || (!applied_cpus.empty() && effective != applied_cpus)) {
-        Remap(effective);
-        applied_cpus = std::move(effective);
-    }
-    return 0;
-}
-
-int CpuAffinity::GetAllowedHostCpus(uintptr_t thread, std::vector<int>& cpus) {
-    const int ret = Refresh(thread);
-    if (ret == 0) {
-        cpus.clear();
-        for (const auto& cpu : host_cpus) {
-            cpus.push_back(cpu.id);
-        }
-    }
-    return ret;
-}
-
 int CpuAffinity::SetThreadAffinity(uintptr_t thread, u64 guest_mask) {
     if (guest_mask == 0 || (guest_mask & ~u64{0xff}) != 0) {
         return POSIX_EINVAL;
@@ -176,8 +147,12 @@ int CpuAffinity::SetThreadAffinity(uintptr_t thread, u64 guest_mask) {
 #if !defined(_WIN32) && !defined(__linux__) && !defined(__FreeBSD__)
     return 0;
 #else
-    if (const int ret = Refresh(thread); ret != 0) {
-        return ret;
+    if (host_cpus.empty()) {
+        std::vector<int> allowed;
+        if (const int ret = ReadHostAffinity(thread, allowed); ret != 0) {
+            return ret;
+        }
+        Remap(allowed);
     }
     for (int attempt = 0; attempt < 3; ++attempt) {
         std::vector<int> requested;
@@ -195,11 +170,9 @@ int CpuAffinity::SetThreadAffinity(uintptr_t thread, u64 guest_mask) {
             return read_ret;
         }
         if (ret == 0 && effective == requested) {
-            applied_cpus = std::move(effective);
             return 0;
         }
         Remap(effective);
-        applied_cpus = std::move(effective);
     }
     return POSIX_EAGAIN;
 #endif
