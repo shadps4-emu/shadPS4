@@ -1373,6 +1373,7 @@ s32 PS4_SYSV_ABI posix_fsync(s32 fd) {
         return -1;
     }
 
+    std::scoped_lock lk{file->m_mutex};
     if (file->type == Core::FileSys::FileType::Device) {
         s32 result = file->device->fsync();
         if (result < 0) {
@@ -1392,6 +1393,28 @@ s32 PS4_SYSV_ABI sceKernelFsync(s32 fd) {
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
+}
+
+s32 PS4_SYSV_ABI posix_fdatasync(s32 fd) {
+    return posix_fsync(fd);
+}
+
+s32 PS4_SYSV_ABI sceKernelFdatasync(s32 fd) {
+    s32 result = posix_fdatasync(fd);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
+}
+
+void PS4_SYSV_ABI posix_sync() {
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    h->FlushAll();
+}
+
+void PS4_SYSV_ABI sceKernelSync() {
+    posix_sync();
 }
 
 static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
@@ -1758,6 +1781,12 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("juWbTNM+8hw", "libScePosix", 1, "libkernel", posix_fsync);
     LIB_FUNCTION("juWbTNM+8hw", "libkernel", 1, "libkernel", posix_fsync);
     LIB_FUNCTION("fTx66l5iWIA", "libkernel", 1, "libkernel", sceKernelFsync);
+    LIB_FUNCTION("KIbJFQ0I1Cg", "libkernel", 1, "libkernel", posix_fdatasync);
+    LIB_FUNCTION("KIbJFQ0I1Cg", "libScePosix", 1, "libkernel", posix_fdatasync);
+    LIB_FUNCTION("30Rh4ixbKy4", "libkernel", 1, "libkernel", sceKernelFdatasync);
+    LIB_FUNCTION("Y2OqwJQ3lr8", "libkernel", 1, "libkernel", posix_sync);
+    LIB_FUNCTION("Y2OqwJQ3lr8", "libScePosix", 1, "libkernel", posix_sync);
+    LIB_FUNCTION("uvT2iYBBnkY", "libkernel", 1, "libkernel", sceKernelSync);
     LIB_FUNCTION("j2AIqSqJP0w", "libkernel", 1, "libkernel", sceKernelGetdents);
     LIB_FUNCTION("sfKygSjIbI8", "libkernel", 1, "libkernel", getdirentries);
     LIB_FUNCTION("2G6i6hMIUUY", "libkernel", 1, "libkernel", posix_getdents);
