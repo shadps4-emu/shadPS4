@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <array>
 #include <vector>
 #include "common/types.h"
 
@@ -11,7 +10,7 @@ namespace Core {
 
 class CpuAffinity {
 public:
-    explicit CpuAffinity(std::vector<int> allowed = {});
+    explicit CpuAffinity(const std::vector<int>& allowed = {});
 
     int SetThreadAffinity(uintptr_t thread, u64 guest_mask);
     int CurrentGuestCpu(u64 guest_mask);
@@ -19,10 +18,13 @@ public:
 
 private:
     int Refresh(uintptr_t thread);
-    void Remap(std::vector<int> allowed);
+    void Remap(const std::vector<int>& allowed);
 
-    std::array<int, 8> host_cpus{};
-    std::vector<int> allowed_cpus;
+    struct HostCpu {
+        int id;
+        u8 guest_mask;
+    };
+    std::vector<HostCpu> host_cpus;
     std::vector<int> applied_cpus;
 };
 

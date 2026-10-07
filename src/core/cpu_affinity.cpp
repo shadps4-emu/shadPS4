@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm>
 #include <bit>
 #include <cerrno>
 #include <utility>
@@ -132,16 +131,17 @@ int CurrentHostCpu() {
 
 } // namespace
 
-CpuAffinity::CpuAffinity(std::vector<int> allowed) {
-    Remap(std::move(allowed));
+CpuAffinity::CpuAffinity(const std::vector<int>& allowed) {
+    Remap(allowed);
 }
 
-void CpuAffinity::Remap(std::vector<int> allowed) {
-    allowed_cpus = std::move(allowed);
-    if (!allowed_cpus.empty()) {
-        for (size_t guest = 0; guest < host_cpus.size(); ++guest) {
-            host_cpus[guest] = allowed_cpus[guest % allowed_cpus.size()];
-        }
+void CpuAffinity::Remap(const std::vector<int>& allowed) {
+    host_cpus.clear();
+    for (const int cpu : allowed) {
+        host_cpus.push_back({cpu, 0});
+    }
+    for (int guest = 0; guest < 8 && !host_cpus.empty(); ++guest) {
+        host_cpus[guest % host_cpus.size()].guest_mask |= 1U << guest;
     }
 }
 
@@ -151,7 +151,7 @@ int CpuAffinity::Refresh(uintptr_t thread) {
     if (ret != 0) {
         return ret;
     }
-    if (allowed_cpus.empty() || (!applied_cpus.empty() && effective != applied_cpus)) {
+    if (host_cpus.empty() || (!applied_cpus.empty() && effective != applied_cpus)) {
         Remap(effective);
         applied_cpus = std::move(effective);
     }
@@ -161,7 +161,10 @@ int CpuAffinity::Refresh(uintptr_t thread) {
 int CpuAffinity::GetAllowedHostCpus(uintptr_t thread, std::vector<int>& cpus) {
     const int ret = Refresh(thread);
     if (ret == 0) {
-        cpus = allowed_cpus;
+        cpus.clear();
+        for (const auto& cpu : host_cpus) {
+            cpus.push_back(cpu.id);
+        }
     }
     return ret;
 }
@@ -178,13 +181,11 @@ int CpuAffinity::SetThreadAffinity(uintptr_t thread, u64 guest_mask) {
     }
     for (int attempt = 0; attempt < 3; ++attempt) {
         std::vector<int> requested;
-        for (size_t guest = 0; guest < host_cpus.size(); ++guest) {
-            if (guest_mask & (u64{1} << guest)) {
-                requested.push_back(host_cpus[guest]);
+        for (const auto& cpu : host_cpus) {
+            if (guest_mask & cpu.guest_mask) {
+                requested.push_back(cpu.id);
             }
         }
-        std::ranges::sort(requested);
-        requested.erase(std::unique(requested.begin(), requested.end()), requested.end());
         const int ret = ApplyHostAffinity(thread, requested);
         if (ret != 0 && ret != POSIX_EINVAL) {
             return ret;
@@ -216,11 +217,10 @@ int CpuAffinity::CurrentGuestCpu(u64 guest_mask) {
         if (host_cpu < 0) {
             return -1;
         }
-        if (!allowed_cpus.empty()) {
-            for (size_t guest = 0; guest < host_cpus.size(); ++guest) {
-                if ((guest_mask & (u64{1} << guest)) != 0 && host_cpus[guest] == host_cpu) {
-                    return static_cast<int>(guest);
-                }
+        for (const auto& cpu : host_cpus) {
+            const u64 candidates = cpu.guest_mask & guest_mask;
+            if (cpu.id == host_cpu && candidates != 0) {
+                return std::countr_zero(candidates);
             }
         }
         if (SetThreadAffinity(0, guest_mask) != 0) {

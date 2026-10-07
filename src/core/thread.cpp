@@ -35,15 +35,10 @@ int NativeThread::Create(ThreadFunc func, void* arg, u64 affinity_mask,
     struct Startup {
         ThreadFunc func;
         void* arg;
-        CpuAffinity& affinity;
-        u64 mask;
-        std::promise<int> ready;
-        std::future<void> start;
+        std::future<int> ready;
     };
-    std::promise<void> start;
-    auto startup = std::make_unique<Startup>(func, arg, cpu_affinity, affinity_mask,
-                                             std::promise<int>{}, start.get_future());
-    auto ready = startup->ready.get_future();
+    std::promise<int> ready;
+    auto startup = std::make_unique<Startup>(func, arg, ready.get_future());
     const auto entry = [](void* data)
 #ifdef _WIN64
         -> DWORD
@@ -54,9 +49,7 @@ int NativeThread::Create(ThreadFunc func, void* arg, u64 affinity_mask,
         std::unique_ptr<Startup> state{static_cast<Startup*>(data)};
         const auto func = state->func;
         const auto arg = state->arg;
-        const int ret = state->affinity.SetThreadAffinity(0, state->mask);
-        state->ready.set_value(ret);
-        state->start.wait();
+        const int ret = state->ready.get();
         state.reset();
         if (ret != 0) {
             return 0;
@@ -76,8 +69,8 @@ int NativeThread::Create(ThreadFunc func, void* arg, u64 affinity_mask,
     }
 #endif
     startup.release();
-    const int error = ready.get();
-    start.set_value();
+    const int error = cpu_affinity.SetThreadAffinity(GetHandle(), affinity_mask);
+    ready.set_value(error);
     if (error != 0) {
 #ifdef _WIN64
         WaitForSingleObject(native_handle, INFINITE);
