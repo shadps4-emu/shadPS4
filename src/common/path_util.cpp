@@ -224,7 +224,7 @@ std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& gam
     if (auto found = boot_path_for(dir)) {
         if (dir.filename() == game_id) { // Check if this is the game we're looking for
             return found;
-        } else { // if not, don't waste time looking through game folders in a different game
+        } else { // if not, don't waste time looking through game data folders in a different game
             is_different_game_root = true;
         }
     }
