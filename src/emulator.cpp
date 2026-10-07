@@ -479,6 +479,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "General isRedZonePatchingEnabled: {}",
              EmulatorSettings.IsRedZonePatchingEnabled());
 #endif
+    LOG_INFO(Config, "General p2pPort: {}", EmulatorSettings.GetP2PPort());
     LOG_INFO(Config, "Log sync: {}", EmulatorSettings.IsLogSync());
     LOG_INFO(Config, "Log skipDuplicate: {}", EmulatorSettings.IsLogSkipDuplicate());
 #ifdef _WIN32

@@ -36,6 +36,8 @@ path = [
     "src/resources/silver.png",
     "src/resources/trophy.wav",
     "AGENTS.md",
+    "src/resources/amd_rcp_index_table.bin.zstd",
+    "src/resources/amd_rsqrt_index_table.bin.zstd",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "shadPS4 Emulator Project"
