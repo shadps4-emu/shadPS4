@@ -605,9 +605,6 @@ private:
     }
 
     static void PrintChangedSummary(const std::vector<std::string>& changed);
-    void ApplyLegacyNetworkKeys(const nlohmann::json& general);
-    static void SyncLegacyNetworkKeys(const nlohmann::json& old_general, nlohmann::json& general,
-                                      const nlohmann::json& network);
 
 public:
     // Add these getters to access overrideable fields

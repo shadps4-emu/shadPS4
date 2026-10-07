@@ -256,9 +256,6 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
                     existing = json::object();
                 }
             }
-            if (existing.contains("General") && existing["General"].is_object()) {
-                SyncLegacyNetworkKeys(existing["General"], generalObj, networkObj);
-            }
             j["General"] = generalObj;
 
             json logObj = json::object();
@@ -327,9 +324,6 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
                 else
                     existing[section] = val;
             }
-            if (existing["General"].is_object()) {
-                SyncLegacyNetworkKeys(existing["General"], existing["General"], j["Network"]);
-            }
 
             std::ofstream out(path);
             if (!out) {
@@ -342,29 +336,6 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
     } catch (const std::exception& e) {
         LOG_ERROR(Config, "Error saving settings: {}", e.what());
         return false;
-    }
-}
-
-void EmulatorSettingsImpl::ApplyLegacyNetworkKeys(const json& general) {
-    json current = m_network;
-    bool found = false;
-    for (const auto& item : m_network.GetOverrideableFields()) {
-        if (general.contains(item.key)) {
-            current[item.key] = general.at(item.key);
-            found = true;
-        }
-    }
-    if (found) {
-        m_network = current.get<NetworkSettings>();
-    }
-}
-
-void EmulatorSettingsImpl::SyncLegacyNetworkKeys(const json& old_general, json& general,
-                                                 const json& network) {
-    for (const auto& [key, value] : network.items()) {
-        if (old_general.contains(key)) {
-            general[key] = value;
-        }
     }
 }
 
@@ -394,9 +365,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
 
                 mergeGroup(m_general, "General");
                 mergeGroup(m_network, "Network");
-                if (gj.contains("General") && gj["General"].is_object()) {
-                    ApplyLegacyNetworkKeys(gj["General"]);
-                }
                 mergeGroup(m_log, "Log");
                 mergeGroup(m_debug, "Debug");
                 mergeGroup(m_input, "Input");
