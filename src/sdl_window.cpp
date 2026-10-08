@@ -209,6 +209,10 @@ void WindowSDL::WaitEvent() {
         return;
     }
 
+    if (Overlay::ProcessQuitEvent(event)) {
+        return;
+    }
+
     if (Libraries::Mouse::PushSDLEvent(event) || Libraries::Keyboard::PushSDLEvent(event)) {
         return;
     }
@@ -252,6 +256,7 @@ void WindowSDL::WaitEvent() {
         OnGamepadEvent(&event);
         break;
     case SDL_EVENT_QUIT:
+        LOG_INFO(Frontend, "HOST_QUIT action=accepted");
         is_open = false;
         break;
     case SDL_EVENT_QUIT_DIALOG:
