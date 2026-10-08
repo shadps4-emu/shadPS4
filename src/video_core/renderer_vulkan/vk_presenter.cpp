@@ -16,6 +16,7 @@
 #include "imgui/renderer/imgui_core.h"
 #include "imgui/renderer/imgui_impl_vulkan.h"
 #include "imgui/shadnet_notifications_layer.h"
+#include "imgui/startup_loading.h"
 #include "sdl_window.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/renderdoc.h"
@@ -150,6 +151,16 @@ struct ScreenshotReadback {
           buffer{instance, 0, static_cast<u64>(width_) * static_cast<u64>(height_) * 4,
                  VideoCore::MemoryType::HostCached},
           width{width_}, height{height_}, format{format_}, hdr_encoded{hdr_encoded_} {}
+};
+
+struct StartupReadback {
+    VideoCore::Buffer buffer;
+    u64 tick{};
+    bool pending{};
+    bool presented{};
+
+    StartupReadback(const Instance& instance, u64 size)
+        : buffer{instance, 0, size, VideoCore::MemoryType::HostCached, "Startup frame readback"} {}
 };
 
 static std::string SanitizeFilenameComponent(std::string value) {
@@ -670,6 +681,7 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
     texture_cache.UpdateImage(image_id);
 
     Frame* frame = GetRenderFrame();
+    frame->has_game_content = true;
 
     const auto frame_subresources = vk::ImageSubresourceRange{
         .aspectMask = vk::ImageAspectFlagBits::eColor,
@@ -770,6 +782,7 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
 Frame* Presenter::PrepareBlankFrame(bool present_thread) {
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();
+    frame->has_game_content = false;
 
     auto& scheduler = present_thread ? present_scheduler : draw_scheduler;
     scheduler.EndRendering();
@@ -840,6 +853,100 @@ Frame* Presenter::PrepareBlankFrame(bool present_thread) {
     return frame;
 }
 
+bool Presenter::PrepareStartupReadback(const Frame* frame) {
+    auto& progress = Core::Startup::progress;
+    if (startup_readback && startup_readback->pending) {
+        auto& readback = *startup_readback;
+        const auto semaphore = present_scheduler.GetWorkSemaphore()->Handle();
+        const vk::SemaphoreWaitInfo wait_info{
+            .semaphoreCount = 1,
+            .pSemaphores = &semaphore,
+            .pValues = &readback.tick,
+        };
+        const auto result = instance.GetDevice().waitSemaphores(&wait_info, 0);
+        if (result == vk::Result::eTimeout) {
+            return false;
+        }
+        ASSERT_MSG(result == vk::Result::eSuccess, "Startup readback failed: {}",
+                   vk::to_string(result));
+        readback.pending = false;
+        readback.buffer.Invalidate(0, readback.buffer.SizeBytes());
+        ++startup_samples;
+        if (readback.presented) {
+            const bool visible = Core::Startup::HasVisibleRgb8Content(readback.buffer.mapped_data);
+            if (progress.Presented(visible, true)) {
+                LOG_INFO(Frontend,
+                         "STARTUP_UI event=visible_game_frame elapsed_ms={} samples={} "
+                         "black_samples={}",
+                         progress.ElapsedMs(), startup_samples, startup_black_samples);
+            } else if (!visible && ++startup_black_samples == 1) {
+                LOG_INFO(Frontend, "STARTUP_UI event=black_game_frame elapsed_ms={}",
+                         progress.ElapsedMs());
+            }
+        }
+    }
+
+    if (!progress.IsActive()) {
+        startup_readback.reset();
+        return false;
+    }
+
+    const auto elapsed_ms = progress.ElapsedMs();
+    if (!frame->has_game_content || elapsed_ms < startup_next_probe_ms) {
+        return false;
+    }
+
+    const u64 size = static_cast<u64>(frame->width) * frame->height * 4;
+    if (!startup_readback || startup_readback->buffer.SizeBytes() != size) {
+        startup_readback = std::make_unique<StartupReadback>(instance, size);
+    }
+    startup_readback->tick = present_scheduler.CurrentTick();
+    startup_readback->pending = true;
+    startup_readback->presented = false;
+    startup_next_probe_ms = elapsed_ms + 250;
+    return true;
+}
+
+void Presenter::CopyStartupReadback(const Frame* frame, vk::CommandBuffer cmdbuf) {
+    const auto& buffer = startup_readback->buffer;
+    const vk::BufferImageCopy copy_region{
+        .imageSubresource{
+            .aspectMask = vk::ImageAspectFlagBits::eColor,
+            .layerCount = 1,
+        },
+        .imageExtent = {frame->width, frame->height, 1},
+    };
+    cmdbuf.copyImageToBuffer(frame->image, vk::ImageLayout::eTransferSrcOptimal, buffer.Handle(),
+                             copy_region);
+
+    const vk::BufferMemoryBarrier host_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = vk::AccessFlagBits::eHostRead,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .buffer = buffer.Handle(),
+        .size = VK_WHOLE_SIZE,
+    };
+    const vk::ImageMemoryBarrier image_barrier{
+        .srcAccessMask = vk::AccessFlagBits::eTransferRead,
+        .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+        .oldLayout = vk::ImageLayout::eTransferSrcOptimal,
+        .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = frame->image,
+        .subresourceRange{
+            .aspectMask = vk::ImageAspectFlagBits::eColor,
+            .levelCount = 1,
+            .layerCount = 1,
+        },
+    };
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                           vk::PipelineStageFlagBits::eFragmentShader |
+                               vk::PipelineStageFlagBits::eHost,
+                           {}, {}, host_barrier, image_barrier);
+}
+
 void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame) {
     // Free the frame for reuse
     const auto free_frame = [&] {
@@ -880,6 +987,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
 
     auto& scheduler = present_scheduler;
     const auto cmdbuf = scheduler.CommandBuffer();
+    const bool startup_probe = PrepareStartupReadback(frame);
     const u32 capture_with_overlays_count = VideoCore::ConsumeWithOverlaysScreenshotRequests();
     std::optional<ScreenshotReadback> pending_screenshot;
 
@@ -914,9 +1022,11 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
             },
             vk::ImageMemoryBarrier{
                 .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-                .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+                .dstAccessMask = startup_probe ? vk::AccessFlagBits::eTransferRead
+                                               : vk::AccessFlagBits::eShaderRead,
                 .oldLayout = vk::ImageLayout::eGeneral,
-                .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+                .newLayout = startup_probe ? vk::ImageLayout::eTransferSrcOptimal
+                                           : vk::ImageLayout::eShaderReadOnlyOptimal,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image = frame->image,
@@ -932,10 +1042,16 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
 
         bool swapchain_copied_for_screenshot = false;
 
-        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                               vk::PipelineStageFlagBits::eColorAttachmentOutput |
-                                   vk::PipelineStageFlagBits::eFragmentShader,
-                               {}, {}, {}, pre_barriers);
+        cmdbuf.pipelineBarrier(
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            vk::PipelineStageFlagBits::eColorAttachmentOutput |
+                vk::PipelineStageFlagBits::eFragmentShader |
+                (startup_probe ? vk::PipelineStageFlagBits::eTransfer : vk::PipelineStageFlags{}),
+            {}, {}, {}, pre_barriers);
+
+        if (startup_probe) {
+            CopyStartupReadback(frame, cmdbuf);
+        }
 
         { // Draw the game
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0.0f});
@@ -980,6 +1096,18 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
 
                 ImGui::SetCursorPos(ImGui::GetCursorStartPos() + offset);
                 ImGui::Image(game_texture, size);
+
+                if (Core::Startup::progress.IsActive()) {
+                    ImGui::DrawStartupLoading(ImGui::GetWindowPos() + ImGui::GetCursorStartPos(),
+                                              contentArea, Common::ElfInfo::Instance().Title(),
+                                              Core::Startup::progress.GetStage(),
+                                              Core::Startup::progress.ElapsedMs());
+                    if (!startup_screen_logged) {
+                        LOG_INFO(Frontend, "STARTUP_UI event=shown elapsed_ms={}",
+                                 Core::Startup::progress.ElapsedMs());
+                        startup_screen_logged = true;
+                    }
+                }
 
                 if (EmulatorSettings.IsNullGPU()) {
                     Core::Devtools::Layer::DrawNullGpuNotice();
@@ -1076,7 +1204,16 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
     // Present to swapchain.
     {
         std::scoped_lock submit_lock{Scheduler::submit_mutex};
-        if (!swapchain.Present()) {
+        const bool presented = swapchain.Present();
+        if (startup_probe) {
+            startup_readback->presented = presented;
+        }
+        if (frame->has_game_content && presented && !startup_first_frame_logged) {
+            LOG_INFO(Frontend, "STARTUP_UI event=first_game_frame elapsed_ms={}",
+                     Core::Startup::progress.ElapsedMs());
+            startup_first_frame_logged = true;
+        }
+        if (!presented) {
             swapchain.Recreate(window.GetWidth(), window.GetHeight());
         }
     }

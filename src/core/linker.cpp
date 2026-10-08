@@ -25,6 +25,7 @@
 #include "core/libraries/sysmodule/sysmodule_internal.h"
 #include "core/linker.h"
 #include "core/memory.h"
+#include "core/startup_progress.h"
 #include "core/tls.h"
 #include "ipc/ipc.h"
 
@@ -155,8 +156,10 @@ void Linker::Execute(const std::vector<std::string>& args) {
         pthread_sigmask(SIG_SETMASK, &emptyset, nullptr);
 #endif
         if (auto& ipc = IPC::Instance()) {
+            Startup::progress.SetStage(Startup::Stage::Launch);
             ipc.WaitForStart();
         }
+        Startup::progress.SetStage(Startup::Stage::Modules);
 
         // Load libSceLibcInternal, run malloc_init.
         if (has_libcinternal) {
@@ -213,6 +216,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
         // Run the game's entry function
         params.entry_addr = module->GetEntryAddress();
+        Startup::progress.SetStage(Startup::Stage::FirstFrame);
         RunMainEntry(&params);
     });
 }
