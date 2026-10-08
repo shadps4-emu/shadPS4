@@ -219,7 +219,7 @@ public:
             return std::nullopt;
         }
         const auto& meta = it->second;
-        if (!meta.owner_id || !slot_images.is_allocated(meta.owner_id)) {
+        if (!meta.owner_id || !slot_images.IsAllocated(meta.owner_id)) {
             return std::nullopt;
         }
         const auto& owner = slot_images[meta.owner_id];
@@ -413,10 +413,6 @@ private:
     Common::LRUCache<Sampler> sampler_lru_cache;
     const bool readback_linear_images;
     std::mutex download_images_mutex;
-    struct MetaDataInfo {
-        MetaType type;
-        s32 clear_mask = -1;
-    };
     absl::flat_hash_map<VAddr, MetaDataInfo> surface_metas;
 };
 
