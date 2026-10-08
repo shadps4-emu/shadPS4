@@ -13,6 +13,9 @@
 #include "core/libraries/kernel/memory.h"
 #include "core/memory.h"
 #include "libraries/error_codes.h"
+#if defined(__linux__) && defined(ARCH_X86_64)
+#include "core/cpu_id.h"
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -697,6 +700,9 @@ struct AddressSpace::Impl {
         const VAddr system_managed_addr = reinterpret_cast<VAddr>(system_managed_base);
         const VAddr system_reserved_addr = reinterpret_cast<VAddr>(system_reserved_base);
         const VAddr user_addr = reinterpret_cast<VAddr>(user_base);
+#if defined(__linux__) && defined(ARCH_X86_64)
+        SetCpuIdGuestAddressRange(system_managed_addr, user_addr + user_size);
+#endif
         m_free_regions.insert({system_managed_addr, system_managed_addr + system_managed_size});
         m_free_regions.insert({system_reserved_addr, system_reserved_addr + system_reserved_size});
         m_free_regions.insert({user_addr, user_addr + user_size});
