@@ -96,7 +96,10 @@ std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
         ecx |= (1u << 6) | (1u << 22);
         break;
     case 0x80000008:
+        // Jaguar reserves EBX and EDX (AMD BKDG 48751, CPUID Fn8000_0008).
+        ebx = 0;
         ecx = (ecx & ~0xf0ffu) | (3u << 12) | (GuestCpuCount - 1);
+        edx = 0;
         break;
     case 0x8000001e:
         result = {cpu, cpu, 0, 0};
