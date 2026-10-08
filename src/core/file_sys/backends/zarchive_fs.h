@@ -18,7 +18,7 @@ class ZArchiveReader;
 namespace Core::FileSys {
 
 struct SharedReader {
-    explicit SharedReader(ZArchiveReader* r);
+    SharedReader(ZArchiveReader* r, std::shared_ptr<Common::FS::IOFile> file);
     ~SharedReader();
 
     SharedReader(const SharedReader&) = delete;
@@ -28,6 +28,7 @@ struct SharedReader {
     void Dispatch(JobFn fn, void* ctx);
 
     ZArchiveReader* reader{nullptr};
+    std::shared_ptr<Common::FS::IOFile> archive_file;
     std::mutex mutex;
 
 private:
@@ -78,6 +79,7 @@ private:
     std::shared_ptr<SharedReader> m_reader;
     uint32_t m_node;
     u64 m_size;
+    u32 m_inode{0};
     std::filesystem::path m_archive_path;
     mutable std::mutex m_position_mutex;
     u64 m_position{0};
@@ -111,6 +113,7 @@ public:
 
     bool Exists(std::string_view rel_path) override;
     bool IsDirectory(std::string_view rel_path) override;
+    bool Stat(std::string_view rel_path, FileStat& out) override;
 
     std::unique_ptr<IFile> Open(std::string_view rel_path,
                                 Common::FS::FileAccessMode mode) override;
