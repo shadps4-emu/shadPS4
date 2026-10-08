@@ -29,6 +29,7 @@ add_executable(quit_dialog_test test_quit_dialog.cpp)
 target_compile_features(quit_dialog_test PRIVATE cxx_std_20)
 target_include_directories(quit_dialog_test PRIVATE "${CMAKE_CURRENT_BINARY_DIR}"
     "${SHADPS4_SOURCE}" "${SDL_HEADERS_PATH}")
-foreach(case second_controller unfocused_confirm cancel_resume held_confirm keyboard hotplug)
+foreach(case second_controller unfocused_confirm cancel_resume held_confirm keyboard hotplug
+             guide_passthrough)
     add_test(NAME quit_dialog_${case} COMMAND quit_dialog_test ${case})
 endforeach()
