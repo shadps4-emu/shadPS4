@@ -30,9 +30,9 @@ namespace VideoCore {
 
 struct TilingInfo {
     u32 bank_swizzle;
-    u32 num_slices;
+    u32 micro_tiled_mips;
     u32 num_mips;
-    std::array<ImageInfo::MipInfo, 16> mips;
+    std::array<MipInfo, MAX_MIPS> mips;
 };
 
 TileManager::TileManager(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
@@ -201,14 +201,14 @@ std::pair<const Buffer*, u64> TileManager::DetileImage(const VideoCore::Buffer* 
 
     TilingInfo params{};
     params.bank_swizzle = info.bank_swizzle;
-    params.num_slices = info.props.is_volume ? info.size.depth : info.resources.layers;
+    params.micro_tiled_mips = info.micro_tiled_mips;
     params.num_mips = info.resources.levels;
     for (u32 mip = 0; mip < params.num_mips; ++mip) {
         auto& mip_info = params.mips[mip];
         mip_info = info.mips_layout[mip];
         if (info.props.is_block) {
-            mip_info.pitch = std::max((mip_info.pitch + 3) / 4, 1U);
-            mip_info.height = std::max((mip_info.height + 3) / 4, 1U);
+            mip_info.pitch = std::max<u16>((mip_info.pitch + 3) / 4, 1U);
+            mip_info.height = std::max<u16>((mip_info.height + 3) / 4, 1U);
         }
     }
 
@@ -290,14 +290,14 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
 
     TilingInfo params{};
     params.bank_swizzle = info.bank_swizzle;
-    params.num_slices = info.props.is_volume ? info.size.depth : info.resources.layers;
+    params.micro_tiled_mips = info.micro_tiled_mips;
     params.num_mips = static_cast<u32>(buffer_copies.size());
     for (u32 mip = 0; mip < params.num_mips; ++mip) {
         auto& mip_info = params.mips[mip];
         mip_info = info.mips_layout[mip];
         if (info.props.is_block) {
-            mip_info.pitch = std::max((mip_info.pitch + 3) / 4, 1U);
-            mip_info.height = std::max((mip_info.height + 3) / 4, 1U);
+            mip_info.pitch = std::max<u16>((mip_info.pitch + 3) / 4, 1U);
+            mip_info.height = std::max<u16>((mip_info.height + 3) / 4, 1U);
         }
     }
 

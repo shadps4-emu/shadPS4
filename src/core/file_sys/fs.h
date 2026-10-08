@@ -16,12 +16,6 @@
 #include "core/file_sys/directories/base_directory.h"
 #include "core/file_sys/ifile.h"
 
-namespace Libraries::Net {
-struct Socket;
-struct Epoll;
-struct Resolver;
-} // namespace Libraries::Net
-
 namespace Core::FileSys {
 
 /// Builds the path of an overlay that sits next to a game
@@ -131,8 +125,6 @@ enum class FileType {
     Directory,
     Device,
     Socket,
-    Epoll,
-    Resolver,
     Equeue
 };
 
@@ -145,9 +137,6 @@ struct File {
     std::mutex m_mutex;
     std::shared_ptr<Directories::BaseDirectory> directory; // only valid for type == Directory
     std::shared_ptr<Devices::BaseDevice> device;           // only valid for type == Device
-    std::shared_ptr<Libraries::Net::Socket> socket;        // only valid for type == Socket
-    std::shared_ptr<Libraries::Net::Epoll> epoll;          // only valid for type == Epoll
-    std::shared_ptr<Libraries::Net::Resolver> resolver;    // only valid for type == Resolver
 
     bool IsBackendOpen() const {
         return handle && handle->IsOpen();
@@ -196,8 +185,6 @@ public:
     File* GetFile(int d);
     File* GetSocket(int d);
     std::vector<int> GetSocketHandles();
-    File* GetEpoll(int d);
-    File* GetResolver(int d);
     File* GetFile(const std::filesystem::path& host_name);
     int GetFileDescriptor(File* file);
 

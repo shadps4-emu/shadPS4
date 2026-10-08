@@ -21,6 +21,7 @@ OPCODE(ReadConstBuffer,                                     U32,            Opaq
 OPCODE(Barrier,                                             Void,                                                                                           )
 OPCODE(WorkgroupMemoryBarrier,                              Void,                                                                                           )
 OPCODE(DeviceMemoryBarrier,                                 Void,                                                                                           )
+OPCODE(SubgroupBarrier,                                     Void,                                                                                           )
 
 // Geometry shader specific
 OPCODE(EmitVertex,                                          Void,                                                                                           )
@@ -316,7 +317,6 @@ OPCODE(FPCmpClass32,                                        U1,             F32,
 // Integer operations
 OPCODE(IAdd32,                                              U32,            U32,            U32,                                                            )
 OPCODE(IAdd64,                                              U64,            U64,            U64,                                                            )
-OPCODE(IAddCarry32,                                         U32x2,          U32,            U32,                                                            )
 OPCODE(ISub32,                                              U32,            U32,            U32,                                                            )
 OPCODE(ISub64,                                              U64,            U64,            U64,                                                            )
 OPCODE(IMul32,                                              U32,            U32,            U32,                                                            )

@@ -388,7 +388,8 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
     }
 }
 
-void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {
+void DefineEntryPoint(const Info& info, const RuntimeInfo& runtime_info, EmitContext& ctx,
+                      Id main) {
     const std::span interfaces(ctx.interfaces.data(), ctx.interfaces.size());
     spv::ExecutionModel execution_model{};
     switch (info.sw_stage) {
@@ -418,7 +419,7 @@ void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {
                                        : spv::ExecutionMode::VertexOrderCw);
         break;
     }
-    case SwStage::Fragment:
+    case SwStage::Fragment: {
         execution_model = spv::ExecutionModel::Fragment;
         if (ctx.profile.lower_left_origin_mode) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginLowerLeft);
@@ -428,10 +429,16 @@ void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {
         if (info.has_discard) {
             ctx.AddCapability(spv::Capability::DemoteToHelperInvocation);
         }
-        if (info.stores.GetAny(IR::Attribute::Depth)) {
+        const bool stores_depth = info.stores.Get(IR::Attribute::Depth);
+        if (stores_depth) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
         }
+        if (runtime_info.hw.fs.depth_before_shader) {
+            ctx.AddExecutionMode(main, spv::ExecutionMode::EarlyFragmentTests);
+            ASSERT_MSG(!stores_depth, "DEPTH_BEFORE_SHADER enabled with depth exporting shader");
+        }
         break;
+    }
     case SwStage::Geometry:
         execution_model = spv::ExecutionModel::Geometry;
         ctx.AddExecutionMode(main, GetInputPrimitiveType(ctx.runtime_info.hw.gs.in_primitive));
@@ -659,11 +666,10 @@ std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_in
                            const IR::Program& program, Bindings& binding) {
     EmitContext ctx{profile, runtime_info, program.info, binding};
     const Id main{DefineMain(ctx, program)};
-    DefineEntryPoint(program.info, ctx, main);
+    DefineEntryPoint(program.info, runtime_info, ctx, main);
     SetupCapabilities(program.info, profile, runtime_info, ctx);
     SetupFloatMode(ctx, profile, runtime_info, main);
     PatchPhiNodes(program, ctx);
-    binding.user_data += program.info.ud_mask.NumRegs();
     return ctx.Assemble();
 }
 

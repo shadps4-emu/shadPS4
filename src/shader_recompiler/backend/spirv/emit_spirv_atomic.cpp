@@ -121,10 +121,30 @@ Id BufferAtomicU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id 
     return (ctx.*atomic_func)(ctx.U64, ptr, scope, semantics, value);
 }
 
+Id FixImageAtomicCoords(EmitContext& ctx, Id coords, AmdGpu::ImageType image_type) {
+    switch (image_type) {
+    case AmdGpu::ImageType::Color1D: {
+        // Lowered to 2D with height 1
+        const auto x = coords;
+        return ctx.OpCompositeConstruct(ctx.U32[2], x, ctx.u32_zero_value);
+    }
+    case AmdGpu::ImageType::Color1DArray: {
+        // Lowered to 2D array with height 1
+        const auto x = ctx.OpCompositeExtract(ctx.U32[1], coords, 0U);
+        const auto slice = ctx.OpCompositeExtract(ctx.U32[1], coords, 1U);
+        return ctx.OpCompositeConstruct(ctx.U32[3], x, ctx.u32_zero_value, slice);
+    }
+    default:
+        return coords;
+    }
+}
+
 Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
                   Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const auto& texture = ctx.images[handle & 0xFFFF];
-    const Id pointer{ctx.OpImageTexelPointer(ctx.image_u32, texture.id, coords, ctx.ConstU32(0U))};
+    const Id fixed_coords{FixImageAtomicCoords(ctx, coords, texture.view_type)};
+    const Id pointer{
+        ctx.OpImageTexelPointer(ctx.image_u32, texture.id, fixed_coords, ctx.ConstU32(0U))};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
 }
@@ -132,7 +152,9 @@ Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id va
 Id ImageAtomicF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
                   Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const auto& texture = ctx.images[handle & 0xFFFF];
-    const Id pointer{ctx.OpImageTexelPointer(ctx.image_f32, texture.id, coords, ctx.ConstU32(0U))};
+    const Id fixed_coords{FixImageAtomicCoords(ctx, coords, texture.view_type)};
+    const Id pointer{
+        ctx.OpImageTexelPointer(ctx.image_f32, texture.id, fixed_coords, ctx.ConstU32(0U))};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.F32[1], pointer, scope, semantics, value);
 }
@@ -141,7 +163,9 @@ Id ImageAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords
                          Id cmp_value,
                          Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id, Id, Id)) {
     const auto& texture = ctx.images[handle & 0xFFFF];
-    const Id pointer{ctx.OpImageTexelPointer(ctx.image_u32, texture.id, coords, ctx.ConstU32(0U))};
+    const Id fixed_coords{FixImageAtomicCoords(ctx, coords, texture.view_type)};
+    const Id pointer{
+        ctx.OpImageTexelPointer(ctx.image_u32, texture.id, fixed_coords, ctx.ConstU32(0U))};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, semantics, value, cmp_value);
 }

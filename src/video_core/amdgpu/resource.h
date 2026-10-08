@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/bit_field.h"
@@ -449,7 +450,8 @@ struct Sampler {
     }
 
     bool Valid() const {
-        return true;
+        return max_aniso.Value() <= AnisoRatio::Sixteen && filter_mode.Value() <= FilterMode::Max &&
+               mip_filter.Value() <= MipFilter::Linear;
     }
 
     bool operator==(const Sampler& other) const noexcept {

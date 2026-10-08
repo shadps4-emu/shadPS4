@@ -210,7 +210,8 @@ bool Instance::CreateDevice() {
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
         vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
         vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
-        vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR>();
+        vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR,
+        vk::PhysicalDeviceMaintenance6FeaturesKHR>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -262,6 +263,10 @@ bool Instance::CreateDevice() {
                "Required Vulkan feature unavailable: robustImageAccess2");
     ASSERT_MSG(robustness2_features.nullDescriptor,
                "Required Vulkan feature unavailable: nullDescriptor");
+    ASSERT_MSG(add_extension(VK_KHR_MAINTENANCE_6_EXTENSION_NAME),
+               "Required Vulkan extension unavailable: {}", VK_KHR_MAINTENANCE_6_EXTENSION_NAME);
+    ASSERT_MSG(feature_chain.get<vk::PhysicalDeviceMaintenance6FeaturesKHR>().maintenance6,
+               "Required Vulkan feature unavailable: maintenance6");
 
     // Optional
     maintenance_5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
@@ -492,6 +497,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceMaintenance5FeaturesKHR{
             .maintenance5 = true,
         },
+        vk::PhysicalDeviceMaintenance6FeaturesKHR{
+            .maintenance6 = true,
+        },
         vk::PhysicalDeviceMaintenance8FeaturesKHR{
             .maintenance8 = true,
         },
@@ -711,7 +719,7 @@ void Instance::CollectPhysicalMemoryInfo() {
     // Leave at least 8 GB for the system on integrated GPUs.
     const s64 available_memory = static_cast<s64>(total_memory_budget - device_initial_usage);
     total_memory_budget =
-        static_cast<u64>(std::max<s64>(available_memory - 8_GB, static_cast<s64>(local_memory)));
+        static_cast<u64>(std::max<s64>(available_memory - 8_GB, static_cast<s64>(2_GB)));
 }
 
 void Instance::CollectImageFormatInfo() {
