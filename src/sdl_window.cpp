@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_properties.h>
+#include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
 #include <cmrc/cmrc.hpp>
@@ -95,6 +97,156 @@ static Uint32 SDLCALL PollControllerLightColour(void* userdata, SDL_TimerID time
     return interval;
 }
 
+namespace {
+
+SDL_Window* early_splash_window{};
+
+void FinishEarlySplashOnMainThread(void* userdata) {
+    auto* game_window = static_cast<SDL_Window*>(userdata);
+    if (early_splash_window == nullptr || game_window == nullptr) {
+        return;
+    }
+
+    SDL_ShowWindow(game_window);
+    SDL_RaiseWindow(game_window);
+    SDL_SyncWindow(game_window);
+    SDL_DestroyWindow(early_splash_window);
+    early_splash_window = nullptr;
+}
+
+} // namespace
+
+bool ShowEarlySplash(std::span<const u8> png_data, s32 width, s32 height,
+                     std::string_view window_title) {
+    if (png_data.empty() || !EmulatorSettings.IsShowSplash()) {
+        return false;
+    }
+
+    if (!SDL_SetHint(SDL_HINT_APP_NAME, "shadPS4")) {
+        LOG_WARNING(Frontend, "Failed to set SDL app name for early splash: {}", SDL_GetError());
+    }
+    if (SDL_WasInit(SDL_INIT_VIDEO) == 0 && !SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+        LOG_WARNING(Frontend, "Failed to initialize SDL video for early splash: {}",
+                    SDL_GetError());
+        return false;
+    }
+
+    if (early_splash_window != nullptr) {
+        SDL_DestroyWindow(early_splash_window);
+        early_splash_window = nullptr;
+    }
+
+    SDL_PropertiesID props = SDL_CreateProperties();
+    SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING,
+                          std::string(window_title).c_str());
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_CENTERED);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, width);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_FULLSCREEN_BOOLEAN,
+                           EmulatorSettings.IsFullScreen());
+    early_splash_window = SDL_CreateWindowWithProperties(props);
+    SDL_DestroyProperties(props);
+
+    if (early_splash_window == nullptr) {
+        LOG_WARNING(Frontend, "Failed to create early splash window: {}", SDL_GetError());
+        return false;
+    }
+
+    if (EmulatorSettings.IsFullScreen()) {
+        const SDL_DisplayID display = SDL_GetDisplayForWindow(early_splash_window);
+        if (display != 0) {
+            if (const SDL_DisplayMode* mode = SDL_GetCurrentDisplayMode(display)) {
+                SDL_SetWindowFullscreenMode(
+                    early_splash_window,
+                    EmulatorSettings.GetFullScreenMode() == "Fullscreen" ? mode : nullptr);
+            }
+        }
+        SDL_SetWindowFullscreen(early_splash_window, true);
+    }
+    SDL_SyncWindow(early_splash_window);
+
+    int output_width = width;
+    int output_height = height;
+    SDL_GetWindowSizeInPixels(early_splash_window, &output_width, &output_height);
+
+    SDL_Surface* output = SDL_GetWindowSurface(early_splash_window);
+    if (output == nullptr) {
+        LOG_WARNING(Frontend, "Failed to get early splash surface: {}", SDL_GetError());
+        SDL_DestroyWindow(early_splash_window);
+        early_splash_window = nullptr;
+        return false;
+    }
+
+    int image_width = 0;
+    int image_height = 0;
+    constexpr int channels = 4;
+    unsigned char* image_data =
+        stbi_load_from_memory(png_data.data(), static_cast<int>(png_data.size()), &image_width,
+                              &image_height, nullptr, channels);
+    if (image_data == nullptr || image_width <= 0 || image_height <= 0) {
+        LOG_WARNING(Frontend, "Failed to decode early splash image: {}", stbi_failure_reason());
+        if (image_data != nullptr) {
+            stbi_image_free(image_data);
+        }
+        SDL_DestroyWindow(early_splash_window);
+        early_splash_window = nullptr;
+        return false;
+    }
+
+    SDL_Surface* image = SDL_CreateSurfaceFrom(image_width, image_height, SDL_PIXELFORMAT_RGBA32,
+                                               image_data, image_width * channels);
+    if (image == nullptr) {
+        LOG_WARNING(Frontend, "Failed to create early splash image surface: {}", SDL_GetError());
+        stbi_image_free(image_data);
+        SDL_DestroyWindow(early_splash_window);
+        early_splash_window = nullptr;
+        return false;
+    }
+
+    SDL_FillSurfaceRect(output, nullptr, 0);
+    const double scale = std::min(static_cast<double>(output_width) / image_width,
+                                  static_cast<double>(output_height) / image_height);
+    const int draw_width = std::max(1, static_cast<int>(image_width * scale));
+    const int draw_height = std::max(1, static_cast<int>(image_height * scale));
+    const SDL_Rect dst_rect{
+        .x = (output_width - draw_width) / 2,
+        .y = (output_height - draw_height) / 2,
+        .w = draw_width,
+        .h = draw_height,
+    };
+
+    const bool blit_ok =
+        SDL_BlitSurfaceScaled(image, nullptr, output, &dst_rect, SDL_SCALEMODE_LINEAR);
+    SDL_DestroySurface(image);
+    stbi_image_free(image_data);
+
+    if (!blit_ok || !SDL_UpdateWindowSurface(early_splash_window)) {
+        LOG_WARNING(Frontend, "Failed to present early splash: {}", SDL_GetError());
+        SDL_DestroyWindow(early_splash_window);
+        early_splash_window = nullptr;
+        return false;
+    }
+
+    SDL_RaiseWindow(early_splash_window);
+    SDL_PumpEvents();
+    LOG_INFO(Frontend, "STARTUP_UI event=early_splash_shown");
+    return true;
+}
+
+bool HasEarlySplash() {
+    return early_splash_window != nullptr;
+}
+
+void FinishEarlySplash(SDL_Window* game_window) {
+    if (early_splash_window == nullptr || game_window == nullptr) {
+        return;
+    }
+    if (!SDL_RunOnMainThread(FinishEarlySplashOnMainThread, game_window, true)) {
+        LOG_WARNING(Frontend, "Failed to hand off early splash window: {}", SDL_GetError());
+    }
+}
+
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controllers_,
                      std::string_view window_title)
     : width{width_}, height{height_}, controllers{*controllers_} {
@@ -120,7 +272,11 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_CENTERED);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, width);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, height);
-    SDL_SetNumberProperty(props, "flags", SDL_WINDOW_VULKAN);
+    SDL_WindowFlags window_flags = SDL_WINDOW_VULKAN;
+    if (HasEarlySplash()) {
+        window_flags |= SDL_WINDOW_HIDDEN;
+    }
+    SDL_SetNumberProperty(props, "flags", window_flags);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_RESIZABLE_BOOLEAN, true);
     // Creating the window directly in fullscreen avoids a visible windowed -> fullscreen
     // transition on startup. SDL sizes the window to the display and keeps the requested
