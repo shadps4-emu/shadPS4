@@ -95,6 +95,11 @@ private:
     bool is_open{true};
 };
 
+bool ShowEarlySplash(std::span<const u8> png_data, s32 width, s32 height,
+                     std::string_view window_title);
+bool HasEarlySplash();
+void FinishEarlySplash(SDL_Window* game_window);
+
 void SetWindowIcon(SDL_Window* window, const std::vector<u8>& png);
 void SetDefaultWindowIcon(SDL_Window* window);
 
