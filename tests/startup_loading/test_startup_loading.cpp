@@ -84,7 +84,7 @@ static void Lifecycle() {
 
     for (int attempt = 0; attempt < 100; ++attempt) {
         progress.Begin(start);
-        std::jthread loader([&] {
+        std::thread loader([&] {
             for (int i = 0; i < 100; ++i) {
                 progress.SetStage(Stage::Modules);
             }
