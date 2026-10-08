@@ -646,7 +646,7 @@ void TextureCache::RegisterMeta(VAddr address, MetaDataInfo info) {
         return;
     }
 
-    auto& registered = it.value();
+    auto& registered = it->second;
     if (registered.type != info.type || registered.owner_uid != info.owner_uid) {
         registered = info;
         return;
