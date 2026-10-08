@@ -1205,6 +1205,11 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame, bool is_game_frame)
     {
         std::scoped_lock submit_lock{Scheduler::submit_mutex};
         const bool presented = swapchain.Present();
+        if (presented && Frontend::HasEarlySplash()) {
+            Frontend::FinishEarlySplash(window.GetSDLWindow());
+            LOG_INFO(Frontend, "STARTUP_UI event=early_splash_handoff elapsed_ms={}",
+                     Core::Startup::progress.ElapsedMs());
+        }
         if (startup_probe) {
             startup_readback->presented = presented;
         }
