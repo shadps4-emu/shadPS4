@@ -12,6 +12,15 @@
     { self, nixpkgs }:
     let
       pkgsLinux = nixpkgs.legacyPackages.x86_64-linux;
+
+      runtimeBinaries = with pkgsLinux; [
+        libpulseaudio
+        wayland
+        libGL
+        libxkbcommon
+        libx11
+        vulkan-loader
+      ];
     in
     {
       formatter.x86_64-linux = pkgsLinux.nixpkgs-fmt;
@@ -37,15 +46,6 @@
             , libGL
             , enableDebugTooling ? true
             }:
-            let
-              runtimeBinaries = [
-                libpulseaudio
-                wayland
-                vulkan-loader
-                libGL
-                libxkbcommon
-              ];
-            in
             mkShell.override { stdenv = clangStdenv; } {
               inputsFrom = [ self.packages.x86_64-linux.default ];
 
@@ -60,11 +60,8 @@
                 export LD_LIBRARY_PATH="${lib.makeLibraryPath runtimeBinaries}:$LD_LIBRARY_PATH"
               '';
 
-              CMAKE_C_COMPILER = "clang";
-              CMAKE_CXX_COMPILER = "clang++";
               CMAKE_EXPORT_COMPILE_COMMANDS = "ON";
             };
-
         in
         pkgsLinux.callPackage shell { inherit self; };
 
@@ -101,6 +98,7 @@
             , libuuid
             , libx11
             , sdl3
+            , gtest
               # System Libraries:
             , boost
             , cli11
@@ -133,6 +131,7 @@
             , releaseMode
             , enableDiscordRpc ? false
             , enableSystemLibraries ? false
+            , enableTests ? false
             ,
             }:
             let
@@ -146,7 +145,6 @@
               ffmpegZip = (getFfmpegZip "94dde08" "sha256-qsu/uOYitoS8XTtM1sn5939d72SujYPAxbPr5leqM90=");
 
               x11Libs = [
-                libx11
                 libxcursor
                 libxfixes
                 libxi
@@ -161,7 +159,7 @@
             clangStdenv.mkDerivation (finalAttrs: {
               name = "${finalAttrs.pname}-${finalAttrs.version}-${finalAttrs.system}";
               pname = "shadps4";
-              version = "0.18.1";
+              version = "0.19.1";
               system = "${clangStdenv.hostPlatform.system}";
               src = ./.;
 
@@ -212,22 +210,25 @@
                 zydis
                 pugixml
                 sdl3
-              ];
+              ]
+              ++ lib.optional enableTests gtest;
 
               cmakeFlags = [
                 (lib.cmakeFeature "CMAKE_BUILD_TYPE" releaseMode)
                 (lib.cmakeBool "ENABLE_DISCORD_RPC" enableDiscordRpc)
                 (lib.cmakeBool "ENABLE_SYSTEM_LIBRARIES" enableSystemLibraries)
                 (lib.cmakeBool "ENABLE_TESTS" false)
-                (lib.cmakeBool "SDL_VULKAN" true)
-                (lib.cmakeBool "SDL_WAYLAND" true)
-                (lib.cmakeBool "SDL_X11" true)
               ] ++ lib.optionals (!enableSystemLibraries) [
                 (lib.cmakeFeature "FETCHCONTENT_SOURCE_DIR_FMT" "${self}/externals/fmt")
                 (lib.cmakeBool "CMAKE_CXX_SCAN_FOR_MODULES" false)
               ];
 
               inherit dontStrip;
+
+              preConfigure = lib.optionalString (!enableSystemLibraries) ''
+                mkdir -p build/externals
+                ln -sf ${ffmpegZip.path} build/externals/ffmpeg-${ffmpegZip.commit}.zip
+              '';
 
               postPatch = ''
                 # Pevents GIT-NOTFOUND in titlebar.
@@ -242,17 +243,12 @@
                   --replace-fail \
                   'set(FFMPEG_ZIP_PATH "''${CMAKE_BINARY_DIR}/externals/ffmpeg-''${FFMPEG_GIT_SHA}.zip")' \
                   'set(FFMPEG_ZIP_PATH "''${CMAKE_BINARY_DIR}/externals/ffmpeg-${ffmpegZip.commit}.zip")'
-                
-                # SDL3 calls dlopen for libvulkan.so, replace with the Nix Path.
-                substituteInPlace externals/sdl3/src/video/wayland/SDL_waylandvulkan.c \
-                                  externals/sdl3/src/video/x11/SDL_x11vulkan.c \
-                                  externals/sdl3/src/video/offscreen/SDL_offscreenvulkan.c \
-                --replace-fail 'libvulkan.so' '${lib.getLib vulkan-loader}/lib/libvulkan.so'
               '';
 
-              preConfigure = lib.optionalString (!enableSystemLibraries) ''
-                mkdir -p build/externals
-                ln -sf ${ffmpegZip.path} build/externals/ffmpeg-${ffmpegZip.commit}.zip
+              postFixup = lib.optionalString (!enableSystemLibraries) ''
+                patchelf \
+                  --add-rpath "${lib.makeLibraryPath runtimeBinaries}" \
+                  $out/bin/${finalAttrs.pname}
               '';
             });
 
