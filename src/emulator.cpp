@@ -458,6 +458,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         LOG_INFO(Loader, "No splash image found at /app0/sce_sys/pic1.png");
     }
 
+    Startup::progress.Begin();
+    Frontend::ShowEarlySplash(game_info.GetSplashData(), EmulatorSettings.GetWindowWidth(),
+                              EmulatorSettings.GetWindowHeight(), title);
+
     game_info.game_folder = game_folder;
 
     ASSERT_MSG(mnt->Exists(guest_eboot_path), "Guest app's main executable {} does not exist",
@@ -596,7 +600,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                                        Common::g_scm_branch, Common::g_scm_desc, game_title);
         }
     }
-    Startup::progress.Begin();
     window = std::make_unique<Frontend::WindowSDL>(EmulatorSettings.GetWindowWidth(),
                                                    EmulatorSettings.GetWindowHeight(), controllers,
                                                    window_title);
