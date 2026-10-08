@@ -1,0 +1,95 @@
+diff --git a/core/unix/memquery_linux.c b/core/unix/memquery_linux.c
+index c570f60..1629abf 100644
+--- a/core/unix/memquery_linux.c
++++ b/core/unix/memquery_linux.c
+@@ -162,8 +162,7 @@ memquery_iterator_start(memquery_iter_t *iter, app_pc start, bool may_alloc)
+      * "/proc/self/maps" uses pid which fails if primary thread in group
+      * has exited.
+      */
+-    snprintf(maps_name, BUFFER_SIZE_ELEMENTS(maps_name), "/proc/%d/maps",
+-             d_r_get_thread_id());
++    snprintf(maps_name, BUFFER_SIZE_ELEMENTS(maps_name), "/proc/thread-self/maps");
+     mi->maps = os_open(maps_name, OS_OPEN_READ);
+     ASSERT(mi->maps != INVALID_FILE);
+     mi->buf[BUFSIZE - 1] = '\0'; /* permanently */
+diff --git a/core/unix/os.c b/core/unix/os.c
+index 3c22697..ee86fba 100644
+--- a/core/unix/os.c
++++ b/core/unix/os.c
+@@ -8530,6 +8530,32 @@ pre_system_call(dcontext_t *dcontext)
+         /* we handle arch_prctl in post_syscall */
+         dcontext->sys_param0 = sys_param(dcontext, 0);
+         dcontext->sys_param1 = sys_param(dcontext, 1);
++        if (INTERNAL_OPTION(mangle_app_seg) && dcontext->sys_param0 == ARCH_SET_GS) {
++            /* The code-cache syscall return path already needs DR's GS.  Perform
++             * the kernel operation here and restore GS before re-entering that
++             * path.  Block delivery while the stolen register is unavailable.
++             */
++            kernel_sigset_t blocked, previous;
++            os_thread_data_t *ostd = dcontext->os_field;
++            void *dr_gs = ostd->priv_alt_tls_base;
++            memset(&blocked, 0xff, sizeof(blocked));
++            dynamorio_syscall(SYS_rt_sigprocmask, 4, SIG_SETMASK, &blocked, &previous,
++                              sizeof(blocked));
++            long result = dynamorio_syscall(SYS_arch_prctl, 2, ARCH_SET_GS,
++                                            dcontext->sys_param1);
++            long restored = dynamorio_syscall(SYS_arch_prctl, 2, ARCH_SET_GS, dr_gs);
++            ASSERT(restored == 0);
++            if (result == 0)
++                tls_handle_post_arch_prctl(dcontext, ARCH_SET_GS,
++                                           dcontext->sys_param1);
++            dynamorio_syscall(SYS_rt_sigprocmask, 4, SIG_SETMASK, &previous, NULL,
++                              sizeof(previous));
++            if (result == 0)
++                set_success_return_val(dcontext, 0);
++            else
++                set_failure_return_val(dcontext, -result);
++            execute_syscall = false;
++        }
+         break;
+     }
+ #    endif
+@@ -10015,8 +10041,7 @@ read_proc_self_exe(bool ignore_cache)
+          */
+         ssize_t res;
+         DEBUG_DECLARE(int len =)
+-        snprintf(exepath, BUFFER_SIZE_ELEMENTS(exepath), "/proc/%d/exe",
+-                 get_process_id());
++        snprintf(exepath, BUFFER_SIZE_ELEMENTS(exepath), "/proc/self/exe");
+         ASSERT(len > 0);
+         NULL_TERMINATE_BUFFER(exepath);
+         /* i#960: readlink does not null terminate, so we do it. */
+@@ -11130,6 +11155,33 @@ os_list_threads_from_task_dir(dcontext_t *dcontext, const char *task_path,
+         ASSERT_MESSAGE(CHKLVL_ASSERTS, "failed to parse /proc/pid/task entry", r == 1);
+         if (tid <= 0)
+             continue;
++        {
++            char path[MAXIMUM_PATH];
++            char status[4096];
++            snprintf(path, BUFFER_SIZE_ELEMENTS(path), "%s/%s/status", task_path,
++                     iter.name);
++            file_t file = os_open(path, OS_OPEN_READ);
++            if (file != INVALID_FILE) {
++                ssize_t count = os_read(file, status, sizeof(status) - 1);
++                os_close(file);
++                if (count > 0) {
++                    status[count] = '\0';
++                    char *field = strstr(status, "\nNSpid:");
++                    if (field != NULL) {
++                        field += 7;
++                        while (*field == ' ' || *field == '\t') {
++                            while (*field == ' ' || *field == '\t')
++                                ++field;
++                            if (*field < '0' || *field > '9')
++                                break;
++                            tid = 0;
++                            while (*field >= '0' && *field <= '9')
++                                tid = tid * 10 + (*field++ - '0');
++                        }
++                    }
++                }
++            }
++        }
+         if (num_threads == tids_alloced) {
+             /* realloc, essentially.  Less expensive than counting first. */
+             new_tids = HEAP_ARRAY_ALLOC(dcontext, thread_id_t, tids_alloced * 2,

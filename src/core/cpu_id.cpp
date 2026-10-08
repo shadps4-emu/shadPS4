@@ -18,6 +18,18 @@
 #include "core/cpu_id.h"
 #include "core/libraries/kernel/threads/pthread.h"
 
+#ifdef ENABLE_CPU_ID_TRANSLATION
+extern "C" __attribute__((noinline, visibility("default"))) int ShadCpuIdTranslationActive() {
+    volatile int active = 0;
+    return active;
+}
+
+extern "C" __attribute__((noinline, visibility("default"))) void ShadCpuIdTranslationRange(
+    uintptr_t begin, uintptr_t end) {
+    asm volatile("" : : "r"(begin), "r"(end) : "memory");
+}
+#endif
+
 namespace Core {
 namespace {
 
@@ -96,11 +108,16 @@ std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
     return result;
 }
 
-void PS4_SYSV_ABI ExecuteCpuId(u64* registers, CpuIdInstruction instruction, u32 destination) {
+u32 CurrentGuestCpu() {
     auto* thread = Libraries::Kernel::g_curthread;
     ASSERT(thread != nullptr);
     const s32 cpu = thread->GetCurrentCpu();
     ASSERT_MSG(cpu >= 0 && cpu < GuestCpuCount, "Cannot resolve guest CPU identity: {}", cpu);
+    return cpu;
+}
+
+void PS4_SYSV_ABI ExecuteCpuId(u64* registers, CpuIdInstruction instruction, u32 destination) {
+    const u32 cpu = CurrentGuestCpu();
     switch (instruction) {
     case CpuIdInstruction::Cpuid: {
         const auto result = GuestCpuid(static_cast<u32>(registers[0]),
@@ -125,9 +142,11 @@ void PS4_SYSV_ABI ExecuteCpuId(u64* registers, CpuIdInstruction instruction, u32
     }
 }
 
-enum class FaultInstruction { Cpuid, Rdtscp, Rdtsc };
+enum class FaultInstruction { Cpuid, Rdtscp, Rdpid, Rdtsc };
 
-size_t FaultInstructionLength(const u8* code, FaultInstruction& instruction) {
+size_t FaultInstructionLength(const u8* code, FaultInstruction& instruction, u32& destination) {
+    u8 rex = 0;
+    u8 repeat = 0;
     for (size_t index = 0; index < 14; ++index) {
         const u8 byte = code[index];
         if (byte == 0x0f) {
@@ -143,11 +162,25 @@ size_t FaultInstructionLength(const u8* code, FaultInstruction& instruction) {
                 instruction = FaultInstruction::Rdtscp;
                 return index + 3;
             }
+            if (index < 13 && repeat == 0xf3 && code[index + 1] == 0xc7 &&
+                (code[index + 2] & 0xf8) == 0xf8) {
+                instruction = FaultInstruction::Rdpid;
+                destination = (code[index + 2] & 7) | ((rex & 1) << 3);
+                return index + 3;
+            }
             return 0;
         }
-        if ((byte >= 0x40 && byte <= 0x4f) || byte == 0x66 || byte == 0x67 || byte == 0xf2 ||
-            byte == 0xf3 || byte == 0x26 || byte == 0x2e || byte == 0x36 || byte == 0x3e ||
-            byte == 0x64 || byte == 0x65) {
+        if (byte >= 0x40 && byte <= 0x4f) {
+            rex = byte;
+            continue;
+        }
+        rex = 0;
+        if (byte == 0xf2 || byte == 0xf3) {
+            repeat = byte;
+            continue;
+        }
+        if (byte == 0x66 || byte == 0x67 || byte == 0x26 || byte == 0x2e || byte == 0x36 ||
+            byte == 0x3e || byte == 0x64 || byte == 0x65) {
             continue;
         }
         return 0;
@@ -159,12 +192,15 @@ size_t FaultInstructionLength(const u8* code, FaultInstruction& instruction) {
 
 bool HandleCpuIdFault(void* context, void* fault_address) {
     auto& registers = static_cast<ucontext_t*>(context)->uc_mcontext.gregs;
-    if (fault_address != nullptr || registers[REG_TRAPNO] != 13) {
+    const bool illegal = registers[REG_TRAPNO] == 6;
+    if (!illegal && (fault_address != nullptr || registers[REG_TRAPNO] != 13)) {
         return false;
     }
     const auto address = static_cast<uintptr_t>(registers[REG_RIP]);
     FaultInstruction instruction{};
-    const size_t length = FaultInstructionLength(reinterpret_cast<const u8*>(address), instruction);
+    u32 destination = 0;
+    const size_t length =
+        FaultInstructionLength(reinterpret_cast<const u8*>(address), instruction, destination);
     if (length == 0) {
         return false;
     }
@@ -172,12 +208,24 @@ bool HandleCpuIdFault(void* context, void* fault_address) {
         address >= guest_begin.load(std::memory_order_relaxed) &&
         address < guest_end.load(std::memory_order_relaxed) &&
         Libraries::Kernel::g_curthread != nullptr) {
+        if (instruction == FaultInstruction::Rdpid) {
+            static constexpr std::array HostRegisters{
+                REG_RAX, REG_RCX, REG_RDX, REG_RBX, REG_RSP, REG_RBP, REG_RSI, REG_RDI,
+                REG_R8,  REG_R9,  REG_R10, REG_R11, REG_R12, REG_R13, REG_R14, REG_R15};
+            registers[HostRegisters[destination]] = CurrentGuestCpu();
+            registers[REG_RIP] += length;
+            return true;
+        }
         const auto stack = static_cast<uintptr_t>(registers[REG_RSP]) - FaultStackSize;
         *reinterpret_cast<u64*>(stack) = address + length;
         registers[REG_RSP] = stack;
-        registers[REG_RIP] = reinterpret_cast<uintptr_t>(
-            fault_trampolines[static_cast<size_t>(instruction)]->getCode());
+        const auto index = static_cast<size_t>(instruction);
+        registers[REG_RIP] = reinterpret_cast<uintptr_t>(fault_trampolines[index]->getCode());
         return true;
+    }
+
+    if (illegal || instruction == FaultInstruction::Rdpid) {
+        return false;
     }
 
     const int saved_errno = errno;
@@ -305,6 +353,15 @@ void InitializeCpuId() {
 }
 
 void EnableCpuIdFaulting() {
+#ifdef ENABLE_CPU_ID_TRANSLATION
+    if (ShadCpuIdTranslationActive()) {
+        static std::atomic announced{false};
+        if (!announced.exchange(true)) {
+            LOG_INFO(Core, "CPU identity translation active");
+        }
+        return;
+    }
+#endif
     if (prctl(PR_SET_TSC, PR_TSC_SIGSEGV) != 0) {
         static std::atomic warned{false};
         if (!warned.exchange(true)) {
@@ -322,6 +379,9 @@ void EnableCpuIdFaulting() {
 void SetCpuIdGuestAddressRange(uintptr_t begin, uintptr_t end) {
     guest_begin.store(begin, std::memory_order_relaxed);
     guest_end.store(end, std::memory_order_relaxed);
+#ifdef ENABLE_CPU_ID_TRANSLATION
+    ShadCpuIdTranslationRange(begin, end);
+#endif
 }
 
 } // namespace Core
