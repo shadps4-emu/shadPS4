@@ -106,6 +106,10 @@ void IREmitter::Barrier() {
     Inst(Opcode::Barrier);
 }
 
+void IREmitter::SubgroupBarrier() {
+    Inst(Opcode::SubgroupBarrier);
+}
+
 void IREmitter::WorkgroupMemoryBarrier() {
     Inst(Opcode::WorkgroupMemoryBarrier);
 }
@@ -1447,18 +1451,6 @@ U32U64 IREmitter::IAdd(const U32U64& a, const U32U64& b) {
         return Inst<U32>(Opcode::IAdd32, a, b);
     case Type::U64:
         return Inst<U64>(Opcode::IAdd64, a, b);
-    default:
-        ThrowInvalidType(a.Type());
-    }
-}
-
-Value IREmitter::IAddCarry(const U32& a, const U32& b) {
-    if (a.Type() != b.Type()) {
-        UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
-    }
-    switch (a.Type()) {
-    case Type::U32:
-        return Inst(Opcode::IAddCarry32, a, b);
     default:
         ThrowInvalidType(a.Type());
     }

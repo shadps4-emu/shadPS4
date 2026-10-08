@@ -1,11 +1,16 @@
-// SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
+#include <cstddef>
+#include <cstdlib>
+#include <limits>
 #include <numeric>
 #include <utility>
 #include <vector>
+
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/types.h"
 
@@ -26,179 +31,74 @@ struct SlotId {
     u32 index = INVALID_INDEX;
 };
 
+void* ReserveMemoryPages(std::size_t size) noexcept;
+void CommitMemoryPages(void* address, std::size_t size) noexcept;
+void ReleaseMemoryPages(void* base, [[maybe_unused]] std::size_t size) noexcept;
+
 template <class T>
 class SlotVector {
-    constexpr static std::size_t InitialCapacity = 2048;
+    static constexpr std::size_t CHUNK_SIZE = 2_MB;
+    static_assert(sizeof(T) <= CHUNK_SIZE);
 
 public:
-    template <typename ValueType, typename Pointer, typename Reference>
-    class Iterator {
-    public:
-        using iterator_category = std::forward_iterator_tag;
-        using value_type = ValueType;
-        using difference_type = std::ptrdiff_t;
-        using pointer = Pointer;
-        using reference = Reference;
-
-        Iterator(SlotVector& vector_, SlotId index_) : vector(vector_), slot(index_) {
-            AdvanceToValid();
-        }
-
-        reference operator*() const {
-            return vector[slot];
-        }
-
-        pointer operator->() const {
-            return &vector[slot];
-        }
-
-        Iterator& operator++() {
-            ++slot.index;
-            AdvanceToValid();
-            return *this;
-        }
-
-        Iterator operator++(int) {
-            Iterator temp = *this;
-            ++(*this);
-            return temp;
-        }
-
-        bool operator==(const Iterator& other) const {
-            return slot == other.slot;
-        }
-
-        bool operator!=(const Iterator& other) const {
-            return !(*this == other);
-        }
-
-    private:
-        void AdvanceToValid() {
-            while (slot < vector.values_capacity && !vector.ReadStorageBit(slot.index)) {
-                ++slot.index;
-            }
-        }
-
-        SlotVector& vector;
-        SlotId slot;
-    };
-
-    using iterator = Iterator<T, T*, T&>;
-    using const_iterator = Iterator<const T, const T*, const T&>;
-    using reverse_iterator = std::reverse_iterator<iterator>;
-    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-
-    SlotVector() {
-        Reserve(InitialCapacity);
+    explicit SlotVector() = default;
+    explicit SlotVector(u32 max_entries) {
+        Create(max_entries);
     }
 
     ~SlotVector() noexcept {
-        std::size_t index = 0;
-        for (u64 bits : stored_bitset) {
-            for (std::size_t bit = 0; bits; ++bit, bits >>= 1) {
-                if ((bits & 1) != 0) {
-                    values[index + bit].object.~T();
-                }
-            }
-            index += 64;
-        }
-        delete[] values;
+        Destroy();
     }
+
+    SlotVector(const SlotVector&) = delete;
+    SlotVector& operator=(const SlotVector&) = delete;
+    SlotVector(SlotVector&&) = delete;
+    SlotVector& operator=(SlotVector&&) = delete;
 
     [[nodiscard]] T& operator[](SlotId id) noexcept {
         ValidateIndex(id);
-        return values[id.index].object;
+        return values[id.index];
     }
 
     [[nodiscard]] const T& operator[](SlotId id) const noexcept {
         ValidateIndex(id);
-        return values[id.index].object;
+        return values[id.index];
     }
 
-    bool is_allocated(SlotId id) const {
-        return (id.index / 64) < stored_bitset.size() && ReadStorageBit(id.index);
+    void ResizeDestructive(u32 max_entries) {
+        Destroy();
+        Create(max_entries);
+    }
+
+    bool IsAllocated(SlotId id) const noexcept {
+        return id.index < capacity && ReadStorageBit(id.index);
     }
 
     template <typename... Args>
-    SlotId insert(Args&&... args) noexcept {
+    SlotId Insert(Args&&... args) noexcept {
         const u32 index = FreeValueIndex();
-        new (&values[index].object) T(std::forward<Args>(args)...);
+        new (&values[index]) T(std::forward<Args>(args)...);
         SetStorageBit(index);
-
         return SlotId{index};
     }
 
-    void erase(SlotId id) noexcept {
-        values[id.index].object.~T();
+    void Erase(SlotId id) noexcept {
+        ValidateIndex(id);
+        values[id.index].~T();
         free_list.push_back(id.index);
         ResetStorageBit(id.index);
     }
 
-    std::size_t size() const noexcept {
-        return values_capacity - free_list.size();
+    SlotId GetSlotId(const T& value) {
+        const u32 index = std::addressof(value) - values;
+        return SlotId{index};
     }
 
-    iterator begin() noexcept {
-        return iterator(*this, 0);
-    }
-
-    const_iterator begin() const noexcept {
-        return const_iterator(*this, 0);
-    }
-
-    const_iterator cbegin() const noexcept {
-        return begin();
-    }
-
-    iterator end() noexcept {
-        return iterator(*this, values_capacity);
-    }
-
-    const_iterator end() const noexcept {
-        return const_iterator(*this, values_capacity);
-    }
-
-    const_iterator cend() const noexcept {
-        return end();
-    }
-
-    reverse_iterator rbegin() noexcept {
-        return reverse_iterator(end());
-    }
-
-    const_reverse_iterator rbegin() const noexcept {
-        return const_reverse_iterator(end());
-    }
-
-    const_reverse_iterator crbegin() const noexcept {
-        return rbegin();
-    }
-
-    reverse_iterator rend() noexcept {
-        return reverse_iterator(begin());
-    }
-
-    const_reverse_iterator rend() const noexcept {
-        return const_reverse_iterator(begin());
-    }
-
-    const_reverse_iterator crend() const noexcept {
-        return rend();
+    std::size_t Size() const noexcept {
+        return capacity - free_list.size();
     }
 
 private:
-    struct NonTrivialDummy {
-        NonTrivialDummy() noexcept {}
-    };
-
-    union Entry {
-        Entry() noexcept : dummy{} {}
-        ~Entry() noexcept {}
-
-        NonTrivialDummy dummy;
-        T object;
-    };
-
     void SetStorageBit(u32 index) noexcept {
         stored_bitset[index / 64] |= u64(1) << (index % 64);
     }
@@ -213,54 +113,84 @@ private:
 
     void ValidateIndex([[maybe_unused]] SlotId id) const noexcept {
         DEBUG_ASSERT(id);
+        DEBUG_ASSERT(id.index < capacity);
         DEBUG_ASSERT(id.index / 64 < stored_bitset.size());
         DEBUG_ASSERT(((stored_bitset[id.index / 64] >> (id.index % 64)) & 1) != 0);
     }
 
     [[nodiscard]] u32 FreeValueIndex() noexcept {
         if (free_list.empty()) {
-            Reserve(values_capacity ? (values_capacity << 1) : 1);
+            AddChunk();
         }
-
         const u32 free_index = free_list.back();
         free_list.pop_back();
         return free_index;
     }
 
-    void Reserve(std::size_t new_capacity) noexcept {
-        Entry* const new_values = new Entry[new_capacity];
+    void AddChunk() noexcept {
+        ASSERT_MSG(!small_vector && num_chunks < max_chunks, "Run out of space");
+        auto* const chunk_address = reinterpret_cast<u8*>(values) + num_chunks * CHUNK_SIZE;
+        CommitMemoryPages(chunk_address, CHUNK_SIZE);
+        ++num_chunks;
+        const u32 new_capacity = num_chunks * CHUNK_SIZE / sizeof(T);
+        const u32 new_entries = new_capacity - capacity;
+        stored_bitset.resize((new_capacity + 63) / 64);
+        for (u32 i = new_entries; i-- > 0;) {
+            free_list.push_back(capacity + i);
+        }
+        capacity = new_capacity;
+    }
+
+    void Create(u32 max_entries) {
+        const u64 max_bytes = max_entries * sizeof(T);
+        const u64 reserved_bytes = Common::AlignUpPow2(max_bytes, CHUNK_SIZE);
+        max_chunks = reserved_bytes / CHUNK_SIZE;
+        small_vector = max_bytes <= CHUNK_SIZE;
+        if (small_vector) {
+            capacity = max_entries;
+            values = static_cast<T*>(std::calloc(capacity, sizeof(T)));
+            stored_bitset.resize((capacity + 63) / 64);
+            free_list.resize(capacity);
+            std::iota(free_list.rbegin(), free_list.rend(), 0u);
+        } else {
+            values = static_cast<T*>(ReserveMemoryPages(reserved_bytes));
+        }
+    }
+
+    void Destroy() {
         std::size_t index = 0;
         for (u64 bits : stored_bitset) {
             for (std::size_t bit = 0; bits; ++bit, bits >>= 1) {
-                const std::size_t i = index + bit;
-                if ((bits & 1) == 0) {
-                    continue;
+                if ((bits & 1) != 0) {
+                    values[index + bit].~T();
                 }
-                T& old_value = values[i].object;
-                new (&new_values[i].object) T(std::move(old_value));
-                old_value.~T();
             }
             index += 64;
         }
+        if (values) {
+            if (small_vector) {
+                std::free(values);
+            } else {
+                ReleaseMemoryPages(values, max_chunks * CHUNK_SIZE);
+            }
+            values = nullptr;
+        }
 
-        stored_bitset.resize((new_capacity + 63) / 64);
-
-        const std::size_t old_free_size = free_list.size();
-        free_list.resize(old_free_size + (new_capacity - values_capacity));
-        const std::size_t new_free_size = free_list.size();
-        std::iota(free_list.rbegin(), free_list.rbegin() + new_free_size - old_free_size,
-                  static_cast<u32>(values_capacity));
-
-        delete[] values;
-        values = new_values;
-        values_capacity = new_capacity;
+        stored_bitset.clear();
+        free_list.clear();
+        max_chunks = 0;
+        num_chunks = 0;
+        capacity = 0;
+        small_vector = false;
     }
 
-    Entry* values = nullptr;
-    std::size_t values_capacity = 0;
-
+    T* values{};
     std::vector<u64> stored_bitset;
     std::vector<u32> free_list;
+    u32 max_chunks{};
+    u32 num_chunks{};
+    u32 capacity{};
+    bool small_vector{};
 };
 
 } // namespace Common

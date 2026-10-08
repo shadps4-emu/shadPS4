@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
     // Initialize main log with default config
     Common::Log::Setup("shadps4.log");
 
-    LOG_INFO(Debug, "Run: {}", fmt::join(std::span(argv, argc), ""));
+    LOG_INFO(Debug, "Run: {}", fmt::join(std::span(argv, argc), " "));
 
     IPC::Instance().Init();
 
@@ -237,12 +237,20 @@ int main(int argc, char* argv[]) {
     };
     if (!std::filesystem::exists(ebootPath) && !archive_component_exists(ebootPath)) {
         bool found = false;
-        constexpr int maxDepth = 5;
         for (const auto& installDir : EmulatorSettings.GetGameInstallDirs()) {
-            if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth)) {
+            if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, 0)) {
                 ebootPath = *foundPath;
                 found = true;
                 break;
+            }
+        }
+        if (!found) {
+            for (const auto& installDir : EmulatorSettings.GetGameInstallDirs()) {
+                if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, 5)) {
+                    ebootPath = *foundPath;
+                    found = true;
+                    break;
+                }
             }
         }
         if (!found) {

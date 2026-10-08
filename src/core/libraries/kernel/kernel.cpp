@@ -27,7 +27,8 @@
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/network/sys_net.h"
+#include "core/libraries/net/net.h"
+#include "core/libraries/net/net_kernel.h"
 
 #ifdef _WIN64
 #include <Rpc.h>
@@ -35,8 +36,6 @@
 #include <uuid/uuid.h>
 #endif
 #include <common/singleton.h>
-#include <core/libraries/network/net_error.h>
-#include <core/libraries/network/sockets.h>
 #include <core/linker.h>
 #include "aio.h"
 
@@ -311,11 +310,11 @@ s32 PS4_SYSV_ABI sceKernelTitleWorkaroundIsEnabled(OrbisKernelTitleWorkaround* t
 }
 
 s32 PS4_SYSV_ABI sceKernelGetProcessType(s32 pid) {
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called, pid: {}", pid);
-    if (pid != GLOBAL_PID) {
-        return ORBIS_KERNEL_ERROR_ENOSYS;
+    LOG_DEBUG(Lib_Kernel, "called, pid: {}", pid);
+    if (pid != GLOBAL_PID && pid != -1 && pid != 0) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
     }
-    return 0;
+    return ORBIS_KERNEL_PROCESS_TYPE_BIG_APP;
 }
 
 s32 PS4_SYSV_ABI __sys_regmgr_call(u32 op, u32 key, void* result, void* value, u64 len) {
@@ -447,6 +446,9 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
 
     static char const** kernel_environ = g_environment;
+
+    // Before any socket exists: net ids are file descriptors from the kernel's table.
+    Libraries::Net::InstallKernelIntegration();
 
     Libraries::Kernel::RegisterFileSystem(sym);
     Libraries::Kernel::RegisterTime(sym);
