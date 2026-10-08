@@ -117,6 +117,12 @@ struct Image : public Common::LRUNode<> {
         depth_uid = {};
     }
 
+    vk::DeviceSize SizeBytes() const {
+        return std::accumulate(
+            backing_images.begin(), backing_images.end(), vk::DeviceSize(0),
+            [](vk::DeviceSize sum, const BackingImage& bi) { return sum + bi.image.size_bytes; });
+    }
+
     ImageView& FindView(const ImageViewInfo& view_info, bool ensure_guest_samples = true);
 
     using Barriers = SmallVector<vk::ImageMemoryBarrier2, 32>;
