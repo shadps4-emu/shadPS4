@@ -262,7 +262,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 
     BindVertexBuffers(pipeline);
     if (is_indexed) {
-        BindIndexBuffer();
+        BindIndexBuffer(0, true);
     }
 
     const auto size = stride * max_count;
@@ -540,7 +540,7 @@ void Rasterizer::BindVertexBuffers(const GraphicsPipeline* pipeline) {
     }
 }
 
-void Rasterizer::BindIndexBuffer(u32 index_offset) {
+void Rasterizer::BindIndexBuffer(u32 index_offset, bool is_indirect) {
     const auto& regs = liverpool->regs;
 
     // Figure out index type and size.
@@ -548,17 +548,32 @@ void Rasterizer::BindIndexBuffer(u32 index_offset) {
     const vk::IndexType index_type = is_index16 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
     const u32 index_size = is_index16 ? sizeof(u16) : sizeof(u32);
     const VAddr index_address =
-        regs.index_base_address.Address<VAddr>() + index_offset * index_size;
+        regs.index_base_address.Address<VAddr>() + u64(index_offset) * index_size;
 
     // Bind index buffer.
-    const u32 index_buffer_size = regs.num_indices * index_size;
-    const auto [buffer, offset] =
-        buffer_cache.ObtainBuffer(index_address, index_buffer_size, false);
-    needs_barrier |= runtime.IsBufferAccessed(buffer, offset, index_buffer_size);
-    bound_buffers.emplace_back(buffer, offset, index_buffer_size, vk::AccessFlagBits2::eIndexRead);
+    const u32 num_indices =
+        is_indirect ? regs.max_index_size : std::min(regs.num_indices, regs.max_index_size);
+    const u64 requested_size = u64(num_indices) * index_size;
+    const u64 mapped_size = memory->ClampRangeSize(index_address, requested_size);
+    const u32 index_buffer_size = static_cast<u32>(Common::AlignDown(mapped_size, index_size));
+    vk::Buffer index_buffer{};
+    u64 buffer_offset{};
+    if (index_buffer_size != 0) {
+        const auto [buffer, offset] =
+            buffer_cache.ObtainBuffer(index_address, index_buffer_size, false);
+        needs_barrier |= runtime.IsBufferAccessed(buffer, offset, index_buffer_size);
+        bound_buffers.emplace_back(buffer, offset, index_buffer_size,
+                                   vk::AccessFlagBits2::eIndexRead);
+        index_buffer = buffer->Handle();
+        buffer_offset = offset;
+    }
 
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.bindIndexBuffer(buffer->Handle(), offset, index_type);
+    if (instance.IsMaintenance5Supported()) {
+        cmdbuf.bindIndexBuffer2KHR(index_buffer, buffer_offset, index_buffer_size, index_type);
+    } else {
+        cmdbuf.bindIndexBuffer(index_buffer, buffer_offset, index_type);
+    }
 }
 
 void Rasterizer::ResetBindings(bool is_compute) {
@@ -1154,7 +1169,10 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
         regs.depth_htile_data_base.GetAddress(), liverpool->last_db_extent, true);
 
     auto& read_image = texture_cache.GetImage(texture_cache.FindImage(read_desc));
-    auto& write_image = texture_cache.GetImage(texture_cache.FindImage(write_desc));
+    const auto write_id = texture_cache.FindImage(write_desc);
+    auto& write_image = texture_cache.GetImage(write_id);
+    // The copy destination is never bound as a target, so its stencil plane is linked here.
+    texture_cache.AssociateStencil(write_id, write_desc.info);
 
     VideoCore::SubresourceRange sub_range;
     sub_range.base.layer = liverpool->regs.depth_view.slice_start;
