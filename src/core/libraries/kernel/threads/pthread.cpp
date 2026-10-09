@@ -317,28 +317,24 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
         requested_attr->cpuset->_reserved != 0) {
         return POSIX_EINVAL;
     }
-    const u64 mask = requested_attr != nullptr && requested_attr->cpuset != nullptr
-                         ? requested_attr->cpuset->bits
-                     : curthread != nullptr
-                         ? curthread->affinity_mask.load(std::memory_order_acquire)
-                         : GetGuestCpuMask();
-    if (mask == 0) {
-        return POSIX_EINVAL;
-    }
-    if ((mask & ~GetGuestCpuMask()) != 0) {
-        return POSIX_EPERM;
-    }
-    std::vector<int> host_cpus;
+    const bool explicit_affinity = requested_attr != nullptr && requested_attr->cpuset != nullptr;
+    u64 mask = explicit_affinity ? requested_attr->cpuset->bits : GetGuestCpuMask();
+    Core::CpuAffinity affinity;
     if (curthread != nullptr) {
 #if defined(__linux__) && defined(ARCH_X86_64)
         const AffinitySignalGuard signal_guard;
 #endif
         std::scoped_lock lock{curthread->affinity_mutex};
-        if (const int ret =
-                curthread->native_thr->GetCpuAffinity().GetAllowedHostCpus(0, host_cpus);
-            ret != 0) {
-            return ret;
+        affinity = curthread->native_thr->GetCpuAffinity();
+        if (!explicit_affinity) {
+            mask = curthread->affinity_mask.load(std::memory_order_acquire);
         }
+    }
+    if (mask == 0) {
+        return POSIX_EINVAL;
+    }
+    if ((mask & ~GetGuestCpuMask()) != 0) {
+        return POSIX_EPERM;
     }
     auto* thread_state = ThrState::Instance();
     Pthread* new_thread = thread_state->Alloc(curthread);
@@ -413,7 +409,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     /* Create thread */
     new_thread->native_thr = std::make_unique<Core::NativeThread>(Core::NativeThread());
     const int ret =
-        new_thread->native_thr->Create(RunThread, new_thread, mask, std::move(host_cpus));
+        new_thread->native_thr->Create(RunThread, new_thread, mask, std::move(affinity));
     if (ret) {
         *thread = nullptr;
         thread_state->Unlink(curthread, new_thread);

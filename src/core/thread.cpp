@@ -29,9 +29,8 @@ NativeThread::NativeThread() : native_handle{0} {}
 
 NativeThread::~NativeThread() {}
 
-int NativeThread::Create(ThreadFunc func, void* arg, u64 affinity_mask,
-                         std::vector<int> host_cpus) {
-    cpu_affinity = CpuAffinity{std::move(host_cpus)};
+int NativeThread::Create(ThreadFunc func, void* arg, u64 affinity_mask, CpuAffinity affinity) {
+    cpu_affinity = std::move(affinity);
     struct Startup {
         ThreadFunc func;
         void* arg;
