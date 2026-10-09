@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cerrno>
 #include <vector>
 
 #include "common/alignment.h"
@@ -229,9 +230,9 @@ void IOFile::Close() {
 #endif
 }
 
-void IOFile::Unlink() {
+int IOFile::Unlink() {
     if (!IsOpen()) {
-        return;
+        return EBADF;
     }
 
     // Mark the file for deletion
@@ -244,15 +245,25 @@ void IOFile::Unlink() {
     HANDLE hfile = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
 
     disposition.DeleteFile = TRUE;
-    NtSetInformationFile(hfile, &iosb, &disposition, sizeof(disposition),
-                         FileDispositionInformation);
+    const auto status = static_cast<s32>(NtSetInformationFile(
+        hfile, &iosb, &disposition, sizeof(disposition), FileDispositionInformation));
+    if (status < 0) {
+        // Do not pass NTSTATUS through the POSIX errno interface. Preserve the
+        // native status in the diagnostic; an unmapped host failure is EIO.
+        LOG_ERROR(Common_Filesystem, "Failed to unlink the file at path={}, NTSTATUS={:#x}",
+                  PathToUTF8String(file_path), static_cast<u32>(status));
+        return EIO;
+    }
 #else
     if (unlink(file_path.c_str()) != 0) {
-        const auto ec = std::error_code{errno, std::generic_category()};
+        const int error = errno;
+        const auto ec = std::error_code{error, std::generic_category()};
         LOG_ERROR(Common_Filesystem, "Failed to unlink the file at path={}, ec_message={}",
                   PathToUTF8String(file_path), ec.message());
+        return error;
     }
 #endif
+    return 0;
 }
 
 uintptr_t IOFile::GetFileMapping() {
