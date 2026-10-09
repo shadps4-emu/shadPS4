@@ -453,7 +453,7 @@ std::array<OrbisSysmoduleModuleInternal, g_num_modules> g_modules_array = std::t
      {0x9b, -1, 0, 1, "libSceFreeTypeOptOl", g_libSceFreeTypeOptOl_modules, 1},
      {0x9c, -1, 0, 1, "libSceScreenShot", g_libSceScreenShot_modules, 3},
      {0x9d, -1, 0, 1, "libSceNpAuth", g_libSceNpAuth_modules, 3},
-     {0x1b, -1, 0, 1, "libSceVoiceQos", g_libSceVoiceQos_modules, 5},
+     {0x1b, -1, 0, 1, "libSceVoiceQoS", g_libSceVoiceQos_modules, 5},
      {0x80000004, -1, 0, 1, "libSceSysCore", g_libSceSysCore_modules, 2},
      {0xbc, -1, 0, 1, "libSceM4aacEnc", g_libSceM4aacEnc_modules, 2},
      {0xbd, -1, 0, 1, "libSceAudiodecCpu", g_libSceAudiodecCpu_modules, 1},
