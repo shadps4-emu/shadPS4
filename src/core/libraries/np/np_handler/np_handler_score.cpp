@@ -509,9 +509,6 @@ s32 NpHandler::GetRankingByRangeA(s32 user_id, s32 service_label, u32 boardId, u
         PendingScoreRequest pending;
         pending.req = std::move(req);
         pending.cmd = ShadNet::CommandType::GetScoreRange;
-        // Note: aRankArray is set, plainRankArray remains null. The shared
-        // GetScoreRange/GetScoreFriends branch in OnScoreReply dispatches
-        // on which one is non-null to pick the right fill helper.
         pending.aRankArray = rankArray;
         pending.commentArray = commentArray;
         pending.infoArray = infoArray;
@@ -724,8 +721,6 @@ s32 NpHandler::GetFriendsRankingA(s32 user_id, s32 service_label, u32 boardId, b
         PendingScoreRequest pending;
         pending.req = std::move(req);
         pending.cmd = ShadNet::CommandType::GetScoreFriends;
-        // Note: aRankArray is set, plainRankArray remains null. OnScoreReply
-        // dispatches on which one is non-null.
         pending.aRankArray = rankArray;
         pending.commentArray = commentArray;
         pending.infoArray = infoArray;
@@ -1003,10 +998,6 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
     }
 
     case ShadNet::CommandType::RecordScoreData: {
-        // Reply body is empty on success — error byte already consumed by
-        // the caller. Server-side errors are mapped to ErrorType values
-        // (NotFound / ScoreInvalid / ScoreHasData) which arrive as the
-        // packet's error byte; if we got here, error == NoError.
         LOG_INFO(NpHandler, "RecordScoreData user_id={} pkt_id={} ok", user_id, pkt_id);
         req->SetResult(ORBIS_OK);
         break;
@@ -1031,11 +1022,6 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
             req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
             break;
         }
-
-        // Always populate *totalSizeOut with the actual stored size on
-        // the server, even when truncating into a smaller dataOut buffer.
-        // Lets the caller know if they undersized their buffer and need
-        // to retry with a larger one.
         if (pending.totalSizeOut != nullptr) {
             *pending.totalSizeOut = stored_size;
         }
@@ -1126,9 +1112,6 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         break;
     }
     case ShadNet::CommandType::GetScoreAccountId: {
-        // Reply body = u32 LE proto size + GetScoreResponse proto bytes.
-        // Index-aligned with the request's accountIds[] (empty-npid sentinel
-        // marks "no score on this board"), same contract as GetScoreNpid.
         if (body.size() < 4) {
             LOG_ERROR(NpHandler, "GetScoreAccountId body too small ({})", body.size());
             req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);

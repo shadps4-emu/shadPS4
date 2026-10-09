@@ -14,9 +14,6 @@ namespace Libraries::Np {
 void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEvent& n) {
     LOG_INFO(NpHandler, "user_id={} WebApiPushEvent svc='{}' type='{}' bytes={}", user_id,
              n.npServiceName, n.dataType, n.data.size());
-    // Forward verbatim to the libSceNpWebApi push-event dispatch.it queues the event
-    // and delivers it on the game's thread during sceNpCheckCallback to any registered
-    // (and filter-matching) push-event callback.
     NpWebApi::PushEventInput ev;
     ev.targetUserId = user_id;
     ev.npServiceName = n.npServiceName;
@@ -82,14 +79,6 @@ void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEv
                 inv.from_account_id = ev.fromAccountId;
                 v.push_back(std::move(inv));
             }
-            // ORBIS_SYSTEM_SERVICE_EVENT_SESSION_INVITATION is a *join* event: it
-            // fires only after the user explicitly accepts, via the game-opened invitation dialog
-            // (RECV) or the system software UI. Posting it here on arrival makes titles silently
-            // auto-join. The event is raised from AcceptSessionInvitation instead. The WebAPI push
-            // callback above still fires on arrival for titles that watch invites themselves.
-            //
-            // The emulator has no ShellUI, so surface the "system software UI" half here: an
-            // overlay prompt whose Accept routes through AcceptSessionInvitation.
             ImGui::InvitationPrompt::Push(user_id, invitation_id, session_id, n.fromNpid);
         }
     }
