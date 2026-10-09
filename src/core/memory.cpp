@@ -457,6 +457,7 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
         handle++;
     }
     ASSERT_MSG(remaining_size == 0, "Failed to commit pooled memory");
+    rasterizer->ProtectMemory(mapped_addr, size, MemoryPermission::ReadWrite);
 
     // Merge this VMA with similar nearby areas
     MergeAdjacent(vma_map, new_vma_handle);
@@ -687,6 +688,9 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         lk2.unlock();
 
         // If this is not a reservation, then map to GPU and address space
+        rasterizer->ProtectMemory(mapped_addr, size,
+                                  is_exec ? MemoryPermission::ReadWriteExecute
+                                          : MemoryPermission::ReadWrite);
         if (IsValidGpuMapping(mapped_addr, size)) {
             rasterizer->MapMemory(mapped_addr, size);
         }
@@ -880,6 +884,7 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
                 phys_handle++;
             }
             ASSERT_MSG(size_to_free == 0, "Failed to decommit pooled memory");
+            rasterizer->ProtectMemory(current_addr, size_in_vma, MemoryPermission::None);
         }
 
         // Mark region as pool reserved and attempt to coalesce it with neighbours.
@@ -994,6 +999,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
     if (vma_type != VMAType::Reserved && vma_type != VMAType::PoolReserved) {
         // Unmap the memory region.
+        rasterizer->ProtectMemory(virtual_addr, size_in_vma, MemoryPermission::None);
         u64 size_to_unmap = size_in_vma;
         VAddr unmapped_addr = impl.Unmap(virtual_addr, &size_to_unmap);
         rasterizer->RegisterMemory(unmapped_addr, size_to_unmap);
@@ -1052,6 +1058,7 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
     const auto adjusted_size = std::min<u64>(vma_base.size - start_in_vma, size);
     const MemoryProt old_prot = vma_base.prot;
     const MemoryProt new_prot = prot;
+    const VMAType type = vma_base.type;
 
     if (vma_base.type == VMAType::Free || vma_base.type == VMAType::PoolReserved) {
         // On PS4, protecting freed memory does nothing.
@@ -1069,7 +1076,7 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
     if (True(prot & MemoryProt::CpuRead)) {
         perms |= Core::MemoryPermission::Read;
     }
-    if (True(prot & MemoryProt::CpuReadWrite)) {
+    if (True(prot & MemoryProt::CpuWrite)) {
         perms |= Core::MemoryPermission::ReadWrite;
     }
     if (True(prot & MemoryProt::CpuExec)) {
@@ -1079,14 +1086,10 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
         perms |= Core::MemoryPermission::Read;
     }
     if (True(prot & MemoryProt::GpuWrite)) {
-        perms |= Core::MemoryPermission::Write;
-    }
-    if (True(prot & MemoryProt::GpuReadWrite)) {
         perms |= Core::MemoryPermission::ReadWrite;
     }
 
-    if (vma_base.type == VMAType::Direct || vma_base.type == VMAType::Pooled ||
-        vma_base.type == VMAType::File) {
+    if (type == VMAType::Direct || type == VMAType::Pooled || type == VMAType::File) {
         // On PS4, execute permissions are hidden from direct memory and file mappings.
         // Tests show that execute permissions still apply, so handle this after reading perms.
         prot &= ~MemoryProt::CpuExec;
@@ -1098,7 +1101,7 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
     new_vma.prot = prot;
     MergeAdjacent(vma_map, new_it);
 
-    if (vma_base.type == VMAType::Reserved) {
+    if (type == VMAType::Reserved) {
         // On PS4, protections change vma_map, but don't apply.
         // Return early to avoid protecting memory that isn't mapped in address space.
         return adjusted_size;
@@ -1106,7 +1109,7 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
 
     // Perform address-space memory protections if needed.
     if (new_prot != old_prot) {
-        impl.Protect(addr, adjusted_size, perms);
+        rasterizer->ProtectMemory(addr, adjusted_size, perms);
     }
 
     return adjusted_size;

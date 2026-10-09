@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <atomic>
 #include <utility>
 #include "common/adaptive_mutex.h"
 #include "common/assert.h"
@@ -41,6 +42,8 @@ struct PageManager::Impl {
     struct PageState {
         u8 num_write_watchers;
         u8 num_read_watchers;
+        std::atomic<Core::MemoryPermission> guest_perms{Core::MemoryPermission::None};
+        std::atomic<Core::MemoryPermission> watched_perms{Core::MemoryPermission::None};
 
         Core::MemoryPermission WritePerm() const noexcept {
             return num_write_watchers == 0 ? Core::MemoryPermission::Write
@@ -53,7 +56,8 @@ struct PageManager::Impl {
         }
 
         Core::MemoryPermission Perms() const noexcept {
-            return ReadPerm() | WritePerm();
+            return guest_perms.load(std::memory_order_relaxed) &
+                   (ReadPerm() | WritePerm() | Core::MemoryPermission::Execute);
         }
 
         template <bool is_read>
@@ -65,9 +69,8 @@ struct PageManager::Impl {
             }
         }
 
-        constexpr Core::MemoryPermission Update(PageOp write_op, bool update_write = true,
-                                                PageOp read_op = PageOp::None,
-                                                bool update_read = false) {
+        Core::MemoryPermission Update(PageOp write_op, bool update_write = true,
+                                      PageOp read_op = PageOp::None, bool update_read = false) {
             if (update_read) {
                 if (read_op == PageOp::Track) {
                     ASSERT_MSG(num_read_watchers == 0, "Too many watchers");
@@ -84,6 +87,8 @@ struct PageManager::Impl {
                 }
                 num_write_watchers += std::to_underlying(write_op);
             }
+            watched_perms.store(Core::MemoryPermission::ReadWrite & ~(ReadPerm() | WritePerm()),
+                                std::memory_order_release);
             return Perms();
         }
     };
@@ -98,7 +103,6 @@ struct PageManager::Impl {
 
     virtual void OnMap(VAddr address, size_t size) {
         // No-op
-        EnsurePages(address, address + size);
     }
 
     virtual void OnUnmap(VAddr address, size_t size) {
@@ -107,12 +111,55 @@ struct PageManager::Impl {
 
     virtual void Protect(VAddr address, size_t size, Core::MemoryPermission perms) = 0;
 
+    virtual void ProtectGuest(VAddr address, size_t size, Core::MemoryPermission guest_perms,
+                              Core::MemoryPermission effective_perms) {
+        Core::Memory::Instance()->GetAddressSpace().Protect(address, size, guest_perms);
+        Protect(address, size, effective_perms);
+    }
+
     void EnsurePages(VAddr begin, VAddr end) {
-        end = std::min(end, VAddr{1} << ADDRESS_BITS) - 1;
+        end = std::min(end, VAddr{1} << ADDRESS_BITS);
+        if (begin >= end) {
+            return;
+        }
         const size_t start_page = begin >> PM_PAGE_BITS;
-        const size_t end_page = end >> PM_PAGE_BITS;
+        const size_t end_page = (end - 1) >> PM_PAGE_BITS;
         cached_pages.reserve(start_page, end_page);
         locks.reserve(start_page, end_page);
+    }
+
+    void ProtectMemory(VAddr address, size_t size, Core::MemoryPermission guest_perms) {
+        const VAddr end = address + size;
+        const VAddr tracked_end = std::min(end, VAddr{1} << ADDRESS_BITS);
+        EnsurePages(address, tracked_end);
+        VAddr range_begin = address;
+        Core::MemoryPermission range_perms{};
+        for (VAddr page_addr = address; page_addr < tracked_end;
+             page_addr += PageManager::PM_PAGE_SIZE) {
+            const auto page = page_addr >> PM_PAGE_BITS;
+            locks[page].lock();
+            auto& state = cached_pages[page];
+            state.guest_perms.store(guest_perms, std::memory_order_release);
+            const auto perms = state.Perms();
+            if (page_addr == address) {
+                range_perms = perms;
+            } else if (perms != range_perms) {
+                ProtectGuest(range_begin, page_addr - range_begin, guest_perms, range_perms);
+                range_begin = page_addr;
+                range_perms = perms;
+            }
+        }
+        if (range_begin < tracked_end) {
+            ProtectGuest(range_begin, tracked_end - range_begin, guest_perms, range_perms);
+        }
+        for (VAddr page_addr = address; page_addr < tracked_end;
+             page_addr += PageManager::PM_PAGE_SIZE) {
+            locks[page_addr >> PM_PAGE_BITS].unlock();
+        }
+        if (end > tracked_end) {
+            const auto begin = std::max(address, tracked_end);
+            Core::Memory::Instance()->GetAddressSpace().Protect(begin, end - begin, guest_perms);
+        }
     }
 
     void UpdatePageWatchers(VAddr addr, u64 size, PageOp write_op) {
@@ -413,8 +460,11 @@ public:
 #endif // __linux__
 
 struct SignalImpl : public PageManager::Impl {
+    inline static SignalImpl* instance;
+
     SignalImpl(Vulkan::Rasterizer* rasterizer_) : Impl() {
         rasterizer = rasterizer_;
+        instance = this;
 
         // Should be called first.
         constexpr auto priority = std::numeric_limits<u32>::min();
@@ -431,9 +481,28 @@ struct SignalImpl : public PageManager::Impl {
         impl.Protect(address, size, perms);
     }
 
+    void ProtectGuest(VAddr address, size_t size, Core::MemoryPermission guest_perms,
+                      Core::MemoryPermission effective_perms) override {
+        Protect(address, size, effective_perms);
+    }
+
     static bool GuestFaultSignalHandler(void* context, void* fault_address) {
         const auto addr = reinterpret_cast<VAddr>(fault_address);
         const auto size = std::min<u64>(8, PageManager::GetNextPageAddr(addr) - addr);
+        if (addr >= (VAddr{1} << ADDRESS_BITS) || Common::IsExecuteError(context) ||
+            !rasterizer->IsMapped(addr, size)) {
+            return false;
+        }
+        const auto* state = instance->cached_pages.find(addr >> PageManager::PM_PAGE_BITS);
+        const auto access = Common::IsWriteError(context) ? Core::MemoryPermission::Write
+                                                          : Core::MemoryPermission::Read;
+        if (!state || False(state->guest_perms.load(std::memory_order_acquire) & access)) {
+            return false;
+        }
+        if (False(state->watched_perms.load(std::memory_order_acquire) & access)) {
+            // Another thread may have already removed the GPU watch for this fault.
+            return true;
+        }
         const auto is_gpu_thread =
             std::this_thread::get_id() == rasterizer->GetGpuCommandProcessorThread();
         if (Common::IsWriteError(context)) {
@@ -465,6 +534,14 @@ PageManager::~PageManager() = default;
 
 void PageManager::OnGpuMap(VAddr address, size_t size) {
     impl->OnMap(address, size);
+}
+
+void PageManager::MapMemory(VAddr address, size_t size) {
+    impl->EnsurePages(address, address + size);
+}
+
+void PageManager::ProtectMemory(VAddr address, size_t size, Core::MemoryPermission perms) {
+    impl->ProtectMemory(address, size, perms);
 }
 
 void PageManager::OnGpuUnmap(VAddr address, size_t size) {
