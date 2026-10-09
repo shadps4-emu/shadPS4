@@ -24,10 +24,12 @@ constexpr const char* RestartMarker = "SHADPS4_CPU_ID_RESTART";
 
 bool NeedsTranslation() {
     unsigned int eax, ebx, ecx, edx;
+    const bool intel = __get_cpuid(0, &eax, &ebx, &ecx, &edx) && ebx == 0x756e6547 &&
+                       edx == 0x49656e69 && ecx == 0x6c65746e;
     const bool rdpid = __get_cpuid_count(7, 0, &eax, &ebx, &ecx, &edx) && (ecx & (1u << 22));
     const bool cpuid_faulting = syscall(SYS_arch_prctl, ARCH_SET_CPUID, 1) == 0;
     const bool tsc_faulting = prctl(PR_SET_TSC, PR_TSC_ENABLE) == 0;
-    return rdpid || !cpuid_faulting || !tsc_faulting;
+    return intel || rdpid || !cpuid_faulting || !tsc_faulting;
 }
 
 } // namespace

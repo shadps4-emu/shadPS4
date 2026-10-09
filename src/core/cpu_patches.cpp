@@ -50,6 +50,17 @@ using namespace Xbyak::util;
 
 namespace Core {
 
+#ifdef ENABLE_CPU_ID_TRANSLATION
+extern "C" __attribute__((noinline, visibility("default"))) void ShadReciprocalTranslationTables(
+    const void* rcp_indices, const void* rsqrt_indices, const void* rcp_values,
+    const void* rsqrt_values) {
+    asm volatile(""
+                 :
+                 : "r"(rcp_indices), "r"(rsqrt_indices), "r"(rcp_values), "r"(rsqrt_values)
+                 : "memory");
+}
+#endif
+
 constexpr static u64 rcp_index_table_size = 1u << 21;
 static bool rcp_index_tables_initialized = false;
 // VGATHER used in our RCP packing reads 32-bit elements, as there's no 8-bit read alternative
@@ -2444,6 +2455,13 @@ static bool PatchesIllegalInstructionHandler(void* context) {
 static void PatchesInit() {
 #if defined(__linux__)
     InitializeCpuId();
+#endif
+#ifdef ENABLE_CPU_ID_TRANSLATION
+    if (FilterIntelCPU(nullptr)) {
+        ASSERT_MSG(InitializeIndexTables(), "Failed to load reciprocal index tables");
+        ShadReciprocalTranslationTables(rcp_index_table.data(), rsqrt_index_table.data(),
+                                        rcp_xor_values.data(), rsqrt_xor_values.data());
+    }
 #endif
     if (!Patches.empty()) {
         auto* signals = Signals::Instance();

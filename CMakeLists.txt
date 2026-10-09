@@ -1335,7 +1335,8 @@ if (ENABLE_CPU_ID_TRANSLATION)
     target_sources(shadps4 PRIVATE src/core/cpu_id_translation/launcher.cpp)
     target_link_options(shadps4 PRIVATE
         "-Wl,--export-dynamic-symbol=ShadCpuIdTranslationActive"
-        "-Wl,--export-dynamic-symbol=ShadCpuIdTranslationRange")
+        "-Wl,--export-dynamic-symbol=ShadCpuIdTranslationRange"
+        "-Wl,--export-dynamic-symbol=ShadReciprocalTranslationTables")
     include(cmake/CpuIdTranslation.cmake)
 endif()
 
