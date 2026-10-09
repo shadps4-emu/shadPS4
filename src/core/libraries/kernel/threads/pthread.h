@@ -7,6 +7,7 @@
 #include <condition_variable>
 #include <forward_list>
 #include <list>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 
@@ -28,6 +29,7 @@ class SymbolsResolver;
 namespace Libraries::Kernel {
 
 constexpr int PthreadInheritSched = 4;
+constexpr s32 PthreadBarrierSerialThread = -1;
 
 constexpr int ORBIS_KERNEL_PRIO_FIFO_DEFAULT = 700;
 constexpr int ORBIS_KERNEL_PRIO_FIFO_LOWEST = 256;
@@ -40,6 +42,23 @@ constexpr int ORBIS_KERNEL_PRIO_RR_LOWEST = 256;
 constexpr int ORBIS_KERNEL_PRIO_RR_HIGHEST = 767;
 
 struct Pthread;
+
+struct PthreadBarrier {
+    struct State {
+        std::mutex mutex;
+        std::condition_variable cv;
+        u32 count;
+        u32 arrived{};
+        u64 generation{};
+    };
+    std::shared_ptr<State> state;
+};
+using PthreadBarrierT = PthreadBarrier*;
+
+struct PthreadBarrierAttr {
+    s32 pshared;
+};
+using PthreadBarrierAttrT = PthreadBarrierAttr*;
 
 enum class PthreadMutexFlags : u32 {
     TypeMask = 0xff,
@@ -441,6 +460,7 @@ bool IsPthreadCancelSignal(int native_signal) noexcept;
 #endif
 void PS4_SYSV_ABI posix_pthread_exit(void* status);
 
+void RegisterBarrier(Core::Loader::SymbolsResolver* sym);
 void RegisterMutex(Core::Loader::SymbolsResolver* sym);
 void RegisterCond(Core::Loader::SymbolsResolver* sym);
 void RegisterRwlock(Core::Loader::SymbolsResolver* sym);

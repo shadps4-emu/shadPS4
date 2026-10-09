@@ -326,6 +326,7 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/sync/mutex.h
                src/core/libraries/kernel/sync/semaphore.h
+               src/core/libraries/kernel/threads/barrier.cpp
                src/core/libraries/kernel/threads/condvar.cpp
                src/core/libraries/kernel/threads/event_flag.cpp
                src/core/libraries/kernel/threads/exception.cpp
