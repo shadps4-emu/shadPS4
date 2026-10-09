@@ -1109,6 +1109,8 @@ bool Pthread::DispatchSignal(s32 sig, Siginfo* info, Ucontext* context) {
     }
 
     SetGuestSigmask(old_mask);
+    // Signals queued while the callback blocked them need a new delivery attempt.
+    WakeForSignal();
 
     if (in_sigsuspend.load(std::memory_order_acquire)) {
         sigsuspend_interrupted.store(true, std::memory_order_release);
