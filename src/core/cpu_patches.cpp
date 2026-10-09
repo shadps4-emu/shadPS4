@@ -467,7 +467,7 @@ static void GenerateEXTRQ(void* /* address */, const ZydisDecodedInstruction&,
 
         // Writeback to xmm register, extrq instruction says top 64-bits are undefined but zeroed on
         // AMD CPUs
-        c.vmovq(xmm_dst, scratch1);
+        c.movq(xmm_dst, scratch1);
 
         c.pop(scratch2);
         c.pop(scratch1);
@@ -525,7 +525,7 @@ static void GenerateEXTRQ(void* /* address */, const ZydisDecodedInstruction&,
         c.vmovq(scratch1, xmm_dst);
         c.shr(scratch1, cl);
         c.and_(scratch1, mask);
-        c.vmovq(xmm_dst, scratch1);
+        c.movq(xmm_dst, scratch1);
 
         c.pop(mask);
         c.pop(scratch2);
@@ -599,7 +599,7 @@ static void GenerateINSERTQ(void* /* address */, const ZydisDecodedInstruction&,
 
         // Insert scratch2 into low 64 bits of dst, upper 64 bits are undefined but zeroed on AMD
         // CPUs
-        c.vmovq(xmm_dst, scratch2);
+        c.movq(xmm_dst, scratch2);
 
         c.pop(mask);
         c.pop(scratch2);
@@ -666,7 +666,7 @@ static void GenerateINSERTQ(void* /* address */, const ZydisDecodedInstruction&,
         c.or_(scratch2, scratch1);
 
         // Upper 64 bits are undefined in insertq but AMD CPUs zero them
-        c.vmovq(xmm_dst, scratch2);
+        c.movq(xmm_dst, scratch2);
 
         c.pop(mask);
         c.pop(index);
@@ -920,17 +920,6 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module, bool allow_t
     return std::make_pair(false, instruction.length);
 }
 
-static bool Is4ByteExtrqOrInsertq(void* code_address) {
-    u8* bytes = (u8*)code_address;
-    if (bytes[0] == 0x66 && bytes[1] == 0x0F && bytes[2] == 0x79) {
-        return true; // extrq
-    } else if (bytes[0] == 0xF2 && bytes[1] == 0x0F && bytes[2] == 0x79) {
-        return true; // insertq
-    } else {
-        return false;
-    }
-}
-
 static void* GetXmmPointer(void* ctx, u8 index) {
 #if defined(_WIN32)
 #define CASE(index)                                                                                \
@@ -993,131 +982,43 @@ static void IncrementRip(void* ctx, u64 length) {
 }
 
 static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
-    // We need to decode the instruction to find out what it is. Normally we'd use a fully fleshed
-    // out decoder like Zydis, however Zydis does a bunch of stuff that impact performance that we
-    // don't care about. We can get information about the instruction a lot faster by writing a mini
-    // decoder here, since we know it is definitely an extrq or an insertq. If for some reason we
-    // need to interpret more instructions in the future (I don't see why we would), we can revert
-    // to using Zydis.
-    ZydisMnemonic mnemonic;
-    u8* bytes = (u8*)code_address;
-    if (bytes[0] == 0x66) {
-        mnemonic = ZYDIS_MNEMONIC_EXTRQ;
-    } else if (bytes[0] == 0xF2) {
-        mnemonic = ZYDIS_MNEMONIC_INSERTQ;
-    } else {
-        ZydisDecodedInstruction instruction;
-        ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-        const auto status =
-            Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
-        LOG_ERROR(Core, "Unhandled illegal instruction at code address {}: {}",
-                  fmt::ptr(code_address),
-                  ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
-                                       : "Failed to decode");
+    ZydisDecodedInstruction instruction;
+    ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+    const auto status =
+        Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
+    if (!ZYAN_SUCCESS(status) || (instruction.mnemonic != ZYDIS_MNEMONIC_EXTRQ &&
+                                  instruction.mnemonic != ZYDIS_MNEMONIC_INSERTQ)) {
         return false;
     }
 
-    ASSERT(bytes[1] == 0x0F && bytes[2] == 0x79);
+    const bool insert = instruction.mnemonic == ZYDIS_MNEMONIC_INSERTQ;
+    const auto dst = GetXmmPointer(ctx, operands[0].reg.value - ZYDIS_REGISTER_XMM0);
+    u64 value;
+    memcpy(&value, dst, sizeof(value));
 
-    // Note: It's guaranteed that there's no REX prefix in these instructions checked by
-    // Is4ByteExtrqOrInsertq
-    u8 modrm = bytes[3];
-    u8 rm = modrm & 0b111;
-    u8 reg = (modrm >> 3) & 0b111;
-    u8 mod = (modrm >> 6) & 0b11;
-
-    ASSERT(mod == 0b11); // Any instruction we interpret here uses reg/reg addressing only
-
-    int dstIndex = reg;
-    int srcIndex = rm;
-
-    switch (mnemonic) {
-    case ZYDIS_MNEMONIC_EXTRQ: {
-        const auto dst = GetXmmPointer(ctx, dstIndex);
-        const auto src = GetXmmPointer(ctx, srcIndex);
-
-        u64 lowQWordSrc;
-        memcpy(&lowQWordSrc, src, sizeof(lowQWordSrc));
-
-        u64 lowQWordDst;
-        memcpy(&lowQWordDst, dst, sizeof(lowQWordDst));
-
-        u64 length = lowQWordSrc & 0x3F;
-        u64 mask;
-        if (length == 0) {
-            length = 64; // for the check below
-            mask = 0xFFFF'FFFF'FFFF'FFFF;
-        } else {
-            mask = (1ULL << length) - 1;
-        }
-
-        u64 index = (lowQWordSrc >> 8) & 0x3F;
-        if (length + index > 64) {
-            // Undefined behavior if length + index is bigger than 64 according to the spec,
-            // we'll warn and continue execution.
-            LOG_TRACE(Core,
-                      "extrq at {} with length {} and index {} is bigger than 64, "
-                      "undefined behavior",
-                      fmt::ptr(code_address), length, index);
-        }
-
-        lowQWordDst >>= index;
-        lowQWordDst &= mask;
-
-        memset((u8*)dst + sizeof(u64), 0, sizeof(u64));
-        memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
-
-        IncrementRip(ctx, 4);
-
-        return true;
+    u64 source = 0;
+    u64 control;
+    const bool immediate = operands[1].type == ZYDIS_OPERAND_TYPE_IMMEDIATE ||
+                           operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
+    if (insert || !immediate) {
+        const auto src = GetXmmPointer(ctx, operands[1].reg.value - ZYDIS_REGISTER_XMM0);
+        memcpy(&source, src, sizeof(source));
+        memcpy(&control, static_cast<u8*>(src) + (insert ? sizeof(u64) : 0), sizeof(control));
     }
-    case ZYDIS_MNEMONIC_INSERTQ: {
-        const auto dst = GetXmmPointer(ctx, dstIndex);
-        const auto src = GetXmmPointer(ctx, srcIndex);
-
-        u64 lowQWordSrc, highQWordSrc;
-        memcpy(&lowQWordSrc, src, sizeof(lowQWordSrc));
-        memcpy(&highQWordSrc, (u8*)src + 8, sizeof(highQWordSrc));
-
-        u64 lowQWordDst;
-        memcpy(&lowQWordDst, dst, sizeof(lowQWordDst));
-
-        u64 length = highQWordSrc & 0x3F;
-        u64 mask;
-        if (length == 0) {
-            length = 64; // for the check below
-            mask = 0xFFFF'FFFF'FFFF'FFFF;
-        } else {
-            mask = (1ULL << length) - 1;
-        }
-
-        u64 index = (highQWordSrc >> 8) & 0x3F;
-        if (length + index > 64) {
-            // Undefined behavior if length + index is bigger than 64 according to the spec,
-            // we'll warn and continue execution.
-            LOG_TRACE(Core,
-                      "insertq at {} with length {} and index {} is bigger than 64, "
-                      "undefined behavior",
-                      fmt::ptr(code_address), length, index);
-        }
-
-        lowQWordSrc &= mask;
-        lowQWordDst &= ~(mask << index);
-        lowQWordDst |= lowQWordSrc << index;
-
-        memset((u8*)dst + sizeof(u64), 0, sizeof(u64));
-        memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
-
-        IncrementRip(ctx, 4);
-
-        return true;
+    if (immediate) {
+        const auto first = insert ? 2 : 1;
+        control =
+            (operands[first].imm.value.u & 0x3F) | ((operands[first + 1].imm.value.u & 0x3F) << 8);
     }
-    default: {
-        UNREACHABLE();
-    }
-    }
-
-    UNREACHABLE();
+    const u64 length = control & 0x3F;
+    const u64 index = (control >> 8) & 0x3F;
+    const u64 mask = length == 0 ? UINT64_MAX : (u64{1} << length) - 1;
+    value =
+        insert ? (value & ~(mask << index)) | ((source & mask) << index) : (value >> index) & mask;
+    memcpy(dst, &value, sizeof(value));
+    memset(static_cast<u8*>(dst) + sizeof(u64), 0, sizeof(u64));
+    IncrementRip(ctx, instruction.length);
+    return true;
 }
 
 static bool TryPatchJit(void* code_address) {
@@ -2453,17 +2354,14 @@ static bool PatchesIllegalInstructionHandler(void* context) {
     void* code_address = Common::GetRip(context);
 #if defined(_WIN32)
     // Windows static guest red-zone protection
-    const bool inspect_short_cpu_patch =
-        !WindowsGuestRedZoneProtection::IsStaticPatchingEnabled() ||
-        GetContainingModule(code_address) != nullptr;
+    const bool inspect_sse4a = !WindowsGuestRedZoneProtection::IsStaticPatchingEnabled() ||
+                               GetContainingModule(code_address) != nullptr;
 #else
-    constexpr bool inspect_short_cpu_patch = true;
+    constexpr bool inspect_sse4a = true;
 #endif
-    if (inspect_short_cpu_patch && // Windows static guest red-zone protection
-        Is4ByteExtrqOrInsertq(code_address)) {
-        // The instruction is not big enough for a relative jump, don't try to patch it and pass it
-        // to our illegal instruction interpreter directly
-        return TryExecuteIllegalInstruction(context, code_address);
+    if (inspect_sse4a && // Windows static guest red-zone protection
+        TryExecuteIllegalInstruction(context, code_address)) {
+        return true;
     } else {
         if (!TryPatchJit(code_address)) {
             ZydisDecodedInstruction instruction;
