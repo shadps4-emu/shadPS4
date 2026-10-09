@@ -1,8 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <array>
 #include <bit>
 #include <cerrno>
+#include <span>
+#include <utility>
+#include <vector>
 #include "core/cpu_affinity.h"
 #include "core/libraries/kernel/posix_error.h"
 
@@ -18,6 +23,23 @@
 #endif
 
 namespace Core {
+
+struct CpuAffinityMap {
+    explicit CpuAffinityMap(std::span<const int> allowed)
+        : host_count{static_cast<size_t>(allowed[std::min<size_t>(8, allowed.size()) - 1]) + 1},
+          host_to_guest{std::make_unique<u8[]>(host_count)} {
+        for (size_t guest = 0; guest < guest_to_host.size(); ++guest) {
+            const int host = allowed[guest % allowed.size()];
+            guest_to_host[guest] = host;
+            host_to_guest[host] |= 1U << guest;
+        }
+    }
+
+    const size_t host_count;
+    const std::unique_ptr<u8[]> host_to_guest;
+    std::array<int, 8> guest_to_host{};
+};
+
 namespace {
 
 int ReadHostAffinity(uintptr_t thread, std::vector<int>& cpus) {
@@ -76,7 +98,7 @@ int ReadHostAffinity(uintptr_t thread, std::vector<int>& cpus) {
     return cpus.empty() ? POSIX_EAGAIN : 0;
 }
 
-int ApplyHostAffinity(uintptr_t thread, const std::vector<int>& cpus) {
+int ApplyHostAffinity(uintptr_t thread, std::span<const int> cpus) {
 #ifdef _WIN32
     GROUP_AFFINITY affinity{};
     affinity.Group = static_cast<WORD>(cpus.front() >> 16);
@@ -130,16 +152,6 @@ int CurrentHostCpu() {
 
 } // namespace
 
-void CpuAffinity::Remap(const std::vector<int>& allowed) {
-    host_cpus.clear();
-    for (const int cpu : allowed) {
-        host_cpus.push_back({cpu, 0});
-    }
-    for (int guest = 0; guest < 8 && !host_cpus.empty(); ++guest) {
-        host_cpus[guest % host_cpus.size()].guest_mask |= 1U << guest;
-    }
-}
-
 int CpuAffinity::SetThreadAffinity(uintptr_t thread, u64 guest_mask) {
     if (guest_mask == 0 || (guest_mask & ~u64{0xff}) != 0) {
         return POSIX_EINVAL;
@@ -147,32 +159,34 @@ int CpuAffinity::SetThreadAffinity(uintptr_t thread, u64 guest_mask) {
 #if !defined(_WIN32) && !defined(__linux__) && !defined(__FreeBSD__)
     return 0;
 #else
-    if (host_cpus.empty()) {
-        std::vector<int> allowed;
-        if (const int ret = ReadHostAffinity(thread, allowed); ret != 0) {
-            return ret;
+    if (!mapping) {
+        static const auto initial = [] {
+            std::vector<int> allowed;
+            const int ret = ReadHostAffinity(0, allowed);
+            return std::pair{ret == 0 ? std::make_shared<const CpuAffinityMap>(allowed) : nullptr,
+                             ret};
+        }();
+        if (initial.second != 0) {
+            return initial.second;
         }
-        Remap(allowed);
+        mapping = initial.first;
     }
     for (int attempt = 0; attempt < 3; ++attempt) {
-        std::vector<int> requested;
-        for (const auto& cpu : host_cpus) {
-            if (guest_mask & cpu.guest_mask) {
-                requested.push_back(cpu.id);
-            }
-        }
-        const int ret = ApplyHostAffinity(thread, requested);
-        if (ret != 0 && ret != POSIX_EINVAL) {
+        auto requested = mapping->guest_to_host;
+        std::ranges::sort(requested);
+        auto end = std::unique(requested.begin(), requested.end());
+        end = std::remove_if(requested.begin(), end, [&](int host) {
+            return (mapping->host_to_guest[host] & guest_mask) == 0;
+        });
+        const int ret = ApplyHostAffinity(thread, {requested.begin(), end});
+        if (ret != POSIX_EINVAL) {
             return ret;
         }
         std::vector<int> effective;
         if (const int read_ret = ReadHostAffinity(thread, effective); read_ret != 0) {
             return read_ret;
         }
-        if (ret == 0 && effective == requested) {
-            return 0;
-        }
-        Remap(effective);
+        mapping = std::make_shared<const CpuAffinityMap>(effective);
     }
     return POSIX_EAGAIN;
 #endif
@@ -190,9 +204,9 @@ int CpuAffinity::CurrentGuestCpu(u64 guest_mask) {
         if (host_cpu < 0) {
             return -1;
         }
-        for (const auto& cpu : host_cpus) {
-            const u64 candidates = cpu.guest_mask & guest_mask;
-            if (cpu.id == host_cpu && candidates != 0) {
+        if (mapping && static_cast<size_t>(host_cpu) < mapping->host_count) {
+            const u64 candidates = mapping->host_to_guest[host_cpu] & guest_mask;
+            if (candidates != 0) {
                 return std::countr_zero(candidates);
             }
         }

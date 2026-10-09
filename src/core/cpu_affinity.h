@@ -3,10 +3,12 @@
 
 #pragma once
 
-#include <vector>
+#include <memory>
 #include "common/types.h"
 
 namespace Core {
+
+struct CpuAffinityMap;
 
 class CpuAffinity {
 public:
@@ -14,13 +16,7 @@ public:
     int CurrentGuestCpu(u64 guest_mask);
 
 private:
-    void Remap(const std::vector<int>& allowed);
-
-    struct HostCpu {
-        int id;
-        u8 guest_mask;
-    };
-    std::vector<HostCpu> host_cpus;
+    std::shared_ptr<const CpuAffinityMap> mapping;
 };
 
 } // namespace Core
