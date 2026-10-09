@@ -638,4 +638,18 @@ int HandleTable::GetFileDescriptor(File* file) {
     return 0;
 }
 
+void HandleTable::FlushAll() {
+    std::scoped_lock lock{m_mutex};
+    for (auto* file : m_files) {
+        if (file != nullptr && file->is_opened) {
+            std::scoped_lock lk{file->m_mutex};
+            if (file->type == FileType::Device && file->device) {
+                file->device->fsync();
+            } else if (file->type == FileType::Regular) {
+                file->Flush();
+            }
+        }
+    }
+}
+
 } // namespace Core::FileSys
