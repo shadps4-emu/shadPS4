@@ -9,10 +9,12 @@
 #include <csignal>
 #include <pthread.h>
 #endif
+#include "core/cpu_affinity.h"
 #include "core/debug_state.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/posix_error.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/thread_state.h"
@@ -32,6 +34,28 @@ namespace Libraries::Kernel {
 
 extern PthreadAttr PthreadAttrDefault;
 extern std::array<Sigaction, 128> PosixActions;
+
+#if defined(__linux__) && defined(ARCH_X86_64)
+static thread_local std::atomic_bool affinity_busy{};
+static thread_local std::atomic_bool affinity_signal_pending{};
+
+class AffinitySignalGuard {
+public:
+    AffinitySignalGuard() : nested{affinity_busy.exchange(true)} {}
+
+    ~AffinitySignalGuard() {
+        if (!nested) {
+            affinity_busy.store(false);
+            if (affinity_signal_pending.exchange(false) && g_curthread != nullptr) {
+                g_curthread->WakeForSignal();
+            }
+        }
+    }
+
+private:
+    bool nested;
+};
+#endif
 
 void _thread_cleanupspecific();
 
@@ -284,7 +308,35 @@ static void* RunThread(void* arg) {
 int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAttrT* attr,
                                               PthreadEntryFunc start_routine, void* arg,
                                               const char* name) {
+    if (thread == nullptr) {
+        return POSIX_EINVAL;
+    }
     Pthread* curthread = g_curthread;
+    const auto* requested_attr = attr != nullptr ? *attr : nullptr;
+    if (requested_attr != nullptr && requested_attr->cpuset != nullptr &&
+        requested_attr->cpuset->_reserved != 0) {
+        return POSIX_EINVAL;
+    }
+    const u64 mask = requested_attr != nullptr && requested_attr->cpuset != nullptr
+                         ? requested_attr->cpuset->bits
+                     : curthread != nullptr
+                         ? curthread->affinity_mask.load(std::memory_order_acquire)
+                         : GetGuestCpuMask();
+    if (mask == 0) {
+        return POSIX_EINVAL;
+    }
+    if ((mask & ~GetGuestCpuMask()) != 0) {
+        return POSIX_EPERM;
+    }
+    std::vector<int> host_cpus;
+    if (curthread != nullptr) {
+        std::scoped_lock lock{curthread->affinity_mutex};
+        if (const int ret =
+                curthread->native_thr->GetCpuAffinity().GetAllowedHostCpus(0, host_cpus);
+            ret != 0) {
+            return ret;
+        }
+    }
     auto* thread_state = ThrState::Instance();
     Pthread* new_thread = thread_state->Alloc(curthread);
     if (new_thread == nullptr) {
@@ -295,8 +347,10 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
         new_thread->attr = PthreadAttrDefault;
     } else {
         new_thread->attr = *(*attr);
-        new_thread->attr.cpusetsize = 0;
     }
+    new_thread->attr.cpuset = nullptr;
+    new_thread->attr.cpusetsize = 0;
+    new_thread->affinity_mask.store(mask, std::memory_order_release);
     if (curthread != nullptr && new_thread->attr.sched_inherit == PthreadInheritSched) {
         if (True(curthread->attr.flags & PthreadAttrFlags::ScopeSystem)) {
             new_thread->attr.flags |= PthreadAttrFlags::ScopeSystem;
@@ -355,15 +409,13 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
 
     /* Create thread */
     new_thread->native_thr = std::make_unique<Core::NativeThread>(Core::NativeThread());
-    int ret = new_thread->native_thr->Create(RunThread, new_thread);
-
-    ASSERT_MSG(ret == 0, "Failed to create thread with error {}", ret);
-
-    if (attr != nullptr && *attr != nullptr && (*attr)->cpuset != nullptr) {
-        new_thread->SetAffinity((*attr)->cpuset);
-    }
+    const int ret =
+        new_thread->native_thr->Create(RunThread, new_thread, mask, std::move(host_cpus));
     if (ret) {
         *thread = nullptr;
+        thread_state->Unlink(curthread, new_thread);
+        thread_state->FreeStack(&new_thread->attr);
+        thread_state->Free(curthread, new_thread);
     }
     return ret;
 }
@@ -1068,6 +1120,12 @@ bool Pthread::DispatchSignal(s32 sig, Siginfo* info, Ucontext* context) {
 }
 
 bool Pthread::DispatchPendingSignals(Siginfo* info, Ucontext* context) {
+#if defined(__linux__) && defined(ARCH_X86_64)
+    if (affinity_busy.load()) {
+        affinity_signal_pending.store(true);
+        return false;
+    }
+#endif
     const s32 sig = FindPendingUnblockedSignal();
     if (sig == 0) {
         return false;
@@ -1089,54 +1147,41 @@ bool Pthread::DispatchPendingSignals(Siginfo* info, Ucontext* context) {
     return DispatchSignal(sig, info, context);
 }
 
-int Pthread::SetAffinity(const Cpuset* cpuset) {
-    const auto processor_count = std::thread::hardware_concurrency();
-    if (processor_count < 8) {
-        return 0;
-    }
-    if (cpuset == nullptr) {
+s32 Pthread::GetCurrentCpu() const {
+#if defined(__linux__) && defined(ARCH_X86_64)
+    const AffinitySignalGuard signal_guard;
+#endif
+    std::scoped_lock lock{affinity_mutex};
+    const u64 mask = affinity_mask.load(std::memory_order_acquire);
+    const int cpu = native_thr->GetCpuAffinity().CurrentGuestCpu(mask);
+    return cpu >= 0 ? cpu : ORBIS_KERNEL_ERROR_EAGAIN;
+}
+
+int Pthread::SetAffinity(u64 mask) {
+    if (mask == 0) {
         return POSIX_EINVAL;
     }
-
-    uintptr_t handle = native_thr->GetHandle();
-    if (handle == 0) {
-        return POSIX_ESRCH;
+    if ((mask & ~GetGuestCpuMask()) != 0) {
+        return POSIX_EPERM;
     }
-
-    // We don't use this currently because some games gets performance problems
-    // when applying affinity even on strong hardware
-    /*
-    u64 mask = cpuset->bits;
-    #ifdef _WIN64
-        DWORD_PTR affinity_mask = static_cast<DWORD_PTR>(mask);
-        if (!SetThreadAffinityMask(reinterpret_cast<HANDLE>(handle), affinity_mask)) {
-            return POSIX_EINVAL;
-        }
-
-    #elif defined(__linux__)
-        cpu_set_t cpu_set;
-        CPU_ZERO(&cpu_set);
-
-        u64 mask = cpuset->bits;
-        for (int cpu = 0; cpu < std::min(64, CPU_SETSIZE); ++cpu) {
-            if (mask & (1ULL << cpu)) {
-                CPU_SET(cpu, &cpu_set);
-            }
-        }
-
-        int result =
-            pthread_setaffinity_np(static_cast<pthread_t>(handle), sizeof(cpu_set_t), &cpu_set);
-        if (result != 0) {
-            return POSIX_EINVAL;
-        }
-    #endif
-    */
-    return 0;
+#if defined(__linux__) && defined(ARCH_X86_64)
+    const AffinitySignalGuard signal_guard;
+#endif
+    std::scoped_lock lock{affinity_mutex};
+    const auto handle = this == g_curthread ? 0 : native_thr->GetHandle();
+    const int ret = native_thr->GetCpuAffinity().SetThreadAffinity(handle, mask);
+    if (ret == 0) {
+        affinity_mask.store(mask, std::memory_order_release);
+    }
+    return ret;
 }
 
 int PS4_SYSV_ABI posix_pthread_getaffinity_np(PthreadT thread, size_t cpusetsize, Cpuset* cpusetp) {
     if (thread == nullptr || cpusetp == nullptr) {
         return POSIX_EINVAL;
+    }
+    if (cpusetsize < sizeof(u64)) {
+        return POSIX_ERANGE;
     }
 
     auto* thread_state = ThrState::Instance();
@@ -1147,11 +1192,12 @@ int PS4_SYSV_ABI posix_pthread_getaffinity_np(PthreadT thread, size_t cpusetsize
         return ret;
     }
 
-    auto* attr_ptr = &thread->attr;
-    auto ret = posix_pthread_attr_getaffinity_np(&attr_ptr, cpusetsize, cpusetp);
+    const u64 mask = thread->affinity_mask.load(std::memory_order_acquire);
+    memset(cpusetp, 0, cpusetsize);
+    memcpy(cpusetp, &mask, sizeof(mask));
 
     thread->lock->unlock();
-    return ret;
+    return 0;
 }
 
 int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize,
@@ -1159,6 +1205,15 @@ int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize
     if (thread == nullptr || cpusetp == nullptr) {
         return POSIX_EINVAL;
     }
+    if (cpusetsize < sizeof(u64)) {
+        return POSIX_ERANGE;
+    }
+    const auto* bytes = reinterpret_cast<const u8*>(cpusetp);
+    if (std::any_of(bytes + sizeof(u64), bytes + cpusetsize, [](u8 value) { return value != 0; })) {
+        return POSIX_EINVAL;
+    }
+    u64 mask;
+    memcpy(&mask, cpusetp, sizeof(mask));
 
     auto* thread_state = ThrState::Instance();
     if (thread == g_curthread) {
@@ -1168,18 +1223,16 @@ int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize
         return ret;
     }
 
-    auto* attr_ptr = &thread->attr;
-    auto ret = posix_pthread_attr_setaffinity_np(&attr_ptr, cpusetsize, cpusetp);
-
-    if (ret == ORBIS_OK) {
-        ret = thread->SetAffinity(thread->attr.cpuset);
-    }
+    const int ret = thread->SetAffinity(mask);
 
     thread->lock->unlock();
     return ret;
 }
 
 int PS4_SYSV_ABI scePthreadGetaffinity(PthreadT thread, u64* mask) {
+    if (mask == nullptr) {
+        return POSIX_EINVAL;
+    }
     Cpuset cpuset;
     const int ret = posix_pthread_getaffinity_np(thread, sizeof(Cpuset), &cpuset);
     if (ret == 0) {

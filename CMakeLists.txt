@@ -982,6 +982,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/platform.h
          src/core/signals.cpp
          src/core/signals.h
+         src/core/cpu_affinity.cpp
+         src/core/cpu_affinity.h
          src/core/thread.cpp
          src/core/thread.h
          src/core/tls.cpp

@@ -1785,7 +1785,7 @@ s32 PS4_SYSV_ABI sceSystemServiceGetStatus(OrbisSystemServiceStatus* status) {
     status->event_num = static_cast<s32>(g_event_queue.size());
     status->is_system_ui_overlaid = false;
     status->is_in_background_execution = false;
-    status->is_cpu_mode7_cpu_normal = true;
+    status->is_cpu_mode7_cpu_normal = Kernel::sceKernelGetCpumode() == 5;
     status->is_game_live_streaming_on_air = false;
     status->is_out_of_vr_play_area = false;
     return ORBIS_OK;
