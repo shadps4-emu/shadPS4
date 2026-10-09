@@ -27,6 +27,9 @@ s32 PS4_SYSV_ABI sceKernelIsNeoMode();
 
 s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver);
 
+s32 PS4_SYSV_ABI sceKernelGetCpumode();
+u64 GetGuestCpuMask();
+
 s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
                                                  OrbisModuleInfoForUnwind* info);
 
