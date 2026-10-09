@@ -93,7 +93,6 @@ void NativeThread::Exit() {
     tid = 0;
 
 #ifdef _WIN64
-    native_handle = nullptr;
     ExitThread(0);
 #else
     // Disable and free the signal stack.
@@ -108,6 +107,19 @@ void NativeThread::Exit() {
     }
     pthread_exit(nullptr);
 #endif
+}
+
+void NativeThread::Join() {
+    if (!native_handle) {
+        return;
+    }
+#ifdef _WIN64
+    ASSERT(WaitForSingleObject(native_handle, INFINITE) == WAIT_OBJECT_0);
+    CloseHandle(native_handle);
+#else
+    ASSERT(pthread_join(reinterpret_cast<pthread_t>(native_handle), nullptr) == 0);
+#endif
+    native_handle = 0;
 }
 
 void NativeThread::Initialize() {

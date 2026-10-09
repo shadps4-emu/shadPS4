@@ -24,6 +24,7 @@ public:
 
     int Create(ThreadFunc func, void* arg, u64 affinity_mask, CpuAffinity affinity = {});
     void Exit();
+    void Join();
 
     void Initialize();
 
