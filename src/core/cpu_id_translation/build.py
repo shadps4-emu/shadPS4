@@ -5,6 +5,7 @@
 """Build the experimental Linux x86-64 CPU identity translation runtime and emulator."""
 
 import argparse
+import hashlib
 import os
 from pathlib import Path
 import platform
@@ -16,6 +17,7 @@ REVISION = "a522a505582076eb7f68363b5d301ddca44399e2"
 REPOSITORY = "https://github.com/DynamoRIO/dynamorio.git"
 ROOT = Path(__file__).resolve().parents[3]
 PATCH = Path(__file__).with_name("dynamorio.patch")
+PREVIOUS_PATCH = "cf24a7d5a056099e7240c54b783c66e0abf3277a48370f1d67a9c1f65c61e789"
 
 
 def run(*args, cwd=None):
@@ -59,7 +61,15 @@ def main():
         run("git", "apply", "--check", PATCH, cwd=source)
         run("git", "apply", PATCH, cwd=source)
     elif diff != PATCH.read_bytes():
-        raise RuntimeError("Runtime source contains other changes; preserved")
+        if hashlib.sha256(diff).hexdigest() != PREVIOUS_PATCH:
+            raise RuntimeError("Runtime source contains other changes; preserved")
+        subprocess.run(["git", "apply", "--reverse", "-"], input=diff, cwd=source, check=True)
+        try:
+            run("git", "apply", "--check", PATCH, cwd=source)
+            run("git", "apply", PATCH, cwd=source)
+        except BaseException:
+            subprocess.run(["git", "apply", "-"], input=diff, cwd=source, check=True)
+            raise
     run("git", "submodule", "update", "--init", "third_party/elfutils", cwd=source)
     run(args.cmake, "-S", source, "-B", runtime, "-G", "Ninja",
         "-DCMAKE_MAKE_PROGRAM=" + args.ninja, "-DCMAKE_BUILD_TYPE=RelWithDebInfo",

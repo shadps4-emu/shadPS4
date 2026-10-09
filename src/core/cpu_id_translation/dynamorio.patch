@@ -148,7 +148,7 @@ index b09211d..6ee30e9 100644
  
  #ifdef LINUX
 diff --git a/core/unix/signal.c b/core/unix/signal.c
-index 2c5c3ab..aa8bae6 100644
+index 2c5c3ab..21c78d9 100644
 --- a/core/unix/signal.c
 +++ b/core/unix/signal.c
 @@ -2696,12 +2696,18 @@ handle_post_sigprocmask(dcontext_t *dcontext, int how, kernel_sigset_t *app_set,
@@ -194,6 +194,23 @@ index 2c5c3ab..aa8bae6 100644
  }
  
  static void
+@@ -7784,6 +7803,16 @@ os_forge_exception(app_pc target_pc, dr_exception_type_t type)
+ #endif
+     mcontext_to_ucontext(uc, get_mcontext(dcontext));
+     sc->SC_XIP = (reg_t)target_pc;
++#if defined(LINUX) && defined(X86) && defined(X64)
++    if (type == UNREADABLE_MEMORY_EXECUTION_EXCEPTION) {
++        uint prot = 0;
++        bool mapped = get_memory_info(target_pc, NULL, NULL, &prot);
++        frame->info.si_code = mapped ? SEGV_ACCERR : SEGV_MAPERR;
++        sc->trapno = 14;
++        sc->err = 0x14 | (mapped && prot != MEMPROT_NONE ? 1 : 0);
++        sc->cr2 = (reg_t)target_pc;
++    }
++#endif
+     /* We'll fill in fpstate at delivery time.
+      * We fill in segment registers to their current values and assume they won't
+      * change and that these are the right values.
 diff --git a/core/unix/signal_private.h b/core/unix/signal_private.h
 index da6f9e2..1b44157 100644
 --- a/core/unix/signal_private.h
@@ -206,3 +223,38 @@ index da6f9e2..1b44157 100644
  
      /* to inherit in children must not modify until they're scheduled */
      volatile int num_unstarted_children;
+diff --git a/core/vmareas.c b/core/vmareas.c
+index 6fd6306..9cea420 100644
+--- a/core/vmareas.c
++++ b/core/vmareas.c
+@@ -6681,7 +6681,8 @@ app_memory_protection_change_internal(dcontext_t *dcontext, bool update_areas,
+      * deadlock issues w/ thread_initexit_lock
+      */
+     is_executable = executable_vm_area_overlap(base, base + size, false /*have no lock*/);
+-    if (is_executable && TESTANY(MEMPROT_WRITE, prot) && !TESTANY(MEMPROT_EXEC, prot) &&
++    if (is_executable && IF_LINUX_ELSE(true, TESTANY(MEMPROT_WRITE, prot)) &&
++        !TESTANY(MEMPROT_EXEC, prot) &&
+         INTERNAL_OPTION(hw_cache_consistency)) {
+ #ifdef WINDOWS
+         app_pc IAT_start, IAT_end;
+@@ -7731,7 +7732,8 @@ check_thread_vm_area(dcontext_t *dcontext, app_pc pc, app_pc tag, void **vmlist,
+             }
+ #endif
+             if ((is_in_dr IF_WINDOWS(&&!in_private_library(pc))) || !is_allocated_mem ||
+-                prot == 0 /*no access flags*/ || is_being_unloaded) {
++                prot == 0 /*no access flags*/ ||
++                IF_LINUX_ELSE(!TESTANY(MEMPROT_EXEC, prot), false) || is_being_unloaded) {
+                 if (xfer) {
+                     /* don't follow cti, wait for app to get there and then
+                      * handle this (might be pathological case where cti is
+@@ -7810,6 +7812,10 @@ check_thread_vm_area(dcontext_t *dcontext, app_pc pc, app_pc tag, void **vmlist,
+                         os_dump_core("Warning: App trying to execute from unreadable "
+                                      "memory");
+                     }
++#if defined(LINUX) && defined(X86) && defined(X64)
++                    if (PAGE_START(pc) != PAGE_START(tag))
++                        pc = (app_pc)PAGE_START(pc);
++#endif
+                     os_forge_exception(pc, UNREADABLE_MEMORY_EXECUTION_EXCEPTION);
+                     ASSERT_NOT_REACHED();
+                 }
