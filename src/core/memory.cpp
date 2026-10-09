@@ -689,8 +689,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
         // If this is not a reservation, then map to GPU and address space
         rasterizer->ProtectMemory(mapped_addr, size,
-                                  is_exec ? MemoryPermission::ReadWriteExecute
-                                          : MemoryPermission::ReadWrite);
+                                  is_exec && ARCH_X86_64 ? MemoryPermission::ReadWriteExecute
+                                                         : MemoryPermission::ReadWrite);
         if (IsValidGpuMapping(mapped_addr, size)) {
             rasterizer->MapMemory(mapped_addr, size);
         }
