@@ -16,6 +16,7 @@
 #include <xbyak/xbyak_util.h>
 #include "common/assert.h"
 #include "core/cpu_id.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/threads/pthread.h"
 
 #ifdef ENABLE_CPU_ID_TRANSLATION
@@ -44,6 +45,7 @@ constexpr size_t RegisterFrameSize = 17 * sizeof(u64);
 constexpr size_t FaultStackSize = RedZoneSize + sizeof(u64);
 u32 host_max_basic{};
 u32 host_max_extended{};
+bool guest_neo{};
 static_assert(std::atomic<uintptr_t>::is_always_lock_free);
 std::atomic<uintptr_t> guest_begin{};
 std::atomic<uintptr_t> guest_end{};
@@ -57,16 +59,20 @@ std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
         result = {};
     }
     auto& [eax, ebx, ecx, edx] = result;
+    if ((leaf > 0xd && leaf < 0x80000000) || leaf > 0x8000001e) {
+        return {};
+    }
+    const u32 signature = guest_neo ? 0x00740f30 : 0x00710f31;
     switch (leaf) {
     case 0:
-        eax = std::max(host_max_basic, 0x1fu);
+        result = {0xd, 0x68747541, 0x444d4163, 0x69746e65};
         break;
     case 1:
-        ebx = (ebx & 0xffff) | (GuestCpuCount << 16) | (apic_id << 24);
+        eax = signature;
+        ebx = 0x00000800 | (GuestCpuCount << 16) | (apic_id << 24);
         ecx &= GuestFeaturesEcx;
         edx = (edx & GuestFeaturesEdx) | (1u << 28);
         break;
-    case 4:
     case 0x8000001d: {
         constexpr std::array<std::array<u32, 4>, 3> caches{{
             {0x00000121, 0x01c0003f, 0x0000003f, 0},
@@ -74,32 +80,40 @@ std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
             {0x0000c143, 0x03c0003f, 0x000007ff, 2},
         }};
         result = subleaf < caches.size() ? caches[subleaf] : std::array<u32, 4>{};
-        if (leaf == 4 && eax != 0) {
-            eax |= (GuestCpuCount - 1) << 26;
-        }
         break;
     }
     case 7:
         // BMI1 is the only Jaguar structured extended feature (AMD BKDG 48751).
         result = {0, subleaf == 0 ? ebx & (1u << 3) : 0, 0, 0};
         break;
-    case 0xb:
-    case 0x1f:
-        eax = subleaf == 1 ? 3 : 0;
-        ebx = subleaf == 0 ? 1 : subleaf == 1 ? GuestCpuCount : 0;
-        ecx = (subleaf & 0xff) | (subleaf < 2 ? (subleaf + 1) << 8 : 0);
-        edx = apic_id;
+    case 5:
+        result = {64, 64, ecx & 3, 0};
         break;
-    case 0x1a:
-        result = {};
+    case 6:
+        result = {0, 0, ecx & 1, 0};
+        break;
+    case 0xd:
+        // Native XGETBV/XSAVE still use the host layout, including its enabled state size.
         break;
     case 0x80000000:
-        eax = std::max(host_max_extended, 0x8000001eu);
+        result = {0x8000001e, 0x68747541, 0x444d4163, 0x69746e65};
         break;
     case 0x80000001:
+        eax = signature;
+        ebx = 0;
         ecx &= GuestExtendedFeaturesEcx;
         ecx |= (1u << 6) | (1u << 22);
         edx &= GuestExtendedFeaturesEdx;
+        break;
+    case 0x80000002:
+        result = guest_neo ? std::array<u32, 4>{0x35314744, 0x4d533130, 0x4c37384c, 0x20202042}
+                           : std::array<u32, 4>{0x31314744, 0x4b533130, 0x48343846, 0x20202056};
+        break;
+    case 0x80000003:
+        result = {0x20202020, 0x20202020, 0x20202020, 0x20202020};
+        break;
+    case 0x80000004:
+        result = {0x20202020, 0x20202020, 0x20202020, 0x00202020};
         break;
     case 0x80000005:
         result = {0xff08ff08, 0xff28ff20, 0x20080140, 0x20020140};
@@ -107,19 +121,30 @@ std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
     case 0x80000006:
         result = {0x21000000, 0x42004200, 0x08008140, 0};
         break;
+    case 0x80000007:
+        result = {0, 0, 0, edx & (1u << 8)};
+        break;
     case 0x80000008:
+        eax = std::min(eax & 0xff, 40u) | (std::min((eax >> 8) & 0xff, 48u) << 8);
         // Jaguar reserves EBX and EDX (AMD BKDG 48751, CPUID Fn8000_0008).
         ebx = 0;
-        ecx = (ecx & ~0xf0ffu) | (3u << 12) | (GuestCpuCount - 1);
+        ecx = (3u << 12) | (GuestCpuCount - 1);
         edx = 0;
         break;
     case 0x8000001e:
         result = {apic_id, apic_id, 0, 0};
         break;
-    case 0x80000026:
-        result = {};
+    case 0x8000000a:
+        result = {eax & 1, std::min(ebx, 8u), 0, edx & 0x1cdf};
+        break;
+    case 0x8000001a:
+        result = {3, 0, 0, 0};
+        break;
+    case 0x8000001b:
+        result = {eax & 0xff, 0, 0, 0};
         break;
     default:
+        result = {};
         break;
     }
     return result;
@@ -350,6 +375,7 @@ void GenerateCpuIdInstruction(Xbyak::CodeGenerator& c, CpuIdInstruction instruct
 }
 
 void InitializeCpuId() {
+    guest_neo = EmulatorSettings.IsNeo();
     u32 data[4];
     Xbyak::util::Cpu::getCpuid(0, data);
     host_max_basic = data[0];
