@@ -79,6 +79,9 @@ public:
 private:
     void MakeCurrent(const VideoCore::Buffer* handle);
 
+    void CopyImageRegions(VideoCore::Image* src, VideoCore::Image* dst,
+                          std::span<const vk::ImageCopy> regions);
+
 private:
     const Instance& instance;
     Scheduler& scheduler;
