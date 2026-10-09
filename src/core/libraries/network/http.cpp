@@ -863,9 +863,10 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_
 
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
         if (plan.scheme == "https") {
+            const bool config_disabled_verify = EmulatorSettings.IsForcedHttpsDisabled();
             const bool game_disabled_verify =
                 (plan.settings.ssl_flags & ORBIS_HTTPS_FLAG_SERVER_VERIFY) == 0;
-            bool verify_server = !game_disabled_verify;
+            bool verify_server = !config_disabled_verify && !game_disabled_verify;
             if (verify_server && plan.ctx_has_loaded_certs) {
                 verify_server = false;
                 LOG_INFO(Lib_Http,
@@ -874,7 +875,10 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_
                          plan.scheme, plan.host);
             }
             cli.enable_server_certificate_verification(verify_server);
-            if (game_disabled_verify) {
+            if (config_disabled_verify) {
+                LOG_INFO(Lib_Http, "{}://{}: server cert verification disabled by configuration",
+                         plan.scheme, plan.host);
+            } else if (game_disabled_verify) {
                 LOG_INFO(Lib_Http, "{}://{}: server cert verification disabled (ssl_flags={:#x})",
                          plan.scheme, plan.host, plan.settings.ssl_flags);
             }
@@ -2619,6 +2623,9 @@ int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags) {
 
 int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags) {
     LOG_INFO(Lib_Http, "called id={}, sslFlags={:#x}", id, sslFlags);
+    if (EmulatorSettings.IsForcedHttpsDisabled()) {
+        return sceHttpsDisableOptionPrivate(id, sslFlags);
+    }
     // Same as sceHttpsEnableOption but accepts the wider Private
     // bit-mask (ORBIS_HTTPS_FLAG_PRIVATE_VALID).
     std::lock_guard<std::mutex> lock(g_state.m_mutex);
