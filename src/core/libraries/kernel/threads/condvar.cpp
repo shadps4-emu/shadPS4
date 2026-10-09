@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -75,6 +75,16 @@ static int InitStatic(Pthread* thread, PthreadCondT* cond) {
 int PS4_SYSV_ABI posix_pthread_cond_init(PthreadCondT* cond, const PthreadCondAttrT* cond_attr) {
     *cond = nullptr;
     return CondInit(cond, cond_attr, nullptr);
+}
+
+int PS4_SYSV_ABI posix_pthread_cond_setname_np(PthreadCondT* cond, const char* name) {
+    if (!name) {
+        return POSIX_EINVAL;
+    }
+    if (*cond) {
+        (*cond)->name = name;
+    }
+    return 0;
 }
 
 int PS4_SYSV_ABI scePthreadCondInit(PthreadCondT* cond, const PthreadCondAttrT* cond_attr,
@@ -439,6 +449,8 @@ void RegisterCond(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("CI6Qy73ae10", "libkernel", 1, "libkernel", posix_pthread_cond_signalto_np);
     LIB_FUNCTION("mkx2fVhNMsg", "libkernel", 1, "libkernel", posix_pthread_cond_broadcast);
     LIB_FUNCTION("RXXqi4CtF8w", "libkernel", 1, "libkernel", posix_pthread_cond_destroy);
+    LIB_FUNCTION("EZ8h70dtFLg", "libkernel", 1, "libkernel", posix_pthread_cond_setname_np);
+    LIB_FUNCTION("EZ8h70dtFLg", "libkernel_psmkit", 1, "libkernel", posix_pthread_cond_setname_np);
 
     // Orbis
     LIB_FUNCTION("m5-2bsNfv7s", "libkernel", 1, "libkernel", ORBIS(posix_pthread_condattr_init));
