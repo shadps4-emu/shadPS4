@@ -26,6 +26,13 @@ static constexpr u32 MAX_IMAGES = std::numeric_limits<u16>::max();
 static constexpr u32 MAX_IMAGE_VIEWS = std::numeric_limits<u16>::max();
 static constexpr u32 MAX_SAMPLERS = std::numeric_limits<u16>::max();
 
+// Image and image view slots are a fixed-size resource, independent of VRAM usage. On GPUs with
+// a lot of memory the memory based thresholds are never reached, so garbage collection must also
+// react to slot usage, otherwise the slot tables fill up and the emulator aborts.
+static constexpr u32 SLOT_TRIGGER_GC_PERCENT = 60;
+static constexpr u32 SLOT_PRESSURE_GC_PERCENT = 75;
+static constexpr u32 SLOT_CRITICAL_GC_PERCENT = 90;
+
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                            Vulkan::Runtime& runtime_, AmdGpu::Liverpool* liverpool_,
                            BufferCache& buffer_cache_, PageManager& tracker_)
@@ -923,7 +930,11 @@ void TextureCache::GarbageCollectImages() {
     if (instance.CanReportMemoryUsage()) {
         total_used_memory = instance.GetDeviceMemoryUsage();
     }
-    if (total_used_memory < trigger_gc_memory) {
+    const u64 slot_percent = std::max(slot_images.Size() * 100 / MAX_IMAGES,
+                                      slot_image_views.Size() * 100 / MAX_IMAGE_VIEWS);
+    const bool slots_pressured = slot_percent >= SLOT_PRESSURE_GC_PERCENT;
+    const bool slots_critical = slot_percent >= SLOT_CRITICAL_GC_PERCENT;
+    if (total_used_memory < trigger_gc_memory && slot_percent < SLOT_TRIGGER_GC_PERCENT) {
         return;
     }
     bool pressured = false;
@@ -932,8 +943,8 @@ void TextureCache::GarbageCollectImages() {
     size_t num_deletions = 0;
 
     const auto configure = [&](bool allow_aggressive) {
-        pressured = total_used_memory >= pressure_gc_memory;
-        aggresive = allow_aggressive && total_used_memory >= critical_gc_memory;
+        pressured = total_used_memory >= pressure_gc_memory || slots_pressured;
+        aggresive = allow_aggressive && (total_used_memory >= critical_gc_memory || slots_critical);
         ticks_to_destroy = aggresive ? 160 : pressured ? 80 : 16;
         ticks_to_destroy = std::min(ticks_to_destroy, gc_tick);
         num_deletions = aggresive ? 40 : pressured ? 20 : 10;
@@ -957,13 +968,15 @@ void TextureCache::GarbageCollectImages() {
             DownloadImageMemory(image_id);
         }
         FreeImage(image_id);
-        if (total_used_memory < critical_gc_memory) {
+        // Slots are only reclaimed later by deferred operations, so slot usage can't be rechecked
+        // here. Keep the full deletion budget while slots are the limiting resource.
+        if (total_used_memory < critical_gc_memory && !slots_critical) {
             if (aggresive) {
                 num_deletions >>= 2;
                 aggresive = false;
                 return false;
             }
-            if (pressured && total_used_memory < pressure_gc_memory) {
+            if (pressured && total_used_memory < pressure_gc_memory && !slots_pressured) {
                 num_deletions >>= 1;
                 pressured = false;
             }
@@ -975,7 +988,7 @@ void TextureCache::GarbageCollectImages() {
     configure(false);
     image_lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
 
-    if (total_used_memory >= critical_gc_memory) {
+    if (total_used_memory >= critical_gc_memory || slots_critical) {
         // If we are still over the critical limit, run an aggressive GC
         configure(true);
         image_lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
