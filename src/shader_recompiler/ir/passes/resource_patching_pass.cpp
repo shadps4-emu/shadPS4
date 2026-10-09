@@ -492,12 +492,10 @@ void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descrip
         break;
     }
     case IR::Opcode::SharedAtomicFMin32: {
-        const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicFMax32;
         inst.ReplaceUsesWith(ir.BufferAtomicFMin(handle, address_dwords, inst.Arg(1), {}));
         break;
     }
     case IR::Opcode::SharedAtomicFMax32: {
-        const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicFMax32;
         inst.ReplaceUsesWith(ir.BufferAtomicFMax(handle, address_dwords, inst.Arg(1), {}));
         break;
     }
