@@ -254,10 +254,6 @@ Id EmitSharedAtomicFMin32(EmitContext& ctx, Id offset, Id value) {
     return result;
 }
 
-Id EmitSharedAtomicFMin64(EmitContext& ctx, Id offset, Id value) {
-    return SharedAtomicU64(ctx, offset, value, &Sirit::Module::OpAtomicFMin);
-}
-
 Id EmitSharedAtomicAnd32(EmitContext& ctx, Id offset, Id value) {
     return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicAnd);
 }
