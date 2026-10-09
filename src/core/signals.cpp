@@ -325,6 +325,10 @@ SignalDispatch::SignalDispatch() {
     action.sa_sigaction = SignalHandler;
     action.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&action.sa_mask);
+#if defined(__linux__) && defined(ARCH_X86_64)
+    // Guest callbacks can execute CPUID; defer them until the fault handler has returned.
+    sigaddset(&action.sa_mask, SIGUSR1);
+#endif
 
     ASSERT_MSG(
         sigaction(SIGSEGV, &action, nullptr) == 0 && sigaction(SIGBUS, &action, nullptr) == 0 &&

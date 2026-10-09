@@ -1005,6 +1005,9 @@ if (ARCHITECTURE STREQUAL "x86_64")
              src/core/cpu_patches.cpp
              src/core/cpu_patches.h
              ${FIBER_LIB})
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        list(APPEND CORE src/core/cpu_id.cpp src/core/cpu_id.h)
+    endif()
 endif()
 
 set(SHADER_RECOMPILER src/shader_recompiler/profile.h
