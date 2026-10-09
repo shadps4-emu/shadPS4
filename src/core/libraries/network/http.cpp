@@ -214,7 +214,7 @@ static bool ResolveEpollBinding(int id, int*& epoll_id_out, void**& user_arg_out
 }
 
 static bool HeaderNameMatches(std::string_view a, std::string_view b);
-static std::string_view RedactHeaderValue(std::string_view name, std::string_view value);
+static bool IsCredentialHeader(std::string_view name);
 static std::string HttpStatusLabel(int sc);
 
 // JSON shape: flat object mapping endpoint -> replacement URL. Example:
@@ -567,7 +567,10 @@ static void LogSendRequestSettings(const HttpRequest& req, int reqId, u64 body_s
             return;
         }
         for (const auto& [name, value] : h) {
-            LOG_INFO(Lib_Http, "  header[{}] {}: {}", origin, name, RedactHeaderValue(name, value));
+            if (IsCredentialHeader(name)) {
+                continue;
+            }
+            LOG_INFO(Lib_Http, "  header[{}] {}: {}", origin, name, value);
         }
     };
     if (tmpl) {
@@ -1082,12 +1085,9 @@ static bool HeaderNameMatches(std::string_view a, std::string_view b) {
     return true;
 }
 
-static std::string_view RedactHeaderValue(std::string_view name, std::string_view value) {
-    if (HeaderNameMatches(name, "Authorization") ||
-        HeaderNameMatches(name, "Proxy-Authorization") || HeaderNameMatches(name, "Cookie")) {
-        return "[REDACTED]";
-    }
-    return value;
+static bool IsCredentialHeader(std::string_view name) {
+    return HeaderNameMatches(name, "Authorization") ||
+           HeaderNameMatches(name, "Proxy-Authorization") || HeaderNameMatches(name, "Cookie");
 }
 
 static std::string GetLibhttpSystemVersionString() {
@@ -2823,8 +2823,11 @@ int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable) {
 // Http Header setting functions
 //***********************************
 int PS4_SYSV_ABI sceHttpAddRequestHeader(int id, const char* name, const char* value, s32 mode) {
-    LOG_INFO(Lib_Http, "called id={}, name={}, value={}, mode={}", id, name ? name : "(null)",
-             value ? RedactHeaderValue(name ? name : "", value) : "(null)", mode);
+    const bool is_credential_header = name && IsCredentialHeader(name);
+    if (!is_credential_header) {
+        LOG_INFO(Lib_Http, "called id={}, name={}, value={}, mode={}", id, name ? name : "(null)",
+                 value ? value : "(null)", mode);
+    }
     std::lock_guard<std::mutex> lock(g_state.m_mutex);
     if (!g_state.inited) {
         LOG_ERROR(Lib_Http, "Not initialized");
@@ -2851,8 +2854,10 @@ int PS4_SYSV_ABI sceHttpAddRequestHeader(int id, const char* name, const char* v
             headers->end());
     }
     headers->emplace_back(name, value);
-    LOG_INFO(Lib_Http, "added header at {} id={}: {}: {} (mode={}, total now {})", level, id, name,
-             RedactHeaderValue(name, value), mode, headers->size());
+    if (!is_credential_header) {
+        LOG_INFO(Lib_Http, "added header at {} id={}: {}: {} (mode={}, total now {})", level, id,
+                 name, value, mode, headers->size());
+    }
     return ORBIS_OK;
 }
 
