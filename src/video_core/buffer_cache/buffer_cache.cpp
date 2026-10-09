@@ -23,6 +23,7 @@
 namespace VideoCore {
 
 static constexpr size_t GDS_BUFFER_SIZE = 64_KB;
+static constexpr size_t NULL_INDEX_BUFFER_SIZE = 16;
 static constexpr size_t STREAM_BUFFER_SIZE = 128_MB;
 
 static constexpr auto ARENA_USAGE =
@@ -85,6 +86,11 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
     bda_pagetable_buffer = std::make_unique<Buffer>(
         instance, 0, bda_pagetable_size, MemoryType::DeviceLocal, "BDA Page Table Buffer");
     runtime.FillBuffer(bda_pagetable_buffer.get(), 0u, bda_pagetable_size, 0u);
+    if (!instance.IsMaintenance6Supported()) {
+        null_index_buffer = std::make_unique<Buffer>(instance, 0, NULL_INDEX_BUFFER_SIZE,
+                                                     MemoryType::DeviceLocal, "Null Index Buffer");
+        runtime.FillBuffer(null_index_buffer.get(), 0u, NULL_INDEX_BUFFER_SIZE, 0u);
+    }
 }
 
 BufferCache::~BufferCache() = default;

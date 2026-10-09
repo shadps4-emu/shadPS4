@@ -555,7 +555,7 @@ void Rasterizer::BindIndexBuffer(u32 index_offset, bool is_indirect) {
         is_indirect ? regs.max_index_size : std::min(regs.num_indices, regs.max_index_size);
     const u64 requested_size = u64(num_indices) * index_size;
     const u64 mapped_size = memory->ClampRangeSize(index_address, requested_size);
-    const u32 index_buffer_size = static_cast<u32>(Common::AlignDown(mapped_size, index_size));
+    u32 index_buffer_size = static_cast<u32>(Common::AlignDown(mapped_size, index_size));
     vk::Buffer index_buffer{};
     u64 buffer_offset{};
     if (index_buffer_size != 0) {
@@ -566,6 +566,13 @@ void Rasterizer::BindIndexBuffer(u32 index_offset, bool is_indirect) {
                                    vk::AccessFlagBits2::eIndexRead);
         index_buffer = buffer->Handle();
         buffer_offset = offset;
+    } else if (!instance.IsMaintenance6Supported()) {
+        const auto* null_buffer = buffer_cache.GetNullIndexBuffer();
+        index_buffer_size = static_cast<u32>(null_buffer->SizeBytes());
+        needs_barrier |= runtime.IsBufferAccessed(null_buffer, 0, index_buffer_size);
+        bound_buffers.emplace_back(null_buffer, 0, index_buffer_size,
+                                   vk::AccessFlagBits2::eIndexRead);
+        index_buffer = null_buffer->Handle();
     }
 
     const auto cmdbuf = scheduler.CommandBuffer();
