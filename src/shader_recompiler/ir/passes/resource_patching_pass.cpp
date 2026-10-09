@@ -162,50 +162,6 @@ private:
 
 using SharpSources = boost::container::small_vector<const IR::Inst*, 4>;
 
-SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
-    SharpLocation location{};
-    if (inst->GetOpcode() == IR::Opcode::GetUserData) {
-        return static_cast<SharpLocation>(inst->Arg(0).ScalarReg());
-    } else if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-        location = inst->Flags<IR::BufferInstInfo>().flatbuf_off_dw;
-    } else {
-        location = inst->Flags<SharpLocation>();
-    }
-    if (location == 0) {
-        LOG_WARNING(Render_Recompiler, "Sharp source was not flatenned");
-        return UNKNOWN_LOCATION;
-    }
-    return location;
-}
-
-template <typename T>
-SharpFetch<T> ConstructSharpFetch(const SharpReference& sharp) {
-    using Summary = SharpFetch<T>::Summary;
-    SharpFetch<T> sharp_fetch{};
-    for (u32 i = 0; i < sharp.num_dwords; i++) {
-        auto dword = sharp.dwords[i];
-        if (dword.IsImmediate()) {
-            sharp_fetch.immediates[i] = dword.U32();
-        } else {
-            sharp_fetch.offsets[i] = SharpLocationFromSource(dword.Inst());
-            sharp_fetch.load_mask |= (1 << i);
-            if (sharp_fetch.offsets[i] == UNKNOWN_LOCATION) {
-                sharp_fetch.summary = Summary::Invalid;
-            }
-        }
-    }
-    if (sharp_fetch.summary != Summary::Invalid) {
-        const u32 base = sharp_fetch.offsets[0];
-        for (u32 i = 1; i < sharp.num_dwords; ++i) {
-            if (sharp_fetch.offsets[i] - base != i) {
-                return sharp_fetch;
-            }
-        }
-        sharp_fetch.summary = Summary::SingleLoad;
-    }
-    return sharp_fetch;
-}
-
 void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors,
                       const Profile& profile) {
     IR::Inst& inst = *resource.user;
@@ -246,6 +202,7 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
         .is_written = is_written,
         .is_r128 = bool(inst_info.is_r128),
         .post_op = resource.sharps[0].post_op,
+        .guard = resource.guards[0],
     };
 
     auto image = image_res.GetSharp(info);
@@ -309,6 +266,7 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
             // Track FMask resource to do specialization.
             descriptors.Add(FMaskResource{
                 .sharp_idx = SharpLocationFromSource(resource.sharps[0].dwords[0].Inst()),
+                .guard = resource.guards[0],
             });
             return;
         }
@@ -329,6 +287,7 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
             .post_op_tsharp_dw3_off =
                 lod_prod.IsEmpty() ? UNKNOWN_LOCATION : SharpLocationFromSource(lod_prod.Inst()),
             .is_depth = bool(inst_info.is_depth), // true for the _C (compare) opcodes
+            .guard = resource.guards[1],
         });
         inst.SetArg(0, ir.Imm32(image_binding | sampler_binding << 16));
     } else {
