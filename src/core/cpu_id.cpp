@@ -8,6 +8,7 @@
 #include <csignal>
 #include <memory>
 #include <asm/prctl.h>
+#include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <sys/ucontext.h>
 #include <unistd.h>
@@ -16,7 +17,6 @@
 #include "common/assert.h"
 #include "core/cpu_id.h"
 #include "core/libraries/kernel/threads/pthread.h"
-#include "core/signals.h"
 
 namespace Core {
 namespace {
@@ -31,7 +31,7 @@ u32 host_cache_leaf{};
 static_assert(std::atomic<uintptr_t>::is_always_lock_free);
 std::atomic<uintptr_t> guest_begin{};
 std::atomic<uintptr_t> guest_end{};
-std::unique_ptr<Xbyak::CodeGenerator> fault_trampoline;
+std::array<std::unique_ptr<Xbyak::CodeGenerator>, 2> fault_trampolines;
 
 std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
     std::array<u32, 4> result{};
@@ -125,11 +125,25 @@ void PS4_SYSV_ABI ExecuteCpuId(u64* registers, CpuIdInstruction instruction, u32
     }
 }
 
-size_t CpuidLength(const u8* code) {
+enum class FaultInstruction { Cpuid, Rdtscp, Rdtsc };
+
+size_t FaultInstructionLength(const u8* code, FaultInstruction& instruction) {
     for (size_t index = 0; index < 14; ++index) {
         const u8 byte = code[index];
         if (byte == 0x0f) {
-            return code[index + 1] == 0xa2 ? index + 2 : 0;
+            if (code[index + 1] == 0xa2) {
+                instruction = FaultInstruction::Cpuid;
+                return index + 2;
+            }
+            if (code[index + 1] == 0x31) {
+                instruction = FaultInstruction::Rdtsc;
+                return index + 2;
+            }
+            if (index < 13 && code[index + 1] == 0x01 && code[index + 2] == 0xf9) {
+                instruction = FaultInstruction::Rdtscp;
+                return index + 3;
+            }
+            return 0;
         }
         if ((byte >= 0x40 && byte <= 0x4f) || byte == 0x66 || byte == 0x67 || byte == 0xf2 ||
             byte == 0xf3 || byte == 0x26 || byte == 0x2e || byte == 0x36 || byte == 0x3e ||
@@ -141,23 +155,28 @@ size_t CpuidLength(const u8* code) {
     return 0;
 }
 
-bool HandleCpuidFault(void* context, void* fault_address) {
+} // namespace
+
+bool HandleCpuIdFault(void* context, void* fault_address) {
     auto& registers = static_cast<ucontext_t*>(context)->uc_mcontext.gregs;
     if (fault_address != nullptr || registers[REG_TRAPNO] != 13) {
         return false;
     }
     const auto address = static_cast<uintptr_t>(registers[REG_RIP]);
-    const size_t length = CpuidLength(reinterpret_cast<const u8*>(address));
+    FaultInstruction instruction{};
+    const size_t length = FaultInstructionLength(reinterpret_cast<const u8*>(address), instruction);
     if (length == 0) {
         return false;
     }
-    if (address >= guest_begin.load(std::memory_order_relaxed) &&
+    if (instruction != FaultInstruction::Rdtsc &&
+        address >= guest_begin.load(std::memory_order_relaxed) &&
         address < guest_end.load(std::memory_order_relaxed) &&
         Libraries::Kernel::g_curthread != nullptr) {
         const auto stack = static_cast<uintptr_t>(registers[REG_RSP]) - FaultStackSize;
         *reinterpret_cast<u64*>(stack) = address + length;
         registers[REG_RSP] = stack;
-        registers[REG_RIP] = reinterpret_cast<uintptr_t>(fault_trampoline->getCode());
+        registers[REG_RIP] = reinterpret_cast<uintptr_t>(
+            fault_trampolines[static_cast<size_t>(instruction)]->getCode());
         return true;
     }
 
@@ -168,17 +187,31 @@ bool HandleCpuidFault(void* context, void* fault_address) {
         errno = saved_errno;
         return false;
     }
-    const bool enabled = syscall(SYS_arch_prctl, ARCH_SET_CPUID, 1) == 0;
+    const bool is_cpuid = instruction == FaultInstruction::Cpuid;
+    const bool enabled = is_cpuid ? syscall(SYS_arch_prctl, ARCH_SET_CPUID, 1) == 0
+                                  : prctl(PR_SET_TSC, PR_TSC_ENABLE) == 0;
     if (enabled) {
-        u32 result[4];
-        Xbyak::util::Cpu::getCpuidEx(static_cast<u32>(registers[REG_RAX]),
-                                     static_cast<u32>(registers[REG_RCX]), result);
-        if (syscall(SYS_arch_prctl, ARCH_SET_CPUID, 0) != 0) {
+        u32 result[4]{};
+        if (is_cpuid) {
+            Xbyak::util::Cpu::getCpuidEx(static_cast<u32>(registers[REG_RAX]),
+                                         static_cast<u32>(registers[REG_RCX]), result);
+        } else if (instruction == FaultInstruction::Rdtscp) {
+            asm volatile("rdtscp" : "=a"(result[0]), "=d"(result[3]), "=c"(result[2]) : : "memory");
+        } else {
+            asm volatile("rdtsc" : "=a"(result[0]), "=d"(result[3]) : : "memory");
+        }
+        const int restored = is_cpuid ? syscall(SYS_arch_prctl, ARCH_SET_CPUID, 0)
+                                      : prctl(PR_SET_TSC, PR_TSC_SIGSEGV);
+        if (restored != 0) {
             _exit(1);
         }
         registers[REG_RAX] = result[0];
-        registers[REG_RBX] = result[1];
-        registers[REG_RCX] = result[2];
+        if (is_cpuid) {
+            registers[REG_RBX] = result[1];
+        }
+        if (instruction != FaultInstruction::Rdtsc) {
+            registers[REG_RCX] = result[2];
+        }
         registers[REG_RDX] = result[3];
         registers[REG_RIP] += length;
     }
@@ -186,8 +219,6 @@ bool HandleCpuidFault(void* context, void* fault_address) {
     errno = saved_errno;
     return enabled;
 }
-
-} // namespace
 
 void GenerateCpuIdInstruction(Xbyak::CodeGenerator& c, CpuIdInstruction instruction,
                               u32 destination, bool fault_entry) {
@@ -265,13 +296,21 @@ void InitializeCpuId() {
     } else if (host_max_extended >= 0x8000001d) {
         host_cache_leaf = 0x8000001d;
     }
-    fault_trampoline = std::make_unique<Xbyak::CodeGenerator>(4096);
-    GenerateCpuIdInstruction(*fault_trampoline, CpuIdInstruction::Cpuid, 0, true);
-    fault_trampoline->readyRE();
-    Signals::Instance()->RegisterAccessViolationHandler(HandleCpuidFault, 2);
+    for (const auto instruction : {CpuIdInstruction::Cpuid, CpuIdInstruction::Rdtscp}) {
+        auto& trampoline = fault_trampolines[static_cast<size_t>(instruction)];
+        trampoline = std::make_unique<Xbyak::CodeGenerator>(4096);
+        GenerateCpuIdInstruction(*trampoline, instruction, 0, true);
+        trampoline->readyRE();
+    }
 }
 
 void EnableCpuIdFaulting() {
+    if (prctl(PR_SET_TSC, PR_TSC_SIGSEGV) != 0) {
+        static std::atomic warned{false};
+        if (!warned.exchange(true)) {
+            LOG_WARNING(Core, "TSC faulting unavailable; RDTSCP identity requires static patches");
+        }
+    }
     if (syscall(SYS_arch_prctl, ARCH_SET_CPUID, 0) != 0) {
         static std::atomic warned{false};
         if (!warned.exchange(true)) {
