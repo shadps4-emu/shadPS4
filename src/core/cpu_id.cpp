@@ -34,18 +34,23 @@ namespace Core {
 namespace {
 
 constexpr u32 GuestCpuCount = 8;
+// Common CPUID feature bits observed on PS4 and PS4 Pro hardware.
+constexpr u32 GuestFeaturesEcx = 0x3ed8220b;
+constexpr u32 GuestFeaturesEdx = 0x178bfbff;
+constexpr u32 GuestExtendedFeaturesEcx = 0x154837ff;
+constexpr u32 GuestExtendedFeaturesEdx = 0x2fd3fbff;
 constexpr size_t RedZoneSize = 128;
 constexpr size_t RegisterFrameSize = 17 * sizeof(u64);
 constexpr size_t FaultStackSize = RedZoneSize + sizeof(u64);
 u32 host_max_basic{};
 u32 host_max_extended{};
-u32 host_cache_leaf{};
 static_assert(std::atomic<uintptr_t>::is_always_lock_free);
 std::atomic<uintptr_t> guest_begin{};
 std::atomic<uintptr_t> guest_end{};
 std::array<std::unique_ptr<Xbyak::CodeGenerator>, 2> fault_trampolines;
 
 std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
+    const u32 apic_id = GuestCpuCount - 1 - cpu;
     std::array<u32, 4> result{};
     Xbyak::util::Cpu::getCpuidEx(leaf, subleaf, result.data());
     if (leaf > host_max_basic && (leaf < 0x80000000 || leaf > host_max_extended)) {
@@ -57,22 +62,23 @@ std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
         eax = std::max(host_max_basic, 0x1fu);
         break;
     case 1:
-        ebx = (ebx & 0xffff) | (GuestCpuCount << 16) | (cpu << 24);
-        // Jaguar has neither FMA nor RDRAND (AMD BKDG 48751, CPUID Fn0000_0001_ECX).
-        ecx &= ~((1u << 12) | (1u << 30));
-        edx |= 1u << 28;
+        ebx = (ebx & 0xffff) | (GuestCpuCount << 16) | (apic_id << 24);
+        ecx &= GuestFeaturesEcx;
+        edx = (edx & GuestFeaturesEdx) | (1u << 28);
         break;
     case 4:
-    case 0x8000001d:
-        if (host_cache_leaf != 0) {
-            Xbyak::util::Cpu::getCpuidEx(host_cache_leaf, subleaf, result.data());
-        }
-        if ((eax & 0x1f) != 0) {
-            const u32 sharing = ((eax >> 5) & 7) >= 3 ? GuestCpuCount : 1;
-            const u32 cores = leaf == 4 ? (GuestCpuCount - 1) << 26 : 0;
-            eax = (eax & 0x3fff) | ((sharing - 1) << 14) | cores;
+    case 0x8000001d: {
+        constexpr std::array<std::array<u32, 4>, 3> caches{{
+            {0x00000121, 0x01c0003f, 0x0000003f, 0},
+            {0x00000122, 0x0040003f, 0x000000ff, 0},
+            {0x0000c143, 0x03c0003f, 0x000007ff, 2},
+        }};
+        result = subleaf < caches.size() ? caches[subleaf] : std::array<u32, 4>{};
+        if (leaf == 4 && eax != 0) {
+            eax |= (GuestCpuCount - 1) << 26;
         }
         break;
+    }
     case 7:
         // BMI1 is the only Jaguar structured extended feature (AMD BKDG 48751).
         result = {0, subleaf == 0 ? ebx & (1u << 3) : 0, 0, 0};
@@ -82,7 +88,7 @@ std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
         eax = subleaf == 1 ? 3 : 0;
         ebx = subleaf == 0 ? 1 : subleaf == 1 ? GuestCpuCount : 0;
         ecx = (subleaf & 0xff) | (subleaf < 2 ? (subleaf + 1) << 8 : 0);
-        edx = cpu;
+        edx = apic_id;
         break;
     case 0x1a:
         result = {};
@@ -91,9 +97,15 @@ std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
         eax = std::max(host_max_extended, 0x8000001eu);
         break;
     case 0x80000001:
-        // XOP, LWP, FMA4, TBM and MONITORX/MWAITX are not Jaguar instructions.
-        ecx &= ~((1u << 11) | (1u << 15) | (1u << 16) | (1u << 21) | (1u << 29));
+        ecx &= GuestExtendedFeaturesEcx;
         ecx |= (1u << 6) | (1u << 22);
+        edx &= GuestExtendedFeaturesEdx;
+        break;
+    case 0x80000005:
+        result = {0xff08ff08, 0xff28ff20, 0x20080140, 0x20020140};
+        break;
+    case 0x80000006:
+        result = {0x21000000, 0x42004200, 0x08008140, 0};
         break;
     case 0x80000008:
         // Jaguar reserves EBX and EDX (AMD BKDG 48751, CPUID Fn8000_0008).
@@ -102,7 +114,7 @@ std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
         edx = 0;
         break;
     case 0x8000001e:
-        result = {cpu, cpu, 0, 0};
+        result = {apic_id, apic_id, 0, 0};
         break;
     case 0x80000026:
         result = {};
@@ -343,12 +355,6 @@ void InitializeCpuId() {
     host_max_basic = data[0];
     Xbyak::util::Cpu::getCpuid(0x80000000, data);
     host_max_extended = data[0];
-    Xbyak::util::Cpu::getCpuidEx(4, 0, data);
-    if (host_max_basic >= 4 && (data[0] & 0x1f) != 0) {
-        host_cache_leaf = 4;
-    } else if (host_max_extended >= 0x8000001d) {
-        host_cache_leaf = 0x8000001d;
-    }
     for (const auto instruction : {CpuIdInstruction::Cpuid, CpuIdInstruction::Rdtscp}) {
         auto& trampoline = fault_trampolines[static_cast<size_t>(instruction)];
         trampoline = std::make_unique<Xbyak::CodeGenerator>(4096);
