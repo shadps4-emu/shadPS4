@@ -3,6 +3,7 @@
 
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/posix_error.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/thread_state.h"
 #include "core/libraries/libs.h"
@@ -40,6 +41,7 @@ int PS4_SYSV_ABI posix_pthread_attr_destroy(PthreadAttrT* attr) {
     if (attr == nullptr || *attr == nullptr) {
         return POSIX_EINVAL;
     }
+    free((*attr)->cpuset);
     delete *attr;
     *attr = nullptr;
     return 0;
@@ -256,27 +258,35 @@ int PS4_SYSV_ABI posix_pthread_attr_get_np(PthreadT pthread, PthreadAttrT* dstat
         return ret;
     }
     PthreadAttr attr = pthread->attr;
+    const u64 mask = pthread->affinity_mask.load(std::memory_order_acquire);
     if (True(pthread->flags & ThreadFlags::Detached)) {
         attr.flags |= PthreadAttrFlags::Detached;
     }
     pthread->lock->unlock();
+    auto* cpuset = static_cast<Cpuset*>(calloc(1, sizeof(Cpuset)));
+    if (cpuset == nullptr) {
+        return POSIX_ENOMEM;
+    }
+    cpuset->bits = mask;
+    attr.cpuset = cpuset;
+    attr.cpusetsize = sizeof(Cpuset);
+    free(dst->cpuset);
     memcpy(dst, &attr, sizeof(PthreadAttr));
     return ret;
 }
 
 int PS4_SYSV_ABI posix_pthread_attr_getaffinity_np(const PthreadAttrT* pattr, size_t cpusetsize,
                                                    Cpuset* cpusetp) {
-    if (pattr == nullptr) {
+    if (pattr == nullptr || *pattr == nullptr || cpusetp == nullptr) {
         return POSIX_EINVAL;
     }
-    PthreadAttrT attr = *pattr;
-    if (attr == nullptr) {
-        return POSIX_EINVAL;
+    if (cpusetsize < sizeof(u64)) {
+        return POSIX_ERANGE;
     }
-    if (attr->cpuset != nullptr)
-        memcpy(cpusetp, attr->cpuset, std::min(cpusetsize, attr->cpusetsize));
-    else
-        memset(cpusetp, -1, cpusetsize);
+    const auto* attr = *pattr;
+    const u64 mask = attr->cpuset != nullptr ? attr->cpuset->bits : GetGuestCpuMask();
+    memset(cpusetp, 0, cpusetsize);
+    memcpy(cpusetp, &mask, sizeof(mask));
     return 0;
 }
 
@@ -297,15 +307,23 @@ int PS4_SYSV_ABI posix_pthread_attr_setaffinity_np(PthreadAttrT* pattr, size_t c
         }
         return 0;
     }
+    Cpuset replacement{};
+    memcpy(&replacement, cpusetp, std::min(cpusetsize, sizeof(Cpuset)));
     if (attr->cpuset == nullptr) {
         attr->cpuset = static_cast<Cpuset*>(calloc(1, sizeof(Cpuset)));
+        if (attr->cpuset == nullptr) {
+            return POSIX_ENOMEM;
+        }
         attr->cpusetsize = sizeof(Cpuset);
     }
-    memcpy(attr->cpuset, cpusetp, std::min(cpusetsize, sizeof(Cpuset)));
+    *attr->cpuset = replacement;
     return 0;
 }
 
 int PS4_SYSV_ABI scePthreadAttrGetaffinity(PthreadAttrT* attr, u64* mask) {
+    if (mask == nullptr) {
+        return POSIX_EINVAL;
+    }
     Cpuset cpuset;
     const int ret = posix_pthread_attr_getaffinity_np(attr, sizeof(Cpuset), &cpuset);
     if (ret == 0) {

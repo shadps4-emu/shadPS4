@@ -1,10 +1,16 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <future>
 #include "common/alignment.h"
 #include "common/arch.h"
+#include "core/cpu_affinity.h"
+#include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "thread.h"
+#if defined(__linux__) && defined(ARCH_X86_64)
+#include "core/cpu_id.h"
+#endif
 #ifdef _WIN64
 #include <windows.h>
 #include "common/ntapi.h"
@@ -26,17 +32,57 @@ NativeThread::NativeThread() : native_handle{0} {}
 
 NativeThread::~NativeThread() {}
 
-int NativeThread::Create(ThreadFunc func, void* arg) {
+int NativeThread::Create(ThreadFunc func, void* arg, u64 affinity_mask, CpuAffinity affinity) {
+    cpu_affinity = std::move(affinity);
+    struct Startup {
+        ThreadFunc func;
+        void* arg;
+        std::future<int> ready;
+    };
+    std::promise<int> ready;
+    auto startup = std::make_unique<Startup>(func, arg, ready.get_future());
+    const auto entry = [](void* data)
+#ifdef _WIN64
+        -> DWORD
+#else
+        -> void*
+#endif
+    {
+        std::unique_ptr<Startup> state{static_cast<Startup*>(data)};
+        const auto func = state->func;
+        const auto arg = state->arg;
+        const int ret = state->ready.get();
+        state.reset();
+        if (ret != 0) {
+            return 0;
+        }
+        return func(arg);
+    };
 #ifndef _WIN64
     pthread_t* pthr = reinterpret_cast<pthread_t*>(&native_handle);
-    return pthread_create(pthr, nullptr, func, arg);
-#else
-    native_handle = CreateThread(nullptr, 0, func, arg, 0, nullptr);
-    if (native_handle == nullptr) {
-        return GetLastError();
+    const int ret = pthread_create(pthr, nullptr, entry, startup.get());
+    if (ret != 0) {
+        return POSIX_EAGAIN;
     }
-    return 0;
+#else
+    native_handle = CreateThread(nullptr, 0, entry, startup.get(), 0, nullptr);
+    if (native_handle == nullptr) {
+        return POSIX_EAGAIN;
+    }
 #endif
+    startup.release();
+    const int error = cpu_affinity.SetThreadAffinity(GetHandle(), affinity_mask);
+    ready.set_value(error);
+    if (error != 0) {
+#ifdef _WIN64
+        WaitForSingleObject(native_handle, INFINITE);
+        CloseHandle(native_handle);
+#else
+        pthread_join(reinterpret_cast<pthread_t>(native_handle), nullptr);
+#endif
+        native_handle = 0;
+    }
+    return error;
 }
 
 void NativeThread::Exit() {
@@ -47,7 +93,6 @@ void NativeThread::Exit() {
     tid = 0;
 
 #ifdef _WIN64
-    native_handle = nullptr;
     ExitThread(0);
 #else
     // Disable and free the signal stack.
@@ -62,6 +107,19 @@ void NativeThread::Exit() {
     }
     pthread_exit(nullptr);
 #endif
+}
+
+void NativeThread::Join() {
+    if (!native_handle) {
+        return;
+    }
+#ifdef _WIN64
+    ASSERT(WaitForSingleObject(native_handle, INFINITE) == WAIT_OBJECT_0);
+    CloseHandle(native_handle);
+#else
+    ASSERT(pthread_join(reinterpret_cast<pthread_t>(native_handle), nullptr) == 0);
+#endif
+    native_handle = 0;
 }
 
 void NativeThread::Initialize() {
@@ -86,6 +144,9 @@ void NativeThread::Initialize() {
     sig_stack.ss_size = sig_stack_size;
     sig_stack.ss_flags = 0;
     ASSERT_MSG(sigaltstack(&sig_stack, nullptr) == 0, "Failed to set signal stack: {}", errno);
+#endif
+#if defined(__linux__) && defined(ARCH_X86_64)
+    EnableCpuIdFaulting();
 #endif
 }
 
