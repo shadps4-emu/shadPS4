@@ -65,6 +65,10 @@ public:
         return &gds_buffer;
     }
 
+    [[nodiscard]] const Buffer* GetNullIndexBuffer() const noexcept {
+        return null_index_buffer.get();
+    }
+
     /// Retrieves the device local DBA page table buffer.
     [[nodiscard]] Buffer* GetBdaPageTableBuffer() noexcept {
         return bda_pagetable_buffer.get();
@@ -159,6 +163,7 @@ private:
 
     StreamBuffer stream_buffer;
     Buffer gds_buffer;
+    std::unique_ptr<Buffer> null_index_buffer;
     RangeSet gpu_modified_ranges;
 
     std::unique_ptr<FaultManager> fault_manager;

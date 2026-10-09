@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -91,10 +91,7 @@ public:
     /// Memory maps a specified file descriptor.
     void* MapFile(VAddr virtual_addr, u64 size, u64 offset, u32 prot, uintptr_t fd);
 
-    /// Unmaps specified virtual memory area.
-    /// Due to coalescing unmapped areas (implemented to save on VMAs), the real replaced area
-    /// might be different to what has been passed to Unmap. Therefore, a new address is returned
-    /// and size is updated to properly represent the mmapped area.
+    /// Unmaps specified virtual memory area and marks it free in the address space.
     VAddr Unmap(VAddr virtual_addr, u64* size);
 
     /// Protects requested region.

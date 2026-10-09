@@ -60,7 +60,10 @@ bool HostFile::Flush() {
     if (!m_file.IsOpen()) {
         return false;
     }
-    return m_file.Flush();
+    if (m_read_only) {
+        return true;
+    }
+    return m_file.Commit();
 }
 
 bool HostFile::IsOpen() const {

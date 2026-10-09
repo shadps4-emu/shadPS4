@@ -5,6 +5,7 @@
 #include <array>
 #include <unordered_set>
 #include "common/assert.h"
+#include "common/logging/log.h"
 #include "common/string_util.h"
 #include "core/file_sys/backends/host_fs.h"
 #include "core/file_sys/backends/zarchive_fs.h"
@@ -112,6 +113,20 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
                       bool read_only) {
     std::scoped_lock lock{m_mutex};
     const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
+    auto it = std::find_if(m_mnt_pairs.begin(), m_mnt_pairs.end(), [&](const MntPair& pair) {
+        return pair.mount == guest_folder_sanitized;
+    });
+    if (it != m_mnt_pairs.end()) {
+        if (it->host_path == host_folder && it->read_only == read_only) {
+            LOG_DEBUG(Kernel_Fs, "Mount point {} already mounted to {}, skipping",
+                      guest_folder_sanitized, host_folder.string());
+            return;
+        }
+        LOG_INFO(Kernel_Fs, "Replacing mount point {} (old: {}, new: {})", guest_folder_sanitized,
+                 it->host_path.string(), host_folder.string());
+        m_mnt_pairs.erase(it);
+    }
+
     // Build the backend stack for this mount.
     std::vector<std::shared_ptr<IBackend>> stack;
     const bool eligible_for_overlays =
@@ -158,18 +173,43 @@ void MntPoints::UnmountAll() {
     m_mnt_pairs.clear();
 }
 
+// Normalize a guest path. Resolves redundant slashes (e.g. Turok2 double slashes like
+// /app0//game.kpf) and directory traversal (e.g. /app0/../savedata0/) per POSIX pathname resolution
+// standards.
+std::optional<std::string> MntPoints::SanitizeGuestPath(std::string_view path) {
+    if (path.empty() || path.length() > 255) {
+        return std::nullopt;
+    }
+    std::filesystem::path p(path);
+    std::string normalized = p.lexically_normal().generic_string();
+    if (normalized.length() > 255) {
+        return std::nullopt;
+    }
+    return normalized;
+}
+
+// Strip the mount prefix from a corrected guest path
+std::string_view RelativeToMount(const std::string& corrected, const MntPoints::MntPair& mount) {
+    if (corrected.size() <= mount.mount.size() + 1) {
+        return {};
+    }
+    return std::string_view{corrected}.substr(mount.mount.size() + 1);
+}
+
 std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_read_only,
                                              HostPathType path_type) {
-    // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
-    std::string corrected_path(path);
-    size_t pos = corrected_path.find("//");
-    while (pos != std::string::npos) {
-        corrected_path.replace(pos, 2, "/");
-        pos = corrected_path.find("//", pos + 1);
-    }
-
-    if (path.length() > 255)
+    const auto sanitized = SanitizeGuestPath(path);
+    if (!sanitized) {
         return "";
+    }
+    const std::string& corrected_path = *sanitized;
+
+    if (corrected_path == "/") {
+        if (is_read_only) {
+            *is_read_only = true;
+        }
+        return "/";
+    }
 
     const auto* mount = GetMount(corrected_path);
     if (!mount) {
@@ -207,10 +247,12 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     }
 
     // Remove device (e.g /app0) from path to retrieve relative path.
-    const auto rel_path = std::string_view{corrected_path}.substr(mount->mount.size() + 1);
-    host_path /= rel_path;
-    patch_path /= rel_path;
-    mods_path /= rel_path;
+    const auto rel_path = RelativeToMount(corrected_path, *mount);
+    if (!rel_path.empty()) {
+        host_path /= rel_path;
+        patch_path /= rel_path;
+        mods_path /= rel_path;
+    }
 
     if (path_type == HostPathType::Mod) {
         return mods_path;
@@ -317,28 +359,6 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     return host_path;
 }
 
-// Normalize a guest path
-std::optional<std::string> SanitizeGuestPath(std::string_view path) {
-    if (path.length() > 255) {
-        return std::nullopt;
-    }
-    std::string corrected(path);
-    size_t pos = corrected.find("//");
-    while (pos != std::string::npos) {
-        corrected.replace(pos, 2, "/");
-        pos = corrected.find("//", pos + 1);
-    }
-    return corrected;
-}
-
-// Strip the mount prefix from a corrected guest path
-std::string_view RelativeToMount(const std::string& corrected, const MntPoints::MntPair& mount) {
-    if (corrected.size() <= mount.mount.size() + 1) {
-        return {};
-    }
-    return std::string_view{corrected}.substr(mount.mount.size() + 1);
-}
-
 void MntPoints::IterateDirectory(std::string_view guest_directory,
                                  const IterateDirectoryCallback& callback) {
     const auto corrected_opt = SanitizeGuestPath(guest_directory);
@@ -346,6 +366,22 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
         return;
     }
     const auto& corrected = *corrected_opt;
+    if (corrected == "/") {
+        callback(std::filesystem::path("/."), false);
+        callback(std::filesystem::path("/.."), false);
+        std::scoped_lock lock{m_mutex};
+        std::unordered_set<std::string> seen;
+        for (const auto& mount : m_mnt_pairs) {
+            std::string name = mount.mount;
+            if (name.starts_with("/")) {
+                name = name.substr(1);
+            }
+            if (!name.empty() && seen.insert(name).second) {
+                callback(std::filesystem::path("/") / name, /*is_file=*/false);
+            }
+        }
+        return;
+    }
     const auto mount = GetMount(corrected);
     if (!mount || mount->backends.empty()) {
         return;
@@ -422,6 +458,9 @@ bool MntPoints::Exists(std::string_view guest_path) {
     if (!corrected) {
         return false;
     }
+    if (*corrected == "/") {
+        return true;
+    }
     const auto mount = GetMount(*corrected);
     if (!mount || mount->backends.empty()) {
         return false;
@@ -439,6 +478,9 @@ bool MntPoints::IsDirectory(std::string_view guest_path) {
     const auto corrected = SanitizeGuestPath(guest_path);
     if (!corrected) {
         return false;
+    }
+    if (*corrected == "/") {
+        return true;
     }
     const auto mount = GetMount(*corrected);
     if (!mount || mount->backends.empty()) {
@@ -461,7 +503,7 @@ std::unique_ptr<IFile> MntPoints::Open(std::string_view guest_path, bool writabl
 std::unique_ptr<IFile> MntPoints::Open(std::string_view guest_path,
                                        Common::FS::FileAccessMode mode) {
     const auto corrected = SanitizeGuestPath(guest_path);
-    if (!corrected) {
+    if (!corrected || *corrected == "/") {
         return nullptr;
     }
     const auto mount = GetMount(*corrected);
@@ -491,6 +533,24 @@ std::unique_ptr<IDirectory> MntPoints::OpenDir(std::string_view guest_path) {
     const auto corrected = SanitizeGuestPath(guest_path);
     if (!corrected) {
         return nullptr;
+    }
+    if (*corrected == "/") {
+        std::scoped_lock lock{m_mutex};
+        std::vector<DirEntry> entries;
+        std::unordered_set<std::string> seen;
+        for (const auto& mount : m_mnt_pairs) {
+            std::string name = mount.mount;
+            if (name.starts_with("/")) {
+                name = name.substr(1);
+            }
+            if (!name.empty() && seen.insert(name).second) {
+                entries.push_back(DirEntry{
+                    .name = std::move(name),
+                    .is_directory = true,
+                });
+            }
+        }
+        return std::make_unique<MergedDirectory>(std::move(entries));
     }
     const auto mount = GetMount(*corrected);
     if (!mount || mount->backends.empty()) {
@@ -636,6 +696,20 @@ int HandleTable::GetFileDescriptor(File* file) {
         return std::distance(m_files.begin(), it);
     }
     return 0;
+}
+
+void HandleTable::FlushAll() {
+    std::scoped_lock lock{m_mutex};
+    for (auto* file : m_files) {
+        if (file != nullptr && file->is_opened) {
+            std::scoped_lock lk{file->m_mutex};
+            if (file->type == FileType::Device && file->device) {
+                file->device->fsync();
+            } else if (file->type == FileType::Regular) {
+                file->Flush();
+            }
+        }
+    }
 }
 
 } // namespace Core::FileSys
