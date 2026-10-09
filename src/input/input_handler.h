@@ -27,6 +27,10 @@
 #define SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT SDL_GAMEPAD_BUTTON_COUNT + 1
 #define SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER SDL_GAMEPAD_BUTTON_COUNT + 2
 #define SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT SDL_GAMEPAD_BUTTON_COUNT + 3
+#define SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_LEFT SDL_GAMEPAD_BUTTON_COUNT + 4
+#define SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_RIGHT SDL_GAMEPAD_BUTTON_COUNT + 5
+#define SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_UP SDL_GAMEPAD_BUTTON_COUNT + 6
+#define SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_DOWN SDL_GAMEPAD_BUTTON_COUNT + 7
 
 #define SDL_EVENT_TOGGLE_FULLSCREEN SDL_EVENT_USER + 1
 #define SDL_EVENT_TOGGLE_PAUSE SDL_EVENT_USER + 2
@@ -140,6 +144,10 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"touchpad_left", SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT},
     {"touchpad_center", SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER},
     {"touchpad_right", SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT},
+    {"touchpad_swipe_left", SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_LEFT},
+    {"touchpad_swipe_right", SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_RIGHT},
+    {"touchpad_swipe_up", SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_UP},
+    {"touchpad_swipe_down", SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_DOWN},
     {"leftjoystick_halfmode", LEFTJOYSTICK_HALFMODE},
     {"rightjoystick_halfmode", RIGHTJOYSTICK_HALFMODE},
 
@@ -540,7 +548,7 @@ public:
 
 class ControllerAllOutputs {
 public:
-    static constexpr u64 output_count = 43;
+    static constexpr u64 output_count = 47;
     std::array<ControllerOutput, output_count> data = {
         // Important: these have to be the first, or else they will update in the wrong order
         ControllerOutput(LEFTJOYSTICK_HALFMODE),
@@ -565,6 +573,12 @@ public:
         ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_DOWN),       // Down
         ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_LEFT),       // Left
         ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),      // Right
+
+        // Touchpad swipe gestures
+        ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_LEFT),
+        ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_RIGHT),
+        ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_UP),
+        ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_SWIPE_DOWN),
 
         // Axis mappings
         // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX, false),
