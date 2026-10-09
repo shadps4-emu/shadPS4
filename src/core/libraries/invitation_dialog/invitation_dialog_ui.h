@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/system/commondialog.h"
 #include "imgui/imgui_layer.h"
 
