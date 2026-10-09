@@ -566,7 +566,7 @@ void Rasterizer::BindIndexBuffer(u32 index_offset, bool is_indirect) {
                                    vk::AccessFlagBits2::eIndexRead);
         index_buffer = buffer->Handle();
         buffer_offset = offset;
-    } else {
+    } else if (!instance.IsMaintenance6Supported()) {
         const auto* null_buffer = buffer_cache.GetNullIndexBuffer();
         index_buffer_size = static_cast<u32>(null_buffer->SizeBytes());
         needs_barrier |= runtime.IsBufferAccessed(null_buffer, 0, index_buffer_size);
