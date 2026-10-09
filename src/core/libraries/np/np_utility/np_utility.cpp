@@ -12,7 +12,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_utility/np_utility.h"
 #include "core/libraries/np/np_utility/np_utility_ctx.h"
 

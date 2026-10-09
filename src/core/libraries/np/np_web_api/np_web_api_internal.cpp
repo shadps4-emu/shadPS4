@@ -15,7 +15,7 @@
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/np/np_error.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "np_web_api_internal.h"
 
 namespace Libraries::Np::NpWebApi {

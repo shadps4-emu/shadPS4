@@ -37,6 +37,8 @@ class ContextManager;
 struct NpMatching2State;
 } // namespace NpMatching2
 
+bool IsValidNpCommId(const std::string& id);
+
 class NpHandler {
 public:
     class Matching2CacheGuard {

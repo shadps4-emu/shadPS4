@@ -10,7 +10,7 @@
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/system/userservice_error.h"
