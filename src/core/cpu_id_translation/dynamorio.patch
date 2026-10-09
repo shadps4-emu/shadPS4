@@ -13,10 +13,37 @@ index c570f60..1629abf 100644
      ASSERT(mi->maps != INVALID_FILE);
      mi->buf[BUFSIZE - 1] = '\0'; /* permanently */
 diff --git a/core/unix/os.c b/core/unix/os.c
-index 3c22697..ee86fba 100644
+index 3c22697..3fe7030 100644
 --- a/core/unix/os.c
 +++ b/core/unix/os.c
-@@ -8530,6 +8530,32 @@ pre_system_call(dcontext_t *dcontext)
+@@ -7979,15 +7979,18 @@ pre_system_call(dcontext_t *dcontext)
+            asmlinkage int
+            sys_rt_sigsuspend(sigset_t *unewset, size_t sigsetsize)
+          */
+-        /* TODO i#7955: If a signal is already pending (either because it was blocked
+-         * and is now unblocked by sigsuspend, or because it was already unblocked
+-         * but delayed by DR), executing sigsuspend may hang because the signal
+-         * was already consumed by DR's signal handler. We should detect this (e.g.,
+-         * check signals_pending > 0 after handle_sigsuspend) and preemptively deliver
+-         * the signal and skip/re-execute the syscall.
++        /* A signal consumed by DR cannot wake the kernel's sigsuspend.  Return
++         * to dispatch to deliver it with the temporary mask; signal delivery
++         * restores the original mask through terminate_sigsuspend().
+          */
+-        handle_sigsuspend(dcontext, (kernel_sigset_t *)sys_param(dcontext, 0),
+-                          (size_t)sys_param(dcontext, 1));
++        dcontext->sys_param0 = sys_param(dcontext, 0);
++        int error = handle_sigsuspend(dcontext, (kernel_sigset_t *)dcontext->sys_param0,
++                                     (size_t)sys_param(dcontext, 1));
++        if (error != 0) {
++            set_failure_return_val(dcontext, error);
++            DODEBUG({ dcontext->expect_last_syscall_to_fail = true; });
++            execute_syscall = false;
++        }
+         break;
+     }
+ #ifdef LINUX
+@@ -8530,6 +8533,32 @@ pre_system_call(dcontext_t *dcontext)
          /* we handle arch_prctl in post_syscall */
          dcontext->sys_param0 = sys_param(dcontext, 0);
          dcontext->sys_param1 = sys_param(dcontext, 1);
@@ -49,7 +76,21 @@ index 3c22697..ee86fba 100644
          break;
      }
  #    endif
-@@ -10015,8 +10041,7 @@ read_proc_self_exe(bool ignore_cache)
+@@ -9571,6 +9600,13 @@ post_system_call(dcontext_t *dcontext)
+         success = true;
+         break;
+ 
++#ifdef MACOS
++    case SYS_sigsuspend_nocancel:
++#endif
++    case IF_MACOS_ELSE(SYS_sigsuspend, SYS_rt_sigsuspend):
++        set_syscall_param(dcontext, 0, dcontext->sys_param0);
++        break;
++
+     case SYS_setitimer: /* 104 */
+         handle_post_setitimer(dcontext, success, (int)dcontext->sys_param0,
+                               (const struct itimerval *)dcontext->sys_param1,
+@@ -10015,8 +10051,7 @@ read_proc_self_exe(bool ignore_cache)
           */
          ssize_t res;
          DEBUG_DECLARE(int len =)
@@ -59,7 +100,7 @@ index 3c22697..ee86fba 100644
          ASSERT(len > 0);
          NULL_TERMINATE_BUFFER(exepath);
          /* i#960: readlink does not null terminate, so we do it. */
-@@ -11130,6 +11155,33 @@ os_list_threads_from_task_dir(dcontext_t *dcontext, const char *task_path,
+@@ -11130,6 +11165,33 @@ os_list_threads_from_task_dir(dcontext_t *dcontext, const char *task_path,
          ASSERT_MESSAGE(CHKLVL_ASSERTS, "failed to parse /proc/pid/task entry", r == 1);
          if (tid <= 0)
              continue;
@@ -93,3 +134,75 @@ index 3c22697..ee86fba 100644
          if (num_threads == tids_alloced) {
              /* realloc, essentially.  Less expensive than counting first. */
              new_tids = HEAP_ARRAY_ALLOC(dcontext, thread_id_t, tids_alloced * 2,
+diff --git a/core/unix/os_private.h b/core/unix/os_private.h
+index b09211d..6ee30e9 100644
+--- a/core/unix/os_private.h
++++ b/core/unix/os_private.h
+@@ -370,7 +370,7 @@ handle_sigprocmask(dcontext_t *dcontext, int how, kernel_sigset_t *set,
+ int
+ handle_post_sigprocmask(dcontext_t *dcontext, int how, kernel_sigset_t *set,
+                         kernel_sigset_t *oset, size_t sigsetsize);
+-void
++int
+ handle_sigsuspend(dcontext_t *dcontext, kernel_sigset_t *set, size_t sigsetsize);
+ 
+ #ifdef LINUX
+diff --git a/core/unix/signal.c b/core/unix/signal.c
+index 2c5c3ab..aa8bae6 100644
+--- a/core/unix/signal.c
++++ b/core/unix/signal.c
+@@ -2696,12 +2696,18 @@ handle_post_sigprocmask(dcontext_t *dcontext, int how, kernel_sigset_t *app_set,
+     return 0;
+ }
+ 
+-void
++int
+ handle_sigsuspend(dcontext_t *dcontext, kernel_sigset_t *set, size_t sigsetsize)
+ {
+     thread_sig_info_t *info = (thread_sig_info_t *)dcontext->signal_field;
+     int i;
+-    ASSERT(set != NULL);
++#ifdef LINUX
++    if (sigsetsize != sizeof(kernel_sigset_t))
++        return EINVAL;
++#endif
++    if (!d_r_safe_read(set, sizeof(*set), &info->sigsuspend_kernel_mask))
++        return EFAULT;
++    set = &info->sigsuspend_kernel_mask;
+     LOG(THREAD, LOG_ASYNCH, 2, "handle_sigsuspend\n");
+     info->in_sigsuspend = true;
+     info->app_sigblocked_save = info->app_sigblocked;
+@@ -2720,8 +2726,21 @@ handle_sigsuspend(dcontext_t *dcontext, kernel_sigset_t *set, size_t sigsetsize)
+         dump_sigset(dcontext, &info->app_sigblocked);
+     }
+ #endif
++    bool pending = false;
++    for (i = 1; i <= MAX_SIGNUM; i++) {
++        if (info->sigpending[i] != NULL &&
++            !kernel_sigismember(&info->app_sigblocked, i)) {
++            pending = true;
++            dcontext->signals_pending = 1;
++            break;
++        }
++    }
+     d_r_mutex_unlock(&info->sigblocked_lock);
+     DOLOG(4, LOG_ASYNCH, dump_unmasked(dcontext, __FUNCTION__););
++    if (pending)
++        return EINTR;
++    set_syscall_param(dcontext, 0, (reg_t)set);
++    return 0;
+ }
+ 
+ static void
+diff --git a/core/unix/signal_private.h b/core/unix/signal_private.h
+index da6f9e2..1b44157 100644
+--- a/core/unix/signal_private.h
++++ b/core/unix/signal_private.h
+@@ -510,6 +510,7 @@ typedef struct _thread_sig_info_t {
+     /* to handle sigsuspend we have to save blocked set */
+     bool in_sigsuspend;
+     kernel_sigset_t app_sigblocked_save;
++    kernel_sigset_t sigsuspend_kernel_mask;
+ 
+     /* to inherit in children must not modify until they're scheduled */
+     volatile int num_unstarted_children;
