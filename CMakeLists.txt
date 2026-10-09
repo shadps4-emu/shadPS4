@@ -40,6 +40,7 @@ option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
 option(ENABLE_UPDATER "Enables the options to updater" ON)
 option(ENABLE_TESTS "Build unit tests (requires GTest)" OFF)
 option(ENABLE_SYSTEM_LIBRARIES "Enable building against system libraries" OFF)
+option(ENABLE_CPU_ID_TRANSLATION "Build experimental DynamoRIO CPU identity translation" OFF)
 
 # First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
 if (APPLE AND CMAKE_OSX_ARCHITECTURES)
@@ -1323,6 +1324,19 @@ add_executable(shadps4
 )
 
 create_target_directory_groups(shadps4)
+
+if (ENABLE_CPU_ID_TRANSLATION)
+    if (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT ARCHITECTURE STREQUAL "x86_64")
+        message(FATAL_ERROR "CPU identity translation requires Linux x86-64")
+    endif()
+    find_package(DynamoRIO CONFIG REQUIRED)
+    set_property(SOURCE src/core/cpu_id.cpp APPEND PROPERTY
+        COMPILE_DEFINITIONS ENABLE_CPU_ID_TRANSLATION)
+    target_link_options(shadps4 PRIVATE
+        "-Wl,--export-dynamic-symbol=ShadCpuIdTranslationActive"
+        "-Wl,--export-dynamic-symbol=ShadCpuIdTranslationRange")
+    add_subdirectory(src/core/cpu_id_translation)
+endif()
 
 target_link_libraries(shadps4 PRIVATE spdlog::spdlog)
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui ImGuiFileDialog gcn half::half ZLIB::ZLIB PNG::PNG minimp3)

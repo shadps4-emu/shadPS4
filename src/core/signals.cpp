@@ -252,7 +252,7 @@ static s32 NativeSiCodeToGuest(s32 sig, s32 code) {
 
 void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
 #if defined(__linux__) && defined(ARCH_X86_64)
-    if (sig == SIGSEGV && HandleCpuIdFault(raw_context, info->si_addr)) {
+    if ((sig == SIGSEGV || sig == SIGILL) && HandleCpuIdFault(raw_context, info->si_addr)) {
         return;
     }
 #endif
@@ -348,7 +348,8 @@ SignalDispatch::SignalDispatch() {
 #if defined(__linux__) && defined(ARCH_X86_64)
     // Host timestamp reads in another fault handler must still reach the TSC emulator.
     action.sa_flags |= SA_NODEFER;
-    ASSERT_MSG(sigaction(SIGSEGV, &action, nullptr) == 0,
+    ASSERT_MSG(sigaction(SIGSEGV, &action, nullptr) == 0 &&
+                   sigaction(SIGILL, &action, nullptr) == 0,
                "Failed to enable nested CPU instruction faults.");
 #endif
 #endif
