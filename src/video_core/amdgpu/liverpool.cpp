@@ -456,7 +456,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 case PM4CmdSetPredication::PredOp::Bool32:
                     predication.enabled = true;
                     predication.address = set_pred->Address();
-                    predication.inverted = (set_pred->draw_op.Value() == 1);
+                    predication.inverted = (set_pred->draw_op.Value() == 0);
                     predication.hint = (set_pred->hint.Value() == 1);
                     predication.continue_bit = is_continue;
                     break;
@@ -714,7 +714,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     // immediately
                     regs.cp_strmout_cntl.offset_update_done = 1;
                 } else if (event->event_index.Value() == EventIndex::ZpassDone) {
-                    if (event->event_type.Value() == EventType::PixelPipeStatDump) {
+                    if (event->event_type.Value() == EventType::PixelPipeStatDump ||
+                        event->event_type.Value() == EventType::ZpassDone) {
                         static constexpr u64 OcclusionCounterValidMask = 0x8000000000000000ULL;
                         static constexpr u64 OcclusionCounterStep = 0x2FFFFFFULL;
                         u64* results = event->Address<u64*>();
@@ -1153,7 +1154,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             case PM4CmdSetPredication::PredOp::Bool32:
                 predication.enabled = true;
                 predication.address = set_pred->Address();
-                predication.inverted = (set_pred->draw_op.Value() == 1);
+                predication.inverted = (set_pred->draw_op.Value() == 0);
                 predication.hint = (set_pred->hint.Value() == 1);
                 predication.continue_bit = is_continue;
                 break;
