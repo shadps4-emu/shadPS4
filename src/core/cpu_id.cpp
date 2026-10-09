@@ -58,6 +58,8 @@ std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
         break;
     case 1:
         ebx = (ebx & 0xffff) | (GuestCpuCount << 16) | (cpu << 24);
+        // Jaguar has neither FMA nor RDRAND (AMD BKDG 48751, CPUID Fn0000_0001_ECX).
+        ecx &= ~((1u << 12) | (1u << 30));
         edx |= 1u << 28;
         break;
     case 4:
@@ -72,10 +74,8 @@ std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
         }
         break;
     case 7:
-        if (subleaf == 0) {
-            ecx &= ~(1u << 22);
-            edx &= ~(1u << 15);
-        }
+        // BMI1 is the only Jaguar structured extended feature (AMD BKDG 48751).
+        result = {0, subleaf == 0 ? ebx & (1u << 3) : 0, 0, 0};
         break;
     case 0xb:
     case 0x1f:
@@ -91,7 +91,9 @@ std::array<u32, 4> GuestCpuid(u32 leaf, u32 subleaf, u32 cpu) {
         eax = std::max(host_max_extended, 0x8000001eu);
         break;
     case 0x80000001:
-        ecx |= 1u << 22;
+        // XOP, LWP, FMA4, TBM and MONITORX/MWAITX are not Jaguar instructions.
+        ecx &= ~((1u << 11) | (1u << 15) | (1u << 16) | (1u << 21) | (1u << 29));
+        ecx |= (1u << 6) | (1u << 22);
         break;
     case 0x80000008:
         ecx = (ecx & ~0xf0ffu) | (3u << 12) | (GuestCpuCount - 1);
