@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--build-dir", type=Path, default=ROOT / "build-cpu-id-translation")
     parser.add_argument("--runtime-source", type=Path)
     parser.add_argument("--runtime-build", type=Path)
+    parser.add_argument("--runtime-only", action="store_true")
     parser.add_argument("--cmake", default=shutil.which("cmake"))
     parser.add_argument("--ninja", default=shutil.which("ninja"))
     parser.add_argument("--cc", help="Emulator C compiler")
@@ -41,8 +42,10 @@ def main():
     source = (args.runtime_source or cache / "source").resolve()
     runtime = (args.runtime_build or cache / "build").resolve()
     build = args.build_dir.resolve()
-    if not source.exists():
-        source.mkdir(parents=True)
+    if not (source / ".git").exists():
+        if source.exists() and any(source.iterdir()):
+            raise RuntimeError("Runtime source is not an empty directory or a git checkout; preserved")
+        source.mkdir(parents=True, exist_ok=True)
         run("git", "init", source)
         run("git", "remote", "add", "origin", REPOSITORY, cwd=source)
         run("git", "fetch", "--depth", "1", "--no-recurse-submodules", "origin", REVISION,
@@ -51,7 +54,7 @@ def main():
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=source, text=True).strip()
     if head != REVISION:
         raise RuntimeError("Runtime source has a different revision; preserved")
-    diff = subprocess.check_output(["git", "diff", "HEAD", "--"], cwd=source)
+    diff = subprocess.check_output(["git", "diff", "--abbrev=7", "HEAD", "--"], cwd=source)
     if not diff:
         run("git", "apply", "--check", PATCH, cwd=source)
         run("git", "apply", PATCH, cwd=source)
@@ -64,8 +67,10 @@ def main():
         "-DBUILD_DOCS=OFF", "-DBUILD_EXT=ON", "-DDISABLE_DRGUI=ON",
         "-DDISABLE_WARNINGS=ON", "-Dpreferred_base=0x710000000000",
         "-DPREFERRED_BASE=0x710040000000")
-    run(args.cmake, "--build", runtime, "--target", "dynamorio", "drrun", "drmgr", "drwrap",
+    run(args.cmake, "--build", runtime, "--target", "dynamorio", "drpreload", "drrun", "drmgr", "drwrap",
         "--parallel", args.jobs)
+    if args.runtime_only:
+        return
     generator = [] if (build / "CMakeCache.txt").exists() else [
         "-G", "Ninja", "-DCMAKE_MAKE_PROGRAM=" + args.ninja]
     compilers = []
@@ -74,7 +79,8 @@ def main():
     if args.cxx:
         compilers.append("-DCMAKE_CXX_COMPILER=" + args.cxx)
     run(args.cmake, "-S", ROOT, "-B", build, *generator, *compilers, "-DCMAKE_BUILD_TYPE=Release",
-        "-DENABLE_CPU_ID_TRANSLATION=ON", "-DDynamoRIO_DIR=" + str(runtime / "cmake"))
+        "-DENABLE_CPU_ID_TRANSLATION=ON", "-DDynamoRIO_DIR=" + str(runtime / "cmake"),
+        "-DDynamoRIO_SOURCE_DIR=" + str(source))
     run(args.cmake, "--build", build, "--target", "shadps4", "shadps4_cpu_id",
         "--parallel", args.jobs)
     command = [str(runtime / "bin64/drrun"), "-disable_rseq", "-vm_base", "0x710020000000",

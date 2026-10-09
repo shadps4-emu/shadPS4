@@ -40,7 +40,6 @@ option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
 option(ENABLE_UPDATER "Enables the options to updater" ON)
 option(ENABLE_TESTS "Build unit tests (requires GTest)" OFF)
 option(ENABLE_SYSTEM_LIBRARIES "Enable building against system libraries" OFF)
-option(ENABLE_CPU_ID_TRANSLATION "Build experimental DynamoRIO CPU identity translation" OFF)
 
 # First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
 if (APPLE AND CMAKE_OSX_ARCHITECTURES)
@@ -65,6 +64,9 @@ if (ARCHITECTURE STREQUAL "x86_64")
     # instructions like AVX2 and maintaining support for older CPUs.
     add_compile_options(-march=x86-64-v3)
 endif()
+
+cmake_dependent_option(ENABLE_CPU_ID_TRANSLATION "Bundle Linux CPU identity translation" ON
+    "CMAKE_SYSTEM_NAME STREQUAL Linux;ARCHITECTURE STREQUAL x86_64" OFF)
 
 cmake_host_system_information(RESULT PROC_INFO QUERY PROCESSOR_DESCRIPTION)
 
@@ -1329,13 +1331,12 @@ if (ENABLE_CPU_ID_TRANSLATION)
     if (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT ARCHITECTURE STREQUAL "x86_64")
         message(FATAL_ERROR "CPU identity translation requires Linux x86-64")
     endif()
-    find_package(DynamoRIO CONFIG REQUIRED)
-    set_property(SOURCE src/core/cpu_id.cpp APPEND PROPERTY
-        COMPILE_DEFINITIONS ENABLE_CPU_ID_TRANSLATION)
+    target_compile_definitions(shadps4 PRIVATE ENABLE_CPU_ID_TRANSLATION)
+    target_sources(shadps4 PRIVATE src/core/cpu_id_translation/launcher.cpp)
     target_link_options(shadps4 PRIVATE
         "-Wl,--export-dynamic-symbol=ShadCpuIdTranslationActive"
         "-Wl,--export-dynamic-symbol=ShadCpuIdTranslationRange")
-    add_subdirectory(src/core/cpu_id_translation)
+    include(cmake/CpuIdTranslation.cmake)
 endif()
 
 target_link_libraries(shadps4 PRIVATE spdlog::spdlog)
