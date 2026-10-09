@@ -330,6 +330,9 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     }
     std::vector<int> host_cpus;
     if (curthread != nullptr) {
+#if defined(__linux__) && defined(ARCH_X86_64)
+        const AffinitySignalGuard signal_guard;
+#endif
         std::scoped_lock lock{curthread->affinity_mutex};
         if (const int ret =
                 curthread->native_thr->GetCpuAffinity().GetAllowedHostCpus(0, host_cpus);
