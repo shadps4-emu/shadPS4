@@ -1,8 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <future>
 #include "common/alignment.h"
 #include "common/arch.h"
+#include "core/cpu_affinity.h"
+#include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "thread.h"
 #ifdef _WIN64
@@ -26,17 +29,57 @@ NativeThread::NativeThread() : native_handle{0} {}
 
 NativeThread::~NativeThread() {}
 
-int NativeThread::Create(ThreadFunc func, void* arg) {
+int NativeThread::Create(ThreadFunc func, void* arg, u64 affinity_mask, CpuAffinity affinity) {
+    cpu_affinity = std::move(affinity);
+    struct Startup {
+        ThreadFunc func;
+        void* arg;
+        std::future<int> ready;
+    };
+    std::promise<int> ready;
+    auto startup = std::make_unique<Startup>(func, arg, ready.get_future());
+    const auto entry = [](void* data)
+#ifdef _WIN64
+        -> DWORD
+#else
+        -> void*
+#endif
+    {
+        std::unique_ptr<Startup> state{static_cast<Startup*>(data)};
+        const auto func = state->func;
+        const auto arg = state->arg;
+        const int ret = state->ready.get();
+        state.reset();
+        if (ret != 0) {
+            return 0;
+        }
+        return func(arg);
+    };
 #ifndef _WIN64
     pthread_t* pthr = reinterpret_cast<pthread_t*>(&native_handle);
-    return pthread_create(pthr, nullptr, func, arg);
-#else
-    native_handle = CreateThread(nullptr, 0, func, arg, 0, nullptr);
-    if (native_handle == nullptr) {
-        return GetLastError();
+    const int ret = pthread_create(pthr, nullptr, entry, startup.get());
+    if (ret != 0) {
+        return POSIX_EAGAIN;
     }
-    return 0;
+#else
+    native_handle = CreateThread(nullptr, 0, entry, startup.get(), 0, nullptr);
+    if (native_handle == nullptr) {
+        return POSIX_EAGAIN;
+    }
 #endif
+    startup.release();
+    const int error = cpu_affinity.SetThreadAffinity(GetHandle(), affinity_mask);
+    ready.set_value(error);
+    if (error != 0) {
+#ifdef _WIN64
+        WaitForSingleObject(native_handle, INFINITE);
+        CloseHandle(native_handle);
+#else
+        pthread_join(reinterpret_cast<pthread_t>(native_handle), nullptr);
+#endif
+        native_handle = 0;
+    }
+    return error;
 }
 
 void NativeThread::Exit() {
