@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <cstring>
 #include <deque>
@@ -77,8 +78,7 @@ struct Port {
 
 struct VoiceManager {
     std::mutex mutex;
-    bool initialized = false;
-    bool started = false;
+    std::atomic<bool> initialized = false;
     std::array<Port, ORBIS_VOICE_MAX_PORT> ports{};
 };
 
@@ -210,7 +210,6 @@ s32 PS4_SYSV_ABI sceVoiceEnd() {
     }
     std::scoped_lock lock{g_voice_manager.mutex};
     g_voice_manager.initialized = false;
-    g_voice_manager.started = false;
     g_voice_manager.ports = {};
     return ORBIS_OK;
 }
@@ -375,7 +374,6 @@ static s32 InitInternal(const OrbisVoiceInitParam* param) {
     }
     std::scoped_lock lock{g_voice_manager.mutex};
     g_voice_manager.ports = {};
-    g_voice_manager.started = false;
     g_voice_manager.initialized = true;
     return ORBIS_OK;
 }
@@ -611,8 +609,6 @@ s32 PS4_SYSV_ABI sceVoiceStart(const OrbisVoiceStartParam* param) {
     if (param == nullptr || param->container == 0) {
         return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
     }
-    std::scoped_lock lock{g_voice_manager.mutex};
-    g_voice_manager.started = true;
     return ORBIS_OK;
 }
 
@@ -622,7 +618,6 @@ s32 PS4_SYSV_ABI sceVoiceStop() {
         return ORBIS_VOICE_ERROR_NOT_INIT;
     }
     std::scoped_lock lock{g_voice_manager.mutex};
-    g_voice_manager.started = false;
     for (auto& port : g_voice_manager.ports) {
         if (port.allocated) {
             ClosePortDevices(port);
