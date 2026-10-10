@@ -458,6 +458,7 @@ public:
     s16 old_param;
     s16* new_param;
     bool old_button_state, new_button_state, state_changed, positive_axis;
+    bool analog_source = false;
 
     ControllerOutput(const u32 b, u32 a = SDL_GAMEPAD_AXIS_INVALID, bool p = true) {
         button = b;
