@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <set>
 #include <unordered_map>
 #include "common/assert.h"
 #include "shader_recompiler/info.h"
@@ -217,17 +218,9 @@ public:
         for (IR::Use use : read_const_buffer->Uses()) {
             WalkUsersOfTessConstantHelper(use, inc, false);
         }
-
-        ++seq_num;
     }
 
-private:
-    struct PhiInfo {
-        u32 seq_num;
-        u32 unique_edge;
-    };
-
-    void WalkUsersOfTessConstantHelper(IR::Use use, u32 inc, bool propagateError) {
+    void WalkUsersOfTessConstantHelper(IR::Use use, u32 inc, bool uses_phi) {
         IR::Inst* inst = use.user;
 
         switch (use.user->GetOpcode()) {
@@ -237,36 +230,24 @@ private:
         case IR::Opcode::WriteSharedU64: {
             bool is_addr_operand = use.operand == 0;
             if (is_addr_operand) {
+                ASSERT_MSG(!uses_phi, "LDS instruction {} accesses ambiguous attribute type",
+                           fmt::ptr(use.user));
                 u32 counter = inst->Flags<u32>();
                 inst->SetFlags<u32>(counter + inc);
-                ASSERT_MSG(!propagateError, "LDS instruction {} accesses ambiguous attribute type",
-                           fmt::ptr(use.user));
                 // Stop here
                 return;
             }
             break;
         }
         case IR::Opcode::Phi: {
-            auto it = phi_infos.find(use.user);
-            // the point of seq_num is to tell us if we've already traversed this
-            // phi on the current walk to handle phi cycles
-            if (it == phi_infos.end()) {
-                // First time we've encountered this phi
-                // Mark the phi as having been traversed originally through this edge
-                phi_infos[inst] = {.seq_num = seq_num,
-                                   .unique_edge = static_cast<u16>(use.operand)};
-            } else if (it->second.seq_num < seq_num) {
-                it->second.seq_num = seq_num;
-                // For now, assume we are visiting this phi via the same edge
-                // as on other walks. If not, some dataflow analysis might be necessary
-                if (it->second.unique_edge != use.operand) {
-                    propagateError = true;
-                }
-            } else {
-                ASSERT(it->second.seq_num == seq_num);
-                // there's a cycle, and we've already been here on this walk
+            // Only track phis in order to assert if they contribute to some address, we assume this
+            // doesn't happen for now
+            auto [_, is_new] = phis.insert(inst);
+            if (!is_new) {
+                // cycle/previously visited
                 return;
             }
+            uses_phi = true;
             break;
         }
         default:
@@ -274,12 +255,11 @@ private:
         }
 
         for (IR::Use use : inst->Uses()) {
-            WalkUsersOfTessConstantHelper(use, inc, propagateError);
+            WalkUsersOfTessConstantHelper(use, inc, uses_phi);
         }
     }
 
-    std::unordered_map<const IR::Inst*, PhiInfo> phi_infos;
-    u32 seq_num{1u};
+    std::set<IR::Inst*> phis;
 };
 
 enum class AttributeRegion : u32 { InputCP, OutputCP, PatchConst };
@@ -368,7 +348,7 @@ static IR::F32 ReadTessControlPointAttribute(IR::U32 addr, const u32 stride, IR:
 } // namespace
 
 void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) {
-    const Info& info = program.info;
+    Info& info = program.info;
 
     for (IR::Block* block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
@@ -385,19 +365,17 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                     break;
                 }
 
-                const auto info = inst.Flags<IR::BufferInstInfo>();
+                const auto inst_info = inst.Flags<IR::BufferInstInfo>();
                 IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
 
-                IR::Value voffset;
+                IR::U32 voffset;
                 bool success =
-                    M_COMPOSITECONSTRUCTU32X3(MatchU32(0), MatchImm(voffset), MatchIgnore())
+                    M_COMPOSITECONSTRUCTU32X3(MatchU32(0), MatchValue(voffset), MatchIgnore())
                         .Match(inst.Arg(IR::StoreBufferArgs::Address));
                 ASSERT_MSG(success, "unhandled pattern in tess factor store");
 
-                const u32 gcn_factor_idx = (info.inst_offset.Value() + voffset.U32()) >> 2;
-                const IR::Value data = inst.Arg(IR::StoreBufferArgs::Data);
-
                 const u32 num_dwords = u32(opcode) - u32(IR::Opcode::StoreBufferU32) + 1;
+                const IR::Value data = inst.Arg(IR::StoreBufferArgs::Data);
 
                 const auto GetValue = [&](IR::Value data) -> IR::F32 {
                     if (auto* inst = data.TryInst();
@@ -407,44 +385,19 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                     return ir.BitCast<IR::F32, IR::U32>(IR::U32{data});
                 };
 
-                auto get_factor_attr = [&](u32 gcn_factor_idx) -> IR::Patch {
-                    // The hull outputs tess factors in different formats depending on the shader.
-                    // For triangle domains, it seems to pack the entries into 4 consecutive floats,
-                    // with the 3 edge factors followed by the 1 interior factor.
-                    // For quads, it does 4 edge factors then 2 interior.
-                    // There is a tess factor stride member of the GNMX hull constants struct in
-                    // a hull program shader binary archive, but this doesn't seem to be
-                    // communicated to the driver.
-                    // The layout seems to be implied by the type of the abstract domain.
-                    switch (runtime_info.sw.tcs.tess_type) {
-                    case AmdGpu::TessellationType::Isoline:
-                        ASSERT(gcn_factor_idx < 2);
-                        return IR::PatchFactor(gcn_factor_idx);
-                    case AmdGpu::TessellationType::Triangle:
-                        ASSERT(gcn_factor_idx < 4);
-                        if (gcn_factor_idx == 3) {
-                            return IR::Patch::TessellationLodInteriorU;
-                        }
-                        return IR::PatchFactor(gcn_factor_idx);
-                    case AmdGpu::TessellationType::Quad:
-                        ASSERT(gcn_factor_idx < 6);
-                        return IR::PatchFactor(gcn_factor_idx);
-                    default:
-                        UNREACHABLE();
-                    }
-                };
+                const IR::U32 factor_offset{
+                    ir.IAdd(voffset, ir.Imm32(static_cast<u32>(inst_info.inst_offset.Value())))};
+                const IR::U32 factor_index(ir.ShiftRightLogical(factor_offset, ir.Imm32(2u)));
 
                 inst.Invalidate();
+
                 if (num_dwords == 1) {
-                    ir.SetPatch(get_factor_attr(gcn_factor_idx), GetValue(data));
+                    ir.SetTessFactor(GetValue(data), factor_index);
                     break;
                 }
-                auto* inst = data.TryInst();
-                ASSERT(inst && (inst->GetOpcode() == IR::Opcode::CompositeConstructU32x2 ||
-                                inst->GetOpcode() == IR::Opcode::CompositeConstructU32x3 ||
-                                inst->GetOpcode() == IR::Opcode::CompositeConstructU32x4));
-                for (s32 i = 0; i < num_dwords; i++) {
-                    ir.SetPatch(get_factor_attr(gcn_factor_idx + i), GetValue(inst->Arg(i)));
+                for (u32 i = 0; i < num_dwords; i++) {
+                    IR::U32 component_idx{ir.IAdd(factor_index, ir.Imm32(i))};
+                    ir.SetTessFactor(GetValue(data.Inst()->Arg(i)), component_idx);
                 }
                 break;
             }
@@ -560,7 +513,8 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
         // if (InvocationId == 0) {
         //     PatchConstFunction();
         // }
-        // But as long as we treat invocation ID as 0 for all threads, shouldn't matter functionally
+        // But as long as we treat invocation ID as 0 for all threads, shouldn't matter
+        // functionally
     }
 }
 
@@ -694,11 +648,11 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
                     case TessConstantAttribute::HsOutputBase:
                     case TessConstantAttribute::PatchConstBase:
                         walker.WalkUsersOfTessConstant(&inst, tess_const_attr);
-                        // We should be able to safely set these to 0 so that indexing happens only
-                        // within the local patch in the recompiled Vulkan shader. This assumes
-                        // these values only contribute to address calculations for in/out
-                        // attributes in the original gcn shader.
-                        // See the explanation for why we set V2 to 0 when emitting the prologue.
+                        // We should be able to safely set these to 0 so that indexing happens
+                        // only within the local patch in the recompiled Vulkan shader. This
+                        // assumes these values only contribute to address calculations for
+                        // in/out attributes in the original gcn shader. See the explanation for
+                        // why we set V2 to 0 when emitting the prologue.
                         inst.ReplaceUsesWithAndRemove(IR::Value(0u));
                         break;
                     case Shader::TessConstantAttribute::PatchConstSize:
@@ -716,8 +670,8 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
     }
 
     // These pattern matching are neccessary for now unless we support dynamic indexing of
-    // PatchConst attributes and tess factors. PatchConst should be easy, turn those into a single
-    // vec4 array like in/out attrs. Not sure about tess factors.
+    // PatchConst attributes and tess factors. PatchConst should be easy, turn those into a
+    // single vec4 array like in/out attrs. Not sure about tess factors.
     if (info.sw_stage == SwStage::TessellationControl) {
         // Replace the BFEs on V1 (packed with patch id within VGT and output cp id)
         for (IR::Block* block : program.blocks) {

@@ -660,16 +660,15 @@ void EmitContext::DefineOutputs() {
         break;
     }
     case SwStage::TessellationControl: {
-        if (info.stores_tess_level_outer) {
-            const Id type{TypeArray(F32[1], ConstU32(4U))};
+        if (info.stores_tess_factors) {
+            const Id outer_type{TypeArray(F32[1], ConstU32(4U))};
             output_tess_level_outer =
-                DefineOutput(type, std::nullopt, spv::BuiltIn::TessLevelOuter);
+                DefineOutput(outer_type, std::nullopt, spv::BuiltIn::TessLevelOuter);
             Decorate(output_tess_level_outer, spv::Decoration::Patch);
-        }
-        if (info.stores_tess_level_inner) {
-            const Id type{TypeArray(F32[1], ConstU32(2U))};
+
+            const Id inner_type{TypeArray(F32[1], ConstU32(2U))};
             output_tess_level_inner =
-                DefineOutput(type, std::nullopt, spv::BuiltIn::TessLevelInner);
+                DefineOutput(inner_type, std::nullopt, spv::BuiltIn::TessLevelInner);
             Decorate(output_tess_level_inner, spv::Decoration::Patch);
         }
 
@@ -685,6 +684,7 @@ void EmitContext::DefineOutputs() {
         }
 
         const u32 patch_base_location = num_attrs;
+        u32 max_used_patch = patch_base_location - 1;
         for (size_t index = 0; index < 30; ++index) {
             if (!(info.uses_patches & (1U << index))) {
                 continue;
@@ -693,6 +693,13 @@ void EmitContext::DefineOutputs() {
             Decorate(id, spv::Decoration::Patch);
             Name(id, fmt::format("patch_out{}", index));
             patches[index] = id;
+            max_used_patch = patch_base_location + index;
+        }
+        if (info.dynamically_accesses_tess_factors) {
+            const Id type{TypeArray(F32[1], ConstU32(6U))}; // TODO could use less for non-quad
+            tess_factor_dynamic_array = DefineOutput(type, max_used_patch + 1);
+            Decorate(tess_factor_dynamic_array, spv::Decoration::Patch);
+            Name(tess_factor_dynamic_array, "tess_factor_dynamic_array");
         }
         break;
     }
