@@ -6,6 +6,8 @@
 
 #include "imgui/imgui_layer.h"
 
+union SDL_Event;
+
 namespace Core::Devtools {
 
 class Layer final : public ImGui::Layer {
@@ -31,6 +33,8 @@ namespace Overlay {
 void ToggleSimpleFps();
 void SetSimpleFps(bool enabled);
 void ToggleQuitWindow();
+bool ProcessQuitEvent(const SDL_Event& event);
+bool IsQuitInputCaptured();
 void ShowVolume();
 
 void TextCentered(const std::string& text);
