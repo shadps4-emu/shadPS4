@@ -892,10 +892,10 @@ void HandleHandshakePacket(u32 from_addr, u16 from_port,
             transport.peer_activated = true;
             if (transport.state != NpSignaling::ConnState::Established) {
                 SetTransportStateLocked(transport, NpSignaling::ConnState::SendingAccept);
-                reply = MakeHandshakeLocked(transport, NpSignaling::HandshakeKind::Accept);
-                send_reply = true;
-                reply_transport = transport_id;
             }
+            reply = MakeHandshakeLocked(transport, NpSignaling::HandshakeKind::Accept);
+            send_reply = true;
+            reply_transport = transport_id;
         } else if (transport_id == 0) {
             return;
         } else if (kind == NpSignaling::HandshakeKind::Accept) {
