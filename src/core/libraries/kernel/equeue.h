@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -59,6 +59,8 @@ struct OrbisKernelEvent {
         Receipt = 0x40u,
         Dispatch = 0x80u,
         Flag1 = 0x2000u,
+        Error = 0x4000u,
+        Eof = 0x8000u,
         System = 0xf000u,
     };
 
@@ -93,6 +95,7 @@ struct EqueueEvent {
         is_triggered = false;
         event.fflags = 0;
         event.data = 0;
+        event.flags &= ~(OrbisKernelEvent::Flags::Error | OrbisKernelEvent::Flags::Eof);
     }
 
     void Trigger(void* data) {
@@ -126,6 +129,13 @@ struct EqueueEvent {
                     (time & 0xfff) | (counter << 0xc) | (event_hint_raw & 0xffffffffffff0000);
             }
         }
+    }
+
+    void TriggerIo(u64 data_val, u32 fflags_val = 0, u16 flags_add = 0) {
+        is_triggered = true;
+        event.data = data_val;
+        event.fflags = fflags_val;
+        event.flags |= flags_add;
     }
 
     bool IsTriggered() const {
@@ -162,6 +172,8 @@ public:
     int WaitForEvents(OrbisKernelEvent* ev, int num, const OrbisKernelUseconds* timo);
     bool TriggerEvent(u64 ident, s16 filter, void* trigger_data);
     int GetTriggeredEvents(OrbisKernelEvent* ev, int num);
+    bool CheckIoEvent(EqueueEvent& ev);
+    bool HasPendingIoEvents();
 
     bool AddSmallTimer(EqueueEvent& event);
     bool HasSmallTimer() {
