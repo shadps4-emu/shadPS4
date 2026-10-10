@@ -65,6 +65,9 @@ if (ARCHITECTURE STREQUAL "x86_64")
     add_compile_options(-march=x86-64-v3)
 endif()
 
+cmake_dependent_option(ENABLE_CPU_ID_TRANSLATION "Bundle Linux CPU identity translation" ON
+    "CMAKE_SYSTEM_NAME STREQUAL Linux;ARCHITECTURE STREQUAL x86_64" OFF)
+
 cmake_host_system_information(RESULT PROC_INFO QUERY PROCESSOR_DESCRIPTION)
 
 message(STATUS "${PROC_INFO}")
@@ -989,6 +992,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/platform.h
          src/core/signals.cpp
          src/core/signals.h
+         src/core/cpu_affinity.cpp
+         src/core/cpu_affinity.h
          src/core/thread.cpp
          src/core/thread.h
          src/core/tls.cpp
@@ -1010,6 +1015,9 @@ if (ARCHITECTURE STREQUAL "x86_64")
              src/core/cpu_patches.cpp
              src/core/cpu_patches.h
              ${FIBER_LIB})
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        list(APPEND CORE src/core/cpu_id.cpp src/core/cpu_id.h)
+    endif()
 endif()
 
 set(SHADER_RECOMPILER src/shader_recompiler/profile.h
@@ -1325,6 +1333,19 @@ add_executable(shadps4
 )
 
 create_target_directory_groups(shadps4)
+
+if (ENABLE_CPU_ID_TRANSLATION)
+    if (NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" OR NOT ARCHITECTURE STREQUAL "x86_64")
+        message(FATAL_ERROR "CPU identity translation requires Linux x86-64")
+    endif()
+    target_compile_definitions(shadps4 PRIVATE ENABLE_CPU_ID_TRANSLATION)
+    target_sources(shadps4 PRIVATE src/core/cpu_id_translation/launcher.cpp)
+    target_link_options(shadps4 PRIVATE
+        "-Wl,--export-dynamic-symbol=ShadCpuIdTranslationActive"
+        "-Wl,--export-dynamic-symbol=ShadCpuIdTranslationRange"
+        "-Wl,--export-dynamic-symbol=ShadReciprocalTranslationTables")
+    include(cmake/CpuIdTranslation.cmake)
+endif()
 
 target_link_libraries(shadps4 PRIVATE spdlog::spdlog)
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui ImGuiFileDialog gcn half::half ZLIB::ZLIB PNG::PNG minimp3)

@@ -77,6 +77,7 @@ public:
     bool IsMapped(VAddr addr, u64 size);
     void MapMemory(VAddr addr, u64 size);
     void RegisterMemory(VAddr addr, u64 size);
+    void ProtectMemory(VAddr addr, u64 size, Core::MemoryPermission perms);
     void UnmapMemory(VAddr addr, u64 size);
 
     u64 Flush();

@@ -30,6 +30,10 @@
 #include "core/tls.h"
 #include "cpu_patches.h"
 
+#if defined(__linux__)
+#include "core/cpu_id.h"
+#endif
+
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -45,6 +49,17 @@ CMRC_DECLARE(res);
 using namespace Xbyak::util;
 
 namespace Core {
+
+#ifdef ENABLE_CPU_ID_TRANSLATION
+extern "C" __attribute__((noinline, visibility("default"))) void ShadReciprocalTranslationTables(
+    const void* rcp_indices, const void* rsqrt_indices, const void* rcp_values,
+    const void* rsqrt_values) {
+    asm volatile(""
+                 :
+                 : "r"(rcp_indices), "r"(rsqrt_indices), "r"(rcp_values), "r"(rsqrt_values)
+                 : "memory");
+}
+#endif
 
 constexpr static u64 rcp_index_table_size = 1u << 21;
 static bool rcp_index_tables_initialized = false;
@@ -272,7 +287,8 @@ static bool FilterIntelCPU(const ZydisDecodedOperand*) {
 
 static void GenerateReciprocalInstruction(void* address, const ZydisDecodedInstruction& instruction,
                                           const ZydisDecodedOperand* operands,
-                                          Xbyak::CodeGenerator& c, bool rsqrt, bool vex) {
+                                          Xbyak::CodeGenerator& c, bool rsqrt, bool vex,
+                                          bool scalar = false) {
     bool table_loaded = InitializeIndexTables();
     ASSERT_MSG(table_loaded, "Failed to load RCP index table");
 
@@ -281,14 +297,21 @@ static void GenerateReciprocalInstruction(void* address, const ZydisDecodedInstr
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
     ASSERT_MSG(dst.isXMM() || dst.isYMM(), "operand 0 must be an XMM or YMM register");
-    bool is_src_mem = operands[1].type == ZYDIS_OPERAND_TYPE_MEMORY;
+    const auto& source = operands[scalar && vex ? 2 : 1];
+    const bool is_src_mem = source.type == ZYDIS_OPERAND_TYPE_MEMORY;
 
     std::array<bool, 16> taken_vecs = {};
     Xbyak::Xmm dst_reg;
     Xbyak::Xmm src_reg;
+    Xbyak::Xmm merge_reg;
+
+    if (scalar && vex) {
+        merge_reg = Xbyak::Xmm(ZydisToXbyakRegisterOperand(operands[1]).getIdx());
+        taken_vecs[merge_reg.getIdx()] = true;
+    }
 
     if (!is_src_mem) {
-        const auto src = ZydisToXbyakRegisterOperand(operands[1]);
+        const auto src = ZydisToXbyakRegisterOperand(source);
         src_reg = Xbyak::Xmm(src.getKind(), src.getIdx());
         taken_vecs[src_reg.getIdx()] = true;
     }
@@ -325,29 +348,38 @@ static void GenerateReciprocalInstruction(void* address, const ZydisDecodedInstr
     c.push(scratch2);
 
     if (is_src_mem) {
-        if (operands[1].mem.base == ZYDIS_REGISTER_RIP) {
-            const u64 target = (u64)address + instruction.length + operands[1].mem.disp.value;
+        const auto load_source = [&](const Xbyak::Address& memory) {
+            if (scalar) {
+                c.vmovss(src_storage, memory);
+            } else {
+                c.vmovups(src_storage, memory);
+            }
+        };
+        if (source.mem.base == ZYDIS_REGISTER_RIP) {
+            const u64 target = (u64)address + instruction.length + source.mem.disp.value;
             c.mov(rax, target);
-            c.vmovups(src_storage, ptr[rax]);
+            load_source(ptr[rax]);
         } else {
-            ZydisDecodedOperand operand = operands[1];
-            if (operands[1].mem.base == ZYDIS_REGISTER_RSP) { // rsp can't be index
+            ZydisDecodedOperand operand = source;
+            if (source.mem.base == ZYDIS_REGISTER_RSP) { // rsp can't be index
                 operand.mem.disp.size = 32;
                 operand.mem.disp.value += rsp_disp + 8 * 3; // Account for what we pushed
             }
             Xbyak::Address mem = ZydisToXbyakMemoryOperand(operand);
-            c.vmovups(src_storage, mem);
+            load_source(mem);
         }
         src_reg = src_storage;
     }
     void* index_table = rsqrt ? rsqrt_index_table.data() : rcp_index_table.data();
     const int* xor_table = rsqrt ? rsqrt_xor_values.data() : rcp_xor_values.data();
+    c.mov(eax, 0x7f800000);
+    c.vmovd(xmm_scratch2.cvt128(), eax);
+    c.vpbroadcastd(xmm_scratch2, xmm_scratch2.cvt128());
+    c.vpslld(xmm_scratch3, src_reg, 1);
+    c.vpsrld(xmm_scratch3, xmm_scratch3, 1);
+    c.vpcmpgtd(nan_mask, xmm_scratch3, xmm_scratch2);
     c.mov(scratch1, reinterpret_cast<u64>(index_table));
     c.mov(scratch2, reinterpret_cast<u64>(xor_table));
-    // Find NaNs in source
-    // In non-VEX forms this will zero the top elements which will make the vblendvps
-    // pick from dst_reg, thus preserving the top bits
-    c.vcmpunordps(nan_mask, src_reg, src_reg);
     // Set mask to all ones for the elements we'll load
     c.vpcmpeqd(xmm_scratch2, xmm_scratch2, xmm_scratch2);
     // Load indices for active elements from table
@@ -358,12 +390,26 @@ static void GenerateReciprocalInstruction(void* address, const ZydisDecodedInstr
     // Load XOR values using those indices
     c.vpcmpeqd(xmm_scratch2, xmm_scratch2, xmm_scratch2); // vgather sets to zero
     c.vgatherdps(xmm_scratch3, ptr[scratch2 + xmm_scratch1 * 4], xmm_scratch2);
-    if (dst_reg == src_reg) {
-        // The RCP would modify our source reg so we wouldn't be able to use it for NaN merging
-        c.vmovaps(xmm_scratch1, src_reg);
-        src_reg = xmm_scratch1;
-    }
-    if (vex) {
+    c.vpandn(xmm_scratch3, nan_mask, xmm_scratch3);
+    if (scalar) {
+        c.vpslldq(xmm_scratch3, xmm_scratch3, 12);
+        c.vpsrldq(xmm_scratch3, xmm_scratch3, 12);
+        if (vex) {
+            if (rsqrt) {
+                c.vrsqrtss(dst_reg, merge_reg, src_reg);
+            } else {
+                c.vrcpss(dst_reg, merge_reg, src_reg);
+            }
+            c.vxorps(dst_reg, dst_reg, xmm_scratch3);
+        } else {
+            if (rsqrt) {
+                c.rsqrtss(dst_reg, src_reg);
+            } else {
+                c.rcpss(dst_reg, src_reg);
+            }
+            c.xorps(dst_reg, xmm_scratch3);
+        }
+    } else if (vex) {
         auto func = rsqrt ? &Xbyak::CodeGenerator::vrsqrtps : &Xbyak::CodeGenerator::vrcpps;
         (c.*func)(dst_reg, src_reg);
         c.vxorps(dst_reg, dst_reg, xmm_scratch3);
@@ -373,8 +419,6 @@ static void GenerateReciprocalInstruction(void* address, const ZydisDecodedInstr
         (c.*func)(dst_reg, src_reg);
         c.xorps(dst_reg, xmm_scratch3);
     }
-    // Merge NaNs back into dst
-    c.vblendvps(dst_reg.cvt256(), dst_reg.cvt256(), src_reg.cvt256(), nan_mask);
 
     c.pop(scratch2);
     c.pop(scratch1);
@@ -407,6 +451,26 @@ static void GenerateRCPPS(void* address, const ZydisDecodedInstruction& instruct
 static void GenerateVRCPPS(void* address, const ZydisDecodedInstruction& instruction,
                            const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     GenerateReciprocalInstruction(address, instruction, operands, c, false, true);
+}
+
+static void GenerateRCPSS(void* address, const ZydisDecodedInstruction& instruction,
+                          const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+    GenerateReciprocalInstruction(address, instruction, operands, c, false, false, true);
+}
+
+static void GenerateVRCPSS(void* address, const ZydisDecodedInstruction& instruction,
+                           const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+    GenerateReciprocalInstruction(address, instruction, operands, c, false, true, true);
+}
+
+static void GenerateRSQRTSS(void* address, const ZydisDecodedInstruction& instruction,
+                            const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+    GenerateReciprocalInstruction(address, instruction, operands, c, true, false, true);
+}
+
+static void GenerateVRSQRTSS(void* address, const ZydisDecodedInstruction& instruction,
+                             const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+    GenerateReciprocalInstruction(address, instruction, operands, c, true, true, true);
 }
 
 static void GenerateEXTRQ(void* /* address */, const ZydisDecodedInstruction&,
@@ -463,7 +527,7 @@ static void GenerateEXTRQ(void* /* address */, const ZydisDecodedInstruction&,
 
         // Writeback to xmm register, extrq instruction says top 64-bits are undefined but zeroed on
         // AMD CPUs
-        c.vmovq(xmm_dst, scratch1);
+        c.movq(xmm_dst, scratch1);
 
         c.pop(scratch2);
         c.pop(scratch1);
@@ -521,7 +585,7 @@ static void GenerateEXTRQ(void* /* address */, const ZydisDecodedInstruction&,
         c.vmovq(scratch1, xmm_dst);
         c.shr(scratch1, cl);
         c.and_(scratch1, mask);
-        c.vmovq(xmm_dst, scratch1);
+        c.movq(xmm_dst, scratch1);
 
         c.pop(mask);
         c.pop(scratch2);
@@ -595,7 +659,7 @@ static void GenerateINSERTQ(void* /* address */, const ZydisDecodedInstruction&,
 
         // Insert scratch2 into low 64 bits of dst, upper 64 bits are undefined but zeroed on AMD
         // CPUs
-        c.vmovq(xmm_dst, scratch2);
+        c.movq(xmm_dst, scratch2);
 
         c.pop(mask);
         c.pop(scratch2);
@@ -662,7 +726,7 @@ static void GenerateINSERTQ(void* /* address */, const ZydisDecodedInstruction&,
         c.or_(scratch2, scratch1);
 
         // Upper 64 bits are undefined in insertq but AMD CPUs zero them
-        c.vmovq(xmm_dst, scratch2);
+        c.movq(xmm_dst, scratch2);
 
         c.pop(mask);
         c.pop(index);
@@ -733,7 +797,34 @@ static const bool need_tcb_trampoline = true;
 static const bool need_tcb_trampoline = false;
 #endif
 
+#if defined(__linux__)
+static bool FilterCpuId(const ZydisDecodedOperand*) {
+    return true;
+}
+
+static void GenerateCpuid(void*, const ZydisDecodedInstruction&, const ZydisDecodedOperand*,
+                          Xbyak::CodeGenerator& c) {
+    GenerateCpuIdInstruction(c, CpuIdInstruction::Cpuid);
+}
+
+static void GenerateRdtscp(void*, const ZydisDecodedInstruction&, const ZydisDecodedOperand*,
+                           Xbyak::CodeGenerator& c) {
+    GenerateCpuIdInstruction(c, CpuIdInstruction::Rdtscp);
+}
+
+static void GenerateRdpid(void*, const ZydisDecodedInstruction&,
+                          const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+    GenerateCpuIdInstruction(c, CpuIdInstruction::Rdpid,
+                             ZydisToXbyakRegisterOperand(operands[0]).getIdx());
+}
+#endif
+
 static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches = {
+#if defined(__linux__)
+    {ZYDIS_MNEMONIC_CPUID, {{FilterCpuId, GenerateCpuid, true}}},
+    {ZYDIS_MNEMONIC_RDTSCP, {{FilterCpuId, GenerateRdtscp, true}}},
+    {ZYDIS_MNEMONIC_RDPID, {{FilterCpuId, GenerateRdpid, true}}},
+#endif
     // SSE4a
     {ZYDIS_MNEMONIC_EXTRQ, {{FilterNoSSE4a, GenerateEXTRQ, true}}},
     {ZYDIS_MNEMONIC_INSERTQ, {{FilterNoSSE4a, GenerateINSERTQ, true}}},
@@ -743,6 +834,10 @@ static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches =
     {ZYDIS_MNEMONIC_VRSQRTPS, {{FilterIntelCPU, GenerateVRSQRTPS, true}}},
     {ZYDIS_MNEMONIC_RCPPS, {{FilterIntelCPU, GenerateRCPPS, true}}},
     {ZYDIS_MNEMONIC_VRCPPS, {{FilterIntelCPU, GenerateVRCPPS, true}}},
+    {ZYDIS_MNEMONIC_RCPSS, {{FilterIntelCPU, GenerateRCPSS, true}}},
+    {ZYDIS_MNEMONIC_VRCPSS, {{FilterIntelCPU, GenerateVRCPSS, true}}},
+    {ZYDIS_MNEMONIC_RSQRTSS, {{FilterIntelCPU, GenerateRSQRTSS, true}}},
+    {ZYDIS_MNEMONIC_VRSQRTSS, {{FilterIntelCPU, GenerateVRSQRTSS, true}}},
 
 #if !defined(__APPLE__)
     // FS segment patches
@@ -889,17 +984,6 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module, bool allow_t
     return std::make_pair(false, instruction.length);
 }
 
-static bool Is4ByteExtrqOrInsertq(void* code_address) {
-    u8* bytes = (u8*)code_address;
-    if (bytes[0] == 0x66 && bytes[1] == 0x0F && bytes[2] == 0x79) {
-        return true; // extrq
-    } else if (bytes[0] == 0xF2 && bytes[1] == 0x0F && bytes[2] == 0x79) {
-        return true; // insertq
-    } else {
-        return false;
-    }
-}
-
 static void* GetXmmPointer(void* ctx, u8 index) {
 #if defined(_WIN32)
 #define CASE(index)                                                                                \
@@ -962,131 +1046,43 @@ static void IncrementRip(void* ctx, u64 length) {
 }
 
 static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
-    // We need to decode the instruction to find out what it is. Normally we'd use a fully fleshed
-    // out decoder like Zydis, however Zydis does a bunch of stuff that impact performance that we
-    // don't care about. We can get information about the instruction a lot faster by writing a mini
-    // decoder here, since we know it is definitely an extrq or an insertq. If for some reason we
-    // need to interpret more instructions in the future (I don't see why we would), we can revert
-    // to using Zydis.
-    ZydisMnemonic mnemonic;
-    u8* bytes = (u8*)code_address;
-    if (bytes[0] == 0x66) {
-        mnemonic = ZYDIS_MNEMONIC_EXTRQ;
-    } else if (bytes[0] == 0xF2) {
-        mnemonic = ZYDIS_MNEMONIC_INSERTQ;
-    } else {
-        ZydisDecodedInstruction instruction;
-        ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-        const auto status =
-            Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
-        LOG_ERROR(Core, "Unhandled illegal instruction at code address {}: {}",
-                  fmt::ptr(code_address),
-                  ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
-                                       : "Failed to decode");
+    ZydisDecodedInstruction instruction;
+    ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+    const auto status =
+        Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
+    if (!ZYAN_SUCCESS(status) || (instruction.mnemonic != ZYDIS_MNEMONIC_EXTRQ &&
+                                  instruction.mnemonic != ZYDIS_MNEMONIC_INSERTQ)) {
         return false;
     }
 
-    ASSERT(bytes[1] == 0x0F && bytes[2] == 0x79);
+    const bool insert = instruction.mnemonic == ZYDIS_MNEMONIC_INSERTQ;
+    const auto dst = GetXmmPointer(ctx, operands[0].reg.value - ZYDIS_REGISTER_XMM0);
+    u64 value;
+    memcpy(&value, dst, sizeof(value));
 
-    // Note: It's guaranteed that there's no REX prefix in these instructions checked by
-    // Is4ByteExtrqOrInsertq
-    u8 modrm = bytes[3];
-    u8 rm = modrm & 0b111;
-    u8 reg = (modrm >> 3) & 0b111;
-    u8 mod = (modrm >> 6) & 0b11;
-
-    ASSERT(mod == 0b11); // Any instruction we interpret here uses reg/reg addressing only
-
-    int dstIndex = reg;
-    int srcIndex = rm;
-
-    switch (mnemonic) {
-    case ZYDIS_MNEMONIC_EXTRQ: {
-        const auto dst = GetXmmPointer(ctx, dstIndex);
-        const auto src = GetXmmPointer(ctx, srcIndex);
-
-        u64 lowQWordSrc;
-        memcpy(&lowQWordSrc, src, sizeof(lowQWordSrc));
-
-        u64 lowQWordDst;
-        memcpy(&lowQWordDst, dst, sizeof(lowQWordDst));
-
-        u64 length = lowQWordSrc & 0x3F;
-        u64 mask;
-        if (length == 0) {
-            length = 64; // for the check below
-            mask = 0xFFFF'FFFF'FFFF'FFFF;
-        } else {
-            mask = (1ULL << length) - 1;
-        }
-
-        u64 index = (lowQWordSrc >> 8) & 0x3F;
-        if (length + index > 64) {
-            // Undefined behavior if length + index is bigger than 64 according to the spec,
-            // we'll warn and continue execution.
-            LOG_TRACE(Core,
-                      "extrq at {} with length {} and index {} is bigger than 64, "
-                      "undefined behavior",
-                      fmt::ptr(code_address), length, index);
-        }
-
-        lowQWordDst >>= index;
-        lowQWordDst &= mask;
-
-        memset((u8*)dst + sizeof(u64), 0, sizeof(u64));
-        memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
-
-        IncrementRip(ctx, 4);
-
-        return true;
+    u64 source = 0;
+    u64 control;
+    const bool immediate = operands[1].type == ZYDIS_OPERAND_TYPE_IMMEDIATE ||
+                           operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
+    if (insert || !immediate) {
+        const auto src = GetXmmPointer(ctx, operands[1].reg.value - ZYDIS_REGISTER_XMM0);
+        memcpy(&source, src, sizeof(source));
+        memcpy(&control, static_cast<u8*>(src) + (insert ? sizeof(u64) : 0), sizeof(control));
     }
-    case ZYDIS_MNEMONIC_INSERTQ: {
-        const auto dst = GetXmmPointer(ctx, dstIndex);
-        const auto src = GetXmmPointer(ctx, srcIndex);
-
-        u64 lowQWordSrc, highQWordSrc;
-        memcpy(&lowQWordSrc, src, sizeof(lowQWordSrc));
-        memcpy(&highQWordSrc, (u8*)src + 8, sizeof(highQWordSrc));
-
-        u64 lowQWordDst;
-        memcpy(&lowQWordDst, dst, sizeof(lowQWordDst));
-
-        u64 length = highQWordSrc & 0x3F;
-        u64 mask;
-        if (length == 0) {
-            length = 64; // for the check below
-            mask = 0xFFFF'FFFF'FFFF'FFFF;
-        } else {
-            mask = (1ULL << length) - 1;
-        }
-
-        u64 index = (highQWordSrc >> 8) & 0x3F;
-        if (length + index > 64) {
-            // Undefined behavior if length + index is bigger than 64 according to the spec,
-            // we'll warn and continue execution.
-            LOG_TRACE(Core,
-                      "insertq at {} with length {} and index {} is bigger than 64, "
-                      "undefined behavior",
-                      fmt::ptr(code_address), length, index);
-        }
-
-        lowQWordSrc &= mask;
-        lowQWordDst &= ~(mask << index);
-        lowQWordDst |= lowQWordSrc << index;
-
-        memset((u8*)dst + sizeof(u64), 0, sizeof(u64));
-        memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
-
-        IncrementRip(ctx, 4);
-
-        return true;
+    if (immediate) {
+        const auto first = insert ? 2 : 1;
+        control =
+            (operands[first].imm.value.u & 0x3F) | ((operands[first + 1].imm.value.u & 0x3F) << 8);
     }
-    default: {
-        UNREACHABLE();
-    }
-    }
-
-    UNREACHABLE();
+    const u64 length = control & 0x3F;
+    const u64 index = (control >> 8) & 0x3F;
+    const u64 mask = length == 0 ? UINT64_MAX : (u64{1} << length) - 1;
+    value =
+        insert ? (value & ~(mask << index)) | ((source & mask) << index) : (value >> index) & mask;
+    memcpy(dst, &value, sizeof(value));
+    memset(static_cast<u8*>(dst) + sizeof(u64), 0, sizeof(u64));
+    IncrementRip(ctx, instruction.length);
+    return true;
 }
 
 static bool TryPatchJit(void* code_address) {
@@ -2415,6 +2411,9 @@ RedZonePatchResult PatchCpuInstructionsStatically(u64 segment_addr, u64 segment_
 // ============================================================================
 
 static bool PatchesAccessViolationHandler(void* context, void* /* fault_address */) {
+    if (Common::IsExecuteError(context)) {
+        return false;
+    }
     return TryPatchJit(Common::GetRip(context));
 }
 
@@ -2422,17 +2421,14 @@ static bool PatchesIllegalInstructionHandler(void* context) {
     void* code_address = Common::GetRip(context);
 #if defined(_WIN32)
     // Windows static guest red-zone protection
-    const bool inspect_short_cpu_patch =
-        !WindowsGuestRedZoneProtection::IsStaticPatchingEnabled() ||
-        GetContainingModule(code_address) != nullptr;
+    const bool inspect_sse4a = !WindowsGuestRedZoneProtection::IsStaticPatchingEnabled() ||
+                               GetContainingModule(code_address) != nullptr;
 #else
-    constexpr bool inspect_short_cpu_patch = true;
+    constexpr bool inspect_sse4a = true;
 #endif
-    if (inspect_short_cpu_patch && // Windows static guest red-zone protection
-        Is4ByteExtrqOrInsertq(code_address)) {
-        // The instruction is not big enough for a relative jump, don't try to patch it and pass it
-        // to our illegal instruction interpreter directly
-        return TryExecuteIllegalInstruction(context, code_address);
+    if (inspect_sse4a && // Windows static guest red-zone protection
+        TryExecuteIllegalInstruction(context, code_address)) {
+        return true;
     } else {
         if (!TryPatchJit(code_address)) {
             ZydisDecodedInstruction instruction;
@@ -2457,6 +2453,16 @@ static bool PatchesIllegalInstructionHandler(void* context) {
 }
 
 static void PatchesInit() {
+#if defined(__linux__)
+    InitializeCpuId();
+#endif
+#ifdef ENABLE_CPU_ID_TRANSLATION
+    if (FilterIntelCPU(nullptr)) {
+        ASSERT_MSG(InitializeIndexTables(), "Failed to load reciprocal index tables");
+        ShadReciprocalTranslationTables(rcp_index_table.data(), rsqrt_index_table.data(),
+                                        rcp_xor_values.data(), rsqrt_xor_values.data());
+    }
+#endif
     if (!Patches.empty()) {
         auto* signals = Signals::Instance();
         // Should be called last.

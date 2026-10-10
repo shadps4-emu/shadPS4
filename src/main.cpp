@@ -26,6 +26,10 @@
 #include "emulator.h"
 #include "imgui/big_picture/big_picture.h"
 
+#ifdef ENABLE_CPU_ID_TRANSLATION
+#include "core/cpu_id_translation/launcher.h"
+#endif
+
 #ifdef _WIN32
 #include <windows.h>
 #elif defined(__APPLE__)
@@ -59,6 +63,9 @@ int main(int argc, char* argv[]) {
     std::optional<int> waitPid;
     bool waitForDebugger = false;
     bool userfaultfd = false;
+#ifdef ENABLE_CPU_ID_TRANSLATION
+    std::string cpuIdMode = "auto";
+#endif
 
     std::optional<std::string> fullscreenStr;
     bool ignoreGamePatch = false;
@@ -93,6 +100,11 @@ int main(int argc, char* argv[]) {
 
     app.add_flag("--wait-for-debugger", waitForDebugger);
     app.add_option("--wait-for-pid", waitPid);
+#ifdef ENABLE_CPU_ID_TRANSLATION
+    app.add_option("--cpu-id-mode", cpuIdMode, "CPU identity execution mode")
+        ->check(CLI::IsMember({"auto", "native", "translated"}))
+        ->envname("SHADPS4_CPU_ID_MODE");
+#endif
 #ifdef __linux__
     app.add_flag("--userfaultfd", userfaultfd,
                  "Enable userfaultfd for tracking memory (Linux only)");
@@ -144,6 +156,13 @@ int main(int argc, char* argv[]) {
     } catch (const CLI::ParseError& e) {
         return app.exit(e);
     }
+
+#ifdef ENABLE_CPU_ID_TRANSLATION
+    if ((gamePath || bigPicture) &&
+        !Core::StartCpuIdTranslation(argc, argv, cpuIdMode, gamePath.has_value() || sameProcess)) {
+        return 1;
+    }
+#endif
 
     if (waitPid)
         Core::Debugger::WaitForPid(*waitPid);

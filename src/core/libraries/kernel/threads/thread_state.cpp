@@ -41,12 +41,13 @@ void ThreadState::Collect(Pthread* curthread) {
                 ++it;
                 continue;
             }
-            FreeStack(&td->attr);
             work_list.push_back(td);
             it = gc_list.erase(it);
         }
     }
     for (Pthread* td : work_list) {
+        td->native_thr->Join();
+        FreeStack(&td->attr);
         Free(curthread, td);
     }
 }
@@ -118,6 +119,7 @@ Pthread* ThreadState::Alloc(Pthread* curthread) {
 }
 
 void ThreadState::Free(Pthread* curthread, Pthread* thread) {
+    thread->native_thr.reset();
     if (curthread != nullptr) {
         std::scoped_lock lk{tcb_lock};
         TcbDtor(thread->tcb);
