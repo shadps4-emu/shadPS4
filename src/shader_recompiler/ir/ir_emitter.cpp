@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
@@ -343,6 +343,24 @@ U32U64 IREmitter::SharedAtomicIMax(const U32& address, const U32U64& data, bool 
     case Type::U64:
         return Inst<U64>(is_signed ? Opcode::SharedAtomicSMax64 : Opcode::SharedAtomicUMax64,
                          Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
+}
+
+U32U64 IREmitter::SharedAtomicFMax(const U32& address, const U32U64& data, bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicFMax32, Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
+}
+
+U32U64 IREmitter::SharedAtomicFMin(const U32& address, const U32U64& data, bool is_gds) {
+    switch (data.Type()) {
+    case Type::U32:
+        return Inst<U32>(Opcode::SharedAtomicFMin32, Flags{is_gds}, address, data);
     default:
         ThrowInvalidType(data.Type());
     }

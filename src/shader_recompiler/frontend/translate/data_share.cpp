@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -28,6 +28,10 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_OP(inst, AtomicOp::Umin, false);
     case Opcode::DS_MAX_U32:
         return DS_OP(inst, AtomicOp::Umax, false);
+    case Opcode::DS_MAX_F32:
+        return DS_OP(inst, AtomicOp::Fmax, false);
+    case Opcode::DS_MIN_F32:
+        return DS_OP(inst, AtomicOp::Fmin, false);
     case Opcode::DS_AND_B32:
         return DS_OP(inst, AtomicOp::And, false);
     case Opcode::DS_OR_B32:
@@ -148,6 +152,10 @@ void Translator::DS_OP(const GcnInst& inst, AtomicOp op, bool rtn) {
             return ir.SharedAtomicIMax(addr_offset, data, false, is_gds);
         case AtomicOp::Smax:
             return ir.SharedAtomicIMax(addr_offset, data, true, is_gds);
+        case AtomicOp::Fmax:
+            return ir.SharedAtomicFMax(addr_offset, data, is_gds);
+        case AtomicOp::Fmin:
+            return ir.SharedAtomicFMin(addr_offset, data, is_gds);
         case AtomicOp::And:
             return ir.SharedAtomicAnd(addr_offset, data, is_gds);
         case AtomicOp::Or:

@@ -491,6 +491,14 @@ void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descrip
             ir.BufferAtomicIMax(handle, address_dwords, inst.Arg(1), is_signed, {}));
         break;
     }
+    case IR::Opcode::SharedAtomicFMin32: {
+        inst.ReplaceUsesWith(ir.BufferAtomicFMin(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    }
+    case IR::Opcode::SharedAtomicFMax32: {
+        inst.ReplaceUsesWith(ir.BufferAtomicFMax(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    }
     case IR::Opcode::SharedAtomicInc32:
         inst.ReplaceUsesWith(ir.BufferAtomicInc(handle, address_dwords, {}));
         break;

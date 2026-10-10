@@ -132,6 +132,10 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicFMin32:
         info.uses_buffer_atomic_float_min_max = true;
         break;
+    case IR::Opcode::SharedAtomicFMax32:
+    case IR::Opcode::SharedAtomicFMin32:
+        info.uses_shared_atomic_float_min_max = true;
+        break;
     case IR::Opcode::BufferAtomicIAdd64:
     case IR::Opcode::BufferAtomicSMax64:
     case IR::Opcode::BufferAtomicSMin64:

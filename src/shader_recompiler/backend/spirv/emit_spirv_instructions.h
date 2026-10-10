@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -146,10 +146,12 @@ Id EmitSharedAtomicUMax32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicUMax64(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicSMax32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicSMax64(EmitContext& ctx, Id offset, Id value);
+Id EmitSharedAtomicFMax32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicUMin32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicUMin64(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicSMin32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicSMin64(EmitContext& ctx, Id offset, Id value);
+Id EmitSharedAtomicFMin32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicAnd32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicAnd64(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicOr32(EmitContext& ctx, Id offset, Id value);

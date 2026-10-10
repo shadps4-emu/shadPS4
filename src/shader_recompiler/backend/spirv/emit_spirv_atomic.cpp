@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
@@ -195,6 +196,27 @@ Id EmitSharedAtomicSMax64(EmitContext& ctx, Id offset, Id value) {
     return SharedAtomicU64(ctx, offset, value, &Sirit::Module::OpAtomicSMax);
 }
 
+Id EmitSharedAtomicFMax32(EmitContext& ctx, Id offset, Id value) {
+    if (ctx.profile.supports_shared_fp32_atomic_min_max) {
+        return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicFMax);
+    }
+
+    const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
+    // OpSelect requires a bool condition; produce one by comparing the sign bit to 0.
+    const auto sign_bit_set = ctx.OpINotEqual(
+        ctx.U1[1],
+        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u)),
+        ctx.u32_zero_value);
+
+    // FIXME this needs control flow because it currently executes both atomics
+    const auto result =
+        ctx.OpSelect(ctx.F32[1], sign_bit_set,
+                     EmitBitCastF32U32(ctx, EmitSharedAtomicUMin32(ctx, offset, u32_value)),
+                     EmitBitCastF32U32(ctx, EmitSharedAtomicSMax32(ctx, offset, u32_value)));
+
+    return result;
+}
+
 Id EmitSharedAtomicUMin32(EmitContext& ctx, Id offset, Id value) {
     return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicUMin);
 }
@@ -209,6 +231,27 @@ Id EmitSharedAtomicSMin32(EmitContext& ctx, Id offset, Id value) {
 
 Id EmitSharedAtomicSMin64(EmitContext& ctx, Id offset, Id value) {
     return SharedAtomicU64(ctx, offset, value, &Sirit::Module::OpAtomicSMin);
+}
+
+Id EmitSharedAtomicFMin32(EmitContext& ctx, Id offset, Id value) {
+    if (ctx.profile.supports_shared_fp32_atomic_min_max) {
+        return SharedAtomicU32(ctx, offset, value, &Sirit::Module::OpAtomicFMax);
+    }
+
+    const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
+    // OpSelect requires a bool condition; produce one by comparing the sign bit to 0.
+    const auto sign_bit_set = ctx.OpINotEqual(
+        ctx.U1[1],
+        ctx.OpBitFieldUExtract(ctx.U32[1], u32_value, ctx.ConstU32(31u), ctx.ConstU32(1u)),
+        ctx.u32_zero_value);
+
+    // FIXME this needs control flow because it currently executes both atomics
+    const auto result =
+        ctx.OpSelect(ctx.F32[1], sign_bit_set,
+                     EmitBitCastF32U32(ctx, EmitSharedAtomicUMax32(ctx, offset, u32_value)),
+                     EmitBitCastF32U32(ctx, EmitSharedAtomicSMin32(ctx, offset, u32_value)));
+
+    return result;
 }
 
 Id EmitSharedAtomicAnd32(EmitContext& ctx, Id offset, Id value) {

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -119,6 +119,7 @@ struct Info : InfoPersistent {
     bool has_flatbuf{};
     bool uses_buffer_atomic_float_min_max{};
     bool uses_image_atomic_float_min_max{};
+    bool uses_shared_atomic_float_min_max{};
     bool uses_lane_id{};
     bool uses_shader_clock{};
     bool uses_group_quad{};
