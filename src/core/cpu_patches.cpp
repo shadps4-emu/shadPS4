@@ -342,12 +342,14 @@ static void GenerateReciprocalInstruction(void* address, const ZydisDecodedInstr
     }
     void* index_table = rsqrt ? rsqrt_index_table.data() : rcp_index_table.data();
     const int* xor_table = rsqrt ? rsqrt_xor_values.data() : rcp_xor_values.data();
+    c.mov(eax, 0x7f800000);
+    c.vmovd(xmm_scratch2.cvt128(), eax);
+    c.vpbroadcastd(xmm_scratch2, xmm_scratch2.cvt128());
+    c.vpslld(xmm_scratch3, src_reg, 1);
+    c.vpsrld(xmm_scratch3, xmm_scratch3, 1);
+    c.vpcmpgtd(nan_mask, xmm_scratch3, xmm_scratch2);
     c.mov(scratch1, reinterpret_cast<u64>(index_table));
     c.mov(scratch2, reinterpret_cast<u64>(xor_table));
-    // Find NaNs in source
-    // In non-VEX forms this will zero the top elements which will make the vblendvps
-    // pick from dst_reg, thus preserving the top bits
-    c.vcmpunordps(nan_mask, src_reg, src_reg);
     // Set mask to all ones for the elements we'll load
     c.vpcmpeqd(xmm_scratch2, xmm_scratch2, xmm_scratch2);
     // Load indices for active elements from table
@@ -358,11 +360,7 @@ static void GenerateReciprocalInstruction(void* address, const ZydisDecodedInstr
     // Load XOR values using those indices
     c.vpcmpeqd(xmm_scratch2, xmm_scratch2, xmm_scratch2); // vgather sets to zero
     c.vgatherdps(xmm_scratch3, ptr[scratch2 + xmm_scratch1 * 4], xmm_scratch2);
-    if (dst_reg == src_reg) {
-        // The RCP would modify our source reg so we wouldn't be able to use it for NaN merging
-        c.vmovaps(xmm_scratch1, src_reg);
-        src_reg = xmm_scratch1;
-    }
+    c.vpandn(xmm_scratch3, nan_mask, xmm_scratch3);
     if (vex) {
         auto func = rsqrt ? &Xbyak::CodeGenerator::vrsqrtps : &Xbyak::CodeGenerator::vrcpps;
         (c.*func)(dst_reg, src_reg);
@@ -373,8 +371,6 @@ static void GenerateReciprocalInstruction(void* address, const ZydisDecodedInstr
         (c.*func)(dst_reg, src_reg);
         c.xorps(dst_reg, xmm_scratch3);
     }
-    // Merge NaNs back into dst
-    c.vblendvps(dst_reg.cvt256(), dst_reg.cvt256(), src_reg.cvt256(), nan_mask);
 
     c.pop(scratch2);
     c.pop(scratch1);
