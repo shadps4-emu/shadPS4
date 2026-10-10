@@ -524,9 +524,7 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti(u32* cmdbuf, u32 size, u32 da
         (shader_stage == ShaderStages::Vs || shader_stage == ShaderStages::Es ||
          shader_stage == ShaderStages::Ls)) {
 
-        cmdbuf = WriteHeader<PM4ItOpcode::Nop>(cmdbuf, 2);
-        cmdbuf = WriteBody(cmdbuf, 0u);
-        cmdbuf += 1;
+        cmdbuf = WriteTrailingNop<2>(cmdbuf);
 
         const auto predicate = flags & 1 ? PM4Predicate::PredEnable : PM4Predicate::PredDisable;
         cmdbuf = WriteHeader<PM4ItOpcode::DrawIndexIndirectCountMulti>(
@@ -636,8 +634,9 @@ s32 PS4_SYSV_ABI sceGnmDrawIndirectCountMulti(u32* cmdbuf, u32 size, u32 data_of
     if (cmdbuf && (size == 0x10) && (shader_stage < ShaderStages::Max) &&
         (vertex_sgpr_offset < 0x10u) && (instance_sgpr_offset < 0x10u)) {
 
-        const auto predicate = flags & 1 ? PM4Predicate::PredEnable : PM4Predicate::PredDisable;
         cmdbuf = WriteTrailingNop<2>(cmdbuf);
+
+        const auto predicate = flags & 1 ? PM4Predicate::PredEnable : PM4Predicate::PredDisable;
         cmdbuf = WriteHeader<PM4ItOpcode::DrawIndirectCountMulti>(
             cmdbuf, 9, PM4ShaderType::ShaderGraphics, predicate);
 
@@ -668,7 +667,7 @@ s32 PS4_SYSV_ABI sceGnmDrawIndirectMulti(u32* cmdbuf, u32 size, u32 data_offset,
         instance_sgpr_offset < 0x10) {
         const auto predicate = flags & 1 ? PM4Predicate::PredEnable : PM4Predicate::PredDisable;
         cmdbuf = WriteHeader<PM4ItOpcode::DrawIndirectMulti>(
-            cmdbuf, 4, PM4ShaderType::ShaderGraphics, predicate);
+            cmdbuf, 6, PM4ShaderType::ShaderGraphics, predicate);
 
         const auto sgpr_offset = indirect_sgpr_offsets[shader_stage];
         cmdbuf[0] = data_offset;
