@@ -113,6 +113,12 @@ public:
     // WebAPI bearer token
     std::string GetBearerToken(s32 user_id) const;
 
+    struct Authentication {
+        OrbisNpAccountId account_id = 0;
+        std::string bearer;
+    };
+    std::optional<Authentication> GetAuthentication(s32 user_id) const;
+
     // Sends a session invitation via the WebAPI (POST /v1/sessions/<id>/invitations). Each 'to'
     // entry is an online ID (npid) or a decimal account ID
     bool SendSessionInvitation(s32 user_id, const std::string& session_id,
