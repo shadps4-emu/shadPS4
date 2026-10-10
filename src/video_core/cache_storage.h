@@ -28,6 +28,8 @@ public:
 
     void Open();
     void Close();
+    /// Deletes the stored cache and opens an empty one.
+    void Reset();
     [[nodiscard]] bool IsOpened() const {
         return opened;
     }
