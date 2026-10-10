@@ -12,7 +12,7 @@
 #include "core/libraries/net/net_util.h"
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/np/np_common.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_signaling/np_signaling.h"
 #include "core/libraries/np/np_signaling/np_signaling_helpers.h"

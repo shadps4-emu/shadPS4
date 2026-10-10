@@ -326,6 +326,7 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/sync/mutex.h
                src/core/libraries/kernel/sync/semaphore.h
+               src/core/libraries/kernel/threads/barrier.cpp
                src/core/libraries/kernel/threads/condvar.cpp
                src/core/libraries/kernel/threads/event_flag.cpp
                src/core/libraries/kernel/threads/exception.cpp
@@ -647,8 +648,14 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_partner.cpp
             src/core/libraries/np/np_partner.h
             src/core/libraries/np/object_manager.h
-            src/core/libraries/np/np_handler.cpp
-            src/core/libraries/np/np_handler.h
+            src/core/libraries/np/np_handler/np_handler.cpp
+            src/core/libraries/np/np_handler/np_handler.h
+            src/core/libraries/np/np_handler/np_handler_friends.cpp
+            src/core/libraries/np/np_handler/np_handler_invitation.cpp
+            src/core/libraries/np/np_handler/np_handler_score.cpp
+            src/core/libraries/np/np_handler/np_handler_trophy.cpp
+            src/core/libraries/np/np_handler/np_handler_tus.cpp
+            src/core/libraries/np/np_handler/np_handler_web_api.cpp
             src/core/libraries/np/signaling_handler.cpp
             src/core/libraries/np/signaling_handler.h
             src/core/libraries/np/np_commerce/np_commerce.cpp

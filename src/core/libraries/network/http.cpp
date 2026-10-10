@@ -214,6 +214,7 @@ static bool ResolveEpollBinding(int id, int*& epoll_id_out, void**& user_arg_out
 }
 
 static bool HeaderNameMatches(std::string_view a, std::string_view b);
+static bool IsCredentialHeader(std::string_view name);
 static std::string HttpStatusLabel(int sc);
 
 // JSON shape: flat object mapping endpoint -> replacement URL. Example:
@@ -566,6 +567,9 @@ static void LogSendRequestSettings(const HttpRequest& req, int reqId, u64 body_s
             return;
         }
         for (const auto& [name, value] : h) {
+            if (IsCredentialHeader(name)) {
+                continue;
+            }
             LOG_INFO(Lib_Http, "  header[{}] {}: {}", origin, name, value);
         }
     };
@@ -859,9 +863,10 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_
 
 #ifdef CPPHTTPLIB_OPENSSL_SUPPORT
         if (plan.scheme == "https") {
+            const bool config_disabled_verify = EmulatorSettings.IsForcedHttpsDisabled();
             const bool game_disabled_verify =
                 (plan.settings.ssl_flags & ORBIS_HTTPS_FLAG_SERVER_VERIFY) == 0;
-            bool verify_server = !game_disabled_verify;
+            bool verify_server = !config_disabled_verify && !game_disabled_verify;
             if (verify_server && plan.ctx_has_loaded_certs) {
                 verify_server = false;
                 LOG_INFO(Lib_Http,
@@ -870,7 +875,10 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_
                          plan.scheme, plan.host);
             }
             cli.enable_server_certificate_verification(verify_server);
-            if (game_disabled_verify) {
+            if (config_disabled_verify) {
+                LOG_INFO(Lib_Http, "{}://{}: server cert verification disabled by configuration",
+                         plan.scheme, plan.host);
+            } else if (game_disabled_verify) {
                 LOG_INFO(Lib_Http, "{}://{}: server cert verification disabled (ssl_flags={:#x})",
                          plan.scheme, plan.host, plan.settings.ssl_flags);
             }
@@ -1079,6 +1087,11 @@ static bool HeaderNameMatches(std::string_view a, std::string_view b) {
         }
     }
     return true;
+}
+
+static bool IsCredentialHeader(std::string_view name) {
+    return HeaderNameMatches(name, "Authorization") ||
+           HeaderNameMatches(name, "Proxy-Authorization") || HeaderNameMatches(name, "Cookie");
 }
 
 static std::string GetLibhttpSystemVersionString() {
@@ -2610,6 +2623,9 @@ int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags) {
 
 int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags) {
     LOG_INFO(Lib_Http, "called id={}, sslFlags={:#x}", id, sslFlags);
+    if (EmulatorSettings.IsForcedHttpsDisabled()) {
+        return sceHttpsDisableOptionPrivate(id, sslFlags);
+    }
     // Same as sceHttpsEnableOption but accepts the wider Private
     // bit-mask (ORBIS_HTTPS_FLAG_PRIVATE_VALID).
     std::lock_guard<std::mutex> lock(g_state.m_mutex);
@@ -2814,8 +2830,11 @@ int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable) {
 // Http Header setting functions
 //***********************************
 int PS4_SYSV_ABI sceHttpAddRequestHeader(int id, const char* name, const char* value, s32 mode) {
-    LOG_INFO(Lib_Http, "called id={}, name={}, value={}, mode={}", id, name ? name : "(null)",
-             value ? value : "(null)", mode);
+    const bool is_credential_header = name && IsCredentialHeader(name);
+    if (!is_credential_header) {
+        LOG_INFO(Lib_Http, "called id={}, name={}, value={}, mode={}", id, name ? name : "(null)",
+                 value ? value : "(null)", mode);
+    }
     std::lock_guard<std::mutex> lock(g_state.m_mutex);
     if (!g_state.inited) {
         LOG_ERROR(Lib_Http, "Not initialized");
@@ -2842,8 +2861,10 @@ int PS4_SYSV_ABI sceHttpAddRequestHeader(int id, const char* name, const char* v
             headers->end());
     }
     headers->emplace_back(name, value);
-    LOG_INFO(Lib_Http, "added header at {} id={}: {}: {} (mode={}, total now {})", level, id, name,
-             value, mode, headers->size());
+    if (!is_credential_header) {
+        LOG_INFO(Lib_Http, "added header at {} id={}: {}: {} (mode={}, total now {})", level, id,
+                 name, value, mode, headers->size());
+    }
     return ORBIS_OK;
 }
 

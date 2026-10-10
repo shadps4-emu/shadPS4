@@ -80,6 +80,15 @@ static void KernelServiceThread(std::stop_token stoken) {
 }
 
 static PS4_SYSV_ABI void stack_chk_fail() {
+    void* caller = __builtin_return_address(0);
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* mod = linker ? linker->FindByAddress(reinterpret_cast<VAddr>(caller)) : nullptr;
+    if (mod) {
+        LOG_CRITICAL(Lib_Kernel, "called from {:p} (module: {}, offset: {:#x})", caller, mod->name,
+                     reinterpret_cast<VAddr>(caller) - mod->GetBaseAddress());
+    } else {
+        LOG_CRITICAL(Lib_Kernel, "called from {:p} (unknown module)", caller);
+    }
     UNREACHABLE();
 }
 
@@ -322,6 +331,17 @@ s32 PS4_SYSV_ABI __sys_regmgr_call(u32 op, u32 key, void* result, void* value, u
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceKernelGetOpenPsId(void* psid) {
+    LOG_TRACE(Lib_Kernel, "called, psid = {}", fmt::ptr(psid));
+    if (!psid) {
+        return POSIX_EINVAL;
+    }
+    static constexpr u8 default_psid[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                                            0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10};
+    std::memcpy(psid, default_psid, sizeof(default_psid));
+    return ORBIS_OK;
+}
+
 // Nominally: long sysconf(int name);
 u64 PS4_SYSV_ABI posix_sysconf(s32 name) {
     switch (name) {
@@ -532,6 +552,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ca7v6Cxulzs", "libkernel", 1, "libkernel", sceKernelSetGPO);
     LIB_FUNCTION("iKJMWrAumPE", "libkernel", 1, "libkernel", getargc);
     LIB_FUNCTION("FJmglmTMdr4", "libkernel", 1, "libkernel", getargv);
+    LIB_FUNCTION("DLORcroUqbc", "libkernel", 1, "libkernel", sceKernelGetOpenPsId);
+    LIB_FUNCTION("DLORcroUqbc", "libSceOpenPsId", 1, "libkernel", sceKernelGetOpenPsId);
 }
 
 } // namespace Libraries::Kernel

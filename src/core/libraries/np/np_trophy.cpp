@@ -13,7 +13,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/trophy_ui.h"
 #include "core/libraries/system/userservice.h"
