@@ -263,6 +263,15 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
     return cache_image_id;
 }
 
+static bool HasHeightIndependentLayout(const ImageInfo& info) {
+    if (info.type != AmdGpu::ImageType::Color2D || info.num_samples != 1 ||
+        info.resources.layers != 1 || info.props.is_depth || info.props.is_block) {
+        return false;
+    }
+    const auto array_mode = AmdGpu::GetArrayMode(info.tile_mode);
+    return AmdGpu::GetMicroTileThickness(array_mode) == 1 && !AmdGpu::IsPrt(array_mode);
+}
+
 std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& image_info,
                                                            BindingType binding,
                                                            ImageId cache_image_id,
@@ -277,6 +286,16 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
     if (image_info.guest_address == cache_image.info.guest_address) {
         const u32 lhs_block_size = image_info.num_bits * image_info.num_samples;
         const u32 rhs_block_size = cache_image.info.num_bits * cache_image.info.num_samples;
+        // Same memory but different size, keeping gpu data
+        if (image_info.size != cache_image.info.size &&
+            image_info.pitch == cache_image.info.pitch &&
+            image_info.tile_mode == cache_image.info.tile_mode &&
+            lhs_block_size == rhs_block_size && HasHeightIndependentLayout(image_info) &&
+            HasHeightIndependentLayout(cache_image.info) &&
+            True(cache_image.flags & ImageFlagBits::GpuModified)) {
+            return {ResizeImage(image_info, cache_image_id), -1, -1};
+        }
+
         if (image_info.BlockDim() != cache_image.info.BlockDim() ||
             lhs_block_size != rhs_block_size) {
             // Very likely this kind of overlap is caused by allocation from a pool.
@@ -493,6 +512,25 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
     }
 
     return {merged_image_id, -1, -1};
+}
+
+ImageId TextureCache::ResizeImage(const ImageInfo& info, ImageId image_id) {
+    const auto new_image_id = slot_images.Insert(instance, runtime, slot_image_views, info);
+    RegisterImage(new_image_id);
+
+    auto& src_image = slot_images[image_id];
+    auto& new_image = slot_images[new_image_id];
+
+    RefreshImage(new_image);
+    runtime.CopyRegion(&src_image, &new_image);
+
+    if (src_image.binding.is_bound || src_image.binding.is_target) {
+        src_image.binding.needs_rebind = 1u;
+    }
+
+    FreeImage(image_id);
+    TrackImage(new_image_id);
+    return new_image_id;
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {

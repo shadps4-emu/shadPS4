@@ -155,6 +155,9 @@ public:
     /// Creates a new image with provided image info and copies subresources from image_id
     [[nodiscard]] ImageId ExpandImage(const ImageInfo& info, ImageId image_id);
 
+    /// Creates a new image with new size and keeps previous image data
+    [[nodiscard]] ImageId ResizeImage(const ImageInfo& info, ImageId image_id);
+
     /// Reuploads image contents.
     void RefreshImage(Image& image);
 
