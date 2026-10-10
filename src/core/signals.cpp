@@ -13,6 +13,10 @@
 #include "core/signals.h"
 #include "emulator.h"
 
+#if defined(__linux__) && defined(ARCH_X86_64)
+#include "core/cpu_id.h"
+#endif
+
 #ifdef _WIN32
 #include <windows.h>
 static constexpr DWORD MS_VC_EXCEPTION = 0x406D1388;
@@ -248,6 +252,11 @@ static s32 NativeSiCodeToGuest(s32 sig, s32 code) {
 }
 
 void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
+#if defined(__linux__) && defined(ARCH_X86_64)
+    if ((sig == SIGSEGV || sig == SIGILL) && HandleCpuIdFault(raw_context, info->si_addr)) {
+        return;
+    }
+#endif
     using namespace Libraries::Kernel;
     auto* thread = g_curthread;
     const auto* signals = Signals::Instance();
@@ -333,6 +342,10 @@ SignalDispatch::SignalDispatch() {
     action.sa_sigaction = SignalHandler;
     action.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&action.sa_mask);
+#if defined(__linux__) && defined(ARCH_X86_64)
+    // Guest callbacks can execute CPUID; defer them until the fault handler has returned.
+    sigaddset(&action.sa_mask, SIGUSR1);
+#endif
 
     ASSERT_MSG(
         sigaction(SIGSEGV, &action, nullptr) == 0 && sigaction(SIGBUS, &action, nullptr) == 0 &&
@@ -340,6 +353,13 @@ SignalDispatch::SignalDispatch() {
             sigaction(SIGTRAP, &action, nullptr) == 0 && sigaction(SIGSYS, &action, nullptr) == 0 &&
             sigaction(SIGUSR1, &action, nullptr) == 0 && sigaction(SIGSLEEP, &action, nullptr) == 0,
         "Failed to register signal handlers.");
+#if defined(__linux__) && defined(ARCH_X86_64)
+    // Host timestamp reads in another fault handler must still reach the TSC emulator.
+    action.sa_flags |= SA_NODEFER;
+    ASSERT_MSG(sigaction(SIGSEGV, &action, nullptr) == 0 &&
+                   sigaction(SIGILL, &action, nullptr) == 0,
+               "Failed to enable nested CPU instruction faults.");
+#endif
 #endif
 }
 

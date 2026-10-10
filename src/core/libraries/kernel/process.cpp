@@ -7,6 +7,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 
@@ -62,22 +63,28 @@ s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver) {
 }
 
 s32 PS4_SYSV_ABI sceKernelGetCpumode() {
-    LOG_DEBUG(Lib_Kernel, "called");
-    auto& attrs = Common::ElfInfo::Instance().GetPSFAttributes();
+    const auto& info = Common::ElfInfo::Instance();
+    if (info.CompiledSdkVer() < Common::ElfInfo::FW_300) {
+        return 2;
+    }
+    const auto& attrs = info.GetPSFAttributes();
     u32 is_cpu6 = attrs.six_cpu_mode.Value();
     u32 is_cpu7 = attrs.seven_cpu_mode.Value();
     if (is_cpu6 == 1 && is_cpu7 == 1) {
         return 2;
     }
-    if (is_cpu7 == 1) {
+    if (is_cpu7 == 1 || is_cpu6 == 0) {
         return 5;
     }
     return 0;
 }
 
+u64 GetGuestCpuMask() {
+    return sceKernelGetCpumode() == 5 ? 0x7f : 0x3f;
+}
+
 s32 PS4_SYSV_ABI sceKernelGetCurrentCpu() {
-    LOG_DEBUG(Lib_Kernel, "called");
-    return 0;
+    return g_curthread != nullptr ? g_curthread->GetCurrentCpu() : 0;
 }
 
 void* PS4_SYSV_ABI sceKernelGetProcParam() {
