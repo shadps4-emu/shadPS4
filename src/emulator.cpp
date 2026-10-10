@@ -627,6 +627,12 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
     mnt->Mount(mount_download_dir, "/download0");
 
+    const auto& mount_usb_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "mnt" / "usb0";
+    std::error_code ec_usb;
+    std::filesystem::create_directories(mount_usb_dir, ec_usb);
+    mnt->Mount(mount_usb_dir, "/mnt/usb0");
+
     const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
     if (!std::filesystem::exists(mount_captures_dir)) {
         std::filesystem::create_directory(mount_captures_dir);
