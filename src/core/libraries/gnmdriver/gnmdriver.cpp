@@ -1438,17 +1438,8 @@ s32 PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDoneForWorkload(u64 workload, u32* gp
         return patch_result;
     }
 
-    // Wrap our packet into an indirect buffer
-    u32 ib_packet[4];
-    std::memset(ib_packet, 0, sizeof(ib_packet));
-    auto* ib = reinterpret_cast<PM4CmdIndirectBuffer*>(ib_packet);
-    ib->header = PM4Type3Header{PM4ItOpcode::IndirectBuffer, 2};
-    ib->ibase_lo = (reinterpret_cast<u64>(gpu_addr));
-    ib->ibase_hi.Assign((reinterpret_cast<u64>(gpu_addr) >> 0x20) & 0xff);
-    ib->ib_size.Assign(0x40);
-
     // Submit
-    const auto& dcb_span = std::span{ib_packet, 4};
+    const auto& dcb_span = std::span{gpu_addr, 0x40};
     if (DebugState.DumpingCurrentFrame()) {
         static auto last_frame_num = -1LL;
         static u32 seq_num{};
