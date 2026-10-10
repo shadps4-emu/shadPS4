@@ -29,10 +29,12 @@ enum ImageFlagBits : u32 {
     Empty = 0,
     MaybeCpuDirty = 1 << 0, ///< The page this image is in was touched before the image address
     CpuDirty = 1 << 1,      ///< Contents have been modified from the CPU
-    GpuDirty = 1 << 2, ///< Contents have been modified from the GPU (valid data in buffer cache)
+    GpuDirty =
+        1 << 2, ///< Image contents have been modified from the GPU (valid data in buffer cache)
     Dirty = MaybeCpuDirty | CpuDirty | GpuDirty,
-    GpuModified = 1 << 3, ///< Contents have been modified from the GPU
-    Registered = 1 << 6,  ///< True when the image is registered
+    GpuModified = 1 << 3,   ///< Contents have been modified from the GPU
+    MaybeGpuDirty = 1 << 4, ///< Image contents may have been modified in the buffer cache
+    Registered = 1 << 6,    ///< True when the image is registered
 };
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 
@@ -115,6 +117,12 @@ struct Image : public Common::LRUNode<> {
         depth_uid = {};
     }
 
+    vk::DeviceSize SizeBytes() const {
+        return std::accumulate(
+            backing_images.begin(), backing_images.end(), vk::DeviceSize(0),
+            [](vk::DeviceSize sum, const BackingImage& bi) { return sum + bi.image.size_bytes; });
+    }
+
     ImageView& FindView(const ImageViewInfo& view_info, bool ensure_guest_samples = true);
 
     using Barriers = SmallVector<vk::ImageMemoryBarrier2, 32>;
@@ -155,7 +163,8 @@ public:
     u64 image_uid{};
     u64 lru_id{};
     u64 tick_accessed_last{};
-    u64 hash{};
+    u64 cpu_hash{};
+    u64 gpu_hash{};
 
     struct {
         u32 texture : 1;
