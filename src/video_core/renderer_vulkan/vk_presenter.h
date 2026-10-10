@@ -35,6 +35,7 @@ struct Frame {
     vk::Semaphore ready_semaphore;
     u64 ready_tick;
     bool is_hdr{false};
+    bool has_game_content{};
     u8 id{};
 
     ImTextureID imgui_texture;
@@ -47,6 +48,7 @@ enum SchedulerType {
 };
 
 class Rasterizer;
+struct StartupReadback;
 
 class Presenter {
 public:
@@ -108,6 +110,9 @@ private:
 
     void SetExpectedGameSize(s32 width, s32 height);
 
+    bool PrepareStartupReadback(const Frame* frame);
+    void CopyStartupReadback(const Frame* frame, vk::CommandBuffer cmdbuf);
+
 private:
     float expected_ratio{1920.0 / 1080.0f};
     u32 expected_frame_width{1920};
@@ -130,7 +135,13 @@ private:
     vk::UniqueCommandPool command_pool;
     std::vector<Frame> present_frames;
     std::queue<Frame*> free_queue;
-    Frame* last_submit_frame;
+    Frame* last_submit_frame{};
+    bool startup_screen_logged{};
+    bool startup_first_frame_logged{};
+    std::unique_ptr<StartupReadback> startup_readback;
+    s64 startup_next_probe_ms{};
+    u32 startup_samples{};
+    u32 startup_black_samples{};
     std::mutex free_mutex;
     std::condition_variable free_cv;
     std::condition_variable_any frame_cv;

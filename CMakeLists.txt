@@ -890,7 +890,8 @@ set(NET_LIB   src/core/libraries/net/net.cpp
               src/core/libraries/net/net_upnp.h
 )
 
-set(CORE src/core/aerolib/stubs.cpp
+set(CORE src/core/startup_progress.h
+         src/core/aerolib/stubs.cpp
          src/core/aerolib/stubs.h
          src/core/aerolib/aerolib.cpp
          src/core/aerolib/aerolib.h
@@ -1229,6 +1230,8 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_layer.h
           src/imgui/imgui_std.h
           src/imgui/imgui_texture.h
+          src/imgui/startup_loading.cpp
+          src/imgui/startup_loading.h
           src/imgui/imgui_translations.cpp
           src/imgui/imgui_translations.h
           src/imgui/friends_layer.cpp
