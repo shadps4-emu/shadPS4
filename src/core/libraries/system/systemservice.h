@@ -23,7 +23,45 @@ enum class OrbisSystemServiceParamId {
     Summertime = 5,
     SystemName = 6,
     GameParentalLevel = 7,
+
+    // Closed Caption Settings
+    ClosedCaptionDisplay = 100,
+    ClosedCaptionEnabled = 101,
+    ClosedCaptionTextSize = 102,
+    ClosedCaptionFont = 103,
+    ClosedCaptionTextColor = 104,
+    ClosedCaptionTextOpacity = 105,
+    ClosedCaptionEdgeType = 106,
+    ClosedCaptionEdgeColor = 107,
+    ClosedCaptionBackgroundColor = 108,
+    ClosedCaptionBackgroundOpacity = 109,
+    ClosedCaptionWindowColor = 110,
+    ClosedCaptionWindowOpacity = 111,
+
+    // Accessibility Settings
+    AccessibilityHighContrast = 200,
+    AccessibilityInvertColors = 201,
+    AccessibilityLargeText = 202,
+    AccessibilityBoldText = 203,
+    AccessibilityZoom = 204,
+
+    // Controller Settings
+    CustomButtonAssignments = 300,
+
     EnterButtonAssign = 1000,
+};
+
+enum class OrbisSystemServiceActivationType : u32 {
+    Mpeg2 = 0,
+    Hevc = 3,
+    HevcSoft = 4,
+};
+
+enum class OrbisSystemServiceActivationStatus : s32 {
+    None = 0,
+    Processing = 1,
+    Activated = 2,
+    Failed = 3,
 };
 
 enum class OrbisSystemParamDateFormat {
@@ -225,25 +263,26 @@ int PS4_SYSV_ABI sceLncUtilUnregisterCdlgSharedMemoryName();
 int PS4_SYSV_ABI sceLncUtilUnregisterDaemon();
 int PS4_SYSV_ABI sceLncUtilUnregisterShellUI();
 int PS4_SYSV_ABI sceSystemServiceActivateHevcSoft();
-int PS4_SYSV_ABI sceSystemServiceActivateHevcSoftAbort();
-int PS4_SYSV_ABI sceSystemServiceActivateHevcSoftGetStatus();
-int PS4_SYSV_ABI sceSystemServiceActivateHevcSoftInit();
-int PS4_SYSV_ABI sceSystemServiceActivateHevcSoftIsActivated();
-int PS4_SYSV_ABI sceSystemServiceActivateHevcSoftStart();
-int PS4_SYSV_ABI sceSystemServiceActivateHevcSoftTerm();
+int PS4_SYSV_ABI sceSystemServiceActivateHevcSoftAbort(int handle);
+int PS4_SYSV_ABI sceSystemServiceActivateHevcSoftGetStatus(int handle, int* status, int* result);
+int PS4_SYSV_ABI sceSystemServiceActivateHevcSoftInit(int* handle);
+int PS4_SYSV_ABI sceSystemServiceActivateHevcSoftIsActivated(bool* is_activated);
+int PS4_SYSV_ABI sceSystemServiceActivateHevcSoftStart(int handle);
+int PS4_SYSV_ABI sceSystemServiceActivateHevcSoftTerm(int handle);
 int PS4_SYSV_ABI sceShellCoreUtilAccessibilityZoomLock();
 int PS4_SYSV_ABI sceShellCoreUtilAccessibilityZoomUnlock();
 int PS4_SYSV_ABI sceShellCoreUtilAcquireBgmCpuBudget();
 int PS4_SYSV_ABI sceShellCoreUtilAcquireRemotePlayCpuBudget();
 int PS4_SYSV_ABI sceShellCoreUtilAcquireSharePlayCpuBudget();
-int PS4_SYSV_ABI sceShellCoreUtilActivateAbort();
-int PS4_SYSV_ABI sceShellCoreUtilActivateGetStatus();
-int PS4_SYSV_ABI sceShellCoreUtilActivateInit();
-int PS4_SYSV_ABI sceShellCoreUtilActivateIsActivated();
-int PS4_SYSV_ABI sceShellCoreUtilActivateRecordActivation();
-int PS4_SYSV_ABI sceShellCoreUtilActivateStart();
-int PS4_SYSV_ABI sceShellCoreUtilActivateStartAsync();
-int PS4_SYSV_ABI sceShellCoreUtilActivateTerm();
+int PS4_SYSV_ABI sceShellCoreUtilActivateAbort(int handle);
+int PS4_SYSV_ABI sceShellCoreUtilActivateGetStatus(int handle, int* status, int* result);
+int PS4_SYSV_ABI sceShellCoreUtilActivateInit(OrbisSystemServiceActivationType type, int* handle);
+int PS4_SYSV_ABI sceShellCoreUtilActivateIsActivated(OrbisSystemServiceActivationType type,
+                                                     bool* is_activated);
+int PS4_SYSV_ABI sceShellCoreUtilActivateRecordActivation(OrbisSystemServiceActivationType type);
+int PS4_SYSV_ABI sceShellCoreUtilActivateStart(int handle);
+int PS4_SYSV_ABI sceShellCoreUtilActivateStartAsync(int handle);
+int PS4_SYSV_ABI sceShellCoreUtilActivateTerm(int handle);
 int PS4_SYSV_ABI sceShellCoreUtilChangeRunLevel();
 int PS4_SYSV_ABI sceShellCoreUtilChangeToStaffModeForIDU();
 int PS4_SYSV_ABI sceShellCoreUtilCheckerAbort();
@@ -536,18 +575,18 @@ int PS4_SYSV_ABI sceSystemServiceLaunchWebApp();
 int PS4_SYSV_ABI Func_B8495C766861FDCF();
 int PS4_SYSV_ABI sceSystemServiceGetDbgExecutablePath();
 int PS4_SYSV_ABI sceSystemServiceActivateHevc();
-int PS4_SYSV_ABI sceSystemServiceActivateHevcAbort();
-int PS4_SYSV_ABI sceSystemServiceActivateHevcGetStatus();
-int PS4_SYSV_ABI sceSystemServiceActivateHevcInit();
-int PS4_SYSV_ABI sceSystemServiceActivateHevcIsActivated();
-int PS4_SYSV_ABI sceSystemServiceActivateHevcStart();
-int PS4_SYSV_ABI sceSystemServiceActivateHevcTerm();
-int PS4_SYSV_ABI sceSystemServiceActivateMpeg2Abort();
-int PS4_SYSV_ABI sceSystemServiceActivateMpeg2GetStatus();
-int PS4_SYSV_ABI sceSystemServiceActivateMpeg2Init();
-int PS4_SYSV_ABI sceSystemServiceActivateMpeg2IsActivated();
-int PS4_SYSV_ABI sceSystemServiceActivateMpeg2Start();
-int PS4_SYSV_ABI sceSystemServiceActivateMpeg2Term();
+int PS4_SYSV_ABI sceSystemServiceActivateHevcAbort(int handle);
+int PS4_SYSV_ABI sceSystemServiceActivateHevcGetStatus(int handle, int* status, int* result);
+int PS4_SYSV_ABI sceSystemServiceActivateHevcInit(int* handle);
+int PS4_SYSV_ABI sceSystemServiceActivateHevcIsActivated(bool* is_activated);
+int PS4_SYSV_ABI sceSystemServiceActivateHevcStart(int handle);
+int PS4_SYSV_ABI sceSystemServiceActivateHevcTerm(int handle);
+int PS4_SYSV_ABI sceSystemServiceActivateMpeg2Abort(int handle);
+int PS4_SYSV_ABI sceSystemServiceActivateMpeg2GetStatus(int handle, int* status, int* result);
+int PS4_SYSV_ABI sceSystemServiceActivateMpeg2Init(int* handle);
+int PS4_SYSV_ABI sceSystemServiceActivateMpeg2IsActivated(bool* is_activated);
+int PS4_SYSV_ABI sceSystemServiceActivateMpeg2Start(int handle);
+int PS4_SYSV_ABI sceSystemServiceActivateMpeg2Term(int handle);
 int PS4_SYSV_ABI sceSystemStateMgrCancelShutdownTimer();
 int PS4_SYSV_ABI sceSystemStateMgrEnterMediaPlaybackMode();
 int PS4_SYSV_ABI sceSystemStateMgrEnterStandby();
