@@ -484,6 +484,7 @@ Id EmitWriteLane(EmitContext& ctx, Id value, Id write_value, u32 lane);
 Id EmitBallot(EmitContext& ctx, Id bit);
 Id EmitBallotFindLsb(EmitContext& ctx, Id mask);
 Id EmitInverseBallot(EmitContext& ctx, Id mask);
+Id EmitGroupUMin(EmitContext& ctx, Id value);
 Id EmitGroupAny(EmitContext& ctx, Id bit);
 Id EmitDataAppend(EmitContext& ctx, Id gds_dw_offset, Id exec);
 Id EmitDataConsume(EmitContext& ctx, Id gds_dw_offset, Id exec);
