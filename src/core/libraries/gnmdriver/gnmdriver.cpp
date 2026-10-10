@@ -637,8 +637,9 @@ s32 PS4_SYSV_ABI sceGnmDrawIndirectCountMulti(u32* cmdbuf, u32 size, u32 data_of
         (vertex_sgpr_offset < 0x10u) && (instance_sgpr_offset < 0x10u)) {
 
         const auto predicate = flags & 1 ? PM4Predicate::PredEnable : PM4Predicate::PredDisable;
+        cmdbuf = WriteTrailingNop<2>(cmdbuf);
         cmdbuf = WriteHeader<PM4ItOpcode::DrawIndirectCountMulti>(
-            cmdbuf, 4, PM4ShaderType::ShaderGraphics, predicate);
+            cmdbuf, 9, PM4ShaderType::ShaderGraphics, predicate);
 
         const auto sgpr_offset = indirect_sgpr_offsets[shader_stage];
 
