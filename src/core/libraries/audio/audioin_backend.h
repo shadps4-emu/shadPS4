@@ -12,6 +12,8 @@ class PortInBackend {
 public:
     virtual ~PortInBackend() = default;
     virtual int Read(void* out_buffer) = 0;
+    // Like Read(), but returns 0 immediately instead of waiting for a full frame.
+    virtual int TryRead(void* out_buffer) = 0;
     virtual void Clear() = 0;
     virtual bool IsAvailable() = 0;
 };
