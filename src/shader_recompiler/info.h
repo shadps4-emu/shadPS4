@@ -46,6 +46,8 @@ struct InfoPersistent {
 
     u32 fetch_shader_sgpr_base{};
     u32 shared_memory_scratch_size{};
+    // Set by Optimization::WorkgroupSizeClampPass; 1 when no splitting was done.
+    u32 workgroup_split_factor{1};
 
     u64 pgm_hash{};
 
