@@ -5,12 +5,10 @@
 
 #include <boost/container/small_vector.hpp>
 
+#include "common/logging/log.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
-
-namespace Shader {
-enum class SharpFetchPostOp : u8;
-}
+#include "shader_recompiler/resource.h"
 
 namespace Shader::Optimization {
 
@@ -29,8 +27,55 @@ struct SharpReference {
 struct ResourceDiscovery {
     IR::Inst* user{};
     std::array<SharpReference, 2> sharps;
+    std::array<u8, 2> guards{NO_GUARD, NO_GUARD};
 };
 using ResourceDiscoveryList = boost::container::small_vector<ResourceDiscovery, 32>;
+
+inline SharpLocation SharpLocationFromSource(const IR::Inst* inst, bool warn = true) {
+    SharpLocation location{};
+    if (inst->GetOpcode() == IR::Opcode::GetUserData) {
+        return static_cast<SharpLocation>(inst->Arg(0).ScalarReg());
+    } else if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        location = inst->Flags<IR::BufferInstInfo>().flatbuf_off_dw;
+    } else {
+        location = inst->Flags<SharpLocation>();
+    }
+    if (location == 0) {
+        if (warn) {
+            LOG_WARNING(Render_Recompiler, "Sharp source was not flatenned");
+        }
+        return UNKNOWN_LOCATION;
+    }
+    return location;
+}
+
+template <typename T>
+SharpFetch<T> ConstructSharpFetch(const SharpReference& sharp, bool warn = true) {
+    using Summary = SharpFetch<T>::Summary;
+    SharpFetch<T> sharp_fetch{};
+    for (u32 i = 0; i < sharp.num_dwords; i++) {
+        auto dword = sharp.dwords[i];
+        if (dword.IsImmediate()) {
+            sharp_fetch.immediates[i] = dword.U32();
+        } else {
+            sharp_fetch.offsets[i] = SharpLocationFromSource(dword.Inst(), warn);
+            sharp_fetch.load_mask |= (1 << i);
+            if (sharp_fetch.offsets[i] == UNKNOWN_LOCATION) {
+                sharp_fetch.summary = Summary::Invalid;
+            }
+        }
+    }
+    if (sharp_fetch.summary != Summary::Invalid) {
+        const u32 base = sharp_fetch.offsets[0];
+        for (u32 i = 1; i < sharp.num_dwords; ++i) {
+            if (sharp_fetch.offsets[i] - base != i) {
+                return sharp_fetch;
+            }
+        }
+        sharp_fetch.summary = Summary::SingleLoad;
+    }
+    return sharp_fetch;
+}
 
 inline bool IsBufferAtomic(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
