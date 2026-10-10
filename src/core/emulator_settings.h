@@ -608,6 +608,23 @@ private:
     void MigrateNetworkKeys(const nlohmann::json& general, const nlohmann::json& network);
 
 public:
+    // Used by the launcher to back up / restore settings (e.g. per-game settings dialog)
+    EmulatorSettingsImpl& operator=(const EmulatorSettingsImpl& other) {
+        if (this != &other) {
+            m_shadnet_session_disabled.store(other.m_shadnet_session_disabled.load());
+            m_general = other.m_general;
+            m_network = other.m_network;
+            m_log = other.m_log;
+            m_debug = other.m_debug;
+            m_input = other.m_input;
+            m_audio = other.m_audio;
+            m_gpu = other.m_gpu;
+            m_vulkan = other.m_vulkan;
+            m_configMode = other.m_configMode;
+        }
+        return *this;
+    }
+
     // Add these getters to access overrideable fields
     std::vector<OverrideItem> GetGeneralOverrideableFields() const {
         return m_general.GetOverrideableFields();
