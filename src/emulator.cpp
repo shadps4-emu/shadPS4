@@ -41,6 +41,7 @@
 #include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/save_data/save_backup.h"
+#include "core/libraries/usbd/usbstorage.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/user_settings.h"
@@ -626,6 +627,11 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         std::filesystem::create_directory(mount_download_dir);
     }
     mnt->Mount(mount_download_dir, "/download0");
+
+    const auto mount_usb_dir = Libraries::UsbStorage::GetUsbMountPath();
+    std::error_code ec_usb;
+    std::filesystem::create_directories(mount_usb_dir, ec_usb);
+    mnt->Mount(mount_usb_dir, "/mnt/usb0");
 
     const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
     if (!std::filesystem::exists(mount_captures_dir)) {
