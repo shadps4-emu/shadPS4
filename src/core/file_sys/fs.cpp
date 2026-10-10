@@ -496,6 +496,24 @@ bool MntPoints::IsDirectory(std::string_view guest_path) {
     return false;
 }
 
+bool MntPoints::Stat(std::string_view guest_path, FileStat& out) {
+    const auto corrected = SanitizeGuestPath(guest_path);
+    if (!corrected) {
+        return false;
+    }
+    const auto mount = GetMount(*corrected);
+    if (!mount || mount->backends.empty()) {
+        return false;
+    }
+    const auto rel = RelativeToMount(*corrected, *mount);
+    for (const auto& backend : mount->backends) {
+        if (backend->Exists(rel)) {
+            return backend->Stat(rel, out);
+        }
+    }
+    return false;
+}
+
 std::unique_ptr<IFile> MntPoints::Open(std::string_view guest_path, bool writable) {
     return Open(guest_path, writable ? Common::FS::FileAccessMode::ReadWrite
                                      : Common::FS::FileAccessMode::Read);

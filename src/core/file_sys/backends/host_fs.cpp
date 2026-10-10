@@ -1,13 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <chrono>
 #include <fstream>
 #include <system_error>
-
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
-#include <sys/stat.h>
-#endif
 
 #include "common/string_util.h"
 #include "core/file_sys/backends/host_fs.h"
@@ -15,11 +10,33 @@
 
 namespace Core::FileSys {
 
+namespace {
+
+FileStat MakeFileStat(const Common::FS::FileInfo& info, u32 inode) {
+    return {
+        .size = info.size,
+        .inode = inode,
+        .mtime_sec = info.mtime_sec,
+        .mtime_nsec = info.mtime_nsec,
+        .atime_sec = info.atime_sec,
+        .atime_nsec = info.atime_nsec,
+        .ctime_sec = info.ctime_sec,
+        .ctime_nsec = info.ctime_nsec,
+        .is_directory = info.is_directory,
+    };
+}
+
+} // namespace
+
 // Guest code expects POSIX sharing: opening a file already open for writing must not fail.
 HostFile::HostFile(std::filesystem::path host_path, Common::FS::FileAccessMode mode, bool read_only)
     : m_path(std::move(host_path)), m_file(m_path, mode, Common::FS::FileType::BinaryFile,
                                            Common::FS::FileShareFlag::ShareReadWrite),
-      m_read_only(read_only) {}
+      m_read_only(read_only) {
+    if (const auto info = m_file.GetInfo()) {
+        m_inode = GetGuestInode(FileIdentity{.host = info->identity}).value_or(0);
+    }
+}
 
 s64 HostFile::Read(void* dst, u64 size) {
     if (!m_file.IsOpen()) {
@@ -71,44 +88,9 @@ bool HostFile::IsOpen() const {
 }
 
 void HostFile::Stat(FileStat& out) {
-    out.size = Size();
-    out.is_directory = false;
-#if defined(__linux__) || defined(__FreeBSD__)
-    struct stat st = {};
-    if (::stat(m_path.string().c_str(), &st) == 0) {
-        out.mtime_sec = static_cast<s64>(st.st_mtim.tv_sec);
-        out.mtime_nsec = static_cast<s64>(st.st_mtim.tv_nsec);
-        out.atime_sec = static_cast<s64>(st.st_atim.tv_sec);
-        out.atime_nsec = static_cast<s64>(st.st_atim.tv_nsec);
-        out.ctime_sec = static_cast<s64>(st.st_ctim.tv_sec);
-        out.ctime_nsec = static_cast<s64>(st.st_ctim.tv_nsec);
-    }
-#elif defined(__APPLE__)
-    struct stat st = {};
-    if (::stat(m_path.string().c_str(), &st) == 0) {
-        out.mtime_sec = static_cast<s64>(st.st_mtimespec.tv_sec);
-        out.mtime_nsec = static_cast<s64>(st.st_mtimespec.tv_nsec);
-        out.atime_sec = static_cast<s64>(st.st_atimespec.tv_sec);
-        out.atime_nsec = static_cast<s64>(st.st_atimespec.tv_nsec);
-        out.ctime_sec = static_cast<s64>(st.st_ctimespec.tv_sec);
-        out.ctime_nsec = static_cast<s64>(st.st_ctimespec.tv_nsec);
-    }
-#else
-    std::error_code ec;
-    const auto ft = std::filesystem::last_write_time(m_path, ec);
-    if (!ec) {
-        const auto sctp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
-            ft - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
-        const auto secs = std::chrono::time_point_cast<std::chrono::seconds>(sctp);
-        const auto nsecs = std::chrono::duration_cast<std::chrono::nanoseconds>(sctp - secs);
-        out.mtime_sec = static_cast<s64>(secs.time_since_epoch().count());
-        out.mtime_nsec = static_cast<s64>(nsecs.count());
-        out.atime_sec = out.mtime_sec;
-        out.atime_nsec = out.mtime_nsec;
-        out.ctime_sec = out.mtime_sec;
-        out.ctime_nsec = out.mtime_nsec;
-    }
-#endif
+    m_file.Flush();
+    const auto info = m_file.GetInfo();
+    out = info ? MakeFileStat(*info, m_inode) : FileStat{};
 }
 
 HostDirectory::HostDirectory(const std::filesystem::path& root) : m_root(root) {
@@ -214,6 +196,19 @@ bool HostFsBackend::Exists(std::string_view rel_path) {
 bool HostFsBackend::IsDirectory(std::string_view rel_path) {
     std::error_code ec;
     return std::filesystem::is_directory(Resolve(rel_path), ec);
+}
+
+bool HostFsBackend::Stat(std::string_view rel_path, FileStat& out) {
+    const auto info = Common::FS::GetFileInfo(Resolve(rel_path));
+    if (!info) {
+        return false;
+    }
+    const auto inode = GetGuestInode(FileIdentity{.host = info->identity});
+    if (!inode) {
+        return false;
+    }
+    out = MakeFileStat(*info, *inode);
+    return true;
 }
 
 std::unique_ptr<IFile> HostFsBackend::Open(std::string_view rel_path,

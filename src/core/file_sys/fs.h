@@ -77,6 +77,7 @@ public:
     /// Returns true if the guest path resolves to a directory in any
     /// backend of the mount stack.
     bool IsDirectory(std::string_view guest_path);
+    bool Stat(std::string_view guest_path, FileStat& out);
 
     /// Opens the guest path through the mount's backend stack. Returns
     /// nullptr when the path does not exist or the caller requested
