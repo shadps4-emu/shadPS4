@@ -9,6 +9,7 @@
 #include "core/cpu_patches.h" // Windows static guest red-zone protection
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/threads/exception.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "core/signals.h"
 #include "emulator.h"
 
@@ -297,11 +298,18 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         UNREACHABLE_MSG("Unhandled signal {} at code address {}", sig, fmt::ptr(code_address));
     }
     case SIGSLEEP: {
+        if (thread) {
+            thread->suspended_context = context.uc_mcontext;
+            thread->is_suspended_in_signal = true;
+        }
         // Sleep thread until signal is received again
         sigset_t sigset;
         sigemptyset(&sigset);
         sigaddset(&sigset, SIGSLEEP);
         sigwait(&sigset, &sig);
+        if (thread) {
+            thread->is_suspended_in_signal = false;
+        }
         break;
     }
     case SIGUSR1:

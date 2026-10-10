@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <condition_variable>
@@ -461,6 +461,14 @@ s32 PS4_SYSV_ABI posix_sem_getvalue(PthreadSem** sem, s32* sval) {
     return 0;
 }
 
+s32 PS4_SYSV_ABI posix_sem_setname(PthreadSem** sem, const char* name) {
+    if (!name) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+    return 0;
+}
+
 s32 PS4_SYSV_ABI scePthreadSemInit(PthreadSem** sem, s32 flag, u32 value, const char* name) {
     if (flag != 0) {
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -557,6 +565,7 @@ void RegisterSemaphore(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("4SbrhCozqQU", "libkernel", 1, "libkernel", posix_sem_reltimedwait_np);
     LIB_FUNCTION("IKP8typ0QUk", "libkernel", 1, "libkernel", posix_sem_post);
     LIB_FUNCTION("Bq+LRV-N6Hk", "libkernel", 1, "libkernel", posix_sem_getvalue);
+    LIB_FUNCTION("-wUggz2S5yk", "libkernel", 1, "libkernel", posix_sem_setname);
 
     LIB_FUNCTION("GEnUkDZoUwY", "libkernel", 1, "libkernel", scePthreadSemInit);
     LIB_FUNCTION("Vwc+L05e6oE", "libkernel", 1, "libkernel", scePthreadSemDestroy);

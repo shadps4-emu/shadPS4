@@ -1121,7 +1121,25 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
 
     // Ensure the range to modify is valid
     std::scoped_lock lk{mutex, unmap_mutex};
-    ASSERT_MSG(IsValidMapping(addr, size), "Attempted to access invalid address {:#x}", addr);
+
+    const VAddr vbase = impl.SystemManagedVirtualBase();
+    const VAddr vend = vbase + impl.SystemManagedVirtualSize();
+
+    // In the PS4 kernel, invalid pages are ignored and only mapped pages in range are protected.
+    if (addr < vbase) {
+        const u64 skip = vbase - addr;
+        if (skip >= size) {
+            return ORBIS_OK;
+        }
+        addr += skip;
+        size -= skip;
+    }
+    if (addr >= vend) {
+        return ORBIS_OK;
+    }
+    if (addr + size > vend) {
+        size = vend - addr;
+    }
 
     // Appropriately restrict flags.
     constexpr static MemoryProt flag_mask =
@@ -1132,15 +1150,24 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
     s64 protected_bytes = 0;
     while (protected_bytes < size) {
         auto it = FindVMA(addr + protected_bytes);
+        if (it == vma_map.end()) {
+            break;
+        }
         auto& vma_base = it->second;
         if (vma_base.base > addr + protected_bytes) {
             // Account for potential gaps in memory map.
             protected_bytes += vma_base.base - (addr + protected_bytes);
+            if (protected_bytes >= size) {
+                break;
+            }
         }
         auto result = ProtectBytes(addr + protected_bytes, vma_base, size - protected_bytes, prot);
         if (result < 0) {
             // ProtectBytes returned an error, return it
             return result;
+        }
+        if (result == 0) {
+            break;
         }
         protected_bytes += result;
     }

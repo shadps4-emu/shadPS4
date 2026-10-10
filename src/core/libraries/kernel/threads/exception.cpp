@@ -23,11 +23,17 @@
 namespace Libraries::Kernel {
 
 #ifndef _WIN32
+static thread_local ucontext_t* s_current_host_context = nullptr;
+#else
+static thread_local PCONTEXT s_current_host_context = nullptr;
+#endif
+
+#ifndef _WIN32
 Ucontext::Ucontext(siginfo_t const* inf, ucontext_t* raw_context) {
     if (!inf || !raw_context) {
         return;
     }
-    host_context = raw_context;
+    s_current_host_context = raw_context;
 #ifdef ARCH_X86_64
 #ifdef __APPLE__
     const auto& regs = raw_context->uc_mcontext->__ss;
@@ -105,7 +111,7 @@ Ucontext::Ucontext(PCONTEXT context) {
     if (!context) {
         return;
     }
-    host_context = context;
+    s_current_host_context = context;
     uc_mcontext.mc_r8 = context->R8;
     uc_mcontext.mc_r9 = context->R9;
     uc_mcontext.mc_r10 = context->R10;
@@ -129,33 +135,33 @@ Ucontext::Ucontext(PCONTEXT context) {
 #endif
 
 void Ucontext::SyncHostFromGuest() {
-    if (!host_context) {
+    if (!s_current_host_context) {
         return;
     }
 
 #ifdef ARCH_X86_64
 #ifdef _WIN32
-    host_context->R8 = uc_mcontext.mc_r8;
-    host_context->R9 = uc_mcontext.mc_r9;
-    host_context->R10 = uc_mcontext.mc_r10;
-    host_context->R11 = uc_mcontext.mc_r11;
-    host_context->R12 = uc_mcontext.mc_r12;
-    host_context->R13 = uc_mcontext.mc_r13;
-    host_context->R14 = uc_mcontext.mc_r14;
-    host_context->R15 = uc_mcontext.mc_r15;
-    host_context->Rdi = uc_mcontext.mc_rdi;
-    host_context->Rsi = uc_mcontext.mc_rsi;
-    host_context->Rbp = uc_mcontext.mc_rbp;
-    host_context->Rbx = uc_mcontext.mc_rbx;
-    host_context->Rdx = uc_mcontext.mc_rdx;
-    host_context->Rax = uc_mcontext.mc_rax;
-    host_context->Rcx = uc_mcontext.mc_rcx;
-    host_context->Rsp = uc_mcontext.mc_rsp;
-    host_context->Rip = uc_mcontext.mc_rip;
-    // host_context->SegFs = static_cast<DWORD>(uc_mcontext.mc_fs);
-    // host_context->SegGs = static_cast<DWORD>(uc_mcontext.mc_gs);
+    s_current_host_context->R8 = uc_mcontext.mc_r8;
+    s_current_host_context->R9 = uc_mcontext.mc_r9;
+    s_current_host_context->R10 = uc_mcontext.mc_r10;
+    s_current_host_context->R11 = uc_mcontext.mc_r11;
+    s_current_host_context->R12 = uc_mcontext.mc_r12;
+    s_current_host_context->R13 = uc_mcontext.mc_r13;
+    s_current_host_context->R14 = uc_mcontext.mc_r14;
+    s_current_host_context->R15 = uc_mcontext.mc_r15;
+    s_current_host_context->Rdi = uc_mcontext.mc_rdi;
+    s_current_host_context->Rsi = uc_mcontext.mc_rsi;
+    s_current_host_context->Rbp = uc_mcontext.mc_rbp;
+    s_current_host_context->Rbx = uc_mcontext.mc_rbx;
+    s_current_host_context->Rdx = uc_mcontext.mc_rdx;
+    s_current_host_context->Rax = uc_mcontext.mc_rax;
+    s_current_host_context->Rcx = uc_mcontext.mc_rcx;
+    s_current_host_context->Rsp = uc_mcontext.mc_rsp;
+    s_current_host_context->Rip = uc_mcontext.mc_rip;
+    // s_current_host_context->SegFs = static_cast<DWORD>(uc_mcontext.mc_fs);
+    // s_current_host_context->SegGs = static_cast<DWORD>(uc_mcontext.mc_gs);
 #elif __APPLE__
-    auto& regs = host_context->uc_mcontext->__ss;
+    auto& regs = s_current_host_context->uc_mcontext->__ss;
     regs.__r8 = uc_mcontext.mc_r8;
     regs.__r9 = uc_mcontext.mc_r9;
     regs.__r10 = uc_mcontext.mc_r10;
@@ -176,7 +182,7 @@ void Ucontext::SyncHostFromGuest() {
     regs.__gs = uc_mcontext.mc_gs;
     regs.__rip = uc_mcontext.mc_rip;
 #elif defined(__FreeBSD__)
-    auto& regs = host_context->uc_mcontext;
+    auto& regs = s_current_host_context->uc_mcontext;
     regs.mc_r8 = uc_mcontext.mc_r8;
     regs.mc_r9 = uc_mcontext.mc_r9;
     regs.mc_r10 = uc_mcontext.mc_r10;
@@ -197,7 +203,7 @@ void Ucontext::SyncHostFromGuest() {
     regs.mc_gs = uc_mcontext.mc_gs;
     regs.mc_rip = uc_mcontext.mc_rip;
 #else
-    auto& regs = host_context->uc_mcontext.gregs;
+    auto& regs = s_current_host_context->uc_mcontext.gregs;
     regs[REG_R8] = uc_mcontext.mc_r8;
     regs[REG_R9] = uc_mcontext.mc_r9;
     regs[REG_R10] = uc_mcontext.mc_r10;
