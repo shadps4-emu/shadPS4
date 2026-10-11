@@ -1554,14 +1554,13 @@ void Translator::V_CVT_PK_I16_I32(const GcnInst& inst) {
 
 void Translator::V_CVT_PK_U8_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
-    const IR::U32 src1{GetSrc<IR::U32>(inst.src[1])};
-    const IR::U32 src2{GetSrc<IR::U32>(inst.src[2])};
-    const IR::F32 rounded{ir.FPRoundEven(src0)};
-    const IR::F32 clamped{ir.FPClamp(rounded, ir.Imm32(0.0f), ir.Imm32(255.0f))};
+    const IR::U32 src1{GetSrc(inst.src[1])};
+    const IR::U32 src2{GetSrc(inst.src[2])};
+
+    const IR::F32 clamped{ir.FPClamp(ir.FPRoundEven(src0), ir.Imm32(0.0f), ir.Imm32(255.0f))};
     const IR::F32 value{ir.Select(ir.FPIsNan(src0), ir.Imm32(0.0f), clamped)};
     const IR::U32 value_uint{ir.ConvertFToU(32, value)};
-    const IR::U32 byte_index{ir.BitwiseAnd(src1, ir.Imm32(3))};
-    const IR::U32 offset{ir.ShiftLeftLogical(byte_index, ir.Imm32(3))};
+    const IR::U32 offset{ir.ShiftLeftLogical(ir.BitwiseAnd(src1, ir.Imm32(3)), ir.Imm32(3))};
     SetDst(inst.dst[0], ir.BitFieldInsert(src2, value_uint, offset, ir.Imm32(8)));
 }
 
