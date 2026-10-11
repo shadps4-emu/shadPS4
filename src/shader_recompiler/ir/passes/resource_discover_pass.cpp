@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
+#include <span>
+#include <unordered_map>
+
 #include "common/assert.h"
+#include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/program.h"
@@ -389,7 +394,203 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
     MarkReadConstBufferSharpSources(ssharp);
 }
 
+static bool IsSelectableBufferLoad(const IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::LoadBufferU32:
+    case IR::Opcode::LoadBufferU32x2:
+    case IR::Opcode::LoadBufferU32x3:
+    case IR::Opcode::LoadBufferU32x4:
+    case IR::Opcode::LoadBufferU64:
+    case IR::Opcode::LoadBufferF32:
+    case IR::Opcode::LoadBufferF32x2:
+    case IR::Opcode::LoadBufferF32x3:
+    case IR::Opcode::LoadBufferF32x4:
+    case IR::Opcode::LoadBufferFormatF32:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool IsEntryValue(const IR::Value& value) {
+    return value.IsImmediate() || value.Inst()->GetParent()->ImmPredecessors().empty();
+}
+
+static bool CanRebuildSharpValue(const IR::Value& value, u32 depth) {
+    if (IsEntryValue(value)) {
+        return true;
+    }
+    const IR::Inst* const inst = value.Inst();
+    switch (inst->GetOpcode()) {
+    case IR::Opcode::GetUserData:
+    case IR::Opcode::ReadConst:
+    case IR::Opcode::CompositeConstructU32x2:
+        break;
+    default:
+        return false;
+    }
+    if (depth == 0) {
+        return false;
+    }
+    for (size_t i = 0; i < inst->NumArgs(); ++i) {
+        if (!CanRebuildSharpValue(inst->Arg(i), depth - 1)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static IR::Value RebuildSharpValue(IR::Block& block, IR::Block::iterator insert_point,
+                                   const IR::Value& value,
+                                   std::unordered_map<const IR::Inst*, IR::Value>& rebuilt) {
+    if (IsEntryValue(value)) {
+        return value;
+    }
+    const IR::Inst* const inst = value.Inst();
+    if (const auto it = rebuilt.find(inst); it != rebuilt.end()) {
+        return it->second;
+    }
+    boost::container::small_vector<IR::Value, 2> args;
+    for (size_t i = 0; i < inst->NumArgs(); ++i) {
+        args.push_back(RebuildSharpValue(block, insert_point, inst->Arg(i), rebuilt));
+    }
+    IR::Inst* const copy = &*block.PrependNewInst(insert_point, *inst);
+    for (size_t i = 0; i < args.size(); ++i) {
+        copy->SetArg(i, args[i]);
+    }
+    return rebuilt.emplace(inst, IR::Value{copy}).first->second;
+}
+
+static IR::Value SelectSideResult(IR::IREmitter& ir, const IR::U1& condition,
+                                  const IR::Value& true_value, const IR::Value& false_value) {
+    size_t num_components = 0;
+    switch (true_value.Type()) {
+    case IR::Type::U32x2:
+    case IR::Type::F32x2:
+        num_components = 2;
+        break;
+    case IR::Type::U32x3:
+    case IR::Type::F32x3:
+        num_components = 3;
+        break;
+    case IR::Type::U32x4:
+    case IR::Type::F32x4:
+        num_components = 4;
+        break;
+    default:
+        return ir.Select(condition, true_value, false_value);
+    }
+    boost::container::small_vector<IR::Value, 4> components;
+    for (size_t i = 0; i < num_components; ++i) {
+        components.push_back(ir.Select(condition, ir.CompositeExtract(true_value, i),
+                                       ir.CompositeExtract(false_value, i)));
+    }
+    return ir.CompositeConstruct(std::span<const IR::Value>{components.data(), components.size()});
+}
+
+static void SplitBufferLoadBySharpPhi(IR::Block& block, IR::Inst& inst) {
+    IR::Inst* const handle = inst.Arg(0).TryInst();
+    if (!handle || handle->GetOpcode() != IR::Opcode::CompositeConstructU32x4) {
+        return;
+    }
+    std::array<IR::Value, 4> dwords;
+    std::array<bool, 4> from_phi{};
+    const IR::Inst* first_phi{};
+    for (size_t i = 0; i < dwords.size(); ++i) {
+        dwords[i] = handle->Arg(i);
+        if (const IR::Inst* const rfl = dwords[i].TryInst();
+            rfl && rfl->GetOpcode() == IR::Opcode::ReadFirstLane) {
+            dwords[i] = rfl->Arg(0);
+        }
+        const IR::Inst* const source = dwords[i].TryInst();
+        if (!source || IsSharpSource(source)) {
+            continue;
+        }
+        if (source->GetOpcode() != IR::Opcode::Phi) {
+            return;
+        }
+        if (!first_phi) {
+            first_phi = source;
+        } else if (source->GetParent() != first_phi->GetParent() ||
+                   source->NumArgs() != first_phi->NumArgs()) {
+            return;
+        }
+        from_phi[i] = true;
+    }
+    if (!first_phi || first_phi->NumArgs() < 2) {
+        return;
+    }
+    const size_t num_sides = first_phi->NumArgs();
+    boost::container::small_vector<std::array<IR::Value, 4>, 4> sides(num_sides);
+    for (size_t side = 0; side < num_sides; ++side) {
+        IR::Block* const pred = first_phi->PhiBlock(side);
+        for (size_t other = 0; other < side; ++other) {
+            if (first_phi->PhiBlock(other) == pred) {
+                return;
+            }
+        }
+        for (size_t i = 0; i < dwords.size(); ++i) {
+            if (!from_phi[i]) {
+                sides[side][i] = dwords[i];
+                continue;
+            }
+            const IR::Inst* const phi = dwords[i].Inst();
+            size_t arg = 0;
+            while (arg < phi->NumArgs() && phi->PhiBlock(arg) != pred) {
+                ++arg;
+            }
+            if (arg == phi->NumArgs()) {
+                return;
+            }
+            const IR::Value value = phi->Arg(arg);
+            const IR::Inst* const side_source = value.TryInst();
+            if ((side_source && !IsSharpSource(side_source)) || !CanRebuildSharpValue(value, 4)) {
+                return;
+            }
+            sides[side][i] = value;
+        }
+    }
+    IR::Block* const phi_block = first_phi->GetParent();
+    IR::Inst* const side_index{&*phi_block->PrependNewInst(phi_block->begin(), IR::Opcode::Phi)};
+    side_index->SetFlags(IR::Type::U32);
+    for (size_t side = 0; side < num_sides; ++side) {
+        side_index->AddPhiOperand(first_phi->PhiBlock(side), IR::Value{static_cast<u32>(side)});
+    }
+    const auto insert_point = IR::Block::InstructionList::s_iterator_to(inst);
+    std::unordered_map<const IR::Inst*, IR::Value> rebuilt;
+    boost::container::small_vector<IR::Value, 4> loads;
+    for (size_t side = 0; side < num_sides; ++side) {
+        std::array<IR::Value, 4> values;
+        for (size_t i = 0; i < dwords.size(); ++i) {
+            values[i] = from_phi[i]
+                            ? RebuildSharpValue(block, insert_point, sides[side][i], rebuilt)
+                            : sides[side][i];
+        }
+        IR::Inst* const side_handle = &*block.PrependNewInst(insert_point, *handle);
+        for (size_t i = 0; i < values.size(); ++i) {
+            side_handle->SetArg(i, values[i]);
+        }
+        IR::Inst* const load = &*block.PrependNewInst(insert_point, inst);
+        load->SetArg(0, IR::Value{side_handle});
+        loads.push_back(IR::Value{load});
+    }
+    IR::IREmitter ir{block, insert_point};
+    IR::Value result = loads.back();
+    for (size_t side = num_sides - 1; side-- > 0;) {
+        const IR::U1 taken = ir.IEqual(IR::U32{side_index}, ir.Imm32(static_cast<u32>(side)));
+        result = SelectSideResult(ir, taken, loads[side], result);
+    }
+    inst.ReplaceUsesWithAndRemove(result);
+}
+
 ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& profile) {
+    for (IR::Block* const block : program.blocks) {
+        for (IR::Inst& inst : block->Instructions()) {
+            if (IsSelectableBufferLoad(inst)) {
+                SplitBufferLoadBySharpPhi(*block, inst);
+            }
+        }
+    }
     ResourceDiscoveryList sharp_usages;
 
     for (IR::Block* const block : program.blocks) {
