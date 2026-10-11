@@ -892,10 +892,10 @@ void HandleHandshakePacket(u32 from_addr, u16 from_port,
             transport.peer_activated = true;
             if (transport.state != NpSignaling::ConnState::Established) {
                 SetTransportStateLocked(transport, NpSignaling::ConnState::SendingAccept);
-                reply = MakeHandshakeLocked(transport, NpSignaling::HandshakeKind::Accept);
-                send_reply = true;
-                reply_transport = transport_id;
             }
+            reply = MakeHandshakeLocked(transport, NpSignaling::HandshakeKind::Accept);
+            send_reply = true;
+            reply_transport = transport_id;
         } else if (transport_id == 0) {
             return;
         } else if (kind == NpSignaling::HandshakeKind::Accept) {
@@ -1356,6 +1356,26 @@ void ReleaseContextRef() {
     if (should_stop) {
         Stop();
     }
+}
+
+bool FindMatching2MemberNpId(OrbisNpAccountId account_id, OrbisNpId* out_npid) {
+    for (u32 id = 1; id <= NpMatching2::ContextManager::kMaxContexts; ++id) {
+        auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(
+            static_cast<NpMatching2::OrbisNpMatching2ContextId>(id));
+        if (!ctx) {
+            continue;
+        }
+        auto cache = NpHandler::GetInstance().LockMatching2Cache(ctx->ctx_id);
+        for (const auto& [room_id, room] : cache->rooms) {
+            for (const auto& [member_id, member] : room.members) {
+                if (member.account_id == account_id && member.np_id.handle.data[0] != '\0') {
+                    *out_npid = member.np_id;
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 s32 ActivateSig1(NpSignaling::OrbisNpSignalingContextId ctx_id, const OrbisNpId& peer_npid,
