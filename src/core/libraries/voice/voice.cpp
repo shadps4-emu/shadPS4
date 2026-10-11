@@ -118,6 +118,13 @@ AudioIn::PortInBackend* GetOrOpenCapture(Port& port) {
     return port.audio_in.get();
 }
 
+bool IsCaptureAvailable(const Port& port) {
+    if (port.audio_in) {
+        return port.audio_in->IsAvailable();
+    }
+    return EmulatorSettings.GetSDLMicDevice() != "None";
+}
+
 AudioOut::PortBackend* GetOrOpenPlayback(Port& port) {
     if (!port.audio_out_open_tried) {
         port.audio_out_open_tried = true;
@@ -288,19 +295,29 @@ s32 PS4_SYSV_ABI sceVoiceGetPortAttr(u32 port_id, s32 attr_id, void* value, u32 
         return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
     }
     std::scoped_lock lock{g_voice_manager.mutex};
-    if (!g_voice_manager.ports[port_id].allocated) {
+    const auto& port = g_voice_manager.ports[port_id];
+    if (!port.allocated) {
         return ORBIS_VOICE_ERROR_NOT_ACTIVE;
     }
-    // Attribute meaning is unknown; report a stable default instead of garbage.
+    // Other attributes are unknown; report a stable default instead of garbage.
+    u32 result = 0;
+    if (port.param.type == 0) {
+        const bool connected = IsCaptureAvailable(port);
+        if (attr_id == ORBIS_VOICE_ATTR_1001) {
+            result = connected;
+        } else if (attr_id == ORBIS_VOICE_ATTR_1002 && !connected) {
+            result = AudioIn::ORBIS_AUDIO_IN_SILENT_STATE_DEVICE_NONE;
+        }
+    }
     switch (expected_size) {
     case 1:
-        *static_cast<u8*>(value) = 0;
+        *static_cast<u8*>(value) = static_cast<u8>(result);
         break;
     case 2:
-        *static_cast<u16*>(value) = 0;
+        *static_cast<u16*>(value) = static_cast<u16>(result);
         break;
     case 4:
-        *static_cast<u32*>(value) = 0;
+        *static_cast<u32*>(value) = result;
         break;
     }
     return ORBIS_OK;
@@ -459,7 +476,7 @@ s32 PS4_SYSV_ABI sceVoiceReadFromOPort(u32 port_id, void* data, u32* size) {
     }
     // Otherwise treat it as mic-backed and capture a live frame.
     auto* capture = GetOrOpenCapture(in_port);
-    if (capture == nullptr) {
+    if (capture == nullptr || !capture->IsAvailable()) {
         return ORBIS_OK;
     }
     std::array<s16, kFrameSamples> frame{};

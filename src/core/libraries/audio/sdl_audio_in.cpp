@@ -134,11 +134,7 @@ public:
         }
     }
     bool IsAvailable() override {
-        if (nullDevice) {
-            return false;
-        } else {
-            return true;
-        }
+        return !nullDevice && stream != nullptr;
     }
 
 private:
