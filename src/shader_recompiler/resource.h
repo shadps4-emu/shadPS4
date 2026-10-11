@@ -106,7 +106,7 @@ struct BufferResource {
         if (post_op == SharpFetchPostOp::BitwiseOrDw1WithImm) {
             reinterpret_cast<u32*>(&buffer)[1] |= post_op_dw1_mask;
         } else if (post_op == SharpFetchPostOp::ClearStrideAndBitshiftDw2WithImm) {
-            buffer.index_stride = 0;
+            buffer.stride = 0;
             buffer.num_records <<= post_op_dw2_shift;
         } else if (post_op == SharpFetchPostOp::OffsetByProgramBase) {
             buffer.base_address += info.pgm_base;
