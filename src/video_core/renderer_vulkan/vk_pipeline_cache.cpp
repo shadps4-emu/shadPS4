@@ -405,6 +405,18 @@ bool PipelineCache::RefreshGraphicsKey() {
                              ? regs.depth_buffer.stencil_info.format
                              : AmdGpu::DepthBuffer::StencilFormat::Invalid;
     key.depth_clamp_enable = !regs.depth_render_override.disable_viewport_clamp;
+    if (key.depth_clamp_enable && instance.IsDepthClampControlSupported()) {
+        key.depth_clamp_min = 0.f;
+        key.depth_clamp_max = 1.f;
+        for (u32 i = 0; i < AmdGpu::NUM_VIEWPORTS; i++) {
+            if (regs.viewports[i].xscale != 0) {
+                const auto& vp_d = regs.viewport_depths[i];
+                key.depth_clamp_min = std::min(vp_d.zmin, vp_d.zmax);
+                key.depth_clamp_max = std::max(vp_d.zmin, vp_d.zmax);
+                break;
+            }
+        }
+    }
     key.depth_clip_enable = regs.clipper_control.ZclipEnable();
     key.clip_space = regs.clipper_control.clip_space;
     key.provoking_vtx_last = regs.polygon_control.provoking_vtx_last;
