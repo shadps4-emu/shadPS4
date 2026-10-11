@@ -29,9 +29,9 @@ void Translator::EmitDataShare(const GcnInst& inst) {
     case Opcode::DS_MAX_U32:
         return DS_OP(inst, AtomicOp::Umax, false);
     case Opcode::DS_MAX_F32:
-        return DS_OP_F32(inst, AtomicOp::Fmax, false);
+        return DS_OP_F32(inst, AtomicOp::Fmax);
     case Opcode::DS_MIN_F32:
-        return DS_OP_F32(inst, AtomicOp::Fmin, false);
+        return DS_OP_F32(inst, AtomicOp::Fmin);
     case Opcode::DS_AND_B32:
         return DS_OP(inst, AtomicOp::And, false);
     case Opcode::DS_OR_B32:
@@ -178,23 +178,15 @@ void Translator::DS_OP(const GcnInst& inst, AtomicOp op, bool rtn) {
 }
 
 template <typename T>
-void Translator::DS_OP_F32(const GcnInst& inst, AtomicOp op, bool rtn) {
+void Translator::DS_OP_F32(const GcnInst& inst, AtomicOp op) {
     const bool is_gds = inst.control.ds.gds;
     const IR::U32 addr{GetSrc(inst.src[0])};
-    const T data = [&] {
-        if (op == AtomicOp::Inc || op == AtomicOp::Dec) {
-            return T{};
-        }
-        if constexpr (std::is_same_v<T, IR::F32>) {
-            return GetSrc<IR::F32>(inst.src[1]);
-        } else {
-            return GetSrc64<IR::F64>(inst.src[1]);
-        }
-    }();
+    const IR::F32 data{GetSrc<IR::F32>(inst.src[1])};
+
     const IR::U32 offset =
         ir.Imm32((u32(inst.control.ds.offset1) << 8u) + u32(inst.control.ds.offset0));
     const IR::U32 addr_offset = ir.IAdd(addr, offset);
-    const T original_val = [&] -> T {
+    const IR::F32 original_val = [&] {
         switch (op) {
         case AtomicOp::Fmax:
             return ir.SharedAtomicFMax(addr_offset, data, is_gds);
@@ -204,13 +196,7 @@ void Translator::DS_OP_F32(const GcnInst& inst, AtomicOp op, bool rtn) {
             UNREACHABLE();
         }
     }();
-    if (rtn) {
-        if constexpr (std::is_same_v<T, IR::F32>) {
-            SetDst(inst.dst[0], original_val);
-        } else {
-            SetDst64(inst.dst[0], original_val);
-        }
-    }
+    SetDst(inst.dst[0], original_val);
 }
 
 void Translator::DS_CMPST(int bit_size, bool rtn, const GcnInst& inst) {
