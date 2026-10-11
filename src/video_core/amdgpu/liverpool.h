@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -7,9 +7,11 @@
 #include <coroutine>
 #include <exception>
 #include <mutex>
+#include <optional>
 #include <semaphore>
 #include <span>
 #include <thread>
+#include <utility>
 #include <vector>
 #include <queue>
 
@@ -145,6 +147,19 @@ public:
         return gpu_id;
     }
 
+    [[nodiscard]] bool IsDrawPredicated() const noexcept {
+        return predication.enabled && predication.is_packet_predicated &&
+               (predication.address != 0);
+    }
+
+    [[nodiscard]] VAddr GetPredicationAddress() const noexcept {
+        return predication.address;
+    }
+
+    [[nodiscard]] bool IsPredicationInverted() const noexcept {
+        return predication.inverted;
+    }
+
 #ifdef __linux__
     u32 GetGpuCommandProcessorThreadId() {
         return gpu_tid;
@@ -205,6 +220,25 @@ private:
     };
     std::array<GpuQueue, NumTotalQueues> mapped_queues{};
     u32 num_mapped_queues{1u}; // GFX is always available
+
+    struct PredicationState {
+        bool enabled{false};
+        VAddr address{0};
+        bool inverted{false};
+        bool hint{false};
+        bool continue_bit{false};
+        bool is_packet_predicated{false};
+    } predication{};
+
+    std::optional<std::pair<u32, u32>> saved_index_base{};
+    void RestorePredicatedIndexBase() {
+        if (!saved_index_base) {
+            return;
+        }
+        regs.index_base_address.base_addr_lo = saved_index_base->first;
+        regs.index_base_address.base_addr_hi = saved_index_base->second;
+        saved_index_base.reset();
+    }
 
     VAddr indirect_args_addr{};
     u32 num_counter_pairs{};

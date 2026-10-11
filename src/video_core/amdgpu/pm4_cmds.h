@@ -768,7 +768,11 @@ struct PM4CmdWriteData {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>(addr64);
+        if constexpr (std::is_pointer_v<T>) {
+            return reinterpret_cast<T>(addr64);
+        } else {
+            return static_cast<T>(addr64);
+        }
     }
 };
 
@@ -1257,19 +1261,62 @@ struct PM4CmdCondExec {
     union {
         BitField<2, 30, u32> bool_addr_lo; ///< low 32 address bits for the block in memory from
                                            ///< where the CP will fetch the condition
+        u32 addr_lo_raw;
     };
     union {
-        BitField<0, 16, u32> bool_addr_hi; ///< high address bits for the condition
+        BitField<0, 16, u32> bool_addr_hi; ///< high address bits for the condition (GFX6)
         BitField<28, 4, u32> command;
+        u32 addr_hi_raw; ///< GFX7+ uses full high 32 bits
     };
     union {
-        BitField<0, 14, u32> exec_count; ///< Number of DWords that the CP will skip
-                                         ///< if bool pointed to is zero
+        BitField<0, 14, u32> exec_count_gfx6; ///< GFX6 exec_count
+        u32 reserved_gfx7;                    ///< GFX7+ reserved DWORD (DW3)
+    };
+    union {
+        BitField<0, 14, u32> exec_count_gfx7; ///< GFX7+ exec_count (DW4)
+        u32 exec_count_raw;
     };
 
-    bool* Address() const {
-        return std::bit_cast<bool*>(u64(bool_addr_hi.Value()) << 32 | u64(bool_addr_lo.Value())
-                                                                          << 2);
+    [[nodiscard]] u32 ExecCount() const {
+        if (header.count.Value() >= 3) {
+            return exec_count_gfx7.Value();
+        }
+        return exec_count_gfx6.Value();
+    }
+
+    template <typename T = VAddr>
+    [[nodiscard]] T Address() const {
+        const u64 hi = (header.count.Value() >= 3) ? u64(addr_hi_raw) : u64(bool_addr_hi.Value());
+        return std::bit_cast<T>((hi << 32) | (u64(bool_addr_lo.Value()) << 2));
+    }
+};
+
+struct PM4CmdSetPredication {
+    enum class PredOp : u32 {
+        Disable = 0u,
+        Zpass = 1u,
+        PrimCount = 2u,
+        Bool64 = 3u,
+        Bool32 = 4u,
+    };
+
+    PM4Type3Header header;
+    union {
+        u32 dw1;
+        BitField<4, 28, u32> addr_lo;
+    };
+    union {
+        u32 dw2;
+        BitField<0, 8, u32> addr_hi;
+        BitField<8, 1, u32> draw_op;
+        BitField<12, 1, u32> hint;
+        BitField<16, 3, PredOp> pred_op;
+        BitField<31, 1, u32> continue_bit;
+    };
+
+    template <typename T = VAddr>
+    [[nodiscard]] T Address() const {
+        return std::bit_cast<T>((u64(addr_hi.Value()) << 32) | (u64(addr_lo.Value()) << 4));
     }
 };
 
