@@ -32,6 +32,7 @@ constexpr s32 kMatching2ConnPending = 1;
 constexpr s32 kMatching2ConnActive = 2;
 constexpr auto kMatching2StepInterval = std::chrono::milliseconds(500);
 constexpr auto kMatching2Timeout = std::chrono::seconds(30);
+constexpr auto kMatching2EstablishDelay = std::chrono::milliseconds(1000);
 constexpr auto kStunPingInterval = std::chrono::seconds(5);
 constexpr s64 kHandshakeConnectTimeoutMs = 30'000;
 constexpr s64 kHandshakeRetransmitMs = 500;
@@ -627,6 +628,7 @@ void QueueMatching2DeadForTransport(s32 transport_id, s32 error_code) {
             }();
             peer.status = kMatching2ConnInactive;
             peer.sent_established = false;
+            peer.active_since_us = 0;
             if (room_id != 0) {
                 NpMatching2::QueueMatching2SignalingEvent(
                     *ctx, room_id, member_id, NpMatching2::ORBIS_NP_MATCHING2_SIGNALING_EVENT_DEAD,
@@ -1192,6 +1194,20 @@ void SyncMatching2Peers() {
                       : s.status == NpSignaling::ORBIS_NP_SIGNALING_CONN_STATUS_PENDING
                           ? kMatching2ConnPending
                           : kMatching2ConnInactive;
+        if (peer.status != kMatching2ConnActive) {
+            peer.active_since_us = 0;
+        } else if (!peer.sent_established) {
+            // Report pending (status and event) until the establish delay has passed.
+            const s64 now_us = NpSignaling::NowUs();
+            if (peer.active_since_us == 0) {
+                peer.active_since_us = now_us;
+            }
+            if (now_us - peer.active_since_us <
+                std::chrono::duration_cast<std::chrono::microseconds>(kMatching2EstablishDelay)
+                    .count()) {
+                peer.status = kMatching2ConnPending;
+            }
+        }
         if (peer.status == kMatching2ConnActive && !peer.sent_established) {
             peer.sent_established = true;
             NpMatching2::QueueMatching2SignalingEvent(
