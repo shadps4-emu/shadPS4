@@ -59,7 +59,10 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexOffset(u32* cmdbuf, u32 size, u32 index_offset, 
                                        u32 flags);
 s32 PS4_SYSV_ABI sceGnmDrawIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 shader_stage,
                                     u32 vertex_sgpr_offset, u32 instance_sgpr_offset, u32 flags);
-int PS4_SYSV_ABI sceGnmDrawIndirectCountMulti();
+s32 PS4_SYSV_ABI sceGnmDrawIndirectCountMulti(u32* cmdbuf, u32 size, u32 data_offset, u32 max_count,
+                                              u64 count_addr, u32 shader_stage,
+                                              u32 vertex_sgpr_offset, u32 instance_sgpr_offset,
+                                              u32 flags);
 s32 PS4_SYSV_ABI sceGnmDrawIndirectMulti(u32* cmdbuf, u32 size, u32 data_offset, u32 max_count,
                                          u32 shader_stage, u32 vertex_sgpr_offset,
                                          u32 instance_sgpr_offset, u32 flags);
@@ -138,8 +141,13 @@ void PS4_SYSV_ABI sceGnmRegisterGnmLiveCallbackConfig();
 s32 PS4_SYSV_ABI sceGnmRegisterOwner(void* handle, const char* name);
 s32 PS4_SYSV_ABI sceGnmRegisterResource(void* res_handle, void* owner_handle, const void* addr,
                                         size_t size, const char* name, int res_type, u64 user_data);
-int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDone();
-int PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDoneForWorkload();
+s32 PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDone(u32* gpu_addr, u32 gpu_addr_size_in_bytes,
+                                                u32 video_out_handle, u32 display_buffer_index,
+                                                u32 flip_mode, s64 flip_arg);
+s32 PS4_SYSV_ABI sceGnmRequestFlipAndSubmitDoneForWorkload(u64 workload, u32* gpu_addr,
+                                                           u32 gpu_addr_size_in_bytes,
+                                                           u32 vo_handle, u32 buf_idx,
+                                                           u32 flip_mode, s64 flip_arg);
 int PS4_SYSV_ABI sceGnmRequestMipStatsReportAndReset();
 s32 PS4_SYSV_ABI sceGnmResetVgtControl(u32* cmdbuf, u32 size);
 int PS4_SYSV_ABI sceGnmSdmaClose();
