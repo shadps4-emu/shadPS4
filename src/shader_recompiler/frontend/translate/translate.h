@@ -225,11 +225,15 @@ public:
     void V_RNDNE_F32(const GcnInst& inst);
     void V_FLOOR_F32(const GcnInst& inst);
     void V_EXP_F32(const GcnInst& inst);
+    void V_LOG_CLAMP_F32(const GcnInst& inst);
     void V_LOG_F32(const GcnInst& inst);
     void V_RCP_F32(const GcnInst& inst);
+    void V_RCP_CLAMP_F32(const GcnInst& inst);
     void V_RCP_LEGACY_F32(const GcnInst& inst);
     void V_RCP_F64(const GcnInst& inst);
+    void V_RSQ_LEGACY_F32(const GcnInst& inst);
     void V_RSQ_F32(const GcnInst& inst);
+    void V_RSQ_CLAMP_F32(const GcnInst& inst);
     void V_SQRT_F32(const GcnInst& inst);
     void V_SIN_F32(const GcnInst& inst);
     void V_COS_F32(const GcnInst& inst);
