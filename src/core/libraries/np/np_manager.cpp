@@ -1048,10 +1048,22 @@ s32 PS4_SYSV_ABI sceNpUnregisterNpReachabilityStateCallback() {
 
 s32 PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit(OrbisNpStateCallbackForNpToolkit callback,
                                                       void* userdata) {
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
-    std::scoped_lock lk{g_np_state_callbacks_mutex};
-    NpStateCbForNp.func = callback;
-    NpStateCbForNp.userdata = userdata;
+    LOG_INFO(Lib_NpManager, "called");
+    {
+        std::scoped_lock lk{g_np_state_callbacks_mutex};
+        NpStateCbForNp.func = callback;
+        NpStateCbForNp.userdata = userdata;
+    }
+    // Report the current state of the users that are already logged in. Otherwise the toolkit only
+    // gets state events if the game polls sceUserServiceGetEvent, and titles that never do so
+    // wait forever for the callback.
+    if (callback != nullptr && !g_shadnet_enabled) {
+        for (const User* u : UserManagement.GetLoggedInUsers()) {
+            if (u != nullptr) {
+                QueueNpStateEvent(u->user_id, OrbisNpState::SignedOut);
+            }
+        }
+    }
     return ORBIS_OK;
 }
 
