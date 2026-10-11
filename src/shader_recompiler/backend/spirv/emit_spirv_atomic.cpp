@@ -214,7 +214,7 @@ Id EmitSharedAtomicFMax32(EmitContext& ctx, Id offset, Id value) {
                      EmitBitCastF32U32(ctx, EmitSharedAtomicUMin32(ctx, offset, u32_value)),
                      EmitBitCastF32U32(ctx, EmitSharedAtomicSMax32(ctx, offset, u32_value)));
 
-    return result;
+    return ctx.OpBitcast(ctx.F32[1], result);
 }
 
 Id EmitSharedAtomicUMin32(EmitContext& ctx, Id offset, Id value) {
@@ -251,7 +251,7 @@ Id EmitSharedAtomicFMin32(EmitContext& ctx, Id offset, Id value) {
                      EmitBitCastF32U32(ctx, EmitSharedAtomicUMax32(ctx, offset, u32_value)),
                      EmitBitCastF32U32(ctx, EmitSharedAtomicSMin32(ctx, offset, u32_value)));
 
-    return result;
+    return ctx.OpBitcast(ctx.F32[1], result);
 }
 
 Id EmitSharedAtomicAnd32(EmitContext& ctx, Id offset, Id value) {
