@@ -193,8 +193,6 @@ void Runtime::UploadImage(VideoCore::Image* dst, const VideoCore::Buffer* src,
         AccessBuffer(src, copy.bufferOffset, copy_size, vk::PipelineStageFlagBits2::eCopy,
                      vk::AccessFlagBits2::eTransferRead);
     }
-
-    dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
 
 void Runtime::DownloadImage(VideoCore::Image* src, const VideoCore::Buffer* dst,
