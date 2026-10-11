@@ -19,7 +19,7 @@ int PS4_SYSV_ABI sceGnmAreSubmitsAllowed();
 int PS4_SYSV_ABI sceGnmBeginWorkload(u32 workload_stream, u64* workload);
 s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t addr, u32 mask,
                                             u32 cmp_func, u32 ref);
-int PS4_SYSV_ABI sceGnmComputeWaitSemaphore();
+s32 PS4_SYSV_ABI sceGnmComputeWaitSemaphore(u32* cmdbuf, u32 size, u64 sem_addr, u32 flags);
 int PS4_SYSV_ABI sceGnmCreateWorkloadStream(u64 param1, u32* workload_stream);
 int PS4_SYSV_ABI sceGnmDebuggerGetAddressWatch();
 int PS4_SYSV_ABI sceGnmDebuggerHaltWavefront();

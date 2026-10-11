@@ -199,9 +199,19 @@ s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t add
     return -1;
 }
 
-int PS4_SYSV_ABI sceGnmComputeWaitSemaphore() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmComputeWaitSemaphore(u32* cmdbuf, u32 size, u64 sem_addr, u32 flags) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    if (cmdbuf && size == 0xa) {
+        cmdbuf = WriteTrailingNop<3>(cmdbuf);
+        cmdbuf = WriteHeader<PM4ItOpcode::MemSemaphore>(cmdbuf, 2);
+        cmdbuf[0] = u32(sem_addr);
+        cmdbuf[1] = (flags == 1 ? 0x100000 : 0) - 0x20000000 + u32(sem_addr >> 0x20);
+        cmdbuf += 2;
+
+        WriteTrailingNop<2>(cmdbuf);
+        return ORBIS_OK;
+    }
+    return -1;
 }
 
 int PS4_SYSV_ABI sceGnmCreateWorkloadStream(u64 param1, u32* workload_stream) {
