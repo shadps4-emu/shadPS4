@@ -153,12 +153,36 @@ public:
                (predication.address != 0);
     }
 
+    [[nodiscard]] PM4CmdSetPredication::PredOp GetPredicationOp() const noexcept {
+        return predication.op;
+    }
+
     [[nodiscard]] VAddr GetPredicationAddress() const noexcept {
         return predication.address;
     }
 
     [[nodiscard]] bool IsPredicationInverted() const noexcept {
         return predication.inverted;
+    }
+
+    bool IsPredicationHint() const noexcept {
+        return predication.hint;
+    }
+
+    bool IsPredicationContinue() const noexcept {
+        return predication.continue_bit;
+    }
+
+    bool GetPredicationAccumulatedResult() const noexcept {
+        return predication.accumulated_result;
+    }
+
+    void SetPredicationAccumulatedResult(bool result) noexcept {
+        if (predication.continue_bit) {
+            predication.accumulated_result = predication.accumulated_result && result;
+        } else {
+            predication.accumulated_result = result;
+        }
     }
 
 #ifdef __linux__
@@ -225,26 +249,24 @@ private:
 
     struct PredicationState {
         bool enabled{false};
+        PM4CmdSetPredication::PredOp op{PM4CmdSetPredication::PredOp::Disable};
         VAddr address{0};
         bool inverted{false};
         bool hint{false};
         bool continue_bit{false};
         bool is_packet_predicated{false};
+        bool accumulated_result{true};
     } predication{};
-
-    std::optional<std::pair<u32, u32>> saved_index_base{};
-    void RestorePredicatedIndexBase() {
-        if (!saved_index_base) {
-            return;
-        }
-        regs.index_base_address.base_addr_lo = saved_index_base->first;
-        regs.index_base_address.base_addr_hi = saved_index_base->second;
-        saved_index_base.reset();
-    }
 
     VAddr indirect_args_addr{};
     u32 num_counter_pairs{};
-    u64 pixel_counter{};
+    struct PipeStatControl {
+        u32 stride{16};
+        u32 num_dbs{8};
+        u32 instance_mask{0xff};
+    } pipe_stat_control{};
+    u64 pixel_counter{1ULL};
+    u64 streamout_counter{1000ULL};
 
     struct ConstantEngine {
         void Reset() {

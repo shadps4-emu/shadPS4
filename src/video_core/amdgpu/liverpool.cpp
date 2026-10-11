@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
+#include <bit>
 #include <boost/preprocessor/stringize.hpp>
 
 #include "common/assert.h"
@@ -68,6 +69,9 @@ static std::span<const u32> NextPacket(std::span<const u32> span, size_t offset)
 
 Liverpool::Liverpool() : guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()} {
     num_counter_pairs = Libraries::Kernel::sceKernelIsNeoMode() ? 16 : 8;
+    pipe_stat_control.num_dbs = num_counter_pairs;
+    pipe_stat_control.stride = 16;
+    pipe_stat_control.instance_mask = (1u << num_counter_pairs) - 1;
     process_thread = std::jthread{std::bind_front(&Liverpool::Process, this)};
 }
 
@@ -204,8 +208,15 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         }
         case PM4ItOpcode::IndirectBufferConst: {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
-            auto task =
-                ProcessCeUpdate({indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
+            if (indirect_buffer->chain.Value() == 1) {
+                LOG_DEBUG(Render, "CE IndirectBufferConst chained to {:p}, size={}",
+                          static_cast<const void*>(indirect_buffer->Address<const u32>()),
+                          indirect_buffer->ib_size.Value());
+                ccb = {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size.Value()};
+                continue;
+            }
+            auto task = ProcessCeUpdate(
+                {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size.Value()});
             RESUME_CE(task);
 
             while (!task.handle.done()) {
@@ -252,6 +263,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
     }
 
     const auto base_addr = reinterpret_cast<uintptr_t>(dcb.data());
+    struct PacketTrace {
+        PM4ItOpcode opcode{};
+        u32 count{};
+        bool is_predicated{};
+    };
+    std::array<PacketTrace, 8> recent_packets{};
+    size_t recent_packet_idx{0};
+
     while (!dcb.empty()) {
         ProcessCommands();
 
@@ -262,10 +281,27 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         default:
             UNREACHABLE_MSG("Wrong PM4 type {}", type);
             break;
-        case 0:
+        case 0: {
+            std::string recent_str;
+            const size_t total = std::min(recent_packet_idx, recent_packets.size());
+            for (size_t i = 0; i < total; ++i) {
+                const auto& p =
+                    recent_packets[(recent_packet_idx - total + i) % recent_packets.size()];
+                recent_str += fmt::format("{}(count={}, pred={}) ", magic_enum::enum_name(p.opcode),
+                                          p.count, p.is_predicated);
+            }
+            std::string dcb_dump;
+            for (size_t i = 0; i < std::min<size_t>(dcb.size(), 16); ++i) {
+                dcb_dump += fmt::format("{:08x} ", dcb[i]);
+            }
+            LOG_CRITICAL(Render,
+                         "PM4 Type 0 hit! dcb_ptr={:p}, Recent opcodes: [{}], remaining dwords: "
+                         "{}, dump: [{}]",
+                         static_cast<const void*>(dcb.data()), recent_str, dcb.size(), dcb_dump);
             UNREACHABLE_MSG("Unimplemented PM4 type 0, base reg: {}, size: {}",
                             header->type0.base.Value(), header->type0.NumWords());
             break;
+        }
         case 2:
             // Type-2 packet are used for padding purposes
             dcb = NextPacket(dcb, 1);
@@ -275,6 +311,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             const PM4ItOpcode opcode = header->type3.opcode;
             predication.is_packet_predicated =
                 (header->type3.predicate == PM4Predicate::PredEnable);
+            recent_packets[recent_packet_idx++ % recent_packets.size()] = {
+                .opcode = opcode,
+                .count = count,
+                .is_predicated = predication.is_packet_predicated,
+            };
             switch (opcode) {
             case PM4ItOpcode::Nop: {
                 const auto* nop = reinterpret_cast<const PM4CmdNop*>(header);
@@ -326,7 +367,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::ClearState: {
                 regs.SetDefaults();
                 predication = {};
-                saved_index_base.reset();
                 break;
             }
             case PM4ItOpcode::SetConfigReg: {
@@ -435,7 +475,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* set_pred = reinterpret_cast<const PM4CmdSetPredication*>(header);
                 const bool is_continue = (set_pred->continue_bit.Value() == 1);
                 if (!is_continue) {
-                    RestorePredicatedIndexBase();
+                    predication.accumulated_result = true;
                 }
                 LOG_DEBUG(
                     Render,
@@ -446,17 +486,33 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 switch (set_pred->pred_op.Value()) {
                 case PM4CmdSetPredication::PredOp::Disable:
                     predication.enabled = false;
+                    predication.op = PM4CmdSetPredication::PredOp::Disable;
                     predication.address = 0;
                     predication.inverted = false;
                     predication.hint = false;
                     predication.continue_bit = false;
-                    RestorePredicatedIndexBase();
+                    predication.accumulated_result = true;
                     break;
                 case PM4CmdSetPredication::PredOp::Zpass:
-                case PM4CmdSetPredication::PredOp::PrimCount:
+                    predication.enabled = true;
+                    predication.op = PM4CmdSetPredication::PredOp::Zpass;
+                    predication.address = set_pred->Address();
+                    predication.inverted = (set_pred->draw_op.Value() == 0);
+                    predication.hint = (set_pred->hint.Value() == 1);
+                    predication.continue_bit = is_continue;
+                    break;
                 case PM4CmdSetPredication::PredOp::Bool64:
                 case PM4CmdSetPredication::PredOp::Bool32:
                     predication.enabled = true;
+                    predication.op = set_pred->pred_op.Value();
+                    predication.address = set_pred->Address();
+                    predication.inverted = (set_pred->draw_op.Value() == 0);
+                    predication.hint = (set_pred->hint.Value() == 1);
+                    predication.continue_bit = is_continue;
+                    break;
+                case PM4CmdSetPredication::PredOp::PrimCount:
+                    predication.enabled = true;
+                    predication.op = PM4CmdSetPredication::PredOp::PrimCount;
                     predication.address = set_pred->Address();
                     predication.inverted = (set_pred->draw_op.Value() == 0);
                     predication.hint = (set_pred->hint.Value() == 1);
@@ -466,11 +522,11 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     LOG_WARNING(Render, "Unknown IT_SET_PREDICATION pred_op {} addr={:#x}",
                                 static_cast<u32>(set_pred->pred_op.Value()), set_pred->Address());
                     predication.enabled = false;
+                    predication.op = PM4CmdSetPredication::PredOp::Disable;
                     predication.address = 0;
                     predication.inverted = false;
                     predication.hint = false;
                     predication.continue_bit = false;
-                    RestorePredicatedIndexBase();
                     break;
                 }
                 break;
@@ -482,15 +538,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::DrawIndex2: {
                 const auto* draw_index = reinterpret_cast<const PM4CmdDrawIndex2*>(header);
-                if (predication.is_packet_predicated && predication.enabled) {
-                    if (!saved_index_base) {
-                        saved_index_base.emplace(
-                            static_cast<u32>(regs.index_base_address.base_addr_lo),
-                            static_cast<u32>(regs.index_base_address.base_addr_hi));
-                    }
-                } else {
-                    saved_index_base.reset();
-                }
                 regs.max_index_size = draw_index->max_size;
                 regs.index_base_address.base_addr_lo = draw_index->index_base_lo;
                 regs.index_base_address.base_addr_hi = draw_index->index_base_hi;
@@ -711,7 +758,6 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::IndexBase: {
                 const auto* index_base = reinterpret_cast<const PM4CmdDrawIndexBase*>(header);
-                saved_index_base.reset();
                 regs.index_base_address.base_addr_lo = index_base->addr_lo;
                 regs.index_base_address.base_addr_hi = index_base->addr_hi;
                 break;
@@ -729,27 +775,75 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::EventWrite: {
                 const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
-                LOG_DEBUG(Render, "Encountered EventWrite: event_type = {}, event_index = {}",
-                          magic_enum::enum_name(event->event_type.Value()),
-                          magic_enum::enum_name(event->event_index.Value()));
+                const auto* dwords = reinterpret_cast<const u32*>(header);
                 if (event->event_type.Value() == EventType::SoVgtStreamoutFlush) {
                     // TODO: handle proper synchronization, for now signal that update is done
                     // immediately
                     regs.cp_strmout_cntl.offset_update_done = 1;
-                } else if (event->event_index.Value() == EventIndex::ZpassDone) {
-                    if (event->event_type.Value() == EventType::PixelPipeStatDump ||
-                        event->event_type.Value() == EventType::ZpassDone) {
+                } else if (event->event_type.Value() == EventType::PixelPipeStatControl &&
+                           count >= 2) {
+                    const u32 dw2 = dwords[2];
+                    const u32 stride_enum = (dw2 >> 9) & 0x3;
+                    static constexpr std::array<u32, 4> Strides = {4, 8, 16, 32};
+                    pipe_stat_control.stride = Strides[stride_enum];
+                    pipe_stat_control.instance_mask = (dw2 >> 11) & 0x1fffff;
+                    pipe_stat_control.num_dbs = std::popcount(pipe_stat_control.instance_mask);
+                    if (pipe_stat_control.num_dbs == 0) {
+                        pipe_stat_control.num_dbs = num_counter_pairs;
+                    }
+                    LOG_DEBUG(Render, "EventWrite: PixelPipeStatControl num_dbs = {}, stride = {}",
+                              pipe_stat_control.num_dbs, pipe_stat_control.stride);
+                } else if ((event->event_type.Value() == EventType::PixelPipeStatDump ||
+                            event->event_type.Value() == EventType::ZpassDone ||
+                            event->event_index.Value() == EventIndex::ZpassDone) &&
+                           count >= 3) {
+                    const VAddr addr = (u64(dwords[3]) << 32u) | u64(dwords[2]);
+                    const u32 num_dbs =
+                        pipe_stat_control.num_dbs ? pipe_stat_control.num_dbs : num_counter_pairs;
+                    const u32 stride = pipe_stat_control.stride ? pipe_stat_control.stride : 16;
+                    const u32 total_bytes = num_dbs * stride;
+                    LOG_DEBUG(
+                        Render,
+                        "EventWrite: occlusion stats dump to {:#x}, num_dbs = {}, stride = {}",
+                        addr, num_dbs, stride);
+                    if (rasterizer) {
+                        rasterizer->InvalidateMemory(addr, total_bytes);
+                        rasterizer->OcclusionDump(addr, num_dbs, stride);
+                    } else {
                         static constexpr u64 OcclusionCounterValidMask = 0x8000000000000000ULL;
-                        static constexpr u64 OcclusionCounterStep = 0x2FFFFFFULL;
-                        u64* results = event->Address<u64*>();
-                        for (s32 i = 0; i < num_counter_pairs; ++i, results += 2) {
-                            *results = pixel_counter | OcclusionCounterValidMask;
+                        auto* memory = Core::Memory::Instance();
+                        if (addr != 0 && memory->IsValidMapping(addr, total_bytes)) {
+                            u8* ptr = reinterpret_cast<u8*>(addr);
+                            for (u32 i = 0; i < num_dbs; ++i) {
+                                *reinterpret_cast<u64*>(ptr + i * stride) =
+                                    pixel_counter | OcclusionCounterValidMask;
+                            }
                         }
+                        pixel_counter += 0x2FFFFFFULL;
+                    }
+                } else if (event->event_index.Value() == EventIndex::SampleStreamoutStatSx ||
+                           event->event_index.Value() == EventIndex::SamplePipelineStat ||
+                           event->event_type.Value() == EventType::SampleStreamoutStats ||
+                           event->event_type.Value() == EventType::SampleStreamoutStats1 ||
+                           event->event_type.Value() == EventType::SampleStreamoutStats2 ||
+                           event->event_type.Value() == EventType::SampleStreamoutStats3 ||
+                           event->event_type.Value() == EventType::SamplePipelineStat) {
+                    if (count >= 3) {
+                        const VAddr addr = (u64(dwords[3]) << 32u) | u64(dwords[2]);
+                        LOG_DEBUG(Render, "EventWrite: primitive stats sample to {:#x}", addr);
                         if (rasterizer) {
-                            rasterizer->InvalidateMemory(event->Address<VAddr>(),
-                                                         num_counter_pairs * 2 * sizeof(u64));
+                            rasterizer->StreamoutDump(addr);
+                            rasterizer->InvalidateMemory(addr, sizeof(u64) * 2);
+                        } else {
+                            static constexpr u64 StreamoutCounterValidMask = 0x8000000000000000ULL;
+                            auto* memory = Core::Memory::Instance();
+                            if (addr != 0 && memory->IsValidMapping(addr, sizeof(u64) * 2)) {
+                                u64* ptr = reinterpret_cast<u64*>(addr);
+                                ptr[0] = streamout_counter | StreamoutCounterValidMask;
+                                ptr[1] = streamout_counter | StreamoutCounterValidMask;
+                            }
+                            streamout_counter += 1000ULL;
                         }
-                        pixel_counter += OcclusionCounterStep;
                     }
                 }
                 break;
@@ -896,8 +990,15 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::IndirectBuffer: {
                 const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
+                if (indirect_buffer->chain.Value() == 1) {
+                    LOG_DEBUG(Render, "IndirectBuffer chained to {:p}, size={}",
+                              static_cast<const void*>(indirect_buffer->Address<const u32>()),
+                              indirect_buffer->ib_size.Value());
+                    dcb = {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size.Value()};
+                    continue;
+                }
                 auto task = ProcessGraphics(
-                    {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, {});
+                    {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size.Value()}, {});
                 RESUME_GFX(task);
 
                 while (!task.handle.done()) {
@@ -1071,8 +1172,17 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         }
         case PM4ItOpcode::IndirectBuffer: {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
+            if constexpr (is_indirect) {
+                if (indirect_buffer->chain.Value() == 1) {
+                    LOG_DEBUG(Render, "Compute IndirectBuffer chained to {:p}, size={}",
+                              static_cast<const void*>(indirect_buffer->Address<const u32>()),
+                              indirect_buffer->ib_size.Value());
+                    acb = {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size.Value()};
+                    continue;
+                }
+            }
             auto task = ProcessCompute<true>(
-                {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, vqid);
+                {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size.Value()}, vqid);
             RESUME_ASC(task, vqid);
 
             while (!task.handle.done()) {
@@ -1167,6 +1277,9 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         case PM4ItOpcode::SetPredication: {
             const auto* set_pred = reinterpret_cast<const PM4CmdSetPredication*>(header);
             const bool is_continue = (set_pred->continue_bit.Value() == 1);
+            if (!is_continue) {
+                predication.accumulated_result = true;
+            }
             LOG_DEBUG(
                 Render,
                 "compute IT_SET_PREDICATION pred_op = {}, draw_op = {}, hint = {}, continue = "
@@ -1176,16 +1289,33 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             switch (set_pred->pred_op.Value()) {
             case PM4CmdSetPredication::PredOp::Disable:
                 predication.enabled = false;
+                predication.op = PM4CmdSetPredication::PredOp::Disable;
                 predication.address = 0;
                 predication.inverted = false;
                 predication.hint = false;
                 predication.continue_bit = false;
+                predication.accumulated_result = true;
                 break;
             case PM4CmdSetPredication::PredOp::Zpass:
-            case PM4CmdSetPredication::PredOp::PrimCount:
+                predication.enabled = true;
+                predication.op = PM4CmdSetPredication::PredOp::Zpass;
+                predication.address = set_pred->Address();
+                predication.inverted = (set_pred->draw_op.Value() == 0);
+                predication.hint = (set_pred->hint.Value() == 1);
+                predication.continue_bit = is_continue;
+                break;
             case PM4CmdSetPredication::PredOp::Bool64:
             case PM4CmdSetPredication::PredOp::Bool32:
                 predication.enabled = true;
+                predication.op = set_pred->pred_op.Value();
+                predication.address = set_pred->Address();
+                predication.inverted = (set_pred->draw_op.Value() == 0);
+                predication.hint = (set_pred->hint.Value() == 1);
+                predication.continue_bit = is_continue;
+                break;
+            case PM4CmdSetPredication::PredOp::PrimCount:
+                predication.enabled = true;
+                predication.op = PM4CmdSetPredication::PredOp::PrimCount;
                 predication.address = set_pred->Address();
                 predication.inverted = (set_pred->draw_op.Value() == 0);
                 predication.hint = (set_pred->hint.Value() == 1);
@@ -1195,6 +1325,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
                 LOG_WARNING(Render, "Unknown compute IT_SET_PREDICATION pred_op {} addr={:#x}",
                             static_cast<u32>(set_pred->pred_op.Value()), set_pred->Address());
                 predication.enabled = false;
+                predication.op = PM4CmdSetPredication::PredOp::Disable;
                 predication.address = 0;
                 predication.inverted = false;
                 predication.hint = false;

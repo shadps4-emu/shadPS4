@@ -846,9 +846,19 @@ u32 PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState400(u32* cmdbuf, u32 size) {
     return CtxInitPacketSize;
 }
 
-int PS4_SYSV_ABI sceGnmDrawOpaqueAuto() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmDrawOpaqueAuto(u32* cmdbuf, u32 size, u32 flags) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (cmdbuf && (size == 7) && (flags & 0x1ffffffe) == 0) {
+        const auto predicate = flags & 1 ? PM4Predicate::PredEnable : PM4Predicate::PredDisable;
+        cmdbuf = WriteHeader<PM4ItOpcode::DrawIndexAuto>(cmdbuf, 2, PM4ShaderType::ShaderGraphics,
+                                                         predicate);
+        cmdbuf =
+            WriteBody(cmdbuf, 0x10u, sceKernelIsNeoMode() ? (flags & 0xe0000000u) | 0x42u : 0x42u);
+        WriteNop<3>(cmdbuf);
+        return ORBIS_OK;
+    }
+    return -1;
 }
 
 bool PS4_SYSV_ABI sceGnmDriverCaptureInProgress() {
