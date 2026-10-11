@@ -160,6 +160,10 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
 
         const auto* header = reinterpret_cast<const PM4Header*>(ccb.data());
         const u32 type = header->type;
+        if (type == 2) {
+            ccb = NextPacket(ccb, 1);
+            continue;
+        }
         if (type != 3) {
             // No other types of packets were spotted so far
             UNREACHABLE_MSG("Invalid PM4 type {}", type);
@@ -207,6 +211,17 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
                 RESUME_CE(task);
             }
             task.handle.destroy();
+            break;
+        }
+        case PM4ItOpcode::Rewind: {
+            if (!rasterizer) {
+                break;
+            }
+            LOG_TRACE(Render, "CE Rewind packet encountered");
+            const auto* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
+            while (!rewind->Valid()) {
+                YIELD_CE();
+            }
             break;
         }
         default:
