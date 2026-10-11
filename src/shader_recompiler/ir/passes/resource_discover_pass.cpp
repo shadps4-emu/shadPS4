@@ -48,7 +48,7 @@ struct ClearStrideAndPatchRecordsResult {
 ClearStrideAndPatchRecordsResult CheckClearStrideAndPatchRecordsPattern(IR::Value dword1,
                                                                         IR::Value dword2) {
     // s_and_b32       s21, s21, 0xffff
-    // s_lshl_b32      s22, s22, 4
+    // s_lshl_b32      s22, s22, <imm>
     // s_buffer_load_dwordx4 s[20:23], s[20:23], 0x0
 
     auto* dw1_inst = dword1.TryInst();
