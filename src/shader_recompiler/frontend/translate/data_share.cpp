@@ -177,7 +177,6 @@ void Translator::DS_OP(const GcnInst& inst, AtomicOp op, bool rtn) {
     }
 }
 
-template <typename T>
 void Translator::DS_OP_F32(const GcnInst& inst, AtomicOp op) {
     const bool is_gds = inst.control.ds.gds;
     const IR::U32 addr{GetSrc(inst.src[0])};
