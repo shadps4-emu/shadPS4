@@ -992,11 +992,11 @@ void TextureCache::GarbageCollectImages() {
         if (num_deletions == 0) {
             return true;
         }
-        --num_deletions;
-        bool download = image.SafeToDownload();
-        if (download && !pressured) {
+        const bool download = True(image.flags & ImageFlagBits::GpuModified);
+        if (download && (!pressured || !image.SafeToDownload())) {
             return false;
         }
+        --num_deletions;
         const auto image_id = slot_images.GetSlotId(image);
         if (download) {
             UntrackImage(image_id);

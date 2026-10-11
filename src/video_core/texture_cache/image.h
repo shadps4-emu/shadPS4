@@ -12,6 +12,7 @@
 #include "common/small_vector.h"
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
+#include "video_core/texture_cache/host_compatibility.h"
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/image_view.h"
 
@@ -104,7 +105,9 @@ struct Image : public Common::LRUNode<> {
     }
 
     bool SafeToDownload() const {
-        return True(flags & ImageFlagBits::GpuModified) && False(flags & ImageFlagBits::Dirty);
+        return False(flags & ImageFlagBits::Dirty) && info.num_samples == 1 &&
+               !info.props.has_stencil &&
+               IsVulkanFormatCompatible(info.pixel_format, backing->image.image_ci.format);
     }
 
     void AssociateDepth(ImageId depth_image_id, u64 depth_image_uid) {
