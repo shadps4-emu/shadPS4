@@ -618,20 +618,9 @@ bool PipelineCache::RefreshGraphicsStages() {
 bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};
     const auto& cs_pgm = liverpool->GetCsRegs();
-    const VAddr address = cs_pgm.Address<VAddr>();
-    buffer_cache.ReadMemoryRange(address, 2 * sizeof(u32));
-    const auto* code = reinterpret_cast<const u32*>(address);
-    u32 shader_size = 0x4000 * sizeof(u32);
-    if (code[0] == 0xbeeb03ff) {
-        const VAddr info_address = address + (u64{code[1]} + 1) * 2 * sizeof(u32);
-        buffer_cache.ReadMemoryRange(info_address, sizeof(AmdGpu::BinaryInfo));
-        const auto& info = *reinterpret_cast<const AmdGpu::BinaryInfo*>(info_address);
-        if (info.Valid()) {
-            shader_size = info.length;
-        }
-    }
-    buffer_cache.ReadMemoryRange(address, shader_size);
-    const auto cs_params = AmdGpu::GetParams(cs_pgm);
+    const auto cs_params = AmdGpu::GetParams(cs_pgm, [this](VAddr address, u64 size) {
+        buffer_cache.ReadMemory(address, size, false, true);
+    });
     std::tie(infos[0], modules[0], compute_key.value) =
         GetProgram(HwStage::Compute, SwStage::Compute, cs_params, binding);
     return true;
