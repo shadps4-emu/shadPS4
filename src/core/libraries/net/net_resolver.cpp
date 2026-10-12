@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <memory>
@@ -78,11 +77,8 @@ std::optional<u32> GetHostOverride(const std::string& hostname) {
         return std::nullopt;
     }
     static const auto overrides = [] {
-        const char* path_env = std::getenv("SHADPS4_HTTP_HOST_OVERRIDES_JSON");
         const auto path =
-            path_env && path_env[0]
-                ? std::filesystem::path{path_env}
-                : Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "host_overrides.json";
+            Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "host_overrides.json";
         std::ifstream file(path);
         if (!file.is_open()) {
             return nlohmann::json{};
