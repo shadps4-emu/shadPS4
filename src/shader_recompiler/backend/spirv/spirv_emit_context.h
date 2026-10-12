@@ -278,6 +278,7 @@ public:
     Id local_invocation_id{};
     Id local_invocation_index{};
     Id invocation_id{};
+    Id subgroup_id{};
     Id subgroup_local_invocation_id{};
     Id subgroup_lt_mask{};
     Id image_u32{};

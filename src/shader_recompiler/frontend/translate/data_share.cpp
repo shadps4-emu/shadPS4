@@ -99,7 +99,7 @@ void Translator::EmitDataShare(const GcnInst& inst) {
 
 void Translator::V_READFIRSTLANE_B32(const GcnInst& inst) {
     const IR::U32 value{GetSrc(inst.src[0])};
-    SetDst(inst.dst[0], ir.ReadFirstLane(value));
+    SetDst(inst.dst[0], ir.ReadFirstLane(value, ir.GetExec()));
 }
 
 void Translator::V_READLANE_B32(const GcnInst& inst) {

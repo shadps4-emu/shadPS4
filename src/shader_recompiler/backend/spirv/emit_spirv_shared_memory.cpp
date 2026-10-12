@@ -48,4 +48,15 @@ void EmitWriteSharedU64(EmitContext& ctx, Id offset, Id value) {
     ctx.OpStore(pointer, value);
 }
 
+void EmitPredicatedWriteSharedU32(EmitContext& ctx, Id offset, Id value, Id cond) {
+    const Id if_label{ctx.OpLabel()};
+    const Id merge_label{ctx.OpLabel()};
+    ctx.OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+    ctx.OpBranchConditional(cond, if_label, merge_label);
+    ctx.AddLabel(if_label);
+    EmitWriteSharedU32(ctx, offset, value);
+    ctx.OpBranch(merge_label);
+    ctx.AddLabel(merge_label);
+}
+
 } // namespace Shader::Backend::SPIRV

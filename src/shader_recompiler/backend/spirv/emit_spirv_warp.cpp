@@ -10,8 +10,14 @@ Id SubgroupScope(EmitContext& ctx) {
     return ctx.ConstU32(static_cast<u32>(spv::Scope::Subgroup));
 }
 
-Id EmitWarpId(EmitContext& ctx) {
-    UNREACHABLE();
+Id EmitWaveId(EmitContext& ctx) {
+    ASSERT_MSG(ctx.profile.subgroup_size == 64, "Unpatched WaveId for subgroup size {}",
+               ctx.profile.subgroup_size);
+    return ctx.OpLoad(ctx.U32[1], ctx.subgroup_id);
+}
+
+Id EmitSubgroupId(EmitContext& ctx) {
+    return ctx.OpLoad(ctx.U32[1], ctx.subgroup_id);
 }
 
 Id EmitLaneId(EmitContext& ctx) {
@@ -22,7 +28,18 @@ Id EmitQuadBroadcast(EmitContext& ctx, Id value, Id index) {
     return ctx.OpGroupNonUniformQuadBroadcast(ctx.U32[1], SubgroupScope(ctx), value, index);
 }
 
-Id EmitReadFirstLane(EmitContext& ctx, Id value) {
+Id EmitWaveElect(EmitContext& ctx, Id exec) {
+    return ctx.OpLogicalAnd(ctx.U1[1], exec, EmitWaveElectOrLane0(ctx, exec));
+}
+
+Id EmitWaveElectOrLane0(EmitContext& ctx, Id exec) {
+    const Id any = EmitGroupAny(ctx, exec);
+    const Id first_lane = ctx.OpSelect(
+        ctx.U32[1], any, EmitBallotFindLsb(ctx, EmitBallot(ctx, exec)), ctx.u32_zero_value);
+    return ctx.OpIEqual(ctx.U1[1], first_lane, EmitLaneId(ctx));
+}
+
+Id EmitReadFirstLane(EmitContext& ctx, Id value, Id exec) {
     return ctx.OpGroupNonUniformBroadcastFirst(ctx.U32[1], SubgroupScope(ctx), value);
 }
 
