@@ -155,10 +155,6 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
     }
 }
 
-void BufferCache::ReadMemoryRange(VAddr device_addr, u64 size) {
-    ReadMemory(device_addr, size, false, false, true);
-}
-
 void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool is_write,
                                  bool async) {
     boost::container::small_vector<vk::BufferCopy, 1> copies;
