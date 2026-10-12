@@ -3,10 +3,14 @@
 
 #pragma once
 
+#include <atomic>
 #include <map>
 #include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <string_view>
+#include <boost/container/small_vector.hpp>
+#include <boost/icl/interval_map.hpp>
 #include "common/enum.h"
 #include "common/shared_first_mutex.h"
 #include "common/singleton.h"
@@ -304,6 +308,23 @@ public:
 
     void InvalidateMemory(VAddr addr, u64 size) const;
 
+    struct StackPiece {
+        VAddr addr;
+        u64 size;
+        bool is_stack;
+    };
+    using StackPieces = boost::container::small_vector<StackPiece, 4>;
+
+    void RegisterStack(VAddr addr, u64 size);
+
+    void UnregisterStack(VAddr addr, u64 size);
+
+    bool HasStacks() const {
+        return has_stacks.load(std::memory_order_relaxed);
+    }
+
+    StackPieces SplitByStacks(VAddr addr, u64 size);
+
 private:
     VMAHandle FindVMA(VAddr target) {
         return std::prev(vma_map.upper_bound(target));
@@ -356,6 +377,9 @@ private:
     u64 pool_budget{};
     s32 sdk_version{};
     Vulkan::Rasterizer* rasterizer{};
+    std::shared_mutex stack_mutex{};
+    boost::icl::interval_map<VAddr, u32> stack_pages{};
+    std::atomic_bool has_stacks{};
 
     struct PrtArea {
         VAddr start;

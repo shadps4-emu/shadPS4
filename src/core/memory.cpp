@@ -1468,6 +1468,64 @@ void MemoryManager::InvalidateMemory(const VAddr addr, const u64 size) const {
     }
 }
 
+using StackInterval = boost::icl::interval<VAddr>;
+
+void MemoryManager::RegisterStack(VAddr addr, u64 size) {
+#ifdef _WIN32
+    // Windows delivers a fault on the stack of the faulting thread, so a thread running on a
+    // tracked stack cannot receive it. The GPU caches leave registered stacks untracked.
+    const VAddr start = Common::AlignDown(addr, 4_KB);
+    const VAddr end = Common::AlignUp(addr + size, 4_KB);
+    {
+        std::scoped_lock lk{stack_mutex};
+        stack_pages += std::make_pair(StackInterval::right_open(start, end), 1u);
+        has_stacks = true;
+    }
+    InvalidateMemory(start, end - start);
+#endif
+}
+
+void MemoryManager::UnregisterStack(VAddr addr, u64 size) {
+#ifdef _WIN32
+    const VAddr start = Common::AlignDown(addr, 4_KB);
+    const VAddr end = Common::AlignUp(addr + size, 4_KB);
+    {
+        std::scoped_lock lk{stack_mutex};
+        stack_pages -= std::make_pair(StackInterval::right_open(start, end), 1u);
+        has_stacks = !stack_pages.empty();
+    }
+    InvalidateMemory(start, end - start);
+#endif
+}
+
+MemoryManager::StackPieces MemoryManager::SplitByStacks(VAddr addr, u64 size) {
+    StackPieces pieces;
+    if (size == 0) {
+        return pieces;
+    }
+    const VAddr end = addr + size;
+    VAddr cur = addr;
+    std::shared_lock lk{stack_mutex};
+    const auto [first, last] = stack_pages.equal_range(StackInterval::right_open(addr, end));
+    for (auto it = first; it != last; ++it) {
+        const VAddr stack_start = std::max(it->first.lower(), addr);
+        const VAddr stack_end = std::min(it->first.upper(), end);
+        if (stack_start > cur) {
+            pieces.push_back({cur, stack_start - cur, false});
+        }
+        if (!pieces.empty() && pieces.back().is_stack) {
+            pieces.back().size += stack_end - stack_start;
+        } else {
+            pieces.push_back({stack_start, stack_end - stack_start, true});
+        }
+        cur = stack_end;
+    }
+    if (cur < end) {
+        pieces.push_back({cur, end - cur, false});
+    }
+    return pieces;
+}
+
 VAddr MemoryManager::SearchFree(VAddr virtual_addr, u64 size, u32 alignment) {
     // Calculate the minimum and maximum addresses present in our address space.
     auto min_search_address = impl.SystemManagedVirtualBase();

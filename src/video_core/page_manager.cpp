@@ -428,7 +428,16 @@ struct SignalImpl : public PageManager::Impl {
         auto& impl = memory->GetAddressSpace();
         ASSERT_MSG(perms != Core::MemoryPermission::Write,
                    "Attempted to protect region as write-only which is not a valid permission");
-        impl.Protect(address, size, perms);
+        if (perms == Core::MemoryPermission::ReadWrite || !memory->HasStacks()) {
+            impl.Protect(address, size, perms);
+            return;
+        }
+        // Windows cannot deliver a fault to a thread on a protected stack, so never protect one.
+        for (const auto& piece : memory->SplitByStacks(address, size)) {
+            if (!piece.is_stack) {
+                impl.Protect(piece.addr, piece.size, perms);
+            }
+        }
     }
 
     static bool GuestFaultSignalHandler(void* context, void* fault_address) {

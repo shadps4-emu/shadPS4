@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "common/types.h"
+#include "core/memory.h"
 #include "video_core/buffer_cache/region_manager.h"
 
 namespace VideoCore {
@@ -86,8 +87,8 @@ public:
 
     /// Call 'func' for each CPU modified range and unmark those pages as CPU modified
     void ForEachUploadRange(VAddr cpu_addr, u64 size, bool is_written, auto&& func) {
-        IteratePages<true>(
-            cpu_addr, size, [&func, is_written](RegionManager* manager, u64 offset, u64 size) {
+        const auto upload = [&](VAddr addr, u64 length) {
+            IteratePages<true>(addr, length, [&](RegionManager* manager, u64 offset, u64 size) {
                 if (is_written) {
                     manager->template ForEachModifiedRange<Type::CPU, StateOp::Clear, StateOp::Set>(
                         offset, size, func);
@@ -97,6 +98,16 @@ public:
                             offset, size, func);
                 }
             });
+        };
+        auto* memory = Core::Memory::Instance();
+        if (!memory->HasStacks()) {
+            return upload(cpu_addr, size);
+        }
+        for (const auto& piece : memory->SplitByStacks(cpu_addr, size)) {
+            if (!piece.is_stack) {
+                upload(piece.addr, piece.size);
+            }
+        }
     }
 
     /// Call 'func' for each GPU modified range and unmark those pages as GPU modified
