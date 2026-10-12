@@ -39,6 +39,38 @@ StridePatchResult CheckStridePatchPattern(IR::Value value) {
     return {inst->Arg(0), inst->Arg(1).U32(), true};
 }
 
+struct ClearStrideAndPatchRecordsResult {
+    IR::Value vsharp_dw1;
+    IR::Value vsharp_dw2;
+    u32 records_shift;
+    bool found;
+};
+ClearStrideAndPatchRecordsResult CheckClearStrideAndPatchRecordsPattern(IR::Value dword1,
+                                                                        IR::Value dword2) {
+    // s_and_b32       s21, s21, 0xffff
+    // s_lshl_b32      s22, s22, <imm>
+    // s_buffer_load_dwordx4 s[20:23], s[20:23], 0x0
+
+    auto* dw1_inst = dword1.TryInst();
+    if (!dw1_inst) {
+        return {dword1, dword2, false};
+    }
+    if (dw1_inst->GetOpcode() != IR::Opcode::BitwiseAnd32 || !dw1_inst->Arg(1).IsImmediate() ||
+        dw1_inst->Arg(1).U32() != 0xffffu) {
+        return {dword1, dword2, false};
+    }
+    auto* dw2_inst = dword2.TryInst();
+    if (!dw2_inst) {
+        return {dword1, dword2, false};
+    }
+    if (dw2_inst->GetOpcode() != IR::Opcode::ShiftLeftLogical32 ||
+        !dw2_inst->Arg(1).IsImmediate()) {
+        return {dword1, dword2, false};
+    }
+
+    return {dw1_inst->Arg(0), dw2_inst->Arg(0), dw2_inst->Arg(1).U32(), true};
+}
+
 struct InlineCbufResult {
     IR::Value vsharp_dw0;
     bool found;
@@ -287,6 +319,13 @@ void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList
         vsharp.post_op = SharpFetchPostOp::BitwiseOrDw1WithImm;
         vsharp.post_op_data.dw1_mask = mask;
         vsharp.dwords[1] = dword1;
+    } else if (auto [dword1, dword2, shift, found] =
+                   CheckClearStrideAndPatchRecordsPattern(handle->Arg(1), handle->Arg(2));
+               found) {
+        vsharp.post_op = SharpFetchPostOp::ClearStrideAndBitshiftDw2WithImm;
+        vsharp.post_op_data.dw2_shift = shift;
+        vsharp.dwords[1] = dword1;
+        vsharp.dwords[2] = dword2;
     }
 
     MarkReadConstBufferSharpSources(vsharp);
