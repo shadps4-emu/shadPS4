@@ -409,6 +409,11 @@ private:
     void OnFriendLost(s32 user_id, const ShadNet::NotifyFriendLost& n);
     void OnFriendStatus(s32 user_id, const ShadNet::NotifyFriendStatus& n);
     void OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEvent& n);
+    // The server refused a service (matchmaking full, not allowed, disabled): tell the player.
+    void OnServiceUnavailable(s32 user_id, const ShadNet::NotifyServiceUnavailable& n);
+    // The server signed this client out (e.g. version not accepted): tell the player and stay
+    // offline for this run instead of reconnecting into the same refusal.
+    void OnClientRejected(s32 user_id, const ShadNet::NotifyClientRejected& n);
     void OnLoginResult(s32 user_id, const ShadNet::LoginResult& res);
 
     // General async reply dispatch. Routes a reply to the owning subsystem by
