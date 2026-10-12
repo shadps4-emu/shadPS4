@@ -332,7 +332,9 @@ void DispatchBackupEvent(const Backup::BackupRequest& request) {
              static_cast<u32>(event.type), event.errorCode, request.dir_name);
     const bool was_in_callback = g_in_backup_callback;
     g_in_backup_callback = true;
-    SCOPE_EXIT { g_in_backup_callback = was_in_callback; };
+    SCOPE_EXIT {
+        g_in_backup_callback = was_in_callback;
+    };
     g_event_callback(&event, g_event_userdata);
 }
 
