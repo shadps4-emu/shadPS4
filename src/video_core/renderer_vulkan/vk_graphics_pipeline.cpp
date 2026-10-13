@@ -148,7 +148,7 @@ GraphicsPipeline::GraphicsPipeline(
         .depthClampMode = vk::DepthClampModeEXT::eUserDefinedRange,
         .pDepthClampRange = &depth_clamp_range,
     };
-    if (instance.IsDepthClampControlSupported() && key.depth_clamp_enable) {
+    if (key.depth_clamp_user_defined_range) {
         viewport_info.pNext = &clamp_control;
     }
 

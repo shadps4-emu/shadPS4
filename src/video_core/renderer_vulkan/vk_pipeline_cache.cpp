@@ -405,17 +405,9 @@ bool PipelineCache::RefreshGraphicsKey() {
                              ? regs.depth_buffer.stencil_info.format
                              : AmdGpu::DepthBuffer::StencilFormat::Invalid;
     key.depth_clamp_enable = !regs.depth_render_override.disable_viewport_clamp;
-    if (key.depth_clamp_enable && instance.IsDepthClampControlSupported()) {
-        key.depth_clamp_min = 0.f;
-        key.depth_clamp_max = 1.f;
-        for (u32 i = 0; i < AmdGpu::NUM_VIEWPORTS; i++) {
-            if (regs.viewports[i].xscale != 0) {
-                const auto& vp_d = regs.viewport_depths[i];
-                key.depth_clamp_min = std::min(vp_d.zmin, vp_d.zmax);
-                key.depth_clamp_max = std::max(vp_d.zmin, vp_d.zmax);
-                break;
-            }
-        }
+    if (key.depth_clamp_enable && key.z_format != AmdGpu::DepthBuffer::ZFormat::Invalid &&
+        instance.IsDepthClampControlSupported()) {
+        RefreshDepthClampRange();
     }
     key.depth_clip_enable = regs.clipper_control.ZclipEnable();
     key.clip_space = regs.clipper_control.clip_space;
@@ -622,6 +614,55 @@ bool PipelineCache::RefreshGraphicsStages() {
     }
 
     return true;
+}
+
+void PipelineCache::RefreshDepthClampRange() {
+    const auto& regs = liverpool->regs;
+    auto& key = graphics_key;
+
+    const bool restrict_range = !instance.IsDepthRangeUnrestrictedSupported();
+    const auto& vp_ctl = regs.viewport_control;
+    bool found_viewport = false;
+    bool viewport_range_matches = true;
+    float clamp_min = 0.f;
+    float clamp_max = 0.f;
+    for (u32 i = 0; i < AmdGpu::NUM_VIEWPORTS; i++) {
+        const auto& vp = regs.viewports[i];
+        if (vp.xscale == 0) {
+            continue;
+        }
+        const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
+        const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
+        float min_depth = regs.clipper_control.clip_space == AmdGpu::ClipSpace::MinusWToW
+                              ? zoffset - zscale
+                              : zoffset;
+        float max_depth = zoffset + zscale;
+        if (restrict_range) {
+            min_depth = std::max(min_depth, 0.f);
+            max_depth = std::min(max_depth, 1.f);
+        }
+
+        const auto& vp_d = regs.viewport_depths[i];
+        float zmin = std::min(vp_d.zmin, vp_d.zmax);
+        float zmax = std::max(vp_d.zmin, vp_d.zmax);
+        if (restrict_range) {
+            zmin = std::clamp(zmin, 0.f, 1.f);
+            zmax = std::clamp(zmax, 0.f, 1.f);
+        }
+        viewport_range_matches &=
+            std::min(min_depth, max_depth) == zmin && std::max(min_depth, max_depth) == zmax;
+        if (!found_viewport) {
+            found_viewport = true;
+            clamp_min = zmin;
+            clamp_max = zmax;
+        }
+    }
+
+    if (found_viewport && !viewport_range_matches) {
+        key.depth_clamp_user_defined_range = true;
+        key.depth_clamp_min = clamp_min;
+        key.depth_clamp_max = clamp_max;
+    }
 }
 
 bool PipelineCache::RefreshComputeKey() {
