@@ -548,14 +548,15 @@ void Rasterizer::BindIndexBuffer(u32 index_offset, bool is_indirect) {
     const bool is_index16 = regs.index_buffer_type.index_type == AmdGpu::IndexType::Index16;
     const vk::IndexType index_type = is_index16 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
     const u32 index_size = is_index16 ? sizeof(u16) : sizeof(u32);
-    const VAddr index_address =
-        regs.index_base_address.Address<VAddr>() + u64(index_offset) * index_size;
+    const VAddr base_address = regs.index_base_address.Address<VAddr>();
+    const VAddr index_address = base_address + u64(index_offset) * index_size;
 
     // Bind index buffer.
     const u32 num_indices =
         is_indirect ? regs.max_index_size : std::min(regs.num_indices, regs.max_index_size);
     const u64 requested_size = u64(num_indices) * index_size;
-    const u64 mapped_size = memory->ClampRangeSize(index_address, requested_size);
+    const u64 mapped_size =
+        base_address != 0 ? memory->ClampRangeSize(index_address, requested_size) : 0;
     u32 index_buffer_size = static_cast<u32>(Common::AlignDown(mapped_size, index_size));
     vk::Buffer index_buffer{};
     u64 buffer_offset{};
