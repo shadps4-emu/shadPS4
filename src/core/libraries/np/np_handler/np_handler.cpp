@@ -256,6 +256,12 @@ bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, cons
     client->onWebApiPushEvent = [this, user_id](const ShadNet::NotifyWebApiPushEvent& n) {
         OnWebApiPushEvent(user_id, n);
     };
+    client->onServiceUnavailable = [this, user_id](const ShadNet::NotifyServiceUnavailable& n) {
+        OnServiceUnavailable(user_id, n);
+    };
+    client->onClientRejected = [this, user_id](const ShadNet::NotifyClientRejected& n) {
+        OnClientRejected(user_id, n);
+    };
     client->onAsyncReply = [this, user_id](ShadNet::CommandType cmd, u64 pkt_id,
                                            ShadNet::ErrorType err, const std::vector<u8>& body) {
         OnAsyncReply(user_id, cmd, pkt_id, err, body);
@@ -749,6 +755,50 @@ void NpHandler::OnLookupReply(s32 user_id, ShadNet::CommandType /*cmd*/, u64 pkt
     LOG_INFO(NpHandler, "LookupOnlineId: user_id={} pkt_id={} -> accountId={} npid='{}'", user_id,
              pkt_id, pb.account_id(), pb.npid());
     on_result(ORBIS_OK, pb.account_id(), pb.npid());
+}
+
+void NpHandler::OnClientRejected(s32 user_id, const ShadNet::NotifyClientRejected& n) {
+    EmulatorSettings.SetShadNetSessionDisabled(true);
+    {
+        std::lock_guard lock(m_mutex_clients);
+        m_reconnect.erase(user_id);
+    }
+    const std::string text =
+        n.message.empty() ? std::string("The shadNet server doesn't accept this shadPS4 build. "
+                                        "Online features are off for this session.")
+                          : n.message + " Online features are off for this session.";
+    LOG_ERROR(NpHandler, "user_id={} signed out by the server (reason {}, version '{}'): {}",
+              user_id, n.reason, n.version, n.message);
+    ImGui::ShadNetNotify::Push(ImGui::ShadNetNotify::Kind::Warning, text);
+}
+
+void NpHandler::OnServiceUnavailable(s32 user_id, const ShadNet::NotifyServiceUnavailable& n) {
+    using N = ShadNet::NotifyServiceUnavailable;
+    if (n.service != N::ServiceMatching2) {
+        LOG_INFO(NpHandler, "user_id={} server refused service {} (reason {})", user_id, n.service,
+                 n.reason);
+        return;
+    }
+    std::string text;
+    switch (n.reason) {
+    case N::ReasonServerFull:
+        text = n.limit > 0 ? fmt::format("Online matchmaking is full right now ({}/{} players). "
+                                         "Try again in a few minutes.",
+                                         n.inUse, n.limit)
+                           : "Online matchmaking is full right now. Try again in a few minutes.";
+        break;
+    case N::ReasonNotAllowed:
+        text = "Your shadNet account isn't allowed to use online matchmaking.";
+        break;
+    case N::ReasonDisabled:
+        text = "Online matchmaking is turned off on this shadNet server.";
+        break;
+    default:
+        text = "The shadNet server refused online matchmaking.";
+        break;
+    }
+    LOG_WARNING(NpHandler, "user_id={} matchmaking unavailable: {}", user_id, text);
+    ImGui::ShadNetNotify::Push(ImGui::ShadNetNotify::Kind::Warning, std::move(text));
 }
 
 } // namespace Libraries::Np
