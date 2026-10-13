@@ -547,12 +547,11 @@ void EmitContext::DefineInputs() {
 
         const u32 num_attrs = Common::AlignUp(runtime_info.sw.tcs.ls_stride, 16) >> 4;
         if (num_attrs > 0) {
-            // Per-attribute array of control-point vertices. Location assignment becomes
-            // locations 0..num_attrs-1 each as array[32] of vec4, matching Local Shader
-            // outputs of array[num_attrs] of vec4 at location 0.
-            const Id per_attr_type{TypeArray(F32[4], ConstU32(32u))};
-            const Id attr_array_type{TypeArray(per_attr_type, ConstU32(num_attrs))};
-            input_attr_array = DefineInput(attr_array_type, 0);
+            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
+            // The input vertex count isn't statically known, so make length 32 (what
+            // glslang does). Layout is [vertex][attr] so the outer array is per-vertex.
+            const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
+            input_attr_array = DefineInput(patch_array_type, 0);
             Name(input_attr_array, "in_attrs");
         }
         break;
@@ -563,9 +562,11 @@ void EmitContext::DefineInputs() {
 
         const u32 num_attrs = Common::AlignUp(runtime_info.sw.tes.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
-            const Id per_attr_type{TypeArray(F32[4], ConstU32(32u))};
-            const Id attr_array_type{TypeArray(per_attr_type, ConstU32(num_attrs))};
-            input_attr_array = DefineInput(attr_array_type, 0);
+            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
+            // The input vertex count isn't statically known, so make length 32 (what
+            // glslang does)
+            const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
+            input_attr_array = DefineInput(patch_array_type, 0);
             Name(input_attr_array, "in_attrs");
         }
 
@@ -674,11 +675,11 @@ void EmitContext::DefineOutputs() {
 
         const u32 num_attrs = Common::AlignUp(runtime_info.sw.tcs.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
-            // Match TES / LS location layout: [attr][vertex] of vec4
-            const Id per_attr_type{
-                TypeArray(F32[4], ConstU32(runtime_info.sw.tcs.NumOutputControlPoints()))};
-            const Id attr_array_type{TypeArray(per_attr_type, ConstU32(num_attrs))};
-            output_attr_array = DefineOutput(attr_array_type, 0);
+            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
+            // Layout is [vertex][attr], matching Local Shader / TES inputs.
+            const Id patch_array_type{
+                TypeArray(per_vertex_type, ConstU32(runtime_info.sw.tcs.NumOutputControlPoints()))};
+            output_attr_array = DefineOutput(patch_array_type, 0);
             Name(output_attr_array, "out_attrs");
         }
 
@@ -990,10 +991,18 @@ void EmitContext::DefineImagesAndSamplers() {
     for (const auto& image_desc : info.images) {
         const auto sharp = image_desc.GetSharp(info);
         const auto nfmt = sharp.GetNumberFmt();
-        const bool is_integer = AmdGpu::IsInteger(nfmt);
         const bool is_storage = image_desc.is_written;
+        // Depth views coerce R16/R32 UINT T#s to D16/D32; sample as float to match the view.
+        const bool sample_as_float = image_desc.sample_as_float && !is_storage;
+        const auto effective_nfmt =
+            sample_as_float ? AmdGpu::NumberFormat::Float : nfmt;
+        const bool is_integer = AmdGpu::IsInteger(effective_nfmt);
+        u8 depth_alias_bpp = 0;
+        if (sample_as_float && AmdGpu::IsInteger(nfmt)) {
+            depth_alias_bpp = sharp.GetDataFmt() == AmdGpu::DataFormat::Format16 ? 16 : 32;
+        }
         const MipStorageFallbackMode mip_fallback_mode = image_desc.mip_fallback_mode;
-        const VectorIds& data_types = GetAttributeType(*this, nfmt);
+        const VectorIds& data_types = GetAttributeType(*this, effective_nfmt);
         const Id sampled_type = data_types[1];
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
 
@@ -1017,6 +1026,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .view_type = sharp.GetViewType(image_desc.is_array),
             .is_integer = is_integer,
             .is_storage = is_storage,
+            .depth_alias_bpp = depth_alias_bpp,
             .mip_fallback_mode = mip_fallback_mode,
         });
         interfaces.push_back(id);

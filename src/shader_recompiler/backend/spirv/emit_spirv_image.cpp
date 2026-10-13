@@ -50,6 +50,26 @@ static Id FixImageCoords(EmitContext& ctx, Id coords, AmdGpu::ImageType image_ty
     }
 }
 
+// Convert a float depth sample into the IR's uint-as-float-bits representation when a UINT T#
+// is bound to a D16/D32 view.
+static Id ConvertDepthAliasSample(EmitContext& ctx, const EmitContext::TextureDefinition& texture,
+                                  Id sample) {
+    if (texture.depth_alias_bpp == 0) {
+        return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;
+    }
+    const Id depth = ctx.OpCompositeExtract(ctx.F32[1], sample, 0U);
+    Id as_float_bits = depth;
+    if (texture.depth_alias_bpp == 16) {
+        const Id scaled =
+            ctx.OpFMul(ctx.F32[1], depth, ctx.ConstF32(65535.f));
+        const Id as_uint = ctx.OpConvertFToU(ctx.U32[1], ctx.OpRoundEven(ctx.F32[1], scaled));
+        as_float_bits = ctx.OpBitcast(ctx.F32[1], as_uint);
+    }
+    // D32: depth float bits already match R32_UINT reinterpretation used by the guest.
+    return ctx.OpCompositeConstruct(ctx.F32[4], as_float_bits, ctx.f32_zero_value,
+                                    ctx.f32_zero_value, ctx.f32_zero_value);
+}
+
 template <bool is_float>
 static Id PadImageOperand(EmitContext& ctx, Id operand, AmdGpu::ImageType image_type) {
     if (image_type == AmdGpu::ImageType::Color1D || image_type == AmdGpu::ImageType::Color1DArray) {
@@ -157,7 +177,7 @@ Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id c
     operands.AddOffset(ctx, texture.view_type, offset);
     const Id sample = ctx.OpImageSampleImplicitLod(result_type, sampled_image, fixed_coords,
                                                    operands.mask, operands.operands);
-    return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;
+    return ConvertDepthAliasSample(ctx, texture, sample);
 }
 
 Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod,
@@ -173,7 +193,7 @@ Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id c
     operands.AddOffset(ctx, texture.view_type, offset);
     const Id sample = ctx.OpImageSampleExplicitLod(result_type, sampled_image, fixed_coords,
                                                    operands.mask, operands.operands);
-    return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;
+    return ConvertDepthAliasSample(ctx, texture, sample);
 }
 
 Id EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id dref,
@@ -225,7 +245,7 @@ Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
     operands.AddOffset(ctx, texture.view_type, offset, true);
     const Id texels = ctx.OpImageGather(result_type, sampled_image, fixed_coords,
                                         ctx.ConstU32(comp), operands.mask, operands.operands);
-    return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], texels) : texels;
+    return ConvertDepthAliasSample(ctx, texture, texels);
 }
 
 Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
@@ -298,7 +318,7 @@ Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id
     operands.AddOffset(ctx, texture.view_type, offset);
     const Id sample = ctx.OpImageSampleExplicitLod(result_type, sampled_image, fixed_coords,
                                                    operands.mask, operands.operands);
-    return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;
+    return ConvertDepthAliasSample(ctx, texture, sample);
 }
 
 Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id ms) {
@@ -345,7 +365,7 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
         const Id image = ctx.OpLoad(texture.image_type, image_ptr);
         texel = ctx.OpImageRead(color_type, image, fixed_coords, operands.mask, operands.operands);
     }
-    return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], texel) : texel;
+    return ConvertDepthAliasSample(ctx, texture, texel);
 }
 
 void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id ms,

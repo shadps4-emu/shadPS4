@@ -307,6 +307,8 @@ public:
         AmdGpu::ImageType view_type;
         bool is_integer = false;
         bool is_storage = false;
+        // 16: D16_UNORM sampled as R16_UINT (scale float→uint). 32: D32 bits as R32_UINT.
+        u8 depth_alias_bpp = 0;
         MipStorageFallbackMode mip_fallback_mode{};
     };
 

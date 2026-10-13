@@ -128,6 +128,9 @@ public:
     /// Retrieves image whose address matches provided
     [[nodiscard]] ImageId FindImageFromRange(VAddr address, size_t size, bool ensure_valid = true);
 
+    /// Returns true if a depth image is registered at the exact guest address.
+    [[nodiscard]] bool IsDepthImageAt(VAddr address) const;
+
     /// Retrieves an image view with the properties of the specified image id.
     [[nodiscard]] ImageView& FindTexture(ImageId image_id, const ImageDesc& desc);
 

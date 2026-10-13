@@ -1,0 +1,509 @@
+diff --git a/src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp b/src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp
+index 3a57dfa8..4ff81e24 100644
+--- a/src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp
++++ b/src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp
+@@ -325,24 +325,24 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
+ 
+ Id EmitGetTessGenericAttribute(EmitContext& ctx, Id vertex_index, Id attr_index, Id comp_index) {
+     const auto attr_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
+-    // Layout is [attr][vertex][comp]
++    // Layout is [vertex][attr][comp]
+     return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(attr_comp_ptr, ctx.input_attr_array,
+-                                                    attr_index, vertex_index, comp_index));
++                                                    vertex_index, attr_index, comp_index));
+ }
+ 
+ Id EmitReadTcsGenericOuputAttribute(EmitContext& ctx, Id vertex_index, Id attr_index,
+                                     Id comp_index) {
+     const auto attr_comp_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+     return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(attr_comp_ptr, ctx.output_attr_array,
+-                                                    attr_index, vertex_index, comp_index));
++                                                    vertex_index, attr_index, comp_index));
+ }
+ 
+ void EmitSetTcsGenericAttribute(EmitContext& ctx, Id value, Id attr_index, Id comp_index) {
+     // Implied vertex index is invocation_id
+     const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+     Id pointer =
+-        ctx.OpAccessChain(component_ptr, ctx.output_attr_array, attr_index,
+-                          ctx.OpLoad(ctx.U32[1], ctx.invocation_id), comp_index);
++        ctx.OpAccessChain(component_ptr, ctx.output_attr_array,
++                          ctx.OpLoad(ctx.U32[1], ctx.invocation_id), attr_index, comp_index);
+     ctx.OpStore(pointer, value);
+ }
+ 
+diff --git a/src/shader_recompiler/backend/spirv/emit_spirv_image.cpp b/src/shader_recompiler/backend/spirv/emit_spirv_image.cpp
+index 28904ba8..ac37e035 100644
+--- a/src/shader_recompiler/backend/spirv/emit_spirv_image.cpp
++++ b/src/shader_recompiler/backend/spirv/emit_spirv_image.cpp
+@@ -50,6 +50,26 @@ static Id FixImageCoords(EmitContext& ctx, Id coords, AmdGpu::ImageType image_ty
+     }
+ }
+ 
++// Convert a float depth sample into the IR's uint-as-float-bits representation when a UINT T#
++// is bound to a D16/D32 view.
++static Id ConvertDepthAliasSample(EmitContext& ctx, const EmitContext::TextureDefinition& texture,
++                                  Id sample) {
++    if (texture.depth_alias_bpp == 0) {
++        return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;
++    }
++    const Id depth = ctx.OpCompositeExtract(ctx.F32[1], sample, 0U);
++    Id as_float_bits = depth;
++    if (texture.depth_alias_bpp == 16) {
++        const Id scaled =
++            ctx.OpFMul(ctx.F32[1], depth, ctx.ConstF32(65535.f));
++        const Id as_uint = ctx.OpConvertFToU(ctx.U32[1], ctx.OpRoundEven(ctx.F32[1], scaled));
++        as_float_bits = ctx.OpBitcast(ctx.F32[1], as_uint);
++    }
++    // D32: depth float bits already match R32_UINT reinterpretation used by the guest.
++    return ctx.OpCompositeConstruct(ctx.F32[4], as_float_bits, ctx.f32_zero_value,
++                                    ctx.f32_zero_value, ctx.f32_zero_value);
++}
++
+ template <bool is_float>
+ static Id PadImageOperand(EmitContext& ctx, Id operand, AmdGpu::ImageType image_type) {
+     if (image_type == AmdGpu::ImageType::Color1D || image_type == AmdGpu::ImageType::Color1DArray) {
+@@ -157,7 +177,7 @@ Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id c
+     operands.AddOffset(ctx, texture.view_type, offset);
+     const Id sample = ctx.OpImageSampleImplicitLod(result_type, sampled_image, fixed_coords,
+                                                    operands.mask, operands.operands);
+-    return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;
++    return ConvertDepthAliasSample(ctx, texture, sample);
+ }
+ 
+ Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod,
+@@ -173,7 +193,7 @@ Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id c
+     operands.AddOffset(ctx, texture.view_type, offset);
+     const Id sample = ctx.OpImageSampleExplicitLod(result_type, sampled_image, fixed_coords,
+                                                    operands.mask, operands.operands);
+-    return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;
++    return ConvertDepthAliasSample(ctx, texture, sample);
+ }
+ 
+ Id EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id dref,
+@@ -225,7 +245,7 @@ Id EmitImageGather(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
+     operands.AddOffset(ctx, texture.view_type, offset, true);
+     const Id texels = ctx.OpImageGather(result_type, sampled_image, fixed_coords,
+                                         ctx.ConstU32(comp), operands.mask, operands.operands);
+-    return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], texels) : texels;
++    return ConvertDepthAliasSample(ctx, texture, texels);
+ }
+ 
+ Id EmitImageGatherDref(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
+@@ -298,7 +318,7 @@ Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id
+     operands.AddOffset(ctx, texture.view_type, offset);
+     const Id sample = ctx.OpImageSampleExplicitLod(result_type, sampled_image, fixed_coords,
+                                                    operands.mask, operands.operands);
+-    return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], sample) : sample;
++    return ConvertDepthAliasSample(ctx, texture, sample);
+ }
+ 
+ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id ms) {
+@@ -345,7 +365,7 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
+         const Id image = ctx.OpLoad(texture.image_type, image_ptr);
+         texel = ctx.OpImageRead(color_type, image, fixed_coords, operands.mask, operands.operands);
+     }
+-    return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], texel) : texel;
++    return ConvertDepthAliasSample(ctx, texture, texel);
+ }
+ 
+ void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id ms,
+diff --git a/src/shader_recompiler/backend/spirv/spirv_emit_context.cpp b/src/shader_recompiler/backend/spirv/spirv_emit_context.cpp
+index 2b806898..c6cb98fa 100644
+--- a/src/shader_recompiler/backend/spirv/spirv_emit_context.cpp
++++ b/src/shader_recompiler/backend/spirv/spirv_emit_context.cpp
+@@ -547,12 +547,11 @@ void EmitContext::DefineInputs() {
+ 
+         const u32 num_attrs = Common::AlignUp(runtime_info.sw.tcs.ls_stride, 16) >> 4;
+         if (num_attrs > 0) {
+-            // Per-attribute array of control-point vertices. Location assignment becomes
+-            // locations 0..num_attrs-1 each as array[32] of vec4, matching Local Shader
+-            // outputs of array[num_attrs] of vec4 at location 0.
+-            const Id per_attr_type{TypeArray(F32[4], ConstU32(32u))};
+-            const Id attr_array_type{TypeArray(per_attr_type, ConstU32(num_attrs))};
+-            input_attr_array = DefineInput(attr_array_type, 0);
++            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
++            // The input vertex count isn't statically known, so make length 32 (what
++            // glslang does). Layout is [vertex][attr] so the outer array is per-vertex.
++            const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
++            input_attr_array = DefineInput(patch_array_type, 0);
+             Name(input_attr_array, "in_attrs");
+         }
+         break;
+@@ -563,9 +562,11 @@ void EmitContext::DefineInputs() {
+ 
+         const u32 num_attrs = Common::AlignUp(runtime_info.sw.tes.hs_output_cp_stride, 16) >> 4;
+         if (num_attrs > 0) {
+-            const Id per_attr_type{TypeArray(F32[4], ConstU32(32u))};
+-            const Id attr_array_type{TypeArray(per_attr_type, ConstU32(num_attrs))};
+-            input_attr_array = DefineInput(attr_array_type, 0);
++            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
++            // The input vertex count isn't statically known, so make length 32 (what
++            // glslang does)
++            const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
++            input_attr_array = DefineInput(patch_array_type, 0);
+             Name(input_attr_array, "in_attrs");
+         }
+ 
+@@ -674,11 +675,11 @@ void EmitContext::DefineOutputs() {
+ 
+         const u32 num_attrs = Common::AlignUp(runtime_info.sw.tcs.hs_output_cp_stride, 16) >> 4;
+         if (num_attrs > 0) {
+-            // Match TES / LS location layout: [attr][vertex] of vec4
+-            const Id per_attr_type{
+-                TypeArray(F32[4], ConstU32(runtime_info.sw.tcs.NumOutputControlPoints()))};
+-            const Id attr_array_type{TypeArray(per_attr_type, ConstU32(num_attrs))};
+-            output_attr_array = DefineOutput(attr_array_type, 0);
++            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
++            // Layout is [vertex][attr], matching Local Shader / TES inputs.
++            const Id patch_array_type{
++                TypeArray(per_vertex_type, ConstU32(runtime_info.sw.tcs.NumOutputControlPoints()))};
++            output_attr_array = DefineOutput(patch_array_type, 0);
+             Name(output_attr_array, "out_attrs");
+         }
+ 
+@@ -990,10 +991,18 @@ void EmitContext::DefineImagesAndSamplers() {
+     for (const auto& image_desc : info.images) {
+         const auto sharp = image_desc.GetSharp(info);
+         const auto nfmt = sharp.GetNumberFmt();
+-        const bool is_integer = AmdGpu::IsInteger(nfmt);
+         const bool is_storage = image_desc.is_written;
++        // Depth views coerce R16/R32 UINT T#s to D16/D32; sample as float to match the view.
++        const bool sample_as_float = image_desc.sample_as_float && !is_storage;
++        const auto effective_nfmt =
++            sample_as_float ? AmdGpu::NumberFormat::Float : nfmt;
++        const bool is_integer = AmdGpu::IsInteger(effective_nfmt);
++        u8 depth_alias_bpp = 0;
++        if (sample_as_float && AmdGpu::IsInteger(nfmt)) {
++            depth_alias_bpp = sharp.GetDataFmt() == AmdGpu::DataFormat::Format16 ? 16 : 32;
++        }
+         const MipStorageFallbackMode mip_fallback_mode = image_desc.mip_fallback_mode;
+-        const VectorIds& data_types = GetAttributeType(*this, nfmt);
++        const VectorIds& data_types = GetAttributeType(*this, effective_nfmt);
+         const Id sampled_type = data_types[1];
+         const Id image_type{ImageType(*this, image_desc, sampled_type)};
+ 
+@@ -1017,6 +1026,7 @@ void EmitContext::DefineImagesAndSamplers() {
+             .view_type = sharp.GetViewType(image_desc.is_array),
+             .is_integer = is_integer,
+             .is_storage = is_storage,
++            .depth_alias_bpp = depth_alias_bpp,
+             .mip_fallback_mode = mip_fallback_mode,
+         });
+         interfaces.push_back(id);
+diff --git a/src/shader_recompiler/backend/spirv/spirv_emit_context.h b/src/shader_recompiler/backend/spirv/spirv_emit_context.h
+index ef2589fd..97d793f2 100644
+--- a/src/shader_recompiler/backend/spirv/spirv_emit_context.h
++++ b/src/shader_recompiler/backend/spirv/spirv_emit_context.h
+@@ -307,6 +307,8 @@ public:
+         AmdGpu::ImageType view_type;
+         bool is_integer = false;
+         bool is_storage = false;
++        // 16: D16_UNORM sampled as R16_UINT (scale float→uint). 32: D32 bits as R32_UINT.
++        u8 depth_alias_bpp = 0;
+         MipStorageFallbackMode mip_fallback_mode{};
+     };
+ 
+diff --git a/src/shader_recompiler/resource.h b/src/shader_recompiler/resource.h
+index 443234af..6dd56843 100644
+--- a/src/shader_recompiler/resource.h
++++ b/src/shader_recompiler/resource.h
+@@ -132,6 +132,9 @@ struct ImageResource {
+     bool is_array{};
+     bool is_written{};
+     bool is_r128{};
++    // When true, emit a float OpTypeImage even if the T# number format is integer.
++    // Used when the texture cache binds a depth view (D16/D32) for an R16/R32 UINT T#.
++    bool sample_as_float{};
+     u8 constant_mip_index{};
+     MipStorageFallbackMode mip_fallback_mode{};
+     SharpFetchPostOp post_op{};
+diff --git a/src/shader_recompiler/specialization.h b/src/shader_recompiler/specialization.h
+index 9d208bf1..e151db2b 100644
+--- a/src/shader_recompiler/specialization.h
++++ b/src/shader_recompiler/specialization.h
+@@ -48,6 +48,8 @@ struct ImageSpecialization {
+     bool is_integer = false;
+     bool is_storage = false;
+     bool is_srgb = false;
++    // Integer T# aliased onto a depth image (view coerced to D16/D32).
++    bool is_depth_alias = false;
+     AmdGpu::CompMapping dst_select{};
+     AmdGpu::NumberConversion num_conversion{};
+     // FIXME any pipeline cache changes needed?
+diff --git a/src/video_core/renderer_vulkan/vk_instance.cpp b/src/video_core/renderer_vulkan/vk_instance.cpp
+index b3acd6e9..0e4c1b88 100644
+--- a/src/video_core/renderer_vulkan/vk_instance.cpp
++++ b/src/video_core/renderer_vulkan/vk_instance.cpp
+@@ -427,12 +427,14 @@ bool Instance::CreateDevice() {
+         },
+         vk::PhysicalDeviceVulkan11Features{
+             .storageBuffer16BitAccess = vk11_features.storageBuffer16BitAccess,
++            .uniformAndStorageBuffer16BitAccess = vk11_features.uniformAndStorageBuffer16BitAccess,
+             .shaderDrawParameters = vk11_features.shaderDrawParameters,
+         },
+         vk::PhysicalDeviceVulkan12Features{
+             .samplerMirrorClampToEdge = vk12_features.samplerMirrorClampToEdge,
+             .drawIndirectCount = vk12_features.drawIndirectCount,
+             .storageBuffer8BitAccess = vk12_features.storageBuffer8BitAccess,
++            .uniformAndStorageBuffer8BitAccess = vk12_features.uniformAndStorageBuffer8BitAccess,
+             .shaderBufferInt64Atomics = vk12_features.shaderBufferInt64Atomics,
+             .shaderSharedInt64Atomics = vk12_features.shaderSharedInt64Atomics,
+             .shaderFloat16 = vk12_features.shaderFloat16,
+diff --git a/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp b/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
+index 85a9f5e1..dc55edd7 100644
+--- a/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
++++ b/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
+@@ -19,6 +19,7 @@
+ #include "video_core/renderer_vulkan/vk_pipeline_serialization.h"
+ #include "video_core/renderer_vulkan/vk_scheduler.h"
+ #include "video_core/renderer_vulkan/vk_shader_util.h"
++#include "video_core/texture_cache/texture_cache.h"
+ 
+ namespace Vulkan {
+ 
+@@ -276,8 +277,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
+ }
+ 
+ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
+-                             AmdGpu::Liverpool* liverpool_, u32 sparse_page_shift)
++                             AmdGpu::Liverpool* liverpool_, VideoCore::TextureCache& texture_cache_,
++                             u32 sparse_page_shift)
+     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
++      texture_cache{texture_cache_},
+       desc_heap{instance, scheduler.GetWorkSemaphore(), DescriptorHeapSizes} {
+     const auto& vk12_props = instance.GetVk12Properties();
+     profile = Shader::Profile{
+@@ -627,6 +630,48 @@ bool PipelineCache::RefreshComputeKey() {
+     return true;
+ }
+ 
++void PipelineCache::MarkDepthIntegerAliases(Shader::Info& info) const {
++    for (auto& image_desc : info.images) {
++        image_desc.sample_as_float = false;
++        if (image_desc.is_written || image_desc.is_depth) {
++            continue;
++        }
++        const auto sharp = image_desc.GetSharp(info);
++        if (!sharp || !AmdGpu::IsInteger(sharp.GetNumberFmt())) {
++            continue;
++        }
++        const auto data_fmt = sharp.GetDataFmt();
++        if (data_fmt != AmdGpu::DataFormat::Format16 && data_fmt != AmdGpu::DataFormat::Format32) {
++            continue;
++        }
++        if (texture_cache.IsDepthImageAt(sharp.Address())) {
++            image_desc.sample_as_float = true;
++        }
++    }
++}
++
++void PipelineCache::ApplyDepthAliasesToSpecialization(Shader::Info& info,
++                                                      Shader::StageSpecialization& spec) const {
++    for (size_t i = 0; i < info.images.size() && i < spec.images.size(); ++i) {
++        const auto& image_desc = info.images[i];
++        if (image_desc.is_written || image_desc.is_depth) {
++            continue;
++        }
++        const auto sharp = image_desc.GetSharp(info);
++        if (!sharp || !AmdGpu::IsInteger(sharp.GetNumberFmt())) {
++            continue;
++        }
++        const auto data_fmt = sharp.GetDataFmt();
++        if (data_fmt != AmdGpu::DataFormat::Format16 && data_fmt != AmdGpu::DataFormat::Format32) {
++            continue;
++        }
++        if (texture_cache.IsDepthImageAt(sharp.Address())) {
++            spec.images[i].is_depth_alias = true;
++            spec.images[i].is_integer = false;
++        }
++    }
++}
++
+ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
+                                               const std::span<const u32>& code, size_t perm_idx,
+                                               Shader::Backend::Bindings& binding) {
+@@ -635,6 +680,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
+     DumpShader(code, info.pgm_hash, info.hw_stage, perm_idx, "bin");
+ 
+     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
++    MarkDepthIntegerAliases(info);
+     auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
+     DumpShader(spv, info.pgm_hash, info.hw_stage, perm_idx, "spv");
+ 
+@@ -671,6 +717,7 @@ PipelineCache::Result PipelineCache::GetProgram(HwStage hw_stage, SwStage sw_sta
+         auto start = binding;
+         const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding);
+         auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
++        ApplyDepthAliasesToSpecialization(program->info, spec);
+         const auto perm_hash = HashCombine(params.hash, 0);
+ 
+         RegisterShaderMeta(program->info, spec.fetch_shader_data, spec, perm_hash, 0);
+@@ -687,6 +734,7 @@ PipelineCache::Result PipelineCache::GetProgram(HwStage hw_stage, SwStage sw_sta
+     info.user_data = params.user_data;
+     info.RefreshFlatBuf();
+     auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
++    ApplyDepthAliasesToSpecialization(info, spec);
+ 
+     size_t perm_idx = program->modules.size();
+     u64 perm_hash = HashCombine(params.hash, perm_idx);
+diff --git a/src/video_core/renderer_vulkan/vk_pipeline_cache.h b/src/video_core/renderer_vulkan/vk_pipeline_cache.h
+index d863594d..f76c389a 100644
+--- a/src/video_core/renderer_vulkan/vk_pipeline_cache.h
++++ b/src/video_core/renderer_vulkan/vk_pipeline_cache.h
+@@ -32,6 +32,10 @@ namespace Shader {
+ struct Info;
+ }
+ 
++namespace VideoCore {
++class TextureCache;
++}
++
+ namespace Vulkan {
+ 
+ class Instance;
+@@ -73,7 +77,8 @@ struct DrawIndirectParams {
+ class PipelineCache {
+ public:
+     explicit PipelineCache(const Instance& instance, Scheduler& scheduler,
+-                           AmdGpu::Liverpool* liverpool, u32 sparse_page_shift);
++                           AmdGpu::Liverpool* liverpool, VideoCore::TextureCache& texture_cache,
++                           u32 sparse_page_shift);
+     ~PipelineCache();
+ 
+     void WarmUp();
+@@ -113,6 +118,9 @@ private:
+     vk::ShaderModule CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
+                                    const std::span<const u32>& code, size_t perm_idx,
+                                    Shader::Backend::Bindings& binding);
++    void MarkDepthIntegerAliases(Shader::Info& info) const;
++    void ApplyDepthAliasesToSpecialization(Shader::Info& info,
++                                           Shader::StageSpecialization& spec) const;
+     const Shader::RuntimeInfo& BuildRuntimeInfo(Shader::HwStage stage, Shader::SwStage l_stage);
+ 
+     [[nodiscard]] bool IsPipelineCacheDirty() const {
+@@ -123,6 +131,7 @@ private:
+     const Instance& instance;
+     Scheduler& scheduler;
+     AmdGpu::Liverpool* liverpool;
++    VideoCore::TextureCache& texture_cache;
+     DescriptorHeap desc_heap;
+     vk::UniquePipelineCache pipeline_cache;
+     vk::UniquePipelineLayout pipeline_layout;
+diff --git a/src/video_core/renderer_vulkan/vk_rasterizer.cpp b/src/video_core/renderer_vulkan/vk_rasterizer.cpp
+index 57b67ac7..6ccf3910 100644
+--- a/src/video_core/renderer_vulkan/vk_rasterizer.cpp
++++ b/src/video_core/renderer_vulkan/vk_rasterizer.cpp
+@@ -39,7 +39,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
+       buffer_cache{instance, scheduler, runtime, liverpool_, texture_cache, page_manager},
+       texture_cache{instance, scheduler, runtime, liverpool_, buffer_cache, page_manager},
+       liverpool{liverpool_}, memory{Core::Memory::Instance()},
+-      pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
++      pipeline_cache{instance, scheduler, liverpool, texture_cache,
++                     buffer_cache.GetSparsePageShift()},
+       host_markers_enabled{EmulatorSettings.IsVkHostMarkersEnabled()},
+       guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()} {
+     if (!EmulatorSettings.IsNullGPU()) {
+diff --git a/src/video_core/texture_cache/texture_cache.cpp b/src/video_core/texture_cache/texture_cache.cpp
+index a1773976..4e9362fb 100644
+--- a/src/video_core/texture_cache/texture_cache.cpp
++++ b/src/video_core/texture_cache/texture_cache.cpp
+@@ -72,10 +72,62 @@ TextureCache::~TextureCache() = default;
+ 
+ void TextureCache::ProcessDownloadImages() {
+     std::unique_lock lk{download_images_mutex};
++    if (download_images.empty()) {
++        return;
++    }
++    struct PendingDownload {
++        VAddr guest_address{};
++        u32 download_size{};
++        Vulkan::StagingBufferRef staging{};
++    };
++    SmallVector<PendingDownload, 8> pending;
+     for (const ImageId image_id : download_images) {
+-        DownloadImageMemory(image_id, true);
++        Image& image = slot_images[image_id];
++        if (False(image.flags & ImageFlagBits::GpuModified)) {
++            continue;
++        }
++        if (image.info.pixel_format != image.backing->image.image_ci.format) {
++            continue;
++        }
++        const u32 download_size = image.info.pitch * image.info.size.height *
++                                  image.info.size.depth * image.info.resources.layers *
++                                  (image.info.num_bits / 8);
++        ASSERT(download_size <= image.info.guest_size);
++        const auto download =
++            runtime.GetStagingPool().Request(download_size, MemoryType::HostCached, 16, false);
++        const vk::BufferImageCopy image_download = {
++            .bufferOffset = download.offset,
++            .bufferRowLength = image.info.pitch,
++            .bufferImageHeight = image.info.size.height,
++            .imageSubresource =
++                {
++                    .aspectMask = image.info.props.is_depth ? vk::ImageAspectFlagBits::eDepth
++                                                            : vk::ImageAspectFlagBits::eColor,
++                    .mipLevel = 0,
++                    .baseArrayLayer = 0,
++                    .layerCount = image.info.resources.layers,
++                },
++            .imageOffset = {0, 0, 0},
++            .imageExtent = {image.info.size.width, image.info.size.height, image.info.size.depth},
++        };
++        runtime.DownloadImage(&image, download.buffer, std::span{&image_download, 1});
++        pending.push_back(PendingDownload{
++            .guest_address = image.info.guest_address,
++            .download_size = download_size,
++            .staging = download,
++        });
+     }
+     download_images.clear();
++    if (pending.empty()) {
++        return;
++    }
++    // One GPU wait for the whole batch (preserves sync-in-time semantics from #3593).
++    scheduler.Finish();
++    for (auto& download : pending) {
++        download.staging.Invalidate();
++        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(download.guest_address),
++                                                  download.staging.mapped, download.download_size);
++    }
+ }
+ 
+ void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
+@@ -605,6 +657,20 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
+     return image_id;
+ }
+ 
++bool TextureCache::IsDepthImageAt(VAddr address) const {
++    const auto it = page_table.find(address >> Traits::PAGE_BITS);
++    if (it == nullptr) {
++        return false;
++    }
++    const u32 key = u32(address >> 8);
++    for (const auto& entry : it->entries) {
++        if (entry.key == key) {
++            return slot_images[entry.id].info.props.is_depth != 0;
++        }
++    }
++    return false;
++}
++
+ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure_valid) {
+     SmallVector<ImageId, 4> image_ids;
+     ForEachImageWithAddress(address, [&](ImageId image_id, Image& image) {
+diff --git a/src/video_core/texture_cache/texture_cache.h b/src/video_core/texture_cache/texture_cache.h
+index 2ee1a045..994ff409 100644
+--- a/src/video_core/texture_cache/texture_cache.h
++++ b/src/video_core/texture_cache/texture_cache.h
+@@ -128,6 +128,9 @@ public:
+     /// Retrieves image whose address matches provided
+     [[nodiscard]] ImageId FindImageFromRange(VAddr address, size_t size, bool ensure_valid = true);
+ 
++    /// Returns true if a depth image is registered at the exact guest address.
++    [[nodiscard]] bool IsDepthImageAt(VAddr address) const;
++
+     /// Retrieves an image view with the properties of the specified image id.
+     [[nodiscard]] ImageView& FindTexture(ImageId image_id, const ImageDesc& desc);
+ 

@@ -32,6 +32,10 @@ namespace Shader {
 struct Info;
 }
 
+namespace VideoCore {
+class TextureCache;
+}
+
 namespace Vulkan {
 
 class Instance;
@@ -73,7 +77,8 @@ struct DrawIndirectParams {
 class PipelineCache {
 public:
     explicit PipelineCache(const Instance& instance, Scheduler& scheduler,
-                           AmdGpu::Liverpool* liverpool, u32 sparse_page_shift);
+                           AmdGpu::Liverpool* liverpool, VideoCore::TextureCache& texture_cache,
+                           u32 sparse_page_shift);
     ~PipelineCache();
 
     void WarmUp();
@@ -113,6 +118,9 @@ private:
     vk::ShaderModule CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                    const std::span<const u32>& code, size_t perm_idx,
                                    Shader::Backend::Bindings& binding);
+    void MarkDepthIntegerAliases(Shader::Info& info) const;
+    void ApplyDepthAliasesToSpecialization(Shader::Info& info,
+                                           Shader::StageSpecialization& spec) const;
     const Shader::RuntimeInfo& BuildRuntimeInfo(Shader::HwStage stage, Shader::SwStage l_stage);
 
     [[nodiscard]] bool IsPipelineCacheDirty() const {
@@ -123,6 +131,7 @@ private:
     const Instance& instance;
     Scheduler& scheduler;
     AmdGpu::Liverpool* liverpool;
+    VideoCore::TextureCache& texture_cache;
     DescriptorHeap desc_heap;
     vk::UniquePipelineCache pipeline_cache;
     vk::UniquePipelineLayout pipeline_layout;

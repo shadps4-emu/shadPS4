@@ -19,6 +19,7 @@
 #include "video_core/renderer_vulkan/vk_pipeline_serialization.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
+#include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
@@ -276,8 +277,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
 }
 
 PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
-                             AmdGpu::Liverpool* liverpool_, u32 sparse_page_shift)
+                             AmdGpu::Liverpool* liverpool_, VideoCore::TextureCache& texture_cache_,
+                             u32 sparse_page_shift)
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
+      texture_cache{texture_cache_},
       desc_heap{instance, scheduler.GetWorkSemaphore(), DescriptorHeapSizes} {
     const auto& vk12_props = instance.GetVk12Properties();
     profile = Shader::Profile{
@@ -627,6 +630,48 @@ bool PipelineCache::RefreshComputeKey() {
     return true;
 }
 
+void PipelineCache::MarkDepthIntegerAliases(Shader::Info& info) const {
+    for (auto& image_desc : info.images) {
+        image_desc.sample_as_float = false;
+        if (image_desc.is_written || image_desc.is_depth) {
+            continue;
+        }
+        const auto sharp = image_desc.GetSharp(info);
+        if (!sharp || !AmdGpu::IsInteger(sharp.GetNumberFmt())) {
+            continue;
+        }
+        const auto data_fmt = sharp.GetDataFmt();
+        if (data_fmt != AmdGpu::DataFormat::Format16 && data_fmt != AmdGpu::DataFormat::Format32) {
+            continue;
+        }
+        if (texture_cache.IsDepthImageAt(sharp.Address())) {
+            image_desc.sample_as_float = true;
+        }
+    }
+}
+
+void PipelineCache::ApplyDepthAliasesToSpecialization(Shader::Info& info,
+                                                      Shader::StageSpecialization& spec) const {
+    for (size_t i = 0; i < info.images.size() && i < spec.images.size(); ++i) {
+        const auto& image_desc = info.images[i];
+        if (image_desc.is_written || image_desc.is_depth) {
+            continue;
+        }
+        const auto sharp = image_desc.GetSharp(info);
+        if (!sharp || !AmdGpu::IsInteger(sharp.GetNumberFmt())) {
+            continue;
+        }
+        const auto data_fmt = sharp.GetDataFmt();
+        if (data_fmt != AmdGpu::DataFormat::Format16 && data_fmt != AmdGpu::DataFormat::Format32) {
+            continue;
+        }
+        if (texture_cache.IsDepthImageAt(sharp.Address())) {
+            spec.images[i].is_depth_alias = true;
+            spec.images[i].is_integer = false;
+        }
+    }
+}
+
 vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                               const std::span<const u32>& code, size_t perm_idx,
                                               Shader::Backend::Bindings& binding) {
@@ -635,6 +680,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
     DumpShader(code, info.pgm_hash, info.hw_stage, perm_idx, "bin");
 
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
+    MarkDepthIntegerAliases(info);
     auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
     DumpShader(spv, info.pgm_hash, info.hw_stage, perm_idx, "spv");
 
@@ -671,6 +717,7 @@ PipelineCache::Result PipelineCache::GetProgram(HwStage hw_stage, SwStage sw_sta
         auto start = binding;
         const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding);
         auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
+        ApplyDepthAliasesToSpecialization(program->info, spec);
         const auto perm_hash = HashCombine(params.hash, 0);
 
         RegisterShaderMeta(program->info, spec.fetch_shader_data, spec, perm_hash, 0);
@@ -687,6 +734,7 @@ PipelineCache::Result PipelineCache::GetProgram(HwStage hw_stage, SwStage sw_sta
     info.user_data = params.user_data;
     info.RefreshFlatBuf();
     auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
+    ApplyDepthAliasesToSpecialization(info, spec);
 
     size_t perm_idx = program->modules.size();
     u64 perm_hash = HashCombine(params.hash, perm_idx);

@@ -132,6 +132,9 @@ struct ImageResource {
     bool is_array{};
     bool is_written{};
     bool is_r128{};
+    // When true, emit a float OpTypeImage even if the T# number format is integer.
+    // Used when the texture cache binds a depth view (D16/D32) for an R16/R32 UINT T#.
+    bool sample_as_float{};
     u8 constant_mip_index{};
     MipStorageFallbackMode mip_fallback_mode{};
     SharpFetchPostOp post_op{};

@@ -72,10 +72,62 @@ TextureCache::~TextureCache() = default;
 
 void TextureCache::ProcessDownloadImages() {
     std::unique_lock lk{download_images_mutex};
+    if (download_images.empty()) {
+        return;
+    }
+    struct PendingDownload {
+        VAddr guest_address{};
+        u32 download_size{};
+        Vulkan::StagingBufferRef staging{};
+    };
+    SmallVector<PendingDownload, 8> pending;
     for (const ImageId image_id : download_images) {
-        DownloadImageMemory(image_id, true);
+        Image& image = slot_images[image_id];
+        if (False(image.flags & ImageFlagBits::GpuModified)) {
+            continue;
+        }
+        if (image.info.pixel_format != image.backing->image.image_ci.format) {
+            continue;
+        }
+        const u32 download_size = image.info.pitch * image.info.size.height *
+                                  image.info.size.depth * image.info.resources.layers *
+                                  (image.info.num_bits / 8);
+        ASSERT(download_size <= image.info.guest_size);
+        const auto download =
+            runtime.GetStagingPool().Request(download_size, MemoryType::HostCached, 16, false);
+        const vk::BufferImageCopy image_download = {
+            .bufferOffset = download.offset,
+            .bufferRowLength = image.info.pitch,
+            .bufferImageHeight = image.info.size.height,
+            .imageSubresource =
+                {
+                    .aspectMask = image.info.props.is_depth ? vk::ImageAspectFlagBits::eDepth
+                                                            : vk::ImageAspectFlagBits::eColor,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = image.info.resources.layers,
+                },
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {image.info.size.width, image.info.size.height, image.info.size.depth},
+        };
+        runtime.DownloadImage(&image, download.buffer, std::span{&image_download, 1});
+        pending.push_back(PendingDownload{
+            .guest_address = image.info.guest_address,
+            .download_size = download_size,
+            .staging = download,
+        });
     }
     download_images.clear();
+    if (pending.empty()) {
+        return;
+    }
+    // One GPU wait for the whole batch (preserves sync-in-time semantics from #3593).
+    scheduler.Finish();
+    for (auto& download : pending) {
+        download.staging.Invalidate();
+        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(download.guest_address),
+                                                  download.staging.mapped, download.download_size);
+    }
 }
 
 void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
@@ -603,6 +655,20 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     }
 
     return image_id;
+}
+
+bool TextureCache::IsDepthImageAt(VAddr address) const {
+    const auto it = page_table.find(address >> Traits::PAGE_BITS);
+    if (it == nullptr) {
+        return false;
+    }
+    const u32 key = u32(address >> 8);
+    for (const auto& entry : it->entries) {
+        if (entry.key == key) {
+            return slot_images[entry.id].info.props.is_depth != 0;
+        }
+    }
+    return false;
 }
 
 ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure_valid) {

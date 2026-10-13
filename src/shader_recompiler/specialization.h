@@ -48,6 +48,8 @@ struct ImageSpecialization {
     bool is_integer = false;
     bool is_storage = false;
     bool is_srgb = false;
+    // Integer T# aliased onto a depth image (view coerced to D16/D32).
+    bool is_depth_alias = false;
     AmdGpu::CompMapping dst_select{};
     AmdGpu::NumberConversion num_conversion{};
     // FIXME any pipeline cache changes needed?
