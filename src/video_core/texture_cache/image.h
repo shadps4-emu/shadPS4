@@ -106,8 +106,13 @@ struct Image : public Common::LRUNode<> {
         return track_addr == 0 || track_addr_end == 0;
     }
 
-    bool SafeToDownload() const {
-        return False(flags & ImageFlagBits::Dirty);
+    bool HasGpuValidData() const {
+        return True(flags & ImageFlagBits::GpuModified) && False(flags & ImageFlagBits::Dirty);
+    }
+
+    bool CanBeDownloaded() {
+        return HasGpuValidData() && info.num_samples == 1 && !info.props.has_stencil &&
+               IsVulkanFormatCompatible(info.pixel_format, backing->image.image_ci.format);
     }
 
     void AssociateDepth(ImageId depth_image_id, u64 depth_image_uid) {

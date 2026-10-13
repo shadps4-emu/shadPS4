@@ -645,7 +645,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
 ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure_valid) {
     SmallVector<ImageId, 4> image_ids;
     ForEachImageWithAddress(address, [&](ImageId image_id, Image& image) {
-        if (ensure_valid && !image.SafeToDownload()) {
+        if (ensure_valid && !image.HasGpuValidData()) {
             return;
         }
         image_ids.push_back(image_id);
@@ -1043,8 +1043,8 @@ void TextureCache::GarbageCollectImages() {
         if (num_deletions == 0) {
             return true;
         }
-        const bool download = True(image.flags & ImageFlagBits::GpuModified);
-        if (download && (!pressured || !image.SafeToDownload())) {
+        const bool download = image.HasGpuValidData();
+        if (download && (!pressured || !image.CanBeDownloaded())) {
             return false;
         }
         --num_deletions;
