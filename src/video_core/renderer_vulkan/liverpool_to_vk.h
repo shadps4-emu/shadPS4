@@ -115,6 +115,7 @@ static inline bool IsFormatDepthCompatible(vk::Format fmt) {
     // 16-bit unorm compatible
     case vk::Format::eD16Unorm:
     case vk::Format::eR16Unorm:
+    case vk::Format::eR16Uint:
         return true;
     default:
         return false;
@@ -136,7 +137,7 @@ static inline bool IsFormatStencilCompatible(vk::Format fmt) {
 static inline vk::Format PromoteFormatToDepth(vk::Format fmt) {
     if (fmt == vk::Format::eR32Sfloat || fmt == vk::Format::eR32Uint) {
         return vk::Format::eD32Sfloat;
-    } else if (fmt == vk::Format::eR16Unorm) {
+    } else if (fmt == vk::Format::eR16Unorm || fmt == vk::Format::eR16Uint) {
         return vk::Format::eD16Unorm;
     }
     UNREACHABLE_MSG("Unexpected depth format {}", vk::to_string(fmt));

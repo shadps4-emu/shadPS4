@@ -547,11 +547,12 @@ void EmitContext::DefineInputs() {
 
         const u32 num_attrs = Common::AlignUp(runtime_info.sw.tcs.ls_stride, 16) >> 4;
         if (num_attrs > 0) {
-            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
-            // The input vertex count isn't statically known, so make length 32 (what
-            // glslang does)
-            const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
-            input_attr_array = DefineInput(patch_array_type, 0);
+            // Per-attribute array of control-point vertices. Location assignment becomes
+            // locations 0..num_attrs-1 each as array[32] of vec4, matching Local Shader
+            // outputs of array[num_attrs] of vec4 at location 0.
+            const Id per_attr_type{TypeArray(F32[4], ConstU32(32u))};
+            const Id attr_array_type{TypeArray(per_attr_type, ConstU32(num_attrs))};
+            input_attr_array = DefineInput(attr_array_type, 0);
             Name(input_attr_array, "in_attrs");
         }
         break;
@@ -562,11 +563,9 @@ void EmitContext::DefineInputs() {
 
         const u32 num_attrs = Common::AlignUp(runtime_info.sw.tes.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
-            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
-            // The input vertex count isn't statically known, so make length 32 (what
-            // glslang does)
-            const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
-            input_attr_array = DefineInput(patch_array_type, 0);
+            const Id per_attr_type{TypeArray(F32[4], ConstU32(32u))};
+            const Id attr_array_type{TypeArray(per_attr_type, ConstU32(num_attrs))};
+            input_attr_array = DefineInput(attr_array_type, 0);
             Name(input_attr_array, "in_attrs");
         }
 
@@ -675,12 +674,11 @@ void EmitContext::DefineOutputs() {
 
         const u32 num_attrs = Common::AlignUp(runtime_info.sw.tcs.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
-            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
-            // The input vertex count isn't statically known, so make length 32 (what
-            // glslang does)
-            const Id patch_array_type{
-                TypeArray(per_vertex_type, ConstU32(runtime_info.sw.tcs.NumOutputControlPoints()))};
-            output_attr_array = DefineOutput(patch_array_type, 0);
+            // Match TES / LS location layout: [attr][vertex] of vec4
+            const Id per_attr_type{
+                TypeArray(F32[4], ConstU32(runtime_info.sw.tcs.NumOutputControlPoints()))};
+            const Id attr_array_type{TypeArray(per_attr_type, ConstU32(num_attrs))};
+            output_attr_array = DefineOutput(attr_array_type, 0);
             Name(output_attr_array, "out_attrs");
         }
 

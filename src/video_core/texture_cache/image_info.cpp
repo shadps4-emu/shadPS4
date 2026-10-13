@@ -94,12 +94,16 @@ ImageInfo::ImageInfo(const AmdGpu::DepthBuffer& buffer, u32 num_slices, VAddr ht
                      AmdGpu::CbDbExtent hint, bool write_buffer) noexcept {
     tile_mode = buffer.GetTileMode();
     array_mode = AmdGpu::GetArrayMode(tile_mode);
-    pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
+    const auto z_format = buffer.DepthValid() ? buffer.z_info.format
+                                              : AmdGpu::DepthBuffer::ZFormat::Invalid;
+    const auto s_format = buffer.StencilValid() ? buffer.stencil_info.format
+                                                : AmdGpu::DepthBuffer::StencilFormat::Invalid;
+    pixel_format = LiverpoolToVK::DepthFormat(z_format, s_format);
     type = AmdGpu::ImageType::Color2D;
     props = ImageProperties{
         .is_tiled = buffer.IsTiled(),
         .is_depth = true,
-        .has_stencil = buffer.stencil_info.format != AmdGpu::DepthBuffer::StencilFormat::Invalid,
+        .has_stencil = s_format != AmdGpu::DepthBuffer::StencilFormat::Invalid,
     };
     num_samples = buffer.NumSamples();
     num_bits = buffer.NumBits();
@@ -284,11 +288,11 @@ s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
 
     // Ensure that address is aligned too.
     const auto addr_diff = guest_address - (info.guest_address + info.mips_layout[mip].offset);
-    if ((addr_diff % guest_size) != 0) {
+    if ((addr_diff % slice_size) != 0) {
         return -1;
     }
 
-    return addr_diff / guest_size;
+    return addr_diff / slice_size;
 }
 
 } // namespace VideoCore

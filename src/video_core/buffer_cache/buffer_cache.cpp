@@ -6,6 +6,7 @@
 
 #include "common/alignment.h"
 #include "core/debug_state.h"
+#include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer.h"
@@ -117,9 +118,18 @@ void BufferCache::TickFrame() {
     if (std::exchange(fault_process_pending, false)) {
         fault_manager->ProcessFaultBuffer();
     }
+    num_flushes_per_frame = 0;
 }
 
 void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool assume_locks) {
+    // With readbacks Disabled, never promote GPU-written spans (CS skinned buffers) to
+    // CPU-modified — that would upload bind-pose/zeros over the arena on the next flush.
+    if (EmulatorSettings.GetReadbacksMode() == GpuReadbacksMode::Disabled) {
+        gpu_modified_ranges.ForEachNotInRange(device_addr, size, [this](VAddr addr, size_t gap) {
+            memory_tracker->MarkRegionAsCpuModified(addr, gap);
+        });
+        return;
+    }
     memory_tracker->InvalidateRegion(device_addr, size, [this, device_addr, size, assume_locks] {
         ReadMemory(device_addr, size, true, assume_locks);
     });
@@ -131,14 +141,25 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
         const u32 last_block = (device_addr + size - 1) >> block_shift;
         const auto* arena = GetArena(first_block, last_block);
 
-        // GPU-modified ranges come as many small scattered islands,
-        // so the download is widened to a window around the request
-        constexpr u64 WindowSize = 512_KB;
+        // Large/scattered GPU islands benefit from a wide download window. Small faults
+        // (typical CS skinning StoreBuffer islands) must stay tight — widening to 512KB
+        // + Finish() races with in-flight draws and flashes wrong triangles (UFC3 body).
+        constexpr u64 LargeWindowSize = 512_KB;
+        constexpr u64 SmallFaultThreshold = 64_KB;
         const VAddr arena_end = arena->cpu_addr + arena->size_bytes;
-        const VAddr window_start =
-            std::max<VAddr>(Common::AlignDown(device_addr, WindowSize), arena->cpu_addr);
-        const VAddr window_end = std::min<VAddr>(
-            std::max<VAddr>(window_start + WindowSize, device_addr + size), arena_end);
+        VAddr window_start;
+        VAddr window_end;
+        if (size <= SmallFaultThreshold) {
+            window_start =
+                std::max<VAddr>(Common::AlignDown(device_addr, BYTES_PER_PAGE), arena->cpu_addr);
+            window_end = std::min<VAddr>(Common::AlignUp(device_addr + size, BYTES_PER_PAGE),
+                                         arena_end);
+        } else {
+            window_start =
+                std::max<VAddr>(Common::AlignDown(device_addr, LargeWindowSize), arena->cpu_addr);
+            window_end = std::min<VAddr>(
+                std::max<VAddr>(window_start + LargeWindowSize, device_addr + size), arena_end);
+        }
         DownloadMemory(arena, window_start, window_end - window_start);
         if (is_write) {
             memory_tracker->MarkRegionAsCpuModified(device_addr, size);
@@ -204,7 +225,10 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     const u64 last_block = (device_addr + size - 1) >> block_shift;
     const auto* arena = GetArena(first_block, last_block);
     EnsureResident(arena, first_block, last_block);
-    SynchronizeMemory(arena, device_addr, size, is_written, is_texel_buffer);
+    sync_batch.Add(device_addr, device_addr + size, is_written);
+    if (is_texel_buffer && !is_written) {
+        SynchronizeMemoryFromImage(arena, device_addr, size);
+    }
     if (is_written) {
         gpu_modified_ranges.Add(device_addr, size);
     }
@@ -227,6 +251,11 @@ bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
 }
 
 bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
+    // gpu_modified_ranges is authoritative for GPU writes (e.g. CS skinning StoreBuffer).
+    // Tracker bits may never be set for pure GPU writes that skipped a CPU upload path.
+    if (gpu_modified_ranges.Intersects(addr, size)) {
+        return true;
+    }
     return memory_tracker->IsRegionGpuModified(addr, size);
 }
 
@@ -236,7 +265,7 @@ void BufferCache::SynchronizeDmaBuffers() {
         const u64 page = range.start >> (ARENA_PAGE_BITS - block_shift);
         const VAddr device_addr = range.start << block_shift;
         const u64 size = (range.end - range.start) << block_shift;
-        SynchronizeMemory(address_space[page], device_addr, size, false, false);
+        sync_batch.Add(device_addr, device_addr + size, false);
     }
 }
 
@@ -354,30 +383,6 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
     runtime.CopyBuffer(staging.buffer, bda_pagetable_buffer.get(), copies);
 }
 
-bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size,
-                                    bool is_written, bool is_texel_buffer) {
-    boost::container::small_vector<vk::BufferCopy, 4> copies;
-    size_t total_size_bytes{};
-    memory_tracker->ForEachUploadRange(device_addr, size, is_written, [&](u64 addr, u64 size) {
-        copies.emplace_back(total_size_bytes, addr, size);
-        total_size_bytes += size;
-    });
-    if (!copies.empty()) {
-        const auto staging = staging_pool.Request(total_size_bytes, MemoryType::HostUncached);
-        for (auto& copy : copies) {
-            memory->CopySparseMemory(copy.dstOffset, staging.mapped + copy.srcOffset, copy.size);
-            copy.srcOffset += staging.offset;
-            copy.dstOffset -= arena->cpu_addr;
-        }
-        staging.Flush();
-        runtime.CopyBuffer(staging.buffer, arena, copies);
-    }
-    if (is_texel_buffer && !is_written) {
-        return SynchronizeMemoryFromImage(arena, device_addr, size);
-    }
-    return false;
-}
-
 bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size) {
     if (const auto meta = texture_cache.GetMetaInfo(device_addr)) {
         if (meta->type == TextureCache::MetaType::HTile) {
@@ -478,6 +483,104 @@ void BufferCache::SubmitPendingArenaBinds(Vulkan::SubmitInfo& info) {
     ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost, "Device lost during submit");
 
     pending_binds.clear();
+}
+
+void BufferCache::FlushSyncBatch(bool from_scheduler) {
+    boost::container::small_vector<vk::BufferCopy, 32> copies;
+    size_t total_size_bytes = 0;
+    for (const auto& range : sync_batch) {
+        memory_tracker->ForEachUploadRange(
+            range.start, range.end - range.start, range.written, [&](u64 addr, u64 range_size) {
+                // Never upload CPU guest memory over live GPU-written spans (CS skinning
+                // StoreBuffer). That stomps skinned verts with bind-pose/zeros and collapses
+                // UFC3 bodies to a polygon when Precise is off.
+                gpu_modified_ranges.ForEachNotInRange(addr, range_size, [&](VAddr gap_addr,
+                                                                            size_t gap_size) {
+                    copies.emplace_back(total_size_bytes, gap_addr, gap_size);
+                    total_size_bytes += gap_size;
+                });
+            });
+    }
+    sync_batch.Clear();
+    if (copies.empty()) {
+        return;
+    }
+    const auto staging = staging_pool.Request(total_size_bytes, MemoryType::HostUncached);
+    for (auto& copy : copies) {
+        memory->CopySparseMemory(copy.dstOffset, staging.mapped + copy.srcOffset, copy.size);
+        copy.srcOffset += staging.offset;
+    }
+    staging.Flush();
+
+    const auto cmdbuf = scheduler.UploadCommandBuffer();
+
+    u32 batch_start = 0;
+    u32 batch_end = 0;
+
+    while (true) {
+        batch_start = batch_end;
+        const auto& copy = copies[batch_start];
+        const auto* arena = address_space[copy.dstOffset >> ARENA_PAGE_BITS];
+
+        const auto expand_batch = [&] {
+            const auto& copy = copies[batch_end];
+            const auto end_page = (copy.dstOffset + copy.size - 1) >> ARENA_PAGE_BITS;
+            return address_space[end_page] == arena;
+        };
+        const auto flush_batch = [&] {
+            const auto regions = std::span{copies}.subspan(batch_start, batch_end - batch_start);
+            for (auto& copy : regions) {
+                copy.dstOffset -= arena->cpu_addr;
+            }
+            cmdbuf.copyBuffer(staging.buffer->Handle(), arena->Handle(), regions);
+        };
+
+        while (batch_end < copies.size() && expand_batch()) {
+            ++batch_end;
+        }
+
+        // No more copies to examine.
+        if (batch_end == copies.size()) {
+            flush_batch();
+            break;
+        }
+
+        // Next copy does not overlap with the current buffer.
+        auto end_copy = copies[batch_end];
+        const auto* end_arena = address_space[end_copy.dstOffset >> ARENA_PAGE_BITS];
+        if (end_arena != arena) {
+            flush_batch();
+            continue;
+        }
+
+        // Next copy partially overlaps with buffer.
+        const auto copy_size = end_arena->cpu_addr + end_arena->size_bytes - end_copy.dstOffset;
+        copies[batch_end].size = copy_size;
+        end_copy.srcOffset += copy_size;
+        end_copy.dstOffset += copy_size;
+        end_copy.size -= copy_size;
+        ++batch_end;
+        flush_batch();
+        --batch_end;
+        copies[batch_end] = end_copy;
+    }
+
+    const vk::MemoryBarrier2 memory_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .memoryBarrierCount = 1u,
+        .pMemoryBarriers = &memory_barrier,
+    });
+    num_flushes_per_frame++;
+
+    if (!from_scheduler) {
+        scheduler.BeginSession();
+    }
 }
 
 } // namespace VideoCore

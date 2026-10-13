@@ -62,11 +62,19 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     }
 
     range.base.level = image.base_level;
-    range.base.layer = std::min<u32>(image.base_array, image.NumLayers() - 1);
     range.extent.levels = image.NumViewLevels(desc.is_array);
-    range.extent.layers = image.NumViewLayers(desc.is_array);
     type = image.GetViewType(desc.is_array);
     min_lod = static_cast<u32>(image.min_lod);
+
+    if (type == AmdGpu::ImageType::Color3D) {
+        range.base.layer = 0;
+        range.extent.layers = 1;
+    } else {
+        range.base.layer =
+            std::min<u32>(image.base_array, image.NumLayers() > 0 ? image.NumLayers() - 1 : 0);
+        range.extent.layers = image.NumViewLayers(desc.is_array);
+    }
+
     if (!is_storage) {
         mapping = image.DstSelect();
     }
@@ -81,10 +89,13 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::ColorBuffer& col_buffer) noexcept {
 }
 
 ImageViewInfo::ImageViewInfo(const AmdGpu::DepthBuffer& depth_buffer, AmdGpu::DepthView view,
-                             AmdGpu::DepthControl ctl) {
-    format = Vulkan::LiverpoolToVK::DepthFormat(depth_buffer.z_info.format,
-                                                depth_buffer.stencil_info.format);
-    is_storage = ctl.depth_write_enable;
+                             bool is_writable) {
+    const auto z_format = depth_buffer.DepthValid() ? depth_buffer.z_info.format
+                                                    : AmdGpu::DepthBuffer::ZFormat::Invalid;
+    const auto s_format = depth_buffer.StencilValid() ? depth_buffer.stencil_info.format
+                                                      : AmdGpu::DepthBuffer::StencilFormat::Invalid;
+    format = Vulkan::LiverpoolToVK::DepthFormat(z_format, s_format);
+    is_storage = is_writable;
     range.base.layer = view.slice_start;
     range.extent.layers = view.NumSlices() - range.base.layer;
     type = range.extent.layers > 1 ? AmdGpu::ImageType::Color2DArray : AmdGpu::ImageType::Color2D;

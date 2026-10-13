@@ -288,14 +288,14 @@ void Runtime::CopyImage(VideoCore::Image* src, VideoCore::Image* dst) {
                 region.extent = vk::Extent3D(mip_w, mip_h, 1);
             }
         } else if (is_2d_to_3d) {
-            // 2D array -> 3D volume
-            region.srcSubresource.layerCount = src_layers;
+            // 2D array -> 3D volume: Vulkan requires both layerCounts to be 1.
+            region.srcSubresource.layerCount = 1;
             region.dstSubresource.layerCount = 1;
             region.extent = vk::Extent3D(mip_w, mip_h, src_layers);
         } else if (is_3d_to_2d) {
-            // 3D volume -> 2D array
+            // 3D volume -> 2D array: Vulkan requires both layerCounts to be 1.
             region.srcSubresource.layerCount = 1;
-            region.dstSubresource.layerCount = dst_layers;
+            region.dstSubresource.layerCount = 1;
             region.extent = vk::Extent3D(mip_w, mip_h, dst_layers);
         }
 
@@ -392,23 +392,61 @@ void Runtime::CopyMip(VideoCore::Image* src, VideoCore::Image* dst, u32 mip, u32
     ASSERT(mip_block_h == (src->info.size.height >> src_dim));
     ASSERT(mip_block_p == (src->info.pitch >> src_dim));
 
-    const auto [src_layers, dst_layers] =
+    if (slice >= dst->info.resources.layers) {
+        LOG_WARNING(Render_Vulkan, "CopyMip slice {} is out of bounds for {} layers", slice,
+                    dst->info.resources.layers);
+        return;
+    }
+
+    auto [src_layers, dst_layers] =
         SanitizeCopyLayers(src->info, dst->info, src->info.size.depth);
+
+    const bool src_is_2d = ConvertImageType(src->info.type) == vk::ImageType::e2D;
+    const bool src_is_3d = ConvertImageType(src->info.type) == vk::ImageType::e3D;
+    const bool dst_is_2d = ConvertImageType(dst->info.type) == vk::ImageType::e2D;
+    const bool dst_is_3d = ConvertImageType(dst->info.type) == vk::ImageType::e3D;
+
+    u32 copy_src_layers = src_layers;
+    u32 copy_dst_layers = dst_layers;
+    u32 copy_depth = src->info.size.depth;
+
+    if (src_is_2d && dst_is_3d) {
+        copy_src_layers = 1;
+        copy_dst_layers = 1;
+        copy_depth = src_layers;
+    } else if (src_is_3d && dst_is_2d) {
+        copy_src_layers = 1;
+        copy_dst_layers = 1;
+        copy_depth = dst_layers;
+    } else if (src_is_2d && dst_is_2d) {
+        const u32 max_dst_layers = dst->info.resources.layers - slice;
+        const u32 copy_layers = std::min({src_layers, dst_layers, max_dst_layers});
+        copy_src_layers = copy_layers;
+        copy_dst_layers = copy_layers;
+        copy_depth = 1;
+    } else if (src_is_3d && dst_is_3d) {
+        copy_src_layers = 1;
+        copy_dst_layers = 1;
+    }
+
+    if (copy_src_layers == 0 || copy_dst_layers == 0) {
+        return;
+    }
 
     const vk::ImageCopy image_copy{
         .srcSubresource{
             .aspectMask = src->aspect_mask,
             .mipLevel = 0,
             .baseArrayLayer = 0,
-            .layerCount = src_layers,
+            .layerCount = copy_src_layers,
         },
         .dstSubresource{
             .aspectMask = src->aspect_mask,
             .mipLevel = mip,
             .baseArrayLayer = slice,
-            .layerCount = dst_layers,
+            .layerCount = copy_dst_layers,
         },
-        .extent = {src->info.size.width, src->info.size.height, src->info.size.depth},
+        .extent = {src->info.size.width, src->info.size.height, copy_depth},
     };
 
     SetBackingSamples(dst, dst->info.num_samples);

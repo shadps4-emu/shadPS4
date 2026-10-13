@@ -108,6 +108,12 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         const auto* hull_info = infos[u32(SwStage::TessellationControl)];
         hull_info->ReadTessConstantBuffer(tess_constants);
         info.hw.ls.ls_stride = tess_constants.ls_stride;
+        // Prefer the TCS-analyzed stride when hull runtime info already has a larger value,
+        // so VS and HS declare the same number of attribute locations.
+        const auto& tcs_rt = runtime_infos[u32(SwStage::TessellationControl)];
+        if (tcs_rt.sw.tcs.ls_stride > info.hw.ls.ls_stride) {
+            info.hw.ls.ls_stride = tcs_rt.sw.tcs.ls_stride;
+        }
         break;
     }
     case HwStage::Hull:

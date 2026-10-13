@@ -309,7 +309,10 @@ private:
             } else if (state_op == StateOp::Clear) {
                 return PageOp::Track;
             }
-        } else if (type == Type::GPU && readbacks_mode == GpuReadbacksMode::Precise) {
+        } else if (type == Type::GPU && readbacks_mode != GpuReadbacksMode::Disabled) {
+            // Both Relaxed and Precise must Track GPU-modified pages so CPU reads fault
+            // and trigger downloads. Without this, games that CPU-read GPU results
+            // (UFC3 fight scene) see a black world with only the HUD.
             if (state_op == StateOp::Set) {
                 return PageOp::Track;
             } else if (state_op == StateOp::Clear) {

@@ -3,12 +3,14 @@
 
 #include <bit>
 #include <cstring>
+#include <utility>
 
 #include "ajm_error.h"
 #include "ajm_mp3.h"
 #include "ajm_result.h"
 
 #include "common/assert.h"
+#include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 
 extern "C" {
@@ -151,21 +153,43 @@ u32 AjmMp3Decoder::GetMinimumInputSize() const {
 DecoderResult AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuffer& output,
                                          AjmInstanceGapless& gapless) {
     DecoderResult result{};
+    if (in_buf.empty()) {
+        result.result |= ORBIS_AJM_RESULT_PARTIAL_INPUT;
+        return result;
+    }
+
     AVPacket* pkt = av_packet_alloc();
+    if (pkt == nullptr) {
+        result.result |= ORBIS_AJM_RESULT_CODEC_ERROR | ORBIS_AJM_RESULT_FATAL;
+        return result;
+    }
 
     int ret = av_parser_parse2(m_parser, m_codec_context, &pkt->data, &pkt->size, in_buf.data(),
-                               in_buf.size(), AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
-    ASSERT_MSG(ret >= 0, "Error while parsing {}", ret);
-    in_buf = in_buf.subspan(ret);
+                               static_cast<int>(in_buf.size()), AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+    if (ret < 0) {
+        LOG_ERROR(Lib_Ajm, "MP3 parser error {}", ret);
+        result.result |= ORBIS_AJM_RESULT_INVALID_DATA | ORBIS_AJM_RESULT_CODEC_ERROR;
+        av_packet_free(&pkt);
+        return result;
+    }
+    in_buf = in_buf.subspan(static_cast<size_t>(ret));
 
-    if (pkt->size >= 4) {
+    if (pkt->size) {
+        if (pkt->data == nullptr || static_cast<u32>(pkt->size) < 4) {
+            result.result |= ORBIS_AJM_RESULT_INVALID_DATA;
+            av_packet_free(&pkt);
+            return result;
+        }
         u32 raw_header = 0;
         std::memcpy(&raw_header, pkt->data, sizeof(raw_header));
         m_header = std::byteswap(raw_header);
         AjmDecMp3ParseFrame info{};
-        auto res = ParseMp3Header(pkt->data, pkt->size, true, &info);
-        ASSERT(res == ORBIS_OK);
-
+        if (ParseMp3Header(pkt->data, pkt->size, true, &info) != ORBIS_OK) {
+            LOG_WARNING(Lib_Ajm, "Invalid MP3 frame header");
+            result.result |= ORBIS_AJM_RESULT_INVALID_DATA;
+            av_packet_free(&pkt);
+            return result;
+        }
         m_frame_samples = info.samples_per_channel;
         if (info.total_samples != 0 || info.encoder_delay != 0) {
             gapless.init = {
@@ -181,7 +205,12 @@ DecoderResult AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuff
         pkt->dts = m_parser->dts;
         pkt->flags = (m_parser->key_frame == 1) ? AV_PKT_FLAG_KEY : 0;
         ret = avcodec_send_packet(m_codec_context, pkt);
-        ASSERT_MSG(ret >= 0, "Error submitting the packet to the decoder {}", ret);
+        if (ret < 0) {
+            LOG_ERROR(Lib_Ajm, "Error submitting MP3 packet to decoder {}", ret);
+            result.result |= ORBIS_AJM_RESULT_CODEC_ERROR;
+            av_packet_free(&pkt);
+            return result;
+        }
 
         // Read all the output frames (in general there may be any number of them
         while (ret >= 0) {
@@ -191,9 +220,17 @@ DecoderResult AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuff
                 av_frame_free(&frame);
                 break;
             } else if (ret < 0) {
-                UNREACHABLE_MSG("Error during decoding");
+                LOG_ERROR(Lib_Ajm, "Error during MP3 decoding {}", ret);
+                av_frame_free(&frame);
+                result.result |= ORBIS_AJM_RESULT_CODEC_ERROR;
+                break;
             }
             frame = ConvertAudioFrame(frame);
+            if (frame == nullptr) {
+                LOG_ERROR(Lib_Ajm, "MP3 frame conversion failed");
+                result.result |= ORBIS_AJM_RESULT_CODEC_ERROR;
+                break;
+            }
 
             result.frames_decoded += 1;
             u32 skip_samples = 0;
@@ -219,7 +256,11 @@ DecoderResult AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuff
                 pcm_written = WriteOutputPCM<float>(frame, output, skip_samples, max_pcm);
                 break;
             default:
-                UNREACHABLE();
+                LOG_ERROR(Lib_Ajm, "Unsupported AJM PCM format {}", std::to_underlying(m_format));
+                av_frame_free(&frame);
+                result.result |= ORBIS_AJM_RESULT_INVALID_PARAMETER | ORBIS_AJM_RESULT_FATAL;
+                av_packet_free(&pkt);
+                return result;
             }
 
             const auto samples = pcm_written / m_codec_context->ch_layout.nb_channels;

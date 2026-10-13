@@ -1,0 +1,1002 @@
+diff --git a/src/core/libraries/ajm/ajm_mp3.cpp b/src/core/libraries/ajm/ajm_mp3.cpp
+index 02850a27..7a2cce4f 100644
+--- a/src/core/libraries/ajm/ajm_mp3.cpp
++++ b/src/core/libraries/ajm/ajm_mp3.cpp
+@@ -3,12 +3,14 @@
+ 
+ #include <bit>
+ #include <cstring>
++#include <utility>
+ 
+ #include "ajm_error.h"
+ #include "ajm_mp3.h"
+ #include "ajm_result.h"
+ 
+ #include "common/assert.h"
++#include "common/logging/log.h"
+ #include "core/libraries/error_codes.h"
+ 
+ extern "C" {
+@@ -151,21 +153,43 @@ u32 AjmMp3Decoder::GetMinimumInputSize() const {
+ DecoderResult AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuffer& output,
+                                          AjmInstanceGapless& gapless) {
+     DecoderResult result{};
++    if (in_buf.empty()) {
++        result.result |= ORBIS_AJM_RESULT_PARTIAL_INPUT;
++        return result;
++    }
++
+     AVPacket* pkt = av_packet_alloc();
++    if (pkt == nullptr) {
++        result.result |= ORBIS_AJM_RESULT_CODEC_ERROR | ORBIS_AJM_RESULT_FATAL;
++        return result;
++    }
+ 
+     int ret = av_parser_parse2(m_parser, m_codec_context, &pkt->data, &pkt->size, in_buf.data(),
+-                               in_buf.size(), AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+-    ASSERT_MSG(ret >= 0, "Error while parsing {}", ret);
+-    in_buf = in_buf.subspan(ret);
++                               static_cast<int>(in_buf.size()), AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
++    if (ret < 0) {
++        LOG_ERROR(Lib_Ajm, "MP3 parser error {}", ret);
++        result.result |= ORBIS_AJM_RESULT_INVALID_DATA | ORBIS_AJM_RESULT_CODEC_ERROR;
++        av_packet_free(&pkt);
++        return result;
++    }
++    in_buf = in_buf.subspan(static_cast<size_t>(ret));
+ 
+-    if (pkt->size >= 4) {
++    if (pkt->size) {
++        if (pkt->data == nullptr || static_cast<u32>(pkt->size) < 4) {
++            result.result |= ORBIS_AJM_RESULT_INVALID_DATA;
++            av_packet_free(&pkt);
++            return result;
++        }
+         u32 raw_header = 0;
+         std::memcpy(&raw_header, pkt->data, sizeof(raw_header));
+         m_header = std::byteswap(raw_header);
+         AjmDecMp3ParseFrame info{};
+-        auto res = ParseMp3Header(pkt->data, pkt->size, true, &info);
+-        ASSERT(res == ORBIS_OK);
+-
++        if (ParseMp3Header(pkt->data, pkt->size, true, &info) != ORBIS_OK) {
++            LOG_WARNING(Lib_Ajm, "Invalid MP3 frame header");
++            result.result |= ORBIS_AJM_RESULT_INVALID_DATA;
++            av_packet_free(&pkt);
++            return result;
++        }
+         m_frame_samples = info.samples_per_channel;
+         if (info.total_samples != 0 || info.encoder_delay != 0) {
+             gapless.init = {
+@@ -181,7 +205,12 @@ DecoderResult AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuff
+         pkt->dts = m_parser->dts;
+         pkt->flags = (m_parser->key_frame == 1) ? AV_PKT_FLAG_KEY : 0;
+         ret = avcodec_send_packet(m_codec_context, pkt);
+-        ASSERT_MSG(ret >= 0, "Error submitting the packet to the decoder {}", ret);
++        if (ret < 0) {
++            LOG_ERROR(Lib_Ajm, "Error submitting MP3 packet to decoder {}", ret);
++            result.result |= ORBIS_AJM_RESULT_CODEC_ERROR;
++            av_packet_free(&pkt);
++            return result;
++        }
+ 
+         // Read all the output frames (in general there may be any number of them
+         while (ret >= 0) {
+@@ -191,9 +220,17 @@ DecoderResult AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuff
+                 av_frame_free(&frame);
+                 break;
+             } else if (ret < 0) {
+-                UNREACHABLE_MSG("Error during decoding");
++                LOG_ERROR(Lib_Ajm, "Error during MP3 decoding {}", ret);
++                av_frame_free(&frame);
++                result.result |= ORBIS_AJM_RESULT_CODEC_ERROR;
++                break;
+             }
+             frame = ConvertAudioFrame(frame);
++            if (frame == nullptr) {
++                LOG_ERROR(Lib_Ajm, "MP3 frame conversion failed");
++                result.result |= ORBIS_AJM_RESULT_CODEC_ERROR;
++                break;
++            }
+ 
+             result.frames_decoded += 1;
+             u32 skip_samples = 0;
+@@ -219,7 +256,11 @@ DecoderResult AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuff
+                 pcm_written = WriteOutputPCM<float>(frame, output, skip_samples, max_pcm);
+                 break;
+             default:
+-                UNREACHABLE();
++                LOG_ERROR(Lib_Ajm, "Unsupported AJM PCM format {}", std::to_underlying(m_format));
++                av_frame_free(&frame);
++                result.result |= ORBIS_AJM_RESULT_INVALID_PARAMETER | ORBIS_AJM_RESULT_FATAL;
++                av_packet_free(&pkt);
++                return result;
+             }
+ 
+             const auto samples = pcm_written / m_codec_context->ch_layout.nb_channels;
+diff --git a/src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp b/src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp
+index e2f35b1a..3a57dfa8 100644
+--- a/src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp
++++ b/src/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp
+@@ -325,23 +325,24 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
+ 
+ Id EmitGetTessGenericAttribute(EmitContext& ctx, Id vertex_index, Id attr_index, Id comp_index) {
+     const auto attr_comp_ptr = ctx.TypePointer(spv::StorageClass::Input, ctx.F32[1]);
++    // Layout is [attr][vertex][comp]
+     return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(attr_comp_ptr, ctx.input_attr_array,
+-                                                    vertex_index, attr_index, comp_index));
++                                                    attr_index, vertex_index, comp_index));
+ }
+ 
+ Id EmitReadTcsGenericOuputAttribute(EmitContext& ctx, Id vertex_index, Id attr_index,
+                                     Id comp_index) {
+     const auto attr_comp_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+     return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(attr_comp_ptr, ctx.output_attr_array,
+-                                                    vertex_index, attr_index, comp_index));
++                                                    attr_index, vertex_index, comp_index));
+ }
+ 
+ void EmitSetTcsGenericAttribute(EmitContext& ctx, Id value, Id attr_index, Id comp_index) {
+     // Implied vertex index is invocation_id
+     const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+     Id pointer =
+-        ctx.OpAccessChain(component_ptr, ctx.output_attr_array,
+-                          ctx.OpLoad(ctx.U32[1], ctx.invocation_id), attr_index, comp_index);
++        ctx.OpAccessChain(component_ptr, ctx.output_attr_array, attr_index,
++                          ctx.OpLoad(ctx.U32[1], ctx.invocation_id), comp_index);
+     ctx.OpStore(pointer, value);
+ }
+ 
+diff --git a/src/shader_recompiler/backend/spirv/spirv_emit_context.cpp b/src/shader_recompiler/backend/spirv/spirv_emit_context.cpp
+index ececaf8e..2b806898 100644
+--- a/src/shader_recompiler/backend/spirv/spirv_emit_context.cpp
++++ b/src/shader_recompiler/backend/spirv/spirv_emit_context.cpp
+@@ -547,11 +547,12 @@ void EmitContext::DefineInputs() {
+ 
+         const u32 num_attrs = Common::AlignUp(runtime_info.sw.tcs.ls_stride, 16) >> 4;
+         if (num_attrs > 0) {
+-            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
+-            // The input vertex count isn't statically known, so make length 32 (what
+-            // glslang does)
+-            const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
+-            input_attr_array = DefineInput(patch_array_type, 0);
++            // Per-attribute array of control-point vertices. Location assignment becomes
++            // locations 0..num_attrs-1 each as array[32] of vec4, matching Local Shader
++            // outputs of array[num_attrs] of vec4 at location 0.
++            const Id per_attr_type{TypeArray(F32[4], ConstU32(32u))};
++            const Id attr_array_type{TypeArray(per_attr_type, ConstU32(num_attrs))};
++            input_attr_array = DefineInput(attr_array_type, 0);
+             Name(input_attr_array, "in_attrs");
+         }
+         break;
+@@ -562,11 +563,9 @@ void EmitContext::DefineInputs() {
+ 
+         const u32 num_attrs = Common::AlignUp(runtime_info.sw.tes.hs_output_cp_stride, 16) >> 4;
+         if (num_attrs > 0) {
+-            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
+-            // The input vertex count isn't statically known, so make length 32 (what
+-            // glslang does)
+-            const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
+-            input_attr_array = DefineInput(patch_array_type, 0);
++            const Id per_attr_type{TypeArray(F32[4], ConstU32(32u))};
++            const Id attr_array_type{TypeArray(per_attr_type, ConstU32(num_attrs))};
++            input_attr_array = DefineInput(attr_array_type, 0);
+             Name(input_attr_array, "in_attrs");
+         }
+ 
+@@ -675,12 +674,11 @@ void EmitContext::DefineOutputs() {
+ 
+         const u32 num_attrs = Common::AlignUp(runtime_info.sw.tcs.hs_output_cp_stride, 16) >> 4;
+         if (num_attrs > 0) {
+-            const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
+-            // The input vertex count isn't statically known, so make length 32 (what
+-            // glslang does)
+-            const Id patch_array_type{
+-                TypeArray(per_vertex_type, ConstU32(runtime_info.sw.tcs.NumOutputControlPoints()))};
+-            output_attr_array = DefineOutput(patch_array_type, 0);
++            // Match TES / LS location layout: [attr][vertex] of vec4
++            const Id per_attr_type{
++                TypeArray(F32[4], ConstU32(runtime_info.sw.tcs.NumOutputControlPoints()))};
++            const Id attr_array_type{TypeArray(per_attr_type, ConstU32(num_attrs))};
++            output_attr_array = DefineOutput(attr_array_type, 0);
+             Name(output_attr_array, "out_attrs");
+         }
+ 
+diff --git a/src/video_core/amdgpu/liverpool.cpp b/src/video_core/amdgpu/liverpool.cpp
+index 547ba8b5..d2142a31 100644
+--- a/src/video_core/amdgpu/liverpool.cpp
++++ b/src/video_core/amdgpu/liverpool.cpp
+@@ -180,8 +180,15 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
+         }
+         case PM4ItOpcode::DumpConstRam: {
+             const auto* dump_const = reinterpret_cast<const PM4DumpConstRam*>(header);
++            const u32 size = dump_const->Size();
++            if (rasterizer) {
++                auto& buffer_cache = rasterizer->GetBufferCache();
++                if (buffer_cache.IsRegionInSyncBatch(dump_const->Address<VAddr>(), size)) {
++                    buffer_cache.FlushSyncBatch();
++                }
++            }
+             memcpy(dump_const->Address<void*>(),
+-                   cblock.constants_heap.data() + dump_const->Offset(), dump_const->Size());
++                   cblock.constants_heap.data() + dump_const->Offset(), size);
+             break;
+         }
+         case PM4ItOpcode::IncrementCeCounter: {
+diff --git a/src/video_core/buffer_cache/buffer_cache.cpp b/src/video_core/buffer_cache/buffer_cache.cpp
+index 86b6d7b1..a3813472 100644
+--- a/src/video_core/buffer_cache/buffer_cache.cpp
++++ b/src/video_core/buffer_cache/buffer_cache.cpp
+@@ -6,6 +6,7 @@
+ 
+ #include "common/alignment.h"
+ #include "core/debug_state.h"
++#include "core/emulator_settings.h"
+ #include "core/memory.h"
+ #include "video_core/amdgpu/liverpool.h"
+ #include "video_core/buffer_cache/buffer.h"
+@@ -117,9 +118,18 @@ void BufferCache::TickFrame() {
+     if (std::exchange(fault_process_pending, false)) {
+         fault_manager->ProcessFaultBuffer();
+     }
++    num_flushes_per_frame = 0;
+ }
+ 
+ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool assume_locks) {
++    // With readbacks Disabled, never promote GPU-written spans (CS skinned buffers) to
++    // CPU-modified — that would upload bind-pose/zeros over the arena on the next flush.
++    if (EmulatorSettings.GetReadbacksMode() == GpuReadbacksMode::Disabled) {
++        gpu_modified_ranges.ForEachNotInRange(device_addr, size, [this](VAddr addr, size_t gap) {
++            memory_tracker->MarkRegionAsCpuModified(addr, gap);
++        });
++        return;
++    }
+     memory_tracker->InvalidateRegion(device_addr, size, [this, device_addr, size, assume_locks] {
+         ReadMemory(device_addr, size, true, assume_locks);
+     });
+@@ -131,14 +141,25 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
+         const u32 last_block = (device_addr + size - 1) >> block_shift;
+         const auto* arena = GetArena(first_block, last_block);
+ 
+-        // GPU-modified ranges come as many small scattered islands,
+-        // so the download is widened to a window around the request
+-        constexpr u64 WindowSize = 512_KB;
++        // Large/scattered GPU islands benefit from a wide download window. Small faults
++        // (typical CS skinning StoreBuffer islands) must stay tight — widening to 512KB
++        // + Finish() races with in-flight draws and flashes wrong triangles (UFC3 body).
++        constexpr u64 LargeWindowSize = 512_KB;
++        constexpr u64 SmallFaultThreshold = 64_KB;
+         const VAddr arena_end = arena->cpu_addr + arena->size_bytes;
+-        const VAddr window_start =
+-            std::max<VAddr>(Common::AlignDown(device_addr, WindowSize), arena->cpu_addr);
+-        const VAddr window_end = std::min<VAddr>(
+-            std::max<VAddr>(window_start + WindowSize, device_addr + size), arena_end);
++        VAddr window_start;
++        VAddr window_end;
++        if (size <= SmallFaultThreshold) {
++            window_start =
++                std::max<VAddr>(Common::AlignDown(device_addr, BYTES_PER_PAGE), arena->cpu_addr);
++            window_end = std::min<VAddr>(Common::AlignUp(device_addr + size, BYTES_PER_PAGE),
++                                         arena_end);
++        } else {
++            window_start =
++                std::max<VAddr>(Common::AlignDown(device_addr, LargeWindowSize), arena->cpu_addr);
++            window_end = std::min<VAddr>(
++                std::max<VAddr>(window_start + LargeWindowSize, device_addr + size), arena_end);
++        }
+         DownloadMemory(arena, window_start, window_end - window_start);
+         if (is_write) {
+             memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+@@ -204,7 +225,10 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
+     const u64 last_block = (device_addr + size - 1) >> block_shift;
+     const auto* arena = GetArena(first_block, last_block);
+     EnsureResident(arena, first_block, last_block);
+-    SynchronizeMemory(arena, device_addr, size, is_written, is_texel_buffer);
++    sync_batch.Add(device_addr, device_addr + size, is_written);
++    if (is_texel_buffer && !is_written) {
++        SynchronizeMemoryFromImage(arena, device_addr, size);
++    }
+     if (is_written) {
+         gpu_modified_ranges.Add(device_addr, size);
+     }
+@@ -227,6 +251,11 @@ bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
+ }
+ 
+ bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
++    // gpu_modified_ranges is authoritative for GPU writes (e.g. CS skinning StoreBuffer).
++    // Tracker bits may never be set for pure GPU writes that skipped a CPU upload path.
++    if (gpu_modified_ranges.Intersects(addr, size)) {
++        return true;
++    }
+     return memory_tracker->IsRegionGpuModified(addr, size);
+ }
+ 
+@@ -236,7 +265,7 @@ void BufferCache::SynchronizeDmaBuffers() {
+         const u64 page = range.start >> (ARENA_PAGE_BITS - block_shift);
+         const VAddr device_addr = range.start << block_shift;
+         const u64 size = (range.end - range.start) << block_shift;
+-        SynchronizeMemory(address_space[page], device_addr, size, false, false);
++        sync_batch.Add(device_addr, device_addr + size, false);
+     }
+ }
+ 
+@@ -354,30 +383,6 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
+     runtime.CopyBuffer(staging.buffer, bda_pagetable_buffer.get(), copies);
+ }
+ 
+-bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size,
+-                                    bool is_written, bool is_texel_buffer) {
+-    boost::container::small_vector<vk::BufferCopy, 4> copies;
+-    size_t total_size_bytes{};
+-    memory_tracker->ForEachUploadRange(device_addr, size, is_written, [&](u64 addr, u64 size) {
+-        copies.emplace_back(total_size_bytes, addr, size);
+-        total_size_bytes += size;
+-    });
+-    if (!copies.empty()) {
+-        const auto staging = staging_pool.Request(total_size_bytes, MemoryType::HostUncached);
+-        for (auto& copy : copies) {
+-            memory->CopySparseMemory(copy.dstOffset, staging.mapped + copy.srcOffset, copy.size);
+-            copy.srcOffset += staging.offset;
+-            copy.dstOffset -= arena->cpu_addr;
+-        }
+-        staging.Flush();
+-        runtime.CopyBuffer(staging.buffer, arena, copies);
+-    }
+-    if (is_texel_buffer && !is_written) {
+-        return SynchronizeMemoryFromImage(arena, device_addr, size);
+-    }
+-    return false;
+-}
+-
+ bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size) {
+     if (const auto meta = texture_cache.GetMetaInfo(device_addr)) {
+         if (meta->type == TextureCache::MetaType::HTile) {
+@@ -480,4 +485,102 @@ void BufferCache::SubmitPendingArenaBinds(Vulkan::SubmitInfo& info) {
+     pending_binds.clear();
+ }
+ 
++void BufferCache::FlushSyncBatch(bool from_scheduler) {
++    boost::container::small_vector<vk::BufferCopy, 32> copies;
++    size_t total_size_bytes = 0;
++    for (const auto& range : sync_batch) {
++        memory_tracker->ForEachUploadRange(
++            range.start, range.end - range.start, range.written, [&](u64 addr, u64 range_size) {
++                // Never upload CPU guest memory over live GPU-written spans (CS skinning
++                // StoreBuffer). That stomps skinned verts with bind-pose/zeros and collapses
++                // UFC3 bodies to a polygon when Precise is off.
++                gpu_modified_ranges.ForEachNotInRange(addr, range_size, [&](VAddr gap_addr,
++                                                                            size_t gap_size) {
++                    copies.emplace_back(total_size_bytes, gap_addr, gap_size);
++                    total_size_bytes += gap_size;
++                });
++            });
++    }
++    sync_batch.Clear();
++    if (copies.empty()) {
++        return;
++    }
++    const auto staging = staging_pool.Request(total_size_bytes, MemoryType::HostUncached);
++    for (auto& copy : copies) {
++        memory->CopySparseMemory(copy.dstOffset, staging.mapped + copy.srcOffset, copy.size);
++        copy.srcOffset += staging.offset;
++    }
++    staging.Flush();
++
++    const auto cmdbuf = scheduler.UploadCommandBuffer();
++
++    u32 batch_start = 0;
++    u32 batch_end = 0;
++
++    while (true) {
++        batch_start = batch_end;
++        const auto& copy = copies[batch_start];
++        const auto* arena = address_space[copy.dstOffset >> ARENA_PAGE_BITS];
++
++        const auto expand_batch = [&] {
++            const auto& copy = copies[batch_end];
++            const auto end_page = (copy.dstOffset + copy.size - 1) >> ARENA_PAGE_BITS;
++            return address_space[end_page] == arena;
++        };
++        const auto flush_batch = [&] {
++            const auto regions = std::span{copies}.subspan(batch_start, batch_end - batch_start);
++            for (auto& copy : regions) {
++                copy.dstOffset -= arena->cpu_addr;
++            }
++            cmdbuf.copyBuffer(staging.buffer->Handle(), arena->Handle(), regions);
++        };
++
++        while (batch_end < copies.size() && expand_batch()) {
++            ++batch_end;
++        }
++
++        // No more copies to examine.
++        if (batch_end == copies.size()) {
++            flush_batch();
++            break;
++        }
++
++        // Next copy does not overlap with the current buffer.
++        auto end_copy = copies[batch_end];
++        const auto* end_arena = address_space[end_copy.dstOffset >> ARENA_PAGE_BITS];
++        if (end_arena != arena) {
++            flush_batch();
++            continue;
++        }
++
++        // Next copy partially overlaps with buffer.
++        const auto copy_size = end_arena->cpu_addr + end_arena->size_bytes - end_copy.dstOffset;
++        copies[batch_end].size = copy_size;
++        end_copy.srcOffset += copy_size;
++        end_copy.dstOffset += copy_size;
++        end_copy.size -= copy_size;
++        ++batch_end;
++        flush_batch();
++        --batch_end;
++        copies[batch_end] = end_copy;
++    }
++
++    const vk::MemoryBarrier2 memory_barrier = {
++        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
++        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
++        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
++        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
++    };
++    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
++        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
++        .memoryBarrierCount = 1u,
++        .pMemoryBarriers = &memory_barrier,
++    });
++    num_flushes_per_frame++;
++
++    if (!from_scheduler) {
++        scheduler.BeginSession();
++    }
++}
++
+ } // namespace VideoCore
+diff --git a/src/video_core/buffer_cache/buffer_cache.h b/src/video_core/buffer_cache/buffer_cache.h
+index fc90a1a9..ce7a3e2e 100644
+--- a/src/video_core/buffer_cache/buffer_cache.h
++++ b/src/video_core/buffer_cache/buffer_cache.h
+@@ -72,6 +72,11 @@ public:
+         return stream_buffer;
+     }
+ 
++    /// Return true when a region has a pending synchronization request.
++    [[nodiscard]] bool IsRegionInSyncBatch(VAddr addr, size_t size) const noexcept {
++        return sync_batch.Overlaps(addr, addr + size);
++    }
++
+     /// Returns minimum granularity of a sparse memory bind.
+     u32 GetSparsePageShift() const noexcept {
+         return block_shift;
+@@ -105,6 +110,9 @@ public:
+     /// Commits pending sparse buffer memory binds. Must be called before every scheduler submit.
+     void SubmitPendingArenaBinds(Vulkan::SubmitInfo& info);
+ 
++    /// Flushes pending synchronization requests
++    void FlushSyncBatch(bool from_scheduler = false);
++
+ private:
+     struct ArenaBinds {
+         const Buffer* arena;
+@@ -125,9 +133,6 @@ private:
+ 
+     void DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size);
+ 
+-    bool SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size, bool is_written,
+-                           bool is_texel_buffer);
+-
+     bool SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size);
+ 
+     const Vulkan::Instance& instance;
+@@ -165,6 +170,21 @@ private:
+     };
+     IntervalList<Backing> resident_ranges;
+ 
++    struct SyncRange : Interval {
++        bool written;
++        constexpr bool CanMergeWith(const SyncRange& o) const noexcept {
++            return written == o.written;
++        }
++        constexpr SyncRange SubRange(u64 a, u64 b) const noexcept {
++            return {{a, b}, written};
++        }
++        constexpr bool Dominant(const SyncRange& o) const noexcept {
++            return written && !o.written;
++        }
++    };
++    DomIntervalList<SyncRange> sync_batch{};
++    u32 num_flushes_per_frame{};
++
+     u32 arena_memory_type_index{};
+     u32 block_size{};
+     u32 block_shift{};
+diff --git a/src/video_core/buffer_cache/memory_tracker.h b/src/video_core/buffer_cache/memory_tracker.h
+index 4e802222..dbc2bbc1 100644
+--- a/src/video_core/buffer_cache/memory_tracker.h
++++ b/src/video_core/buffer_cache/memory_tracker.h
+@@ -55,10 +55,23 @@ public:
+         });
+     }
+ 
+-    /// Removes all protection from a page and ensures GPU data has been flushed if requested
++    /// Removes all protection from a page and ensures GPU data has been flushed if requested.
++    /// When readbacks are Disabled, callers must not mark GPU-written spans as CPU-modified
++    /// (see BufferCache::InvalidateMemory); this path still avoids clobbering tracker GPU bits.
+     void InvalidateRegion(VAddr cpu_addr, u64 size, auto&& on_flush) noexcept {
+         if (readbacks_mode == GpuReadbacksMode::Disabled) {
+-            return MarkRegionAsCpuModified(cpu_addr, size);
++            IteratePages(cpu_addr, size, [](RegionManager* manager, u64 offset, u64 size) {
++                const auto bounds = manager->GetBounds(offset, size);
++                manager->Lock(bounds);
++                // Preserve pages still marked GPU-modified so arena contents are not
++                // overwritten by a later CPU upload of stale guest memory.
++                if (!manager->template IsRegionModified<Type::GPU>(offset, size)) {
++                    manager->template ChangeRegionState<StateOp::Set, StateOp::None, false>(
++                        offset, size);
++                }
++                manager->Unlock(bounds);
++            });
++            return;
+         }
+         bool should_flush = false;
+         IteratePages(cpu_addr, size, [&should_flush](RegionManager* manager, u64 offset, u64 size) {
+diff --git a/src/video_core/buffer_cache/region_manager.h b/src/video_core/buffer_cache/region_manager.h
+index ba82498e..d6af86ec 100644
+--- a/src/video_core/buffer_cache/region_manager.h
++++ b/src/video_core/buffer_cache/region_manager.h
+@@ -309,7 +309,10 @@ private:
+             } else if (state_op == StateOp::Clear) {
+                 return PageOp::Track;
+             }
+-        } else if (type == Type::GPU && readbacks_mode == GpuReadbacksMode::Precise) {
++        } else if (type == Type::GPU && readbacks_mode != GpuReadbacksMode::Disabled) {
++            // Both Relaxed and Precise must Track GPU-modified pages so CPU reads fault
++            // and trigger downloads. Without this, games that CPU-read GPU results
++            // (UFC3 fight scene) see a black world with only the HUD.
+             if (state_op == StateOp::Set) {
+                 return PageOp::Track;
+             } else if (state_op == StateOp::Clear) {
+diff --git a/src/video_core/page_manager.cpp b/src/video_core/page_manager.cpp
+index c8e463cf..3f2b2c39 100644
+--- a/src/video_core/page_manager.cpp
++++ b/src/video_core/page_manager.cpp
+@@ -2,6 +2,7 @@
+ // SPDX-License-Identifier: GPL-2.0-or-later
+ 
+ #include <algorithm>
++#include <limits>
+ #include <utility>
+ #include "common/adaptive_mutex.h"
+ #include "common/assert.h"
+@@ -39,8 +40,10 @@ namespace VideoCore {
+ 
+ struct PageManager::Impl {
+     struct PageState {
+-        u8 num_write_watchers;
+-        u8 num_read_watchers;
++        // UFC3 walkout tracks hundreds of overlapping textures on shared pages;
++        // u8 saturates at 255 and asserts under Relaxed/Precise GPU tracking.
++        u16 num_write_watchers;
++        u16 num_read_watchers;
+ 
+         Core::MemoryPermission WritePerm() const noexcept {
+             return num_write_watchers == 0 ? Core::MemoryPermission::Write
+@@ -57,7 +60,7 @@ struct PageManager::Impl {
+         }
+ 
+         template <bool is_read>
+-        u8 GetPage() const {
++        u16 GetPage() const {
+             if constexpr (is_read) {
+                 return num_read_watchers;
+             } else {
+@@ -78,7 +81,8 @@ struct PageManager::Impl {
+             }
+             if (update_write) {
+                 if (write_op == PageOp::Track) {
+-                    ASSERT_MSG(num_write_watchers < 255, "Too many watchers");
++                    ASSERT_MSG(num_write_watchers < std::numeric_limits<u16>::max(),
++                               "Too many watchers");
+                 } else if (write_op == PageOp::Untrack) {
+                     ASSERT_MSG(num_write_watchers > 0, "Not enough watchers");
+                 }
+diff --git a/src/video_core/renderer_vulkan/liverpool_to_vk.h b/src/video_core/renderer_vulkan/liverpool_to_vk.h
+index 6f9260f3..885a77f3 100644
+--- a/src/video_core/renderer_vulkan/liverpool_to_vk.h
++++ b/src/video_core/renderer_vulkan/liverpool_to_vk.h
+@@ -115,6 +115,7 @@ static inline bool IsFormatDepthCompatible(vk::Format fmt) {
+     // 16-bit unorm compatible
+     case vk::Format::eD16Unorm:
+     case vk::Format::eR16Unorm:
++    case vk::Format::eR16Uint:
+         return true;
+     default:
+         return false;
+@@ -136,7 +137,7 @@ static inline bool IsFormatStencilCompatible(vk::Format fmt) {
+ static inline vk::Format PromoteFormatToDepth(vk::Format fmt) {
+     if (fmt == vk::Format::eR32Sfloat || fmt == vk::Format::eR32Uint) {
+         return vk::Format::eD32Sfloat;
+-    } else if (fmt == vk::Format::eR16Unorm) {
++    } else if (fmt == vk::Format::eR16Unorm || fmt == vk::Format::eR16Uint) {
+         return vk::Format::eD16Unorm;
+     }
+     UNREACHABLE_MSG("Unexpected depth format {}", vk::to_string(fmt));
+diff --git a/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp b/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
+index a2b9d9b9..85a9f5e1 100644
+--- a/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
++++ b/src/video_core/renderer_vulkan/vk_pipeline_cache.cpp
+@@ -108,6 +108,12 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
+         const auto* hull_info = infos[u32(SwStage::TessellationControl)];
+         hull_info->ReadTessConstantBuffer(tess_constants);
+         info.hw.ls.ls_stride = tess_constants.ls_stride;
++        // Prefer the TCS-analyzed stride when hull runtime info already has a larger value,
++        // so VS and HS declare the same number of attribute locations.
++        const auto& tcs_rt = runtime_infos[u32(SwStage::TessellationControl)];
++        if (tcs_rt.sw.tcs.ls_stride > info.hw.ls.ls_stride) {
++            info.hw.ls.ls_stride = tcs_rt.sw.tcs.ls_stride;
++        }
+         break;
+     }
+     case HwStage::Hull:
+diff --git a/src/video_core/renderer_vulkan/vk_rasterizer.cpp b/src/video_core/renderer_vulkan/vk_rasterizer.cpp
+index 2fbfde78..57b67ac7 100644
+--- a/src/video_core/renderer_vulkan/vk_rasterizer.cpp
++++ b/src/video_core/renderer_vulkan/vk_rasterizer.cpp
+@@ -47,6 +47,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
+     }
+     memory->SetRasterizer(this);
+ 
++    scheduler.SetSessionCallback([this] { buffer_cache.FlushSyncBatch(true); });
++
+     scheduler.SetSubmitCallback([this](Vulkan::SubmitInfo& info) {
+         runtime.FlushBarriers();
+         buffer_cache.SubmitPendingArenaBinds(info);
+@@ -133,9 +135,20 @@ void Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
+         const auto htile_address = regs.depth_htile_data_base.GetAddress();
+         const auto& hint = liverpool->last_db_extent;
+         auto& [image_id, desc] = db_desc;
+-        std::construct_at(&desc, regs.depth_buffer, regs.depth_view, regs.depth_control,
+-                          htile_address, hint);
+-        image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
++
++        bool is_writable = regs.depth_control.depth_write_enable ||
++                           regs.depth_render_control.depth_clear_enable ||
++                           regs.depth_render_control.stencil_clear_enable;
++        if (regs.depth_control.stencil_enable) {
++            is_writable |= (regs.stencil_ref_front.stencil_write_mask != 0);
++            if (regs.depth_control.backface_enable) {
++                is_writable |= (regs.stencil_ref_back.stencil_write_mask != 0);
++            }
++        }
++
++        std::construct_at(&desc, regs.depth_buffer, regs.depth_view, is_writable, htile_address,
++                          hint);
++        image_id = bound_images.emplace_back(texture_cache.FindImage(desc, true));
+         auto& image = texture_cache.GetImage(image_id);
+         image.binding.is_target = 1u;
+     } else {
+@@ -405,6 +418,7 @@ void Rasterizer::OnSubmit() {
+ 
+ void Rasterizer::OnFence() {
+     texture_cache.ProcessDownloadImages();
++    buffer_cache.FlushSyncBatch();
+ }
+ 
+ bool Rasterizer::BindResources(const Pipeline* pipeline) {
+@@ -1171,11 +1185,11 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
+     auto& regs = liverpool->regs;
+ 
+     auto read_desc = VideoCore::TextureCache::ImageDesc(
+-        regs.depth_buffer, regs.depth_view, regs.depth_control,
+-        regs.depth_htile_data_base.GetAddress(), liverpool->last_db_extent, false);
++        regs.depth_buffer, regs.depth_view, false, regs.depth_htile_data_base.GetAddress(),
++        liverpool->last_db_extent, false);
+     auto write_desc = VideoCore::TextureCache::ImageDesc(
+-        regs.depth_buffer, regs.depth_view, regs.depth_control,
+-        regs.depth_htile_data_base.GetAddress(), liverpool->last_db_extent, true);
++        regs.depth_buffer, regs.depth_view, true, regs.depth_htile_data_base.GetAddress(),
++        liverpool->last_db_extent, true);
+ 
+     auto& read_image = texture_cache.GetImage(texture_cache.FindImage(read_desc));
+     const auto write_id = texture_cache.FindImage(write_desc);
+@@ -1218,7 +1232,8 @@ void Rasterizer::FillBuffer(VAddr address, u32 num_bytes, u32 value, bool is_gds
+ }
+ 
+ void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {
+-    if (!dst_gds && !buffer_cache.IsRegionGpuModified(dst, num_bytes)) {
++    if (!dst_gds && !buffer_cache.IsRegionGpuModified(dst, num_bytes) &&
++        !buffer_cache.IsRegionInSyncBatch(dst, num_bytes)) {
+         if (!src_gds && !buffer_cache.IsRegionGpuModified(src, num_bytes) &&
+             !texture_cache.FindImageFromRange(src, num_bytes)) {
+             // Both buffers were not transferred to GPU yet. Can safely copy in host memory.
+diff --git a/src/video_core/renderer_vulkan/vk_runtime.cpp b/src/video_core/renderer_vulkan/vk_runtime.cpp
+index 7e1c025a..9cf59f32 100644
+--- a/src/video_core/renderer_vulkan/vk_runtime.cpp
++++ b/src/video_core/renderer_vulkan/vk_runtime.cpp
+@@ -288,14 +288,14 @@ void Runtime::CopyImage(VideoCore::Image* src, VideoCore::Image* dst) {
+                 region.extent = vk::Extent3D(mip_w, mip_h, 1);
+             }
+         } else if (is_2d_to_3d) {
+-            // 2D array -> 3D volume
+-            region.srcSubresource.layerCount = src_layers;
++            // 2D array -> 3D volume: Vulkan requires both layerCounts to be 1.
++            region.srcSubresource.layerCount = 1;
+             region.dstSubresource.layerCount = 1;
+             region.extent = vk::Extent3D(mip_w, mip_h, src_layers);
+         } else if (is_3d_to_2d) {
+-            // 3D volume -> 2D array
++            // 3D volume -> 2D array: Vulkan requires both layerCounts to be 1.
+             region.srcSubresource.layerCount = 1;
+-            region.dstSubresource.layerCount = dst_layers;
++            region.dstSubresource.layerCount = 1;
+             region.extent = vk::Extent3D(mip_w, mip_h, dst_layers);
+         }
+ 
+@@ -392,23 +392,61 @@ void Runtime::CopyMip(VideoCore::Image* src, VideoCore::Image* dst, u32 mip, u32
+     ASSERT(mip_block_h == (src->info.size.height >> src_dim));
+     ASSERT(mip_block_p == (src->info.pitch >> src_dim));
+ 
+-    const auto [src_layers, dst_layers] =
++    if (slice >= dst->info.resources.layers) {
++        LOG_WARNING(Render_Vulkan, "CopyMip slice {} is out of bounds for {} layers", slice,
++                    dst->info.resources.layers);
++        return;
++    }
++
++    auto [src_layers, dst_layers] =
+         SanitizeCopyLayers(src->info, dst->info, src->info.size.depth);
+ 
++    const bool src_is_2d = ConvertImageType(src->info.type) == vk::ImageType::e2D;
++    const bool src_is_3d = ConvertImageType(src->info.type) == vk::ImageType::e3D;
++    const bool dst_is_2d = ConvertImageType(dst->info.type) == vk::ImageType::e2D;
++    const bool dst_is_3d = ConvertImageType(dst->info.type) == vk::ImageType::e3D;
++
++    u32 copy_src_layers = src_layers;
++    u32 copy_dst_layers = dst_layers;
++    u32 copy_depth = src->info.size.depth;
++
++    if (src_is_2d && dst_is_3d) {
++        copy_src_layers = 1;
++        copy_dst_layers = 1;
++        copy_depth = src_layers;
++    } else if (src_is_3d && dst_is_2d) {
++        copy_src_layers = 1;
++        copy_dst_layers = 1;
++        copy_depth = dst_layers;
++    } else if (src_is_2d && dst_is_2d) {
++        const u32 max_dst_layers = dst->info.resources.layers - slice;
++        const u32 copy_layers = std::min({src_layers, dst_layers, max_dst_layers});
++        copy_src_layers = copy_layers;
++        copy_dst_layers = copy_layers;
++        copy_depth = 1;
++    } else if (src_is_3d && dst_is_3d) {
++        copy_src_layers = 1;
++        copy_dst_layers = 1;
++    }
++
++    if (copy_src_layers == 0 || copy_dst_layers == 0) {
++        return;
++    }
++
+     const vk::ImageCopy image_copy{
+         .srcSubresource{
+             .aspectMask = src->aspect_mask,
+             .mipLevel = 0,
+             .baseArrayLayer = 0,
+-            .layerCount = src_layers,
++            .layerCount = copy_src_layers,
+         },
+         .dstSubresource{
+             .aspectMask = src->aspect_mask,
+             .mipLevel = mip,
+             .baseArrayLayer = slice,
+-            .layerCount = dst_layers,
++            .layerCount = copy_dst_layers,
+         },
+-        .extent = {src->info.size.width, src->info.size.height, src->info.size.depth},
++        .extent = {src->info.size.width, src->info.size.height, copy_depth},
+     };
+ 
+     SetBackingSamples(dst, dst->info.num_samples);
+diff --git a/src/video_core/texture_cache/image.cpp b/src/video_core/texture_cache/image.cpp
+index 38f76d7f..598f9ca2 100644
+--- a/src/video_core/texture_cache/image.cpp
++++ b/src/video_core/texture_cache/image.cpp
+@@ -255,11 +255,16 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
+                 ASSERT(subres_idx < subresource_states.size());
+                 auto& state = subresource_states[subres_idx];
+ 
+-                constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
+-                                             vk::AccessFlagBits2::eShaderWrite |
+-                                             vk::AccessFlagBits2::eMemoryWrite;
+-                const bool is_write = static_cast<bool>(state.access_mask & write_flags);
+-                if (state.layout != dst_layout || state.access_mask != dst_mask || is_write) {
++                constexpr vk::AccessFlags2 write_mask =
++                    vk::AccessFlagBits2::eShaderWrite | vk::AccessFlagBits2::eColorAttachmentWrite |
++                    vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
++                    vk::AccessFlagBits2::eTransferWrite | vk::AccessFlagBits2::eMemoryWrite |
++                    vk::AccessFlagBits2::eTransformFeedbackWriteEXT;
++                const bool same_state =
++                    state.layout == dst_layout && state.access_mask == dst_mask;
++                const bool needs_waw = same_state && (dst_mask & write_mask) &&
++                                      (state.access_mask & write_mask);
++                if (!same_state || needs_waw) {
+                     barriers.emplace_back(vk::ImageMemoryBarrier2{
+                         .srcStageMask = state.pl_stage,
+                         .srcAccessMask = state.access_mask,
+@@ -289,11 +294,18 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
+             subresource_states.clear();
+         }
+     } else { // Full resource transition
+-        constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
+-                                     vk::AccessFlagBits2::eShaderWrite |
+-                                     vk::AccessFlagBits2::eMemoryWrite;
+-        const bool is_write = static_cast<bool>(last_state.access_mask & write_flags);
+-        if (last_state.layout == dst_layout && last_state.access_mask == dst_mask && !is_write) {
++        // Same layout+access normally needs no barrier, but write-after-write (e.g.
++        // UploadImage then CopyImage both as TransferDst/TransferWrite) still does.
++        constexpr vk::AccessFlags2 write_mask =
++            vk::AccessFlagBits2::eShaderWrite | vk::AccessFlagBits2::eColorAttachmentWrite |
++            vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
++            vk::AccessFlagBits2::eTransferWrite | vk::AccessFlagBits2::eMemoryWrite |
++            vk::AccessFlagBits2::eTransformFeedbackWriteEXT;
++        const bool same_state =
++            last_state.layout == dst_layout && last_state.access_mask == dst_mask;
++        const bool needs_waw = same_state && (dst_mask & write_mask) &&
++                               (last_state.access_mask & write_mask);
++        if (same_state && !needs_waw) {
+             return;
+         }
+         barriers.emplace_back(vk::ImageMemoryBarrier2{
+diff --git a/src/video_core/texture_cache/image_info.cpp b/src/video_core/texture_cache/image_info.cpp
+index 51a9d88c..625c6187 100644
+--- a/src/video_core/texture_cache/image_info.cpp
++++ b/src/video_core/texture_cache/image_info.cpp
+@@ -94,12 +94,16 @@ ImageInfo::ImageInfo(const AmdGpu::DepthBuffer& buffer, u32 num_slices, VAddr ht
+                      AmdGpu::CbDbExtent hint, bool write_buffer) noexcept {
+     tile_mode = buffer.GetTileMode();
+     array_mode = AmdGpu::GetArrayMode(tile_mode);
+-    pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
++    const auto z_format = buffer.DepthValid() ? buffer.z_info.format
++                                              : AmdGpu::DepthBuffer::ZFormat::Invalid;
++    const auto s_format = buffer.StencilValid() ? buffer.stencil_info.format
++                                                : AmdGpu::DepthBuffer::StencilFormat::Invalid;
++    pixel_format = LiverpoolToVK::DepthFormat(z_format, s_format);
+     type = AmdGpu::ImageType::Color2D;
+     props = ImageProperties{
+         .is_tiled = buffer.IsTiled(),
+         .is_depth = true,
+-        .has_stencil = buffer.stencil_info.format != AmdGpu::DepthBuffer::StencilFormat::Invalid,
++        .has_stencil = s_format != AmdGpu::DepthBuffer::StencilFormat::Invalid,
+     };
+     num_samples = buffer.NumSamples();
+     num_bits = buffer.NumBits();
+@@ -284,11 +288,11 @@ s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
+ 
+     // Ensure that address is aligned too.
+     const auto addr_diff = guest_address - (info.guest_address + info.mips_layout[mip].offset);
+-    if ((addr_diff % guest_size) != 0) {
++    if ((addr_diff % slice_size) != 0) {
+         return -1;
+     }
+ 
+-    return addr_diff / guest_size;
++    return addr_diff / slice_size;
+ }
+ 
+ } // namespace VideoCore
+diff --git a/src/video_core/texture_cache/image_view.cpp b/src/video_core/texture_cache/image_view.cpp
+index 95daedd2..2d7e6db3 100644
+--- a/src/video_core/texture_cache/image_view.cpp
++++ b/src/video_core/texture_cache/image_view.cpp
+@@ -62,11 +62,19 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
+     }
+ 
+     range.base.level = image.base_level;
+-    range.base.layer = std::min<u32>(image.base_array, image.NumLayers() - 1);
+     range.extent.levels = image.NumViewLevels(desc.is_array);
+-    range.extent.layers = image.NumViewLayers(desc.is_array);
+     type = image.GetViewType(desc.is_array);
+     min_lod = static_cast<u32>(image.min_lod);
++
++    if (type == AmdGpu::ImageType::Color3D) {
++        range.base.layer = 0;
++        range.extent.layers = 1;
++    } else {
++        range.base.layer =
++            std::min<u32>(image.base_array, image.NumLayers() > 0 ? image.NumLayers() - 1 : 0);
++        range.extent.layers = image.NumViewLayers(desc.is_array);
++    }
++
+     if (!is_storage) {
+         mapping = image.DstSelect();
+     }
+@@ -81,10 +89,13 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::ColorBuffer& col_buffer) noexcept {
+ }
+ 
+ ImageViewInfo::ImageViewInfo(const AmdGpu::DepthBuffer& depth_buffer, AmdGpu::DepthView view,
+-                             AmdGpu::DepthControl ctl) {
+-    format = Vulkan::LiverpoolToVK::DepthFormat(depth_buffer.z_info.format,
+-                                                depth_buffer.stencil_info.format);
+-    is_storage = ctl.depth_write_enable;
++                             bool is_writable) {
++    const auto z_format = depth_buffer.DepthValid() ? depth_buffer.z_info.format
++                                                    : AmdGpu::DepthBuffer::ZFormat::Invalid;
++    const auto s_format = depth_buffer.StencilValid() ? depth_buffer.stencil_info.format
++                                                      : AmdGpu::DepthBuffer::StencilFormat::Invalid;
++    format = Vulkan::LiverpoolToVK::DepthFormat(z_format, s_format);
++    is_storage = is_writable;
+     range.base.layer = view.slice_start;
+     range.extent.layers = view.NumSlices() - range.base.layer;
+     type = range.extent.layers > 1 ? AmdGpu::ImageType::Color2DArray : AmdGpu::ImageType::Color2D;
+diff --git a/src/video_core/texture_cache/image_view.h b/src/video_core/texture_cache/image_view.h
+index 5c7fbdd0..deac7ff6 100644
+--- a/src/video_core/texture_cache/image_view.h
++++ b/src/video_core/texture_cache/image_view.h
+@@ -29,7 +29,7 @@ struct ImageViewInfo {
+     ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept;
+     ImageViewInfo(const AmdGpu::ColorBuffer& col_buffer) noexcept;
+     ImageViewInfo(const AmdGpu::DepthBuffer& depth_buffer, AmdGpu::DepthView view,
+-                  AmdGpu::DepthControl ctl);
++                  bool is_writable);
+ 
+     AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
+     vk::Format format = vk::Format::eR8G8B8A8Unorm;
+diff --git a/src/video_core/texture_cache/texture_cache.cpp b/src/video_core/texture_cache/texture_cache.cpp
+index 1e7a23de..a1773976 100644
+--- a/src/video_core/texture_cache/texture_cache.cpp
++++ b/src/video_core/texture_cache/texture_cache.cpp
+@@ -83,6 +83,9 @@ void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
+     if (False(image.flags & ImageFlagBits::GpuModified)) {
+         return;
+     }
++    if (image.info.pixel_format != image.backing->image.image_ci.format) {
++        return;
++    }
+     const u32 download_size = image.info.pitch * image.info.size.height * image.info.size.depth *
+                               image.info.resources.layers * (image.info.num_bits / 8);
+     ASSERT(download_size <= image.info.guest_size);
+@@ -571,9 +574,13 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
+             // Cannot reuse this image as we need the exact requested format.
+             image_id = {};
+         } else if (image_resolved.info.resources < info.resources) {
+-            // The image was clearly picked up wrong.
++            // The image was clearly picked up wrong. Free and recreate rather than
++            // ExpandImage here — walkout layer growth (1→N) temporarily doubles VRAM
++            // and OOMs on 6GB GPUs (UFC3). ResolveOverlap still expands when safe.
+             FreeImage(image_id);
+             image_id = {};
++            view_mip = -1;
++            view_slice = -1;
+             LOG_WARNING(Render_Vulkan, "Image overlap resolve failed");
+         }
+     }
+@@ -765,6 +772,9 @@ void TextureCache::RefreshImage(Image& image) {
+     if (False(image.flags & ImageFlagBits::Dirty) || image.info.num_samples > 1) {
+         return;
+     }
++    if (image.info.pixel_format != image.backing->image.image_ci.format) {
++        return;
++    }
+ 
+     RENDERER_TRACE;
+     TRACE_HINT(fmt::format("{:x}:{:x}", image.info.guest_address, image.info.guest_size));
+diff --git a/src/video_core/texture_cache/texture_cache.h b/src/video_core/texture_cache/texture_cache.h
+index 9f101b8e..2ee1a045 100644
+--- a/src/video_core/texture_cache/texture_cache.h
++++ b/src/video_core/texture_cache/texture_cache.h
+@@ -91,10 +91,10 @@ public:
+         ImageDesc(const AmdGpu::ColorBuffer& buffer, AmdGpu::CbDbExtent hint)
+             : info{buffer, hint}, view_info{buffer}, type{BindingType::RenderTarget} {}
+         ImageDesc(const AmdGpu::DepthBuffer& buffer, AmdGpu::DepthView view,
+-                  AmdGpu::DepthControl ctl, VAddr htile_address, AmdGpu::CbDbExtent hint,
++                  bool is_writable, VAddr htile_address, AmdGpu::CbDbExtent hint,
+                   bool write_buffer = false)
+             : info{buffer, view.NumSlices(), htile_address, hint, write_buffer},
+-              view_info{buffer, view, ctl}, type{BindingType::DepthTarget} {}
++              view_info{buffer, view, is_writable}, type{BindingType::DepthTarget} {}
+         ImageDesc(const Libraries::VideoOut::BufferAttributeGroup& group, VAddr cpu_address)
+             : info{group, cpu_address}, type{BindingType::VideoOut} {}
+     };

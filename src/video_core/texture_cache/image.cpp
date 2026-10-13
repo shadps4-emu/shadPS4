@@ -255,11 +255,16 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                 ASSERT(subres_idx < subresource_states.size());
                 auto& state = subresource_states[subres_idx];
 
-                constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
-                                             vk::AccessFlagBits2::eShaderWrite |
-                                             vk::AccessFlagBits2::eMemoryWrite;
-                const bool is_write = static_cast<bool>(state.access_mask & write_flags);
-                if (state.layout != dst_layout || state.access_mask != dst_mask || is_write) {
+                constexpr vk::AccessFlags2 write_mask =
+                    vk::AccessFlagBits2::eShaderWrite | vk::AccessFlagBits2::eColorAttachmentWrite |
+                    vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
+                    vk::AccessFlagBits2::eTransferWrite | vk::AccessFlagBits2::eMemoryWrite |
+                    vk::AccessFlagBits2::eTransformFeedbackWriteEXT;
+                const bool same_state =
+                    state.layout == dst_layout && state.access_mask == dst_mask;
+                const bool needs_waw = same_state && (dst_mask & write_mask) &&
+                                      (state.access_mask & write_mask);
+                if (!same_state || needs_waw) {
                     barriers.emplace_back(vk::ImageMemoryBarrier2{
                         .srcStageMask = state.pl_stage,
                         .srcAccessMask = state.access_mask,
@@ -289,11 +294,18 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
             subresource_states.clear();
         }
     } else { // Full resource transition
-        constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
-                                     vk::AccessFlagBits2::eShaderWrite |
-                                     vk::AccessFlagBits2::eMemoryWrite;
-        const bool is_write = static_cast<bool>(last_state.access_mask & write_flags);
-        if (last_state.layout == dst_layout && last_state.access_mask == dst_mask && !is_write) {
+        // Same layout+access normally needs no barrier, but write-after-write (e.g.
+        // UploadImage then CopyImage both as TransferDst/TransferWrite) still does.
+        constexpr vk::AccessFlags2 write_mask =
+            vk::AccessFlagBits2::eShaderWrite | vk::AccessFlagBits2::eColorAttachmentWrite |
+            vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
+            vk::AccessFlagBits2::eTransferWrite | vk::AccessFlagBits2::eMemoryWrite |
+            vk::AccessFlagBits2::eTransformFeedbackWriteEXT;
+        const bool same_state =
+            last_state.layout == dst_layout && last_state.access_mask == dst_mask;
+        const bool needs_waw = same_state && (dst_mask & write_mask) &&
+                               (last_state.access_mask & write_mask);
+        if (same_state && !needs_waw) {
             return;
         }
         barriers.emplace_back(vk::ImageMemoryBarrier2{

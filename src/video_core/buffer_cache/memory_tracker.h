@@ -55,10 +55,23 @@ public:
         });
     }
 
-    /// Removes all protection from a page and ensures GPU data has been flushed if requested
+    /// Removes all protection from a page and ensures GPU data has been flushed if requested.
+    /// When readbacks are Disabled, callers must not mark GPU-written spans as CPU-modified
+    /// (see BufferCache::InvalidateMemory); this path still avoids clobbering tracker GPU bits.
     void InvalidateRegion(VAddr cpu_addr, u64 size, auto&& on_flush) noexcept {
         if (readbacks_mode == GpuReadbacksMode::Disabled) {
-            return MarkRegionAsCpuModified(cpu_addr, size);
+            IteratePages(cpu_addr, size, [](RegionManager* manager, u64 offset, u64 size) {
+                const auto bounds = manager->GetBounds(offset, size);
+                manager->Lock(bounds);
+                // Preserve pages still marked GPU-modified so arena contents are not
+                // overwritten by a later CPU upload of stale guest memory.
+                if (!manager->template IsRegionModified<Type::GPU>(offset, size)) {
+                    manager->template ChangeRegionState<StateOp::Set, StateOp::None, false>(
+                        offset, size);
+                }
+                manager->Unlock(bounds);
+            });
+            return;
         }
         bool should_flush = false;
         IteratePages(cpu_addr, size, [&should_flush](RegionManager* manager, u64 offset, u64 size) {

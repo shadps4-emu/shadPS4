@@ -47,6 +47,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     }
     memory->SetRasterizer(this);
 
+    scheduler.SetSessionCallback([this] { buffer_cache.FlushSyncBatch(true); });
+
     scheduler.SetSubmitCallback([this](Vulkan::SubmitInfo& info) {
         runtime.FlushBarriers();
         buffer_cache.SubmitPendingArenaBinds(info);
@@ -133,9 +135,20 @@ void Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
         const auto& hint = liverpool->last_db_extent;
         auto& [image_id, desc] = db_desc;
-        std::construct_at(&desc, regs.depth_buffer, regs.depth_view, regs.depth_control,
-                          htile_address, hint);
-        image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
+
+        bool is_writable = regs.depth_control.depth_write_enable ||
+                           regs.depth_render_control.depth_clear_enable ||
+                           regs.depth_render_control.stencil_clear_enable;
+        if (regs.depth_control.stencil_enable) {
+            is_writable |= (regs.stencil_ref_front.stencil_write_mask != 0);
+            if (regs.depth_control.backface_enable) {
+                is_writable |= (regs.stencil_ref_back.stencil_write_mask != 0);
+            }
+        }
+
+        std::construct_at(&desc, regs.depth_buffer, regs.depth_view, is_writable, htile_address,
+                          hint);
+        image_id = bound_images.emplace_back(texture_cache.FindImage(desc, true));
         auto& image = texture_cache.GetImage(image_id);
         image.binding.is_target = 1u;
     } else {
@@ -405,6 +418,7 @@ void Rasterizer::OnSubmit() {
 
 void Rasterizer::OnFence() {
     texture_cache.ProcessDownloadImages();
+    buffer_cache.FlushSyncBatch();
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
@@ -1171,11 +1185,11 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
     auto& regs = liverpool->regs;
 
     auto read_desc = VideoCore::TextureCache::ImageDesc(
-        regs.depth_buffer, regs.depth_view, regs.depth_control,
-        regs.depth_htile_data_base.GetAddress(), liverpool->last_db_extent, false);
+        regs.depth_buffer, regs.depth_view, false, regs.depth_htile_data_base.GetAddress(),
+        liverpool->last_db_extent, false);
     auto write_desc = VideoCore::TextureCache::ImageDesc(
-        regs.depth_buffer, regs.depth_view, regs.depth_control,
-        regs.depth_htile_data_base.GetAddress(), liverpool->last_db_extent, true);
+        regs.depth_buffer, regs.depth_view, true, regs.depth_htile_data_base.GetAddress(),
+        liverpool->last_db_extent, true);
 
     auto& read_image = texture_cache.GetImage(texture_cache.FindImage(read_desc));
     const auto write_id = texture_cache.FindImage(write_desc);
@@ -1218,7 +1232,8 @@ void Rasterizer::FillBuffer(VAddr address, u32 num_bytes, u32 value, bool is_gds
 }
 
 void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {
-    if (!dst_gds && !buffer_cache.IsRegionGpuModified(dst, num_bytes)) {
+    if (!dst_gds && !buffer_cache.IsRegionGpuModified(dst, num_bytes) &&
+        !buffer_cache.IsRegionInSyncBatch(dst, num_bytes)) {
         if (!src_gds && !buffer_cache.IsRegionGpuModified(src, num_bytes) &&
             !texture_cache.FindImageFromRange(src, num_bytes)) {
             // Both buffers were not transferred to GPU yet. Can safely copy in host memory.

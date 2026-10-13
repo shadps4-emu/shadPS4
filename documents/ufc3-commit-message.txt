@@ -1,0 +1,5 @@
+Fix UFC3 loading hang and related GPU/readback correctness.
+
+Correct SliceOf/depth binding and promoted-format sync so mid-load
+no longer device-loses; keep Relaxed Track, sync_batch skinning-safe
+uploads, and related path fixes without regressing upstream BindIndexBuffer.

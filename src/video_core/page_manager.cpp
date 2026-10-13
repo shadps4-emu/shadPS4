@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <limits>
 #include <utility>
 #include "common/adaptive_mutex.h"
 #include "common/assert.h"
@@ -39,8 +40,10 @@ namespace VideoCore {
 
 struct PageManager::Impl {
     struct PageState {
-        u8 num_write_watchers;
-        u8 num_read_watchers;
+        // UFC3 walkout tracks hundreds of overlapping textures on shared pages;
+        // u8 saturates at 255 and asserts under Relaxed/Precise GPU tracking.
+        u16 num_write_watchers;
+        u16 num_read_watchers;
 
         Core::MemoryPermission WritePerm() const noexcept {
             return num_write_watchers == 0 ? Core::MemoryPermission::Write
@@ -57,7 +60,7 @@ struct PageManager::Impl {
         }
 
         template <bool is_read>
-        u8 GetPage() const {
+        u16 GetPage() const {
             if constexpr (is_read) {
                 return num_read_watchers;
             } else {
@@ -78,7 +81,8 @@ struct PageManager::Impl {
             }
             if (update_write) {
                 if (write_op == PageOp::Track) {
-                    ASSERT_MSG(num_write_watchers < 255, "Too many watchers");
+                    ASSERT_MSG(num_write_watchers < std::numeric_limits<u16>::max(),
+                               "Too many watchers");
                 } else if (write_op == PageOp::Untrack) {
                     ASSERT_MSG(num_write_watchers > 0, "Not enough watchers");
                 }

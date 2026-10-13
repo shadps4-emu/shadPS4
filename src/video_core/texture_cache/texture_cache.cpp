@@ -83,6 +83,9 @@ void TextureCache::DownloadImageMemory(ImageId image_id, bool sync) {
     if (False(image.flags & ImageFlagBits::GpuModified)) {
         return;
     }
+    if (image.info.pixel_format != image.backing->image.image_ci.format) {
+        return;
+    }
     const u32 download_size = image.info.pitch * image.info.size.height * image.info.size.depth *
                               image.info.resources.layers * (image.info.num_bits / 8);
     ASSERT(download_size <= image.info.guest_size);
@@ -571,9 +574,13 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
             // Cannot reuse this image as we need the exact requested format.
             image_id = {};
         } else if (image_resolved.info.resources < info.resources) {
-            // The image was clearly picked up wrong.
+            // The image was clearly picked up wrong. Free and recreate rather than
+            // ExpandImage here — walkout layer growth (1→N) temporarily doubles VRAM
+            // and OOMs on 6GB GPUs (UFC3). ResolveOverlap still expands when safe.
             FreeImage(image_id);
             image_id = {};
+            view_mip = -1;
+            view_slice = -1;
             LOG_WARNING(Render_Vulkan, "Image overlap resolve failed");
         }
     }
@@ -763,6 +770,9 @@ void TextureCache::AssociateStencil(ImageId depth_id, const ImageInfo& depth_inf
 
 void TextureCache::RefreshImage(Image& image) {
     if (False(image.flags & ImageFlagBits::Dirty) || image.info.num_samples > 1) {
+        return;
+    }
+    if (image.info.pixel_format != image.backing->image.image_ci.format) {
         return;
     }
 
