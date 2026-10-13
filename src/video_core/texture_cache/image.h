@@ -107,9 +107,7 @@ struct Image : public Common::LRUNode<> {
     }
 
     bool SafeToDownload() const {
-        return False(flags & ImageFlagBits::Dirty) && info.num_samples == 1 &&
-               !info.props.has_stencil &&
-               IsVulkanFormatCompatible(info.pixel_format, backing->image.image_ci.format);
+        return False(flags & ImageFlagBits::Dirty);
     }
 
     void AssociateDepth(ImageId depth_image_id, u64 depth_image_uid) {

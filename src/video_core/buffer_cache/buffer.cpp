@@ -101,7 +101,7 @@ void UniqueBuffer::Create(vk::BufferCreateInfo& buffer_ci, MemoryType mem_type,
         VkBuffer unsafe_buffer{};
         VkResult result = vmaCreateBuffer(allocator, &buffer_ci_unsafe, &alloc_ci, &unsafe_buffer,
                                           &allocation, out_alloc_info);
-        if (result != VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
             alloc_ci.flags &= ~VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT;
             LOG_WARNING(Render_Vulkan, "Allocating buffer of size {} bytes over budget.",
                         buffer_ci.size);
