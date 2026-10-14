@@ -160,7 +160,7 @@
               name = "${finalAttrs.pname}-${finalAttrs.version}-${finalAttrs.system}";
               pname = "shadps4";
               version = "0.20.1";
-              system = "x86_64-linux";
+              system = "${clangStdenv.hostPlatform.system}";
               src = ./.;
 
               nativeBuildInputs = [
