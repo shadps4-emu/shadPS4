@@ -715,7 +715,7 @@ void ControllerOutput::AddUpdate(InputEvent event) {
 
     } else if (axis != SDL_GAMEPAD_AXIS_INVALID) {
         *new_param = (event.active ? event.axis_value : 0) + *new_param;
-        analog_source |= event.input.type == InputType::Axis;
+        analog_source |= event.analog_source;
     }
 }
 
@@ -936,6 +936,8 @@ InputEvent BindingConnection::ProcessBinding() {
     if (event.input.type != InputType::Axis) {
         // for button inputs
         event.axis_value = axis_param;
+    } else {
+        event.analog_source = true;
     }
     // it's a bit scuffed, but if the output is a toggle, then we put the key here
     if (output->button == KEY_TOGGLE) {
