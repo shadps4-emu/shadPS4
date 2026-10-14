@@ -4,6 +4,7 @@
 project(ImGui_Resources)
 
 add_executable(Dear_ImGui_FontEmbed ${CMAKE_SOURCE_DIR}/externals/imgui/misc/fonts/binary_to_compressed_c.cpp)
+set_target_properties(Dear_ImGui_FontEmbed PROPERTIES COMPILE_OPTIONS "")
 
 set(FONT_LIST
     NotoSansArabic-Regular.ttf
