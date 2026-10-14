@@ -217,6 +217,7 @@ public:
     void LoadSymbols();
 
     void* FindByName(std::string_view name);
+    void* FindByNid(std::string_view nid);
 
     OrbisKernelModuleInfoEx GetModuleInfoEx() const;
     const ModuleInfo* FindModule(std::string_view id);

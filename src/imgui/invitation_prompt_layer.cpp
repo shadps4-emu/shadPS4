@@ -11,7 +11,7 @@
 #include <imgui.h>
 
 #include "common/types.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "imgui/imgui_layer.h"
 #include "imgui/invitation_prompt_layer.h"
 #include "imgui/renderer/imgui_core.h"

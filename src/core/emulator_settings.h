@@ -237,7 +237,6 @@ struct NetworkSettings {
     Setting<bool> shad_net_enabled{false};
     Setting<std::string> shadnet_server{"srv.shadps4.net:31313"};
     Setting<std::string> shadnet_webapi_server{"http://srv.shadps4.net:31315"};
-    Setting<std::string> signaling_info{};
     Setting<bool> enable_upnp{true};
     Setting<int> p2p_port{3658}; // 0 is any free port, 3658 is the default PS4 port. With UPnP
                                  // enabled it is forwarded on the router.
@@ -251,7 +250,6 @@ struct NetworkSettings {
             make_override<NetworkSettings>("shadnet_server", &NetworkSettings::shadnet_server),
             make_override<NetworkSettings>("shadnet_webapi_server",
                                            &NetworkSettings::shadnet_webapi_server),
-            make_override<NetworkSettings>("signaling_info", &NetworkSettings::signaling_info),
             make_override<NetworkSettings>("enable_upnp", &NetworkSettings::enable_upnp),
             make_override<NetworkSettings>("p2p_port", &NetworkSettings::p2p_port),
             make_override<NetworkSettings>("disable_https", &NetworkSettings::disable_https)};
@@ -259,8 +257,8 @@ struct NetworkSettings {
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(NetworkSettings, connected_to_network, shad_net_enabled,
-                                   shadnet_server, shadnet_webapi_server, signaling_info,
-                                   enable_upnp, p2p_port, disable_https)
+                                   shadnet_server, shadnet_webapi_server, enable_upnp, p2p_port,
+                                   disable_https)
 
 // -------------------------------
 // Log settings
@@ -608,6 +606,23 @@ private:
     void MigrateNetworkKeys(const nlohmann::json& general, const nlohmann::json& network);
 
 public:
+    // Used by the launcher to back up / restore settings (e.g. per-game settings dialog)
+    EmulatorSettingsImpl& operator=(const EmulatorSettingsImpl& other) {
+        if (this != &other) {
+            m_shadnet_session_disabled.store(other.m_shadnet_session_disabled.load());
+            m_general = other.m_general;
+            m_network = other.m_network;
+            m_log = other.m_log;
+            m_debug = other.m_debug;
+            m_input = other.m_input;
+            m_audio = other.m_audio;
+            m_gpu = other.m_gpu;
+            m_vulkan = other.m_vulkan;
+            m_configMode = other.m_configMode;
+        }
+        return *this;
+    }
+
     // Add these getters to access overrideable fields
     std::vector<OverrideItem> GetGeneralOverrideableFields() const {
         return m_general.GetOverrideableFields();
@@ -688,7 +703,6 @@ public:
     SETTING_FORWARD_BOOL(m_network, ConnectedToNetwork, connected_to_network)
     SETTING_FORWARD(m_network, ShadNetServer, shadnet_server)
     SETTING_FORWARD(m_network, ShadNetWebApiServer, shadnet_webapi_server)
-    SETTING_FORWARD(m_network, SignalingInfo, signaling_info)
     SETTING_FORWARD_BOOL(m_network, UPnPEnabled, enable_upnp)
     SETTING_FORWARD(m_network, P2PPort, p2p_port)
     SETTING_FORWARD_BOOL(m_network, ForcedHttpsDisabled, disable_https)

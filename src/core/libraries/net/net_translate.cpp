@@ -303,6 +303,10 @@ std::optional<HostOption> ToHostOption(int level, int name) {
             return HostOption{SOL_SOCKET, SO_SNDBUF, OptionValue::Int};
         case ORBIS_NET_SO_RCVBUF:
             return HostOption{SOL_SOCKET, SO_RCVBUF, OptionValue::Int};
+        case ORBIS_NET_SO_SNDLOWAT:
+            return HostOption{SOL_SOCKET, SO_SNDLOWAT, OptionValue::Int};
+        case ORBIS_NET_SO_RCVLOWAT:
+            return HostOption{SOL_SOCKET, SO_RCVLOWAT, OptionValue::Int};
         case ORBIS_NET_SO_LINGER:
             return HostOption{SOL_SOCKET, Core::Net::Host::LingerOption, OptionValue::Linger};
         default:

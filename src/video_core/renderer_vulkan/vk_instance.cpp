@@ -210,8 +210,7 @@ bool Instance::CreateDevice() {
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
         vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
         vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
-        vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR,
-        vk::PhysicalDeviceMaintenance6FeaturesKHR>();
+        vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -263,13 +262,10 @@ bool Instance::CreateDevice() {
                "Required Vulkan feature unavailable: robustImageAccess2");
     ASSERT_MSG(robustness2_features.nullDescriptor,
                "Required Vulkan feature unavailable: nullDescriptor");
-    ASSERT_MSG(add_extension(VK_KHR_MAINTENANCE_6_EXTENSION_NAME),
-               "Required Vulkan extension unavailable: {}", VK_KHR_MAINTENANCE_6_EXTENSION_NAME);
-    ASSERT_MSG(feature_chain.get<vk::PhysicalDeviceMaintenance6FeaturesKHR>().maintenance6,
-               "Required Vulkan feature unavailable: maintenance6");
 
     // Optional
     maintenance_5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    maintenance_6 = add_extension(VK_KHR_MAINTENANCE_6_EXTENSION_NAME);
     maintenance_8 = add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
     attachment_feedback_loop = add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_EXTENSION_NAME);
     if (attachment_feedback_loop) {
@@ -562,6 +558,9 @@ bool Instance::CreateDevice() {
     }
     if (!maintenance_5) {
         device_chain.unlink<vk::PhysicalDeviceMaintenance5FeaturesKHR>();
+    }
+    if (!maintenance_6) {
+        device_chain.unlink<vk::PhysicalDeviceMaintenance6FeaturesKHR>();
     }
     if (!maintenance_8) {
         device_chain.unlink<vk::PhysicalDeviceMaintenance8FeaturesKHR>();

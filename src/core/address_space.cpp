@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
+#include <span>
+#include <vector>
 #include <fmt/format.h>
 #include "common/alignment.h"
 #include "common/arch.h"
@@ -232,7 +234,8 @@ struct AddressSpace::Impl {
         }
     }
 
-    void* MapRegion(MemoryRegion* region) {
+    void* MapRegion(MemoryRegion* region,
+                    std::span<const MEMORY_BASIC_INFORMATION> protections = {}) {
         VAddr virtual_addr = region->base;
         PAddr phys_addr = region->phys_base;
         u64 size = region->size;
@@ -289,7 +292,40 @@ struct AddressSpace::Impl {
                               MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
         }
         ASSERT_MSG(ptr, "{}", Common::GetLastErrorMsg());
+
+        for (const auto& info : protections) {
+            const VAddr info_base = reinterpret_cast<VAddr>(info.BaseAddress);
+            const VAddr begin = std::max(info_base, virtual_addr);
+            const VAddr end = std::min(info_base + info.RegionSize, virtual_addr + size);
+            if (begin >= end) {
+                continue;
+            }
+            DWORD old_flags{};
+            const bool ret =
+                VirtualProtectEx(process, LPVOID(begin), end - begin, info.Protect, &old_flags);
+            ASSERT_MSG(ret, "VirtualProtectEx failed. {}", Common::GetLastErrorMsg());
+        }
         return ptr;
+    }
+
+    std::vector<MEMORY_BASIC_INFORMATION> QueryProtections(const MemoryRegion& region,
+                                                           VAddr skip_addr, u64 skip_size) {
+        std::vector<MEMORY_BASIC_INFORMATION> protections;
+        const VAddr end = region.base + region.size;
+        for (VAddr addr = region.base; addr < end;) {
+            if (addr >= skip_addr && addr < skip_addr + skip_size) {
+                addr = skip_addr + skip_size;
+                continue;
+            }
+            MEMORY_BASIC_INFORMATION info{};
+            const bool ret = VirtualQueryEx(process, LPCVOID(addr), &info, sizeof(info));
+            ASSERT_MSG(ret, "VirtualQueryEx failed. {}", Common::GetLastErrorMsg());
+            if (info.Protect != region.prot) {
+                protections.push_back(info);
+            }
+            addr = reinterpret_cast<VAddr>(info.BaseAddress) + info.RegionSize;
+        }
+        return protections;
     }
 
     void UnmapRegion(MemoryRegion* region) {
@@ -321,9 +357,11 @@ struct AddressSpace::Impl {
                    "Cannot fit region into one placeholder");
 
         // If the region is mapped, we need to unmap first before we can modify the placeholders.
+        std::vector<MEMORY_BASIC_INFORMATION> protections;
         if (it->second.is_mapped) {
             ASSERT_MSG(it->second.phys_base != -1 || !it->second.is_mapped,
                        "Cannot split unbacked mapping");
+            protections = QueryProtections(it->second, virtual_addr, size);
             UnmapRegion(&it->second);
         }
 
@@ -348,7 +386,7 @@ struct AddressSpace::Impl {
 
             // If the mapping was mapped, remap the region.
             if (region.is_mapped) {
-                MapRegion(&region);
+                MapRegion(&region, protections);
             }
 
             // Store a new region matching the removed area.
@@ -387,7 +425,7 @@ struct AddressSpace::Impl {
 
             // If these regions were mapped, then map the unmapped area beyond the requested range.
             if (region.is_mapped) {
-                MapRegion(&std::next(it)->second);
+                MapRegion(&std::next(it)->second, protections);
             }
         }
 
@@ -694,13 +732,6 @@ struct AddressSpace::Impl {
         LOG_INFO(Kernel_Vmm, "User virtual memory region: {} - {}", fmt::ptr(user_base),
                  fmt::ptr(user_base + user_size - 1));
 
-        const VAddr system_managed_addr = reinterpret_cast<VAddr>(system_managed_base);
-        const VAddr system_reserved_addr = reinterpret_cast<VAddr>(system_reserved_base);
-        const VAddr user_addr = reinterpret_cast<VAddr>(user_base);
-        m_free_regions.insert({system_managed_addr, system_managed_addr + system_managed_size});
-        m_free_regions.insert({system_reserved_addr, system_reserved_addr + system_reserved_size});
-        m_free_regions.insert({user_addr, user_addr + user_size});
-
 #ifdef __APPLE__
         const auto shm_path = fmt::format("/BackingDmem{}", getpid());
         backing_fd = shm_open(shm_path.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
@@ -743,7 +774,6 @@ struct AddressSpace::Impl {
 
     void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, PosixPageProtection prot,
               int fd = -1) {
-        m_free_regions.subtract({virtual_addr, virtual_addr + size});
 #ifdef __APPLE__
         if ((prot & PROT_EXEC) != 0) {
             ASSERT_MSG(fd == -1, "Requested execute permissions for file mapping");
@@ -760,30 +790,16 @@ struct AddressSpace::Impl {
     }
 
     VAddr Unmap(VAddr virtual_addr, u64* size) {
-        // Check to see if we are adjacent to any regions.
-        VAddr start_address = virtual_addr;
-        VAddr end_address = start_address + *size;
+        ASSERT_MSG(size != nullptr && *size > 0, "Invalid unmap size");
 
-        // If we are, join with them, ensuring we stay in bounds.
-        auto it = m_free_regions.find({start_address - 1, end_address});
-        if (it != m_free_regions.end()) {
-            start_address = std::min(start_address, it->lower());
-        }
-        it = m_free_regions.find({start_address, end_address + 1});
-        if (it != m_free_regions.end()) {
-            end_address = std::max(end_address, it->upper());
-        }
-
-        // Free the relevant region.
-        m_free_regions.insert({start_address, end_address});
-
-        // Return the adjusted pointers.
-        void* ret = mmap(reinterpret_cast<void*>(start_address), end_address - start_address,
-                         PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+        int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED;
+#if !defined(__FreeBSD__)
+        map_flags |= MAP_NORESERVE;
+#endif
+        void* ret = mmap(reinterpret_cast<void*>(virtual_addr), *size, PROT_NONE, map_flags, -1, 0);
         ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
 
-        *size = end_address - start_address;
-        return reinterpret_cast<VAddr>(ret);
+        return virtual_addr;
     }
 
     void Protect(VAddr virtual_addr, u64 size, bool read, bool write, bool execute) {
@@ -811,7 +827,6 @@ struct AddressSpace::Impl {
     u64 system_reserved_size{};
     u8* user_base{};
     u64 user_size{};
-    boost::icl::interval_set<VAddr> m_free_regions;
 };
 #endif
 

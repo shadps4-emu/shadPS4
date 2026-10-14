@@ -213,7 +213,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "19")
+set(EMULATOR_VERSION_MINOR "20")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/dist/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -326,6 +326,7 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/sync/mutex.h
                src/core/libraries/kernel/sync/semaphore.h
+               src/core/libraries/kernel/threads/barrier.cpp
                src/core/libraries/kernel/threads/condvar.cpp
                src/core/libraries/kernel/threads/event_flag.cpp
                src/core/libraries/kernel/threads/exception.cpp
@@ -647,8 +648,14 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_partner.cpp
             src/core/libraries/np/np_partner.h
             src/core/libraries/np/object_manager.h
-            src/core/libraries/np/np_handler.cpp
-            src/core/libraries/np/np_handler.h
+            src/core/libraries/np/np_handler/np_handler.cpp
+            src/core/libraries/np/np_handler/np_handler.h
+            src/core/libraries/np/np_handler/np_handler_friends.cpp
+            src/core/libraries/np/np_handler/np_handler_invitation.cpp
+            src/core/libraries/np/np_handler/np_handler_score.cpp
+            src/core/libraries/np/np_handler/np_handler_trophy.cpp
+            src/core/libraries/np/np_handler/np_handler_tus.cpp
+            src/core/libraries/np/np_handler/np_handler_web_api.cpp
             src/core/libraries/np/signaling_handler.cpp
             src/core/libraries/np/signaling_handler.h
             src/core/libraries/np/np_commerce/np_commerce.cpp
@@ -714,6 +721,7 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/ulobjmgr/ulobjmgr.h
                src/core/libraries/signin_dialog/signindialog.cpp
                src/core/libraries/signin_dialog/signindialog.h
+               src/core/libraries/signin_dialog/signindialog_error.h
 )
 
 set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp

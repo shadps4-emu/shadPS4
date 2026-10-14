@@ -38,7 +38,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/save_data/save_backup.h"
 #include "core/linker.h"

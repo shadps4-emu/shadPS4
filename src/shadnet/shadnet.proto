@@ -89,6 +89,27 @@ message NotifyFriendStatus {
     uint64 timestamp = 3;  // nanoseconds since Unix epoch
 }
 
+// Notification 18: the server refused a service to this player.
+//   service: 1 = Matching2 (matchmaking)
+//   reason:  1 = server full (in_use / limit are set), 2 = account not allowed,
+//            3 = service disabled on this server
+message NotifyServiceUnavailable {
+    uint32 service = 1;
+    uint32 reason  = 2;
+    uint32 in_use  = 3;
+    uint32 limit   = 4;
+}
+
+// Notification 19: the server is signing this client out, then disconnects.
+//   reason:  1 = client version not accepted (clientversions.cfg)
+//   message: text for the player, from the rule that matched
+//   version: the version the server checked ("" = none reported)
+message NotifyClientRejected {
+    uint32 reason  = 1;
+    string message = 2;
+    string version = 3;
+}
+
 // Score: board configuration
 
 message BoardInfo {
