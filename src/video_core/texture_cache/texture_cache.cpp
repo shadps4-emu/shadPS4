@@ -599,13 +599,8 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
 }
 
 ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure_valid) {
-    SmallVector<ImageId, 4> image_ids;
-    ForEachImageWithAddress(address, [&](ImageId image_id, Image& image) {
-        if (ensure_valid && !image.SafeToDownload()) {
-            return;
-        }
-        image_ids.push_back(image_id);
-    });
+    const auto image_ids =
+        FindImagesFromRange(address, size, ImageRange::MatchAddress, ensure_valid);
     if (image_ids.size() == 1) {
         // Sometimes image size might not exactly match with requested buffer size
         // If we only found 1 candidate image use it without too many questions.
@@ -623,6 +618,56 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
                     size);
     }
     return {};
+}
+
+SmallVector<ImageId, 4> TextureCache::FindImagesFromRange(VAddr address, size_t size,
+                                                          ImageRange range, bool ensure_valid) {
+    SmallVector<ImageId, 4> image_ids;
+    if (range == ImageRange::MatchAddress) {
+        ForEachImageWithAddress(address, [&](ImageId image_id, Image& image) {
+            if (!ensure_valid || image.SafeToDownload()) {
+                image_ids.push_back(image_id);
+            }
+        });
+        return image_ids;
+    }
+    if (size == 0 || address > std::numeric_limits<VAddr>::max() - size) {
+        return image_ids;
+    }
+    bool starts_at_image = false;
+    bool unsupported_image = false;
+    ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
+        if (ensure_valid && !image.SafeToDownload()) {
+            return;
+        }
+        if (image.info.props.is_depth || image.info.num_samples != 1 ||
+            image.info.guest_address < address) {
+            unsupported_image = true;
+            return;
+        }
+        const u64 offset = image.info.guest_address - address;
+        if (offset >= size || image.info.guest_size == 0 || image.info.guest_size > size - offset) {
+            unsupported_image = true;
+            return;
+        }
+        starts_at_image |= image.info.guest_address == address;
+        image_ids.push_back(image_id);
+    });
+    if (!starts_at_image || unsupported_image) {
+        image_ids.clear();
+        return image_ids;
+    }
+    std::ranges::sort(image_ids, {},
+                      [&](ImageId id) { return slot_images[id].info.guest_address; });
+    for (size_t i = 1; i < image_ids.size(); ++i) {
+        const auto& previous = slot_images[image_ids[i - 1]].info;
+        const auto& current = slot_images[image_ids[i]].info;
+        if (current.guest_address - previous.guest_address < previous.guest_size) {
+            image_ids.clear();
+            break;
+        }
+    }
+    return image_ids;
 }
 
 ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
