@@ -7,12 +7,18 @@
 #include "core/libraries/network/http2.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_types.h"
+#include "core/libraries/np/np_web_api/np_web_api.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_context.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_internal.h"
 #include "core/libraries/system/userservice.h"
 
+#include <algorithm>
+#include <cstring>
+#include <deque>
 #include <map>
 #include <mutex>
+#include <string_view>
+#include <vector>
 
 namespace Libraries::Np::NpWebApi2 {
 
@@ -476,8 +482,47 @@ s32 unregisterPushContextCallback(s32 user_ctx_id, s32 callback_id) {
     return result;
 }
 
+static std::mutex g_push_queue_mutex;
+static std::deque<NpWebApi::PushEventInput> g_push_queue;
+
+void EnqueuePushEvent(const NpWebApi::PushEventInput& ev) {
+    std::scoped_lock lk{g_push_queue_mutex};
+    if (g_push_queue.size() >= 256) {
+        g_push_queue.pop_front();
+    }
+    g_push_queue.push_back(ev);
+}
+
 void processPushEvents() {
-    // LOG_ERROR(Lib_NpWebApi2, "(STUBBED)");
+    std::deque<NpWebApi::PushEventInput> events;
+    {
+        std::scoped_lock lk{g_push_queue_mutex};
+        if (g_push_queue.empty()) {
+            return;
+        }
+        events.swap(g_push_queue);
+    }
+
+    std::vector<s32> lib_ctx_ids;
+    {
+        std::scoped_lock lk{g_mutex};
+        for (const auto& [lib_ctx_id, lib_ctx] : g_lib_contexts) {
+            lib_ctx_ids.push_back(lib_ctx_id);
+        }
+    }
+
+    for (const NpWebApi::PushEventInput& ev : events) {
+        LOG_INFO(Lib_NpWebApi2, "processing push event svc='{}' type='{}' bytes={} user_id={}",
+                 ev.npServiceName, ev.dataType, ev.data.size(), ev.targetUserId);
+        for (s32 lib_ctx_id : lib_ctx_ids) {
+            LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+            if (!lib_ctx) {
+                continue;
+            }
+            lib_ctx->DispatchPushEvent(ev);
+            lib_ctx->RemoveUser();
+        }
+    }
 }
 
 s32 createRequest(s32 user_ctx_id, const char* api_group, const char* path, const char* method,
@@ -672,7 +717,7 @@ s32 sendRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
     }
 
     if (request->GetHttpRequestId() == 0) {
-        std::string base_url = EmulatorSettings.GetShadNetWebApiServer();
+        std::string base_url = EmulatorSettings.GetShadNetWebApiUrl();
         s32 template_id = user_ctx->GetHttpTemplateId();
         // Technically this should be base_url + api_group + path,
         // but shadNet doesn't seem to use the api_group for endpoints?
@@ -696,6 +741,13 @@ s32 sendRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
         return result;
     }
 
+    if (data && data_size > 0) {
+        LOG_INFO(Lib_NpWebApi2, "request {:#x} {} {} body ({:#x} bytes): {}", request_id,
+                 request->GetMethod(), request->GetPath(), data_size,
+                 std::string_view{static_cast<const char*>(data),
+                                  static_cast<size_t>(std::min<u64>(data_size, 4096))});
+    }
+
     if (request->IsMultipart()) {
         // TODO: Multipart sends
         // result = request->SendMultipartHttpRequest(data, data_size, part_index);
@@ -714,7 +766,43 @@ s32 sendRequest(s64 request_id, s32 part_index, void* data, u64 data_size,
                     resp_info_option->http_status = http_status;
                 }
                 if (http_status >= 400) {
+                    std::string error_body;
+                    char buf[256];
+                    for (;;) {
+                        const s32 n =
+                            Libraries::Http2::sceHttp2ReadData(http_request_id, buf, sizeof(buf));
+                        if (n <= 0) {
+                            break;
+                        }
+                        error_body.append(buf, static_cast<size_t>(n));
+                        if (error_body.size() > 64u * 1024u) {
+                            break;
+                        }
+                    }
+                    LOG_ERROR(Lib_NpWebApi2, "request {:#x} {} {} failed with http status {}: {}",
+                              request_id, request->GetMethod(), request->GetPath(), http_status,
+                              error_body);
+                    if (resp_info_option) {
+                        resp_info_option->response_data_size = error_body.size();
+                        char* const dst = resp_info_option->error_object;
+                        const u64 cap = resp_info_option->error_object_size;
+                        if (dst != nullptr && cap > 0) {
+                            const u64 n = std::min<u64>(error_body.size(), cap - 1);
+                            if (n > 0) {
+                                std::memcpy(dst, error_body.data(), n);
+                            }
+                            dst[n] = '\0';
+                        }
+                    }
                     result = http_status | 0x82f00000;
+                } else if (resp_info_option) {
+                    s32 length_result{};
+                    u64 content_length{};
+                    if (Libraries::Http2::sceHttp2GetResponseContentLength(
+                            http_request_id, &length_result, &content_length) >= 0 &&
+                        length_result == 0) {
+                        resp_info_option->response_data_size = content_length;
+                    }
                 }
             } else {
                 LOG_ERROR(Lib_NpWebApi2, "Failed to get http status code, error = {:#x}", result);
@@ -807,6 +895,12 @@ s32 readData(s64 request_id, void* data, u64 size) {
 
     s32 http_req_id = request->GetHttpRequestId();
     s32 result2 = Libraries::Http2::sceHttp2ReadData(http_req_id, data, size);
+    if (result2 > 0) {
+        LOG_INFO(Lib_NpWebApi2, "request {:#x} response body ({:#x} bytes): {}", request_id,
+                 result2,
+                 std::string_view{static_cast<const char*>(data),
+                                  static_cast<size_t>(std::min<s32>(result2, 4096))});
+    }
 
     request->Lock();
     request->SetState(0);

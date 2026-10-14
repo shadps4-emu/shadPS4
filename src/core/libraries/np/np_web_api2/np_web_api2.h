@@ -10,6 +10,10 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
+namespace Libraries::Np::NpWebApi {
+struct PushEventInput;
+}
+
 namespace Libraries::Np::NpWebApi2 {
 
 struct OrbisNpWebApi2IntInitializeArgs {
@@ -97,6 +101,8 @@ using OrbisNpWebApi2PushEventPushContextCallback = void PS4_SYSV_ABI (*)(
     const OrbisNpOnlineId* from_online_id, const OrbisNpWebApi2PushEventDataType* data_type,
     const char* data, u64 data_len, const OrbisNpWebApi2PushEventExtdData* extd_data,
     u64 extd_data_num, void* user_arg);
+
+void EnqueuePushEvent(const NpWebApi::PushEventInput& ev);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpWebApi2

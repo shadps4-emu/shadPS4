@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
+#include <string_view>
+
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
@@ -240,20 +243,20 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventCreateFilter(
         LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
     }
-    LOG_DEBUG(Lib_NpWebApi2,
-              "called, lib_ctx_id = {:#x}, handle_id = {:#x}, np_service_name = {}, "
-              "np_service_label = {:#x}, filter_param_num = {:#x}",
-              lib_ctx_id, handle_id, np_service_name ? np_service_name : "(null)",
-              static_cast<u32>(np_service_label), filter_param_num);
+    LOG_INFO(Lib_NpWebApi2,
+             "called, lib_ctx_id = {:#x}, handle_id = {:#x}, np_service_name = {}, "
+             "np_service_label = {:#x}, filter_param_num = {:#x}",
+             lib_ctx_id, handle_id, np_service_name ? np_service_name : "(null)",
+             static_cast<u32>(np_service_label), filter_param_num);
     for (u64 i = 0; i < filter_param_num; i++) {
-        LOG_DEBUG(Lib_NpWebApi2, "filter_param[{}].data_type.val = {}", i,
-                  filter_param[i].data_type.val);
-        LOG_DEBUG(Lib_NpWebApi2, "filter_param[{}].extd_data_key_num = {}", i,
-                  filter_param[i].extd_data_key_num);
+        LOG_INFO(Lib_NpWebApi2, "filter_param[{}].data_type.val = {}", i,
+                 filter_param[i].data_type.val);
+        LOG_INFO(Lib_NpWebApi2, "filter_param[{}].extd_data_key_num = {}", i,
+                 filter_param[i].extd_data_key_num);
         for (u64 j = 0; j < filter_param[i].extd_data_key_num && filter_param[i].extd_data_key;
              j++) {
-            LOG_DEBUG(Lib_NpWebApi2, "filter_param[{}].extd_data_key[{}].val = {}", i, j,
-                      filter_param[i].extd_data_key[j].val);
+            LOG_INFO(Lib_NpWebApi2, "filter_param[{}].extd_data_key[{}].val = {}", i, j,
+                     filter_param[i].extd_data_key[j].val);
         }
     }
     s32 filter_id = createPushEventFilter(lib_ctx_id, handle_id, np_service_name, np_service_label,
@@ -282,9 +285,8 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventCreatePushContext(
     LOG_DEBUG(Lib_NpWebApi2, "called, user_ctx_id = {:#x}", user_ctx_id);
     s32 result = createPushContext(user_ctx_id, push_ctx_id);
     if (result == 0) {
-        s64 raw_id{};
-        std::memcpy(&raw_id, push_ctx_id, sizeof(s64));
-        LOG_INFO(Lib_NpWebApi2, "created push_ctx_id = {:#x}", raw_id);
+        LOG_INFO(Lib_NpWebApi2, "created push_ctx_id = {}",
+                 std::string_view{push_ctx_id->uuid, strnlen(push_ctx_id->uuid, 36)});
     }
     return result;
 }
@@ -305,10 +307,8 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventDeletePushContext(
         LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
     }
-    s64 raw_id{};
-    std::memcpy(&raw_id, push_ctx_id, sizeof(s64));
-    LOG_INFO(Lib_NpWebApi2, "called, user_ctx_id = {:#x}, push_ctx_id = {:#x}", user_ctx_id,
-             raw_id);
+    LOG_INFO(Lib_NpWebApi2, "called, user_ctx_id = {:#x}, push_ctx_id = {}", user_ctx_id,
+             std::string_view{push_ctx_id->uuid, strnlen(push_ctx_id->uuid, 36)});
     return deletePushContext(user_ctx_id, push_ctx_id);
 }
 
@@ -356,10 +356,8 @@ s32 PS4_SYSV_ABI sceNpWebApi2PushEventStartPushContextCallback(
         LOG_ERROR(Lib_NpWebApi2, "Invalid parameters");
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
     }
-    s64 raw_id{};
-    std::memcpy(&raw_id, push_ctx_id, sizeof(s64));
-    LOG_INFO(Lib_NpWebApi2, "called, user_ctx_id = {:#x}, push_ctx_id = {:#x}", user_ctx_id,
-             raw_id);
+    LOG_INFO(Lib_NpWebApi2, "called, user_ctx_id = {:#x}, push_ctx_id = {}", user_ctx_id,
+             std::string_view{push_ctx_id->uuid, strnlen(push_ctx_id->uuid, 36)});
     return startPushContextCallback(user_ctx_id, push_ctx_id);
 }
 
