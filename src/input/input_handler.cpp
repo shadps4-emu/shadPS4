@@ -936,8 +936,6 @@ InputEvent BindingConnection::ProcessBinding() {
     if (event.input.type != InputType::Axis) {
         // for button inputs
         event.axis_value = axis_param;
-    } else {
-        event.analog_source = true;
     }
     // it's a bit scuffed, but if the output is a toggle, then we put the key here
     if (output->button == KEY_TOGGLE) {
@@ -978,6 +976,7 @@ InputEvent BindingConnection::ProcessBinding() {
                 }
                 if (pressed_it->first.input.type == InputType::Axis) {
                     event.axis_value = pressed_it->first.axis_value;
+                    event.analog_source = true;
                 }
                 ++pressed_it;
                 break;
