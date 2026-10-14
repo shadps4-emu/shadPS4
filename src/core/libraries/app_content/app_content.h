@@ -108,7 +108,7 @@ int PS4_SYSV_ABI sceAppContentSmallSharedDataUnmount();
 int PS4_SYSV_ABI sceAppContentTemporaryDataFormat();
 int PS4_SYSV_ABI sceAppContentTemporaryDataGetAvailableSpaceKb(
     const OrbisAppContentMountPoint* mountPoint, u64* availableSpaceKb);
-int PS4_SYSV_ABI sceAppContentTemporaryDataMount();
+int PS4_SYSV_ABI sceAppContentTemporaryDataMount(OrbisAppContentMountPoint* mountPoint);
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOption option,
                                                   OrbisAppContentMountPoint* mountPoint);
 int PS4_SYSV_ABI sceAppContentTemporaryDataUnmount();

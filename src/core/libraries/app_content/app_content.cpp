@@ -455,9 +455,9 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataGetAvailableSpaceKb(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentTemporaryDataMount() {
-    LOG_ERROR(Lib_AppContent, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceAppContentTemporaryDataMount(OrbisAppContentMountPoint* mountPoint) {
+    return sceAppContentTemporaryDataMount2(ORBIS_APP_CONTENT_TEMPORARY_DATA_OPTION_FORMAT,
+                                            mountPoint);
 }
 
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOption option,
