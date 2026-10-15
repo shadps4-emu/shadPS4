@@ -638,10 +638,23 @@ void Instance::CreateAllocator() {
         .vkGetDeviceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr,
     };
 
+    vk::DeviceSize largest_device_heap = 0;
+    const auto memory_properties = physical_device.getMemoryProperties();
+    for (u32 i = 0; i < memory_properties.memoryHeapCount; ++i) {
+        const auto& heap = memory_properties.memoryHeaps[i];
+        if (heap.flags & vk::MemoryHeapFlagBits::eDeviceLocal) {
+            largest_device_heap = std::max(largest_device_heap, heap.size);
+        }
+    }
+    constexpr vk::DeviceSize SmallHeapThreshold = 4ULL << 30;
+    constexpr vk::DeviceSize SmallHeapBlockSize = 32ULL << 20;
+
     const VmaAllocatorCreateInfo allocator_info = {
         .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
         .physicalDevice = physical_device,
         .device = *device,
+        .preferredLargeHeapBlockSize =
+            largest_device_heap <= SmallHeapThreshold ? SmallHeapBlockSize : 0,
         .pVulkanFunctions = &functions,
         .instance = *instance,
         .vulkanApiVersion = TargetVulkanApiVersion,
