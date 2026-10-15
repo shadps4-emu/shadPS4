@@ -214,6 +214,7 @@ static bool ResolveEpollBinding(int id, int*& epoll_id_out, void**& user_arg_out
 }
 
 static bool HeaderNameMatches(std::string_view a, std::string_view b);
+static std::string_view TrimHeaderValue(std::string_view value);
 static bool IsCredentialHeader(std::string_view name);
 static std::string HttpStatusLabel(int sc);
 
@@ -887,7 +888,7 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_
 
         httplib::Headers headers;
         for (const auto& [k, v] : plan.headers) {
-            headers.emplace(k, v);
+            headers.emplace(k, std::string(TrimHeaderValue(v)));
         }
         if (plan.settings.accept_encoding_gzip && !game_set_accept_encoding) {
             headers.emplace("Accept-Encoding", "gzip");
@@ -1073,6 +1074,15 @@ static s32 RunRealHttpRequest(const SendRequestPlan& plan_in, HttpResponse& out_
         ORBIS_HTTP_NB_EVENT_IN | ORBIS_HTTP_NB_EVENT_OUT | ORBIS_HTTP_NB_EVENT_RESOLVED;
     return 0;
 #endif // ORBIS_HTTP_WITH_HTTPLIB
+}
+
+static std::string_view TrimHeaderValue(std::string_view value) {
+    const auto first = value.find_first_not_of(" \t");
+    if (first == std::string_view::npos) {
+        return {};
+    }
+    const auto last = value.find_last_not_of(" \t");
+    return value.substr(first, last - first + 1);
 }
 
 // Case-insensitive ASCII comparison of two HTTP header names.
