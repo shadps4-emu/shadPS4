@@ -106,7 +106,6 @@ struct Info : InfoPersistent {
     std::vector<u32> flattened_ud_buf;
     PersistentSrtInfo srt_info;
     u32 dead_resource_guards{};
-    const Info* key_info{};
 
     AttributeFlags loads{};
     AttributeFlags stores{};
