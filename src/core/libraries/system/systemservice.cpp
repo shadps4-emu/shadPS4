@@ -1955,12 +1955,31 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
     case OrbisSystemServiceParamId::TimeFormat:
         *value = u32(OrbisSystemParamTimeFormat::Fmt24Hour);
         break;
-    case OrbisSystemServiceParamId::TimeZone:
-        *value = +120;
+    case OrbisSystemServiceParamId::TimeZone: {
+#ifdef _WIN32
+        _tzset();
+        *value = -static_cast<int>(_timezone / 60);
+#else
+        time_t t = time(nullptr);
+        struct tm tm_val;
+        localtime_r(&t, &tm_val);
+        long dst_sec = (tm_val.tm_isdst > 0) ? 3600 : 0;
+        long standard_offset_sec = tm_val.tm_gmtoff - dst_sec;
+        *value = static_cast<int>(standard_offset_sec / 60);
+#endif
         break;
-    case OrbisSystemServiceParamId::Summertime:
-        *value = 1;
+    }
+    case OrbisSystemServiceParamId::Summertime: {
+        time_t t = time(nullptr);
+        struct tm tm_val;
+#ifdef _WIN32
+        localtime_s(&tm_val, &t);
+#else
+        localtime_r(&t, &tm_val);
+#endif
+        *value = (tm_val.tm_isdst > 0) ? 1 : 0;
         break;
+    }
     case OrbisSystemServiceParamId::GameParentalLevel:
         *value = u32(OrbisSystemParamGameParentalLevel::Off);
         break;
