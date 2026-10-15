@@ -326,7 +326,6 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
                                   const VideoCore::Buffer* buffer, u64 offset) {
     const u32 num_mips = std::min(src->info.resources.levels, dst->info.resources.levels);
     const u32 num_layers = std::min(src->info.resources.layers, dst->info.resources.layers);
-    ASSERT(num_mips == 1);
 
     SetBackingSamples(dst, dst->info.num_samples, false);
     SetBackingSamples(src, src->info.num_samples);
@@ -344,7 +343,20 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
         .imageOffset = {0, 0, 0},
         .imageExtent = {src->info.size.width, src->info.size.height, src->info.size.depth},
     };
-    const auto copy_size = BufferImageCopySize(buffer_copy, src->info.pixel_format);
+    u64 copy_size = BufferImageCopySize(buffer_copy, src->info.pixel_format);
+    SmallVector<vk::BufferImageCopy, 8> buffer_copies;
+    buffer_copies.push_back(buffer_copy);
+    for (u32 mip = 1; mip < num_mips; ++mip) {
+        auto mip_copy = buffer_copy;
+        mip_copy.bufferOffset = Common::AlignUp(offset + copy_size, 16);
+        mip_copy.imageSubresource.mipLevel = mip;
+        mip_copy.imageExtent = vk::Extent3D{std::max(src->info.size.width >> mip, 1u),
+                                            std::max(src->info.size.height >> mip, 1u),
+                                            std::max(src->info.size.depth >> mip, 1u)};
+        copy_size =
+            mip_copy.bufferOffset - offset + BufferImageCopySize(mip_copy, src->info.pixel_format);
+        buffer_copies.push_back(mip_copy);
+    }
 
     scheduler.EndRendering();
 
@@ -360,7 +372,7 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
 
     auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyImageToBuffer(src->GetImage(), vk::ImageLayout::eTransferSrcOptimal,
-                             buffer->Handle(), buffer_copy);
+                             buffer->Handle(), buffer_copies);
 
     const vk::MemoryBarrier2 post_copy_barrier = {
         .srcStageMask = vk::PipelineStageFlagBits2::eCopy,
@@ -374,9 +386,11 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
         .pMemoryBarriers = &post_copy_barrier,
     });
 
-    buffer_copy.imageSubresource.aspectMask = dst->aspect_mask & ~vk::ImageAspectFlagBits::eStencil;
+    for (auto& copy : buffer_copies) {
+        copy.imageSubresource.aspectMask = dst->aspect_mask & ~vk::ImageAspectFlagBits::eStencil;
+    }
     cmdbuf.copyBufferToImage(buffer->Handle(), dst->GetImage(),
-                             vk::ImageLayout::eTransferDstOptimal, buffer_copy);
+                             vk::ImageLayout::eTransferDstOptimal, buffer_copies);
 
     dst->flags |= (src->flags & VideoCore::ImageFlagBits::GpuModified);
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
