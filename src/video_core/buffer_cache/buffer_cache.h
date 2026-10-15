@@ -4,6 +4,7 @@
 #pragma once
 
 #include <deque>
+#include <unordered_map>
 #include <boost/container/small_vector.hpp>
 
 #include "common/enum.h"
@@ -147,6 +148,12 @@ private:
     void DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool is_write,
                         bool async);
 
+    void EvictArenaMemory();
+
+    u64 EvictArena(u64 wanted, bool emergency);
+
+    void DownloadForEviction(const Buffer* arena, VAddr device_addr, u64 size);
+
     bool SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size, bool is_written,
                            bool is_texel_buffer);
 
@@ -188,6 +195,13 @@ private:
     IntervalList<Backing> resident_ranges;
 
     u32 arena_memory_type_index{};
+    struct ArenaAllocation {
+        u64 size;
+        u64 last_use;
+    };
+    std::unordered_map<VkDeviceMemory, ArenaAllocation> arena_allocations;
+    u64 arena_resident_bytes{};
+    u64 frame_counter{};
     u32 block_size{};
     u32 block_shift{};
     u32 blocks_per_arena_page{};

@@ -86,6 +86,29 @@ public:
         Coalesce(at, m);
     }
 
+    void Subtract(u64 start, u64 end) {
+        if (start >= end) [[unlikely]] {
+            return;
+        }
+        auto [first, last] = OverlapRun(start, end);
+        while (last != first && std::prev(last)->start >= end) {
+            --last;
+        }
+        if (first == last) {
+            return;
+        }
+        IV out[2];
+        std::size_t m = 0;
+        if (first->start < start) {
+            out[m++] = first->SubRange(first->start, start);
+        }
+        const auto prev = std::prev(last);
+        if (prev->end > end) {
+            out[m++] = prev->SubRange(end, prev->end);
+        }
+        Splice(first, last, out, m);
+    }
+
     /// Returns immutable iterator to an interval that contains provided address.
     const_iterator Find(u64 addr) const {
         auto it = std::ranges::upper_bound(intervals, addr, {}, &IV::end);

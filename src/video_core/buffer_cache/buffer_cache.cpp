@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <chrono>
+#include <cstring>
+#include <unordered_set>
 #include <magic_enum/magic_enum.hpp>
 #include <xxhash.h>
 
@@ -115,8 +118,159 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
 BufferCache::~BufferCache() = default;
 
 void BufferCache::TickFrame() {
+    ++frame_counter;
     if (std::exchange(fault_process_pending, false)) {
         fault_manager->ProcessFaultBuffer();
+    }
+    EvictArenaMemory();
+}
+
+void BufferCache::EvictArenaMemory() {
+    constexpr u64 Headroom = 128_MB;
+    constexpr u64 Batch = 64_MB;
+
+    if (arena_allocations.empty() || !instance.CanReportMemoryUsage()) {
+        return;
+    }
+    const u64 budget = instance.GetTotalMemoryBudget();
+    const u64 usage = instance.GetDeviceMemoryUsage();
+    if (usage + Headroom <= budget) {
+        return;
+    }
+    EvictArena(usage + Headroom + Batch - budget, false);
+}
+
+u64 BufferCache::EvictArena(u64 wanted, bool emergency) {
+    const u64 min_age = emergency ? 3 : 30;
+
+    std::vector<std::pair<u64, VkDeviceMemory>> candidates;
+    for (const auto& [memory, alloc] : arena_allocations) {
+        if (alloc.last_use + min_age <= frame_counter) {
+            candidates.emplace_back(alloc.last_use, memory);
+        }
+    }
+    std::ranges::sort(candidates);
+
+    std::unordered_set<VkDeviceMemory> victims;
+    if (emergency) {
+        std::unordered_set<VkDeviceMemory> gpu_dirty;
+        for (const auto& range : resident_ranges) {
+            if (memory_tracker->IsRegionGpuModified(range.start << block_shift,
+                                                    (range.end - range.start) << block_shift)) {
+                gpu_dirty.insert(static_cast<VkDeviceMemory>(range.memory));
+            }
+        }
+        std::erase_if(candidates, [&](const auto& c) { return gpu_dirty.contains(c.second); });
+    }
+    u64 freed = 0;
+    for (const auto& [last_use, memory] : candidates) {
+        if (freed >= wanted) {
+            break;
+        }
+        victims.insert(memory);
+        freed += arena_allocations[memory].size;
+    }
+    if (victims.empty()) {
+        return 0;
+    }
+
+    const auto t0 = std::chrono::steady_clock::now();
+    if (emergency) {
+        const u64 current = scheduler.CurrentTick();
+        if (current > 1) {
+            scheduler.Wait(current - 1);
+        }
+    } else {
+        scheduler.Finish();
+    }
+
+    std::vector<Backing> ranges;
+    for (const auto& range : resident_ranges) {
+        if (victims.contains(static_cast<VkDeviceMemory>(range.memory))) {
+            ranges.push_back(range);
+        }
+    }
+    for (const auto& range : ranges) {
+        const auto* arena = address_space[range.start >> blocks_per_arena_page_shift];
+        const VAddr device_addr = range.start << block_shift;
+        const u64 size = (range.end - range.start) << block_shift;
+        if (!emergency) {
+            DownloadForEviction(arena, device_addr, size);
+        }
+        memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+        BindsForArena(arena)->binds.push_back(vk::SparseMemoryBind{
+            .resourceOffset = device_addr - arena->cpu_addr,
+            .size = size,
+            .memory = {},
+            .memoryOffset = 0,
+        });
+        runtime.FillBuffer(bda_pagetable_buffer.get(), range.start * sizeof(vk::DeviceAddress),
+                           (range.end - range.start) * sizeof(vk::DeviceAddress), 0u);
+        resident_ranges.Subtract(range.start, range.end);
+    }
+    if (!emergency) {
+        scheduler.Finish();
+    }
+
+    const auto device = instance.GetDevice();
+    for (const VkDeviceMemory memory : victims) {
+        device.freeMemory(vk::DeviceMemory{memory});
+        arena_allocations.erase(memory);
+    }
+    arena_resident_bytes -= freed;
+    const auto ms =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    LOG_DEBUG(Render, "{}Evicted {} MiB of arena memory ({} allocations) in {:.1f} ms",
+              emergency ? "Emergency: " : "", freed >> 20, victims.size(), ms);
+    return freed;
+}
+
+void BufferCache::DownloadForEviction(const Buffer* arena, VAddr device_addr, u64 size) {
+    constexpr u64 PageSize = 4_KB;
+    constexpr u64 Chunk = 8_MB;
+    const u64 num_pages = size / PageSize;
+    std::vector<u8> tracked(num_pages);
+    for (u64 p = 0; p < num_pages; ++p) {
+        tracked[p] = memory_tracker->IsRegionGpuModified(device_addr + p * PageSize, PageSize);
+    }
+    gpu_modified_ranges.Subtract(device_addr, size);
+    memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, false);
+
+    std::array<u8, PageSize> guest_page;
+    u64 written = 0;
+    u64 untracked = 0;
+    for (u64 off = 0; off < size; off += Chunk) {
+        const u64 len = std::min(Chunk, size - off);
+        const auto download = staging_pool.Request(len, VideoCore::MemoryType::HostCached);
+        const vk::BufferCopy copy{
+            .srcOffset = device_addr + off - arena->cpu_addr,
+            .dstOffset = download.offset,
+            .size = len,
+        };
+        runtime.CopyBuffer(arena, download.buffer, {&copy, 1});
+        scheduler.Finish();
+        download.buffer->Invalidate(download.offset, len);
+        for (u64 p = 0; p < len / PageSize; ++p) {
+            const VAddr addr = device_addr + off + p * PageSize;
+            if (memory_tracker->IsRegionCpuModified(addr, PageSize)) {
+                continue;
+            }
+            const u8* src = download.mapped + p * PageSize;
+            memory->CopySparseMemory(addr, guest_page.data(), PageSize);
+            if (std::memcmp(src, guest_page.data(), PageSize) == 0) {
+                continue;
+            }
+            ++written;
+            if (!tracked[(off / PageSize) + p]) {
+                ++untracked;
+            }
+            memory->TryWriteBacking(std::bit_cast<u8*>(addr), src, PageSize);
+        }
+    }
+    if (written != 0) {
+        LOG_DEBUG(Render,
+                  "Evicted range {:#x}: wrote back {} pages, {} not tracked as GPU modified",
+                  device_addr, written, untracked);
     }
 }
 
@@ -229,6 +383,12 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     const u64 first_block = device_addr >> block_shift;
     const u64 last_block = (device_addr + size - 1) >> block_shift;
     const auto* arena = GetArena(first_block, last_block);
+    resident_ranges.ForEachInRange(first_block, last_block + 1, [&](const Backing& backing) {
+        if (const auto it = arena_allocations.find(static_cast<VkDeviceMemory>(backing.memory));
+            it != arena_allocations.end()) {
+            it->second.last_use = frame_counter;
+        }
+    });
     EnsureResident(arena, first_block, last_block);
     if (is_written) {
         texture_cache.MarkAsMaybeGpuDirty(device_addr, size);
@@ -383,52 +543,73 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
 }
 
 void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_block) {
+    constexpr u64 ChunkBytes = 2_MB;
+    const u64 chunk_blocks = std::max<u64>(ChunkBytes >> block_shift, 1);
+
     u32 resident_blocks{};
-    IntervalList bind_ranges;
+    std::vector<Interval> chunks;
     resident_ranges.ForEachGap(first_block, last_block + 1, [&](u64 start, u64 end) {
         resident_blocks += end - start;
-        bind_ranges.Add({start, end});
+        while (start < end) {
+            const u64 chunk_end =
+                std::min(end, Common::AlignDown(start, chunk_blocks) + chunk_blocks);
+            chunks.push_back({start, chunk_end});
+            start = chunk_end;
+        }
     });
 
-    if (bind_ranges.Empty()) {
+    if (chunks.empty()) {
         return;
     }
 
     const vk::MemoryAllocateFlagsInfo alloc_flags = {
         .flags = vk::MemoryAllocateFlagBits::eDeviceAddress,
     };
-    const vk::MemoryAllocateInfo alloc_info = {
-        .pNext = &alloc_flags,
-        .allocationSize = resident_blocks << block_shift,
-        .memoryTypeIndex = arena_memory_type_index,
-    };
-    const auto device_memory = Vulkan::Check(instance.GetDevice().allocateMemory(alloc_info));
+    const auto device = instance.GetDevice();
 
     boost::container::small_vector<vk::BufferCopy, 8> copies;
     const auto staging =
         staging_pool.Request(resident_blocks * sizeof(vk::DeviceAddress), MemoryType::HostUncached);
 
-    u64 memory_offset{};
-    ArenaBinds* binds = BindsForArena(arena);
     auto* bda_addrs = reinterpret_cast<vk::DeviceAddress*>(staging.mapped);
     u64 offset = staging.offset;
-    for (const auto& range : bind_ranges) {
+    for (const auto& range : chunks) {
+        const vk::MemoryAllocateInfo alloc_info = {
+            .pNext = &alloc_flags,
+            .allocationSize = (range.end - range.start) << block_shift,
+            .memoryTypeIndex = arena_memory_type_index,
+        };
+        auto alloc_result = device.allocateMemory(alloc_info);
+        while (alloc_result.result == vk::Result::eErrorOutOfDeviceMemory &&
+               EvictArena(alloc_info.allocationSize + 32_MB, true) != 0) {
+            alloc_result = device.allocateMemory(alloc_info);
+        }
+        if (alloc_result.result != vk::Result::eSuccess) {
+            LOG_CRITICAL(
+                Render,
+                "Arena allocation of {} KiB failed: arena resident={} MiB, device usage={} MiB",
+                alloc_info.allocationSize >> 10, arena_resident_bytes >> 20,
+                instance.GetDeviceMemoryUsage() >> 20);
+        } else {
+            arena_resident_bytes += alloc_info.allocationSize;
+        }
+        const auto device_memory = Vulkan::Check(std::move(alloc_result));
+        arena_allocations[static_cast<VkDeviceMemory>(device_memory)] = {alloc_info.allocationSize,
+                                                                         frame_counter};
+
         Backing backing;
         backing.start = range.start;
         backing.end = range.end;
         backing.memory = device_memory;
-        backing.offset = memory_offset >> block_shift;
+        backing.offset = 0;
         resident_ranges.Add(backing);
 
-        LOG_INFO(Render, "Making range start={}, end={} resident", backing.start, backing.end);
-
-        const auto& bind = binds->binds.emplace_back(vk::SparseMemoryBind{
+        const auto& bind = BindsForArena(arena)->binds.emplace_back(vk::SparseMemoryBind{
             .resourceOffset = (range.start << block_shift) - arena->cpu_addr,
-            .size = (range.end - range.start) << block_shift,
+            .size = alloc_info.allocationSize,
             .memory = device_memory,
-            .memoryOffset = memory_offset,
+            .memoryOffset = 0,
         });
-        memory_offset += bind.size;
 
         for (u32 block = 0; block < bind.size; block += block_size) {
             *(bda_addrs++) = arena->BufferDeviceAddress() + bind.resourceOffset + block;
