@@ -155,11 +155,12 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
         return;
     }
 
-    const u32 scratch_base = Common::AlignUp(runtime_info.hw.cs.shared_memory_size, sizeof(u64));
     const u32 scratch_size =
         (Common::AlignUp(num_threads, 64) / profile.subgroup_size) * sizeof(u32);
-    program.info.shared_memory_scratch_base = scratch_base;
-    program.info.shared_memory_scratch_size = scratch_size;
+
+    Info::SharedMemorySection& scratch_info =
+        program.info.GetSharedMemSection(SharedMemory::Section::Scratch);
+    scratch_info.SetMinSize(scratch_size);
 
     while (!worklist.empty()) {
         IR::Inst* inst = worklist.front();
@@ -172,24 +173,20 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
         if (inst->GetOpcode() == IR::Opcode::Ballot) {
             const IR::U32 mask_low =
                 IR::U32{ir.CompositeExtract(ir.UnpackUint2x32(ir.Ballot(IR::U1{inst->Arg(0)})), 0)};
-            const IR::U32 offset =
-                ir.IAdd(ir.Imm32(scratch_base), ir.ShiftLeftLogical(subgroup_id, ir.Imm32(2u)));
-            ir.WriteShared(32, mask_low, offset);
+            const IR::U32 offset = ir.ShiftLeftLogical(subgroup_id, ir.Imm32(2u));
+            ir.WriteSharedU32Scratch(mask_low, offset);
             ir.Barrier();
-            const IR::U64 mask = IR::U64{ir.LoadShared(64, false, offset)};
+            const IR::U64 mask{ir.LoadSharedU64Scratch(offset)};
             ir.Barrier();
             inst->ReplaceUsesWithAndRemove(mask);
         } else if (inst->GetOpcode() == IR::Opcode::ReadLane) {
             const IR::U32 lane32 = ir.BitwiseAnd(IR::U32{inst->Arg(1)}, ir.Imm32(31));
             const IR::U32 half = ir.ShiftRightLogical(IR::U32{inst->Arg(1)}, ir.Imm32(5u));
-            const IR::U32 offset =
-                ir.IAdd(ir.Imm32(scratch_base), ir.ShiftLeftLogical(subgroup_id, ir.Imm32(2u)));
-            ir.WriteShared(32, ir.ReadLane(IR::U32{inst->Arg(0)}, lane32), offset);
+            const IR::U32 offset = ir.ShiftLeftLogical(subgroup_id, ir.Imm32(2u));
+            ir.WriteSharedU32Scratch(ir.ReadLane(IR::U32{inst->Arg(0)}, lane32), offset);
             ir.Barrier();
-            const IR::U32 value =
-                IR::U32{ir.LoadShared(32, false,
-                                      ir.IAdd(ir.BitwiseAnd(offset, ir.Imm32(~7u)),
-                                              ir.ShiftLeftLogical(half, ir.Imm32(2u))))};
+            const IR::U32 value = ir.LoadSharedU32Scratch(ir.IAdd(
+                ir.BitwiseAnd(offset, ir.Imm32(~7u)), ir.ShiftLeftLogical(half, ir.Imm32(2u))));
             ir.Barrier();
             inst->ReplaceUsesWithAndRemove(value);
         } else if (inst->GetOpcode() == IR::Opcode::MaskedBitCount32) {
@@ -207,14 +204,13 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
             const IR::U1 exec{inst->Arg(0)};
             const IR::U1 is_bottom{
                 ir.IEqual(ir.Imm32(0u), ir.BitwiseAnd(subgroup_id, ir.Imm32(1u)))};
-            const IR::U32 offset =
-                ir.IAdd(ir.Imm32(scratch_base), ir.ShiftLeftLogical(subgroup_id, ir.Imm32(2u)));
+            const IR::U32 offset = ir.ShiftLeftLogical(subgroup_id, ir.Imm32(2u));
             const IR::U1 any{ir.GroupAny(exec)};
             const IR::U64 mask = ir.Ballot(exec);
-            ir.WriteShared(32, ir.Select(any, ir.Imm32(1u), ir.Imm32(0u)), offset);
+            ir.WriteSharedU32Scratch(IR::U32{ir.Select(any, ir.Imm32(1u), ir.Imm32(0u))}, offset);
             ir.Barrier();
             const IR::U32 other_offset{ir.BitwiseXor(offset, ir.Imm32(1u << 2))};
-            const IR::U32 other_has_any_u32{ir.LoadShared(32, false, other_offset)};
+            const IR::U32 other_has_any_u32{ir.LoadSharedU32Scratch(other_offset)};
             const IR::U1 other_has_any{ir.INotEqual(other_has_any_u32, ir.Imm32(0u))};
             // need to be careful of poison from BallotFindLsb
             const IR::U32 lane32{ir.Select(any, ir.BallotFindLsb(mask), ir.Imm32(0u))};
@@ -237,19 +233,20 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
         } else if (inst->GetOpcode() == IR::Opcode::ReadFirstLane) {
             const IR::U1 exec{inst->Arg(1)};
             const IR::U32 value{inst->Arg(0)};
-            // Using Elect means 4 barriers total. Could reduce by unfactoring and using more
-            // shared mem, but this seems simplest for now
-            const IR::U1 elected{ir.WaveElectOrLane0(exec)};
-            const IR::U32 lo_subgroup_offset = ir.IAdd(
-                ir.Imm32(scratch_base),
-                ir.ShiftLeftLogical(ir.BitwiseAnd(ir.Imm32(~1u), subgroup_id), ir.Imm32(2u)));
-            ir.PredicatedWriteSharedU32(value, lo_subgroup_offset, elected);
+            const bool already_elected(inst->Flags<bool>());
+            // When we know exec mask only has 1 bit set, don't need to do an elect
+            const IR::U1 elected{already_elected ? exec : ir.WaveElectOrLane0(exec)};
+            const IR::U32 lo_subgroup_offset =
+                ir.ShiftLeftLogical(ir.BitwiseAnd(ir.Imm32(~1u), subgroup_id), ir.Imm32(2u));
+            ir.PredicatedWriteSharedU32Scratch(value, lo_subgroup_offset, elected);
             ir.Barrier();
-            const IR::Value result{ir.LoadShared(32, false, lo_subgroup_offset)};
+            const IR::U32 result{ir.LoadSharedU32Scratch(lo_subgroup_offset)};
             ir.Barrier();
             inst->ReplaceUsesWithAndRemove(result);
-            // Need to expand Elect too
-            worklist.push_back(elected.Inst());
+            if (!already_elected) {
+                // Need to expand Elect too
+                worklist.push_back(elected.Inst());
+            }
         } else if (inst->GetOpcode() == IR::Opcode::WaveId) {
             u32 subgroup_size = profile.subgroup_size;
             ASSERT(subgroup_size < 64);

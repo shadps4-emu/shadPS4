@@ -280,37 +280,55 @@ void IREmitter::SetPatch(Patch patch, const F32& value) {
     Inst(Opcode::SetPatch, patch, value);
 }
 
-Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset, bool is_gds) {
+Value IREmitter::LoadShared(int bit_size, bool is_signed, const U32& offset, bool is_gds,
+                            SharedMemory::Section section) {
+    SharedMemory::Flags flags{is_gds, section};
     switch (bit_size) {
     case 16:
-        return Inst<U16>(Opcode::LoadSharedU16, Flags{is_gds}, offset);
+        return Inst<U16>(Opcode::LoadSharedU16, Flags{flags}, offset);
     case 32:
-        return Inst<U32>(Opcode::LoadSharedU32, Flags{is_gds}, offset);
+        return Inst<U32>(Opcode::LoadSharedU32, Flags{flags}, offset);
     case 64:
-        return Inst<U64>(Opcode::LoadSharedU64, Flags{is_gds}, offset);
+        return Inst<U64>(Opcode::LoadSharedU64, Flags{flags}, offset);
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);
     }
 }
 
-void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset, bool is_gds) {
+void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset, bool is_gds,
+                            SharedMemory::Section section) {
+    SharedMemory::Flags flags{is_gds, section};
     switch (bit_size) {
     case 16:
-        Inst(Opcode::WriteSharedU16, Flags{is_gds}, offset, value);
+        Inst(Opcode::WriteSharedU16, Flags{flags}, offset, value);
         break;
     case 32:
-        Inst(Opcode::WriteSharedU32, Flags{is_gds}, offset, value);
+        Inst(Opcode::WriteSharedU32, Flags{flags}, offset, value);
         break;
     case 64:
-        Inst(Opcode::WriteSharedU64, Flags{is_gds}, offset, value);
+        Inst(Opcode::WriteSharedU64, Flags{flags}, offset, value);
         break;
     default:
         UNREACHABLE_MSG("Invalid bit size {}", bit_size);
     }
 }
 
-void IREmitter::PredicatedWriteSharedU32(const Value& value, const U32& offset, const U1& cond) {
-    Inst(Opcode::PredicatedWriteSharedU32, offset, value, cond);
+U32 IREmitter::LoadSharedU32Scratch(const U32& offset) {
+    return U32{LoadShared(32, false, offset, false, SharedMemory::Section::Scratch)};
+}
+
+U64 IREmitter::LoadSharedU64Scratch(const U32& offset) {
+    return U64{LoadShared(64, false, offset, false, SharedMemory::Section::Scratch)};
+}
+
+void IREmitter::WriteSharedU32Scratch(const U32& value, const U32& offset) {
+    WriteShared(32, value, offset, false, SharedMemory::Section::Scratch);
+}
+
+void IREmitter::PredicatedWriteSharedU32Scratch(const U32& value, const U32& offset,
+                                                const U1& cond) {
+    SharedMemory::Flags flags{false, SharedMemory::Section::Scratch};
+    Inst(Opcode::PredicatedWriteSharedU32, Flags{flags}, offset, value, cond);
 }
 
 U32U64 IREmitter::SharedAtomicIAdd(const U32& address, const U32U64& data, bool is_gds) {
@@ -677,8 +695,8 @@ U1 IREmitter::WaveElectOrLane0(const U1& exec) {
     return Inst<U1>(Opcode::WaveElectOrLane0, exec);
 }
 
-U32 IREmitter::ReadFirstLane(const U32& value, const U1& exec) {
-    return Inst<U32>(Opcode::ReadFirstLane, value, exec);
+U32 IREmitter::ReadFirstLane(const U32& value, const U1& exec, bool already_elected) {
+    return Inst<U32>(Opcode::ReadFirstLane, Flags{already_elected}, value, exec);
 }
 
 U32 IREmitter::ReadLane(const U32& value, const U32& lane) {

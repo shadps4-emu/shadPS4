@@ -6,55 +6,55 @@
 
 namespace Shader::Backend::SPIRV {
 
-Id EmitLoadSharedU16(EmitContext& ctx, Id offset) {
-    const Id shift_id{ctx.ConstU32(1U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer = ctx.EmitSharedMemoryAccess(ctx.shared_u16, ctx.shared_memory_u16, index);
+using PointerType = EmitContext::PointerType;
+using SharedMemory::Section;
+using SharedFlags = SharedMemory::Flags;
+
+Id EmitLoadSharedU16(EmitContext& ctx, IR::Inst* inst, Id offset) {
+    Section section = inst->Flags<SharedFlags>().section.Value();
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U16, section);
     return ctx.OpLoad(ctx.U16, pointer);
 }
 
-Id EmitLoadSharedU32(EmitContext& ctx, Id offset) {
-    const Id shift_id{ctx.ConstU32(2U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer = ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index);
+Id EmitLoadSharedU32(EmitContext& ctx, IR::Inst* inst, Id offset) {
+    Section section = inst->Flags<SharedFlags>().section.Value();
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U32, section);
     return ctx.OpLoad(ctx.U32[1], pointer);
 }
 
-Id EmitLoadSharedU64(EmitContext& ctx, Id offset) {
-    const Id shift_id{ctx.ConstU32(3U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer = ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index);
+Id EmitLoadSharedU64(EmitContext& ctx, IR::Inst* inst, Id offset) {
+    Section section = inst->Flags<SharedFlags>().section.Value();
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U64, section);
     return ctx.OpLoad(ctx.U64, pointer);
 }
 
-void EmitWriteSharedU16(EmitContext& ctx, Id offset, Id value) {
-    const Id shift{ctx.ConstU32(1U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift)};
-    const Id pointer = ctx.EmitSharedMemoryAccess(ctx.shared_u16, ctx.shared_memory_u16, index);
+void EmitWriteSharedU16(EmitContext& ctx, IR::Inst* inst, Id offset, Id value) {
+    Section section = inst->Flags<SharedFlags>().section.Value();
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U16, section);
     ctx.OpStore(pointer, value);
 }
 
-void EmitWriteSharedU32(EmitContext& ctx, Id offset, Id value) {
-    const Id shift{ctx.ConstU32(2U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift)};
-    const Id pointer = ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index);
+void EmitWriteSharedU32(EmitContext& ctx, IR::Inst* inst, Id offset, Id value) {
+    Section section = inst->Flags<SharedFlags>().section.Value();
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U32, section);
     ctx.OpStore(pointer, value);
 }
 
-void EmitWriteSharedU64(EmitContext& ctx, Id offset, Id value) {
-    const Id shift{ctx.ConstU32(3U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift)};
-    const Id pointer = ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index);
+void EmitWriteSharedU64(EmitContext& ctx, IR::Inst* inst, Id offset, Id value) {
+    Section section = inst->Flags<SharedFlags>().section.Value();
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U64, section);
     ctx.OpStore(pointer, value);
 }
 
-void EmitPredicatedWriteSharedU32(EmitContext& ctx, Id offset, Id value, Id cond) {
+void EmitPredicatedWriteSharedU32(EmitContext& ctx, IR::Inst* inst, Id offset, Id value, Id cond) {
+    Section section = inst->Flags<SharedFlags>().section.Value();
     const Id if_label{ctx.OpLabel()};
     const Id merge_label{ctx.OpLabel()};
     ctx.OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
     ctx.OpBranchConditional(cond, if_label, merge_label);
     ctx.AddLabel(if_label);
-    EmitWriteSharedU32(ctx, offset, value);
+    const Id pointer{ctx.EmitSharedMemoryAccess(offset, PointerType::U32, section)};
+    ctx.OpStore(pointer, value);
     ctx.OpBranch(merge_label);
     ctx.AddLabel(merge_label);
 }
