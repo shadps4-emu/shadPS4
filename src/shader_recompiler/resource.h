@@ -281,12 +281,8 @@ using SamplerResourceList = boost::container::static_vector<SamplerResource, NUM
 
 struct FMaskResource {
     SharpLocation sharp_idx;
-    u8 guard{NO_GUARD};
 
     constexpr AmdGpu::Image GetSharp(const auto& info) const noexcept {
-        if (IsGuardDead(guard, info.dead_resource_guards)) {
-            return AmdGpu::Image::Null(false);
-        }
         return info.template ReadUdSharp<AmdGpu::Image>(sharp_idx);
     }
 };
