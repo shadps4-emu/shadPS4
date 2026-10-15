@@ -8,6 +8,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/music/music_player_service.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/systemservice_error.h"
 #include "emulator.h"
@@ -1079,18 +1080,18 @@ int PS4_SYSV_ABI sceShellCoreUtilIsAccessibilityZoomLocked() {
 }
 
 int PS4_SYSV_ABI sceShellCoreUtilIsBgmCpuBudgetAcquired() {
-    LOG_ERROR(Lib_SystemService, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_SystemService, "called");
+    return 1;
 }
 
 int PS4_SYSV_ABI sceShellCoreUtilIsBgmCpuBudgetAvailable() {
-    LOG_ERROR(Lib_SystemService, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_SystemService, "called");
+    return 1;
 }
 
 int PS4_SYSV_ABI sceShellCoreUtilIsBgmPlaying() {
-    LOG_ERROR(Lib_SystemService, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_SystemService, "called");
+    return Libraries::MusicPlayerService::IsBgmPlaying() ? 1 : 0;
 }
 
 int PS4_SYSV_ABI sceShellCoreUtilIsExternalStorageAppMoveInProgress() {
@@ -1813,8 +1814,8 @@ int PS4_SYSV_ABI sceSystemServiceIsAppSuspended() {
 }
 
 int PS4_SYSV_ABI sceSystemServiceIsBgmPlaying() {
-    LOG_ERROR(Lib_SystemService, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_SystemService, "called");
+    return Libraries::MusicPlayerService::IsBgmPlaying() ? 1 : 0;
 }
 
 int PS4_SYSV_ABI sceSystemServiceIsEyeToEyeDistanceAdjusted() {
