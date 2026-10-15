@@ -26,6 +26,8 @@ namespace VideoCore {
 static constexpr size_t GDS_BUFFER_SIZE = 64_KB;
 static constexpr size_t NULL_INDEX_BUFFER_SIZE = 16;
 static constexpr size_t STREAM_BUFFER_SIZE = 128_MB;
+static constexpr size_t LOW_VRAM_STREAM_BUFFER_SIZE = 32_MB;
+static constexpr u64 LOW_VRAM_THRESHOLD = 3_GB;
 constexpr std::optional<u32> CmaskColorExpandedValue(u32 num_samples) {
     switch (num_samples) {
     case 1:
@@ -72,7 +74,10 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
       staging_pool{runtime_.GetStagingPool()}, liverpool{liverpool_},
       memory{Core::Memory::Instance()}, texture_cache{texture_cache_},
       memory_tracker{std::make_unique<MemoryTracker>(tracker)},
-      stream_buffer{instance, scheduler, MemoryType::Stream, STREAM_BUFFER_SIZE},
+      stream_buffer{instance, scheduler, MemoryType::Stream,
+                    instance.GetTotalMemoryBudget() <= LOW_VRAM_THRESHOLD
+                        ? LOW_VRAM_STREAM_BUFFER_SIZE
+                        : STREAM_BUFFER_SIZE},
       gds_buffer{instance, 0, GDS_BUFFER_SIZE, MemoryType::Stream, "GDS Buffer"},
       memory_semaphore{instance} {
     const vk::BufferCreateInfo probe_ci = {
