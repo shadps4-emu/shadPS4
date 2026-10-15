@@ -1,16 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm>
 #include <array>
 #include <bit>
 #include <limits>
 #include <optional>
 #include <unordered_map>
-#include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
-#include "shader_recompiler/ir/dominance.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/passes/resource_pass.h"
@@ -761,155 +758,121 @@ private:
     std::array<std::unordered_map<const IR::Inst*, GuardTerms>, 2> necessary;
 };
 
-class GuardCollector {
-public:
-    explicit GuardCollector(GuardBuilder& builder_) : builder{builder_} {}
-
-    GuardTerms BlockTerms(IR::Block* block) {
-        boost::container::small_vector<IR::Block*, 32> chain;
-        GuardTerms block_terms = GuardTerms::Always();
-        for (IR::Block* current = block; current;) {
-            if (const auto it = terms.find(current); it != terms.end()) {
-                block_terms = it->second;
-                break;
-            }
-            chain.push_back(current);
-            IR::Block* const idom = current->immediate_dominator;
-            current = idom != current ? idom : nullptr;
-        }
-        for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
-            block_terms = block_terms.And(EdgeTerms(*it));
-            terms.emplace(*it, block_terms);
-        }
-        return block_terms;
-    }
-
-private:
-    GuardTerms EdgeTerms(IR::Block* block) {
-        const IR::Block* const idom = block->immediate_dominator;
-        if (!idom || idom == block || block->ImmPredecessors().size() != 1) {
-            return GuardTerms::Always();
-        }
-        const IR::Block* const pred = block->ImmPredecessors().front();
-        const Gcn::Block* const cfg = pred->cfg_block;
-        if (pred->branch_cond.IsEmpty() || pred->ImmSuccessors().size() != 2 || !cfg ||
-            !cfg->branch_true || !cfg->branch_false) {
-            return GuardTerms::Always();
-        }
-        const IR::Block* const on_true = cfg->branch_true->ir_block;
-        const IR::Block* const on_false = cfg->branch_false->ir_block;
-        if (on_true == on_false || (block != on_true && block != on_false)) {
-            return GuardTerms::Always();
-        }
-        return builder.Condition(pred->branch_cond, block == on_true);
-    }
-
-    GuardBuilder& builder;
-    std::unordered_map<const IR::Block*, GuardTerms> terms;
+struct ImageUse {
+    u32 image{};
+    u32 sampler{};
+    bool has_sampler{};
+    bool is_storage{};
 };
+
+std::optional<ImageUse> ImageUseOf(const IR::Inst& inst) {
+    ImageUse use{};
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::ImageSampleImplicitLod:
+    case IR::Opcode::ImageSampleExplicitLod:
+    case IR::Opcode::ImageSampleDrefImplicitLod:
+    case IR::Opcode::ImageSampleDrefExplicitLod:
+    case IR::Opcode::ImageGather:
+    case IR::Opcode::ImageGatherDref:
+    case IR::Opcode::ImageGradient:
+    case IR::Opcode::ImageQueryLod:
+        use.has_sampler = true;
+        break;
+    case IR::Opcode::ImageQueryDimensions:
+    case IR::Opcode::ImageRead:
+        break;
+    case IR::Opcode::ImageWrite:
+        use.is_storage = true;
+        break;
+    default:
+        if (!IsImageAtomicInstruction(inst)) {
+            return std::nullopt;
+        }
+        use.is_storage = true;
+        break;
+    }
+    const std::optional<u32> handle = ImmU32(inst.Arg(0));
+    if (!handle) {
+        return std::nullopt;
+    }
+    use.image = *handle & 0xFFFF;
+    use.sampler = *handle >> 16;
+    return use;
+}
 
 template <typename T>
+bool IsGuardable(const SharpFetch<T>& fetch) {
+    return fetch.summary != SharpFetch<T>::Summary::Invalid && fetch.load_mask != 0;
+}
+
 class GuardGroups {
 public:
-    u32 AddUse(const SharpFetch<T>& key, const GuardTerms& terms) {
-        const auto it = std::ranges::find(entries, key, &Entry::key);
-        const u32 index = static_cast<u32>(std::distance(entries.begin(), it));
-        if (it == entries.end()) {
-            entries.push_back({.key = key});
-        }
-        const bool is_guardable =
-            key.summary != SharpFetch<T>::Summary::Invalid && key.load_mask != 0;
-        Entry& entry = entries[index];
-        entry.terms = entry.terms.Or(is_guardable ? terms : GuardTerms::Always());
-        return index;
-    }
+    explicit GuardGroups(size_t num_resources) : entries(num_resources) {}
 
-    void AddTermsToAll(const GuardTerms& terms) {
-        for (Entry& entry : entries) {
-            entry.terms = entry.terms.Or(terms);
+    void AddUse(u32 binding, const GuardTerms& terms) {
+        if (binding < entries.size()) {
+            entries[binding] = entries[binding].Or(terms);
         }
     }
 
-    void Emit(ResourceGuards& table) {
-        for (Entry& entry : entries) {
-            if (entry.terms.IsTrivial() || table.num_groups == ResourceGuards::MaxGroups) {
+    void Emit(ResourceGuards& table, auto& resources) {
+        for (size_t i = 0; i < resources.size(); ++i) {
+            const GuardTerms& terms = entries[i];
+            if (terms.IsTrivial() || !IsGuardable(resources[i].sharp_fetch) ||
+                table.num_groups == ResourceGuards::MaxGroups) {
                 continue;
             }
-            entry.group = table.num_groups;
+            resources[i].guard = table.num_groups;
             auto& group = table.groups[table.num_groups++];
-            group.terms = entry.terms.terms;
-            group.num_terms = entry.terms.count;
+            group.terms = terms.terms;
+            group.num_terms = terms.count;
         }
-    }
-
-    u8 GroupOf(u32 index) const {
-        return index < entries.size() ? entries[index].group : NO_GUARD;
     }
 
 private:
-    struct Entry {
-        SharpFetch<T> key{};
-        GuardTerms terms{};
-        u8 group{NO_GUARD};
-    };
-
-    boost::container::small_vector<Entry, 16> entries;
+    boost::container::small_vector<GuardTerms, 16> entries;
 };
 
-void BuildGuards(ResourceGuards& table, ResourceDiscoveryList& resources) {
-    GuardBuilder builder{table};
-    GuardCollector collector{builder};
-    GuardGroups<AmdGpu::Image> images;
-    GuardGroups<AmdGpu::Sampler> samplers;
-    constexpr u32 NoUse = std::numeric_limits<u32>::max();
-    boost::container::small_vector<std::array<u32, 2>, 32> uses(resources.size(), {NoUse, NoUse});
-    boost::container::small_vector<GuardTerms, 4> lod_terms;
-    for (size_t i = 0; i < resources.size(); ++i) {
-        const IR::Inst& inst = *resources[i].user;
-        if (!IsImageInstruction(inst)) {
-            continue;
+void BuildGuards(Info& info, const IR::AbstractSyntaxList& syntax_list) {
+    GuardBuilder builder{info.resource_guards};
+    GuardGroups images{info.images.size()};
+    GuardGroups samplers{info.samplers.size()};
+    boost::container::small_vector<GuardTerms, 16> scopes{GuardTerms::Always()};
+    for (const IR::AbstractSyntaxNode& node : syntax_list) {
+        switch (node.type) {
+        case IR::AbstractSyntaxNode::Type::If:
+            scopes.push_back(scopes.back().And(builder.Condition(node.data.if_node.cond, true)));
+            break;
+        case IR::AbstractSyntaxNode::Type::EndIf:
+            scopes.pop_back();
+            break;
+        case IR::AbstractSyntaxNode::Type::Block:
+            for (const IR::Inst& inst : node.data.block->Instructions()) {
+                const std::optional<ImageUse> use = ImageUseOf(inst);
+                if (!use) {
+                    continue;
+                }
+                images.AddUse(use->image, use->is_storage ? GuardTerms::Always() : scopes.back());
+                if (use->has_sampler) {
+                    samplers.AddUse(use->sampler, scopes.back());
+                }
+            }
+            break;
+        default:
+            break;
         }
-        const GuardTerms terms = collector.BlockTerms(inst.GetParent());
-        const bool is_storage =
-            inst.GetOpcode() == IR::Opcode::ImageWrite || IsImageAtomicInstruction(inst);
-        uses[i][0] =
-            images.AddUse(ConstructSharpFetch<AmdGpu::Image>(resources[i].sharps[0], false),
-                          is_storage ? GuardTerms::Always() : terms);
-        if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
-            uses[i][1] = samplers.AddUse(
-                ConstructSharpFetch<AmdGpu::Sampler>(resources[i].sharps[1], false), terms);
-        } else if (inst.GetOpcode() == IR::Opcode::ImageQueryLod) {
-            lod_terms.push_back(terms);
-        }
     }
-    for (const GuardTerms& terms : lod_terms) {
-        samplers.AddTermsToAll(terms);
-    }
-    images.Emit(table);
-    samplers.Emit(table);
-    for (size_t i = 0; i < resources.size(); ++i) {
-        resources[i].guards = {images.GroupOf(uses[i][0]), samplers.GroupOf(uses[i][1])};
-    }
+    images.Emit(info.resource_guards, info.images);
+    samplers.Emit(info.resource_guards, info.samplers);
 }
 
 } // Anonymous namespace
 
-void ResourceGuardPass(IR::Program& program, ResourceDiscoveryList& resources) {
+void ResourceGuardPass(IR::Program& program) {
     Info& info = program.info;
     info.resource_guards = {};
     if (!info.skip_resource_guards) {
-        IR::ComputeDominators(program.post_order_blocks);
-        BuildGuards(info.resource_guards, resources);
-        for (IR::Block* const block : program.blocks) {
-            block->immediate_dominator = nullptr;
-        }
-    }
-    if (info.key_info) {
-        info.dead_resource_guards = info.key_info->resource_guards == info.resource_guards
-                                        ? info.key_info->dead_resource_guards
-                                        : 0;
-    } else {
-        info.RefreshResourceGuards();
+        BuildGuards(info, program.syntax_list);
     }
 }
 

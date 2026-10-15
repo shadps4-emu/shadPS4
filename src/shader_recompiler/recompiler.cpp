@@ -109,7 +109,6 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     auto resources = Shader::Optimization::ResourceDiscoverPass(program, profile);
     Shader::Optimization::FlattenExtendedUserdataPass(program);
     Shader::IR::DumpProgram(program, info, "pre-res-patch.");
-    Shader::Optimization::ResourceGuardPass(program, resources);
     Shader::Optimization::ResourcePatchingPass(program.info, resources, profile);
     Shader::Optimization::LowerBufferFormatToRaw(program);
     Shader::Optimization::SharedMemorySimplifyPass(program, profile);
@@ -135,6 +134,7 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     // Run optimization passes on structured graph
     Shader::Optimization::SsaRepairPass(program);
     Shader::Optimization::SsaRewritePass(program);
+    Shader::Optimization::ResourceGuardPass(program);
     Shader::Optimization::SharedMemoryBarrierPass(program, runtime_info, profile);
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::LowerWave64BallotPass(program, runtime_info, profile);
