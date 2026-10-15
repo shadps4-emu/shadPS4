@@ -3,6 +3,8 @@
 
 #include <cmrc/cmrc.hpp>
 #include <imgui.h>
+#include <mutex>
+#include <optional>
 #include <queue>
 
 #include "imgui/imgui_std.h"
