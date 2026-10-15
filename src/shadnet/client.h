@@ -125,7 +125,9 @@ enum class NotificationType : u16 {
     FriendStatus = 8,
     RoomEvent = 10,
     RoomMessage = 11,
-    WebApiPushEvent = 17, // Generic NP WebApi push event
+    WebApiPushEvent = 17,    // Generic NP WebApi push event
+    ServiceUnavailable = 18, // Server refused a service (e.g. matchmaking full)
+    ClientRejected = 19,     // Server is signing this client out (e.g. version not accepted)
 };
 
 enum class ErrorType : uint8_t {
@@ -212,6 +214,23 @@ struct NotifyFriendStatus {
     std::string npid;
     bool online = false;
     u64 timestamp = 0;
+};
+// Notification 18 (NotifyServiceUnavailable): why the server refused a service.
+struct NotifyServiceUnavailable {
+    enum : u32 { ServiceMatching2 = 1 };
+    enum : u32 { ReasonServerFull = 1, ReasonNotAllowed = 2, ReasonDisabled = 3 };
+    u32 service = 0;
+    u32 reason = 0;
+    u32 inUse = 0; // set for ReasonServerFull
+    u32 limit = 0; // set for ReasonServerFull
+};
+// Notification 19 (NotifyClientRejected): the server is signing this client out and will
+// disconnect right after.
+struct NotifyClientRejected {
+    enum : u32 { ReasonVersion = 1 };
+    u32 reason = 0;
+    std::string message; // for the player, from the server's rule
+    std::string version; // the version the server checked ("" = none reported)
 };
 struct NotifyWebApiPushEvent {
     std::string npServiceName; // may be empty (catch-all listeners match any)
@@ -328,6 +347,8 @@ public:
     std::function<void(const NotifyRoomEvent&)> onRoomEvent;
     std::function<void(const NotifyRoomMessage&)> onRoomMessage;
     std::function<void(const NotifyWebApiPushEvent&)> onWebApiPushEvent;
+    std::function<void(const NotifyServiceUnavailable&)> onServiceUnavailable;
+    std::function<void(const NotifyClientRejected&)> onClientRejected;
     // Async reply callback.
     //   cmd    —command this reply is for (matches the request's cmd)
     //   pkt_id —packet id echoed back from the original request header

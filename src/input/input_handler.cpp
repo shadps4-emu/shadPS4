@@ -715,7 +715,7 @@ void ControllerOutput::AddUpdate(InputEvent event) {
 
     } else if (axis != SDL_GAMEPAD_AXIS_INVALID) {
         *new_param = (event.active ? event.axis_value : 0) + *new_param;
-        analog_source |= event.input.type == InputType::Axis;
+        analog_source |= event.analog_source;
     }
 }
 
@@ -976,6 +976,7 @@ InputEvent BindingConnection::ProcessBinding() {
                 }
                 if (pressed_it->first.input.type == InputType::Axis) {
                     event.axis_value = pressed_it->first.axis_value;
+                    event.analog_source = true;
                 }
                 ++pressed_it;
                 break;

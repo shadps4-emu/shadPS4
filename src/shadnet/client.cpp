@@ -1019,6 +1019,39 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
             onWebApiPushEvent(n);
         break;
     }
+    case NotificationType::ServiceUnavailable: {
+        shadnet::NotifyServiceUnavailable pb;
+        if (!pb.ParseFromString(blob)) {
+            LOG_WARNING(ShadNet, "ServiceUnavailable parse error");
+            break;
+        }
+        NotifyServiceUnavailable n;
+        n.service = pb.service();
+        n.reason = pb.reason();
+        n.inUse = pb.in_use();
+        n.limit = pb.limit();
+        LOG_INFO(ShadNet, "ServiceUnavailable service={} reason={} in_use={} limit={}", n.service,
+                 n.reason, n.inUse, n.limit);
+        if (onServiceUnavailable)
+            onServiceUnavailable(n);
+        break;
+    }
+    case NotificationType::ClientRejected: {
+        shadnet::NotifyClientRejected pb;
+        if (!pb.ParseFromString(blob)) {
+            LOG_WARNING(ShadNet, "ClientRejected parse error");
+            break;
+        }
+        NotifyClientRejected n;
+        n.reason = pb.reason();
+        n.message = pb.message();
+        n.version = pb.version();
+        LOG_ERROR(ShadNet, "Server rejected this client (reason={}, version='{}'): {}", n.reason,
+                  n.version, n.message);
+        if (onClientRejected)
+            onClientRejected(n);
+        break;
+    }
     default:
         LOG_DEBUG(ShadNet, "Unknown notification type {}", cmd_raw);
         break;
