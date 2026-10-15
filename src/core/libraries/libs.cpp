@@ -31,6 +31,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/mouse/mouse.h"
 #include "core/libraries/move/move.h"
+#include "core/libraries/music/music_player_service.h"
 #include "core/libraries/net/net.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/http2.h"
@@ -159,6 +160,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceRandom.sprx", Libraries::Random::RegisterLib},
             {"libSceUsbd.sprx", Libraries::Usbd::RegisterLib},
             {"libSceUsbStorage.sprx", Libraries::UsbStorage::RegisterLib},
+            {"libSceMusicPlayerService.sprx", Libraries::MusicPlayerService::RegisterLib},
             {"libSceAjm.sprx", Libraries::Ajm::RegisterLib},
             {"libSceErrorDialog.sprx", Libraries::ErrorDialog::RegisterLib},
             {"libSceImeDialog.sprx", Libraries::ImeDialog::RegisterLib},
