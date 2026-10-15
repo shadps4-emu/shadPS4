@@ -213,7 +213,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "19")
+set(EMULATOR_VERSION_MINOR "20")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/dist/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -326,6 +326,7 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/sync/mutex.h
                src/core/libraries/kernel/sync/semaphore.h
+               src/core/libraries/kernel/threads/barrier.cpp
                src/core/libraries/kernel/threads/condvar.cpp
                src/core/libraries/kernel/threads/event_flag.cpp
                src/core/libraries/kernel/threads/exception.cpp
@@ -589,12 +590,18 @@ set(RANDOM_LIB src/core/libraries/random/random.cpp
 set(USBD_LIB src/core/libraries/usbd/usbd.cpp
              src/core/libraries/usbd/usbd.h
              src/core/libraries/usbd/usb_backend.h
+             src/core/libraries/usbd/usbstorage.cpp
+             src/core/libraries/usbd/usbstorage.h
              src/core/libraries/usbd/emulated/dimensions.cpp
              src/core/libraries/usbd/emulated/dimensions.h
              src/core/libraries/usbd/emulated/infinity.cpp
              src/core/libraries/usbd/emulated/infinity.h
              src/core/libraries/usbd/emulated/skylander.cpp
              src/core/libraries/usbd/emulated/skylander.h
+)
+
+set(MUSIC_LIB src/core/libraries/music/music_player_service.cpp
+              src/core/libraries/music/music_player_service.h
 )
 
 set(FIBER_LIB src/core/libraries/fiber/fiber_context.cpp
@@ -647,8 +654,14 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_partner.cpp
             src/core/libraries/np/np_partner.h
             src/core/libraries/np/object_manager.h
-            src/core/libraries/np/np_handler.cpp
-            src/core/libraries/np/np_handler.h
+            src/core/libraries/np/np_handler/np_handler.cpp
+            src/core/libraries/np/np_handler/np_handler.h
+            src/core/libraries/np/np_handler/np_handler_friends.cpp
+            src/core/libraries/np/np_handler/np_handler_invitation.cpp
+            src/core/libraries/np/np_handler/np_handler_score.cpp
+            src/core/libraries/np/np_handler/np_handler_trophy.cpp
+            src/core/libraries/np/np_handler/np_handler_tus.cpp
+            src/core/libraries/np/np_handler/np_handler_web_api.cpp
             src/core/libraries/np/signaling_handler.cpp
             src/core/libraries/np/signaling_handler.h
             src/core/libraries/np/np_commerce/np_commerce.cpp
@@ -714,6 +727,7 @@ set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/ulobjmgr/ulobjmgr.h
                src/core/libraries/signin_dialog/signindialog.cpp
                src/core/libraries/signin_dialog/signindialog.h
+               src/core/libraries/signin_dialog/signindialog_error.h
 )
 
 set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp
@@ -961,6 +975,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${PLAYGO_LIB}
          ${RANDOM_LIB}
          ${USBD_LIB}
+         ${MUSIC_LIB}
          ${ZLIB_LIB}
          ${MISC_LIBS}
          ${IME_LIB}
@@ -1321,7 +1336,7 @@ add_executable(shadps4
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE spdlog::spdlog)
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui ImGuiFileDialog gcn half::half ZLIB::ZLIB PNG::PNG minimp3)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui ImGuiFileDialog gcn half::half ZLIB::ZLIB PNG::PNG minimp3 dr_flac)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis SDL3::SDL3 pugixml::pugixml)
 target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib miniupnpc::miniupnpc)
 target_link_libraries(shadps4 PRIVATE Freetype::Freetype)

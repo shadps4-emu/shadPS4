@@ -22,6 +22,7 @@ void ReleaseContextRef();
 s32 ActivateSig1(NpSignaling::OrbisNpSignalingContextId ctx_id, const OrbisNpId& peer_npid,
                  const OrbisNpOnlineId& peer_online_id,
                  NpSignaling::OrbisNpSignalingConnectionId* out_conn_id);
+bool FindMatching2MemberNpId(OrbisNpAccountId account_id, OrbisNpId* out_npid);
 void DeactivateSig1(NpSignaling::OrbisNpSignalingConnectionId conn_id);
 void TerminateSig1(NpSignaling::OrbisNpSignalingConnectionId conn_id);
 

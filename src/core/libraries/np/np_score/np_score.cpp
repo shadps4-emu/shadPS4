@@ -12,7 +12,7 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_score/np_score.h"
 #include "core/libraries/np/np_score/np_score_ctx.h"
 

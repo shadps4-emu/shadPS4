@@ -18,7 +18,7 @@
 #include "core/libraries/net/net.h"
 #include "core/libraries/net/net_util.h"
 #include "core/libraries/np/np_error.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_matching2/np_matching2_internal.h"
 #include "core/libraries/np/np_matching2/np_matching2_signaling.h"
 #include "core/libraries/np/np_signaling/np_signaling_state.h"
@@ -32,6 +32,7 @@ constexpr s32 kMatching2ConnPending = 1;
 constexpr s32 kMatching2ConnActive = 2;
 constexpr auto kMatching2StepInterval = std::chrono::milliseconds(500);
 constexpr auto kMatching2Timeout = std::chrono::seconds(30);
+constexpr auto kMatching2EstablishDelay = std::chrono::milliseconds(1000);
 constexpr auto kStunPingInterval = std::chrono::seconds(5);
 constexpr s64 kHandshakeConnectTimeoutMs = 30'000;
 constexpr s64 kHandshakeRetransmitMs = 500;
@@ -627,6 +628,7 @@ void QueueMatching2DeadForTransport(s32 transport_id, s32 error_code) {
             }();
             peer.status = kMatching2ConnInactive;
             peer.sent_established = false;
+            peer.active_since_us = 0;
             if (room_id != 0) {
                 NpMatching2::QueueMatching2SignalingEvent(
                     *ctx, room_id, member_id, NpMatching2::ORBIS_NP_MATCHING2_SIGNALING_EVENT_DEAD,
@@ -892,10 +894,10 @@ void HandleHandshakePacket(u32 from_addr, u16 from_port,
             transport.peer_activated = true;
             if (transport.state != NpSignaling::ConnState::Established) {
                 SetTransportStateLocked(transport, NpSignaling::ConnState::SendingAccept);
-                reply = MakeHandshakeLocked(transport, NpSignaling::HandshakeKind::Accept);
-                send_reply = true;
-                reply_transport = transport_id;
             }
+            reply = MakeHandshakeLocked(transport, NpSignaling::HandshakeKind::Accept);
+            send_reply = true;
+            reply_transport = transport_id;
         } else if (transport_id == 0) {
             return;
         } else if (kind == NpSignaling::HandshakeKind::Accept) {
@@ -1192,6 +1194,20 @@ void SyncMatching2Peers() {
                       : s.status == NpSignaling::ORBIS_NP_SIGNALING_CONN_STATUS_PENDING
                           ? kMatching2ConnPending
                           : kMatching2ConnInactive;
+        if (peer.status != kMatching2ConnActive) {
+            peer.active_since_us = 0;
+        } else if (!peer.sent_established) {
+            // Report pending (status and event) until the establish delay has passed.
+            const s64 now_us = NpSignaling::NowUs();
+            if (peer.active_since_us == 0) {
+                peer.active_since_us = now_us;
+            }
+            if (now_us - peer.active_since_us <
+                std::chrono::duration_cast<std::chrono::microseconds>(kMatching2EstablishDelay)
+                    .count()) {
+                peer.status = kMatching2ConnPending;
+            }
+        }
         if (peer.status == kMatching2ConnActive && !peer.sent_established) {
             peer.sent_established = true;
             NpMatching2::QueueMatching2SignalingEvent(
@@ -1356,6 +1372,26 @@ void ReleaseContextRef() {
     if (should_stop) {
         Stop();
     }
+}
+
+bool FindMatching2MemberNpId(OrbisNpAccountId account_id, OrbisNpId* out_npid) {
+    for (u32 id = 1; id <= NpMatching2::ContextManager::kMaxContexts; ++id) {
+        auto ctx = NpHandler::GetInstance().GetMatching2ContextManager().Get(
+            static_cast<NpMatching2::OrbisNpMatching2ContextId>(id));
+        if (!ctx) {
+            continue;
+        }
+        auto cache = NpHandler::GetInstance().LockMatching2Cache(ctx->ctx_id);
+        for (const auto& [room_id, room] : cache->rooms) {
+            for (const auto& [member_id, member] : room.members) {
+                if (member.account_id == account_id && member.np_id.handle.data[0] != '\0') {
+                    *out_npid = member.np_id;
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 s32 ActivateSig1(NpSignaling::OrbisNpSignalingContextId ctx_id, const OrbisNpId& peer_npid,

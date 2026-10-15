@@ -157,6 +157,7 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
     stack.push_back(std::move(base));
 
     m_mnt_pairs.emplace_back(host_folder, guest_folder_sanitized, read_only, std::move(stack));
+    LOG_INFO(Kernel_Fs, "Mounted '{}' -> '{}'", guest_folder_sanitized, host_folder.string());
 }
 
 void MntPoints::Unmount(const std::string& guest_folder) {

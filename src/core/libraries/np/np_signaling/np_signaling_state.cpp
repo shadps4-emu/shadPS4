@@ -17,7 +17,7 @@
 #include "core/libraries/net/net.h"
 #include "core/libraries/net/net_util.h"
 #include "core/libraries/np/np_error.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_signaling/np_signaling_state.h"
 #include "core/libraries/np/np_signaling/np_signaling_transport.h"
 

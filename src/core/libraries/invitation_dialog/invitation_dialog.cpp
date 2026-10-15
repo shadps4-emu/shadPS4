@@ -9,7 +9,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "invitation_dialog_ui.h"
 
 namespace Libraries::InvitationDialog {

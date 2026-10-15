@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <limits>
 #include "shader_recompiler/frontend/opcodes.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/attribute.h"
@@ -170,7 +171,7 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_EXP_F32:
         return V_EXP_F32(inst);
     case Opcode::V_LOG_CLAMP_F32:
-        return V_LOG_F32(inst);
+        return V_LOG_CLAMP_F32(inst);
     case Opcode::V_LOG_F32:
         return V_LOG_F32(inst);
     case Opcode::V_RCP_F32:
@@ -182,11 +183,11 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_RCP_IFLAG_F32:
         return V_RCP_F32(inst);
     case Opcode::V_RCP_CLAMP_F32:
-        return V_RCP_F32(inst);
+        return V_RCP_CLAMP_F32(inst);
     case Opcode::V_RSQ_CLAMP_F32:
-        return V_RSQ_F32(inst);
+        return V_RSQ_CLAMP_F32(inst);
     case Opcode::V_RSQ_LEGACY_F32:
-        return V_RSQ_F32(inst);
+        return V_RSQ_LEGACY_F32(inst);
     case Opcode::V_RSQ_F32:
         return V_RSQ_F32(inst);
     case Opcode::V_SQRT_F32:
@@ -1046,6 +1047,14 @@ void Translator::V_EXP_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPExp2(src0));
 }
 
+void Translator::V_LOG_CLAMP_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 result{ir.FPLog2(src0)};
+    const IR::F32 max_val{ir.Imm32(std::numeric_limits<float>::max())};
+    const IR::F32 min_val{ir.Imm32(-std::numeric_limits<float>::max())};
+    SetDst(inst.dst[0], ir.FPClamp(result, min_val, max_val));
+}
+
 void Translator::V_LOG_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPLog2(src0));
@@ -1075,9 +1084,36 @@ void Translator::V_RCP_F64(const GcnInst& inst) {
     SetDst64(inst.dst[0], ir.FPRecip(src0));
 }
 
+void Translator::V_RSQ_LEGACY_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 result{ir.FPRecipSqrt(src0)};
+    const IR::F32 max_val{ir.Imm32(std::numeric_limits<float>::max())};
+    const IR::F32 min_val{ir.Imm32(-std::numeric_limits<float>::max())};
+    const IR::F32 clamped{ir.FPClamp(result, min_val, max_val)};
+    const IR::F32 zero{ir.Imm32(0.0f)};
+    const IR::F32 output{ir.Select(ir.FPEqual(src0, zero), zero, clamped)};
+    SetDst(inst.dst[0], output);
+}
+
 void Translator::V_RSQ_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPRecipSqrt(src0));
+}
+
+void Translator::V_RCP_CLAMP_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 result{ir.FPRecip(src0)};
+    const IR::F32 max_val{ir.Imm32(std::numeric_limits<float>::max())};
+    const IR::F32 min_val{ir.Imm32(-std::numeric_limits<float>::max())};
+    SetDst(inst.dst[0], ir.FPClamp(result, min_val, max_val));
+}
+
+void Translator::V_RSQ_CLAMP_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 result{ir.FPRecipSqrt(src0)};
+    const IR::F32 max_val{ir.Imm32(std::numeric_limits<float>::max())};
+    const IR::F32 min_val{ir.Imm32(-std::numeric_limits<float>::max())};
+    SetDst(inst.dst[0], ir.FPClamp(result, min_val, max_val));
 }
 
 void Translator::V_SQRT_F32(const GcnInst& inst) {

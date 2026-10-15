@@ -132,15 +132,15 @@ struct Ucontext {
     int __spare[4];
     int field7_0x4f4[3];
 
+    Ucontext() = default;
 #ifndef _WIN32
     explicit Ucontext(siginfo_t const* inf, ucontext_t* raw_context);
-    ucontext_t* host_context;
 #else
     explicit Ucontext(PCONTEXT context);
-    PCONTEXT host_context;
 #endif
     void SyncHostFromGuest();
 };
+static_assert(sizeof(Ucontext) == 0x500, "Ucontext size must match PS4 ABI (0x500 bytes)");
 
 using SigHandler = void PS4_SYSV_ABI (*)(int);
 
