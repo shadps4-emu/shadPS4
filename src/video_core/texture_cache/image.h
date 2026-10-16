@@ -162,6 +162,13 @@ public:
         UniqueImage image;
         State state;
         std::vector<State> subresource_states;
+        struct {
+            SubresourceRange range{};
+            vk::ImageLayout layout{};
+            vk::AccessFlags2 access{};
+            vk::PipelineStageFlags2 stage{};
+            bool valid{};
+        } noop_partial_transition;
         SmallVector<ImageViewInfo, 2> image_view_infos;
         SmallVector<ImageViewId, 2> image_view_ids;
         u32 num_samples;

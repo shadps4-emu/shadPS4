@@ -231,6 +231,15 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                         std::optional<SubresourceRange> subres_range) {
     auto& last_state = backing->state;
     auto& subresource_states = backing->subresource_states;
+    auto& noop = backing->noop_partial_transition;
+
+    if (noop.valid && subres_range && *subres_range == noop.range && dst_layout == noop.layout &&
+        dst_mask == noop.access && dst_stage == noop.stage && last_state.layout == dst_layout &&
+        last_state.access_mask == dst_mask && last_state.pl_stage == dst_stage) {
+        return;
+    }
+    noop.valid = false;
+    const size_t num_barriers_before = barriers.size();
 
     const bool needs_partial_transition =
         subres_range &&
@@ -326,6 +335,10 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
     last_state.layout = dst_layout;
     last_state.access_mask = dst_mask;
     last_state.pl_stage = dst_stage;
+
+    if (needs_partial_transition && barriers.size() == num_barriers_before) {
+        noop = {*subres_range, dst_layout, dst_mask, dst_stage, true};
+    }
 }
 
 } // namespace VideoCore
