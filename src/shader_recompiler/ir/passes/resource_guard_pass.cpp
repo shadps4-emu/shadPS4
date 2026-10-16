@@ -152,10 +152,6 @@ struct GuardTerms {
     }
 };
 
-GuardTerms Majority(const GuardTerms& a, const GuardTerms& b, const GuardTerms& c) {
-    return a.And(b).Or(a.And(c)).Or(b.And(c));
-}
-
 struct CompareKind {
     GuardCompare op{};
     bool swap{};
@@ -220,28 +216,6 @@ std::optional<u32> ImmU32(const IR::Value& value) {
     return std::nullopt;
 }
 
-const IR::Inst* Unpacked(const IR::Value& value) {
-    const IR::Inst* const vec = value.TryInst();
-    if (!vec) {
-        return nullptr;
-    }
-    if (vec->GetOpcode() == IR::Opcode::UnpackUint2x32) {
-        return vec;
-    }
-    if (vec->GetOpcode() != IR::Opcode::CompositeConstructU32x2) {
-        return nullptr;
-    }
-    const IR::Inst* const lo = vec->Arg(0).TryInst();
-    const IR::Inst* const hi = vec->Arg(1).TryInst();
-    if (!lo || !hi || lo->GetOpcode() != IR::Opcode::CompositeExtractU32x2 ||
-        hi->GetOpcode() != IR::Opcode::CompositeExtractU32x2 || lo->Arg(0) != hi->Arg(0) ||
-        lo->Arg(1) != IR::Value{0U} || hi->Arg(1) != IR::Value{1U}) {
-        return nullptr;
-    }
-    const IR::Inst* const unpack = lo->Arg(0).TryInst();
-    return unpack && unpack->GetOpcode() == IR::Opcode::UnpackUint2x32 ? unpack : nullptr;
-}
-
 const IR::Inst* ValueSelect(const IR::Value& value) {
     const IR::Inst* inst = value.TryInst();
     while (inst && (inst->GetOpcode() == IR::Opcode::BitCastU32F32 ||
@@ -253,36 +227,6 @@ const IR::Inst* ValueSelect(const IR::Value& value) {
         return inst;
     }
     return nullptr;
-}
-
-std::pair<IR::Value, bool> StripNegation(IR::Value value) {
-    bool negated = false;
-    for (const IR::Inst* inst = value.TryInst(); inst && inst->GetOpcode() == IR::Opcode::FPNeg32;
-         inst = value.TryInst()) {
-        value = inst->Arg(0);
-        negated = !negated;
-    }
-    return {value, negated};
-}
-
-std::optional<std::pair<IR::Value, IR::Value>> Unnegated(const IR::Value& lhs,
-                                                         const IR::Value& rhs) {
-    const auto [a, a_negated] = StripNegation(lhs);
-    const auto [b, b_negated] = StripNegation(rhs);
-    if (a_negated == b_negated) {
-        return std::pair{a, b};
-    }
-    const IR::Value& fixed = a_negated ? b : a;
-    if (!fixed.IsImmediate() || fixed.Type() != IR::Type::F32) {
-        return std::nullopt;
-    }
-    const IR::Value negated{-fixed.F32()};
-    return a_negated ? std::pair{a, negated} : std::pair{negated, b};
-}
-
-bool IsRange(const IR::Value& low, const IR::Value& high) {
-    return low.IsImmediate() && high.IsImmediate() && low.Type() == IR::Type::F32 &&
-           high.Type() == IR::Type::F32 && low.F32() <= high.F32();
 }
 
 GuardOperand Bits(GuardOperand operand, u32 offset, u32 mask) {
@@ -341,7 +285,6 @@ std::optional<GuardOperand> Operand(const IR::Value& value, u32 depth) {
             return GuardOperand{.value = location, .is_flatbuf = true};
         }
         return std::nullopt;
-    case IR::Opcode::ReadFirstLane:
     case IR::Opcode::BitCastU32F32:
     case IR::Opcode::BitCastF32U32:
         return Operand(inst->Arg(0), depth + 1);
@@ -366,13 +309,11 @@ std::optional<GuardOperand> Operand(const IR::Value& value, u32 depth) {
 }
 
 std::optional<GuardOperand> FloatOperand(const IR::Value& value) {
-    const IR::Inst* const inst = value.TryInst();
-    const bool is_abs = inst && inst->GetOpcode() == IR::Opcode::FPAbs32;
-    const std::optional<GuardOperand> operand = Operand(is_abs ? inst->Arg(0) : value, 0);
+    const std::optional<GuardOperand> operand = Operand(value, 0);
     if (!operand || operand->shift != 0 || operand->mask != ~0U) {
         return std::nullopt;
     }
-    return is_abs ? Bits(*operand, 0, 0x7FFFFFFF) : *operand;
+    return operand;
 }
 
 class AtomBuilder {
@@ -389,90 +330,27 @@ public:
         return Atom({.lhs = *a, .rhs = *b, .op = op, .negate = negate});
     }
 
-    GuardTerms Equality(const IR::Value& lhs, const IR::Value& rhs, bool equal, u32 depth) {
-        if (depth >= MaxDepth) {
-            return GuardTerms::Always();
-        }
-        for (const bool left : {true, false}) {
-            const IR::Inst* const combined = (left ? lhs : rhs).TryInst();
-            const IR::Value& other = left ? rhs : lhs;
-            if (!combined || ImmU32(other) != 0U) {
-                continue;
-            }
-            if (combined->GetOpcode() == IR::Opcode::BitwiseOr32) {
-                return OrEqualsZero(*combined, other, equal, depth + 1);
-            }
-            if (combined->GetOpcode() == IR::Opcode::BitwiseXor32) {
-                return XorEqualsZero(*combined, equal, depth + 1);
-            }
-        }
-        return Leaf(lhs, rhs, GuardCompare::IEq, !equal);
-    }
-
-    GuardTerms FloatEquality(const IR::Value& lhs, const IR::Value& rhs, GuardCompare op,
-                             bool negate) {
-        if (const auto sides = Unnegated(lhs, rhs)) {
-            return Leaf(sides->first, sides->second, op, negate);
-        }
-        return GuardTerms::Always();
-    }
-
     GuardTerms Order(const IR::Value& small, const IR::Value& big, bool strict, bool nan_false,
                      u32 depth) {
         if (depth >= MaxDepth) {
             return GuardTerms::Always();
         }
-        const auto [s, s_negated] = StripNegation(small);
-        const auto [b, b_negated] = StripNegation(big);
-        if (s_negated || b_negated) {
-            if (const auto sides = Unnegated(small, big)) {
-                return Order(sides->second, sides->first, strict, nan_false, depth + 1);
-            }
-            return GuardTerms::Always();
-        }
         const auto below = [&](const IR::Value& value) {
-            return Order(value, b, strict, nan_false, depth + 1);
+            return Order(value, big, strict, nan_false, depth + 1);
         };
         const auto above = [&](const IR::Value& value) {
-            return Order(s, value, strict, nan_false, depth + 1);
+            return Order(small, value, strict, nan_false, depth + 1);
         };
-        if (const std::optional<GuardTerms> terms = OrderOperation(s, true, nan_false, below)) {
+        if (const std::optional<GuardTerms> terms = OrderOperation(small, true, nan_false, below)) {
             return *terms;
         }
-        if (const std::optional<GuardTerms> terms = OrderOperation(b, false, nan_false, above)) {
+        if (const std::optional<GuardTerms> terms = OrderOperation(big, false, nan_false, above)) {
             return *terms;
         }
-        return Leaf(s, b, strict ? GuardCompare::FLt : GuardCompare::FLe, false);
-    }
-
-    GuardTerms Class(const IR::Inst& inst, bool polarity) {
-        const std::optional<GuardOperand> value = FloatOperand(inst.Arg(0));
-        if (!value) {
-            return GuardTerms::Always();
-        }
-        const bool is_nan = inst.GetOpcode() == IR::Opcode::FPIsNan32;
-        const GuardTerms special = Atom({.lhs = Bits(*value, 23, 0xFF),
-                                         .rhs = {.value = 0xFF},
-                                         .op = GuardCompare::IEq,
-                                         .negate = !polarity});
-        const GuardTerms payload = Atom({.lhs = Bits(*value, 0, 0x7FFFFF),
-                                         .rhs = {},
-                                         .op = GuardCompare::IEq,
-                                         .negate = is_nan == polarity});
-        return polarity ? special.And(payload) : special.Or(payload);
+        return Leaf(small, big, strict ? GuardCompare::FLt : GuardCompare::FLe, false);
     }
 
 private:
-    GuardTerms OrEqualsZero(const IR::Inst& inst, const IR::Value& zero, bool equal, u32 depth) {
-        const GuardTerms lhs = Equality(inst.Arg(0), zero, equal, depth);
-        const GuardTerms rhs = Equality(inst.Arg(1), zero, equal, depth);
-        return equal ? lhs.And(rhs) : lhs.Or(rhs);
-    }
-
-    GuardTerms XorEqualsZero(const IR::Inst& inst, bool equal, u32 depth) {
-        return Equality(inst.Arg(0), inst.Arg(1), equal, depth);
-    }
-
     static std::optional<GuardTerms> OrderOperation(const IR::Value& value, bool is_small,
                                                     bool nan_false, const auto& order) {
         const IR::Inst* const inst = value.TryInst();
@@ -484,10 +362,6 @@ private:
             return is_small ? EitherArgument(*inst, order) : BothArguments(*inst, nan_false, order);
         case IR::Opcode::FPMax32:
             return is_small ? BothArguments(*inst, nan_false, order) : EitherArgument(*inst, order);
-        case IR::Opcode::FPClamp32:
-            return Clamp(*inst, is_small, nan_false, order);
-        case IR::Opcode::FPMedTri32:
-            return Median(*inst, order);
         default:
             return std::nullopt;
         }
@@ -499,21 +373,6 @@ private:
 
     static GuardTerms BothArguments(const IR::Inst& inst, bool nan_false, const auto& order) {
         return nan_false ? order(inst.Arg(0)).And(order(inst.Arg(1))) : GuardTerms::Always();
-    }
-
-    static GuardTerms Clamp(const IR::Inst& inst, bool is_small, bool nan_false,
-                            const auto& order) {
-        if (!nan_false || !IsRange(inst.Arg(1), inst.Arg(2))) {
-            return GuardTerms::Always();
-        }
-        if (is_small) {
-            return order(inst.Arg(0)).And(order(inst.Arg(1))).Or(order(inst.Arg(2)));
-        }
-        return order(inst.Arg(0)).Or(order(inst.Arg(1))).And(order(inst.Arg(2)));
-    }
-
-    static GuardTerms Median(const IR::Inst& inst, const auto& order) {
-        return Majority(order(inst.Arg(0)), order(inst.Arg(1)), order(inst.Arg(2)));
     }
 
     GuardTerms Atom(const GuardAtom& atom) {
@@ -549,7 +408,7 @@ public:
 
 private:
     GuardTerms Necessary(const IR::Value& value, bool polarity, u32 depth) {
-        if (const std::optional<bool> known = Known(value, depth)) {
+        if (const std::optional<bool> known = Known(value)) {
             return *known == polarity ? GuardTerms::Always() : GuardTerms::Never();
         }
         if (value.IsImmediate() || depth >= MaxDepth) {
@@ -569,8 +428,6 @@ private:
     GuardTerms NecessaryInst(const IR::Inst& inst, bool polarity, u32 depth) {
         switch (inst.GetOpcode()) {
         case IR::Opcode::ConditionRef:
-        case IR::Opcode::Ballot:
-        case IR::Opcode::InverseBallot:
             return Necessary(inst.Arg(0), polarity, depth);
         case IR::Opcode::LogicalNot:
         case IR::Opcode::BitwiseNot64:
@@ -581,20 +438,9 @@ private:
         case IR::Opcode::LogicalOr:
         case IR::Opcode::BitwiseOr64:
             return Junction(inst, false, polarity, depth);
-        case IR::Opcode::LogicalXor:
-        case IR::Opcode::BitwiseXor64:
-            return Exclusive(inst, polarity, depth);
         case IR::Opcode::SelectU1:
         case IR::Opcode::SelectU64:
             return Select(inst, polarity, depth);
-        case IR::Opcode::PackUint2x32:
-            if (const IR::Inst* const unpack = Unpacked(inst.Arg(0))) {
-                return Necessary(unpack->Arg(0), polarity, depth);
-            }
-            return GuardTerms::Always();
-        case IR::Opcode::FPIsNan32:
-        case IR::Opcode::FPIsInf32:
-            return atoms.Class(inst, polarity);
         default:
             if (const std::optional<CompareKind> kind = CompareKindOf(inst.GetOpcode())) {
                 return Compare(inst, *kind, polarity);
@@ -611,15 +457,6 @@ private:
         return lhs.count == 0 ? lhs : lhs.And(Necessary(inst.Arg(1), polarity, depth));
     }
 
-    GuardTerms Exclusive(const IR::Inst& inst, bool polarity, u32 depth) {
-        const auto side = [&](bool lhs_value) {
-            const GuardTerms lhs = Necessary(inst.Arg(0), lhs_value, depth);
-            return lhs.count == 0 ? lhs
-                                  : lhs.And(Necessary(inst.Arg(1), lhs_value != polarity, depth));
-        };
-        return side(true).Or(side(false));
-    }
-
     GuardTerms Select(const IR::Inst& inst, bool polarity, u32 depth) {
         return Choice(inst.Arg(0), depth, [&](bool taken) {
             return Necessary(inst.Arg(taken ? 1 : 2), polarity, depth);
@@ -627,7 +464,7 @@ private:
     }
 
     GuardTerms Choice(const IR::Value& cond, u32 depth, const auto& arm) {
-        if (const std::optional<bool> taken = Known(cond, depth)) {
+        if (const std::optional<bool> taken = Known(cond)) {
             return arm(*taken);
         }
         const auto when = [&](bool taken) {
@@ -654,10 +491,7 @@ private:
         switch (op) {
         case GuardCompare::IEq:
         case GuardCompare::INe:
-            return atoms.Equality(lhs, rhs, (op == GuardCompare::IEq) == polarity, depth + 1);
-        case GuardCompare::FEq:
-        case GuardCompare::FNe:
-            return atoms.FloatEquality(lhs, rhs, op, !polarity);
+            return atoms.Leaf(lhs, rhs, GuardCompare::IEq, (op == GuardCompare::IEq) != polarity);
         case GuardCompare::FLt:
         case GuardCompare::FLe:
             return atoms.Order(polarity ? lhs : rhs, polarity ? rhs : lhs,
@@ -683,78 +517,21 @@ private:
         return std::nullopt;
     }
 
-    std::optional<bool> Known(const IR::Value& value, u32 depth) {
-        if (value.IsImmediate()) {
-            if (value.Type() == IR::Type::U1) {
-                return value.U1();
-            }
-            if (value.Type() == IR::Type::U64 &&
-                (value.U64() == 0 || value.U64() == std::numeric_limits<u64>::max())) {
-                return value.U64() != 0;
-            }
+    static std::optional<bool> Known(const IR::Value& value) {
+        if (!value.IsImmediate()) {
             return std::nullopt;
         }
-        const IR::Inst* const inst = value.Inst();
-        if (const auto it = known.find(inst); it != known.end()) {
-            return it->second;
+        if (value.Type() == IR::Type::U1) {
+            return value.U1();
         }
-        known.emplace(inst, std::nullopt);
-        const std::optional<bool> result =
-            depth < MaxDepth ? KnownInst(*inst, depth + 1) : std::nullopt;
-        known[inst] = result;
-        return result;
-    }
-
-    std::optional<bool> KnownInst(const IR::Inst& inst, u32 depth) {
-        switch (inst.GetOpcode()) {
-        case IR::Opcode::ConditionRef:
-        case IR::Opcode::Ballot:
-        case IR::Opcode::InverseBallot:
-            return Known(inst.Arg(0), depth);
-        case IR::Opcode::LogicalNot:
-        case IR::Opcode::BitwiseNot64:
-            if (const std::optional<bool> value = Known(inst.Arg(0), depth)) {
-                return !*value;
-            }
-            return std::nullopt;
-        case IR::Opcode::LogicalAnd:
-        case IR::Opcode::BitwiseAnd64:
-            return KnownJunction(inst, true, depth);
-        case IR::Opcode::LogicalOr:
-        case IR::Opcode::BitwiseOr64:
-            return KnownJunction(inst, false, depth);
-        case IR::Opcode::SelectU1:
-        case IR::Opcode::SelectU64: {
-            if (const std::optional<bool> taken = Known(inst.Arg(0), depth)) {
-                return Known(inst.Arg(*taken ? 1 : 2), depth);
-            }
-            const std::optional<bool> on_true = Known(inst.Arg(1), depth);
-            return on_true == Known(inst.Arg(2), depth) ? on_true : std::nullopt;
-        }
-        case IR::Opcode::PackUint2x32:
-            if (const IR::Inst* const unpack = Unpacked(inst.Arg(0))) {
-                return Known(unpack->Arg(0), depth);
-            }
-            return std::nullopt;
-        default:
-            return std::nullopt;
-        }
-    }
-
-    std::optional<bool> KnownJunction(const IR::Inst& inst, bool is_and, u32 depth) {
-        const std::optional<bool> lhs = Known(inst.Arg(0), depth);
-        const std::optional<bool> rhs = Known(inst.Arg(1), depth);
-        if (lhs == !is_and || rhs == !is_and) {
-            return !is_and;
-        }
-        if (lhs && rhs) {
-            return is_and;
+        if (value.Type() == IR::Type::U64 &&
+            (value.U64() == 0 || value.U64() == std::numeric_limits<u64>::max())) {
+            return value.U64() != 0;
         }
         return std::nullopt;
     }
 
     AtomBuilder atoms;
-    std::unordered_map<const IR::Inst*, std::optional<bool>> known;
     std::array<std::unordered_map<const IR::Inst*, GuardTerms>, 2> necessary;
 };
 
