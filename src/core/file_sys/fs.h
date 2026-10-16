@@ -142,6 +142,8 @@ enum class FileType {
 struct File {
     std::atomic_bool is_opened{};
     std::atomic<FileType> type{FileType::Regular};
+    std::atomic<u32> ref_count{1};
+    std::atomic<s32> m_flags{0};
     std::filesystem::path m_host_name;
     std::string m_guest_name;
     std::unique_ptr<IFile> handle;
@@ -197,6 +199,10 @@ public:
 
     int CreateHandle();
     void DeleteHandle(int d);
+    int DuplicateHandleFrom(int old_fd, int min_fd = 0, bool cloexec = false);
+    int DuplicateHandleTo(int old_fd, int target_fd, bool cloexec = false);
+    s32 GetFdFlags(int d);
+    void SetFdFlags(int d, s32 flags);
     File* GetFile(int d);
     File* GetSocket(int d);
     std::vector<int> GetSocketHandles();
@@ -208,6 +214,7 @@ public:
 
 private:
     std::vector<File*> m_files;
+    std::vector<s32> m_fd_flags;
     std::mutex m_mutex;
 };
 
