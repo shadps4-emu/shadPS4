@@ -1297,23 +1297,28 @@ s32 PS4_SYSV_ABI sceKernelFutimes(s32 fd, const OrbisKernelTimeval* times) {
 }
 
 s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    bool ro = false;
-    const auto src_path = mnt->GetHostPath(from, &ro);
-    if (strlen(from) > 255) {
-        *__Error() = POSIX_ENAMETOOLONG;
+    if (from == nullptr || to == nullptr) {
+        *__Error() = POSIX_EFAULT;
         return -1;
     }
-    if (strlen(to) > 255) {
-        *__Error() = POSIX_ENAMETOOLONG;
-        return -1;
-    }
-    if (!fs::exists(src_path)) {
+    if (from[0] == '\0' || to[0] == '\0') {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
+    if (strlen(from) > 255 || strlen(to) > 255) {
+        *__Error() = POSIX_ENAMETOOLONG;
+        return -1;
+    }
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    bool ro = false;
+    const auto src_path = mnt->GetHostPath(from, &ro);
     if (ro) {
         *__Error() = POSIX_EROFS;
+        return -1;
+    }
+    std::error_code ec;
+    if (!fs::exists(src_path, ec)) {
+        *__Error() = POSIX_ENOENT;
         return -1;
     }
     const auto dst_path = mnt->GetHostPath(to, &ro);
@@ -1321,10 +1326,14 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
-    const bool src_is_dir = fs::is_directory(src_path);
-    const bool dst_is_dir = fs::is_directory(dst_path);
+    if (src_path == dst_path ||
+        (fs::exists(dst_path, ec) && fs::equivalent(src_path, dst_path, ec))) {
+        return ORBIS_OK;
+    }
+    const bool src_is_dir = fs::is_directory(src_path, ec);
+    const bool dst_is_dir = fs::is_directory(dst_path, ec);
 
-    if (fs::exists(dst_path)) {
+    if (fs::exists(dst_path, ec)) {
         if (src_is_dir && !dst_is_dir) {
             *__Error() = POSIX_ENOTDIR;
             return -1;
@@ -1333,15 +1342,19 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
             *__Error() = POSIX_EISDIR;
             return -1;
         }
-        if (dst_is_dir && !fs::is_empty(dst_path)) {
+        if (dst_is_dir && !fs::is_empty(dst_path, ec)) {
             *__Error() = POSIX_ENOTEMPTY;
             return -1;
         }
     }
 
     // On Windows, fs::rename will error if the file has been opened before.
-    fs::copy(src_path, dst_path,
-             fs::copy_options::overwrite_existing | fs::copy_options::recursive);
+    fs::copy(src_path, dst_path, fs::copy_options::overwrite_existing | fs::copy_options::recursive,
+             ec);
+    if (ec) {
+        *__Error() = POSIX_EIO;
+        return -1;
+    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto file = h->GetFile(src_path);
     if (file) {
@@ -1350,12 +1363,13 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
             access_mode = host->GetAccessMode();
         }
         file->handle.reset();
-        fs::remove(src_path);
+        fs::remove(src_path, ec);
         // Reopen through the mount stack at the destination guest path.
         file->handle = mnt->Open(std::string_view(to), access_mode);
+        file->m_host_name = dst_path;
         file->m_guest_name = to;
     } else {
-        fs::remove_all(src_path);
+        fs::remove_all(src_path, ec);
     }
 
     return ORBIS_OK;
