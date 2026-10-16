@@ -112,6 +112,32 @@ struct ColorBufferMask {
         raw &= ~(0xf << (buf_id * 4));
         raw |= (mask << (buf_id * 4));
     }
+
+    bool HasExportHoles() const {
+        u32 written = 0;
+        for (u32 buf_id = 0; buf_id < NUM_COLOR_BUFFERS; ++buf_id) {
+            written |= (GetMask(buf_id) != 0 ? 1u : 0u) << buf_id;
+        }
+        return (written & (written + 1)) != 0;
+    }
+
+    u32 ExportTarget(u32 export_idx) const {
+        u32 num_written = 0;
+        for (u32 buf_id = 0; buf_id < NUM_COLOR_BUFFERS; ++buf_id) {
+            if (GetMask(buf_id) != 0 && num_written++ == export_idx) {
+                return buf_id;
+            }
+        }
+        return NUM_COLOR_BUFFERS;
+    }
+
+    u32 ExportIndex(u32 buf_id) const {
+        u32 num_written = 0;
+        for (u32 i = 0; i < buf_id; ++i) {
+            num_written += GetMask(i) != 0 ? 1 : 0;
+        }
+        return num_written;
+    }
 };
 
 struct ColorBuffer {
