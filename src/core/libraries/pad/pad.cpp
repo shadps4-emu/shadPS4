@@ -143,7 +143,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     std::memset(pInfo, 0, sizeof(OrbisPadControllerInformation));
     pInfo->touchPadInfo.pixelDensity = 1;
     pInfo->touchPadInfo.resolution.x = 1920;
-    pInfo->touchPadInfo.resolution.y = 950;
+    pInfo->touchPadInfo.resolution.y = 942; // DualShock 4; touch y is sent as 0..941
     pInfo->stickInfo.deadZoneLeft = 1;
     pInfo->stickInfo.deadZoneRight = 1;
     pInfo->connectionType = ORBIS_PAD_CONNECTION_TYPE_LOCAL;
