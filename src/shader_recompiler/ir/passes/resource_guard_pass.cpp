@@ -140,22 +140,13 @@ struct GuardTerms {
             terms[count++] = term;
             return;
         }
-        u32 closest{};
-        for (u32 i = 1; i < count; ++i) {
-            if (std::popcount(terms[i] & term) > std::popcount(terms[closest] & term)) {
-                closest = i;
-            }
-        }
-        const u64 merged = terms[closest] & term;
-        terms[closest] = terms[--count];
-        Add(merged);
+        *this = Always();
     }
 };
 
 struct CompareKind {
     GuardCompare op{};
     bool swap{};
-    bool unordered{};
 };
 
 std::optional<CompareKind> CompareKindOf(IR::Opcode opcode) {
@@ -181,29 +172,23 @@ std::optional<CompareKind> CompareKindOf(IR::Opcode opcode) {
     case IR::Opcode::UGreaterThanEqual32:
         return CompareKind{.op = GuardCompare::ULe, .swap = true};
     case IR::Opcode::FPOrdEqual32:
-        return CompareKind{.op = GuardCompare::FEq};
     case IR::Opcode::FPUnordEqual32:
-        return CompareKind{.op = GuardCompare::FEq, .unordered = true};
+        return CompareKind{.op = GuardCompare::FEq};
     case IR::Opcode::FPOrdNotEqual32:
-        return CompareKind{.op = GuardCompare::FNe};
     case IR::Opcode::FPUnordNotEqual32:
-        return CompareKind{.op = GuardCompare::FNe, .unordered = true};
+        return CompareKind{.op = GuardCompare::FNe};
     case IR::Opcode::FPOrdLessThan32:
-        return CompareKind{.op = GuardCompare::FLt};
     case IR::Opcode::FPUnordLessThan32:
-        return CompareKind{.op = GuardCompare::FLt, .unordered = true};
+        return CompareKind{.op = GuardCompare::FLt};
     case IR::Opcode::FPOrdLessThanEqual32:
-        return CompareKind{.op = GuardCompare::FLe};
     case IR::Opcode::FPUnordLessThanEqual32:
-        return CompareKind{.op = GuardCompare::FLe, .unordered = true};
+        return CompareKind{.op = GuardCompare::FLe};
     case IR::Opcode::FPOrdGreaterThan32:
-        return CompareKind{.op = GuardCompare::FLt, .swap = true};
     case IR::Opcode::FPUnordGreaterThan32:
-        return CompareKind{.op = GuardCompare::FLt, .swap = true, .unordered = true};
+        return CompareKind{.op = GuardCompare::FLt, .swap = true};
     case IR::Opcode::FPOrdGreaterThanEqual32:
-        return CompareKind{.op = GuardCompare::FLe, .swap = true};
     case IR::Opcode::FPUnordGreaterThanEqual32:
-        return CompareKind{.op = GuardCompare::FLe, .swap = true, .unordered = true};
+        return CompareKind{.op = GuardCompare::FLe, .swap = true};
     default:
         return std::nullopt;
     }
@@ -214,19 +199,6 @@ std::optional<u32> ImmU32(const IR::Value& value) {
         return value.U32();
     }
     return std::nullopt;
-}
-
-const IR::Inst* ValueSelect(const IR::Value& value) {
-    const IR::Inst* inst = value.TryInst();
-    while (inst && (inst->GetOpcode() == IR::Opcode::BitCastU32F32 ||
-                    inst->GetOpcode() == IR::Opcode::BitCastF32U32)) {
-        inst = inst->Arg(0).TryInst();
-    }
-    if (inst && (inst->GetOpcode() == IR::Opcode::SelectU32 ||
-                 inst->GetOpcode() == IR::Opcode::SelectF32)) {
-        return inst;
-    }
-    return nullptr;
 }
 
 GuardOperand Bits(GuardOperand operand, u32 offset, u32 mask) {
@@ -295,14 +267,6 @@ std::optional<GuardOperand> Operand(const IR::Value& value, u32 depth) {
             return Extract(inst->Arg(0), *shift, 32 - *shift, depth);
         }
         return std::nullopt;
-    case IR::Opcode::BitFieldUExtract: {
-        const std::optional<u32> offset = ImmU32(inst->Arg(1));
-        const std::optional<u32> count = ImmU32(inst->Arg(2));
-        if (offset && count) {
-            return Extract(inst->Arg(0), *offset, *count, depth);
-        }
-        return std::nullopt;
-    }
     default:
         return std::nullopt;
     }
@@ -330,54 +294,10 @@ public:
         return Atom({.lhs = *a, .rhs = *b, .op = op, .negate = negate});
     }
 
-    GuardTerms Order(const IR::Value& small, const IR::Value& big, bool strict, bool nan_false,
-                     u32 depth) {
-        if (depth >= MaxDepth) {
-            return GuardTerms::Always();
-        }
-        const auto below = [&](const IR::Value& value) {
-            return Order(value, big, strict, nan_false, depth + 1);
-        };
-        const auto above = [&](const IR::Value& value) {
-            return Order(small, value, strict, nan_false, depth + 1);
-        };
-        if (const std::optional<GuardTerms> terms = OrderOperation(small, true, nan_false, below)) {
-            return *terms;
-        }
-        if (const std::optional<GuardTerms> terms = OrderOperation(big, false, nan_false, above)) {
-            return *terms;
-        }
-        return Leaf(small, big, strict ? GuardCompare::FLt : GuardCompare::FLe, false);
-    }
-
 private:
-    static std::optional<GuardTerms> OrderOperation(const IR::Value& value, bool is_small,
-                                                    bool nan_false, const auto& order) {
-        const IR::Inst* const inst = value.TryInst();
-        if (!inst) {
-            return std::nullopt;
-        }
-        switch (inst->GetOpcode()) {
-        case IR::Opcode::FPMin32:
-            return is_small ? EitherArgument(*inst, order) : BothArguments(*inst, nan_false, order);
-        case IR::Opcode::FPMax32:
-            return is_small ? BothArguments(*inst, nan_false, order) : EitherArgument(*inst, order);
-        default:
-            return std::nullopt;
-        }
-    }
-
-    static GuardTerms EitherArgument(const IR::Inst& inst, const auto& order) {
-        return order(inst.Arg(0)).Or(order(inst.Arg(1)));
-    }
-
-    static GuardTerms BothArguments(const IR::Inst& inst, bool nan_false, const auto& order) {
-        return nan_false ? order(inst.Arg(0)).And(order(inst.Arg(1))) : GuardTerms::Always();
-    }
-
     GuardTerms Atom(const GuardAtom& atom) {
         if (!atom.lhs.is_flatbuf && !atom.rhs.is_flatbuf) {
-            return IsFalse(atom, {}) ? GuardTerms::Never() : GuardTerms::Always();
+            return GuardTerms::Always();
         }
         u32 index{};
         while (index < table.num_atoms && table.atoms[index] != atom) {
@@ -458,63 +378,34 @@ private:
     }
 
     GuardTerms Select(const IR::Inst& inst, bool polarity, u32 depth) {
-        return Choice(inst.Arg(0), depth, [&](bool taken) {
-            return Necessary(inst.Arg(taken ? 1 : 2), polarity, depth);
-        });
-    }
-
-    GuardTerms Choice(const IR::Value& cond, u32 depth, const auto& arm) {
+        const IR::Value cond = inst.Arg(0);
         if (const std::optional<bool> taken = Known(cond)) {
-            return arm(*taken);
+            return Necessary(inst.Arg(*taken ? 1 : 2), polarity, depth);
         }
         const auto when = [&](bool taken) {
-            const GuardTerms terms = arm(taken);
+            const GuardTerms terms = Necessary(inst.Arg(taken ? 1 : 2), polarity, depth);
             return terms.count == 0 ? terms : Necessary(cond, taken, depth).And(terms);
         };
         return when(true).Or(when(false));
     }
 
     GuardTerms Compare(const IR::Inst& inst, const CompareKind& kind, bool polarity) {
-        return Comparison(inst.Arg(kind.swap ? 1 : 0), inst.Arg(kind.swap ? 0 : 1), kind.op,
-                          !kind.unordered, polarity, 0);
-    }
-
-    GuardTerms Comparison(const IR::Value& lhs, const IR::Value& rhs, GuardCompare op, bool ordered,
-                          bool polarity, u32 depth) {
-        if (depth >= MaxDepth) {
-            return GuardTerms::Always();
-        }
-        if (const std::optional<GuardTerms> terms =
-                SelectComparison(lhs, rhs, op, ordered, polarity, depth)) {
-            return *terms;
-        }
-        switch (op) {
+        const IR::Value lhs = inst.Arg(kind.swap ? 1 : 0);
+        const IR::Value rhs = inst.Arg(kind.swap ? 0 : 1);
+        switch (kind.op) {
         case GuardCompare::IEq:
         case GuardCompare::INe:
-            return atoms.Leaf(lhs, rhs, GuardCompare::IEq, (op == GuardCompare::IEq) != polarity);
+            return atoms.Leaf(lhs, rhs, GuardCompare::IEq,
+                              (kind.op == GuardCompare::IEq) != polarity);
         case GuardCompare::FLt:
         case GuardCompare::FLe:
-            return atoms.Order(polarity ? lhs : rhs, polarity ? rhs : lhs,
-                               (op == GuardCompare::FLt) == polarity, ordered == polarity,
-                               depth + 1);
+            return atoms.Leaf(polarity ? lhs : rhs, polarity ? rhs : lhs,
+                              (kind.op == GuardCompare::FLt) == polarity ? GuardCompare::FLt
+                                                                         : GuardCompare::FLe,
+                              false);
         default:
-            return atoms.Leaf(lhs, rhs, op, !polarity);
+            return atoms.Leaf(lhs, rhs, kind.op, !polarity);
         }
-    }
-
-    std::optional<GuardTerms> SelectComparison(const IR::Value& lhs, const IR::Value& rhs,
-                                               GuardCompare op, bool ordered, bool polarity,
-                                               u32 depth) {
-        for (const bool left : {true, false}) {
-            if (const IR::Inst* const select = ValueSelect(left ? lhs : rhs)) {
-                return Choice(select->Arg(0), depth, [&](bool taken) {
-                    const IR::Value arm = select->Arg(taken ? 1 : 2);
-                    return Comparison(left ? arm : lhs, left ? rhs : arm, op, ordered, polarity,
-                                      depth + 1);
-                });
-            }
-        }
-        return std::nullopt;
     }
 
     static std::optional<bool> Known(const IR::Value& value) {
