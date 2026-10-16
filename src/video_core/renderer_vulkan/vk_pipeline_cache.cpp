@@ -536,9 +536,8 @@ bool PipelineCache::RefreshGraphicsStages() {
             LOG_WARNING(Render_Vulkan, "Geometry shader stage unsupported, skipping");
             return false;
         }
-        if (regs.vgt_gs_mode.onchip || regs.vgt_strmout_config.raw) {
-            LOG_WARNING(Render_Vulkan, "Geometry shader features unsupported, skipping");
-            return false;
+        if (regs.vgt_strmout_config.raw) {
+            LOG_WARNING(Render_Vulkan, "Geometry shader streamout is not fully implemented");
         }
         if (!bind_stage(HwStage::Export, SwStage::Vertex)) {
             return false;
@@ -569,9 +568,8 @@ bool PipelineCache::RefreshGraphicsStages() {
             LOG_WARNING(Render_Vulkan, "Geometry shader stage unsupported, skipping");
             return false;
         }
-        if (regs.vgt_gs_mode.onchip || regs.vgt_strmout_config.raw) {
-            LOG_WARNING(Render_Vulkan, "Geometry shader features unsupported, skipping");
-            return false;
+        if (regs.vgt_strmout_config.raw) {
+            LOG_WARNING(Render_Vulkan, "Geometry shader streamout is not fully implemented");
         }
         if (!bind_stage(HwStage::Hull, SwStage::TessellationControl)) {
             return false;
