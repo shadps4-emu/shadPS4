@@ -470,6 +470,16 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOp
     mountPoint->data[TmpMount.size()] = '\0';
     LOG_INFO(Lib_AppContent, "sceAppContentTemporaryDataMount2: option = {}, mountPoint = {}",
              option, mountPoint->data);
+    if (option & ORBIS_APP_CONTENT_TEMPORARY_DATA_OPTION_FORMAT) {
+        auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+        const auto temp_dir = mnt->GetHostPath(TmpMount);
+        std::error_code ec;
+        std::filesystem::remove_all(temp_dir, ec);
+        if (ec) {
+            LOG_ERROR(Lib_AppContent, "Failed to format temporary data: {}", ec.message());
+        }
+        std::filesystem::create_directory(temp_dir, ec);
+    }
     return ORBIS_OK;
 }
 
