@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <array>
 #include <bit>
 #include <limits>
@@ -58,13 +59,13 @@ std::optional<bool> CompareValues(GuardCompare op, u32 x, u32 y) {
 }
 
 std::optional<u32> LoadOperand(const GuardOperand& operand, std::span<const u32> flatbuf) {
-    if (!operand.is_flatbuf) {
-        return operand.value;
+    if (operand.location == UNKNOWN_LOCATION) {
+        return operand.immediate;
     }
-    if (operand.value >= flatbuf.size()) {
+    if (operand.location >= flatbuf.size()) {
         return std::nullopt;
     }
-    return (flatbuf[operand.value] >> operand.shift) & operand.mask;
+    return (flatbuf[operand.location] >> operand.shift) & operand.mask;
 }
 
 bool IsFalse(const GuardAtom& atom, std::span<const u32> flatbuf) {
@@ -86,8 +87,7 @@ namespace {
 constexpr u32 MaxDepth = 32;
 
 struct GuardTerms {
-    std::array<u64, ResourceGuards::MaxTerms> terms{};
-    u8 count{};
+    ResourceGuards::Terms terms;
 
     static GuardTerms Always() {
         return Of(0);
@@ -98,18 +98,18 @@ struct GuardTerms {
     }
 
     static GuardTerms Of(u64 term) {
-        return {.terms = {term}, .count = 1};
+        return {.terms = {term}};
     }
 
     bool IsTrivial() const {
-        return count == 0 || terms[0] == 0;
+        return terms.empty() || terms[0] == 0;
     }
 
     GuardTerms And(const GuardTerms& other) const {
         GuardTerms result;
-        for (u32 i = 0; i < count; ++i) {
-            for (u32 j = 0; j < other.count; ++j) {
-                result.Add(terms[i] | other.terms[j]);
+        for (const u64 lhs : terms) {
+            for (const u64 rhs : other.terms) {
+                result.Add(lhs | rhs);
             }
         }
         return result;
@@ -117,27 +117,21 @@ struct GuardTerms {
 
     GuardTerms Or(const GuardTerms& other) const {
         GuardTerms result = *this;
-        for (u32 i = 0; i < other.count; ++i) {
-            result.Add(other.terms[i]);
+        for (const u64 term : other.terms) {
+            result.Add(term);
         }
         return result;
     }
 
     void Add(u64 term) {
-        for (u32 i = 0; i < count; ++i) {
-            if ((terms[i] & term) == terms[i]) {
-                return;
-            }
+        if (std::ranges::any_of(terms, [term](u64 kept) { return (kept & term) == kept; })) {
+            return;
         }
-        u32 kept{};
-        for (u32 i = 0; i < count; ++i) {
-            if ((terms[i] & term) != term) {
-                terms[kept++] = terms[i];
-            }
-        }
-        count = static_cast<u8>(kept);
-        if (count < ResourceGuards::MaxTerms) {
-            terms[count++] = term;
+        const auto [first, last] =
+            std::ranges::remove_if(terms, [term](u64 kept) { return (kept & term) == term; });
+        terms.erase(first, last);
+        if (terms.size() < ResourceGuards::MaxTerms) {
+            terms.push_back(term);
             return;
         }
         *this = Always();
@@ -202,11 +196,11 @@ std::optional<u32> ImmU32(const IR::Value& value) {
 }
 
 GuardOperand Bits(GuardOperand operand, u32 offset, u32 mask) {
-    if (operand.is_flatbuf) {
+    if (operand.location != UNKNOWN_LOCATION) {
         operand.shift = static_cast<u8>(operand.shift + offset);
         operand.mask = (operand.mask >> offset) & mask;
     } else {
-        operand.value = (operand.value >> offset) & mask;
+        operand.immediate = (operand.immediate >> offset) & mask;
     }
     return operand;
 }
@@ -220,7 +214,7 @@ std::optional<GuardOperand> Masked(const IR::Inst& inst, u32 depth) {
         return std::nullopt;
     }
     const std::optional<GuardOperand> operand = Operand(inst.Arg(lhs_mask ? 1 : 0), depth + 1);
-    if (!operand || !operand->is_flatbuf) {
+    if (!operand || operand->location == UNKNOWN_LOCATION) {
         return std::nullopt;
     }
     return Bits(*operand, 0, lhs_mask ? *lhs_mask : *rhs_mask);
@@ -228,8 +222,8 @@ std::optional<GuardOperand> Masked(const IR::Inst& inst, u32 depth) {
 
 std::optional<GuardOperand> Extract(const IR::Value& base, u32 offset, u32 count, u32 depth) {
     const std::optional<GuardOperand> operand = Operand(base, depth + 1);
-    if (!operand || !operand->is_flatbuf || count == 0 || offset > 32 || count > 32 ||
-        offset + count > 32 || operand->shift + offset >= 32) {
+    if (!operand || operand->location == UNKNOWN_LOCATION || count == 0 || offset > 32 ||
+        count > 32 || offset + count > 32 || operand->shift + offset >= 32) {
         return std::nullopt;
     }
     return Bits(*operand, offset, static_cast<u32>((u64{1} << count) - 1));
@@ -238,10 +232,10 @@ std::optional<GuardOperand> Extract(const IR::Value& base, u32 offset, u32 count
 std::optional<GuardOperand> Operand(const IR::Value& value, u32 depth) {
     if (value.IsImmediate()) {
         if (value.Type() == IR::Type::U32) {
-            return GuardOperand{.value = value.U32()};
+            return GuardOperand{.immediate = value.U32()};
         }
         if (value.Type() == IR::Type::F32) {
-            return GuardOperand{.value = std::bit_cast<u32>(value.F32())};
+            return GuardOperand{.immediate = std::bit_cast<u32>(value.F32())};
         }
         return std::nullopt;
     }
@@ -254,7 +248,7 @@ std::optional<GuardOperand> Operand(const IR::Value& value, u32 depth) {
     case IR::Opcode::ReadConst:
         if (const SharpLocation location = SharpLocationFromSource(inst, false);
             location != UNKNOWN_LOCATION) {
-            return GuardOperand{.value = location, .is_flatbuf = true};
+            return GuardOperand{.location = location};
         }
         return std::nullopt;
     case IR::Opcode::BitCastU32F32:
@@ -296,18 +290,16 @@ public:
 
 private:
     GuardTerms Atom(const GuardAtom& atom) {
-        if (!atom.lhs.is_flatbuf && !atom.rhs.is_flatbuf) {
+        if (atom.lhs.location == UNKNOWN_LOCATION && atom.rhs.location == UNKNOWN_LOCATION) {
             return GuardTerms::Always();
         }
-        u32 index{};
-        while (index < table.num_atoms && table.atoms[index] != atom) {
-            ++index;
-        }
+        const auto index =
+            static_cast<u32>(std::ranges::find(table.atoms, atom) - table.atoms.begin());
         if (index == ResourceGuards::MaxAtoms) {
             return GuardTerms::Always();
         }
-        if (index == table.num_atoms) {
-            table.atoms[table.num_atoms++] = atom;
+        if (index == table.atoms.size()) {
+            table.atoms.push_back(atom);
         }
         return GuardTerms::Of(u64{1} << index);
     }
@@ -374,7 +366,7 @@ private:
         if (polarity != is_and) {
             return lhs.Or(Necessary(inst.Arg(1), polarity, depth));
         }
-        return lhs.count == 0 ? lhs : lhs.And(Necessary(inst.Arg(1), polarity, depth));
+        return lhs.terms.empty() ? lhs : lhs.And(Necessary(inst.Arg(1), polarity, depth));
     }
 
     GuardTerms Select(const IR::Inst& inst, bool polarity, u32 depth) {
@@ -384,7 +376,7 @@ private:
         }
         const auto when = [&](bool taken) {
             const GuardTerms terms = Necessary(inst.Arg(taken ? 1 : 2), polarity, depth);
-            return terms.count == 0 ? terms : Necessary(cond, taken, depth).And(terms);
+            return terms.terms.empty() ? terms : Necessary(cond, taken, depth).And(terms);
         };
         return when(true).Or(when(false));
     }
@@ -487,13 +479,11 @@ public:
         for (size_t i = 0; i < resources.size(); ++i) {
             const GuardTerms& terms = entries[i];
             if (terms.IsTrivial() || !IsGuardable(resources[i].sharp_fetch) ||
-                table.num_groups == ResourceGuards::MaxGroups) {
+                table.groups.size() == ResourceGuards::MaxGroups) {
                 continue;
             }
-            resources[i].guard = table.num_groups;
-            auto& group = table.groups[table.num_groups++];
-            group.terms = terms.terms;
-            group.num_terms = terms.count;
+            resources[i].guard = static_cast<u8>(table.groups.size());
+            table.groups.push_back(terms.terms);
         }
     }
 
@@ -549,11 +539,11 @@ void ResourceGuardPass(IR::Program& program) {
 namespace Shader {
 
 u32 ResourceGuards::EvaluateDead(std::span<const u32> flatbuf) const {
-    if (num_groups == 0) {
+    if (groups.empty()) {
         return 0;
     }
     u64 false_atoms{};
-    for (u32 i = 0; i < num_atoms; ++i) {
+    for (u32 i = 0; i < atoms.size(); ++i) {
         if (IsFalse(atoms[i], flatbuf)) {
             false_atoms |= u64{1} << i;
         }
@@ -562,12 +552,11 @@ u32 ResourceGuards::EvaluateDead(std::span<const u32> flatbuf) const {
         return 0;
     }
     u32 dead{};
-    for (u32 i = 0; i < num_groups; ++i) {
-        const Group& group = groups[i];
-        bool is_dead = group.num_terms != 0;
-        for (u32 t = 0; is_dead && t < group.num_terms; ++t) {
-            is_dead = (group.terms[t] & false_atoms) != 0;
-        }
+    for (u32 i = 0; i < groups.size(); ++i) {
+        const Terms& terms = groups[i];
+        const bool is_dead = !terms.empty() && std::ranges::all_of(terms, [false_atoms](u64 term) {
+            return (term & false_atoms) != 0;
+        });
         dead |= static_cast<u32>(is_dead) << i;
     }
     return dead;
