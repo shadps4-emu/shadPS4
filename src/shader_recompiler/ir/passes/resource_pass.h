@@ -5,12 +5,10 @@
 
 #include <boost/container/small_vector.hpp>
 
+#include "common/logging/log.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/value.h"
-
-namespace Shader {
-enum class SharpFetchPostOp : u8;
-}
+#include "shader_recompiler/resource.h"
 
 namespace Shader::Optimization {
 
@@ -32,6 +30,24 @@ struct ResourceDiscovery {
     std::array<SharpReference, 2> sharps;
 };
 using ResourceDiscoveryList = boost::container::small_vector<ResourceDiscovery, 32>;
+
+inline SharpLocation SharpLocationFromSource(const IR::Inst* inst, bool warn = true) {
+    SharpLocation location{};
+    if (inst->GetOpcode() == IR::Opcode::GetUserData) {
+        return static_cast<SharpLocation>(inst->Arg(0).ScalarReg());
+    } else if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        location = inst->Flags<IR::BufferInstInfo>().flatbuf_off_dw;
+    } else {
+        location = inst->Flags<SharpLocation>();
+    }
+    if (location == 0) {
+        if (warn) {
+            LOG_WARNING(Render_Recompiler, "Sharp source was not flatenned");
+        }
+        return UNKNOWN_LOCATION;
+    }
+    return location;
+}
 
 inline bool IsBufferAtomic(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {

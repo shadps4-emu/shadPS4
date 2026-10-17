@@ -628,8 +628,10 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
              perm_idx != 0 ? "(permutation)" : "");
     DumpShader(code, info.pgm_hash, info.hw_stage, perm_idx, "bin");
 
+    info.skip_resource_guards = SkipResourceGuards(info.pgm_hash, info.hw_stage);
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
+    info.RefreshResourceGuards();
     DumpShader(spv, info.pgm_hash, info.hw_stage, perm_idx, "spv");
 
     vk::ShaderModule module;
@@ -776,5 +778,25 @@ std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::
     std::vector<u32> code(file.GetSize() / sizeof(u32));
     file.Read(code);
     return code;
+}
+
+bool PipelineCache::SkipResourceGuards(u64 hash, Shader::HwStage stage) {
+    if (!EmulatorSettings.IsResourceGuardsEnabled() || EmulatorSettings.IsShaderCollect()) {
+        return true;
+    }
+    if (!EmulatorSettings.IsPatchShaders()) {
+        return false;
+    }
+    using namespace Common::FS;
+    const auto patch_dir = GetUserPath(PathType::ShaderDir) / "patch";
+    const std::filesystem::path prefix = GetShaderName(stage, hash) + "_";
+    std::error_code ec;
+    for (const auto& entry : std::filesystem::directory_iterator{patch_dir, ec}) {
+        const auto& path = entry.path();
+        if (path.extension() == ".spv" && path.filename().native().starts_with(prefix.native())) {
+            return true;
+        }
+    }
+    return false;
 }
 } // namespace Vulkan
