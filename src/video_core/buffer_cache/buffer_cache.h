@@ -53,6 +53,10 @@ class BufferCache {
     static constexpr u64 NUM_ARENA_PAGES = u64{1} << (ADDRESS_SPACE_BITS - ARENA_PAGE_BITS);
     static constexpr u64 MIN_BLOCK_SIZE = 16_KB;
     static constexpr u64 STREAM_THRESHOLD = 16_KB;
+    // Residency memory is carved out of larger pools instead of one vkAllocateMemory per gap.
+    // The pool size grows dynamically with demand, up to MAX_RESIDENT_POOL_SIZE.
+    static constexpr u64 MIN_RESIDENT_POOL_SIZE = 4_MB;
+    static constexpr u64 MAX_RESIDENT_POOL_SIZE = 256_MB;
 
 public:
     explicit BufferCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
@@ -144,6 +148,10 @@ private:
 
     void EnsureResident(const Buffer* arena, u64 first_block, u64 last_block);
 
+    /// Sub-allocates device memory for `num_blocks` sparse blocks from the current resident pool,
+    /// growing the pool dynamically when it runs out. Returns the memory and byte offset into it.
+    std::pair<vk::DeviceMemory, u64> AllocateResidentMemory(u64 num_blocks);
+
     void DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool is_write,
                         bool async);
 
@@ -186,6 +194,14 @@ private:
         }
     };
     IntervalList<Backing> resident_ranges;
+
+    struct ResidentPool {
+        vk::DeviceMemory memory{};
+        u64 size{};
+        u64 used{};
+    };
+    ResidentPool resident_pool;
+    u64 next_resident_pool_size{MIN_RESIDENT_POOL_SIZE};
 
     u32 arena_memory_type_index{};
     u32 block_size{};
