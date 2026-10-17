@@ -345,6 +345,11 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
         return -1;
     }
 
+    if (file->IsReadOnly()) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
     return file->Write(buf, nbytes);
 }
 
@@ -447,6 +452,11 @@ s64 PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
         }
         return result;
     } else if (file->type == Core::FileSys::FileType::Directory) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
+    if (file->IsReadOnly()) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
@@ -1566,6 +1576,11 @@ s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, 
         }
         return result;
     } else if (file->type == Core::FileSys::FileType::Directory) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
+    if (file->IsReadOnly()) {
         *__Error() = POSIX_EBADF;
         return -1;
     }

@@ -175,6 +175,10 @@ struct File {
         return handle ? handle->Flush() : false;
     }
 
+    bool IsReadOnly() const {
+        return handle ? handle->IsReadOnly() : false;
+    }
+
     bool IsWriteOnly() const {
         return handle ? handle->IsWriteOnly() : false;
     }
