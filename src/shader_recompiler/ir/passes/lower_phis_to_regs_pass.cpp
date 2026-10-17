@@ -45,6 +45,10 @@ void LowerPhisToRegsPass(IR::Program& program) {
             if (inst.GetOpcode() != IR::Opcode::Phi) {
                 break;
             }
+            if (!inst.HasUses()) {
+                inst.Invalidate();
+                continue;
+            }
 
             IR::IREmitter ir{*block, it};
             if (const auto tag = inst.GetRegTag()) {
