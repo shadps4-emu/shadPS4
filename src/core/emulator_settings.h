@@ -703,6 +703,23 @@ public:
     SETTING_FORWARD_BOOL(m_network, ConnectedToNetwork, connected_to_network)
     SETTING_FORWARD(m_network, ShadNetServer, shadnet_server)
     SETTING_FORWARD(m_network, ShadNetWebApiServer, shadnet_webapi_server)
+    std::string GetShadNetWebApiUrl() const {
+        std::string url = GetShadNetWebApiServer();
+        const auto first = url.find_first_not_of(" \t\r\n");
+        if (first == std::string::npos) {
+            return {};
+        }
+        url.erase(0, first);
+        url.erase(url.find_last_not_of(" \t\r\n") + 1);
+        if (url.find("://") == std::string::npos) {
+            url.insert(0, "http://");
+        }
+        const size_t host_start = url.find("://") + 3;
+        while (url.size() > host_start && url.back() == '/') {
+            url.pop_back();
+        }
+        return url;
+    }
     SETTING_FORWARD_BOOL(m_network, UPnPEnabled, enable_upnp)
     SETTING_FORWARD(m_network, P2PPort, p2p_port)
     SETTING_FORWARD_BOOL(m_network, ForcedHttpsDisabled, disable_https)
