@@ -3,9 +3,11 @@
 
 #include "fiber.h"
 
+#include <algorithm>
 #include <map>
 #include <mutex>
 
+#include "common/alignment.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/fiber/fiber_error.h"
@@ -92,6 +94,19 @@ static void ReleaseStack(const OrbisFiber* fiber) {
     }
     FreeStack(it->second.stack, it->second.size);
     fiber_stacks.erase(it);
+#endif
+}
+
+bool IsFiberStack(VAddr addr) {
+#ifdef _WIN32
+    std::scoped_lock lk{fiber_stacks_mutex};
+    return std::ranges::any_of(fiber_stacks, [addr](const auto& entry) {
+        const VAddr stack = reinterpret_cast<VAddr>(entry.second.stack);
+        return addr >= stack &&
+               addr - stack < Common::AlignUp(entry.second.size, Kernel::ThrPageSize);
+    });
+#else
+    return false;
 #endif
 }
 
