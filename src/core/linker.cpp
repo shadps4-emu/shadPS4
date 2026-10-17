@@ -247,7 +247,11 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
                elf_name.string());
 
     num_static_modules += !is_dynamic;
-    m_modules.emplace_back(std::move(module));
+    {
+        // Other threads may look modules up by address while the vector grows.
+        std::unique_lock modules_lock{modules_mutex};
+        m_modules.emplace_back(std::move(module));
+    }
 
     Core::Devtools::Widget::ModuleList::AddModule(elf_name.filename().string(), elf_name);
 
@@ -284,6 +288,7 @@ s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, cons
 }
 
 Module* Linker::FindByAddress(VAddr address) {
+    std::shared_lock modules_lock{modules_mutex};
     for (auto& module : m_modules) {
         const VAddr base = module->GetBaseAddress();
         if (address >= base && address < base + module->aligned_base_size) {

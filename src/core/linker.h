@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <mutex>
+#include <shared_mutex>
 #include <vector>
 #include "core/libraries/kernel/threads.h"
 #include "core/module.h"
@@ -166,6 +167,7 @@ private:
     MemoryManager* memory;
     Libraries::Kernel::Thread main_thread;
     std::mutex mutex;
+    mutable std::shared_mutex modules_mutex; // Guards growth of m_modules for lock-free readers
     u32 dtv_generation_counter{1};
     size_t static_tls_size{};
     u32 max_tls_index{};
