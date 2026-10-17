@@ -52,8 +52,8 @@ template <typename... Args>
 #define ASSERT_MSG(_a_, ...)                                                                       \
     do {                                                                                           \
         if (!(_a_)) [[unlikely]] {                                                                 \
-            Common::Detail::AssertFail(__FILE__, __LINE__, __func__,                               \
-                                       "Assertion Failed!\n" __VA_ARGS__);                         \
+            LOG_CRITICAL(Debug, "Assertion Failed!\n" __VA_ARGS__);                                \
+            assert_fail_impl();                                                                    \
         }                                                                                          \
     } while (0)
 
