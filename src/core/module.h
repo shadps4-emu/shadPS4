@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <string>
 #include <vector>
 #include "common/types.h"
@@ -252,6 +253,9 @@ public:
     ThreadLocalImage tls{};
     OrbisKernelModuleInfo info{};
     std::vector<u8> rela_bits;
+    // Number of pending thread-local destructors registered by this module, maintained through
+    // _sceKernelRtldThreadAtexitIncrement/Decrement.
+    std::atomic<s32> thread_atexit_count{0};
 };
 
 } // namespace Core
