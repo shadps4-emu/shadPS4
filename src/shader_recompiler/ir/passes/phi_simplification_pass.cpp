@@ -352,11 +352,10 @@ static void DeduplicateSccs(std::vector<PhiScc>& sccs) {
 
     std::vector<SccGroup*> worklist;
     worklist.reserve(scc_groups.size());
-    for (auto it = scc_groups.begin(); it != scc_groups.end(); ++it) {
-        auto& group = it->second;
-        if (group.sccs.size() > 1) {
+    for (const auto& scc : sccs) {
+        auto& group = scc_groups.at(scc.hash);
+        if (group.sccs.size() > 1 && !std::exchange(group.queued, true)) {
             worklist.push_back(&group);
-            group.queued = true;
         }
     }
 
