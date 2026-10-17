@@ -85,6 +85,7 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::WriteSharedU16:
     case Opcode::WriteSharedU32:
     case Opcode::WriteSharedU64:
+    case Opcode::PredicatedWriteSharedU32:
     case Opcode::SharedAtomicIAdd32:
     case Opcode::SharedAtomicISub32:
     case Opcode::SharedAtomicSMin32:

@@ -317,10 +317,12 @@ void EmitContext::DefineInputs() {
             Decorate(subgroup_local_invocation_id, spv::Decoration::Flat);
         }
     }
+    if (info.uses_subgroup_id) {
+        subgroup_id = DefineVariable(U32[1], spv::BuiltIn::SubgroupId, spv::StorageClass::Input);
+    }
     if (info.loads.GetAny(IR::Attribute::SubgroupLtMask)) {
         subgroup_lt_mask =
             DefineVariable(U32[4], spv::BuiltIn::SubgroupLtMask, spv::StorageClass::Input);
-        Decorate(subgroup_lt_mask, spv::Decoration::Flat);
     }
     switch (sw_stage) {
     case SwStage::Vertex: {
@@ -1049,8 +1051,17 @@ void EmitContext::DefineSharedMemory() {
         return;
     }
     ASSERT(info.hw_stage == HwStage::Compute);
-    const u32 shared_memory_size =
-        runtime_info.hw.cs.shared_memory_size + info.shared_memory_scratch_size;
+
+    u32 shared_mem_total_size = 0;
+
+    const u32 shared_mem_guest_base = 0;
+    const u32 shared_mem_guest_size = runtime_info.hw.cs.shared_memory_size;
+    shared_mem_total_size = shared_mem_guest_base + shared_mem_guest_size;
+
+    if (info.shared_memory_scratch_size > 0) {
+        shared_mem_total_size = info.shared_memory_scratch_base;
+        shared_mem_total_size += info.shared_memory_scratch_size;
+    }
 
     const auto make_type = [&](IR::Type type, Id element_type, u32 element_size,
                                std::string_view name) {
@@ -1059,7 +1070,7 @@ void EmitContext::DefineSharedMemory() {
             return std::make_tuple(Id{}, Id{}, Id{});
         }
 
-        const u32 num_elements{Common::DivCeil(shared_memory_size, element_size)};
+        const u32 num_elements{Common::DivCeil(shared_mem_total_size, element_size)};
         const Id array_type{TypeArray(element_type, ConstU32(num_elements))};
 
         const auto mem_type = [&] {
@@ -1092,6 +1103,8 @@ void EmitContext::DefineSharedMemory() {
         make_type(IR::Type::U32, U32[1], 4u, "shared_mem_u32");
     std::tie(shared_memory_u64, shared_u64, shared_memory_u64_type) =
         make_type(IR::Type::U64, U64, 8u, "shared_mem_u64");
+
+    ASSERT(shared_mem_total_size < profile.max_shared_memory_size);
 }
 
 Id EmitContext::DefineFloat32ToUfloatM5(u32 mantissa_bits, const std::string_view name) {

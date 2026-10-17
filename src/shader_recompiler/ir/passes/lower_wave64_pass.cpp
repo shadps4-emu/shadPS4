@@ -113,7 +113,7 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
         return;
     }
 
-    std::vector<IR::Inst*> worklist;
+    std::deque<IR::Inst*> worklist;
     const auto uniform_blocks = FindUniformBlocks(program);
     for (IR::Block* block : program.blocks) {
         const bool is_uniform = std::ranges::contains(uniform_blocks, block);
@@ -126,9 +126,7 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
             }
         };
         for (IR::Inst& inst : block->Instructions()) {
-            if (inst.GetOpcode() == IR::Opcode::ReadLane && inst.Arg(1).IsImmediate()) {
-                push_worklist(inst);
-            } else if (inst.GetOpcode() == IR::Opcode::Ballot) {
+            if (inst.GetOpcode() == IR::Opcode::Ballot) {
                 const auto is_unpack = [](const IR::Use& use) {
                     return use.user->GetOpcode() == IR::Opcode::UnpackUint2x32;
                 };
@@ -141,6 +139,15 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
                     std::ranges::contains(uniform_blocks, ballot->GetParent())) {
                     worklist.push_back(&inst);
                 }
+            } else if (inst.GetOpcode() == IR::Opcode::ReadLane ||
+                       inst.GetOpcode() == IR::Opcode::ReadFirstLane ||
+                       inst.GetOpcode() == IR::Opcode::WaveElect ||
+                       inst.GetOpcode() == IR::Opcode::WaveElectOrLane0 &&
+                           std::ranges::contains(uniform_blocks, inst.GetParent())) {
+                ASSERT(profile.subgroup_size == 32);
+                push_worklist(inst);
+            } else if (inst.GetOpcode() == IR::Opcode::WaveId) {
+                worklist.push_back(&inst);
             }
         }
     }
@@ -151,14 +158,17 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
     const u32 scratch_base = Common::AlignUp(runtime_info.hw.cs.shared_memory_size, sizeof(u64));
     const u32 scratch_size =
         (Common::AlignUp(num_threads, 64) / profile.subgroup_size) * sizeof(u32);
-    program.info.shared_memory_scratch_size =
-        scratch_base + scratch_size - runtime_info.hw.cs.shared_memory_size;
+    program.info.shared_memory_scratch_base = scratch_base;
+    program.info.shared_memory_scratch_size = scratch_size;
 
-    for (IR::Inst* inst : worklist) {
+    while (!worklist.empty()) {
+        IR::Inst* inst = worklist.front();
+        worklist.pop_front();
+
         LOG_INFO(Render_Recompiler, "Lowering {} instruction for wave64", inst->GetOpcode());
         IR::IREmitter ir{*inst->GetParent(), IR::Block::InstructionList::s_iterator_to(*inst)};
         const IR::U32 invocation_index = ir.GetAttributeU32(IR::Attribute::LocalInvocationIndex);
-        const IR::U32 subgroup_id = ir.ShiftRightLogical(invocation_index, ir.Imm32(5));
+        const IR::U32 subgroup_id = ir.SubgroupId();
         if (inst->GetOpcode() == IR::Opcode::Ballot) {
             const IR::U32 mask_low =
                 IR::U32{ir.CompositeExtract(ir.UnpackUint2x32(ir.Ballot(IR::U1{inst->Arg(0)})), 0)};
@@ -191,6 +201,63 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
             const IR::U32 masked_value{
                 ir.BitCount(ir.BitwiseAnd(IR::U32{inst->Arg(0)}, thread_mask))};
             inst->ReplaceUsesWithAndRemove(ir.IAdd(masked_value, IR::U32{inst->Arg(1)}));
+        } else if (inst->GetOpcode() == IR::Opcode::WaveElect ||
+                   inst->GetOpcode() == IR::Opcode::WaveElectOrLane0) {
+            const bool default_to_lane0 = inst->GetOpcode() == IR::Opcode::WaveElectOrLane0;
+            const IR::U1 exec{inst->Arg(0)};
+            const IR::U1 is_bottom{
+                ir.IEqual(ir.Imm32(0u), ir.BitwiseAnd(subgroup_id, ir.Imm32(1u)))};
+            const IR::U32 offset =
+                ir.IAdd(ir.Imm32(scratch_base), ir.ShiftLeftLogical(subgroup_id, ir.Imm32(2u)));
+            const IR::U1 any{ir.GroupAny(exec)};
+            const IR::U64 mask = ir.Ballot(exec);
+            ir.WriteShared(32, ir.Select(any, ir.Imm32(1u), ir.Imm32(0u)), offset);
+            ir.Barrier();
+            const IR::U32 other_offset{ir.BitwiseXor(offset, ir.Imm32(1u << 2))};
+            const IR::U32 other_has_any_u32{ir.LoadShared(32, false, other_offset)};
+            const IR::U1 other_has_any{ir.INotEqual(other_has_any_u32, ir.Imm32(0u))};
+            // need to be careful of poison from BallotFindLsb
+            const IR::U32 lane32{ir.Select(any, ir.BallotFindLsb(mask), ir.Imm32(0u))};
+            const IR::U1 is_first_in_subgroup{ir.IEqual(lane32, ir.LaneId())};
+            const IR::U1 other_has_none{ir.LogicalNot(other_has_any)};
+
+            const IR::U1 bottom_cond{[&]() -> IR::U1 {
+                if (default_to_lane0) {
+                    return ir.LogicalAnd(is_first_in_subgroup, ir.LogicalOr(exec, other_has_none));
+                } else {
+                    return ir.LogicalAnd(exec, is_first_in_subgroup);
+                }
+            }()};
+
+            const IR::U1 top_cond{
+                ir.LogicalAnd(exec, ir.LogicalAnd(is_first_in_subgroup, other_has_none))};
+            const IR::U1 result{ir.Select(is_bottom, bottom_cond, top_cond)};
+            ir.Barrier();
+            inst->ReplaceUsesWithAndRemove(result);
+        } else if (inst->GetOpcode() == IR::Opcode::ReadFirstLane) {
+            const IR::U1 exec{inst->Arg(1)};
+            const IR::U32 value{inst->Arg(0)};
+            // Using Elect means 4 barriers total. Could reduce by unfactoring and using more
+            // shared mem, but this seems simplest for now
+            const IR::U1 elected{ir.WaveElectOrLane0(exec)};
+            const IR::U32 lo_subgroup_offset = ir.IAdd(
+                ir.Imm32(scratch_base),
+                ir.ShiftLeftLogical(ir.BitwiseAnd(ir.Imm32(~1u), subgroup_id), ir.Imm32(2u)));
+            ir.PredicatedWriteSharedU32(value, lo_subgroup_offset, elected);
+            ir.Barrier();
+            const IR::Value result{ir.LoadShared(32, false, lo_subgroup_offset)};
+            ir.Barrier();
+            inst->ReplaceUsesWithAndRemove(result);
+            // Need to expand Elect too
+            worklist.push_back(elected.Inst());
+        } else if (inst->GetOpcode() == IR::Opcode::WaveId) {
+            u32 subgroup_size = profile.subgroup_size;
+            ASSERT(subgroup_size < 64);
+            ASSERT(std::popcount(subgroup_size) == 1);
+            const u32 scale = 64 / subgroup_size;
+            const u32 shift = std::countr_zero(scale);
+            const IR::U32 scaled_wave_id = ir.ShiftRightLogical(subgroup_id, ir.Imm32(shift));
+            inst->ReplaceUsesWithAndRemove(scaled_wave_id);
         }
     }
 }

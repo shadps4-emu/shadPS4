@@ -309,6 +309,10 @@ void IREmitter::WriteShared(int bit_size, const Value& value, const U32& offset,
     }
 }
 
+void IREmitter::PredicatedWriteSharedU32(const Value& value, const U32& offset, const U1& cond) {
+    Inst(Opcode::PredicatedWriteSharedU32, offset, value, cond);
+}
+
 U32U64 IREmitter::SharedAtomicIAdd(const U32& address, const U32U64& data, bool is_gds) {
     switch (data.Type()) {
     case Type::U32:
@@ -645,8 +649,12 @@ U32 IREmitter::LaneId() {
     return Inst<U32>(Opcode::LaneId);
 }
 
-U32 IREmitter::WarpId() {
-    return Inst<U32>(Opcode::WarpId);
+U32 IREmitter::WaveId() {
+    return Inst<U32>(Opcode::WaveId);
+}
+
+U32 IREmitter::SubgroupId() {
+    return Inst<U32>(Opcode::SubgroupId);
 }
 
 U32 IREmitter::QuadBroadcast(const U32& value, const U32& index) {
@@ -661,8 +669,16 @@ U32 IREmitter::ShuffleXor(const U32& value, const U32& mask) {
     return Inst<U32>(Opcode::ShuffleXor, value, mask);
 }
 
-U32 IREmitter::ReadFirstLane(const U32& value) {
-    return Inst<U32>(Opcode::ReadFirstLane, value);
+U1 IREmitter::WaveElect(const U1& exec) {
+    return Inst<U1>(Opcode::WaveElect, exec);
+}
+
+U1 IREmitter::WaveElectOrLane0(const U1& exec) {
+    return Inst<U1>(Opcode::WaveElectOrLane0, exec);
+}
+
+U32 IREmitter::ReadFirstLane(const U32& value, const U1& exec) {
+    return Inst<U32>(Opcode::ReadFirstLane, value, exec);
 }
 
 U32 IREmitter::ReadLane(const U32& value, const U32& lane) {

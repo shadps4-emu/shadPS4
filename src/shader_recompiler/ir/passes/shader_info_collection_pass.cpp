@@ -187,6 +187,13 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::LaneId:
         info.uses_lane_id = true;
         break;
+    case IR::Opcode::WaveId:
+    case IR::Opcode::SubgroupId:
+        info.uses_subgroup_id = true;
+        break;
+    case IR::Opcode::GroupAny:
+        info.uses_group_vote = true;
+        break;
     case IR::Opcode::Memtime:
         info.uses_shader_clock = true;
         break;

@@ -45,7 +45,6 @@ struct InfoPersistent {
     FMaskResourceList fmasks;
 
     u32 fetch_shader_sgpr_base{};
-    u32 shared_memory_scratch_size{};
 
     u64 pgm_hash{};
 
@@ -111,6 +110,9 @@ struct Info : InfoPersistent {
     CopyShaderData gs_copy_data;
     u32 uses_patches{};
 
+    u32 shared_memory_scratch_base{};
+    u32 shared_memory_scratch_size{};
+
     VAddr pgm_base;
     bool has_storage_images{};
     bool has_discard{};
@@ -119,11 +121,13 @@ struct Info : InfoPersistent {
     bool has_flatbuf{};
     bool uses_buffer_atomic_float_min_max{};
     bool uses_image_atomic_float_min_max{};
+    bool uses_subgroup_id{};
     bool uses_lane_id{};
     bool uses_shader_clock{};
     bool uses_group_quad{};
     bool uses_group_shuffle{};
     bool uses_group_ballot{};
+    bool uses_group_vote{};
     IR::Type shared_types{};
     bool uses_fp16{};
     bool uses_fp64{};
