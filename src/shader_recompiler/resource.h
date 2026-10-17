@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include <array>
 #include <span>
-#include <type_traits>
 #include "common/types.h"
 #include "shader_recompiler/ir/type.h"
 #include "video_core/amdgpu/resource.h"
@@ -13,66 +11,6 @@
 #include <boost/container/static_vector.hpp>
 
 namespace Shader {
-
-enum class GuardCompare : u8 {
-    IEq,
-    INe,
-    SLt,
-    SLe,
-    ULt,
-    ULe,
-    FEq,
-    FNe,
-    FLt,
-    FLe,
-};
-
-struct GuardOperand {
-    u32 value{};
-    u32 mask{~0U};
-    u8 shift{};
-    bool is_flatbuf{};
-
-    bool operator==(const GuardOperand&) const = default;
-};
-
-struct GuardAtom {
-    GuardOperand lhs{};
-    GuardOperand rhs{};
-    GuardCompare op{};
-    bool negate{};
-
-    bool operator==(const GuardAtom&) const = default;
-};
-
-struct ResourceGuards {
-    static constexpr u32 MaxAtoms = 64;
-    static constexpr u32 MaxGroups = 32;
-    static constexpr u32 MaxTerms = 4;
-
-    struct Group {
-        std::array<u64, MaxTerms> terms{};
-        u8 num_terms{};
-
-        bool operator==(const Group&) const = default;
-    };
-
-    std::array<GuardAtom, MaxAtoms> atoms{};
-    std::array<Group, MaxGroups> groups{};
-    u8 num_atoms{};
-    u8 num_groups{};
-
-    bool operator==(const ResourceGuards&) const = default;
-
-    u32 EvaluateDead(std::span<const u32> flatbuf) const;
-};
-static_assert(std::is_trivially_copyable_v<ResourceGuards>);
-
-constexpr u8 NO_GUARD = 0xFF;
-
-constexpr bool IsGuardDead(u8 guard, u32 dead_guards) {
-    return guard != NO_GUARD && ((dead_guards >> guard) & 1) != 0;
-}
 
 static constexpr u32 NUM_USER_DATA_REGS = 16;
 static constexpr u32 NUM_IMAGES = 64;
@@ -121,6 +59,56 @@ struct SharpFetch {
         return true;
     }
 };
+
+enum class GuardCompare : u8 {
+    IEq,
+    INe,
+    SLt,
+    SLe,
+    ULt,
+    ULe,
+    FEq,
+    FNe,
+    FLt,
+    FLe,
+};
+
+struct GuardOperand {
+    u32 immediate{};
+    u32 mask{~0U};
+    SharpLocation location{UNKNOWN_LOCATION};
+    u8 shift{};
+
+    bool operator==(const GuardOperand&) const = default;
+};
+
+struct GuardAtom {
+    GuardOperand lhs{};
+    GuardOperand rhs{};
+    GuardCompare op{};
+    bool negate{};
+
+    bool operator==(const GuardAtom&) const = default;
+};
+
+struct ResourceGuards {
+    static constexpr u32 MaxAtoms = 64;
+    static constexpr u32 MaxGroups = 32;
+    static constexpr u32 MaxTerms = 4;
+
+    using Terms = boost::container::static_vector<u64, MaxTerms>;
+
+    boost::container::static_vector<GuardAtom, MaxAtoms> atoms;
+    boost::container::static_vector<Terms, MaxGroups> groups;
+
+    u32 EvaluateDead(std::span<const u32> flatbuf) const;
+};
+
+constexpr u8 NO_GUARD = 0xFF;
+
+constexpr bool IsGuardDead(u8 guard, u32 dead_guards) {
+    return guard != NO_GUARD && ((dead_guards >> guard) & 1) != 0;
+}
 
 enum class SharpFetchPostOp : u8 {
     None,
