@@ -624,6 +624,7 @@ void PipelineCache::RefreshDepthClampRange() {
     const auto& vp_ctl = regs.viewport_control;
     bool found_viewport = false;
     bool viewport_range_matches = true;
+    bool clamp_range_matches = true;
     float clamp_min = 0.f;
     float clamp_max = 0.f;
     for (u32 i = 0; i < AmdGpu::NUM_VIEWPORTS; i++) {
@@ -656,9 +657,14 @@ void PipelineCache::RefreshDepthClampRange() {
             clamp_min = zmin;
             clamp_max = zmax;
         }
+        clamp_range_matches &= clamp_min == zmin && clamp_max == zmax;
     }
 
     if (found_viewport && !viewport_range_matches) {
+        if (!clamp_range_matches) {
+            LOG_ERROR(Render_Vulkan,
+                      "Viewport depth clamping configuration cannot be accurately emulated");
+        }
         key.depth_clamp_user_defined_range = true;
         key.depth_clamp_min = clamp_min;
         key.depth_clamp_max = clamp_max;
