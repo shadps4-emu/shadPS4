@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -86,6 +86,9 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
 void Scheduler::EndRendering() {
     if (!is_rendering) {
         return;
+    }
+    if (on_end_rendering) {
+        on_end_rendering();
     }
     is_rendering = false;
     CommandBuffer().endRendering();

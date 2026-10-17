@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -136,9 +136,17 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 const auto comp_ofs = info.gs_copy_data.output_vertices * sizeof(u32);
                 const auto output_size = gs_info.output_vertices * dwords_per_vertex * sizeof(u32);
 
+                if (comp_ofs == 0 || output_size == 0) {
+                    inst.Invalidate();
+                    break;
+                }
+
                 const auto vc_read_ofs = (((offset / comp_ofs) * comp_ofs) % output_size) * 16u;
                 const auto& it = info.gs_copy_data.attr_map.find(vc_read_ofs);
-                ASSERT(it != info.gs_copy_data.attr_map.cend());
+                if (it == info.gs_copy_data.attr_map.cend()) {
+                    inst.Invalidate();
+                    break;
+                }
                 const auto& [attr, comp] = it->second;
 
                 inst.Invalidate();

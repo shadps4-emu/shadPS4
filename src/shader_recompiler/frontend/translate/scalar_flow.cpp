@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/opcodes.h"
@@ -63,6 +63,10 @@ void Translator::S_SENDMSG(const GcnInst& inst) {
             break;
         case SendMsgSimm::GsOp::Emit:
             ir.EmitVertex();
+            break;
+        case SendMsgSimm::GsOp::EmitCut:
+            ir.EmitVertex();
+            ir.EmitPrimitive();
             break;
         default:
             UNREACHABLE();
