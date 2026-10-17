@@ -425,9 +425,8 @@ std::pair<vk::DeviceMemory, u64> BufferCache::AllocateResidentMemory(u64 num_blo
 
 void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_block) {
     IntervalList bind_ranges;
-    resident_ranges.ForEachGap(first_block, last_block + 1, [&](u64 start, u64 end) {
-        bind_ranges.Add({start, end});
-    });
+    resident_ranges.ForEachGap(first_block, last_block + 1,
+                               [&](u64 start, u64 end) { bind_ranges.Add({start, end}); });
 
     if (bind_ranges.Empty()) {
         return;
