@@ -3,6 +3,9 @@
 
 #include "fiber.h"
 
+#include <map>
+#include <mutex>
+
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/fiber/fiber_error.h"
@@ -25,25 +28,70 @@ OrbisFiberContext* GetFiberContext() {
     return Core::GetTcbBase()->tcb_fiber;
 }
 
+#ifdef _WIN32
+struct FiberStack {
+    u64 size;
+    void* stack;
+    u32 num_fibers;
+};
+
+// Stacks given to fibers, by the address of the guest context they run in place of.
+static std::mutex fiber_stacks_mutex;
+static std::map<VAddr, FiberStack> fiber_stacks;
+
+static void* AllocateStack(u64 size) {
+    Kernel::PthreadAttr attr{.stacksize_attr = size};
+    const int ret = Kernel::ThrState::Instance()->CreateStack(&attr);
+    ASSERT_MSG(ret == 0, "Unable to allocate a fiber stack with size = 0x{:x}", size);
+    return attr.stackaddr_attr;
+}
+
+static void FreeStack(void* stack, u64 size) {
+    auto* thread_state = Kernel::ThrState::Instance();
+    Kernel::PthreadAttr attr{.stackaddr_attr = stack, .stacksize_attr = size};
+    std::scoped_lock lk{thread_state->thread_list_lock};
+    thread_state->FreeStack(&attr);
+}
+#endif
+
 static void* AcquireStack(void* addr_context, u64 size_context) {
 #ifdef _WIN32
     // Windows delivers a fault on the stack of the faulting thread, so a fiber cannot run on
     // game memory that the GPU caches may write protect. It gets a stack of its own instead.
-    Kernel::PthreadAttr attr{.stacksize_attr = size_context};
-    const int ret = Kernel::ThrState::Instance()->CreateStack(&attr);
-    ASSERT_MSG(ret == 0, "Unable to allocate a fiber stack with size = 0x{:x}", size_context);
-    return attr.stackaddr_attr;
+    const VAddr start = reinterpret_cast<VAddr>(addr_context);
+    std::scoped_lock lk{fiber_stacks_mutex};
+    auto it = fiber_stacks.lower_bound(start);
+    if (it != fiber_stacks.begin() && std::prev(it)->first + std::prev(it)->second.size > start) {
+        --it;
+    }
+    while (it != fiber_stacks.end() && it->first < start + size_context) {
+        if (it->first == start && it->second.size == size_context) {
+            ++it->second.num_fibers;
+            return it->second.stack;
+        }
+        // A PS4 would overwrite the older context, so no fiber can run on it anymore. This also
+        // frees the stacks of fibers that are never finalized.
+        FreeStack(it->second.stack, it->second.size);
+        it = fiber_stacks.erase(it);
+    }
+    void* stack = AllocateStack(size_context);
+    fiber_stacks.emplace(start, FiberStack{size_context, stack, 1});
+    return stack;
 #else
     return addr_context;
 #endif
 }
 
-static void ReleaseStack(void* stack, u64 size) {
+static void ReleaseStack(const OrbisFiber* fiber) {
 #ifdef _WIN32
-    auto* thread_state = Kernel::ThrState::Instance();
-    Kernel::PthreadAttr attr{.stackaddr_attr = stack, .stacksize_attr = size};
-    std::scoped_lock lk{thread_state->thread_list_lock};
-    thread_state->FreeStack(&attr);
+    std::scoped_lock lk{fiber_stacks_mutex};
+    const auto it = fiber_stacks.find(reinterpret_cast<VAddr>(fiber->addr_context));
+    if (it == fiber_stacks.end() || it->second.stack != fiber->context_start ||
+        --it->second.num_fibers != 0) {
+        return;
+    }
+    FreeStack(it->second.stack, it->second.size);
+    fiber_stacks.erase(it);
 #endif
 }
 
@@ -280,7 +328,7 @@ s32 PS4_SYSV_ABI sceFiberFinalize(OrbisFiber* fiber) {
     }
 
     if (fiber->addr_context) {
-        ReleaseStack(fiber->context_start, fiber->size_context);
+        ReleaseStack(fiber);
     }
     return ORBIS_OK;
 }
