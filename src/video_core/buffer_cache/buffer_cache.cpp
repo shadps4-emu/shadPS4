@@ -216,7 +216,7 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
 std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 size,
                                                         ObtainBufferFlags flags) {
     const bool is_written = True(flags & ObtainBufferFlags::IsWritten);
-    const bool is_texel_buffer = True(flags & ObtainBufferFlags::IsTexelBuffer);
+    const bool synchronize_image = True(flags & ObtainBufferFlags::SynchronizeImage);
     const bool skip_stream_buffer = True(flags & ObtainBufferFlags::IgnoreStreamBuffer);
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
     if (!is_written && !skip_stream_buffer && size <= STREAM_THRESHOLD &&
@@ -233,7 +233,7 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     if (is_written) {
         texture_cache.MarkAsMaybeGpuDirty(device_addr, size);
     }
-    SynchronizeMemory(arena, device_addr, size, is_written, is_texel_buffer);
+    SynchronizeMemory(arena, device_addr, size, is_written, synchronize_image);
     if (is_written) {
         gpu_modified_ranges.Add(device_addr, size);
     }
@@ -443,7 +443,7 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
 }
 
 bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size,
-                                    bool is_written, bool is_texel_buffer) {
+                                    bool is_written, bool synchronize_image) {
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     size_t total_size_bytes{};
     memory_tracker->ForEachUploadRange(device_addr, size, is_written, [&](u64 addr, u64 size) {
@@ -460,7 +460,7 @@ bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 
         staging.Flush();
         runtime.CopyBuffer(staging.buffer, arena, copies);
     }
-    if (is_texel_buffer && !is_written) {
+    if (synchronize_image && !is_written) {
         return SynchronizeMemoryFromImage(arena, device_addr, size);
     }
     return false;
