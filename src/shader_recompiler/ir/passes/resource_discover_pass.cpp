@@ -278,20 +278,31 @@ IR::Inst* FindSharpSource(IR::Inst* handle) {
     return handle;
 }
 
-void MarkReadConstBufferSharpSources(const SharpReference& sharp) {
-    // In cases of bindless sharp fetches mark all producer instructions
-    // so the extended userdata flattening pass will include them.
+void MarkSourceAsSharp(IR::Inst* inst) {
+    ASSERT(IsSharpSource(inst));
+    if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        auto inst_info = inst->Flags<IR::BufferInstInfo>();
+        inst_info.sharp_source.Assign(1u);
+        inst->SetFlags(inst_info);
+        return;
+    }
+    if (inst->GetOpcode() == IR::Opcode::ReadConst) {
+        auto inst_info = inst->Flags<IR::ReadConstInstInfo>();
+        inst_info.sharp_source.Assign(1u);
+        inst->SetFlags(inst_info);
+        return;
+    }
+}
+
+void MarkSharpSources(const SharpReference& sharp) {
+    // Mark all producer instructions as sharp sources so that they will be flattened.
     for (size_t i = 0; i < sharp.num_dwords; i++) {
         IR::Inst* source = sharp.dwords[i].TryInst();
         if (!source) {
             continue;
         }
         ASSERT(IsSharpSource(source));
-        if (source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-            auto flags = source->Flags<IR::BufferInstInfo>();
-            flags.sharp_source.Assign(1u);
-            source->SetFlags(flags);
-        }
+        MarkSourceAsSharp(source);
     }
 }
 
@@ -328,7 +339,7 @@ void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList
         vsharp.dwords[2] = dword2;
     }
 
-    MarkReadConstBufferSharpSources(vsharp);
+    MarkSharpSources(vsharp);
 }
 
 void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList& resources) {
@@ -356,7 +367,7 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
         tsharp.dwords[4] = tsharp_dw4;
     }
 
-    MarkReadConstBufferSharpSources(tsharp);
+    MarkSharpSources(tsharp);
 
     if (inst.GetOpcode() != IR::Opcode::ImageSampleRaw) {
         return;
@@ -372,6 +383,8 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
         found) {
         ssharp.post_op = SharpFetchPostOp::DisableAnisoIfSingleLod;
         ssharp.post_op_data.lod_prod = tsharp_dw3;
+        // We need lod_prod on the cpu
+        MarkSourceAsSharp(tsharp_dw3.Inst());
         ssharp.dwords[0] = ssharp_dw0;
     } else if (auto [ssharp_dw0, found] = CheckForceClampToWrapPattern(ssharp.dwords[0]); found) {
         ssharp.post_op = SharpFetchPostOp::ForceRepeatXyzClamp;
@@ -386,7 +399,7 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
         ssharp.dwords[0] = ssharp_dw0;
     }
 
-    MarkReadConstBufferSharpSources(ssharp);
+    MarkSharpSources(ssharp);
 }
 
 ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& profile) {
