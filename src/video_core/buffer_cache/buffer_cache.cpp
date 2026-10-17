@@ -382,11 +382,50 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
     return new_arena;
 }
 
+std::pair<vk::DeviceMemory, u64> BufferCache::AllocateResidentMemory(u64 num_blocks) {
+    const u64 size = num_blocks << block_shift;
+    if (resident_pool.memory && resident_pool.used + size <= resident_pool.size) {
+        const u64 offset = resident_pool.used;
+        resident_pool.used += size;
+        return {resident_pool.memory, offset};
+    }
+
+    // Current pool is exhausted (or doesn't exist yet), start a new one. Resident memory is never
+    // returned, so a plain bump allocator is enough. Offsets stay block aligned because every
+    // allocation is a whole number of blocks and pool sizes are rounded up to a block multiple.
+    const auto device = instance.GetDevice();
+    const vk::MemoryAllocateFlagsInfo alloc_flags = {
+        .flags = vk::MemoryAllocateFlagBits::eDeviceAddress,
+    };
+    vk::MemoryAllocateInfo alloc_info = {
+        .pNext = &alloc_flags,
+        .allocationSize = Common::AlignUp(std::max(size, next_resident_pool_size), block_size),
+        .memoryTypeIndex = arena_memory_type_index,
+    };
+    auto result = device.allocateMemory(alloc_info);
+    if (result.result != vk::Result::eSuccess && alloc_info.allocationSize > size) {
+        // Not enough room for the oversized pool, fall back to exactly what is needed.
+        LOG_WARNING(Render_Vulkan, "Resident pool of {} MiB failed, falling back to {} KiB",
+                    alloc_info.allocationSize >> 20, size >> 10);
+        alloc_info.allocationSize = size;
+        result = device.allocateMemory(alloc_info);
+    }
+    ASSERT_MSG(result.result == vk::Result::eSuccess, "Failed to allocate resident memory: {}",
+               vk::to_string(result.result));
+
+    resident_pool = ResidentPool{
+        .memory = result.value,
+        .size = alloc_info.allocationSize,
+        .used = size,
+    };
+    // Grow geometrically so busy scenes quickly converge to few, large allocations.
+    next_resident_pool_size = std::min(next_resident_pool_size * 2, MAX_RESIDENT_POOL_SIZE);
+    return {resident_pool.memory, 0};
+}
+
 void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_block) {
-    u32 resident_blocks{};
     IntervalList bind_ranges;
     resident_ranges.ForEachGap(first_block, last_block + 1, [&](u64 start, u64 end) {
-        resident_blocks += end - start;
         bind_ranges.Add({start, end});
     });
 
@@ -394,25 +433,21 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
         return;
     }
 
-    const vk::MemoryAllocateFlagsInfo alloc_flags = {
-        .flags = vk::MemoryAllocateFlagBits::eDeviceAddress,
-    };
-    const vk::MemoryAllocateInfo alloc_info = {
-        .pNext = &alloc_flags,
-        .allocationSize = resident_blocks << block_shift,
-        .memoryTypeIndex = arena_memory_type_index,
-    };
-    const auto device_memory = Vulkan::Check(instance.GetDevice().allocateMemory(alloc_info));
+    u64 resident_blocks{};
+    for (const auto& range : bind_ranges) {
+        resident_blocks += range.end - range.start;
+    }
 
     boost::container::small_vector<vk::BufferCopy, 8> copies;
     const auto staging =
         staging_pool.Request(resident_blocks * sizeof(vk::DeviceAddress), MemoryType::HostUncached);
 
-    u64 memory_offset{};
     ArenaBinds* binds = BindsForArena(arena);
     auto* bda_addrs = reinterpret_cast<vk::DeviceAddress*>(staging.mapped);
     u64 offset = staging.offset;
     for (const auto& range : bind_ranges) {
+        const auto [device_memory, memory_offset] = AllocateResidentMemory(range.end - range.start);
+
         Backing backing;
         backing.start = range.start;
         backing.end = range.end;
@@ -428,9 +463,8 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
             .memory = device_memory,
             .memoryOffset = memory_offset,
         });
-        memory_offset += bind.size;
 
-        for (u32 block = 0; block < bind.size; block += block_size) {
+        for (u64 block = 0; block < bind.size; block += block_size) {
             *(bda_addrs++) = arena->BufferDeviceAddress() + bind.resourceOffset + block;
         }
         const u64 copy_size = (backing.end - backing.start) * sizeof(vk::DeviceAddress);
