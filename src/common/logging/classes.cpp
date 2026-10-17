@@ -149,6 +149,8 @@ std::string_view NameOf(Class log_class) {
         return "Lib.Ngs2";
     case Class::Lib_Audio3d:
         return "Lib.Audio3d";
+    case Class::Lib_AudiodecCpu:
+        return "Lib.AudiodecCpu";
     case Class::Lib_Ime:
         return "Lib.Ime";
     case Class::Lib_GameLiveStreaming:
