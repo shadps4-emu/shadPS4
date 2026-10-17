@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include <memory>
 #include <vector>
+#include <queue>
 
 #include "videodec2.h"
 
@@ -27,11 +29,23 @@ public:
     s32 Reset();
 
 private:
-    AVFrame* ConvertNV12Frame(AVFrame& frame);
+    static void ReleaseAVPacket(AVPacket* packet);
+    static void ReleaseAVFrame(AVFrame* frame);
+    static void ReleaseAVCodecContext(AVCodecContext* context);
+    static void ReleaseSwsContext(SwsContext* context);
+
+    using AVPacketPtr = std::unique_ptr<AVPacket, decltype(&ReleaseAVPacket)>;
+    using AVFramePtr = std::unique_ptr<AVFrame, decltype(&ReleaseAVFrame)>;
+    using AVCodecContextPtr = std::unique_ptr<AVCodecContext, decltype(&ReleaseAVCodecContext)>;
+    using SwsContextPtr = std::unique_ptr<SwsContext, decltype(&ReleaseSwsContext)>;
+
+    void DrainFrames();
+    AVFramePtr ConvertNV12Frame(AVFrame& frame);
 
 private:
-    AVCodecContext* m_codec_context = nullptr;
-    SwsContext* m_sws_context = nullptr;
+    AVCodecContextPtr m_codec_context{nullptr, &ReleaseAVCodecContext};
+    SwsContextPtr m_sws_context{nullptr, &ReleaseSwsContext};
+    std::queue<AVFramePtr> m_frame_queue;
 };
 
 } // namespace Libraries::Videodec2
