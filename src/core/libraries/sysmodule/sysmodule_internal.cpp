@@ -247,7 +247,8 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libScePadTracker.sprx", nullptr},
              {"libSceMoveTracker.sprx", nullptr},
              {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib},
-             {"libSceXml.sprx", nullptr}});
+             {"libSceXml.sprx", nullptr},
+             {"libSceVoiceQoS.sprx", nullptr}});
 
         // Iterate through the allowed array
         const auto it = std::ranges::find_if(
