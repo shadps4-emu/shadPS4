@@ -355,30 +355,81 @@ Id EmitGetPatch(EmitContext& ctx, IR::Patch patch) {
 
 void EmitSetPatch(EmitContext& ctx, IR::Patch patch, Id value) {
     const Id pointer{[&] {
-        if (IR::IsGeneric(patch)) {
-            const u32 index{IR::GenericPatchIndex(patch)};
-            const Id element{ctx.ConstU32(IR::GenericPatchElement(patch))};
-            return ctx.OpAccessChain(ctx.output_f32, ctx.patches.at(index), element);
-        }
-        switch (patch) {
-        case IR::Patch::TessellationLodLeft:
-        case IR::Patch::TessellationLodRight:
-        case IR::Patch::TessellationLodTop:
-        case IR::Patch::TessellationLodBottom: {
-            const u32 index{static_cast<u32>(patch) - u32(IR::Patch::TessellationLodLeft)};
-            const Id index_id{ctx.ConstU32(index)};
-            return ctx.OpAccessChain(ctx.output_f32, ctx.output_tess_level_outer, index_id);
-        }
-        case IR::Patch::TessellationLodInteriorU:
-            return ctx.OpAccessChain(ctx.output_f32, ctx.output_tess_level_inner,
-                                     ctx.u32_zero_value);
-        case IR::Patch::TessellationLodInteriorV:
-            return ctx.OpAccessChain(ctx.output_f32, ctx.output_tess_level_inner, ctx.ConstU32(1u));
-        default:
-            UNREACHABLE_MSG("Patch {}", u32(patch));
-        }
+        const u32 index{IR::GenericPatchIndex(patch)};
+        const Id element{ctx.ConstU32(IR::GenericPatchElement(patch))};
+        return ctx.OpAccessChain(ctx.output_f32, ctx.patches.at(index), element);
     }()};
     ctx.OpStore(pointer, value);
+}
+
+void EmitSetTessFactor(EmitContext& ctx, IR::Inst* inst, Id value, Id factor_idx) {
+    enum TessFactor {
+        LodLeft,
+        LodTop,
+        LodRight,
+        LodBottom,
+        LodInteriorU,
+        LodInteriorV,
+    };
+
+    if (ctx.info.dynamically_accesses_tess_factors) {
+        const Id pointer{
+            ctx.OpAccessChain(ctx.output_f32, ctx.tess_factor_dynamic_array, factor_idx)};
+        ctx.OpStore(pointer, value);
+    } else {
+        u32 factor_idx_imm = inst->Arg(1).U32();
+        const auto factor = [&]() -> TessFactor {
+            // The hull outputs tess factors in different formats depending on the
+            // shader. For triangle domains, it seems to pack the entries into 4
+            // consecutive floats, with the 3 edge factors followed by the 1 interior
+            // factor. For quads, it does 4 edge factors then 2 interior. There is a
+            // tess factor stride member of the GNMX hull constants struct in a hull
+            // program shader binary archive, but this doesn't seem to be communicated
+            // to the driver. The layout seems to be implied by the type of the abstract
+            // domain.
+            switch (ctx.runtime_info.sw.tcs.tess_type) {
+            case AmdGpu::TessellationType::Isoline:
+                // [left, top]
+                ASSERT(factor_idx_imm < 2);
+                return TessFactor(factor_idx_imm);
+            case AmdGpu::TessellationType::Triangle:
+                // [left, top, right, interiorU]
+                ASSERT(factor_idx_imm < 4);
+                if (factor_idx_imm == 3) {
+                    return TessFactor::LodInteriorU;
+                }
+                return TessFactor(factor_idx_imm);
+            case AmdGpu::TessellationType::Quad:
+                // [left, top, right, bottom, interiorU, interiorV]
+                ASSERT(factor_idx_imm < 6);
+                return TessFactor(factor_idx_imm);
+            default:
+                UNREACHABLE();
+            }
+        }();
+
+        const Id pointer = [&] {
+            switch (factor) {
+            case TessFactor::LodLeft:
+            case TessFactor::LodRight:
+            case TessFactor::LodTop:
+            case TessFactor::LodBottom: {
+                const u32 index{static_cast<u32>(factor) - u32(TessFactor::LodLeft)};
+                const Id index_id{ctx.ConstU32(index)};
+                return ctx.OpAccessChain(ctx.output_f32, ctx.output_tess_level_outer, index_id);
+            }
+            case TessFactor::LodInteriorU:
+            case TessFactor::LodInteriorV: {
+                const u32 index{static_cast<u32>(factor) - u32(TessFactor::LodInteriorU)};
+                const Id index_id{ctx.ConstU32(index)};
+                return ctx.OpAccessChain(ctx.output_f32, ctx.output_tess_level_inner, index_id);
+            }
+            default:
+                UNREACHABLE();
+            }
+        }();
+        ctx.OpStore(pointer, value);
+    }
 }
 
 template <u32 N, PointerType alias>

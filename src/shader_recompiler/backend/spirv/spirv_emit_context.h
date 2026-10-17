@@ -269,6 +269,8 @@ public:
     Id patch_vertices{};
     Id output_tess_level_outer{};
     Id output_tess_level_inner{};
+    Id tess_factor_dynamic_array{};
+
     Id tess_coord;
     std::array<Id, 30> patches{};
 
