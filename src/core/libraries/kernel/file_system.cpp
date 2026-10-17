@@ -917,6 +917,11 @@ s32 PS4_SYSV_ABI sceKernelFstat(s32 fd, OrbisKernelStat* sb) {
 }
 
 s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
+    if (length < 0) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
 
@@ -934,6 +939,12 @@ s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
         return result;
     }
 
+    if (file->type == Core::FileSys::FileType::Directory ||
+        (file->handle && file->handle->IsReadOnly())) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+
     if (file->m_host_name.empty()) {
         *__Error() = POSIX_EACCES;
         return -1;
@@ -943,7 +954,10 @@ s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
-    host->SetSize(length);
+    if (!host->SetSize(length)) {
+        *__Error() = POSIX_EIO;
+        return -1;
+    }
     return ORBIS_OK;
 }
 
