@@ -40,7 +40,7 @@ class PageManager;
 enum class ObtainBufferFlags {
     None = 0,
     IsWritten = 1 << 0,
-    IsTexelBuffer = 1 << 1,
+    SynchronizeImage = 1 << 1,
     IgnoreStreamBuffer = 1 << 2,
     InvalidateTextureCache = 1 << 3,
 };
@@ -148,7 +148,7 @@ private:
                         bool async);
 
     bool SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size, bool is_written,
-                           bool is_texel_buffer);
+                           bool synchronize_image);
 
     bool SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size);
 
