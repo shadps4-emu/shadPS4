@@ -170,6 +170,7 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         }
 
         const PM4ItOpcode opcode = header->type3.opcode;
+        const u32 count = header->type3.NumWords();
         const auto* it_body = reinterpret_cast<const u32*>(header) + 1;
         switch (opcode) {
         case PM4ItOpcode::Nop: {
@@ -225,11 +226,10 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
             break;
         }
         default:
-            const u32 count = header->type3.NumWords();
             UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                             static_cast<u32>(opcode), count);
         }
-        ccb = NextPacket(ccb, header->type3.NumWords() + 1);
+        ccb = NextPacket(ccb, count + 1);
     }
 
     FIBER_EXIT;
@@ -362,7 +362,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                                             (ContextRegs::CbColor1Base - ContextRegs::CbColor0Base);
                     ASSERT(col_buf_id < NUM_COLOR_BUFFERS);
 
-                    const auto nop_offset = header->type3.count;
+                    const auto nop_offset = count - 1;
                     if (nop_offset == 0x0e || nop_offset == 0x0d || nop_offset == 0x0b) {
                         ASSERT_MSG(payload[nop_offset] == 0xc0001000,
                                    "NOP hint is missing in CB setup sequence");
@@ -385,7 +385,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                         (ContextRegs::CbColor1Cmask - ContextRegs::CbColor0Cmask);
                     ASSERT(col_buf_id < NUM_COLOR_BUFFERS);
 
-                    const auto nop_offset = header->type3.count;
+                    const auto nop_offset = count - 1;
                     if (nop_offset == 0x04) {
                         ASSERT_MSG(payload[nop_offset] == 0xc0001000,
                                    "NOP hint is missing in CB setup sequence");
@@ -394,7 +394,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     break;
                 }
                 case ContextRegs::DbZInfo: {
-                    if (header->type3.count == 8) {
+                    if (count - 1 == 8) {
                         ASSERT_MSG(payload[20] == 0xc0001000,
                                    "NOP hint is missing in DB setup sequence");
                         last_db_extent.raw = payload[21];
@@ -825,7 +825,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::WriteData: {
                 const auto* write_data = reinterpret_cast<const PM4CmdWriteData*>(header);
                 ASSERT(write_data->dst_sel.Value() == 2 || write_data->dst_sel.Value() == 5);
-                const u32 data_size = (header->type3.count.Value() - 2) * 4;
+                const u32 data_size = (count - 3) * 4;
                 u64* address = write_data->Address<u64*>();
                 if (!write_data->wr_one_addr.Value()) {
                     if (rasterizer) {
@@ -868,6 +868,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 if (!rasterizer) {
                     break;
                 }
+                LOG_TRACE(Render, "Rewind packet encountered");
                 const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
                 while (!rewind->Valid()) {
                     YIELD_GFX();
@@ -934,7 +935,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     break;
                 case SourceSelect::SrcAddress: {
                     const VAddr src_addr = strmout->SrcAddress<VAddr>();
-                    if (src_addr) {
+                    auto* memory = Core::Memory::Instance();
+                    if (src_addr && memory && memory->IsValidMapping(src_addr, sizeof(offset))) {
                         std::memcpy(&offset, reinterpret_cast<const void*>(src_addr),
                                     sizeof(offset));
                     }
@@ -945,7 +947,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 if (strmout->update_memory.Value()) {
                     const VAddr dst_addr = strmout->DstAddress<VAddr>();
-                    if (dst_addr) {
+                    auto* memory = Core::Memory::Instance();
+                    if (dst_addr && memory && memory->IsValidMapping(dst_addr, sizeof(offset))) {
                         std::memcpy(reinterpret_cast<void*>(dst_addr), &offset, sizeof(offset));
                     }
                 }
@@ -958,7 +961,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::CondExec: {
                 const auto* cond_exec = reinterpret_cast<const PM4CmdCondExec*>(header);
-                if (cond_exec->command.Value() != 0) {
+                if (count < 4 && cond_exec->command.Value() != 0) {
                     LOG_WARNING(Render, "IT_COND_EXEC used a reserved command {}",
                                 cond_exec->command.Value());
                 }
@@ -966,13 +969,16 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 bool skip = false;
                 auto* memory = Core::Memory::Instance();
                 if (address != 0 && memory->IsValidMapping(address, sizeof(u32))) {
-                    skip = (*reinterpret_cast<const u32*>(address) == 0);
+                    skip = (std::atomic_ref<u32>{
+                                *const_cast<u32*>(reinterpret_cast<const u32*>(address))}
+                                .load(std::memory_order_acquire) == 0);
+                    LOG_DEBUG(Render, "IT_COND_EXEC: addr = {:#x}, skip = {}, exec_count = {}",
+                              address, skip, cond_exec->ExecCount());
                 } else {
                     LOG_WARNING(Render, "IT_COND_EXEC: invalid condition address {:#x}", address);
                 }
                 if (skip) {
-                    dcb = NextPacket(dcb,
-                                     header->type3.NumWords() + 1 + cond_exec->exec_count.Value());
+                    dcb = NextPacket(dcb, count + 1 + cond_exec->ExecCount());
                     continue;
                 }
                 break;
@@ -981,7 +987,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                                 static_cast<u32>(opcode), count);
             }
-            dcb = NextPacket(dcb, header->type3.NumWords() + 1);
+            dcb = NextPacket(dcb, count + 1);
             break;
         }
     }
@@ -1051,6 +1057,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             UNREACHABLE_MSG("Invalid PM4 type {}", header->type.Value());
         }
 
+        const u32 count = header->type3.NumWords();
         const PM4ItOpcode opcode = header->type3.opcode;
         predication.is_packet_predicated = (header->type3.predicate == PM4Predicate::PredEnable);
 
@@ -1126,6 +1133,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             if (!rasterizer) {
                 break;
             }
+            LOG_TRACE(Render, "Compute Rewind packet encountered");
             const PM4CmdRewind* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
             while (!rewind->Valid()) {
                 YIELD_ASC(vqid);
@@ -1134,7 +1142,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         }
         case PM4ItOpcode::SetShReg: {
             const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
-            const auto set_size = (header->type3.NumWords() - 1) * sizeof(u32);
+            const auto set_size = (count - 1) * sizeof(u32);
 
             if (set_data->reg_offset >= 0x200 &&
                 set_data->reg_offset <= (0x200 + sizeof(ComputeProgram) / 4)) {
@@ -1241,7 +1249,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         case PM4ItOpcode::WriteData: {
             const auto* write_data = reinterpret_cast<const PM4CmdWriteData*>(header);
             ASSERT(write_data->dst_sel.Value() == 2 || write_data->dst_sel.Value() == 5);
-            const u32 data_size = (header->type3.count.Value() - 2) * 4;
+            const u32 data_size = (count - 3) * 4;
             if (!write_data->wr_one_addr.Value()) {
                 if (rasterizer) {
                     rasterizer->OnFence();
@@ -1290,9 +1298,39 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             // const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
             break;
         }
+        case PM4ItOpcode::CondExec: {
+            const auto* cond_exec = reinterpret_cast<const PM4CmdCondExec*>(header);
+            if (count < 4 && cond_exec->command.Value() != 0) {
+                LOG_WARNING(Render, "Compute IT_COND_EXEC used a reserved command {}",
+                            cond_exec->command.Value());
+            }
+            const VAddr address = cond_exec->Address();
+            bool skip = false;
+            auto* memory = Core::Memory::Instance();
+            if (address != 0 && memory->IsValidMapping(address, sizeof(u32))) {
+                skip =
+                    (std::atomic_ref<u32>{*const_cast<u32*>(reinterpret_cast<const u32*>(address))}
+                         .load(std::memory_order_acquire) == 0);
+                LOG_DEBUG(Render, "Compute IT_COND_EXEC: addr = {:#x}, skip = {}, exec_count = {}",
+                          address, skip, cond_exec->ExecCount());
+            } else {
+                LOG_WARNING(Render, "Compute IT_COND_EXEC: invalid condition address {:#x}",
+                            address);
+            }
+            if (skip) {
+                const u32 skip_words = next_dw_off + cond_exec->ExecCount();
+                acb = NextPacket(acb, skip_words);
+                if constexpr (!is_indirect) {
+                    *queue.read_addr += skip_words;
+                    *queue.read_addr %= queue.ring_size_dw;
+                }
+                continue;
+            }
+            break;
+        }
         default:
             UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
-                            static_cast<u32>(opcode), header->type3.NumWords());
+                            static_cast<u32>(opcode), count);
         }
 
         acb = NextPacket(acb, next_dw_off);

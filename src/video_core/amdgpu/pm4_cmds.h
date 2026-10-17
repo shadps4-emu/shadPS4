@@ -3,7 +3,9 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstring>
+#include <type_traits>
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/types.h"
@@ -661,7 +663,8 @@ struct PM4CmdRewind {
     };
 
     bool Valid() const {
-        return valid;
+        return (std::atomic_ref<u32>{const_cast<u32&>(raw)}.load(std::memory_order_acquire) >>
+                31) != 0;
     }
 };
 
@@ -707,7 +710,10 @@ struct PM4CmdWaitRegMem {
     }
 
     bool Test(std::span<const u32> regs) const {
-        u32 value = mem_space.Value() == MemSpace::Memory ? *Address() : regs[Reg()];
+        u32 value =
+            mem_space.Value() == MemSpace::Memory
+                ? std::atomic_ref<u32>{*const_cast<u32*>(Address())}.load(std::memory_order_acquire)
+                : regs[Reg()];
         switch (function.Value()) {
         case Function::Always: {
             return true;
@@ -1234,21 +1240,22 @@ struct PM4CmdMemSemaphore {
     }
 
     [[nodiscard]] bool Signaled() const {
-        return *Address<u64*>() > 0;
+        return std::atomic_ref<u64>{*Address<u64*>()}.load(std::memory_order_acquire) > 0;
     }
 
     void Decrement() const {
-        *Address<u64*>() -= 1;
+        std::atomic_ref<u64>{*Address<u64*>()}.fetch_sub(1, std::memory_order_acq_rel);
     }
 
     void Signal() const {
         auto* ptr = Address<u64*>();
+        std::atomic_ref<u64> ref{*ptr};
         switch (signal_type) {
         case SignalType::Increment:
-            *ptr += 1;
+            ref.fetch_add(1, std::memory_order_acq_rel);
             break;
         case SignalType::Write:
-            *ptr = 1;
+            ref.store(1, std::memory_order_release);
             break;
         default:
             UNREACHABLE_MSG("Unknown signal type {}", static_cast<u32>(signal_type.Value()));
