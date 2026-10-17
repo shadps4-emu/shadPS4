@@ -102,6 +102,7 @@ struct Info : InfoPersistent {
 
     std::span<const u32> user_data;
     std::vector<u32> flattened_ud_buf;
+    std::vector<VAddr> touch_addrs;
     PersistentSrtInfo srt_info;
 
     AttributeFlags loads{};
@@ -166,10 +167,11 @@ struct Info : InfoPersistent {
 
     void RefreshFlatBuf() {
         flattened_ud_buf.resize(srt_info.flattened_bufsize_dw);
+        touch_addrs.resize(srt_info.touch_addr_bufsize_qw + 1);
         ASSERT(user_data.size() <= NUM_USER_DATA_REGS);
         std::memcpy(flattened_ud_buf.data(), user_data.data(), user_data.size_bytes());
         if (srt_info.walker_func) {
-            srt_info.walker_func(user_data.data(), flattened_ud_buf.data());
+            srt_info.walker_func(user_data.data(), flattened_ud_buf.data(), touch_addrs.data());
         }
     }
 

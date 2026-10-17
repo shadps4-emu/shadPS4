@@ -60,8 +60,16 @@ union BufferInstInfo {
     BitField<17, 4, AmdGpu::DataFormat> inst_data_fmt;
     BitField<21, 3, AmdGpu::NumberFormat> inst_num_fmt;
     BitField<24, 1, u64> sharp_source;
+    BitField<25, 1, u64> touch_buf;
     BitField<32, 16, u64> pc;
-    BitField<48, 16, u64> flatbuf_off_dw;
+    BitField<48, 16, u64> userdatabuf_off;
+};
+
+union ReadConstInstInfo {
+    u32 raw;
+    BitField<0, 16, u32> userdatabuf_off;
+    BitField<16, 1, u32> sharp_source;
+    BitField<17, 1, u32> touch_buf;
 };
 
 enum class ScalarReg : u32 {

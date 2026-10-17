@@ -17,6 +17,7 @@
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
@@ -168,7 +169,8 @@ struct PassInfo {
     std::unordered_map<u32, IR::Inst*> vn_to_inst;
 
     // Bumped during codegen to assign offsets to readconsts
-    u16 dst_off_dw;
+    u16 flatbuf_dst_off_dw;
+    u16 touchbuf_dst_off_qw;
 
     PtrUserList* GetUsesAsPointer(IR::Inst* inst) {
         auto it = pointer_uses.find(inst);
@@ -192,27 +194,14 @@ namespace Shader::Optimization {
 
 namespace {
 
-static inline u16 GetFlatbufOffset(const IR::Inst* inst) {
+static inline bool IsSharpSource(const IR::Inst* inst) {
     if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
         auto inst_info = inst->Flags<IR::BufferInstInfo>();
-        return inst_info.flatbuf_off_dw;
+        return inst_info.sharp_source;
     }
     if (inst->GetOpcode() == IR::Opcode::ReadConst) {
-        return inst->Flags<u16>();
-    }
-    UNREACHABLE_MSG("Instruction not supported");
-}
-
-static inline void SetFlatbufOffset(IR::Inst* inst, u16 offset) {
-    if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-        auto inst_info = inst->Flags<IR::BufferInstInfo>();
-        inst_info.flatbuf_off_dw.Assign(offset);
-        inst->SetFlags(inst_info);
-        return;
-    }
-    if (inst->GetOpcode() == IR::Opcode::ReadConst) {
-        inst->SetFlags(offset);
-        return;
+        auto inst_info = inst->Flags<IR::ReadConstInstInfo>();
+        return inst_info.sharp_source;
     }
     UNREACHABLE_MSG("Instruction not supported");
 }
@@ -476,10 +465,10 @@ static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Re
         }
         POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(2)));
         c.mov(ecx, reg);
-        c.mov(edx, 1);
-        c.shl(edx, cl);
-        c.dec(edx);
-        c.and_(dword[rsp], edx);
+        c.mov(r11d, 1);
+        c.shl(r11d, cl);
+        c.dec(r11d);
+        c.and_(dword[rsp], r11d);
         c.pop(reg.cvt64());
     }
     return true;
@@ -510,19 +499,27 @@ static bool IsAllowedOffsetInstruction(const IR::Inst* inst) {
 
 static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
                           const IR::Value& off_dw) {
-    ASSERT(reg != ecx && reg != edx);
+    ASSERT(reg != ecx && reg != r11d);
     auto inst = off_dw.Inst();
     switch (inst->GetOpcode()) {
     case IR::Opcode::GetUserData:
         c.mov(reg, ptr[rsi + (static_cast<u32>(inst->Arg(0).ScalarReg()) << 2)]);
         return true;
     case IR::Opcode::ReadConst:
-    case IR::Opcode::ReadConstBuffer:
-        if (u16 offset = GetFlatbufOffset(pass_info.DeduplicateInstruction(inst)); offset != 0) {
+    case IR::Opcode::ReadConstBuffer: {
+        const auto [offset, is_touch] =
+            IR::GetUserdataBufOffset(pass_info.DeduplicateInstruction(inst));
+        if (is_touch) {
+            c.mov(reg.cvt64(), ptr[rdx + (offset << 3)]);
+            c.mov(reg, dword[reg.cvt64()]);
+        } else {
+            if (offset == 0) {
+                return false;
+            }
             c.mov(reg, ptr[rsi + (offset << 2)]);
-            return true;
         }
-        return false;
+        return true;
+    }
     case IR::Opcode::IAdd32:
         ABORT_ON_FAILURE(EmitComputeOffsetIAdd32(c, reg, pass_info, inst));
         return true;
@@ -587,10 +584,10 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
 
 static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
                          Xbyak::CodeGenerator& c) {
-    if (subtree->GetOpcode() == IR::Opcode::ReadConst && subtree->Flags<u16>() == 0 ||
-        subtree->GetOpcode() == IR::Opcode::ReadConstBuffer &&
-            subtree->Flags<IR::BufferInstInfo>().flatbuf_off_dw == 0) {
-        return;
+    if (subtree->GetOpcode() == IR::Opcode::ReadConst || subtree->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        if (const auto [offset, is_touch] = IR::GetUserdataBufOffset(subtree); offset == 0) {
+            return;
+        }
     }
 
     if (!PushPtr(c, pass_info, off_dw)) {
@@ -606,8 +603,14 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
     // TODO src and dst are contiguous. Optimize with wider loads/stores
     // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
     for (auto [src_off_dw, use] : *use_list) {
+        const bool is_touch = !pass_info.GetUsesAsPointer(use) && !IsSharpSource(use);
         if (src_off_dw.IsImmediate()) {
-            c.mov(r10d, ptr[rdi + (src_off_dw.U32() << 2)]);
+            // c.mov(r10d, ptr[rdi + (src_off_dw.U32() << 2)]);
+            if (is_touch) {
+                c.lea(r10, ptr[rdi + (src_off_dw.U32() << 2)]);
+            } else {
+                c.mov(r10d, ptr[rdi + (src_off_dw.U32() << 2)]);
+            }
         } else {
             if (!ComputeOffset(c, r10d, pass_info, src_off_dw)) {
                 LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
@@ -615,12 +618,21 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
             }
             c.shl(r10d, 2);
             c.mov(r10d, r10d);
-            c.mov(r10d, dword[rdi + r10]);
+            if (is_touch) {
+                c.lea(r10, ptr[rdi + r10]);
+            } else {
+                c.mov(r10d, ptr[rdi + r10]);
+            }
         }
-        c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
-
-        SetFlatbufOffset(use, pass_info.dst_off_dw);
-        pass_info.dst_off_dw++;
+        if (is_touch) {
+            c.mov(ptr[rdx + (pass_info.touchbuf_dst_off_qw << 3)], r10);
+            IR::SetUserDataBufOffset(use, pass_info.touchbuf_dst_off_qw, true);
+            pass_info.touchbuf_dst_off_qw++;
+        } else {
+            c.mov(ptr[rsi + (pass_info.flatbuf_dst_off_dw << 2)], r10d);
+            IR::SetUserDataBufOffset(use, pass_info.flatbuf_dst_off_dw, false);
+            pass_info.flatbuf_dst_off_dw++;
+        }
     }
 
     // Then visit any children used as pointers
@@ -650,8 +662,9 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     }
 
     info.srt_info.walker_func = c.getCurr<PFN_SrtWalker>();
-    pass_info.dst_off_dw = NUM_USER_DATA_REGS;
-    ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
+    pass_info.flatbuf_dst_off_dw = NUM_USER_DATA_REGS;
+    pass_info.touchbuf_dst_off_qw = 0;
+    ASSERT(pass_info.flatbuf_dst_off_dw == info.srt_info.flattened_bufsize_dw);
 
     for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
         VisitPointer(IR::Value(static_cast<u32>(sgpr_base)), root, pass_info, c);
@@ -668,7 +681,8 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
                        info.srt_info.walker_func_size);
     }
 
-    info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
+    info.srt_info.flattened_bufsize_dw = pass_info.flatbuf_dst_off_dw;
+    info.srt_info.touch_addr_bufsize_qw = pass_info.touchbuf_dst_off_qw;
 }
 
 static bool IsReadConstSource(const IR::Value base) {
@@ -852,7 +866,8 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
     for (IR::Inst* readconst : all_readconsts) {
         ASSERT(pass_info.vn_to_inst.contains(pass_info.gvn_table.GetValueNumber(readconst)));
         IR::Inst* original = pass_info.DeduplicateInstruction(readconst);
-        SetFlatbufOffset(readconst, GetFlatbufOffset(original));
+        const auto [offset, is_touch] = IR::GetUserdataBufOffset(original);
+        IR::SetUserDataBufOffset(readconst, offset, is_touch);
     }
 
     program.info.RefreshFlatBuf();

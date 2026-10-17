@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/emulator_settings.h"
+#include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
 
@@ -192,7 +193,7 @@ void Visit(Info& info, const IR::Inst& inst) {
         break;
     case IR::Opcode::ReadConst:
         AddFlatbuf(info);
-        if (inst.Flags<u32>() == 0) {
+        if (IR::GetUserdataBufOffset(&inst).first == 0) {
             info.readconst_types |= Info::ReadConstType::Immediate;
             info.readconst_types |= Info::ReadConstType::Dynamic;
             info.uses_dma = true;

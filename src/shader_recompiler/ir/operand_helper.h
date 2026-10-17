@@ -1,9 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#pragma once
+
 // Some helpers to get operand indices of instructions by name to make it a bit safer.
 // Just a start, not widely used
 
+#include <utility>
+#include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
@@ -43,6 +47,36 @@ static inline U32 GetBufferVOffsetArg(const Inst* buffer_inst) {
 
 static inline U32 GetBufferSOffsetArg(const Inst* buffer_inst) {
     return GetBufferAddressComponent(buffer_inst, 2);
+}
+
+static inline std::pair<u16, bool> GetUserdataBufOffset(const Inst* inst) {
+    if (inst->GetOpcode() == Opcode::ReadConstBuffer) {
+        auto inst_info = inst->Flags<BufferInstInfo>();
+        return {inst_info.userdatabuf_off, inst_info.touch_buf};
+    }
+    if (inst->GetOpcode() == Opcode::ReadConst) {
+        auto inst_info = inst->Flags<ReadConstInstInfo>();
+        return {inst_info.userdatabuf_off, inst_info.touch_buf};
+    }
+    UNREACHABLE_MSG("Instruction not supported");
+}
+
+static inline void SetUserDataBufOffset(Inst* inst, u16 offset, bool touch_buf) {
+    if (inst->GetOpcode() == Opcode::ReadConstBuffer) {
+        auto inst_info = inst->Flags<BufferInstInfo>();
+        inst_info.userdatabuf_off.Assign(offset);
+        inst_info.touch_buf.Assign(touch_buf);
+        inst->SetFlags(inst_info);
+        return;
+    }
+    if (inst->GetOpcode() == Opcode::ReadConst) {
+        auto inst_info = inst->Flags<ReadConstInstInfo>();
+        inst_info.userdatabuf_off.Assign(offset);
+        inst_info.touch_buf.Assign(touch_buf);
+        inst->SetFlags(inst_info);
+        return;
+    }
+    UNREACHABLE_MSG("Instruction not supported");
 }
 
 } // namespace Shader::IR
