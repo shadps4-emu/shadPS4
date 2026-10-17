@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include <cstring>
 #include <magic_enum/magic_enum.hpp>
 #include <xxhash.h>
 
@@ -321,8 +320,6 @@ void BufferCache::ReadEdgeImagePages(const Image& image) {
 
 void BufferCache::SynchronizeDmaBuffers() {
     fault_process_pending = true;
-    // Shaders that use DMA read the BDA page table, make sure queued entries have reached it.
-    FlushPendingPageTable();
     for (const auto& range : resident_ranges) {
         const u64 page = range.start >> (ARENA_PAGE_BITS - block_shift);
         const VAddr device_addr = range.start << block_shift;
@@ -436,7 +433,18 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
         return;
     }
 
+    u64 resident_blocks{};
+    for (const auto& range : bind_ranges) {
+        resident_blocks += range.end - range.start;
+    }
+
+    boost::container::small_vector<vk::BufferCopy, 8> copies;
+    const auto staging =
+        staging_pool.Request(resident_blocks * sizeof(vk::DeviceAddress), MemoryType::HostUncached);
+
     ArenaBinds* binds = BindsForArena(arena);
+    auto* bda_addrs = reinterpret_cast<vk::DeviceAddress*>(staging.mapped);
+    u64 offset = staging.offset;
     for (const auto& range : bind_ranges) {
         const auto [device_memory, memory_offset] = AllocateResidentMemory(range.end - range.start);
 
@@ -449,51 +457,32 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
 
         LOG_INFO(Render, "Making range start={}, end={} resident", backing.start, backing.end);
 
-        const auto& bind = binds->binds.emplace_back(vk::SparseMemoryBind{
+        const vk::SparseMemoryBind bind = {
             .resourceOffset = (range.start << block_shift) - arena->cpu_addr,
             .size = (range.end - range.start) << block_shift,
             .memory = device_memory,
             .memoryOffset = memory_offset,
-        });
-
-        // Queue the page table entries instead of copying them right away. A copy here would end
-        // the current render pass for every miss; FlushPendingPageTable writes them all at once.
-        const u64 src_offset = pending_pagetable_addrs.size() * sizeof(vk::DeviceAddress);
-        for (u64 block = 0; block < bind.size; block += block_size) {
-            pending_pagetable_addrs.push_back(arena->BufferDeviceAddress() + bind.resourceOffset +
-                                              block);
-        }
-        const u64 dst_offset = backing.start * sizeof(vk::DeviceAddress);
-        const u64 copy_size = (backing.end - backing.start) * sizeof(vk::DeviceAddress);
-        if (!pending_pagetable_copies.empty() &&
-            pending_pagetable_copies.back().srcOffset + pending_pagetable_copies.back().size ==
-                src_offset &&
-            pending_pagetable_copies.back().dstOffset + pending_pagetable_copies.back().size ==
-                dst_offset) {
-            // Continues the previous queued copy, extend it.
-            pending_pagetable_copies.back().size += copy_size;
+        };
+        // Pool allocations are handed out back to back, so a new bind often just continues the
+        // previous one. Merge those to keep the number of entries in bindSparse down.
+        if (!binds->binds.empty() && binds->binds.back().memory == bind.memory &&
+            binds->binds.back().resourceOffset + binds->binds.back().size == bind.resourceOffset &&
+            binds->binds.back().memoryOffset + binds->binds.back().size == bind.memoryOffset) {
+            binds->binds.back().size += bind.size;
         } else {
-            pending_pagetable_copies.emplace_back(src_offset, dst_offset, copy_size);
+            binds->binds.push_back(bind);
         }
-    }
-}
 
-void BufferCache::FlushPendingPageTable() {
-    if (pending_pagetable_copies.empty()) {
-        return;
+        for (u64 block = 0; block < bind.size; block += block_size) {
+            *(bda_addrs++) = arena->BufferDeviceAddress() + bind.resourceOffset + block;
+        }
+        const u64 copy_size = (backing.end - backing.start) * sizeof(vk::DeviceAddress);
+        copies.emplace_back(offset, backing.start * sizeof(vk::DeviceAddress), copy_size);
+        offset += copy_size;
     }
 
-    const u64 total_size = pending_pagetable_addrs.size() * sizeof(vk::DeviceAddress);
-    const auto staging = staging_pool.Request(total_size, MemoryType::HostUncached);
-    std::memcpy(staging.mapped, pending_pagetable_addrs.data(), total_size);
-    for (auto& copy : pending_pagetable_copies) {
-        copy.srcOffset += staging.offset;
-    }
     staging.Flush();
-    runtime.CopyBuffer(staging.buffer, bda_pagetable_buffer.get(), pending_pagetable_copies);
-
-    pending_pagetable_addrs.clear();
-    pending_pagetable_copies.clear();
+    runtime.CopyBuffer(staging.buffer, bda_pagetable_buffer.get(), copies);
 }
 
 bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size,
