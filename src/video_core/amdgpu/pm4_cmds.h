@@ -1327,4 +1327,31 @@ struct PM4CmdSetPredication {
     }
 };
 
+struct PM4CmdGetLodStats {
+    PM4Type3Header header;
+    union {
+        BitField<0, 16, u32> data_offset;
+        BitField<16, 16, u32> control_flags;
+        u32 control;
+    };
+    u32 addr_lo;
+    u32 addr_hi;
+
+    template <typename T = VAddr>
+    [[nodiscard]] T Address() const {
+        const u64 addr = (static_cast<u64>(addr_hi & 0x3) << 38) | (static_cast<u64>(addr_lo) << 6);
+        if constexpr (std::is_pointer_v<T>) {
+            return reinterpret_cast<T>(addr);
+        } else {
+            return static_cast<T>(addr);
+        }
+    }
+
+    [[nodiscard]] u32 DataOffset() const {
+        const u32 ofs = data_offset.Value();
+        return ofs != 0 ? ofs : 0x20;
+    }
+};
+static_assert(sizeof(PM4CmdGetLodStats) == 0x10);
+
 } // namespace AmdGpu

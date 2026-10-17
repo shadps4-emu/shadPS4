@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
 #include <boost/preprocessor/stringize.hpp>
 
 #include "common/assert.h"
@@ -956,7 +957,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 break;
             }
             case PM4ItOpcode::GetLodStats: {
-                LOG_WARNING(Render_Vulkan, "Unimplemented IT_GET_LOD_STATS");
+                const auto* get_lod = reinterpret_cast<const PM4CmdGetLodStats*>(header);
+                HandleGetLodStats(get_lod);
                 break;
             }
             case PM4ItOpcode::CondExec: {
@@ -1298,6 +1300,11 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             // const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
             break;
         }
+        case PM4ItOpcode::GetLodStats: {
+            const auto* get_lod = reinterpret_cast<const PM4CmdGetLodStats*>(header);
+            HandleGetLodStats(get_lod);
+            break;
+        }
         case PM4ItOpcode::CondExec: {
             const auto* cond_exec = reinterpret_cast<const PM4CmdCondExec*>(header);
             if (count < 4 && cond_exec->command.Value() != 0) {
@@ -1342,6 +1349,44 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     }
 
     FIBER_EXIT;
+}
+
+void Liverpool::HandleGetLodStats(const PM4CmdGetLodStats* get_lod) {
+    const VAddr address = get_lod->Address();
+    const u32 data_offset = get_lod->DataOffset();
+    const u32 total_size = data_offset + 256 * sizeof(u64);
+    auto* memory = Core::Memory::Instance();
+    if (address != 0 && memory->IsValidMapping(address, total_size)) {
+        LOG_DEBUG(Render, "IT_GET_LOD_STATS: buffer = {:#x}, offset = {:#x}", address, data_offset);
+        if (rasterizer) {
+            rasterizer->OnFence();
+        }
+        struct LodStatsHeader {
+            u32 offset{0x20};
+            u32 status{1};
+            u64 timestamp{0};
+            u32 reserved[4]{};
+        };
+        static_assert(sizeof(LodStatsHeader) == 0x20);
+
+        const LodStatsHeader stats_header{
+            .offset = data_offset,
+            .status = 1,
+            .timestamp = 0,
+            .reserved = {},
+        };
+        memory->TryWriteBacking(reinterpret_cast<void*>(address), &stats_header,
+                                sizeof(stats_header));
+
+        static constexpr std::array<u64, 256> baseline_stats{};
+        memory->TryWriteBacking(reinterpret_cast<void*>(address + data_offset),
+                                baseline_stats.data(), baseline_stats.size() * sizeof(u64));
+        if (rasterizer) {
+            rasterizer->InvalidateMemory(address, total_size);
+        }
+    } else {
+        LOG_WARNING(Render, "IT_GET_LOD_STATS: invalid address {:#x}", address);
+    }
 }
 
 Liverpool::CmdBuffer Liverpool::CopyCmdBuffers(std::span<const u32> dcb, std::span<const u32> ccb) {
