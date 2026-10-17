@@ -872,6 +872,12 @@ void TextureCache::RefreshImage(Image& image) {
 
     scheduler.EndRendering();
 
+    {
+        std::scoped_lock lk{image.mutex};
+        image.flags &= ~ImageFlagBits::Dirty;
+    }
+    TrackImage(image);
+
     const auto [in_buffer, in_offset] =
         buffer_cache.ObtainBufferForImage(image.info.guest_address, image.info.guest_size);
     const auto [buffer, offset] = tile_manager.DetileImage(in_buffer, in_offset, image.info);
@@ -939,7 +945,10 @@ void TextureCache::UnregisterImage(ImageId image_id) {
 }
 
 void TextureCache::TrackImage(ImageId image_id) {
-    auto& image = slot_images[image_id];
+    TrackImage(slot_images[image_id]);
+}
+
+void TextureCache::TrackImage(Image& image) {
     if (False(image.flags & ImageFlagBits::Registered)) {
         return;
     }
