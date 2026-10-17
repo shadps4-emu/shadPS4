@@ -457,12 +457,21 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
 
         LOG_INFO(Render, "Making range start={}, end={} resident", backing.start, backing.end);
 
-        const auto& bind = binds->binds.emplace_back(vk::SparseMemoryBind{
+        const vk::SparseMemoryBind bind = {
             .resourceOffset = (range.start << block_shift) - arena->cpu_addr,
             .size = (range.end - range.start) << block_shift,
             .memory = device_memory,
             .memoryOffset = memory_offset,
-        });
+        };
+        // Pool allocations are handed out back to back, so a new bind often just continues the
+        // previous one. Merge those to keep the number of entries in bindSparse down.
+        if (!binds->binds.empty() && binds->binds.back().memory == bind.memory &&
+            binds->binds.back().resourceOffset + binds->binds.back().size == bind.resourceOffset &&
+            binds->binds.back().memoryOffset + binds->binds.back().size == bind.memoryOffset) {
+            binds->binds.back().size += bind.size;
+        } else {
+            binds->binds.push_back(bind);
+        }
 
         for (u64 block = 0; block < bind.size; block += block_size) {
             *(bda_addrs++) = arena->BufferDeviceAddress() + bind.resourceOffset + block;
