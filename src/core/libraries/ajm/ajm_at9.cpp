@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ajm_result.h"
@@ -94,22 +94,33 @@ u8 g_at9_guid[] = {0xD2, 0x42, 0xE1, 0x47, 0xBA, 0x36, 0x8D, 0x4D,
                    0x88, 0xFC, 0x61, 0x65, 0x4F, 0x8C, 0x83, 0x6C};
 
 void AjmAt9Decoder::ParseRIFFHeader(std::span<u8>& in_buf, AjmInstanceGapless& gapless) {
-    auto* header = reinterpret_cast<RIFFHeader*>(in_buf.data());
-    in_buf = in_buf.subspan(sizeof(RIFFHeader));
+    if (in_buf.size() < sizeof(RIFFHeader) + sizeof(ChunkHeader)) {
+        return;
+    }
 
+    auto* header = reinterpret_cast<const RIFFHeader*>(in_buf.data());
     ASSERT(header->riff == 'FFIR');
     ASSERT(header->wave == 'EVAW');
+    in_buf = in_buf.subspan(sizeof(RIFFHeader));
 
-    auto* chunk = reinterpret_cast<ChunkHeader*>(in_buf.data());
-    in_buf = in_buf.subspan(sizeof(ChunkHeader));
-    while (chunk->tag != 'atad') {
+    while (in_buf.size() >= sizeof(ChunkHeader)) {
+        auto* chunk = reinterpret_cast<const ChunkHeader*>(in_buf.data());
+        in_buf = in_buf.subspan(sizeof(ChunkHeader));
+
+        if (chunk->tag == 'atad') {
+            break;
+        }
+
+        if (in_buf.size() < chunk->length) {
+            break;
+        }
+
         switch (chunk->tag) {
         case ' tmf': {
             ASSERT(chunk->length == sizeof(AudioFormat));
-            auto* fmt = reinterpret_cast<AudioFormat*>(in_buf.data());
-
+            auto* fmt = reinterpret_cast<const AudioFormat*>(in_buf.data());
             ASSERT(fmt->fmt_type == 0xFFFE);
-            ASSERT(memcmp(fmt->guid, g_at9_guid, 16) == 0);
+            ASSERT(std::memcmp(fmt->guid, g_at9_guid, 16) == 0);
             AjmDecAt9InitializeParameters init_params = {};
             std::memcpy(init_params.config_data, fmt->config_data, ORBIS_AT9_CONFIG_DATA_SIZE);
             Initialize(&init_params, sizeof(init_params));
@@ -117,8 +128,7 @@ void AjmAt9Decoder::ParseRIFFHeader(std::span<u8>& in_buf, AjmInstanceGapless& g
         }
         case 'tcaf': {
             ASSERT(chunk->length == sizeof(SampleData));
-            auto* samples = reinterpret_cast<SampleData*>(in_buf.data());
-
+            auto* samples = reinterpret_cast<const SampleData*>(in_buf.data());
             gapless.init.total_samples = samples->sample_length;
             gapless.init.skip_samples = samples->encoder_delay;
             gapless.Reset();
@@ -127,10 +137,9 @@ void AjmAt9Decoder::ParseRIFFHeader(std::span<u8>& in_buf, AjmInstanceGapless& g
         default:
             break;
         }
-        in_buf = in_buf.subspan(chunk->length);
 
-        chunk = reinterpret_cast<ChunkHeader*>(in_buf.data());
-        in_buf = in_buf.subspan(sizeof(ChunkHeader));
+        const size_t advance_len = std::min(in_buf.size(), size_t((chunk->length + 1) & ~1));
+        in_buf = in_buf.subspan(advance_len);
     }
 }
 
@@ -141,14 +150,20 @@ u32 AjmAt9Decoder::GetMinimumInputSize() const {
 DecoderResult AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuffer& output,
                                          AjmInstanceGapless& gapless) {
     DecoderResult result{};
-    if (True(m_flags & AjmAt9CodecFlags::ParseRiffHeader) &&
-        *reinterpret_cast<u32*>(in_buf.data()) == 'FFIR') {
+    const bool is_riff = True(m_flags & AjmAt9CodecFlags::ParseRiffHeader) &&
+                         in_buf.size() >= sizeof(RIFFHeader) &&
+                         *reinterpret_cast<const u32*>(in_buf.data()) == 'FFIR';
+    if (is_riff) {
         ParseRIFFHeader(in_buf, gapless);
         result.is_reset = true;
     }
 
     if (!m_is_initialized) {
         result.result = ORBIS_AJM_RESULT_NOT_INITIALIZED;
+        return result;
+    }
+
+    if (in_buf.empty()) {
         return result;
     }
 
