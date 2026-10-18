@@ -88,14 +88,13 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
             continue;
         }
 
-        // Mount the content so we can check its param.sfo
-        mnt->Mount(entry.path(), mount_point->data, true);
+        // Create a temporary filesystem backend to view the param.sfo
+        std::shared_ptr<Core::FileSys::IBackend> fs = mnt->CreateBackend(entry.path(), true);
 
-        auto psf_path = fmt::format("{}/sce_sys/param.sfo", mount_point->data);
-        auto psf_handle = mnt->Open(psf_path, false);
+        // Look for a param.sfo in the additional content
+        auto psf_handle = fs->Open("sce_sys/param.sfo", Common::FS::FileAccessMode::Read);
         if (psf_handle == nullptr) {
             // This content doesn't have a param.sfo
-            mnt->Unmount(mount_point->data);
             continue;
         }
 
@@ -103,7 +102,6 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
         std::unique_ptr<PSF> dlc_params = std::make_unique<PSF>();
         if (!dlc_params->Open(psf_handle)) {
             // The param.sfo is invalid
-            mnt->Unmount(mount_point->data);
             continue;
         }
 
@@ -114,18 +112,17 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
             !content_id.has_value() ||
             content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
             // This content fails the error checks performed in sceAppContentInitialize.
-            mnt->Unmount(mount_point->data);
             continue;
         }
 
         auto entitlement_id = content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
         if (strncmp(entitlement_id.data(), entitlement_label->data, entitlement_id.length()) != 0) {
             // The entitlement ID is incorrect.
-            mnt->Unmount(mount_point->data);
             continue;
         }
 
         // We've located the correct folder.
+        mnt->Mount(entry.path(), mount_point->data, true);
         return ORBIS_OK;
     }
 
@@ -323,13 +320,14 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
     }
     const auto addon_path = addons_dir / title_id;
     if (std::filesystem::exists(addon_path)) {
+        auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+
         for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
             if (!entry.is_directory() && entry.path().extension() != ".zar") {
                 continue;
             }
 
             // Create a temporary filesystem backend to view the param.sfo
-            auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
             std::shared_ptr<Core::FileSys::IBackend> fs = mnt->CreateBackend(entry.path(), true);
 
             // Look for a param.sfo in the additional content.
