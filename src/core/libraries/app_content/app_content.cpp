@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
+#include <cstring>
 
 #include "app_content.h"
 #include "common/assert.h"
@@ -88,14 +89,13 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
             continue;
         }
 
-        // Mount the content so we can check its param.sfo
-        mnt->Mount(entry.path(), mount_point->data, true);
+        // Create a temporary filesystem backend to view the param.sfo
+        std::shared_ptr<Core::FileSys::IBackend> fs = mnt->CreateBackend(entry.path(), true);
 
-        auto psf_path = fmt::format("{}/sce_sys/param.sfo", mount_point->data);
-        auto psf_handle = mnt->Open(psf_path, false);
+        // Look for a param.sfo in the additional content
+        auto psf_handle = fs->Open("sce_sys/param.sfo", Common::FS::FileAccessMode::Read);
         if (psf_handle == nullptr) {
             // This content doesn't have a param.sfo
-            mnt->Unmount(mount_point->data);
             continue;
         }
 
@@ -103,7 +103,6 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
         std::unique_ptr<PSF> dlc_params = std::make_unique<PSF>();
         if (!dlc_params->Open(psf_handle)) {
             // The param.sfo is invalid
-            mnt->Unmount(mount_point->data);
             continue;
         }
 
@@ -114,18 +113,17 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
             !content_id.has_value() ||
             content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
             // This content fails the error checks performed in sceAppContentInitialize.
-            mnt->Unmount(mount_point->data);
             continue;
         }
 
         auto entitlement_id = content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
         if (strncmp(entitlement_id.data(), entitlement_label->data, entitlement_id.length()) != 0) {
             // The entitlement ID is incorrect.
-            mnt->Unmount(mount_point->data);
             continue;
         }
 
         // We've located the correct folder.
+        mnt->Mount(entry.path(), mount_point->data, true);
         return ORBIS_OK;
     }
 
@@ -140,8 +138,23 @@ int PS4_SYSV_ABI sceAppContentAddcontShrink() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentAddcontUnmount() {
-    LOG_ERROR(Lib_AppContent, "(STUBBED) called");
+int PS4_SYSV_ABI sceAppContentAddcontUnmount(OrbisAppContentMountPoint* mount_point) {
+    if (!is_initialized) {
+        LOG_ERROR(Lib_AppContent, "called before initialization");
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
+
+    if (!mount_point) {
+        LOG_ERROR(Lib_AppContent, "mount_point is null");
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+
+    const std::string_view mp{mount_point->data,
+                              strnlen(mount_point->data, sizeof(mount_point->data))};
+    LOG_INFO(Lib_AppContent, "called, mount_point = {}", mp);
+
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    mnt->Unmount(std::string{mp});
     return ORBIS_OK;
 }
 
@@ -316,13 +329,14 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
     }
     const auto addon_path = addons_dir / title_id;
     if (std::filesystem::exists(addon_path)) {
+        auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+
         for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
             if (!entry.is_directory() && entry.path().extension() != ".zar") {
                 continue;
             }
 
             // Create a temporary filesystem backend to view the param.sfo
-            auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
             std::shared_ptr<Core::FileSys::IBackend> fs = mnt->CreateBackend(entry.path(), true);
 
             // Look for a param.sfo in the additional content.
@@ -462,19 +476,46 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataMount(OrbisAppContentMountPoint* moun
 
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOption option,
                                                   OrbisAppContentMountPoint* mountPoint) {
+    if (!is_initialized) {
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
     if (mountPoint == nullptr) {
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     }
+
+    auto* param_sfo = Common::Singleton<PSF>::Instance();
+    const auto tid = !title_id.empty() ? title_id : param_sfo->GetString("TITLE_ID").value_or("");
+    const auto mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / tid;
+
+    std::error_code ec;
+    if (option == ORBIS_APP_CONTENT_TEMPORARY_DATA_OPTION_FORMAT) {
+        std::filesystem::remove_all(mount_temp_dir, ec);
+    }
+    std::filesystem::create_directories(mount_temp_dir, ec);
+
     static constexpr std::string_view TmpMount = "/temp0";
     TmpMount.copy(mountPoint->data, TmpMount.size());
     mountPoint->data[TmpMount.size()] = '\0';
-    LOG_INFO(Lib_AppContent, "sceAppContentTemporaryDataMount2: option = {}, mountPoint = {}",
-             option, mountPoint->data);
+
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    mnt->Mount(mount_temp_dir, std::string{TmpMount});
+
+    LOG_INFO(Lib_AppContent, "option = {}, mountPoint = {}", option, mountPoint->data);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentTemporaryDataUnmount() {
-    LOG_ERROR(Lib_AppContent, "(STUBBED) called");
+int PS4_SYSV_ABI sceAppContentTemporaryDataUnmount(const OrbisAppContentMountPoint* mountPoint) {
+    if (!is_initialized) {
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
+    if (mountPoint == nullptr) {
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+    const std::string_view mp{mountPoint->data,
+                              strnlen(mountPoint->data, sizeof(mountPoint->data))};
+    LOG_INFO(Lib_AppContent, "mountPoint = {}", mp);
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    mnt->Unmount(std::string{mp});
     return ORBIS_OK;
 }
 
