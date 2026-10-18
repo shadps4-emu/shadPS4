@@ -111,19 +111,34 @@ ImageInfo::ImageInfo(const AmdGpu::DepthBuffer& buffer, u32 num_slices, VAddr ht
     meta_info.htile_addr = buffer.z_info.tile_surface_enable ? htile_address : 0;
 
     stencil_addr = write_buffer ? buffer.StencilWriteAddress() : buffer.StencilAddress();
-
-    guest_address = write_buffer ? buffer.DepthWriteAddress() : buffer.DepthAddress();
-    if (props.is_tiled) {
-        guest_size = buffer.GetDepthSliceSize() * resources.layers;
-        mips_layout[0] = MipInfo(guest_size, pitch, buffer.Height(), 0);
-    } else {
-        std::tie(std::ignore, std::ignore, guest_size) =
-            ImageSizeLinearAligned(pitch, size.height, num_bits, num_samples);
-        guest_size *= resources.layers;
-        mips_layout[0] = MipInfo(guest_size, pitch, size.height, 0);
+    if (props.has_stencil) {
+        if (props.is_tiled) {
+            stencil_size = buffer.GetStencilSliceSize() * resources.layers;
+        } else {
+            std::tie(std::ignore, std::ignore, stencil_size) =
+                ImageSizeLinearAligned(pitch, size.height, 8, num_samples);
+            stencil_size *= resources.layers;
+        }
     }
-    // Stencil is one byte per sample with the same tiling as depth.
-    stencil_size = guest_size / (num_bits >> 3);
+
+    if (buffer.z_info.format != AmdGpu::DepthBuffer::ZFormat::Invalid) {
+        guest_address = write_buffer ? buffer.DepthWriteAddress() : buffer.DepthAddress();
+        if (props.is_tiled) {
+            guest_size = buffer.GetDepthSliceSize() * resources.layers;
+            mips_layout[0] = MipInfo(guest_size, pitch, buffer.Height(), 0);
+        } else {
+            std::tie(std::ignore, std::ignore, guest_size) =
+                ImageSizeLinearAligned(pitch, size.height, num_bits, num_samples);
+            guest_size *= resources.layers;
+            mips_layout[0] = MipInfo(guest_size, pitch, size.height, 0);
+        }
+    } else {
+        guest_address = stencil_addr;
+        guest_size = stencil_size;
+        mips_layout[0] =
+            MipInfo(guest_size, pitch, props.is_tiled ? buffer.Height() : size.height, 0);
+        num_bits = 8;
+    }
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Image& sharp, const Shader::ImageResource& desc) noexcept {

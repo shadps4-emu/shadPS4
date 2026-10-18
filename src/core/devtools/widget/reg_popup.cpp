@@ -108,7 +108,8 @@ void RegPopup::DrawDepthBuffer(const AmdGpu::DepthBuffer& buffer,
             "StencilAddress()",               buffer.StencilAddress(),
             "NumSamples()",                   buffer.NumSamples(),
             "NumBits()",                      buffer.NumBits(),
-            "GetDepthSliceSize()",            buffer.GetDepthSliceSize()
+            "GetDepthSliceSize()",            buffer.GetDepthSliceSize(),
+            "GetStencilSliceSize()",          buffer.GetStencilSliceSize()
         );
         // clang-format on
 
