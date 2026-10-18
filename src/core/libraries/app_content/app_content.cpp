@@ -583,13 +583,46 @@ int PS4_SYSV_ABI sceAppContentSmallSharedDataGetAvailableSpaceKb() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentSmallSharedDataMount() {
-    LOG_ERROR(Lib_AppContent, "(STUBBED) called");
+int PS4_SYSV_ABI sceAppContentSmallSharedDataMount(u32 option, const void* id, const void* param,
+                                                   OrbisAppContentMountPoint* mountPoint) {
+    if (!is_initialized) {
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
+    if (id == nullptr || mountPoint == nullptr) {
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+
+    auto* param_sfo = Common::Singleton<PSF>::Instance();
+    const auto tid = !title_id.empty() ? title_id : param_sfo->GetString("TITLE_ID").value_or("");
+    const auto mount_ssd_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / tid / "smallshared";
+
+    std::error_code ec;
+    std::filesystem::create_directories(mount_ssd_dir, ec);
+
+    static constexpr std::string_view SsdMount = "/smallshared0";
+    SsdMount.copy(mountPoint->data, SsdMount.size());
+    mountPoint->data[SsdMount.size()] = '\0';
+
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    mnt->Mount(mount_ssd_dir, std::string{SsdMount});
+
+    LOG_INFO(Lib_AppContent, "option = {}, mountPoint = {}", option, mountPoint->data);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentSmallSharedDataUnmount() {
-    LOG_ERROR(Lib_AppContent, "(STUBBED) called");
+int PS4_SYSV_ABI sceAppContentSmallSharedDataUnmount(const OrbisAppContentMountPoint* mountPoint) {
+    if (!is_initialized) {
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
+    if (mountPoint == nullptr) {
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+    const std::string_view mp{mountPoint->data,
+                              strnlen(mountPoint->data, sizeof(mountPoint->data))};
+    LOG_INFO(Lib_AppContent, "mountPoint = {}", mp);
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    mnt->Unmount(std::string{mp});
     return ORBIS_OK;
 }
 
