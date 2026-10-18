@@ -48,6 +48,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     memory->SetRasterizer(this);
 
     scheduler.SetSubmitCallback([this](Vulkan::SubmitInfo& info) {
+        // Page table entries must land in the same command buffer that waits on their sparse bind.
+        buffer_cache.FlushPendingPageTable();
         runtime.FlushBarriers();
         buffer_cache.SubmitPendingArenaBinds(info);
     });
