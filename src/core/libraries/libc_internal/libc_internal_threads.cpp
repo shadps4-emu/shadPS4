@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <condition_variable>
+#include <mutex>
+
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/libc_internal/libc_internal_threads.h"
 #include "core/libraries/libs.h"
@@ -55,11 +58,49 @@ s32 PS4_SYSV_ABI internal__Mtxdst(Libraries::Kernel::PthreadMutexT* mtx) {
     return result != 0;
 }
 
+static std::mutex g_cxa_guard_mutex;
+static std::condition_variable g_cxa_guard_cv;
+
+s32 PS4_SYSV_ABI internal__cxa_guard_acquire(u64* guard) {
+    std::unique_lock lk{g_cxa_guard_mutex};
+    auto* bytes = reinterpret_cast<volatile u8*>(guard);
+    while (bytes[0] == 0 && bytes[1] != 0) {
+        g_cxa_guard_cv.wait(lk);
+    }
+    if (bytes[0] != 0) {
+        return 0;
+    }
+    *guard = 0x100;
+    return 1;
+}
+
+void PS4_SYSV_ABI internal__cxa_guard_release(u64* guard) {
+    {
+        std::scoped_lock lk{g_cxa_guard_mutex};
+        *guard = 1;
+    }
+    g_cxa_guard_cv.notify_all();
+}
+
+void PS4_SYSV_ABI internal__cxa_guard_abort(u64* guard) {
+    {
+        std::scoped_lock lk{g_cxa_guard_mutex};
+        *guard = 0;
+    }
+    g_cxa_guard_cv.notify_all();
+}
+
 void RegisterlibSceLibcInternalThreads(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("z7STeF6abuU", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Mtxinit);
     LIB_FUNCTION("pE4Ot3CffW0", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Mtxlock);
     LIB_FUNCTION("cMwgSSmpE5o", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Mtxunlock);
     LIB_FUNCTION("LaPaA6mYA38", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Mtxdst);
+    LIB_FUNCTION("3GPpjQdAMTw", "libSceLibcInternal", 1, "libSceLibcInternal",
+                 internal__cxa_guard_acquire);
+    LIB_FUNCTION("9rAeANT2tyE", "libSceLibcInternal", 1, "libSceLibcInternal",
+                 internal__cxa_guard_release);
+    LIB_FUNCTION("2emaaluWzUw", "libSceLibcInternal", 1, "libSceLibcInternal",
+                 internal__cxa_guard_abort);
 }
 
 } // namespace Libraries::LibcInternal
