@@ -132,6 +132,9 @@ public:
     ImageFlagBits flags = ImageFlagBits::Dirty;
     VAddr track_addr = 0;
     VAddr track_addr_end = 0;
+    bool read_guarded{};        ///< Image's pages currently fault on CPU read
+    bool no_read_guard{};       ///< Guarding was given up for this image
+    u8 neighbour_read_faults{}; ///< How many times other data triggered the guard
     ImageId depth_id{};
     u64 depth_uid{};
 

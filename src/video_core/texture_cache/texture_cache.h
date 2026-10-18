@@ -116,6 +116,9 @@ public:
     /// Marks an image as dirty if it exists at the provided address.
     void InvalidateMemoryFromGPU(VAddr address, size_t max_size);
 
+    /// Downloads guarded GPU-written pages so read can go on.
+    void ReadMemory(VAddr addr, size_t size, bool assume_locks);
+
     /// Evicts any images that overlap the unmapped range.
     void UnmapMemory(VAddr cpu_addr, size_t size);
 
@@ -344,6 +347,15 @@ private:
 
     /// Copies image memory back to CPU.
     void DownloadImageMemory(ImageId image_id, bool sync = false);
+
+    /// Copies a tiled image back to the guest memory.
+    void DownloadTiledImageMemory(Image& image, bool sync = false);
+
+    /// Makes CPU reads of a GPU-written image fault so the image can be downloaded.
+    void ArmReadback(ImageId image_id);
+
+    /// Removes the page guard.
+    void DisarmReadback(Image& image);
 
     /// Register image in the page table
     void RegisterImage(ImageId image);

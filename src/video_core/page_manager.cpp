@@ -70,7 +70,7 @@ struct PageManager::Impl {
                                                 bool update_read = false) {
             if (update_read) {
                 if (read_op == PageOp::Track) {
-                    ASSERT_MSG(num_read_watchers == 0, "Too many watchers");
+                    ASSERT_MSG(num_read_watchers < 255, "Too many watchers");
                 } else if (read_op == PageOp::Untrack) {
                     ASSERT_MSG(num_read_watchers > 0, "Not enough watchers");
                 }
@@ -115,7 +115,8 @@ struct PageManager::Impl {
         locks.reserve(start_page, end_page);
     }
 
-    void UpdatePageWatchers(VAddr addr, u64 size, PageOp write_op) {
+    template <bool is_read = false>
+    void UpdatePageWatchers(VAddr addr, u64 size, PageOp op) {
         const u64 page_start = addr >> PM_PAGE_BITS;
         const u64 page_end = Common::DivCeil(addr + size, PM_PAGE_SIZE);
 
@@ -156,7 +157,8 @@ struct PageManager::Impl {
             }
 
             // Apply the change to the page state
-            const auto new_perms = state->Update(write_op);
+            const auto new_perms =
+                is_read ? state->Update(PageOp::None, false, op, true) : state->Update(op);
             if (new_perms != perms) [[unlikely]] {
                 // If the protection changed add pending (un)protect action
                 release_pending();
@@ -473,6 +475,10 @@ void PageManager::OnGpuUnmap(VAddr address, size_t size) {
 
 void PageManager::UpdatePageWatchers(VAddr addr, u64 size, PageOp write_op) const {
     impl->UpdatePageWatchers(addr, size, write_op);
+}
+
+void PageManager::UpdatePageReadWatchers(VAddr addr, u64 size, PageOp read_op) const {
+    impl->UpdatePageWatchers<true>(addr, size, read_op);
 }
 
 void PageManager::UpdatePageWatchersForRegion(VAddr base_addr, const Bounds& bounds,

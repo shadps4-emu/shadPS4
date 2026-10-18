@@ -1270,7 +1270,12 @@ bool Rasterizer::ReadMemory(VAddr addr, u64 size, bool assume_locks) {
         // Not GPU mapped memory, can skip invalidation logic entirely.
         return false;
     }
-    buffer_cache.ReadMemory(addr, size, false, assume_locks);
+    // Texture cache handles guarded images, buffers read-protected pages
+    // When readbacks are enabled
+    texture_cache.ReadMemory(addr, size, assume_locks);
+    if (EmulatorSettings.GetReadbacksMode() != GpuReadbacksMode::Disabled) {
+        buffer_cache.ReadMemory(addr, size, false, assume_locks);
+    }
     return true;
 }
 
