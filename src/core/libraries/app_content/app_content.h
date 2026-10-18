@@ -77,7 +77,7 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
                                            const OrbisNpUnifiedEntitlementLabel* entitlement_label,
                                            OrbisAppContentMountPoint* mount_point);
 int PS4_SYSV_ABI sceAppContentAddcontShrink();
-int PS4_SYSV_ABI sceAppContentAddcontUnmount();
+int PS4_SYSV_ABI sceAppContentAddcontUnmount(OrbisAppContentMountPoint* mount_point);
 int PS4_SYSV_ABI sceAppContentAppParamGetInt(OrbisAppContentAppParamId paramId, s32* value);
 int PS4_SYSV_ABI sceAppContentAppParamGetString();
 int PS4_SYSV_ABI sceAppContentDownload0Expand();
