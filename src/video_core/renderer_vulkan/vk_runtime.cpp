@@ -601,6 +601,31 @@ void Runtime::ClearImage(VideoCore::Image* dst, const VideoCore::SubresourceRang
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
 
+void Runtime::ClearStencil(VideoCore::Image* dst, const VideoCore::SubresourceRange& range,
+                           u32 value) {
+    scheduler.EndRendering();
+
+    const bool needs_flush =
+        Transit(dst, vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eClear,
+                vk::AccessFlagBits2::eTransferWrite, range);
+    if (needs_flush) {
+        FlushBarriers();
+    }
+
+    const vk::ImageSubresourceRange vk_range = {
+        .aspectMask = vk::ImageAspectFlagBits::eStencil,
+        .baseMipLevel = range.base.level,
+        .levelCount = range.extent.levels,
+        .baseArrayLayer = range.base.layer,
+        .layerCount = range.extent.layers,
+    };
+    const auto cmdbuf = scheduler.CommandBuffer();
+    cmdbuf.clearDepthStencilImage(dst->GetImage(), vk::ImageLayout::eTransferDstOptimal,
+                                  vk::ClearDepthStencilValue{0.0f, value}, vk_range);
+
+    dst->flags |= VideoCore::ImageFlagBits::GpuModified;
+}
+
 void Runtime::SetBackingSamples(VideoCore::Image* image, u32 num_samples, bool copy_backing) {
     auto& backing = image->backing;
     auto& backing_images = image->backing_images;

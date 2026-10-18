@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <set>
+
 #include "common/debug.h"
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
@@ -719,6 +721,39 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
     // First buffer must have size of vec4 and second the size of a single layer
     const AmdGpu::Buffer buf0 = desc0.GetSharp(info);
     const AmdGpu::Buffer buf1 = desc1.GetSharp(info);
+
+    // A compute fill of a depth buffer's stencil plane
+    // The stencil is the depth image's stencil aspect, address only has placeholder
+    // Fill writes one element per thread, so generic check doesn't recognise it
+    // We require the fill to cover the whole plane, and clear the depth stencil
+    if (buf0.GetSize() == 16) {
+        if (const auto stencil_id =
+                texture_cache.FindImageFromRange(buf1.base_address, buf1.GetSize(), false)) {
+            VideoCore::Image& stencil = texture_cache.GetImage(stencil_id);
+            const auto depth_id = texture_cache.GetAssociatedDepth(stencil);
+            if (depth_id && stencil.info.guest_address == buf1.base_address &&
+                buf1.GetSize() >= stencil.info.guest_size) {
+                VideoCore::Image& depth = texture_cache.GetImage(depth_id);
+                if (depth.info.props.has_stencil) {
+                    const u32 value = *reinterpret_cast<const u32*>(buf0.base_address) & 0xFFu;
+                    static std::set<VAddr> logged;
+                    if (logged.insert(buf1.base_address).second) {
+                        LOG_INFO(Render_Vulkan,
+                                 "Compute fill of the stencil plane {:#x} (depth {:#x}) applied "
+                                 "as a stencil clear to {}",
+                                 buf1.base_address, depth.info.guest_address, value);
+                    }
+                    const VideoCore::SubresourceRange range = {
+                        .base = {.level = 0, .layer = 0},
+                        .extent = depth.info.resources,
+                    };
+                    runtime.ClearStencil(&depth, range, value);
+                    return true;
+                }
+            }
+        }
+    }
+
     const u32 buf1_bpp = AmdGpu::NumBitsPerBlock(buf1.GetDataFmt());
     if (buf0.GetSize() != 16 || (cs_pgm.dim_x * 128ULL * (buf1_bpp / 8)) != buf1.GetSize()) {
         return false;
