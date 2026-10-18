@@ -140,8 +140,15 @@ int PS4_SYSV_ABI sceAppContentAddcontShrink() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentAddcontUnmount() {
-    LOG_ERROR(Lib_AppContent, "(STUBBED) called");
+int PS4_SYSV_ABI sceAppContentAddcontUnmount(OrbisAppContentMountPoint* mount_point) {
+    LOG_INFO(Lib_AppContent, "called, mount_point = {}", mount_point ? mount_point->data : "");
+    if (!mount_point) {
+        LOG_ERROR(Lib_AppContent, "mount_point is null");
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    mnt->Unmount(mount_point->data);
     return ORBIS_OK;
 }
 
