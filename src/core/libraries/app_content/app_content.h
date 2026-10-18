@@ -111,7 +111,7 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataGetAvailableSpaceKb(
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount(OrbisAppContentMountPoint* mountPoint);
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOption option,
                                                   OrbisAppContentMountPoint* mountPoint);
-int PS4_SYSV_ABI sceAppContentTemporaryDataUnmount();
+int PS4_SYSV_ABI sceAppContentTemporaryDataUnmount(const OrbisAppContentMountPoint* mountPoint);
 int PS4_SYSV_ABI sceAppContentGetPftFlag();
 int PS4_SYSV_ABI Func_C59A36FF8D7C59DA();
 int PS4_SYSV_ABI sceAppContentAddcontEnqueueDownloadByEntitlementId();

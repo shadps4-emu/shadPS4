@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
+#include <cstring>
 
 #include "app_content.h"
 #include "common/assert.h"
@@ -475,19 +476,46 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataMount(OrbisAppContentMountPoint* moun
 
 int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOption option,
                                                   OrbisAppContentMountPoint* mountPoint) {
+    if (!is_initialized) {
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
     if (mountPoint == nullptr) {
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     }
+
+    auto* param_sfo = Common::Singleton<PSF>::Instance();
+    const auto tid = !title_id.empty() ? title_id : param_sfo->GetString("TITLE_ID").value_or("");
+    const auto mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / tid;
+
+    std::error_code ec;
+    if (option == ORBIS_APP_CONTENT_TEMPORARY_DATA_OPTION_FORMAT) {
+        std::filesystem::remove_all(mount_temp_dir, ec);
+    }
+    std::filesystem::create_directories(mount_temp_dir, ec);
+
     static constexpr std::string_view TmpMount = "/temp0";
     TmpMount.copy(mountPoint->data, TmpMount.size());
     mountPoint->data[TmpMount.size()] = '\0';
-    LOG_INFO(Lib_AppContent, "sceAppContentTemporaryDataMount2: option = {}, mountPoint = {}",
-             option, mountPoint->data);
+
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    mnt->Mount(mount_temp_dir, std::string{TmpMount});
+
+    LOG_INFO(Lib_AppContent, "option = {}, mountPoint = {}", option, mountPoint->data);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentTemporaryDataUnmount() {
-    LOG_ERROR(Lib_AppContent, "(STUBBED) called");
+int PS4_SYSV_ABI sceAppContentTemporaryDataUnmount(const OrbisAppContentMountPoint* mountPoint) {
+    if (!is_initialized) {
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
+    if (mountPoint == nullptr) {
+        return ORBIS_APP_CONTENT_ERROR_PARAMETER;
+    }
+    const std::string_view mp{mountPoint->data,
+                              strnlen(mountPoint->data, sizeof(mountPoint->data))};
+    LOG_INFO(Lib_AppContent, "mountPoint = {}", mp);
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    mnt->Unmount(std::string{mp});
     return ORBIS_OK;
 }
 
