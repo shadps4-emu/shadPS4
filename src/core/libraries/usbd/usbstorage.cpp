@@ -25,27 +25,34 @@ constexpr s32 ORBIS_AUTO_MOUNTER_ERROR_INVAL = static_cast<s32>(0x80f40002);
 constexpr s32 ORBIS_AUTO_MOUNTER_ERROR_NOENT = static_cast<s32>(0x80f40004);
 constexpr s32 ORBIS_AUTO_MOUNTER_ERROR_NOTSUP = static_cast<s32>(0x80f40005);
 
+// Flags for OrbisUsbStorageDeviceInfo additional_features
+constexpr u64 ORBIS_USB_STORAGE_FEATURE_READ_ONLY = 1ull << 4;
+constexpr u64 ORBIS_USB_STORAGE_FEATURE_FAT = 1ull << 6;
+constexpr u64 ORBIS_USB_STORAGE_FEATURE_EXFAT = 1ull << 7;
+
 struct OrbisUsbStorageDeviceInfo {
-    u32 device_id;          // +0x00
-    u8 pad0[12];            // +0x04
-    u16 unk10;              // +0x10
-    u16 unk12;              // +0x12
-    u16 unk14;              // +0x14
-    char vendor[256];       // +0x16
-    u64 capacity;           // +0x118
-    char product[256];      // +0x120
-    u64 status;             // +0x220
-    char mount_path[256];   // +0x228
-    u64 ready;              // +0x328
-    u8 pad1[0x360 - 0x330]; // up to 0x360
+    u32 device_id;           // +0x00
+    u8 pad0[12];             // +0x04
+    u16 vendor_id;           // +0x10
+    u16 product_id;          // +0x12
+    u16 bcd_device;          // +0x14
+    char vendor[256];        // +0x16
+    u8 pad1[2];              // +0x116
+    u64 vendor_len;          // +0x118
+    char product[256];       // +0x120
+    u64 product_len;         // +0x220
+    char serial_number[256]; // +0x228
+    u64 serial_number_len;   // +0x328
+    u64 additional_features; // +0x330
 };
 static_assert(offsetof(OrbisUsbStorageDeviceInfo, vendor) == 0x16);
-static_assert(offsetof(OrbisUsbStorageDeviceInfo, capacity) == 0x118);
+static_assert(offsetof(OrbisUsbStorageDeviceInfo, vendor_len) == 0x118);
 static_assert(offsetof(OrbisUsbStorageDeviceInfo, product) == 0x120);
-static_assert(offsetof(OrbisUsbStorageDeviceInfo, status) == 0x220);
-static_assert(offsetof(OrbisUsbStorageDeviceInfo, mount_path) == 0x228);
-static_assert(offsetof(OrbisUsbStorageDeviceInfo, ready) == 0x328);
-static_assert(sizeof(OrbisUsbStorageDeviceInfo) == 0x360);
+static_assert(offsetof(OrbisUsbStorageDeviceInfo, product_len) == 0x220);
+static_assert(offsetof(OrbisUsbStorageDeviceInfo, serial_number) == 0x228);
+static_assert(offsetof(OrbisUsbStorageDeviceInfo, serial_number_len) == 0x328);
+static_assert(offsetof(OrbisUsbStorageDeviceInfo, additional_features) == 0x330);
+static_assert(sizeof(OrbisUsbStorageDeviceInfo) == 0x338);
 
 #pragma pack(push, 1)
 struct OrbisUsbStorageDirent {
@@ -207,26 +214,23 @@ static s32 PS4_SYSV_ABI sceUsbStorageGetDeviceInfo(u32 device_id, OrbisUsbStorag
 
     std::memset(info, 0, sizeof(OrbisUsbStorageDeviceInfo));
     info->device_id = device_id;
-    info->unk10 = 1;
-    info->unk12 = 1;
-    info->unk14 = 1;
+    info->vendor_id = 0x054c;
+    info->product_id = 0x0268;
+    info->bcd_device = 0x0100;
+
     std::strncpy(info->vendor, "shadPS4", sizeof(info->vendor) - 1);
+    info->vendor_len = std::strlen(info->vendor);
+
     std::strncpy(info->product, "Virtual USB Storage", sizeof(info->product) - 1);
+    info->product_len = std::strlen(info->product);
 
-    const auto space_info = std::filesystem::space(usb_path, ec);
-    if (!ec && space_info.capacity > 0) {
-        info->capacity = space_info.capacity;
-    } else {
-        info->capacity = 64ULL * 1024 * 1024 * 1024; // 64 GB fallback
-    }
+    std::strncpy(info->serial_number, "0123456789ABCDEF", sizeof(info->serial_number) - 1);
+    info->serial_number_len = std::strlen(info->serial_number);
 
-    info->status = 1;
-    const std::string guest_mount = "/mnt/usb" + std::to_string(device_id);
-    std::strncpy(info->mount_path, guest_mount.c_str(), sizeof(info->mount_path) - 1);
-    info->ready = 1;
+    info->additional_features = ORBIS_USB_STORAGE_FEATURE_EXFAT;
 
-    LOG_INFO(Lib_Usbd, "device_id = {}, mount_path = '{}', capacity = {} MB", device_id,
-             info->mount_path, info->capacity / (1024 * 1024));
+    LOG_INFO(Lib_Usbd, "device_id = {}, vendor = '{}', product = '{}', serial = '{}'", device_id,
+             info->vendor, info->product, info->serial_number);
     return ORBIS_OK;
 }
 

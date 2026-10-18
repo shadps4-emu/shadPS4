@@ -618,7 +618,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         std::filesystem::remove_all(mount_temp_dir);
     }
     std::filesystem::create_directory(mount_temp_dir);
-    mnt->Mount(mount_temp_dir, "/temp0");
     mnt->Mount(mount_temp_dir, "/temp");
 
     const auto& mount_download_dir =
