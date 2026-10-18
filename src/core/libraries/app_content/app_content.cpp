@@ -138,14 +138,22 @@ int PS4_SYSV_ABI sceAppContentAddcontShrink() {
 }
 
 int PS4_SYSV_ABI sceAppContentAddcontUnmount(OrbisAppContentMountPoint* mount_point) {
-    LOG_INFO(Lib_AppContent, "called, mount_point = {}", mount_point ? mount_point->data : "");
+    if (!is_initialized) {
+        LOG_ERROR(Lib_AppContent, "called before initialization");
+        return ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED;
+    }
+
     if (!mount_point) {
         LOG_ERROR(Lib_AppContent, "mount_point is null");
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     }
 
+    const std::string_view mp{mount_point->data,
+                              strnlen(mount_point->data, sizeof(mount_point->data))};
+    LOG_INFO(Lib_AppContent, "called, mount_point = {}", mp);
+
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    mnt->Unmount(mount_point->data);
+    mnt->Unmount(std::string{mp});
     return ORBIS_OK;
 }
 
