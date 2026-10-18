@@ -350,6 +350,16 @@ void EmulatorSettingsImpl::MigrateNetworkKeys(const json& general, const json& n
     }
 }
 
+static void MigrateDmaSyncSetting(json& settings) {
+    if (!settings.contains("GPU")) {
+        return;
+    }
+    auto& gpu = settings["GPU"];
+    if (gpu.contains("direct_memory_access_enabled") && !gpu.contains("full_dma_sync_enabled")) {
+        gpu["full_dma_sync_enabled"] = gpu["direct_memory_access_enabled"];
+    }
+}
+
 // ── Load ──────────────────────────────────────────────────────────────
 
 bool EmulatorSettingsImpl::Load(const std::string& serial) {
@@ -365,6 +375,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             if (std::ifstream in{configPath}; in.good()) {
                 json gj;
                 in >> gj;
+                MigrateDmaSyncSetting(gj);
 
                 auto mergeGroup = [&gj](auto& group, const char* section) {
                     if (!gj.contains(section))
@@ -443,6 +454,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
 
             json gj;
             in >> gj;
+            MigrateDmaSyncSetting(gj);
 
             std::vector<std::string> changed;
 
@@ -615,7 +627,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
         setFromToml(s.copy_gpu_buffers, gpu, "copyGPUBuffers");
         setFromToml(s.readbacks_mode, gpu, "readbacksMode");
         setFromToml(s.readback_linear_images_enabled, gpu, "readbackLinearImages");
-        setFromToml(s.direct_memory_access_enabled, gpu, "directMemoryAccess");
+        setFromToml(s.full_dma_sync_enabled, gpu, "directMemoryAccess");
         setFromToml(s.dump_shaders, gpu, "dumpShaders");
         setFromToml(s.patch_shaders, gpu, "patchShaders");
         setFromToml(s.vblank_frequency, gpu, "vblankFrequency");

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <deque>
+#include <span>
 #include <boost/container/small_vector.hpp>
 
 #include "common/enum.h"
@@ -55,6 +56,13 @@ class BufferCache {
     static constexpr u64 STREAM_THRESHOLD = 16_KB;
 
 public:
+    struct DmaBufferRange {
+        const Buffer* buffer;
+        u64 offset;
+        u32 size;
+    };
+    using DmaBufferRangeList = boost::container::small_vector<DmaBufferRange, 8>;
+
     explicit BufferCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
                          Vulkan::Runtime& runtime, AmdGpu::Liverpool* liverpool,
                          TextureCache& texture_cache, PageManager& tracker);
@@ -120,8 +128,11 @@ public:
     /// Mark region as modified from the GPU
     void MarkRegionAsGpuModified(VAddr addr, size_t size);
 
+    /// Synchronizes all resident buffers needed for DMA.
+    DmaBufferRangeList SynchronizeAllDmaBuffers();
+
     /// Synchronizes all buffers needed for DMA.
-    void SynchronizeDmaBuffers();
+    DmaBufferRangeList SynchronizeDmaBuffers(std::span<const VAddr> addresses);
 
     /// Commits pending sparse buffer memory binds. Must be called before every scheduler submit.
     void SubmitPendingArenaBinds(Vulkan::SubmitInfo& info);
