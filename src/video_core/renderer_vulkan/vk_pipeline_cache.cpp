@@ -619,7 +619,7 @@ bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};
     const auto& cs_pgm = liverpool->GetCsRegs();
     const auto cs_params = AmdGpu::GetParams(cs_pgm, [this](VAddr address, u64 size) {
-        buffer_cache.ReadMemory(address, size, false, true);
+        buffer_cache.ReadMemory(address, size, false, false, true);
     });
     std::tie(infos[0], modules[0], compute_key.value) =
         GetProgram(HwStage::Compute, SwStage::Compute, cs_params, binding);
