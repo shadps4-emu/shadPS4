@@ -45,10 +45,6 @@ class TextureCache;
 class MemoryTracker;
 class PageManager;
 
-/// Layout of the table that maps every sparse block to the VMA allocation backing it. It is
-/// indexed by block number, so PAGE_BITS is the smallest possible block size (16 KiB) and the
-/// table is always large enough regardless of the block size the device ends up with. A second
-/// level page holds 4096 blocks (32 KiB) and only exists once one of its blocks was allocated.
 struct BlockTableTraits {
     using Entry = VmaAllocation;
     static constexpr size_t ADDRESS_SPACE_BITS = 40;
@@ -66,22 +62,7 @@ enum class ObtainBufferFlags {
 };
 DECLARE_ENUM_FLAG_OPERATORS(ObtainBufferFlags)
 
-/// Dynamic two level bitset that tracks which sparse blocks of an arena are resident.
-///
-/// Level 0 holds one bit per block and is split into fixed size leaves of 4096 bits (512 bytes).
-/// Level 1 is the table of leaf pointers, each leaf also keeping a population count. A missing
-/// leaf is an all zero leaf and a leaf whose count equals LEAF_BITS is an all ones leaf, which
-/// lets every search skip 4096 blocks at a time without touching the leaf contents. Leaves are
-/// only allocated when a bit inside them is set and are released again once they become empty.
-///
-/// Costs, with N being the number of blocks touched by the request:
-///   - checking that a range is fully resident: O(1) for ranges inside a single word, otherwise
-///     O(words) for partially filled leaves and O(1) per fully resident leaf
-///   - finding gaps / resident runs: O(runs + words that contain a run boundary)
-///   - marking a range resident or not: O(N / 64)
-///
-/// All block arguments are absolute block indices (address >> block_shift), not arena relative,
-/// and every range has to be inside [FirstBlock(), EndBlock()).
+
 class ResidencyBitset {
     static constexpr u64 WORD_BITS = 64;
     static constexpr u64 LEAF_WORDS = 64;
@@ -91,7 +72,7 @@ class ResidencyBitset {
 
     struct Leaf {
         std::array<u64, LEAF_WORDS> words{};
-        u32 count{}; ///< Number of set bits in the leaf.
+        u32 count{}; 
     };
 
 public:
@@ -108,7 +89,6 @@ public:
         return base + size;
     }
 
-    /// Returns true if the block is resident.
     [[nodiscard]] bool Test(u64 block) const noexcept {
         DEBUG_ASSERT(block >= base && block < base + size);
         const u64 pos = block - base;
@@ -120,7 +100,6 @@ public:
         return (leaf->words[bit / WORD_BITS] >> (bit % WORD_BITS)) & 1;
     }
 
-    /// Returns the first non-resident block in [from, end), or `end` if all of them are resident.
     [[nodiscard]] u64 FindNextGap(u64 from, u64 end) const noexcept {
         return FindNext<false>(from, end);
     }
@@ -130,7 +109,6 @@ public:
         return FindNext<true>(from, end);
     }
 
-    /// Returns true if every block in [first, end) is resident.
     [[nodiscard]] bool IsResident(u64 first, u64 end) const noexcept {
         return FindNext<false>(first, end) == end;
     }
@@ -358,18 +336,11 @@ public:
     /// Synchronizes all buffers needed for DMA.
     void SynchronizeDmaBuffers();
 
-    /// Writes the BDA page table entries of all blocks made resident since the last flush with a
-    /// single copy. Must be called before every scheduler submit and before running any shader
-    /// that dereferences guest pointers.
     void FlushPendingPageTable();
 
-    /// Allocates memory for all blocks queued by EnsureResident in a single VMA call and commits
-    /// the resulting sparse binds. Must be called before every scheduler submit.
     void SubmitPendingArenaBinds(Vulkan::SubmitInfo& info);
 
 private:
-    /// Sparse buffer covering one or two pages of the guest address space together with the set of
-    /// blocks that are currently resident in it.
     struct Arena : public Buffer {
         explicit Arena(const Vulkan::Instance& instance, VAddr cpu_addr_, u64 size_bytes_,
                        u32 block_shift)
