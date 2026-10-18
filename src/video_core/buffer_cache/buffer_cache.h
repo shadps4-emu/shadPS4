@@ -62,7 +62,6 @@ enum class ObtainBufferFlags {
 };
 DECLARE_ENUM_FLAG_OPERATORS(ObtainBufferFlags)
 
-
 class ResidencyBitset {
     static constexpr u64 WORD_BITS = 64;
     static constexpr u64 LEAF_WORDS = 64;
@@ -72,7 +71,7 @@ class ResidencyBitset {
 
     struct Leaf {
         std::array<u64, LEAF_WORDS> words{};
-        u32 count{}; 
+        u32 count{};
     };
 
 public:
