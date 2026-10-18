@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -103,8 +103,9 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
 int PS4_SYSV_ABI sceAppContentRequestPatchInstall();
 int PS4_SYSV_ABI sceAppContentSmallSharedDataFormat();
 int PS4_SYSV_ABI sceAppContentSmallSharedDataGetAvailableSpaceKb();
-int PS4_SYSV_ABI sceAppContentSmallSharedDataMount();
-int PS4_SYSV_ABI sceAppContentSmallSharedDataUnmount();
+int PS4_SYSV_ABI sceAppContentSmallSharedDataMount(u32 option, const void* id, const void* param,
+                                                   OrbisAppContentMountPoint* mountPoint);
+int PS4_SYSV_ABI sceAppContentSmallSharedDataUnmount(const OrbisAppContentMountPoint* mountPoint);
 int PS4_SYSV_ABI sceAppContentTemporaryDataFormat();
 int PS4_SYSV_ABI sceAppContentTemporaryDataGetAvailableSpaceKb(
     const OrbisAppContentMountPoint* mountPoint, u64* availableSpaceKb);
