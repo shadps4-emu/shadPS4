@@ -25,19 +25,24 @@ constexpr s32 ORBIS_AUTO_MOUNTER_ERROR_INVAL = static_cast<s32>(0x80f40002);
 constexpr s32 ORBIS_AUTO_MOUNTER_ERROR_NOENT = static_cast<s32>(0x80f40004);
 constexpr s32 ORBIS_AUTO_MOUNTER_ERROR_NOTSUP = static_cast<s32>(0x80f40005);
 
+// Flags for OrbisUsbStorageDeviceInfo additional_features
+constexpr u64 ORBIS_USB_STORAGE_FEATURE_READ_ONLY = 1ull << 4;
+constexpr u64 ORBIS_USB_STORAGE_FEATURE_FAT = 1ull << 6;
+constexpr u64 ORBIS_USB_STORAGE_FEATURE_EXFAT = 1ull << 7;
+
 struct OrbisUsbStorageDeviceInfo {
-    u32 device_id;          // +0x00
-    u8 pad0[12];            // +0x04
-    u16 unk10;              // +0x10
-    u16 unk12;              // +0x12
-    u16 unk14;              // +0x14
-    char vendor[256];       // +0x16
-    u64 capacity;           // +0x118
-    char product[256];      // +0x120
-    u64 status;             // +0x220
-    char mount_path[256];   // +0x228
-    u64 ready;              // +0x328
-    u8 pad1[0x360 - 0x330]; // up to 0x360
+    u32 device_id;           // +0x00
+    u8 pad0[12];             // +0x04
+    u16 unk10;               // +0x10
+    u16 unk12;               // +0x12
+    u16 unk14;               // +0x14
+    char vendor[256];        // +0x16
+    u64 capacity;            // +0x118
+    char product[256];       // +0x120
+    u64 status;              // +0x220
+    char mount_path[256];    // +0x228
+    u64 ready;               // +0x328
+    u64 additional_features; // +0x330
 };
 static_assert(offsetof(OrbisUsbStorageDeviceInfo, vendor) == 0x16);
 static_assert(offsetof(OrbisUsbStorageDeviceInfo, capacity) == 0x118);
@@ -45,7 +50,8 @@ static_assert(offsetof(OrbisUsbStorageDeviceInfo, product) == 0x120);
 static_assert(offsetof(OrbisUsbStorageDeviceInfo, status) == 0x220);
 static_assert(offsetof(OrbisUsbStorageDeviceInfo, mount_path) == 0x228);
 static_assert(offsetof(OrbisUsbStorageDeviceInfo, ready) == 0x328);
-static_assert(sizeof(OrbisUsbStorageDeviceInfo) == 0x360);
+static_assert(offsetof(OrbisUsbStorageDeviceInfo, additional_features) == 0x330);
+static_assert(sizeof(OrbisUsbStorageDeviceInfo) == 0x338);
 
 #pragma pack(push, 1)
 struct OrbisUsbStorageDirent {
