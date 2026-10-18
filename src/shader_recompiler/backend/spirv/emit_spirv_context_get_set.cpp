@@ -54,14 +54,25 @@ Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
 }
 
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
-    const u32 flatbuf_off_dw = IR::GetUserdataBufOffset(inst).first;
-    if (!EmulatorSettings.IsDirectMemoryAccessEnabled()) {
-        return ctx.EmitFlatbufferLoad(ctx.ConstU32(flatbuf_off_dw));
-    }
-    if (flatbuf_off_dw == 0) {
-        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_dynamic, addr, offset);
+    const auto dma_full_sync = EmulatorSettings.IsFullDmaSyncEnabled();
+    const auto [buf_off, is_touch] = IR::GetUserdataBufOffset(inst);
+    if (is_touch) {
+        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const, addr, offset);
+    } else if (dma_full_sync) {
+        if (buf_off == 0) {
+            return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_checked_zero, addr, offset);
+        } else {
+            return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_checked_flatbuf, addr, offset,
+                                      ctx.ConstU32(u32{buf_off}));
+        }
     } else {
-        return ctx.EmitFlatbufferLoad(ctx.ConstU32(flatbuf_off_dw));
+        if (buf_off == 0) {
+            LOG_WARNING(Render_Recompiler, "Shader {:#x} ReadConst with flatbuf offset 0.",
+                        ctx.info.pgm_hash);
+            return ctx.u32_zero_value;
+        } else {
+            return ctx.EmitFlatbufferLoad(ctx.ConstU32(u32{buf_off}));
+        }
     }
 }
 

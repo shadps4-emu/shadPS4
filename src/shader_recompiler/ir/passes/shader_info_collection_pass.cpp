@@ -19,6 +19,7 @@ static void AddFlatbuf(Info& info) {
 }
 
 void Visit(Info& info, const IR::Inst& inst) {
+    const bool full_sync_dma = EmulatorSettings.IsFullDmaSyncEnabled();
     switch (inst.GetOpcode()) {
     case IR::Opcode::GetAttribute:
     case IR::Opcode::GetAttributeU1:
@@ -191,14 +192,26 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::Memtime:
         info.uses_shader_clock = true;
         break;
-    case IR::Opcode::ReadConst:
-        AddFlatbuf(info);
-        if (IR::GetUserdataBufOffset(&inst).first == 0) {
-            info.readconst_types |= Info::ReadConstType::Immediate;
-            info.readconst_types |= Info::ReadConstType::Dynamic;
-            info.uses_dma = true;
+    case IR::Opcode::ReadConst: {
+        const auto [buf_off, is_touch] = IR::GetUserdataBufOffset(&inst);
+        if (is_touch) {
+            info.dma_sync_mode |= InfoPersistent::DmaSyncMode::Touch;
+            info.readconst_types |= Info::ReadConstType::Unchecked;
+        } else {
+            if (buf_off != 0) {
+                AddFlatbuf(info);
+            }
+            if (full_sync_dma) {
+                info.dma_sync_mode |= InfoPersistent::DmaSyncMode::Full;
+                if (buf_off == 0) {
+                    info.readconst_types |= Info::ReadConstType::CheckedZero;
+                } else {
+                    info.readconst_types |= Info::ReadConstType::CheckedFlatbuf;
+                }
+            }
         }
         break;
+    }
     case IR::Opcode::PackUfloat10_11_11:
         info.uses_pack_10_11_11 = true;
         break;
@@ -218,23 +231,22 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
         }
     }
 
-    if (!EmulatorSettings.IsDirectMemoryAccessEnabled()) {
-        info.uses_dma = false;
-        info.readconst_types = Info::ReadConstType::None;
-    }
 
-    if (info.uses_dma) {
+    if (True(info.dma_sync_mode)) {
         info.buffers.push_back({
             .used_types = IR::Type::U64,
             .buffer_type = BufferType::BdaPagetable,
             .is_written = true,
         });
-        info.buffers.push_back({
-            .used_types = IR::Type::U32,
-            .buffer_type = BufferType::FaultBuffer,
-            .is_written = true,
-        });
-        LOG_ERROR(Render, "Enabling DMA for shader {:#x}", info.pgm_hash);
+
+        if (True(info.dma_sync_mode & InfoPersistent::DmaSyncMode::Full)) {
+            info.buffers.push_back({
+                .used_types = IR::Type::U32,
+                .buffer_type = BufferType::FaultBuffer,
+                .is_written = true,
+            });
+            LOG_ERROR(Render, "Enabling full sync DMA for shader {:#x}", info.pgm_hash);
+        }
     }
 }
 

@@ -490,7 +490,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "GPU readbacksMode: {}", EmulatorSettings.GetReadbacksMode());
     LOG_INFO(Config, "GPU readbackLinearImages: {}",
              EmulatorSettings.IsReadbackLinearImagesEnabled());
-    LOG_INFO(Config, "GPU directMemoryAccess: {}", EmulatorSettings.IsDirectMemoryAccessEnabled());
+    LOG_INFO(Config, "GPU fullDmaSync: {}", EmulatorSettings.IsFullDmaSyncEnabled());
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", EmulatorSettings.IsDumpShaders());
     LOG_INFO(Config, "GPU vblankFrequency: {}", EmulatorSettings.GetVblankFrequency());
     LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}", EmulatorSettings.IsCopyGpuBuffers());

@@ -156,7 +156,7 @@ private:
     // Experimental tab
     int readbacksModeSetting;
     bool readbackLinearImagesSetting;
-    bool directMemoryAccessSetting;
+    bool fullDmaSyncSetting;
     bool windowsGuestRedZoneProtectionModeSetting;
     bool devkitConsoleSetting;
     bool neoModeSetting;
