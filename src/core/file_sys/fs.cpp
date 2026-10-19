@@ -174,6 +174,16 @@ void MntPoints::UnmountAll() {
     m_mnt_pairs.clear();
 }
 
+std::optional<MntPoints::MntPair> MntPoints::GetMountSnapshot(const std::string& guest_folder) {
+    const auto mount = RemoveTrailingSlashes(guest_folder);
+    std::scoped_lock lock{m_mutex};
+    const auto it = std::ranges::find(m_mnt_pairs, mount, &MntPair::mount);
+    if (it == m_mnt_pairs.end()) {
+        return std::nullopt;
+    }
+    return *it;
+}
+
 // Normalize a guest path. Resolves redundant slashes (e.g. Turok2 double slashes like
 // /app0//game.kpf) and directory traversal (e.g. /app0/../savedata0/) per POSIX pathname resolution
 // standards.
@@ -608,7 +618,21 @@ int HandleTable::CreateHandle() {
 
     auto* file = new File{};
     file->is_opened = false;
+    return InsertLocked(file);
+}
 
+int HandleTable::CreateDevice(std::shared_ptr<Devices::BaseDevice> device, std::string guest_name) {
+    auto* file = new File{};
+    file->type = FileType::Device;
+    file->device = std::move(device);
+    file->m_guest_name = std::move(guest_name);
+    file->is_opened = true;
+
+    std::scoped_lock lock{m_mutex};
+    return InsertLocked(file);
+}
+
+int HandleTable::InsertLocked(File* file) {
     int existingFilesNum = m_files.size();
 
     for (int index = 0; index < existingFilesNum; index++) {
@@ -634,6 +658,15 @@ File* HandleTable::GetFile(int d) {
         return nullptr;
     }
     return m_files.at(d);
+}
+
+HandleTable::DeviceRef HandleTable::GetDevice(int d) {
+    std::scoped_lock lock{m_mutex};
+    if (d < 0 || d >= m_files.size() || m_files[d] == nullptr) {
+        return {false, nullptr};
+    }
+    const auto* file = m_files[d];
+    return {true, file->type == FileType::Device ? file->device : nullptr};
 }
 
 File* HandleTable::GetSocket(int d) {

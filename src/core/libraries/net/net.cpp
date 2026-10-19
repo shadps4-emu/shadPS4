@@ -24,6 +24,7 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/jit_shared_memory.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/kernel/threads/pthread.h"
@@ -2019,6 +2020,180 @@ s32 PS4_SYSV_ABI sceNetRecvfrom(OrbisNetId s, void* buf, u64 len, s32 flags, Orb
     return r;
 }
 
+// Control messages in the guest's FreeBSD layout: a 12-byte header, data at +16, 8-byte alignment.
+constexpr u32 GuestCmsgHeaderSize = 12;
+constexpr u32 GuestCmsgDataOffset = 16;
+constexpr s32 GuestSolSocket = 0xffff;
+constexpr s32 GuestScmRights = 1;
+constexpr s32 GuestMsgEor = 0x8;
+constexpr s32 GuestMsgTrunc = 0x10;
+constexpr s32 GuestMsgCtrunc = 0x20;
+// Every guest descriptor travels as two host descriptors; Linux takes 253 per message.
+constexpr size_t MaxGuestDescriptors = 126;
+
+constexpr u32 GuestCmsgAlign(u32 len) {
+    return (len + 7) & ~7u;
+}
+
+struct GuestRights {
+    std::vector<s32> fds;
+    bool found = false;
+    bool malformed = false;
+    bool other = false;
+};
+
+static GuestRights ParseGuestRights(const OrbisNetMsghdr& msg) {
+    GuestRights rights;
+    const auto* control = static_cast<const u8*>(msg.msg_control);
+    u32 offset = 0;
+    while (offset + GuestCmsgHeaderSize <= msg.msg_controllen) {
+        u32 len;
+        s32 level, type;
+        std::memcpy(&len, control + offset, sizeof(len));
+        std::memcpy(&level, control + offset + 4, sizeof(level));
+        std::memcpy(&type, control + offset + 8, sizeof(type));
+        if (len < GuestCmsgHeaderSize || len > msg.msg_controllen - offset) {
+            rights.malformed = true;
+            break;
+        }
+        if (level == GuestSolSocket && type == GuestScmRights) {
+            rights.found = true;
+            if (len < GuestCmsgDataOffset || (len - GuestCmsgDataOffset) % sizeof(s32) != 0) {
+                rights.malformed = true;
+                break;
+            }
+            for (u32 i = GuestCmsgDataOffset; i < len; i += sizeof(s32)) {
+                s32 fd;
+                std::memcpy(&fd, control + offset + i, sizeof(fd));
+                rights.fds.push_back(fd);
+            }
+        } else {
+            rights.other = true;
+        }
+        if (GuestCmsgAlign(len) > msg.msg_controllen - offset) {
+            break;
+        }
+        offset += GuestCmsgAlign(len);
+    }
+    return rights;
+}
+
+#ifdef __linux__
+static bool IsLocalSocket(OrbisNetId s) {
+    Core::Net::SocketInfo info{};
+    if (Core::Net::SocketGetInfo(s, &info).error != Error::Ok || info.p2p) {
+        return false;
+    }
+    const auto family = Core::Net::SocketGetFamily(s);
+    return family.error == Error::Ok && family.value == AF_UNIX;
+}
+
+// Guest JIT descriptors travel with the data over the emulator's local sockets.
+static s32 SendmsgWithDescriptors(OrbisNetId s, const OrbisNetMsghdr& msg, s32 flags,
+                                  std::span<const s32> guest_fds) {
+    Core::Net::SocketInfo info{};
+    if (const auto r = Core::Net::SocketGetInfo(s, &info); r.error != Error::Ok) {
+        return Return(r);
+    }
+    if (info.p2p) {
+        LOG_ERROR(Lib_Net, "P2P sockets cannot carry descriptors");
+        return SetErrno(ORBIS_NET_EOPNOTSUPP);
+    }
+    if (const auto family = Core::Net::SocketGetFamily(s); family.error != Error::Ok) {
+        return Return(family);
+    } else if (family.value != AF_UNIX) {
+        LOG_ERROR(Lib_Net, "Descriptors can only be sent over local sockets");
+        return SetErrno(ORBIS_NET_EINVAL);
+    }
+    if (guest_fds.size() > MaxGuestDescriptors) {
+        return SetErrno(ORBIS_NET_EMSGSIZE);
+    }
+    if (msg.msg_name != nullptr && msg.msg_namelen != 0) {
+        LOG_ERROR(Lib_Net, "Descriptors to an addressed local socket are not supported");
+        return SetErrno(ORBIS_NET_EOPNOTSUPP);
+    }
+    std::vector<u8> buffer;
+    if (const int e = GatherSize(msg, &buffer); e != 0) {
+        return SetErrno(e);
+    }
+    size_t offset = 0;
+    for (s32 i = 0; i < msg.msg_iovlen; ++i) {
+        std::memcpy(buffer.data() + offset, msg.msg_iov[i].iov_base, msg.msg_iov[i].iov_len);
+        offset += msg.msg_iov[i].iov_len;
+    }
+    if (info.type == SOCK_STREAM && buffer.empty()) {
+        // A stream carries descriptors only with data.
+        return SetErrno(ORBIS_NET_EINVAL);
+    }
+    Libraries::Kernel::JitDescriptorBatch batch;
+    if (const int e = Libraries::Kernel::ExportJitDescriptors(guest_fds, &batch); e != 0) {
+        return SetErrno(e);
+    }
+    const auto host = ToHostMsgFlags(flags);
+    if (host.unsupported != 0) {
+        LOG_WARNING(Lib_Net, "ignoring flags {:#x}", host.unsupported);
+    }
+    return Return(Core::Net::SocketSendWithDescriptors(s, buffer.data(), buffer.size(), host.host,
+                                                       host.dontwait, batch.HostDescriptors()));
+}
+
+static s32 RecvmsgWithDescriptors(OrbisNetId s, OrbisNetMsghdr* msg, s32 flags) {
+    std::vector<u8> buffer;
+    if (const int e = GatherSize(*msg, &buffer); e != 0) {
+        return SetErrno(e);
+    }
+    const auto host = ToHostMsgFlags(flags);
+    if (host.unsupported != 0) {
+        LOG_WARNING(Lib_Net, "ignoring flags {:#x}", host.unsupported);
+    }
+    const u32 capacity = msg->msg_control != nullptr ? msg->msg_controllen : 0;
+    const size_t max_guest_fds =
+        capacity >= GuestCmsgDataOffset + sizeof(s32)
+            ? std::min<size_t>((capacity - GuestCmsgDataOffset) / sizeof(s32), MaxGuestDescriptors)
+            : 0;
+    // Peeked descriptors would be duplicates. They stay queued for the receive that follows.
+    const size_t max_host_fds = host.peek ? 0 : max_guest_fds * 2;
+    std::vector<int> host_fds;
+    int host_flags = 0;
+    const auto r =
+        Core::Net::SocketRecvWithDescriptors(s, buffer.data(), buffer.size(), host.host,
+                                             host.dontwait, max_host_fds, &host_fds, &host_flags);
+    if (r.error != Error::Ok) {
+        return Return(r);
+    }
+    const auto imported = Libraries::Kernel::ImportJitDescriptors(host_fds);
+    bool truncated = imported.dropped || (!host.peek && (host_flags & MSG_CTRUNC) != 0);
+    u32 controllen = 0;
+    if (!imported.guest_fds.empty()) {
+        // Like FreeBSD, the message takes CMSG_SPACE and is cut to the buffer.
+        const u32 cmsg_len =
+            GuestCmsgDataOffset + static_cast<u32>(imported.guest_fds.size() * sizeof(s32));
+        std::vector<u8> control(GuestCmsgAlign(cmsg_len));
+        std::memcpy(control.data(), &cmsg_len, sizeof(cmsg_len));
+        std::memcpy(control.data() + 4, &GuestSolSocket, sizeof(GuestSolSocket));
+        std::memcpy(control.data() + 8, &GuestScmRights, sizeof(GuestScmRights));
+        std::memcpy(control.data() + GuestCmsgDataOffset, imported.guest_fds.data(),
+                    imported.guest_fds.size() * sizeof(s32));
+        controllen = std::min<u32>(static_cast<u32>(control.size()), capacity);
+        truncated |= controllen < control.size();
+        std::memcpy(msg->msg_control, control.data(), controllen);
+    }
+    size_t offset = 0;
+    for (s32 i = 0; i < msg->msg_iovlen && offset < static_cast<size_t>(r.value); ++i) {
+        const size_t chunk =
+            std::min<size_t>(msg->msg_iov[i].iov_len, static_cast<size_t>(r.value) - offset);
+        std::memcpy(msg->msg_iov[i].iov_base, buffer.data() + offset, chunk);
+        offset += chunk;
+    }
+    msg->msg_namelen = 0;
+    msg->msg_controllen = controllen;
+    msg->msg_flags = ((host_flags & MSG_EOR) != 0 ? GuestMsgEor : 0) |
+                     ((host_flags & MSG_TRUNC) != 0 ? GuestMsgTrunc : 0) |
+                     (truncated ? GuestMsgCtrunc : 0);
+    return static_cast<s32>(r.value);
+}
+#endif
+
 static s32 sceNetRecvmsgImpl(OrbisNetId s, OrbisNetMsghdr* msg, s32 flags) {
     if (msg == nullptr) {
         return SetErrno(ORBIS_NET_EFAULT);
@@ -2026,6 +2201,11 @@ static s32 sceNetRecvmsgImpl(OrbisNetId s, OrbisNetMsghdr* msg, s32 flags) {
     if ((flags & ORBIS_NET_MSG_PEEKLEN) == ORBIS_NET_MSG_PEEKLEN) {
         return SetErrno(ORBIS_NET_EINVAL);
     }
+#ifdef __linux__
+    if (IsLocalSocket(s)) {
+        return RecvmsgWithDescriptors(s, msg, flags);
+    }
+#endif
     std::vector<u8> buffer;
     if (const int e = GatherSize(*msg, &buffer); e != 0) {
         return SetErrno(e);
@@ -2045,6 +2225,9 @@ static s32 sceNetRecvmsgImpl(OrbisNetId s, OrbisNetMsghdr* msg, s32 flags) {
         offset += chunk;
     }
     msg->msg_namelen = namelen;
+    // This path receives no control data and doesn't learn the message flags.
+    msg->msg_controllen = 0;
+    msg->msg_flags = 0;
     return r;
 }
 
@@ -2213,6 +2396,24 @@ static s32 sceNetSendmsgImpl(OrbisNetId s, const OrbisNetMsghdr* msg, s32 flags)
         return SetErrno(ORBIS_NET_EFAULT);
     }
     if (msg->msg_control != nullptr && msg->msg_controllen != 0) {
+        const auto rights = ParseGuestRights(*msg);
+        if (rights.found) {
+            if (rights.malformed) {
+                return SetErrno(ORBIS_NET_EINVAL);
+            }
+            if (rights.other) {
+                LOG_ERROR(Lib_Net, "Only descriptors are supported in control data");
+                return SetErrno(ORBIS_NET_EOPNOTSUPP);
+            }
+            if (!rights.fds.empty()) {
+#ifdef __linux__
+                return SendmsgWithDescriptors(s, *msg, flags, rights.fds);
+#else
+                LOG_ERROR(Lib_Net, "Sending descriptors is only implemented on Linux");
+                return SetErrno(ORBIS_NET_EOPNOTSUPP);
+#endif
+            }
+        }
         LOG_WARNING(Lib_Net, "ancillary data ignored ({} bytes)", msg->msg_controllen);
     }
     // Gather into one buffer so a datagram goes out whole.

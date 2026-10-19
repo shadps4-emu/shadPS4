@@ -13,6 +13,7 @@
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/frontend/opcodes.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
@@ -152,7 +153,208 @@ Id TypeId(const EmitContext& ctx, IR::Type type) {
     }
 }
 
-void Traverse(EmitContext& ctx, const IR::Program& program) {
+struct TerminalPublication {
+    const IR::Inst* inst{};
+    Id index{};
+    Id pending{};
+};
+
+const IR::Inst* FindTerminalPublication(const IR::Program& program, const RuntimeInfo& runtime_info,
+                                        const Profile& profile) {
+    if (runtime_info.hw_stage != HwStage::Compute || profile.subgroup_size == 0 ||
+        profile.subgroup_size >= 64 || profile.supported_spirv < 0x00010400) {
+        return nullptr;
+    }
+    const auto& size = runtime_info.hw.cs.workgroup_size;
+    if (u64(size[0]) * size[1] * size[2] != 64) {
+        return nullptr;
+    }
+    for (const auto& image : program.info.images) {
+        if (image.is_written || image.is_atomic) {
+            return nullptr;
+        }
+    }
+    const auto& code = program.ins_list;
+    size_t atomic_index = code.size();
+    size_t end_count = 0;
+    for (size_t i = 0; i < code.size(); ++i) {
+        end_count += code[i].opcode == Gcn::Opcode::S_ENDPGM;
+        if (code[i].opcode == Gcn::Opcode::BUFFER_ATOMIC_INC) {
+            if (atomic_index != code.size()) {
+                return nullptr;
+            }
+            atomic_index = i;
+        }
+    }
+    if (end_count != 1 || atomic_index == 0 || atomic_index == code.size() ||
+        code[atomic_index - 1].opcode != Gcn::Opcode::S_WAITCNT ||
+        (code[atomic_index - 1].control.sopp.simm & 0xf) != 0) {
+        return nullptr;
+    }
+    u32 wait_pc = 0;
+    for (size_t i = 0; i + 1 < atomic_index; ++i) {
+        wait_pc += code[i].length;
+    }
+    u32 end_pc = wait_pc + code[atomic_index - 1].length + code[atomic_index].length;
+    bool terminal = false;
+    for (size_t i = atomic_index + 1; i < code.size(); ++i) {
+        const auto& inst = code[i];
+        if (inst.opcode == Gcn::Opcode::S_ENDPGM) {
+            terminal = true;
+            break;
+        }
+        if (inst.opcode == Gcn::Opcode::S_WAITCNT || inst.opcode == Gcn::Opcode::S_NOP) {
+            end_pc += inst.length;
+            continue;
+        }
+        if (inst.opcode != Gcn::Opcode::S_MOV_B64 ||
+            inst.dst[0].field != Gcn::OperandField::ExecLo) {
+            return nullptr;
+        }
+        end_pc += inst.length;
+    }
+    if (!terminal) {
+        return nullptr;
+    }
+
+    u32 pc = 0;
+    for (const auto& inst : code) {
+        if (inst.opcode == Gcn::Opcode::S_SETPC_B64) {
+            return nullptr;
+        }
+        if (inst.IsConditionalBranch() || inst.IsUnconditionalBranch()) {
+            const u32 target = inst.BranchTarget(pc);
+            if (target > wait_pc && target <= end_pc) {
+                return nullptr;
+            }
+        }
+        pc += inst.length;
+    }
+
+    const IR::Inst* candidate = nullptr;
+    for (const auto* block : program.blocks) {
+        for (const auto& inst : block->Instructions()) {
+            if (inst.GetOpcode() == IR::Opcode::BufferAtomicInc32) {
+                if (candidate || inst.HasUses() || !inst.Arg(0).IsImmediate()) {
+                    return nullptr;
+                }
+                candidate = &inst;
+            }
+        }
+    }
+    if (!candidate) {
+        return nullptr;
+    }
+    bool after_atomic = false;
+    bool reached_return = false;
+    size_t returns = 0;
+    for (const auto& node : program.syntax_list) {
+        if (node.type == IR::AbstractSyntaxNode::Type::Return) {
+            ++returns;
+            reached_return |= after_atomic;
+        }
+        if (reached_return) {
+            continue;
+        }
+        if (node.type == IR::AbstractSyntaxNode::Type::Block) {
+            for (const auto& inst : node.data.block->Instructions()) {
+                if (&inst == candidate) {
+                    after_atomic = true;
+                } else if (after_atomic && inst.GetOpcode() != IR::Opcode::Epilogue &&
+                           inst.GetOpcode() != IR::Opcode::Void) {
+                    return nullptr;
+                }
+            }
+        } else if (after_atomic && node.type != IR::AbstractSyntaxNode::Type::EndIf) {
+            return nullptr;
+        }
+    }
+    return reached_return && returns == 1 ? candidate : nullptr;
+}
+
+Id DefineDispatchEntry(EmitContext& ctx, Id body) {
+    const Id function_type = ctx.TypeFunction(ctx.void_id);
+    const Id main = ctx.OpFunction(ctx.void_id, spv::FunctionControlMask::MaskNone, function_type);
+    ctx.AddLabel(ctx.OpLabel());
+    const Id pointer = ctx.TypePointer(spv::StorageClass::PushConstant, ctx.U32[4]);
+    const Id base =
+        ctx.OpLoad(ctx.U32[4], ctx.OpAccessChain(pointer, ctx.push_data_block, ctx.ConstU32(7U)));
+    const Id count =
+        ctx.OpLoad(ctx.U32[4], ctx.OpAccessChain(pointer, ctx.push_data_block, ctx.ConstU32(8U)));
+    const Id base3 = ctx.OpVectorShuffle(ctx.U32[3], base, base, 0, 1, 2);
+    const Id count3 = ctx.OpVectorShuffle(ctx.U32[3], count, count, 0, 1, 2);
+    const Id has_count = ctx.OpINotEqual(ctx.U1[1], ctx.OpCompositeExtract(ctx.U32[1], count, 0),
+                                         ctx.u32_zero_value);
+    ctx.OpStore(ctx.guest_workgroup_id,
+                ctx.OpIAdd(ctx.U32[3], ctx.OpLoad(ctx.U32[3], ctx.workgroup_id), base3));
+    ctx.OpStore(
+        ctx.guest_workgroup_count,
+        ctx.OpSelect(ctx.U32[3], has_count, count3, ctx.OpLoad(ctx.U32[3], ctx.num_workgroups_id)));
+    const Id native = ctx.OpIEqual(ctx.U1[1], ctx.DispatchMetadata(8), ctx.u32_zero_value);
+    const Id index = ctx.HostWorkgroupIndex();
+    const Id in_bounds = ctx.OpULessThan(ctx.U1[1], index, ctx.DispatchMetadata(7));
+    const Id run = ctx.OpLogicalOr(ctx.U1[1], native, in_bounds);
+    const Id body_label = ctx.OpLabel();
+    const Id exit_label = ctx.OpLabel();
+    ctx.OpSelectionMerge(exit_label, spv::SelectionControlMask::MaskNone);
+    ctx.OpBranchConditional(run, body_label, exit_label);
+    ctx.AddLabel(body_label);
+    const Id reshape_label = ctx.OpLabel();
+    const Id call_label = ctx.OpLabel();
+    ctx.OpSelectionMerge(call_label, spv::SelectionControlMask::MaskNone);
+    ctx.OpBranchConditional(native, call_label, reshape_label);
+    ctx.AddLabel(reshape_label);
+    const Id nx = ctx.DispatchMetadata(0);
+    const Id ny = ctx.DispatchMetadata(1);
+    const Id nz = ctx.DispatchMetadata(2);
+    const Id y = ctx.OpUDiv(ctx.U32[1], index, nx);
+    const Id guest =
+        ctx.OpCompositeConstruct(ctx.U32[3], ctx.OpUMod(ctx.U32[1], index, nx),
+                                 ctx.OpUMod(ctx.U32[1], y, ny), ctx.OpUDiv(ctx.U32[1], y, ny));
+    ctx.OpStore(ctx.guest_workgroup_id, guest);
+    ctx.OpStore(ctx.guest_workgroup_count, ctx.OpCompositeConstruct(ctx.U32[3], nx, ny, nz));
+    ctx.OpBranch(call_label);
+    ctx.AddLabel(call_label);
+    ctx.OpFunctionCall(ctx.void_id, body);
+    ctx.OpBranch(exit_label);
+    ctx.AddLabel(exit_label);
+    ctx.OpReturn();
+    ctx.OpFunctionEnd();
+    return main;
+}
+
+Id DefinePublicationEntry(EmitContext& ctx, Id body, const TerminalPublication& publication) {
+    const Id function_type{ctx.TypeFunction(ctx.void_id)};
+    const Id main{ctx.OpFunction(ctx.void_id, spv::FunctionControlMask::MaskNone, function_type)};
+    ctx.AddLabel(ctx.OpLabel());
+    ctx.OpStore(publication.pending, ctx.false_value);
+    ctx.OpFunctionCall(ctx.void_id, body);
+    const Id scope{ctx.ConstU32(u32(spv::Scope::Device))};
+    const auto memory =
+        spv::MemorySemanticsMask::UniformMemory | spv::MemorySemanticsMask::WorkgroupMemory;
+    ctx.OpControlBarrier(ctx.ConstU32(u32(spv::Scope::Workgroup)), scope,
+                         ctx.ConstU32(u32(spv::MemorySemanticsMask::AcquireRelease | memory)));
+    const Id signal_label{ctx.OpLabel()};
+    const Id exit_label{ctx.OpLabel()};
+    const Id pending{ctx.OpLoad(ctx.U1[1], publication.pending)};
+    ctx.OpSelectionMerge(exit_label, spv::SelectionControlMask::MaskNone);
+    ctx.OpBranchConditional(pending, signal_label, exit_label);
+    ctx.AddLabel(signal_label);
+    const auto& buffer = ctx.buffers[publication.inst->Arg(0).U32()];
+    const auto [id, pointer_type] = buffer.Alias(EmitContext::PointerType::U32);
+    const Id index{ctx.OpLoad(ctx.U32[1], publication.index)};
+    const Id pointer{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index)};
+    ctx.OpAtomicIIncrement(ctx.U32[1], pointer, scope,
+                           ctx.ConstU32(u32(spv::MemorySemanticsMask::Release | memory)));
+    ctx.OpBranch(exit_label);
+    ctx.AddLabel(exit_label);
+    ctx.OpReturn();
+    ctx.OpFunctionEnd();
+    return main;
+}
+
+void Traverse(EmitContext& ctx, const IR::Program& program,
+              const TerminalPublication& publication) {
     IR::Block* current_block{};
     for (const IR::AbstractSyntaxNode& node : program.syntax_list) {
         switch (node.type) {
@@ -164,7 +366,18 @@ void Traverse(EmitContext& ctx, const IR::Program& program) {
             current_block = node.data.block;
             ctx.AddLabel(label);
             for (IR::Inst& inst : node.data.block->Instructions()) {
-                EmitInst(ctx, &inst);
+                if (&inst == publication.inst) {
+                    Id index{ctx.Def(inst.Arg(1))};
+                    const auto& buffer = ctx.buffers[inst.Arg(0).U32()];
+                    if (const Id offset = buffer.Offset(EmitContext::PointerSize::B32);
+                        Sirit::ValidId(offset)) {
+                        index = ctx.OpIAdd(ctx.U32[1], index, offset);
+                    }
+                    ctx.OpStore(publication.index, index);
+                    ctx.OpStore(publication.pending, ctx.true_value);
+                } else {
+                    EmitInst(ctx, &inst);
+                }
             }
             ctx.first_to_last_label_map[label.value] = ctx.last_label;
             break;
@@ -216,13 +429,14 @@ void Traverse(EmitContext& ctx, const IR::Program& program) {
     }
 }
 
-Id DefineMain(EmitContext& ctx, const IR::Program& program) {
+Id DefineMain(EmitContext& ctx, const IR::Program& program,
+              const TerminalPublication& publication) {
     const Id void_function{ctx.TypeFunction(ctx.void_id)};
     const Id main{ctx.OpFunction(ctx.void_id, spv::FunctionControlMask::MaskNone, void_function)};
     for (IR::Block* const block : program.blocks) {
         block->SetDefinition(ctx.OpLabel());
     }
-    Traverse(ctx, program);
+    Traverse(ctx, program, publication);
     ctx.OpFunctionEnd();
     return main;
 }
@@ -665,7 +879,30 @@ void PatchPhiNodes(const IR::Program& program, EmitContext& ctx) {
 std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_info,
                            const IR::Program& program, Bindings& binding) {
     EmitContext ctx{profile, runtime_info, program.info, binding};
-    const Id main{DefineMain(ctx, program)};
+    TerminalPublication publication{FindTerminalPublication(program, runtime_info, profile)};
+    if (publication.inst) {
+        publication.index = ctx.DefineVar(ctx.U32[1], spv::StorageClass::Private);
+        publication.pending = ctx.DefineVar(ctx.U1[1], spv::StorageClass::Private);
+        ctx.interfaces.push_back(publication.index);
+        ctx.interfaces.push_back(publication.pending);
+        for (size_t i = 0; i < ctx.buffers.size(); ++i) {
+            const auto& desc = program.info.buffers[i];
+            if (!desc.is_written || desc.buffer_type == BufferType::SharedMemory ||
+                desc.GetSharp(program.info).mtype == 3) {
+                continue;
+            }
+            for (const auto& alias : ctx.buffers[i].aliases) {
+                if (Sirit::ValidId(alias.id)) {
+                    ctx.Decorate(alias.id, spv::Decoration::Coherent);
+                }
+            }
+        }
+    }
+    const Id body{DefineMain(ctx, program, publication)};
+    Id main{publication.inst ? DefinePublicationEntry(ctx, body, publication) : body};
+    if (program.info.sw_stage == SwStage::Compute) {
+        main = DefineDispatchEntry(ctx, main);
+    }
     DefineEntryPoint(program.info, runtime_info, ctx, main);
     SetupCapabilities(program.info, profile, runtime_info, ctx);
     SetupFloatMode(ctx, profile, runtime_info, main);

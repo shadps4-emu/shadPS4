@@ -1,0 +1,66 @@
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#version 450
+
+layout(local_size_x = 1) in;
+layout(set = 0, binding = 0, std430) readonly buffer Arguments {
+    uint arguments[];
+};
+layout(set = 0, binding = 1, std430) writeonly buffer Metadata {
+    uint words[];
+};
+layout(push_constant) uniform Params {
+    uvec4 limits;
+    uvec4 source;
+} pc;
+
+uint ceil_div(uint a, uint b) {
+    return a / b + uint(a % b != 0);
+}
+
+void main() {
+    uvec3 guest = uvec3(arguments[pc.source.x], arguments[pc.source.x + 1],
+                        arguments[pc.source.x + 2]);
+    uvec3 limit = pc.limits.xyz;
+    uint status = 0, total = 0, mode = 0;
+    uvec3 command = uvec3(0);
+    if (all(notEqual(guest, uvec3(0)))) {
+        if (all(lessThanEqual(guest, limit))) {
+            command = guest;
+        } else {
+            uint xy, high_xy, product, high_product;
+            umulExtended(guest.x, guest.y, high_xy, xy);
+            umulExtended(xy, guest.z, high_product, product);
+            if (high_xy != 0 || high_product != 0) {
+                status = 1;
+            } else if (any(equal(limit, uvec3(0)))) {
+                status = 2;
+            } else {
+                uint x = min(product, limit.x);
+                uint remaining = ceil_div(product, x);
+                uint y = min(remaining, limit.y);
+                uint z = ceil_div(remaining, y);
+                uint padded_xy, padded_high_xy, padded, padded_high;
+                umulExtended(x, y, padded_high_xy, padded_xy);
+                umulExtended(padded_xy, z, padded_high, padded);
+                if (z > limit.z || padded_high_xy != 0 || padded_high != 0) {
+                    status = 2;
+                } else {
+                    command = uvec3(x, y, z);
+                    total = product;
+                    mode = 1;
+                }
+            }
+        }
+    }
+    words[0] = guest.x;
+    words[1] = guest.y;
+    words[2] = guest.z;
+    words[3] = status;
+    words[4] = command.x;
+    words[5] = command.y;
+    words[6] = command.z;
+    words[7] = total;
+    words[8] = mode;
+}

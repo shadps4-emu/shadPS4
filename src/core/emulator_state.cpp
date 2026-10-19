@@ -43,3 +43,11 @@ bool EmulatorState::IsGameSpecifigConfigUsed() const {
 void EmulatorState::SetGameSpecifigConfigUsed(bool used) {
     m_game_specific_config_used = used;
 }
+
+bool EmulatorState::IsLocalProcess() const {
+    return m_local_process;
+}
+
+void EmulatorState::SetLocalProcess(bool local) {
+    m_local_process = local;
+}

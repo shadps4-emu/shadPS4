@@ -7,6 +7,10 @@ namespace Shader::Gcn {
 
 void Translator::EmitVectorMemory(const GcnInst& inst) {
     switch (inst.opcode) {
+    case Opcode::BUFFER_WBINVL1_SC:
+    case Opcode::BUFFER_WBINVL1:
+        ir.DeviceMemoryBarrier();
+        return;
         // MUBUF / MTBUF
 
         // Buffer load operations

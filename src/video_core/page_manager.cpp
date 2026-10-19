@@ -434,9 +434,19 @@ struct SignalImpl : public PageManager::Impl {
     static bool GuestFaultSignalHandler(void* context, void* fault_address) {
         const auto addr = reinterpret_cast<VAddr>(fault_address);
         const auto size = std::min<u64>(8, PageManager::GetNextPageAddr(addr) - addr);
+        if (Common::IsExecuteError(context) || !rasterizer->IsMapped(addr, size)) {
+            return false;
+        }
+        const bool is_write = Common::IsWriteError(context);
+        u32 prot{};
+        if (Core::Memory::Instance()->QueryProtection(addr, nullptr, nullptr, &prot) != 0 ||
+            !True(static_cast<Core::MemoryProt>(prot) &
+                  (is_write ? Core::MemoryProt::CpuWrite : Core::MemoryProt::CpuRead))) {
+            return false;
+        }
         const auto is_gpu_thread =
             std::this_thread::get_id() == rasterizer->GetGpuCommandProcessorThread();
-        if (Common::IsWriteError(context)) {
+        if (is_write) {
             return rasterizer->InvalidateMemory(addr, size, is_gpu_thread);
         } else {
             return rasterizer->ReadMemory(addr, size, is_gpu_thread);

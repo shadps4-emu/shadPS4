@@ -42,6 +42,9 @@ enum class MemoryProt : u32 {
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryProt)
 
+constexpr MemoryProt AllMemoryProt =
+    MemoryProt::CpuReadWrite | MemoryProt::CpuExec | MemoryProt::GpuReadWrite;
+
 enum class MemoryMapFlags : u32 {
     NoFlags = 0,
     Shared = 1,
@@ -102,6 +105,7 @@ enum class VMAType : u32 {
     Code = 7,
     File = 8,
     System = 9,
+    JitShared = 10,
 };
 
 struct VirtualMemoryArea {
@@ -113,6 +117,8 @@ struct VirtualMemoryArea {
     std::string name = "";
     s32 fd = 0;
     bool disallow_merge = false;
+    // Highest protection the area may get, only limited for JIT shared memory.
+    MemoryProt max_prot = AllMemoryProt;
 
     bool Contains(VAddr addr, u64 size) const {
         return addr >= base && (addr + size) <= (base + this->size);
@@ -145,7 +151,7 @@ struct VirtualMemoryArea {
                 return false;
             }
         }
-        if (prot != next.prot || type != next.type) {
+        if (prot != next.prot || type != next.type || max_prot != next.max_prot) {
             return false;
         }
         if (name.compare(next.name) != 0) {
@@ -272,6 +278,13 @@ public:
 
     s32 MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                 MemoryMapFlags flags, s32 fd, s64 phys_addr);
+
+#ifdef __linux__
+    s32 MapJitSharedMemory(VAddr virtual_addr, u64 size, MemoryProt prot, MemoryProt max_prot,
+                           s32 host_fd, std::string_view name);
+#endif
+
+    VAddr FindFreeArea(VAddr start, VAddr end, u64 size, u32 alignment);
 
     s32 PoolDecommit(VAddr virtual_addr, u64 size);
 

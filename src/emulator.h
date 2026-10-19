@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <filesystem>
 #include <optional>
 #include <thread>
@@ -19,6 +20,20 @@ using HLEInitDef = void (*)(Core::Loader::SymbolsResolver* sym);
 struct SysModules {
     std::string_view module_name;
     HLEInitDef callback;
+};
+
+struct LocalProcessArgs {
+    std::string guest_path;
+    std::filesystem::path game_folder;
+    std::vector<std::pair<std::filesystem::path, std::string>> mounts;
+    std::vector<std::pair<std::filesystem::path, std::string>> read_only_mounts;
+    std::string log_name;
+    // Host descriptors inherited from the parent emulator, -1 when absent.
+    int parent_socket = -1;
+    // Reaches end of file once the parent emulator has exited.
+    int lifeline = -1;
+    // Page the emulator's processes share to assign JIT addresses.
+    int family = -1;
 };
 
 class Emulator {
@@ -45,16 +60,27 @@ public:
      */
     [[noreturn]] void Relaunch(std::vector<std::string> args);
 
+    /**
+     * Starts a guest executable from /app0 in a separate headless emulator process sharing this
+     * game's mounts. parent_socket is a guest socket handed to the child as its parent socket.
+     */
+    bool LaunchLocalProcess(std::string_view guest_path, s32 parent_socket);
+
+    /// Runs this process as a local process started by LaunchLocalProcess.
+    [[noreturn]] void RunLocalProcess(const LocalProcessArgs& args);
+
     const char* executableName;
     bool waitForDebuggerBeforeRun{false};
 
 private:
     void LoadSystemModules(const std::string& game_serial);
 
-    Core::MemoryManager* memory;
-    Input::GameControllers* controllers;
-    Core::Linker* linker;
+    Core::MemoryManager* memory{};
+    Input::GameControllers* controllers{};
+    Core::Linker* linker{};
     std::unique_ptr<Frontend::WindowSDL> window;
+    std::vector<std::pair<std::filesystem::path, std::string>> extra_mounts;
+    std::atomic<u32> local_process_count{};
     std::chrono::steady_clock::time_point start_time;
     std::jthread play_time_thread;
 };

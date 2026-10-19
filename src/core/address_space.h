@@ -91,6 +91,10 @@ public:
     /// Memory maps a specified file descriptor.
     void* MapFile(VAddr virtual_addr, u64 size, u64 offset, u32 prot, uintptr_t fd);
 
+#ifdef __linux__
+    int MapShared(VAddr virtual_addr, u64 size, u32 prot, int fd);
+#endif
+
     /// Unmaps specified virtual memory area and marks it free in the address space.
     VAddr Unmap(VAddr virtual_addr, u64* size);
 

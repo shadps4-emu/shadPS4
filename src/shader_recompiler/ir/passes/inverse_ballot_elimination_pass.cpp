@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <bit>
 #include <unordered_map>
 #include <vector>
 
@@ -64,6 +65,16 @@ void InverseBallotEliminationPass(IR::Program& program) {
         RunLocalCSE(block);
         for (IR::Inst& inst : block->Instructions()) {
             TrySimplifyInst(inst);
+            if (program.info.hw_stage == HwStage::Compute &&
+                inst.GetOpcode() == IR::Opcode::ReadFirstLane && !inst.Arg(1).IsImmediate()) {
+                const IR::Inst* exec = inst.Arg(1).Inst();
+                if (exec->GetOpcode() == IR::Opcode::InverseBallot && exec->Arg(0).IsImmediate() &&
+                    exec->Arg(0).U64() != 0) {
+                    const u32 lane = std::countr_zero(exec->Arg(0).U64());
+                    inst.ReplaceOpcode(IR::Opcode::ReadLane);
+                    inst.SetArg(1, IR::Value{lane});
+                }
+            }
             if (inst.GetOpcode() != IR::Opcode::InverseBallot) {
                 continue;
             }
@@ -85,6 +96,17 @@ void InverseBallotEliminationPass(IR::Program& program) {
                 inst->ReplaceUsesWithAndRemove(IR::Value{false});
             } else if (value.U64() == std::numeric_limits<u64>::max()) {
                 inst->ReplaceUsesWithAndRemove(IR::Value{true});
+            } else if (program.info.hw_stage == HwStage::Compute) {
+                // An immediate mask uses guest wave64 lane numbering, which can differ from the
+                // host subgroup lane. Compute waves are formed from consecutive invocations, so
+                // test the bit of the guest lane directly.
+                IR::IREmitter ir{*inst->GetParent(),
+                                 IR::Block::InstructionList::s_iterator_to(*inst)};
+                const IR::U32 lane{ir.BitwiseAnd(
+                    ir.GetAttributeU32(IR::Attribute::LocalInvocationIndex), ir.Imm32(63U))};
+                const IR::U64 bit{
+                    ir.BitwiseAnd(ir.ShiftRightLogical(IR::U64{value}, lane), ir.Imm64(u64{1}))};
+                inst->ReplaceUsesWithAndRemove(ir.INotEqual(bit, ir.Imm64(u64{0})));
             } else {
                 LOG_WARNING(Render_Recompiler,
                             "Unhandled immediate argument {:#x} for InverseBallot", value.U64());

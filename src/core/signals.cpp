@@ -255,12 +255,33 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     auto* code_address = Common::GetRip(raw_context);
 
     Ucontext context{info, reinterpret_cast<ucontext_t*>(raw_context)};
+    s32 guest_sig = sig == SIGUSR1 ? 0 : NativeToOrbisSignal(sig);
+    bool is_general_protection = false;
+#if defined(__linux__) && defined(ARCH_X86_64)
+    constexpr s32 X86GeneralProtection = 13;
+    constexpr s32 OrbisProtectionFault = 9;
+    is_general_protection =
+        sig == SIGSEGV && info && info->si_code == SI_KERNEL && raw_context &&
+        reinterpret_cast<ucontext_t*>(raw_context)->uc_mcontext.gregs[REG_TRAPNO] ==
+            X86GeneralProtection;
+    if (is_general_protection) {
+        guest_sig = POSIX_SIGBUS;
+        context.uc_mcontext.mc_trapno = OrbisProtectionFault;
+        context.uc_mcontext.mc_err =
+            reinterpret_cast<ucontext_t*>(raw_context)->uc_mcontext.gregs[REG_ERR];
+        context.uc_mcontext.mc_addr = reinterpret_cast<u64>(code_address);
+    }
+#endif
     Siginfo guest_info{};
     if (info) {
         guest_info = *reinterpret_cast<Siginfo*>(info);
-        guest_info._si_signo = sig == SIGUSR1 ? 0 : NativeToOrbisSignal(info->si_signo);
+        guest_info._si_signo = guest_sig;
         guest_info._si_errno = NativeToPosixErrno(info->si_errno);
-        guest_info._si_code = NativeSiCodeToGuest(sig, info->si_code);
+        guest_info._si_code =
+            is_general_protection ? POSIX_BUS_OBJERR : NativeSiCodeToGuest(sig, info->si_code);
+        if (is_general_protection) {
+            guest_info._reason._fault._trapno = context.uc_mcontext.mc_trapno;
+        }
         guest_info._si_addr = (void*)context.uc_mcontext.mc_rip;
     }
     Siginfo* info_p = info ? &guest_info : nullptr;
@@ -271,8 +292,9 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGBUS: {
         const bool is_write = Common::IsWriteError(raw_context);
         const bool is_exec = Common::IsExecuteError(raw_context);
-        if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
-            if (thread && thread->DispatchSignal(NativeToOrbisSignal(sig), info_p, context_p)) {
+        if (is_general_protection ||
+            !signals->DispatchAccessViolation(raw_context, info->si_addr)) {
+            if (thread && thread->DispatchSignal(guest_sig, info_p, context_p)) {
                 return;
             }
             UNREACHABLE_MSG("Unhandled access violation at code address {}: {} address {}",
@@ -292,7 +314,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGTRAP:
     case SIGABRT:
     case SIGSYS: {
-        if (thread && thread->DispatchSignal(NativeToOrbisSignal(sig), info_p, context_p)) {
+        if (thread && thread->DispatchSignal(guest_sig, info_p, context_p)) {
             return;
         }
 

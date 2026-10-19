@@ -19,11 +19,29 @@ void Translator::EmitFlowControl(const GcnInst& inst) {
     case Opcode::S_TRAP:
         LOG_WARNING(Render_Vulkan, "S_TRAP instruction!");
         return;
+    case Opcode::S_GETREG_B32: {
+        const u32 selector = static_cast<u16>(inst.control.sopk.simm);
+        const u32 register_id = selector & 0x3f;
+        const u32 offset = (selector >> 6) & 0x1f;
+        const u32 width = ((selector >> 11) & 0x1f) + 1;
+        if (register_id != 4 || offset < 13 || offset + width > 15) {
+            UNREACHABLE_MSG("Unsupported S_GETREG_B32 register={} offset={} width={}", register_id,
+                            offset, width);
+        }
+        // Vulkan exposes no shader-engine placement; use one virtual shader engine.
+        ir.SetScalarReg(IR::ScalarReg{inst.dst[0].code}, ir.Imm32(0));
+        return;
+    }
     case Opcode::S_GETPC_B64:
         return S_GETPC_B64(inst);
-    case Opcode::S_SETPC_B64:
     case Opcode::S_WAITCNT:
+        if ((inst.control.sopp.simm & 0xf) == 0) {
+            ir.WaitBufferMemory();
+        }
+        return;
+    case Opcode::S_SETPC_B64:
     case Opcode::S_NOP:
+    case Opcode::S_SLEEP:
     case Opcode::S_ENDPGM:
     case Opcode::S_CBRANCH_EXECZ:
     case Opcode::S_CBRANCH_SCC0:

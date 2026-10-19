@@ -222,6 +222,13 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
         info.readconst_types = Info::ReadConstType::None;
     }
 
+    if (info.sw_stage == SwStage::Compute) {
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            .buffer_type = BufferType::DispatchMetadata,
+        });
+    }
+
     if (info.uses_dma) {
         info.buffers.push_back({
             .used_types = IR::Type::U64,

@@ -76,6 +76,9 @@ int main(int argc, char* argv[]) {
     std::vector<std::pair<std::filesystem::path, std::string>> mounts;
     static std::vector<std::string> env_vars;
 
+    std::optional<std::string> localProcess;
+    Core::LocalProcessArgs localProcessArgs{.log_name = "local_process.log"};
+
     // ---- Options ----
     app.add_option("guest_arg", gamePath, "Game path or ID"); // positional
     app.add_option("-g,--game", gamePath, "Game path or ID");
@@ -107,6 +110,15 @@ int main(int argc, char* argv[]) {
     app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
     app.add_option("--mount", mounts, "Mount source to destination");
     app.add_option("-e,--env", env_vars, "Environment variables to pass to the guest");
+
+    // Internal: started by the emulator itself for a guest local process.
+    app.add_option("--local-process", localProcess)->group("");
+    app.add_option("--local-process-root", localProcessArgs.game_folder)->group("");
+    app.add_option("--local-process-log", localProcessArgs.log_name)->group("");
+    app.add_option("--local-process-socket", localProcessArgs.parent_socket)->group("");
+    app.add_option("--local-process-lifeline", localProcessArgs.lifeline)->group("");
+    app.add_option("--local-process-family", localProcessArgs.family)->group("");
+    app.add_option("--local-process-read-only-mount", localProcessArgs.read_only_mounts)->group("");
 
     // ---- Capture args after `--` verbatim ----
     app.allow_extras();
@@ -143,6 +155,23 @@ int main(int argc, char* argv[]) {
         }
     } catch (const CLI::ParseError& e) {
         return app.exit(e);
+    }
+
+    if (localProcess) {
+        if (ignoreGamePatch) {
+            Core::FileSys::MntPoints::ignore_game_patches = true;
+        }
+        if (configClean) {
+            EmulatorSettings.SetConfigMode(ConfigMode::Clean);
+        }
+        if (configGlobal) {
+            EmulatorSettings.SetConfigMode(ConfigMode::Global);
+        }
+        localProcessArgs.guest_path = *localProcess;
+        localProcessArgs.mounts = mounts;
+        auto* emulator = Common::Singleton<Core::Emulator>::Instance();
+        emulator->executableName = argv[0];
+        emulator->RunLocalProcess(localProcessArgs);
     }
 
     if (waitPid)

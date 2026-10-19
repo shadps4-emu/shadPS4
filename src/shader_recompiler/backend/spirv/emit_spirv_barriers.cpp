@@ -16,6 +16,10 @@ void MemoryBarrier(EmitContext& ctx, spv::Scope scope) {
 }
 } // Anonymous namespace
 
+void EmitWaitBufferMemory(EmitContext& ctx) {
+    UNREACHABLE_MSG("Buffer memory wait was not lowered");
+}
+
 void EmitBarrier(EmitContext& ctx) {
     const auto execution{spv::Scope::Workgroup};
     spv::Scope memory;

@@ -989,6 +989,15 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
         return ir.SetVccHi(result);
     case OperandField::M0:
         return ir.SetM0(result);
+    case OperandField::ExecLo:
+    case OperandField::ExecHi: {
+        const auto exec = ir.UnpackUint2x32(ir.Ballot(ir.GetExec()));
+        const auto value =
+            result.Type() == IR::Type::F32 ? ir.BitCast<IR::U32>(IR::F32{result}) : IR::U32{result};
+        const auto updated =
+            ir.CompositeInsert(exec, value, operand.field == OperandField::ExecHi ? 1 : 0);
+        return ir.SetExec(ir.InverseBallot(ir.PackUint2x32(updated)));
+    }
     default:
         UNREACHABLE_MSG("Unknown field {}", u32(operand.field));
     }

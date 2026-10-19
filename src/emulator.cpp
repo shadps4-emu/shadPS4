@@ -36,14 +36,17 @@
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/kernel/jit_shared_memory.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/save_data/save_backup.h"
+#include "core/libraries/system/systemservice.h"
 #include "core/libraries/usbd/usbstorage.h"
 #include "core/linker.h"
 #include "core/memory.h"
+#include "core/net/guest_net.h"
 #include "core/user_settings.h"
 #include "emulator.h"
 #include "video_core/cache_storage.h"
@@ -54,6 +57,8 @@
 #endif
 
 #ifndef _WIN32
+#include <fcntl.h>
+#include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #endif
@@ -666,6 +671,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         LOG_INFO(Loader, "Mounting {} to {}", mount_pair.first.string(), mount_pair.second);
         mnt->Mount(mount_pair.first, mount_pair.second);
     }
+    extra_mounts = mounts;
 
     if (std::filesystem::is_empty(host_font_dir) || std::filesystem::is_empty(host_font2_dir)) {
         LOG_WARNING(Loader, "No dumped system fonts, expect missing text or instability");
@@ -847,6 +853,308 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 #endif
 
     std::quick_exit(0);
+}
+
+#if defined(__linux__) && defined(__GLIBC__)
+#if __GLIBC_PREREQ(2, 34)
+// posix_spawn_file_actions_addclosefrom_np keeps unrelated descriptors out of the child.
+#define LOCAL_PROCESS_SUPPORTED
+#endif
+#endif
+
+#ifdef LOCAL_PROCESS_SUPPORTED
+// Descriptors a local process receives its parent socket, lifeline and JIT family page on.
+constexpr int LocalProcessSocketFd = 3;
+constexpr int LocalProcessLifelineFd = 4;
+constexpr int LocalProcessFamilyFd = 5;
+// Sources for posix_spawn are kept clear of the descriptors above.
+constexpr int LocalProcessMinSourceFd = 16;
+#endif
+
+bool Emulator::LaunchLocalProcess(std::string_view guest_path, s32 parent_socket) {
+#ifndef LOCAL_PROCESS_SUPPORTED
+    LOG_ERROR(Loader, "Local processes are not supported on this platform, cannot start {} ({})",
+              guest_path, parent_socket);
+    return false;
+#else
+    const int family_source = Libraries::Kernel::GetJitFamilyDescriptor();
+    const int family_fd =
+        family_source >= 0 ? fcntl(family_source, F_DUPFD_CLOEXEC, LocalProcessMinSourceFd) : -1;
+    if (family_fd < 0) {
+        LOG_ERROR(Loader, "No JIT family page for local process {}", guest_path);
+        return false;
+    }
+
+    int socket_fd = -1;
+    if (parent_socket >= 0) {
+        const auto dup = Net::SocketDuplicateNative(parent_socket, LocalProcessMinSourceFd);
+        if (dup.error != Net::Host::Error::Ok) {
+            LOG_ERROR(Loader, "Guest descriptor {} cannot be passed to a local process",
+                      parent_socket);
+            close(family_fd);
+            return false;
+        }
+        socket_fd = static_cast<int>(dup.value);
+    }
+
+    int pipe_fds[2];
+    if (pipe2(pipe_fds, O_CLOEXEC) != 0) {
+        LOG_ERROR(Loader, "Failed to create the local process lifeline: {}", strerror(errno));
+        if (socket_fd >= 0) {
+            close(socket_fd);
+        }
+        close(family_fd);
+        return false;
+    }
+    const int lifeline_read = fcntl(pipe_fds[0], F_DUPFD_CLOEXEC, LocalProcessMinSourceFd);
+    const int lifeline_error = errno;
+    close(pipe_fds[0]);
+    const int lifeline_write = pipe_fds[1];
+    if (lifeline_read < 0) {
+        LOG_ERROR(Loader, "Failed to create the local process lifeline: {}",
+                  strerror(lifeline_error));
+        close(lifeline_write);
+        if (socket_fd >= 0) {
+            close(socket_fd);
+        }
+        close(family_fd);
+        return false;
+    }
+
+    const auto& game_info = Common::ElfInfo::Instance();
+    const std::string serial =
+        game_info.GameSerial().empty() ? std::string("local") : std::string(game_info.GameSerial());
+    const std::string log_name = fmt::format("{}_local{}.log", serial, ++local_process_count);
+    std::vector<std::string> args{
+        "--local-process",          std::string(guest_path),
+        "--local-process-root",     Common::FS::PathToUTF8String(game_info.GetGameFolder()),
+        "--local-process-log",      log_name,
+        "--local-process-lifeline", std::to_string(LocalProcessLifelineFd),
+        "--local-process-family",   std::to_string(LocalProcessFamilyFd),
+    };
+    if (socket_fd >= 0) {
+        args.insert(args.end(), {"--local-process-socket", std::to_string(LocalProcessSocketFd)});
+    }
+    if (FileSys::MntPoints::ignore_game_patches) {
+        args.push_back("--ignore-game-patch");
+    }
+    if (EmulatorSettings.GetConfigMode() == ConfigMode::Clean) {
+        args.push_back("--config-clean");
+    } else if (EmulatorSettings.GetConfigMode() == ConfigMode::Global) {
+        args.push_back("--config-global");
+    }
+    auto* mnt = Common::Singleton<FileSys::MntPoints>::Instance();
+    std::set<std::string> inherited_mounts;
+    const auto inherit_mount = [&](const std::string& guest) {
+        if (const auto mount = mnt->GetMountSnapshot(guest)) {
+            if (!inherited_mounts.insert(mount->mount).second) {
+                return;
+            }
+            args.insert(args.end(),
+                        {mount->read_only ? "--local-process-read-only-mount" : "--mount",
+                         Common::FS::PathToUTF8String(mount->host_path), mount->mount});
+        }
+    };
+    // /temp0 exists only after TemporaryDataMount (or an explicit mount).
+    inherit_mount("/temp0");
+    for (const auto& mount : extra_mounts) {
+        inherit_mount(mount.second);
+    }
+
+    std::vector<char*> argv;
+    argv.push_back(const_cast<char*>(executableName));
+    for (auto& arg : args) {
+        argv.push_back(arg.data());
+    }
+    argv.push_back(nullptr);
+
+    pid_t pid = -1;
+    int error = 0;
+    posix_spawn_file_actions_t actions;
+    if (error = posix_spawn_file_actions_init(&actions); error == 0) {
+        const auto add_actions = [&] {
+            if (const int e = posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null",
+                                                               O_RDONLY, 0)) {
+                return e;
+            }
+            if (const int e =
+                    socket_fd >= 0
+                        ? posix_spawn_file_actions_adddup2(&actions, socket_fd,
+                                                           LocalProcessSocketFd)
+                        : posix_spawn_file_actions_addclose(&actions, LocalProcessSocketFd)) {
+                return e;
+            }
+            if (const int e = posix_spawn_file_actions_adddup2(&actions, lifeline_read,
+                                                               LocalProcessLifelineFd)) {
+                return e;
+            }
+            if (const int e =
+                    posix_spawn_file_actions_adddup2(&actions, family_fd, LocalProcessFamilyFd)) {
+                return e;
+            }
+            return posix_spawn_file_actions_addclosefrom_np(&actions, LocalProcessFamilyFd + 1);
+        };
+        error = add_actions();
+        if (error == 0) {
+            error = posix_spawnp(&pid, executableName, &actions, nullptr, argv.data(), environ);
+        }
+        posix_spawn_file_actions_destroy(&actions);
+    }
+    if (socket_fd >= 0) {
+        close(socket_fd);
+    }
+    close(lifeline_read);
+    close(family_fd);
+    if (error != 0) {
+        LOG_ERROR(Loader, "Failed to start local process {}: {}", guest_path, strerror(error));
+        close(lifeline_write);
+        return false;
+    }
+
+    LOG_INFO(Loader, "Started local process {} as pid {}, log {}", guest_path, pid, log_name);
+    // The child keeps running while lifeline_write is open, i.e. until it exits or we do.
+    std::thread([pid, lifeline_write, path = std::string(guest_path)] {
+        int status = 0;
+        pid_t result;
+        while ((result = waitpid(pid, &status, 0)) < 0 && errno == EINTR) {
+        }
+        const int wait_error = errno;
+        close(lifeline_write);
+        if (result < 0) {
+            LOG_ERROR(Loader, "Failed to wait for local process {} (pid {}): {}", path, pid,
+                      strerror(wait_error));
+        } else if (WIFSIGNALED(status)) {
+            LOG_WARNING(Loader, "Local process {} (pid {}) was killed by signal {}", path, pid,
+                        WTERMSIG(status));
+        } else {
+            LOG_INFO(Loader, "Local process {} (pid {}) exited with status {}", path, pid,
+                     WEXITSTATUS(status));
+        }
+    }).detach();
+    return true;
+#endif
+}
+
+void Emulator::RunLocalProcess(const LocalProcessArgs& args) {
+    Common::SetCurrentThreadName("shadPS4:Main");
+    EmulatorState::GetInstance()->SetLocalProcess(true);
+    Common::Log::Setup(args.log_name);
+    EmulatorSettings.Load();
+
+    auto* mnt = Common::Singleton<FileSys::MntPoints>::Instance();
+    mnt->Mount(args.game_folder, "/app0", true);
+    mnt->Mount(args.game_folder, "/hostapp", true);
+
+    std::string id;
+    u32 fw_version = 0x4700000;
+    Common::PSFAttributes psf_attributes{};
+    if (auto psf_handle = mnt->Open("/app0/sce_sys/param.sfo", /*writable=*/false)) {
+        auto* param_sfo = Common::Singleton<PSF>::Instance();
+        ASSERT_MSG(param_sfo->Open(psf_handle), "Failed to open param.sfo");
+        const auto content_id = param_sfo->GetString("CONTENT_ID");
+        const auto title_id = param_sfo->GetString("TITLE_ID");
+        if (content_id.has_value() && !content_id->empty()) {
+            id = std::string(*content_id, 7, 9);
+        } else if (title_id.has_value()) {
+            id = *title_id;
+        }
+        fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(fw_version);
+        if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
+            psf_attributes.raw = *raw_attributes;
+        }
+    }
+
+    EmulatorSettings.Load(id);
+    Common::Log::Switch(args.log_name, false);
+
+#ifndef _WIN32
+    // Started after the last log switch; _Exit skips shutdown handlers that would race with the
+    // initialization still running on the main thread.
+    if (args.lifeline >= 0) {
+        std::thread([lifeline = args.lifeline] {
+            Common::SetCurrentThreadName("shadPS4:Lifeline");
+            char byte;
+            while (read(lifeline, &byte, 1) < 0 && errno == EINTR) {
+            }
+            LOG_INFO(Loader, "Parent emulator exited, stopping the local process");
+            Common::Log::Flush();
+            std::_Exit(0);
+        }).detach();
+    }
+#endif
+
+    auto& game_info = Common::ElfInfo::Instance();
+    game_info.initialized = true;
+    game_info.game_serial = id;
+    game_info.firmware_ver = fw_version & 0xFFF00000;
+    game_info.raw_firmware_ver = fw_version;
+    game_info.sdk_ver = ReadCompiledSdkVersion(args.guest_path);
+    game_info.psf_attributes = psf_attributes;
+    game_info.game_folder = args.game_folder;
+
+    LOG_INFO(Loader, "Starting local process {} of {}, shadps4 v{} revision {}", args.guest_path,
+             id, Common::g_version, Common::g_scm_rev);
+    if (!mnt->Exists(args.guest_path)) {
+        LOG_CRITICAL(Loader, "Local process executable {} does not exist", args.guest_path);
+        std::quick_exit(1);
+    }
+
+    // The parent emulator created these directories; they are shared, never recreated here.
+    const auto mount_if_present = [mnt](const std::filesystem::path& host,
+                                        const std::string& guest) {
+        if (std::filesystem::is_directory(host)) {
+            mnt->Mount(host, guest);
+        } else {
+            LOG_WARNING(Loader, "{} is not available to the local process", guest);
+        }
+    };
+    mount_if_present(Common::FS::GetUserPath(Common::FS::PathType::GameDataDir), "/data");
+    const auto temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
+    mount_if_present(temp_dir, "/temp");
+    mount_if_present(Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id, "/download0");
+    std::string guest_font_dir = "/";
+    guest_font_dir.append(Libraries::Kernel::sceKernelGetFsSandboxRandomWord())
+        .append("/common/font");
+    mount_if_present(EmulatorSettings.GetFontsDir() / "font", guest_font_dir);
+    mount_if_present(EmulatorSettings.GetFontsDir() / "font2", guest_font_dir + "2");
+    for (const auto& [host, guest] : args.mounts) {
+        mnt->Mount(host, guest);
+    }
+    for (const auto& [host, guest] : args.read_only_mounts) {
+        mnt->Mount(host, guest, true);
+    }
+
+    Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
+    memory = Core::Memory::Instance();
+#ifdef __linux__
+    if (args.family >= 0 && !Libraries::Kernel::JoinJitFamily(args.family)) {
+        LOG_CRITICAL(Loader, "Failed to join the JIT family of the parent emulator");
+        std::quick_exit(1);
+    }
+#endif
+    linker = Common::Singleton<Core::Linker>::Instance();
+    Libraries::InitHLELibs(&linker->GetHLESymbols());
+
+    if (args.parent_socket >= 0) {
+        const auto socket = Net::SocketAdopt(args.parent_socket, SOCK_STREAM);
+        if (socket.error != Net::Host::Error::Ok) {
+            LOG_CRITICAL(Loader, "Failed to take over the parent socket");
+            std::quick_exit(1);
+        }
+        LOG_INFO(Loader, "Parent socket is guest descriptor {}", socket.value);
+        Libraries::SystemService::SetParentSocketForPs2Emu(static_cast<s32>(socket.value));
+    }
+
+    if (linker->LoadModule(args.guest_path) == -1) {
+        LOG_CRITICAL(Loader, "Failed to load local process executable {}", args.guest_path);
+        std::quick_exit(1);
+    }
+    linker->Execute({args.guest_path});
+
+    // The guest ends the process itself, or the lifeline does when the parent exits.
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::hours(1));
+    }
 }
 
 void Emulator::UpdatePlayTime(const std::string_view serial) {

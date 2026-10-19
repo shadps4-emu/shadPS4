@@ -101,7 +101,9 @@ public:
     u32 Add(const BufferResource& desc) {
         const u32 index{Add(buffer_resources, desc, [&desc](const auto& existing) {
             return desc.sharp_fetch == existing.sharp_fetch && desc.post_op == existing.post_op &&
+                   desc.post_op_arg == existing.post_op_arg &&
                    desc.post_op_dw1_mask == existing.post_op_dw1_mask &&
+                   desc.post_op_dw2_shift == existing.post_op_dw2_shift &&
                    desc.buffer_type == existing.buffer_type;
         })};
         auto& buffer = buffer_resources[index];
@@ -220,6 +222,7 @@ void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors
         .post_op = resource.sharps[0].post_op,
         .post_op_dw1_mask = resource.sharps[0].post_op_data.dw1_mask,
         .post_op_dw2_shift = resource.sharps[0].post_op_data.dw2_shift,
+        .post_op_arg = resource.sharps[0].post_op_data.buffer_arg,
     });
 
     // Replace handle with binding index in buffer resource list.

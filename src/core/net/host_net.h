@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <optional>
 #include <span>
+#include <vector>
 
 #include "common/types.h"
 
@@ -111,6 +112,8 @@ bool ConfigureSocket(NativeSocket s, int type);
 void CloseSocket(NativeSocket s);
 // Windows has no socketpair(), so it uses a loopback TCP connection (stream only).
 Error CreateSocketPair(int family, int type, int protocol, NativeSocket out[2]);
+// Close-on-exec duplicate numbered at least min_fd, for handing a socket to a child process.
+NativeSocket DuplicateSocket(NativeSocket s, int min_fd, Error* error);
 
 Error PrepareBind(NativeSocket s, bool reuse_addr, bool reuse_port);
 // SO_LINGER in seconds. Darwin's SO_LINGER counts clock ticks, SO_LINGER_SEC is the BSD one.
@@ -137,6 +140,18 @@ IoResult SendTo(NativeSocket s, const void* buf, size_t len, int flags, const so
                 socklen_t addr_len);
 IoResult RecvFrom(NativeSocket s, void* buf, size_t len, int flags, sockaddr* addr,
                   socklen_t* addr_len);
+
+#ifdef __linux__
+// Local sockets only. The descriptors stay owned by the caller.
+IoResult SendWithDescriptors(NativeSocket s, const void* buf, size_t len, int flags,
+                             std::span<const int> fds);
+// Receives with room for max_fds descriptors. They are appended to fds, close-on-exec, for the
+// caller to own. msg_flags gets the flags of the received message.
+IoResult RecvWithDescriptors(NativeSocket s, void* buf, size_t len, int flags, size_t max_fds,
+                             std::vector<int>* fds, int* msg_flags);
+// Address family of the socket, -1 on error.
+int SocketFamily(NativeSocket s);
+#endif
 
 // Pollable object another thread can signal to interrupt a wait.
 class WakeHandle {

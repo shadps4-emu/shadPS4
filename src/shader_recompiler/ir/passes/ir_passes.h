@@ -37,6 +37,8 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
 void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info);
 void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info);
 void DomainShaderTransform(const IR::Program& program, const RuntimeInfo& runtime_info);
+void BufferMemoryBarrierPass(IR::Program& program, const RuntimeInfo& runtime_info,
+                             const Profile& profile);
 void SharedMemoryBarrierPass(IR::Program& program, const RuntimeInfo& runtime_info,
                              const Profile& profile);
 void SharedMemorySimplifyPass(IR::Program& program, const Profile& profile);

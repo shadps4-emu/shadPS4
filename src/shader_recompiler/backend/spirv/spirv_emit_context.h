@@ -47,6 +47,8 @@ public:
     void DefineBufferProperties();
     void DefineAmdPerVertexAttribs();
     void DefineWorkgroupIndex();
+    Id DispatchMetadata(u32 word);
+    Id HostWorkgroupIndex();
 
     [[nodiscard]] Id DefineInput(Id type, std::optional<u32> location = std::nullopt,
                                  std::optional<spv::BuiltIn> builtin = std::nullopt) {
@@ -273,6 +275,8 @@ public:
     std::array<Id, 30> patches{};
 
     Id workgroup_id{};
+    Id guest_workgroup_id{};
+    Id guest_workgroup_count{};
     Id num_workgroups_id{};
     Id workgroup_index_id{};
     Id local_invocation_id{};
@@ -338,6 +342,9 @@ public:
         BufferType buffer_type;
         std::array<Id, u32(PointerSize::NumClass)> offsets;
         std::array<BufferSpv, u32(PointerType::NumAlias)> aliases;
+        std::array<BufferSpv, u32(PointerType::NumAlias)> coherent_aliases;
+        u32 unified_binding;
+        bool is_written;
 
         template <class Self>
         auto& Alias(this Self& self, PointerType alias) {
@@ -350,6 +357,9 @@ public:
         }
     };
 
+    /// Variable aliasing a buffer binding with the Coherent decoration, created on first use.
+    const BufferSpv& CoherentBufferAlias(u32 handle, PointerType alias);
+
     Bindings& binding;
     boost::container::small_vector<Id, 16> buf_type_ids;
     boost::container::small_vector<BufferDefinition, 16> buffers;
@@ -358,6 +368,7 @@ public:
     std::unordered_map<u32, Id> first_to_last_label_map;
 
     size_t flatbuf_index{};
+    size_t dispatch_metadata_index{};
     size_t bda_pagetable_index{};
     size_t fault_buffer_index{};
     Id physical_pointer_type_u32;

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <unordered_set>
 #include "common/logging/classes.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
@@ -84,6 +85,146 @@ static std::vector<IR::Block*> FindUniformBlocks(const IR::Program& program) {
     return blocks;
 }
 
+static bool IsWaveUniform(IR::Value value, const std::unordered_set<IR::Inst*>& reads) {
+    if (value.IsImmediate()) {
+        return true;
+    }
+    const IR::Inst* inst = value.Inst();
+    if (reads.contains(value.Inst())) {
+        return true;
+    }
+    switch (inst->GetOpcode()) {
+    case IR::Opcode::GetAttributeU32:
+        return inst->Arg(0).Attribute() == IR::Attribute::WorkgroupId;
+    case IR::Opcode::ReadConstBuffer:
+    case IR::Opcode::ConditionRef:
+    case IR::Opcode::LogicalNot:
+    case IR::Opcode::LogicalAnd:
+    case IR::Opcode::LogicalOr:
+    case IR::Opcode::IEqual32:
+    case IR::Opcode::INotEqual32:
+    case IR::Opcode::SLessThan32:
+    case IR::Opcode::ULessThan32:
+    case IR::Opcode::SLessThanEqual32:
+    case IR::Opcode::ULessThanEqual32:
+    case IR::Opcode::SGreaterThan32:
+    case IR::Opcode::UGreaterThan32:
+    case IR::Opcode::IAdd32:
+    case IR::Opcode::ISub32:
+    case IR::Opcode::IMul32:
+    case IR::Opcode::ShiftRightLogical32:
+    case IR::Opcode::ShiftLeftLogical32:
+    case IR::Opcode::BitwiseAnd32:
+    case IR::Opcode::BitwiseOr32:
+        for (size_t i = 0; i < inst->NumArgs(); ++i) {
+            if (!IsWaveUniform(inst->Arg(i), reads)) {
+                return false;
+            }
+        }
+        return true;
+    default:
+        return false;
+    }
+}
+
+static std::unordered_set<IR::Inst*> FindUniformWaveReads(const IR::Program& program) {
+    using Type = IR::AbstractSyntaxNode::Type;
+    std::unordered_set<IR::Inst*> reads;
+    for (auto* block : program.blocks) {
+        for (IR::Inst& inst : block->Instructions()) {
+            if (inst.GetOpcode() == IR::Opcode::ReadLane && inst.Arg(1).IsImmediate() &&
+                inst.Arg(1).U32() < 64) {
+                reads.insert(&inst);
+            }
+        }
+    }
+    bool changed;
+    do {
+        changed = false;
+        std::unordered_set<const IR::Block*> divergent_loops;
+        std::vector<const IR::Block*> loops;
+        std::vector<bool> conditionals;
+        u32 divergence_depth = 0;
+        for (const auto& node : program.syntax_list) {
+            switch (node.type) {
+            case Type::If: {
+                const bool divergent = !IsWaveUniform(node.data.if_node.cond, reads);
+                conditionals.push_back(divergent);
+                divergence_depth += divergent;
+                break;
+            }
+            case Type::EndIf:
+                divergence_depth -= conditionals.back();
+                conditionals.pop_back();
+                break;
+            case Type::Loop:
+                loops.push_back(node.data.loop.merge);
+                break;
+            case Type::Repeat:
+                if (!IsWaveUniform(node.data.repeat.cond, reads)) {
+                    divergent_loops.insert(loops.back());
+                }
+                loops.pop_back();
+                break;
+            case Type::Break:
+                if (divergence_depth || !IsWaveUniform(node.data.break_node.cond, reads)) {
+                    divergent_loops.insert(loops.back());
+                }
+                break;
+            case Type::Return:
+                if (divergence_depth || !loops.empty()) {
+                    return {};
+                }
+                break;
+            default:
+                break;
+            }
+        }
+        std::unordered_set<IR::Block*> uniform_blocks;
+        loops.clear();
+        conditionals.clear();
+        divergence_depth = 0;
+        for (const auto& node : program.syntax_list) {
+            switch (node.type) {
+            case Type::If: {
+                const bool divergent = !IsWaveUniform(node.data.if_node.cond, reads);
+                conditionals.push_back(divergent);
+                divergence_depth += divergent;
+                break;
+            }
+            case Type::EndIf:
+                divergence_depth -= conditionals.back();
+                conditionals.pop_back();
+                break;
+            case Type::Loop:
+                loops.push_back(node.data.loop.merge);
+                break;
+            case Type::Repeat:
+                loops.pop_back();
+                break;
+            case Type::Block:
+                if (divergence_depth == 0 && std::ranges::none_of(loops, [&](auto* loop) {
+                        return divergent_loops.contains(loop);
+                    })) {
+                    uniform_blocks.insert(node.data.block);
+                }
+                break;
+            default:
+                break;
+            }
+        }
+        for (auto it = reads.begin(); it != reads.end();) {
+            if (!uniform_blocks.contains((*it)->GetParent())) {
+                it = reads.erase(it);
+                changed = true;
+            } else {
+                ++it;
+            }
+        }
+    } while (changed);
+    return reads;
+}
+
 static IR::Inst* FindBallotForMaskedBitCount(const IR::Inst& mbcnt) {
     IR::Value value = mbcnt.Arg(0);
     if (value.IsImmediate()) {
@@ -115,6 +256,9 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
 
     std::vector<IR::Inst*> worklist;
     const auto uniform_blocks = FindUniformBlocks(program);
+    const auto uniform_reads = num_threads == 64 && profile.subgroup_size == 32
+                                   ? FindUniformWaveReads(program)
+                                   : std::unordered_set<IR::Inst*>{};
     for (IR::Block* block : program.blocks) {
         const bool is_uniform = std::ranges::contains(uniform_blocks, block);
         const auto push_worklist = [&](IR::Inst& inst) {
@@ -127,7 +271,11 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
         };
         for (IR::Inst& inst : block->Instructions()) {
             if (inst.GetOpcode() == IR::Opcode::ReadLane && inst.Arg(1).IsImmediate()) {
-                push_worklist(inst);
+                if (uniform_reads.contains(&inst)) {
+                    worklist.push_back(&inst);
+                } else {
+                    push_worklist(inst);
+                }
             } else if (inst.GetOpcode() == IR::Opcode::Ballot) {
                 const auto is_unpack = [](const IR::Use& use) {
                     return use.user->GetOpcode() == IR::Opcode::UnpackUint2x32;
@@ -150,7 +298,9 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
 
     const u32 scratch_base = Common::AlignUp(runtime_info.hw.cs.shared_memory_size, sizeof(u64));
     const u32 scratch_size =
-        (Common::AlignUp(num_threads, 64) / profile.subgroup_size) * sizeof(u32);
+        uniform_reads.empty()
+            ? (Common::AlignUp(num_threads, 64) / profile.subgroup_size) * sizeof(u32)
+            : num_threads * sizeof(u32);
     program.info.shared_memory_scratch_size =
         scratch_base + scratch_size - runtime_info.hw.cs.shared_memory_size;
 
@@ -169,6 +319,15 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
             const IR::U64 mask = IR::U64{ir.LoadShared(64, false, offset)};
             ir.Barrier();
             inst->ReplaceUsesWithAndRemove(mask);
+        } else if (inst->GetOpcode() == IR::Opcode::ReadLane && uniform_reads.contains(inst)) {
+            const IR::U32 offset = ir.IAdd(ir.Imm32(scratch_base),
+                                           ir.ShiftLeftLogical(invocation_index, ir.Imm32(2u)));
+            ir.WriteShared(32, IR::U32{inst->Arg(0)}, offset);
+            ir.Barrier();
+            const IR::U32 value =
+                IR::U32{ir.LoadShared(32, false, ir.Imm32(scratch_base + inst->Arg(1).U32() * 4u))};
+            ir.Barrier();
+            inst->ReplaceUsesWithAndRemove(value);
         } else if (inst->GetOpcode() == IR::Opcode::ReadLane) {
             const IR::U32 lane32 = ir.BitwiseAnd(IR::U32{inst->Arg(1)}, ir.Imm32(31));
             const IR::U32 half = ir.ShiftRightLogical(IR::U32{inst->Arg(1)}, ir.Imm32(5u));

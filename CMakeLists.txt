@@ -354,6 +354,8 @@ set(KERNEL_LIB src/core/libraries/kernel/coredump/coredump.cpp
                src/core/libraries/kernel/equeue.h
                src/core/libraries/kernel/file_system.cpp
                src/core/libraries/kernel/file_system.h
+               src/core/libraries/kernel/jit_shared_memory.cpp
+               src/core/libraries/kernel/jit_shared_memory.h
                src/core/libraries/kernel/kernel.cpp
                src/core/libraries/kernel/kernel.h
                src/core/libraries/kernel/memory.cpp
@@ -1097,6 +1099,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/passes/resource_patching_pass.cpp
                       src/shader_recompiler/ir/passes/ring_access_elimination.cpp
                       src/shader_recompiler/ir/passes/shader_info_collection_pass.cpp
+                      src/shader_recompiler/ir/passes/buffer_memory_barrier_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_barrier_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_simplify_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_to_storage_pass.cpp
@@ -1186,6 +1189,8 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/vk_platform.h
                src/video_core/renderer_vulkan/vk_presenter.cpp
                src/video_core/renderer_vulkan/vk_presenter.h
+               src/video_core/renderer_vulkan/vk_dispatch_helper.cpp
+               src/video_core/renderer_vulkan/vk_dispatch_helper.h
                src/video_core/renderer_vulkan/vk_rasterizer.cpp
                src/video_core/renderer_vulkan/vk_rasterizer.h
                src/video_core/renderer_vulkan/vk_resource_pool.cpp

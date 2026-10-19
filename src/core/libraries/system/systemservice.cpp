@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstddef>
 #include <cstdlib>
 #include "common/elf_info.h"
 #include "common/singleton.h"
@@ -2424,14 +2425,40 @@ int PS4_SYSV_ABI sceSystemServiceRequestReboot() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSystemServiceAddLocalProcessForPs2Emu() {
-    LOG_ERROR(Lib_SystemService, "(STUBBED) called");
+static s32 g_ps2emu_parent_socket = -1;
+
+void SetParentSocketForPs2Emu(s32 socket) {
+    g_ps2emu_parent_socket = socket;
+}
+
+int PS4_SYSV_ABI sceSystemServiceAddLocalProcessForPs2Emu(
+    const char* path, const char** argv, const OrbisSystemServicePs2EmuLocalProcessParam* param) {
+    LOG_INFO(Lib_SystemService, "path = {}", path ? path : "(null)");
+    if (path == nullptr || !std::string_view{path}.starts_with("/app0/")) {
+        return ORBIS_SYSTEM_SERVICE_ERROR_REJECTED;
+    }
+    if (argv != nullptr && argv[0] != nullptr) {
+        LOG_ERROR(Lib_SystemService, "Arguments for a local process are not supported");
+        return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
+    }
+    constexpr u32 MinParamSize = offsetof(OrbisSystemServicePs2EmuLocalProcessParam, unknown);
+    if (param != nullptr && param->size < MinParamSize) {
+        LOG_ERROR(Lib_SystemService, "Parameter size {:#x} is too small", param->size);
+        return ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER;
+    }
+    const s32 parent_socket = param != nullptr ? param->parent_socket : -1;
+    auto* emu = Common::Singleton<Core::Emulator>::Instance();
+    if (!emu->LaunchLocalProcess(path, parent_socket)) {
+        return ORBIS_SYSTEM_SERVICE_ERROR_INTERNAL;
+    }
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceSystemServiceGetParentSocketForPs2Emu() {
-    LOG_ERROR(Lib_SystemService, "(STUBBED) called");
-    return ORBIS_OK;
+    if (g_ps2emu_parent_socket < 0) {
+        LOG_ERROR(Lib_SystemService, "Not running as a local process");
+    }
+    return g_ps2emu_parent_socket;
 }
 
 int PS4_SYSV_ABI sceSystemServiceKillLocalProcessForPs2Emu() {

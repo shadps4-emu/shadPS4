@@ -65,6 +65,7 @@ enum class SharpFetchPostOp : u8 {
     BitwiseOrDw1WithImm,
     OffsetByProgramBase,
     ClearStrideAndBitshiftDw2WithImm,
+    ReplaceZeroDw0WithUserData,
     // For images,
     ConvertCubeTo2DArray,
     // For samplers
@@ -82,6 +83,7 @@ enum class BufferType : u8 {
     GdsBuffer,
     SharedMemory,
     ClipPlanes,
+    DispatchMetadata,
 };
 
 struct BufferResource {
@@ -93,6 +95,7 @@ struct BufferResource {
     SharpFetchPostOp post_op{};
     u32 post_op_dw1_mask{};
     u32 post_op_dw2_shift{};
+    u32 post_op_arg{};
 
     bool IsSpecial() const noexcept {
         return buffer_type != BufferType::Guest;
@@ -110,6 +113,9 @@ struct BufferResource {
             buffer.num_records <<= post_op_dw2_shift;
         } else if (post_op == SharpFetchPostOp::OffsetByProgramBase) {
             buffer.base_address += info.pgm_base;
+        } else if (post_op == SharpFetchPostOp::ReplaceZeroDw0WithUserData &&
+                   reinterpret_cast<u32*>(&buffer)[0] == 0) {
+            reinterpret_cast<u32*>(&buffer)[0] = info.flattened_ud_buf[post_op_arg];
         }
         if (!buffer.Valid()) {
             return AmdGpu::Buffer::Null();
@@ -117,7 +123,7 @@ struct BufferResource {
         return buffer;
     }
 };
-using BufferResourceList = boost::container::static_vector<BufferResource, NUM_BUFFERS>;
+using BufferResourceList = boost::container::static_vector<BufferResource, NUM_BUFFERS + 1>;
 
 enum class MipStorageFallbackMode : u16 {
     None,

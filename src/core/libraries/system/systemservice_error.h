@@ -6,5 +6,7 @@
 #include "core/libraries/error_codes.h"
 
 // SystemService library
+constexpr int ORBIS_SYSTEM_SERVICE_ERROR_INTERNAL = 0x80A10001;
 constexpr int ORBIS_SYSTEM_SERVICE_ERROR_PARAMETER = 0x80A10003;
 constexpr int ORBIS_SYSTEM_SERVICE_ERROR_NO_EVENT = 0x80A10004;
+constexpr int ORBIS_SYSTEM_SERVICE_ERROR_REJECTED = 0x80A10005;

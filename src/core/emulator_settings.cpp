@@ -233,6 +233,10 @@ void EmulatorSettingsImpl::ClearGameSpecificOverrides() {
 }
 
 bool EmulatorSettingsImpl::Save(const std::string& serial) {
+    // The parent emulator owns the configuration files.
+    if (EmulatorState::GetInstance()->IsLocalProcess()) {
+        return false;
+    }
     try {
         if (!serial.empty()) {
             const auto cfgDir = Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs);

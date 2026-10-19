@@ -18,6 +18,7 @@ OPCODE(ReadConst,                                           U32,            U32x
 OPCODE(ReadConstBuffer,                                     U32,            Opaque,         U32,                                                            )
 
 // Barriers
+OPCODE(WaitBufferMemory,                                    Void,                                                                                           )
 OPCODE(Barrier,                                             Void,                                                                                           )
 OPCODE(WorkgroupMemoryBarrier,                              Void,                                                                                           )
 OPCODE(DeviceMemoryBarrier,                                 Void,                                                                                           )
@@ -461,7 +462,7 @@ OPCODE(WarpId,                                              U32,                
 OPCODE(QuadBroadcast,                                       U32,            U32,            U32                                                             )
 OPCODE(Shuffle,                                             U32,            U32,            U32                                                             )
 OPCODE(ShuffleXor,                                          U32,            U32,            U32,                                                            )
-OPCODE(ReadFirstLane,                                       U32,            U32,                                                                            )
+OPCODE(ReadFirstLane, U32, U32, U1, )
 OPCODE(ReadLane,                                            U32,            U32,            U32                                                             )
 OPCODE(WriteLane,                                           U32,            U32,            U32,            U32                                             )
 OPCODE(Ballot,                                              U64,            U1,                                                                             )
