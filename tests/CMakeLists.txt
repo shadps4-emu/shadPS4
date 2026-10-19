@@ -101,6 +101,7 @@ set(GCN_TEST_SOURCES
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/frontend/decode.h
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/frontend/fetch_shader.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/frontend/fetch_shader.h
+    ${CMAKE_SOURCE_DIR}/src/shader_recompiler/frontend/instruction.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/frontend/translate/data_share.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/frontend/translate/export.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/frontend/translate/translate.cpp
