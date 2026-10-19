@@ -5,12 +5,14 @@
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
+#include "shader_recompiler/dispatch_data.h"
 #include "shader_recompiler/resource.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
+#include "video_core/renderer_vulkan/vk_dispatch_helper.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -332,6 +334,12 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
+    auto& stream = buffer_cache.GetStreamBuffer();
+    const Shader::IndirectDispatchMetadata metadata{};
+    dispatch_metadata = vk::DescriptorBufferInfo{
+        .buffer = stream.Handle(),
+        .offset = stream.Copy(&metadata, sizeof(metadata), instance.StorageMinAlignment()),
+        .range = sizeof(metadata)};
     if (!BindResources(pipeline)) {
         return;
     }
@@ -345,7 +353,19 @@ void Rasterizer::DispatchDirect() {
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
-    cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
+    const std::array<u32, 3> count{cs_program.dim_x, cs_program.dim_y, cs_program.dim_z};
+    const auto device_limits =
+        instance.GetPhysicalDevice().getProperties().limits.maxComputeWorkGroupCount;
+    const std::array<u32, 3> limits{device_limits[0], device_limits[1], device_limits[2]};
+    Shader::ComputeDispatchData dispatch_data{};
+    std::copy(count.begin(), count.end(), dispatch_data.count.begin());
+    Shader::ForEachDispatchChunk(count, limits, [&](const auto& base, const auto& extent) {
+        std::copy(base.begin(), base.end(), dispatch_data.base.begin());
+        cmdbuf.pushConstants(pipeline->GetLayout(), vk::ShaderStageFlagBits::eCompute,
+                             Shader::ComputeDispatchData::Offset, sizeof(dispatch_data),
+                             &dispatch_data);
+        cmdbuf.dispatch(extent[0], extent[1], extent[2]);
+    });
     DebugState.IncDispatch();
 
     ResetBindings(true);
@@ -356,30 +376,50 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 
     scheduler.PopPendingOperations();
 
-    const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
     if (!pipeline) {
         return;
     }
 
+    const auto& cs = pipeline->GetStage(Shader::SwStage::Compute);
+    ASSERT_MSG(std::ranges::none_of(cs.buffers,
+                                    [](const auto& desc) {
+                                        return desc.buffer_type == Shader::BufferType::SharedMemory;
+                                    }),
+               "Indirect dispatch with storage-backed LDS is not implemented");
+    ASSERT(size >= sizeof(VkDispatchIndirectCommand));
+    dispatch_metadata =
+        vk::DescriptorBufferInfo{.buffer = VK_NULL_HANDLE, .offset = 0, .range = VK_WHOLE_SIZE};
     if (!BindResources(pipeline)) {
         return;
     }
-
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size);
     needs_barrier |= runtime.IsBufferAccessed(buffer, base, size);
-    bound_buffers.emplace_back(buffer, base, size, vk::AccessFlagBits2::eIndirectCommandRead);
-
+    bound_buffers.emplace_back(buffer, base, size, vk::AccessFlagBits2::eShaderRead);
     if (needs_barrier) {
         runtime.FlushBarriers();
     }
-
     scheduler.EndRendering();
+    if (!dispatch_helper) {
+        dispatch_helper =
+            std::make_unique<DispatchHelper>(instance, scheduler, runtime.GetStagingPool());
+    }
+    dispatch_metadata = dispatch_helper->Prepare(buffer, base);
+    const auto metadata = std::ranges::find(cs.buffers, Shader::BufferType::DispatchMetadata,
+                                            &Shader::BufferResource::buffer_type);
+    ASSERT(metadata != cs.buffers.end());
+    buffer_infos[std::distance(cs.buffers.begin(), metadata)] = dispatch_metadata;
     pipeline->BindResources(set_writes, push_data);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
-    cmdbuf.dispatchIndirect(buffer->Handle(), base);
+    const Shader::ComputeDispatchData dispatch_data{};
+    cmdbuf.pushConstants(pipeline->GetLayout(), vk::ShaderStageFlagBits::eCompute,
+                         Shader::ComputeDispatchData::Offset, sizeof(dispatch_data),
+                         &dispatch_data);
+    cmdbuf.dispatchIndirect(dispatch_metadata.buffer,
+                            dispatch_metadata.offset +
+                                offsetof(Shader::IndirectDispatchMetadata, command));
     DebugState.IncDispatch();
 
     ResetBindings(true);
@@ -798,6 +838,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             } else if (desc.buffer_type == Shader::BufferType::FaultBuffer) {
                 const auto* fault_buffer = buffer_cache.GetFaultBuffer();
                 buffer_infos.emplace_back(fault_buffer->Handle(), 0, fault_buffer->SizeBytes());
+            } else if (desc.buffer_type == Shader::BufferType::DispatchMetadata) {
+                buffer_infos.push_back(dispatch_metadata);
             } else if (desc.buffer_type == Shader::BufferType::SharedMemory) {
                 auto& lds_buffer = buffer_cache.GetStreamBuffer();
                 const auto& cs_program = liverpool->GetCsRegs();

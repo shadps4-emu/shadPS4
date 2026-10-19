@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
+#include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/program.h"
@@ -14,6 +15,90 @@ static bool IsSharpSource(const IR::Inst* inst) {
     return inst->GetOpcode() == IR::Opcode::GetUserData ||
            inst->GetOpcode() == IR::Opcode::ReadConst ||
            inst->GetOpcode() == IR::Opcode::ReadConstBuffer;
+}
+
+struct ZeroFallbackResult {
+    IR::Value primary;
+    IR::Value fallback;
+};
+
+static ZeroFallbackResult CheckZeroFallbackPattern(IR::Value value) {
+    auto* phi = value.TryInst();
+    if (!phi || phi->GetOpcode() != IR::Opcode::Phi || phi->NumArgs() != 2) {
+        return {};
+    }
+    auto* merge = phi->GetParent();
+    for (u32 i = 0; i < 2; ++i) {
+        auto* branch = phi->PhiBlock(i);
+        auto* other = phi->PhiBlock(1 - i);
+        const auto* cfg = branch->cfg_block;
+        if (!cfg || !cfg->branch_true || !cfg->branch_false ||
+            other->ImmPredecessors().size() != 1 || other->ImmPredecessors()[0] != branch ||
+            other->ImmSuccessors().size() != 1 || other->ImmSuccessors()[0] != merge) {
+            continue;
+        }
+        auto* condition = branch->branch_cond.TryInst();
+        if (!condition || condition->GetOpcode() != IR::Opcode::ConditionRef) {
+            continue;
+        }
+        condition = condition->Arg(0).TryInst();
+        bool inverted = false;
+        if (condition && condition->GetOpcode() == IR::Opcode::LogicalNot) {
+            inverted = true;
+            condition = condition->Arg(0).TryInst();
+        }
+        if (!condition || (condition->GetOpcode() != IR::Opcode::IEqual32 &&
+                           condition->GetOpcode() != IR::Opcode::INotEqual32)) {
+            continue;
+        }
+        const auto primary = phi->Arg(1 - i);
+        const auto fallback = phi->Arg(i);
+        auto* primary_inst = primary.TryInst();
+        auto* fallback_inst = fallback.TryInst();
+        if (!primary_inst || !IsSharpSource(primary_inst) || !fallback_inst ||
+            fallback_inst->GetOpcode() != IR::Opcode::GetUserData) {
+            continue;
+        }
+        bool compares_primary = false;
+        for (u32 j = 0; j < 2; ++j) {
+            const auto zero = condition->Arg(1 - j);
+            compares_primary |=
+                condition->Arg(j) == primary && zero.IsImmediate() && zero.U32() == 0;
+        }
+        const bool zero_is_true = (condition->GetOpcode() == IR::Opcode::IEqual32) != inverted;
+        const auto* zero_target = zero_is_true ? cfg->branch_true : cfg->branch_false;
+        const auto* nonzero_target = zero_is_true ? cfg->branch_false : cfg->branch_true;
+        if (compares_primary && zero_target->ir_block == merge &&
+            nonzero_target->ir_block == other) {
+            return {primary, fallback};
+        }
+    }
+    return {};
+}
+
+static IR::Value ResolveSharpPhi(IR::Value value) {
+    boost::container::small_vector<IR::Value, 16> pending{value}, visited;
+    IR::Value source;
+    while (!pending.empty()) {
+        const auto current = pending.back();
+        pending.pop_back();
+        if (std::ranges::find(visited, current) != visited.end()) {
+            continue;
+        }
+        visited.push_back(current);
+        auto* inst = current.TryInst();
+        if (inst && inst->GetOpcode() == IR::Opcode::Phi &&
+            CheckZeroFallbackPattern(current).primary.IsEmpty()) {
+            for (u32 i = 0; i < inst->NumArgs(); ++i) {
+                pending.push_back(inst->Arg(i));
+            }
+        } else if (source.IsEmpty()) {
+            source = current;
+        } else if (source != current) {
+            return value;
+        }
+    }
+    return source.IsEmpty() ? value : source;
 }
 
 struct StridePatchResult {
@@ -308,16 +393,21 @@ void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList
             inst && inst->GetOpcode() == IR::Opcode::ReadFirstLane) {
             vsharp.dwords[i] = inst->Arg(0);
         }
+        vsharp.dwords[i] = ResolveSharpPhi(vsharp.dwords[i]);
     }
 
     // Attempt to "see through" various V# access patterns and have binding reproduce them
-    if (auto [dword0, found] = CheckInlineCbufPattern(vsharp.dwords[0]); found) {
+    if (auto [primary, fallback] = CheckZeroFallbackPattern(vsharp.dwords[0]); !primary.IsEmpty()) {
+        vsharp.post_op = SharpFetchPostOp::ReplaceZeroDw0WithUserData;
+        vsharp.post_op_data.buffer_arg = u32(fallback.Inst()->Arg(0).ScalarReg());
+        vsharp.dwords[0] = primary;
+    } else if (auto [dword0, found] = CheckInlineCbufPattern(vsharp.dwords[0]); found) {
         vsharp.post_op = SharpFetchPostOp::OffsetByProgramBase;
         vsharp.dwords[0] = dword0;
         vsharp.dwords[1] = IR::Value{0U};
     } else if (auto [dword1, mask, found] = CheckStridePatchPattern(handle->Arg(1)); found) {
         vsharp.post_op = SharpFetchPostOp::BitwiseOrDw1WithImm;
-        vsharp.post_op_data.dw1_mask = mask;
+        vsharp.post_op_data.buffer_arg = mask;
         vsharp.dwords[1] = dword1;
     } else if (auto [dword1, dword2, shift, found] =
                    CheckClearStrideAndPatchRecordsPattern(handle->Arg(1), handle->Arg(2));

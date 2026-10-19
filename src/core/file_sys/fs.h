@@ -62,6 +62,9 @@ public:
     void Unmount(const std::string& guest_folder);
     void UnmountAll();
 
+    // Copies an exact mount point while holding the mount-table lock.
+    std::optional<MntPair> GetMountSnapshot(const std::string& guest_folder);
+
     std::filesystem::path GetHostPath(std::string_view guest_directory,
                                       bool* is_read_only = nullptr,
                                       HostPathType host_path = HostPathType::Default);
@@ -189,9 +192,18 @@ public:
     HandleTable() = default;
     virtual ~HandleTable() = default;
 
+    struct DeviceRef {
+        bool exists;
+        std::shared_ptr<Devices::BaseDevice> device; // null unless the descriptor is a device
+    };
+
     int CreateHandle();
+    // Publishes a descriptor that is already complete.
+    int CreateDevice(std::shared_ptr<Devices::BaseDevice> device, std::string guest_name);
     void DeleteHandle(int d);
     File* GetFile(int d);
+    // Unlike GetFile, the result stays valid when the descriptor is closed meanwhile.
+    DeviceRef GetDevice(int d);
     File* GetSocket(int d);
     std::vector<int> GetSocketHandles();
     File* GetFile(const std::filesystem::path& host_name);
@@ -201,6 +213,8 @@ public:
     void FlushAll();
 
 private:
+    int InsertLocked(File* file);
+
     std::vector<File*> m_files;
     std::mutex m_mutex;
 };

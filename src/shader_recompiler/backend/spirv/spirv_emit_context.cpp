@@ -4,6 +4,7 @@
 #include "common/assert.h"
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/dispatch_data.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/microinstruction.h"
@@ -295,17 +296,36 @@ void EmitContext::DefineAmdPerVertexAttribs() {
     }
 }
 
+Id EmitContext::DispatchMetadata(u32 word) {
+    const auto [id, pointer] = buffers[dispatch_metadata_index].Alias(PointerType::U32);
+    return OpLoad(U32[1], OpAccessChain(pointer, id, u32_zero_value, ConstU32(word)));
+}
+
+Id EmitContext::HostWorkgroupIndex() {
+    const Id id = OpLoad(U32[3], workgroup_id);
+    const Id count = OpLoad(U32[3], num_workgroups_id);
+    const Id x = OpCompositeExtract(U32[1], id, 0);
+    const Id y = OpCompositeExtract(U32[1], id, 1);
+    const Id z = OpCompositeExtract(U32[1], id, 2);
+    const Id nx = OpCompositeExtract(U32[1], count, 0);
+    const Id ny = OpCompositeExtract(U32[1], count, 1);
+    return OpIAdd(U32[1], x, OpIMul(U32[1], nx, OpIAdd(U32[1], y, OpIMul(U32[1], ny, z))));
+}
+
+Id GuestWorkgroupId(EmitContext& ctx) {
+    return ctx.OpLoad(ctx.U32[3], ctx.guest_workgroup_id);
+}
+
 void EmitContext::DefineWorkgroupIndex() {
-    const Id workgroup_id_val{OpLoad(U32[3], workgroup_id)};
-    const Id workgroup_x{OpCompositeExtract(U32[1], workgroup_id_val, 0)};
-    const Id workgroup_y{OpCompositeExtract(U32[1], workgroup_id_val, 1)};
-    const Id workgroup_z{OpCompositeExtract(U32[1], workgroup_id_val, 2)};
-    const Id num_workgroups{OpLoad(U32[3], num_workgroups_id)};
-    const Id num_workgroups_x{OpCompositeExtract(U32[1], num_workgroups, 0)};
-    const Id num_workgroups_y{OpCompositeExtract(U32[1], num_workgroups, 1)};
+    const Id id = GuestWorkgroupId(*this);
+    const Id count = OpLoad(U32[3], guest_workgroup_count);
+    const Id x = OpCompositeExtract(U32[1], id, 0);
+    const Id y = OpCompositeExtract(U32[1], id, 1);
+    const Id z = OpCompositeExtract(U32[1], id, 2);
+    const Id nx = OpCompositeExtract(U32[1], count, 0);
+    const Id ny = OpCompositeExtract(U32[1], count, 1);
     workgroup_index_id =
-        OpIAdd(U32[1], OpIAdd(U32[1], workgroup_x, OpIMul(U32[1], workgroup_y, num_workgroups_x)),
-               OpIMul(U32[1], workgroup_z, OpIMul(U32[1], num_workgroups_x, num_workgroups_y)));
+        OpIAdd(U32[1], x, OpIMul(U32[1], nx, OpIAdd(U32[1], y, OpIMul(U32[1], ny, z))));
     Name(workgroup_index_id, "workgroup_index");
 }
 
@@ -491,15 +511,13 @@ void EmitContext::DefineInputs() {
         break;
     }
     case SwStage::Compute:
-        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex) ||
-            info.loads.GetAny(IR::Attribute::WorkgroupId)) {
-            workgroup_id =
-                DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
-        }
-        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex)) {
-            num_workgroups_id =
-                DefineVariable(U32[3], spv::BuiltIn::NumWorkgroups, spv::StorageClass::Input);
-        }
+        workgroup_id = DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
+        num_workgroups_id =
+            DefineVariable(U32[3], spv::BuiltIn::NumWorkgroups, spv::StorageClass::Input);
+        guest_workgroup_id = DefineVar(U32[3], spv::StorageClass::Private);
+        guest_workgroup_count = DefineVar(U32[3], spv::StorageClass::Private);
+        interfaces.push_back(guest_workgroup_id);
+        interfaces.push_back(guest_workgroup_count);
         if (info.loads.GetAny(IR::Attribute::LocalInvocationId)) {
             local_invocation_id =
                 DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
@@ -768,8 +786,11 @@ void EmitContext::DefineOutputs() {
 
 void EmitContext::DefinePushDataBlock() {
     // Create push constants block for instance steps rates
-    const Id struct_type{
-        Name(TypeStruct(F32[1], F32[1], F32[1], F32[1], U32[4], U32[4], U32[2]), "AuxData")};
+    const Id struct_type = Name(
+        sw_stage == SwStage::Compute
+            ? TypeStruct(F32[1], F32[1], F32[1], F32[1], U32[4], U32[4], U32[2], U32[4], U32[4])
+            : TypeStruct(F32[1], F32[1], F32[1], F32[1], U32[4], U32[4], U32[2]),
+        "AuxData");
     Decorate(struct_type, spv::Decoration::Block);
     MemberName(struct_type, PushData::XOffsetIndex, "xoffset");
     MemberName(struct_type, PushData::YOffsetIndex, "yoffset");
@@ -785,6 +806,12 @@ void EmitContext::DefinePushDataBlock() {
     MemberDecorate(struct_type, PushData::BufOffsetIndex + 0, spv::Decoration::Offset, 16U);
     MemberDecorate(struct_type, PushData::BufOffsetIndex + 1, spv::Decoration::Offset, 32U);
     MemberDecorate(struct_type, PushData::BufOffsetIndex + 2, spv::Decoration::Offset, 48U);
+    if (sw_stage == SwStage::Compute) {
+        MemberName(struct_type, 7, "workgroup_base");
+        MemberName(struct_type, 8, "workgroup_count");
+        MemberDecorate(struct_type, 7, spv::Decoration::Offset, ComputeDispatchData::Offset);
+        MemberDecorate(struct_type, 8, spv::Decoration::Offset, ComputeDispatchData::Offset + 16);
+    }
     push_data_block = DefineVar(struct_type, spv::StorageClass::PushConstant);
     Name(push_data_block, "push_data");
     interfaces.push_back(push_data_block);
@@ -834,6 +861,9 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, bool is_cohere
     case BufferType::FaultBuffer:
         Name(id, "fault_buffer");
         break;
+    case BufferType::DispatchMetadata:
+        Name(id, "dispatch_metadata");
+        break;
     case BufferType::SharedMemory:
         Name(id, "ssbo_shmem");
         break;
@@ -844,6 +874,47 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, bool is_cohere
     interfaces.push_back(id);
     return {id, pointer_type};
 };
+
+const EmitContext::BufferSpv& EmitContext::CoherentBufferAlias(u32 handle, PointerType alias) {
+    auto& buffer = buffers[handle];
+    auto& coherent = buffer.coherent_aliases[u32(alias)];
+    if (Sirit::ValidId(coherent.id)) {
+        return coherent;
+    }
+    const auto& plain = buffer.Alias(alias);
+    ASSERT(Sirit::ValidId(plain.id));
+    const Id data_type = [&] {
+        switch (alias) {
+        case PointerType::U8:
+            return U8;
+        case PointerType::U16:
+            return U16;
+        case PointerType::U32:
+            return U32[1];
+        case PointerType::F32:
+            return F32[1];
+        case PointerType::U64:
+            return U64;
+        default:
+            UNREACHABLE_MSG("Unsupported coherent buffer alias {}", u32(alias));
+        }
+    }();
+    // Same binding and layout as the plain alias, which already decorated the block types.
+    constexpr auto storage_class = spv::StorageClass::StorageBuffer;
+    const Id struct_type{TypeStruct(TypeRuntimeArray(data_type))};
+    const Id id{AddGlobalVariable(TypePointer(storage_class, struct_type), storage_class)};
+    Decorate(id, spv::Decoration::Binding, buffer.unified_binding);
+    Decorate(id, spv::Decoration::DescriptorSet, 0U);
+    if (!buffer.is_written) {
+        Decorate(id, spv::Decoration::NonWritable);
+    }
+    Decorate(id, spv::Decoration::Coherent);
+    // Plain aliases are named after the incremented buffer binding.
+    Name(id, fmt::format("ssbo_{}_coherent", buffer.binding + 1));
+    interfaces.push_back(id);
+    coherent = {id, plain.pointer_type};
+    return coherent;
+}
 
 void EmitContext::DefineBuffers() {
     for (const auto& desc : info.buffers) {
@@ -858,12 +929,16 @@ void EmitContext::DefineBuffers() {
             flatbuf_index = buffers.size();
         } else if (desc.buffer_type == BufferType::BdaPagetable) {
             bda_pagetable_index = buffers.size();
+        } else if (desc.buffer_type == BufferType::DispatchMetadata) {
+            dispatch_metadata_index = buffers.size();
         } else if (desc.buffer_type == BufferType::FaultBuffer) {
             fault_buffer_index = buffers.size();
         }
 
         // Define aliases depending on the shader usage.
         auto& spv_buffer = buffers.emplace_back(binding.buffer++, desc.buffer_type);
+        spv_buffer.unified_binding = binding.unified;
+        spv_buffer.is_written = desc.is_written;
         if (True(desc.used_types & IR::Type::U64)) {
             spv_buffer.Alias(PointerType::U64) =
                 DefineBuffer(desc.is_written, is_coherent, 3, desc.buffer_type, U64);

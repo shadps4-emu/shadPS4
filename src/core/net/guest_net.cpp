@@ -651,6 +651,32 @@ NetResult SocketCreatePair(int family, int type, int protocol, s32 ids[2]) {
     return NetResult::Ok();
 }
 
+NetResult SocketAdopt(Host::NativeSocket native, int type) {
+    if (!Host::ConfigureSocket(native, type)) {
+        const Error e = Host::LastError();
+        Host::CloseSocket(native);
+        return NetResult::Fail(e);
+    }
+    auto s = std::make_shared<GuestSocket>(native, type, g_next_generation.fetch_add(1));
+    return g_objects.Insert(std::move(s));
+}
+
+NetResult SocketDuplicateNative(s32 id, int min_fd) {
+    const auto s = g_objects.Get<GuestSocket>(id);
+    if (!s) {
+        return NetResult::Fail(Error::BadF);
+    }
+    if (s->IsP2P()) {
+        return NetResult::Fail(Error::OpNotSupp);
+    }
+    Error e;
+    const Host::NativeSocket dup = Host::DuplicateSocket(s->native, min_fd, &e);
+    if (dup == Host::InvalidSocket) {
+        return NetResult::Fail(e);
+    }
+    return NetResult::Ok(static_cast<s64>(dup));
+}
+
 NetResult SocketBind(s32 id, const sockaddr* addr, socklen_t len) {
     const auto s = g_objects.Get<GuestSocket>(id);
     if (!s) {
@@ -840,6 +866,80 @@ NetResult SocketRecvFrom(s32 id, void* buf, size_t len, int host_flags, bool don
         });
     });
 }
+
+#ifdef __linux__
+NetResult SocketGetFamily(s32 id) {
+    const auto s = g_objects.Get<GuestSocket>(id);
+    if (!s) {
+        return NetResult::Fail(Error::BadF);
+    }
+    if (s->IsP2P()) {
+        return NetResult::Fail(Error::OpNotSupp);
+    }
+    return NetResult::Ok(Host::SocketFamily(s->native));
+}
+
+NetResult SocketSendWithDescriptors(s32 id, const void* buf, size_t len, int host_flags,
+                                    bool dontwait, std::span<const int> fds) {
+    const auto s = g_objects.Get<GuestSocket>(id);
+    if (!s) {
+        return NetResult::Fail(Error::BadF);
+    }
+    if (s->IsP2P()) {
+        return NetResult::Fail(Error::OpNotSupp);
+    }
+    const bool stream = s->type == SOCK_STREAM;
+    const auto* bytes = static_cast<const u8*>(buf);
+    bool attached = false;
+    return SendAll(*s, len, !dontwait && !s->nonblocking, stream, [&](size_t sent) {
+        const size_t chunk = stream ? std::min(len - sent, MaxStreamSendChunk) : len;
+        if (attached) {
+            const auto io = Host::SendTo(s->native, bytes + sent, chunk, host_flags, nullptr, 0);
+            return NetResult{io.value, io.error};
+        }
+        const auto io = Host::SendWithDescriptors(s->native, bytes + sent, chunk, host_flags, fds);
+        attached = io.error == Error::Ok && (io.value > 0 || !stream);
+        return NetResult{io.value, io.error};
+    });
+}
+
+NetResult SocketRecvWithDescriptors(s32 id, void* buf, size_t len, int host_flags, bool dontwait,
+                                    size_t max_fds, std::vector<int>* fds, int* msg_flags) {
+    const auto s = g_objects.Get<GuestSocket>(id);
+    if (!s) {
+        return NetResult::Fail(Error::BadF);
+    }
+    if (s->IsP2P()) {
+        return NetResult::Fail(Error::OpNotSupp);
+    }
+    const bool blocking = !dontwait && !s->nonblocking;
+    // A peek returns the same bytes again, so it never loops.
+    const bool waitall = (host_flags & MSG_WAITALL) != 0 && (host_flags & MSG_PEEK) == 0 &&
+                         s->type == SOCK_STREAM && blocking;
+    host_flags &= ~MSG_WAITALL;
+    const auto deadline = SocketDeadline(s->rcv_timeout_us);
+    auto* bytes = static_cast<u8*>(buf);
+    size_t got = 0;
+    *msg_flags = 0;
+    for (;;) {
+        int flags = 0;
+        const NetResult r = RunBlocking(*s, Side::Recv, Host::Readable, deadline, blocking, [&] {
+            const auto io = Host::RecvWithDescriptors(s->native, bytes + got, len - got, host_flags,
+                                                      max_fds, fds, &flags);
+            return NetResult{io.value, io.error};
+        });
+        if (r.error != Error::Ok) {
+            return got > 0 ? NetResult::Ok(static_cast<s64>(got)) : r;
+        }
+        *msg_flags |= flags;
+        got += static_cast<size_t>(r.value);
+        // Descriptors end the call: later bytes belong to the next message.
+        if (!waitall || got >= len || r.value == 0 || !fds->empty() || (flags & MSG_CTRUNC)) {
+            return NetResult::Ok(static_cast<s64>(got));
+        }
+    }
+}
+#endif
 
 NetResult SocketShutdown(s32 id, int how) {
     const auto s = g_objects.Get<GuestSocket>(id);

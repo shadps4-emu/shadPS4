@@ -1,3 +1,4 @@
+#include "shader_recompiler/dispatch_data.h"
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -13,6 +14,8 @@
 #include <magic_enum/magic_enum.hpp>
 
 namespace Shader::Backend::SPIRV {
+
+Id GuestWorkgroupId(EmitContext& ctx);
 
 using PointerType = EmitContext::PointerType;
 using PointerSize = EmitContext::PointerSize;
@@ -208,7 +211,7 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     case IR::Attribute::WorkgroupIndex:
         return ctx.workgroup_index_id;
     case IR::Attribute::WorkgroupId:
-        return ctx.OpCompositeExtract(ctx.U32[1], ctx.OpLoad(ctx.U32[3], ctx.workgroup_id), comp);
+        return ctx.OpCompositeExtract(ctx.U32[1], GuestWorkgroupId(ctx), comp);
     case IR::Attribute::LocalInvocationId:
         return ctx.OpCompositeExtract(ctx.U32[1], ctx.OpLoad(ctx.U32[3], ctx.local_invocation_id),
                                       comp);
@@ -381,6 +384,27 @@ void EmitSetPatch(EmitContext& ctx, IR::Patch patch, Id value) {
     ctx.OpStore(pointer, value);
 }
 
+// A GLC load reads memory shared with other invocations (for example a counter polled in a
+// loop). Read it through a Coherent alias and keep every access.
+static bool IsGloballyCoherent(const IR::Inst* inst) {
+    return inst->Flags<IR::BufferInstInfo>().globally_coherent != 0;
+}
+
+static const EmitContext::BufferSpv& LoadBufferAlias(EmitContext& ctx, const IR::Inst* inst,
+                                                     u32 handle, PointerType alias) {
+    if (IsGloballyCoherent(inst)) {
+        return ctx.CoherentBufferAlias(handle, alias);
+    }
+    return ctx.buffers[handle].Alias(alias);
+}
+
+static Id LoadBufferElement(EmitContext& ctx, const IR::Inst* inst, Id type, Id pointer) {
+    if (IsGloballyCoherent(inst)) {
+        return ctx.OpLoad(type, pointer, spv::MemoryAccessMask::Volatile);
+    }
+    return ctx.OpLoad(type, pointer);
+}
+
 template <u32 N, PointerType alias>
 static Id EmitLoadBufferB32xN(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     const auto& spv_buffer = ctx.buffers[handle];
@@ -388,13 +412,13 @@ static Id EmitLoadBufferB32xN(EmitContext& ctx, IR::Inst* inst, u32 handle, Id a
         address = ctx.OpIAdd(ctx.U32[1], address, offset);
     }
     const auto& data_types = alias == PointerType::U32 ? ctx.U32 : ctx.F32;
-    const auto [id, pointer_type] = spv_buffer.Alias(alias);
+    const auto [id, pointer_type] = LoadBufferAlias(ctx, inst, handle, alias);
 
     boost::container::static_vector<Id, N> ids;
     for (u32 i = 0; i < N; i++) {
         const Id index_i = i == 0 ? address : ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(i));
         const Id ptr_i = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, index_i);
-        const Id result_i = ctx.OpLoad(data_types[1], ptr_i);
+        const Id result_i = LoadBufferElement(ctx, inst, data_types[1], ptr_i);
         ids.push_back(result_i);
     }
 
@@ -407,9 +431,9 @@ Id EmitLoadBufferU8(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     if (const Id offset = spv_buffer.Offset(PointerSize::B8); Sirit::ValidId(offset)) {
         address = ctx.OpIAdd(ctx.U32[1], address, offset);
     }
-    const auto [id, pointer_type] = spv_buffer.Alias(PointerType::U8);
+    const auto [id, pointer_type] = LoadBufferAlias(ctx, inst, handle, PointerType::U8);
     const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address)};
-    const Id result{ctx.OpLoad(ctx.U8, ptr)};
+    const Id result{LoadBufferElement(ctx, inst, ctx.U8, ptr)};
     return result;
 }
 
@@ -418,9 +442,9 @@ Id EmitLoadBufferU16(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     if (const Id offset = spv_buffer.Offset(PointerSize::B16); Sirit::ValidId(offset)) {
         address = ctx.OpIAdd(ctx.U32[1], address, offset);
     }
-    const auto [id, pointer_type] = spv_buffer.Alias(PointerType::U16);
+    const auto [id, pointer_type] = LoadBufferAlias(ctx, inst, handle, PointerType::U16);
     const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address)};
-    const Id result{ctx.OpLoad(ctx.U16, ptr)};
+    const Id result{LoadBufferElement(ctx, inst, ctx.U16, ptr)};
     return result;
 }
 
@@ -445,9 +469,9 @@ Id EmitLoadBufferU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address) {
     if (const Id offset = spv_buffer.Offset(PointerSize::B64); Sirit::ValidId(offset)) {
         address = ctx.OpIAdd(ctx.U32[1], address, offset);
     }
-    const auto [id, pointer_type] = spv_buffer.Alias(PointerType::U64);
+    const auto [id, pointer_type] = LoadBufferAlias(ctx, inst, handle, PointerType::U64);
     const Id ptr{ctx.OpAccessChain(pointer_type, id, ctx.u64_zero_value, address)};
-    const Id result{ctx.OpLoad(ctx.U64, ptr)};
+    const Id result{LoadBufferElement(ctx, inst, ctx.U64, ptr)};
     return result;
 }
 

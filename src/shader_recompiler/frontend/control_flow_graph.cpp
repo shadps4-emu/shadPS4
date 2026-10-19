@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <ranges>
+#include <span>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
@@ -66,6 +68,60 @@ static bool IgnoresExecMask(const GcnInst& inst) {
         break;
     }
     return false;
+}
+
+// A move of a partial EXEC mask restricts the following vector instructions.
+static bool IsPartialExecWrite(const GcnInst& inst) {
+    if (inst.dst[0].field != OperandField::ExecLo) {
+        return false;
+    }
+    if (inst.opcode == Opcode::S_AND_B64) {
+        return true;
+    }
+    if (inst.opcode != Opcode::S_MOV_B64) {
+        return false;
+    }
+    switch (inst.src[0].field) {
+    case OperandField::ScalarGPR:
+    case OperandField::ConstZero:
+    case OperandField::SignedConstIntPos:
+    case OperandField::LiteralConst:
+        return true;
+    case OperandField::SignedConstIntNeg:
+        // Inline constant -1 enables every lane.
+        return inst.src[0].code != u32(OperandField::SignedConstIntNeg);
+    default:
+        return false;
+    }
+}
+
+// Invocations outside a divergence scope skip all of its instructions, while GCN executes
+// scalar instructions for the whole wave. Only accept scopes whose instructions affect
+// vector registers or memory alone, so every invocation keeps the same scalar state.
+static bool IsVectorOnlyScope(std::span<const GcnInst> insts) {
+    const auto first = std::ranges::find_if_not(insts, IgnoresExecMask);
+    const auto last = std::ranges::find_if_not(insts | std::views::reverse, IgnoresExecMask);
+    if (first == insts.end()) {
+        return true;
+    }
+    return std::all_of(first, last.base(), [](const GcnInst& inst) {
+        if (inst.opcode == Opcode::S_WAITCNT || inst.opcode == Opcode::S_NOP) {
+            return true;
+        }
+        // An export with the valid mask bit kills the invocations outside EXEC, so every
+        // invocation must reach it.
+        if (inst.opcode == Opcode::EXP && inst.control.exp.vm) {
+            return false;
+        }
+        if (IgnoresExecMask(inst)) {
+            return false;
+        }
+        // VOPC keeps its implicit VCC destination in dst[1] outside dst_count.
+        return std::ranges::all_of(inst.dst, [](const InstOperand& dst) {
+            return dst.field == OperandField::VectorGPR || dst.field == OperandField::VccLo ||
+                   dst.field == OperandField::VccHi || dst.field == OperandField::Undefined;
+        });
+    });
 }
 
 static std::optional<u32> ResolveSetPcTarget(std::span<const GcnInst> list, u32 setpc_index,
@@ -169,13 +225,14 @@ void CFG::SplitDivergenceScopes() {
                // with SAVEEXEC to mask the threads that didn't pass the condition
                // of initial branch.
                (inst.opcode == Opcode::S_ANDN2_B64 && inst.dst[0].field == OperandField::ExecLo) ||
-               inst.IsCmpx();
+               inst.IsCmpx() || IsPartialExecWrite(inst);
     };
     const auto is_close_scope = [](const GcnInst& inst) {
         // Closing an EXEC scope can be either a branch instruction
         // (typical case when S_AND_SAVEEXEC_B64 is right before a branch)
         // or by a move instruction to EXEC that restores the backup.
-        return (inst.opcode == Opcode::S_MOV_B64 && inst.dst[0].field == OperandField::ExecLo) ||
+        return ((inst.opcode == Opcode::S_MOV_B64 || inst.opcode == Opcode::S_AND_B64) &&
+                inst.dst[0].field == OperandField::ExecLo) ||
                // Sometimes compiler might insert instructions between the SAVEEXEC and the branch.
                // Those instructions need to be wrapped in the condition as well so allow branch
                // as end scope instruction.
@@ -198,8 +255,14 @@ void CFG::SplitDivergenceScopes() {
                 // If all instructions in the scope ignore exec masking, we shouldn't insert a
                 // scope.
                 const auto start = inst_list.begin() + curr_begin + 1;
-                if (!std::ranges::all_of(start, inst_list.begin() + index + !is_close,
-                                         IgnoresExecMask)) {
+                const auto end = inst_list.begin() + index + !is_close;
+                const bool is_safe_scope = !IsPartialExecWrite(inst_list[curr_begin]) ||
+                                           IsVectorOnlyScope(std::span(start, end));
+                if (!is_safe_scope) {
+                    LOG_WARNING(Render_Recompiler, "EXEC move at PC {:#x} also covers scalar state",
+                                index_to_pc[curr_begin]);
+                }
+                if (is_safe_scope && !std::ranges::all_of(start, end, IgnoresExecMask)) {
                     // Determine the first instruction affected by the exec mask.
                     do {
                         ++curr_begin;

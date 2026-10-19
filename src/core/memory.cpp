@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cerrno>
+#include <cstring>
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/debug.h"
@@ -345,7 +347,7 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
 
     // Early unmap from GPU to avoid deadlocking.
     for (auto& [addr, unmap_size] : remove_list) {
-        if (IsValidGpuMapping(addr, unmap_size)) {
+        if (rasterizer && IsValidGpuMapping(addr, unmap_size)) {
             rasterizer->UnmapMemory(addr, unmap_size);
         }
     }
@@ -447,7 +449,9 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
 
         // Perform an address space mapping for each physical area
         void* out_addr = impl.Map(current_addr, size_to_map, new_dmem_area.base);
-        rasterizer->RegisterMemory(current_addr, size_to_map);
+        if (rasterizer) {
+            rasterizer->RegisterMemory(current_addr, size_to_map);
+        }
 
         // Tracy memory tracking breaks from merging memory areas. Disabled for now.
         // TRACK_ALLOC(out_addr, size_to_map, "VMEM");
@@ -463,7 +467,7 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
     MergeAdjacent(vma_map, new_vma_handle);
 
     lk2.unlock();
-    if (IsValidGpuMapping(mapped_addr, size)) {
+    if (rasterizer && IsValidGpuMapping(mapped_addr, size)) {
         rasterizer->MapMemory(mapped_addr, size);
     }
 
@@ -505,6 +509,7 @@ MemoryManager::VMAHandle MemoryManager::CreateArea(VAddr virtual_addr, u64 size,
     // Update VMA appropriately.
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
     new_vma.prot = prot;
+    new_vma.max_prot = AllMemoryProt;
     new_vma.name = name;
     new_vma.type = type;
     new_vma.phys_areas.clear();
@@ -581,7 +586,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     }
 
     // Perform early GPU unmap to avoid potential deadlocks
-    if (IsValidGpuMapping(virtual_addr, size)) {
+    if (rasterizer && IsValidGpuMapping(virtual_addr, size)) {
         rasterizer->UnmapMemory(virtual_addr, size);
     }
 
@@ -622,7 +627,9 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
             // Perform an address space mapping for each physical area
             void* out_addr = impl.Map(current_addr, size_to_map, new_fmem_area.base, is_exec);
-            rasterizer->RegisterMemory(current_addr, size_to_map);
+            if (rasterizer) {
+                rasterizer->RegisterMemory(current_addr, size_to_map);
+            }
 
             // Tracy memory tracking breaks from merging memory areas. Disabled for now.
             // TRACK_ALLOC(out_addr, size_to_map, "VMEM");
@@ -676,11 +683,16 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     }
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
+    if (type == VMAType::Reserved) {
+        impl.Protect(mapped_addr, size, Core::MemoryPermission::None);
+    }
     if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
         // Flexible address space mappings were performed while finding direct memory areas.
         if (type != VMAType::Flexible) {
             impl.Map(mapped_addr, size, phys_addr, is_exec);
-            rasterizer->RegisterMemory(mapped_addr, size);
+            if (rasterizer) {
+                rasterizer->RegisterMemory(mapped_addr, size);
+            }
             // Tracy memory tracking breaks from merging memory areas. Disabled for now.
             // TRACK_ALLOC(mapped_addr, size, "VMEM");
         }
@@ -688,7 +700,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         lk2.unlock();
 
         // If this is not a reservation, then map to GPU and address space
-        if (IsValidGpuMapping(mapped_addr, size)) {
+        if (rasterizer && IsValidGpuMapping(mapped_addr, size)) {
             rasterizer->MapMemory(mapped_addr, size);
         }
     }
@@ -770,7 +782,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     }
 
     // Perform early GPU unmap to avoid potential deadlocks
-    if (IsValidGpuMapping(virtual_addr, size)) {
+    if (rasterizer && IsValidGpuMapping(virtual_addr, size)) {
         rasterizer->UnmapMemory(virtual_addr, size);
     }
 
@@ -815,11 +827,65 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
                       map_ctx);
     if (prot != Core::MemoryProt::CpuRead) {
         // read-only mappings cannot be registered with userfaultfd in writeprotect mode
-        rasterizer->RegisterMemory(mapped_addr, size);
+        if (rasterizer) {
+            rasterizer->RegisterMemory(mapped_addr, size);
+        }
     }
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
     return ORBIS_OK;
+}
+
+#ifdef __linux__
+s32 MemoryManager::MapJitSharedMemory(VAddr virtual_addr, u64 size, MemoryProt prot,
+                                      MemoryProt max_prot, s32 host_fd, std::string_view name) {
+    if (True(prot & MemoryProt::CpuWrite)) {
+        // On PS4, read is appended to write mappings.
+        prot |= MemoryProt::CpuRead;
+    }
+    if (True(prot & ~max_prot)) {
+        return ORBIS_KERNEL_ERROR_EACCES;
+    }
+
+    std::scoped_lock lk{unmap_mutex};
+    std::scoped_lock lk2{mutex};
+    if (!IsValidMapping(virtual_addr, size)) {
+        LOG_ERROR(Kernel_Vmm, "addr = {:#x} size = {:#x} is outside the memory map", virtual_addr,
+                  size);
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
+    const auto& vma = FindVMA(virtual_addr)->second;
+    if (!vma.IsFree() || !vma.Contains(virtual_addr, size)) {
+        LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at address {:#x}, the area is in use",
+                  size, virtual_addr);
+        return ORBIS_KERNEL_ERROR_ENOMEM;
+    }
+
+    // Map on the host first, so a failure leaves the memory map untouched.
+    if (const int error = impl.MapShared(virtual_addr, size, std::bit_cast<u32>(prot), host_fd);
+        error != 0) {
+        LOG_ERROR(Kernel_Vmm, "Unable to map shared memory at address {:#x}: {}", virtual_addr,
+                  strerror(error));
+        return error == EACCES || error == EPERM ? ORBIS_KERNEL_ERROR_EACCES
+                                                 : ORBIS_KERNEL_ERROR_ENOMEM;
+    }
+    auto& new_vma =
+        CreateArea(virtual_addr, size, prot, MemoryMapFlags::Fixed | MemoryMapFlags::NoCoalesce,
+                   VMAType::JitShared, name, 0)
+            ->second;
+    new_vma.fd = -1;
+    new_vma.max_prot = max_prot;
+    return ORBIS_OK;
+}
+#endif
+
+VAddr MemoryManager::FindFreeArea(VAddr start, VAddr end, u64 size, u32 alignment) {
+    std::shared_lock lk{mutex};
+    const VAddr addr = SearchFree(start, size, alignment);
+    if (addr == static_cast<VAddr>(-1) || addr > end || end - addr < size) {
+        return -1;
+    }
+    return addr;
 }
 
 s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
@@ -838,7 +904,7 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     }
 
     // Perform early GPU unmap to avoid potential deadlocks
-    if (IsValidGpuMapping(virtual_addr, size)) {
+    if (rasterizer && IsValidGpuMapping(virtual_addr, size)) {
         rasterizer->UnmapMemory(virtual_addr, size);
     }
 
@@ -900,7 +966,9 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     // Unmap from address space
     u64 size_to_unmap = size;
     VAddr unmapped_addr = impl.Unmap(virtual_addr, &size_to_unmap);
-    rasterizer->RegisterMemory(unmapped_addr, size_to_unmap);
+    if (rasterizer) {
+        rasterizer->RegisterMemory(unmapped_addr, size_to_unmap);
+    }
 
     // Tracy memory tracking breaks from merging memory areas. Disabled for now.
     // TRACK_FREE(virtual_addr, "VMEM");
@@ -924,7 +992,7 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
     }
 
     // If the requested range has GPU access, unmap from GPU.
-    if (IsValidGpuMapping(virtual_addr, size)) {
+    if (rasterizer && IsValidGpuMapping(virtual_addr, size)) {
         rasterizer->UnmapMemory(virtual_addr, size);
     }
 
@@ -988,6 +1056,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     auto& vma = new_it->second;
     vma.type = VMAType::Free;
     vma.prot = MemoryProt::NoAccess;
+    vma.max_prot = AllMemoryProt;
     vma.phys_areas.clear();
     vma.disallow_merge = false;
     vma.name = "";
@@ -997,7 +1066,9 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
         // Unmap the memory region.
         u64 size_to_unmap = size_in_vma;
         VAddr unmapped_addr = impl.Unmap(virtual_addr, &size_to_unmap);
-        rasterizer->RegisterMemory(unmapped_addr, size_to_unmap);
+        if (rasterizer) {
+            rasterizer->RegisterMemory(unmapped_addr, size_to_unmap);
+        }
 
         // Tracy memory tracking breaks from merging memory areas. Disabled for now.
         // TRACK_FREE(virtual_addr, "VMEM");
@@ -1070,7 +1141,7 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
     if (True(prot & MemoryProt::CpuRead)) {
         perms |= Core::MemoryPermission::Read;
     }
-    if (True(prot & MemoryProt::CpuReadWrite)) {
+    if (True(prot & MemoryProt::CpuWrite)) {
         perms |= Core::MemoryPermission::ReadWrite;
     }
     if (True(prot & MemoryProt::CpuExec)) {
@@ -1084,6 +1155,19 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
     }
     if (True(prot & MemoryProt::GpuReadWrite)) {
         perms |= Core::MemoryPermission::ReadWrite;
+    }
+    if (vma_base.type == VMAType::JitShared) {
+        // The host gets exactly the access the guest asked for, so views without write stay so.
+        perms = {};
+        if (True(prot & MemoryProt::CpuRead)) {
+            perms |= Core::MemoryPermission::Read;
+        }
+        if (True(prot & MemoryProt::CpuWrite)) {
+            perms |= Core::MemoryPermission::ReadWrite;
+        }
+        if (True(prot & MemoryProt::CpuExec)) {
+            perms |= Core::MemoryPermission::Execute;
+        }
     }
 
     if (vma_base.type == VMAType::Direct || vma_base.type == VMAType::Pooled ||
@@ -1145,6 +1229,22 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
     constexpr static MemoryProt flag_mask =
         MemoryProt::CpuReadWrite | MemoryProt::CpuExec | MemoryProt::GpuReadWrite;
     MemoryProt valid_flags = prot & flag_mask;
+
+    // JIT shared memory can't get more access than the alias it was mapped from. Check the whole
+    // range before changing anything.
+    MemoryProt requested = valid_flags;
+    if (True(requested & MemoryProt::CpuWrite)) {
+        requested |= MemoryProt::CpuRead;
+    }
+    for (VAddr check_addr = addr; check_addr < addr + size;) {
+        const auto& vma = FindVMA(check_addr)->second;
+        if (vma.type == VMAType::JitShared && True(requested & ~vma.max_prot)) {
+            LOG_ERROR(Kernel_Vmm, "Protection {:#x} exceeds the limit {:#x} of area at {:#x}",
+                      static_cast<u32>(requested), static_cast<u32>(vma.max_prot), vma.base);
+            return ORBIS_KERNEL_ERROR_EACCES;
+        }
+        check_addr = vma.base + vma.size;
+    }
 
     // Protect all VMAs between addr and addr + size.
     s64 protected_bytes = 0;

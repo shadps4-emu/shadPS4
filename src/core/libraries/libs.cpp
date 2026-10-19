@@ -4,6 +4,7 @@
 #include "common/arch.h"
 #include "common/elf_info.h"
 #include "common/singleton.h"
+#include "core/emulator_state.h"
 #include "core/libraries/ajm/ajm.h"
 #include "core/libraries/app_content/app_content.h"
 #include "core/libraries/audio/audioin.h"
@@ -85,6 +86,7 @@
 #include "core/libraries/zlib/zlib_sce.h"
 #include "emulator.h"
 
+#include <algorithm>
 #include <array>
 
 void LinkSymbolImpl(Core::Loader::SymbolsResolver* sym, char const* nid, char const* lib,
@@ -199,7 +201,17 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             // {"libSceSsl.sprx", Libraries::Ssl::RegisterLib},
         });
 
+        // A local process runs without a window, GPU or controllers.
+        constexpr auto DeviceModules = std::to_array<std::string_view>(
+            {"libSceGnmDriver.sprx", "libSceVideoOut.sprx", "libScePad.sprx"});
+        const bool local_process = EmulatorState::GetInstance()->IsLocalProcess();
+
         for (auto mod : ModulesToLoad) {
+            if (local_process &&
+                std::ranges::find(DeviceModules, mod.module_name) != DeviceModules.end()) {
+                LOG_INFO(Loader, "{} is not registered in a local process", mod.module_name);
+                continue;
+            }
             if (mod.module_name == "libSceGnmDriver.sprx") {
                 auto lle_file = Kernel::sceKernelIsNeoMode() ? "libSceGnmDriverForNeoMode.sprx"
                                                              : mod.module_name;

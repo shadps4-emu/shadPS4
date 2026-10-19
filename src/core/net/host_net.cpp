@@ -5,6 +5,7 @@
 #include <array>
 #include <climits>
 #include <cstdint>
+#include <cstring>
 
 #include "core/net/host_net.h"
 
@@ -245,6 +246,21 @@ bool ConfigureSocket(NativeSocket s, int type) {
 #endif
 #endif
     return true;
+}
+
+NativeSocket DuplicateSocket(NativeSocket s, int min_fd, Error* error) {
+#ifdef _WIN32
+    (void)s;
+    (void)min_fd;
+    *error = Error::OpNotSupp;
+    return InvalidSocket;
+#else
+    const NativeSocket dup = fcntl(s, F_DUPFD_CLOEXEC, min_fd);
+    if (dup == InvalidSocket) {
+        *error = LastError();
+    }
+    return dup;
+#endif
 }
 
 NativeSocket CreateSocket(int family, int type, int protocol, Error* error) {
@@ -527,6 +543,72 @@ IoResult RecvFrom(NativeSocket s, void* buf, size_t len, int flags, sockaddr* ad
     }
     return {static_cast<s64>(n), Error::Ok};
 }
+
+#ifdef __linux__
+IoResult SendWithDescriptors(NativeSocket s, const void* buf, size_t len, int flags,
+                             std::span<const int> fds) {
+    iovec iov{const_cast<void*>(buf), len};
+    msghdr msg{};
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+    std::vector<u8> control(CMSG_SPACE(fds.size_bytes()));
+    if (!fds.empty()) {
+        msg.msg_control = control.data();
+        msg.msg_controllen = control.size();
+        cmsghdr* cmsg = CMSG_FIRSTHDR(&msg);
+        cmsg->cmsg_level = SOL_SOCKET;
+        cmsg->cmsg_type = SCM_RIGHTS;
+        cmsg->cmsg_len = CMSG_LEN(fds.size_bytes());
+        std::memcpy(CMSG_DATA(cmsg), fds.data(), fds.size_bytes());
+    }
+    ssize_t n;
+    do {
+        n = sendmsg(s, &msg, flags | MSG_NOSIGNAL);
+    } while (n < 0 && errno == EINTR);
+    if (n < 0) {
+        return {-1, LastError()};
+    }
+    return {static_cast<s64>(n), Error::Ok};
+}
+
+IoResult RecvWithDescriptors(NativeSocket s, void* buf, size_t len, int flags, size_t max_fds,
+                             std::vector<int>* fds, int* msg_flags) {
+    iovec iov{buf, len};
+    msghdr msg{};
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+    std::vector<u8> control(max_fds > 0 ? CMSG_SPACE(max_fds * sizeof(int)) : 0);
+    msg.msg_control = control.empty() ? nullptr : control.data();
+    msg.msg_controllen = control.size();
+    ssize_t n;
+    do {
+        n = recvmsg(s, &msg, flags | MSG_CMSG_CLOEXEC);
+    } while (n < 0 && errno == EINTR);
+    if (n < 0) {
+        return {-1, LastError()};
+    }
+    *msg_flags = msg.msg_flags;
+    for (cmsghdr* cmsg = control.empty() ? nullptr : CMSG_FIRSTHDR(&msg); cmsg != nullptr;
+         cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+        if (cmsg->cmsg_level != SOL_SOCKET || cmsg->cmsg_type != SCM_RIGHTS) {
+            continue;
+        }
+        const size_t count = (cmsg->cmsg_len - CMSG_LEN(0)) / sizeof(int);
+        for (size_t i = 0; i < count; ++i) {
+            int fd;
+            std::memcpy(&fd, CMSG_DATA(cmsg) + i * sizeof(int), sizeof(int));
+            fds->push_back(fd);
+        }
+    }
+    return {static_cast<s64>(n), Error::Ok};
+}
+
+int SocketFamily(NativeSocket s) {
+    int family = -1;
+    socklen_t len = sizeof(family);
+    return getsockopt(s, SOL_SOCKET, SO_DOMAIN, &family, &len) == 0 ? family : -1;
+}
+#endif
 
 WakeHandle::WakeHandle() {
 #if defined(__linux__)

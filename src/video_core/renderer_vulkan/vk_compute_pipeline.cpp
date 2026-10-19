@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <boost/container/small_vector.hpp>
+#include "shader_recompiler/dispatch_data.h"
 
 #include "shader_recompiler/info.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
@@ -69,7 +70,7 @@ ComputePipeline::ComputePipeline(const Instance& instance, Scheduler& scheduler,
     const vk::PushConstantRange push_constants = {
         .stageFlags = vk::ShaderStageFlagBits::eCompute,
         .offset = 0,
-        .size = sizeof(Shader::PushData),
+        .size = Shader::ComputeDispatchData::Offset + sizeof(Shader::ComputeDispatchData),
     };
 
     uses_push_descriptors = binding < instance.MaxPushDescriptors();

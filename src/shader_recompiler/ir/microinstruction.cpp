@@ -37,6 +37,7 @@ Inst::~Inst() {
 
 bool Inst::MayHaveSideEffects() const noexcept {
     switch (op) {
+    case Opcode::WaitBufferMemory:
     case Opcode::Barrier:
     case Opcode::WorkgroupMemoryBarrier:
     case Opcode::DeviceMemoryBarrier:

@@ -102,6 +102,10 @@ void IREmitter::Discard(const U1& cond) {
     Inst(Opcode::DiscardCond, cond);
 }
 
+void IREmitter::WaitBufferMemory() {
+    Inst(Opcode::WaitBufferMemory);
+}
+
 void IREmitter::Barrier() {
     Inst(Opcode::Barrier);
 }
@@ -662,7 +666,7 @@ U32 IREmitter::ShuffleXor(const U32& value, const U32& mask) {
 }
 
 U32 IREmitter::ReadFirstLane(const U32& value) {
-    return Inst<U32>(Opcode::ReadFirstLane, value);
+    return Inst<U32>(Opcode::ReadFirstLane, value, GetExec());
 }
 
 U32 IREmitter::ReadLane(const U32& value, const U32& lane) {

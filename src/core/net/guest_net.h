@@ -53,6 +53,10 @@ s32 ToOrbisReturn(NetResult result);
 
 NetResult SocketCreate(int family, int type, int protocol);
 NetResult SocketCreatePair(int family, int type, int protocol, s32 ids[2]);
+// Takes ownership of a host socket inherited from another process.
+NetResult SocketAdopt(Host::NativeSocket native, int type);
+// Returns a host duplicate of the socket that the caller owns.
+NetResult SocketDuplicateNative(s32 id, int min_fd);
 NetResult SocketBind(s32 id, const sockaddr* addr, socklen_t len);
 NetResult SocketListen(s32 id, int backlog);
 NetResult SocketConnect(s32 id, const sockaddr* addr, socklen_t len);
@@ -61,6 +65,16 @@ NetResult SocketSendTo(s32 id, const void* buf, size_t len, int host_flags, bool
                        const sockaddr* addr, socklen_t addr_len);
 NetResult SocketRecvFrom(s32 id, void* buf, size_t len, int host_flags, bool dontwait,
                          sockaddr* addr, socklen_t* addr_len);
+#ifdef __linux__
+// Host address family of a socket that is not P2P.
+NetResult SocketGetFamily(s32 id);
+// Local sockets. The descriptors go with the first bytes that leave.
+NetResult SocketSendWithDescriptors(s32 id, const void* buf, size_t len, int host_flags,
+                                    bool dontwait, std::span<const int> fds);
+// Local sockets. Stops after the first bytes that bring descriptors, also with MSG_WAITALL.
+NetResult SocketRecvWithDescriptors(s32 id, void* buf, size_t len, int host_flags, bool dontwait,
+                                    size_t max_fds, std::vector<int>* fds, int* msg_flags);
+#endif
 NetResult SocketShutdown(s32 id, int how);
 NetResult SocketGetName(s32 id, sockaddr* addr, socklen_t* len);
 NetResult SocketGetPeerName(s32 id, sockaddr* addr, socklen_t* len);

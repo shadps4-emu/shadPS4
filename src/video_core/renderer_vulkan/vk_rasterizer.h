@@ -22,6 +22,7 @@ class MemoryManager;
 namespace Vulkan {
 
 class GraphicsPipeline;
+class DispatchHelper;
 class Runtime;
 
 class Rasterizer {
@@ -146,6 +147,8 @@ private:
     boost::icl::interval_set<VAddr> mapped_ranges;
     Common::SharedFirstMutex mapped_ranges_mutex;
     PipelineCache pipeline_cache;
+    std::unique_ptr<DispatchHelper> dispatch_helper;
+    vk::DescriptorBufferInfo dispatch_metadata;
     const bool host_markers_enabled;
     const bool guest_markers_enabled;
 
@@ -158,7 +161,7 @@ private:
     ImageBinding db_desc;
 
     boost::container::static_vector<vk::DescriptorImageInfo, Shader::NUM_IMAGES> image_infos;
-    boost::container::static_vector<vk::DescriptorBufferInfo, Shader::NUM_BUFFERS> buffer_infos;
+    boost::container::static_vector<vk::DescriptorBufferInfo, Shader::NUM_BUFFERS + 1> buffer_infos;
 
     struct BoundBuffer {
         const VideoCore::Buffer* buffer;

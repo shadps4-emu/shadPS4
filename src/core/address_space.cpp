@@ -678,7 +678,7 @@ struct AddressSpace::Impl {
         system_reserved_size = SystemReservedSize;
         user_size = UserSize;
 
-        constexpr int protection_flags = PROT_READ | PROT_WRITE;
+        constexpr int protection_flags = PROT_NONE;
         int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED; // compiler knows its constexpr
 #if !defined(__FreeBSD__)
         map_flags |= MAP_NORESERVE;
@@ -789,6 +789,22 @@ struct AddressSpace::Impl {
         return ret;
     }
 
+#ifdef __linux__
+    int MapShared(VAddr virtual_addr, u64 size, PosixPageProtection prot, int fd) {
+        void* ret =
+            mmap(reinterpret_cast<void*>(virtual_addr), size, prot, MAP_FIXED | MAP_SHARED, fd, 0);
+        if (ret == MAP_FAILED) {
+            const int error = errno;
+            // A failed fixed mapping may have dropped the reservation, put it back.
+            ret = mmap(reinterpret_cast<void*>(virtual_addr), size, PROT_NONE,
+                       MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+            ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
+            return error;
+        }
+        return 0;
+    }
+#endif
+
     VAddr Unmap(VAddr virtual_addr, u64* size) {
         ASSERT_MSG(size != nullptr && *size > 0, "Invalid unmap size");
 
@@ -870,6 +886,13 @@ void* AddressSpace::MapFile(VAddr virtual_addr, u64 size, u64 offset, u32 prot, 
                      fd);
 #endif
 }
+
+#ifdef __linux__
+int AddressSpace::MapShared(VAddr virtual_addr, u64 size, u32 prot, int fd) {
+    return impl->MapShared(virtual_addr, size, ToPosixProt(std::bit_cast<Core::MemoryProt>(prot)),
+                           fd);
+}
+#endif
 
 VAddr AddressSpace::Unmap(VAddr virtual_addr, u64* size) {
     const VAddr end_addr = virtual_addr + *size - 1;

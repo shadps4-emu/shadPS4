@@ -17,6 +17,7 @@
 #include "core/libraries/kernel/debug.h"
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/file_system.h"
+#include "core/libraries/kernel/jit_shared_memory.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -475,6 +476,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::RegisterThreads(sym);
     Libraries::Kernel::RegisterKernelEventFlag(sym);
     Libraries::Kernel::RegisterMemory(sym);
+    Libraries::Kernel::RegisterJitSharedMemory(sym);
     Libraries::Kernel::RegisterEventQueue(sym);
     Libraries::Kernel::RegisterProcess(sym);
     Libraries::Kernel::RegisterException(sym);

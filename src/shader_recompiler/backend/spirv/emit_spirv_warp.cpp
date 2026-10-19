@@ -22,7 +22,7 @@ Id EmitQuadBroadcast(EmitContext& ctx, Id value, Id index) {
     return ctx.OpGroupNonUniformQuadBroadcast(ctx.U32[1], SubgroupScope(ctx), value, index);
 }
 
-Id EmitReadFirstLane(EmitContext& ctx, Id value) {
+Id EmitReadFirstLane(EmitContext& ctx, Id value, Id exec) {
     return ctx.OpGroupNonUniformBroadcastFirst(ctx.U32[1], SubgroupScope(ctx), value);
 }
 

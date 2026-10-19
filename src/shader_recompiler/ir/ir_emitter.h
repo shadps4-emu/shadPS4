@@ -42,6 +42,7 @@ public:
     void Discard(const U1& cond);
     void DebugPrint(const char* fmt, boost::container::small_vector<Value, 5> args);
 
+    void WaitBufferMemory();
     void Barrier();
     void WorkgroupMemoryBarrier();
     void DeviceMemoryBarrier();

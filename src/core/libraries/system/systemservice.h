@@ -98,6 +98,13 @@ struct OrbisSystemServiceDisplaySafeAreaInfo {
     uint8_t reserved[128];
 };
 
+// Only the fields read by the system library are known; the PS2 emulator passes 0x8c bytes.
+struct OrbisSystemServicePs2EmuLocalProcessParam {
+    u32 size;
+    s32 parent_socket;
+    u32 unknown;
+};
+
 struct OrbisSystemServiceEvent {
     OrbisSystemServiceEventType event_type;
     union {
@@ -591,7 +598,8 @@ int PS4_SYSV_ABI sceSystemServiceDisableSuspendNotification();
 int PS4_SYSV_ABI sceSystemServiceEnableSuspendNotification();
 int PS4_SYSV_ABI sceSystemServiceRequestPowerOff();
 int PS4_SYSV_ABI sceSystemServiceRequestReboot();
-int PS4_SYSV_ABI sceSystemServiceAddLocalProcessForPs2Emu();
+int PS4_SYSV_ABI sceSystemServiceAddLocalProcessForPs2Emu(
+    const char* path, const char** argv, const OrbisSystemServicePs2EmuLocalProcessParam* param);
 int PS4_SYSV_ABI sceSystemServiceGetParentSocketForPs2Emu();
 int PS4_SYSV_ABI sceSystemServiceKillLocalProcessForPs2Emu();
 int PS4_SYSV_ABI sceSystemServiceShowImposeMenuForPs2Emu();
@@ -607,6 +615,8 @@ int PS4_SYSV_ABI Func_6B1CDB955F0EBD65();
 int PS4_SYSV_ABI Func_CB5E885E225F69F0();
 
 void PushSystemServiceEvent(const OrbisSystemServiceEvent& event);
+
+void SetParentSocketForPs2Emu(s32 socket);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::SystemService
