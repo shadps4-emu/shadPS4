@@ -256,11 +256,27 @@ static constexpr Shader::ShaderParams GetParams(const auto& sh, auto&& read_memo
     const auto* code = sh.template Address<u32*>();
     const auto& bininfo = SearchBinaryInfo(code, read_memory);
     read_memory(std::bit_cast<VAddr>(code), bininfo.length);
-    return {
+    Shader::ShaderParams params = {
         .user_data = sh.user_data,
         .code = std::span{code, bininfo.length / sizeof(u32)},
         .hash = bininfo.shader_hash,
     };
+    if (bininfo.is_srt) {
+        const auto* slots = reinterpret_cast<const u8*>(&bininfo) -
+                            bininfo.chunk_usage_base_offset_in_dw * sizeof(u32) -
+                            bininfo.num_input_usage_slots * sizeof(u32);
+        const auto* start = reinterpret_cast<const u8*>(code) + bininfo.length;
+        if (start < slots) {
+            for (u32 i = 0; i < bininfo.num_input_usage_slots; ++i) {
+                if (slots[i * 4] == 0x0a) {
+                    params.srt_metadata = {start, slots};
+                    params.srt_user_data_base = slots[i * 4 + 2];
+                    break;
+                }
+            }
+        }
+    }
+    return params;
 }
 
 static constexpr Shader::ShaderParams GetParams(const auto& sh) {

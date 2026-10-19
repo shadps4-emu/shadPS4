@@ -75,6 +75,10 @@ Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
     return result;
 }
 
+Id EmitReadConstArray(EmitContext& ctx, u32 base, Id offset) {
+    return ctx.EmitFlatbufferLoad(ctx.OpIAdd(ctx.U32[1], ctx.ConstU32(base), offset));
+}
+
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     if (IR::IsParam(attr)) {
         const u32 param_index{u32(attr) - u32(IR::Attribute::Param0)};

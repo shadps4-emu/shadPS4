@@ -113,7 +113,9 @@ public:
 
     u32 Add(const ImageResource& desc) {
         const u32 index{Add(image_resources, desc, [&desc](const auto& existing) {
-            return desc.sharp_fetch == existing.sharp_fetch && desc.is_array == existing.is_array &&
+            return desc.sharp_fetch == existing.sharp_fetch &&
+                   desc.descriptor_count == existing.descriptor_count &&
+                   desc.is_array == existing.is_array &&
                    desc.mip_fallback_mode == existing.mip_fallback_mode &&
                    desc.constant_mip_index == existing.constant_mip_index &&
                    desc.post_op == existing.post_op;
@@ -239,8 +241,14 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
     // need fallback (TODO is this 100% true?)
     const bool needs_mip_storage_fallback =
         inst_info.has_lod && is_written && !profile.supports_image_load_store_lod;
+    auto source = resource.sharps[0];
+    const bool dynamic_array = resource.image_array && !is_written && !inst_info.is_r128;
+    if (dynamic_array) {
+        std::copy_n(resource.image_array->begin(), 8, source.dwords.begin());
+    }
     ImageResource image_res = {
-        .sharp_fetch = ConstructSharpFetch<AmdGpu::Image>(resource.sharps[0]),
+        .sharp_fetch = ConstructSharpFetch<AmdGpu::Image>(source),
+        .descriptor_count = dynamic_array ? u32(resource.image_array->size() / 8) : 0,
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = is_atomic,
         .is_array = bool(inst_info.is_array),
@@ -322,6 +330,20 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
 
     IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
 
+    if (dynamic_array) {
+        ASSERT(image_res.sharp_fetch.summary == SharpFetch<AmdGpu::Image>::Summary::SingleLoad);
+        const u32 base = image_res.sharp_fetch.offsets[0];
+        for (const auto value : resource.sharps[0].dwords) {
+            auto* read = value.TryInst();
+            if (read && read->GetOpcode() == IR::Opcode::ReadConst && read->Flags<u32>() == 0) {
+                IR::IREmitter reader{*read->GetParent(),
+                                     IR::Block::InstructionList::s_iterator_to(*read)};
+                read->ReplaceUsesWith(
+                    reader.ReadConstArray(reader.Imm32(base), IR::U32{read->Arg(1)}));
+            }
+        }
+    }
+
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
         auto& lod_prod = resource.sharps[1].post_op_data.lod_prod;
         const u32 sampler_binding = descriptors.Add(SamplerResource{
@@ -331,9 +353,15 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
                 lod_prod.IsEmpty() ? UNKNOWN_LOCATION : SharpLocationFromSource(lod_prod.Inst()),
             .is_depth = bool(inst_info.is_depth), // true for the _C (compare) opcodes
         });
-        inst.SetArg(0, ir.Imm32(image_binding | sampler_binding << 16));
+        const auto handle = ir.Imm32(image_binding | sampler_binding << 16);
+        inst.SetArg(0, dynamic_array
+                           ? ir.ImageDescriptorHandle(handle, IR::U32{resource.image_array_index})
+                           : IR::Value{handle});
     } else {
-        inst.SetArg(0, ir.Imm32(image_binding));
+        const auto handle = ir.Imm32(image_binding);
+        inst.SetArg(0, dynamic_array
+                           ? ir.ImageDescriptorHandle(handle, IR::U32{resource.image_array_index})
+                           : IR::Value{handle});
     }
 }
 
@@ -640,7 +668,8 @@ void PatchBufferArgs(IR::Inst& inst, Info& info) {
 void PatchImageSampleArgs(IR::Inst& inst, Info& info, const ImageResource& image_res,
                           const AmdGpu::Image& image) {
     const auto handle = inst.Arg(0);
-    const auto& sampler_res = info.samplers[(handle.U32() >> 16) & 0xFFFF];
+    const u32 binding = handle.IsImmediate() ? handle.U32() : handle.Inst()->Arg(0).U32();
+    const auto& sampler_res = info.samplers[(binding >> 16) & 0xFFFF];
     const auto sampler = sampler_res.GetSharp(info);
 
     IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
@@ -836,7 +865,9 @@ void PatchImageArgs(IR::Inst& inst, Info& info) {
     }
 
     const auto image_handle = inst.Arg(0);
-    const auto binding_index = image_handle.U32() & 0xFFFF;
+    const u32 binding_index =
+        (image_handle.IsImmediate() ? image_handle.U32() : image_handle.Inst()->Arg(0).U32()) &
+        0xFFFF;
     const auto& image_res = info.images[binding_index];
     auto image = image_res.GetSharp(info);
 

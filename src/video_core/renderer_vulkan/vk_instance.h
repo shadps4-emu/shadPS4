@@ -364,6 +364,15 @@ public:
         return push_descriptor_props.maxPushDescriptors;
     }
 
+    bool IsSampledImageArrayNonUniformIndexingSupported() const {
+        return vk12_features.shaderSampledImageArrayNonUniformIndexing;
+    }
+
+    u32 MaxSampledImageDescriptors() const {
+        return std::min(properties.limits.maxPerStageDescriptorSampledImages,
+                        properties.limits.maxDescriptorSetSampledImages);
+    }
+
     /// Returns the maximum size of a single VkDeviceMemory
     vk::DeviceSize MaxMemoryAllocationSize() const {
         return vk11_props.maxMemoryAllocationSize;
