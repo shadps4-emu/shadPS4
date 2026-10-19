@@ -319,7 +319,18 @@ void BufferCache::ReadEdgeImagePages(const Image& image) {
         });
 }
 
-BufferCache::DmaBufferRangeList BufferCache::SynchronizeAllDmaBuffers() {
+BufferCache::DmaBufferRangeList BufferCache::SynchronizeAllDmaBuffers(
+    std::span<const VAddr> addresses) {
+    for (const auto addr : addresses) {
+        const u64 page = addr >> ARENA_PAGE_BITS;
+        if (page >= address_space.size()) {
+            continue;
+        }
+        const u64 block = addr >> block_shift;
+        const auto* arena = GetArena(block, block);
+        EnsureResident(arena, block, block);
+    }
+
     DmaBufferRangeList ranges;
     fault_process_pending = true;
     
@@ -363,8 +374,9 @@ BufferCache::DmaBufferRangeList BufferCache::SynchronizeDmaBuffers(
             release_pending();
             continue;
         }
-        const auto* arena = address_space[page];
-        if (!arena || !arena->IsInBounds(addr, read_size)) {
+        const u64 block = addr >> block_shift;
+        const auto* arena = GetArena(block, block);
+        if (!arena->IsInBounds(addr, read_size)) {
             release_pending();
             continue;
         }

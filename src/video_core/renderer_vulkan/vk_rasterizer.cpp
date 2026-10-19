@@ -444,7 +444,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     const auto dma_ranges = ([&]() {
         if (sync_all_buffers) {
-            return buffer_cache.SynchronizeAllDmaBuffers();
+            return buffer_cache.SynchronizeAllDmaBuffers(touch_addresses);
         } else if (!touch_addresses.empty()) {
             std::ranges::sort(touch_addresses);
             return buffer_cache.SynchronizeDmaBuffers(touch_addresses);
