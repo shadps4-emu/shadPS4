@@ -84,21 +84,20 @@ static std::vector<IR::Block*> FindUniformBlocks(const IR::Program& program) {
     return blocks;
 }
 
-static IR::Inst* FindBallotForMaskedBitCount(const IR::Inst& mbcnt) {
-    IR::Value value = mbcnt.Arg(0);
+static bool UsesUnloweredBallot(const IR::Inst& mbcnt, const std::vector<IR::Inst*>& worklist) {
+    const IR::Value value = mbcnt.Arg(0);
     if (value.IsImmediate()) {
-        return nullptr;
+        return false;
     }
-    IR::Inst* inst = value.Inst();
-    if (inst->GetOpcode() != IR::Opcode::CompositeExtractU32x2 || inst->Arg(0).IsImmediate()) {
-        return nullptr;
-    }
-    inst = inst->Arg(0).Inst();
-    if (inst->GetOpcode() != IR::Opcode::UnpackUint2x32 || inst->Arg(0).IsImmediate()) {
-        return nullptr;
-    }
-    inst = inst->Arg(0).Inst();
-    return inst->GetOpcode() == IR::Opcode::Ballot ? inst : nullptr;
+    return IR::BreadthFirstSearch(value.Inst(),
+                                  [&](const IR::Inst* inst) -> std::optional<bool> {
+                                      if (inst->GetOpcode() == IR::Opcode::Ballot &&
+                                          !std::ranges::contains(worklist, inst)) {
+                                          return true;
+                                      }
+                                      return std::nullopt;
+                                  })
+        .value_or(false);
 }
 
 void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info,
@@ -114,6 +113,7 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
     }
 
     std::vector<IR::Inst*> worklist;
+    std::vector<IR::Inst*> bit_counts;
     const auto uniform_blocks = FindUniformBlocks(program);
     for (IR::Block* block : program.blocks) {
         const bool is_uniform = std::ranges::contains(uniform_blocks, block);
@@ -136,12 +136,13 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
                     push_worklist(inst);
                 }
             } else if (inst.GetOpcode() == IR::Opcode::MaskedBitCount32) {
-                IR::Inst* const ballot = FindBallotForMaskedBitCount(inst);
-                if (ballot == nullptr ||
-                    std::ranges::contains(uniform_blocks, ballot->GetParent())) {
-                    worklist.push_back(&inst);
-                }
+                bit_counts.push_back(&inst);
             }
+        }
+    }
+    for (IR::Inst* inst : bit_counts) {
+        if (!UsesUnloweredBallot(*inst, worklist)) {
+            worklist.push_back(inst);
         }
     }
     if (worklist.empty()) {

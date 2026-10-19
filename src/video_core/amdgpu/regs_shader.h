@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstring>
+#include <utility>
 #include <vector>
 
 #include "common/assert.h"
@@ -232,7 +233,7 @@ struct ComputeProgram {
     }
 };
 
-static BinaryInfo SearchBinaryInfo(VAddr address, auto&& read_memory) {
+static std::pair<BinaryInfo, VAddr> SearchBinaryInfo(VAddr address, auto&& read_memory) {
     auto* memory = Core::Memory::Instance();
     std::array<u32, 2> header;
     read_memory(address, sizeof(header));
@@ -244,7 +245,7 @@ static BinaryInfo SearchBinaryInfo(VAddr address, auto&& read_memory) {
         read_memory(info_address, sizeof(info));
         memory->CopySparseMemory(info_address, reinterpret_cast<u8*>(&info), sizeof(info));
         if (info.Valid()) {
-            return info;
+            return {info, info_address};
         }
     }
     constexpr u32 signature_size = sizeof(BinaryInfo::signature_ref) / sizeof(u8);
@@ -259,7 +260,7 @@ static BinaryInfo SearchBinaryInfo(VAddr address, auto&& read_memory) {
             const auto info_address = address + i * sizeof(u32);
             read_memory(info_address, sizeof(info));
             memory->CopySparseMemory(info_address, reinterpret_cast<u8*>(&info), sizeof(info));
-            return info;
+            return {info, info_address};
         }
     }
     UNREACHABLE_MSG("Shader binary info not found.");
@@ -267,13 +268,36 @@ static BinaryInfo SearchBinaryInfo(VAddr address, auto&& read_memory) {
 
 static Shader::ShaderParams GetParams(const auto& sh, auto&& read_memory) {
     const auto* code = sh.template Address<u32*>();
-    const auto bininfo = SearchBinaryInfo(std::bit_cast<VAddr>(code), read_memory);
+    const auto [bininfo, info_address] = SearchBinaryInfo(std::bit_cast<VAddr>(code), read_memory);
     read_memory(std::bit_cast<VAddr>(code), bininfo.length);
-    return {
+    Shader::ShaderParams params = {
         .user_data = sh.user_data,
         .code = std::span{code, bininfo.length / sizeof(u32)},
         .hash = bininfo.shader_hash,
     };
+    if (bininfo.is_srt) {
+        const VAddr slots_address = info_address -
+                                    bininfo.chunk_usage_base_offset_in_dw * sizeof(u32) -
+                                    bininfo.num_input_usage_slots * sizeof(u32);
+        const VAddr start = std::bit_cast<VAddr>(code) + bininfo.length;
+        if (start < slots_address && slots_address < info_address) {
+            read_memory(start, info_address - start);
+            auto* memory = Core::Memory::Instance();
+            std::array<u8, 256 * sizeof(u32)> slots;
+            memory->CopySparseMemory(slots_address, slots.data(),
+                                     bininfo.num_input_usage_slots * sizeof(u32));
+            for (u32 i = 0; i < bininfo.num_input_usage_slots; ++i) {
+                if (slots[i * 4] == 0x0a) {
+                    params.srt_metadata.resize(slots_address - start);
+                    memory->CopySparseMemory(start, params.srt_metadata.data(),
+                                             params.srt_metadata.size());
+                    params.srt_user_data_base = slots[i * 4 + 2];
+                    break;
+                }
+            }
+        }
+    }
+    return params;
 }
 
 static Shader::ShaderParams GetParams(const auto& sh) {

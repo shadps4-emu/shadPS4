@@ -513,7 +513,11 @@ struct PM4CmdEventWriteEop {
 
 struct PM4CmdAcquireMem {
     PM4Type3Header header;
-    u32 cp_coher_cntl;
+    union {
+        u32 cp_coher_cntl;
+        BitField<18, 1, u32> tc_wb_action_ena;
+        BitField<23, 1, u32> tc_action_ena;
+    };
     u32 cp_coher_size_lo;
     u32 cp_coher_size_hi;
     u32 cp_coher_base_lo;

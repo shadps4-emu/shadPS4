@@ -385,8 +385,6 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return FoldInverseFunc(inst, IR::Opcode::PackSint2x16);
     case IR::Opcode::PackHalf2x16:
         return FoldInverseFunc(inst, IR::Opcode::UnpackHalf2x16);
-    case IR::Opcode::UnpackHalf2x16:
-        return FoldInverseFunc(inst, IR::Opcode::PackHalf2x16);
     // 4x8
     case IR::Opcode::PackUnorm4x8:
         return FoldInverseFunc(inst, IR::Opcode::UnpackUnorm4x8);

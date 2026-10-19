@@ -108,6 +108,23 @@ struct ColorBufferMask {
         return (raw >> (buf_id * 4)) & 0xfu;
     }
 
+    u32 GetTarget(u32 export_id) const {
+        for (u32 target = 0; target < NUM_COLOR_BUFFERS; ++target) {
+            if (GetMask(target) && export_id-- == 0) {
+                return target;
+            }
+        }
+        return NUM_COLOR_BUFFERS;
+    }
+
+    u32 GetExport(u32 target) const {
+        u32 export_id = 0;
+        for (u32 i = 0; i < target; ++i) {
+            export_id += GetMask(i) != 0;
+        }
+        return export_id;
+    }
+
     void SetMask(u32 buf_id, u32 mask) {
         raw &= ~(0xf << (buf_id * 4));
         raw |= (mask << (buf_id * 4));
