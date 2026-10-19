@@ -699,7 +699,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 #endif
 
-    if (EmulatorSettings.IsConnectedToNetwork()) {
+    if (EmulatorSettings.IsConnectedToNetwork() && EmulatorSettings.IsDeviceDiscoveryEnabled()) {
         Libraries::Net::DiscoveryResponder::Instance().Start();
     }
 
