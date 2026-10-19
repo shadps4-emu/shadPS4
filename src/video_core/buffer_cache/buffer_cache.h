@@ -129,7 +129,7 @@ public:
     void MarkRegionAsGpuModified(VAddr addr, size_t size);
 
     /// Synchronizes all resident buffers needed for DMA.
-    DmaBufferRangeList SynchronizeAllDmaBuffers();
+    DmaBufferRangeList SynchronizeAllDmaBuffers(std::span<const VAddr> addresses);
 
     /// Synchronizes all buffers needed for DMA.
     DmaBufferRangeList SynchronizeDmaBuffers(std::span<const VAddr> addresses);
