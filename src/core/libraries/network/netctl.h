@@ -55,6 +55,21 @@ struct OrbisNetCtlNatInfo {
 };
 static_assert(sizeof(OrbisNetCtlNatInfo) == 0x10);
 
+struct OrbisNetCtlApConnectInfo {
+    u64 size;
+    char ssid[0x28];
+    char wpa_key[0x88];
+};
+static_assert(sizeof(OrbisNetCtlApConnectInfo) == 0xb8);
+
+struct OrbisNetCtlApInfo {
+    u64 size;
+    u8 reserved0[0x2d];
+    char ip_address[ORBIS_NET_CTL_IPV4_ADDR_STR_LEN];
+    u8 reserved1[0x53];
+};
+static_assert(sizeof(OrbisNetCtlApInfo) == 0x98);
+
 // GetInfo codes
 constexpr int ORBIS_NET_CTL_INFO_DEVICE = 1;
 constexpr int ORBIS_NET_CTL_INFO_ETHER_ADDR = 2;
@@ -146,16 +161,16 @@ int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit(OrbisNetCtlCallbackForNpT
                                                        void* arg, int* cid);
 int PS4_SYSV_ABI sceNetCtlUnregisterCallbackForNpToolkit();
 int PS4_SYSV_ABI sceNetCtlApCheckCallback();
-int PS4_SYSV_ABI sceNetCtlApClearEvent();
-int PS4_SYSV_ABI sceNetCtlApGetConnectInfo();
-int PS4_SYSV_ABI sceNetCtlApGetInfo();
-int PS4_SYSV_ABI sceNetCtlApGetResult();
-int PS4_SYSV_ABI sceNetCtlApGetState();
+int PS4_SYSV_ABI sceNetCtlApClearEvent(int event);
+int PS4_SYSV_ABI sceNetCtlApGetConnectInfo(int code, OrbisNetCtlApConnectInfo* info);
+int PS4_SYSV_ABI sceNetCtlApGetInfo(OrbisNetCtlApInfo* info);
+int PS4_SYSV_ABI sceNetCtlApGetResult(int event, int* error);
+int PS4_SYSV_ABI sceNetCtlApGetState(int* state);
 int PS4_SYSV_ABI sceNetCtlApInit();
-int PS4_SYSV_ABI sceNetCtlApRegisterCallback();
+int PS4_SYSV_ABI sceNetCtlApRegisterCallback(OrbisNetCtlCallback func, void* arg, int* cid);
 int PS4_SYSV_ABI sceNetCtlApStop();
 int PS4_SYSV_ABI sceNetCtlApTerm();
-int PS4_SYSV_ABI sceNetCtlApUnregisterCallback();
+int PS4_SYSV_ABI sceNetCtlApUnregisterCallback(int cid);
 int PS4_SYSV_ABI sceNetCtlApAppInitWpaKey();
 int PS4_SYSV_ABI sceNetCtlApAppInitWpaKeyForQa();
 int PS4_SYSV_ABI sceNetCtlApAppStartWithRetry();
@@ -172,6 +187,8 @@ int PS4_SYSV_ABI sceNetCtlApRpStartConf();
 int PS4_SYSV_ABI sceNetCtlApRpStartWithRetry();
 int PS4_SYSV_ABI sceNetCtlApRpStop();
 int PS4_SYSV_ABI sceNetCtlApRpUnregisterCallback();
+
+bool StartAccessPoint();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::NetCtl

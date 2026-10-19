@@ -12,18 +12,57 @@
 #include <unistd.h>
 #endif
 
+#include <chrono>
+#include <cstring>
+#include <string>
+#include <thread>
+
 #include <common/singleton.h>
 #include "common/logging/log.h"
+#include "common/polyfill_thread.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/net/net_util.h"
 #include "core/libraries/network/net_ctl_codes.h"
+#include "core/libraries/network/net_ctl_hotspot.h"
 #include "core/libraries/network/netctl.h"
 
 namespace Libraries::NetCtl {
 
 static NetCtlInternal netctl;
+
+namespace {
+
+std::jthread g_hotspot_monitor;
+
+void WaitForHotspot(std::stop_token stop) {
+    do {
+        if (const auto hotspot = QueryHostHotspot(); hotspot && !hotspot->ip_address.empty()) {
+            LOG_INFO(Lib_NetCtl, "Access point is up at {}", hotspot->ip_address);
+            netctl.SetApReady(hotspot->ip_address);
+            return;
+        }
+    } while (Common::StoppableTimedWait(stop, std::chrono::seconds(1)));
+}
+
+} // namespace
+
+bool StartAccessPoint() {
+    auto hotspot = QueryHostHotspot();
+    if (!hotspot) {
+        LOG_ERROR(Lib_NetCtl, "No host hotspot to stand in for the access point");
+        return false;
+    }
+    if (hotspot->ip_address.empty()) {
+        LOG_WARNING(Lib_NetCtl, "Mobile hotspot \"{}\" is off, turn it on so devices can join it",
+                    hotspot->ssid);
+    }
+    LOG_INFO(Lib_NetCtl, "Access point started on host hotspot \"{}\"", hotspot->ssid);
+    netctl.StartAp(std::move(hotspot->ssid), std::move(hotspot->passphrase));
+    g_hotspot_monitor = std::jthread(WaitForHotspot);
+    return true;
+}
 
 int PS4_SYSV_ABI sceNetBweCheckCallbackIpcInt() {
     LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
@@ -486,58 +525,93 @@ int PS4_SYSV_ABI sceNetCtlUnregisterCallbackForNpToolkit() {
 }
 
 int PS4_SYSV_ABI sceNetCtlApCheckCallback() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    netctl.CheckApCallback();
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlApClearEvent() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlApClearEvent(int event) {
+    LOG_DEBUG(Lib_NetCtl, "event = {}", event);
+    netctl.ClearApEvent(event);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlApGetConnectInfo() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlApGetConnectInfo(int code, OrbisNetCtlApConnectInfo* info) {
+    LOG_DEBUG(Lib_NetCtl, "code = {}", code);
+    if (info == nullptr) {
+        return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
+    }
+    if (netctl.GetApState() != ORBIS_NET_CTL_AP_STATE_STARTED) {
+        return ORBIS_NET_CTL_ERROR_NOT_AVAIL;
+    }
+    std::memset(info->ssid, 0, sizeof(info->ssid));
+    std::memset(info->wpa_key, 0, sizeof(info->wpa_key));
+    const auto credentials = netctl.GetApCredentials();
+    credentials.ssid.copy(info->ssid, sizeof(info->ssid) - 1);
+    credentials.wpa_key.copy(info->wpa_key, sizeof(info->wpa_key) - 1);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlApGetInfo() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlApGetInfo(OrbisNetCtlApInfo* info) {
+    if (info == nullptr) {
+        return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
+    }
+    std::memset(info->reserved0, 0, sizeof(info->reserved0));
+    std::memset(info->ip_address, 0, sizeof(info->ip_address));
+    std::memset(info->reserved1, 0, sizeof(info->reserved1));
+    netctl.GetApAddress().copy(info->ip_address, sizeof(info->ip_address) - 1);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlApGetResult() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlApGetResult(int event, int* error) {
+    if (error == nullptr) {
+        return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
+    }
+    LOG_DEBUG(Lib_NetCtl, "event = {}", event);
+    *error = 0;
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlApGetState() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlApGetState(int* state) {
+    if (state == nullptr) {
+        return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
+    }
+    *state = netctl.GetApState();
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNetCtlApInit() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    LOG_DEBUG(Lib_NetCtl, "called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlApRegisterCallback() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+int PS4_SYSV_ABI sceNetCtlApRegisterCallback(OrbisNetCtlCallback func, void* arg, int* cid) {
+    if (func == nullptr || cid == nullptr) {
+        return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
+    }
+    const s32 result = netctl.RegisterApCallback(func, arg);
+    if (result < 0) {
+        return result;
+    }
+    *cid = result;
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNetCtlApStop() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    LOG_DEBUG(Lib_NetCtl, "called");
+    g_hotspot_monitor = {};
+    netctl.StopAp();
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNetCtlApTerm() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
+    LOG_DEBUG(Lib_NetCtl, "called");
+    g_hotspot_monitor = {};
+    netctl.StopAp();
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNetCtlApUnregisterCallback() {
-    LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceNetCtlApUnregisterCallback(int cid) {
+    return netctl.UnregisterApCallback(cid);
 }
 
 int PS4_SYSV_ABI sceNetCtlApAppInitWpaKey() {
