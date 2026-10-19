@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/emulator_settings.h"
-#include "shader_recompiler/ir/operand_helper.h"
+#include "shader_recompiler/ir/helpers.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/shared_memory.h"
 #include "shader_recompiler/profile.h"
@@ -43,7 +43,6 @@ static void RecordSharedMemInfo(Info& info, const IR::Inst& inst, IR::Type type)
 }
 
 void Visit(Info& info, const IR::Inst& inst, const Profile& profile) {
-    const bool full_sync_dma = EmulatorSettings.IsFullDmaSyncEnabled();
     switch (inst.GetOpcode()) {
     case IR::Opcode::GetAttribute:
     case IR::Opcode::GetAttributeU1:
@@ -228,22 +227,11 @@ void Visit(Info& info, const IR::Inst& inst, const Profile& profile) {
         info.uses_shader_clock = true;
         break;
     case IR::Opcode::ReadConst: {
-        const auto [buf_off, is_touch] = IR::GetUserdataBufOffset(&inst);
-        if (is_touch) {
-            info.dma_sync_mode |= InfoPersistent::DmaSyncMode::Touch;
-            info.readconst_types |= Info::ReadConstType::Unchecked;
-        } else {
-            if (buf_off != 0) {
-                AddFlatbuf(info);
-            }
-            if (full_sync_dma) {
-                info.dma_sync_mode |= InfoPersistent::DmaSyncMode::Full;
-                if (buf_off == 0) {
-                    info.readconst_types |= Info::ReadConstType::CheckedZero;
-                } else {
-                    info.readconst_types |= Info::ReadConstType::CheckedFlatbuf;
-                }
-            }
+        const bool is_touched = IR::IsReadConstAddressTouched(&inst);
+        if (is_touched) {
+            info.readconst_types |= InfoPersistent::ReadConstType::Unchecked;
+        } else if (EmulatorSettings.IsFullDmaSyncEnabled()) {
+            info.readconst_types |= InfoPersistent::ReadConstType::Checked;
         }
         break;
     }
@@ -266,15 +254,14 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
         }
     }
 
-
-    if (True(info.dma_sync_mode)) {
+    if (True(info.readconst_types)) {
         info.buffers.push_back({
             .used_types = IR::Type::U64,
             .buffer_type = BufferType::BdaPagetable,
             .is_written = true,
         });
 
-        if (True(info.dma_sync_mode & InfoPersistent::DmaSyncMode::Full)) {
+        if (True(info.readconst_types & InfoPersistent::ReadConstType::Unchecked)) {
             info.buffers.push_back({
                 .used_types = IR::Type::U32,
                 .buffer_type = BufferType::FaultBuffer,
