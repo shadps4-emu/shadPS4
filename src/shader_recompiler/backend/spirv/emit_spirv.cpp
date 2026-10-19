@@ -363,7 +363,7 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
     } else if (stage == SwStage::Geometry && info.stores.GetAny(IR::Attribute::ViewportIndex)) {
         ctx.AddCapability(spv::Capability::MultiViewport);
     }
-    if (True(info.dma_sync_mode)) {
+    if (True(info.readconst_types)) {
         ctx.AddCapability(spv::Capability::PhysicalStorageBufferAddresses);
         ctx.AddExtension("SPV_KHR_physical_storage_buffer");
     }

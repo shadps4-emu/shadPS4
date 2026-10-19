@@ -333,7 +333,7 @@ BufferCache::DmaBufferRangeList BufferCache::SynchronizeAllDmaBuffers(
 
     DmaBufferRangeList ranges;
     fault_process_pending = true;
-    
+
     for (const auto& range : resident_ranges) {
         const u64 page = range.start >> (ARENA_PAGE_BITS - block_shift);
         const VAddr device_addr = range.start << block_shift;

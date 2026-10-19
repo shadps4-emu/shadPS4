@@ -15,9 +15,9 @@
 #include "core/emulator_settings.h"
 #include "core/signals.h"
 #include "shader_recompiler/info.h"
+#include "shader_recompiler/ir/helpers.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
-#include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
@@ -157,7 +157,7 @@ struct PassInfo {
 
     // map offset to inst
     using PtrUserList =
-        boost::container::flat_map<IR::Value, Shader::IR::Inst*, PointerListCompare>;
+        boost::container::flat_multimap<IR::Value, Shader::IR::Inst*, PointerListCompare>;
 
     Optimization::SrtGvnTable gvn_table;
     // keys are GetUserData, ReadConst or ReadConstBuffer instructions that are used as pointers
@@ -167,6 +167,7 @@ struct PassInfo {
 
     // pick a single inst for a given value number
     std::unordered_map<u32, IR::Inst*> vn_to_inst;
+    std::unordered_map<IR::Inst*, u16> touchbuf_offsets;
 
     // Bumped during codegen to assign offsets to readconsts
     u16 flatbuf_dst_off_dw;
@@ -507,17 +508,12 @@ static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& p
         return true;
     case IR::Opcode::ReadConst:
     case IR::Opcode::ReadConstBuffer: {
-        const auto [offset, is_touch] =
-            IR::GetUserdataBufOffset(pass_info.DeduplicateInstruction(inst));
-        if (is_touch) {
-            c.mov(reg.cvt64(), ptr[rdx + (offset << 3)]);
-            c.mov(reg, dword[reg.cvt64()]);
-        } else {
-            if (offset == 0) {
-                return false;
-            }
-            c.mov(reg, ptr[rsi + (offset << 2)]);
+        const auto it = pass_info.touchbuf_offsets.find(pass_info.DeduplicateInstruction(inst));
+        if (it == pass_info.touchbuf_offsets.end()) {
+            return false;
         }
+        c.mov(reg.cvt64(), ptr[rdx + (it->second << 3)]);
+        c.mov(reg, dword[reg.cvt64()]);
         return true;
     }
     case IR::Opcode::IAdd32:
@@ -584,8 +580,9 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
 
 static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
                          Xbyak::CodeGenerator& c) {
-    if (subtree->GetOpcode() == IR::Opcode::ReadConst || subtree->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-        if (const auto [offset, is_touch] = IR::GetUserdataBufOffset(subtree); offset == 0) {
+    if (subtree->GetOpcode() == IR::Opcode::ReadConst ||
+        subtree->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        if (!IR::IsReadConstAddressTouched(subtree)) {
             return;
         }
     }
@@ -603,14 +600,8 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
     // TODO src and dst are contiguous. Optimize with wider loads/stores
     // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
     for (auto [src_off_dw, use] : *use_list) {
-        const bool is_touch = !pass_info.GetUsesAsPointer(use) && !IsSharpSource(use);
         if (src_off_dw.IsImmediate()) {
-            // c.mov(r10d, ptr[rdi + (src_off_dw.U32() << 2)]);
-            if (is_touch) {
-                c.lea(r10, ptr[rdi + (src_off_dw.U32() << 2)]);
-            } else {
-                c.mov(r10d, ptr[rdi + (src_off_dw.U32() << 2)]);
-            }
+            c.lea(r10, ptr[rdi + (src_off_dw.U32() << 2)]);
         } else {
             if (!ComputeOffset(c, r10d, pass_info, src_off_dw)) {
                 LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
@@ -618,21 +609,19 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
             }
             c.shl(r10d, 2);
             c.mov(r10d, r10d);
-            if (is_touch) {
-                c.lea(r10, ptr[rdi + r10]);
-            } else {
-                c.mov(r10d, ptr[rdi + r10]);
-            }
+            c.lea(r10, ptr[rdi + r10]);
         }
-        if (is_touch) {
-            c.mov(ptr[rdx + (pass_info.touchbuf_dst_off_qw << 3)], r10);
-            IR::SetUserDataBufOffset(use, pass_info.touchbuf_dst_off_qw, true);
-            pass_info.touchbuf_dst_off_qw++;
-        } else {
-            c.mov(ptr[rsi + (pass_info.flatbuf_dst_off_dw << 2)], r10d);
-            IR::SetUserDataBufOffset(use, pass_info.flatbuf_dst_off_dw, false);
-            pass_info.flatbuf_dst_off_dw++;
+        const u16 touch_offset = pass_info.touchbuf_dst_off_qw++;
+        c.mov(ptr[rdx + (touch_offset << 3)], r10);
+        pass_info.touchbuf_offsets.emplace(use, touch_offset);
+
+        u16 flatbuf_offset = 0;
+        if (IsSharpSource(use)) {
+            flatbuf_offset = pass_info.flatbuf_dst_off_dw++;
+            c.mov(r10d, dword[r10]);
+            c.mov(ptr[rsi + (flatbuf_offset << 2)], r10d);
         }
+        IR::TouchReadConstAddress(use, flatbuf_offset);
     }
 
     // Then visit any children used as pointers
@@ -852,7 +841,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         auto ptr_uses_kv = pass_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
         PassInfo::PtrUserList& user_list = ptr_uses_kv.first->second;
 
-        user_list[inst->Arg(1)] = inst;
+        user_list.emplace(inst->Arg(1), inst);
 
         if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
             IR::ScalarReg ud_reg = ptr_lo->Arg(0).ScalarReg();
@@ -866,8 +855,8 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
     for (IR::Inst* readconst : all_readconsts) {
         ASSERT(pass_info.vn_to_inst.contains(pass_info.gvn_table.GetValueNumber(readconst)));
         IR::Inst* original = pass_info.DeduplicateInstruction(readconst);
-        const auto [offset, is_touch] = IR::GetUserdataBufOffset(original);
-        IR::SetUserDataBufOffset(readconst, offset, is_touch);
+        const u16 offset = IR::GetFlatBufferOffset(original);
+        IR::TouchReadConstAddress(readconst, offset);
     }
 
     program.info.RefreshFlatBuf();

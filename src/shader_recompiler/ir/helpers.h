@@ -3,10 +3,8 @@
 
 #pragma once
 
-// Some helpers to get operand indices of instructions by name to make it a bit safer.
-// Just a start, not widely used
+// Helpers for accessing instruction operands and buffer address metadata.
 
-#include <utility>
 #include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/ir/value.h"
 
@@ -49,32 +47,44 @@ static inline U32 GetBufferSOffsetArg(const Inst* buffer_inst) {
     return GetBufferAddressComponent(buffer_inst, 2);
 }
 
-static inline std::pair<u16, bool> GetUserdataBufOffset(const Inst* inst) {
+static inline void TouchReadConstAddress(Inst* inst, u16 flatbuf_off_dw) {
     if (inst->GetOpcode() == Opcode::ReadConstBuffer) {
         auto inst_info = inst->Flags<BufferInstInfo>();
-        return {inst_info.userdatabuf_off, inst_info.touch_buf};
+        inst_info.flatbuf_off_dw.Assign(flatbuf_off_dw);
+        inst_info.address_touched.Assign(true);
+        inst->SetFlags(inst_info);
+        return;
     }
     if (inst->GetOpcode() == Opcode::ReadConst) {
         auto inst_info = inst->Flags<ReadConstInstInfo>();
-        return {inst_info.userdatabuf_off, inst_info.touch_buf};
+        inst_info.flatbuf_off_dw.Assign(flatbuf_off_dw);
+        inst_info.address_touched.Assign(true);
+        inst->SetFlags(inst_info);
+        return;
     }
     UNREACHABLE_MSG("Instruction not supported");
 }
 
-static inline void SetUserDataBufOffset(Inst* inst, u16 offset, bool touch_buf) {
+static inline u16 GetFlatBufferOffset(const Inst* inst) {
     if (inst->GetOpcode() == Opcode::ReadConstBuffer) {
         auto inst_info = inst->Flags<BufferInstInfo>();
-        inst_info.userdatabuf_off.Assign(offset);
-        inst_info.touch_buf.Assign(touch_buf);
-        inst->SetFlags(inst_info);
-        return;
+        return inst_info.flatbuf_off_dw.Value();
     }
     if (inst->GetOpcode() == Opcode::ReadConst) {
         auto inst_info = inst->Flags<ReadConstInstInfo>();
-        inst_info.userdatabuf_off.Assign(offset);
-        inst_info.touch_buf.Assign(touch_buf);
-        inst->SetFlags(inst_info);
-        return;
+        return inst_info.flatbuf_off_dw.Value();
+    }
+    UNREACHABLE_MSG("Instruction not supported");
+}
+
+static inline bool IsReadConstAddressTouched(const Inst* inst) {
+    if (inst->GetOpcode() == Opcode::ReadConstBuffer) {
+        auto inst_info = inst->Flags<BufferInstInfo>();
+        return inst_info.address_touched.Value();
+    }
+    if (inst->GetOpcode() == Opcode::ReadConst) {
+        auto inst_info = inst->Flags<ReadConstInstInfo>();
+        return inst_info.address_touched.Value();
     }
     UNREACHABLE_MSG("Instruction not supported");
 }

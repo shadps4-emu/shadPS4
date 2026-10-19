@@ -433,8 +433,9 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
                           stage->samplers.size());
         BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
-        sync_all_buffers |= True(stage->dma_sync_mode & Shader::Info::DmaSyncMode::Full);
-        uses_bda_pagetable |= True(stage->dma_sync_mode);
+        sync_all_buffers |=
+            True(stage->readconst_types & Shader::InfoPersistent::ReadConstType::Checked);
+        uses_bda_pagetable |= True(stage->readconst_types);
         if (stage->srt_info.touch_addr_bufsize_qw > 0) {
             const auto addresses =
                 std::span{stage->touch_addrs}.first(stage->srt_info.touch_addr_bufsize_qw);

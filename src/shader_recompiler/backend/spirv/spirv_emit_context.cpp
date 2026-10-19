@@ -72,7 +72,7 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
                          Bindings& binding_)
     : Sirit::Module(profile_.supported_spirv), info{info_}, runtime_info{runtime_info_},
       profile{profile_}, hw_stage{info.hw_stage}, sw_stage{info.sw_stage}, binding{binding_} {
-    if (True(info.dma_sync_mode)) {
+    if (True(info.readconst_types)) {
         SetMemoryModel(spv::AddressingModel::PhysicalStorageBuffer64, spv::MemoryModel::GLSL450);
     } else {
         SetMemoryModel(spv::AddressingModel::Logical, spv::MemoryModel::GLSL450);
@@ -173,7 +173,7 @@ void EmitContext::DefineArithmeticTypes() {
     if (info.uses_fp64) {
         frexp_result_f64 = Name(TypeStruct(F64[1], S32[1]), "frexp_result_f64");
     }
-    if (True(info.dma_sync_mode)) {
+    if (True(info.readconst_types)) {
         physical_pointer_type_u32 = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U32[1]);
     }
 }
@@ -212,25 +212,6 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
         break;
     }
     UNREACHABLE_MSG("Invalid attribute type {}", fmt);
-}
-
-Id EmitContext::GetBufferSize(const u32 sharp_idx) {
-    // Can this be done with memory access? Like we do now with ReadConst
-    const auto& srt_flatbuf = buffers[flatbuf_index];
-    ASSERT(srt_flatbuf.buffer_type == BufferType::Flatbuf);
-    const auto [id, pointer_type] = srt_flatbuf.Alias(PointerType::U32);
-
-    const auto rsrc1{
-        OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(sharp_idx + 1)))};
-    const auto rsrc2{
-        OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(sharp_idx + 2)))};
-
-    const auto stride{OpBitFieldUExtract(U32[1], rsrc1, ConstU32(16u), ConstU32(14u))};
-    const auto num_records{rsrc2};
-
-    const auto stride_zero{OpIEqual(U1[1], stride, u32_zero_value)};
-    const auto stride_size{OpIMul(U32[1], num_records, stride)};
-    return OpSelect(U32[1], stride_zero, num_records, stride_size);
 }
 
 void EmitContext::DefineBufferProperties() {
@@ -1190,20 +1171,20 @@ Id EmitContext::DefineGetBdaPointer(bool faulting) {
     const auto caching_pagebits{Constant(U64, static_cast<u64>(profile.sparse_page_shift))};
     const auto caching_pagemask{
         Constant(U64, static_cast<u64>((1u << profile.sparse_page_shift) - 1))};
-    
+
     const auto func_type{TypeFunction(U64, U64)};
     const auto func{OpFunction(U64, spv::FunctionControlMask::MaskNone, func_type)};
     const auto address{OpFunctionParameter(U64)};
     Name(func, faulting ? "get_bda_pointer_faulting" : "get_bda_pointer");
     AddLabel();
-    
+
     Id fault_label{}, available_label{}, merge_label{};
     if (faulting) {
         fault_label = OpLabel();
         available_label = OpLabel();
         merge_label = OpLabel();
     }
-    
+
     // Get page BDA
     const auto page{OpShiftRightLogical(U64, address, caching_pagebits)};
     const auto page32{OpUConvert(U32[1], page)};
@@ -1254,14 +1235,12 @@ Id EmitContext::DefineGetBdaPointer(bool faulting) {
     return func;
 }
 
-Id EmitContext::DefineReadConst(bool checked, bool flatbuf) {
-    const auto func_type{flatbuf ? TypeFunction(U32[1], U32[2], U32[1], U32[1])
-                                 : TypeFunction(U32[1], U32[2], U32[1])};
+Id EmitContext::DefineReadConst(bool checked) {
+    const auto func_type{TypeFunction(U32[1], U32[2], U32[1])};
     const auto func{OpFunction(U32[1], spv::FunctionControlMask::MaskNone, func_type)};
     const auto base{OpFunctionParameter(U32[2])};
     const auto offset{OpFunctionParameter(U32[1])};
-    const auto flatbuf_offset{flatbuf ? OpFunctionParameter(U32[1]) : Id{}};
-    Name(func, !checked ? "read_const" : flatbuf ? "read_const_flatbuf" : "read_const_checked");
+    Name(func, !checked ? "read_const" : "read_const_checked");
     AddLabel();
 
     const auto base_lo{OpUConvert(U64, OpCompositeExtract(U32[1], base, 0))};
@@ -1273,13 +1252,7 @@ Id EmitContext::DefineReadConst(bool checked, bool flatbuf) {
 
     const auto result = ([&]() {
         if (checked) {
-            return EmitCheckedDwordMemoryRead(addr, [&]() {
-                if (flatbuf) {
-                    return EmitFlatbufferLoad(flatbuf_offset);
-                } else {
-                    return u32_zero_value;
-                }
-            });
+            return EmitCheckedDwordMemoryRead(addr);
         } else {
             return EmitDwordMemoryRead(addr);
         }
@@ -1299,24 +1272,15 @@ void EmitContext::DefineFunctions() {
         uf11_to_f32 = DefineUfloatM5ToFloat32(6, "uf11_to_f32");
         uf10_to_f32 = DefineUfloatM5ToFloat32(5, "uf10_to_f32");
     }
-    if (True(info.dma_sync_mode & Info::DmaSyncMode::Touch)) {
-        get_bda_pointer = DefineGetBdaPointer(false);
-    }
-    if (True(info.dma_sync_mode & Info::DmaSyncMode::Full)) {
-        get_bda_pointer_faulting = DefineGetBdaPointer(true);
-    }
-
-    if (True(info.readconst_types & Info::ReadConstType::CheckedFlatbuf)) {
-        LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses checked flatbuf ReadConst", info.pgm_hash);
-        read_const_checked_flatbuf = DefineReadConst(true, true);
-    }
-    if (True(info.readconst_types & Info::ReadConstType::CheckedZero)) {
-        LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses checked ReadConst", info.pgm_hash);
-        read_const_checked_zero = DefineReadConst(true, false);
-    }
     if (True(info.readconst_types & Info::ReadConstType::Unchecked)) {
         LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses unchecked ReadConst", info.pgm_hash);
-        read_const = DefineReadConst(false, false);
+        get_bda_pointer = DefineGetBdaPointer(false);
+        read_const = DefineReadConst(false);
+    }
+    if (True(info.readconst_types & Info::ReadConstType::Checked)) {
+        LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses checked ReadConst", info.pgm_hash);
+        get_bda_pointer_faulting = DefineGetBdaPointer(true);
+        read_const_checked = DefineReadConst(true);
     }
 }
 

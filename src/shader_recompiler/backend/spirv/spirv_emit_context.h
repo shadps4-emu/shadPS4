@@ -144,7 +144,7 @@ public:
         return last_label;
     }
 
-    Id EmitCheckedDwordMemoryRead(Id address, auto&& fallback) {
+    Id EmitCheckedDwordMemoryRead(Id address) {
         const Id available_label = OpLabel();
         const Id fallback_label = OpLabel();
         const Id merge_label = OpLabel();
@@ -162,7 +162,7 @@ public:
 
         // Fallback
         AddLabel(fallback_label);
-        const Id fallback_result = fallback();
+        const Id fallback_result{u32_zero_value};
         OpBranch(merge_label);
 
         // Merge
@@ -398,8 +398,7 @@ public:
     Id get_bda_pointer_faulting{};
 
     Id read_const{};
-    Id read_const_checked_zero{};
-    Id read_const_checked_flatbuf{};
+    Id read_const_checked{};
 
 private:
     void DefineArithmeticTypes();
@@ -424,9 +423,7 @@ private:
 
     Id DefineGetBdaPointer(bool faulting);
 
-    Id DefineReadConst(bool checked, bool flatbuf);
-
-    Id GetBufferSize(u32 sharp_idx);
+    Id DefineReadConst(bool checked);
 };
 
 } // namespace Shader::Backend::SPIRV
