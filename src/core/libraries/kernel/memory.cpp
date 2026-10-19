@@ -16,7 +16,6 @@
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
-#include "core/libraries/fiber/fiber.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -482,16 +481,6 @@ s32 PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, s32* directMemoryTypeOut
 
 s32 PS4_SYSV_ABI sceKernelIsStack(void* addr, void** start, void** end) {
     LOG_DEBUG(Kernel_Vmm, "called, addr = {}", fmt::ptr(addr));
-    if (Libraries::Fiber::IsFiberStack(std::bit_cast<VAddr>(addr))) {
-        // On a PS4 a fiber runs on memory the game gave it, which is not a thread stack.
-        if (start != nullptr) {
-            *start = nullptr;
-        }
-        if (end != nullptr) {
-            *end = nullptr;
-        }
-        return ORBIS_OK;
-    }
     auto* memory = Core::Memory::Instance();
     return memory->IsStack(std::bit_cast<VAddr>(addr), start, end);
 }

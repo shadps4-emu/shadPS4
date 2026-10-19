@@ -116,8 +116,5 @@ s32 PS4_SYSV_ABI sceFiberRename(OrbisFiber* fiber, const char* name);
 
 s32 PS4_SYSV_ABI sceFiberGetThreadFramePointerAddress(u64* addr_frame_pointer);
 
-/// Returns true if the address is in a stack the emulator runs a fiber on.
-bool IsFiberStack(VAddr addr);
-
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Fiber
