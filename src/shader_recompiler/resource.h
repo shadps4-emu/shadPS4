@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <span>
 #include "common/types.h"
 #include "shader_recompiler/ir/type.h"
 #include "video_core/amdgpu/resource.h"
@@ -59,56 +58,6 @@ struct SharpFetch {
         return true;
     }
 };
-
-enum class GuardCompare : u8 {
-    IEq,
-    INe,
-    SLt,
-    SLe,
-    ULt,
-    ULe,
-    FEq,
-    FNe,
-    FLt,
-    FLe,
-};
-
-struct GuardOperand {
-    u32 immediate{};
-    u32 mask{~0U};
-    SharpLocation location{UNKNOWN_LOCATION};
-    u8 shift{};
-
-    bool operator==(const GuardOperand&) const = default;
-};
-
-struct GuardAtom {
-    GuardOperand lhs{};
-    GuardOperand rhs{};
-    GuardCompare op{};
-    bool negate{};
-
-    bool operator==(const GuardAtom&) const = default;
-};
-
-struct ResourceGuards {
-    static constexpr u32 MaxAtoms = 64;
-    static constexpr u32 MaxGroups = 32;
-    static constexpr u32 MaxTerms = 4;
-
-    using Terms = boost::container::static_vector<u64, MaxTerms>;
-
-    boost::container::static_vector<GuardAtom, MaxAtoms> atoms;
-    boost::container::static_vector<Terms, MaxGroups> groups;
-
-    u32 EvaluateDead(std::span<const u32> flatbuf) const;
-};
-
-constexpr u8 NO_GUARD = 0xFF;
-
-constexpr bool IsGuardDead(u8 guard, u32 dead_guards) {
-    return guard != NO_GUARD && ((dead_guards >> guard) & 1) != 0;
-}
 
 enum class SharpFetchPostOp : u8 {
     None,
@@ -186,12 +135,10 @@ struct ImageResource {
     u8 constant_mip_index{};
     MipStorageFallbackMode mip_fallback_mode{};
     SharpFetchPostOp post_op{};
-    u8 guard{NO_GUARD};
 
     constexpr AmdGpu::Image GetSharp(const auto& info) const noexcept {
         AmdGpu::Image image{};
-        if (IsGuardDead(guard, info.dead_resource_guards) ||
-            !Fetch(info.flattened_ud_buf.data(), &image)) {
+        if (!Fetch(info.flattened_ud_buf.data(), &image)) {
             return AmdGpu::Image::Null(is_depth);
         }
         if (post_op == SharpFetchPostOp::ConvertCubeTo2DArray) {
@@ -237,13 +184,9 @@ struct SamplerResource {
     SharpFetchPostOp post_op{};
     SharpLocation post_op_tsharp_dw3_off{};
     bool is_depth{};
-    u8 guard{NO_GUARD};
 
     constexpr AmdGpu::Sampler GetSharp(const auto& info) const noexcept {
         AmdGpu::Sampler sampler{};
-        if (IsGuardDead(guard, info.dead_resource_guards)) {
-            return sampler;
-        }
         sharp_fetch.Fetch(info.flattened_ud_buf.data(), &sampler);
         if (post_op == SharpFetchPostOp::DisableAnisoIfSingleLod) {
             const u32 tsharp_dw3 = info.flattened_ud_buf[post_op_tsharp_dw3_off];

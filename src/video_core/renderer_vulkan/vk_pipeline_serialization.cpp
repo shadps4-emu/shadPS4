@@ -402,7 +402,6 @@ bool Info::Deserialize(Serialization::Archive& ar) {
 
     info.Read(this, sizeof(Shader::InfoPersistent));
     info.Read(flattened_ud_buf);
-    RefreshResourceGuards();
 
     return srt_info.Deserialize(ar);
 }
@@ -455,7 +454,6 @@ void StageSpecialization::Serialize(Serialization::Archive& ar) const {
 
     spec.Write(start);
     spec.Write(runtime_info);
-    spec.Write(dead_resource_guards);
 
     spec.Write(bitset.to_string());
 
@@ -478,7 +476,6 @@ bool StageSpecialization::Deserialize(Serialization::Archive& ar) {
 
     spec.Read(start);
     spec.Read(runtime_info);
-    spec.Read(dead_resource_guards);
 
     std::string bits{};
     spec.Read(bits);
