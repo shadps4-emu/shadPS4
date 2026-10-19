@@ -49,13 +49,16 @@ static u32 MaskFromExportFormat(u8 mask, AmdGpu::ShaderExportFormat export_forma
 
 void Translator::ExportRenderTarget(const GcnInst& inst) {
     const auto& exp = inst.control.exp;
-    const IR::Attribute mrt{exp.target};
-    info.mrt_mask |= 1u << static_cast<u8>(mrt);
-
-    // Dual source blending uses MRT1 for exporting src1
-    u32 color_buffer_idx = static_cast<u32>(mrt) - static_cast<u32>(IR::Attribute::RenderTarget0);
-    if (runtime_info.hw.fs.dual_source_blending && mrt == IR::Attribute::RenderTarget1) {
+    const u32 export_idx = exp.target - static_cast<u32>(IR::Attribute::RenderTarget0);
+    info.mrt_mask |= 1u << export_idx;
+    u32 color_buffer_idx = runtime_info.hw.fs.color_shader_mask.GetTarget(export_idx);
+    IR::Attribute mrt =
+        IR::Attribute(static_cast<u32>(IR::Attribute::RenderTarget0) + color_buffer_idx);
+    if (runtime_info.hw.fs.dual_source_blending && export_idx <= 1) {
         color_buffer_idx = 0;
+        mrt = IR::Attribute(exp.target);
+    } else if (color_buffer_idx == AmdGpu::NUM_COLOR_BUFFERS) {
+        return;
     }
 
     const auto color_buffer = runtime_info.hw.fs.color_buffers[color_buffer_idx];

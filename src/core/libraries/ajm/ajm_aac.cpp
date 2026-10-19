@@ -62,6 +62,9 @@ static UINT g_freq[] = {
 };
 
 void AjmAacDecoder::Reset() {
+    if (!m_is_initialized) {
+        return;
+    }
     if (m_decoder) {
         aacDecoder_Close(m_decoder);
     }
@@ -107,6 +110,7 @@ void AjmAacDecoder::Reset() {
 void AjmAacDecoder::Initialize(const void* buffer, u32 buffer_size) {
     ASSERT(buffer_size == 8);
     m_init_params = *reinterpret_cast<const InitializeParameters*>(buffer);
+    m_is_initialized = true;
     Reset();
 }
 

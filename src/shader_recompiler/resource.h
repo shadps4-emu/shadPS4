@@ -12,7 +12,7 @@
 namespace Shader {
 
 static constexpr u32 NUM_USER_DATA_REGS = 16;
-static constexpr u32 NUM_IMAGES = 64;
+static constexpr u32 NUM_IMAGES = 128;
 static constexpr u32 NUM_BUFFERS = 56;
 static constexpr u32 NUM_SAMPLERS = 16;
 static constexpr u32 NUM_FMASKS = 8;
@@ -127,6 +127,7 @@ enum class MipStorageFallbackMode : u16 {
 
 struct ImageResource {
     SharpFetch<AmdGpu::Image> sharp_fetch{};
+    u32 descriptor_count{};
     bool is_depth{};
     bool is_atomic{};
     bool is_array{};
@@ -136,9 +137,9 @@ struct ImageResource {
     MipStorageFallbackMode mip_fallback_mode{};
     SharpFetchPostOp post_op{};
 
-    constexpr AmdGpu::Image GetSharp(const auto& info) const noexcept {
+    constexpr AmdGpu::Image GetSharp(const auto& info, u32 index = 0) const noexcept {
         AmdGpu::Image image{};
-        if (!Fetch(info.flattened_ud_buf.data(), &image)) {
+        if (!Fetch(info.flattened_ud_buf.data() + index * 8, &image)) {
             return AmdGpu::Image::Null(is_depth);
         }
         if (post_op == SharpFetchPostOp::ConvertCubeTo2DArray) {
@@ -171,6 +172,9 @@ struct ImageResource {
     }
 
     u32 NumBindings(const auto& info) const {
+        if (descriptor_count != 0) {
+            return descriptor_count;
+        }
         const AmdGpu::Image tsharp = GetSharp(info);
         return (mip_fallback_mode == MipStorageFallbackMode::DynamicIndex)
                    ? (tsharp.last_level - tsharp.base_level + 1)

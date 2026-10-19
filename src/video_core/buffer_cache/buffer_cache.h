@@ -104,6 +104,8 @@ public:
     /// Flushes GPU modified ranges of the uncovered part of the edge pages of an image.
     void ReadEdgeImagePages(const Image& image);
 
+    void RequestReadback();
+
     /// Finds a buffer for the specified region.
     [[nodiscard]] std::pair<const Buffer*, u64> ObtainBuffer(
         VAddr device_addr, u32 size, ObtainBufferFlags flags = ObtainBufferFlags::None);
@@ -166,6 +168,7 @@ private:
     Buffer gds_buffer;
     std::unique_ptr<Buffer> null_index_buffer;
     RangeSet gpu_modified_ranges;
+    bool readback_request_pending{true};
 
     std::unique_ptr<FaultManager> fault_manager;
     std::unique_ptr<Buffer> bda_pagetable_buffer;

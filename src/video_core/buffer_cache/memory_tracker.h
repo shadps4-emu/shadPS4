@@ -61,6 +61,12 @@ public:
         });
     }
 
+    void RequestReadback(VAddr cpu_addr, u64 size) {
+        IteratePages(cpu_addr, size, [](RegionManager* manager, u64 offset, u64 size) {
+            manager->RequestReadback(offset, size);
+        });
+    }
+
     /// Removes all protection from a page and ensures GPU data has been flushed if requested
     void InvalidateRegion(VAddr cpu_addr, u64 size, auto&& on_flush) noexcept {
         bool should_flush = false;

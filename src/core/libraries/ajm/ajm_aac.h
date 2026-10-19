@@ -63,6 +63,7 @@ private:
 
     u32 m_skip_frames = 0;
     InitializeParameters m_init_params = {};
+    bool m_is_initialized = false;
     AAC_DECODER_INSTANCE* m_decoder = nullptr;
 };
 

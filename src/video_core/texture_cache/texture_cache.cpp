@@ -244,6 +244,9 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
 
 void TextureCache::MarkAsMaybeGpuDirty(VAddr addr, size_t size) {
     ForEachImageInRegion(addr, size, [&](ImageId image_id, Image& image) {
+        if (!image.HasGpuValidData()) {
+            return;
+        }
         if (image.gpu_hash == 0) {
             // Read backing pages directly, without faulting through the guest readback path.
             image.gpu_hash = HashBackingMemory(image.info.guest_address, image.info.guest_size);
@@ -675,6 +678,15 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     image.tick_accessed_last = scheduler.CurrentTick();
     TouchImage(image);
 
+    // Overlap resolution can merge other images after selecting a parent. Recompute the
+    // requested subresource against the final image instead of retaining an intermediate view.
+    if (auto mip = info.MipOf(image.info); mip >= 0) {
+        if (auto slice = info.SliceOf(image.info, mip); slice >= 0) {
+            view_mip = mip;
+            view_slice = slice;
+        }
+    }
+
     // If the image requested is a subresource of the image from cache record its location.
     if (view_mip > 0) {
         desc.view_info.range.base.level = view_mip;
@@ -689,6 +701,10 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
 ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure_valid) {
     SmallVector<ImageId, 4> image_ids;
     ForEachImageWithAddress(address, [&](ImageId image_id, Image& image) {
+        if (address < image.info.guest_address ||
+            address - image.info.guest_address >= image.info.guest_size) {
+            return;
+        }
         if (ensure_valid && !image.HasGpuValidData()) {
             return;
         }

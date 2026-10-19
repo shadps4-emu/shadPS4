@@ -929,7 +929,8 @@ Value IREmitter::UnpackDouble2x32(const F64& value) {
     return Inst<Value>(Opcode::UnpackDouble2x32, value);
 }
 
-U32 IREmitter::Pack2x16(const AmdGpu::NumberFormat number_format, const Value& vector) {
+U32 IREmitter::Pack2x16(const AmdGpu::NumberFormat number_format, const Value& vector,
+                        bool round_to_zero) {
     switch (number_format) {
     case AmdGpu::NumberFormat::Unorm:
         return Inst<U32>(Opcode::PackUnorm2x16, vector);
@@ -940,7 +941,7 @@ U32 IREmitter::Pack2x16(const AmdGpu::NumberFormat number_format, const Value& v
     case AmdGpu::NumberFormat::Sint:
         return Inst<U32>(Opcode::PackSint2x16, vector);
     case AmdGpu::NumberFormat::Float:
-        return Inst<U32>(Opcode::PackHalf2x16, vector);
+        return Inst<U32>(Opcode::PackHalf2x16, Flags{round_to_zero}, vector);
     default:
         UNREACHABLE_MSG("Unsupported 2x16 number format: {}", number_format);
     }
@@ -2102,6 +2103,14 @@ Value IREmitter::ImageAtomicCmpSwap(const Value& handle, const Value& coords, co
 
 Value IREmitter::ImageHandle(const Value& tsharp_low, const Value& tsharp_high) {
     return Inst(Opcode::ImageHandle, tsharp_low, tsharp_high);
+}
+
+Value IREmitter::ImageDescriptorHandle(const U32& binding, const U32& index) {
+    return Inst(Opcode::ImageDescriptorHandle, binding, index);
+}
+
+U32 IREmitter::ReadConstArray(const U32& base, const U32& offset) {
+    return Inst<U32>(Opcode::ReadConstArray, base, offset);
 }
 
 Value IREmitter::ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
