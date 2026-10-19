@@ -522,12 +522,19 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                     return {merged_image_id, -1, -1};
                 }
 
-                // We need to have a larger, already allocated image to copy this one into
-                if (merged_image_id) {
-                    auto& merged_image = slot_images[merged_image_id];
-                    runtime.CopyMip(&cache_image, &merged_image, mip, slice);
-                    FreeImage(cache_image_id);
+                // If we don't have an allocated image, we create one here
+                // Otherwise it's later created from guest memory and the GPU data is lost
+                // And reads/writes go to different images.
+                if (!merged_image_id) {
+                    merged_image_id =
+                        slot_images.Insert(instance, runtime, slot_image_views, image_info);
+                    RegisterImage(merged_image_id);
+                    RefreshImage(slot_images[merged_image_id]);
+                    TrackImage(merged_image_id);
                 }
+                auto& merged_image = slot_images[merged_image_id];
+                runtime.CopyMip(&cache_image, &merged_image, mip, slice);
+                FreeImage(cache_image_id);
             }
         }
     }
@@ -781,7 +788,7 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
 }
 
 void TextureCache::AssociateStencil(ImageId depth_id, const ImageInfo& depth_info) {
-    if (depth_info.stencil_addr == 0) {
+    if (depth_info.stencil_addr == 0 || depth_info.stencil_addr == depth_info.guest_address) {
         return;
     }
     ImageId stencil_id{};
