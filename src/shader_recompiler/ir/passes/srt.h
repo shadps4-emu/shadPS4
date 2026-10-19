@@ -13,7 +13,8 @@ struct Archive;
 
 namespace Shader {
 
-using PFN_SrtWalker = void PS4_SYSV_ABI (*)(const u32* /*user_data*/, u32* /*flat_dst*/, VAddr* /*touch_buf*/);
+using PFN_SrtWalker = void PS4_SYSV_ABI (*)(const u32* /*user_data*/, u32* /*flat_dst*/,
+                                            VAddr* /*touch_buf*/);
 PFN_SrtWalker RegisterWalkerCode(const u8* ptr, size_t size);
 
 struct PersistentSrtInfo {

@@ -6,8 +6,8 @@
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/ir/attribute.h"
+#include "shader_recompiler/ir/helpers.h"
 #include "shader_recompiler/ir/microinstruction.h"
-#include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/patch.h"
 #include "shader_recompiler/runtime_info.h"
 
@@ -54,25 +54,16 @@ Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
 }
 
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
-    const auto dma_full_sync = EmulatorSettings.IsFullDmaSyncEnabled();
-    const auto [buf_off, is_touch] = IR::GetUserdataBufOffset(inst);
-    if (is_touch) {
+    const bool is_touched = IR::IsReadConstAddressTouched(inst);
+    if (is_touched) {
         return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const, addr, offset);
-    } else if (dma_full_sync) {
-        if (buf_off == 0) {
-            return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_checked_zero, addr, offset);
-        } else {
-            return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_checked_flatbuf, addr, offset,
-                                      ctx.ConstU32(u32{buf_off}));
-        }
+    }
+    if (EmulatorSettings.IsFullDmaSyncEnabled()) {
+        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_checked, addr, offset);
     } else {
-        if (buf_off == 0) {
-            LOG_WARNING(Render_Recompiler, "Shader {:#x} ReadConst with flatbuf offset 0.",
-                        ctx.info.pgm_hash);
-            return ctx.u32_zero_value;
-        } else {
-            return ctx.EmitFlatbufferLoad(ctx.ConstU32(u32{buf_off}));
-        }
+        LOG_WARNING(Render_Recompiler, "Shader {:#x} ReadConst with untouched address.",
+                    ctx.info.pgm_hash);
+        return ctx.u32_zero_value;
     }
 }
 
