@@ -572,6 +572,18 @@ message LookupOnlineIdReply {
     string npid        = 2; // canonical online ID as registered on the server
 }
 
+// Single-use authorization code issued to the signed-in account for a game's backend, which
+// exchanges it at POST /2.0/oauth/token.
+message GetAuthorizationCodeRequest {
+    string client_id = 1;
+    string scope     = 2;
+}
+
+message GetAuthorizationCodeReply {
+    string code       = 1;
+    uint32 expires_in = 2; // seconds
+}
+
 // Notification payloads
 
 // NotificationType::RoomEvent (10) — every room event maps onto

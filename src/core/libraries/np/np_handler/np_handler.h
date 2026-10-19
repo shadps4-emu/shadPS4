@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "common/types.h"
+#include "core/libraries/np/np_auth/np_auth_ctx.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_matching2/np_matching2_cache.h"
 #include "core/libraries/np/np_score/np_score.h"
@@ -112,6 +113,11 @@ public:
 
     // WebAPI bearer token
     std::string GetBearerToken(s32 user_id) const;
+
+    // Asks shadNet for a single-use authorization code for sceNpAuthGetAuthorizationCode.
+    s32 RequestAuthorizationCode(s32 user_id, const std::string& client_id,
+                                 const std::string& scope,
+                                 std::shared_ptr<NpAuth::AuthRequestCtx> ctx);
 
     // Sends a session invitation via the WebAPI (POST /v1/sessions/<id>/invitations). Each 'to'
     // entry is an online ID (npid) or a decimal account ID
@@ -393,7 +399,7 @@ private:
 
     // Disconnect and remove one user's client.
     void DisconnectUser(s32 user_id);
-    // Fail every pending score/TUS request submitted by this user so pollers
+    // Fail every pending score/TUS/auth request submitted by this user so pollers
     // and blocked WaitAsync callers wake up instead of hanging forever.
     void FailPendingRequests(s32 user_id, s32 error_code);
 
@@ -504,6 +510,15 @@ private:
     };
     mutable std::mutex m_mutex_pending_tus;
     std::map<u64, PendingTusRequest> m_pending_tus;
+
+    struct PendingAuthRequest {
+        std::shared_ptr<NpAuth::AuthRequestCtx> req;
+        s32 user_id = -1;
+    };
+    mutable std::mutex m_mutex_pending_auth;
+    std::map<u64, PendingAuthRequest> m_pending_auth;
+    void OnAuthReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
+                     const std::vector<u8>& body);
 
     // Worker thread
     std::atomic<bool> m_initialized{false};
