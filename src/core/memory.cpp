@@ -335,7 +335,9 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
                 const u64 phys_offset =
                     std::max<u64>(phys_mapping.base, phys_addr) - phys_mapping.base;
                 const VAddr addr_in_vma = mapping.base + offset_in_vma + phys_offset;
-                const u64 unmap_size = std::min<u64>(phys_mapping.size - phys_offset, size);
+                const u64 unmap_size =
+                    std::min<u64>(phys_mapping.base + phys_mapping.size, phys_addr + size) -
+                    (phys_mapping.base + phys_offset);
 
                 // Unmapping might erase from vma_map. We can't do it here.
                 remove_list.emplace_back(addr_in_vma, unmap_size);

@@ -385,6 +385,20 @@ void NpHandler::FailPendingRequests(s32 user_id, s32 error_code) {
         }
     }
     {
+        std::lock_guard lock(m_mutex_pending_auth);
+        for (auto it = m_pending_auth.begin(); it != m_pending_auth.end();) {
+            if (it->second.user_id == user_id) {
+                if (it->second.req) {
+                    it->second.req->SetResult(error_code);
+                }
+                it = m_pending_auth.erase(it);
+                ++failed;
+            } else {
+                ++it;
+            }
+        }
+    }
+    {
         std::lock_guard lock(m_mutex_pending_lookup);
         for (auto it = m_pending_lookup.begin(); it != m_pending_lookup.end();) {
             if (it->second.user_id == user_id) {
@@ -653,6 +667,8 @@ void NpHandler::OnAsyncReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         OnTrophyReply(user_id, cmd, pkt_id, error, body);
     } else if (cmd == ShadNet::CommandType::LookupOnlineId) {
         OnLookupReply(user_id, cmd, pkt_id, error, body);
+    } else if (cmd == ShadNet::CommandType::GetAuthorizationCode) {
+        OnAuthReply(user_id, cmd, pkt_id, error, body);
     } else {
         OnScoreReply(user_id, cmd, pkt_id, error, body);
     }
