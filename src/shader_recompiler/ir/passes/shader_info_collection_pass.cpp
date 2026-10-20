@@ -226,7 +226,7 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
             .is_written = true,
         });
 
-        if (True(info.readconst_types & InfoPersistent::ReadConstType::Unchecked)) {
+        if (True(info.readconst_types & InfoPersistent::ReadConstType::Checked)) {
             info.buffers.push_back({
                 .used_types = IR::Type::U32,
                 .buffer_type = BufferType::FaultBuffer,
