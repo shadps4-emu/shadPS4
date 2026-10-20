@@ -91,6 +91,26 @@ void Scheduler::EndRendering() {
     CommandBuffer().endRendering();
 }
 
+vk::CommandBuffer Scheduler::HoistCommandBuffer() {
+    const auto cmdbuf = UploadCommandBuffer();
+    if (!upload_hoisted) {
+        // Work from earlier sessions may still use the copy ranges.
+        const vk::MemoryBarrier2 barrier = {
+            .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+            .srcAccessMask = vk::AccessFlagBits2::eMemoryWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eCopy,
+            .dstAccessMask =
+                vk::AccessFlagBits2::eTransferRead | vk::AccessFlagBits2::eTransferWrite,
+        };
+        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+            .memoryBarrierCount = 1,
+            .pMemoryBarriers = &barrier,
+        });
+        upload_hoisted = true;
+    }
+    return cmdbuf;
+}
+
 vk::CommandBuffer Scheduler::UploadCommandBuffer() {
     auto& upload_cmdbuf = sessions.back().upload;
     if (upload_cmdbuf) {
@@ -144,6 +164,8 @@ void Scheduler::BeginSession() {
     EndSession();
 
     auto& session = sessions.emplace_back();
+    ++session_id;
+    upload_hoisted = false;
 
     const vk::CommandBufferBeginInfo begin_info = {
         .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
@@ -175,6 +197,19 @@ void Scheduler::EndSession() {
 
     const auto& session = sessions.back();
     if (session.upload) {
+        if (upload_hoisted) {
+            const vk::MemoryBarrier2 barrier = {
+                .srcStageMask = vk::PipelineStageFlagBits2::eCopy,
+                .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+                .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+                .dstAccessMask =
+                    vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+            };
+            session.upload.pipelineBarrier2(vk::DependencyInfo{
+                .memoryBarrierCount = 1,
+                .pMemoryBarriers = &barrier,
+            });
+        }
         Check(session.upload.end());
     }
 
