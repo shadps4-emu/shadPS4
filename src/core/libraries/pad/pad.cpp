@@ -451,6 +451,7 @@ int PS4_SYSV_ABI scePadReadBlasterForTracker() {
 
 int PS4_SYSV_ABI scePadReadExt(s32 handle, OrbisPadData* pData, s32 num) {
     LOG_TRACE(Lib_Pad, "handle: {}, num: {}", handle, num);
+    // We don't currently support extensions, pass through.
     return scePadRead(handle, pData, num);
 }
 
@@ -472,6 +473,7 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
 
 int PS4_SYSV_ABI scePadReadStateExt(s32 handle, OrbisPadData* pData) {
     LOG_TRACE(Lib_Pad, "handle: {}", handle);
+    // We don't currently support extensions, pass through.
     return scePadReadState(handle, pData);
 }
 
