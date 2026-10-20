@@ -72,7 +72,7 @@ static std::map<std::string, FactoryDevice> available_device = {
     {"/dev/deci_stdout", GET_DEVICE_FD(1)},
     {"/dev/deci_stderr", GET_DEVICE_FD(2)},
 
-    {"/dev/null", GET_DEVICE_FD(0)}, // fd0 (stdin) is a nop device
+    {"/dev/null", &D::NopDevice::Create},
 
     {"/dev/urandom",  &D::URandomDevice::Create },
     {"/dev/random",   &D::RandomDevice::Create },
@@ -137,7 +137,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
     if (path.starts_with("/dev/")) {
         for (const auto& [prefix, factory] : available_device) {
-            if (path.starts_with(prefix)) {
+            if (path == prefix) {
                 file->is_opened = true;
                 file->type = Core::FileSys::FileType::Device;
                 file->m_guest_name = path;
@@ -216,7 +216,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
         file->type = Core::FileSys::FileType::Directory;
         file->is_opened = true;
-        if (file->m_guest_name.starts_with("/app0")) {
+        if (file->m_guest_name.starts_with("/app0") || file->m_guest_name.starts_with("/addcont")) {
             // TODO: Properly identify type for paths like "/app0/.."
             file->directory = Core::Directories::PfsDirectory::Create(file->m_guest_name);
         } else {
@@ -1788,7 +1788,10 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("FN4gaPmuFV8", "libkernel", 1, "libkernel", posix_write);
     LIB_FUNCTION("4wSze92BhLI", "libkernel", 1, "libkernel", sceKernelWrite);
     LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", readv);
+    LIB_FUNCTION("I7ImcLds-uU", "libkernel", 1, "libkernel", readv);
+    LIB_FUNCTION("QqxBetgJH+g", "libkernel", 1, "libkernel", sceKernelReadv);
     LIB_FUNCTION("YSHRBRLn2pI", "libkernel", 1, "libkernel", writev);
+    LIB_FUNCTION("Z2aKdxzS4KE", "libkernel", 1, "libkernel", writev);
     LIB_FUNCTION("kAt6VDbHmro", "libkernel", 1, "libkernel", sceKernelWritev);
     LIB_FUNCTION("Oy6IpwgtYOk", "libScePosix", 1, "libkernel", posix_lseek);
     LIB_FUNCTION("Oy6IpwgtYOk", "libkernel", 1, "libkernel", posix_lseek);
@@ -1814,6 +1817,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("uWyW3v98sU4", "libkernel", 1, "libkernel", sceKernelCheckReachability);
     LIB_FUNCTION("mqQMh1zPPT8", "libScePosix", 1, "libkernel", posix_fstat);
     LIB_FUNCTION("mqQMh1zPPT8", "libkernel", 1, "libkernel", posix_fstat);
+    LIB_FUNCTION("A0O5kF5x4LQ", "libkernel", 1, "libkernel", posix_fstat);
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", sceKernelFstat);
     LIB_FUNCTION("ih4CD9-gghM", "libkernel", 1, "libkernel", posix_ftruncate);
     LIB_FUNCTION("ih4CD9-gghM", "libScePosix", 1, "libkernel", posix_ftruncate);
@@ -1836,6 +1840,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("NN01qLRhiqU", "libScePosix", 1, "libkernel", posix_rename);
     LIB_FUNCTION("NN01qLRhiqU", "libkernel", 1, "libkernel", posix_rename);
     LIB_FUNCTION("52NcYU9+lEo", "libkernel", 1, "libkernel", sceKernelRename);
+    LIB_FUNCTION("ZaRzaapAZwM", "libkernel", 1, "libkernel", posix_preadv);
     LIB_FUNCTION("yTj62I7kw4s", "libkernel", 1, "libkernel", sceKernelPreadv);
     LIB_FUNCTION("ezv-RSBNKqI", "libScePosix", 1, "libkernel", posix_pread);
     LIB_FUNCTION("ezv-RSBNKqI", "libkernel", 1, "libkernel", posix_pread);
@@ -1851,6 +1856,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("uvT2iYBBnkY", "libkernel", 1, "libkernel", sceKernelSync);
     LIB_FUNCTION("j2AIqSqJP0w", "libkernel", 1, "libkernel", sceKernelGetdents);
     LIB_FUNCTION("sfKygSjIbI8", "libkernel", 1, "libkernel", getdirentries);
+    LIB_FUNCTION("f09KvIPy-QY", "libkernel", 1, "libkernel", getdirentries);
     LIB_FUNCTION("2G6i6hMIUUY", "libkernel", 1, "libkernel", posix_getdents);
     LIB_FUNCTION("taRWhTJFTgE", "libkernel", 1, "libkernel", sceKernelGetdirentries);
     LIB_FUNCTION("C2kJ-byS5rM", "libkernel", 1, "libkernel", posix_pwrite);
