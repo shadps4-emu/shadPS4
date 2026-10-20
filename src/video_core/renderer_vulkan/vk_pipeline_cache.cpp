@@ -13,6 +13,7 @@
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
+#include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/cache_storage.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -150,8 +151,12 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         const auto params_vc = AmdGpu::GetParams(regs.vs_program);
         info.hw.gs.vs_copy = params_vc.code;
         info.hw.gs.vs_copy_hash = params_vc.hash;
-        DumpShader(info.hw.gs.vs_copy, info.hw.gs.vs_copy_hash, Shader::HwStage::Vertex, 0,
-                   "copy.bin");
+        if (EmulatorSettings.IsDumpShaders()) {
+            std::vector<u32> code(params_vc.code.size());
+            Core::Memory::Instance()->CopySparseMemory(
+                params_vc.Base(), reinterpret_cast<u8*>(code.data()), params_vc.code.size_bytes());
+            DumpShader(code, info.hw.gs.vs_copy_hash, Shader::HwStage::Vertex, 0, "copy.bin");
+        }
         break;
     }
     case HwStage::Vertex: {
@@ -270,8 +275,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
 }
 
 PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
-                             AmdGpu::Liverpool* liverpool_, u32 sparse_page_shift)
+                             AmdGpu::Liverpool* liverpool_, VideoCore::BufferCache& buffer_cache_,
+                             u32 sparse_page_shift)
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
+      buffer_cache{buffer_cache_},
       desc_heap{instance, scheduler.GetWorkSemaphore(), DescriptorHeapSizes} {
     const auto& vk12_props = instance.GetVk12Properties();
     profile = Shader::Profile{
@@ -615,17 +622,27 @@ bool PipelineCache::RefreshGraphicsStages() {
 bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};
     const auto& cs_pgm = liverpool->GetCsRegs();
-    const auto cs_params = AmdGpu::GetParams(cs_pgm);
+    const bool gpu_modified =
+        buffer_cache.IsRangeGpuModified(cs_pgm.Address<VAddr>(), 2 * sizeof(u32));
+    const auto cs_params = AmdGpu::GetParams(cs_pgm, [this, gpu_modified](VAddr address, u64 size) {
+        if (gpu_modified) {
+            buffer_cache.ReadMemory(address, size, false, false, true);
+        }
+    });
     std::tie(infos[0], modules[0], compute_key.value) =
         GetProgram(HwStage::Compute, SwStage::Compute, cs_params, binding);
     return true;
 }
 
 vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
-                                              const std::span<const u32>& code, size_t perm_idx,
-                                              Shader::Backend::Bindings& binding) {
+                                              const std::span<const u32>& guest_code,
+                                              size_t perm_idx, Shader::Backend::Bindings& binding) {
     LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x} {}", info.hw_stage, info.pgm_hash,
              perm_idx != 0 ? "(permutation)" : "");
+    std::vector<u32> code(guest_code.size());
+    Core::Memory::Instance()->CopySparseMemory(std::bit_cast<VAddr>(guest_code.data()),
+                                               reinterpret_cast<u8*>(code.data()),
+                                               guest_code.size_bytes());
     DumpShader(code, info.pgm_hash, info.hw_stage, perm_idx, "bin");
 
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
