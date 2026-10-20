@@ -64,6 +64,7 @@ enum class SharpFetchPostOp : u8 {
     // For buffers
     BitwiseOrDw1WithImm,
     OffsetByProgramBase,
+    ClearStrideAndBitshiftDw2WithImm,
     // For images,
     ConvertCubeTo2DArray,
     // For samplers
@@ -91,6 +92,7 @@ struct BufferResource {
     bool is_formatted{};
     SharpFetchPostOp post_op{};
     u32 post_op_dw1_mask{};
+    u32 post_op_dw2_shift{};
 
     bool IsSpecial() const noexcept {
         return buffer_type != BufferType::Guest;
@@ -103,6 +105,9 @@ struct BufferResource {
         }
         if (post_op == SharpFetchPostOp::BitwiseOrDw1WithImm) {
             reinterpret_cast<u32*>(&buffer)[1] |= post_op_dw1_mask;
+        } else if (post_op == SharpFetchPostOp::ClearStrideAndBitshiftDw2WithImm) {
+            buffer.stride = 0;
+            buffer.num_records <<= post_op_dw2_shift;
         } else if (post_op == SharpFetchPostOp::OffsetByProgramBase) {
             buffer.base_address += info.pgm_base;
         }

@@ -106,6 +106,10 @@ void IREmitter::Barrier() {
     Inst(Opcode::Barrier);
 }
 
+void IREmitter::SubgroupBarrier() {
+    Inst(Opcode::SubgroupBarrier);
+}
+
 void IREmitter::WorkgroupMemoryBarrier() {
     Inst(Opcode::WorkgroupMemoryBarrier);
 }

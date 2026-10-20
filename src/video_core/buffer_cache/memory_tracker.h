@@ -37,6 +37,13 @@ public:
         });
     }
 
+    /// Mark region as modified from the host GPU without uploading it again
+    void MarkRegionAsGpuModified(VAddr cpu_addr, u64 size) noexcept {
+        IteratePages<true>(cpu_addr, size, [](RegionManager* manager, u64 offset, u64 size) {
+            manager->template ChangeRegionState<StateOp::None, StateOp::Set>(offset, size);
+        });
+    }
+
     /// Unmark region as modified from the host GPU
     void UnmarkRegionAsGpuModified(VAddr cpu_addr, u64 size, bool is_write) noexcept {
         IteratePages(cpu_addr, size, [is_write](RegionManager* manager, u64 offset, u64 size) {

@@ -253,6 +253,9 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         case PT_SCE_PROCPARAM:
             proc_param_virtual_addr = elf_pheader[i].p_vaddr + base_virtual_addr;
             break;
+        case PT_SCE_MODULE_PARAM:
+            module_param_virtual_addr = elf_pheader[i].p_vaddr + base_virtual_addr;
+            break;
         case PT_GNU_EH_FRAME: {
             eh_frame_hdr_addr = elf_pheader[i].p_vaddr;
             eh_frame_hdr_size = elf_pheader[i].p_memsz;
@@ -646,8 +649,19 @@ const LibraryInfo* Module::FindLibrary(std::string_view id) {
 void* Module::FindByName(std::string_view name) {
     const auto nid_str = StringToNid(name);
     const auto symbols = export_sym.GetSymbols();
+    const auto it = std::ranges::find_if(symbols, [&](const Loader::SymbolRecord& record) {
+        return record.symbol.name == nid_str || record.symbol.nidName == name;
+    });
+    if (it != symbols.end()) {
+        return reinterpret_cast<void*>(it->virtual_address);
+    }
+    return nullptr;
+}
+
+void* Module::FindByNid(std::string_view nid) {
+    const auto symbols = export_sym.GetSymbols();
     const auto it = std::ranges::find_if(
-        symbols, [&](const Loader::SymbolRecord& record) { return record.symbol.name == nid_str; });
+        symbols, [&](const Loader::SymbolRecord& record) { return record.symbol.name == nid; });
     if (it != symbols.end()) {
         return reinterpret_cast<void*>(it->virtual_address);
     }

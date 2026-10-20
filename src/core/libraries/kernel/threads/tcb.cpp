@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -31,8 +31,10 @@ Core::Tcb* TcbCtor(Pthread* thread, int initial) {
     u8* addr = reinterpret_cast<u8*>(addr_out);
     auto* tcb = reinterpret_cast<Core::Tcb*>(addr + static_tls_size);
     memset(addr_out, 0, static_tls_size);
+    memset(tcb, 0, sizeof(Core::Tcb));
     tcb->tcb_self = tcb;
     tcb->tcb_dtv = dtv_table;
+    tcb->tcb_canary = 0xDEADBEEF54321ABC;
 
     // Dtv[0] is the generation counter. libkernel puts their number into dtv[1]
     dtv_table[0].counter = linker->GenerationCounter();

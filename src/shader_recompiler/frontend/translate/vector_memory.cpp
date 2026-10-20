@@ -7,6 +7,10 @@ namespace Shader::Gcn {
 
 void Translator::EmitVectorMemory(const GcnInst& inst) {
     switch (inst.opcode) {
+    case Opcode::BUFFER_WBINVL1_SC:
+    case Opcode::BUFFER_WBINVL1:
+        ir.DeviceMemoryBarrier();
+        return;
         // MUBUF / MTBUF
 
         // Buffer load operations
@@ -188,6 +192,7 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
     case Opcode::IMAGE_GATHER4_L:
     case Opcode::IMAGE_GATHER4_LZ:
     case Opcode::IMAGE_GATHER4_C:
+    case Opcode::IMAGE_GATHER4_C_L:
     case Opcode::IMAGE_GATHER4_O:
     case Opcode::IMAGE_GATHER4_C_O:
     case Opcode::IMAGE_GATHER4_C_LZ:

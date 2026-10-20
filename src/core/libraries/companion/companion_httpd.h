@@ -4,7 +4,7 @@
 #pragma once
 
 #include "common/types.h"
-#include "core/libraries/network/net.h"
+#include "core/libraries/net/net.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Core::Loader {

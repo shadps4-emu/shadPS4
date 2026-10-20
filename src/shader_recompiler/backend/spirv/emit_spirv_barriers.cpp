@@ -33,6 +33,13 @@ void EmitBarrier(EmitContext& ctx) {
                          ctx.ConstU32(static_cast<u32>(memory_semantics)));
 }
 
+void EmitSubgroupBarrier(EmitContext& ctx) {
+    const auto semantics{static_cast<u32>(spv::MemorySemanticsMask::AcquireRelease |
+                                          spv::MemorySemanticsMask::WorkgroupMemory)};
+    ctx.OpMemoryBarrier(ctx.ConstU32(static_cast<u32>(spv::Scope::Subgroup)),
+                        ctx.ConstU32(semantics));
+}
+
 void EmitWorkgroupMemoryBarrier(EmitContext& ctx) {
     MemoryBarrier(ctx, spv::Scope::Workgroup);
 }
