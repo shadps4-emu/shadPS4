@@ -107,7 +107,7 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     Shader::Optimization::RingAccessElimination(program, runtime_info);
     Shader::IR::DumpProgram(program, info, "pre-res-discover.");
     auto resources = Shader::Optimization::ResourceDiscoverPass(program, profile);
-    Shader::Optimization::FlattenExtendedUserdataPass(program, resources);
+    Shader::Optimization::FlattenExtendedUserdataPass(program);
     Shader::IR::DumpProgram(program, info, "pre-res-patch.");
     Shader::Optimization::ResourcePatchingPass(program.info, resources, profile);
     Shader::Optimization::LowerBufferFormatToRaw(program);
