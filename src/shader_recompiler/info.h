@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <span>
 #include <vector>
 #include <boost/container/static_vector.hpp>
@@ -170,6 +171,7 @@ struct Info : InfoPersistent {
         ASSERT(user_data.size() <= NUM_USER_DATA_REGS);
         std::memcpy(flattened_ud_buf.data(), user_data.data(), user_data.size_bytes());
         if (srt_info.walker_func) {
+            std::fill(flattened_ud_buf.begin() + NUM_USER_DATA_REGS, flattened_ud_buf.end(), 0);
             srt_info.walker_func(user_data.data(), flattened_ud_buf.data());
         }
     }

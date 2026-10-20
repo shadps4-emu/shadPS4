@@ -2,16 +2,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include <array>
 #include <bit>
 #include <limits>
-#include <map>
 #include <optional>
+#include <span>
 #include <unordered_map>
 #include <unordered_set>
 #include <boost/container/flat_map.hpp>
 #include <boost/container/small_vector.hpp>
-#include <boost/container/static_vector.hpp>
 #include <queue>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
@@ -28,8 +26,8 @@
 #include "shader_recompiler/ir/dominance.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
-#include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/passes/srt.h"
+#include "shader_recompiler/ir/passes/srt_ir.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/srt_gvn_table.h"
@@ -178,6 +176,18 @@ struct PassInfo {
 
     // pick a single inst for a given value number
     std::unordered_map<u32, IR::Inst*> vn_to_inst;
+
+    struct ReadConstGuard {
+        boost::container::small_vector<std::pair<IR::Block*, const IR::Block*>, 4> demand;
+        bool always{};
+        bool conditional{};
+        bool all_conditional{};
+        bool any_conditional{};
+    };
+
+    std::unordered_set<const IR::Inst*> walker_reads;
+    std::unordered_map<const IR::Inst*, ReadConstGuard> guards;
+    Optimization::Srt::Program srt;
 
     // Bumped during codegen to assign offsets to readconsts
     u16 dst_off_dw;
@@ -597,291 +607,206 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
 }
 
-static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
-                         Xbyak::CodeGenerator& c) {
-    if (subtree->GetOpcode() == IR::Opcode::ReadConst && subtree->Flags<u16>() == 0 ||
-        subtree->GetOpcode() == IR::Opcode::ReadConstBuffer &&
-            subtree->Flags<IR::BufferInstInfo>().flatbuf_off_dw == 0) {
-        return;
+constexpr u32 MaxSrtDepth = 32;
+constexpr size_t MaxDemandBlocks = 16;
+constexpr auto Near = Xbyak::CodeGenerator::T_NEAR;
+
+std::optional<Srt::Opcode> SrtValueOpcode(IR::Opcode opcode) {
+    switch (opcode) {
+    case IR::Opcode::IAdd32:
+        return Srt::Opcode::IAdd32;
+    case IR::Opcode::ISub32:
+        return Srt::Opcode::ISub32;
+    case IR::Opcode::IMul32:
+        return Srt::Opcode::IMul32;
+    case IR::Opcode::ShiftLeftLogical32:
+        return Srt::Opcode::ShiftLeftLogical32;
+    case IR::Opcode::ShiftRightLogical32:
+        return Srt::Opcode::ShiftRightLogical32;
+    case IR::Opcode::BitwiseAnd32:
+        return Srt::Opcode::BitwiseAnd32;
+    case IR::Opcode::BitwiseOr32:
+        return Srt::Opcode::BitwiseOr32;
+    case IR::Opcode::BitwiseXor32:
+        return Srt::Opcode::BitwiseXor32;
+    case IR::Opcode::BitwiseNot32:
+        return Srt::Opcode::BitwiseNot32;
+    case IR::Opcode::UMin32:
+        return Srt::Opcode::UMin32;
+    case IR::Opcode::UMax32:
+        return Srt::Opcode::UMax32;
+    case IR::Opcode::BitFieldUExtract:
+        return Srt::Opcode::BitFieldUExtract;
+    default:
+        return std::nullopt;
     }
-
-    if (!PushPtr(c, pass_info, off_dw)) {
-        LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
-        return;
-    }
-    PassInfo::PtrUserList* use_list = pass_info.GetUsesAsPointer(subtree);
-    ASSERT(use_list);
-
-    // First copy all the src data from this tree level
-    // That way, all data that was contiguous in the guest SRT is also contiguous in the
-    // flattened buffer.
-    // TODO src and dst are contiguous. Optimize with wider loads/stores
-    // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
-    for (auto [src_off_dw, use] : *use_list) {
-        if (src_off_dw.IsImmediate()) {
-            c.mov(r10d, ptr[rdi + (src_off_dw.U32() << 2)]);
-        } else {
-            if (!ComputeOffset(c, r10d, pass_info, src_off_dw)) {
-                LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
-                continue;
-            }
-            c.shl(r10d, 2);
-            c.mov(r10d, r10d);
-            c.mov(r10d, dword[rdi + r10]);
-        }
-        c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
-
-        SetFlatbufOffset(use, pass_info.dst_off_dw);
-        pass_info.dst_off_dw++;
-    }
-
-    // Then visit any children used as pointers
-    for (const auto [src_off_dw, use] : *use_list) {
-        if (pass_info.GetUsesAsPointer(use)) {
-            VisitPointer(src_off_dw, use, pass_info, c);
-        }
-    }
-
-    PopPtr(c);
 }
 
-constexpr u32 MaxGuardAtoms = 64;
-constexpr u32 MaxGuardTerms = 4;
-constexpr u32 MaxGuardDepth = 32;
+std::optional<Srt::Opcode> SrtCompareOpcode(IR::Opcode opcode) {
+    switch (opcode) {
+    case IR::Opcode::IEqual32:
+        return Srt::Opcode::IEqual;
+    case IR::Opcode::INotEqual32:
+        return Srt::Opcode::INotEqual;
+    case IR::Opcode::SLessThan32:
+        return Srt::Opcode::SLessThan;
+    case IR::Opcode::SLessThanEqual32:
+        return Srt::Opcode::SLessThanEqual;
+    case IR::Opcode::SGreaterThan32:
+        return Srt::Opcode::SGreaterThan;
+    case IR::Opcode::SGreaterThanEqual32:
+        return Srt::Opcode::SGreaterThanEqual;
+    case IR::Opcode::ULessThan32:
+        return Srt::Opcode::ULessThan;
+    case IR::Opcode::ULessThanEqual32:
+        return Srt::Opcode::ULessThanEqual;
+    case IR::Opcode::UGreaterThan32:
+        return Srt::Opcode::UGreaterThan;
+    case IR::Opcode::UGreaterThanEqual32:
+        return Srt::Opcode::UGreaterThanEqual;
+    case IR::Opcode::FPOrdEqual32:
+        return Srt::Opcode::FPOrdEqual;
+    case IR::Opcode::FPOrdNotEqual32:
+        return Srt::Opcode::FPOrdNotEqual;
+    case IR::Opcode::FPOrdLessThan32:
+        return Srt::Opcode::FPOrdLessThan;
+    case IR::Opcode::FPOrdLessThanEqual32:
+        return Srt::Opcode::FPOrdLessThanEqual;
+    case IR::Opcode::FPOrdGreaterThan32:
+        return Srt::Opcode::FPOrdGreaterThan;
+    case IR::Opcode::FPOrdGreaterThanEqual32:
+        return Srt::Opcode::FPOrdGreaterThanEqual;
+    case IR::Opcode::FPUnordEqual32:
+        return Srt::Opcode::FPUnordEqual;
+    case IR::Opcode::FPUnordNotEqual32:
+        return Srt::Opcode::FPUnordNotEqual;
+    case IR::Opcode::FPUnordLessThan32:
+        return Srt::Opcode::FPUnordLessThan;
+    case IR::Opcode::FPUnordLessThanEqual32:
+        return Srt::Opcode::FPUnordLessThanEqual;
+    case IR::Opcode::FPUnordGreaterThan32:
+        return Srt::Opcode::FPUnordGreaterThan;
+    case IR::Opcode::FPUnordGreaterThanEqual32:
+        return Srt::Opcode::FPUnordGreaterThanEqual;
+    default:
+        return std::nullopt;
+    }
+}
 
-enum class GuardCompare : u8 {
-    IEq,
-    INe,
-    SLt,
-    SLe,
-    ULt,
-    ULe,
-    FEq,
-    FNe,
-    FLt,
-    FLe,
+bool PassesValueThrough(const IR::Inst& inst) {
+    if (SrtValueOpcode(inst.GetOpcode()) || SrtCompareOpcode(inst.GetOpcode())) {
+        return true;
+    }
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::CompositeConstructU32x2:
+    case IR::Opcode::CompositeConstructU32x3:
+    case IR::Opcode::CompositeConstructU32x4:
+    case IR::Opcode::CompositeConstructU32x2x2:
+    case IR::Opcode::CompositeExtractU32x2:
+    case IR::Opcode::CompositeExtractU32x3:
+    case IR::Opcode::CompositeExtractU32x4:
+    case IR::Opcode::ImageHandle:
+    case IR::Opcode::BitCastU32F32:
+    case IR::Opcode::BitCastF32U32:
+    case IR::Opcode::PackUint2x32:
+    case IR::Opcode::UnpackUint2x32:
+    case IR::Opcode::SelectU1:
+    case IR::Opcode::SelectU32:
+    case IR::Opcode::SelectF32:
+    case IR::Opcode::SelectU64:
+    case IR::Opcode::LogicalAnd:
+    case IR::Opcode::LogicalOr:
+    case IR::Opcode::LogicalNot:
+    case IR::Opcode::ReadFirstLane:
+    case IR::Opcode::Ballot:
+    case IR::Opcode::InverseBallot:
+    case IR::Opcode::SetScalarRegister:
+    case IR::Opcode::SetVectorRegister:
+    case IR::Opcode::SetScc:
+    case IR::Opcode::SetExec:
+    case IR::Opcode::SetVcc:
+    case IR::Opcode::SetVccLo:
+    case IR::Opcode::SetVccHi:
+    case IR::Opcode::SetM0:
+    case IR::Opcode::SetGotoVariable:
+        return true;
+    default:
+        return false;
+    }
+}
+
+struct Demand {
+    boost::container::small_vector<IR::Block*, 4> blocks;
+    bool always{};
+
+    void Add(IR::Block* block) {
+        if (std::ranges::find(blocks, block) == blocks.end()) {
+            blocks.push_back(block);
+        }
+    }
 };
 
-struct GuardOperand {
-    u32 immediate{};
-    u32 mask{~0U};
-    SharpLocation location{UNKNOWN_LOCATION};
-    u8 shift{};
+class DemandCollector {
+public:
+    DemandCollector(const PassInfo& pass_info_, std::span<IR::Block* const> lod_blocks_)
+        : pass_info{pass_info_}, lod_blocks{lod_blocks_} {}
 
-    bool operator==(const GuardOperand&) const = default;
-};
-
-struct GuardAtom {
-    GuardOperand lhs{};
-    GuardOperand rhs{};
-    GuardCompare op{};
-    bool negate{};
-
-    bool operator==(const GuardAtom&) const = default;
-};
-
-using GuardAtoms = boost::container::static_vector<GuardAtom, MaxGuardAtoms>;
-
-struct GuardTerms {
-    boost::container::static_vector<u64, MaxGuardTerms> terms;
-
-    static GuardTerms Always() {
-        return Of(0);
-    }
-
-    static GuardTerms Never() {
-        return {};
-    }
-
-    static GuardTerms Of(u64 term) {
-        return {.terms = {term}};
-    }
-
-    bool IsTrivial() const {
-        return terms.empty() || terms[0] == 0;
-    }
-
-    GuardTerms And(const GuardTerms& other) const {
-        GuardTerms result;
-        for (const u64 lhs : terms) {
-            for (const u64 rhs : other.terms) {
-                result.Add(lhs | rhs);
+    const Demand& Of(const IR::Inst* inst, u32 depth = 0) {
+        if (const auto it = demands.find(inst); it != demands.end()) {
+            return it->second;
+        }
+        Demand demand;
+        demand.always = depth >= MaxSrtDepth;
+        for (const IR::Use& use : inst->Uses()) {
+            if (demand.always) {
+                break;
             }
+            AddUse(demand, use, depth);
+            demand.always |= demand.blocks.size() > MaxDemandBlocks;
         }
-        return result;
+        return demands.insert_or_assign(inst, std::move(demand)).first->second;
     }
 
-    GuardTerms Or(const GuardTerms& other) const {
-        GuardTerms result = *this;
-        for (const u64 term : other.terms) {
-            result.Add(term);
+private:
+    void AddUse(Demand& demand, const IR::Use& use, u32 depth) {
+        const IR::Inst* const user = use.user;
+        switch (user->GetOpcode()) {
+        case IR::Opcode::ReadConst:
+        case IR::Opcode::ReadConstBuffer:
+            if (use.operand != 0 && pass_info.walker_reads.contains(user)) {
+                demand.always = true;
+                return;
+            }
+            break;
+        case IR::Opcode::ImageSampleRaw:
+            if (use.operand == 1) {
+                for (IR::Block* const block : lod_blocks) {
+                    demand.Add(block);
+                }
+            }
+            break;
+        default:
+            if (PassesValueThrough(*user)) {
+                const Demand& through = Of(user, depth + 1);
+                demand.always |= through.always;
+                for (IR::Block* const block : through.blocks) {
+                    demand.Add(block);
+                }
+                return;
+            }
+            break;
         }
-        return result;
+        demand.Add(user->GetParent());
     }
 
-    void Add(u64 term) {
-        if (std::ranges::any_of(terms, [term](u64 kept) { return (kept & term) == kept; })) {
-            return;
-        }
-        const auto [first, last] =
-            std::ranges::remove_if(terms, [term](u64 kept) { return (kept & term) == term; });
-        terms.erase(first, last);
-        if (terms.size() < MaxGuardTerms) {
-            terms.push_back(term);
-            return;
-        }
-        *this = Always();
-    }
+    const PassInfo& pass_info;
+    std::span<IR::Block* const> lod_blocks;
+    std::unordered_map<const IR::Inst*, Demand> demands;
 };
-
-struct GuardGroup {
-    GuardTerms terms;
-    boost::container::small_vector<SharpLocation, 8> slots;
-};
-
-using GuardGroups = boost::container::small_vector<GuardGroup, 8>;
 
 bool IsNormalOrZero(u32 bits) {
     const u32 exponent = (bits >> 23) & 0xFF;
     return exponent != 0xFF && (exponent != 0 || (bits & 0x7FFFFF) == 0);
-}
-
-struct CompareKind {
-    GuardCompare op{};
-    bool swap{};
-};
-
-std::optional<CompareKind> CompareKindOf(IR::Opcode opcode) {
-    switch (opcode) {
-    case IR::Opcode::IEqual32:
-        return CompareKind{.op = GuardCompare::IEq};
-    case IR::Opcode::INotEqual32:
-        return CompareKind{.op = GuardCompare::INe};
-    case IR::Opcode::SLessThan32:
-        return CompareKind{.op = GuardCompare::SLt};
-    case IR::Opcode::SLessThanEqual32:
-        return CompareKind{.op = GuardCompare::SLe};
-    case IR::Opcode::SGreaterThan32:
-        return CompareKind{.op = GuardCompare::SLt, .swap = true};
-    case IR::Opcode::SGreaterThanEqual32:
-        return CompareKind{.op = GuardCompare::SLe, .swap = true};
-    case IR::Opcode::ULessThan32:
-        return CompareKind{.op = GuardCompare::ULt};
-    case IR::Opcode::ULessThanEqual32:
-        return CompareKind{.op = GuardCompare::ULe};
-    case IR::Opcode::UGreaterThan32:
-        return CompareKind{.op = GuardCompare::ULt, .swap = true};
-    case IR::Opcode::UGreaterThanEqual32:
-        return CompareKind{.op = GuardCompare::ULe, .swap = true};
-    case IR::Opcode::FPOrdEqual32:
-    case IR::Opcode::FPUnordEqual32:
-        return CompareKind{.op = GuardCompare::FEq};
-    case IR::Opcode::FPOrdNotEqual32:
-    case IR::Opcode::FPUnordNotEqual32:
-        return CompareKind{.op = GuardCompare::FNe};
-    case IR::Opcode::FPOrdLessThan32:
-    case IR::Opcode::FPUnordLessThan32:
-        return CompareKind{.op = GuardCompare::FLt};
-    case IR::Opcode::FPOrdLessThanEqual32:
-    case IR::Opcode::FPUnordLessThanEqual32:
-        return CompareKind{.op = GuardCompare::FLe};
-    case IR::Opcode::FPOrdGreaterThan32:
-    case IR::Opcode::FPUnordGreaterThan32:
-        return CompareKind{.op = GuardCompare::FLt, .swap = true};
-    case IR::Opcode::FPOrdGreaterThanEqual32:
-    case IR::Opcode::FPUnordGreaterThanEqual32:
-        return CompareKind{.op = GuardCompare::FLe, .swap = true};
-    default:
-        return std::nullopt;
-    }
-}
-
-std::optional<u32> ImmU32(const IR::Value& value) {
-    if (value.IsImmediate() && value.Type() == IR::Type::U32) {
-        return value.U32();
-    }
-    return std::nullopt;
-}
-
-GuardOperand Bits(GuardOperand operand, u32 offset, u32 mask) {
-    if (operand.location != UNKNOWN_LOCATION) {
-        operand.shift = static_cast<u8>(operand.shift + offset);
-        operand.mask = (operand.mask >> offset) & mask;
-    } else {
-        operand.immediate = (operand.immediate >> offset) & mask;
-    }
-    return operand;
-}
-
-std::optional<GuardOperand> GuardOperandOf(const IR::Value& value, u32 depth);
-
-std::optional<GuardOperand> Masked(const IR::Inst& inst, u32 depth) {
-    const std::optional<u32> lhs_mask = ImmU32(inst.Arg(0));
-    const std::optional<u32> rhs_mask = ImmU32(inst.Arg(1));
-    if (lhs_mask.has_value() == rhs_mask.has_value()) {
-        return std::nullopt;
-    }
-    const std::optional<GuardOperand> operand =
-        GuardOperandOf(inst.Arg(lhs_mask ? 1 : 0), depth + 1);
-    if (!operand || operand->location == UNKNOWN_LOCATION) {
-        return std::nullopt;
-    }
-    return Bits(*operand, 0, lhs_mask ? *lhs_mask : *rhs_mask);
-}
-
-std::optional<GuardOperand> Extract(const IR::Value& base, u32 offset, u32 count, u32 depth) {
-    const std::optional<GuardOperand> operand = GuardOperandOf(base, depth + 1);
-    if (!operand || operand->location == UNKNOWN_LOCATION || count == 0 || offset > 32 ||
-        count > 32 || offset + count > 32 || operand->shift + offset >= 32) {
-        return std::nullopt;
-    }
-    return Bits(*operand, offset, static_cast<u32>((u64{1} << count) - 1));
-}
-
-std::optional<GuardOperand> GuardOperandOf(const IR::Value& value, u32 depth) {
-    if (value.IsImmediate()) {
-        if (value.Type() == IR::Type::U32) {
-            return GuardOperand{.immediate = value.U32()};
-        }
-        if (value.Type() == IR::Type::F32) {
-            return GuardOperand{.immediate = std::bit_cast<u32>(value.F32())};
-        }
-        return std::nullopt;
-    }
-    if (depth >= MaxGuardDepth) {
-        return std::nullopt;
-    }
-    const IR::Inst* const inst = value.Inst();
-    switch (inst->GetOpcode()) {
-    case IR::Opcode::GetUserData:
-    case IR::Opcode::ReadConst:
-        if (const SharpLocation location = SharpLocationFromSource(inst, false);
-            location != UNKNOWN_LOCATION) {
-            return GuardOperand{.location = location};
-        }
-        return std::nullopt;
-    case IR::Opcode::ReadFirstLane:
-    case IR::Opcode::BitCastU32F32:
-    case IR::Opcode::BitCastF32U32:
-        return GuardOperandOf(inst->Arg(0), depth + 1);
-    case IR::Opcode::BitwiseAnd32:
-        return Masked(*inst, depth);
-    case IR::Opcode::ShiftRightLogical32:
-        if (const std::optional<u32> shift = ImmU32(inst->Arg(1)); shift && *shift < 32) {
-            return Extract(inst->Arg(0), *shift, 32 - *shift, depth);
-        }
-        return std::nullopt;
-    default:
-        return std::nullopt;
-    }
-}
-
-std::optional<GuardOperand> FloatOperand(const IR::Value& value) {
-    const std::optional<GuardOperand> operand = GuardOperandOf(value, 0);
-    if (!operand || operand->shift != 0 || operand->mask != ~0U) {
-        return std::nullopt;
-    }
-    return operand;
 }
 
 const IR::Inst* Unpacked(const IR::Value& value) {
@@ -906,136 +831,193 @@ const IR::Inst* Unpacked(const IR::Value& value) {
     return unpack && unpack->GetOpcode() == IR::Opcode::UnpackUint2x32 ? unpack : nullptr;
 }
 
-class AtomBuilder {
+class SrtBuilder {
 public:
-    explicit AtomBuilder(GuardAtoms& atoms_) : atoms{atoms_} {}
+    SrtBuilder(PassInfo& pass_info_, Srt::Program& srt_, bool optimistic_ = false)
+        : pass_info{pass_info_}, srt{srt_}, optimistic{optimistic_} {}
 
-    GuardTerms Leaf(const IR::Value& lhs, const IR::Value& rhs, GuardCompare op, bool negate) {
-        const bool is_float = op >= GuardCompare::FEq;
-        const std::optional<GuardOperand> a = is_float ? FloatOperand(lhs) : GuardOperandOf(lhs, 0);
-        const std::optional<GuardOperand> b = is_float ? FloatOperand(rhs) : GuardOperandOf(rhs, 0);
-        if (!a || !b) {
-            return GuardTerms::Always();
+    Srt::Ref Guard(const PassInfo::ReadConstGuard& guard) {
+        if (guard.always) {
+            return Srt::TrueRef;
         }
-        return Atom({.lhs = *a, .rhs = *b, .op = op, .negate = negate});
+        Srt::Ref result = Srt::FalseRef;
+        for (const auto& [block, stop] : guard.demand) {
+            result = srt.Or(result, Chain(block, stop));
+            if (result == Srt::TrueRef) {
+                break;
+            }
+        }
+        return result;
     }
 
 private:
-    GuardTerms Atom(const GuardAtom& atom) {
-        if (atom.lhs.location == UNKNOWN_LOCATION && atom.rhs.location == UNKNOWN_LOCATION) {
-            return GuardTerms::Always();
+    std::optional<Srt::Ref> Value(const IR::Value& value, u32 depth) {
+        if (value.IsImmediate()) {
+            if (value.Type() == IR::Type::U32) {
+                return srt.Imm(value.U32());
+            }
+            if (value.Type() == IR::Type::F32) {
+                return srt.Imm(std::bit_cast<u32>(value.F32()));
+            }
+            return std::nullopt;
         }
-        const auto index = static_cast<u32>(std::ranges::find(atoms, atom) - atoms.begin());
-        if (index == MaxGuardAtoms) {
-            return GuardTerms::Always();
+        if (depth >= MaxSrtDepth || srt.IsFull()) {
+            return std::nullopt;
         }
-        if (index == atoms.size()) {
-            atoms.push_back(atom);
+        IR::Inst* const inst = value.Inst();
+        const IR::Opcode opcode = inst->GetOpcode();
+        switch (opcode) {
+        case IR::Opcode::GetUserData:
+            return srt.Load(static_cast<u32>(inst->Arg(0).ScalarReg()));
+        case IR::Opcode::ReadConst:
+        case IR::Opcode::ReadConstBuffer:
+            if (const u16 offset = GetFlatbufOffset(pass_info.DeduplicateInstruction(inst));
+                offset != 0) {
+                return srt.Load(offset);
+            }
+            if (optimistic && pass_info.walker_reads.contains(inst)) {
+                return srt.Load(0);
+            }
+            return std::nullopt;
+        case IR::Opcode::ReadFirstLane:
+        case IR::Opcode::BitCastU32F32:
+        case IR::Opcode::BitCastF32U32:
+            return Value(inst->Arg(0), depth + 1);
+        default:
+            break;
         }
-        return GuardTerms::Of(u64{1} << index);
+        const std::optional<Srt::Opcode> srt_opcode = SrtValueOpcode(opcode);
+        if (!srt_opcode) {
+            return std::nullopt;
+        }
+        std::array<Srt::Ref, 3> args{};
+        for (size_t i = 0; i < inst->NumArgs(); ++i) {
+            const std::optional<Srt::Ref> arg = Value(inst->Arg(i), depth + 1);
+            if (!arg) {
+                return std::nullopt;
+            }
+            args[i] = *arg;
+        }
+        return srt.Op(*srt_opcode, args[0], args[1], args[2]);
     }
 
-    GuardAtoms& atoms;
-};
+    Srt::Ref Chain(IR::Block* block, const IR::Block* stop) {
+        Srt::Ref chain = Srt::TrueRef;
+        for (IR::Block* current = block; current && current != stop;) {
+            chain = srt.And(chain, EdgeCondition(current));
+            IR::Block* const idom = current->immediate_dominator;
+            current = idom != current ? idom : nullptr;
+        }
+        return chain;
+    }
 
-class GuardBuilder {
-public:
-    explicit GuardBuilder(GuardAtoms& atoms_) : atoms{atoms_} {}
-
-    GuardTerms Condition(const IR::Value& value, bool polarity) {
-        for (auto& seen : necessary) {
+    Srt::Ref EdgeCondition(const IR::Block* block) {
+        const IR::Block* const idom = block->immediate_dominator;
+        if (!idom || idom == block || block->ImmPredecessors().size() != 1) {
+            return Srt::TrueRef;
+        }
+        const IR::Block* const pred = block->ImmPredecessors().front();
+        const Gcn::Block* const cfg = pred->cfg_block;
+        if (pred->branch_cond.IsEmpty() || pred->ImmSuccessors().size() != 2 || !cfg ||
+            !cfg->branch_true || !cfg->branch_false) {
+            return Srt::TrueRef;
+        }
+        const IR::Block* const on_true = cfg->branch_true->ir_block;
+        const IR::Block* const on_false = cfg->branch_false->ir_block;
+        if (on_true == on_false || (block != on_true && block != on_false)) {
+            return Srt::TrueRef;
+        }
+        for (auto& seen : conditions) {
             seen.clear();
         }
-        return Necessary(value, polarity, 0);
+        return Condition(pred->branch_cond, block == on_true, 0);
     }
 
-private:
-    GuardTerms Necessary(const IR::Value& value, bool polarity, u32 depth) {
+    Srt::Ref Condition(const IR::Value& value, bool polarity, u32 depth) {
         if (const std::optional<bool> known = Known(value)) {
-            return *known == polarity ? GuardTerms::Always() : GuardTerms::Never();
+            return *known == polarity ? Srt::TrueRef : Srt::FalseRef;
         }
-        if (value.IsImmediate() || depth >= MaxGuardDepth) {
-            return GuardTerms::Always();
+        if (value.IsImmediate() || depth >= MaxSrtDepth || srt.IsFull()) {
+            return Srt::TrueRef;
         }
         const IR::Inst* const inst = value.Inst();
-        auto& seen = necessary[polarity];
+        auto& seen = conditions[polarity];
         if (const auto it = seen.find(inst); it != seen.end()) {
             return it->second;
         }
-        seen.emplace(inst, GuardTerms::Always());
-        const GuardTerms terms = NecessaryInst(*inst, polarity, depth + 1);
-        seen[inst] = terms;
-        return terms;
+        seen.emplace(inst, Srt::TrueRef);
+        const Srt::Ref ref = ConditionInst(*inst, polarity, depth + 1);
+        seen[inst] = ref;
+        return ref;
     }
 
-    GuardTerms NecessaryInst(const IR::Inst& inst, bool polarity, u32 depth) {
+    Srt::Ref ConditionInst(const IR::Inst& inst, bool polarity, u32 depth) {
         switch (inst.GetOpcode()) {
         case IR::Opcode::ConditionRef:
         case IR::Opcode::Ballot:
         case IR::Opcode::InverseBallot:
-            return Necessary(inst.Arg(0), polarity, depth);
+            return Condition(inst.Arg(0), polarity, depth);
         case IR::Opcode::PackUint2x32:
             if (const IR::Inst* const unpack = Unpacked(inst.Arg(0))) {
-                return Necessary(unpack->Arg(0), polarity, depth);
+                return Condition(unpack->Arg(0), polarity, depth);
             }
-            return GuardTerms::Always();
+            return Srt::TrueRef;
         case IR::Opcode::LogicalNot:
         case IR::Opcode::BitwiseNot64:
-            return Necessary(inst.Arg(0), !polarity, depth);
+            return Condition(inst.Arg(0), !polarity, depth);
         case IR::Opcode::LogicalAnd:
         case IR::Opcode::BitwiseAnd64:
-            return Junction(inst, true, polarity, depth);
+            return Junction(inst, polarity, polarity, depth);
         case IR::Opcode::LogicalOr:
         case IR::Opcode::BitwiseOr64:
-            return Junction(inst, false, polarity, depth);
+            return Junction(inst, !polarity, polarity, depth);
         case IR::Opcode::SelectU1:
         case IR::Opcode::SelectU64:
             return Select(inst, polarity, depth);
         default:
-            if (const std::optional<CompareKind> kind = CompareKindOf(inst.GetOpcode())) {
-                return Compare(inst, *kind, polarity);
+            if (const std::optional<Srt::Opcode> opcode = SrtCompareOpcode(inst.GetOpcode())) {
+                return Compare(inst, polarity ? *opcode : Srt::Negate(*opcode));
             }
-            return GuardTerms::Always();
+            return Srt::TrueRef;
         }
     }
 
-    GuardTerms Junction(const IR::Inst& inst, bool is_and, bool polarity, u32 depth) {
-        const GuardTerms lhs = Necessary(inst.Arg(0), polarity, depth);
-        if (polarity != is_and) {
-            return lhs.Or(Necessary(inst.Arg(1), polarity, depth));
-        }
-        return lhs.terms.empty() ? lhs : lhs.And(Necessary(inst.Arg(1), polarity, depth));
+    Srt::Ref Junction(const IR::Inst& inst, bool is_and, bool polarity, u32 depth) {
+        const Srt::Ref lhs = Condition(inst.Arg(0), polarity, depth);
+        const Srt::Ref rhs = Condition(inst.Arg(1), polarity, depth);
+        return is_and ? srt.And(lhs, rhs) : srt.Or(lhs, rhs);
     }
 
-    GuardTerms Select(const IR::Inst& inst, bool polarity, u32 depth) {
+    Srt::Ref Select(const IR::Inst& inst, bool polarity, u32 depth) {
         const IR::Value cond = inst.Arg(0);
         if (const std::optional<bool> taken = Known(cond)) {
-            return Necessary(inst.Arg(*taken ? 1 : 2), polarity, depth);
+            return Condition(inst.Arg(*taken ? 1 : 2), polarity, depth);
         }
-        const auto when = [&](bool taken) {
-            const GuardTerms terms = Necessary(inst.Arg(taken ? 1 : 2), polarity, depth);
-            return terms.terms.empty() ? terms : Necessary(cond, taken, depth).And(terms);
-        };
-        return when(true).Or(when(false));
+        const Srt::Ref when_true =
+            srt.And(Condition(cond, true, depth), Condition(inst.Arg(1), polarity, depth));
+        const Srt::Ref when_false =
+            srt.And(Condition(cond, false, depth), Condition(inst.Arg(2), polarity, depth));
+        return srt.Or(when_true, when_false);
     }
 
-    GuardTerms Compare(const IR::Inst& inst, const CompareKind& kind, bool polarity) {
-        const IR::Value lhs = inst.Arg(kind.swap ? 1 : 0);
-        const IR::Value rhs = inst.Arg(kind.swap ? 0 : 1);
-        switch (kind.op) {
-        case GuardCompare::IEq:
-        case GuardCompare::INe:
-            return atoms.Leaf(lhs, rhs, GuardCompare::IEq,
-                              (kind.op == GuardCompare::IEq) != polarity);
-        case GuardCompare::FLt:
-        case GuardCompare::FLe:
-            return atoms.Leaf(polarity ? lhs : rhs, polarity ? rhs : lhs,
-                              (kind.op == GuardCompare::FLt) == polarity ? GuardCompare::FLt
-                                                                         : GuardCompare::FLe,
-                              false);
-        default:
-            return atoms.Leaf(lhs, rhs, kind.op, !polarity);
+    Srt::Ref Compare(const IR::Inst& inst, Srt::Opcode opcode) {
+        const std::optional<Srt::Ref> lhs = Value(inst.Arg(0), 0);
+        const std::optional<Srt::Ref> rhs = Value(inst.Arg(1), 0);
+        if (!lhs || !rhs || (IsImm(*lhs) && IsImm(*rhs))) {
+            return Srt::TrueRef;
         }
+        if (Srt::IsFloatCompare(opcode) && (!IsFloatKnown(*lhs) || !IsFloatKnown(*rhs))) {
+            return Srt::TrueRef;
+        }
+        return srt.Op(opcode, *lhs, *rhs);
+    }
+
+    bool IsImm(Srt::Ref ref) const {
+        return srt[ref].opcode == Srt::Opcode::Imm32;
+    }
+
+    bool IsFloatKnown(Srt::Ref ref) const {
+        return !IsImm(ref) || IsNormalOrZero(srt[ref].imm);
     }
 
     static std::optional<bool> Known(const IR::Value& value) {
@@ -1052,258 +1034,88 @@ private:
         return std::nullopt;
     }
 
-    AtomBuilder atoms;
-    std::array<std::unordered_map<const IR::Inst*, GuardTerms>, 2> necessary;
+    PassInfo& pass_info;
+    Srt::Program& srt;
+    bool optimistic;
+    std::array<std::unordered_map<const IR::Inst*, Srt::Ref>, 2> conditions;
 };
 
-class GuardCollector {
-public:
-    explicit GuardCollector(GuardBuilder& builder_) : builder{builder_} {}
-
-    GuardTerms BlockTerms(IR::Block* block) {
-        boost::container::small_vector<IR::Block*, 32> chain;
-        GuardTerms block_terms = GuardTerms::Always();
-        for (IR::Block* current = block; current;) {
-            if (const auto it = terms.find(current); it != terms.end()) {
-                block_terms = it->second;
-                break;
-            }
-            chain.push_back(current);
-            IR::Block* const idom = current->immediate_dominator;
-            current = idom != current ? idom : nullptr;
-        }
-        for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
-            block_terms = block_terms.And(EdgeTerms(*it));
-            terms.emplace(*it, block_terms);
-        }
-        return block_terms;
-    }
-
-private:
-    GuardTerms EdgeTerms(IR::Block* block) {
-        const IR::Block* const idom = block->immediate_dominator;
-        if (!idom || idom == block || block->ImmPredecessors().size() != 1) {
-            return GuardTerms::Always();
-        }
-        const IR::Block* const pred = block->ImmPredecessors().front();
-        const Gcn::Block* const cfg = pred->cfg_block;
-        if (pred->branch_cond.IsEmpty() || pred->ImmSuccessors().size() != 2 || !cfg ||
-            !cfg->branch_true || !cfg->branch_false) {
-            return GuardTerms::Always();
-        }
-        const IR::Block* const on_true = cfg->branch_true->ir_block;
-        const IR::Block* const on_false = cfg->branch_false->ir_block;
-        if (on_true == on_false || (block != on_true && block != on_false)) {
-            return GuardTerms::Always();
-        }
-        return builder.Condition(pred->branch_cond, block == on_true);
-    }
-
-    GuardBuilder& builder;
-    std::unordered_map<const IR::Block*, GuardTerms> terms;
-};
-
-struct SharpUse {
-    const IR::Inst* user{};
-    u32 operand{};
-    GuardTerms terms;
-    boost::container::small_vector<SharpLocation, 8> slots;
-    bool is_guardable{};
-    u32 parent{};
-};
-
-class SharpUses {
-public:
-    void Add(const IR::Inst* user, u32 operand, const SharpReference& sharp,
-             const GuardTerms& terms, bool is_guardable) {
-        SharpUse& use = uses.emplace_back(SharpUse{
-            .user = user,
-            .operand = operand,
-            .terms = terms,
-            .is_guardable = is_guardable,
-            .parent = static_cast<u32>(uses.size()),
-        });
-        for (u32 i = 0; i < sharp.num_dwords; ++i) {
-            const IR::Inst* const source = sharp.dwords[i].TryInst();
-            if (!source) {
-                use.is_guardable = false;
-                continue;
-            }
-            AddSlot(use, SharpLocationFromSource(source, false));
-        }
-        if (sharp.post_op == SharpFetchPostOp::DisableAnisoIfSingleLod) {
-            if (const IR::Inst* const lod_prod = sharp.post_op_data.lod_prod.TryInst()) {
-                AddSlot(use, SharpLocationFromSource(lod_prod, false));
-            }
-        }
-    }
-
-    void AddTermsToSamplers(const GuardTerms& terms) {
-        for (SharpUse& use : uses) {
-            if (use.operand == 1) {
-                use.terms = use.terms.Or(terms);
-            }
-        }
-    }
-
-    GuardGroups Build(const IR::Program& program) {
-        std::unordered_map<SharpLocation, u32> slot_owner;
-        for (u32 i = 0; i < uses.size(); ++i) {
-            for (const SharpLocation slot : uses[i].slots) {
-                if (const auto [it, is_new] = slot_owner.try_emplace(slot, i); !is_new) {
-                    Join(it->second, i);
-                }
-            }
-        }
-        std::unordered_map<SharpLocation, boost::container::small_vector<const IR::Inst*, 2>>
-            readers;
-        for (const IR::Block* const block : program.blocks) {
-            for (const IR::Inst& inst : block->Instructions()) {
-                if (const std::optional<SharpLocation> slot = ReadSlot(inst)) {
-                    readers[*slot].push_back(&inst);
-                }
-            }
-        }
-        std::map<u32, GuardGroup> roots;
-        std::unordered_set<u32> rejected;
-        for (u32 i = 0; i < uses.size(); ++i) {
-            const u32 root = Find(i);
-            if (!uses[i].is_guardable) {
-                rejected.insert(root);
-            }
-            GuardGroup& group = roots[root];
-            group.terms = group.terms.Or(uses[i].terms);
-            for (const SharpLocation slot : uses[i].slots) {
-                if (std::ranges::find(group.slots, slot) == group.slots.end()) {
-                    group.slots.push_back(slot);
-                }
-            }
-        }
-        GuardGroups groups;
-        for (auto& [root, group] : roots) {
-            if (group.terms.IsTrivial() || rejected.contains(root) ||
-                !std::ranges::all_of(group.slots, [&](SharpLocation slot) {
-                    return std::ranges::all_of(readers[slot], [&](const IR::Inst* reader) {
-                        std::unordered_set<const IR::Inst*> visited{reader};
-                        return ReadOnlyBy(reader, root, visited);
-                    });
-                })) {
-                continue;
-            }
-            std::ranges::sort(group.slots);
-            groups.push_back(std::move(group));
-        }
-        return groups;
-    }
-
-private:
-    static void AddSlot(SharpUse& use, SharpLocation slot) {
-        if (slot == UNKNOWN_LOCATION) {
-            use.is_guardable = false;
-        } else if (std::ranges::find(use.slots, slot) == use.slots.end()) {
-            use.slots.push_back(slot);
-        }
-    }
-
-    static std::optional<SharpLocation> ReadSlot(const IR::Inst& inst) {
-        switch (inst.GetOpcode()) {
-        case IR::Opcode::GetUserData:
-            return static_cast<SharpLocation>(inst.Arg(0).ScalarReg());
-        case IR::Opcode::ReadConst:
-            return inst.Flags<SharpLocation>();
-        case IR::Opcode::ReadConstBuffer:
-            if (const SharpLocation slot = SharpLocationFromSource(&inst, false);
-                slot != UNKNOWN_LOCATION) {
-                return slot;
-            }
-            return std::nullopt;
-        default:
-            return std::nullopt;
-        }
-    }
-
-    bool ReadOnlyBy(const IR::Inst* inst, u32 root, std::unordered_set<const IR::Inst*>& visited) {
-        for (const IR::Use& use : inst->Uses()) {
-            const IR::Inst* const user = use.user;
-            if (IsImageInstruction(*user)) {
-                const auto it = std::ranges::find_if(uses, [&](const SharpUse& sharp_use) {
-                    return sharp_use.user == user && sharp_use.operand == use.operand;
-                });
-                if (it == uses.end() || Find(static_cast<u32>(it - uses.begin())) != root) {
-                    return false;
-                }
-                continue;
-            }
-            if (user->MayHaveSideEffects() ||
-                (visited.insert(user).second && !ReadOnlyBy(user, root, visited))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    u32 Find(u32 index) {
-        while (uses[index].parent != index) {
-            uses[index].parent = uses[uses[index].parent].parent;
-            index = uses[index].parent;
-        }
-        return index;
-    }
-
-    void Join(u32 a, u32 b) {
-        uses[Find(b)].parent = Find(a);
-    }
-
-    boost::container::small_vector<SharpUse, 32> uses;
-};
-
-GuardGroups BuildResourceGuards(IR::Program& program, const ResourceDiscoveryList& resources,
-                                GuardAtoms& atoms) {
-    if (program.info.skip_resource_guards) {
-        return {};
-    }
-    IR::ComputeDominators(program.post_order_blocks);
-    GuardBuilder builder{atoms};
-    GuardCollector collector{builder};
-    SharpUses sharp_uses;
-    boost::container::small_vector<GuardTerms, 4> lod_terms;
-    for (const ResourceDiscovery& resource : resources) {
-        IR::Inst* const user = resource.user;
-        if (!IsImageInstruction(*user)) {
-            continue;
-        }
-        const GuardTerms terms = collector.BlockTerms(user->GetParent());
-        const bool is_written =
-            user->GetOpcode() == IR::Opcode::ImageWrite || IsImageAtomicInstruction(*user);
-        sharp_uses.Add(user, 0, resource.sharps[0], is_written ? GuardTerms::Always() : terms,
-                       resource.sharps[0].post_op != SharpFetchPostOp::ConvertCubeTo2DArray);
-        if (user->GetOpcode() == IR::Opcode::ImageSampleRaw) {
-            sharp_uses.Add(user, 1, resource.sharps[1], terms, true);
-        } else if (user->GetOpcode() == IR::Opcode::ImageQueryLod) {
-            lod_terms.push_back(terms);
-        }
-    }
-    for (IR::Block* const block : program.blocks) {
-        block->immediate_dominator = nullptr;
-    }
-    for (const GuardTerms& terms : lod_terms) {
-        sharp_uses.AddTermsToSamplers(terms);
-    }
-    return sharp_uses.Build(program);
-}
-
-void EmitGuardOperand(Xbyak::CodeGenerator& c, const Xbyak::Reg32& reg,
-                      const GuardOperand& operand) {
-    if (operand.location == UNKNOWN_LOCATION) {
-        c.mov(reg, operand.immediate);
+void EmitValue(Xbyak::CodeGenerator& c, const Srt::Program& srt, Srt::Ref ref,
+               const Xbyak::Reg32& reg) {
+    ASSERT(reg != ecx && reg != edx);
+    const Srt::Inst& inst = srt[ref];
+    switch (inst.opcode) {
+    case Srt::Opcode::Imm32:
+        c.mov(reg, inst.imm);
         return;
+    case Srt::Opcode::LoadFlatbuf:
+        c.mov(reg, dword[rsi + (inst.imm << 2)]);
+        return;
+    case Srt::Opcode::BitwiseNot32:
+        EmitValue(c, srt, inst.args[0], reg);
+        c.not_(reg);
+        return;
+    case Srt::Opcode::BitFieldUExtract:
+        EmitValue(c, srt, inst.args[2], reg);
+        c.push(reg.cvt64());
+        EmitValue(c, srt, inst.args[1], reg);
+        c.push(reg.cvt64());
+        EmitValue(c, srt, inst.args[0], reg);
+        c.pop(rcx);
+        c.shr(reg, cl);
+        c.pop(rcx);
+        c.mov(edx, 1);
+        c.shl(edx, cl);
+        c.dec(edx);
+        c.and_(reg, edx);
+        return;
+    default:
+        break;
     }
-    c.mov(reg, dword[rsi + (static_cast<u32>(operand.location) << 2)]);
-    if (operand.shift != 0) {
-        c.shr(reg, operand.shift);
+    if (const Srt::Inst& rhs = srt[inst.args[1]]; rhs.opcode == Srt::Opcode::Imm32) {
+        EmitValue(c, srt, inst.args[0], reg);
+        c.mov(ecx, rhs.imm);
+    } else {
+        EmitValue(c, srt, inst.args[1], reg);
+        c.push(reg.cvt64());
+        EmitValue(c, srt, inst.args[0], reg);
+        c.pop(rcx);
     }
-    if (operand.mask != ~0U) {
-        c.and_(reg, operand.mask);
+    switch (inst.opcode) {
+    case Srt::Opcode::IAdd32:
+        c.add(reg, ecx);
+        break;
+    case Srt::Opcode::ISub32:
+        c.sub(reg, ecx);
+        break;
+    case Srt::Opcode::IMul32:
+        c.imul(reg, ecx);
+        break;
+    case Srt::Opcode::ShiftLeftLogical32:
+        c.shl(reg, cl);
+        break;
+    case Srt::Opcode::ShiftRightLogical32:
+        c.shr(reg, cl);
+        break;
+    case Srt::Opcode::BitwiseAnd32:
+        c.and_(reg, ecx);
+        break;
+    case Srt::Opcode::BitwiseOr32:
+        c.or_(reg, ecx);
+        break;
+    case Srt::Opcode::BitwiseXor32:
+        c.xor_(reg, ecx);
+        break;
+    case Srt::Opcode::UMin32:
+        c.cmp(reg, ecx);
+        c.cmova(reg, ecx);
+        break;
+    case Srt::Opcode::UMax32:
+        c.cmp(reg, ecx);
+        c.cmovb(reg, ecx);
+        break;
+    default:
+        UNREACHABLE_MSG("Unexpected SRT value opcode {}", static_cast<u32>(inst.opcode));
     }
 }
 
@@ -1313,105 +1125,275 @@ void EmitNormalOrZeroCheck(Xbyak::CodeGenerator& c, const Xbyak::Reg32& reg,
     c.mov(edx, reg);
     c.and_(edx, 0x7F800000);
     c.cmp(edx, 0x7F800000);
-    c.je(unknown, Xbyak::CodeGenerator::T_NEAR);
+    c.je(unknown, Near);
     c.test(edx, edx);
     c.jnz(checked);
     c.test(reg, 0x7FFFFF);
-    c.jnz(unknown, Xbyak::CodeGenerator::T_NEAR);
+    c.jnz(unknown, Near);
     c.L(checked);
 }
 
-void EmitCompareResult(Xbyak::CodeGenerator& c, GuardCompare op) {
-    switch (op) {
-    case GuardCompare::IEq:
-    case GuardCompare::FEq:
-        c.sete(dl);
+void EmitJumpIfFalse(Xbyak::CodeGenerator& c, Srt::Opcode opcode, const Xbyak::Label& on_false) {
+    switch (opcode) {
+    case Srt::Opcode::IEqual:
+    case Srt::Opcode::FPOrdEqual:
+    case Srt::Opcode::FPUnordEqual:
+        c.jne(on_false, Near);
         break;
-    case GuardCompare::INe:
-    case GuardCompare::FNe:
-        c.setne(dl);
+    case Srt::Opcode::INotEqual:
+    case Srt::Opcode::FPOrdNotEqual:
+    case Srt::Opcode::FPUnordNotEqual:
+        c.je(on_false, Near);
         break;
-    case GuardCompare::SLt:
-        c.setl(dl);
+    case Srt::Opcode::SLessThan:
+        c.jge(on_false, Near);
         break;
-    case GuardCompare::SLe:
-        c.setle(dl);
+    case Srt::Opcode::SLessThanEqual:
+        c.jg(on_false, Near);
         break;
-    case GuardCompare::ULt:
-    case GuardCompare::FLt:
-        c.setb(dl);
+    case Srt::Opcode::SGreaterThan:
+        c.jle(on_false, Near);
         break;
-    case GuardCompare::ULe:
-    case GuardCompare::FLe:
-        c.setbe(dl);
+    case Srt::Opcode::SGreaterThanEqual:
+        c.jl(on_false, Near);
         break;
+    case Srt::Opcode::ULessThan:
+    case Srt::Opcode::FPOrdLessThan:
+    case Srt::Opcode::FPUnordLessThan:
+        c.jae(on_false, Near);
+        break;
+    case Srt::Opcode::ULessThanEqual:
+    case Srt::Opcode::FPOrdLessThanEqual:
+    case Srt::Opcode::FPUnordLessThanEqual:
+        c.ja(on_false, Near);
+        break;
+    case Srt::Opcode::UGreaterThan:
+    case Srt::Opcode::FPOrdGreaterThan:
+    case Srt::Opcode::FPUnordGreaterThan:
+        c.jbe(on_false, Near);
+        break;
+    case Srt::Opcode::UGreaterThanEqual:
+    case Srt::Opcode::FPOrdGreaterThanEqual:
+    case Srt::Opcode::FPUnordGreaterThanEqual:
+        c.jb(on_false, Near);
+        break;
+    default:
+        UNREACHABLE_MSG("Unexpected SRT compare opcode {}", static_cast<u32>(opcode));
     }
 }
 
-void EmitResourceGuards(Xbyak::CodeGenerator& c, const GuardAtoms& atoms,
-                        const GuardGroups& groups) {
-    u64 used_atoms{};
-    for (const GuardGroup& group : groups) {
-        for (const u64 term : group.terms.terms) {
-            used_atoms |= term;
-        }
-    }
-    if (used_atoms == 0) {
+void EmitCondition(Xbyak::CodeGenerator& c, const Srt::Program& srt, Srt::Ref ref,
+                   const Xbyak::Label& on_false) {
+    const Srt::Inst& inst = srt[ref];
+    switch (inst.opcode) {
+    case Srt::Opcode::True:
+        return;
+    case Srt::Opcode::False:
+        c.jmp(on_false, Near);
+        return;
+    case Srt::Opcode::LogicalAnd:
+        EmitCondition(c, srt, inst.args[0], on_false);
+        EmitCondition(c, srt, inst.args[1], on_false);
+        return;
+    case Srt::Opcode::LogicalOr: {
+        Xbyak::Label on_true;
+        Xbyak::Label next;
+        EmitCondition(c, srt, inst.args[0], next);
+        c.jmp(on_true, Near);
+        c.L(next);
+        EmitCondition(c, srt, inst.args[1], on_false);
+        c.L(on_true);
         return;
     }
-    c.xor_(r8d, r8d);
-    for (u32 i = 0; i < atoms.size(); ++i) {
-        const GuardAtom& atom = atoms[i];
-        const bool is_float = atom.op >= GuardCompare::FEq;
-        const auto is_known = [is_float](const GuardOperand& operand) {
-            return !is_float || operand.location != UNKNOWN_LOCATION ||
-                   IsNormalOrZero(operand.immediate);
-        };
-        if (((used_atoms >> i) & 1) == 0 || !is_known(atom.lhs) || !is_known(atom.rhs)) {
-            continue;
-        }
-        Xbyak::Label next;
-        EmitGuardOperand(c, eax, atom.lhs);
-        EmitGuardOperand(c, ecx, atom.rhs);
-        if (is_float) {
-            if (atom.lhs.location != UNKNOWN_LOCATION) {
-                EmitNormalOrZeroCheck(c, eax, next);
-            }
-            if (atom.rhs.location != UNKNOWN_LOCATION) {
-                EmitNormalOrZeroCheck(c, ecx, next);
-            }
-            c.movd(xmm0, eax);
-            c.movd(xmm1, ecx);
-            c.ucomiss(xmm0, xmm1);
-        } else {
-            c.cmp(eax, ecx);
-        }
-        EmitCompareResult(c, atom.op);
-        c.cmp(dl, atom.negate ? 1 : 0);
-        c.jne(next);
-        c.bts(r8, static_cast<u8>(i));
-        c.L(next);
+    default:
+        break;
     }
-    Xbyak::Label done;
-    c.test(r8, r8);
-    c.jz(done, Xbyak::CodeGenerator::T_NEAR);
-    for (const GuardGroup& group : groups) {
-        Xbyak::Label live;
-        for (const u64 term : group.terms.terms) {
-            c.mov(rax, term);
-            c.test(rax, r8);
-            c.jz(live, Xbyak::CodeGenerator::T_NEAR);
+    Xbyak::Label unknown;
+    EmitValue(c, srt, inst.args[0], eax);
+    EmitValue(c, srt, inst.args[1], r8d);
+    if (Srt::IsFloatCompare(inst.opcode)) {
+        if (srt[inst.args[0]].opcode != Srt::Opcode::Imm32) {
+            EmitNormalOrZeroCheck(c, eax, unknown);
         }
-        for (const SharpLocation slot : group.slots) {
-            c.mov(dword[rsi + (static_cast<u32>(slot) << 2)], 0);
+        if (srt[inst.args[1]].opcode != Srt::Opcode::Imm32) {
+            EmitNormalOrZeroCheck(c, r8d, unknown);
         }
-        c.L(live);
+        c.movd(xmm0, eax);
+        c.movd(xmm1, r8d);
+        c.ucomiss(xmm0, xmm1);
+    } else {
+        c.cmp(eax, r8d);
     }
-    c.L(done);
+    EmitJumpIfFalse(c, inst.opcode, on_false);
+    c.L(unknown);
 }
 
-static void StartSrtProgram(Info& info) {
+static bool CopyReadConst(Xbyak::CodeGenerator& c, PassInfo& pass_info, const IR::Value& src_off_dw,
+                          IR::Inst* use) {
+    if (src_off_dw.IsImmediate()) {
+        c.mov(r10d, ptr[rdi + (src_off_dw.U32() << 2)]);
+    } else {
+        if (!ComputeOffset(c, r10d, pass_info, src_off_dw)) {
+            return false;
+        }
+        c.shl(r10d, 2);
+        c.mov(r10d, r10d);
+        c.mov(r10d, dword[rdi + r10]);
+    }
+    c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
+
+    SetFlatbufOffset(use, pass_info.dst_off_dw);
+    pass_info.dst_off_dw++;
+    return true;
+}
+
+static Srt::Ref GuardOf(PassInfo& pass_info, const IR::Inst* inst) {
+    const auto it = pass_info.guards.find(inst);
+    if (it == pass_info.guards.end() || !it->second.conditional) {
+        return Srt::TrueRef;
+    }
+    return SrtBuilder{pass_info, pass_info.srt}.Guard(it->second);
+}
+
+static bool IsConditional(const PassInfo& pass_info, const IR::Inst* inst) {
+    const auto it = pass_info.guards.find(inst);
+    return it != pass_info.guards.end() && it->second.conditional;
+}
+
+static bool HasReads(const PassInfo& pass_info, const IR::Inst* ptr, bool conditional) {
+    const auto it = pass_info.guards.find(ptr);
+    if (it == pass_info.guards.end()) {
+        return !conditional;
+    }
+    return conditional ? it->second.any_conditional : !it->second.all_conditional;
+}
+
+static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
+                         Xbyak::CodeGenerator& c, bool conditional) {
+    if (subtree->GetOpcode() == IR::Opcode::ReadConst && subtree->Flags<u16>() == 0 ||
+        subtree->GetOpcode() == IR::Opcode::ReadConstBuffer &&
+            subtree->Flags<IR::BufferInstInfo>().flatbuf_off_dw == 0) {
+        return;
+    }
+    if (!HasReads(pass_info, subtree, conditional)) {
+        return;
+    }
+
+    if (!PushPtr(c, pass_info, off_dw)) {
+        LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
+        return;
+    }
+    PassInfo::PtrUserList* use_list = pass_info.GetUsesAsPointer(subtree);
+    ASSERT(use_list);
+
+    // First copy all the src data from this tree level
+    // That way, all data that was contiguous in the guest SRT is also contiguous in the
+    // flattened buffer.
+    // TODO src and dst are contiguous. Optimize with wider loads/stores
+    // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
+    for (auto it = use_list->begin(); it != use_list->end();) {
+        if (IsConditional(pass_info, it->second) != conditional) {
+            ++it;
+            continue;
+        }
+        const Srt::Ref guard = GuardOf(pass_info, it->second);
+        Xbyak::Label skip;
+        EmitCondition(c, pass_info.srt, guard, skip);
+        do {
+            if (!CopyReadConst(c, pass_info, it->first, it->second)) {
+                LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
+            }
+            ++it;
+        } while (it != use_list->end() && IsConditional(pass_info, it->second) == conditional &&
+                 GuardOf(pass_info, it->second) == guard);
+        c.L(skip);
+    }
+
+    // Then visit any children used as pointers
+    for (const auto [src_off_dw, use] : *use_list) {
+        if (!pass_info.GetUsesAsPointer(use) || !HasReads(pass_info, use, conditional)) {
+            continue;
+        }
+        Xbyak::Label skip;
+        EmitCondition(c, pass_info.srt, GuardOf(pass_info, use), skip);
+        VisitPointer(src_off_dw, use, pass_info, c, conditional);
+        c.L(skip);
+    }
+
+    PopPtr(c);
+}
+
+static void ClassifyReads(PassInfo& pass_info, SrtBuilder& builder, IR::Inst* ptr,
+                          bool conditional) {
+    PassInfo::ReadConstGuard& node = pass_info.guards[ptr];
+    node.all_conditional = true;
+    for (const auto [src_off_dw, use] : *pass_info.GetUsesAsPointer(ptr)) {
+        PassInfo::ReadConstGuard& read = pass_info.guards[use];
+        read.conditional = conditional || builder.Guard(read) != Srt::TrueRef;
+        bool all_conditional = read.conditional;
+        bool any_conditional = read.conditional;
+        if (pass_info.GetUsesAsPointer(use)) {
+            ClassifyReads(pass_info, builder, use, read.conditional);
+            all_conditional &= read.all_conditional;
+            any_conditional |= read.any_conditional;
+        }
+        node.all_conditional &= all_conditional;
+        node.any_conditional |= any_conditional;
+    }
+}
+
+static void CollectReadConstGuards(IR::Program& program, PassInfo& pass_info,
+                                   std::span<IR::Inst* const> all_readconsts) {
+    std::unordered_set<const IR::Inst*> walked;
+    for (const auto& [ptr, use_list] : pass_info.pointer_uses) {
+        for (const auto& [src_off_dw, use] : use_list) {
+            walked.insert(use);
+        }
+    }
+    for (IR::Inst* const inst : all_readconsts) {
+        if (walked.contains(pass_info.DeduplicateInstruction(inst))) {
+            pass_info.walker_reads.insert(inst);
+        }
+    }
+
+    boost::container::small_vector<IR::Block*, 4> lod_blocks;
+    for (IR::Block* const block : program.blocks) {
+        if (std::ranges::any_of(block->Instructions(), [](const IR::Inst& inst) {
+                return inst.GetOpcode() == IR::Opcode::ImageQueryLod;
+            })) {
+            lod_blocks.push_back(block);
+        }
+    }
+    DemandCollector demands{pass_info, lod_blocks};
+    for (IR::Inst* const inst : all_readconsts) {
+        if (!pass_info.walker_reads.contains(inst)) {
+            continue;
+        }
+        PassInfo::ReadConstGuard& guard = pass_info.guards[pass_info.DeduplicateInstruction(inst)];
+        const Demand& demand = demands.Of(inst);
+        guard.always |= demand.always;
+        const IR::Block* const stop = inst->Arg(0).Inst()->Arg(0).Inst()->GetParent();
+        for (IR::Block* const block : demand.blocks) {
+            if (std::ranges::find(guard.demand, std::make_pair(block, stop)) ==
+                guard.demand.end()) {
+                guard.demand.emplace_back(block, stop);
+            }
+        }
+        guard.always |= guard.demand.size() > MaxDemandBlocks;
+    }
+    Srt::Program scratch;
+    SrtBuilder builder{pass_info, scratch, true};
+    for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
+        ClassifyReads(pass_info, builder, root, false);
+    }
+}
+
+static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     Xbyak::CodeGenerator& c = g_srt_codegen;
+
+    if (pass_info.srt_roots.empty()) {
+        return;
+    }
 
     // Register the signal handler for SRT walker, if not already registered
     if (g_srt_codegen_start == nullptr) {
@@ -1423,37 +1405,15 @@ static void StartSrtProgram(Info& info) {
     }
 
     info.srt_info.walker_func = c.getCurr<PFN_SrtWalker>();
-}
-
-static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
-    Xbyak::CodeGenerator& c = g_srt_codegen;
-
-    if (pass_info.srt_roots.empty()) {
-        return;
-    }
-
-    StartSrtProgram(info);
     pass_info.dst_off_dw = NUM_USER_DATA_REGS;
     ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
 
-    for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
-        VisitPointer(IR::Value(static_cast<u32>(sgpr_base)), root, pass_info, c);
-    }
-
-    info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
-}
-
-static void FinishSrtProgram(Info& info, const GuardAtoms& atoms, const GuardGroups& groups) {
-    Xbyak::CodeGenerator& c = g_srt_codegen;
-
-    if (!info.srt_info.walker_func) {
-        if (groups.empty()) {
-            return;
+    for (const bool conditional : {false, true}) {
+        for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
+            VisitPointer(IR::Value(static_cast<u32>(sgpr_base)), root, pass_info, c, conditional);
         }
-        StartSrtProgram(info);
     }
 
-    EmitResourceGuards(c, atoms, groups);
     c.ret();
     c.ready();
 
@@ -1464,6 +1424,8 @@ static void FinishSrtProgram(Info& info, const GuardAtoms& atoms, const GuardGro
         DumpSrtProgram(info, reinterpret_cast<const u8*>(info.srt_info.walker_func),
                        info.srt_info.walker_func_size);
     }
+
+    info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
 }
 
 static bool IsReadConstSource(const IR::Value base) {
@@ -1538,7 +1500,7 @@ void SimplifyReadConstAddressAdd(IR::Inst& inst) {
 
 } // Anonymous namespace
 
-void FlattenExtendedUserdataPass(IR::Program& program, const ResourceDiscoveryList& resources) {
+void FlattenExtendedUserdataPass(IR::Program& program) {
     auto& post_order = program.post_order_blocks;
     PassInfo pass_info;
 
@@ -1641,7 +1603,16 @@ void FlattenExtendedUserdataPass(IR::Program& program, const ResourceDiscoveryLi
         }
     }
 
+    if (!program.info.skip_resource_guards) {
+        IR::ComputeDominators(program.post_order_blocks);
+        CollectReadConstGuards(program, pass_info, all_readconsts);
+    }
+
     GenerateSrtProgram(program.info, pass_info);
+
+    for (IR::Block* const block : program.blocks) {
+        block->immediate_dominator = nullptr;
+    }
 
     // Assign offsets to duplicate readconsts
     for (IR::Inst* readconst : all_readconsts) {
@@ -1649,10 +1620,6 @@ void FlattenExtendedUserdataPass(IR::Program& program, const ResourceDiscoveryLi
         IR::Inst* original = pass_info.DeduplicateInstruction(readconst);
         SetFlatbufOffset(readconst, GetFlatbufOffset(original));
     }
-
-    GuardAtoms atoms;
-    const GuardGroups groups = BuildResourceGuards(program, resources, atoms);
-    FinishSrtProgram(program.info, atoms, groups);
 
     program.info.RefreshFlatBuf();
 }
@@ -1669,7 +1636,7 @@ PFN_SrtWalker RegisterWalkerCode(const u8* ptr, size_t size) {
 
 namespace Optimization {
 
-void FlattenExtendedUserdataPass(IR::Program& program, const ResourceDiscoveryList& resources) {
+void FlattenExtendedUserdataPass(IR::Program& program) {
     UNREACHABLE_MSG("FlattenExtendedUserdataPass unimplemented for target architecture.");
 }
 
