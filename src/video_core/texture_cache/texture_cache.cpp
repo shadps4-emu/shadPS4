@@ -242,7 +242,8 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
     const bool bpp_match = requested_info.num_bits == cache_image.info.num_bits;
 
     // If an image in the cache has less slices we need to expand it
-    bool recreate = cache_image.info.resources < requested_info.resources;
+    bool recreate = cache_image.info.resources.levels < requested_info.resources.levels ||
+                    cache_image.info.resources.layers < requested_info.resources.layers;
 
     switch (binding) {
     case BindingType::Texture:
@@ -351,7 +352,10 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
         // Size and resources are less than or equal, use image view.
         if (image_info.pixel_format != cache_image.info.pixel_format ||
-            image_info.guest_size <= cache_image.info.guest_size || pow2_padding_only) {
+            (image_info.guest_size <= cache_image.info.guest_size &&
+             image_info.resources.levels <= cache_image.info.resources.levels &&
+             image_info.resources.layers <= cache_image.info.resources.layers) ||
+            pow2_padding_only) {
             auto result_id = merged_image_id ? merged_image_id : cache_image_id;
             const auto& result_image = slot_images[result_id];
             const bool is_compatible =
@@ -361,8 +365,16 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
         // Size and resources are greater, expand the image.
         if (image_info.type == cache_image.info.type &&
-            image_info.resources > cache_image.info.resources) {
-            return {ExpandImage(image_info, cache_image_id), -1, -1};
+            (image_info.resources.levels > cache_image.info.resources.levels ||
+             image_info.resources.layers > cache_image.info.resources.layers)) {
+            if (image_info.resources.levels >= cache_image.info.resources.levels &&
+                image_info.resources.layers >= cache_image.info.resources.layers) {
+                return {ExpandImage(image_info, cache_image_id), -1, -1};
+            }
+            if (safe_to_delete) {
+                FreeImage(cache_image_id);
+            }
+            return {merged_image_id, -1, -1};
         }
 
         // Size is greater but resources are not, because the tiling mode is different.
@@ -630,7 +642,8 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         if (exact_fmt && info.pixel_format != image_resolved.info.pixel_format) {
             // Cannot reuse this image as we need the exact requested format.
             image_id = {};
-        } else if (image_resolved.info.resources < info.resources) {
+        } else if (image_resolved.info.resources.levels < info.resources.levels ||
+                   image_resolved.info.resources.layers < info.resources.layers) {
             // The image was clearly picked up wrong.
             FreeImage(image_id);
             image_id = {};
