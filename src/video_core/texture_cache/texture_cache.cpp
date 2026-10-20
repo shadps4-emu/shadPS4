@@ -552,9 +552,7 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     // Only carry over the old contents when they hold GPU-written data that guest memory lacks.
     // A CPU-dirty source is stale (e.g. a streamed texture rewritten in a reused pool slot);
     // copying it would overwrite the fresh upload with old data.
-    const bool src_has_gpu_data =
-        True(src_image.flags & ImageFlagBits::GpuModified) &&
-        False(src_image.flags & (ImageFlagBits::CpuDirty | ImageFlagBits::MaybeCpuDirty));
+    const bool src_has_gpu_data = src_image.HasGpuValidData();
 
     RefreshImage(new_image);
     if (src_has_gpu_data) {
