@@ -149,6 +149,7 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
             // Untrack the image, so that the range is unprotected and the guest can write freely.
             image.flags |= ImageFlagBits::CpuDirty;
             UntrackImage(image_id);
+            MarkStencilDirty(image);
         } else if (pages_end < image_end) {
             // This page access may or may not modify the image.
             // We should not mark it as dirty now. If it really was modified
@@ -164,7 +165,15 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
             // Image begins and ends on this page so it can not receive any more invalidations.
             // We will check it's hash later to see if it really was modified.
             MarkAsMaybeDirty(image_id, image);
+            MarkStencilDirty(image);
         }
+    }
+}
+
+void TextureCache::MarkStencilDirty(Image& image) {
+    // Placeholder has no data and the stencil lives in the depth image
+    if (const auto depth_id = GetAssociatedDepth(image)) {
+        slot_images[depth_id].flags |= ImageFlagBits::StencilDirty;
     }
 }
 
@@ -177,6 +186,7 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
         }
         // Ensure image is reuploaded when accessed again.
         image.flags |= ImageFlagBits::GpuDirty;
+        MarkStencilDirty(image);
     });
 }
 
@@ -503,6 +513,8 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     auto& new_image = slot_images[new_image_id];
 
     RefreshImage(new_image);
+    // Upload a pending stencil before the copy takes it forward
+    RefreshStencil(src_image);
     runtime.CopyImage(&src_image, &new_image);
 
     if (src_image.binding.is_bound || src_image.binding.is_target) {
@@ -759,6 +771,8 @@ void TextureCache::AssociateStencil(ImageId depth_id, const ImageInfo& depth_inf
     Image& stencil_image = slot_images[stencil_id];
     TouchImage(stencil_image);
     stencil_image.AssociateDepth(depth_id, slot_images[depth_id].image_uid);
+    // Track the stencil plane so CPU writes reach the depth stencil
+    TrackImage(stencil_id);
 }
 
 void TextureCache::RefreshImage(Image& image) {
@@ -833,6 +847,55 @@ void TextureCache::RefreshImage(Image& image) {
     }
 
     runtime.UploadImage(&image, buffer, image_copies);
+}
+
+void TextureCache::RefreshStencil(Image& image) {
+    if (False(image.flags & ImageFlagBits::StencilDirty)) {
+        return;
+    }
+    image.flags &= ~ImageFlagBits::StencilDirty;
+    // Multisampled stencil uploads aren't supported
+    if (!image.info.props.has_stencil || !image.info.stencil_addr || image.info.num_samples > 1) {
+        return;
+    }
+
+    // Stencil plane is 8bpp with its own tile mode
+    const auto& depth_mip = image.info.mips_layout[0];
+    ImageInfo info = image.info;
+    info.guest_address = image.info.stencil_addr;
+    info.guest_size = image.info.stencil_size;
+    info.num_bits = 8;
+    info.tile_mode = image.info.stencil_tile_mode;
+    info.array_mode = AmdGpu::GetArrayMode(info.tile_mode);
+    info.props.is_tiled = info.tile_mode != AmdGpu::TileMode::DisplayLinearAligned &&
+                          info.tile_mode != AmdGpu::TileMode::DisplayLinearGeneral;
+    info.resources.levels = 1;
+    info.mips_layout[0] = MipInfo(info.guest_size, depth_mip.pitch, depth_mip.height, 0);
+
+    scheduler.EndRendering();
+
+    const auto [in_buffer, in_offset] =
+        buffer_cache.ObtainBufferForImage(info.guest_address, info.guest_size);
+    const auto [buffer, offset] = tile_manager.DetileImage(in_buffer, in_offset, info);
+    const vk::BufferImageCopy copy = {
+        .bufferOffset = offset,
+        .bufferRowLength = depth_mip.pitch,
+        .bufferImageHeight = depth_mip.height,
+        .imageSubresource{
+            .aspectMask = vk::ImageAspectFlagBits::eStencil,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = image.info.resources.layers,
+        },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {std::min<u32>(depth_mip.pitch, image.info.size.width),
+                        std::min<u32>(depth_mip.height, image.info.size.height), 1},
+    };
+
+    // Only the stencil changes, keep the depth dirty state
+    const auto dirty = image.flags & ImageFlagBits::Dirty;
+    runtime.UploadImage(&image, buffer, {&copy, 1});
+    image.flags |= dirty;
 }
 
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sharp,

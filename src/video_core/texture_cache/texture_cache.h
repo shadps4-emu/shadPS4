@@ -146,6 +146,7 @@ public:
         TouchImage(image);
         TrackImage(image_id);
         RefreshImage(image);
+        RefreshStencil(image);
     }
 
     /// Resolves overlap between existing cache image and pending merged image
@@ -163,6 +164,12 @@ public:
 
     /// Reuploads image contents.
     void RefreshImage(Image& image);
+
+    /// Reuploads the stencil aspect from the stencil plane
+    void RefreshStencil(Image& image);
+
+    /// Marks the depth image of a placeholder for stencil reupload
+    void MarkStencilDirty(Image& image);
 
     /// Retrieves the sampler that matches the provided S# descriptor.
     [[nodiscard]] vk::Sampler GetSampler(const AmdGpu::Sampler& sampler,

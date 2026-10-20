@@ -211,6 +211,10 @@ struct DepthBuffer {
     } z_info;
     struct {
         StencilFormat format : 1;
+        u32 : 12;
+        u32 tile_split : 3;
+        u32 : 4;
+        u32 tile_mode_index : 3;
     } stencil_info;
     u32 z_read_base;
     u32 stencil_read_base;
@@ -280,6 +284,10 @@ struct DepthBuffer {
 
     TileMode GetTileMode() const {
         return static_cast<TileMode>(z_info.tile_mode_index);
+    }
+
+    TileMode GetStencilTileMode() const {
+        return static_cast<TileMode>(stencil_info.tile_mode_index);
     }
 
     bool IsTiled() const {

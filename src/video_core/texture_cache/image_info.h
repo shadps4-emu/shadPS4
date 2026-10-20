@@ -83,6 +83,7 @@ struct ImageInfo {
     u8 bank_swizzle{};
     bool alt_tile{};
     VAddr stencil_addr{};
+    AmdGpu::TileMode stencil_tile_mode{};
     u32 stencil_size{};
 };
 

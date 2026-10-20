@@ -245,8 +245,15 @@ void Runtime::CopyImage(VideoCore::Image* src, VideoCore::Image* dst) {
 
     SmallVector<vk::ImageCopy, 8> regions;
 
-    const vk::ImageAspectFlags src_aspect = src->aspect_mask & ~vk::ImageAspectFlagBits::eStencil;
-    const vk::ImageAspectFlags dst_aspect = dst->aspect_mask & ~vk::ImageAspectFlagBits::eStencil;
+    // Only copy the stencil when both images have it in the same format
+    const bool copy_stencil = src->info.pixel_format == dst->info.pixel_format &&
+                              (src->aspect_mask & vk::ImageAspectFlagBits::eStencil) &&
+                              (dst->aspect_mask & vk::ImageAspectFlagBits::eStencil);
+    const vk::ImageAspectFlags stencil_mask =
+        copy_stencil ? vk::ImageAspectFlags{}
+                     : vk::ImageAspectFlags{vk::ImageAspectFlagBits::eStencil};
+    const vk::ImageAspectFlags src_aspect = src->aspect_mask & ~stencil_mask;
+    const vk::ImageAspectFlags dst_aspect = dst->aspect_mask & ~stencil_mask;
 
     const bool src_is_2d = ConvertImageType(src->info.type) == vk::ImageType::e2D;
     const bool src_is_3d = ConvertImageType(src->info.type) == vk::ImageType::e3D;

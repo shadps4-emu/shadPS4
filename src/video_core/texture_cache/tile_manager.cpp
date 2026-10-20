@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/div_ceil.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_runtime.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -193,6 +194,14 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
     return handle;
 }
 
+// Workgroups for the tiling shader
+// 8bpp does 4 texels each
+static u32 NumTilingGroups(const ImageInfo& info) {
+    const u32 texels_per_invocation = info.num_bits == 8 ? 4 : 1;
+    const u32 num_texels = info.guest_size / (info.num_bits / 8);
+    return Common::DivCeil(num_texels, 64 * texels_per_invocation);
+}
+
 std::pair<const Buffer*, u64> TileManager::DetileImage(const VideoCore::Buffer* in_buffer,
                                                        u64 in_offset, const ImageInfo& info) {
     if (!info.props.is_tiled) {
@@ -267,7 +276,7 @@ std::pair<const Buffer*, u64> TileManager::DetileImage(const VideoCore::Buffer* 
     }};
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *pl_layout, 0, set_writes);
 
-    const auto dim_x = (info.guest_size / (info.num_bits / 8)) / 64;
+    const auto dim_x = NumTilingGroups(info);
     cmdbuf.dispatch(dim_x, 1, 1);
 
     runtime.AccessBuffer(staging.buffer, staging.offset, info.guest_size,
@@ -359,7 +368,7 @@ void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buff
     }};
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eCompute, *pl_layout, 0, set_writes);
 
-    const auto dim_x = (info.guest_size / (info.num_bits / 8)) / 64;
+    const auto dim_x = NumTilingGroups(info);
     cmdbuf.dispatch(dim_x, 1, 1);
 
     runtime.AccessBuffer(out_buffer, out_offset, info.guest_size,

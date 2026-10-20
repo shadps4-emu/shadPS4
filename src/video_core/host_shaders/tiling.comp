@@ -40,6 +40,15 @@ layout(constant_id = 11) const uint MACRO_TILE_ASPECT = 1;
 #define BLOCK_TYPE u32vec4
 #endif
 
+#if BITS_PER_PIXEL == 8
+// 8bpp does 4 texels per invocation and they share a micro tile
+#define TEXELS_PER_INVOCATION 4
+#define LINEAR_TYPE uint32_t
+#else
+#define TEXELS_PER_INVOCATION 1
+#define LINEAR_TYPE BLOCK_TYPE
+#endif
+
 #if IS_MACRO_TILED
 const uint NUM_PIPES = PIPE_CONFIG == 0 ? 2 : 8;
 const uint NUM_PIPE_BITS = PIPE_CONFIG == 0 ? 1 : 3;
@@ -96,7 +105,7 @@ layout (set = 0, binding = 0, scalar) buffer InputBuf {
 };
 
 layout (set = 0, binding = 1, scalar) buffer OutputBuf {
-    BLOCK_TYPE linear_data[];
+    LINEAR_TYPE linear_data[];
 };
 
 layout (set = 0, binding = 2, scalar) uniform TilingInfo {
@@ -415,18 +424,23 @@ uint32_t ComputeSurfaceAddrFromCoordMacroTiled(uint32_t x, uint32_t y, uint32_t 
 
 uint GetMipLevel(inout uint texel) {
     uint mip = 0;
-    uint mip_size = info.mips[mip].size / BYTES_PER_PIXEL;
-    while (texel >= mip_size && mip < info.num_mips) {
+    while (mip < info.num_mips) {
+        const uint mip_size = info.mips[mip].size / BYTES_PER_PIXEL;
+        if (texel < mip_size) {
+            break;
+        }
         texel -= mip_size;
         ++mip;
-        mip_size = info.mips[mip].size / BYTES_PER_PIXEL;
     }
     return mip;
 }
 
 void main() {
-    uint texel = gl_GlobalInvocationID.x;
+    uint texel = gl_GlobalInvocationID.x * TEXELS_PER_INVOCATION;
     uint mip = GetMipLevel(texel);
+    if (mip >= info.num_mips) {
+        return;
+    }
     uint pitch = info.mips[mip].pitch;
     uint height = info.mips[mip].height;
     uint tiled_offset = info.mips[mip].offset;
@@ -434,19 +448,40 @@ void main() {
     uint y = (texel / pitch) % height;
     uint slice = texel / (pitch * height);
 
+    uint thickness = MICRO_TILE_THICKNESS;
 #if IS_MACRO_TILED
     if ((info.micro_tiled_mips & (1u << mip)) != 0) {
-        tiled_offset += ComputeSurfaceAddrFromCoordMicroTiled(x, y, slice, pitch, height, min(MICRO_TILE_THICKNESS, 4u), 0);
+        thickness = min(MICRO_TILE_THICKNESS, 4u);
+        tiled_offset += ComputeSurfaceAddrFromCoordMicroTiled(x, y, slice, pitch, height, thickness, 0);
     } else {
         tiled_offset += ComputeSurfaceAddrFromCoordMacroTiled(x, y, slice, pitch, height, 0);
     }
 #else
-    tiled_offset += ComputeSurfaceAddrFromCoordMicroTiled(x, y, slice, pitch, height, MICRO_TILE_THICKNESS, 0);
+    tiled_offset += ComputeSurfaceAddrFromCoordMicroTiled(x, y, slice, pitch, height, thickness, 0);
 #endif
 
+#if TEXELS_PER_INVOCATION == 4
+    const uint pixel_stride = MICRO_TILE_MODE == ADDR_SURF_DEPTH_MICRO_TILING ? NUM_SAMPLES : 1u;
+    const uint base_pixel = ComputePixelIndexWithinMicroTile(x, y, slice, thickness);
+    if (IS_TILER != 0) {
+        const uint32_t packed = linear_data[gl_GlobalInvocationID.x];
+        for (uint i = 0; i < 4; ++i) {
+            const uint pixel = ComputePixelIndexWithinMicroTile(x + i, y, slice, thickness);
+            tiled_data[tiled_offset + (pixel - base_pixel) * pixel_stride] = uint8_t(packed >> (8 * i));
+        }
+    } else {
+        uint32_t packed = 0;
+        for (uint i = 0; i < 4; ++i) {
+            const uint pixel = ComputePixelIndexWithinMicroTile(x + i, y, slice, thickness);
+            packed |= uint32_t(tiled_data[tiled_offset + (pixel - base_pixel) * pixel_stride]) << (8 * i);
+        }
+        linear_data[gl_GlobalInvocationID.x] = packed;
+    }
+#else
     if (IS_TILER != 0) {
         tiled_data[tiled_offset / BYTES_PER_PIXEL] = linear_data[gl_GlobalInvocationID.x];
     } else {
         linear_data[gl_GlobalInvocationID.x] = tiled_data[tiled_offset / BYTES_PER_PIXEL];
     }
+#endif
 }

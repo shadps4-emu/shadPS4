@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <set>
-
 #include "common/debug.h"
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
@@ -322,6 +320,7 @@ void Rasterizer::DispatchDirect() {
     RENDERER_TRACE;
 
     scheduler.PopPendingOperations();
+    pending_clear.reset();
 
     const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
@@ -349,6 +348,23 @@ void Rasterizer::DispatchDirect() {
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
     DebugState.IncDispatch();
+
+    // The fill gave the image one value so we can clear instead of reuploading
+    if (pending_clear) {
+        auto& image = texture_cache.GetImage(pending_clear->image_id);
+        const VideoCore::SubresourceRange range = {
+            .base = {.level = 0, .layer = 0},
+            .extent = image.info.resources,
+        };
+        if (pending_clear->is_stencil) {
+            image.flags &= ~VideoCore::ImageFlagBits::StencilDirty;
+            runtime.ClearStencil(&image, range, pending_clear->value.depthStencil.stencil);
+        } else {
+            // Drops the dirty flags from the buffer write
+            runtime.ClearImage(&image, range, pending_clear->value);
+        }
+        pending_clear.reset();
+    }
 
     ResetBindings(true);
 }
@@ -718,44 +734,13 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
         return false;
     }
 
-    // First buffer must have size of vec4 and second the size of a single layer
+    // The first buffer holds the clear value
+    // The second is written in whole elements per thread
     const AmdGpu::Buffer buf0 = desc0.GetSharp(info);
     const AmdGpu::Buffer buf1 = desc1.GetSharp(info);
-
-    // A compute fill of a depth buffer's stencil plane
-    // The stencil is the depth image's stencil aspect, address only has placeholder
-    // Fill writes one element per thread, so generic check doesn't recognise it
-    // We require the fill to cover the whole plane, and clear the depth stencil
-    if (buf0.GetSize() == 16) {
-        if (const auto stencil_id =
-                texture_cache.FindImageFromRange(buf1.base_address, buf1.GetSize(), false)) {
-            VideoCore::Image& stencil = texture_cache.GetImage(stencil_id);
-            const auto depth_id = texture_cache.GetAssociatedDepth(stencil);
-            if (depth_id && stencil.info.guest_address == buf1.base_address &&
-                buf1.GetSize() >= stencil.info.guest_size) {
-                VideoCore::Image& depth = texture_cache.GetImage(depth_id);
-                if (depth.info.props.has_stencil) {
-                    const u32 value = *reinterpret_cast<const u32*>(buf0.base_address) & 0xFFu;
-                    static std::set<VAddr> logged;
-                    if (logged.insert(buf1.base_address).second) {
-                        LOG_INFO(Render_Vulkan,
-                                 "Compute fill of the stencil plane {:#x} (depth {:#x}) applied "
-                                 "as a stencil clear to {}",
-                                 buf1.base_address, depth.info.guest_address, value);
-                    }
-                    const VideoCore::SubresourceRange range = {
-                        .base = {.level = 0, .layer = 0},
-                        .extent = depth.info.resources,
-                    };
-                    runtime.ClearStencil(&depth, range, value);
-                    return true;
-                }
-            }
-        }
-    }
-
     const u32 buf1_bpp = AmdGpu::NumBitsPerBlock(buf1.GetDataFmt());
-    if (buf0.GetSize() != 16 || (cs_pgm.dim_x * 128ULL * (buf1_bpp / 8)) != buf1.GetSize()) {
+    const u64 dispatch_size = cs_pgm.dim_x * 64ULL * (buf1_bpp / 8);
+    if (buf0.GetSize() != 16 || dispatch_size == 0 || buf1.GetSize() % dispatch_size != 0) {
         return false;
     }
 
@@ -765,29 +750,53 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
     if (!image1_id) {
         return false;
     }
-
-    // Image clear must be valid
     VideoCore::Image& image1 = texture_cache.GetImage(image1_id);
-    if (image1.info.guest_size != buf1.GetSize() || image1.info.num_bits != buf1_bpp ||
-        image1.info.props.is_depth) {
+    if (image1.info.guest_address != buf1.base_address ||
+        image1.info.guest_size != buf1.GetSize()) {
         return false;
     }
 
-    // Perform image clear
+    // A compute fill of a depth buffer's stencil plane
+    // The stencil is the depth image's stencil aspect, address only has placeholder
+    // Fill writes one element per thread, size check allows that
+    // We require the fill to cover the whole plane, and clear the depth stencil
+    // The clear only matches the fill if every stencil byte gets the same value
+    if (const auto depth_id = texture_cache.GetAssociatedDepth(image1)) {
+        const VideoCore::Image& depth = texture_cache.GetImage(depth_id);
+        const auto nfmt = buf1.GetNumberFmt();
+        const u32 element = *reinterpret_cast<const u32*>(buf0.base_address) &
+                            (buf1_bpp >= 32 ? ~0u : (1u << buf1_bpp) - 1);
+        const u32 stencil = element & 0xFFu;
+        const u32 repeated = stencil * (buf1_bpp == 32   ? 0x01010101u
+                                        : buf1_bpp == 16 ? 0x0101u
+                                                         : 0x01u);
+        const bool is_uniform =
+            buf1_bpp <= 32 && element == repeated &&
+            (nfmt == AmdGpu::NumberFormat::Uint || nfmt == AmdGpu::NumberFormat::Sint);
+        if (!is_uniform || !depth.info.props.has_stencil || depth.info.num_samples != 1) {
+            return false;
+        }
+        pending_clear = PendingClear{
+            .image_id = depth_id,
+            .is_stencil = true,
+            .value = {.depthStencil = {.depth = 0.0f, .stencil = stencil}},
+        };
+        return false;
+    }
+
+    // Image clear must be valid
+    if (image1.info.num_bits != buf1_bpp || image1.info.props.is_depth) {
+        return false;
+    }
+
     const float* values = reinterpret_cast<float*>(buf0.base_address);
-    const vk::ClearValue clear = {
-        .color = {.float32 = std::array<float, 4>{values[0], values[1], values[2], values[3]}},
+    pending_clear = PendingClear{
+        .image_id = image1_id,
+        .is_stencil = false,
+        .value = {.color = {.float32 =
+                                std::array<float, 4>{values[0], values[1], values[2], values[3]}}},
     };
-    const VideoCore::SubresourceRange range = {
-        .base =
-            {
-                .level = 0,
-                .layer = 0,
-            },
-        .extent = image1.info.resources,
-    };
-    runtime.ClearImage(&image1, range, clear);
-    return true;
+    return false;
 }
 
 void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,

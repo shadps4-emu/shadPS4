@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "common/recursive_lock.h"
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -175,6 +177,15 @@ private:
 
     bool attachment_feedback_loop{};
     bool needs_barrier{};
+
+    // Clear found by IsComputeImageClear
+    // Applied after the dispatch
+    struct PendingClear {
+        VideoCore::ImageId image_id;
+        bool is_stencil;
+        vk::ClearValue value;
+    };
+    std::optional<PendingClear> pending_clear;
 };
 
 } // namespace Vulkan

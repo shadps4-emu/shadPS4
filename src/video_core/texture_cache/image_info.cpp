@@ -111,6 +111,7 @@ ImageInfo::ImageInfo(const AmdGpu::DepthBuffer& buffer, u32 num_slices, VAddr ht
     meta_info.htile_addr = buffer.z_info.tile_surface_enable ? htile_address : 0;
 
     stencil_addr = write_buffer ? buffer.StencilWriteAddress() : buffer.StencilAddress();
+    stencil_tile_mode = buffer.GetStencilTileMode();
 
     guest_address = write_buffer ? buffer.DepthWriteAddress() : buffer.DepthAddress();
     if (props.is_tiled) {
