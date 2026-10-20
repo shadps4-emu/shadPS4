@@ -253,6 +253,9 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         case PT_SCE_PROCPARAM:
             proc_param_virtual_addr = elf_pheader[i].p_vaddr + base_virtual_addr;
             break;
+        case PT_SCE_MODULE_PARAM:
+            module_param_virtual_addr = elf_pheader[i].p_vaddr + base_virtual_addr;
+            break;
         case PT_GNU_EH_FRAME: {
             eh_frame_hdr_addr = elf_pheader[i].p_vaddr;
             eh_frame_hdr_size = elf_pheader[i].p_memsz;

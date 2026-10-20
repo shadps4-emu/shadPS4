@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include <chrono>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <istream>
+#include <streambuf>
 #include <string>
-
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__APPLE__)
-#include <sys/stat.h>
-#endif
 
 #include <zarchive/zarchivereader.h>
 
@@ -27,7 +25,86 @@ std::string_view NormalizeRel(std::string_view rel) {
     return rel;
 }
 
-SharedReader::SharedReader(ZArchiveReader* r) : reader(r) {
+namespace {
+
+// The reader reads through the handle the archive identity is taken from.
+class IOFileStreamBuf final : public std::streambuf {
+public:
+    explicit IOFileStreamBuf(std::shared_ptr<Common::FS::IOFile> file) : m_file(std::move(file)) {}
+
+protected:
+    pos_type seekoff(off_type offset, std::ios_base::seekdir dir,
+                     std::ios_base::openmode) override {
+        Common::FS::SeekOrigin origin = Common::FS::SeekOrigin::SetOrigin;
+        if (dir == std::ios_base::cur) {
+            origin = Common::FS::SeekOrigin::CurrentPosition;
+        } else if (dir == std::ios_base::end) {
+            origin = Common::FS::SeekOrigin::End;
+        }
+        if (!m_file->Seek(offset, origin)) {
+            return pos_type(off_type(-1));
+        }
+        return pos_type(m_file->Tell());
+    }
+
+    pos_type seekpos(pos_type pos, std::ios_base::openmode mode) override {
+        return seekoff(off_type(pos), std::ios_base::beg, mode);
+    }
+
+    std::streamsize xsgetn(char* dst, std::streamsize count) override {
+        return static_cast<std::streamsize>(
+            std::fread(dst, 1, static_cast<size_t>(count), m_file->file));
+    }
+
+private:
+    std::shared_ptr<Common::FS::IOFile> m_file;
+};
+
+class IOFileStream final : public std::istream {
+public:
+    explicit IOFileStream(std::shared_ptr<Common::FS::IOFile> file)
+        : std::istream(nullptr), m_buf(std::move(file)) {
+        rdbuf(&m_buf);
+    }
+
+private:
+    IOFileStreamBuf m_buf;
+};
+
+bool GetArchiveFileStat(SharedReader& reader, uint32_t node, FileStat& out,
+                        std::optional<u32> inode = std::nullopt) {
+    out = {};
+    std::scoped_lock lk{reader.mutex};
+    const auto info = reader.archive_file->GetInfo();
+    if (!info) {
+        return false;
+    }
+    if (!inode) {
+        inode = GetGuestInode(FileIdentity{
+            .kind = FileIdentity::Kind::ArchiveEntry, .host = info->identity, .node = node});
+    }
+    if (!inode || *inode == 0) {
+        return false;
+    }
+    const bool is_directory = reader.reader->IsDirectory(node);
+    out = {
+        .size = is_directory ? 0 : reader.reader->GetFileSize(node),
+        .inode = *inode,
+        .mtime_sec = info->mtime_sec,
+        .mtime_nsec = info->mtime_nsec,
+        .atime_sec = info->atime_sec,
+        .atime_nsec = info->atime_nsec,
+        .ctime_sec = info->ctime_sec,
+        .ctime_nsec = info->ctime_nsec,
+        .is_directory = is_directory,
+    };
+    return true;
+}
+
+} // namespace
+
+SharedReader::SharedReader(ZArchiveReader* r, std::shared_ptr<Common::FS::IOFile> file)
+    : reader(r), archive_file(std::move(file)) {
     if (reader == nullptr) {
         return;
     }
@@ -82,7 +159,12 @@ void SharedReader::Dispatch(JobFn fn, void* ctx) {
 ZArchiveFile::ZArchiveFile(std::shared_ptr<SharedReader> reader, uint32_t node, u64 size,
                            std::filesystem::path archive_path)
     : m_reader(std::move(reader)), m_node(node), m_size(size),
-      m_archive_path(std::move(archive_path)) {}
+      m_archive_path(std::move(archive_path)) {
+    FileStat stat{};
+    if (IsOpen() && GetArchiveFileStat(*m_reader, m_node, stat)) {
+        m_inode = stat.inode;
+    }
+}
 
 s64 ZArchiveFile::Read(void* dst, u64 size) {
     if (!IsOpen() || size == 0) {
@@ -172,45 +254,10 @@ bool ZArchiveFile::IsOpen() const {
 }
 
 void ZArchiveFile::Stat(FileStat& out) {
-    out.size = m_size;
-    out.is_directory = false;
-    // Every entry inside a .zar shares the archive's mtime
-#if defined(__linux__) || defined(__FreeBSD__)
-    struct stat st = {};
-    if (::stat(m_archive_path.string().c_str(), &st) == 0) {
-        out.mtime_sec = static_cast<s64>(st.st_mtim.tv_sec);
-        out.mtime_nsec = static_cast<s64>(st.st_mtim.tv_nsec);
-        out.atime_sec = static_cast<s64>(st.st_atim.tv_sec);
-        out.atime_nsec = static_cast<s64>(st.st_atim.tv_nsec);
-        out.ctime_sec = static_cast<s64>(st.st_ctim.tv_sec);
-        out.ctime_nsec = static_cast<s64>(st.st_ctim.tv_nsec);
+    out = {};
+    if (IsOpen()) {
+        GetArchiveFileStat(*m_reader, m_node, out, m_inode);
     }
-#elif defined(__APPLE__)
-    struct stat st = {};
-    if (::stat(m_archive_path.string().c_str(), &st) == 0) {
-        out.mtime_sec = static_cast<s64>(st.st_mtimespec.tv_sec);
-        out.mtime_nsec = static_cast<s64>(st.st_mtimespec.tv_nsec);
-        out.atime_sec = static_cast<s64>(st.st_atimespec.tv_sec);
-        out.atime_nsec = static_cast<s64>(st.st_atimespec.tv_nsec);
-        out.ctime_sec = static_cast<s64>(st.st_ctimespec.tv_sec);
-        out.ctime_nsec = static_cast<s64>(st.st_ctimespec.tv_nsec);
-    }
-#else
-    std::error_code ec;
-    const auto ft = std::filesystem::last_write_time(m_archive_path, ec);
-    if (!ec) {
-        const auto sctp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
-            ft - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
-        const auto secs = std::chrono::time_point_cast<std::chrono::seconds>(sctp);
-        const auto nsecs = std::chrono::duration_cast<std::chrono::nanoseconds>(sctp - secs);
-        out.mtime_sec = static_cast<s64>(secs.time_since_epoch().count());
-        out.mtime_nsec = static_cast<s64>(nsecs.count());
-        out.atime_sec = out.mtime_sec;
-        out.atime_nsec = out.mtime_nsec;
-        out.ctime_sec = out.mtime_sec;
-        out.ctime_nsec = out.mtime_nsec;
-    }
-#endif
 }
 
 bool ZArchiveFile::Map(u8* addr, u64 size, u64 offset, u32 raw_prot, const FileMapContext& ctx) {
@@ -285,12 +332,19 @@ void ZArchiveDirectory::Rewind() {
 
 ZArchiveBackend::ZArchiveBackend(const std::filesystem::path& archive_path)
     : m_archive_path(archive_path) {
-    ZArchiveReader* raw = ZArchiveReader::OpenFromFile(archive_path);
+    auto file = std::make_shared<Common::FS::IOFile>(archive_path, Common::FS::FileAccessMode::Read,
+                                                     Common::FS::FileType::BinaryFile,
+                                                     Common::FS::FileShareFlag::ShareReadWrite);
+    if (!file->IsOpen()) {
+        LOG_ERROR(Kernel_Fs, "Failed to open ZArchive: {}", archive_path.string());
+        return;
+    }
+    ZArchiveReader* raw = ZArchiveReader::OpenFromStream(std::make_unique<IOFileStream>(file));
     if (!raw) {
         LOG_ERROR(Kernel_Fs, "Failed to open ZArchive: {}", archive_path.string());
         return;
     }
-    m_reader = std::make_shared<SharedReader>(raw);
+    m_reader = std::make_shared<SharedReader>(raw, std::move(file));
 }
 
 ZArchiveBackend::~ZArchiveBackend() = default;
@@ -315,6 +369,14 @@ bool ZArchiveBackend::IsDirectory(std::string_view rel_path) {
     }
     std::scoped_lock lk{m_reader->mutex};
     return m_reader->reader->IsDirectory(node);
+}
+
+bool ZArchiveBackend::Stat(std::string_view rel_path, FileStat& out) {
+    const auto node = LookUp(rel_path, /*allow_file=*/true, /*allow_directory=*/true);
+    if (node == ZARCHIVE_INVALID_NODE) {
+        return false;
+    }
+    return GetArchiveFileStat(*m_reader, node, out);
 }
 
 std::unique_ptr<IFile> ZArchiveBackend::Open(std::string_view rel_path,

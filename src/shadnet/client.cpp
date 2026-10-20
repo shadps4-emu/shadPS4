@@ -544,6 +544,13 @@ u64 ShadNetClient::LookupOnlineId(const std::string& npid) {
     return SubmitRequest(CommandType::LookupOnlineId, MakeProtoPayload(req));
 }
 
+u64 ShadNetClient::GetAuthorizationCode(const std::string& client_id, const std::string& scope) {
+    shadnet::GetAuthorizationCodeRequest req;
+    req.set_client_id(client_id);
+    req.set_scope(scope);
+    return SubmitRequest(CommandType::GetAuthorizationCode, MakeProtoPayload(req));
+}
+
 static std::vector<u8> MakeComIdPayload(const std::string& com_id, const std::string& proto_bytes) {
     std::vector<u8> payload;
     payload.reserve(12 + 4 + proto_bytes.size());

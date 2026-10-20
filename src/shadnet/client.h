@@ -80,6 +80,7 @@ enum class CommandType : u16 {
     GetToken = 39,
     SetAppearOffline = 40,
     LookupOnlineId = 41,
+    GetAuthorizationCode = 42,
     // Matchmaking
     ContextStart = 100,
     CreateRoom = 101,
@@ -371,6 +372,8 @@ public:
     u64 SetAppearOffline(bool enable);
     // Global online ID to account ID resolution
     u64 LookupOnlineId(const std::string& npid);
+    // Single-use authorization code for a game's backend (sceNpAuthGetAuthorizationCode)
+    u64 GetAuthorizationCode(const std::string& client_id, const std::string& scope);
 
 private:
     void ConnectThread();
