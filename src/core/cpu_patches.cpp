@@ -1133,7 +1133,7 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
 
 static bool TryPatchJit(void* code_address) {
     auto* code = static_cast<u8*>(code_address);
-    auto* module = GetModule(code);
+    auto* module = GetContainingModule(code);
     if (module == nullptr) {
         return false;
     }
