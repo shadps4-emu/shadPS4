@@ -298,6 +298,7 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/sdl_audio_in.cpp
               src/core/libraries/voice/voice.cpp
               src/core/libraries/voice/voice.h
+              src/core/libraries/voice/voice_error.h
               src/core/libraries/audio/audioout.cpp
               src/core/libraries/audio/audioout.h
               src/core/libraries/audio/audioout_backend.h
@@ -647,8 +648,9 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/trophy_ui.h
             src/core/libraries/np/np_party.cpp
             src/core/libraries/np/np_party.h
-            src/core/libraries/np/np_auth.cpp
-            src/core/libraries/np/np_auth.h
+            src/core/libraries/np/np_auth/np_auth.cpp
+            src/core/libraries/np/np_auth/np_auth.h
+            src/core/libraries/np/np_auth/np_auth_ctx.h
             src/core/libraries/np/np_sns_facebook_dialog.cpp
             src/core/libraries/np/np_sns_facebook_dialog.h
             src/core/libraries/np/np_partner.cpp
@@ -657,6 +659,7 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_handler/np_handler.cpp
             src/core/libraries/np/np_handler/np_handler.h
             src/core/libraries/np/np_handler/np_handler_friends.cpp
+            src/core/libraries/np/np_handler/np_handler_auth.cpp
             src/core/libraries/np/np_handler/np_handler_invitation.cpp
             src/core/libraries/np/np_handler/np_handler_score.cpp
             src/core/libraries/np/np_handler/np_handler_trophy.cpp
