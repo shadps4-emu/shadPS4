@@ -216,7 +216,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
         file->type = Core::FileSys::FileType::Directory;
         file->is_opened = true;
-           if (file->m_guest_name.starts_with("/app0") || file->m_guest_name.starts_with("/addcont")) {
+        if (file->m_guest_name.starts_with("/app0") || file->m_guest_name.starts_with("/addcont")) {
             // TODO: Properly identify type for paths like "/app0/.."
             file->directory = Core::Directories::PfsDirectory::Create(file->m_guest_name);
         } else {
