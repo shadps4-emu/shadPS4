@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <mutex>
+#include <optional>
 #include <cmrc/cmrc.hpp>
 #include <imgui.h>
 #include <queue>
