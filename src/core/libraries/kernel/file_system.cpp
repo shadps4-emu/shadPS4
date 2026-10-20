@@ -591,13 +591,13 @@ s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes) {
 }
 
 s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
+    if (path == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
     LOG_INFO(Kernel_Fs, "path = {} mode = {:#o}", path, mode);
     if (strlen(path) > 255) {
         *__Error() = POSIX_ENAMETOOLONG;
-        return -1;
-    }
-    if (path == nullptr) {
-        *__Error() = POSIX_ENOTDIR;
         return -1;
     }
     std::string sanitized_path(path);
@@ -621,7 +621,11 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     }
 
     std::error_code ec;
-    if (dir_name.empty() || !fs::create_directories(dir_name, ec)) {
+    if (dir_name.empty() || !fs::create_directory(dir_name, ec)) {
+        if (ec == std::errc::no_such_file_or_directory) {
+            *__Error() = POSIX_ENOENT;
+            return -1;
+        }
         *__Error() = (ec.value() == EACCES || ec.value() == EPERM) ? POSIX_EACCES : POSIX_EIO;
         return -1;
     }
