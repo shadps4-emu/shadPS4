@@ -100,7 +100,7 @@ void UniqueImage::Destroy() {
     }
 }
 
-void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
+void UniqueImage::Create(const vk::ImageCreateInfo& image_ci, vk::DeviceSize extra_size) {
     this->image_ci = image_ci;
     ASSERT(!image);
     VmaAllocationCreateInfo alloc_ci = {
@@ -115,14 +115,39 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
     const VkImageCreateInfo image_ci_unsafe = static_cast<VkImageCreateInfo>(image_ci);
     VkImage unsafe_image{};
     VmaAllocationInfo alloc_info{};
-    VkResult result = vmaCreateImage(allocator, &image_ci_unsafe, &alloc_ci, &unsafe_image,
-                                     &allocation, &alloc_info);
-    if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
-        alloc_ci.flags &= ~VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT;
-        LOG_WARNING(Render_Vulkan, "Allocating image of size {} bytes over budget.",
-                    alloc_info.size);
+    VkResult result;
+    if (extra_size != 0) {
+        // Allocate the memory separately so it can be larger than the image requires.
+        VmaAllocatorInfo allocator_info{};
+        vmaGetAllocatorInfo(allocator, &allocator_info);
+        result = VULKAN_HPP_DEFAULT_DISPATCHER.vkCreateImage(
+            allocator_info.device, &image_ci_unsafe, nullptr, &unsafe_image);
+        ASSERT_MSG(result == VK_SUCCESS, "Failed creating image with error {}",
+                   vk::to_string(vk::Result{result}));
+        VkMemoryRequirements requirements{};
+        VULKAN_HPP_DEFAULT_DISPATCHER.vkGetImageMemoryRequirements(allocator_info.device,
+                                                                   unsafe_image, &requirements);
+        requirements.size += extra_size;
+        const VmaAllocationCreateInfo extra_alloc_ci = {
+            .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT,
+            .usage = VMA_MEMORY_USAGE_UNKNOWN,
+            .requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        };
+        result =
+            vmaAllocateMemory(allocator, &requirements, &extra_alloc_ci, &allocation, &alloc_info);
+        if (result == VK_SUCCESS) {
+            result = vmaBindImageMemory(allocator, allocation, unsafe_image);
+        }
+    } else {
         result = vmaCreateImage(allocator, &image_ci_unsafe, &alloc_ci, &unsafe_image, &allocation,
                                 &alloc_info);
+        if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+            alloc_ci.flags &= ~VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT;
+            LOG_WARNING(Render_Vulkan, "Allocating image of size {} bytes over budget.",
+                        alloc_info.size);
+            result = vmaCreateImage(allocator, &image_ci_unsafe, &alloc_ci, &unsafe_image,
+                                    &allocation, &alloc_info);
+        }
     }
     ASSERT_MSG(result == VK_SUCCESS, "Failed allocating image with error {}",
                vk::to_string(vk::Result{result}));
@@ -198,8 +223,13 @@ Image::Image(const Vulkan::Instance& instance, Vulkan::Runtime& runtime_,
 
     backing = &backing_images.emplace_back();
     backing->num_samples = info.num_samples;
+    // NVIDIA's proprietary driver writes past the end of the reported memory requirements on
+    // buffer->image copies into mipmapped array images (seen with 64x64x256 R32G32Uint, 8 mips),
+    // corrupting the next allocation and losing the device. Give such images some slack.
+    const bool needs_slack = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary &&
+                             image_ci.arrayLayers > 1 && image_ci.mipLevels > 1;
     backing->image = UniqueImage{instance.GetDevice(), instance.GetAllocator()};
-    backing->image.Create(image_ci);
+    backing->image.Create(image_ci, needs_slack ? 2_MB : 0);
 
     Vulkan::SetObjectName(instance.GetDevice(), GetImage(),
                           "Image {}x{}x{} {} {} {:#x}:{:#x} L:{} M:{} S:{}", info.size.width,
