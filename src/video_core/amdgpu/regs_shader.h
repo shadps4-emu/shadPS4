@@ -3,8 +3,12 @@
 
 #pragma once
 
+#include <cstring>
+#include <vector>
+
 #include "common/assert.h"
 #include "common/types.h"
+#include "core/memory.h"
 #include "shader_recompiler/params.h"
 
 namespace AmdGpu {
@@ -228,33 +232,42 @@ struct ComputeProgram {
     }
 };
 
-static constexpr const BinaryInfo& SearchBinaryInfo(const u32* code, auto&& read_memory) {
-    read_memory(std::bit_cast<VAddr>(code), 2 * sizeof(u32));
+static BinaryInfo SearchBinaryInfo(VAddr address, auto&& read_memory) {
+    auto* memory = Core::Memory::Instance();
+    std::array<u32, 2> header;
+    read_memory(address, sizeof(header));
+    memory->CopySparseMemory(address, reinterpret_cast<u8*>(header.data()), sizeof(header));
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
-    if (code[0] == token_mov_vcchi) {
-        const auto* info = std::bit_cast<const BinaryInfo*>(code + (code[1] + 1) * 2);
-        read_memory(std::bit_cast<VAddr>(info), sizeof(BinaryInfo));
-        if (info->Valid()) {
-            return *info;
+    BinaryInfo info;
+    if (header[0] == token_mov_vcchi) {
+        const auto info_address = address + (u64{header[1]} + 1) * 2 * sizeof(u32);
+        read_memory(info_address, sizeof(info));
+        memory->CopySparseMemory(info_address, reinterpret_cast<u8*>(&info), sizeof(info));
+        if (info.Valid()) {
+            return info;
         }
     }
     constexpr u32 signature_size = sizeof(BinaryInfo::signature_ref) / sizeof(u8);
     constexpr u32 signature_words = (signature_size + sizeof(u32) - 1) / sizeof(u32);
     constexpr u32 search_limit = 0x4000;
-    read_memory(std::bit_cast<VAddr>(code), (search_limit + signature_words - 1) * sizeof(u32));
-    const u32* end = code + search_limit;
-    for (const u32* it = code; it < end; ++it) {
-        if (const BinaryInfo* info = std::bit_cast<const BinaryInfo*>(it); info->Valid()) {
-            read_memory(std::bit_cast<VAddr>(info), sizeof(BinaryInfo));
-            return *info;
+    std::vector<u32> search(search_limit + signature_words - 1);
+    const auto search_size = search.size() * sizeof(u32);
+    read_memory(address, search_size);
+    memory->CopySparseMemory(address, reinterpret_cast<u8*>(search.data()), search_size);
+    for (u32 i = 0; i < search_limit; ++i) {
+        if (std::memcmp(search.data() + i, BinaryInfo::signature_ref.data(), signature_size) == 0) {
+            const auto info_address = address + i * sizeof(u32);
+            read_memory(info_address, sizeof(info));
+            memory->CopySparseMemory(info_address, reinterpret_cast<u8*>(&info), sizeof(info));
+            return info;
         }
     }
     UNREACHABLE_MSG("Shader binary info not found.");
 }
 
-static constexpr Shader::ShaderParams GetParams(const auto& sh, auto&& read_memory) {
+static Shader::ShaderParams GetParams(const auto& sh, auto&& read_memory) {
     const auto* code = sh.template Address<u32*>();
-    const auto& bininfo = SearchBinaryInfo(code, read_memory);
+    const auto bininfo = SearchBinaryInfo(std::bit_cast<VAddr>(code), read_memory);
     read_memory(std::bit_cast<VAddr>(code), bininfo.length);
     return {
         .user_data = sh.user_data,
@@ -263,7 +276,7 @@ static constexpr Shader::ShaderParams GetParams(const auto& sh, auto&& read_memo
     };
 }
 
-static constexpr Shader::ShaderParams GetParams(const auto& sh) {
+static Shader::ShaderParams GetParams(const auto& sh) {
     return GetParams(sh, [](VAddr, u64) {});
 }
 
