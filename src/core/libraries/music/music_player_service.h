@@ -11,6 +11,15 @@ class SymbolsResolver;
 
 namespace Libraries::MusicPlayerService {
 
+// Error codes for module 0x12f (libSceMusicPlayerService)
+constexpr s32 ORBIS_MUSIC_PLAYER_SERVICE_ERROR_NOT_INITIALIZED = static_cast<s32>(0x812f0001);
+constexpr s32 ORBIS_MUSIC_PLAYER_SERVICE_ERROR_ALREADY_INITIALIZED = static_cast<s32>(0x812f0002);
+constexpr s32 ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER = static_cast<s32>(0x812f0004);
+constexpr s32 ORBIS_MUSIC_PLAYER_SERVICE_ERROR_ALREADY_IN_TRANSACTION =
+    static_cast<s32>(0x812f0101);
+constexpr s32 ORBIS_MUSIC_PLAYER_SERVICE_ERROR_NOT_IN_TRANSACTION = static_cast<s32>(0x812f0102);
+constexpr s32 ORBIS_MUSIC_PLAYER_SERVICE_ERROR_TIMED_OUT = static_cast<s32>(0x812f010a);
+
 struct OrbisMusicPlayerPlayStatusExtension {
     u64 size;              // +0x00 (0x48)
     u32 error_code;        // +0x08 (0: ok, non-zero: error)
@@ -40,6 +49,16 @@ struct SceMusicPlayerServicePlayStatus {
     u32 repeat;        // +0x1c (0: off, 1: all, 2: one)
 };
 static_assert(sizeof(SceMusicPlayerServicePlayStatus) == 0x20);
+
+struct OrbisMusicPlayerUsbDeviceInfo {
+    u32 device_id;           // +0x00
+    char serial_number[256]; // +0x04
+    u8 pad0[4];              // +0x104
+    u64 serial_number_len;   // +0x108
+};
+static_assert(offsetof(OrbisMusicPlayerUsbDeviceInfo, serial_number) == 0x04);
+static_assert(offsetof(OrbisMusicPlayerUsbDeviceInfo, serial_number_len) == 0x108);
+static_assert(sizeof(OrbisMusicPlayerUsbDeviceInfo) == 0x110);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 
