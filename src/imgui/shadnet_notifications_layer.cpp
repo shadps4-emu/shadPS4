@@ -70,6 +70,8 @@ KindDisplay DisplayOf(Kind kind) {
         return {"Friend", {0.85f, 0.55f, 0.35f, 1.0f}};
     case Kind::Online:
         return {"Online", {0.35f, 0.85f, 0.40f, 1.0f}};
+    case Kind::Warning:
+        return {"Server", {0.95f, 0.70f, 0.25f, 1.0f}};
     case Kind::Info:
     default:
         return {"shadNet", {0.75f, 0.75f, 0.78f, 1.0f}};

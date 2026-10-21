@@ -31,13 +31,14 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/mouse/mouse.h"
 #include "core/libraries/move/move.h"
+#include "core/libraries/music/music_player_service.h"
 #include "core/libraries/net/net.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/http2.h"
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/network/ssl.h"
 #include "core/libraries/network/ssl2.h"
-#include "core/libraries/np/np_auth.h"
+#include "core/libraries/np/np_auth/np_auth.h"
 #include "core/libraries/np/np_commerce/np_commerce.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_manager.h"
@@ -72,6 +73,7 @@
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/ulobjmgr/ulobjmgr.h"
 #include "core/libraries/usbd/usbd.h"
+#include "core/libraries/usbd/usbstorage.h"
 #include "core/libraries/video_recording/video_recording.h"
 #include "core/libraries/videodec/vdecsw.h"
 #include "core/libraries/videodec/videodec.h"
@@ -157,6 +159,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libScePlayGoDialog.sprx", Libraries::PlayGo::Dialog::RegisterLib},
             {"libSceRandom.sprx", Libraries::Random::RegisterLib},
             {"libSceUsbd.sprx", Libraries::Usbd::RegisterLib},
+            {"libSceUsbStorage.sprx", Libraries::UsbStorage::RegisterLib},
+            {"libSceMusicPlayerService.sprx", Libraries::MusicPlayerService::RegisterLib},
             {"libSceAjm.sprx", Libraries::Ajm::RegisterLib},
             {"libSceErrorDialog.sprx", Libraries::ErrorDialog::RegisterLib},
             {"libSceImeDialog.sprx", Libraries::ImeDialog::RegisterLib},
