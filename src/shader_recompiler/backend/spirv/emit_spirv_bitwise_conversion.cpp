@@ -3,6 +3,7 @@
 
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/ir/microinstruction.h"
 
 namespace Shader::Backend::SPIRV {
 
@@ -126,8 +127,44 @@ Id EmitUnpackSint2x16(EmitContext& ctx, Id value) {
     return ctx.OpBitcast(ctx.F32[2], unpacked);
 }
 
-Id EmitPackHalf2x16(EmitContext& ctx, Id value) {
-    return ctx.OpPackHalf2x16(ctx.U32[1], value);
+Id EmitPackHalf2x16(EmitContext& ctx, IR::Inst* inst, Id value) {
+    const Id packed = ctx.OpPackHalf2x16(ctx.U32[1], value);
+    if (!inst->Flags<bool>()) {
+        return packed;
+    }
+    // GCN PKRTZ truncates finite values; PackHalf2x16 does not guarantee its rounding mode.
+    const auto constant = [&](u32 v) {
+        return ctx.ConstantComposite(ctx.U32[2], ctx.ConstU32(v), ctx.ConstU32(v));
+    };
+    const Id bits = ctx.OpBitcast(ctx.U32[2], value);
+    const Id abs_bits = ctx.OpBitwiseAnd(ctx.U32[2], bits, constant(0x7fffffffU));
+    const Id exponent = ctx.OpShiftRightLogical(ctx.U32[2], abs_bits, constant(23));
+    const Id normal = ctx.OpISub(
+        ctx.U32[2], ctx.OpShiftRightLogical(ctx.U32[2], abs_bits, constant(13)), constant(0x1c000));
+    const Id shift =
+        ctx.OpBitwiseAnd(ctx.U32[2], ctx.OpISub(ctx.U32[2], constant(126), exponent), constant(31));
+    const Id significand = ctx.OpBitwiseOr(
+        ctx.U32[2], ctx.OpBitwiseAnd(ctx.U32[2], abs_bits, constant(0x7fffff)), constant(0x800000));
+    const Id subnormal = ctx.OpShiftRightLogical(ctx.U32[2], significand, shift);
+    Id half = ctx.OpSelect(ctx.U32[2], ctx.OpULessThan(ctx.U1[2], exponent, constant(113)),
+                           subnormal, normal);
+    half = ctx.OpSelect(ctx.U32[2], ctx.OpULessThan(ctx.U1[2], exponent, constant(103)),
+                        constant(0), half);
+    half =
+        ctx.OpSelect(ctx.U32[2], ctx.OpUGreaterThanEqual(ctx.U1[2], abs_bits, constant(0x477fe000)),
+                     constant(0x7bff), half);
+    const Id sign = ctx.OpBitwiseAnd(
+        ctx.U32[2], ctx.OpShiftRightLogical(ctx.U32[2], bits, constant(16)), constant(0x8000));
+    half = ctx.OpBitwiseOr(ctx.U32[2], half, sign);
+    const Id special = ctx.OpCompositeConstruct(
+        ctx.U32[2], ctx.OpBitwiseAnd(ctx.U32[1], packed, ctx.ConstU32(0xffffU)),
+        ctx.OpShiftRightLogical(ctx.U32[1], packed, ctx.ConstU32(16U)));
+    half =
+        ctx.OpSelect(ctx.U32[2], ctx.OpUGreaterThanEqual(ctx.U1[2], abs_bits, constant(0x7f800000)),
+                     special, half);
+    const auto [lo, hi] = ExtractComposite<2>(ctx, ctx.U32, half);
+    return ctx.OpBitwiseOr(ctx.U32[1], lo,
+                           ctx.OpShiftLeftLogical(ctx.U32[1], hi, ctx.ConstU32(16U)));
 }
 
 Id EmitUnpackHalf2x16(EmitContext& ctx, Id value) {

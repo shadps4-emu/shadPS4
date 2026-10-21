@@ -165,7 +165,24 @@ bool Runtime::Transit(VideoCore::Image* image, vk::ImageLayout dst_layout,
                       std::optional<VideoCore::SubresourceRange> subres_range) {
     const size_t prev_num_barriers = static_cast<size_t>(image_barriers.size());
     image->GetBarriers(image_barriers, dst_layout, dst_access, dst_stage, subres_range);
-    return image_barriers.size() != prev_num_barriers;
+    const bool transitioned = image_barriers.size() != prev_num_barriers;
+    for (size_t index = prev_num_barriers; index < image_barriers.size();) {
+        const auto& next = image_barriers[index];
+        const auto pending = std::find_if(
+            image_barriers.begin(), image_barriers.begin() + index, [&](const auto& barrier) {
+                return barrier.image == next.image &&
+                       barrier.subresourceRange == next.subresourceRange;
+            });
+        if (pending == image_barriers.begin() + index) {
+            ++index;
+            continue;
+        }
+        pending->newLayout = next.newLayout;
+        pending->dstStageMask |= next.dstStageMask;
+        pending->dstAccessMask |= next.dstAccessMask;
+        image_barriers.erase(image_barriers.begin() + index);
+    }
+    return transitioned;
 }
 
 void Runtime::UploadImage(VideoCore::Image* dst, const VideoCore::Buffer* src,

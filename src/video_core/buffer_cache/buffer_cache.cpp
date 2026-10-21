@@ -140,7 +140,7 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
 
         // GPU-modified ranges come as many small scattered islands,
         // so the download is widened to a window around the request
-        constexpr u64 WindowSize = 512_KB;
+        constexpr u64 WindowSize = 128_KB;
         const VAddr arena_end = arena->cpu_addr + arena->size_bytes;
         const VAddr window_start =
             std::max<VAddr>(Common::AlignDown(device_addr, WindowSize), arena->cpu_addr);
@@ -153,6 +153,14 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
     } else {
         liverpool->SendCommand<true>(std::move(flush_request));
     }
+}
+
+void BufferCache::RequestReadback() {
+    if (!std::exchange(readback_request_pending, false)) {
+        return;
+    }
+    gpu_modified_ranges.ForEach(
+        [&](VAddr start, VAddr end) { memory_tracker->RequestReadback(start, end - start); });
 }
 
 void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool is_write,
@@ -236,6 +244,7 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     SynchronizeMemory(arena, device_addr, size, is_written, is_texel_buffer);
     if (is_written) {
         gpu_modified_ranges.Add(device_addr, size);
+        readback_request_pending = true;
     }
     return {arena, arena->Offset(device_addr)};
 }
@@ -263,6 +272,7 @@ void BufferCache::MarkRegionAsGpuModified(VAddr addr, size_t size) {
     texture_cache.MarkAsMaybeGpuDirty(addr, size);
     memory_tracker->MarkRegionAsGpuModified(addr, size);
     gpu_modified_ranges.Add(addr, size);
+    readback_request_pending = true;
 }
 
 void BufferCache::ReadEdgeImagePages(const Image& image) {
@@ -494,9 +504,11 @@ bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_a
         return false;
     }
     Image& image = texture_cache.GetImage(image_id);
-    ASSERT_MSG(device_addr == image.info.guest_address,
-               "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
-               image.info.guest_address);
+    const bool is_subrange = device_addr != image.info.guest_address;
+    const auto staging =
+        is_subrange
+            ? staging_pool.Request(image.info.guest_size, MemoryType::DeviceLocal, 256, false, true)
+            : Vulkan::StagingBufferRef{};
     const u64 arena_offset = arena->Offset(device_addr);
     boost::container::small_vector<vk::BufferImageCopy, 8> buffer_copies;
     for (u32 mip = 0; mip < image.info.resources.levels; mip++) {
@@ -504,7 +516,7 @@ bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_a
         const u32 width = std::max(image.info.size.width >> mip, 1u);
         const u32 height = std::max(image.info.size.height >> mip, 1u);
         const u32 depth = std::max(image.info.size.depth >> mip, 1u);
-        if (arena_offset + mip_info.offset + mip_info.size > arena->size_bytes) {
+        if (!is_subrange && arena_offset + mip_info.offset + mip_info.size > arena->size_bytes) {
             break;
         }
         buffer_copies.push_back(vk::BufferImageCopy{
@@ -525,7 +537,20 @@ bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_a
         return false;
     }
     auto& tile_manager = texture_cache.GetTileManager();
-    tile_manager.TileImage(image, buffer_copies, arena, arena_offset);
+    if (is_subrange) {
+        // Retile in image-relative coordinates, then copy only the requested guest-memory range.
+        // Using the buffer's address as the tiling origin would shift the image data.
+        tile_manager.TileImage(image, buffer_copies, staging.buffer, staging.offset);
+        const u64 image_offset = device_addr - image.info.guest_address;
+        const vk::BufferCopy copy{
+            .srcOffset = staging.offset + image_offset,
+            .dstOffset = arena_offset,
+            .size = std::min<u64>(size, image.info.guest_size - image_offset),
+        };
+        runtime.CopyBuffer(staging.buffer, arena, std::span{&copy, 1});
+    } else {
+        tile_manager.TileImage(image, buffer_copies, arena, arena_offset);
+    }
     return true;
 }
 

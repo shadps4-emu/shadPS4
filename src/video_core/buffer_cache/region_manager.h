@@ -30,6 +30,7 @@ public:
           readbacks_mode{EmulatorSettings.GetReadbacksMode()} {
         cpu.Fill(true);
         gpu.Fill(false);
+        readback_requests.Fill(false);
     }
     explicit RegionManager() = default;
 
@@ -162,6 +163,38 @@ public:
         }
     }
 
+    void RequestReadback(u64 offset, u64 size) {
+        if (size == 0 || readbacks_mode == GpuReadbacksMode::Precise) {
+            return;
+        }
+        std::scoped_lock lock{mutex};
+        RegionBits write_prot;
+        RegionBits read_prot;
+        const auto bounds = GetBounds(offset, size);
+        Bounds watcher_bounds = MIN_BOUNDS;
+        bool update_watchers{};
+        IterateWords(bounds, [&](u64 index, u64 mask) {
+            const u64 requested = gpu[index] & mask;
+            read_prot[index] = requested & ~readback_requests[index];
+            readback_requests[index] |= requested;
+            if (const u64 word = read_prot[index]; word) {
+                if (index <= watcher_bounds.start_word) {
+                    watcher_bounds.start_word = index;
+                    watcher_bounds.start_page = std::countr_zero(word);
+                }
+                if (index >= watcher_bounds.end_word) {
+                    watcher_bounds.end_word = index;
+                    watcher_bounds.end_page = PAGES_PER_WORD - std::countl_zero(word) - 1;
+                }
+                update_watchers = true;
+            }
+        });
+        if (update_watchers) {
+            tracker->UpdatePageWatchersForRegion(cpu_addr, watcher_bounds, write_prot, read_prot,
+                                                 PageOp::None, PageOp::Track);
+        }
+    }
+
     template <Type type>
     bool IsRegionModified(u64 offset, u64 size) noexcept {
         const auto& state = GetRegionBits<type>();
@@ -215,7 +248,13 @@ private:
         if constexpr (gpu_op != StateOp::None) {
             const u64 prev = gpu[index];
             const u64 next = Apply<gpu_op>(prev, mask);
-            read_prot[index] = (next ^ prev) & mask;
+            read_prot[index] =
+                readbacks_mode == GpuReadbacksMode::Precise ? (next ^ prev) & mask : 0;
+            if constexpr (gpu_op == StateOp::Clear) {
+                if (readbacks_mode != GpuReadbacksMode::Precise) {
+                    read_prot[index] = readback_requests[index] & mask;
+                }
+            }
             prot_word |= read_prot[index];
         }
         if (prot_word) {
@@ -244,6 +283,9 @@ private:
         }
         if constexpr (gpu_op != StateOp::None) {
             gpu[index] = Apply<gpu_op>(gpu[index], mask);
+            if constexpr (gpu_op == StateOp::Clear) {
+                readback_requests[index] &= ~mask;
+            }
             gpu.set_summary =
                 gpu[index] ? (gpu.set_summary | summary_bit) : (gpu.set_summary & ~summary_bit);
             gpu.clear_summary = gpu[index] != ~u64{0} ? (gpu.clear_summary | summary_bit)
@@ -309,8 +351,8 @@ private:
             } else if (state_op == StateOp::Clear) {
                 return PageOp::Track;
             }
-        } else if (type == Type::GPU && readbacks_mode == GpuReadbacksMode::Precise) {
-            if (state_op == StateOp::Set) {
+        } else if (type == Type::GPU) {
+            if (state_op == StateOp::Set && readbacks_mode == GpuReadbacksMode::Precise) {
                 return PageOp::Track;
             } else if (state_op == StateOp::Clear) {
                 return PageOp::Untrack;
@@ -334,6 +376,7 @@ private:
     u32 readbacks_mode;
     RegionBits cpu;
     RegionBits gpu;
+    RegionBits readback_requests;
     LockType mutex;
 };
 

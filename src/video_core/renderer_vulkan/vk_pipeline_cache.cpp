@@ -13,6 +13,7 @@
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
+#include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/cache_storage.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -176,6 +177,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
                 ? regs.aa_config.NumSamples()
                 : 1;
         info.hw.fs.z_export_format = regs.z_export_format;
+        info.hw.fs.color_shader_mask = regs.color_shader_mask;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
                                        regs.depth_shader_control.stencil_test_val_export_enable;
         info.hw.fs.mrtz_mask = regs.depth_shader_control.z_export_enable |
@@ -270,8 +272,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
 }
 
 PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
-                             AmdGpu::Liverpool* liverpool_, u32 sparse_page_shift)
+                             AmdGpu::Liverpool* liverpool_, VideoCore::BufferCache& buffer_cache_,
+                             u32 sparse_page_shift)
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
+      buffer_cache{buffer_cache_},
       desc_heap{instance, scheduler.GetWorkSemaphore(), DescriptorHeapSizes} {
     const auto& vk12_props = instance.GetVk12Properties();
     profile = Shader::Profile{
@@ -281,6 +285,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .supported_spirv = SpirvVersion1_6,
         .subgroup_size = instance.SubgroupSize(),
         .sparse_page_shift = sparse_page_shift,
+        .max_sampled_image_descriptors = instance_.MaxSampledImageDescriptors(),
         .support_int8 = instance.IsShaderInt8Supported(),
         .support_int16 = instance.IsShaderInt16Supported(),
         .support_int64 = instance.IsShaderInt64Supported(),
@@ -318,6 +323,8 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .supports_amd_shader_explicit_vertex_parameter =
             instance_.IsAmdShaderExplicitVertexParameterSupported(),
         .supports_fragment_shader_barycentric = instance_.IsFragmentShaderBarycentricSupported(),
+        .supports_sampled_image_array_non_uniform_indexing =
+            instance_.IsSampledImageArrayNonUniformIndexingSupported(),
         .supports_shader_subgroup_clock = instance_.IsShaderSubgroupClockSupported(),
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
@@ -434,7 +441,8 @@ bool PipelineCache::RefreshGraphicsKey() {
         color_buffer.data_format = col_buf.GetDataFmt();
         color_buffer.num_format = col_buf.GetNumberFmt();
         color_buffer.num_conversion = col_buf.GetNumberConversion();
-        color_buffer.export_format = regs.color_export_format.GetFormat(cb);
+        color_buffer.export_format =
+            regs.color_export_format.GetFormat(regs.color_shader_mask.GetExport(cb));
         color_buffer.swizzle = col_buf.Swizzle();
 
         const auto& bc = regs.blend_control[cb];
@@ -516,7 +524,9 @@ bool PipelineCache::RefreshGraphicsStages() {
             return false;
         }
 
-        const auto params = AmdGpu::GetParams(*pgm);
+        const auto params = AmdGpu::GetParams(*pgm, [this](VAddr address, u64 size) {
+            buffer_cache.ReadMemory(address, size, false, false, true);
+        });
         std::tie(infos[stage_out_idx], modules[stage_out_idx], key.stage_hashes[stage_out_idx]) =
             GetProgram(stage_in, stage_out, params, binding);
         return true;
@@ -529,6 +539,18 @@ bool PipelineCache::RefreshGraphicsStages() {
 
     const auto* fs_info = infos[static_cast<u32>(SwStage::Fragment)];
     key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
+    if (fs_info && !runtime_infos[u32(SwStage::Fragment)].hw.fs.dual_source_blending) {
+        key.mrt_mask = 0;
+        for (u32 export_id = 0; export_id < AmdGpu::NUM_COLOR_BUFFERS; ++export_id) {
+            if ((fs_info->mrt_mask & (1u << export_id)) == 0) {
+                continue;
+            }
+            const auto target = regs.color_shader_mask.GetTarget(export_id);
+            if (target < AmdGpu::NUM_COLOR_BUFFERS) {
+                key.mrt_mask |= 1u << target;
+            }
+        }
+    }
     key.num_color_attachments = std::bit_width(key.mrt_mask);
 
     switch (regs.stage_enable.raw) {
@@ -616,7 +638,9 @@ bool PipelineCache::RefreshGraphicsStages() {
 bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};
     const auto& cs_pgm = liverpool->GetCsRegs();
-    const auto cs_params = AmdGpu::GetParams(cs_pgm);
+    const auto cs_params = AmdGpu::GetParams(cs_pgm, [this](VAddr address, u64 size) {
+        buffer_cache.ReadMemory(address, size, false, false, true);
+    });
     std::tie(infos[0], modules[0], compute_key.value) =
         GetProgram(HwStage::Compute, SwStage::Compute, cs_params, binding);
     return true;

@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <memory>
+#include <vector>
 #include <boost/container/small_vector.hpp>
 
 #include "shader_recompiler/ir/opcodes.h"
@@ -30,6 +32,8 @@ struct SharpReference {
 struct ResourceDiscovery {
     IR::Inst* user{};
     std::array<SharpReference, 2> sharps;
+    std::shared_ptr<std::vector<IR::Value>> image_array;
+    IR::Value image_array_index;
 };
 using ResourceDiscoveryList = boost::container::small_vector<ResourceDiscovery, 32>;
 
