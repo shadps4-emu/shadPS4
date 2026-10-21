@@ -62,7 +62,7 @@ struct UniqueImage {
         return *this;
     }
 
-    void Create(const vk::ImageCreateInfo& image_ci, vk::DeviceSize extra_size = 0);
+    void Create(const vk::ImageCreateInfo& image_ci);
 
     void Destroy();
 
