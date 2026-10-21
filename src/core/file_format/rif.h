@@ -21,7 +21,7 @@ constexpr u32 RIF_SECRET_ENTITLEMENT_KEY_OFFSET = 0x70;
 struct RIFData {
     u32_be magic;
     u16_le version;
-    u8 unk1[0x2];
+    u16_le license_flags;
     u64_le np_account_id;
     u64_le start_timestamp;
     u64_le end_timestamp;
@@ -31,7 +31,7 @@ struct RIFData {
     u16_le content_type;
     u16_le sku_flag;
     u64_le extra_flags;
-    u8 unk2[0x1E0];
+    u8 reserved_meta[0x1E0];
     u8 disk_key_hash[0x20];
     u8 secret_encryption_iv[0x10];
     u8 encrypted_secret[0x90];
@@ -51,7 +51,7 @@ struct RIDXHeader {
     u32_le entry_count;
     u8 version;
     char service_id[0x13];
-    u8 unk1[0x4];
+    u8 reserved[0x4];
 };
 static_assert(sizeof(RIDXHeader) == 0x20);
 
@@ -59,10 +59,10 @@ struct RIDXEntry {
     char entitlement_label[0x10];
     u64_le rif_offset;
     u64_le rif_size;
-    u8 entitlement_control;
-    u8 unk1;
+    u8 entitlement_flags;
+    u8 license_type;
     u8 rif_digest[0x8];
-    u8 unk2[0x6];
+    u8 reserved[0x6];
 };
 static_assert(sizeof(RIDXEntry) == 0x30);
 
