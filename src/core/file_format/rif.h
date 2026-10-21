@@ -4,8 +4,8 @@
 #pragma once
 
 #include <filesystem>
-#include <span>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "common/endian.h"
 
@@ -15,6 +15,8 @@ constexpr u32 RIDX_MAGIC = 0x72696478;
 constexpr u8 RIDX_VERSION = 0x1;
 
 constexpr u16 RIF_CONTENT_TYPE_PS4AL = 0x1C00;
+
+constexpr u32 RIF_SECRET_ENTITLEMENT_KEY_OFFSET = 0x70;
 
 struct RIFData {
     u32_be magic;
@@ -64,6 +66,15 @@ struct RIDXEntry {
 };
 static_assert(sizeof(RIDXEntry) == 0x30);
 
+struct RIFEntitlementKey {
+    u8 data[0x10]{};
+
+    explicit RIFEntitlementKey(const RIFData& rif_data) {
+        std::memcpy(data, &rif_data.encrypted_secret[RIF_SECRET_ENTITLEMENT_KEY_OFFSET],
+                    sizeof(data));
+    }
+};
+
 class RIF {
 public:
     RIF() = default;
@@ -81,11 +92,11 @@ public:
         return service_id;
     }
 
-    const std::vector<std::string>& GetLicenseOnlyEntitlements() {
+    const std::unordered_map<std::string, RIFEntitlementKey>& GetLicenseOnlyEntitlements() {
         return license_only_entitlements;
     }
 
 private:
     std::string service_id;
-    std::vector<std::string> license_only_entitlements;
+    std::unordered_map<std::string, RIFEntitlementKey> license_only_entitlements;
 };
