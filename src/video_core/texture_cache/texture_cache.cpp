@@ -29,6 +29,7 @@ static constexpr u32 MAX_SAMPLERS = std::numeric_limits<u16>::max();
 
 static u64 HashBackingMemory(VAddr virtual_addr, u64 size) {
     static constexpr std::array<u8, Core::GUEST_PAGE_SIZE> zeros{};
+    // If we only allow xxHash to be staticly linked, we could allocate state entirely in the stack.
     static const std::unique_ptr<XXH3_state_t, decltype(&XXH3_freeState)> state{XXH3_createState(),
                                                                                 XXH3_freeState};
     const auto& backing_pages = Core::Memory::Instance()->GetAddressSpace().BackingPages();
@@ -235,7 +236,6 @@ void TextureCache::MarkAsMaybeGpuDirty(VAddr addr, size_t size) {
             // Read backing pages directly, without faulting through the guest readback path.
             image.gpu_hash = HashBackingMemory(image.info.guest_address, image.info.guest_size);
         }
-        image.flags |= ImageFlagBits::MaybeGpuDirty;
     });
 }
 
@@ -574,9 +574,6 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     const bool src_has_gpu_data = src_image.HasGpuValidData();
 
     RefreshImage(new_image);
-    if (src_has_gpu_data) {
-        runtime.CopyImage(&src_image, &new_image);
-    }
 
     if (src_image.binding.is_bound || src_image.binding.is_target) {
         src_image.binding.needs_rebind = 1u;
@@ -585,7 +582,7 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     TrackImage(new_image_id);
     new_image.flags &= ~ImageFlagBits::Dirty;
     if (src_has_gpu_data) {
-        new_image.flags |= ImageFlagBits::GpuModified;
+        runtime.CopyImage(&src_image, &new_image);
     }
     FreeImage(image_id);
 
@@ -1087,7 +1084,7 @@ void TextureCache::GarbageCollectImages() {
         if (download) {
             UntrackImage(image_id);
             UnregisterImage(image_id);
-            if (True(image.flags & ImageFlagBits::MaybeGpuDirty)) {
+            if (image.gpu_hash != 0) {
                 buffer_cache.ReadMemory(image.info.guest_address, image.info.guest_size, false,
                                         true, true);
                 maybe_download.push_back(image_id);
@@ -1207,7 +1204,6 @@ void TextureCache::TouchImage(Image& image) {
     image_lru_cache.Touch(image, gc_tick);
 
     // Image is still valid
-    image.flags &= ~ImageFlagBits::MaybeGpuDirty;
     image.gpu_hash = 0;
 }
 
