@@ -738,9 +738,6 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
         }
     }
     UpdateImage(image_id);
-    if (desc.type == BindingType::Storage) {
-        image.MarkModified();
-    }
     return image.FindView(desc.view_info);
 }
 
@@ -778,7 +775,6 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
     }
     image.usage.render_target = 1u;
     UpdateImage(image_id);
-    image.MarkModified();
 
     // Register meta data for this color buffer
     const VAddr cmask_addr = desc.info.meta_info.cmask_addr;
@@ -817,7 +813,6 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
     image.flags |= ImageFlagBits::GpuModified;
     image.usage.depth_target = 1u;
     UpdateImage(image_id);
-    image.MarkModified();
 
     // Register meta data for this depth buffer
     const VAddr htile_addr = desc.info.meta_info.htile_addr;
