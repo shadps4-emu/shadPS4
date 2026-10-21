@@ -212,7 +212,6 @@ void TextureCache::MarkAsMaybeGpuDirty(VAddr addr, size_t size) {
     ForEachImageInRegion(addr, size, [&](ImageId image_id, Image& image) {
         if (image.gpu_hash == 0) {
             // Read backing pages directly, without faulting through the guest readback path.
-            // An unavailable baseline keeps the conservative GC behavior.
             image.gpu_hash = Core::Memory::Instance()->HashBackingMemory(image.info.guest_address,
                                                                          image.info.guest_size);
         }
@@ -1111,7 +1110,7 @@ void TextureCache::GarbageCollectImages() {
             const auto& image = slot_images[image_id];
             const u64 hash = Core::Memory::Instance()->HashBackingMemory(image.info.guest_address,
                                                                          image.info.guest_size);
-            if (hash != 0 && image.gpu_hash == hash) {
+            if (image.gpu_hash == hash) {
                 download_queue.push_back(image_id);
             } else {
                 DeleteImage(image_id);

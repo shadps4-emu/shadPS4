@@ -164,6 +164,7 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
 }
 
 u64 MemoryManager::HashBackingMemory(VAddr virtual_addr, u64 size) {
+    static constexpr std::array<u8, 16_KB> zeros{};
     const auto& backing_pages = impl.BackingPages();
     XXH3_state_t* state = XXH3_createState();
     XXH3_64bits_reset(state);
@@ -171,15 +172,15 @@ u64 MemoryManager::HashBackingMemory(VAddr virtual_addr, u64 size) {
         const u64 page = virtual_addr >> 14;
         const u64 offset_in_page = virtual_addr % 16_KB;
         const u64 hash_size = std::min<u64>(16_KB - offset_in_page, size);
-        auto* entry = backing_pages.find(page);
-        if (!entry || !*entry) {
-            break;
+        if (auto* entry = backing_pages.find(page); entry && *entry) {
+            XXH3_64bits_update(state, *entry + offset_in_page, hash_size);
+        } else {
+            XXH3_64bits_update(state, zeros.data(), hash_size);
         }
-        XXH3_64bits_update(state, *entry + offset_in_page, hash_size);
         size -= hash_size;
         virtual_addr += hash_size;
     }
-    const u64 hash = size == 0 ? XXH3_64bits_digest(state) : 0;
+    const u64 hash = XXH3_64bits_digest(state);
     XXH3_freeState(state);
     return hash;
 }
