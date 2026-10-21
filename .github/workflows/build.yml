@@ -19,7 +19,7 @@ on:
 
 concurrency:
   group: ci-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' || github.repository != 'shadps4-emu/shadPS4' || github.event_name != 'push' }}
 
 env:
   BUILD_TYPE: Release
