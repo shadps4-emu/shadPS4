@@ -213,8 +213,8 @@ void TextureCache::MarkAsMaybeGpuDirty(VAddr addr, size_t size) {
         if (image.gpu_hash == 0) {
             // Read backing pages directly, without faulting through the guest readback path.
             // An unavailable baseline keeps the conservative GC behavior.
-            const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
-            image.gpu_hash = XXH3_64bits(addr, image.info.guest_size);
+            image.gpu_hash = Core::Memory::Instance()->HashBackingMemory(image.info.guest_address,
+                                                                         image.info.guest_size);
         }
         image.flags |= ImageFlagBits::MaybeGpuDirty;
     });
@@ -1109,9 +1109,9 @@ void TextureCache::GarbageCollectImages() {
 
         for (const auto& image_id : maybe_download) {
             const auto& image = slot_images[image_id];
-            const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
-            const u64 hash = XXH3_64bits(addr, image.info.guest_size);
-            if (image.gpu_hash == hash) {
+            const u64 hash = Core::Memory::Instance()->HashBackingMemory(image.info.guest_address,
+                                                                         image.info.guest_size);
+            if (hash != 0 && image.gpu_hash == hash) {
                 download_queue.push_back(image_id);
             } else {
                 DeleteImage(image_id);
