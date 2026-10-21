@@ -748,8 +748,7 @@ struct Demand {
 
 class DemandCollector {
 public:
-    DemandCollector(const PassInfo& pass_info_, std::span<IR::Block* const> lod_blocks_)
-        : pass_info{pass_info_}, lod_blocks{lod_blocks_} {}
+    explicit DemandCollector(const PassInfo& pass_info_) : pass_info{pass_info_} {}
 
     const Demand& Of(const IR::Inst* inst, u32 depth = 0) {
         if (const auto it = demands.find(inst); it != demands.end()) {
@@ -778,13 +777,6 @@ private:
                 return;
             }
             break;
-        case IR::Opcode::ImageSampleRaw:
-            if (use.operand == 1) {
-                for (IR::Block* const block : lod_blocks) {
-                    demand.Add(block);
-                }
-            }
-            break;
         default:
             if (PassesValueThrough(*user)) {
                 const Demand& through = Of(user, depth + 1);
@@ -800,7 +792,6 @@ private:
     }
 
     const PassInfo& pass_info;
-    std::span<IR::Block* const> lod_blocks;
     std::unordered_map<const IR::Inst*, Demand> demands;
 };
 
@@ -1342,8 +1333,7 @@ static void ClassifyReads(PassInfo& pass_info, SrtBuilder& builder, IR::Inst* pt
     }
 }
 
-static void CollectReadConstGuards(IR::Program& program, PassInfo& pass_info,
-                                   std::span<IR::Inst* const> all_readconsts) {
+static void CollectReadConstGuards(PassInfo& pass_info, std::span<IR::Inst* const> all_readconsts) {
     std::unordered_set<const IR::Inst*> walked;
     for (const auto& [ptr, use_list] : pass_info.pointer_uses) {
         for (const auto& [src_off_dw, use] : use_list) {
@@ -1356,15 +1346,7 @@ static void CollectReadConstGuards(IR::Program& program, PassInfo& pass_info,
         }
     }
 
-    boost::container::small_vector<IR::Block*, 4> lod_blocks;
-    for (IR::Block* const block : program.blocks) {
-        if (std::ranges::any_of(block->Instructions(), [](const IR::Inst& inst) {
-                return inst.GetOpcode() == IR::Opcode::ImageQueryLod;
-            })) {
-            lod_blocks.push_back(block);
-        }
-    }
-    DemandCollector demands{pass_info, lod_blocks};
+    DemandCollector demands{pass_info};
     for (IR::Inst* const inst : all_readconsts) {
         if (!pass_info.walker_reads.contains(inst)) {
             continue;
@@ -1605,7 +1587,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
 
     if (!program.info.skip_resource_guards) {
         IR::ComputeDominators(program.post_order_blocks);
-        CollectReadConstGuards(program, pass_info, all_readconsts);
+        CollectReadConstGuards(pass_info, all_readconsts);
     }
 
     GenerateSrtProgram(program.info, pass_info);
