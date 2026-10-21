@@ -605,7 +605,11 @@ void Rasterizer::BindIndexBuffer(u32 index_offset, bool is_indirect) {
 
 void Rasterizer::ResetBindings(bool is_compute) {
     for (auto& image_id : bound_images) {
-        texture_cache.GetImage(image_id).binding = {};
+        auto& image = texture_cache.GetImage(image_id);
+        if (image.binding.is_target && !image.info.props.is_depth) {
+            image.MarkModified();
+        }
+        image.binding = {};
     }
     for (const auto [buffer, offset, size, src_access] : bound_buffers) {
         const auto dst_stage = is_compute ? vk::PipelineStageFlagBits2::eComputeShader
