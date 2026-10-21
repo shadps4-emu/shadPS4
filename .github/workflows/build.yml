@@ -26,14 +26,14 @@ env:
 
 jobs:
   reuse:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     continue-on-error: true
     steps:
     - uses: actions/checkout@v6
     - uses: fsfe/reuse-action@v6
 
   clang-format:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     continue-on-error: true
     steps:
     - uses: actions/checkout@v6
@@ -42,16 +42,16 @@ jobs:
     - name: Install
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        sudo add-apt-repository 'deb http://apt.llvm.org/noble/ llvm-toolchain-noble-19 main'
+        sudo add-apt-repository 'deb http://apt.llvm.org/noble/ llvm-toolchain-noble-23 main'
         sudo apt update
-        sudo apt install clang-format-19
+        sudo apt install clang-format-23
     - name: Build
       env:
         COMMIT_RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
       run: ./.github/workflows/scripts/clang-format.sh
 
   get-info:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     outputs:
       date: ${{ steps.vars.outputs.date }}
       shorthash: ${{ steps.vars.outputs.shorthash }}
