@@ -29,24 +29,24 @@ static constexpr u32 MAX_SAMPLERS = std::numeric_limits<u16>::max();
 
 static u64 HashBackingMemory(VAddr virtual_addr, u64 size) {
     static constexpr std::array<u8, Core::GUEST_PAGE_SIZE> zeros{};
-    // If we only allow xxHash to be staticly linked, we could allocate state entirely in the stack.
-    static const std::unique_ptr<XXH3_state_t, decltype(&XXH3_freeState)> state{XXH3_createState(),
-                                                                                XXH3_freeState};
+    auto* state = XXH3_createState();
     const auto& backing_pages = Core::Memory::Instance()->GetAddressSpace().BackingPages();
-    XXH3_64bits_reset(state.get());
+    XXH3_64bits_reset(state);
     while (size) {
         const u64 page = virtual_addr >> Core::GUEST_PAGE_BITS;
         const u64 offset_in_page = virtual_addr & (Core::GUEST_PAGE_SIZE - 1);
         const u64 hash_size = std::min<u64>(Core::GUEST_PAGE_SIZE - offset_in_page, size);
         if (auto* entry = backing_pages.find(page); entry && *entry) {
-            XXH3_64bits_update(state.get(), *entry + offset_in_page, hash_size);
+            XXH3_64bits_update(state, *entry + offset_in_page, hash_size);
         } else {
-            XXH3_64bits_update(state.get(), zeros.data(), hash_size);
+            XXH3_64bits_update(state, zeros.data(), hash_size);
         }
         size -= hash_size;
         virtual_addr += hash_size;
     }
-    return XXH3_64bits_digest(state.get());
+    const u64 hash = XXH3_64bits_digest(state);
+    XXH3_freeState(state);
+    return hash;
 }
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
