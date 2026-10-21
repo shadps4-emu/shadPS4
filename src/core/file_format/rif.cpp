@@ -85,7 +85,7 @@ bool RIF::Open(const std::vector<u8>& ridx_buffer, const std::vector<u8>& rifa_b
         // License-only content has a specific type ID. Ignore anything else.
         if (rif.content_type == RIF_CONTENT_TYPE_PS4AL) {
             std::string entitlement_id(entry.entitlement_label, sizeof(entry.entitlement_label));
-            license_only_entitlements.push_back(entitlement_id);
+            license_only_entitlements.emplace(entitlement_id, rif);
         }
     }
 

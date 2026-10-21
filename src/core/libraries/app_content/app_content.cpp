@@ -26,6 +26,10 @@
 
 namespace Libraries::AppContent {
 
+constexpr u32 ORBIS_LICENSE_INFO_ENTITLEMENT_KEY_OFFSET = 0x30;
+constexpr u32 ORBIS_LICENSE_DAT_ENTITLEMENT_KEY_OFFSET =
+    offsetof(RIFData, encrypted_secret) + RIF_SECRET_ENTITLEMENT_KEY_OFFSET;
+
 struct AddContInfo {
     char entitlement_label[ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE];
     OrbisAppContentAddcontDownloadStatus status;
@@ -400,9 +404,27 @@ static void LoadAddonFolder(const std::filesystem::path& addon_path) {
             if (!CanAddEntitlement(entitlement_id)) {
                 continue;
             }
+
             auto& info = addcont_info[addcont_count++];
             entitlement_id.copy(info.entitlement_label, entitlement_id.length());
             info.status = OrbisAppContentAddcontDownloadStatus::Installed;
+
+            // Attempt 1: Use license.info for entitlement key
+            auto license_handle =
+                fs->Open("sce_sys/license.info", Common::FS::FileAccessMode::Read);
+            auto key_offset = ORBIS_LICENSE_INFO_ENTITLEMENT_KEY_OFFSET;
+            if (!license_handle) {
+                // Attempt 2: Use license.dat for entitlement key
+                license_handle = fs->Open("sce_sys/license.dat", Common::FS::FileAccessMode::Read);
+                key_offset = ORBIS_LICENSE_DAT_ENTITLEMENT_KEY_OFFSET;
+            }
+            // Read the entitlement key if available
+            if (!license_handle ||
+                !license_handle->Seek(key_offset, Common::FS::SeekOrigin::SetOrigin) ||
+                !license_handle->Read(info.key.data, sizeof(info.key.data))) {
+                LOG_WARNING(Lib_AppContent, "Could not load entitlement key for {}",
+                            entitlement_id);
+            }
         }
     }
 }
@@ -424,15 +446,16 @@ static void LoadLicenses(std::string_view service_id) {
     }
 
     LOG_INFO(Lib_AppContent, "Checking license {} for additional entitlements", service_id);
-    const std::vector<std::string>& entitlements = rif.GetLicenseOnlyEntitlements();
-    for (const auto& entitlement_id : entitlements) {
-        LOG_INFO(Lib_AppContent, "License-only entitlement {} found", entitlement_id);
-        if (!CanAddEntitlement(entitlement_id)) {
+    const auto& entitlements = rif.GetLicenseOnlyEntitlements();
+    for (const auto& entitlement : entitlements) {
+        LOG_INFO(Lib_AppContent, "License-only entitlement {} found", entitlement.first);
+        if (!CanAddEntitlement(entitlement.first)) {
             continue;
         }
         auto& info = addcont_info[addcont_count++];
-        entitlement_id.copy(info.entitlement_label, entitlement_id.length());
+        entitlement.first.copy(info.entitlement_label, entitlement.first.length());
         info.status = OrbisAppContentAddcontDownloadStatus::NoExtraData;
+        std::memcpy(info.key.data, entitlement.second.data, sizeof(info.key.data));
     }
 }
 
