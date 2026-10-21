@@ -144,8 +144,7 @@ private:
 
     void EnsureResident(const Buffer* arena, u64 first_block, u64 last_block);
 
-    void DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool is_write,
-                        bool async);
+    void DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool async);
 
     bool SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size, bool is_written,
                            bool is_texel_buffer);
