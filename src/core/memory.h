@@ -29,6 +29,8 @@ class MemoryMapViewer;
 namespace Core {
 
 constexpr u64 DEFAULT_MAPPING_BASE = 0x200000000;
+constexpr u64 GUEST_PAGE_BITS = 14;
+constexpr u64 GUEST_PAGE_SIZE = 1ULL << GUEST_PAGE_BITS;
 
 enum class MemoryProt : u32 {
     NoAccess = 0,
@@ -253,8 +255,6 @@ public:
     void SetPrtArea(u32 id, VAddr address, u64 size);
 
     void CopySparseMemory(VAddr source, u8* dest, u64 size);
-
-    u64 HashBackingMemory(VAddr virtual_addr, u64 size);
 
     bool TryWriteBacking(void* address, const void* data, u64 size);
 
