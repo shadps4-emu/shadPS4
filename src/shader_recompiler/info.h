@@ -58,6 +58,11 @@ struct InfoPersistent {
     bool has_fetch_shader{};
     bool has_bitwise_xor{};
     bool uses_dma{};
+    bool is_indirect_compute{};
+
+    bool UsesDispatchMetadata() const {
+        return !buffers.empty() && buffers.back().buffer_type == BufferType::DispatchMetadata;
+    }
 
     InfoPersistent() = default;
     InfoPersistent(HwStage hw_stage_, SwStage sw_stage_, u64 pgm_hash_)

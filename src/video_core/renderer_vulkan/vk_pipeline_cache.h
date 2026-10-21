@@ -3,8 +3,10 @@
 
 #pragma once
 
+#include <string>
 #include <variant>
 #include <tsl/robin_map.h>
+#include "common/hash.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/specialization.h"
@@ -37,6 +39,35 @@ namespace Vulkan {
 class Instance;
 class Scheduler;
 class ShaderCache;
+
+struct ProgramKey {
+    u64 hash;
+    bool is_indirect_compute{};
+    // Storage-backed LDS changes the resource interface. Keep indirect programs with different
+    // LDS allocations separate, including their SPIR-V files and restored program info.
+    u32 shared_memory_size{};
+
+    bool operator==(const ProgramKey&) const = default;
+
+    u64 PermutationHash(size_t index) const {
+        const auto value = HashCombine(hash, u64(index) | (u64(is_indirect_compute) << 63));
+        return shared_memory_size ? HashCombine(value, u64(shared_memory_size)) : value;
+    }
+
+    std::string ShaderSuffix() const {
+        if (!is_indirect_compute) {
+            return {};
+        }
+        return shared_memory_size ? "_indirect_lds" + std::to_string(shared_memory_size)
+                                  : "_indirect";
+    }
+};
+
+struct ProgramKeyHash {
+    size_t operator()(const ProgramKey& key) const {
+        return key.PermutationHash(0);
+    }
+};
 
 struct Program {
     struct Module {
@@ -85,17 +116,19 @@ public:
 
     const GraphicsPipeline* GetGraphicsPipeline(const DrawIndirectParams params = {});
 
-    const ComputePipeline* GetComputePipeline();
+    const ComputePipeline* GetComputePipeline(bool is_indirect = false);
 
     using Result = std::tuple<const Shader::Info*, vk::ShaderModule, u64>;
     Result GetProgram(Shader::HwStage hw_stage, Shader::SwStage sw_stage,
-                      const Shader::ShaderParams& params, Shader::Backend::Bindings& binding);
+                      const Shader::ShaderParams& params, Shader::Backend::Bindings& binding,
+                      bool is_indirect_compute = false);
 
     std::optional<vk::ShaderModule> ReplaceShader(vk::ShaderModule module,
                                                   std::span<const u32> spv_code);
 
     static std::string GetShaderName(Shader::HwStage stage, u64 hash,
-                                     std::optional<size_t> perm = {});
+                                     std::optional<size_t> perm = {},
+                                     bool is_indirect_compute = false, u32 shared_memory_size = 0);
 
     auto& GetProfile() const {
         return profile;
@@ -104,12 +137,13 @@ public:
 private:
     bool RefreshGraphicsKey();
     bool RefreshGraphicsStages();
-    bool RefreshComputeKey();
+    bool RefreshComputeKey(bool is_indirect);
 
     void DumpShader(std::span<const u32> code, u64 hash, Shader::HwStage stage, size_t perm_idx,
-                    std::string_view ext);
+                    std::string_view ext, bool is_indirect_compute, u32 shared_memory_size = 0);
     std::optional<std::vector<u32>> GetShaderPatch(u64 hash, Shader::HwStage stage, size_t perm_idx,
-                                                   std::string_view ext);
+                                                   std::string_view ext, bool is_indirect_compute,
+                                                   u32 shared_memory_size = 0);
     vk::ShaderModule CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
                                    const std::span<const u32>& code, size_t perm_idx,
                                    Shader::Backend::Bindings& binding);
@@ -129,7 +163,7 @@ private:
     Shader::Profile profile{};
     Shader::Pools pools;
     DrawIndirectParams draw_indirect_params{};
-    tsl::robin_map<size_t, std::unique_ptr<Program>> program_cache;
+    tsl::robin_map<ProgramKey, std::unique_ptr<Program>, ProgramKeyHash> program_cache;
     tsl::robin_map<ComputePipelineKey, std::unique_ptr<ComputePipeline>> compute_pipelines;
     tsl::robin_map<GraphicsPipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_pipelines;
     std::array<Shader::RuntimeInfo, MaxShaderStages> runtime_infos{};

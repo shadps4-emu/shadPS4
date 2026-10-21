@@ -53,6 +53,7 @@ struct Profile {
     bool needs_clip_distance_emulation{};
     bool supports_shader_stencil_export{};
     bool fast_shader_math{};
+    bool supports_dispatch_metadata{};
 
     bool operator==(const Profile&) const = default;
 };

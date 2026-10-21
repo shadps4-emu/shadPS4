@@ -295,12 +295,19 @@ void EmitContext::DefineAmdPerVertexAttribs() {
     }
 }
 
+Id EmitContext::DispatchMetadata(u32 word) {
+    const auto [id, pointer_type] = buffers[dispatch_metadata_index].Alias(PointerType::U32);
+    return OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(word)));
+}
+
 void EmitContext::DefineWorkgroupIndex() {
-    const Id workgroup_id_val{OpLoad(U32[3], workgroup_id)};
+    const Id workgroup_id_val{
+        OpLoad(U32[3], info.UsesDispatchMetadata() ? guest_workgroup_id : workgroup_id)};
     const Id workgroup_x{OpCompositeExtract(U32[1], workgroup_id_val, 0)};
     const Id workgroup_y{OpCompositeExtract(U32[1], workgroup_id_val, 1)};
     const Id workgroup_z{OpCompositeExtract(U32[1], workgroup_id_val, 2)};
-    const Id num_workgroups{OpLoad(U32[3], num_workgroups_id)};
+    const Id num_workgroups{
+        OpLoad(U32[3], info.UsesDispatchMetadata() ? guest_workgroup_count : num_workgroups_id)};
     const Id num_workgroups_x{OpCompositeExtract(U32[1], num_workgroups, 0)};
     const Id num_workgroups_y{OpCompositeExtract(U32[1], num_workgroups, 1)};
     workgroup_index_id =
@@ -491,14 +498,27 @@ void EmitContext::DefineInputs() {
         break;
     }
     case SwStage::Compute:
-        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex) ||
-            info.loads.GetAny(IR::Attribute::WorkgroupId)) {
+        if (info.UsesDispatchMetadata()) {
             workgroup_id =
                 DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
-        }
-        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex)) {
             num_workgroups_id =
                 DefineVariable(U32[3], spv::BuiltIn::NumWorkgroups, spv::StorageClass::Input);
+            guest_workgroup_id = DefineVar(U32[3], spv::StorageClass::Private);
+            guest_workgroup_count = DefineVar(U32[3], spv::StorageClass::Private);
+            Name(guest_workgroup_id, "guest_workgroup_id");
+            Name(guest_workgroup_count, "guest_workgroup_count");
+            interfaces.push_back(guest_workgroup_id);
+            interfaces.push_back(guest_workgroup_count);
+        } else {
+            if (info.loads.GetAny(IR::Attribute::WorkgroupIndex) ||
+                info.loads.GetAny(IR::Attribute::WorkgroupId)) {
+                workgroup_id =
+                    DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
+            }
+            if (info.loads.GetAny(IR::Attribute::WorkgroupIndex)) {
+                num_workgroups_id =
+                    DefineVariable(U32[3], spv::BuiltIn::NumWorkgroups, spv::StorageClass::Input);
+            }
         }
         if (info.loads.GetAny(IR::Attribute::LocalInvocationId)) {
             local_invocation_id =
@@ -834,6 +854,9 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, bool is_cohere
     case BufferType::FaultBuffer:
         Name(id, "fault_buffer");
         break;
+    case BufferType::DispatchMetadata:
+        Name(id, "dispatch_metadata");
+        break;
     case BufferType::SharedMemory:
         Name(id, "ssbo_shmem");
         break;
@@ -858,6 +881,8 @@ void EmitContext::DefineBuffers() {
             flatbuf_index = buffers.size();
         } else if (desc.buffer_type == BufferType::BdaPagetable) {
             bda_pagetable_index = buffers.size();
+        } else if (desc.buffer_type == BufferType::DispatchMetadata) {
+            dispatch_metadata_index = buffers.size();
         } else if (desc.buffer_type == BufferType::FaultBuffer) {
             fault_buffer_index = buffers.size();
         }
