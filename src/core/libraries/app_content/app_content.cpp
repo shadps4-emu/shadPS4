@@ -1,8 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <filesystem>
+#include <string>
+#include <vector>
+#include <fmt/format.h>
 
 #include "app_content.h"
 #include "common/assert.h"
@@ -38,6 +43,9 @@ static s32 sdk_ver = 0;
 static s32 addcont_count = 0;
 static std::string title_id;
 static bool is_initialized = false;
+// Folders searched for additional content: the game's own title ID plus the title IDs of any
+// services linked through SERVICE_ID_ADDCONT_ADD_1..7 in the game's param.sfo.
+static std::vector<std::filesystem::path> addon_paths;
 
 int PS4_SYSV_ABI _Z5dummyv() {
     LOG_ERROR(Lib_AppContent, "(STUBBED) called");
@@ -64,7 +72,6 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
                                            OrbisAppContentMountPoint* mount_point) {
     LOG_INFO(Lib_AppContent, "called");
 
-    const auto& addon_path = EmulatorSettings.GetAddonInstallDir() / title_id;
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
     // Determine which loaded additional content this entitlement label is for.
@@ -84,47 +91,51 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
     }
 
     // Find which directory corresponds to this entitlement
-    for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
-        if (!entry.is_directory() && entry.path().extension() != ".zar") {
-            continue;
+    for (const auto& addon_path : addon_paths) {
+        for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
+            if (!entry.is_directory() && entry.path().extension() != ".zar") {
+                continue;
+            }
+
+            // Create a temporary filesystem backend to view the param.sfo
+            std::shared_ptr<Core::FileSys::IBackend> fs = mnt->CreateBackend(entry.path(), true);
+
+            // Look for a param.sfo in the additional content
+            auto psf_handle = fs->Open("sce_sys/param.sfo", Common::FS::FileAccessMode::Read);
+            if (psf_handle == nullptr) {
+                // This content doesn't have a param.sfo
+                continue;
+            }
+
+            // Open the param.sfo in this content
+            std::unique_ptr<PSF> dlc_params = std::make_unique<PSF>();
+            if (!dlc_params->Open(psf_handle)) {
+                // The param.sfo is invalid
+                continue;
+            }
+
+            // Validate the available params
+            auto category = dlc_params->GetString("CATEGORY");
+            auto content_id = dlc_params->GetString("CONTENT_ID");
+            if (!category.has_value() || strncmp(category.value().data(), "ac", 2) != 0 ||
+                !content_id.has_value() ||
+                content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
+                // This content fails the error checks performed in sceAppContentInitialize.
+                continue;
+            }
+
+            auto entitlement_id =
+                content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
+            if (strncmp(entitlement_id.data(), entitlement_label->data, entitlement_id.length()) !=
+                0) {
+                // The entitlement ID is incorrect.
+                continue;
+            }
+
+            // We've located the correct folder.
+            mnt->Mount(entry.path(), mount_point->data, true);
+            return ORBIS_OK;
         }
-
-        // Create a temporary filesystem backend to view the param.sfo
-        std::shared_ptr<Core::FileSys::IBackend> fs = mnt->CreateBackend(entry.path(), true);
-
-        // Look for a param.sfo in the additional content
-        auto psf_handle = fs->Open("sce_sys/param.sfo", Common::FS::FileAccessMode::Read);
-        if (psf_handle == nullptr) {
-            // This content doesn't have a param.sfo
-            continue;
-        }
-
-        // Open the param.sfo in this content
-        std::unique_ptr<PSF> dlc_params = std::make_unique<PSF>();
-        if (!dlc_params->Open(psf_handle)) {
-            // The param.sfo is invalid
-            continue;
-        }
-
-        // Validate the available params
-        auto category = dlc_params->GetString("CATEGORY");
-        auto content_id = dlc_params->GetString("CONTENT_ID");
-        if (!category.has_value() || strncmp(category.value().data(), "ac", 2) != 0 ||
-            !content_id.has_value() ||
-            content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
-            // This content fails the error checks performed in sceAppContentInitialize.
-            continue;
-        }
-
-        auto entitlement_id = content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
-        if (strncmp(entitlement_id.data(), entitlement_label->data, entitlement_id.length()) != 0) {
-            // The entitlement ID is incorrect.
-            continue;
-        }
-
-        // We've located the correct folder.
-        mnt->Mount(entry.path(), mount_point->data, true);
-        return ORBIS_OK;
     }
 
     // Hitting this shouldn't be possible, as it would mean the entitlement was loaded,
@@ -310,24 +321,24 @@ int PS4_SYSV_ABI sceAppContentGetRegion() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initParam,
-                                         OrbisAppContentBootParam* bootParam) {
-    if (sdk_ver >= Common::ElfInfo::FW_150 && is_initialized) {
-        LOG_ERROR(Lib_AppContent, "Already initialized");
-        return ORBIS_APP_CONTENT_ERROR_BUSY;
+// Returns false if this entitlement is already registered or the table is full.
+static bool CanAddEntitlement(std::string_view entitlement_id) {
+    if (addcont_count >= ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE) {
+        LOG_ERROR(Lib_AppContent, "Too many entitlements, ignoring {}", entitlement_id);
+        return false;
     }
-
-    LOG_WARNING(Lib_AppContent, "(DUMMY) called");
-    is_initialized = true;
-    auto* param_sfo = Common::Singleton<PSF>::Instance();
-
-    const auto addons_dir = EmulatorSettings.GetAddonInstallDir();
-    if (const auto value = param_sfo->GetString("TITLE_ID"); value.has_value()) {
-        title_id = *value;
-    } else {
-        UNREACHABLE_MSG("Failed to get TITLE_ID");
+    for (s32 i = 0; i < addcont_count; i++) {
+        const std::string_view label{
+            addcont_info[i].entitlement_label,
+            strnlen(addcont_info[i].entitlement_label, ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE)};
+        if (label == entitlement_id) {
+            return false;
+        }
     }
-    const auto addon_path = addons_dir / title_id;
+    return true;
+}
+
+static void LoadAddonFolder(const std::filesystem::path& addon_path) {
     if (std::filesystem::exists(addon_path)) {
         auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
@@ -386,39 +397,98 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
             LOG_INFO(Lib_AppContent, "Entitlement {} found", entitlement_id);
 
             // Save the additional content info in addcont_info.
+            if (!CanAddEntitlement(entitlement_id)) {
+                continue;
+            }
             auto& info = addcont_info[addcont_count++];
             entitlement_id.copy(info.entitlement_label, entitlement_id.length());
             info.status = OrbisAppContentAddcontDownloadStatus::Installed;
         }
     }
+}
 
-    // Load license files for any license-only DLC.
-    if (const auto value = param_sfo->GetString("CONTENT_ID"); value.has_value()) {
-        const std::string_view& content_id = *value;
-        std::string service_id(content_id.substr(0, content_id.find_last_of('-')));
+static void LoadLicenses(std::string_view service_id) {
+    const std::filesystem::path& licenses_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::LicensesDir);
+    std::filesystem::path ridx_path = licenses_dir / fmt::format("{}.idx", service_id);
+    std::filesystem::path rifa_path = licenses_dir / fmt::format("{}.rif", service_id);
 
-        const std::filesystem::path& licenses_dir =
-            Common::FS::GetUserPath(Common::FS::PathType::LicensesDir);
-        std::filesystem::path ridx_path = licenses_dir / (service_id + ".idx");
-        std::filesystem::path rifa_path = licenses_dir / (service_id + ".rif");
+    if (!std::filesystem::exists(ridx_path) || !std::filesystem::exists(rifa_path)) {
+        return;
+    }
 
-        if (std::filesystem::exists(ridx_path) && std::filesystem::exists(rifa_path)) {
-            if (RIF rif; rif.Open(ridx_path, rifa_path)) {
-                LOG_INFO(Lib_AppContent, "Checking license {} for additional entitlements",
-                         service_id);
+    RIF rif;
+    if (!rif.Open(ridx_path, rifa_path)) {
+        LOG_ERROR(Lib_AppContent, "Could not open license file for {}", service_id);
+        return;
+    }
 
-                const std::vector<std::string>& entitlements = rif.GetLicenseOnlyEntitlements();
-                for (const auto& entitlement_id : entitlements) {
-                    LOG_INFO(Lib_AppContent, "License-only entitlement {} found", entitlement_id);
+    LOG_INFO(Lib_AppContent, "Checking license {} for additional entitlements", service_id);
+    const std::vector<std::string>& entitlements = rif.GetLicenseOnlyEntitlements();
+    for (const auto& entitlement_id : entitlements) {
+        LOG_INFO(Lib_AppContent, "License-only entitlement {} found", entitlement_id);
+        if (!CanAddEntitlement(entitlement_id)) {
+            continue;
+        }
+        auto& info = addcont_info[addcont_count++];
+        entitlement_id.copy(info.entitlement_label, entitlement_id.length());
+        info.status = OrbisAppContentAddcontDownloadStatus::NoExtraData;
+    }
+}
 
-                    auto& info = addcont_info[addcont_count++];
-                    entitlement_id.copy(info.entitlement_label, entitlement_id.length());
-                    info.status = OrbisAppContentAddcontDownloadStatus::NoExtraData;
-                }
-            } else {
-                LOG_ERROR(Lib_AppContent, "Could not open license file for {}", service_id);
+int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initParam,
+                                         OrbisAppContentBootParam* bootParam) {
+    if (sdk_ver >= Common::ElfInfo::FW_150 && is_initialized) {
+        LOG_ERROR(Lib_AppContent, "Already initialized");
+        return ORBIS_APP_CONTENT_ERROR_BUSY;
+    }
+
+    LOG_WARNING(Lib_AppContent, "(DUMMY) called");
+    is_initialized = true;
+    auto* param_sfo = Common::Singleton<PSF>::Instance();
+
+    const auto addons_dir = EmulatorSettings.GetAddonInstallDir();
+    if (const auto value = param_sfo->GetString("TITLE_ID"); value.has_value()) {
+        title_id = *value;
+    } else {
+        UNREACHABLE_MSG("Failed to get TITLE_ID");
+    }
+    // Collect the game's own service ID and any linked additional content services.
+    // The views point into the game's param.sfo, which outlives this function.
+    std::vector<std::string_view> service_ids;
+    if (const auto content_id = param_sfo->GetString("CONTENT_ID"); content_id.has_value()) {
+        service_ids.push_back(content_id->substr(0, content_id->find_last_of('-')));
+    }
+    for (int i = 1; i <= 7; i++) {
+        const auto key = fmt::format("SERVICE_ID_ADDCONT_ADD_{}", i);
+        const auto service_id = param_sfo->GetString(key);
+        if (service_id.has_value() && !service_id->empty() &&
+            std::ranges::find(service_ids, *service_id) == service_ids.end()) {
+            LOG_INFO(Lib_AppContent, "Linked additional content service {}", *service_id);
+            service_ids.push_back(*service_id);
+        }
+    }
+
+    // Additional content folders: the game's own title ID first, then the title ID of each
+    // linked service (service IDs look like UPXXXX-CUSAXXXXX_XX).
+    addon_paths.clear();
+    addon_paths.push_back(addons_dir / title_id);
+    for (const auto& service_id : service_ids) {
+        if (service_id.length() >= 16) {
+            const auto path = addons_dir / service_id.substr(7, 9);
+            if (std::find(addon_paths.begin(), addon_paths.end(), path) == addon_paths.end()) {
+                addon_paths.push_back(path);
             }
         }
+    }
+    std::erase_if(addon_paths, [](const auto& path) { return !std::filesystem::exists(path); });
+    for (const auto& addon_path : addon_paths) {
+        LoadAddonFolder(addon_path);
+    }
+
+    // Load license files for any license-only DLC, for every service.
+    for (const auto& service_id : service_ids) {
+        LoadLicenses(service_id);
     }
 
     if (addcont_count > 0) {
