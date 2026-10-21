@@ -407,11 +407,11 @@ static void LoadAddonFolder(const std::filesystem::path& addon_path) {
     }
 }
 
-static void LoadLicenses(const std::string& service_id) {
+static void LoadLicenses(std::string_view service_id) {
     const std::filesystem::path& licenses_dir =
         Common::FS::GetUserPath(Common::FS::PathType::LicensesDir);
-    std::filesystem::path ridx_path = licenses_dir / (service_id + ".idx");
-    std::filesystem::path rifa_path = licenses_dir / (service_id + ".rif");
+    std::filesystem::path ridx_path = licenses_dir / fmt::format("{}.idx", service_id);
+    std::filesystem::path rifa_path = licenses_dir / fmt::format("{}.rif", service_id);
 
     if (!std::filesystem::exists(ridx_path) || !std::filesystem::exists(rifa_path)) {
         return;
@@ -454,20 +454,18 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
         UNREACHABLE_MSG("Failed to get TITLE_ID");
     }
     // Collect the game's own service ID and any linked additional content services.
-    std::vector<std::string> service_ids;
-    if (const auto value = param_sfo->GetString("CONTENT_ID"); value.has_value()) {
-        const std::string_view& content_id = *value;
-        service_ids.emplace_back(content_id.substr(0, content_id.find_last_of('-')));
+    // The views point into the game's param.sfo, which outlives this function.
+    std::vector<std::string_view> service_ids;
+    if (const auto content_id = param_sfo->GetString("CONTENT_ID"); content_id.has_value()) {
+        service_ids.push_back(content_id->substr(0, content_id->find_last_of('-')));
     }
     for (int i = 1; i <= 7; i++) {
         const auto key = fmt::format("SERVICE_ID_ADDCONT_ADD_{}", i);
-        if (const auto value = param_sfo->GetString(key); value.has_value()) {
-            std::string service_id(value->data(), strnlen(value->data(), value->size()));
-            if (!service_id.empty() && std::find(service_ids.begin(), service_ids.end(),
-                                                 service_id) == service_ids.end()) {
-                LOG_INFO(Lib_AppContent, "Linked additional content service {}", service_id);
-                service_ids.push_back(service_id);
-            }
+        const auto service_id = param_sfo->GetString(key);
+        if (service_id.has_value() && !service_id->empty() &&
+            std::ranges::find(service_ids, *service_id) == service_ids.end()) {
+            LOG_INFO(Lib_AppContent, "Linked additional content service {}", *service_id);
+            service_ids.push_back(*service_id);
         }
     }
 
