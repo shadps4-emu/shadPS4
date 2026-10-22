@@ -112,6 +112,7 @@ void PS4_SYSV_ABI posix_pthread_exit(void* status) {
     if (ThreadDtors) {
         (ThreadDtors)();
     }
+    CleanupDeletedMutexes();
     ExitThread();
 }
 
