@@ -30,8 +30,8 @@ enum ImageFlagBits : u32 {
     Empty = 0,
     MaybeCpuDirty = 1 << 0, ///< The page this image is in was touched before the image address
     CpuDirty = 1 << 1,      ///< Contents have been modified from the CPU
-    GpuDirty =
-        1 << 2, ///< Image contents have been modified from the GPU (valid data in buffer cache)
+    GpuDirty = 1 << 2, ///< Image contents have been modified from the GPU (valid data in buffer
+                       ///< cache)
     Dirty = MaybeCpuDirty | CpuDirty | GpuDirty,
     GpuModified = 1 << 3,   ///< Contents have been modified from the GPU
     MaybeGpuDirty = 1 << 4, ///< Image contents may have been modified in the buffer cache

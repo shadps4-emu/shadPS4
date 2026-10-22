@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 ## Build shadPS4 for Linux
 
-First and foremost, Clang 19 is the **recommended compiler** as it is used for official Linux builds and CI. GCC 14 is also tested by CI. If you build with GCC, you might encounter issues — please report any you find. Additionally, if you choose to use GCC, please build shadPS4 with Clang at least once before creating an `[APP BUG]` issue or submitting a pull request.
+First and foremost, Clang 23 is the **recommended compiler** as it is used for official Linux builds and CI. GCC 14 is also tested by CI. If you build with GCC, you might encounter issues — please report any you find. Additionally, if you choose to use GCC, please build shadPS4 with Clang at least once before creating an `[APP BUG]` issue or submitting a pull request.
 
 ## Preparatory steps
 
@@ -13,20 +13,20 @@ First and foremost, Clang 19 is the **recommended compiler** as it is used for o
 
 #### Debian & Ubuntu
 
-Make sure Clang 19 is installed. On Ubuntu 24.04, the default `clang` package may still provide Clang 18, while the current Linux CI uses Clang 19 from apt.llvm.org.
+Make sure Clang 23 is installed. On Ubuntu 24.04, the default `clang` package may still provide Clang 18, while the current Linux CI uses Clang 23 from apt.llvm.org.
 
-For Ubuntu 24.04, add the LLVM 19 repository first:
+For Ubuntu 24.04, add the LLVM 23 repository first:
 
 ```bash
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-sudo add-apt-repository 'deb http://apt.llvm.org/noble/ llvm-toolchain-noble-19 main'
+sudo add-apt-repository 'deb http://apt.llvm.org/noble/ llvm-toolchain-noble-23 main'
 sudo apt update
 ```
 
 Then install the build dependencies:
 
 ```bash
-sudo apt install build-essential clang-19 git cmake libasound2-dev \
+sudo apt install build-essential clang-23 git cmake libasound2-dev \
     libpulse-dev libopenal-dev libssl-dev zlib1g-dev libedit-dev \
     libudev-dev libevdev-dev libsdl2-dev libjack-dev libsndio-dev \
     libvulkan-dev vulkan-validationlayers libpng-dev
@@ -108,7 +108,7 @@ There are 3 options you can choose from. Option 1 is **highly recommended**.
 1. Generate the build directory in the shadPS4 directory.
 
 ```bash
-cmake -S . -B build/ -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19
+cmake -S . -B build/ -DCMAKE_C_COMPILER=clang-23 -DCMAKE_CXX_COMPILER=clang++-23
 ```
 
 To change the build type (for debugging), add `-DCMAKE_BUILD_TYPE=Debug`.
@@ -134,7 +134,7 @@ You can also specify the Game ID as an argument for which game to boot, as long 
 
 Open `cmake-gui` and specify the source code and build directories. If you cloned the source code to your Home directory, it would be `/home/user/shadPS4` and `/home/user/shadPS4/build`.
 
-Click on Configure, select "Unix Makefiles", select "Specify native compilers", click Next and choose `clang-19` and `clang++-19` as the C and CXX compilers. Click on Finish and let it configure the project.
+Click on Configure, select "Unix Makefiles", select "Specify native compilers", click Next and choose `clang-23` and `clang++-23` as the C and CXX compilers. Click on Finish and let it configure the project.
 
 Now every option should be displayed in red. Change anything you want, then click on Generate to make the changes permanent, then open a terminal window and do step 2 of Option 1.
 
