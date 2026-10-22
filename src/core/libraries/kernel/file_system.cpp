@@ -3,8 +3,12 @@
 
 #include <chrono>
 #include <climits>
+#include <condition_variable>
 #include <cstdint>
 #include <map>
+#include <mutex>
+#include <unordered_map>
+
 #ifdef _WIN32
 #include <sys/utime.h>
 #else
@@ -86,6 +90,63 @@ static std::map<std::string, FactoryDevice> available_device = {
 };
 
 namespace Libraries::Kernel {
+
+namespace {
+
+struct FlockState {
+    std::mutex mtx;
+    std::condition_variable cv;
+    bool is_exclusive = false;
+    Core::FileSys::File* exclusive_owner = nullptr;
+    std::unordered_map<Core::FileSys::File*, u32> shared_holders;
+    u32 total_waiters = 0;
+};
+
+std::mutex g_flock_map_mtx;
+std::unordered_map<std::string, std::shared_ptr<FlockState>> g_flock_states;
+
+std::string GetFileLockKey(Core::FileSys::File* file) {
+    if (!file->m_host_name.empty()) {
+        return file->m_host_name.string();
+    }
+    return file->m_guest_name;
+}
+
+void ReleaseFlockState(Core::FileSys::File* file) {
+    const std::string key = GetFileLockKey(file);
+    std::shared_ptr<FlockState> state;
+    {
+        std::scoped_lock lock{g_flock_map_mtx};
+        auto it = g_flock_states.find(key);
+        if (it != g_flock_states.end()) {
+            state = it->second;
+        }
+    }
+    if (state) {
+        std::scoped_lock lock{state->mtx};
+        bool changed = false;
+        if (state->is_exclusive && state->exclusive_owner == file) {
+            state->is_exclusive = false;
+            state->exclusive_owner = nullptr;
+            changed = true;
+        }
+        if (state->shared_holders.erase(file) > 0) {
+            changed = true;
+        }
+        if (changed) {
+            state->cv.notify_all();
+        }
+        if (!state->is_exclusive && state->shared_holders.empty() && state->total_waiters == 0) {
+            std::scoped_lock map_lock{g_flock_map_mtx};
+            if (!state->is_exclusive && state->shared_holders.empty() &&
+                state->total_waiters == 0) {
+                g_flock_states.erase(key);
+            }
+        }
+    }
+}
+
+} // anonymous namespace
 
 s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#o}", raw_path, flags, mode);
@@ -298,6 +359,7 @@ s32 PS4_SYSV_ABI close(s32 fd) {
     if (file->type == Core::FileSys::FileType::Socket) {
         return Libraries::Net::KernelClose(fd);
     }
+    ReleaseFlockState(file);
     if (file->type == Core::FileSys::FileType::Regular) {
         file->handle.reset();
     }
@@ -1506,6 +1568,8 @@ void PS4_SYSV_ABI sceKernelSync() {
 }
 
 s32 PS4_SYSV_ABI posix_flock(s32 fd, s32 operation) {
+    LOG_TRACE(Kernel_Fs, "fd = {}, operation = {:#x}", fd, operation);
+
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -1513,8 +1577,166 @@ s32 PS4_SYSV_ABI posix_flock(s32 fd, s32 operation) {
         return -1;
     }
 
-    LOG_ERROR(Kernel_Fs, "(STUBBED) fd = {}, operation = {}", fd, operation);
-    return ORBIS_OK;
+    if (file->type == Core::FileSys::FileType::Socket) {
+        *__Error() = POSIX_EOPNOTSUPP;
+        return -1;
+    }
+
+    constexpr s32 valid_mask =
+        ORBIS_KERNEL_LOCK_SH | ORBIS_KERNEL_LOCK_EX | ORBIS_KERNEL_LOCK_NB | ORBIS_KERNEL_LOCK_UN;
+    if ((operation & ~valid_mask) != 0) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+
+    const s32 lock_op =
+        operation & (ORBIS_KERNEL_LOCK_SH | ORBIS_KERNEL_LOCK_EX | ORBIS_KERNEL_LOCK_UN);
+    if (lock_op != ORBIS_KERNEL_LOCK_SH && lock_op != ORBIS_KERNEL_LOCK_EX &&
+        lock_op != ORBIS_KERNEL_LOCK_UN) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+
+    const bool non_blocking = (operation & ORBIS_KERNEL_LOCK_NB) != 0;
+    const std::string key = GetFileLockKey(file);
+
+    std::shared_ptr<FlockState> state;
+    {
+        std::scoped_lock lock{g_flock_map_mtx};
+        auto it = g_flock_states.find(key);
+        if (it == g_flock_states.end()) {
+            if (lock_op == ORBIS_KERNEL_LOCK_UN) {
+                return ORBIS_OK;
+            }
+            state = std::make_shared<FlockState>();
+            g_flock_states.emplace(key, state);
+        } else {
+            state = it->second;
+        }
+    }
+
+    std::unique_lock lock{state->mtx};
+    if (!file->is_opened) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
+    switch (lock_op) {
+    case ORBIS_KERNEL_LOCK_EX: {
+        // If this descriptor already holds exclusive lock, idempotent success.
+        if (state->is_exclusive && state->exclusive_owner == file) {
+            return ORBIS_OK;
+        }
+
+        auto can_acquire = [&]() {
+            if (!file->is_opened) {
+                return true;
+            }
+            if (state->is_exclusive) {
+                return false;
+            }
+            if (state->shared_holders.empty()) {
+                return true;
+            }
+            // Allow atomic upgrade if this descriptor is the sole shared lock holder.
+            if (state->shared_holders.size() == 1 && state->shared_holders.contains(file)) {
+                return true;
+            }
+            return false;
+        };
+
+        if (!can_acquire()) {
+            if (non_blocking) {
+                *__Error() = POSIX_EWOULDBLOCK;
+                LOG_TRACE(Kernel_Fs, "flock: fd = {} LOCK_EX would block", fd);
+                return -1;
+            }
+            state->total_waiters++;
+            state->cv.wait(lock, can_acquire);
+            state->total_waiters--;
+        }
+
+        if (!file->is_opened) {
+            *__Error() = POSIX_EBADF;
+            return -1;
+        }
+
+        state->shared_holders.erase(file);
+        state->is_exclusive = true;
+        state->exclusive_owner = file;
+        return ORBIS_OK;
+    }
+
+    case ORBIS_KERNEL_LOCK_SH: {
+        // If this descriptor holds exclusive lock, downgrade to shared.
+        if (state->is_exclusive && state->exclusive_owner == file) {
+            state->is_exclusive = false;
+            state->exclusive_owner = nullptr;
+            state->shared_holders[file] = 1;
+            state->cv.notify_all();
+            return ORBIS_OK;
+        }
+
+        auto can_acquire = [&]() { return !file->is_opened || !state->is_exclusive; };
+
+        if (!can_acquire()) {
+            if (non_blocking) {
+                *__Error() = POSIX_EWOULDBLOCK;
+                LOG_TRACE(Kernel_Fs, "flock: fd = {} LOCK_SH would block", fd);
+                return -1;
+            }
+            state->total_waiters++;
+            state->cv.wait(lock, can_acquire);
+            state->total_waiters--;
+        }
+
+        if (!file->is_opened) {
+            *__Error() = POSIX_EBADF;
+            return -1;
+        }
+
+        state->shared_holders[file]++;
+        return ORBIS_OK;
+    }
+
+    case ORBIS_KERNEL_LOCK_UN: {
+        bool changed = false;
+        if (state->is_exclusive && state->exclusive_owner == file) {
+            state->is_exclusive = false;
+            state->exclusive_owner = nullptr;
+            changed = true;
+        }
+        if (state->shared_holders.erase(file) > 0) {
+            changed = true;
+        }
+        if (changed) {
+            state->cv.notify_all();
+        }
+        if (!state->is_exclusive && state->shared_holders.empty() && state->total_waiters == 0) {
+            std::scoped_lock map_lock{g_flock_map_mtx};
+            if (!state->is_exclusive && state->shared_holders.empty() &&
+                state->total_waiters == 0) {
+                g_flock_states.erase(key);
+            }
+        }
+        return ORBIS_OK;
+    }
+
+    default:
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+}
+
+s32 PS4_SYSV_ABI sceKernelFlock(s32 fd, s32 operation) {
+    s32 result = posix_flock(fd, operation);
+    if (result < 0) {
+        if (*__Error() != POSIX_EWOULDBLOCK) {
+            LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        }
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
 }
 
 static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
@@ -1921,6 +2143,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("VAzswvTOCzI", "libScePosix", 1, "libkernel", posix_unlink);
     LIB_FUNCTION("9eMlfusH4sU", "libkernel", 1, "libkernel", posix_flock);
     LIB_FUNCTION("9eMlfusH4sU", "libScePosix", 1, "libkernel", posix_flock);
+    LIB_FUNCTION("YDg-SQj66AQ", "libkernel", 1, "libkernel", sceKernelFlock);
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", sceKernelUnlink);
     LIB_FUNCTION("T8fER+tIGgk", "libScePosix", 1, "libkernel", posix_select);
     LIB_FUNCTION("T8fER+tIGgk", "libkernel", 1, "libkernel", posix_select);
