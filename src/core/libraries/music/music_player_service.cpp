@@ -59,11 +59,43 @@ public:
         m_tracklist_version++;
     }
 
+    s32 SetUsbStorageDeviceInfo(const OrbisMusicPlayerUsbDeviceInfo* devices, u32 count) {
+        if (!devices || count == 0 || count > 8) {
+            LOG_ERROR(Lib_AudioOut, "invalid arguments: devices={}, count={}",
+                      static_cast<const void*>(devices), count);
+            return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
+        }
+
+        std::scoped_lock lock(m_mutex);
+        m_usb_devices.clear();
+
+        for (u32 i = 0; i < count; ++i) {
+            const auto& dev = devices[i];
+            if (dev.serial_number_len > 255) {
+                LOG_ERROR(Lib_AudioOut, "device[{}] serial_number_len {} > 255", i,
+                          dev.serial_number_len);
+                return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
+            }
+            size_t str_len = strnlen(dev.serial_number, sizeof(dev.serial_number));
+            if (str_len > dev.serial_number_len) {
+                LOG_ERROR(Lib_AudioOut, "device[{}] strlen {} > serial_number_len {}", i, str_len,
+                          dev.serial_number_len);
+                return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
+            }
+            std::string serial(dev.serial_number, str_len);
+            LOG_INFO(Lib_AudioOut, "registered USB device_id {} with serial '{}'", dev.device_id,
+                     serial);
+            m_usb_devices[serial] = dev.device_id;
+        }
+
+        return ORBIS_OK;
+    }
+
     s32 BeginTransaction() {
         std::scoped_lock lock(m_mutex);
         if (m_in_transaction.load()) {
             LOG_ERROR(Lib_AudioOut, "BeginTransaction: already in transaction");
-            return static_cast<s32>(0x812f0101);
+            return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_ALREADY_IN_TRANSACTION;
         }
         m_in_transaction = true;
         return ORBIS_OK;
@@ -73,7 +105,7 @@ public:
         std::scoped_lock lock(m_mutex);
         if (!m_in_transaction.load()) {
             LOG_ERROR(Lib_AudioOut, "EndTransaction: not in transaction");
-            return static_cast<s32>(0x812f0102);
+            return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_NOT_IN_TRANSACTION;
         }
         m_in_transaction = false;
         m_tracklist_version++;
@@ -87,12 +119,12 @@ public:
     s32 CreateTrackList(u32 tracklist_id) {
         if (tracklist_id > 99) {
             LOG_ERROR(Lib_AudioOut, "CreateTrackList: invalid tracklist_id={}", tracklist_id);
-            return static_cast<s32>(0x812f0004);
+            return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
         }
         std::scoped_lock lock(m_mutex);
         if (!m_in_transaction.load()) {
             LOG_ERROR(Lib_AudioOut, "CreateTrackList: not in transaction");
-            return static_cast<s32>(0x812f0102);
+            return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_NOT_IN_TRANSACTION;
         }
         m_tracklists[tracklist_id].clear();
         return ORBIS_OK;
@@ -101,12 +133,12 @@ public:
     s32 RemoveTrackList(u32 tracklist_id) {
         if (tracklist_id > 99) {
             LOG_ERROR(Lib_AudioOut, "RemoveTrackList: invalid tracklist_id={}", tracklist_id);
-            return static_cast<s32>(0x812f0004);
+            return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
         }
         std::scoped_lock lock(m_mutex);
         if (!m_in_transaction.load()) {
             LOG_ERROR(Lib_AudioOut, "RemoveTrackList: not in transaction");
-            return static_cast<s32>(0x812f0102);
+            return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_NOT_IN_TRANSACTION;
         }
         m_tracklists.erase(tracklist_id);
         if (tracklist_id == 0) {
@@ -119,12 +151,12 @@ public:
         if (tracklist_id > 99 || track_index > 3999) {
             LOG_ERROR(Lib_AudioOut, "InsertTrackEntry: invalid tracklist_id={} or track_index={}",
                       tracklist_id, track_index);
-            return static_cast<s32>(0x812f0004);
+            return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
         }
         std::scoped_lock lock(m_mutex);
         if (!m_in_transaction.load()) {
             LOG_ERROR(Lib_AudioOut, "InsertTrackEntry: not in transaction");
-            return static_cast<s32>(0x812f0102);
+            return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_NOT_IN_TRANSACTION;
         }
         auto& list = m_tracklists[tracklist_id];
         if (track_index < list.size()) {
@@ -139,12 +171,12 @@ public:
         if (tracklist_id > 99 || track_index > 3999) {
             LOG_ERROR(Lib_AudioOut, "RemoveTrackEntry: invalid tracklist_id={} or track_index={}",
                       tracklist_id, track_index);
-            return static_cast<s32>(0x812f0004);
+            return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
         }
         std::scoped_lock lock(m_mutex);
         if (!m_in_transaction.load()) {
             LOG_ERROR(Lib_AudioOut, "RemoveTrackEntry: not in transaction");
-            return static_cast<s32>(0x812f0102);
+            return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_NOT_IN_TRANSACTION;
         }
         auto it = m_tracklists.find(tracklist_id);
         if (it != m_tracklists.end() && track_index < it->second.size()) {
@@ -512,13 +544,26 @@ private:
             }
             guest_path = std::move(decoded_path);
 
+            std::string resolved_guest_path = guest_path;
+            {
+                std::scoped_lock lock(m_mutex);
+                for (const auto& [serial, device_id] : m_usb_devices) {
+                    std::string prefix = "/" + serial + "/";
+                    if (guest_path.starts_with(prefix)) {
+                        resolved_guest_path = "/mnt/usb" + std::to_string(device_id) + "/" +
+                                              guest_path.substr(prefix.size());
+                        break;
+                    }
+                }
+            }
+
             auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
             std::filesystem::path host_path;
             if (mnt) {
-                host_path = mnt->GetHostPath(guest_path);
+                host_path = mnt->GetHostPath(resolved_guest_path);
             }
             if (host_path.empty() || !std::filesystem::exists(host_path)) {
-                host_path = guest_path;
+                host_path = resolved_guest_path;
             }
 
             if (!std::filesystem::exists(host_path)) {
@@ -732,6 +777,7 @@ private:
     std::condition_variable m_event_cv;
     std::queue<MusicEvent> m_event_queue;
     std::unordered_map<u32, std::vector<std::string>> m_tracklists;
+    std::unordered_map<std::string, u32> m_usb_devices;
     std::atomic<bool> m_in_transaction{false};
     std::atomic<u64> m_tracklist_version{1};
 };
@@ -752,7 +798,7 @@ static s32 PS4_SYSV_ABI sceMusicPlayerServiceInitialize3(size_t pool_size, void*
     if (pool_size < 0x200000 || !pool_addr) {
         LOG_ERROR(Lib_AudioOut, "invalid arguments: pool_size={:#x}, pool_addr={}", pool_size,
                   pool_addr);
-        return static_cast<s32>(0x812f0004);
+        return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
     }
     return ORBIS_OK;
 }
@@ -763,9 +809,10 @@ static s32 PS4_SYSV_ABI sceMusicPlayerServiceTerminate() {
     return ORBIS_OK;
 }
 
-static s32 PS4_SYSV_ABI sceMusicPlayerServiceSetUsbStorageDeviceInfo(void* a, void* b) {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
-    return ORBIS_OK;
+static s32 PS4_SYSV_ABI sceMusicPlayerServiceSetUsbStorageDeviceInfo(
+    const OrbisMusicPlayerUsbDeviceInfo* devices, u32 count) {
+    LOG_INFO(Lib_AudioOut, "devices={}, count={}", static_cast<const void*>(devices), count);
+    return MusicPlayerManager::Instance().SetUsbStorageDeviceInfo(devices, count);
 }
 
 static s32 PS4_SYSV_ABI sceMusicPlayerServiceRemoveAllData(s32 player_id) {
@@ -778,7 +825,7 @@ static s32 SetTrackListInternal(s32 player_id, const void* tracks, u32 count, u3
                                 size_t track_entry_size) {
     if (!tracks || count == 0) {
         LOG_ERROR(Lib_AudioOut, "invalid arguments: tracks={}, count={}", tracks, count);
-        return static_cast<s32>(0x812f0004);
+        return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
     }
 
     const auto* base = reinterpret_cast<const u8*>(tracks);
@@ -871,7 +918,7 @@ static s32 PS4_SYSV_ABI sceMusicPlayerServiceSetAudioVolume(s32 volume) {
     LOG_INFO(Lib_AudioOut, "volume={}", volume);
     if (volume < 0 || volume > 25) {
         LOG_ERROR(Lib_AudioOut, "invalid volume={}", volume);
-        return static_cast<s32>(0x812f0004);
+        return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
     }
     MusicPlayerManager::Instance().SetVolume(volume);
     return ORBIS_OK;
@@ -891,7 +938,7 @@ static s32 PS4_SYSV_ABI sceMusicPlayerServiceSetShuffle(u32 mode) {
     LOG_INFO(Lib_AudioOut, "mode={}", mode);
     if (mode > 1) {
         LOG_ERROR(Lib_AudioOut, "invalid mode={}", mode);
-        return static_cast<s32>(0x812f0004);
+        return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
     }
     MusicPlayerManager::Instance().SetShuffle(mode);
     return ORBIS_OK;
@@ -901,7 +948,7 @@ static s32 PS4_SYSV_ABI sceMusicPlayerServiceSetRepeatMode(u32 mode) {
     LOG_INFO(Lib_AudioOut, "mode={}", mode);
     if (mode > 2) {
         LOG_ERROR(Lib_AudioOut, "invalid mode={}", mode);
-        return static_cast<s32>(0x812f0004);
+        return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
     }
     MusicPlayerManager::Instance().SetRepeatMode(mode);
     return ORBIS_OK;
@@ -910,7 +957,7 @@ static s32 PS4_SYSV_ABI sceMusicPlayerServiceSetRepeatMode(u32 mode) {
 static s32 PS4_SYSV_ABI
 sceMusicPlayerServiceGetPlayStatusExtension(OrbisMusicPlayerPlayStatusExtension* status) {
     if (!status || status->size != 0x48) {
-        return static_cast<s32>(0x812f0004);
+        return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
     }
 
     auto& mgr = MusicPlayerManager::Instance();
@@ -953,7 +1000,7 @@ sceMusicPlayerServiceGetPlayStatusExtension(OrbisMusicPlayerPlayStatusExtension*
 static s32 PS4_SYSV_ABI
 sceMusicPlayerServiceGetCurrentPlayStatus(SceMusicPlayerServicePlayStatus* status) {
     if (!status) {
-        return static_cast<s32>(0x812f0004);
+        return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
     }
     auto& mgr = MusicPlayerManager::Instance();
 
@@ -977,7 +1024,7 @@ sceMusicPlayerServiceGetCurrentPlayStatus(SceMusicPlayerServicePlayStatus* statu
 static s32 PS4_SYSV_ABI sceMusicPlayerServiceReceiveEvent(void* buffer) {
     if (!buffer) {
         LOG_ERROR(Lib_AudioOut, "invalid buffer");
-        return static_cast<s32>(0x812f0004);
+        return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
     }
     u8* buf = static_cast<u8*>(buffer);
     auto& mgr = MusicPlayerManager::Instance();
@@ -991,7 +1038,7 @@ static s32 PS4_SYSV_ABI sceMusicPlayerServiceReceiveEvent(void* buffer) {
         *reinterpret_cast<u32*>(buf + 0x28) = ev.track_index;
         return ORBIS_OK;
     }
-    return static_cast<s32>(0x812f010a);
+    return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_TIMED_OUT;
 }
 
 static s32 PS4_SYSV_ABI sceMusicPlayerServiceGetPlaybackResults(void* a, void* b) {
@@ -1028,7 +1075,7 @@ static s32 PS4_SYSV_ABI sceMusicPlayerServiceInsertTrackEntry(u32 tracklist_id, 
                                                               const void* track_entry) {
     if (!track_entry) {
         LOG_ERROR(Lib_AudioOut, "InsertTrackEntry: null track_entry");
-        return static_cast<s32>(0x812f0004);
+        return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
     }
     const char* uri_str = reinterpret_cast<const char*>(track_entry);
     LOG_INFO(Lib_AudioOut, "called: tracklist_id={}, track_index={}, uri={}", tracklist_id,
@@ -1044,7 +1091,7 @@ static s32 PS4_SYSV_ABI sceMusicPlayerServiceRemoveTrackEntry(u32 tracklist_id, 
 static s32 PS4_SYSV_ABI sceMusicPlayerServiceGetTrackListVersion(s32 player_id, u64* version) {
     if (!version) {
         LOG_ERROR(Lib_AudioOut, "GetTrackListVersion: null version pointer");
-        return static_cast<s32>(0x812f0004);
+        return ORBIS_MUSIC_PLAYER_SERVICE_ERROR_INVALID_PARAMETER;
     }
     *version = MusicPlayerManager::Instance().GetTrackListVersion();
     return ORBIS_OK;
