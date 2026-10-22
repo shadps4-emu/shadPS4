@@ -9,12 +9,6 @@
 namespace Shader::IR {
 
 enum class Patch : u64 {
-    TessellationLodLeft,
-    TessellationLodTop,
-    TessellationLodRight,
-    TessellationLodBottom,
-    TessellationLodInteriorU,
-    TessellationLodInteriorV,
     Component0,
     Component1,
     Component2,
@@ -136,15 +130,6 @@ enum class Patch : u64 {
     Component118,
     Component119,
 };
-static_assert(static_cast<u64>(Patch::Component119) == 125);
-
-constexpr bool IsGeneric(Patch patch) noexcept {
-    return patch >= Patch::Component0 && patch <= Patch::Component119;
-}
-
-constexpr Patch PatchFactor(u32 index) {
-    return static_cast<Patch>(index);
-}
 
 constexpr Patch PatchGeneric(u32 index) {
     return static_cast<Patch>(static_cast<u32>(Patch::Component0) + index);

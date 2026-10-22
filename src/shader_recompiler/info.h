@@ -131,8 +131,8 @@ struct Info : InfoPersistent {
     bool uses_unpack_10_11_11{};
     bool uses_buffer_int64_atomics{};
     bool uses_shared_int64_atomics{};
-    bool stores_tess_level_outer{};
-    bool stores_tess_level_inner{};
+    bool stores_tess_factors{};
+    bool dynamically_accesses_tess_factors{};
     bool translation_failed{};
 
     std::array<Interpolation, IR::NumParams> fs_interpolation{};
