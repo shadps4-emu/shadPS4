@@ -777,7 +777,7 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
     }
 
     if (request->http_request_id == 0) {
-        std::string base_url = EmulatorSettings.GetShadNetWebApiServer();
+        std::string base_url = EmulatorSettings.GetShadNetWebApiUrl();
         // sceHttpCreateConnectionWithURL expects a template id, not the raw libhttp
         // context id that NpWebApi was initialized with. Create a template from the
         // context first, then open the connection against it.
