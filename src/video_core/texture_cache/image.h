@@ -173,6 +173,8 @@ public:
     u64 tick_accessed_last{};
     u64 cpu_hash{};
     u64 gpu_hash{};
+    u64 head_hash{};
+    u64 tail_hash{};
 
     struct {
         u32 texture : 1;
