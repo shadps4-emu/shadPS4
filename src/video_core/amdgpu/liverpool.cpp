@@ -879,7 +879,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb) {
                 break;
             }
             case PM4ItOpcode::GetLodStats: {
-                LOG_WARNING(Render_Vulkan, "Unimplemented IT_GET_LOD_STATS");
+                const auto* get_lod = reinterpret_cast<const PM4CmdGetLodStats*>(header);
+                HandleGetLodStats(get_lod);
                 break;
             }
             case PM4ItOpcode::CondExec: {
@@ -1163,6 +1164,11 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             // const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
             break;
         }
+        case PM4ItOpcode::GetLodStats: {
+            const auto* get_lod = reinterpret_cast<const PM4CmdGetLodStats*>(header);
+            HandleGetLodStats(get_lod);
+            break;
+        }
         default:
             UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                             static_cast<u32>(opcode), header->type3.NumWords());
@@ -1177,6 +1183,11 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     }
 
     FIBER_EXIT;
+}
+
+void Liverpool::HandleGetLodStats(const PM4CmdGetLodStats* get_lod) {
+    LOG_DEBUG(Render, "IT_GET_LOD_STATS: buffer = {:#x}, offset = {:#x}", get_lod->Address(),
+              get_lod->DataOffset());
 }
 
 Liverpool::CmdBuffer Liverpool::CopyCmdBuffers(std::span<const u32> dcb, std::span<const u32> ccb) {
