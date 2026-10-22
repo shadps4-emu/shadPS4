@@ -130,13 +130,14 @@ void FsrPass::Create(vk::Device device, VmaAllocator allocator, u32 num_images) 
 }
 
 vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
-                              vk::Extent2D input_size, vk::Extent2D output_size, Settings settings,
-                              bool hdr) {
+                              vk::Extent2D input_viewport_size, vk::Extent2D input_texture_size,
+                              vk::Extent2D output_size, Settings settings, bool hdr) {
     if (!settings.enable) {
         DebugState.is_using_fsr = false;
         return input;
     }
-    if (input_size.width >= output_size.width && input_size.height >= output_size.height) {
+    if (input_viewport_size.width >= output_size.width &&
+        input_viewport_size.height >= output_size.height) {
         DebugState.is_using_fsr = false;
         return input;
     }
@@ -192,9 +193,10 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
     FSRConstants consts{};
     FsrEasuCon(reinterpret_cast<AU1*>(&consts.Const0), reinterpret_cast<AU1*>(&consts.Const1),
                reinterpret_cast<AU1*>(&consts.Const2), reinterpret_cast<AU1*>(&consts.Const3),
-               static_cast<AF1>(input_size.width), static_cast<AF1>(input_size.height),
-               static_cast<AF1>(input_size.width), static_cast<AF1>(input_size.height), (AF1)width,
-               (AF1)height);
+               static_cast<AF1>(input_viewport_size.width),
+               static_cast<AF1>(input_viewport_size.height),
+               static_cast<AF1>(input_texture_size.width),
+               static_cast<AF1>(input_texture_size.height), (AF1)width, (AF1)height);
     consts.Sample[0] = hdr && !settings.use_rcas ? 1 : 0;
 
     if (settings.use_rcas) {
