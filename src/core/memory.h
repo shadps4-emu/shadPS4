@@ -29,6 +29,8 @@ class MemoryMapViewer;
 namespace Core {
 
 constexpr u64 DEFAULT_MAPPING_BASE = 0x200000000;
+constexpr u64 GUEST_PAGE_BITS = 14;
+constexpr u64 GUEST_PAGE_SIZE = 1ULL << GUEST_PAGE_BITS;
 
 enum class MemoryProt : u32 {
     NoAccess = 0,
