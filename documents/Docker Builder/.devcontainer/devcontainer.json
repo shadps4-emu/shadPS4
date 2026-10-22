@@ -46,6 +46,6 @@
             "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
         },
         "editor.formatOnSave": true,
-        "clang-format.executable": "clang-format-19"
+        "clang-format.executable": "clang-format-23"
     }
 }
