@@ -83,10 +83,10 @@ struct PhysicalMemoryArea {
         if (base + size != next.base) {
             return false;
         }
-        if (memory_type != next.memory_type) {
+        if (dma_type != next.dma_type) {
             return false;
         }
-        if (dma_type != next.dma_type) {
+        if (dma_type != PhysicalMemoryType::Free && memory_type != next.memory_type) {
             return false;
         }
         return true;
