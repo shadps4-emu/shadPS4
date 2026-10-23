@@ -68,6 +68,18 @@ Linker::Linker() : memory{Memory::Instance()} {}
 
 Linker::~Linker() = default;
 
+VAddr Linker::FindExport(const Loader::SymbolResolver& symbol) {
+    std::scoped_lock lk{mutex};
+    for (const auto& module : m_modules) {
+        const auto* record = module->export_sym.FindSymbol(symbol);
+        // Symbol matching ignores ELF type but callers may require a data object.
+        if (record && record->symbol.type == symbol.type) {
+            return record->virtual_address;
+        }
+    }
+    return 0;
+}
+
 void Linker::Execute(const std::vector<std::string>& args) {
     if (EmulatorSettings.IsDebugDump()) {
         DebugDump();
