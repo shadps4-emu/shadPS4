@@ -451,12 +451,15 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
         std::string_view node_name = node.name();
 
         if (node_name == "title-name") {
-            strncpy(details->title, node.text().as_string(), ORBIS_NP_TROPHY_GAME_TITLE_MAX_SIZE);
+            strncpy(details->title, node.text().as_string(),
+                    ORBIS_NP_TROPHY_GAME_TITLE_MAX_SIZE - 1);
+            details->title[ORBIS_NP_TROPHY_GAME_TITLE_MAX_SIZE - 1] = '\0';
         }
 
         if (node_name == "title-detail") {
             strncpy(details->description, node.text().as_string(),
-                    ORBIS_NP_TROPHY_GAME_DESCR_MAX_SIZE);
+                    ORBIS_NP_TROPHY_GAME_DESCR_MAX_SIZE - 1);
+            details->description[ORBIS_NP_TROPHY_GAME_DESCR_MAX_SIZE - 1] = '\0';
         }
 
         if (node_name == "group")
@@ -722,7 +725,7 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpT
     if (handle == ORBIS_NP_TROPHY_INVALID_HANDLE)
         return ORBIS_NP_TROPHY_ERROR_INVALID_HANDLE;
 
-    if (trophyId >= ORBIS_NP_TROPHY_NUM_MAX)
+    if (trophyId < 0 || trophyId >= ORBIS_NP_TROPHY_NUM_MAX)
         return ORBIS_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
 
     if (details == nullptr || data == nullptr)
@@ -762,9 +765,12 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpT
                 std::string_view current_trophy_description =
                     node.child("detail").text().as_string();
 
-                strncpy(details->name, current_trophy_name.data(), ORBIS_NP_TROPHY_NAME_MAX_SIZE);
+                strncpy(details->name, current_trophy_name.data(),
+                        ORBIS_NP_TROPHY_NAME_MAX_SIZE - 1);
+                details->name[ORBIS_NP_TROPHY_NAME_MAX_SIZE - 1] = '\0';
                 strncpy(details->description, current_trophy_description.data(),
-                        ORBIS_NP_TROPHY_DESCR_MAX_SIZE);
+                        ORBIS_NP_TROPHY_DESCR_MAX_SIZE - 1);
+                details->description[ORBIS_NP_TROPHY_DESCR_MAX_SIZE - 1] = '\0';
             }
         }
     }
@@ -953,7 +959,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
     if (handle == ORBIS_NP_TROPHY_INVALID_HANDLE)
         return ORBIS_NP_TROPHY_ERROR_INVALID_HANDLE;
 
-    if (trophyId >= ORBIS_NP_TROPHY_NUM_MAX)
+    if (trophyId < 0 || trophyId >= ORBIS_NP_TROPHY_NUM_MAX)
         return ORBIS_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
 
     if (platinumId == nullptr)
@@ -1061,8 +1067,8 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
             }
         }
 
-        if (node.attribute("pid").as_int(-1) != ORBIS_NP_TROPHY_INVALID_TROPHY_ID &&
-            node.attribute("gid").as_int(0) > 0) {
+        if (current_trophy_type != "P" &&
+            node.attribute("pid").as_int(-1) != ORBIS_NP_TROPHY_INVALID_TROPHY_ID) {
             num_base_trophies++;
             if (current_trophy_unlockstate) {
                 num_base_trophies_unlocked++;
