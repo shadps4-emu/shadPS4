@@ -1197,27 +1197,27 @@ void Translator::V_FREXP_MANT_F32(const GcnInst& inst) {
 
 void Translator::V_MOVRELD_B32(const GcnInst& inst) {
     const IR::U32 src_val{GetSrc(inst.src[0])};
-    u32 dst_vgprno = inst.dst[0].code - static_cast<u32>(IR::VectorReg::V0);
-    IR::U32 m0 = ir.GetM0();
+    const u32 dst_vgprno = inst.dst[0].code - static_cast<u32>(IR::VectorReg::V0);
+    const IR::U32 m0 = ir.GetM0();
 
-    VMovRelDHelper(dst_vgprno, src_val, m0);
+    VMovRelDHelper(dst_vgprno, src_val, m0, pc - inst.length);
 }
 
 void Translator::V_MOVRELS_B32(const GcnInst& inst) {
-    u32 src_vgprno = inst.src[0].code - static_cast<u32>(IR::VectorReg::V0);
+    const u32 src_vgprno = inst.src[0].code - static_cast<u32>(IR::VectorReg::V0);
     const IR::U32 m0 = ir.GetM0();
 
-    const IR::U32 src_val = VMovRelSHelper(src_vgprno, m0);
+    const IR::U32 src_val = VMovRelSHelper(src_vgprno, m0, pc - inst.length);
     SetDst(inst.dst[0], src_val);
 }
 
 void Translator::V_MOVRELSD_B32(const GcnInst& inst) {
-    u32 src_vgprno = inst.src[0].code - static_cast<u32>(IR::VectorReg::V0);
-    u32 dst_vgprno = inst.dst[0].code - static_cast<u32>(IR::VectorReg::V0);
-    IR::U32 m0 = ir.GetM0();
+    const u32 src_vgprno = inst.src[0].code - static_cast<u32>(IR::VectorReg::V0);
+    const u32 dst_vgprno = inst.dst[0].code - static_cast<u32>(IR::VectorReg::V0);
+    const IR::U32 m0 = ir.GetM0();
 
-    const IR::U32 src_val = VMovRelSHelper(src_vgprno, m0);
-    VMovRelDHelper(dst_vgprno, src_val, m0);
+    const IR::U32 src_val = VMovRelSHelper(src_vgprno, m0, pc - inst.length);
+    VMovRelDHelper(dst_vgprno, src_val, m0, pc - inst.length);
 }
 
 // VOPC
@@ -1998,13 +1998,219 @@ IR::F32 Translator::LegacyMul(const IR::F32& a, const IR::F32& b) {
     return IR::F32{ir.Select(either_zero, zero, ir.FPMul(a, b))};
 }
 
-// TODO: add range analysis pass to hopefully put an upper bound on m0, and only select one of
-// [src_vgprno, src_vgprno + max_m0]. Same for dst regs we may write back to
+static std::optional<u32> GetConstantValue(const InstOperand& op) {
+    switch (op.field) {
+    case OperandField::ConstZero:
+        return 0;
+    case OperandField::SignedConstIntPos:
+        return op.code - SignedConstIntPosMin + 1;
+    case OperandField::LiteralConst:
+        return op.code;
+    default:
+        return std::nullopt;
+    }
+}
 
-IR::U32 Translator::VMovRelSHelper(u32 src_vgprno, const IR::U32 m0) {
-    // Read from VGPR0 by default when src_vgprno + m0 > num_allocated_vgprs
+void Translator::AnalyzeMovRel(std::span<const GcnInst> inst_list) {
+    movrel_bounds.clear();
+
+    bool has_movrel = false;
+    for (const auto& inst : inst_list) {
+        if (inst.opcode == Opcode::V_MOVRELS_B32 || inst.opcode == Opcode::V_MOVRELD_B32 ||
+            inst.opcode == Opcode::V_MOVRELSD_B32) {
+            has_movrel = true;
+            break;
+        }
+    }
+    if (!has_movrel) {
+        return;
+    }
+
+    const u32 num_vgprs = runtime_info.props.num_allocated_vgprs;
+    const u32 unbounded = num_vgprs - 1;
+
+    std::unordered_map<u32, u32> loop_bounds;
+    for (const auto& inst : inst_list) {
+        if (inst.opcode == Opcode::S_CMP_LT_U32 && inst.src_count >= 2) {
+            const auto c = GetConstantValue(inst.src[1]);
+            if (c && *c > 0 && inst.src[0].field == OperandField::ScalarGPR) {
+                loop_bounds[inst.src[0].code] = *c - 1;
+            }
+        } else if (inst.opcode == Opcode::S_CMP_LE_U32 && inst.src_count >= 2) {
+            const auto c = GetConstantValue(inst.src[1]);
+            if (c && inst.src[0].field == OperandField::ScalarGPR) {
+                loop_bounds[inst.src[0].code] = *c;
+            }
+        } else if (inst.opcode == Opcode::S_CMPK_LT_U32 && inst.dst_count >= 1) {
+            const s16 simm = inst.control.sopk.simm;
+            if (simm > 0 && inst.dst[0].field == OperandField::ScalarGPR) {
+                loop_bounds[inst.dst[0].code] = static_cast<u32>(simm - 1);
+            }
+        } else if (inst.opcode == Opcode::S_CMPK_LE_U32 && inst.dst_count >= 1) {
+            const s16 simm = inst.control.sopk.simm;
+            if (simm >= 0 && inst.dst[0].field == OperandField::ScalarGPR) {
+                loop_bounds[inst.dst[0].code] = static_cast<u32>(simm);
+            }
+        }
+    }
+
+    auto ResolveOperand = [&](auto& self, const InstOperand& op, size_t inst_idx,
+                              u32 depth) -> u32 {
+        if (depth > 16) {
+            return unbounded;
+        }
+        if (const auto c = GetConstantValue(op)) {
+            return *c;
+        }
+        if (op.field == OperandField::ScalarGPR || op.field == OperandField::VccLo) {
+            const u32 reg_id = (op.field == OperandField::VccLo) ? 106 : op.code;
+            const auto lb = loop_bounds.find(reg_id);
+            if (lb != loop_bounds.end()) {
+                return lb->second;
+            }
+            for (size_t p = inst_idx; p > 0; --p) {
+                const auto& prev = inst_list[p - 1];
+                for (u32 d = 0; d < prev.dst_count; ++d) {
+                    const u32 d_id =
+                        (prev.dst[d].field == OperandField::VccLo) ? 106 : prev.dst[d].code;
+                    if ((prev.dst[d].field == op.field ||
+                         (op.field == OperandField::VccLo &&
+                          prev.dst[d].field == OperandField::VccLo)) &&
+                        d_id == reg_id) {
+                        if (prev.opcode == Opcode::S_MOV_B32 && prev.src_count >= 1) {
+                            return self(self, prev.src[0], p - 1, depth + 1);
+                        } else if (prev.opcode == Opcode::S_MOVK_I32) {
+                            const s16 simm = prev.control.sopk.simm;
+                            return simm >= 0 ? static_cast<u32>(simm) : unbounded;
+                        } else if (prev.opcode == Opcode::S_AND_B32 && prev.src_count >= 2) {
+                            return std::min(self(self, prev.src[0], p - 1, depth + 1),
+                                            self(self, prev.src[1], p - 1, depth + 1));
+                        } else if (prev.opcode == Opcode::S_MUL_I32 && prev.src_count >= 2) {
+                            const u64 m =
+                                static_cast<u64>(self(self, prev.src[0], p - 1, depth + 1)) *
+                                static_cast<u64>(self(self, prev.src[1], p - 1, depth + 1));
+                            return m < unbounded ? static_cast<u32>(m) : unbounded;
+                        } else if (prev.opcode == Opcode::S_LSHL_B32 && prev.src_count >= 2) {
+                            const u32 shift = self(self, prev.src[1], p - 1, depth + 1);
+                            if (shift < 32) {
+                                const u64 v =
+                                    static_cast<u64>(self(self, prev.src[0], p - 1, depth + 1))
+                                    << shift;
+                                return v < unbounded ? static_cast<u32>(v) : unbounded;
+                            }
+                            return unbounded;
+                        } else if (prev.opcode == Opcode::V_READFIRSTLANE_B32 &&
+                                   prev.src_count >= 1) {
+                            return self(self, prev.src[0], p - 1, depth + 1);
+                        }
+                        return unbounded;
+                    }
+                }
+            }
+            return unbounded;
+        }
+
+        if (op.field == OperandField::VectorGPR) {
+            const u32 vgpr_id = op.code;
+            for (size_t p = inst_idx; p > 0; --p) {
+                const auto& prev = inst_list[p - 1];
+                for (u32 d = 0; d < prev.dst_count; ++d) {
+                    if (prev.dst[d].field == OperandField::VectorGPR &&
+                        prev.dst[d].code == vgpr_id) {
+                        if (prev.opcode == Opcode::V_MOV_B32 && prev.src_count >= 1) {
+                            return self(self, prev.src[0], p - 1, depth + 1);
+                        } else if ((prev.opcode == Opcode::V_MUL_LO_U32 ||
+                                    prev.opcode == Opcode::V_MUL_LO_I32) &&
+                                   prev.src_count >= 2) {
+                            const u64 m =
+                                static_cast<u64>(self(self, prev.src[0], p - 1, depth + 1)) *
+                                static_cast<u64>(self(self, prev.src[1], p - 1, depth + 1));
+                            return m < unbounded ? static_cast<u32>(m) : unbounded;
+                        } else if (prev.opcode == Opcode::V_LSHLREV_B32 && prev.src_count >= 2) {
+                            const u32 shift = self(self, prev.src[0], p - 1, depth + 1);
+                            if (shift < 32) {
+                                const u64 v =
+                                    static_cast<u64>(self(self, prev.src[1], p - 1, depth + 1))
+                                    << shift;
+                                return v < unbounded ? static_cast<u32>(v) : unbounded;
+                            }
+                            return unbounded;
+                        }
+                        return unbounded;
+                    }
+                }
+            }
+            return unbounded;
+        }
+
+        if (op.field == OperandField::M0) {
+            for (size_t p = inst_idx; p > 0; --p) {
+                const auto& prev = inst_list[p - 1];
+                for (u32 d = 0; d < prev.dst_count; ++d) {
+                    if (prev.dst[d].field == OperandField::M0) {
+                        if (prev.opcode == Opcode::S_MOV_B32 && prev.src_count >= 1) {
+                            return self(self, prev.src[0], p - 1, depth + 1);
+                        } else if (prev.opcode == Opcode::S_AND_B32 && prev.src_count >= 2) {
+                            return std::min(self(self, prev.src[0], p - 1, depth + 1),
+                                            self(self, prev.src[1], p - 1, depth + 1));
+                        }
+                        return unbounded;
+                    }
+                }
+            }
+            return 0;
+        }
+
+        return unbounded;
+    };
+
+    u32 max_m0_found = 0;
+    for (size_t idx = 0; idx < inst_list.size(); ++idx) {
+        const auto& inst = inst_list[idx];
+        for (u32 d = 0; d < inst.dst_count; ++d) {
+            if (inst.dst[d].field == OperandField::M0) {
+                u32 ub = unbounded;
+                if (inst.opcode == Opcode::S_MOV_B32 && inst.src_count >= 1) {
+                    ub = ResolveOperand(ResolveOperand, inst.src[0], idx, 0);
+                } else if (inst.opcode == Opcode::S_AND_B32 && inst.src_count >= 2) {
+                    ub = std::min(ResolveOperand(ResolveOperand, inst.src[0], idx, 0),
+                                  ResolveOperand(ResolveOperand, inst.src[1], idx, 0));
+                }
+                if (ub < unbounded) {
+                    max_m0_found = std::max(max_m0_found, ub);
+                }
+            }
+        }
+    }
+
+    u32 cur_pc = 0;
+    for (size_t idx = 0; idx < inst_list.size(); ++idx) {
+        const auto& inst = inst_list[idx];
+        if (inst.opcode == Opcode::V_MOVRELS_B32 || inst.opcode == Opcode::V_MOVRELD_B32 ||
+            inst.opcode == Opcode::V_MOVRELSD_B32) {
+            InstOperand m0_op{};
+            m0_op.field = OperandField::M0;
+            u32 ub = ResolveOperand(ResolveOperand, m0_op, idx, 0);
+            if (ub >= unbounded && max_m0_found > 0) {
+                ub = max_m0_found;
+            }
+            movrel_bounds[cur_pc] = std::min(ub, unbounded);
+        }
+        cur_pc += inst.length;
+    }
+}
+
+u32 Translator::GetMovRelEndVgpr(u32 base_vgprno, u32 inst_pc) const {
+    const auto it = movrel_bounds.find(inst_pc);
+    const u32 max_m0 =
+        (it != movrel_bounds.end()) ? it->second : (runtime_info.props.num_allocated_vgprs - 1);
+    return std::min<u32>(base_vgprno + max_m0 + 1, runtime_info.props.num_allocated_vgprs);
+}
+
+IR::U32 Translator::VMovRelSHelper(u32 src_vgprno, const IR::U32 m0, u32 inst_pc) {
     IR::U32 src_val = ir.GetVectorReg<IR::U32>(IR::VectorReg::V0);
-    for (u32 i = src_vgprno; i < runtime_info.props.num_allocated_vgprs; i++) {
+    const u32 end_vgprno = GetMovRelEndVgpr(src_vgprno, inst_pc);
+    for (u32 i = src_vgprno; i < end_vgprno; i++) {
         const IR::U1 cond = ir.IEqual(m0, ir.Imm32(i - src_vgprno));
         src_val =
             IR::U32{ir.Select(cond, ir.GetVectorReg<IR::U32>(IR::VectorReg::V0 + i), src_val)};
@@ -2012,8 +2218,10 @@ IR::U32 Translator::VMovRelSHelper(u32 src_vgprno, const IR::U32 m0) {
     return src_val;
 }
 
-void Translator::VMovRelDHelper(u32 dst_vgprno, const IR::U32 src_val, const IR::U32 m0) {
-    for (u32 i = dst_vgprno; i < runtime_info.props.num_allocated_vgprs; i++) {
+void Translator::VMovRelDHelper(u32 dst_vgprno, const IR::U32 src_val, const IR::U32 m0,
+                                u32 inst_pc) {
+    const u32 end_vgprno = GetMovRelEndVgpr(dst_vgprno, inst_pc);
+    for (u32 i = dst_vgprno; i < end_vgprno; i++) {
         const IR::U1 cond = ir.IEqual(m0, ir.Imm32(i - dst_vgprno));
         const IR::U32 dst_val =
             IR::U32{ir.Select(cond, src_val, ir.GetVectorReg<IR::U32>(IR::VectorReg::V0 + i))};
