@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -394,6 +394,10 @@ public:
         this->on_submit = std::move(on_submit);
     }
 
+    void SetEndRenderingCallback(SessionFunc&& on_end_rendering) {
+        this->on_end_rendering = std::move(on_end_rendering);
+    }
+
     /// Returns the current render state.
     const RenderState& GetRenderState() const {
         return render_state;
@@ -461,6 +465,7 @@ private:
     DynamicState dynamic_state;
     SessionFunc on_session{};
     SubmitFunc on_submit{};
+    SessionFunc on_end_rendering{};
     struct Session {
         vk::CommandBuffer upload{};
         vk::CommandBuffer primary{};

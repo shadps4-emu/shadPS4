@@ -1,0 +1,38 @@
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#version 450
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 0) buffer words_buf {
+    uint words[];
+};
+
+layout(push_constant) uniform params {
+    uint job_count;
+    uint out_start;
+    uint num_queries;
+    uint num_preds;
+    uint jobs_base;
+    uint preds_base;
+};
+
+void main() {
+    const uint job = gl_GlobalInvocationID.x;
+    if (job >= job_count) {
+        return;
+    }
+    const uint first = words[jobs_base + 2u * job];
+    const uint count = words[jobs_base + 2u * job + 1u];
+    bool visible = false;
+    bool available = true;
+    for (uint i = 0u; i < count; ++i) {
+        const uint slot = (first + i) % num_queries;
+        visible = visible || words[2u * slot] != 0u;
+        available = available && words[2u * slot + 1u] != 0u;
+    }
+    const uint out_pair = preds_base + 2u * ((out_start + job) % num_preds);
+    words[out_pair] = (visible || !available) ? 1u : 0u;
+    words[out_pair + 1u] = (!visible || !available) ? 1u : 0u;
+}

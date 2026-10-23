@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -7,6 +7,7 @@
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
+#include "video_core/renderer_vulkan/vk_occlusion.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
@@ -79,6 +80,11 @@ public:
     void RegisterMemory(VAddr addr, u64 size);
     void UnmapMemory(VAddr addr, u64 size);
 
+    bool OcclusionDump(VAddr address, u32 num_dbs = 8, u32 stride = 16) {
+        return occlusion.Dump(address, num_dbs, stride);
+    }
+    void StreamoutDump(VAddr address, u32 stream = 0);
+
     u64 Flush();
     void Finish();
     void OnSubmit();
@@ -146,6 +152,7 @@ private:
     boost::icl::interval_set<VAddr> mapped_ranges;
     Common::SharedFirstMutex mapped_ranges_mutex;
     PipelineCache pipeline_cache;
+    OcclusionCounter occlusion;
     const bool host_markers_enabled;
     const bool guest_markers_enabled;
 
@@ -175,6 +182,7 @@ private:
 
     bool attachment_feedback_loop{};
     bool needs_barrier{};
+    std::array<u64, 4> streamout_primitives{};
 };
 
 } // namespace Vulkan
