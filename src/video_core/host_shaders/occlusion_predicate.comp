@@ -26,7 +26,7 @@ void main() {
     const uint first = words[jobs_base + 2u * job];
     const uint count = words[jobs_base + 2u * job + 1u];
     bool visible = false;
-    bool available = true;
+    bool available = (count > 0u);
     for (uint i = 0u; i < count; ++i) {
         const uint slot = (first + i) % num_queries;
         visible = visible || words[2u * slot] != 0u;
