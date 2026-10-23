@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <chrono>
 #include <thread>
 #include <unordered_map>
 #include <fmt/format.h>
@@ -210,6 +211,109 @@ struct TrophyContext {
 static Common::SlotVector<OrbisNpTrophyHandle> trophy_handles{MaxTrophyHandles};
 static Common::SlotVector<ContextKey> trophy_contexts{MaxTrophyContexts};
 static std::unordered_map<ContextKey, TrophyContext, ContextKeyHash> contexts_internal{};
+
+// Unlock platinum when a saved game already has every base-game trophy unlocked.
+static void CheckAndUnlockPlatinum(const TrophyContext& ctx) {
+    pugi::xml_document save_doc;
+    const auto save_result = save_doc.load_file(ctx.xml_save_file.native().c_str());
+    if (!save_result) {
+        LOG_DEBUG(Lib_NpTrophy, "Startup platinum check skipped: could not load {}",
+                  ctx.xml_save_file.string());
+        return;
+    }
+
+    auto trophyconf = save_doc.child("trophyconf");
+    if (!trophyconf) {
+        LOG_WARNING(Lib_NpTrophy, "Startup platinum check skipped: missing trophyconf in {}",
+                    ctx.xml_save_file.string());
+        return;
+    }
+
+    int num_base_trophies = 0;
+    int num_base_trophies_unlocked = 0;
+    pugi::xml_node platinum_node;
+
+    for (pugi::xml_node& node : trophyconf.children()) {
+        if (std::string_view(node.name()) != "trophy") {
+            continue;
+        }
+
+        const std::string_view trophy_type = node.attribute("ttype").value();
+        if (trophy_type == "P") {
+            platinum_node = node;
+            continue;
+        }
+
+        // Use the same base-game trophy filter as sceNpTrophyUnlockTrophy.
+        if (node.attribute("pid").as_int(-1) == ORBIS_NP_TROPHY_INVALID_TROPHY_ID) {
+            continue;
+        }
+
+        ++num_base_trophies;
+        if (node.attribute("unlockstate").as_bool()) {
+            ++num_base_trophies_unlocked;
+        }
+    }
+
+    if (!platinum_node || num_base_trophies == 0 ||
+        num_base_trophies_unlocked != num_base_trophies ||
+        platinum_node.attribute("unlockstate").as_bool()) {
+        return;
+    }
+
+    const int platinum_id = platinum_node.attribute("id").as_int(ORBIS_NP_TROPHY_INVALID_TROPHY_ID);
+    if (platinum_id < 0 || platinum_id >= ORBIS_NP_TROPHY_NUM_MAX) {
+        LOG_WARNING(Lib_NpTrophy, "Startup platinum check found invalid trophy id {}", platinum_id);
+        return;
+    }
+
+    const u64 timestamp = static_cast<u64>(std::chrono::duration_cast<std::chrono::seconds>(
+                                               std::chrono::system_clock::now().time_since_epoch())
+                                               .count());
+    if (platinum_node.attribute("unlockstate").empty()) {
+        platinum_node.append_attribute("unlockstate") = "true";
+    } else {
+        platinum_node.attribute("unlockstate").set_value("true");
+    }
+
+    const std::string timestamp_string = std::to_string(timestamp);
+    if (platinum_node.attribute("timestamp").empty()) {
+        platinum_node.append_attribute("timestamp") = timestamp_string.c_str();
+    } else {
+        platinum_node.attribute("timestamp").set_value(timestamp_string.c_str());
+    }
+
+    if (!save_doc.save_file(ctx.xml_save_file.native().c_str())) {
+        LOG_ERROR(Lib_NpTrophy, "Failed to save startup platinum unlock to {}",
+                  ctx.xml_save_file.string());
+        return;
+    }
+
+    // Prefer the active language's trophy name, falling back to the saved XML.
+    std::string platinum_name = platinum_node.child("name").text().as_string();
+    pugi::xml_document lang_doc;
+    if (lang_doc.load_file(ctx.trophy_xml_path.native().c_str())) {
+        for (const pugi::xml_node& node : lang_doc.child("trophyconf").children("trophy")) {
+            if (node.attribute("id").as_int(ORBIS_NP_TROPHY_INVALID_TROPHY_ID) != platinum_id) {
+                continue;
+            }
+            const char* localized_name = node.child("name").text().as_string();
+            if (localized_name[0] != '\0') {
+                platinum_name = localized_name;
+            }
+            break;
+        }
+    }
+
+    const auto platinum_icon_path = ctx.icons_dir / fmt::format("TROP{:03d}.PNG", platinum_id);
+    AddTrophyToQueue(platinum_icon_path, platinum_name, "P");
+    NpHandler::GetInstance().ReportTrophyUnlock(ctx.user_id, ctx.service_label, platinum_id,
+                                                timestamp);
+
+    LOG_INFO(Lib_NpTrophy,
+             "Unlocked platinum trophy {} on startup ({}/{} base-game trophies unlocked)",
+             platinum_id, num_base_trophies_unlocked, num_base_trophies);
+}
 
 void ORBIS_NP_TROPHY_FLAG_ZERO(OrbisNpTrophyFlagArray* p) {
     for (int i = 0; i < ORBIS_NP_TROPHY_NUM_MAX; i++) {
@@ -932,6 +1036,7 @@ int PS4_SYSV_ABI sceNpTrophyRegisterContext(OrbisNpTrophyContext context,
 
     ctx.registered = true;
     LOG_INFO(Lib_NpTrophy, "Context {} registered", context);
+    CheckAndUnlockPlatinum(ctx);
 
     // Sync with shadNet
     {
