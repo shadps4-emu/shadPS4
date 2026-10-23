@@ -289,6 +289,7 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
         } else {
             module = CompileSPV(spv, instance.GetDevice());
         }
+        it_pgm.value()->info.flattened_ud_buf = std::move(program->info.flattened_ud_buf);
     }
     it_pgm.value()->InsertPermut(module, std::move(spec), perm_idx);
 
