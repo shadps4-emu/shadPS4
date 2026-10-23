@@ -39,7 +39,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
       buffer_cache{instance, scheduler, runtime, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, runtime, liverpool_, buffer_cache, page_manager},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
-      pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
+      pipeline_cache{instance, scheduler, liverpool, buffer_cache,
+                     buffer_cache.GetSparsePageShift()},
       host_markers_enabled{EmulatorSettings.IsVkHostMarkersEnabled()},
       guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()} {
     if (!EmulatorSettings.IsNullGPU()) {
@@ -417,6 +418,18 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     set_writes.clear();
     buffer_infos.clear();
     image_infos.clear();
+
+    size_t num_image_descriptors{};
+    for (const auto* stage : pipeline->GetStages()) {
+        if (stage) {
+            num_image_descriptors += stage->samplers.size();
+            for (const auto& image : stage->images) {
+                num_image_descriptors += image.NumBindings(*stage);
+            }
+        }
+    }
+    image_infos.reserve(num_image_descriptors);
+    image_bindings.resize(num_image_descriptors);
 
     bool uses_dma = false;
 
@@ -858,36 +871,45 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
 
 void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding) {
     const u32 first_image_idx = image_infos.size();
-    // To emulate storing to explicit mip levels, build a descriptor array with each mip level.
-    boost::container::small_vector<u32, 8> image_descriptor_array_sizes;
-
     u32 num_images{};
     for (const auto& image_desc : stage.images) {
-        const auto tsharp = image_desc.GetSharp(stage);
-        const auto data_fmt = tsharp.GetDataFmt();
-        const auto num_fmt = tsharp.GetNumberFmt();
-        if (tsharp.Address() == 0 || data_fmt == AmdGpu::DataFormat::FormatInvalid) {
-            image_bindings[num_images++].image_id = {};
-            image_descriptor_array_sizes.push_back(1);
-            continue;
-        }
-
-        if (!memory->IsValidGpuMapping(tsharp.Address(), 0) ||
-            !magic_enum::enum_contains(data_fmt) || !magic_enum::enum_contains(num_fmt)) {
-            LOG_WARNING(Render_Vulkan,
-                        "Rejecting invalid T# address={:#x}, pitch={}, width={}, "
-                        "data_format={}, num_format={}",
-                        tsharp.Address(), tsharp.pitch, tsharp.width, static_cast<u32>(data_fmt),
-                        static_cast<u32>(num_fmt));
-            image_bindings[num_images++].image_id = {};
-            image_descriptor_array_sizes.push_back(1);
-            continue;
-        }
-
-        const Shader::MipStorageFallbackMode mip_fallback_mode = image_desc.mip_fallback_mode;
         const u32 num_bindings = image_desc.NumBindings(stage);
+        for (u32 i = 0; i < num_bindings; ++i) {
+            const auto tsharp =
+                image_desc.GetSharp(stage, image_desc.descriptor_count != 0 ? i : 0);
+            const auto data_fmt = tsharp.GetDataFmt();
+            const auto num_fmt = tsharp.GetNumberFmt();
+            if (image_desc.descriptor_count != 0 && tsharp) {
+                const auto representative = image_desc.GetSharp(stage);
+                if (tsharp.GetViewType(image_desc.is_array) !=
+                        representative.GetViewType(image_desc.is_array) ||
+                    AmdGpu::IsInteger(num_fmt) !=
+                        AmdGpu::IsInteger(representative.GetNumberFmt()) ||
+                    tsharp.GetNumberConversion() != representative.GetNumberConversion()) {
+                    LOG_WARNING(Render_Vulkan,
+                                "Incompatible image descriptor array element {} in shader {:#x}", i,
+                                stage.pgm_hash);
+                    image_bindings[num_images++].image_id = {};
+                    continue;
+                }
+            }
+            if (tsharp.Address() == 0 || data_fmt == AmdGpu::DataFormat::FormatInvalid) {
+                image_bindings[num_images++].image_id = {};
+                continue;
+            }
 
-        for (auto i = 0; i < num_bindings; i++) {
+            if (!memory->IsValidGpuMapping(tsharp.Address(), 0) ||
+                !magic_enum::enum_contains(data_fmt) || !magic_enum::enum_contains(num_fmt)) {
+                LOG_WARNING(Render_Vulkan,
+                            "Rejecting invalid T# address={:#x}, pitch={}, width={}, "
+                            "data_format={}, num_format={}",
+                            tsharp.Address(), tsharp.pitch, tsharp.width,
+                            static_cast<u32>(data_fmt), static_cast<u32>(num_fmt));
+                image_bindings[num_images++].image_id = {};
+                continue;
+            }
+
+            const Shader::MipStorageFallbackMode mip_fallback_mode = image_desc.mip_fallback_mode;
             auto& [image_id, desc] = image_bindings[num_images++];
             std::construct_at(&desc, tsharp, image_desc);
 
@@ -915,8 +937,6 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             }
             image->binding.is_bound = 1u;
         }
-
-        image_descriptor_array_sizes.push_back(num_bindings);
     }
 
     // Second pass to re-bind images that were updated after binding
@@ -976,10 +996,9 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
     }
 
     u32 image_info_idx = first_image_idx;
-    u32 image_binding_idx = 0;
-    for (u32 array_size : image_descriptor_array_sizes) {
-        const auto& [_, desc] = image_bindings[image_binding_idx];
-        const bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
+    for (const auto& image_desc : stage.images) {
+        const u32 array_size = image_desc.NumBindings(stage);
+        const bool is_storage = image_desc.is_written;
         auto& set_write = set_writes[set_write_index++];
         set_write.dstSet = VK_NULL_HANDLE;
         set_write.dstBinding = binding.unified;
@@ -990,7 +1009,6 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         set_write.pImageInfo = &image_infos[image_info_idx];
 
         image_info_idx += array_size;
-        image_binding_idx += array_size;
         binding.unified += array_size;
     }
 
