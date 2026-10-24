@@ -230,11 +230,10 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
                 LOG_ERROR(Kernel_Fs, "Creating {} failed, path is read-only", raw_path);
                 return -1;
             }
-            const auto parent = file->m_host_name.parent_path();
-            std::error_code ec;
-            if (!file->m_host_name.empty() && !fs::is_directory(parent, ec)) {
+            const auto parent = fs::path(file->m_guest_name).parent_path().generic_string();
+            if (!mnt->IsDirectory(parent)) {
                 h->DeleteHandle(handle);
-                *__Error() = fs::exists(parent, ec) ? POSIX_ENOTDIR : POSIX_ENOENT;
+                *__Error() = mnt->Exists(parent) ? POSIX_ENOTDIR : POSIX_ENOENT;
                 LOG_ERROR(Kernel_Fs, "Creating {} failed, parent is not a directory", raw_path);
                 return -1;
             }
