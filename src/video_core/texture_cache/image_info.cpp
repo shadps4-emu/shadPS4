@@ -163,7 +163,10 @@ ImageInfo::ImageInfo(const AmdGpu::Image& sharp, const Shader::ImageResource& de
     size.height = image.height + 1;
     size.depth = props.is_volume ? image.depth + 1 : 1;
     pitch = image.Pitch();
-    resources.levels = image.NumLevels();
+    // The guest may request more levels than the full mip chain has (the extra ones are 1x1),
+    // which Vulkan does not allow. Writing to such levels runs past the image's memory.
+    const u32 max_levels = std::bit_width(std::max(std::max(size.width, size.height), size.depth));
+    resources.levels = std::min(image.NumLevels(), max_levels);
     resources.layers = image.NumLayers();
     num_samples = image.NumSamples();
     num_bits = NumBitsPerBlock(data_fmt);
