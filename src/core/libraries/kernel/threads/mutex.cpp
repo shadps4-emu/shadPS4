@@ -385,12 +385,12 @@ s32 PS4_SYSV_ABI posix_pthread_mutexattr_setkind_np(PthreadMutexAttrT* attr,
     return 0;
 }
 
-s32 PS4_SYSV_ABI posix_pthread_mutexattr_getkind_np(PthreadMutexAttrT* attr, int* kind) {
-    if (attr == nullptr || *attr == nullptr || kind == nullptr) {
-        return POSIX_EINVAL;
+s32 PS4_SYSV_ABI posix_pthread_mutexattr_getkind_np(PthreadMutexAttrT attr) {
+    if (attr == nullptr) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
     }
-    *kind = static_cast<int>((*attr)->m_type);
-    return 0;
+    return static_cast<int>(attr->m_type);
 }
 
 s32 PS4_SYSV_ABI posix_pthread_mutexattr_setprioceiling(PthreadMutexAttrT* attr, int prioceiling) {
