@@ -38,6 +38,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/net/net_discovery.h"
 #include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/save_data/save_backup.h"
@@ -694,6 +695,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         rpc->setStatusPlaying(game_info.title, id);
     }
 #endif
+
+    if (EmulatorSettings.IsConnectedToNetwork() && EmulatorSettings.IsDeviceDiscoveryEnabled()) {
+        Libraries::Net::DiscoveryResponder::Instance().Start();
+    }
 
     if (!id.empty()) {
         start_time = std::chrono::steady_clock::now();
