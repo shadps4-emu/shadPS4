@@ -755,7 +755,7 @@ static bool FilterRosetta(const ZydisDecodedOperand*) {
     return true;
 }
 
-static std::pair<Xbyak::Reg64, Xbyak::Reg64> PickScratchRegisters(
+static std::tuple<Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64> PickScratchRegisters(
     const ZydisDecodedOperand& mem_op) {
     auto GetIdx = [](ZydisRegister reg) {
         if (reg >= ZYDIS_REGISTER_EAX && reg <= ZYDIS_REGISTER_R15D)
@@ -767,16 +767,16 @@ static std::pair<Xbyak::Reg64, Xbyak::Reg64> PickScratchRegisters(
     const int b = GetIdx(mem_op.mem.base);
     const int i = GetIdx(mem_op.mem.index);
 
-    std::array<Xbyak::Reg64, 2> picked{rax, rcx};
+    std::array<Xbyak::Reg64, 3> picked{rax, rcx, rdx};
     int count = 0;
-    for (const auto& reg : {rax, rcx, rdx, rsi}) {
+    for (const auto& reg : {rax, rcx, rdx, rsi, rdi}) {
         if (reg.getIdx() != b && reg.getIdx() != i) {
             picked[count++] = reg;
-            if (count == 2)
+            if (count == 3)
                 break;
         }
     }
-    return {picked[0], picked[1]};
+    return {picked[0], picked[1], picked[2]};
 }
 
 static void GenerateVMASKMOV(void* address, const ZydisDecodedInstruction& instruction,
@@ -805,25 +805,17 @@ static void GenerateVMASKMOV(void* address, const ZydisDecodedInstruction& instr
     const Xbyak::Xmm xmm_reg(raw_reg.getIdx());
     const Xbyak::Ymm ymm_reg(raw_reg.getIdx());
 
-    int temp_idx = 0;
-    while (temp_idx == raw_mask.getIdx() || temp_idx == raw_reg.getIdx()) {
-        ++temp_idx;
-    }
-    const Xbyak::Xmm temp_xmm(temp_idx);
+    auto [scratch_addr, scratch_mask, scratch_data] = PickScratchRegisters(mem_op);
 
-    auto [scratch_addr, scratch_mask] = PickScratchRegisters(mem_op);
-
-    // Preserve the red zone and spill the temporary register
-    const u32 stack_space = 128 + (is_ymm ? 16 : 0);
+    // 128 bytes Red Zone + 32 bytes vector buffer
+    const u32 stack_space = 128 + 32;
     c.lea(rsp, ptr[rsp - stack_space]);
-    if (is_ymm) {
-        c.vmovups(ptr[rsp], temp_xmm);
-    }
     c.pushfq();
     c.push(scratch_addr);
     c.push(scratch_mask);
+    c.push(scratch_data);
 
-    const u32 rsp_offset = stack_space + 8 * 3;
+    const u32 rsp_offset = stack_space + 8 * 4;
 
     if (mem_op.mem.base == ZYDIS_REGISTER_RIP) {
         const u64 target =
@@ -847,14 +839,17 @@ static void GenerateVMASKMOV(void* address, const ZydisDecodedInstruction& instr
                : c.vmovmskps(scratch_mask.cvt32(), xmm_mask);
     }
 
-    Xbyak::Label skip_all;
-    c.test(scratch_mask.cvt32(), scratch_mask.cvt32());
+    Xbyak::Label done;
 
     if (is_store) {
-        c.jz(skip_all);
         if (is_ymm) {
-            c.vextractf128(temp_xmm, ymm_reg, 1);
+            c.vmovups(ptr[rsp + 32], ymm_reg);
+        } else {
+            c.vmovups(ptr[rsp + 32], xmm_reg);
         }
+
+        c.test(scratch_mask.cvt32(), scratch_mask.cvt32());
+        c.jz(done);
 
         for (int i = 0; i < num_elements; ++i) {
             Xbyak::Label skip_elem;
@@ -862,24 +857,27 @@ static void GenerateVMASKMOV(void* address, const ZydisDecodedInstruction& instr
             c.jz(skip_elem);
 
             const u32 offset = i * elem_size;
-            const auto& src_reg = (i < lanes) ? xmm_reg : temp_xmm;
-            const int lane_idx = i % lanes;
-
             if (is_double) {
-                c.vpextrq(ptr[scratch_addr + offset], src_reg, lane_idx);
+                c.mov(scratch_data, ptr[rsp + 32 + offset]);
+                c.mov(ptr[scratch_addr + offset], scratch_data);
             } else {
-                c.vpextrd(ptr[scratch_addr + offset], src_reg, lane_idx);
+                c.mov(scratch_data.cvt32(), ptr[rsp + 32 + offset]);
+                c.mov(ptr[scratch_addr + offset], scratch_data.cvt32());
             }
             c.L(skip_elem);
         }
     } else {
+        // Load: zero buffer using dst register (which will be overwritten anyway)
         if (is_ymm) {
             c.vxorps(ymm_reg, ymm_reg, ymm_reg);
-            c.vxorps(temp_xmm, temp_xmm, temp_xmm);
+            c.vmovups(ptr[rsp + 32], ymm_reg);
         } else {
             c.vxorps(xmm_reg, xmm_reg, xmm_reg);
+            c.vmovups(ptr[rsp + 32], xmm_reg);
         }
-        c.jz(skip_all);
+
+        c.test(scratch_mask.cvt32(), scratch_mask.cvt32());
+        c.jz(done);
 
         for (int i = 0; i < num_elements; ++i) {
             Xbyak::Label skip_elem;
@@ -887,29 +885,32 @@ static void GenerateVMASKMOV(void* address, const ZydisDecodedInstruction& instr
             c.jz(skip_elem);
 
             const u32 offset = i * elem_size;
-            auto& dst_reg = (i < lanes) ? xmm_reg : temp_xmm;
-            const int lane_idx = i % lanes;
-
             if (is_double) {
-                c.vpinsrq(dst_reg, dst_reg, ptr[scratch_addr + offset], lane_idx);
+                c.mov(scratch_data, ptr[scratch_addr + offset]);
+                c.mov(ptr[rsp + 32 + offset], scratch_data);
             } else {
-                c.vpinsrd(dst_reg, dst_reg, ptr[scratch_addr + offset], lane_idx);
+                c.mov(scratch_data.cvt32(), ptr[scratch_addr + offset]);
+                c.mov(ptr[rsp + 32 + offset], scratch_data.cvt32());
             }
             c.L(skip_elem);
         }
 
+        c.L(done);
         if (is_ymm) {
-            c.vinsertf128(ymm_reg, ymm_reg, temp_xmm, 1);
+            c.vmovups(ymm_reg, ptr[rsp + 32]);
+        } else {
+            c.vmovups(xmm_reg, ptr[rsp + 32]);
         }
     }
 
-    c.L(skip_all);
+    if (is_store) {
+        c.L(done);
+    }
+
+    c.pop(scratch_data);
     c.pop(scratch_mask);
     c.pop(scratch_addr);
     c.popfq();
-    if (is_ymm) {
-        c.vmovups(temp_xmm, ptr[rsp]);
-    }
     c.lea(rsp, ptr[rsp + stack_space]);
 }
 #endif
