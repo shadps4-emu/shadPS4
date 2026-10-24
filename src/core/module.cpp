@@ -259,8 +259,13 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         case PT_INTERP: {
             if (elf_pheader[i].p_filesz != 0) {
                 interpreter_path.resize(elf_pheader[i].p_filesz);
-                elf.LoadSegment(std::bit_cast<VAddr>(interpreter_path.data()),
-                                elf_pheader[i].p_offset, elf_pheader[i].p_filesz);
+                if (!elf.TryLoadSegment(std::bit_cast<VAddr>(interpreter_path.data()),
+                                        elf_pheader[i].p_offset, elf_pheader[i].p_filesz)) {
+                    LOG_WARNING(Core_Linker, "Unable to read {} segment of module {}", header_type,
+                                name);
+                    interpreter_path.clear();
+                    break;
+                }
                 while (!interpreter_path.empty() && interpreter_path.back() == '\0') {
                     interpreter_path.pop_back();
                 }
@@ -271,8 +276,13 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         case PT_SCE_COMMENT: {
             if (elf_pheader[i].p_filesz != 0) {
                 comment.resize(elf_pheader[i].p_filesz);
-                elf.LoadSegment(std::bit_cast<VAddr>(comment.data()), elf_pheader[i].p_offset,
-                                elf_pheader[i].p_filesz);
+                if (!elf.TryLoadSegment(std::bit_cast<VAddr>(comment.data()),
+                                        elf_pheader[i].p_offset, elf_pheader[i].p_filesz)) {
+                    LOG_WARNING(Core_Linker, "Unable to read {} segment of module {}", header_type,
+                                name);
+                    comment.clear();
+                    break;
+                }
                 if (comment.starts_with("PATH") && comment.size() > 12) {
                     comment = comment.substr(12);
                     comment = comment.substr(0, comment.find('\0'));
@@ -293,8 +303,12 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         case PT_SCE_LIBVERSION: {
             if (elf_pheader[i].p_filesz != 0) {
                 std::vector<u8> libver_data(elf_pheader[i].p_filesz);
-                elf.LoadSegment(std::bit_cast<VAddr>(libver_data.data()), elf_pheader[i].p_offset,
-                                elf_pheader[i].p_filesz);
+                if (!elf.TryLoadSegment(std::bit_cast<VAddr>(libver_data.data()),
+                                        elf_pheader[i].p_offset, elf_pheader[i].p_filesz)) {
+                    LOG_WARNING(Core_Linker, "Unable to read {} segment of module {}", header_type,
+                                name);
+                    break;
+                }
                 if (!libver_data.empty()) {
                     const u8 rec_len = libver_data[0];
                     if (rec_len > 4 && 1u + rec_len <= libver_data.size()) {
