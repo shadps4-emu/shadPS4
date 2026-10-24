@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
@@ -141,6 +142,45 @@ s32 PS4_SYSV_ABI sceKernelStopUnloadModule(s32 handle, u64 args, const void* arg
         *pRes = 0;
     }
     return ORBIS_OK;
+}
+
+// Callbacks registered by libc. On hardware they are only called when unloading a module,
+// which isn't supported, so they are just stored.
+static std::atomic<void*> g_thread_atexit_count_callback{};
+static std::atomic<void*> g_thread_atexit_report_callback{};
+
+s32 PS4_SYSV_ABI _sceKernelRtldThreadAtexitIncrement(const void* addr) {
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* module = linker->FindByAddress(reinterpret_cast<VAddr>(addr));
+    if (module == nullptr) {
+        LOG_WARNING(Lib_Kernel, "addr {} does not belong to any loaded module", addr);
+        // Not an Orbis error code, the runtime linker returns a plain -1 here.
+        return -1;
+    }
+    const s32 count = module->thread_atexit_count.fetch_add(1) + 1;
+    LOG_TRACE(Lib_Kernel, "module = {}, count = {}", module->name, count);
+    return ORBIS_OK;
+}
+
+void PS4_SYSV_ABI _sceKernelRtldThreadAtexitDecrement(const void* addr) {
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* module = linker->FindByAddress(reinterpret_cast<VAddr>(addr));
+    if (module == nullptr) {
+        LOG_WARNING(Lib_Kernel, "addr {} does not belong to any loaded module", addr);
+        return;
+    }
+    const s32 count = module->thread_atexit_count.fetch_sub(1) - 1;
+    LOG_TRACE(Lib_Kernel, "module = {}, count = {}", module->name, count);
+}
+
+void PS4_SYSV_ABI _sceKernelSetThreadAtexitCount(void* callback) {
+    LOG_DEBUG(Lib_Kernel, "callback = {}", callback);
+    g_thread_atexit_count_callback.store(callback);
+}
+
+void PS4_SYSV_ABI _sceKernelSetThreadAtexitReport(void* callback) {
+    LOG_DEBUG(Lib_Kernel, "callback = {}", callback);
+    g_thread_atexit_report_callback.store(callback);
 }
 
 s32 PS4_SYSV_ABI sceKernelDlsym(s32 handle, const char* symbol, void** addrp) {
@@ -352,6 +392,10 @@ void RegisterProcess(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", sceKernelGetProcParam);
     LIB_FUNCTION("wzvqT4UqKX8", "libkernel", 1, "libkernel", sceKernelLoadStartModule);
     LIB_FUNCTION("QKd0qM58Qes", "libkernel", 1, "libkernel", sceKernelStopUnloadModule);
+    LIB_FUNCTION("Tz4RNUCBbGI", "libkernel", 1, "libkernel", _sceKernelRtldThreadAtexitIncrement);
+    LIB_FUNCTION("8OnWXlgQlvo", "libkernel", 1, "libkernel", _sceKernelRtldThreadAtexitDecrement);
+    LIB_FUNCTION("pB-yGZ2nQ9o", "libkernel", 1, "libkernel", _sceKernelSetThreadAtexitCount);
+    LIB_FUNCTION("WhCc1w3EhSI", "libkernel", 1, "libkernel", _sceKernelSetThreadAtexitReport);
     LIB_FUNCTION("LwG8g3niqwA", "libkernel", 1, "libkernel", sceKernelDlsym);
     LIB_FUNCTION("RpQJJVKTiFM", "libkernel", 1, "libkernel", sceKernelGetModuleInfoForUnwind);
     LIB_FUNCTION("f7KBOafysXo", "libkernel", 1, "libkernel", sceKernelGetModuleInfoFromAddr);
