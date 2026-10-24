@@ -117,6 +117,8 @@ public:
     /// Return true when a region is modified from the GPU
     [[nodiscard]] bool IsRegionGpuModified(VAddr addr, size_t size);
 
+    [[nodiscard]] bool IsRangeGpuModified(VAddr addr, size_t size) const;
+
     /// Mark region as modified from the GPU
     void MarkRegionAsGpuModified(VAddr addr, size_t size);
 
