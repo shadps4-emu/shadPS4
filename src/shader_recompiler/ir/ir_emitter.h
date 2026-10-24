@@ -10,6 +10,7 @@
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/condition.h"
 #include "shader_recompiler/ir/patch.h"
+#include "shader_recompiler/ir/shared_memory.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
@@ -93,8 +94,15 @@ public:
     void SetPatch(Patch patch, const F32& value);
 
     [[nodiscard]] Value LoadShared(int bit_size, bool is_signed, const U32& offset,
-                                   bool is_gds = false);
-    void WriteShared(int bit_size, const Value& value, const U32& offset, bool is_gds = false);
+                                   bool is_gds = false,
+                                   SharedMemory::Section section = SharedMemory::Section::Guest);
+    void WriteShared(int bit_size, const Value& value, const U32& offset, bool is_gds = false,
+                     SharedMemory::Section section = SharedMemory::Section::Guest);
+
+    [[nodiscard]] U32 LoadSharedU32Scratch(const U32& offset);
+    [[nodiscard]] U64 LoadSharedU64Scratch(const U32& offset);
+    void WriteSharedU32Scratch(const U32& value, const U32& offset);
+    void PredicatedWriteSharedU32Scratch(const U32& value, const U32& offset, const U1& cond);
 
     [[nodiscard]] U32U64 SharedAtomicIAdd(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicISub(const U32& address, const U32U64& data, bool is_gds);
@@ -172,11 +180,15 @@ public:
     [[nodiscard]] U32 DataAppend(const U32& gds_dw_offset);
     [[nodiscard]] U32 DataConsume(const U32& gds_dw_offset);
     [[nodiscard]] U32 LaneId();
-    [[nodiscard]] U32 WarpId();
+    [[nodiscard]] U32 WaveId();
+    [[nodiscard]] U32 SubgroupId();
     [[nodiscard]] U32 QuadBroadcast(const U32& value, const U32& index);
     [[nodiscard]] U32 Shuffle(const U32& value, const U32& index);
     [[nodiscard]] U32 ShuffleXor(const U32& value, const U32& mask);
-    [[nodiscard]] U32 ReadFirstLane(const U32& value);
+    [[nodiscard]] U1 WaveElect(const U1& exec);
+    // Elect, but always elect invocation 0 if no active threads
+    [[nodiscard]] U1 WaveElectOrLane0(const U1& exec);
+    [[nodiscard]] U32 ReadFirstLane(const U32& value, const U1& exec, bool already_elected = false);
     [[nodiscard]] U32 ReadLane(const U32& value, const U32& lane);
     [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
     [[nodiscard]] U64 Ballot(const U1& bit);

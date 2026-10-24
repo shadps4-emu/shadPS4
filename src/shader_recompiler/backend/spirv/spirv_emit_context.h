@@ -9,6 +9,7 @@
 
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/info.h"
+#include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/value.h"
 #include "shader_recompiler/profile.h"
 
@@ -172,14 +173,6 @@ public:
         return final_result;
     }
 
-    Id EmitSharedMemoryAccess(const Id result_type, const Id shared_mem, const Id index) {
-        if (std::popcount(static_cast<u32>(info.shared_types)) > 1) {
-            return OpAccessChain(result_type, shared_mem, u32_zero_value, index);
-        }
-        // Workgroup layout struct omitted.
-        return OpAccessChain(result_type, shared_mem, index);
-    }
-
     Id EmitFlatbufferLoad(Id flatbuf_offset) {
         const auto& flatbuf_buffer{buffers[flatbuf_index]};
         ASSERT(flatbuf_buffer.binding >= 0 && flatbuf_buffer.buffer_type == BufferType::Flatbuf);
@@ -230,10 +223,6 @@ public:
     Id u64_one_value{};
     Id u64_zero_value{};
 
-    Id shared_u16{};
-    Id shared_u32{};
-    Id shared_u64{};
-
     Id input_u32{};
     Id input_f32{};
     Id input_s32{};
@@ -278,18 +267,11 @@ public:
     Id local_invocation_id{};
     Id local_invocation_index{};
     Id invocation_id{};
+    Id subgroup_id{};
     Id subgroup_local_invocation_id{};
     Id subgroup_lt_mask{};
     Id image_u32{};
     Id image_f32{};
-
-    Id shared_memory_u16{};
-    Id shared_memory_u32{};
-    Id shared_memory_u64{};
-
-    Id shared_memory_u16_type{};
-    Id shared_memory_u32_type{};
-    Id shared_memory_u64_type{};
 
     Id bary_coord{};
     Id bary_coord_smooth{};
@@ -327,6 +309,55 @@ public:
         B64,
         NumClass,
     };
+
+    static inline PointerSize GetPointerSize(PointerType pointer_type) {
+        switch (pointer_type) {
+        case PointerType::U8:
+            return PointerSize::B8;
+        case PointerType::U16:
+            return PointerSize::B16;
+        case PointerType::U32:
+        case PointerType::F32:
+            return PointerSize::B32;
+        case PointerType::U64:
+        case PointerType::F64:
+            return PointerSize::B64;
+        default:
+            UNREACHABLE();
+        }
+    }
+
+    struct SharedSpv {
+        Id id;
+        Id element_type;
+        Id type;
+    };
+
+    struct SharedDefinition {
+        std::array<SharedSpv, u32(PointerType::NumAlias)> aliases;
+
+        template <class Self>
+        auto& Alias(this Self& self, PointerType alias) {
+            return self.aliases[u32(alias)];
+        }
+    };
+
+    std::array<SharedDefinition, SharedMemory::NumSections> shared_memory_defs;
+
+    Id EmitSharedMemoryAccess(const Id offset, PointerType pointer_type,
+                              SharedMemory::Section section = SharedMemory::Section::Guest) {
+        const PointerSize pointer_size = GetPointerSize(pointer_type);
+        const Id shift_id{ConstU32(static_cast<u32>(pointer_size))};
+        const Id index{OpShiftRightLogical(U32[1], offset, shift_id)};
+        auto [shared_mem, result_type, _] =
+            shared_memory_defs[static_cast<u32>(section)].Alias(pointer_type);
+
+        if (info.uses_aliased_shared_memory) {
+            return OpAccessChain(result_type, shared_mem, u32_zero_value, index);
+        }
+        // Workgroup layout struct omitted.
+        return OpAccessChain(result_type, shared_mem, index);
+    }
 
     struct BufferSpv {
         Id id;

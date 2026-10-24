@@ -421,3 +421,5 @@ cmake-build-*
 
 # Nix Result symlink
 result
+
+.gdb_history

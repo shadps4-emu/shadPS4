@@ -5,6 +5,7 @@
 #include <initializer_list>
 #include <map>
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/shared_memory.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
@@ -160,12 +161,30 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
             ret += fmt::format("         {}", op); // '%00000 = ' -> 1 + 5 + 3 = 9 spaces
         }
 
+        auto is_shared = [](IR::Opcode op) {
+            switch (op) {
+            case IR::Opcode::LoadSharedU16:
+            case IR::Opcode::LoadSharedU32:
+            case IR::Opcode::LoadSharedU64:
+            case IR::Opcode::WriteSharedU16:
+            case IR::Opcode::WriteSharedU32:
+            case IR::Opcode::PredicatedWriteSharedU32:
+            case IR::Opcode::WriteSharedU64:
+                return true;
+            default:
+                return false;
+            }
+        };
+
         if (op == Opcode::ReadConst || op == Opcode::ImageSampleRaw) {
             ret += fmt::format(" (flags={:#x}) ", inst.Flags<u32>());
         } else if (op == Opcode::ReadConstBuffer) {
             const auto info = inst.Flags<BufferInstInfo>();
             ret += fmt::format(" (sharp_source={}, flatbuf_off_dw={:#x}) ", bool(info.sharp_source),
                                info.flatbuf_off_dw.Value());
+        } else if (is_shared(op)) {
+            const auto info = inst.Flags<SharedMemory::Flags>();
+            ret += fmt::format(" ({})", magic_enum::enum_name(info.section.Value()));
         }
         const size_t arg_count{inst.NumArgs()};
         for (size_t arg_index = 0; arg_index < arg_count; ++arg_index) {
