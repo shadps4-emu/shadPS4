@@ -147,6 +147,10 @@ public:
         return depth_clip_control;
     }
 
+    bool IsDepthClampControlSupported() const {
+        return depth_clamp_control;
+    }
+
     /// Returns true when VK_EXT_depth_clip_enable is supported
     bool IsDepthClipEnableSupported() const {
         return depth_clip_enable;
@@ -520,6 +524,7 @@ private:
     bool fragment_shader_barycentric{};
     bool amd_shader_explicit_vertex_parameter{};
     bool depth_clip_control{};
+    bool depth_clamp_control{};
     bool depth_clip_enable{};
     bool dynamic_state_3{};
     bool depth_range_unrestricted{};

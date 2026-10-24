@@ -286,6 +286,7 @@ bool Instance::CreateDevice() {
     }
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
     depth_clip_control = add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
+    depth_clamp_control = add_extension(VK_EXT_DEPTH_CLAMP_CONTROL_EXTENSION_NAME);
     depth_clip_enable = add_extension(VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME);
     vertex_input_dynamic_state = add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
     // Games excessively leave restart enabled with lists when it isn't actually needed, and it
@@ -465,6 +466,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceDepthClipControlFeaturesEXT{
             .depthClipControl = true,
         },
+        vk::PhysicalDeviceDepthClampControlFeaturesEXT{
+            .depthClampControl = true,
+        },
         vk::PhysicalDeviceDepthClipEnableFeaturesEXT{
             .depthClipEnable = true,
         },
@@ -540,6 +544,9 @@ bool Instance::CreateDevice() {
     }
     if (!depth_clip_control) {
         device_chain.unlink<vk::PhysicalDeviceDepthClipControlFeaturesEXT>();
+    }
+    if (!depth_clamp_control) {
+        device_chain.unlink<vk::PhysicalDeviceDepthClampControlFeaturesEXT>();
     }
     if (!depth_clip_enable) {
         device_chain.unlink<vk::PhysicalDeviceDepthClipEnableFeaturesEXT>();
