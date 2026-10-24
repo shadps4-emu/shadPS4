@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/emulator_settings.h"
+#include "shader_recompiler/ir/helpers.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
 
@@ -190,14 +191,15 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::Memtime:
         info.uses_shader_clock = true;
         break;
-    case IR::Opcode::ReadConst:
-        AddFlatbuf(info);
-        if (inst.Flags<u32>() == 0) {
-            info.readconst_types |= Info::ReadConstType::Immediate;
-            info.readconst_types |= Info::ReadConstType::Dynamic;
-            info.uses_dma = true;
+    case IR::Opcode::ReadConst: {
+        const bool is_touched = IR::IsReadConstAddressTouched(&inst);
+        if (is_touched) {
+            info.readconst_types |= InfoPersistent::ReadConstType::Unchecked;
+        } else if (EmulatorSettings.IsFullDmaSyncEnabled()) {
+            info.readconst_types |= InfoPersistent::ReadConstType::Checked;
         }
         break;
+    }
     case IR::Opcode::PackUfloat10_11_11:
         info.uses_pack_10_11_11 = true;
         break;
@@ -217,23 +219,21 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
         }
     }
 
-    if (!EmulatorSettings.IsDirectMemoryAccessEnabled()) {
-        info.uses_dma = false;
-        info.readconst_types = Info::ReadConstType::None;
-    }
-
-    if (info.uses_dma) {
+    if (True(info.readconst_types)) {
         info.buffers.push_back({
             .used_types = IR::Type::U64,
             .buffer_type = BufferType::BdaPagetable,
             .is_written = true,
         });
-        info.buffers.push_back({
-            .used_types = IR::Type::U32,
-            .buffer_type = BufferType::FaultBuffer,
-            .is_written = true,
-        });
-        LOG_ERROR(Render, "Enabling DMA for shader {:#x}", info.pgm_hash);
+
+        if (True(info.readconst_types & InfoPersistent::ReadConstType::Checked)) {
+            info.buffers.push_back({
+                .used_types = IR::Type::U32,
+                .buffer_type = BufferType::FaultBuffer,
+                .is_written = true,
+            });
+            LOG_ERROR(Render, "Enabling full sync DMA for shader {:#x}", info.pgm_hash);
+        }
     }
 }
 

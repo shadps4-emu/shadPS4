@@ -72,7 +72,7 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
                          Bindings& binding_)
     : Sirit::Module(profile_.supported_spirv), info{info_}, runtime_info{runtime_info_},
       profile{profile_}, hw_stage{info.hw_stage}, sw_stage{info.sw_stage}, binding{binding_} {
-    if (info.uses_dma) {
+    if (True(info.readconst_types)) {
         SetMemoryModel(spv::AddressingModel::PhysicalStorageBuffer64, spv::MemoryModel::GLSL450);
     } else {
         SetMemoryModel(spv::AddressingModel::Logical, spv::MemoryModel::GLSL450);
@@ -173,7 +173,7 @@ void EmitContext::DefineArithmeticTypes() {
     if (info.uses_fp64) {
         frexp_result_f64 = Name(TypeStruct(F64[1], S32[1]), "frexp_result_f64");
     }
-    if (info.uses_dma) {
+    if (True(info.readconst_types)) {
         physical_pointer_type_u32 = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U32[1]);
     }
 }
@@ -212,25 +212,6 @@ EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat f
         break;
     }
     UNREACHABLE_MSG("Invalid attribute type {}", fmt);
-}
-
-Id EmitContext::GetBufferSize(const u32 sharp_idx) {
-    // Can this be done with memory access? Like we do now with ReadConst
-    const auto& srt_flatbuf = buffers[flatbuf_index];
-    ASSERT(srt_flatbuf.buffer_type == BufferType::Flatbuf);
-    const auto [id, pointer_type] = srt_flatbuf.Alias(PointerType::U32);
-
-    const auto rsrc1{
-        OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(sharp_idx + 1)))};
-    const auto rsrc2{
-        OpLoad(U32[1], OpAccessChain(pointer_type, id, u32_zero_value, ConstU32(sharp_idx + 2)))};
-
-    const auto stride{OpBitFieldUExtract(U32[1], rsrc1, ConstU32(16u), ConstU32(14u))};
-    const auto num_records{rsrc2};
-
-    const auto stride_zero{OpIEqual(U1[1], stride, u32_zero_value)};
-    const auto stride_size{OpIMul(U32[1], num_records, stride)};
-    return OpSelect(U32[1], stride_zero, num_records, stride_size);
 }
 
 void EmitContext::DefineBufferProperties() {
@@ -1186,7 +1167,7 @@ Id EmitContext::DefineUfloatM5ToFloat32(u32 mantissa_bits, const std::string_vie
     return func;
 }
 
-Id EmitContext::DefineGetBdaPointer() {
+Id EmitContext::DefineGetBdaPointer(bool faulting) {
     const auto caching_pagebits{Constant(U64, static_cast<u64>(profile.sparse_page_shift))};
     const auto caching_pagemask{
         Constant(U64, static_cast<u64>((1u << profile.sparse_page_shift) - 1))};
@@ -1194,12 +1175,15 @@ Id EmitContext::DefineGetBdaPointer() {
     const auto func_type{TypeFunction(U64, U64)};
     const auto func{OpFunction(U64, spv::FunctionControlMask::MaskNone, func_type)};
     const auto address{OpFunctionParameter(U64)};
-    Name(func, "get_bda_pointer");
+    Name(func, faulting ? "get_bda_pointer_faulting" : "get_bda_pointer");
     AddLabel();
 
-    const auto fault_label{OpLabel()};
-    const auto available_label{OpLabel()};
-    const auto merge_label{OpLabel()};
+    Id fault_label{}, available_label{}, merge_label{};
+    if (faulting) {
+        fault_label = OpLabel();
+        available_label = OpLabel();
+        merge_label = OpLabel();
+    }
 
     // Get page BDA
     const auto page{OpShiftRightLogical(U64, address, caching_pagebits)};
@@ -1209,50 +1193,54 @@ Id EmitContext::DefineGetBdaPointer() {
     const auto bda_ptr{OpAccessChain(bda_pointer_type, bda_buffer_id, u32_zero_value, page32)};
     const auto bda{OpLoad(U64, bda_ptr)};
 
-    // Check if page is GPU cached
-    const auto is_fault{OpIEqual(U1[1], bda, u64_zero_value)};
-    OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
-    OpBranchConditional(is_fault, fault_label, available_label);
+    if (faulting) {
+        // Check if page is GPU cached
+        const auto is_fault{OpIEqual(U1[1], bda, u64_zero_value)};
+        OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+        OpBranchConditional(is_fault, fault_label, available_label);
 
-    // First time acces, mark as fault
-    AddLabel(fault_label);
-    const auto& fault_buffer{buffers[fault_buffer_index]};
-    const auto [fault_buffer_id, fault_pointer_type] = fault_buffer.Alias(PointerType::U32);
-    const auto page_div32{OpShiftRightLogical(U32[1], page32, ConstU32(5U))};
-    const auto page_mod32{OpBitwiseAnd(U32[1], page32, ConstU32(31U))};
-    const auto page_mask{OpShiftLeftLogical(U32[1], u32_one_value, page_mod32)};
-    const auto fault_ptr{
-        OpAccessChain(fault_pointer_type, fault_buffer_id, u32_zero_value, page_div32)};
-    const auto fault_value{OpLoad(U32[1], fault_ptr)};
-    const auto fault_value_masked{OpBitwiseOr(U32[1], fault_value, page_mask)};
-    OpStore(fault_ptr, fault_value_masked);
+        // First time acces, mark as fault
+        AddLabel(fault_label);
+        const auto& fault_buffer{buffers[fault_buffer_index]};
+        const auto [fault_buffer_id, fault_pointer_type] = fault_buffer.Alias(PointerType::U32);
+        const auto page_div32{OpShiftRightLogical(U32[1], page32, ConstU32(5U))};
+        const auto page_mod32{OpBitwiseAnd(U32[1], page32, ConstU32(31U))};
+        const auto page_mask{OpShiftLeftLogical(U32[1], u32_one_value, page_mod32)};
+        const auto fault_ptr{
+            OpAccessChain(fault_pointer_type, fault_buffer_id, u32_zero_value, page_div32)};
+        const auto fault_value{OpLoad(U32[1], fault_ptr)};
+        const auto fault_value_masked{OpBitwiseOr(U32[1], fault_value, page_mask)};
+        OpStore(fault_ptr, fault_value_masked);
 
-    // Return null pointer
-    const auto fallback_result{u64_zero_value};
-    OpBranch(merge_label);
+        // Return null pointer
+        OpBranch(merge_label);
 
+        AddLabel(available_label);
+    }
     // Value is available, compute address
-    AddLabel(available_label);
     const auto offset_in_bda{OpBitwiseAnd(U64, address, caching_pagemask)};
     const auto addr{OpIAdd(U64, bda, offset_in_bda)};
+    if (!faulting) {
+        OpReturnValue(addr);
+        OpFunctionEnd();
+        return func;
+    }
     OpBranch(merge_label);
 
     // Merge
     AddLabel(merge_label);
-    const auto result{OpPhi(U64, addr, available_label, fallback_result, fault_label)};
+    const auto result{OpPhi(U64, addr, available_label, u64_zero_value, fault_label)};
     OpReturnValue(result);
     OpFunctionEnd();
     return func;
 }
 
-Id EmitContext::DefineReadConst(bool dynamic) {
-    const auto func_type{!dynamic ? TypeFunction(U32[1], U32[2], U32[1], U32[1])
-                                  : TypeFunction(U32[1], U32[2], U32[1])};
+Id EmitContext::DefineReadConst(bool checked) {
+    const auto func_type{TypeFunction(U32[1], U32[2], U32[1])};
     const auto func{OpFunction(U32[1], spv::FunctionControlMask::MaskNone, func_type)};
     const auto base{OpFunctionParameter(U32[2])};
     const auto offset{OpFunctionParameter(U32[1])};
-    const auto flatbuf_offset{!dynamic ? OpFunctionParameter(U32[1]) : Id{}};
-    Name(func, dynamic ? "read_const_dynamic" : "read_const");
+    Name(func, !checked ? "read_const" : "read_const_checked");
     AddLabel();
 
     const auto base_lo{OpUConvert(U64, OpCompositeExtract(U32[1], base, 0))};
@@ -1262,13 +1250,13 @@ Id EmitContext::DefineReadConst(bool dynamic) {
     const auto offset_bytes{OpShiftLeftLogical(U32[1], offset, ConstU32(2U))};
     const auto addr{OpIAdd(U64, base_addr, OpUConvert(U64, offset_bytes))};
 
-    const auto result = EmitDwordMemoryRead(addr, [&]() {
-        if (dynamic) {
-            return u32_zero_value;
+    const auto result = ([&]() {
+        if (checked) {
+            return EmitCheckedDwordMemoryRead(addr);
         } else {
-            return EmitFlatbufferLoad(flatbuf_offset);
+            return EmitDwordMemoryRead(addr);
         }
-    });
+    })();
 
     OpReturnValue(result);
     OpFunctionEnd();
@@ -1284,17 +1272,15 @@ void EmitContext::DefineFunctions() {
         uf11_to_f32 = DefineUfloatM5ToFloat32(6, "uf11_to_f32");
         uf10_to_f32 = DefineUfloatM5ToFloat32(5, "uf10_to_f32");
     }
-    if (info.uses_dma) {
-        get_bda_pointer = DefineGetBdaPointer();
-    }
-
-    if (True(info.readconst_types & Info::ReadConstType::Immediate)) {
-        LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses immediate ReadConst", info.pgm_hash);
+    if (True(info.readconst_types & Info::ReadConstType::Unchecked)) {
+        LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses unchecked ReadConst", info.pgm_hash);
+        get_bda_pointer = DefineGetBdaPointer(false);
         read_const = DefineReadConst(false);
     }
-    if (True(info.readconst_types & Info::ReadConstType::Dynamic)) {
-        LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses dynamic ReadConst", info.pgm_hash);
-        read_const_dynamic = DefineReadConst(true);
+    if (True(info.readconst_types & Info::ReadConstType::Checked)) {
+        LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses checked ReadConst", info.pgm_hash);
+        get_bda_pointer_faulting = DefineGetBdaPointer(true);
+        read_const_checked = DefineReadConst(true);
     }
 }
 

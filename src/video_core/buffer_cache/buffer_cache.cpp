@@ -2,17 +2,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <limits>
 #include <magic_enum/magic_enum.hpp>
 #include <xxhash.h>
 
 #include "common/alignment.h"
-#include "core/debug_state.h"
 #include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/buffer_cache/memory_tracker.h"
-#include "video_core/buffer_cache/region_definitions.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_runtime.h"
@@ -102,6 +101,8 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
         (blocks_per_arena_page * NUM_ARENA_PAGES) * sizeof(vk::DeviceAddress);
     fault_manager = std::make_unique<FaultManager>(instance, scheduler, *this, block_shift,
                                                    blocks_per_arena_page * NUM_ARENA_PAGES);
+    const auto* fault_buffer = fault_manager->GetFaultBuffer();
+    runtime.FillBuffer(fault_buffer, 0u, fault_buffer->SizeBytes(), 0u);
     bda_pagetable_buffer = std::make_unique<Buffer>(
         instance, 0, bda_pagetable_size, MemoryType::DeviceLocal, "BDA Page Table Buffer");
     runtime.FillBuffer(bda_pagetable_buffer.get(), 0u, bda_pagetable_size, 0u);
@@ -317,14 +318,82 @@ void BufferCache::ReadEdgeImagePages(const Image& image) {
         });
 }
 
-void BufferCache::SynchronizeDmaBuffers() {
+BufferCache::DmaBufferRangeList BufferCache::SynchronizeAllDmaBuffers(
+    std::span<const VAddr> addresses) {
+    for (const auto addr : addresses) {
+        const u64 page = addr >> ARENA_PAGE_BITS;
+        if (page >= address_space.size()) {
+            continue;
+        }
+        const u64 block = addr >> block_shift;
+        const auto* arena = GetArena(block, block);
+        EnsureResident(arena, block, block);
+    }
+
+    DmaBufferRangeList ranges;
     fault_process_pending = true;
+
     for (const auto& range : resident_ranges) {
         const u64 page = range.start >> (ARENA_PAGE_BITS - block_shift);
         const VAddr device_addr = range.start << block_shift;
-        const u64 size = (range.end - range.start) << block_shift;
-        SynchronizeMemory(address_space[page], device_addr, size, false, false);
+        const u32 size = (range.end - range.start) << block_shift;
+        const auto* arena = address_space[page];
+        SynchronizeMemory(arena, device_addr, size, false, false);
+        ranges.push_back({arena, arena->Offset(device_addr), size});
     }
+    return ranges;
+}
+
+BufferCache::DmaBufferRangeList BufferCache::SynchronizeDmaBuffers(
+    std::span<const VAddr> addresses) {
+    constexpr u32 read_size = sizeof(u32);
+    DmaBufferRangeList ranges;
+    VAddr range_start = 0;
+    VAddr range_end = 0;
+    u32 range_size = 0;
+    const Buffer* current_arena = nullptr;
+
+    const auto release_pending = [&]() {
+        if (current_arena) {
+            const u64 first_block = range_start >> block_shift;
+            const u64 last_block = (range_start + range_size - 1) >> block_shift;
+            EnsureResident(current_arena, first_block, last_block);
+            SynchronizeMemory(current_arena, range_start, range_size, false, false);
+            ranges.push_back({current_arena, current_arena->Offset(range_start), range_size});
+            current_arena = nullptr;
+        }
+    };
+
+    for (const auto addr : addresses) {
+        if (addr < range_end) {
+            continue;
+        }
+        const u64 page = addr >> ARENA_PAGE_BITS;
+        if (page >= address_space.size()) {
+            release_pending();
+            continue;
+        }
+        const u64 block = addr >> block_shift;
+        const auto* arena = GetArena(block, block);
+        if (!arena->IsInBounds(addr, read_size)) {
+            release_pending();
+            continue;
+        }
+        if (arena != current_arena || addr != range_end ||
+            u64{range_size} + read_size > std::numeric_limits<u32>::max()) {
+            release_pending();
+            current_arena = arena;
+            range_start = addr;
+            range_end = addr + read_size;
+            range_size = read_size;
+        } else {
+            range_size += read_size;
+            range_end += read_size;
+        }
+    }
+    release_pending();
+
+    return ranges;
 }
 
 const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
@@ -369,6 +438,8 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
             .memoryOffset = (backing.offset + start - backing.start) << block_shift,
         });
     });
+
+    // Do we need to update BDA page table for the new arena?
 
     u64 base_page = first_addr >> ARENA_PAGE_BITS;
     for (u32 page = 0; page < (first_size >> ARENA_PAGE_BITS); ++page) {

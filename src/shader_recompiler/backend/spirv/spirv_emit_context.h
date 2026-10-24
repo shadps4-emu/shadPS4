@@ -144,12 +144,12 @@ public:
         return last_label;
     }
 
-    Id EmitDwordMemoryRead(Id address, auto&& fallback) {
+    Id EmitCheckedDwordMemoryRead(Id address) {
         const Id available_label = OpLabel();
         const Id fallback_label = OpLabel();
         const Id merge_label = OpLabel();
 
-        const Id addr = OpFunctionCall(U64, get_bda_pointer, address);
+        const Id addr = OpFunctionCall(U64, get_bda_pointer_faulting, address);
         const Id is_available = OpINotEqual(U1[1], addr, u64_zero_value);
         OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
         OpBranchConditional(is_available, available_label, fallback_label);
@@ -162,7 +162,7 @@ public:
 
         // Fallback
         AddLabel(fallback_label);
-        const Id fallback_result = fallback();
+        const Id fallback_result{u32_zero_value};
         OpBranch(merge_label);
 
         // Merge
@@ -170,6 +170,12 @@ public:
         const Id final_result =
             OpPhi(U32[1], fallback_result, fallback_label, result, available_label);
         return final_result;
+    }
+
+    Id EmitDwordMemoryRead(Id address) {
+        const auto addr = OpFunctionCall(U64, get_bda_pointer, address);
+        const auto addr_ptr = OpConvertUToPtr(physical_pointer_type_u32, addr);
+        return OpLoad(U32[1], addr_ptr, spv::MemoryAccessMask::Aligned, 4u);
     }
 
     Id EmitSharedMemoryAccess(const Id result_type, const Id shared_mem, const Id index) {
@@ -389,9 +395,10 @@ public:
     Id f32_to_uf10{};
 
     Id get_bda_pointer{};
+    Id get_bda_pointer_faulting{};
 
     Id read_const{};
-    Id read_const_dynamic{};
+    Id read_const_checked{};
 
 private:
     void DefineArithmeticTypes();
@@ -414,11 +421,9 @@ private:
     Id DefineFloat32ToUfloatM5(u32 mantissa_bits, std::string_view name);
     Id DefineUfloatM5ToFloat32(u32 mantissa_bits, std::string_view name);
 
-    Id DefineGetBdaPointer();
+    Id DefineGetBdaPointer(bool faulting);
 
-    Id DefineReadConst(bool dynamic);
-
-    Id GetBufferSize(u32 sharp_idx);
+    Id DefineReadConst(bool checked);
 };
 
 } // namespace Shader::Backend::SPIRV
