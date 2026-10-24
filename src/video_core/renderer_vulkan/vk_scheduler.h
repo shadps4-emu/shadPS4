@@ -384,6 +384,18 @@ public:
     /// Returns the current command buffer used for uploads.
     vk::CommandBuffer UploadCommandBuffer();
 
+    /// Returns the upload command buffer for copies moved out of a render pass. It runs before
+    /// the session's primary command buffer, with barriers on both sides.
+    vk::CommandBuffer HoistCommandBuffer();
+
+    [[nodiscard]] bool IsRendering() const {
+        return is_rendering;
+    }
+
+    [[nodiscard]] u64 SessionId() const {
+        return session_id;
+    }
+
     /// Sets a function to be called on every session finalization.
     void SetSessionCallback(SessionFunc&& on_session) {
         this->on_session = std::move(on_session);
@@ -479,6 +491,8 @@ private:
     std::jthread priority_pending_ops_thread;
     RenderState render_state;
     bool is_rendering = false;
+    u64 session_id = 0;
+    bool upload_hoisted = false;
     tracy::VkCtxScope* profiler_scope{};
 };
 
