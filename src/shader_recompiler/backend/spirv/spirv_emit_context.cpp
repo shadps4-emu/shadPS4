@@ -528,8 +528,16 @@ void EmitContext::DefineInputs() {
         gl_in = Name(DefineVar(vertices_in, spv::StorageClass::Input), "gl_in");
         interfaces.push_back(gl_in);
 
-        const auto num_params = runtime_info.hw.gs.in_vertex_data_size / 4 - 1u;
-        for (int param_id = 0; param_id < num_params; ++param_id) {
+        u32 num_params = 0u;
+        for (u32 i = 0; i < IR::NumParams; i++) {
+            if (info.loads.GetAny(IR::Attribute::Param0 + i)) {
+                num_params = std::max(num_params, i + 1);
+            }
+        }
+        if (runtime_info.hw.gs.in_vertex_data_size >= 4) {
+            num_params = std::min(num_params, runtime_info.hw.gs.in_vertex_data_size / 4 - 1u);
+        }
+        for (u32 param_id = 0; param_id < num_params; ++param_id) {
             const Id type{TypeArray(F32[4], ConstU32(num_verts_in))};
             const Id id{DefineInput(type, param_id)};
             Name(id, fmt::format("gs_in_attr{}", param_id));
@@ -631,6 +639,20 @@ void EmitContext::DefineOutputs() {
                 output_attr_array = DefineOutput(type, 0);
                 Name(output_attr_array, "out_attrs");
             }
+        } else if (hw_stage == Shader::HwStage::Export) {
+            u32 num_params = runtime_info.hw.es.vertex_data_size >= 4
+                                 ? (runtime_info.hw.es.vertex_data_size / 4 - 1u)
+                                 : 0u;
+            for (u32 i = 0; i < IR::NumParams; i++) {
+                if (info.stores.GetAny(IR::Attribute::Param0 + i)) {
+                    num_params = std::max(num_params, i + 1);
+                }
+            }
+            for (u32 i = 0; i < num_params; i++) {
+                const Id id{DefineOutput(F32[4], i)};
+                Name(id, fmt::format("out_attr{}", i));
+                output_params[i] = GetAttributeInfo(AmdGpu::NumberFormat::Float, id, 4, true);
+            }
         } else {
             const bool needs_clip_distance_emulation =
                 hw_stage == HwStage::Vertex && profile.needs_clip_distance_emulation &&
@@ -698,16 +720,32 @@ void EmitContext::DefineOutputs() {
     }
     case SwStage::TessellationEval: {
         DefineVertexBlock();
-        for (u32 i = 0; i < IR::NumParams; i++) {
-            const IR::Attribute param{IR::Attribute::Param0 + i};
-            if (!info.stores.GetAny(param)) {
-                continue;
+        if (hw_stage == Shader::HwStage::Export) {
+            u32 num_params = runtime_info.hw.es.vertex_data_size >= 4
+                                 ? (runtime_info.hw.es.vertex_data_size / 4 - 1u)
+                                 : 0u;
+            for (u32 i = 0; i < IR::NumParams; i++) {
+                if (info.stores.GetAny(IR::Attribute::Param0 + i)) {
+                    num_params = std::max(num_params, i + 1);
+                }
             }
-            const u32 num_components = info.stores.NumComponents(param);
-            const Id id{DefineOutput(F32[num_components], i)};
-            Name(id, fmt::format("out_attr{}", i));
-            output_params[i] =
-                GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, true);
+            for (u32 i = 0; i < num_params; i++) {
+                const Id id{DefineOutput(F32[4], i)};
+                Name(id, fmt::format("out_attr{}", i));
+                output_params[i] = GetAttributeInfo(AmdGpu::NumberFormat::Float, id, 4, true);
+            }
+        } else {
+            for (u32 i = 0; i < IR::NumParams; i++) {
+                const IR::Attribute param{IR::Attribute::Param0 + i};
+                if (!info.stores.GetAny(param)) {
+                    continue;
+                }
+                const u32 num_components = info.stores.NumComponents(param);
+                const Id id{DefineOutput(F32[num_components], i)};
+                Name(id, fmt::format("out_attr{}", i));
+                output_params[i] =
+                    GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, true);
+            }
         }
         break;
     }

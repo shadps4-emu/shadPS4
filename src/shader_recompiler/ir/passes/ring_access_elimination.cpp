@@ -1,7 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <string>
+#include <tuple>
+#include <unordered_set>
 #include "common/assert.h"
+#include "common/logging/log.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/operand_helper.h"
@@ -133,13 +137,57 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
 
                 const auto offset = inst.Flags<IR::BufferInstInfo>().inst_offset.Value();
                 const auto data = ir.BitCast<IR::F32>(IR::U32{inst.Arg(2)});
-                const auto comp_ofs = info.gs_copy_data.output_vertices * sizeof(u32);
-                const auto output_size = gs_info.output_vertices * dwords_per_vertex * sizeof(u32);
+                const auto num_vertices = info.gs_copy_data.output_vertices
+                                              ? info.gs_copy_data.output_vertices
+                                              : gs_info.output_vertices;
+                const auto dwords =
+                    dwords_per_vertex ? dwords_per_vertex : gs_info.out_vertex_data_size;
+                const auto output_size = num_vertices * dwords * sizeof(u32);
 
+                if (num_vertices == 0 || output_size == 0) {
+                    inst.Invalidate();
+                    break;
+                }
+
+                const auto comp_ofs = num_vertices * sizeof(u32);
                 const auto vc_read_ofs = (((offset / comp_ofs) * comp_ofs) % output_size) * 16u;
                 const auto& it = info.gs_copy_data.attr_map.find(vc_read_ofs);
-                ASSERT(it != info.gs_copy_data.attr_map.cend());
-                const auto& [attr, comp] = it->second;
+
+                IR::Attribute attr;
+                u32 comp;
+                if (it != info.gs_copy_data.attr_map.cend()) {
+                    std::tie(attr, comp) = it->second;
+                } else {
+                    LOG_WARNING(Render_Vulkan,
+                                "GS copy shader attr_map miss at vc_read_ofs={:#x}, offset={:#x}. "
+                                "Falling back to hardware ring layout",
+                                vc_read_ofs, offset);
+
+                    static std::unordered_set<u64> logged_copy_shaders;
+                    if (logged_copy_shaders.insert(gs_info.vs_copy_hash).second) {
+                        std::string hex_str;
+                        for (u32 word : gs_info.vs_copy) {
+                            hex_str += fmt::format("{:08x} ", word);
+                        }
+                        std::string map_str;
+                        for (const auto& [ofs, target] : info.gs_copy_data.attr_map) {
+                            map_str += fmt::format("[{:#x} -> attr:{}, comp:{}] ", ofs,
+                                                   static_cast<u32>(target.first), target.second);
+                        }
+                        LOG_WARNING(Render_Vulkan,
+                                    "GS copy shader {:016x} dump ({} dwords): {}\nAttr map: {}",
+                                    gs_info.vs_copy_hash, gs_info.vs_copy.size(), hex_str, map_str);
+                    }
+
+                    const auto comp_idx = offset / comp_ofs;
+                    if (comp_idx >= 4 + IR::NumParams * 4) {
+                        inst.Invalidate();
+                        break;
+                    }
+                    attr = comp_idx < 4 ? IR::Attribute::Position0
+                                        : IR::Attribute::Param0 + (comp_idx / 4 - 1);
+                    comp = comp_idx % 4;
+                }
 
                 inst.Invalidate();
                 if (IsPosition(attr)) {
