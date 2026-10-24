@@ -47,6 +47,8 @@ public:
     void DefineBufferProperties();
     void DefineAmdPerVertexAttribs();
     void DefineWorkgroupIndex();
+    /// Loads a word of the dispatch metadata buffer of a compute shader.
+    Id DispatchMetadata(u32 word);
 
     [[nodiscard]] Id DefineInput(Id type, std::optional<u32> location = std::nullopt,
                                  std::optional<spv::BuiltIn> builtin = std::nullopt) {
@@ -274,6 +276,8 @@ public:
 
     Id workgroup_id{};
     Id num_workgroups_id{};
+    Id guest_workgroup_id{};
+    Id guest_workgroup_count{};
     Id workgroup_index_id{};
     Id local_invocation_id{};
     Id local_invocation_index{};
@@ -358,6 +362,7 @@ public:
     std::unordered_map<u32, Id> first_to_last_label_map;
 
     size_t flatbuf_index{};
+    size_t dispatch_metadata_index{};
     size_t bda_pagetable_index{};
     size_t fault_buffer_index{};
     Id physical_pointer_type_u32;

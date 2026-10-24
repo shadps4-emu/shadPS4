@@ -235,6 +235,18 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
         });
         LOG_ERROR(Render, "Enabling DMA for shader {:#x}", info.pgm_hash);
     }
+
+    // Keep metadata last so that guest buffer indices do not change. The profile only allows it
+    // when the device fits the largest compute layout, so it never depends on bound descriptors.
+    if (info.is_indirect_compute && profile.supports_dispatch_metadata &&
+        std::ranges::none_of(info.buffers, [](const auto& buffer) {
+            return buffer.buffer_type == BufferType::SharedMemory;
+        })) {
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            .buffer_type = BufferType::DispatchMetadata,
+        });
+    }
 }
 
 } // namespace Shader::Optimization

@@ -208,7 +208,11 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     case IR::Attribute::WorkgroupIndex:
         return ctx.workgroup_index_id;
     case IR::Attribute::WorkgroupId:
-        return ctx.OpCompositeExtract(ctx.U32[1], ctx.OpLoad(ctx.U32[3], ctx.workgroup_id), comp);
+        return ctx.OpCompositeExtract(ctx.U32[1],
+                                      ctx.OpLoad(ctx.U32[3], ctx.info.UsesDispatchMetadata()
+                                                                 ? ctx.guest_workgroup_id
+                                                                 : ctx.workgroup_id),
+                                      comp);
     case IR::Attribute::LocalInvocationId:
         return ctx.OpCompositeExtract(ctx.U32[1], ctx.OpLoad(ctx.U32[3], ctx.local_invocation_id),
                                       comp);

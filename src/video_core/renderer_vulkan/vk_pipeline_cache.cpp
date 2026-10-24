@@ -151,7 +151,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         info.hw.gs.vs_copy = params_vc.code;
         info.hw.gs.vs_copy_hash = params_vc.hash;
         DumpShader(info.hw.gs.vs_copy, info.hw.gs.vs_copy_hash, Shader::HwStage::Vertex, 0,
-                   "copy.bin");
+                   "copy.bin", false);
         break;
     }
     case HwStage::Vertex: {
@@ -328,7 +328,17 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .needs_clip_distance_emulation = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .supports_shader_stencil_export = instance_.IsShaderStencilExportSupported(),
         .fast_shader_math = EmulatorSettings.IsFastShaderMath(),
+        .supports_dispatch_metadata =
+            instance.MaxPerStageDescriptorStorageBuffers() >= Shader::MaxComputeStorageBuffers &&
+            instance.MaxDescriptorSetStorageBuffers() >= Shader::MaxComputeStorageBuffers &&
+            instance.MaxPerStageResources() >= Shader::MaxComputeResources,
     };
+    if (!profile.supports_dispatch_metadata) {
+        LOG_WARNING(Render_Vulkan,
+                    "Device descriptor limits are below {} storage buffers and {} resources per "
+                    "stage, indirect dispatches beyond the device limits are not supported",
+                    Shader::MaxComputeStorageBuffers, Shader::MaxComputeResources);
+    }
     WarmUp();
 
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});
@@ -369,8 +379,8 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline(const DrawIndirectPar
     return it->second.get();
 }
 
-const ComputePipeline* PipelineCache::GetComputePipeline() {
-    if (!RefreshComputeKey()) {
+const ComputePipeline* PipelineCache::GetComputePipeline(bool is_indirect) {
+    if (!RefreshComputeKey(is_indirect)) {
         return nullptr;
     }
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
@@ -613,12 +623,12 @@ bool PipelineCache::RefreshGraphicsStages() {
     return true;
 }
 
-bool PipelineCache::RefreshComputeKey() {
+bool PipelineCache::RefreshComputeKey(bool is_indirect) {
     Shader::Backend::Bindings binding{};
     const auto& cs_pgm = liverpool->GetCsRegs();
     const auto cs_params = AmdGpu::GetParams(cs_pgm);
     std::tie(infos[0], modules[0], compute_key.value) =
-        GetProgram(HwStage::Compute, SwStage::Compute, cs_params, binding);
+        GetProgram(HwStage::Compute, SwStage::Compute, cs_params, binding, is_indirect);
     return true;
 }
 
@@ -627,15 +637,20 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
                                               Shader::Backend::Bindings& binding) {
     LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x} {}", info.hw_stage, info.pgm_hash,
              perm_idx != 0 ? "(permutation)" : "");
-    DumpShader(code, info.pgm_hash, info.hw_stage, perm_idx, "bin");
+    const u32 shared_memory_size =
+        info.is_indirect_compute ? runtime_info.hw.cs.shared_memory_size : 0;
+    DumpShader(code, info.pgm_hash, info.hw_stage, perm_idx, "bin", info.is_indirect_compute,
+               shared_memory_size);
 
     const auto ir_program = Shader::TranslateProgram(code, pools, info, runtime_info, profile);
     auto spv = Shader::Backend::SPIRV::EmitSPIRV(profile, runtime_info, ir_program, binding);
-    DumpShader(spv, info.pgm_hash, info.hw_stage, perm_idx, "spv");
+    DumpShader(spv, info.pgm_hash, info.hw_stage, perm_idx, "spv", info.is_indirect_compute,
+               shared_memory_size);
 
     vk::ShaderModule module;
 
-    auto patch = GetShaderPatch(info.pgm_hash, info.hw_stage, perm_idx, "spv");
+    auto patch = GetShaderPatch(info.pgm_hash, info.hw_stage, perm_idx, "spv",
+                                info.is_indirect_compute, shared_memory_size);
     const bool is_patched = patch && EmulatorSettings.IsPatchShaders();
     if (is_patched) {
         LOG_INFO(Loader, "Loaded patch for {} shader {:#x}", info.hw_stage, info.pgm_hash);
@@ -644,9 +659,11 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
         module = CompileSPV(spv, instance.GetDevice());
     }
 
-    RegisterShaderBinary(std::move(spv), info.pgm_hash, perm_idx);
+    RegisterShaderBinary(std::move(spv), info.pgm_hash, perm_idx, info.is_indirect_compute,
+                         shared_memory_size);
 
-    const auto name = GetShaderName(info.hw_stage, info.pgm_hash, perm_idx);
+    const auto name = GetShaderName(info.hw_stage, info.pgm_hash, perm_idx,
+                                    info.is_indirect_compute, shared_memory_size);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
     if (EmulatorSettings.IsShaderCollect()) {
         DebugState.CollectShader(name, info.sw_stage, module, spv, code,
@@ -657,16 +674,20 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
 
 PipelineCache::Result PipelineCache::GetProgram(HwStage hw_stage, SwStage sw_stage,
                                                 const Shader::ShaderParams& params,
-                                                Shader::Backend::Bindings& binding) {
+                                                Shader::Backend::Bindings& binding,
+                                                bool is_indirect_compute) {
     auto runtime_info = BuildRuntimeInfo(hw_stage, sw_stage);
-    auto [it_pgm, new_program] = program_cache.try_emplace(params.hash);
+    const ProgramKey program_key{params.hash, is_indirect_compute,
+                                 is_indirect_compute ? runtime_info.hw.cs.shared_memory_size : 0};
+    auto [it_pgm, new_program] = program_cache.try_emplace(program_key);
     if (new_program) {
         it_pgm.value() = std::make_unique<Program>(hw_stage, sw_stage, params);
         auto& program = it_pgm.value();
+        program->info.is_indirect_compute = is_indirect_compute;
         auto start = binding;
         const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding);
         auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
-        const auto perm_hash = HashCombine(params.hash, 0);
+        const auto perm_hash = program_key.PermutationHash(0);
 
         RegisterShaderMeta(program->info, spec.fetch_shader_data, spec, perm_hash, 0);
         program->AddPermut(module, std::move(spec));
@@ -684,14 +705,20 @@ PipelineCache::Result PipelineCache::GetProgram(HwStage hw_stage, SwStage sw_sta
     auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
 
     size_t perm_idx = program->modules.size();
-    u64 perm_hash = HashCombine(params.hash, perm_idx);
+    u64 perm_hash = program_key.PermutationHash(perm_idx);
 
     vk::ShaderModule module{};
 
     const auto it = std::ranges::find(program->modules, spec, &Program::Module::spec);
     if (it == program->modules.end()) {
         auto new_info = Shader::Info(hw_stage, sw_stage, params);
+        new_info.is_indirect_compute = is_indirect_compute;
         module = CompileModule(new_info, runtime_info, params.code, perm_idx, binding);
+        // Bindings and the layout follow the program info, which decided on the metadata.
+        // Permutations agree unless storage-backed LDS depends on their shared memory size.
+        ASSERT_MSG(new_info.UsesDispatchMetadata() == info.UsesDispatchMetadata(),
+                   "Permutation {} of shader {:#x} differs in dispatch metadata", perm_idx,
+                   params.hash);
 
         RegisterShaderMeta(info, spec.fetch_shader_data, spec, perm_hash, perm_idx);
         program->AddPermut(module, std::move(spec));
@@ -699,7 +726,7 @@ PipelineCache::Result PipelineCache::GetProgram(HwStage hw_stage, SwStage sw_sta
         info.AddBindings(binding);
         module = it->module;
         perm_idx = std::distance(program->modules.begin(), it);
-        perm_hash = HashCombine(params.hash, perm_idx);
+        perm_hash = program_key.PermutationHash(perm_idx);
     }
     if (auto& fetch = program->modules[perm_idx].spec.fetch_shader_data; !fetch.Empty()) {
         fetch_shader = &fetch;
@@ -736,15 +763,18 @@ std::optional<vk::ShaderModule> PipelineCache::ReplaceShader(vk::ShaderModule mo
 }
 
 std::string PipelineCache::GetShaderName(Shader::HwStage stage, u64 hash,
-                                         std::optional<size_t> perm) {
+                                         std::optional<size_t> perm, bool is_indirect_compute,
+                                         u32 shared_memory_size) {
+    const auto suffix = ProgramKey{hash, is_indirect_compute, shared_memory_size}.ShaderSuffix();
     if (perm) {
-        return fmt::format("{}_{:#018x}_{}", stage, hash, *perm);
+        return fmt::format("{}_{:#018x}_{}{}", stage, hash, *perm, suffix);
     }
-    return fmt::format("{}_{:#018x}", stage, hash);
+    return fmt::format("{}_{:#018x}{}", stage, hash, suffix);
 }
 
 void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::HwStage stage,
-                               size_t perm_idx, std::string_view ext) {
+                               size_t perm_idx, std::string_view ext, bool is_indirect_compute,
+                               u32 shared_memory_size) {
     if (!EmulatorSettings.IsDumpShaders()) {
         return;
     }
@@ -754,21 +784,26 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::HwSt
     if (!std::filesystem::exists(dump_dir)) {
         std::filesystem::create_directories(dump_dir);
     }
-    const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
+    const auto filename = fmt::format(
+        "{}.{}", GetShaderName(stage, hash, perm_idx, is_indirect_compute, shared_memory_size),
+        ext);
     const auto file = IOFile{dump_dir / filename, FileAccessMode::Create};
     file.WriteSpan(code);
 }
 
 std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::HwStage stage,
-                                                              size_t perm_idx,
-                                                              std::string_view ext) {
+                                                              size_t perm_idx, std::string_view ext,
+                                                              bool is_indirect_compute,
+                                                              u32 shared_memory_size) {
 
     using namespace Common::FS;
     const auto patch_dir = GetUserPath(PathType::ShaderDir) / "patch";
     if (!std::filesystem::exists(patch_dir)) {
         std::filesystem::create_directories(patch_dir);
     }
-    const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
+    const auto filename = fmt::format(
+        "{}.{}", GetShaderName(stage, hash, perm_idx, is_indirect_compute, shared_memory_size),
+        ext);
     const auto filepath = patch_dir / filename;
     if (!std::filesystem::exists(filepath)) {
         return {};
