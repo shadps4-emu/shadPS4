@@ -385,18 +385,18 @@ s32 PS4_SYSV_ABI posix_pthread_mutexattr_setkind_np(PthreadMutexAttrT* attr,
     return 0;
 }
 
-s32 PS4_SYSV_ABI posix_pthread_mutexattr_getkind_np(PthreadMutexAttrT attr) {
-    if (attr == nullptr) {
-        *__Error() = POSIX_EINVAL;
-        return -1;
+s32 PS4_SYSV_ABI posix_pthread_mutexattr_getkind_np(PthreadMutexAttrT* attr, int* kind) {
+    if (attr == nullptr || *attr == nullptr || kind == nullptr) {
+        return POSIX_EINVAL;
     }
-    return static_cast<int>(attr->m_type);
+    *kind = static_cast<int>((*attr)->m_type);
+    return 0;
 }
 
 s32 PS4_SYSV_ABI posix_pthread_mutexattr_setprioceiling(PthreadMutexAttrT* attr, int prioceiling) {
     if (attr == nullptr || *attr == nullptr || (*attr)->m_protocol != PthreadMutexProt::Protect ||
-        prioceiling > ORBIS_KERNEL_PRIO_FIFO_HIGHEST ||
-        prioceiling < ORBIS_KERNEL_PRIO_FIFO_LOWEST) {
+        prioceiling < ORBIS_KERNEL_PRIO_FIFO_HIGHEST ||
+        prioceiling > ORBIS_KERNEL_PRIO_FIFO_LOWEST) {
         return POSIX_EINVAL;
     }
     (*attr)->m_ceiling = prioceiling;
