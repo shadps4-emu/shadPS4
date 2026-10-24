@@ -274,6 +274,14 @@ public:
         return shader_clock && shader_clock_features.shaderSubgroupClock;
     }
 
+    bool IsSubgroupArithmeticSupported() const {
+        constexpr auto stages =
+            vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eCompute;
+        return static_cast<bool>(vk11_props.subgroupSupportedOperations &
+                                 vk::SubgroupFeatureFlagBits::eArithmetic) &&
+               (vk11_props.subgroupSupportedStages & stages) == stages;
+    }
+
     /// Returns the vendor ID of the physical device
     u32 GetVendorID() const {
         return properties.vendorID;
