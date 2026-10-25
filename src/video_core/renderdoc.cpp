@@ -64,7 +64,9 @@ void LoadRenderDoc() {
         ASSERT(ret == 1);
     }
 #else
-#ifdef ANDROID
+#if defined(__APPLE__)
+    static constexpr const char RENDERDOC_LIB[] = "librenderdoc.dylib";
+#elif defined(ANDROID)
     static constexpr const char RENDERDOC_LIB[] = "libVkLayer_GLES_RenderDoc.so";
 #else
     static constexpr const char RENDERDOC_LIB[] = "librenderdoc.so";
