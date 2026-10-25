@@ -217,7 +217,7 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
         }
     }
 
-    if (!EmulatorSettings.IsDirectMemoryAccessEnabled()) {
+    if (!EmulatorSettings.IsDirectMemoryAccessEnabled() || !profile.support_bda) {
         info.uses_dma = false;
         info.readconst_types = Info::ReadConstType::None;
     }
