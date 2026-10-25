@@ -522,7 +522,6 @@ private:
     std::unordered_map<vk::Format, vk::FormatProperties3> format_properties;
     TracyVkCtx profiler_context{};
     u32 queue_family_index{0};
-    bool vk13_from_extensions{};
     bool custom_border_color{};
     bool fragment_shader_barycentric{};
     bool amd_shader_explicit_vertex_parameter{};

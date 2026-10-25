@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm>
-
 #include <boost/container/static_vector.hpp>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
@@ -171,16 +169,14 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
     CollectDeviceParameters();
     if (properties.apiVersion >= VK_API_VERSION_1_2 &&
         properties.apiVersion < TargetVulkanApiVersion && VideoCore::IsRenderDocLoaded()) {
-        // RenderDoc reports Vulkan 1.2 and hides bufferDeviceAddress on drivers without
-        // bufferDeviceAddressCaptureReplay. Use the Vulkan 1.3 extensions instead.
-        vk13_from_extensions = true;
-        LOG_WARNING(Render_Vulkan,
-                    "RenderDoc limited this device to Vulkan {}.{}, using the Vulkan 1.3 "
-                    "extensions instead",
+        // RenderDoc reports Vulkan 1.2 on drivers without bufferDeviceAddressCaptureReplay, but
+        // still forwards the device setup to the driver, so Vulkan 1.3 features keep working.
+        LOG_WARNING(Render_Vulkan, "RenderDoc limited this device to Vulkan {}.{}",
                     VK_VERSION_MAJOR(properties.apiVersion),
                     VK_VERSION_MINOR(properties.apiVersion));
+        properties.apiVersion = TargetVulkanApiVersion;
     }
-    ASSERT_MSG(vk13_from_extensions || properties.apiVersion >= TargetVulkanApiVersion,
+    ASSERT_MSG(properties.apiVersion >= TargetVulkanApiVersion,
                "Vulkan {}.{} is required, but only {}.{} is supported by device!",
                VK_VERSION_MAJOR(TargetVulkanApiVersion), VK_VERSION_MINOR(TargetVulkanApiVersion),
                VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion));
@@ -242,7 +238,7 @@ bool Instance::CreateDevice() {
         return false;
     }
 
-    boost::container::static_vector<const char*, 48> enabled_extensions;
+    boost::container::static_vector<const char*, 32> enabled_extensions;
     const auto add_extension = [&](std::string_view extension) -> bool {
         const auto result =
             std::find_if(available_extensions.begin(), available_extensions.end(),
@@ -276,35 +272,6 @@ bool Instance::CreateDevice() {
                "Required Vulkan feature unavailable: robustImageAccess2");
     ASSERT_MSG(robustness2_features.nullDescriptor,
                "Required Vulkan feature unavailable: nullDescriptor");
-
-    bool vk13_image_robustness{};
-    bool vk13_shader_demote{};
-    bool vk13_subgroup_size_control{};
-    if (vk13_from_extensions) {
-        // Vulkan 1.3 features are enabled through the extensions they were promoted from.
-        const auto vk13 = feature_chain.get<vk::PhysicalDeviceVulkan13Features>();
-        ASSERT_MSG(vk13.dynamicRendering, "Required Vulkan feature unavailable: dynamicRendering");
-        ASSERT_MSG(vk13.synchronization2, "Required Vulkan feature unavailable: synchronization2");
-        ASSERT_MSG(add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME),
-                   "Required Vulkan extension unavailable: {}",
-                   VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-        ASSERT_MSG(add_extension(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME),
-                   "Required Vulkan extension unavailable: {}",
-                   VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
-        ASSERT_MSG(add_extension(VK_KHR_MAINTENANCE_4_EXTENSION_NAME),
-                   "Required Vulkan extension unavailable: {}",
-                   VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
-        ASSERT_MSG(add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME),
-                   "Required Vulkan extension unavailable: {}",
-                   VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
-        ASSERT_MSG(add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME),
-                   "Required Vulkan extension unavailable: {}",
-                   VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME);
-        vk13_image_robustness = add_extension(VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME);
-        vk13_shader_demote =
-            add_extension(VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME);
-        vk13_subgroup_size_control = add_extension(VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME);
-    }
 
     // Optional
     maintenance_5 = add_extension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
@@ -500,31 +467,6 @@ bool Instance::CreateDevice() {
             .dynamicRendering = vk13_features.dynamicRendering,
             .maintenance4 = vk13_features.maintenance4,
         },
-        // Vulkan 1.3 features as extension structures, used instead of the structure above
-        vk::PhysicalDeviceImageRobustnessFeatures{
-            .robustImageAccess = vk13_features.robustImageAccess,
-        },
-        vk::PhysicalDeviceShaderDemoteToHelperInvocationFeatures{
-            .shaderDemoteToHelperInvocation = vk13_features.shaderDemoteToHelperInvocation,
-        },
-        vk::PhysicalDeviceSubgroupSizeControlFeatures{
-            .subgroupSizeControl = vk13_features.subgroupSizeControl,
-        },
-        vk::PhysicalDeviceSynchronization2Features{
-            .synchronization2 = vk13_features.synchronization2,
-        },
-        vk::PhysicalDeviceDynamicRenderingFeatures{
-            .dynamicRendering = vk13_features.dynamicRendering,
-        },
-        vk::PhysicalDeviceMaintenance4Features{
-            .maintenance4 = vk13_features.maintenance4,
-        },
-        vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT{
-            .extendedDynamicState = true,
-        },
-        vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT{
-            .extendedDynamicState2 = true,
-        },
         // Extensions
         vk::PhysicalDeviceCustomBorderColorFeaturesEXT{
             .customBorderColors = true,
@@ -657,29 +599,6 @@ bool Instance::CreateDevice() {
         device_chain.unlink<vk::PhysicalDeviceShaderClockFeaturesKHR>();
     }
 
-    if (vk13_from_extensions) {
-        device_chain.unlink<vk::PhysicalDeviceVulkan13Features>();
-        if (!vk13_image_robustness) {
-            device_chain.unlink<vk::PhysicalDeviceImageRobustnessFeatures>();
-        }
-        if (!vk13_shader_demote) {
-            device_chain.unlink<vk::PhysicalDeviceShaderDemoteToHelperInvocationFeatures>();
-        }
-        if (!vk13_subgroup_size_control) {
-            device_chain.unlink<vk::PhysicalDeviceSubgroupSizeControlFeatures>();
-            vk13_features.subgroupSizeControl = false;
-        }
-    } else {
-        device_chain.unlink<vk::PhysicalDeviceImageRobustnessFeatures>();
-        device_chain.unlink<vk::PhysicalDeviceShaderDemoteToHelperInvocationFeatures>();
-        device_chain.unlink<vk::PhysicalDeviceSubgroupSizeControlFeatures>();
-        device_chain.unlink<vk::PhysicalDeviceSynchronization2Features>();
-        device_chain.unlink<vk::PhysicalDeviceDynamicRenderingFeatures>();
-        device_chain.unlink<vk::PhysicalDeviceMaintenance4Features>();
-        device_chain.unlink<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
-        device_chain.unlink<vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT>();
-    }
-
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
     if (device_result != vk::Result::eSuccess) {
         LOG_CRITICAL(Render_Vulkan, "Failed to create device: {}", vk::to_string(device_result));
@@ -740,7 +659,7 @@ void Instance::CreateAllocator() {
         .device = *device,
         .pVulkanFunctions = &functions,
         .instance = *instance,
-        .vulkanApiVersion = std::min(properties.apiVersion, TargetVulkanApiVersion),
+        .vulkanApiVersion = TargetVulkanApiVersion,
     };
 
     const VkResult result = vmaCreateAllocator(&allocator_info, &allocator);
