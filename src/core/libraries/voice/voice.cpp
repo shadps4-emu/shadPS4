@@ -8,6 +8,7 @@
 #include <deque>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
@@ -37,9 +38,8 @@ struct Port {
     float volume = 1.0f;
     u32 bitrate = 48000;
     s32 connected_to = -1;
-    std::unique_ptr<AudioIn::PortIn> capture_config{};
     std::unique_ptr<AudioIn::PortInBackend> audio_in{};
-    std::unique_ptr<AudioOut::PortBackend> audio_out{};
+    std::shared_ptr<AudioOut::PortBackend> audio_out{};
     bool audio_in_open_tried = false;
     bool audio_out_open_tried = false;
     std::deque<s16> queue{};
@@ -70,7 +70,6 @@ Port* FindPort(u32 port_id) {
 
 void ClosePortDevices(Port& port) {
     port.audio_in.reset();
-    port.capture_config.reset();
     port.audio_out.reset();
     port.audio_in_open_tried = false;
     port.audio_out_open_tried = false;
@@ -80,8 +79,7 @@ void ClosePortDevices(Port& port) {
 AudioIn::PortInBackend* GetOrOpenCapture(Port& port) {
     if (!port.audio_in_open_tried) {
         port.audio_in_open_tried = true;
-        port.capture_config = std::make_unique<AudioIn::PortIn>();
-        AudioIn::PortIn& config = *port.capture_config;
+        AudioIn::PortIn config;
         config.type = AudioIn::OrbisAudioInType::VoiceChat;
         config.format = AudioIn::OrbisAudioInParamFormat::S16Mono;
         config.samples_num = kFrameSamples;
@@ -90,22 +88,19 @@ AudioIn::PortInBackend* GetOrOpenCapture(Port& port) {
         config.sample_size = sizeof(s16);
         AudioIn::SDLAudioIn backend;
         port.audio_in = backend.Open(config);
-        if (!port.audio_in) {
-            port.capture_config.reset();
+        if (!port.audio_in || !port.audio_in->IsAvailable()) {
             LOG_WARNING(Lib_Voice, "No capture device available");
         }
     }
     return port.audio_in.get();
 }
 
-bool IsCaptureAvailable(const Port& port) {
-    if (port.audio_in) {
-        return port.audio_in->IsAvailable();
-    }
-    return EmulatorSettings.GetSDLMicDevice() != "None";
+bool IsCaptureAvailable(Port& port) {
+    AudioIn::PortInBackend* capture = GetOrOpenCapture(port);
+    return capture && capture->IsAvailable();
 }
 
-std::unique_ptr<AudioOut::PortBackend> OpenPlaybackDevice() {
+std::shared_ptr<AudioOut::PortBackend> OpenPlaybackDevice() {
     AudioOut::PortOut port_out{};
     port_out.type = AudioOut::OrbisAudioOutPort::Voice;
     port_out.format_info = AudioOut::AudioFormatInfo{.is_float = false,
@@ -124,7 +119,7 @@ std::unique_ptr<AudioOut::PortBackend> OpenPlaybackDevice() {
     return backend.Open(port_out);
 }
 
-AudioOut::PortBackend* GetOrOpenPlayback(Port& port) {
+std::shared_ptr<AudioOut::PortBackend> GetOrOpenPlayback(Port& port) {
     if (!port.audio_out_open_tried) {
         port.audio_out_open_tried = true;
         port.audio_out = OpenPlaybackDevice();
@@ -132,14 +127,18 @@ AudioOut::PortBackend* GetOrOpenPlayback(Port& port) {
             LOG_WARNING(Lib_Voice, "No playback device available");
         }
     }
-    return port.audio_out.get();
+    return port.audio_out;
+}
+
+void TrimQueue(Port& port) {
+    if (port.queue.size() > kMaxQueuedSamples) {
+        port.queue.erase(port.queue.begin(), port.queue.end() - kMaxQueuedSamples);
+    }
 }
 
 void Enqueue(Port& port, const s16* samples, size_t count) {
     port.queue.insert(port.queue.end(), samples, samples + count);
-    if (port.queue.size() > kMaxQueuedSamples) {
-        port.queue.erase(port.queue.begin(), port.queue.end() - kMaxQueuedSamples);
-    }
+    TrimQueue(port);
 }
 
 Port* FindConnectedInput(u32 out_port_id) {
@@ -149,19 +148,29 @@ Port* FindConnectedInput(u32 out_port_id) {
     return it != g_state.ports.end() ? &*it : nullptr;
 }
 
+void PumpCapture(Port& in_port) {
+    if (in_port.type != ORBIS_VOICE_PORTTYPE_IN_DEVICE) {
+        return;
+    }
+    AudioIn::PortInBackend* capture = GetOrOpenCapture(in_port);
+    if (!capture || !capture->IsAvailable()) {
+        return;
+    }
+    std::array<s16, kFrameSamples> frame{};
+    while (in_port.queue.size() + kFrameSamples <= kMaxQueuedSamples) {
+        if (capture->TryRead(frame.data()) <= 0) {
+            return;
+        }
+        Enqueue(in_port, frame.data(), frame.size());
+    }
+    capture->Clear();
+}
+
 u32 ReadInput(Port& in_port, void* data, u32 requested) {
     if (in_port.paused || in_port.muted) {
         return 0;
     }
-    if (in_port.type == ORBIS_VOICE_PORTTYPE_IN_DEVICE && in_port.queue.size() < kFrameSamples) {
-        AudioIn::PortInBackend* capture = GetOrOpenCapture(in_port);
-        if (capture && capture->IsAvailable()) {
-            std::array<s16, kFrameSamples> frame{};
-            if (capture->TryRead(frame.data()) > 0) {
-                Enqueue(in_port, frame.data(), frame.size());
-            }
-        }
-    }
+    PumpCapture(in_port);
     const u32 available = static_cast<u32>(in_port.queue.size() * sizeof(s16));
     const u32 to_copy = std::min(requested, available) / sizeof(s16) * sizeof(s16);
     std::copy_n(in_port.queue.begin(), to_copy / sizeof(s16), static_cast<s16*>(data));
@@ -169,28 +178,60 @@ u32 ReadInput(Port& in_port, void* data, u32 requested) {
     return to_copy;
 }
 
-void WriteInput(Port& in_port, const void* data, u32 size) {
-    if (in_port.paused || in_port.muted || size < sizeof(s16)) {
-        return;
+u32 GetPortByteCount(u32 port_id, Port& port) {
+    switch (port.type) {
+    case ORBIS_VOICE_PORTTYPE_OUT_PCMAUDIO:
+    case ORBIS_VOICE_PORTTYPE_OUT_VOICE: {
+        Port* in_port = FindConnectedInput(port_id);
+        if (port.paused || port.muted || !in_port || in_port->paused || in_port->muted) {
+            return 0;
+        }
+        PumpCapture(*in_port);
+        return static_cast<u32>(in_port->queue.size() * sizeof(s16)) / kFrameBytes * kFrameBytes;
+    }
+    case ORBIS_VOICE_PORTTYPE_IN_PCMAUDIO:
+    case ORBIS_VOICE_PORTTYPE_IN_VOICE:
+        return static_cast<u32>((kMaxQueuedSamples - port.queue.size()) * sizeof(s16)) /
+               kFrameBytes * kFrameBytes;
+    default:
+        return 0;
+    }
+}
+
+struct PlaybackBatch {
+    std::shared_ptr<AudioOut::PortBackend> backend{};
+    std::vector<std::array<s16, kFrameSamples>> frames{};
+};
+
+u32 WriteInput(Port& in_port, const void* data, u32 size, PlaybackBatch& batch) {
+    const u32 consumed = size / sizeof(s16) * sizeof(s16);
+    if (in_port.paused || in_port.muted || consumed == 0) {
+        return consumed;
     }
     const auto* samples = static_cast<const s16*>(data);
-    if (in_port.connected_to >= 0 && size == kFrameBytes) {
-        Port& out_port = g_state.ports[in_port.connected_to];
-        if (out_port.allocated && out_port.type == ORBIS_VOICE_PORTTYPE_OUT_DEVICE &&
-            !out_port.paused && !out_port.muted) {
-            if (AudioOut::PortBackend* playback = GetOrOpenPlayback(out_port)) {
-                const float gain = std::clamp(in_port.volume * out_port.volume, 0.0f, 4.0f);
-                std::array<s16, kFrameSamples> scaled{};
-                for (u32 i = 0; i < kFrameSamples; i++) {
-                    scaled[i] =
-                        static_cast<s16>(std::clamp(samples[i] * gain, -32768.0f, 32767.0f));
-                }
-                playback->Output(scaled.data());
-                return;
-            }
-        }
+    in_port.queue.insert(in_port.queue.end(), samples, samples + consumed / sizeof(s16));
+
+    Port* out_port = in_port.connected_to >= 0 ? &g_state.ports[in_port.connected_to] : nullptr;
+    if (!out_port || !out_port->allocated || out_port->type != ORBIS_VOICE_PORTTYPE_OUT_DEVICE) {
+        TrimQueue(in_port);
+        return consumed;
     }
-    Enqueue(in_port, samples, size / sizeof(s16));
+    if (!out_port->paused && !out_port->muted) {
+        batch.backend = GetOrOpenPlayback(*out_port);
+    }
+    if (!batch.backend) {
+        in_port.queue.clear();
+        return consumed;
+    }
+    const float gain = std::clamp(in_port.volume * out_port->volume, 0.0f, 4.0f);
+    while (in_port.queue.size() >= kFrameSamples) {
+        auto& frame = batch.frames.emplace_back();
+        for (u32 i = 0; i < kFrameSamples; i++) {
+            frame[i] = static_cast<s16>(std::clamp(in_port.queue[i] * gain, -32768.0f, 32767.0f));
+        }
+        in_port.queue.erase(in_port.queue.begin(), in_port.queue.begin() + kFrameSamples);
+    }
+    return consumed;
 }
 
 s32 InitInternal(const OrbisVoiceInitParam* param) {
@@ -396,7 +437,7 @@ s32 PS4_SYSV_ABI sceVoiceGetPortAttr(u32 port_id, s32 attr_id, void* value, u32 
                   expected_size);
         return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
     }
-    const Port* port = FindPort(port_id);
+    Port* port = FindPort(port_id);
     if (!port) {
         LOG_ERROR(Lib_Voice, "Port {} is not allocated", port_id);
         return ORBIS_VOICE_ERROR_PORT_INVALID;
@@ -440,15 +481,15 @@ s32 PS4_SYSV_ABI sceVoiceGetPortInfo(u32 port_id, OrbisVoicePortInfo* info) {
         LOG_ERROR(Lib_Voice, "Invalid argument: info is null");
         return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
     }
-    const Port* port = FindPort(port_id);
+    Port* port = FindPort(port_id);
     if (!port) {
         LOG_ERROR(Lib_Voice, "Port {} is not allocated", port_id);
         return ORBIS_VOICE_ERROR_TOPOLOGY;
     }
     info->port_type = port->type;
     info->state = 0;
-    info->byte_count = 0;
-    info->frame_size = 1;
+    info->byte_count = GetPortByteCount(port_id, *port);
+    info->frame_size = kFrameBytes;
     info->edge_count = 0;
     info->reserved = 0;
     return ORBIS_OK;
@@ -745,29 +786,50 @@ s32 PS4_SYSV_ABI sceVoiceVADSetVersion(s32 version) {
 
 s32 PS4_SYSV_ABI sceVoiceWriteToIPort(u32 port_id, const void* data, u32* size, s16 unk) {
     LOG_TRACE(Lib_Voice, "port_id = {}, unk = {}", port_id, unk);
+    PlaybackBatch batch;
+    {
+        std::scoped_lock lock{g_state.mutex};
+        if (const s32 ret = CheckPort(port_id); ret != ORBIS_OK) {
+            LOG_ERROR(Lib_Voice, "Port check failed: port_id = {}, error = {:#x}", port_id,
+                      static_cast<u32>(ret));
+            return ret;
+        }
+        if (data == nullptr || size == nullptr) {
+            LOG_ERROR(Lib_Voice, "Invalid argument: data is null or size is null");
+            return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
+        }
+        Port* port = FindPort(port_id);
+        if (!port) {
+            LOG_ERROR(Lib_Voice, "Port {} is not allocated", port_id);
+            *size = 0;
+            return ORBIS_VOICE_ERROR_TOPOLOGY;
+        }
+        if (port->type != ORBIS_VOICE_PORTTYPE_IN_PCMAUDIO &&
+            port->type != ORBIS_VOICE_PORTTYPE_IN_VOICE) {
+            LOG_ERROR(Lib_Voice, "Port {} is not an input port (type = {})", port_id, port->type);
+            *size = 0;
+            return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
+        }
+        *size = WriteInput(*port, data, *size, batch);
+    }
+    // Output paces itself to real time, so it must not run under the global lock.
+    for (auto& frame : batch.frames) {
+        batch.backend->Output(frame.data());
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceVoiceUnknownWxrYyOK7Las(u32 port_id, void* data, u32 size, float* value) {
+    LOG_ERROR(Lib_Voice, "(STUBBED) port_id = {}, size = {}", port_id, size);
     std::scoped_lock lock{g_state.mutex};
-    if (const s32 ret = CheckPort(port_id); ret != ORBIS_OK) {
-        LOG_ERROR(Lib_Voice, "Port check failed: port_id = {}, error = {:#x}", port_id,
-                  static_cast<u32>(ret));
-        return ret;
+    if (!g_state.initialized) {
+        LOG_ERROR(Lib_Voice, "Voice is not initialized");
+        return ORBIS_VOICE_ERROR_NOT_INIT;
     }
-    if (data == nullptr || size == nullptr) {
-        LOG_ERROR(Lib_Voice, "Invalid argument: data is null or size is null");
+    if (data == nullptr || value == nullptr || !std::isfinite(*value) || *value < 0.0f) {
+        LOG_ERROR(Lib_Voice, "Invalid argument");
         return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
     }
-    Port* port = FindPort(port_id);
-    if (!port) {
-        LOG_ERROR(Lib_Voice, "Port {} is not allocated", port_id);
-        *size = 0;
-        return ORBIS_VOICE_ERROR_TOPOLOGY;
-    }
-    if (port->type != ORBIS_VOICE_PORTTYPE_IN_PCMAUDIO &&
-        port->type != ORBIS_VOICE_PORTTYPE_IN_VOICE) {
-        LOG_ERROR(Lib_Voice, "Port {} is not an input port (type = {})", port_id, port->type);
-        *size = 0;
-        return ORBIS_VOICE_ERROR_ARGUMENT_INVALID;
-    }
-    WriteInput(*port, data, *size);
     return ORBIS_OK;
 }
 
@@ -802,6 +864,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("hg9T73LlRiU", "libSceVoice", 1, "libSceVoice", sceVoiceVADAdjustment);
     LIB_FUNCTION("wFeAxEeEi-8", "libSceVoice", 1, "libSceVoice", sceVoiceVADSetVersion);
     LIB_FUNCTION("YeJl6yDlhW0", "libSceVoice", 1, "libSceVoice", sceVoiceWriteToIPort);
+    LIB_FUNCTION("WxrYyOK7Las", "libSceVoice", 1, "libSceVoice", sceVoiceUnknownWxrYyOK7Las);
 };
 
 } // namespace Libraries::Voice
