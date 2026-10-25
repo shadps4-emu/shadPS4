@@ -10,6 +10,7 @@
 #include "common/types.h"
 #include "imgui/renderer/imgui_core.h"
 #include "sdl_window.h"
+#include "video_core/renderdoc.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
@@ -166,6 +167,21 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
     properties = physical_device.getProperties();
     memory_properties = physical_device.getMemoryProperties();
     CollectDeviceParameters();
+    if (properties.apiVersion < TargetVulkanApiVersion && VideoCore::IsRenderDocLoaded()) {
+        // RenderDoc only exposes Vulkan 1.3 and newer when the driver reports
+        // bufferDeviceAddressCaptureReplay, otherwise it clamps the device to Vulkan 1.2.
+        const auto vk12_chain =
+            physical_device
+                .getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features>();
+        const auto& vk12 = vk12_chain.get<vk::PhysicalDeviceVulkan12Features>();
+        LOG_CRITICAL(Render_Vulkan,
+                     "RenderDoc limited this device to Vulkan {}.{} (driver reports "
+                     "bufferDeviceAddressCaptureReplay: {}). shadPS4 requires Vulkan 1.3, so "
+                     "disable RenderDoc Debugging or use a driver that supports capture replay.",
+                     VK_VERSION_MAJOR(properties.apiVersion),
+                     VK_VERSION_MINOR(properties.apiVersion),
+                     vk12.bufferDeviceAddressCaptureReplay ? "yes" : "no");
+    }
     ASSERT_MSG(properties.apiVersion >= TargetVulkanApiVersion,
                "Vulkan {}.{} is required, but only {}.{} is supported by device!",
                VK_VERSION_MAJOR(TargetVulkanApiVersion), VK_VERSION_MINOR(TargetVulkanApiVersion),
