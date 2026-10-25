@@ -319,7 +319,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
                 }
                 const auto part_low = Common::ToLower(part.string());
                 bool found_match = false;
-                for (const auto& path : std::filesystem::directory_iterator(current_path)) {
+                for (const auto& path : std::filesystem::directory_iterator(current_path, ec)) {
                     const auto candidate = path.path().filename();
                     const auto filename = Common::ToLower(candidate.string());
                     // Check if a filename matches in case insensitive manner.
@@ -491,6 +491,24 @@ bool MntPoints::IsDirectory(std::string_view guest_path) {
     for (const auto& backend : mount->backends) {
         if (backend->Exists(rel)) {
             return backend->IsDirectory(rel);
+        }
+    }
+    return false;
+}
+
+bool MntPoints::Stat(std::string_view guest_path, FileStat& out) {
+    const auto corrected = SanitizeGuestPath(guest_path);
+    if (!corrected) {
+        return false;
+    }
+    const auto mount = GetMount(*corrected);
+    if (!mount || mount->backends.empty()) {
+        return false;
+    }
+    const auto rel = RelativeToMount(*corrected, *mount);
+    for (const auto& backend : mount->backends) {
+        if (backend->Exists(rel)) {
+            return backend->Stat(rel, out);
         }
     }
     return false;

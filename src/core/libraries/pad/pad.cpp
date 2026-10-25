@@ -449,9 +449,10 @@ int PS4_SYSV_ABI scePadReadBlasterForTracker() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadReadExt() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI scePadReadExt(s32 handle, OrbisPadData* pData, s32 num) {
+    LOG_TRACE(Lib_Pad, "handle: {}, num: {}", handle, num);
+    // We don't currently support extensions, pass through.
+    return scePadRead(handle, pData, num);
 }
 
 int PS4_SYSV_ABI scePadReadForTracker() {
@@ -470,9 +471,10 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     return result < 0 ? result : ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadReadStateExt() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI scePadReadStateExt(s32 handle, OrbisPadData* pData) {
+    LOG_TRACE(Lib_Pad, "handle: {}", handle);
+    // We don't currently support extensions, pass through.
+    return scePadReadState(handle, pData);
 }
 
 int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {

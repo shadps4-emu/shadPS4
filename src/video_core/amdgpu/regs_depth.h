@@ -269,13 +269,29 @@ struct DepthBuffer {
     }
 
     u32 NumBits() const {
-        return z_info.format == ZFormat::Z32Float ? 32 : 16;
+        switch (z_info.format) {
+        case ZFormat::Z32Float:
+            return 32;
+        case ZFormat::Z16:
+            return 16;
+        default:
+            return 0;
+        }
     }
 
     u32 GetDepthSliceSize() const {
-        ASSERT(z_info.format != ZFormat::Invalid);
+        if (z_info.format == ZFormat::Invalid) {
+            return 0;
+        }
         const auto bpe = NumBits() >> 3; // in bytes
         return (depth_slice.tile_max + 1) * 64 * bpe * NumSamples();
+    }
+
+    u32 GetStencilSliceSize() const {
+        if (stencil_info.format == StencilFormat::Invalid) {
+            return 0;
+        }
+        return (depth_slice.tile_max + 1) * 64 * 1 * NumSamples();
     }
 
     TileMode GetTileMode() const {

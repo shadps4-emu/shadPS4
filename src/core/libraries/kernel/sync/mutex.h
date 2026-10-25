@@ -53,7 +53,7 @@ public:
         for (;;) {
             const auto now = Clock::now();
             if (abs_time <= now) {
-                return false;
+                return try_lock();
             }
 
             const auto rel_ms = std::chrono::ceil<std::chrono::milliseconds>(abs_time - now);
