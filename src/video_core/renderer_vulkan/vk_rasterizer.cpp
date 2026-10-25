@@ -418,7 +418,9 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     buffer_infos.clear();
     image_infos.clear();
 
-    bool uses_dma = false;
+    bool sync_all_buffers = false;
+    bool uses_bda_pagetable = false;
+    boost::container::small_vector<VAddr, 32> touch_addresses;
 
     // Bind resource buffers and textures.
     Shader::Backend::Bindings binding{};
@@ -431,11 +433,29 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
                           stage->samplers.size());
         BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
-        uses_dma |= stage->uses_dma;
+        sync_all_buffers |=
+            True(stage->readconst_types & Shader::InfoPersistent::ReadConstType::Checked);
+        uses_bda_pagetable |= True(stage->readconst_types);
+        if (stage->srt_info.touch_addr_bufsize_qw > 0) {
+            const auto addresses =
+                std::span{stage->touch_addrs}.first(stage->srt_info.touch_addr_bufsize_qw);
+            touch_addresses.insert(touch_addresses.end(), addresses.begin(), addresses.end());
+        }
     }
 
-    if (uses_dma) {
-        buffer_cache.SynchronizeDmaBuffers();
+    const auto dma_ranges = ([&]() {
+        if (sync_all_buffers) {
+            return buffer_cache.SynchronizeAllDmaBuffers(touch_addresses);
+        } else if (!touch_addresses.empty()) {
+            std::ranges::sort(touch_addresses);
+            return buffer_cache.SynchronizeDmaBuffers(touch_addresses);
+        }
+        return VideoCore::BufferCache::DmaBufferRangeList{};
+    })();
+
+    for (const auto& [buffer, offset, size] : dma_ranges) {
+        needs_barrier |= runtime.IsBufferAccessed(buffer, offset, size);
+        bound_buffers.emplace_back(buffer, offset, size, vk::AccessFlagBits2::eShaderRead);
     }
 
     return true;
