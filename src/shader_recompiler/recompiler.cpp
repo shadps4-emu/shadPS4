@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/classes.h"
@@ -94,7 +94,14 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     if (!profile.support_float64) {
         Shader::Optimization::LowerFp64ToFp32(program);
     }
-    Shader::Optimization::SsaRewritePass(program);
+    if (info.has_movrel) {
+        Shader::Optimization::SsaRewritePass(program, Optimization::SsaTarget::ScalarOnly);
+        Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
+        Shader::Optimization::LowerMovRelPass(program, runtime_info);
+        Shader::Optimization::SsaRewritePass(program, Optimization::SsaTarget::VectorOnly);
+    } else {
+        Shader::Optimization::SsaRewritePass(program);
+    }
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::ReadLaneEliminationPass(program);
     if (info.sw_stage == SwStage::TessellationControl) {
