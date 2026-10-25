@@ -16,6 +16,7 @@
 #include <vector>
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
@@ -226,8 +227,17 @@ private:
     std::vector<IR::Inst*> m_pending_phis;
 };
 
-void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
+void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst, SsaTarget target) {
     const IR::Opcode opcode{inst.GetOpcode()};
+    if (target == SsaTarget::ScalarOnly) {
+        if (opcode == IR::Opcode::SetVectorRegister || opcode == IR::Opcode::GetVectorRegister) {
+            return;
+        }
+    } else if (target == SsaTarget::VectorOnly) {
+        if (opcode != IR::Opcode::SetVectorRegister && opcode != IR::Opcode::GetVectorRegister) {
+            return;
+        }
+    }
     switch (opcode) {
     case IR::Opcode::SetScalarRegister:
         pass.WriteVariable(IR::RegTag{inst.Arg(0).ScalarReg()}, block, inst.Arg(1));
@@ -295,13 +305,13 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
 
 } // Anonymous namespace
 
-void SsaRewritePass(IR::Program& program) {
+void SsaRewritePass(IR::Program& program, SsaTarget target) {
     Pass pass;
     const auto end = program.post_order_blocks.rend();
     for (auto it = program.post_order_blocks.rbegin(); it != end; ++it) {
         IR::Block* block{*it};
         for (IR::Inst& inst : block->Instructions()) {
-            VisitInst(pass, block, inst);
+            VisitInst(pass, block, inst, target);
         }
     }
     pass.EvaluatePendingPhis();

@@ -571,6 +571,14 @@ void EmitSetVectorRegister(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }
 
+void EmitVMovRelS(EmitContext&) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
+void EmitVMovRelD(EmitContext&) {
+    UNREACHABLE_MSG("Unreachable instruction");
+}
+
 void EmitSetVirtualRegister(EmitContext& ctx) {
     UNREACHABLE_MSG("Unreachable instruction");
 }

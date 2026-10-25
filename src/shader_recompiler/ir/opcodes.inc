@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 //     opcode name,                                         return type,    arg1 type,      arg2 type,      arg3 type,      arg4 type,      arg4 type,      ...
@@ -67,6 +67,8 @@ OPCODE(GetScalarRegister,                                   U32,            Scal
 OPCODE(SetScalarRegister,                                   Void,           ScalarReg,      U32,                                                            )
 OPCODE(GetVectorRegister,                                   U32,            VectorReg,                                                                      )
 OPCODE(SetVectorRegister,                                   Void,           VectorReg,      U32,                                                            )
+OPCODE(VMovRelS,                                            U32,            VectorReg,      U32,                                                            )
+OPCODE(VMovRelD,                                            Void,           VectorReg,      U32,            U32,                                            )
 OPCODE(GetVirtualRegister,                                  Opaque,         VirtualReg,                                                                     )
 OPCODE(SetVirtualRegister,                                  Void,           VirtualReg,     Opaque,                                                         )
 OPCODE(GetGotoVariable,                                     U1,             U32,                                                                            )
