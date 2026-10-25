@@ -3,7 +3,9 @@
 
 #include <mutex>
 
+#include <string>
 #include <unordered_set>
+
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -102,17 +104,17 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
 }
 
 s32 PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal(char const* name, u64 args, void const* argp,
-                                                      void const* popt, s32* res) {
+                                                      u32 flags, s32* res) {
     LOG_ERROR(Lib_SysModule, "(DUMMY) called, name: {}", name);
 
-    std::unordered_set<std::string const> const whitelisted_modules{
+    std::unordered_set<std::string> const whitelisted_modules{
         "libScePsmUtil",
         "libReactNative.Modules.Vsh",
         "libmonosgen-2.0",
         "libmono-btls-shared",
     };
 
-    std::unordered_set<std::string const> const blacklisted_modules{
+    std::unordered_set<std::string> const blacklisted_modules{
         "libSceDipsw",
         "libSceComposite",
         "libSceUpdateService",
@@ -151,11 +153,11 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal(char const* name, u64 args
     exists = posix_access((system_base + "/common/lib/" + filename).c_str(), 0);
     if (exists == 0)
         return sceKernelLoadStartModule((system_base + "/common/lib/" + filename).c_str(), args,
-                                        argp, 0, popt, res);
+                                        argp, flags, 0, res);
     exists = posix_access((system_base + "/priv/lib/" + filename).c_str(), 0);
     if (exists == 0)
         return sceKernelLoadStartModule((system_base + "/priv/lib/" + filename).c_str(), args, argp,
-                                        0, popt, res);
+                                        flags, 0, res);
     return ORBIS_KERNEL_ERROR_EINVAL;
 }
 
