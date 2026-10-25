@@ -66,6 +66,52 @@ void ConvertPositionToClipSpace(EmitContext& ctx) {
     ctx.OpStore(ctx.output_position, vector);
 }
 
+template <bool is_interior>
+static void CopyTessFactor(EmitContext& ctx, u32 src_idx, u32 dst_idx) {
+    const Id src_ptr{
+        ctx.OpAccessChain(ctx.output_f32, ctx.tess_factor_dynamic_array, ctx.ConstU32(src_idx))};
+    const Id dst_array = is_interior ? ctx.output_tess_level_inner : ctx.output_tess_level_outer;
+    const Id dst_ptr{ctx.OpAccessChain(ctx.output_f32, dst_array, ctx.ConstU32(dst_idx))};
+    const Id value{ctx.OpLoad(ctx.F32[1], src_ptr)};
+    ctx.OpStore(dst_ptr, value);
+}
+
+static void CopyDynamicallyIndexedTessFactors(EmitContext& ctx) {
+    const auto execution{spv::Scope::Workgroup};
+    const auto memory{spv::Scope::Invocation};
+    const auto memory_semantics{spv::MemorySemanticsMask::MaskNone};
+    ctx.OpControlBarrier(ctx.ConstU32(static_cast<u32>(execution)),
+                         ctx.ConstU32(static_cast<u32>(memory)),
+                         ctx.ConstU32(static_cast<u32>(memory_semantics)));
+
+    switch (ctx.runtime_info.sw.tcs.tess_type) {
+    case AmdGpu::TessellationType::Isoline:
+        // [left, top(?)]
+        for (u32 i = 0; i < 2; i++) {
+            CopyTessFactor<false>(ctx, i, i);
+        }
+        break;
+    case AmdGpu::TessellationType::Triangle:
+        // [left, top, right, interiorU]
+        for (u32 i = 0; i < 3; i++) {
+            CopyTessFactor<false>(ctx, i, i);
+        }
+        CopyTessFactor<true>(ctx, 3, 0);
+        break;
+    case AmdGpu::TessellationType::Quad:
+        // [left, top, right, bottom, interiorU, interiorV]
+        for (u32 i = 0; i < 4; i++) {
+            CopyTessFactor<false>(ctx, i, i);
+        }
+        for (u32 i = 0; i < 2; i++) {
+            CopyTessFactor<true>(ctx, 4 + i, i);
+        }
+        break;
+    default:
+        UNREACHABLE();
+    }
+}
+
 void EmitEpilogue(EmitContext& ctx) {
     if (ctx.hw_stage == HwStage::Vertex &&
         ctx.runtime_info.hw.vs.emulate_depth_negative_one_to_one) {
@@ -73,6 +119,9 @@ void EmitEpilogue(EmitContext& ctx) {
     }
     if (ctx.hw_stage == HwStage::Vertex && ctx.runtime_info.hw.vs.clip_disable) {
         ConvertPositionToClipSpace(ctx);
+    }
+    if (ctx.info.dynamically_accesses_tess_factors) {
+        CopyDynamicallyIndexedTessFactors(ctx);
     }
 }
 
