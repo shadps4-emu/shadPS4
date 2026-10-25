@@ -5,12 +5,14 @@
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
+#include "shader_recompiler/dispatch_data.h"
 #include "shader_recompiler/resource.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
+#include "video_core/renderer_vulkan/vk_dispatch_helper.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -356,30 +358,56 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 
     scheduler.PopPendingOperations();
 
-    const auto& cs_program = liverpool->GetCsRegs();
-    const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
+    const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline(true);
     if (!pipeline) {
         return;
     }
 
+    // The guest dimensions are only known on the GPU, so a helper dispatch checks them against the
+    // device limits and writes the host dispatch together with the metadata the shader reads.
+    // Storage buffers emulating LDS are sized on the CPU from the direct dispatch registers and
+    // cannot follow a dimension known on the GPU only; these shaders keep the guest arguments.
+    const auto& cs = pipeline->GetStage(Shader::SwStage::Compute);
+    const bool prepare = cs.UsesDispatchMetadata();
+    dispatch_metadata = vk::DescriptorBufferInfo{VK_NULL_HANDLE, 0, VK_WHOLE_SIZE};
     if (!BindResources(pipeline)) {
         return;
     }
 
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size);
     needs_barrier |= runtime.IsBufferAccessed(buffer, base, size);
-    bound_buffers.emplace_back(buffer, base, size, vk::AccessFlagBits2::eIndirectCommandRead);
+    bound_buffers.emplace_back(buffer, base, size,
+                               prepare ? vk::AccessFlagBits2::eShaderRead
+                                       : vk::AccessFlagBits2::eIndirectCommandRead);
 
     if (needs_barrier) {
         runtime.FlushBarriers();
     }
 
     scheduler.EndRendering();
+    if (prepare) {
+        if (!dispatch_helper) {
+            dispatch_helper =
+                std::make_unique<DispatchHelper>(instance, scheduler, runtime.GetStagingPool());
+        }
+        // The helper binds its own pipeline; the guest resources are bound after it.
+        dispatch_metadata = dispatch_helper->Prepare(buffer, base);
+        const auto metadata = std::ranges::find(cs.buffers, Shader::BufferType::DispatchMetadata,
+                                                &Shader::BufferResource::buffer_type);
+        ASSERT(metadata != cs.buffers.end());
+        buffer_infos[std::distance(cs.buffers.begin(), metadata)] = dispatch_metadata;
+    }
     pipeline->BindResources(set_writes, push_data);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
-    cmdbuf.dispatchIndirect(buffer->Handle(), base);
+    if (prepare) {
+        cmdbuf.dispatchIndirect(dispatch_metadata.buffer,
+                                dispatch_metadata.offset +
+                                    offsetof(Shader::IndirectDispatchMetadata, command));
+    } else {
+        cmdbuf.dispatchIndirect(buffer->Handle(), base);
+    }
     DebugState.IncDispatch();
 
     ResetBindings(true);
@@ -597,6 +625,15 @@ void Rasterizer::ResetBindings(bool is_compute) {
     needs_barrier = false;
 }
 
+// Exclude optional dispatch metadata when recognizing guest copy/clear shaders.
+static std::span<const Shader::BufferResource> ShaderBuffers(const Shader::Info& info) {
+    std::span<const Shader::BufferResource> buffers{info.buffers};
+    if (!buffers.empty() && buffers.back().buffer_type == Shader::BufferType::DispatchMetadata) {
+        buffers = buffers.first(buffers.size() - 1);
+    }
+    return buffers;
+}
+
 bool Rasterizer::IsComputeMetaClear(const Pipeline* pipeline) {
     if (!pipeline->IsCompute()) {
         return false;
@@ -642,18 +679,19 @@ bool Rasterizer::IsComputeImageCopy(const Pipeline* pipeline) {
     // Ensure shader only has 2 bound buffers
     const auto& cs_pgm = liverpool->GetCsRegs();
     const auto& info = pipeline->GetStage(Shader::SwStage::Compute);
-    if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() < 2 || info.buffers.size() > 3 ||
+    const auto buffers = ShaderBuffers(info);
+    if (cs_pgm.num_thread_x.full != 64 || buffers.size() < 2 || buffers.size() > 3 ||
         !info.images.empty()) {
         return false;
     }
 
     // Those 2 buffers must both be formatted. One must be source and another destination.
-    const auto& desc0 = info.buffers[0];
-    const auto& desc1 = info.buffers[1];
+    const auto& desc0 = buffers[0];
+    const auto& desc1 = buffers[1];
     if (!desc0.is_formatted || !desc1.is_formatted || desc0.is_written == desc1.is_written) {
         return false;
     }
-    if (info.buffers.size() == 3 && info.buffers[2].buffer_type != Shader::BufferType::Flatbuf) {
+    if (buffers.size() == 3 && buffers[2].buffer_type != Shader::BufferType::Flatbuf) {
         return false;
     }
 
@@ -699,18 +737,19 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
     // Ensure shader only has 2 bound buffers
     const auto& cs_pgm = liverpool->GetCsRegs();
     const auto& info = pipeline->GetStage(Shader::SwStage::Compute);
-    if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() < 2 || info.buffers.size() > 3 ||
+    const auto buffers = ShaderBuffers(info);
+    if (cs_pgm.num_thread_x.full != 64 || buffers.size() < 2 || buffers.size() > 3 ||
         !info.images.empty()) {
         return false;
     }
 
     // From those 2 buffers, first must hold the clear vector and second the image being cleared
-    const auto& desc0 = info.buffers[0];
-    const auto& desc1 = info.buffers[1];
+    const auto& desc0 = buffers[0];
+    const auto& desc1 = buffers[1];
     if (desc0.is_formatted || !desc1.is_formatted || desc0.is_written || !desc1.is_written) {
         return false;
     }
-    if (info.buffers.size() == 3 && info.buffers[2].buffer_type != Shader::BufferType::Flatbuf) {
+    if (buffers.size() == 3 && buffers[2].buffer_type != Shader::BufferType::Flatbuf) {
         return false;
     }
 
@@ -798,6 +837,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             } else if (desc.buffer_type == Shader::BufferType::FaultBuffer) {
                 const auto* fault_buffer = buffer_cache.GetFaultBuffer();
                 buffer_infos.emplace_back(fault_buffer->Handle(), 0, fault_buffer->SizeBytes());
+            } else if (desc.buffer_type == Shader::BufferType::DispatchMetadata) {
+                buffer_infos.push_back(dispatch_metadata);
             } else if (desc.buffer_type == Shader::BufferType::SharedMemory) {
                 auto& lds_buffer = buffer_cache.GetStreamBuffer();
                 const auto& cs_program = liverpool->GetCsRegs();

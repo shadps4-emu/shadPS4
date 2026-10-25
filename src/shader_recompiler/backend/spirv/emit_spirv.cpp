@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstddef>
 #include <mutex>
 #include <span>
 #include <type_traits>
@@ -13,6 +14,7 @@
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/dispatch_data.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
@@ -223,6 +225,73 @@ Id DefineMain(EmitContext& ctx, const IR::Program& program) {
         block->SetDefinition(ctx.OpLabel());
     }
     Traverse(ctx, program);
+    ctx.OpFunctionEnd();
+    return main;
+}
+
+constexpr u32 MetadataWord(size_t offset) {
+    return static_cast<u32>(offset / sizeof(u32));
+}
+
+// Compute entry point. Guest workgroups are numbered as in the guest dispatch. An indirect dispatch
+// beyond the device limits runs as a reshaped host grid (metadata mode 1): the linear host index
+// selects the guest workgroup, and padding workgroups return before any guest code runs. Padding
+// is decided per host row, so the index is only formed for guest workgroups and stays below total.
+Id DefineDispatchEntry(EmitContext& ctx, Id body) {
+    const Id void_function{ctx.TypeFunction(ctx.void_id)};
+    const Id main{ctx.OpFunction(ctx.void_id, spv::FunctionControlMask::MaskNone, void_function)};
+    ctx.AddLabel(ctx.OpLabel());
+    const Id host_id{ctx.OpLoad(ctx.U32[3], ctx.workgroup_id)};
+    const Id host_count{ctx.OpLoad(ctx.U32[3], ctx.num_workgroups_id)};
+    ctx.OpStore(ctx.guest_workgroup_id, host_id);
+    ctx.OpStore(ctx.guest_workgroup_count, host_count);
+    const Id mode{ctx.DispatchMetadata(MetadataWord(offsetof(IndirectDispatchMetadata, mode)))};
+    const Id reshaped{ctx.OpINotEqual(ctx.U1[1], mode, ctx.u32_zero_value)};
+    const Id reshape_label{ctx.OpLabel()};
+    const Id call_label{ctx.OpLabel()};
+    ctx.OpSelectionMerge(call_label, spv::SelectionControlMask::MaskNone);
+    ctx.OpBranchConditional(reshaped, reshape_label, call_label);
+
+    ctx.AddLabel(reshape_label);
+    const auto component = [&](Id vector, u32 index) {
+        return ctx.OpCompositeExtract(ctx.U32[1], vector, index);
+    };
+    const Id host_x{component(host_id, 0)};
+    const Id row_size{component(host_count, 0)};
+    const Id row{
+        ctx.OpIAdd(ctx.U32[1], component(host_id, 1),
+                   ctx.OpIMul(ctx.U32[1], component(host_count, 1), component(host_id, 2)))};
+    const Id total{ctx.DispatchMetadata(MetadataWord(offsetof(IndirectDispatchMetadata, total)))};
+    const Id full_rows{ctx.OpUDiv(ctx.U32[1], total, row_size)};
+    const Id last_row{ctx.OpUMod(ctx.U32[1], total, row_size)};
+    const Id in_last_row{ctx.OpLogicalAnd(ctx.U1[1], ctx.OpIEqual(ctx.U1[1], row, full_rows),
+                                          ctx.OpULessThan(ctx.U1[1], host_x, last_row))};
+    const Id guest_group{
+        ctx.OpLogicalOr(ctx.U1[1], ctx.OpULessThan(ctx.U1[1], row, full_rows), in_last_row)};
+    const Id padding_label{ctx.OpLabel()};
+    const Id guest_label{ctx.OpLabel()};
+    ctx.OpSelectionMerge(guest_label, spv::SelectionControlMask::MaskNone);
+    ctx.OpBranchConditional(guest_group, guest_label, padding_label);
+    ctx.AddLabel(padding_label);
+    ctx.OpReturn();
+
+    ctx.AddLabel(guest_label);
+    const Id index{ctx.OpIAdd(ctx.U32[1], host_x, ctx.OpIMul(ctx.U32[1], row_size, row))};
+    constexpr u32 guest_word = MetadataWord(offsetof(IndirectDispatchMetadata, guest));
+    const Id nx{ctx.DispatchMetadata(guest_word)};
+    const Id ny{ctx.DispatchMetadata(guest_word + 1)};
+    const Id nz{ctx.DispatchMetadata(guest_word + 2)};
+    const Id guest_row{ctx.OpUDiv(ctx.U32[1], index, nx)};
+    ctx.OpStore(ctx.guest_workgroup_id,
+                ctx.OpCompositeConstruct(ctx.U32[3], ctx.OpUMod(ctx.U32[1], index, nx),
+                                         ctx.OpUMod(ctx.U32[1], guest_row, ny),
+                                         ctx.OpUDiv(ctx.U32[1], guest_row, ny)));
+    ctx.OpStore(ctx.guest_workgroup_count, ctx.OpCompositeConstruct(ctx.U32[3], nx, ny, nz));
+    ctx.OpBranch(call_label);
+
+    ctx.AddLabel(call_label);
+    ctx.OpFunctionCall(ctx.void_id, body);
+    ctx.OpReturn();
     ctx.OpFunctionEnd();
     return main;
 }
@@ -668,7 +737,10 @@ void PatchPhiNodes(const IR::Program& program, EmitContext& ctx) {
 std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_info,
                            const IR::Program& program, Bindings& binding) {
     EmitContext ctx{profile, runtime_info, program.info, binding};
-    const Id main{DefineMain(ctx, program)};
+    Id main{DefineMain(ctx, program)};
+    if (program.info.UsesDispatchMetadata()) {
+        main = DefineDispatchEntry(ctx, main);
+    }
     DefineEntryPoint(program.info, runtime_info, ctx, main);
     SetupCapabilities(program.info, profile, runtime_info, ctx);
     SetupFloatMode(ctx, profile, runtime_info, main);

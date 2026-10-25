@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstddef>
 #include "common/serdes.h"
 #include "core/emulator_settings.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
@@ -12,8 +13,8 @@
 
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
-static constexpr u32 ShaderBinaryVersion = 11u;
-static constexpr u32 ShaderMetaVersion = 6u;
+static constexpr u32 ShaderBinaryVersion = 16u;
+static constexpr u32 ShaderMetaVersion = 8u;
 static constexpr u32 PipelineKeyVersion = 3u;
 } // namespace Serialization
 
@@ -81,14 +82,17 @@ void RegisterShaderMeta(const Shader::Info& info,
                                        fmt::format("{:#018x}", perm_hash), ar.TakeOff());
 }
 
-void RegisterShaderBinary(std::vector<u32>&& spv, u64 pgm_hash, size_t perm_idx) {
+void RegisterShaderBinary(std::vector<u32>&& spv, u64 pgm_hash, size_t perm_idx,
+                          bool is_indirect_compute, u32 shared_memory_size) {
     if (!Storage::DataBase::Instance().IsOpened()) {
         return;
     }
 
-    Storage::DataBase::Instance().Save(Storage::BlobType::ShaderBinary,
-                                       fmt::format("{:#018x}_{}", pgm_hash, perm_idx),
-                                       std::move(spv));
+    Storage::DataBase::Instance().Save(
+        Storage::BlobType::ShaderBinary,
+        fmt::format("{:#018x}_{}{}", pgm_hash, perm_idx,
+                    ProgramKey{pgm_hash, is_indirect_compute, shared_memory_size}.ShaderSuffix()),
+        std::move(spv));
 }
 
 bool LoadShaderMeta(Serialization::Archive& ar, Shader::Info& info,
@@ -254,10 +258,13 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
         return false;
     }
 
+    const ProgramKey program_key{
+        program->info.pgm_hash, program->info.is_indirect_compute,
+        program->info.is_indirect_compute ? spec.runtime_info.hw.cs.shared_memory_size : 0};
     std::vector<u32> spv{};
-    Storage::DataBase::Instance().Load(Storage::BlobType::ShaderBinary,
-                                       fmt::format("{:#018x}_{}", program->info.pgm_hash, perm_idx),
-                                       spv);
+    Storage::DataBase::Instance().Load(
+        Storage::BlobType::ShaderBinary,
+        fmt::format("{:#018x}_{}{}", program_key.hash, perm_idx, program_key.ShaderSuffix()), spv);
     if (spv.empty()) {
         return false;
     }
@@ -267,7 +274,7 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
 
     vk::ShaderModule module{};
 
-    auto [it_pgm, new_program] = program_cache.try_emplace(program->info.pgm_hash);
+    auto [it_pgm, new_program] = program_cache.try_emplace(program_key);
     if (new_program) {
         module = CompileSPV(spv, instance.GetDevice());
         it_pgm.value() = std::move(program);
@@ -290,6 +297,7 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
             module = CompileSPV(spv, instance.GetDevice());
         }
     }
+    spec.info = &it_pgm.value()->info;
     it_pgm.value()->InsertPermut(module, std::move(spec), perm_idx);
 
     infos[stage] = &it_pgm.value()->info;
@@ -328,6 +336,14 @@ void PipelineCache::WarmUp() {
         return;
     }
 
+    // This field occupies a former padding byte in profiles written before dispatch metadata.
+    // Inspect its representation before copying it into a bool and comparing the profiles.
+    if (profile_data[offsetof(Shader::Profile, supports_dispatch_metadata)] > 1) {
+        LOG_WARNING(Render,
+                    "Pipeline cache has an invalid dispatch metadata flag. Ignoring the cache");
+        Storage::DataBase::Instance().Close();
+        return;
+    }
     Shader::Profile cached_profile{};
     std::memcpy(&cached_profile, profile_data.data(), sizeof(cached_profile));
     if (cached_profile != profile) {

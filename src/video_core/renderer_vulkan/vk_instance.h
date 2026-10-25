@@ -359,6 +359,21 @@ public:
         return properties.limits.maxSamplerAnisotropy;
     }
 
+    /// Returns the maximum number of storage buffer descriptors of a shader stage.
+    u32 MaxPerStageDescriptorStorageBuffers() const {
+        return properties.limits.maxPerStageDescriptorStorageBuffers;
+    }
+
+    /// Returns the maximum number of storage buffer descriptors of a pipeline layout.
+    u32 MaxDescriptorSetStorageBuffers() const {
+        return properties.limits.maxDescriptorSetStorageBuffers;
+    }
+
+    /// Returns the maximum number of resources of a shader stage.
+    u32 MaxPerStageResources() const {
+        return properties.limits.maxPerStageResources;
+    }
+
     /// Returns the maximum number of push descriptors.
     u32 MaxPushDescriptors() const {
         return push_descriptor_props.maxPushDescriptors;

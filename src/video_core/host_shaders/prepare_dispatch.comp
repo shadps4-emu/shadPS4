@@ -1,0 +1,68 @@
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#version 450
+
+layout(local_size_x = 1) in;
+layout(set = 0, binding = 0, std430) readonly buffer Arguments {
+    uint arguments[];
+};
+layout(set = 0, binding = 1, std430) writeonly buffer Metadata {
+    uint words[];
+};
+layout(push_constant) uniform Params {
+    uvec4 limits;
+    uvec4 source;
+} pc;
+
+uint ceil_div(uint a, uint b) {
+    return a / b + uint(a % b != 0);
+}
+
+void main() {
+    uvec3 guest = uvec3(arguments[pc.source.x], arguments[pc.source.x + 1],
+                        arguments[pc.source.x + 2]);
+    uvec3 limit = pc.limits.xyz;
+    uint status = 0, total = 0, mode = 0;
+    uvec3 command = uvec3(0);
+    if (all(notEqual(guest, uvec3(0)))) {
+        if (all(lessThanEqual(guest, limit))) {
+            command = guest;
+        } else {
+            uint xy, high_xy, product, high_product;
+            umulExtended(guest.x, guest.y, high_xy, xy);
+            umulExtended(xy, guest.z, high_product, product);
+            if (high_xy != 0 || high_product != 0) {
+                status = 1;
+            } else if (any(equal(limit, uvec3(0)))) {
+                status = 2;
+            } else {
+                // Spread the workgroups evenly over the fewest slabs and rows the limits allow.
+                // The padded grid may exceed 32 bits: the compute entry skips padding per row.
+                uint plane, plane_high, rows, rows_high;
+                umulExtended(limit.x, limit.y, plane_high, plane);
+                uint z = plane_high != 0 ? 1 : ceil_div(product, plane);
+                uint slab = ceil_div(product, z);
+                uint y = ceil_div(slab, limit.x);
+                uint x = ceil_div(slab, y);
+                umulExtended(y, z, rows_high, rows);
+                if (z > limit.z || rows_high != 0) {
+                    status = 2;
+                } else {
+                    command = uvec3(x, y, z);
+                    total = product;
+                    mode = 1;
+                }
+            }
+        }
+    }
+    words[0] = guest.x;
+    words[1] = guest.y;
+    words[2] = guest.z;
+    words[3] = status;
+    words[4] = command.x;
+    words[5] = command.y;
+    words[6] = command.z;
+    words[7] = total;
+    words[8] = mode;
+}

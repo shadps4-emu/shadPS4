@@ -82,6 +82,7 @@ enum class BufferType : u8 {
     GdsBuffer,
     SharedMemory,
     ClipPlanes,
+    DispatchMetadata,
 };
 
 struct BufferResource {
@@ -117,7 +118,8 @@ struct BufferResource {
         return buffer;
     }
 };
-using BufferResourceList = boost::container::static_vector<BufferResource, NUM_BUFFERS>;
+// Indirect compute shaders may additionally use the dispatch metadata buffer.
+using BufferResourceList = boost::container::static_vector<BufferResource, NUM_BUFFERS + 1>;
 
 enum class MipStorageFallbackMode : u16 {
     None,
@@ -178,6 +180,13 @@ struct ImageResource {
     }
 };
 using ImageResourceList = boost::container::static_vector<ImageResource, NUM_IMAGES>;
+
+/// Most descriptors of a compute layout, whatever the bound descriptors: every buffer slot, the
+/// dispatch metadata included, and every image with a binding per mip level (base_level and
+/// last_level are 4-bit fields of the T#).
+constexpr u32 MaxComputeStorageBuffers = BufferResourceList::static_capacity;
+constexpr u32 MaxComputeResources =
+    MaxComputeStorageBuffers + ImageResourceList::static_capacity * 16;
 
 struct SamplerResource {
     SharpFetch<AmdGpu::Sampler> sharp_fetch{};
