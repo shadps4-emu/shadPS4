@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -54,6 +54,8 @@ void EmitGetScalarRegister(EmitContext& ctx);
 void EmitSetScalarRegister(EmitContext& ctx);
 void EmitGetVectorRegister(EmitContext& ctx);
 void EmitSetVectorRegister(EmitContext& ctx);
+void EmitVMovRelS(EmitContext& ctx);
+void EmitVMovRelD(EmitContext& ctx);
 void EmitSetVirtualRegister(EmitContext& ctx);
 void EmitGetVirtualRegister(EmitContext& ctx);
 void EmitSetGotoVariable(EmitContext& ctx);

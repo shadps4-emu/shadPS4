@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -55,6 +55,9 @@ public:
     [[nodiscard]] T GetVectorReg(IR::VectorReg reg);
     void SetScalarReg(IR::ScalarReg reg, const U32F32& value);
     void SetVectorReg(IR::VectorReg reg, const U32F32& value);
+
+    [[nodiscard]] U32 VMovRelS(IR::VectorReg reg, const U32& m0);
+    void VMovRelD(IR::VectorReg reg, const U32& value, const U32& m0);
 
     [[nodiscard]] Value GetVirtualReg(IR::VirtualReg reg);
     void SetVirtualReg(IR::VirtualReg reg, const Value& value);

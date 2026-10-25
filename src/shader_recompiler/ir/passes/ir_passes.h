@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -14,7 +14,14 @@ void InjectClipDistanceAttributes(IR::Program& program, RuntimeInfo& runtime_inf
 
 namespace Shader::Optimization {
 
-void SsaRewritePass(IR::Program& program);
+enum class SsaTarget {
+    All,
+    ScalarOnly,
+    VectorOnly,
+};
+
+void SsaRewritePass(IR::Program& program, SsaTarget target = SsaTarget::All);
+void LowerMovRelPass(IR::Program& program, const RuntimeInfo& runtime_info);
 void SsaRepairPass(IR::Program& program);
 void PhiSimplificationPass(IR::Program& program);
 void InverseBallotEliminationPass(IR::Program& program);
