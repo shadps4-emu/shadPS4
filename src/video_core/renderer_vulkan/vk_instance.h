@@ -236,6 +236,12 @@ public:
         return vk12_features.shaderSharedInt64Atomics;
     }
 
+    /// Returns true when buffer device address can be used. RenderDoc hides it on drivers that
+    /// lack bufferDeviceAddressCaptureReplay.
+    bool IsBufferDeviceAddressSupported() const {
+        return vk12_features.bufferDeviceAddress;
+    }
+
     /// Returns true if the subgroup size can be set to match guest subgroup size
     bool IsSubgroupSize64Supported() const {
         return vk13_features.subgroupSizeControl && vk13_props.maxSubgroupSize >= 64;
@@ -516,6 +522,7 @@ private:
     std::unordered_map<vk::Format, vk::FormatProperties3> format_properties;
     TracyVkCtx profiler_context{};
     u32 queue_family_index{0};
+    bool vk13_from_extensions{};
     bool custom_border_color{};
     bool fragment_shader_barycentric{};
     bool amd_shader_explicit_vertex_parameter{};
