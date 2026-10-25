@@ -231,11 +231,14 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
 
 void TextureCache::MarkAsMaybeGpuDirty(VAddr addr, size_t size) {
     ForEachImageInRegion(addr, size, [&](ImageId image_id, Image& image) {
-        if (image.gpu_hash == 0) {
-            buffer_cache.ReadMemory(image.info.guest_address, image.info.guest_size, false, false,
+        if (image.gpu_hash == 0 && False(image.flags & ImageFlagBits::MaybeGpuDirty)) {
+            buffer_cache.ReadMemory(image.info.guest_address, image.info.guest_size, false, true,
                                     true);
-            image.gpu_hash = HashBackingMemory(image.info.guest_address, image.info.guest_size);
+            scheduler.DeferOperation([&]() {
+                image.gpu_hash = HashBackingMemory(image.info.guest_address, image.info.guest_size);
+            });
         }
+        image.flags |= ImageFlagBits::MaybeGpuDirty;
     });
 }
 
@@ -1096,7 +1099,6 @@ void TextureCache::GarbageCollectImages() {
         if (num_deletions == 0) {
             return true;
         }
-        // An edge write means the guest reused the memory, so the image is freed without download.
         MarkDirtyIfEdgesModified(image);
         const bool download = image.HasGpuValidData();
         if (download && (!pressured || !image.CanBeDownloaded())) {
@@ -1110,7 +1112,7 @@ void TextureCache::GarbageCollectImages() {
                 UntrackImage(image_id);
             }
             UnregisterImage(image_id);
-            if (image.gpu_hash != 0) {
+            if (True(image.flags & ImageFlagBits::MaybeGpuDirty)) {
                 buffer_cache.ReadMemory(image.info.guest_address, image.info.guest_size, false,
                                         true, true);
                 maybe_download.push_back(image_id);
@@ -1228,6 +1230,8 @@ void TextureCache::RunGarbageCollector() {
 
 void TextureCache::TouchImage(Image& image) {
     image_lru_cache.Touch(image, gc_tick);
+
+    image.flags &= ~ImageFlagBits::MaybeGpuDirty;
 }
 
 void TextureCache::DeleteImage(ImageId image_id) {

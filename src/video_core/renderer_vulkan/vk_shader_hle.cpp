@@ -84,7 +84,7 @@ static bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Compute
             src_buf_sharp.base_address + src_offset_min, src_offset_max - src_offset_min);
         const auto [dst_buf, dst_buf_offset] = buffer_cache.ObtainBuffer(
             dst_buf_sharp.base_address + dst_offset_min, dst_offset_max - dst_offset_min,
-            VideoCore::ObtainBufferFlags::IsWritten);
+            VideoCore::ObtainBufferFlags::IgnoreStreamBuffer);
 
         // Apply found buffer base.
         const auto vk_copies = std::span{copies}.subspan(batch_start, batch_end - batch_start);
@@ -100,12 +100,12 @@ static bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Compute
         batch_start = batch_end;
     }
 
-    // for (u32 i = 0; i < cs_program.dim_x; i++) {
-    //     const auto& [dst_idx, src_idx, end] = ctl_buf[i];
-    //     const VAddr dst_addr = dst_buf_sharp.base_address + (dst_idx * buf_stride);
-    //     const u32 size = (end + 1) * buf_stride;
-    //     buffer_cache.MarkRegionAsGpuModified(dst_addr, size);
-    // }
+    for (u32 i = 0; i < cs_program.dim_x; i++) {
+        const auto& [dst_idx, src_idx, end] = ctl_buf[i];
+        const VAddr dst_addr = dst_buf_sharp.base_address + (dst_idx * buf_stride);
+        const u32 size = (end + 1) * buf_stride;
+        buffer_cache.MarkRegionAsGpuModified(dst_addr, size);
+    }
 
     return true;
 }
