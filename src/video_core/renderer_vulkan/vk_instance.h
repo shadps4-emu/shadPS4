@@ -455,8 +455,7 @@ public:
 
     /// Returns whether the device can report memory usage.
     bool CanReportMemoryUsage() const {
-        return 2_GB;
-        // return supports_memory_budget;
+        return supports_memory_budget;
     }
 
     /// Returns the amount of memory used.
