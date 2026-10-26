@@ -141,6 +141,8 @@ enum class FileType {
 struct File {
     std::atomic_bool is_opened{};
     std::atomic<FileType> type{FileType::Regular};
+    std::atomic<s32> open_flags{};
+    std::atomic_bool close_on_exec{};
     std::filesystem::path m_host_name;
     std::string m_guest_name;
     std::unique_ptr<IFile> handle;
