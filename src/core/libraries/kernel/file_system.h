@@ -53,9 +53,11 @@ struct OrbisKernelDirent {
 constexpr int ORBIS_KERNEL_O_RDONLY = 0x0000;
 constexpr int ORBIS_KERNEL_O_WRONLY = 0x0001;
 constexpr int ORBIS_KERNEL_O_RDWR = 0x0002;
+constexpr int ORBIS_KERNEL_O_ACCMODE = 0x0003;
 
 constexpr int ORBIS_KERNEL_O_NONBLOCK = 0x0004;
 constexpr int ORBIS_KERNEL_O_APPEND = 0x0008;
+constexpr int ORBIS_KERNEL_O_ASYNC = 0x0040;
 constexpr int ORBIS_KERNEL_O_FSYNC = 0x0080;
 constexpr int ORBIS_KERNEL_O_SYNC = 0x0080;
 constexpr int ORBIS_KERNEL_O_CREAT = 0x0200;
@@ -64,6 +66,41 @@ constexpr int ORBIS_KERNEL_O_EXCL = 0x0800;
 constexpr int ORBIS_KERNEL_O_DSYNC = 0x1000;
 constexpr int ORBIS_KERNEL_O_DIRECT = 0x00010000;
 constexpr int ORBIS_KERNEL_O_DIRECTORY = 0x00020000;
+constexpr int ORBIS_KERNEL_O_EXEC = 0x00040000;
+constexpr int ORBIS_KERNEL_O_CLOEXEC = 0x00100000;
+
+constexpr int ORBIS_KERNEL_O_FILE_STATUS_MASK =
+    ORBIS_KERNEL_O_ACCMODE | ORBIS_KERNEL_O_APPEND | ORBIS_KERNEL_O_ASYNC | ORBIS_KERNEL_O_FSYNC |
+    ORBIS_KERNEL_O_NONBLOCK | ORBIS_KERNEL_O_DIRECT | ORBIS_KERNEL_O_EXEC;
+constexpr int ORBIS_KERNEL_O_FCNTL_SETTABLE_MASK = ORBIS_KERNEL_O_APPEND | ORBIS_KERNEL_O_ASYNC |
+                                                   ORBIS_KERNEL_O_FSYNC | ORBIS_KERNEL_O_NONBLOCK |
+                                                   ORBIS_KERNEL_O_DIRECT;
+
+// commands for fcntl
+constexpr int ORBIS_KERNEL_F_GETFD = 1;
+constexpr int ORBIS_KERNEL_F_SETFD = 2;
+constexpr int ORBIS_KERNEL_F_GETFL = 3;
+constexpr int ORBIS_KERNEL_F_SETFL = 4;
+constexpr int ORBIS_KERNEL_F_GETLK = 11;
+constexpr int ORBIS_KERNEL_F_SETLK = 12;
+constexpr int ORBIS_KERNEL_F_SETLKW = 13;
+
+constexpr int ORBIS_KERNEL_FD_CLOEXEC = 1;
+
+// lock types for fcntl record locking
+constexpr s16 ORBIS_KERNEL_F_RDLCK = 1;
+constexpr s16 ORBIS_KERNEL_F_UNLCK = 2;
+constexpr s16 ORBIS_KERNEL_F_WRLCK = 3;
+
+struct OrbisKernelFlock {
+    s64 l_start;
+    s64 l_len;
+    s32 l_pid;
+    s16 l_type;
+    s16 l_whence;
+    s32 l_sysid;
+};
+static_assert(sizeof(OrbisKernelFlock) == 0x20);
 
 // flags for flock
 constexpr int ORBIS_KERNEL_LOCK_SH = 0x01;
@@ -92,6 +129,8 @@ s32 PS4_SYSV_ABI posix_fdatasync(s32 fd);
 s32 PS4_SYSV_ABI sceKernelFdatasync(s32 fd);
 s32 PS4_SYSV_ABI posix_flock(s32 fd, s32 operation);
 s32 PS4_SYSV_ABI sceKernelFlock(s32 fd, s32 operation);
+s32 PS4_SYSV_ABI posix_fcntl(s32 fd, s32 cmd, u64 arg);
+s32 PS4_SYSV_ABI sceKernelFcntl(s32 fd, s32 cmd, u64 arg);
 void PS4_SYSV_ABI posix_sync();
 void PS4_SYSV_ABI sceKernelSync();
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym);
