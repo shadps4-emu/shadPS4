@@ -884,6 +884,8 @@ set(NET_CORE  src/core/net/guest_net.cpp
 
 set(NET_LIB   src/core/libraries/net/net.cpp
               src/core/libraries/net/net.h
+              src/core/libraries/net/net_discovery.cpp
+              src/core/libraries/net/net_discovery.h
               src/core/libraries/net/net_error.h
               src/core/libraries/net/net_kernel.cpp
               src/core/libraries/net/net_kernel.h
