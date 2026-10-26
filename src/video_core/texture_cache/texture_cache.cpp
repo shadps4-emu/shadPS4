@@ -220,9 +220,10 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
 
 void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
     ForEachImageInRegion(address, max_size, [&](ImageId image_id, Image& image) {
-        // Only consider images that match base address.
-        // TODO: Maybe also consider subresources
-        if (image.info.guest_address != address) {
+        // Every image the write covers is stale, not only one starting at the same address:
+        // a title can regenerate a region and sample views that begin further into it.
+        if (image.info.guest_address + image.info.guest_size <= address ||
+            image.info.guest_address >= address + max_size) {
             return;
         }
         // Ensure image is reuploaded when accessed again.
