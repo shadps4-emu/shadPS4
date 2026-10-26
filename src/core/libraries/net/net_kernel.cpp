@@ -182,6 +182,19 @@ s32 KernelFstat(s32 fd, Libraries::Kernel::OrbisKernelStat* sb) {
     return 0;
 }
 
+bool KernelGetNonBlocking(s32 fd, bool* nonblocking) {
+    Core::Net::SocketInfo info{};
+    if (Core::Net::SocketGetInfo(fd, &info).error != Error::Ok) {
+        return false;
+    }
+    *nonblocking = info.nonblocking;
+    return true;
+}
+
+bool KernelSetNonBlocking(s32 fd, bool nonblocking) {
+    return Core::Net::SocketSetNonBlocking(fd, nonblocking).error == Error::Ok;
+}
+
 s64 KernelSelect(std::span<Core::Net::SelectEntry> entries, s64 timeout_us) {
     std::vector<Core::Net::SelectEntry> sockets;
     sockets.reserve(entries.size());

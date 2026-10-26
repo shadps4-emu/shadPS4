@@ -21,6 +21,8 @@ s32 KernelClose(s32 fd);
 s64 KernelRead(s32 fd, void* buf, u64 nbytes);
 s64 KernelWrite(s32 fd, const void* buf, u64 nbytes);
 s32 KernelFstat(s32 fd, Libraries::Kernel::OrbisKernelStat* sb);
+bool KernelGetNonBlocking(s32 fd, bool* nonblocking);
+bool KernelSetNonBlocking(s32 fd, bool nonblocking);
 // Returns the number of ready (fd, direction) pairs. Epolls and resolvers are never ready.
 s64 KernelSelect(std::span<Core::Net::SelectEntry> entries, s64 timeout_us);
 
