@@ -39,7 +39,12 @@ Id EmitReadLane(EmitContext& ctx, Id value, Id lane) {
 }
 
 Id EmitWriteLane(EmitContext& ctx, Id value, Id write_value, u32 lane) {
-    return ctx.u32_zero_value;
+    // V_WRITELANE_B32 stores a scalar into one lane and leaves the others alone; compilers
+    // spill SGPRs through it and restore them with V_READLANE_B32. There is no subgroup
+    // write-lane op, so select the new value in the target lane and keep the old one elsewhere.
+    const Id lane_id{ctx.OpLoad(ctx.U32[1], ctx.subgroup_local_invocation_id)};
+    const Id is_target{ctx.OpIEqual(ctx.U1[1], lane_id, ctx.ConstU32(lane))};
+    return ctx.OpSelect(ctx.U32[1], is_target, write_value, value);
 }
 
 Id EmitBallot(EmitContext& ctx, Id bit) {
