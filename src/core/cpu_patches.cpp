@@ -140,6 +140,7 @@ static Xbyak::Address ZydisToXbyakMemoryOperand(void* address,
     return ptr[expression];
 }
 
+#if defined(_WIN32)
 static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
     const auto& dst_op = operands[0];
     const auto& src_op = operands[1];
@@ -151,7 +152,6 @@ static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
            dst_op.reg.value <= ZYDIS_REGISTER_R15;
 }
 
-#if defined(_WIN32)
 static void RetrieveTcbPointer(Xbyak::Reg dst, Xbyak::CodeGenerator& c, ZyanI64 offset) {
     // The following logic is based on the Kernel32.dll asm of TlsGetValue
     static constexpr u32 TlsSlotsOffset = 0x1480;
@@ -178,28 +178,17 @@ static void RetrieveTcbPointer(Xbyak::Reg dst, Xbyak::CodeGenerator& c, ZyanI64 
         c.mov(dst, qword[dst + offset]);
     }
 }
-#endif
 
 static void GenerateTcbAccess(void* address, const ZydisDecodedInstruction& instruction,
                               const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
-
-#if defined(_WIN32)
     RetrieveTcbPointer(dst, c, operands[1].mem.disp.value);
-#else
-    const auto src = ZydisToXbyakMemoryOperand(address, instruction, operands[1]);
-
-    // Replace fs read with gs read.
-    c.putSeg(gs);
-    c.mov(dst, src);
-#endif
 }
 
 static void GenerateTcbCompare(void* address, const ZydisDecodedInstruction& instruction,
                                const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
-#if defined(_WIN32)
     // Prepare a scratch register. Use rax where possible, rbx if rax is in use.
     const Xbyak::Reg64 scratch = operands[0].reg.value == ZYDIS_REGISTER_RAX ? rbx : rax;
 
@@ -218,20 +207,12 @@ static void GenerateTcbCompare(void* address, const ZydisDecodedInstruction& ins
     c.pop(scratch);
     c.popfq();
     c.lea(rsp, ptr[rsp + 128]);
-#else
-    const auto src = ZydisToXbyakMemoryOperand(address, instruction, operands[1]);
-
-    // Replace fs compare with gs compare.
-    c.putSeg(gs);
-    c.cmp(dst, src);
-#endif
 }
 
 static void GenerateTcbExclusiveOr(void* address, const ZydisDecodedInstruction& instruction,
                                    const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
-#if defined(_WIN32)
     // Prepare a scratch register. Use rax where possible, rbx if rax is in use.
     const Xbyak::Reg64 scratch = operands[0].reg.value == ZYDIS_REGISTER_RAX ? rbx : rax;
 
@@ -250,14 +231,8 @@ static void GenerateTcbExclusiveOr(void* address, const ZydisDecodedInstruction&
     c.pop(scratch);
     c.popfq();
     c.lea(rsp, ptr[rsp + 128]);
-#else
-    const auto src = ZydisToXbyakMemoryOperand(address, instruction, operands[1]);
-
-    // Replace fs xor with gs xor.
-    c.putSeg(gs);
-    c.xor_(dst, src);
-#endif
 }
+#endif
 
 static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
     Cpu cpu;
@@ -933,8 +908,6 @@ constexpr size_t NearJumpSize = 5;
 
 #if defined(_WIN32)
 static const bool need_tcb_trampoline = true;
-#else
-static const bool need_tcb_trampoline = false;
 #endif
 
 static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches = {
@@ -953,9 +926,9 @@ static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches =
     {ZYDIS_MNEMONIC_VCMPSS, {{FilterNegatedScalarCompare, GenerateNegatedScalarCompare, true}}},
     {ZYDIS_MNEMONIC_VMASKMOVPS, {{FilterRosetta, GenerateVMASKMOV, true}}},
     {ZYDIS_MNEMONIC_VMASKMOVPD, {{FilterRosetta, GenerateVMASKMOV, true}}},
-#else
+#elif defined(_WIN32)
     // FS segment patches
-    // For most of these, Windows needs a trampoline while other platforms do not.
+    // Windows needs a trampoline because GS is host TEB.
     {ZYDIS_MNEMONIC_XOR, {{FilterTcbAccess, GenerateTcbExclusiveOr, need_tcb_trampoline}}},
     {ZYDIS_MNEMONIC_MOV, {{FilterTcbAccess, GenerateTcbAccess, need_tcb_trampoline}}},
     {ZYDIS_MNEMONIC_CMP, {{FilterTcbAccess, GenerateTcbCompare, need_tcb_trampoline}}}
@@ -1030,6 +1003,40 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module, bool allow_t
     if (!ZYAN_SUCCESS(status)) {
         return std::make_pair(false, 1);
     }
+
+#if !defined(_WIN32) && !defined(__APPLE__)
+    // On Linux, guest TCB is mapped to GS base. Rewrite FS overrides to GS in place.
+    // Real TLS accesses never use a scaled index register. Support both Local Exec (base == NONE)
+    // and Initial Exec (base is 64-bit GPR) while avoiding ASCII 'd' bytes in rodata strings.
+    if ((instruction.attributes & ZYDIS_ATTRIB_HAS_SEGMENT_FS) != 0) {
+        bool has_tcb_op = false;
+        for (size_t i = 0; i < instruction.operand_count; ++i) {
+            if (operands[i].type == ZYDIS_OPERAND_TYPE_MEMORY &&
+                operands[i].mem.segment == ZYDIS_REGISTER_FS &&
+                operands[i].mem.index == ZYDIS_REGISTER_NONE) {
+                if (operands[i].mem.base == ZYDIS_REGISTER_NONE ||
+                    (operands[i].mem.base >= ZYDIS_REGISTER_RAX &&
+                     operands[i].mem.base <= ZYDIS_REGISTER_R15 &&
+                     operands[i].mem.base != ZYDIS_REGISTER_RSP)) {
+                    has_tcb_op = true;
+                    break;
+                }
+            }
+        }
+
+        if (has_tcb_op) {
+            for (size_t byte_idx = 0; byte_idx < instruction.length; ++byte_idx) {
+                if (code[byte_idx] == 0x64) {
+                    code[byte_idx] = 0x65;
+                    module->patched.insert(code);
+                    LOG_DEBUG(Core, "Patched FS segment override to GS for '{}' at: {}",
+                              ZydisMnemonicGetString(instruction.mnemonic), fmt::ptr(code));
+                    return std::make_pair(true, instruction.length);
+                }
+            }
+        }
+    }
+#endif
 
     if (Patches.contains(instruction.mnemonic)) {
         const auto& patches = Patches.at(instruction.mnemonic);
@@ -2691,13 +2698,11 @@ static bool PatchesIllegalInstructionHandler(void* context) {
 }
 
 static void PatchesInit() {
-    if (!Patches.empty()) {
-        auto* signals = Signals::Instance();
-        // Should be called last.
-        constexpr auto priority = std::numeric_limits<u32>::max();
-        signals->RegisterAccessViolationHandler(PatchesAccessViolationHandler, priority);
-        signals->RegisterIllegalInstructionHandler(PatchesIllegalInstructionHandler, priority);
-    }
+    auto* signals = Signals::Instance();
+    // Should be called last.
+    constexpr auto priority = std::numeric_limits<u32>::max();
+    signals->RegisterAccessViolationHandler(PatchesAccessViolationHandler, priority);
+    signals->RegisterIllegalInstructionHandler(PatchesIllegalInstructionHandler, priority);
 }
 
 void RegisterPatchModule(void* module_ptr, u64 module_size, void* trampoline_area_ptr,
@@ -2713,11 +2718,8 @@ void RegisterPatchModule(void* module_ptr, u64 module_size, void* trampoline_are
 
 void PrePatchInstructions(u64 segment_addr, u64 segment_size) {
 #if !defined(_WIN32) && !defined(__APPLE__)
-    // Linux and others have an FS segment pointing to valid memory, so continue to do full
-    // ahead-of-time patching for now until a better solution is worked out.
-    if (!Patches.empty()) {
-        TryPatchAot(reinterpret_cast<void*>(segment_addr), segment_size);
-    }
+    // On Linux, host TLS uses FS; patch guest FS segment overrides to GS ahead of time.
+    TryPatchAot(reinterpret_cast<void*>(segment_addr), segment_size);
 #endif
 }
 
