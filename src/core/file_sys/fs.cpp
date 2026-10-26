@@ -113,17 +113,16 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
                       bool read_only) {
     std::scoped_lock lock{m_mutex};
     const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
-    auto it = std::find_if(m_mnt_pairs.begin(), m_mnt_pairs.end(), [&](const MntPair& pair) {
-        return pair.mount == guest_folder_sanitized;
-    });
+    auto it = std::find_if(m_mnt_pairs.begin(), m_mnt_pairs.end(),
+                           [&](const auto& pair) { return pair->mount == guest_folder_sanitized; });
     if (it != m_mnt_pairs.end()) {
-        if (it->host_path == host_folder && it->read_only == read_only) {
+        if ((*it)->host_path == host_folder && (*it)->read_only == read_only) {
             LOG_DEBUG(Kernel_Fs, "Mount point {} already mounted to {}, skipping",
                       guest_folder_sanitized, host_folder.string());
             return;
         }
         LOG_INFO(Kernel_Fs, "Replacing mount point {} (old: {}, new: {})", guest_folder_sanitized,
-                 it->host_path.string(), host_folder.string());
+                 (*it)->host_path.string(), host_folder.string());
         m_mnt_pairs.erase(it);
     }
 
@@ -156,15 +155,16 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
     ASSERT_MSG(base, "Mount: base path does not resolve to a backend: {}", host_folder.string());
     stack.push_back(std::move(base));
 
-    m_mnt_pairs.emplace_back(host_folder, guest_folder_sanitized, read_only, std::move(stack));
+    m_mnt_pairs.push_back(std::make_shared<const MntPair>(
+        MntPair{host_folder, guest_folder_sanitized, read_only, std::move(stack)}));
     LOG_INFO(Kernel_Fs, "Mounted '{}' -> '{}'", guest_folder_sanitized, host_folder.string());
 }
 
 void MntPoints::Unmount(const std::string& guest_folder) {
     std::scoped_lock lock{m_mutex};
     const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
-    auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(), [&](const MntPair& pair) {
-        return pair.mount == guest_folder_sanitized;
+    auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(), [&](const auto& pair) {
+        return pair->mount == guest_folder_sanitized;
     });
     m_mnt_pairs.erase(it, m_mnt_pairs.end());
 }
@@ -212,7 +212,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         return "/";
     }
 
-    const auto* mount = GetMount(corrected_path);
+    const auto mount = GetMount(corrected_path);
     if (!mount) {
         return "";
     }
@@ -373,7 +373,7 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
         std::scoped_lock lock{m_mutex};
         std::unordered_set<std::string> seen;
         for (const auto& mount : m_mnt_pairs) {
-            std::string name = mount.mount;
+            std::string name = mount->mount;
             if (name.starts_with("/")) {
                 name = name.substr(1);
             }
@@ -558,7 +558,7 @@ std::unique_ptr<IDirectory> MntPoints::OpenDir(std::string_view guest_path) {
         std::vector<DirEntry> entries;
         std::unordered_set<std::string> seen;
         for (const auto& mount : m_mnt_pairs) {
-            std::string name = mount.mount;
+            std::string name = mount->mount;
             if (name.starts_with("/")) {
                 name = name.substr(1);
             }
