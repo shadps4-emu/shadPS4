@@ -442,8 +442,8 @@ s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = file->GetSize() - file->Tell();
     memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
-    if (file_buf.capacity() < nbytes) {
-        file_buf.reserve(nbytes);
+    if (file_buf.size() < nbytes) {
+        file_buf.resize(nbytes);
     }
     s64 bytes = file->Read(file_buf.data(), nbytes);
     if (bytes < 0) {
