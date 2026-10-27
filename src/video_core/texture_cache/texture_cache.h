@@ -120,8 +120,9 @@ public:
     /// Invalidates any image in the logical page range.
     void InvalidateMemory(VAddr addr, size_t size);
 
-    /// Marks an image as dirty if it exists at the provided address.
-    void InvalidateMemoryFromGPU(VAddr address, size_t max_size);
+    /// Marks an image as dirty if it exists at the provided address. When the written range is
+    /// exact, images that are only partially covered by it are marked as well.
+    void InvalidateMemoryFromGPU(VAddr address, size_t max_size, bool exact_range = false);
 
     /// Marks all images as maybe GPU dirty within the provided range.
     void MarkAsMaybeGpuDirty(VAddr addr, size_t size);

@@ -218,11 +218,14 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
     }
 }
 
-void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
+void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size, bool exact_range) {
     ForEachImageInRegion(address, max_size, [&](ImageId image_id, Image& image) {
-        // Only consider images that match base address.
+        // Only consider images that match base address, unless the written range is exact.
+        // An exact write can land inside an image (e.g. new glyphs copied into a texture atlas).
+        // Images holding GPU rendered data are still skipped then, as the buffer cache copy of
+        // their memory is stale.
         // TODO: Maybe also consider subresources
-        if (image.info.guest_address != address) {
+        if (image.info.guest_address != address && (!exact_range || image.HasGpuValidData())) {
             return;
         }
         // Ensure image is reuploaded when accessed again.
