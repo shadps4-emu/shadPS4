@@ -25,8 +25,9 @@ asm(R"(
   movq %gs:0x10, %r15 # teb->stack_top
 
   # disable stack checks
-  xorq %rcx, %rcx
-  movq %rcx, %gs:0x08 # teb->stack_bottom = 0
+  movq $-1, %rcx
+  movq %rcx, %gs:0x08 # teb->stack_bottom = -1
+  xorq %rcx, %rcx 
   movq %rcx, %gs:0x10 # teb->stack_top = 0
 )");
 
