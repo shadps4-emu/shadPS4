@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <unordered_map>
 #include <xxhash.h>
 
 #include "common/assert.h"
@@ -1009,6 +1010,33 @@ void TextureCache::UnregisterImage(ImageId image_id) {
 
 void TextureCache::TrackImage(ImageId image_id) {
     auto& image = slot_images[image_id];
+    if ((image.info.num_bits == 8 && image.info.size.width >= 1024) ||
+        (image.info.num_bits == 32 && image.info.size.width == 512 &&
+         image.info.size.height == 512)) {
+        // TEMPORARY DIAGNOSTIC (do not upstream): watch the guest memory of atlas-like images.
+        static std::unordered_map<VAddr, std::pair<u64, u64>> watch;
+        auto& [calls, last] = watch[image.info.guest_address];
+        ++calls;
+        if (calls % 16 == 0) {
+            const u64 nonzero =
+                CountNonZeroBackingBytes(image.info.guest_address, image.info.guest_size);
+            const auto* direct = std::bit_cast<const u8*>(image.info.guest_address);
+            u64 nonzero_direct = 0;
+            for (u64 i = 0; i < image.info.guest_size; ++i) {
+                nonzero_direct += direct[i] != 0;
+            }
+            if (nonzero != last || (calls & (calls - 1)) == 0) {
+                LOG_INFO(Render_Vulkan,
+                         "TEXDBG use {:#x}+{:#x} {}x{} bits={} flags={:#x} untracked={} calls={} "
+                         "nonzero={} (was {}) direct={}",
+                         image.info.guest_address, u64(image.info.guest_size),
+                         image.info.size.width, image.info.size.height, image.info.num_bits,
+                         u32(image.flags), image.IsUntracked(), calls, nonzero, last,
+                         nonzero_direct);
+                last = nonzero;
+            }
+        }
+    }
     if (False(image.flags & ImageFlagBits::Registered)) {
         return;
     }
