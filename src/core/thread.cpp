@@ -40,10 +40,9 @@ int NativeThread::Create(ThreadFunc func, void* arg) {
 }
 
 void NativeThread::Exit() {
-    if (!native_handle) {
-        return;
-    }
-
+    // Runs on the exiting thread itself, so it must not depend on native_handle: on macOS
+    // pthread_create stores the handle only after the new thread is running, and a short-lived
+    // thread can reach here first.
     tid = 0;
 
 #ifdef _WIN64
