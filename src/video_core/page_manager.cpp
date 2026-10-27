@@ -41,6 +41,7 @@ struct PageManager::Impl {
     struct PageState {
         u8 num_write_watchers;
         u8 num_read_watchers;
+        bool is_exec;
 
         Core::MemoryPermission WritePerm() const noexcept {
             return num_write_watchers == 0 ? Core::MemoryPermission::Write
@@ -52,8 +53,12 @@ struct PageManager::Impl {
                                           : Core::MemoryPermission::None;
         }
 
+        Core::MemoryPermission ExecPerm() const noexcept {
+            return is_exec ? Core::MemoryPermission::Execute : Core::MemoryPermission::None;
+        }
+
         Core::MemoryPermission Perms() const noexcept {
-            return ReadPerm() | WritePerm();
+            return ReadPerm() | WritePerm() | ExecPerm();
         }
 
         template <bool is_read>
@@ -113,6 +118,20 @@ struct PageManager::Impl {
         const size_t end_page = end >> PM_PAGE_BITS;
         cached_pages.reserve(start_page, end_page);
         locks.reserve(start_page, end_page);
+    }
+
+    void SetExecutable(VAddr address, size_t size, bool is_exec) {
+        const u64 page_start = address >> PM_PAGE_BITS;
+        const u64 page_end =
+            std::min<u64>(Common::DivCeil(address + size, PM_PAGE_SIZE), NUM_ADDRESS_PAGES);
+        for (u64 page = page_start; page < page_end; ++page) {
+            PageState* state = cached_pages.find(page);
+            if (!state) {
+                continue;
+            }
+            std::scoped_lock lk{locks[page]};
+            state->is_exec = is_exec;
+        }
     }
 
     void UpdatePageWatchers(VAddr addr, u64 size, PageOp write_op) {
@@ -426,7 +445,7 @@ struct SignalImpl : public PageManager::Impl {
         RENDERER_TRACE;
         auto* memory = Core::Memory::Instance();
         auto& impl = memory->GetAddressSpace();
-        ASSERT_MSG(perms != Core::MemoryPermission::Write,
+        ASSERT_MSG((perms & Core::MemoryPermission::ReadWrite) != Core::MemoryPermission::Write,
                    "Attempted to protect region as write-only which is not a valid permission");
         impl.Protect(address, size, perms);
     }
@@ -469,6 +488,10 @@ void PageManager::OnGpuMap(VAddr address, size_t size) {
 
 void PageManager::OnGpuUnmap(VAddr address, size_t size) {
     impl->OnUnmap(address, size);
+}
+
+void PageManager::SetExecutable(VAddr address, size_t size, bool is_exec) {
+    impl->SetExecutable(address, size, is_exec);
 }
 
 void PageManager::UpdatePageWatchers(VAddr addr, u64 size, PageOp write_op) const {

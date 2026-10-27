@@ -1305,8 +1305,13 @@ void Rasterizer::MapMemory(VAddr addr, u64 size) {
     }
 }
 
-void Rasterizer::RegisterMemory(VAddr addr, u64 size) {
+void Rasterizer::RegisterMemory(VAddr addr, u64 size, bool is_exec) {
     page_manager.OnGpuMap(addr, size);
+    page_manager.SetExecutable(addr, size, is_exec);
+}
+
+void Rasterizer::ProtectMemory(VAddr addr, u64 size, bool is_exec) {
+    page_manager.SetExecutable(addr, size, is_exec);
 }
 
 void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
