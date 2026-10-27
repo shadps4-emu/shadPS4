@@ -398,6 +398,36 @@ static Id EmitLoadBufferB32xN(EmitContext& ctx, IR::Inst* inst, u32 handle, Id a
         ids.push_back(result_i);
     }
 
+    // A guest buffer may start off a dword boundary, which the dword index above drops: vertex
+    // attributes packed at 2 byte offsets, for one. Then load one dword more and combine
+    // neighbours with a funnel shift. The extra dword is read only when the binding is unaligned,
+    // so it stays inside the bound range.
+    if (const Id byte_offset = spv_buffer.Offset(PointerSize::B8); Sirit::ValidId(byte_offset)) {
+        const Id shift = ctx.OpShiftLeftLogical(
+            ctx.U32[1], ctx.OpBitwiseAnd(ctx.U32[1], byte_offset, ctx.ConstU32(3U)),
+            ctx.ConstU32(3U));
+        const Id unaligned = ctx.OpINotEqual(ctx.U1[1], shift, ctx.u32_zero_value);
+        const Id back_shift = ctx.OpBitwiseAnd(
+            ctx.U32[1], ctx.OpISub(ctx.U32[1], ctx.ConstU32(32U), shift), ctx.ConstU32(31U));
+        const auto as_u32 = [&](Id value) {
+            return alias == PointerType::U32 ? value : ctx.OpBitcast(ctx.U32[1], value);
+        };
+        const Id last_index = ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(N - 1));
+        const Id extra_index = ctx.OpSelect(
+            ctx.U32[1], unaligned, ctx.OpIAdd(ctx.U32[1], address, ctx.ConstU32(N)), last_index);
+        const Id extra = as_u32(ctx.OpLoad(
+            data_types[1], ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, extra_index)));
+        for (u32 i = 0; i < N; i++) {
+            const Id low = as_u32(ids[i]);
+            const Id high = i + 1 < N ? as_u32(ids[i + 1]) : extra;
+            const Id combined =
+                ctx.OpBitwiseOr(ctx.U32[1], ctx.OpShiftRightLogical(ctx.U32[1], low, shift),
+                                ctx.OpShiftLeftLogical(ctx.U32[1], high, back_shift));
+            const Id value = ctx.OpSelect(ctx.U32[1], unaligned, combined, low);
+            ids[i] = alias == PointerType::U32 ? value : ctx.OpBitcast(ctx.F32[1], value);
+        }
+    }
+
     const Id result = N == 1 ? ids[0] : ctx.OpCompositeConstruct(data_types[N], ids);
     return result;
 }
