@@ -613,10 +613,14 @@ set(FIBER_LIB src/core/libraries/fiber/fiber_context.cpp
 
 set(VDEC_LIB src/core/libraries/videodec/video_utils.cpp
              src/core/libraries/videodec/video_utils.h
+             src/core/libraries/videodec/vdeccore.cpp
+             src/core/libraries/videodec/vdeccore.h
              src/core/libraries/videodec/vdecsw.cpp
              src/core/libraries/videodec/vdecsw.h
              src/core/libraries/videodec/vdecsw_impl.cpp
              src/core/libraries/videodec/vdecsw_impl.h
+             src/core/libraries/videodec/videocore_server.cpp
+             src/core/libraries/videodec/videocore_server.h
              src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h
              src/core/libraries/videodec/videodec2.cpp
@@ -880,6 +884,8 @@ set(NET_CORE  src/core/net/guest_net.cpp
 
 set(NET_LIB   src/core/libraries/net/net.cpp
               src/core/libraries/net/net.h
+              src/core/libraries/net/net_discovery.cpp
+              src/core/libraries/net/net_discovery.h
               src/core/libraries/net/net_error.h
               src/core/libraries/net/net_kernel.cpp
               src/core/libraries/net/net_kernel.h
