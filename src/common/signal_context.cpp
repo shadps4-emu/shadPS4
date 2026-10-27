@@ -31,6 +31,22 @@ void* GetRip(void* ctx) {
 #endif
 }
 
+void IncrementRip(void* ctx, u64 length) {
+#if defined(_WIN32)
+    ((EXCEPTION_POINTERS*)ctx)->ContextRecord->Rip += length;
+#elif defined(__APPLE__) && defined(ARCH_X86_64)
+    ((ucontext_t*)ctx)->uc_mcontext->__ss.__rip += length;
+#elif defined(__APPLE__) && defined(ARCH_ARM64)
+    ((ucontext_t*)ctx)->uc_mcontext->__ss.__pc += length;
+#elif defined(__FreeBSD__)
+    ((ucontext_t*)ctx)->uc_mcontext.mc_rip += length;
+#elif defined(ARCH_X86_64)
+    ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RIP] += length;
+#else
+#error "Unsupported architecture"
+#endif
+}
+
 bool IsWriteError(void* ctx) {
 #if defined(_WIN32)
     return ((EXCEPTION_POINTERS*)ctx)->ExceptionRecord->ExceptionInformation[0] == 1;

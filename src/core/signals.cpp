@@ -17,6 +17,7 @@
 #include <windows.h>
 static constexpr DWORD MS_VC_EXCEPTION = 0x406D1388;
 #else
+#include <atomic>
 #include <csignal>
 #include <pthread.h>
 #ifdef ARCH_X86_64
@@ -247,6 +248,24 @@ static s32 NativeSiCodeToGuest(s32 sig, s32 code) {
     }
 }
 
+// Naughty Dog's asserts end with int 0x41, a debugger break, followed by code that recovers and
+// carries on. Here the instruction raises a general protection fault, so step over it instead.
+static bool StepOverDebugBreak(void* raw_context, const siginfo_t* info) {
+    if (!info || info->si_addr != nullptr || Common::IsExecuteError(raw_context)) {
+        return false;
+    }
+    const auto* code = static_cast<const u8*>(Common::GetRip(raw_context));
+    if (!code || code[0] != 0xCD || code[1] != 0x41) {
+        return false;
+    }
+    static std::atomic<u32> stepped_over{0};
+    if (stepped_over.fetch_add(1, std::memory_order_relaxed) < 32) {
+        LOG_WARNING(Core, "Stepping over int 0x41 debug break at {}", fmt::ptr(code));
+    }
+    Common::IncrementRip(raw_context, 2);
+    return true;
+}
+
 void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     using namespace Libraries::Kernel;
     auto* thread = g_curthread;
@@ -269,6 +288,9 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     switch (sig) {
     case SIGSEGV:
     case SIGBUS: {
+        if (StepOverDebugBreak(raw_context, info)) {
+            return;
+        }
         const bool is_write = Common::IsWriteError(raw_context);
         const bool is_exec = Common::IsExecuteError(raw_context);
         if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
