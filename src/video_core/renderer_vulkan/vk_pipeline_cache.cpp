@@ -335,6 +335,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .needs_clip_distance_emulation = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .supports_shader_stencil_export = instance_.IsShaderStencilExportSupported(),
         .fast_shader_math = EmulatorSettings.IsFastShaderMath(),
+        .support_bda = instance_.IsBufferDeviceAddressSupported(),
     };
     WarmUp();
 

@@ -748,6 +748,171 @@ static void GenerateNegatedScalarCompare(void* address, const ZydisDecodedInstru
     c.dq(0);
     c.L(done);
 }
+
+// Rosetta 2 crashes on page faults during VMASKMOVPS/PD execution because
+// EmulateForward is unimplemented.
+static bool FilterRosetta(const ZydisDecodedOperand*) {
+    return true;
+}
+
+static std::tuple<Xbyak::Reg64, Xbyak::Reg64, Xbyak::Reg64> PickScratchRegisters(
+    const ZydisDecodedOperand& mem_op) {
+    auto GetIdx = [](ZydisRegister reg) {
+        if (reg >= ZYDIS_REGISTER_EAX && reg <= ZYDIS_REGISTER_R15D)
+            return reg - ZYDIS_REGISTER_EAX;
+        if (reg >= ZYDIS_REGISTER_RAX && reg <= ZYDIS_REGISTER_R15)
+            return reg - ZYDIS_REGISTER_RAX;
+        return -1;
+    };
+    const int b = GetIdx(mem_op.mem.base);
+    const int i = GetIdx(mem_op.mem.index);
+
+    std::array<Xbyak::Reg64, 3> picked{rax, rcx, rdx};
+    int count = 0;
+    for (const auto& reg : {rax, rcx, rdx, rsi, rdi}) {
+        if (reg.getIdx() != b && reg.getIdx() != i) {
+            picked[count++] = reg;
+            if (count == 3)
+                break;
+        }
+    }
+    return {picked[0], picked[1], picked[2]};
+}
+
+static void GenerateVMASKMOV(void* address, const ZydisDecodedInstruction& instruction,
+                             const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+    const bool is_double = (instruction.mnemonic == ZYDIS_MNEMONIC_VMASKMOVPD);
+    const bool is_store = (operands[0].type == ZYDIS_OPERAND_TYPE_MEMORY);
+
+    const auto& mem_op = is_store ? operands[0] : operands[2];
+    const auto& mask_op = operands[1];
+    const auto& reg_op = is_store ? operands[2] : operands[0];
+
+    ASSERT_MSG(mem_op.type == ZYDIS_OPERAND_TYPE_MEMORY, "Expected memory operand");
+    ASSERT_MSG(mask_op.type == ZYDIS_OPERAND_TYPE_REGISTER, "Expected mask register operand");
+    ASSERT_MSG(reg_op.type == ZYDIS_OPERAND_TYPE_REGISTER, "Expected src/dst register operand");
+
+    const auto raw_mask = ZydisToXbyakRegisterOperand(mask_op);
+    const auto raw_reg = ZydisToXbyakRegisterOperand(reg_op);
+
+    const bool is_ymm = raw_mask.isYMM() || raw_reg.isYMM();
+    const int lanes = is_double ? 2 : 4;
+    const int elem_size = is_double ? 8 : 4;
+    const int num_elements = lanes * (is_ymm ? 2 : 1);
+
+    const Xbyak::Xmm xmm_mask(raw_mask.getIdx());
+    const Xbyak::Ymm ymm_mask(raw_mask.getIdx());
+    const Xbyak::Xmm xmm_reg(raw_reg.getIdx());
+    const Xbyak::Ymm ymm_reg(raw_reg.getIdx());
+
+    auto [scratch_addr, scratch_mask, scratch_data] = PickScratchRegisters(mem_op);
+
+    // 128 bytes Red Zone + 32 bytes vector buffer
+    const u32 stack_space = 128 + 32;
+    c.lea(rsp, ptr[rsp - stack_space]);
+    c.pushfq();
+    c.push(scratch_addr);
+    c.push(scratch_mask);
+    c.push(scratch_data);
+
+    const u32 rsp_offset = stack_space + 8 * 4;
+
+    if (mem_op.mem.base == ZYDIS_REGISTER_RIP) {
+        const u64 target =
+            reinterpret_cast<u64>(address) + instruction.length + mem_op.mem.disp.value;
+        c.mov(scratch_addr, target);
+    } else {
+        ZydisDecodedOperand op = mem_op;
+        if (op.mem.base == ZYDIS_REGISTER_RSP) {
+            op.mem.disp.size = 32;
+            op.mem.disp.value += rsp_offset;
+        }
+        Xbyak::Address mem = ZydisToXbyakMemoryOperand(address, instruction, op);
+        c.lea(scratch_addr, mem);
+    }
+
+    if (is_double) {
+        is_ymm ? c.vmovmskpd(scratch_mask.cvt32(), ymm_mask)
+               : c.vmovmskpd(scratch_mask.cvt32(), xmm_mask);
+    } else {
+        is_ymm ? c.vmovmskps(scratch_mask.cvt32(), ymm_mask)
+               : c.vmovmskps(scratch_mask.cvt32(), xmm_mask);
+    }
+
+    Xbyak::Label done;
+
+    if (is_store) {
+        if (is_ymm) {
+            c.vmovups(ptr[rsp + 32], ymm_reg);
+        } else {
+            c.vmovups(ptr[rsp + 32], xmm_reg);
+        }
+
+        c.test(scratch_mask.cvt32(), scratch_mask.cvt32());
+        c.jz(done);
+
+        for (int i = 0; i < num_elements; ++i) {
+            Xbyak::Label skip_elem;
+            c.test(scratch_mask.cvt32(), 1 << i);
+            c.jz(skip_elem);
+
+            const u32 offset = i * elem_size;
+            if (is_double) {
+                c.mov(scratch_data, ptr[rsp + 32 + offset]);
+                c.mov(ptr[scratch_addr + offset], scratch_data);
+            } else {
+                c.mov(scratch_data.cvt32(), ptr[rsp + 32 + offset]);
+                c.mov(ptr[scratch_addr + offset], scratch_data.cvt32());
+            }
+            c.L(skip_elem);
+        }
+    } else {
+        // Load: zero buffer using dst register (which will be overwritten anyway)
+        if (is_ymm) {
+            c.vxorps(ymm_reg, ymm_reg, ymm_reg);
+            c.vmovups(ptr[rsp + 32], ymm_reg);
+        } else {
+            c.vxorps(xmm_reg, xmm_reg, xmm_reg);
+            c.vmovups(ptr[rsp + 32], xmm_reg);
+        }
+
+        c.test(scratch_mask.cvt32(), scratch_mask.cvt32());
+        c.jz(done);
+
+        for (int i = 0; i < num_elements; ++i) {
+            Xbyak::Label skip_elem;
+            c.test(scratch_mask.cvt32(), 1 << i);
+            c.jz(skip_elem);
+
+            const u32 offset = i * elem_size;
+            if (is_double) {
+                c.mov(scratch_data, ptr[scratch_addr + offset]);
+                c.mov(ptr[rsp + 32 + offset], scratch_data);
+            } else {
+                c.mov(scratch_data.cvt32(), ptr[scratch_addr + offset]);
+                c.mov(ptr[rsp + 32 + offset], scratch_data.cvt32());
+            }
+            c.L(skip_elem);
+        }
+
+        c.L(done);
+        if (is_ymm) {
+            c.vmovups(ymm_reg, ptr[rsp + 32]);
+        } else {
+            c.vmovups(xmm_reg, ptr[rsp + 32]);
+        }
+    }
+
+    if (is_store) {
+        c.L(done);
+    }
+
+    c.pop(scratch_data);
+    c.pop(scratch_mask);
+    c.pop(scratch_addr);
+    c.popfq();
+    c.lea(rsp, ptr[rsp + stack_space]);
+}
 #endif
 
 using PatchFilter = bool (*)(const ZydisDecodedOperand*);
@@ -786,6 +951,8 @@ static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches =
 #if defined(__APPLE__)
     // Rosetta 2
     {ZYDIS_MNEMONIC_VCMPSS, {{FilterNegatedScalarCompare, GenerateNegatedScalarCompare, true}}},
+    {ZYDIS_MNEMONIC_VMASKMOVPS, {{FilterRosetta, GenerateVMASKMOV, true}}},
+    {ZYDIS_MNEMONIC_VMASKMOVPD, {{FilterRosetta, GenerateVMASKMOV, true}}},
 #else
     // FS segment patches
     // For most of these, Windows needs a trampoline while other platforms do not.

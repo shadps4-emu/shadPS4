@@ -238,6 +238,8 @@ public:
     VAddr base_virtual_addr{};
     VAddr proc_param_virtual_addr{};
     VAddr module_param_virtual_addr{};
+    std::string interpreter_path{};
+    std::string comment{};
     VAddr eh_frame_hdr_addr{};
     VAddr eh_frame_addr{};
     u32 eh_frame_hdr_size{};
