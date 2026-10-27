@@ -51,13 +51,13 @@ static bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Compute
         const u32 local_dst_offset = dst_idx * buf_stride;
         const u32 local_src_offset = src_idx * buf_stride;
         const u32 local_size = (end + 1) * buf_stride;
-        
-        const auto [src_buf, src_buf_offset] = buffer_cache.ObtainBuffer(
-            src_buf_sharp.base_address + local_src_offset, local_size);
-            const auto [dst_buf, dst_buf_offset] =
+
+        const auto [src_buf, src_buf_offset] =
+            buffer_cache.ObtainBuffer(src_buf_sharp.base_address + local_src_offset, local_size);
+        const auto [dst_buf, dst_buf_offset] =
             buffer_cache.ObtainBuffer(dst_buf_sharp.base_address + local_dst_offset, local_size,
-                VideoCore::ObtainBufferFlags::IsWritten);
-        
+                                      VideoCore::ObtainBufferFlags::IsWritten);
+
         if (last_src_buf != src_buf || last_dst_buf != dst_buf) {
             do_copies();
             last_src_buf = src_buf;
