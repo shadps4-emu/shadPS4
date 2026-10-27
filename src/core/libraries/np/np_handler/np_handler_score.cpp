@@ -1025,17 +1025,16 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         if (pending.totalSizeOut != nullptr) {
             *pending.totalSizeOut = stored_size;
         }
+        const u64 start = std::min<u64>(req->gameDataRecvOffset, stored_size);
+        u64 copy_n = 0;
         if (pending.dataOut != nullptr && pending.recvSize > 0) {
-            const u64 copy_n = std::min<u64>(static_cast<u64>(stored_size), pending.recvSize);
-            std::memcpy(pending.dataOut, body.data() + 4, static_cast<size_t>(copy_n));
-            if (copy_n < stored_size) {
-                LOG_WARNING(NpHandler, "{} truncated user_id={} pkt_id={} stored={} recv={}",
-                            cmd_name, user_id, pkt_id, stored_size, pending.recvSize);
-            }
+            copy_n = std::min<u64>(static_cast<u64>(stored_size) - start, pending.recvSize);
+            std::memcpy(pending.dataOut, body.data() + 4 + start, static_cast<size_t>(copy_n));
         }
-        LOG_INFO(NpHandler, "{} user_id={} pkt_id={} storedSize={} recvSize={}", cmd_name, user_id,
-                 pkt_id, stored_size, pending.recvSize);
-        req->SetResult(ORBIS_OK);
+        req->gameDataRecvOffset = (copy_n < pending.recvSize) ? 0 : start + copy_n;
+        LOG_INFO(NpHandler, "{} user_id={} pkt_id={} storedSize={} offset={} recvSize={} got={}",
+                 cmd_name, user_id, pkt_id, stored_size, start, pending.recvSize, copy_n);
+        req->SetResult(static_cast<s32>(copy_n));
         break;
     }
 
@@ -1108,7 +1107,8 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         }
         LOG_INFO(NpHandler, "GetScoreNpid user_id={} pkt_id={} found={}/{} totalRecord={}", user_id,
                  pkt_id, found, pending.arrayNum, resp.totalrecord());
-        req->SetResult(static_cast<s32>(found));
+        req->SetResult(found > 0 ? static_cast<s32>(found)
+                                 : ORBIS_NP_COMMUNITY_SERVER_ERROR_GAME_RANKING_NOT_FOUND);
         break;
     }
     case ShadNet::CommandType::GetScoreAccountId: {
@@ -1143,7 +1143,8 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         }
         LOG_INFO(NpHandler, "GetScoreAccountId user_id={} pkt_id={} found={}/{} totalRecord={}",
                  user_id, pkt_id, found, pending.arrayNum, resp.totalrecord());
-        req->SetResult(static_cast<s32>(found));
+        req->SetResult(found > 0 ? static_cast<s32>(found)
+                                 : ORBIS_NP_COMMUNITY_SERVER_ERROR_GAME_RANKING_NOT_FOUND);
         break;
     }
 
@@ -1179,10 +1180,11 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
             found = FillPlainRankArrayFromProto(resp, pending.arrayNum, pending.plainRankArray,
                                                 pending.commentArray, pending.infoArray);
         }
-        if (pending.lastSortDate != nullptr) {
+        const bool write_meta = cmd != ShadNet::CommandType::GetScoreFriends || found > 0;
+        if (write_meta && pending.lastSortDate != nullptr) {
             pending.lastSortDate->tick = resp.lastsortdate();
         }
-        if (pending.totalRecord != nullptr) {
+        if (write_meta && pending.totalRecord != nullptr) {
             *pending.totalRecord = resp.totalrecord();
         }
         LOG_INFO(NpHandler, "{} user_id={} pkt_id={} found={}/{} totalRecord={}{}", cmd_name,
