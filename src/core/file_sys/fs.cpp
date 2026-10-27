@@ -319,7 +319,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
                 }
                 const auto part_low = Common::ToLower(part.string());
                 bool found_match = false;
-                for (const auto& path : std::filesystem::directory_iterator(current_path)) {
+                for (const auto& path : std::filesystem::directory_iterator(current_path, ec)) {
                     const auto candidate = path.path().filename();
                     const auto filename = Common::ToLower(candidate.string());
                     // Check if a filename matches in case insensitive manner.
