@@ -868,10 +868,10 @@ void TextureCache::RefreshImage(Image& image) {
         image.cpu_hash = hash;
     }
 
+    image.gpu_hash = 0;
+
     const u32 num_layers = image.info.resources.layers;
     const u32 num_mips = image.info.resources.levels;
-    const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
-    const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
 
     SmallVector<vk::BufferImageCopy, 14> image_copies;
     for (u32 m = 0; m < num_mips; m++) {
@@ -1226,9 +1226,6 @@ void TextureCache::RunGarbageCollector() {
 
 void TextureCache::TouchImage(Image& image) {
     image_lru_cache.Touch(image, gc_tick);
-
-    // Image is still valid
-    image.gpu_hash = 0;
 }
 
 void TextureCache::DeleteImage(ImageId image_id) {

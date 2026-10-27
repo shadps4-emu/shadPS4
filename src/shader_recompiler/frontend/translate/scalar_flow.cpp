@@ -83,6 +83,10 @@ void Translator::S_SENDMSG(const GcnInst& inst) {
         case SendMsgSimm::GsOp::Emit:
             ir.EmitVertex();
             break;
+        case SendMsgSimm::GsOp::EmitCut:
+            ir.EmitVertex();
+            ir.EmitPrimitive();
+            break;
         default:
             UNREACHABLE();
         }
