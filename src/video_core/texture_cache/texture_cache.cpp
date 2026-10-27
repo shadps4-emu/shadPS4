@@ -49,6 +49,26 @@ static u64 HashBackingMemory(VAddr virtual_addr, u64 size) {
     return hash;
 }
 
+// TEMPORARY DIAGNOSTIC (do not upstream): counts non-zero bytes of the guest backing memory.
+static u64 CountNonZeroBackingBytes(VAddr virtual_addr, u64 size) {
+    const auto& backing_pages = Core::Memory::Instance()->GetAddressSpace().BackingPages();
+    u64 count = 0;
+    while (size) {
+        const u64 page = virtual_addr >> Core::GUEST_PAGE_BITS;
+        const u64 offset_in_page = virtual_addr & (Core::GUEST_PAGE_SIZE - 1);
+        const u64 chunk = std::min<u64>(Core::GUEST_PAGE_SIZE - offset_in_page, size);
+        if (auto* entry = backing_pages.find(page); entry && *entry) {
+            const auto* data = *entry + offset_in_page;
+            for (u64 i = 0; i < chunk; ++i) {
+                count += data[i] != 0;
+            }
+        }
+        size -= chunk;
+        virtual_addr += chunk;
+    }
+    return count;
+}
+
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                            Vulkan::Runtime& runtime_, AmdGpu::Liverpool* liverpool_,
                            BufferCache& buffer_cache_, PageManager& page_manager_)
@@ -197,6 +217,12 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
         if (image.Overlaps(addr, size)) {
             // Modified region overlaps image, so the image was definitely accessed by this fault.
             // Untrack the image, so that the range is unprotected and the guest can write freely.
+            if ((image.info.num_bits == 8 && image.info.size.width >= 512) ||
+                (image.info.size.width == 512 && image.info.size.height == 512)) {
+                LOG_INFO(Render_Vulkan, "TEXDBG cpu write {:#x}+{:#x} dirties {:#x}+{:#x} {}x{}",
+                         addr, size, image.info.guest_address, u64(image.info.guest_size),
+                         image.info.size.width, image.info.size.height);
+            }
             image.flags |= ImageFlagBits::CpuDirty;
             UntrackImage(image_id);
         } else if (pages_end < image_end) {
@@ -872,6 +898,14 @@ void TextureCache::RefreshImage(Image& image) {
     }
 
     image.gpu_hash = 0;
+
+    if ((image.info.num_bits == 8 && image.info.size.width >= 512) ||
+        (image.info.size.width == 512 && image.info.size.height == 512)) {
+        LOG_INFO(Render_Vulkan, "TEXDBG refresh {:#x}+{:#x} {}x{} bits={} flags={:#x} nonzero={}",
+                 image.info.guest_address, u64(image.info.guest_size), image.info.size.width,
+                 image.info.size.height, image.info.num_bits, u32(image.flags),
+                 CountNonZeroBackingBytes(image.info.guest_address, image.info.guest_size));
+    }
 
     const u32 num_layers = image.info.resources.layers;
     const u32 num_mips = image.info.resources.levels;
