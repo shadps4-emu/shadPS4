@@ -256,6 +256,85 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         case PT_SCE_MODULE_PARAM:
             module_param_virtual_addr = elf_pheader[i].p_vaddr + base_virtual_addr;
             break;
+        case PT_INTERP: {
+            if (elf_pheader[i].p_filesz != 0) {
+                interpreter_path.resize(elf_pheader[i].p_filesz);
+                if (!elf.TryLoadSegment(std::bit_cast<VAddr>(interpreter_path.data()),
+                                        elf_pheader[i].p_offset, elf_pheader[i].p_filesz)) {
+                    LOG_WARNING(Core_Linker, "Unable to read {} segment of module {}", header_type,
+                                name);
+                    interpreter_path.clear();
+                    break;
+                }
+                while (!interpreter_path.empty() && interpreter_path.back() == '\0') {
+                    interpreter_path.pop_back();
+                }
+                LOG_INFO(Core_Linker, "Module interpreter: '{}'", interpreter_path);
+            }
+            break;
+        }
+        case PT_SCE_COMMENT: {
+            if (elf_pheader[i].p_filesz != 0) {
+                comment.resize(elf_pheader[i].p_filesz);
+                if (!elf.TryLoadSegment(std::bit_cast<VAddr>(comment.data()),
+                                        elf_pheader[i].p_offset, elf_pheader[i].p_filesz)) {
+                    LOG_WARNING(Core_Linker, "Unable to read {} segment of module {}", header_type,
+                                name);
+                    comment.clear();
+                    break;
+                }
+                if (comment.starts_with("PATH") && comment.size() > 12) {
+                    comment = comment.substr(12);
+                    comment = comment.substr(0, comment.find('\0'));
+                } else {
+                    for (char& c : comment) {
+                        if (c == '\0') {
+                            c = ' ';
+                        }
+                    }
+                    while (!comment.empty() && (comment.back() == ' ' || comment.back() == '\0')) {
+                        comment.pop_back();
+                    }
+                }
+                LOG_INFO(Core_Linker, "Module comment: '{}'", comment);
+            }
+            break;
+        }
+        case PT_SCE_LIBVERSION: {
+            if (elf_pheader[i].p_filesz != 0) {
+                std::vector<u8> libver_data(elf_pheader[i].p_filesz);
+                if (!elf.TryLoadSegment(std::bit_cast<VAddr>(libver_data.data()),
+                                        elf_pheader[i].p_offset, elf_pheader[i].p_filesz)) {
+                    LOG_WARNING(Core_Linker, "Unable to read {} segment of module {}", header_type,
+                                name);
+                    break;
+                }
+                if (!libver_data.empty()) {
+                    const u8 rec_len = libver_data[0];
+                    if (rec_len > 4 && 1u + rec_len <= libver_data.size()) {
+                        const std::string_view rec(
+                            reinterpret_cast<const char*>(libver_data.data() + 1), rec_len);
+                        const auto colon = rec.find(':');
+                        if (colon != std::string_view::npos && colon + 5 <= rec_len) {
+                            const u8* ver_bytes =
+                                reinterpret_cast<const u8*>(rec.data() + colon + 1);
+                            const u32 sdk_ver = (u32(ver_bytes[0]) << 24) |
+                                                (u32(ver_bytes[1]) << 16) |
+                                                (u32(ver_bytes[2]) << 8) | u32(ver_bytes[3]);
+                            LOG_INFO(Core_Linker, "SCE SDK version: {:x}.{:02x} [{:#010x}]",
+                                     ver_bytes[0], ver_bytes[1], sdk_ver);
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case PT_GNU_STACK:
+        case PT_GNU_RELRO:
+        case PT_NOTE:
+        case PT_PHDR:
+            // Non-loadable metadata/flags segments; nothing to map
+            break;
         case PT_GNU_EH_FRAME: {
             eh_frame_hdr_addr = elf_pheader[i].p_vaddr;
             eh_frame_hdr_size = elf_pheader[i].p_memsz;
