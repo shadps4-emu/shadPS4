@@ -64,6 +64,10 @@ struct SubresourceExtent {
     u16 levels = 1;
     u16 layers = 1;
 
+    constexpr bool CanContain(const SubresourceExtent& requested) const {
+        return levels >= requested.levels && layers >= requested.layers;
+    }
+
     auto operator<=>(const SubresourceExtent&) const = default;
 };
 
