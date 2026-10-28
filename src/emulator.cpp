@@ -99,7 +99,10 @@ void Emulator::Shutdown() {
     if (play_time_thread.joinable()) {
         play_time_thread.join();
     }
-    UpdatePlayTime(Common::Singleton<Common::ElfInfo>::Instance()->GameSerial());
+    const auto* elf_info = Common::Singleton<Common::ElfInfo>::Instance();
+    if (elf_info->initialized) {
+        UpdatePlayTime(elf_info->GameSerial());
+    }
     if (controllers) {
         controllers->ResetLightbarColors();
         // need to give SDL time to do this before the runtime exits
