@@ -21,7 +21,9 @@ NormalDirectory::NormalDirectory(std::string_view guest_directory)
 }
 
 s64 NormalDirectory::read(void* buf, u64 nbytes) {
-    RebuildDirents();
+    if (!dirents_built) {
+        RebuildDirents();
+    }
 
     // data is contiguous. read goes like any regular file would: start at offset, read n bytes
     // output is always aligned up to 512 bytes with 0s
@@ -50,7 +52,9 @@ s32 NormalDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
 }
 
 s64 NormalDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
-    RebuildDirents();
+    if (!dirents_built) {
+        RebuildDirents();
+    }
 
     if (basep)
         *basep = file_offset;
@@ -97,12 +101,7 @@ s64 NormalDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
 }
 
 void NormalDirectory::RebuildDirents() {
-    // regenerate only when target wants to read contents again
-    // no reason for testing - read is always raw and dirents get processed on the go
-    if (previous_file_offset == file_offset)
-        return;
-    previous_file_offset = file_offset;
-
+    dirents_built = true;
     constexpr u32 dirent_meta_size =
         sizeof(NormalDirectoryDirent::d_fileno) + sizeof(NormalDirectoryDirent::d_type) +
         sizeof(NormalDirectoryDirent::d_namlen) + sizeof(NormalDirectoryDirent::d_reclen);

@@ -496,6 +496,43 @@ bool MntPoints::IsDirectory(std::string_view guest_path) {
     return false;
 }
 
+void MntPoints::InvalidateCache(std::string_view guest_path) {
+    if (guest_path.empty()) {
+        {
+            std::scoped_lock lock{m_mutex};
+            path_cache.clear();
+        }
+        for (const auto& mount : m_mnt_pairs) {
+            for (const auto& backend : mount.backends) {
+                backend->InvalidateCache();
+            }
+        }
+        return;
+    }
+    const auto corrected = SanitizeGuestPath(guest_path);
+    if (!corrected) {
+        return;
+    }
+    const std::string& path_str = *corrected;
+    const std::string path_slash = path_str + "/";
+    {
+        std::scoped_lock lock{m_mutex};
+        for (auto it = path_cache.begin(); it != path_cache.end();) {
+            const std::string cached = it->first.generic_string();
+            if (cached == path_str || cached.starts_with(path_slash)) {
+                it = path_cache.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    if (const auto* mount = GetMount(path_str)) {
+        const auto rel = RelativeToMount(path_str, *mount);
+        for (const auto& backend : mount->backends) {
+            backend->InvalidateCache(rel);
+        }
+    }
+}
 bool MntPoints::Stat(std::string_view guest_path, FileStat& out) {
     const auto corrected = SanitizeGuestPath(guest_path);
     if (!corrected) {
