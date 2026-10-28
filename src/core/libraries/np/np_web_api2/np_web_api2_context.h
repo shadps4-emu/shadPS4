@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/libraries/kernel/time.h"
+#include "core/libraries/np/np_web_api/np_web_api.h"
 #include "core/libraries/np/np_web_api2/np_web_api2.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_internal.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_push_event.h"
@@ -91,6 +92,8 @@ public:
     }
 
     void CheckTimeout();
+
+    void DispatchPushEvent(const NpWebApi::PushEventInput& ev);
 
     s32 CreatePushEventHandle();
     PushEventHandle* GetPushEventHandle(s32 handle_id);
@@ -254,6 +257,8 @@ public:
 
     void CheckTimeout();
 
+    void DispatchPushEvent(const NpWebApi::PushEventInput& ev);
+
     s32 CreatePushEventCallback(s32 filter_id, OrbisNpWebApi2PushEventCallback cb_func,
                                 void* user_arg);
     s32 DeletePushEventCallback(s32 callback_id);
@@ -292,6 +297,7 @@ private:
     bool push_contexts_busy{};
     LibraryContext* parent_ctx{};
     std::string user_agent{};
+    std::string DescribePushCallbacks();
     std::map<s64, Request*> requests{};
     std::map<s32, PushEventCallback*> push_event_callbacks{};
     std::map<s64, PushEventPushContext*> push_contexts{};
@@ -308,7 +314,8 @@ public:
             const char* method, bool multipart,
             const OrbisNpWebApi2ContentParameter* content_parameter)
         : parent_ctx(parent), id(request_id), api_group(api_group), path(path), method(method),
-          multipart_supported(multipart), content_type(content_parameter->content_type),
+          multipart_supported(multipart),
+          content_type(content_parameter->content_type ? content_parameter->content_type : ""),
           content_length(content_parameter->content_length) {}
 
     void Lock() {

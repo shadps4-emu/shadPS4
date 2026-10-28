@@ -6,6 +6,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/http2.h"
+#include "core/libraries/network/http_error.h"
 
 #include <map>
 #include <mutex>
@@ -16,7 +17,7 @@ std::mutex g_http2_mutex;
 std::map<s32, s32> requests_to_connections{};
 
 s32 PS4_SYSV_ABI sceHttp2AbortRequest(s32 req_id) {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    LOG_INFO(Lib_Http2, "called");
     s32 result = Libraries::Http::sceHttpAbortRequest(req_id);
     if (result < 0) {
         LOG_ERROR(Lib_Http2, "Failed to get abort HTTP request, error = {:#x}", result);
@@ -31,7 +32,7 @@ s32 PS4_SYSV_ABI sceHttp2AddCookie() {
 
 s32 PS4_SYSV_ABI sceHttp2AddRequestHeader(s32 template_or_req_id, const char* name,
                                           const char* value, u32 mode) {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    LOG_INFO(Lib_Http2, "called");
     s32 result = Libraries::Http::sceHttpAddRequestHeader(template_or_req_id, name, value, mode);
     if (result < 0) {
         LOG_ERROR(Lib_Http2, "Failed to add HTTP response header, error = {:#x}", result);
@@ -66,7 +67,7 @@ s32 PS4_SYSV_ABI sceHttp2CreateCookieBox() {
 
 s32 PS4_SYSV_ABI sceHttp2CreateRequestWithURL(s32 tmpl_id, const char* method, const char* url,
                                               u64 content_length) {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    LOG_INFO(Lib_Http2, "called");
     std::lock_guard<std::mutex> lock(g_http2_mutex);
     // Http1 has a connection thing to go through first
     s32 conn_id = Libraries::Http::sceHttpCreateConnectionWithURL(tmpl_id, url, true);
@@ -91,7 +92,7 @@ s32 PS4_SYSV_ABI sceHttp2CreateRequestWithURL(s32 tmpl_id, const char* method, c
 
 s32 PS4_SYSV_ABI sceHttp2CreateTemplate(s32 ctx_id, const char* user_agent, s32 http_ver,
                                         s32 auto_proxy_conf) {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    LOG_INFO(Lib_Http2, "called");
     s32 tmpl_id =
         Libraries::Http::sceHttpCreateTemplate(ctx_id, user_agent, http_ver, auto_proxy_conf);
     if (tmpl_id < 0) {
@@ -106,7 +107,7 @@ s32 PS4_SYSV_ABI sceHttp2DeleteCookieBox() {
 }
 
 s32 PS4_SYSV_ABI sceHttp2DeleteRequest(s32 req_id) {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    LOG_INFO(Lib_Http2, "called");
     std::lock_guard<std::mutex> lock(g_http2_mutex);
     const s32 result = Libraries::Http::sceHttpDeleteRequest(req_id);
     if (result < 0) {
@@ -131,7 +132,7 @@ s32 PS4_SYSV_ABI sceHttp2DeleteRequest(s32 req_id) {
 }
 
 s32 PS4_SYSV_ABI sceHttp2DeleteTemplate(s32 tmpl_id) {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    LOG_INFO(Lib_Http2, "called");
     s32 result = Libraries::Http::sceHttpDeleteTemplate(tmpl_id);
     if (result < 0) {
         LOG_ERROR(Lib_Http2, "Failed to delete HTTP template, error = {:#x}", result);
@@ -140,7 +141,7 @@ s32 PS4_SYSV_ABI sceHttp2DeleteTemplate(s32 tmpl_id) {
 }
 
 s32 PS4_SYSV_ABI sceHttp2GetAllResponseHeaders(s32 req_id, char** header, u64* header_size) {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    LOG_INFO(Lib_Http2, "called");
     s32 result = Libraries::Http::sceHttpGetAllResponseHeaders(req_id, header, header_size);
     if (result < 0) {
         LOG_ERROR(Lib_Http2, "Failed to get HTTP response headers, error = {:#x}", result);
@@ -179,7 +180,7 @@ s32 PS4_SYSV_ABI sceHttp2GetMemoryPoolStats() {
 }
 
 s32 PS4_SYSV_ABI sceHttp2GetResponseContentLength(s32 req_id, s32* result, u64* content_length) {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    LOG_INFO(Lib_Http2, "called");
     s32 res = Libraries::Http::sceHttpGetResponseContentLength(
         req_id, reinterpret_cast<int*>(result), content_length);
     if (res < 0) {
@@ -189,7 +190,7 @@ s32 PS4_SYSV_ABI sceHttp2GetResponseContentLength(s32 req_id, s32* result, u64* 
 }
 
 s32 PS4_SYSV_ABI sceHttp2GetStatusCode(s32 req_id, s32* status_code) {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    LOG_INFO(Lib_Http2, "called");
     s32 result = Libraries::Http::sceHttpGetStatusCode(req_id, status_code);
     if (result < 0) {
         LOG_ERROR(Lib_Http2, "Failed to get HTTP status code, error = {:#x}", result);
@@ -207,7 +208,7 @@ s32 PS4_SYSV_ABI sceHttp2Init(s32 net_id, s32 ssl_id, u64 pool_size, s32 max_req
 }
 
 s32 PS4_SYSV_ABI sceHttp2ReadData(s32 req_id, void* data, u64 size) {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    LOG_INFO(Lib_Http2, "called");
     s32 result = Libraries::Http::sceHttpReadData(req_id, data, size);
     if (result < 0) {
         LOG_ERROR(Lib_Http2, "Failed to read HTTP data, error = {:#x}", result);
@@ -225,13 +226,20 @@ s32 PS4_SYSV_ABI sceHttp2RedirectCacheFlush() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2RemoveRequestHeader() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceHttp2RemoveRequestHeader(s32 template_or_req_id, const char* name) {
+    LOG_INFO(Lib_Http2, "called id={}, name={}", template_or_req_id, name ? name : "(null)");
+    s32 result = Libraries::Http::sceHttpRemoveRequestHeader(template_or_req_id, name);
+    if (result == ORBIS_HTTP_ERROR_NOT_FOUND) {
+        result = ORBIS_OK;
+    }
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to remove HTTP request header, error = {:#x}", result);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceHttp2SendRequest(s32 req_id, const void* data, u64 size) {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    LOG_INFO(Lib_Http2, "called");
     s32 result = Libraries::Http::sceHttpSendRequest(req_id, data, size);
     if (result < 0) {
         LOG_ERROR(Lib_Http2, "Failed to send HTTP request, error = {:#x}", result);
@@ -254,9 +262,13 @@ s32 PS4_SYSV_ABI sceHttp2SetAuthInfoCallback() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2SetAutoRedirect() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceHttp2SetAutoRedirect(s32 id, s32 enable) {
+    LOG_INFO(Lib_Http2, "called id={}, enable={}", id, enable);
+    const s32 result = Libraries::Http::sceHttpSetAutoRedirect(id, enable);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to set auto redirect, error = {:#x}", result);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceHttp2SetConnectionWaitTimeOut() {
@@ -264,9 +276,13 @@ s32 PS4_SYSV_ABI sceHttp2SetConnectionWaitTimeOut() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2SetConnectTimeOut() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceHttp2SetConnectTimeOut(s32 id, u32 usec) {
+    LOG_INFO(Lib_Http2, "called id={}, usec={}", id, usec);
+    const s32 result = Libraries::Http::sceHttpSetConnectTimeOut(id, usec);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to set connect timeout, error = {:#x}", result);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceHttp2SetCookieBox() {
@@ -299,9 +315,13 @@ s32 PS4_SYSV_ABI sceHttp2SetCookieSendCallback() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2SetInflateGZIPEnabled() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceHttp2SetInflateGZIPEnabled(s32 id, s32 enable) {
+    LOG_INFO(Lib_Http2, "called id={}, enable={}", id, enable);
+    const s32 result = Libraries::Http::sceHttpSetInflateGZIPEnabled(id, enable);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to set gzip inflate, error = {:#x}", result);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceHttp2SetMinSslVersion() {
@@ -315,9 +335,13 @@ s32 PS4_SYSV_ABI sceHttp2SetPreSendCallback(s32 template_id, OrbisHttp2PreSendCa
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2SetRecvTimeOut() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceHttp2SetRecvTimeOut(s32 id, u32 usec) {
+    LOG_INFO(Lib_Http2, "called id={}, usec={}", id, usec);
+    const s32 result = Libraries::Http::sceHttpSetRecvTimeOut(id, usec);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to set receive timeout, error = {:#x}", result);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceHttp2SetRedirectCallback() {
@@ -326,7 +350,7 @@ s32 PS4_SYSV_ABI sceHttp2SetRedirectCallback() {
 }
 
 s32 PS4_SYSV_ABI sceHttp2SetRequestContentLength(s32 req_id, u64 content_length) {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
+    LOG_INFO(Lib_Http2, "called");
     s32 result = Libraries::Http::sceHttpSetRequestContentLength(req_id, content_length);
     if (result < 0) {
         LOG_ERROR(Lib_Http2, "Failed to set HTTP request content length, error = {:#x}", result);
@@ -334,9 +358,13 @@ s32 PS4_SYSV_ABI sceHttp2SetRequestContentLength(s32 req_id, u64 content_length)
     return result;
 }
 
-s32 PS4_SYSV_ABI sceHttp2SetResolveRetry() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceHttp2SetResolveRetry(s32 id, s32 retry) {
+    LOG_INFO(Lib_Http2, "called id={}, retry={}", id, retry);
+    const s32 result = Libraries::Http::sceHttpSetResolveRetry(id, retry);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to set resolve retry, error = {:#x}", result);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceHttp2SetResolveTimeOut() {
@@ -344,9 +372,13 @@ s32 PS4_SYSV_ABI sceHttp2SetResolveTimeOut() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2SetSendTimeOut() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceHttp2SetSendTimeOut(s32 id, u32 usec) {
+    LOG_INFO(Lib_Http2, "called id={}, usec={}", id, usec);
+    const s32 result = Libraries::Http::sceHttpSetSendTimeOut(id, usec);
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to set send timeout, error = {:#x}", result);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceHttp2SetSslCallback() {
@@ -354,9 +386,19 @@ s32 PS4_SYSV_ABI sceHttp2SetSslCallback() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceHttp2SetTimeOut() {
-    LOG_ERROR(Lib_Http2, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceHttp2SetTimeOut(s32 id, u32 usec) {
+    LOG_INFO(Lib_Http2, "called id={}, usec={}", id, usec);
+    s32 result = Libraries::Http::sceHttpSetConnectTimeOut(id, usec);
+    if (result >= 0) {
+        result = Libraries::Http::sceHttpSetSendTimeOut(id, usec);
+    }
+    if (result >= 0) {
+        result = Libraries::Http::sceHttpSetRecvTimeOut(id, usec);
+    }
+    if (result < 0) {
+        LOG_ERROR(Lib_Http2, "Failed to set timeout, error = {:#x}", result);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceHttp2SslDisableOption() {

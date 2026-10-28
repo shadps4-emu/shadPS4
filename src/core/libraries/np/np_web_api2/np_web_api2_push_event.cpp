@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdio>
+#include <mutex>
+#include <random>
+
 #include "common/logging/log.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_push_event.h"
@@ -25,40 +29,50 @@ s32 PushEventFilter::Initialize(PushEventHandle* handle,
         return ORBIS_NP_WEBAPI2_ERROR_ABORTED;
     }
 
-    std::vector<std::vector<OrbisNpWebApi2PushEventExtdDataKey>> copy_storage{};
     for (u64 i = 0; i < filter_param_num; i++) {
-        OrbisNpWebApi2PushEventFilterParameter new_param{};
-        memcpy(&new_param, &filter_param[i], sizeof(OrbisNpWebApi2PushEventFilterParameter));
-        if (filter_param[i].extd_data_key != nullptr && filter_param[i].extd_data_key_num != 0) {
-            std::vector<OrbisNpWebApi2PushEventExtdDataKey> data_keys{};
+        Entry entry{};
+        const OrbisNpWebApi2PushEventDataType& data_type = filter_param[i].data_type;
+        entry.data_type.assign(data_type.val, strnlen(data_type.val, sizeof(data_type.val)));
+        if (filter_param[i].extd_data_key != nullptr) {
             for (u64 j = 0; j < filter_param[i].extd_data_key_num; j++) {
-                OrbisNpWebApi2PushEventExtdDataKey new_key{};
-                memcpy(&new_key, &filter_param[i].extd_data_key[j],
-                       sizeof(OrbisNpWebApi2PushEventExtdDataKey));
-                data_keys.emplace_back(new_key);
+                const OrbisNpWebApi2PushEventExtdDataKey& key = filter_param[i].extd_data_key[j];
+                entry.extd_data_keys.emplace_back(key.val, strnlen(key.val, sizeof(key.val)));
             }
-            new_param.extd_data_key = data_keys.data();
-            copy_storage.emplace_back(data_keys);
         }
-        this->filter_params.emplace_back(new_param);
+        this->entries.emplace_back(std::move(entry));
     }
 
     return ORBIS_OK;
 }
 
 void PushEventPushContext::Initialize() {
-    // In the real library, there's a whole process of registering this with NpManager's Push2 API.
-    // For now, we'll just create the uuid for this push context.
-
-    // As for the ID itself, for now we'll cheat a bit.
-    // Real library does a mostly random string, but it's easier to just use an actual index.
-    ++g_current_push_event_push_context_id;
-    if (g_current_push_event_push_context_id < 0) {
-        g_current_push_event_push_context_id = 1;
+    // Titles send this string to the server (e.g. in a player session's pushContexts), so it must
+    // be a printable UUID. The first 8 characters are a counter, which is what the maps key on.
+    static std::mutex id_mutex;
+    static std::mt19937_64 rng{std::random_device{}()};
+    u64 counter{};
+    u64 random_a{};
+    u64 random_b{};
+    {
+        std::scoped_lock lk{id_mutex};
+        ++g_current_push_event_push_context_id;
+        if (g_current_push_event_push_context_id < 0 ||
+            g_current_push_event_push_context_id > 0xffffffffll) {
+            g_current_push_event_push_context_id = 1;
+        }
+        counter = static_cast<u64>(g_current_push_event_push_context_id);
+        random_a = rng();
+        random_b = rng();
     }
-    s64 new_id = g_current_push_event_push_context_id;
+
+    char uuid[37]{};
+    std::snprintf(uuid, sizeof(uuid), "%08x-%04x-4%03x-%x%03x-%012llx", static_cast<u32>(counter),
+                  static_cast<u32>(random_a & 0xffff), static_cast<u32>((random_a >> 16) & 0xfff),
+                  static_cast<u32>(8 + ((random_a >> 28) & 3)),
+                  static_cast<u32>((random_a >> 32) & 0xfff),
+                  static_cast<unsigned long long>(random_b & 0xffffffffffffull));
     std::memset(&this->id, 0, sizeof(this->id));
-    std::memcpy(&this->id, &new_id, sizeof(s64));
+    std::memcpy(this->id.uuid, uuid, 36);
 }
 
 }; // namespace Libraries::Np::NpWebApi2
