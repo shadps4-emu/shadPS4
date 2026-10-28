@@ -586,9 +586,6 @@ private:
         if (on_true == on_false || (block != on_true && block != on_false)) {
             return Srt::TrueRef;
         }
-        for (auto& seen : conditions) {
-            seen.clear();
-        }
         return Condition(pred->branch_cond, block == on_true, 0);
     }
 
@@ -599,15 +596,7 @@ private:
         if (value.IsImmediate() || depth >= MaxSrtDepth || srt.IsFull()) {
             return Srt::TrueRef;
         }
-        const IR::Inst* const inst = value.Inst();
-        auto& seen = conditions[polarity];
-        if (const auto it = seen.find(inst); it != seen.end()) {
-            return it->second;
-        }
-        seen.emplace(inst, Srt::TrueRef);
-        const Srt::Ref ref = ConditionInst(*inst, polarity, depth + 1);
-        seen[inst] = ref;
-        return ref;
+        return ConditionInst(*value.Inst(), polarity, depth + 1);
     }
 
     Srt::Ref ConditionInst(const IR::Inst& inst, bool polarity, u32 depth) {
@@ -696,7 +685,6 @@ private:
     PassInfo& pass_info;
     Srt::Program& srt;
     bool optimistic;
-    std::array<std::unordered_map<const IR::Inst*, Srt::Ref>, 2> conditions;
 };
 
 void EmitValue(Xbyak::CodeGenerator& c, const Srt::Program& srt, Srt::Ref ref,
