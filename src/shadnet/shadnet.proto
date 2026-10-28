@@ -584,25 +584,6 @@ message GetAuthorizationCodeReply {
     uint32 expires_in = 2; // seconds
 }
 
-// Signed ID token (sceNpAuthGetIdTokenA/V3) for the signed-in account. The game's backend
-// verifies it against the keys at GET /.well-known/jwks.json.
-message GetIdTokenRequest {
-    string client_id     = 1;
-    bytes  client_secret = 2;
-    string scope         = 3; // space or comma separated
-}
-
-// The command answers NoError once the request has been decoded. When the auth server refuses
-// it, id_token is empty and error/error_code carry the OAuth error,the client reports
-// 0x82E00000 | error_code to the game.
-message GetIdTokenReply {
-    string id_token          = 1;
-    uint32 expires_in        = 2; // seconds
-    string error             = 3;
-    string error_description = 4;
-    uint32 error_code        = 5;
-}
-
 // Notification payloads
 
 // NotificationType::RoomEvent (10) — every room event maps onto

@@ -667,8 +667,7 @@ void NpHandler::OnAsyncReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         OnTrophyReply(user_id, cmd, pkt_id, error, body);
     } else if (cmd == ShadNet::CommandType::LookupOnlineId) {
         OnLookupReply(user_id, cmd, pkt_id, error, body);
-    } else if (cmd == ShadNet::CommandType::GetAuthorizationCode ||
-               cmd == ShadNet::CommandType::GetIdToken) {
+    } else if (cmd == ShadNet::CommandType::GetAuthorizationCode) {
         OnAuthReply(user_id, cmd, pkt_id, error, body);
     } else {
         OnScoreReply(user_id, cmd, pkt_id, error, body);
