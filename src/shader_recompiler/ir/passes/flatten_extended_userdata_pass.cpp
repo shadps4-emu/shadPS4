@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <bit>
-#include <limits>
 #include <optional>
 #include <span>
 #include <unordered_map>
@@ -457,28 +456,6 @@ bool IsNormalOrZero(u32 bits) {
     return exponent != 0xFF && (exponent != 0 || (bits & 0x7FFFFF) == 0);
 }
 
-const IR::Inst* Unpacked(const IR::Value& value) {
-    const IR::Inst* const vec = value.TryInst();
-    if (!vec) {
-        return nullptr;
-    }
-    if (vec->GetOpcode() == IR::Opcode::UnpackUint2x32) {
-        return vec;
-    }
-    if (vec->GetOpcode() != IR::Opcode::CompositeConstructU32x2) {
-        return nullptr;
-    }
-    const IR::Inst* const lo = vec->Arg(0).TryInst();
-    const IR::Inst* const hi = vec->Arg(1).TryInst();
-    if (!lo || !hi || lo->GetOpcode() != IR::Opcode::CompositeExtractU32x2 ||
-        hi->GetOpcode() != IR::Opcode::CompositeExtractU32x2 || lo->Arg(0) != hi->Arg(0) ||
-        lo->Arg(1) != IR::Value{0U} || hi->Arg(1) != IR::Value{1U}) {
-        return nullptr;
-    }
-    const IR::Inst* const unpack = lo->Arg(0).TryInst();
-    return unpack && unpack->GetOpcode() == IR::Opcode::UnpackUint2x32 ? unpack : nullptr;
-}
-
 class SrtBuilder {
 public:
     SrtBuilder(PassInfo& pass_info_, Srt::Program& srt_, bool optimistic_ = false)
@@ -602,25 +579,14 @@ private:
     Srt::Ref ConditionInst(const IR::Inst& inst, bool polarity, u32 depth) {
         switch (inst.GetOpcode()) {
         case IR::Opcode::ConditionRef:
-        case IR::Opcode::Ballot:
-        case IR::Opcode::InverseBallot:
             return Condition(inst.Arg(0), polarity, depth);
-        case IR::Opcode::PackUint2x32:
-            if (const IR::Inst* const unpack = Unpacked(inst.Arg(0))) {
-                return Condition(unpack->Arg(0), polarity, depth);
-            }
-            return Srt::TrueRef;
         case IR::Opcode::LogicalNot:
-        case IR::Opcode::BitwiseNot64:
             return Condition(inst.Arg(0), !polarity, depth);
         case IR::Opcode::LogicalAnd:
-        case IR::Opcode::BitwiseAnd64:
             return Junction(inst, polarity, polarity, depth);
         case IR::Opcode::LogicalOr:
-        case IR::Opcode::BitwiseOr64:
             return Junction(inst, !polarity, polarity, depth);
         case IR::Opcode::SelectU1:
-        case IR::Opcode::SelectU64:
             return Select(inst, polarity, depth);
         default:
             if (const std::optional<Srt::Opcode> opcode = SrtCompareOpcode(inst.GetOpcode())) {
@@ -669,15 +635,8 @@ private:
     }
 
     static std::optional<bool> Known(const IR::Value& value) {
-        if (!value.IsImmediate()) {
-            return std::nullopt;
-        }
-        if (value.Type() == IR::Type::U1) {
+        if (value.IsImmediate() && value.Type() == IR::Type::U1) {
             return value.U1();
-        }
-        if (value.Type() == IR::Type::U64 &&
-            (value.U64() == 0 || value.U64() == std::numeric_limits<u64>::max())) {
-            return value.U64() != 0;
         }
         return std::nullopt;
     }
