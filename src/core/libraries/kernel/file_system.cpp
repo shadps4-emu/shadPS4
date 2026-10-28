@@ -93,6 +93,37 @@ namespace Libraries::Kernel {
 
 namespace {
 
+struct FlockKey {
+    Common::FS::FileIdentity identity{};
+    std::string fallback_name{};
+
+    bool HasIdentity() const {
+        return identity.device != 0 || identity.file_lo != 0 || identity.file_hi != 0;
+    }
+
+    bool operator==(const FlockKey& o) const {
+        if (HasIdentity() && o.HasIdentity()) {
+            return identity == o.identity;
+        }
+        if (!HasIdentity() && !o.HasIdentity()) {
+            return fallback_name == o.fallback_name;
+        }
+        return false;
+    }
+};
+
+struct FlockKeyHash {
+    size_t operator()(const FlockKey& k) const noexcept {
+        if (k.HasIdentity()) {
+            size_t h = std::hash<u64>{}(k.identity.device);
+            h ^= std::hash<u64>{}(k.identity.file_lo) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            h ^= std::hash<u64>{}(k.identity.file_hi) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            return h;
+        }
+        return std::hash<std::string>{}(k.fallback_name);
+    }
+};
+
 struct FlockState {
     std::mutex mtx;
     std::condition_variable cv;
@@ -103,17 +134,20 @@ struct FlockState {
 };
 
 std::mutex g_flock_map_mtx;
-std::unordered_map<std::string, std::shared_ptr<FlockState>> g_flock_states;
+std::unordered_map<FlockKey, std::shared_ptr<FlockState>, FlockKeyHash> g_flock_states;
 
-std::string GetFileLockKey(Core::FileSys::File* file) {
+FlockKey GetFileLockKey(Core::FileSys::File* file) {
     if (!file->m_host_name.empty()) {
-        return file->m_host_name.string();
+        if (auto info = Common::FS::GetFileInfo(file->m_host_name)) {
+            return FlockKey{.identity = info->identity};
+        }
+        return FlockKey{.fallback_name = file->m_host_name.string()};
     }
-    return file->m_guest_name;
+    return FlockKey{.fallback_name = file->m_guest_name};
 }
 
 void ReleaseFlockState(Core::FileSys::File* file) {
-    const std::string key = GetFileLockKey(file);
+    const FlockKey key = GetFileLockKey(file);
     std::shared_ptr<FlockState> state;
     {
         std::scoped_lock lock{g_flock_map_mtx};
@@ -1521,28 +1555,46 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         }
     }
 
-    // On Windows, fs::rename will error if the file has been opened before.
-    fs::copy(src_path, dst_path, fs::copy_options::overwrite_existing | fs::copy_options::recursive,
-             ec);
-    if (ec) {
-        *__Error() = POSIX_EIO;
-        return -1;
-    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto file = h->GetFile(src_path);
+    Common::FS::FileAccessMode access_mode = Common::FS::FileAccessMode::ReadWrite;
+    s64 file_pos = 0;
     if (file) {
-        Common::FS::FileAccessMode access_mode = Common::FS::FileAccessMode::ReadWrite;
         if (auto* host = file->GetHostFile()) {
             access_mode = host->GetAccessMode();
         }
+        file_pos = file->Tell();
         file->handle.reset();
-        fs::remove(src_path, ec);
+    }
+
+    // Try atomic rename first
+    fs::rename(src_path, dst_path, ec);
+    if (ec) {
+        // Fallback to copy + remove if atomic rename failed (e.g. cross-device)
+        ec.clear();
+        fs::copy(src_path, dst_path,
+                 fs::copy_options::overwrite_existing | fs::copy_options::recursive, ec);
+        if (ec) {
+            *__Error() = POSIX_EIO;
+            if (file) {
+                file->handle = mnt->Open(std::string_view(from), access_mode);
+                if (file->handle && file_pos > 0) {
+                    file->Seek(file_pos);
+                }
+            }
+            return -1;
+        }
+        fs::remove_all(src_path, ec);
+    }
+
+    if (file) {
         // Reopen through the mount stack at the destination guest path.
         file->handle = mnt->Open(std::string_view(to), access_mode);
+        if (file->handle && file_pos > 0) {
+            file->Seek(file_pos);
+        }
         file->m_host_name = dst_path;
         file->m_guest_name = to;
-    } else {
-        fs::remove_all(src_path, ec);
     }
 
     return ORBIS_OK;
@@ -1727,7 +1779,7 @@ s32 PS4_SYSV_ABI posix_flock(s32 fd, s32 operation) {
     }
 
     const bool non_blocking = (operation & ORBIS_KERNEL_LOCK_NB) != 0;
-    const std::string key = GetFileLockKey(file);
+    const FlockKey key = GetFileLockKey(file);
 
     std::shared_ptr<FlockState> state;
     {
