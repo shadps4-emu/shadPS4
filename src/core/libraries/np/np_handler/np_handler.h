@@ -118,6 +118,9 @@ public:
     s32 RequestAuthorizationCode(s32 user_id, const std::string& client_id,
                                  const std::string& scope,
                                  std::shared_ptr<NpAuth::AuthRequestCtx> ctx);
+    // Asks shadNet for a signed ID token for sceNpAuthGetIdTokenA/V3.
+    s32 RequestIdToken(s32 user_id, const std::string& client_id, const std::string& client_secret,
+                       const std::string& scope, std::shared_ptr<NpAuth::AuthRequestCtx> ctx);
 
     // Sends a session invitation via the WebAPI (POST /v1/sessions/<id>/invitations). Each 'to'
     // entry is an online ID (npid) or a decimal account ID
@@ -519,6 +522,8 @@ private:
     std::map<u64, PendingAuthRequest> m_pending_auth;
     void OnAuthReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
                      const std::vector<u8>& body);
+    // The user's shadNet client when it is signed in, else null.
+    std::shared_ptr<ShadNet::ShadNetClient> AuthenticatedClient(s32 user_id);
 
     // Worker thread
     std::atomic<bool> m_initialized{false};
