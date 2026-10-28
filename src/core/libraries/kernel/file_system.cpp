@@ -491,26 +491,49 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
     return result;
 }
 
-static thread_local std::vector<u8> file_buf{};
-
 s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
     if (nbytes == 0) {
         return 0;
     }
+    if (buf == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
 
     const auto* memory = Core::Memory::Instance();
-    // Invalidate up to the actual number of bytes that could be read.
-    const auto remaining = file->GetSize() - file->Tell();
-    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
-    if (file_buf.capacity() < nbytes) {
-        file_buf.reserve(nbytes);
+    static constexpr u64 CHUNK_SIZE = 1024 * 1024;
+    static thread_local std::vector<u8> chunk_buf{};
+    if (chunk_buf.size() < CHUNK_SIZE) {
+        chunk_buf.resize(CHUNK_SIZE);
     }
-    s64 bytes = file->Read(file_buf.data(), nbytes);
-    if (bytes < 0) {
-        return bytes;
+
+    u8* out_ptr = reinterpret_cast<u8*>(buf);
+    u64 remaining = nbytes;
+    u64 total_read = 0;
+
+    while (remaining > 0) {
+        const u64 to_read = std::min<u64>(remaining, CHUNK_SIZE);
+        const s64 bytes = file->Read(chunk_buf.data(), to_read);
+        if (bytes < 0) {
+            return total_read > 0 ? static_cast<s64>(total_read) : bytes;
+        }
+        if (bytes == 0) {
+            break;
+        }
+
+        memory->InvalidateMemory(reinterpret_cast<VAddr>(out_ptr), static_cast<u64>(bytes));
+        std::memcpy(out_ptr, chunk_buf.data(), static_cast<size_t>(bytes));
+
+        total_read += static_cast<u64>(bytes);
+        out_ptr += bytes;
+        remaining -= static_cast<u64>(bytes);
+
+        if (static_cast<u64>(bytes) < to_read) {
+            break;
+        }
     }
-    std::memcpy(buf, file_buf.data(), bytes);
-    return bytes;
+
+    return static_cast<s64>(total_read);
 }
 
 s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
