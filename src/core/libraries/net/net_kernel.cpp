@@ -69,7 +69,7 @@ void InstallKernelIntegration() {
             [] {
                 auto* table = FDTable::Instance();
                 const int fd = table->CreateHandle();
-                auto* file = table->GetFile(fd);
+                auto file = table->GetFile(fd);
                 file->type = Core::FileSys::FileType::Socket;
                 file->m_guest_name = "net";
                 file->is_opened = true;
