@@ -868,10 +868,10 @@ void TextureCache::RefreshImage(Image& image) {
         image.cpu_hash = hash;
     }
 
+    image.gpu_hash = 0;
+
     const u32 num_layers = image.info.resources.layers;
     const u32 num_mips = image.info.resources.levels;
-    const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
-    const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
 
     SmallVector<vk::BufferImageCopy, 14> image_copies;
     for (u32 m = 0; m < num_mips; m++) {
@@ -996,6 +996,9 @@ void TextureCache::TrackImage(ImageId image_id) {
     }
     image.track_addr = image_begin;
     image.track_addr_end = image_end;
+    MarkDirtyIfEdgesModified(image);
+    image.head_hash = 0;
+    image.tail_hash = 0;
 }
 
 void TextureCache::UntrackImage(ImageId image_id) {
@@ -1020,6 +1023,7 @@ void TextureCache::UntrackImageHead(ImageId image_id) {
     }
     const auto addr = page_manager.GetNextPageAddr(image_begin);
     const auto size = addr - image_begin;
+    image.head_hash = HashBackingMemory(image_begin, size);
     page_manager.UpdatePageWatchers(image_begin, size, PageOp::Untrack);
 
     image.track_addr = addr;
@@ -1040,6 +1044,7 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
     ASSERT(image.track_addr_end != 0);
     const auto addr = page_manager.GetPageAddr(image_end);
     const auto size = image_end - addr;
+    image.tail_hash = HashBackingMemory(addr, size);
     image.track_addr_end = addr;
     if (image.track_addr == image.track_addr_end) {
         // This image spans only 2 pages and both are modified,
@@ -1048,6 +1053,23 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
         MarkAsMaybeDirty(image_id, image);
     }
     page_manager.UpdatePageWatchers(addr, size, PageOp::Untrack);
+}
+
+void TextureCache::MarkDirtyIfEdgesModified(Image& image) {
+    const auto image_begin = image.info.guest_address;
+    const auto image_end = image.info.guest_address + image.info.guest_size;
+    if (image.head_hash != 0) {
+        const auto head_end = page_manager.GetNextPageAddr(image_begin);
+        if (HashBackingMemory(image_begin, head_end - image_begin) != image.head_hash) {
+            image.flags |= ImageFlagBits::CpuDirty;
+        }
+    }
+    if (image.tail_hash != 0) {
+        const auto tail_begin = page_manager.GetPageAddr(image_end);
+        if (HashBackingMemory(tail_begin, image_end - tail_begin) != image.tail_hash) {
+            image.flags |= ImageFlagBits::CpuDirty;
+        }
+    }
 }
 
 void TextureCache::GarbageCollectImages() {
@@ -1075,6 +1097,8 @@ void TextureCache::GarbageCollectImages() {
         if (num_deletions == 0) {
             return true;
         }
+        // An edge write means the guest reused the memory, so the image is freed without download.
+        MarkDirtyIfEdgesModified(image);
         const bool download = image.HasGpuValidData();
         if (download && (!pressured || !image.CanBeDownloaded())) {
             return false;
@@ -1202,9 +1226,6 @@ void TextureCache::RunGarbageCollector() {
 
 void TextureCache::TouchImage(Image& image) {
     image_lru_cache.Touch(image, gc_tick);
-
-    // Image is still valid
-    image.gpu_hash = 0;
 }
 
 void TextureCache::DeleteImage(ImageId image_id) {
