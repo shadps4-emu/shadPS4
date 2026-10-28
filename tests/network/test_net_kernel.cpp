@@ -49,7 +49,7 @@ protected:
 TEST_F(NetKernel, SocketsAreFileDescriptors) {
     const int fd = sys_socket(ORBIS_NET_AF_INET, ORBIS_NET_SOCK_DGRAM, 0);
     ASSERT_GE(fd, 3); // after stdin, stdout, stderr
-    auto* file = FDTable::Instance()->GetFile(fd);
+    auto file = FDTable::Instance()->GetFile(fd);
     ASSERT_NE(file, nullptr);
     EXPECT_EQ(file->type, Core::FileSys::FileType::Socket);
     EXPECT_TRUE(file->is_opened);
