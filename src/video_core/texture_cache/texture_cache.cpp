@@ -738,6 +738,10 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
+        if (image.info.num_bits == 8 && image.info.size.width >= 1024) {
+            LOG_INFO(Render_Vulkan, "TEXDBG GpuModified via storage image {:#x}",
+                     image.info.guest_address);
+        }
         if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8) &&
             image.info.guest_address != 0) {
             std::unique_lock lk{download_images_mutex};
@@ -776,6 +780,10 @@ void TextureCache::UnregisterMeta(VAddr address, u64 owner_uid) {
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
+    if (image.info.num_bits == 8 && image.info.size.width >= 1024) {
+        LOG_INFO(Render_Vulkan, "TEXDBG GpuModified via render target {:#x} {}x{}",
+                 image.info.guest_address, image.info.size.width, image.info.size.height);
+    }
     if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8)) {
         std::unique_lock lk{download_images_mutex};
         download_images.emplace(image_id);
@@ -1017,7 +1025,7 @@ void TextureCache::TrackImage(ImageId image_id) {
         static std::unordered_map<VAddr, std::pair<u64, u64>> watch;
         auto& [calls, last] = watch[image.info.guest_address];
         ++calls;
-        if (calls % 16 == 0) {
+        if (calls <= 20 || calls % 16 == 0) {
             const u64 nonzero =
                 CountNonZeroBackingBytes(image.info.guest_address, image.info.guest_size);
             const auto* direct = std::bit_cast<const u8*>(image.info.guest_address);
@@ -1025,7 +1033,7 @@ void TextureCache::TrackImage(ImageId image_id) {
             for (u64 i = 0; i < image.info.guest_size; ++i) {
                 nonzero_direct += direct[i] != 0;
             }
-            if (nonzero != last || (calls & (calls - 1)) == 0) {
+            if (nonzero != last || calls <= 20 || (calls & (calls - 1)) == 0) {
                 LOG_INFO(Render_Vulkan,
                          "TEXDBG use {:#x}+{:#x} {}x{} bits={} flags={:#x} untracked={} calls={} "
                          "nonzero={} (was {}) direct={}",

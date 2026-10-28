@@ -224,6 +224,20 @@ void Runtime::DownloadImage(VideoCore::Image* src, const VideoCore::Buffer* dst,
     }
 }
 
+// TEMPORARY DIAGNOSTIC (do not upstream): report who marks atlas-like images as GPU modified.
+static void LogWatchedGpuWrite(const char* what, const VideoCore::Image* dst,
+                               const VideoCore::Image* src) {
+    const auto& info = dst->info;
+    if ((info.num_bits == 8 && info.size.width >= 1024) ||
+        (info.num_bits == 32 && info.size.width == 512 && info.size.height == 512)) {
+        LOG_INFO(Render_Vulkan,
+                 "TEXDBG GpuModified via {} dst={:#x}+{:#x} {}x{} src={:#x} {}x{} src_flags={:#x}",
+                 what, info.guest_address, u64(info.guest_size), info.size.width, info.size.height,
+                 src ? src->info.guest_address : 0, src ? src->info.size.width : 0,
+                 src ? src->info.size.height : 0, src ? u32(src->flags) : 0u);
+    }
+}
+
 void Runtime::CopyImage(VideoCore::Image* src, VideoCore::Image* dst) {
     const u32 num_mips = std::min(src->info.resources.levels, dst->info.resources.levels);
 
@@ -318,6 +332,7 @@ void Runtime::CopyImage(VideoCore::Image* src, VideoCore::Image* dst) {
     cmdbuf.copyImage(src->GetImage(), vk::ImageLayout::eTransferSrcOptimal, dst->GetImage(),
                      vk::ImageLayout::eTransferDstOptimal, regions);
 
+    LogWatchedGpuWrite("CopyImage", dst, src);
     dst->flags |= (src->flags & VideoCore::ImageFlagBits::GpuModified);
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
@@ -392,6 +407,7 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
     cmdbuf.copyBufferToImage(buffer->Handle(), dst->GetImage(),
                              vk::ImageLayout::eTransferDstOptimal, buffer_copies);
 
+    LogWatchedGpuWrite("CopyImageWithBuffer", dst, src);
     dst->flags |= (src->flags & VideoCore::ImageFlagBits::GpuModified);
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
@@ -444,6 +460,7 @@ void Runtime::CopyMip(VideoCore::Image* src, VideoCore::Image* dst, u32 mip, u32
     cmdbuf.copyImage(src->GetImage(), vk::ImageLayout::eTransferSrcOptimal, dst->GetImage(),
                      vk::ImageLayout::eTransferDstOptimal, image_copy);
 
+    LogWatchedGpuWrite("CopyMip", dst, src);
     dst->flags |= (src->flags & VideoCore::ImageFlagBits::GpuModified);
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
@@ -520,6 +537,7 @@ void Runtime::CopyDepthStencil(VideoCore::Image* src, VideoCore::Image* dst,
     cmdbuf.copyImage(src->GetImage(), vk::ImageLayout::eTransferSrcOptimal, dst->GetImage(),
                      vk::ImageLayout::eTransferDstOptimal, region);
 
+    LogWatchedGpuWrite("CopyDepthStencil", dst, src);
     dst->flags |= VideoCore::ImageFlagBits::GpuModified;
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
@@ -586,6 +604,7 @@ void Runtime::ResolveImage(VideoCore::Image* src, VideoCore::Image* dst,
                             vk::ImageLayout::eTransferDstOptimal, region);
     }
 
+    LogWatchedGpuWrite("ResolveImage", dst, src);
     dst->flags |= VideoCore::ImageFlagBits::GpuModified;
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
@@ -612,6 +631,7 @@ void Runtime::ClearImage(VideoCore::Image* dst, const VideoCore::SubresourceRang
     cmdbuf.clearColorImage(dst->GetImage(), vk::ImageLayout::eTransferDstOptimal, clear_value.color,
                            vk_range);
 
+    LogWatchedGpuWrite("ClearImage", dst, nullptr);
     dst->flags |= VideoCore::ImageFlagBits::GpuModified;
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
