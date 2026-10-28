@@ -96,6 +96,8 @@ public:
     /// Normalizes and validates a guest path (resolves dot and dot-dot components).
     static std::optional<std::string> SanitizeGuestPath(std::string_view path);
 
+    /// Invalidates path and case caches for the given guest path or all caches if empty.
+    void InvalidateCache(std::string_view guest_path = "");
     const MntPair* GetMountFromHostPath(const std::string& host_path) {
         std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
