@@ -894,12 +894,44 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb) {
             }
             case PM4ItOpcode::StrmoutBufferUpdate: {
                 const auto* strmout = reinterpret_cast<const PM4CmdStrmoutBufferUpdate*>(header);
-                LOG_WARNING(Render_Vulkan,
-                            "Unimplemented IT_STRMOUT_BUFFER_UPDATE, update_memory = {}, "
-                            "source_select = {}, buffer_select = {}",
-                            strmout->update_memory.Value(),
-                            magic_enum::enum_name(strmout->source_select.Value()),
-                            strmout->buffer_select.Value());
+                const u32 buf_idx = strmout->buffer_select.Value();
+                LOG_DEBUG(Render,
+                          "IT_STRMOUT_BUFFER_UPDATE buffer_select = {}, source_select = {}, "
+                          "update_memory = {}",
+                          buf_idx, magic_enum::enum_name(strmout->source_select.Value()),
+                          strmout->update_memory.Value());
+                u32 offset = vgt_strmout_buffer_filled_size[buf_idx];
+                switch (strmout->source_select.Value()) {
+                case SourceSelect::BufferOffset:
+                    offset = strmout->buffer_offset;
+                    break;
+                case SourceSelect::VgtStrmoutBufferFilledSize:
+                    offset = vgt_strmout_buffer_filled_size[buf_idx];
+                    break;
+                case SourceSelect::SrcAddress: {
+                    const VAddr src_addr = strmout->SrcAddress<VAddr>();
+                    auto* memory = Core::Memory::Instance();
+                    if (src_addr && memory && memory->IsValidMapping(src_addr, sizeof(offset))) {
+                        std::memcpy(&offset, reinterpret_cast<const void*>(src_addr),
+                                    sizeof(offset));
+                    }
+                    break;
+                }
+                case SourceSelect::None:
+                    break;
+                }
+                if (strmout->source_select.Value() != SourceSelect::None) {
+                    vgt_strmout_buffer_filled_size[buf_idx] = offset;
+                }
+                if (strmout->update_memory.Value()) {
+                    const VAddr dst_addr = strmout->DstAddress<VAddr>();
+                    auto* memory = Core::Memory::Instance();
+                    if (dst_addr && memory && memory->IsValidMapping(dst_addr, sizeof(offset))) {
+                        std::memcpy(reinterpret_cast<void*>(dst_addr),
+                                    &vgt_strmout_buffer_filled_size[buf_idx], sizeof(offset));
+                    }
+                }
+                regs.cp_strmout_cntl.offset_update_done = 1;
                 break;
             }
             case PM4ItOpcode::GetLodStats: {
