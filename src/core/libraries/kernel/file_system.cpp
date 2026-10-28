@@ -776,6 +776,12 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
         return -1;
     }
 
+    const auto parent = fs::path(sanitized_path).parent_path().generic_string();
+    if (!mnt->IsDirectory(parent)) {
+        *__Error() = mnt->Exists(parent) ? POSIX_ENOTDIR : POSIX_ENOENT;
+        return -1;
+    }
+
     std::error_code ec;
     if (dir_name.empty() || !fs::create_directory(dir_name, ec)) {
         if (ec == std::errc::no_such_file_or_directory) {
