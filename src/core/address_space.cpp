@@ -605,6 +605,43 @@ struct AddressSpace::Impl {
         }
     }
 
+    void EnsureWritable(VAddr virtual_addr, u64 size) {
+        std::scoped_lock lk{mutex};
+        const VAddr virtual_end = virtual_addr + size;
+        auto it = regions.upper_bound(virtual_addr);
+        if (it == regions.begin()) {
+            return;
+        }
+        --it;
+        for (; it != regions.end() && it->first < virtual_end; ++it) {
+            if (!it->second.is_mapped) {
+                continue;
+            }
+            const auto& region = it->second;
+            const u64 range_addr = std::max(region.base, virtual_addr);
+            const u64 range_end = std::min(region.base + region.size, virtual_end);
+
+            for (VAddr addr = range_addr; addr < range_end;) {
+                MEMORY_BASIC_INFORMATION mbi{};
+                if (!VirtualQueryEx(process, reinterpret_cast<LPCVOID>(addr), &mbi, sizeof(mbi))) {
+                    break;
+                }
+                const VAddr chunk_start = reinterpret_cast<VAddr>(mbi.BaseAddress);
+                const u64 chunk_rem = mbi.RegionSize - (addr - chunk_start);
+                const u64 cur_size = std::min<u64>(chunk_rem, range_end - addr);
+
+                if (mbi.Protect == PAGE_READONLY || mbi.Protect == PAGE_EXECUTE_READ) {
+                    DWORD new_flags = (mbi.Protect == PAGE_EXECUTE_READ) ? PAGE_EXECUTE_READWRITE
+                                                                         : PAGE_READWRITE;
+                    DWORD old_flags{};
+                    VirtualProtectEx(process, reinterpret_cast<LPVOID>(addr), cur_size, new_flags,
+                                     &old_flags);
+                }
+                addr += cur_size;
+            }
+        }
+    }
+
     boost::icl::interval_set<VAddr> GetUsableRegions() {
         boost::icl::interval_set<VAddr> reserved_regions;
         for (auto region : regions) {
@@ -819,6 +856,10 @@ struct AddressSpace::Impl {
         ASSERT_MSG(ret == 0, "mprotect failed: {}", strerror(errno));
     }
 
+    void EnsureWritable(VAddr virtual_addr, u64 size) {
+        // POSIX kernels handle copy_to_user across memory mappings transparently.
+    }
+
     int backing_fd;
     u8* backing_base{};
     u8* system_managed_base{};
@@ -887,6 +928,10 @@ void AddressSpace::Protect(VAddr virtual_addr, u64 size, MemoryPermission perms)
     const bool write = True(perms & MemoryPermission::Write);
     const bool execute = True(perms & MemoryPermission::Execute);
     return impl->Protect(virtual_addr, size, read, write, execute);
+}
+
+void AddressSpace::EnsureWritable(VAddr virtual_addr, u64 size) {
+    impl->EnsureWritable(virtual_addr, size);
 }
 
 boost::icl::interval_set<VAddr> AddressSpace::GetUsableRegions() {
