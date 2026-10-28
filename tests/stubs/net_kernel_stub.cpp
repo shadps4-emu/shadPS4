@@ -23,7 +23,7 @@ namespace Core::FileSys {
 
 int HandleTable::CreateHandle() {
     std::scoped_lock lock{m_mutex};
-    auto* file = new File{};
+    auto file = std::make_shared<File>();
     for (size_t index = 0; index < m_files.size(); ++index) {
         if (m_files[index] == nullptr) {
             m_files[index] = file;
@@ -34,27 +34,29 @@ int HandleTable::CreateHandle() {
     return static_cast<int>(m_files.size() - 1);
 }
 
-File* HandleTable::UnrefHandle(int d) {
+std::shared_ptr<File> HandleTable::UnrefHandle(int d) {
     std::scoped_lock lock{m_mutex};
     if (d < 0 || static_cast<size_t>(d) >= m_files.size()) {
         return nullptr;
     }
-    File* file = m_files[d];
+    auto file = std::move(m_files[d]);
+    m_files[d] = nullptr;
     if (!file) {
         return nullptr;
     }
-    m_files[d] = nullptr;
-    if (--file->ref_count == 0) {
-        return file;
+    for (const auto& entry : m_files) {
+        if (entry == file) {
+            return nullptr;
+        }
     }
-    return nullptr;
+    return file;
 }
 
 void HandleTable::DeleteHandle(int d) {
-    delete UnrefHandle(d);
+    UnrefHandle(d);
 }
 
-File* HandleTable::GetFile(int d) {
+std::shared_ptr<File> HandleTable::GetFile(int d) {
     std::scoped_lock lock{m_mutex};
     if (d < 0 || static_cast<size_t>(d) >= m_files.size()) {
         return nullptr;
@@ -66,7 +68,7 @@ void HandleTable::CreateStdHandles() {
     // Descriptors 0-2, so net objects start at 3 as in the emulator.
     for (int i = 0; i < 3; ++i) {
         const int fd = CreateHandle();
-        auto* file = GetFile(fd);
+        auto file = GetFile(fd);
         file->type = FileType::Device;
         file->is_opened = true;
     }
