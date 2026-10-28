@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm>
 #include <cstring>
 #include <map>
 #include <memory>
@@ -303,23 +302,19 @@ s32 PS4_SYSV_ABI sceNpAuthDeleteRequest(s32 req_id) {
     return ORBIS_OK;
 }
 
+// TODO  token code taken from old np auth implementation, needs to be reworked to use shadnet and
+// np handler
 s32 GetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param, s32 flag,
                OrbisNpIdToken* token) {
     if (param == nullptr || token == nullptr) {
-        LOG_ERROR(Lib_NpAuth, "called with null parameter");
         return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
     }
     if (param->size != sizeof(OrbisNpAuthGetIdTokenParameterA)) {
-        LOG_ERROR(Lib_NpAuth, "called with invalid parameter size: {}", param->size);
         return ORBIS_NP_AUTH_ERROR_INVALID_SIZE;
     }
-    if (param->client_id == nullptr || param->client_secret == nullptr || param->scope == nullptr) {
-        LOG_ERROR(Lib_NpAuth, "called with null parameter");
+    if (param->user_id == -1 || param->client_id == nullptr || param->client_secret == nullptr ||
+        param->scope == nullptr) {
         return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
-    }
-    if (UserManagement.GetUserByID(param->user_id) == nullptr) {
-        LOG_ERROR(Lib_NpAuth, "user not found: {}", param->user_id);
-        return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
 
     bool async = false;
@@ -333,51 +328,39 @@ s32 GetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param, s32 fla
         return FinishStartedRequest(async, ctx);
     }
 
-    const std::string client_id(param->client_id->id,
-                                strnlen(param->client_id->id, sizeof(param->client_id->id)));
-    std::string client_secret(
-        param->client_secret->secret,
-        strnlen(param->client_secret->secret, sizeof(param->client_secret->secret)));
-    const std::string scope = param->scope;
-    LOG_INFO(Lib_NpAuth, "req_id = {:#x}, async = {}, v3 = {}, client_id = '{}', scope = '{}'",
-             req_id, async, flag != 0, client_id, scope);
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}, async = {}", req_id, async);
 
-    ctx->idToken = token;
-    const s32 submit = NpHandler::GetInstance().RequestIdToken(param->user_id, client_id,
-                                                               client_secret, scope, ctx);
-    std::fill(client_secret.begin(), client_secret.end(), '\0');
-    if (submit < 0) {
-        ctx->SetResult(submit);
-    }
+    // Not sure what values are expected here, so zeroing this for now.
+    std::memset(token, 0, sizeof(OrbisNpIdToken));
+    std::strncpy(token->token, "TOKEN", 6);
+    ctx->SetResult(ORBIS_OK);
     return FinishStartedRequest(async, ctx);
 }
 
 s32 PS4_SYSV_ABI sceNpAuthGetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenParameter* param,
                                      OrbisNpIdToken* token) {
     if (param == nullptr || token == nullptr) {
-        LOG_ERROR(Lib_NpAuth, "called with null parameter");
         return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
     }
     if (param->size != sizeof(OrbisNpAuthGetIdTokenParameter)) {
-        LOG_ERROR(Lib_NpAuth, "called with invalid parameter size: {}", param->size);
         return ORBIS_NP_AUTH_ERROR_INVALID_SIZE;
     }
     if (param->online_id == nullptr || param->client_id == nullptr ||
         param->client_secret == nullptr || param->scope == nullptr) {
-        LOG_ERROR(Lib_NpAuth, "called with null parameter");
         return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
     }
     if (!g_shadnet_enabled) {
-        // Games can't get an online ID while signed out, so the user lookup fails.
-        LOG_ERROR(Lib_NpAuth, "shadnet is not enabled, user not found");
+        // Calls sceNpManagerIntGetUserIdByOnlineId to get a user id, returning any errors.
+        // This call will not succeed while signed out because games cannot retrieve an online id.
         return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
 
-    const s32 user_id = NpHandler::GetInstance().GetUserIdByOnlineId(*param->online_id);
-    if (user_id < 0) {
-        LOG_ERROR(Lib_NpAuth, "user not found for online_id");
-        return ORBIS_NP_ERROR_USER_NOT_FOUND;
-    }
+    // For simplicity, call sceUserServiceGetInitialUser to get the user_id.
+    s32 user_id = 0;
+    ASSERT(UserService::sceUserServiceGetInitialUser(&user_id) == 0);
+
+    // Library constructs an OrbisNpAuthGetIdTokenParameterA struct,
+    // then uses that to call GetIdToken.
     OrbisNpAuthGetIdTokenParameterA internal_params;
     std::memset(&internal_params, 0, sizeof(internal_params));
     internal_params.size = sizeof(internal_params);

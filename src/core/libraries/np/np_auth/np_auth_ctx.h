@@ -20,7 +20,6 @@ struct AuthRequestCtx {
 
     OrbisNpAuthorizationCode* authCode = nullptr;
     s32* issuerId = nullptr;
-    OrbisNpIdToken* idToken = nullptr;
 
     void SetResult(s32 r) {
         {
@@ -43,19 +42,6 @@ struct AuthRequestCtx {
             if (issuerId) {
                 *issuerId = issuer;
             }
-            result = ORBIS_OK;
-        }
-        cv.notify_all();
-    }
-
-    void SetIdToken(const std::string& token) {
-        {
-            std::lock_guard lock(mutex);
-            if (result.has_value()) {
-                return;
-            }
-            std::memset(idToken, 0, sizeof(OrbisNpIdToken));
-            std::memcpy(idToken->token, token.data(), token.size());
             result = ORBIS_OK;
         }
         cv.notify_all();
