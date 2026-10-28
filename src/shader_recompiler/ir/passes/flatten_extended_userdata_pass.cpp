@@ -130,7 +130,11 @@ static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
     return true;
 }
 
-using namespace Shader;
+} // namespace
+
+namespace Shader::Optimization {
+
+namespace {
 
 struct PassInfo {
     struct PointerListCompare {
@@ -207,12 +211,22 @@ struct PassInfo {
         auto it = vn_to_inst.try_emplace(gvn_table.GetValueNumber(inst), inst);
         return it.first->second;
     }
+
+    bool IsConditional(const IR::Inst* inst) const {
+        const auto it = guards.find(inst);
+        return it != guards.end() && it->second.conditional;
+    }
+
+    bool HasReads(const IR::Inst* ptr, bool conditional) const {
+        const auto it = guards.find(ptr);
+        if (it == guards.end()) {
+            return !conditional;
+        }
+        return conditional ? it->second.any_conditional : !it->second.all_conditional;
+    }
+
+    Optimization::Srt::Ref GuardOf(const IR::Inst* inst);
 };
-} // namespace
-
-namespace Shader::Optimization {
-
-namespace {
 
 static inline u16 GetFlatbufOffset(const IR::Inst* inst) {
     if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
@@ -901,7 +915,7 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
 }
 
-static bool CopyReadConst(Xbyak::CodeGenerator& c, PassInfo& pass_info, const IR::Value& src_off_dw,
+static bool EmitReadConst(Xbyak::CodeGenerator& c, PassInfo& pass_info, const IR::Value& src_off_dw,
                           IR::Inst* use) {
     if (src_off_dw.IsImmediate()) {
         c.mov(r10d, ptr[rdi + (src_off_dw.U32() << 2)]);
@@ -921,25 +935,12 @@ static bool CopyReadConst(Xbyak::CodeGenerator& c, PassInfo& pass_info, const IR
     return true;
 }
 
-static Srt::Ref GuardOf(PassInfo& pass_info, const IR::Inst* inst) {
-    const auto it = pass_info.guards.find(inst);
-    if (it == pass_info.guards.end() || !it->second.conditional) {
+Srt::Ref PassInfo::GuardOf(const IR::Inst* inst) {
+    const auto it = guards.find(inst);
+    if (it == guards.end() || !it->second.conditional) {
         return Srt::TrueRef;
     }
-    return SrtBuilder{pass_info, pass_info.srt}.Guard(it->second);
-}
-
-static bool IsConditional(const PassInfo& pass_info, const IR::Inst* inst) {
-    const auto it = pass_info.guards.find(inst);
-    return it != pass_info.guards.end() && it->second.conditional;
-}
-
-static bool HasReads(const PassInfo& pass_info, const IR::Inst* ptr, bool conditional) {
-    const auto it = pass_info.guards.find(ptr);
-    if (it == pass_info.guards.end()) {
-        return !conditional;
-    }
-    return conditional ? it->second.any_conditional : !it->second.all_conditional;
+    return SrtBuilder{*this, srt}.Guard(it->second);
 }
 
 static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
@@ -949,7 +950,7 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
             subtree->Flags<IR::BufferInstInfo>().flatbuf_off_dw == 0) {
         return;
     }
-    if (!HasReads(pass_info, subtree, conditional)) {
+    if (!pass_info.HasReads(subtree, conditional)) {
         return;
     }
 
@@ -966,30 +967,30 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
     // TODO src and dst are contiguous. Optimize with wider loads/stores
     // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
     for (auto it = use_list->begin(); it != use_list->end();) {
-        if (IsConditional(pass_info, it->second) != conditional) {
+        if (pass_info.IsConditional(it->second) != conditional) {
             ++it;
             continue;
         }
-        const Srt::Ref guard = GuardOf(pass_info, it->second);
+        const Srt::Ref guard = pass_info.GuardOf(it->second);
         Xbyak::Label skip;
         EmitCondition(c, pass_info.srt, guard, skip);
         do {
-            if (!CopyReadConst(c, pass_info, it->first, it->second)) {
+            if (!EmitReadConst(c, pass_info, it->first, it->second)) {
                 LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
             }
             ++it;
-        } while (it != use_list->end() && IsConditional(pass_info, it->second) == conditional &&
-                 GuardOf(pass_info, it->second) == guard);
+        } while (it != use_list->end() && pass_info.IsConditional(it->second) == conditional &&
+                 pass_info.GuardOf(it->second) == guard);
         c.L(skip);
     }
 
     // Then visit any children used as pointers
     for (const auto [src_off_dw, use] : *use_list) {
-        if (!pass_info.GetUsesAsPointer(use) || !HasReads(pass_info, use, conditional)) {
+        if (!pass_info.GetUsesAsPointer(use) || !pass_info.HasReads(use, conditional)) {
             continue;
         }
         Xbyak::Label skip;
-        EmitCondition(c, pass_info.srt, GuardOf(pass_info, use), skip);
+        EmitCondition(c, pass_info.srt, pass_info.GuardOf(use), skip);
         VisitPointer(src_off_dw, use, pass_info, c, conditional);
         c.L(skip);
     }
