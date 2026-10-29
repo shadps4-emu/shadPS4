@@ -501,7 +501,7 @@ s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
     }
 
     const auto* memory = Core::Memory::Instance();
-    static constexpr u64 CHUNK_SIZE = 1024 * 1024;
+    static constexpr u64 CHUNK_SIZE = 1_MB;
     static thread_local std::vector<u8> chunk_buf{};
     if (chunk_buf.size() < CHUNK_SIZE) {
         chunk_buf.resize(CHUNK_SIZE);
