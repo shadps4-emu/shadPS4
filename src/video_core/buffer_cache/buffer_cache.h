@@ -4,6 +4,7 @@
 #pragma once
 
 #include <deque>
+#include <absl/container/flat_hash_set.h>
 #include <boost/container/small_vector.hpp>
 
 #include "common/enum.h"
@@ -168,6 +169,7 @@ private:
     std::unique_ptr<FaultManager> fault_manager;
     std::unique_ptr<Buffer> bda_pagetable_buffer;
     bool fault_process_pending{};
+    absl::flat_hash_set<VAddr> stream_promoted_ranges;
 
     std::array<const Buffer*, NUM_ARENA_PAGES> address_space{};
     std::deque<Buffer> arenas;
