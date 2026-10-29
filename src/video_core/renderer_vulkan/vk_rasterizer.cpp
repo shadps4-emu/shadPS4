@@ -390,12 +390,12 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 }
 
 void Rasterizer::FlushPeriodically() {
-    constexpr auto FlushInterval = std::chrono::milliseconds(2);
-    const auto now = std::chrono::steady_clock::now();
+    constexpr u32 FlushInterval = 50;
     if (const u64 tick = scheduler.CurrentTick(); tick != last_submit_tick) {
         last_submit_tick = tick;
-        last_submit_time = now;
-    } else if (now - last_submit_time >= FlushInterval) {
+        draws_since_submit = 0;
+    }
+    if (++draws_since_submit >= FlushInterval) {
         scheduler.Flush();
     }
 }
