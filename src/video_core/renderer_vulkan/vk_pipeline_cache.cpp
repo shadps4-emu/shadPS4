@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <ranges>
+#include <set>
+#include <tuple>
 
 #include "common/hash.h"
 #include "common/io_file.h"
@@ -436,7 +438,29 @@ bool PipelineCache::RefreshGraphicsKey() {
         color_buffer.num_format = col_buf.GetNumberFmt();
         color_buffer.num_conversion = col_buf.GetNumberConversion();
         color_buffer.export_format = regs.color_export_format.GetFormat(cb);
-        color_buffer.swizzle = col_buf.Swizzle();
+        color_buffer.swizzle = col_buf.ExportSwizzle();
+        if (color_buffer.data_format == AmdGpu::DataFormat::Format8 ||
+            color_buffer.data_format == AmdGpu::DataFormat::Format16 ||
+            color_buffer.data_format == AmdGpu::DataFormat::Format32) {
+            // TEMPORARY DIAGNOSTIC (do not upstream): report single channel render targets.
+            static std::set<std::tuple<u64, u32, u32, u32, u32>> logged;
+            const u32 target_mask = regs.color_target_mask.GetMask(cb);
+            if (logged
+                    .emplace(u64(col_buf.Address()), u32(col_buf.info.comp_swap),
+                             u32(col_buf.info.format), u32(col_buf.info.number_type), target_mask)
+                    .second) {
+                const auto raw = col_buf.MrtSwizzle();
+                const auto remapped = col_buf.Swizzle();
+                LOG_INFO(
+                    Render_Vulkan,
+                    "TEXDBG single-channel RT cb={} addr={:#x} fmt={} num_type={} "
+                    "comp_swap={} mask={:#x} blend={} raw=({},{},{},{}) remapped=({},{},{},{})",
+                    cb, u64(col_buf.Address()), u32(col_buf.info.format),
+                    u32(col_buf.info.number_type), u32(col_buf.info.comp_swap), target_mask,
+                    u32(regs.blend_control[cb].enable), u32(raw.r), u32(raw.g), u32(raw.b),
+                    u32(raw.a), u32(remapped.r), u32(remapped.g), u32(remapped.b), u32(remapped.a));
+            }
+        }
 
         const auto& bc = regs.blend_control[cb];
         color_buffer.blend_self_scale =
@@ -472,8 +496,7 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
 
         // Apply swizzle to target mask
-        key.write_masks[cb] =
-            vk::ColorComponentFlags{key.color_buffers[cb].swizzle.ApplyMask(target_mask)};
+        key.write_masks[cb] = vk::ColorComponentFlags{col_buf.Swizzle().ApplyMask(target_mask)};
 
         // Fill color samples
         const u8 prev_color_samples = std::exchange(color_samples, col_buf.NumSamples());

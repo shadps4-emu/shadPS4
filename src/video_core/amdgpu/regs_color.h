@@ -259,7 +259,7 @@ struct ColorBuffer {
         return MapNumberConversion(GetFixedNumberFormat(), DataFormat(info.format));
     }
 
-    CompMapping Swizzle() const {
+    CompMapping MrtSwizzle() const {
         // clang-format off
         static constexpr std::array<std::array<CompMapping, 4>, 4> mrt_swizzles{{
             // Standard
@@ -294,8 +294,23 @@ struct ColorBuffer {
         // clang-format on
         const auto swap_idx = static_cast<u32>(info.comp_swap);
         const auto components_idx = NumComponents(DataFormat(info.format)) - 1;
-        const auto mrt_swizzle = mrt_swizzles[swap_idx][components_idx];
-        return RemapSwizzle(DataFormat(info.format), mrt_swizzle);
+        return mrt_swizzles[swap_idx][components_idx];
+    }
+
+    CompMapping Swizzle() const {
+        return RemapSwizzle(DataFormat(info.format), MrtSwizzle());
+    }
+
+    /// Swizzle applied to the components exported by the pixel shader. Single channel formats keep
+    /// the component selected by the swap mode (e.g. alpha for A8 targets), instead of having it
+    /// redirected to red as done for texture views.
+    CompMapping ExportSwizzle() const {
+        const auto format = DataFormat(info.format);
+        if (format == DataFormat::Format8 || format == DataFormat::Format16 ||
+            format == DataFormat::Format32) {
+            return MrtSwizzle();
+        }
+        return Swizzle();
     }
 
     NumberFormat GetFixedNumberFormat() const {
