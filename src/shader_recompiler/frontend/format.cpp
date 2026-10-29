@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -3362,7 +3362,9 @@ constexpr std::array<InstFormat, 256> InstructionFormatDS = {{
     // 20 = DS_NOP
     {InstClass::DsDataShareMisc, InstCategory::DataShare, 3, 1, ScalarType::Undefined,
      ScalarType::Undefined},
-    {},
+    // 21 = DS_ADD_F32 (Neo)
+    {InstClass::DsAtomicArith32, InstCategory::DataShare, 3, 1, ScalarType::Float32,
+     ScalarType::Float32},
     {},
     {},
     // 24 = DS_GWS_SEMA_RELEASE_ALL
@@ -3651,10 +3653,17 @@ constexpr std::array<InstFormat, 256> InstructionFormatDS = {{
     {},
     // 141 = DS_WRITE_SRC2_B32
     {InstClass::DsIdxWr, InstCategory::DataShare, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
-    {},
-    {},
-    {},
-    {},
+    // 142 = DS_WRITE_ADDTID_B32 (Neo)
+    {InstClass::DsIdxWr, InstCategory::DataShare, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
+    // 143 = DS_ADD_RTN_F32 (Neo)
+    {InstClass::DsAtomicArith32, InstCategory::DataShare, 3, 1, ScalarType::Float32,
+     ScalarType::Float32},
+    // 144 = DS_PERMUTE_B32 (Neo)
+    {InstClass::DsDataShareUt, InstCategory::DataShare, 3, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
+    // 145 = DS_BPERMUTE_B32 (Neo)
+    {InstClass::DsDataShareUt, InstCategory::DataShare, 3, 1, ScalarType::Uint32,
+     ScalarType::Uint32},
     // 146 = DS_MIN_SRC2_F32
     {InstClass::DsAtomicMinMax32, InstCategory::DataShare, 3, 1, ScalarType::Float32,
      ScalarType::Float32},
@@ -3662,6 +3671,9 @@ constexpr std::array<InstFormat, 256> InstructionFormatDS = {{
     {InstClass::DsAtomicMinMax32, InstCategory::DataShare, 3, 1, ScalarType::Float32,
      ScalarType::Float32},
     {},
+    // 149 = DS_ADD_SRC2_F32 (Neo)
+    {InstClass::DsAtomicArith32, InstCategory::DataShare, 3, 1, ScalarType::Float32,
+     ScalarType::Float32},
     {},
     {},
     {},
@@ -3694,17 +3706,20 @@ constexpr std::array<InstFormat, 256> InstructionFormatDS = {{
     {},
     {},
     {},
+    // 182 = DS_READ_ADDTID_B32 (Neo)
+    {InstClass::DsIdxRd, InstCategory::DataShare, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
     {},
     {},
     {},
     {},
     {},
     {},
-    {},
-    {},
-    {},
-    {},
-    {},
+    // 189 = DS_CONSUME (Neo)
+    {InstClass::DsAppendCon, InstCategory::DataShare, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
+    // 190 = DS_APPEND (Neo)
+    {InstClass::DsAppendCon, InstCategory::DataShare, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
+    // 191 = DS_ORDERED_COUNT (Neo)
+    {InstClass::GdsOrdCnt, InstCategory::DataShare, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
     // 192 = DS_ADD_SRC2_U64
     {InstClass::DsAtomicArith64, InstCategory::DataShare, 3, 1, ScalarType::Uint64,
      ScalarType::Uint64},
