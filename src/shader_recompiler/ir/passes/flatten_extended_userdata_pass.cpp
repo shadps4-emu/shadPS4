@@ -535,7 +535,7 @@ private:
         }
         const std::optional<Srt::Opcode> srt_opcode = SrtValueOpcode(opcode);
         if (!srt_opcode) {
-            if (!is_guard) {
+            if (!is_guard && !inputs) {
                 LOG_ERROR(Render_Recompiler, "Unexpected instruction for offset computation, {}",
                           magic_enum::enum_name(opcode));
             }
@@ -965,6 +965,7 @@ static void ClassifyReads(PassInfo& pass_info, Srt::Program& scratch, IR::Inst* 
         if (!read.conditional) {
             read.inputs.clear();
         }
+        SrtBuilder{pass_info, scratch, &read.inputs}.Offset(src_off_dw);
         read.inputs.erase(std::remove(read.inputs.begin(), read.inputs.end(), use),
                           read.inputs.end());
         if (pass_info.GetUsesAsPointer(use)) {
