@@ -227,18 +227,8 @@ private:
     std::vector<IR::Inst*> m_pending_phis;
 };
 
-void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst, SsaTarget target) {
-    const IR::Opcode opcode{inst.GetOpcode()};
-    if (target == SsaTarget::ScalarOnly) {
-        if (opcode == IR::Opcode::SetVectorRegister || opcode == IR::Opcode::GetVectorRegister) {
-            return;
-        }
-    } else if (target == SsaTarget::VectorOnly) {
-        if (opcode != IR::Opcode::SetVectorRegister && opcode != IR::Opcode::GetVectorRegister) {
-            return;
-        }
-    }
-    switch (opcode) {
+void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
+    switch (inst.GetOpcode()) {
     case IR::Opcode::SetScalarRegister:
         pass.WriteVariable(IR::RegTag{inst.Arg(0).ScalarReg()}, block, inst.Arg(1));
         break;
@@ -305,13 +295,13 @@ void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst, SsaTarget target) {
 
 } // Anonymous namespace
 
-void SsaRewritePass(IR::Program& program, SsaTarget target) {
+void SsaRewritePass(IR::Program& program) {
     Pass pass;
     const auto end = program.post_order_blocks.rend();
     for (auto it = program.post_order_blocks.rbegin(); it != end; ++it) {
         IR::Block* block{*it};
         for (IR::Inst& inst : block->Instructions()) {
-            VisitInst(pass, block, inst, target);
+            VisitInst(pass, block, inst);
         }
     }
     pass.EvaluatePendingPhis();
