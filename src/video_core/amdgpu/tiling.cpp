@@ -3,6 +3,8 @@
 
 #include <bit>
 #include <magic_enum/magic_enum.hpp>
+
+#include "common/logging/log.h"
 #include "video_core/amdgpu/tiling.h"
 
 namespace AmdGpu {
@@ -48,7 +50,8 @@ PipeConfig GetPipeConfig(TileMode tile_mode) {
     case TileMode::DisplayLinearGeneral:
         return PipeConfig::P2;
     default:
-        UNREACHABLE_MSG("Unknown tile mode = {}", u32(tile_mode));
+        LOG_WARNING(Render, "Unknown tile mode {}, assuming 32x32 pipe", u32(tile_mode));
+        return PipeConfig::P8_32x32_16x16;
     }
 }
 
@@ -85,7 +88,8 @@ PipeConfig GetAltPipeConfig(TileMode tile_mode) {
     case TileMode::DisplayLinearGeneral:
         return PipeConfig::P2;
     default:
-        UNREACHABLE_MSG("Unknown tile mode = {}", u32(tile_mode));
+        LOG_WARNING(Render, "Unknown tile mode {}, assuming 32x32 pipe", u32(tile_mode));
+        return PipeConfig::P16_32x32_8x16;
     }
 }
 
@@ -122,7 +126,8 @@ u32 GetSampleSplit(TileMode tile_mode) {
     case TileMode::Thin3DThinPrt:
         return 2;
     default:
-        UNREACHABLE_MSG("Unknown tile mode = {}", u32(tile_mode));
+        LOG_WARNING(Render, "Unknown tile mode {}, assuming no sample split", u32(tile_mode));
+        return 1;
     }
 }
 
@@ -162,7 +167,8 @@ u32 GetTileSplitHw(TileMode tile_mode) {
     case TileMode::Depth2DThinPrt1K:
         return 1024;
     default:
-        UNREACHABLE_MSG("Unknown tile mode = {}", u32(tile_mode));
+        LOG_WARNING(Render, "Unknown tile mode {}, assuming 64-byte block", u32(tile_mode));
+        return 64;
     }
 }
 
