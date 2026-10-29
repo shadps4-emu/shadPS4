@@ -131,6 +131,14 @@ void BufferCache::UnmarkRegionAsGpuModified(VAddr device_addr, u64 size, bool is
     gpu_modified_ranges.Subtract(device_addr, size);
 }
 
+void BufferCache::UnmapMemory(VAddr device_addr, u64 size) {
+    InvalidateMemory(device_addr, size);
+    liverpool->SendCommand([this, device_addr, size] {
+        stream_promoted_ranges.erase(stream_promoted_ranges.lower_bound(device_addr),
+                                     stream_promoted_ranges.lower_bound(device_addr + size));
+    });
+}
+
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool async,
                              bool assume_locks) {
     const auto flush_request = [this, device_addr, size, is_write, async] {
