@@ -95,6 +95,26 @@ static u32 BufferImageCopySize(const vk::BufferImageCopy& copy, const vk::Format
            width_in_blocks * block_size;
 }
 
+/// Returns the staging buffer size CopyImageWithBuffer needs for both the source download and
+/// the destination upload.
+static u64 ImageWithBufferCopySize(const VideoCore::Image* src, const VideoCore::Image* dst) {
+    const u32 num_mips = std::min(src->info.resources.levels, dst->info.resources.levels);
+    const u32 num_layers = std::min(src->info.resources.layers, dst->info.resources.layers);
+    u64 size = 0;
+    for (u32 mip = 0; mip < num_mips; ++mip) {
+        const vk::BufferImageCopy copy = {
+            .imageSubresource{.layerCount = num_layers},
+            .imageExtent = {std::max(src->info.size.width >> mip, 1u),
+                            std::max(src->info.size.height >> mip, 1u),
+                            std::max(src->info.size.depth >> mip, 1u)},
+        };
+        const u64 offset = mip == 0 ? 0 : Common::AlignUp(size, 16);
+        size = offset + std::max<u64>(BufferImageCopySize(copy, src->info.pixel_format),
+                                      BufferImageCopySize(copy, dst->info.pixel_format));
+    }
+    return size;
+}
+
 Runtime::Runtime(const Instance& instance_, Scheduler& scheduler_)
     : instance{instance_}, scheduler{scheduler_}, staging_pool{instance_, scheduler_} {
     blit_helper = std::make_unique<VideoCore::BlitHelper>(instance, scheduler);
@@ -457,8 +477,19 @@ void Runtime::CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst) {
         } else {
             // Perform depth from/to color copy using the intermediate copy buffer.
             static constexpr size_t COPY_BUFFER_SIZE = 128_MB;
-            const auto copy_ref =
-                staging_pool.Request(COPY_BUFFER_SIZE, VideoCore::MemoryType::DeviceLocal);
+            const u64 copy_size = ImageWithBufferCopySize(src, dst);
+            if (copy_size > COPY_BUFFER_SIZE) {
+                LOG_WARNING(Render_Vulkan,
+                            "Depth/color copy needs {:#x} bytes: src {} {}x{}x{} layers {} mips "
+                            "{}, dst {} {}x{}x{} layers {} mips {}",
+                            copy_size, vk::to_string(src->info.pixel_format), src->info.size.width,
+                            src->info.size.height, src->info.size.depth, src->info.resources.layers,
+                            src->info.resources.levels, vk::to_string(dst->info.pixel_format),
+                            dst->info.size.width, dst->info.size.height, dst->info.size.depth,
+                            dst->info.resources.layers, dst->info.resources.levels);
+            }
+            const auto copy_ref = staging_pool.Request(std::max<u64>(copy_size, COPY_BUFFER_SIZE),
+                                                       VideoCore::MemoryType::DeviceLocal);
             CopyImageWithBuffer(src, dst, copy_ref.buffer, copy_ref.offset);
         }
     } else if (src->info.num_samples == 1 && dst->info.num_samples > 1 &&
