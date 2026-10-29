@@ -620,7 +620,7 @@ private:
         if (!lhs || !rhs || (IsImm(*lhs) && IsImm(*rhs))) {
             return Srt::TrueRef;
         }
-        if (Srt::IsFloatCompare(opcode) && (!IsFloatKnown(*lhs) || !IsFloatKnown(*rhs))) {
+        if (Srt::IsFloatCompare(opcode) && (!IsFloatDecidable(*lhs) || !IsFloatDecidable(*rhs))) {
             return Srt::TrueRef;
         }
         return srt.Op(opcode, *lhs, *rhs);
@@ -630,7 +630,7 @@ private:
         return srt[ref].opcode == Srt::Opcode::Imm32;
     }
 
-    bool IsFloatKnown(Srt::Ref ref) const {
+    bool IsFloatDecidable(Srt::Ref ref) const {
         return !IsImm(ref) || IsNormalOrZero(srt[ref].imm);
     }
 
