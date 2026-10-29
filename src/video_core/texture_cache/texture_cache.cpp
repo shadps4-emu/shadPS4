@@ -594,6 +594,29 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
 
     ASSERT(info.guest_address != 0);
 
+    const FindImageKey key{
+        .guest_address = info.guest_address,
+        .guest_size = info.guest_size,
+        .width = info.size.width,
+        .height = info.size.height,
+        .depth = info.size.depth,
+        .pixel_format = info.pixel_format,
+        .type = info.type,
+        .levels = info.resources.levels,
+        .layers = info.resources.layers,
+        .exact_fmt = exact_fmt,
+    };
+    if (const auto it = find_image_cache.find(info.guest_address); it != find_image_cache.end()) {
+        for (const auto& [cached_key, cached_id] : it->second) {
+            if (cached_key == key) {
+                Image& image = slot_images[cached_id];
+                image.tick_accessed_last = scheduler.CurrentTick();
+                TouchImage(image);
+                return cached_id;
+            }
+        }
+    }
+
     SmallVector<ImageId, 8> image_ids;
     ForEachImageInRegion(info.guest_address, info.guest_size,
                          [&](ImageId image_id, Image& image) { image_ids.push_back(image_id); });
@@ -621,6 +644,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         }
         image_id = cache_id;
     }
+    const ImageId exact_match_id = image_id;
 
     // Try to resolve overlaps (if any)
     int view_mip{-1};
@@ -653,6 +677,10 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
             LOG_WARNING(Render_Vulkan, "Image overlap resolve failed");
         }
     }
+    if (image_id && image_id == exact_match_id) {
+        find_image_cache[info.guest_address].emplace_back(key, image_id);
+    }
+
     // Create and register a new image
     if (!image_id) {
         image_id = slot_images.Insert(instance, runtime, slot_image_views, info);
@@ -937,6 +965,7 @@ void TextureCache::RegisterImage(ImageId image_id) {
     ASSERT_MSG(False(image.flags & ImageFlagBits::Registered),
                "Trying to register an already registered image");
     image.flags |= ImageFlagBits::Registered;
+    find_image_cache.erase(image.info.guest_address);
     image.memory_usage_counter = &total_used_memory;
     total_used_memory += Common::AlignUp(image.SizeBytes(), 1024);
     image_lru_cache.Insert(image, gc_tick);
@@ -956,6 +985,7 @@ void TextureCache::UnregisterImage(ImageId image_id) {
     ASSERT_MSG(True(image.flags & ImageFlagBits::Registered),
                "Trying to unregister an already unregistered image");
     image.flags &= ~ImageFlagBits::Registered;
+    find_image_cache.erase(image.info.guest_address);
     image.memory_usage_counter = nullptr;
     image_lru_cache.Free(image);
     total_used_memory -= Common::AlignUp(image.SizeBytes(), 1024);
